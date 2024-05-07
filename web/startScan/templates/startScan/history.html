@@ -2,20 +2,21 @@
 {% load static %}
 {% load humanize %}
 {% load permission_tags %}
+{% load i18n %}
 
 {% block title %}
-Scan history
+{% translate "Scan history" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item active" aria-current="page">Scan History</li>
+<li class="breadcrumb-item active" aria-current="page">{% translate "Scan History" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Quick Scan History
+{% translate "Quick Scan History" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -26,40 +27,40 @@ Quick Scan History
         <div class="row">
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="filterMenu">
-              Filter <i class="fe-filter"></i>
+              {% translate "Filter" %} <i class="fe-filter"></i>
             </button>
             <div id="filteringText" class="mt-2">
             </div>
             <div class="dropdown-menu" style="width: 30%">
               <div class="px-4 py-3">
-                <h4 class="headline-title">Filters</h4>
+                <h4 class="headline-title">{% translate "Filters" %}</h4>
                 <div class="">
-                  <label for="filterByOrganization" class="form-label">Filter by Organization</label>
+                  <label for="filterByOrganization" class="form-label">{% translate "Filter by Organization" %}</label>
                   <select class="form-control" id="filterByOrganization">
                   </select>
                 </div>
                 <div class="">
-                  <label for="filterByTarget" class="form-label">Filter by Targets</label>
+                  <label for="filterByTarget" class="form-label">{% translate "Filter by Targets" %}</label>
                   <select class="form-control" id="filterByTarget">
                   </select>
                 </div>
                 <div class="">
-                  <label for="filterByScanType" class="form-label">Filter by Scan Type</label>
+                  <label for="filterByScanType" class="form-label">{% translate "Filter by Scan Type" %}</label>
                   <select class="form-control" id="filterByScanType">
                   </select>
                 </div>
                 <div class="">
-                  <label for="filterByScanStatus" class="form-label">Filter by Scan Status</label>
+                  <label for="filterByScanStatus" class="form-label">{% translate "Filter by Scan Status" %}</label>
                   <select class="form-control" id="filterByScanStatus">
                   </select>
                 </div>
               </div>
               <div class="dropdown-divider"></div>
-              <a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
+              <a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">{% translate "Reset Filters" %}</a>
             </div>
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-            <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleScan()" id="delete_multiple_button">Delete Multiple Scans</a>
+            <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleScan()" id="delete_multiple_button">{% translate "Delete Multiple Scans" %}</a>
           </div>
         </div>
       </div>
@@ -74,15 +75,15 @@ Quick Scan History
         <table id="scan_history_table" class="table dt-responsive w-100">
           <thead>
             <tr>
-              <th class="checkbox-column text-center">Serial Number</th>
-              <th class="text-center">Serial Number</th>
-              <th class="">Domain Name</th>
-              <th>Summary</th>
-              <th class="">Scan Engine Used</th>
-              <th>Last Scan</th>
-              <th class="text-center">Status</th>
-              <th class="text-center">Progress</th>
-              <th class="text-center no-sorting">Action</th>
+              <th class="checkbox-column text-center">{% translate "Serial Number" %}</th>
+              <th class="text-center">{% translate "Serial Number" %}</th>
+              <th class="">{% translate "Domain Name" %}</th>
+              <th>{% translate "Summary" %}</th>
+              <th class="">{% translate "Scan Engine Used" %}</th>
+              <th>{% translate "Last Scan" %}</th>
+              <th class="text-center">{% translate "Status" %}</th>
+              <th class="text-center">{% translate "Progress" %}</th>
+              <th class="text-center no-sorting">{% translate "Action" %}</th>
             </tr>
           </thead>
           <tbody>
@@ -94,34 +95,34 @@ Quick Scan History
                 {{ scan_history.domain.name }}
                 <br>
                 {% for organization in scan_history.domain.get_organization %}
-                <span class="badge badge-soft-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
+                <span class="badge badge-soft-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="{% blocktranslate %}Domain {{ scan_history.domain.name }} belongs to organization {{ organization.name }}{% endblocktranslate %}">{{ organization.name }}</span>
                 {% endfor %}
               </td>
               <td class="text-left">
-                <span class="badge badge-pills bg-info mt-1" data-toggle="tooltip" data-placement="top" title="Subdomains">{{scan_history.get_subdomain_count}}</span>
-                <span class="badge badge-pills bg-warning mt-1" data-toggle="tooltip" data-placement="top" title="Endpoints">{{scan_history.get_endpoint_count}}</span>
-                <span class="badge badge-pills bg-danger mt-1" data-toggle="tooltip" data-placement="top" title="{{scan_history.get_critical_vulnerability_count}} Critical, {{scan_history.get_high_vulnerability_count}} High, {{scan_history.get_medium_vulnerability_count}} Medium Vulnerabilities">{{scan_history.get_vulnerability_count}}</span>
+                <span class="badge badge-pills bg-info mt-1" data-toggle="tooltip" data-placement="top" title="{% translate 'Subdomains' %}">{{scan_history.get_subdomain_count}}</span>
+                <span class="badge badge-pills bg-warning mt-1" data-toggle="tooltip" data-placement="top" title="{% translate 'Endpoints' %}">{{scan_history.get_endpoint_count}}</span>
+                <span class="badge badge-pills bg-danger mt-1" data-toggle="tooltip" data-placement="top" title="{% blocktranslate with critVulnCount=scan_history.get_critical_vulnerability_count highVulnCount=scan_history.get_high_vulnerability_count medVulnCount=scan_history.get_medium_vulnerability_count %}{{ critVulnCount }} Critical, {{ highVulnCount }} High, {{ medVulnCount }} Medium Vulnerabilities{% endblocktranslate %}">{{scan_history.get_vulnerability_count}}</span>
               </td>
               <td class="">
                 <span class="badge badge-soft-primary">{{ scan_history.scan_type }}</span>
               </td>
               <td>
-                <span data-toggle="tooltip" data-placement="top" title="{{scan_history.start_scan_date}}">{{scan_history.start_scan_date|naturaltime}}</span>
+                <span data-toggle="tooltip" data-placement="top" title="{{scan_history.start_scan_date}}">{{ scan_history.start_scan_date|naturaltime}}</span>
               </td>
               <td class="text-center">
                 {% if scan_history.scan_status == -1 %}
-                <span class="badge badge-soft-warning" data-placement="top" data-toggle="tooltip" data-placement="top" title="Waiting for other scans to complete"><span class="spinner-border spinner-border-sm"></span> Pending</span>
+                <span class="badge badge-soft-warning" data-placement="top" data-toggle="tooltip" data-placement="top" title="{% translate 'Waiting for other scans to complete' %}"><span class="spinner-border spinner-border-sm"></span> {% translate 'Pending' %}</span>
                 {% elif scan_history.scan_status == 0 %}
-                <span class="badge badge-soft-danger">Failed</span>
-                {% if scan_history.error_message %}</br><p class="text-danger">Scan Failed due to: {{scan_history.error_message}}</p>{% endif %}
+                <span class="badge badge-soft-danger">{% translate 'Failed' %}</span>
+                {% if scan_history.error_message %}</br><p class="text-danger">{% blocktranslate with errMsg=scan_history.error_message %}Scan Failed due to: {{ errMsg }}{% endblocktranslate %}</p>{% endif %}
                 {% elif scan_history.scan_status == 1 %}
-                <span class="badge badge-soft-info"><span class="spinner-border spinner-border-sm"></span> In Progress</span>
+                <span class="badge badge-soft-info"><span class="spinner-border spinner-border-sm"></span> {% translate 'In Progress' %}</span>
                 {% elif scan_history.scan_status == 2 %}
-                <span class="badge badge-soft-success">Successful</span>
+                <span class="badge badge-soft-success">{% translate 'Successful' %}</span>
                 {% elif scan_history.scan_status == 3 %}
-                <span class="badge badge-soft-danger">Aborted</span>
+                <span class="badge badge-soft-danger">{% translate 'Aborted' %}</span>
                 {% else %}
-                <span class="badge badge-soft-danger">Unknown</span>
+                <span class="badge badge-soft-danger">{% translate 'Unknown' %}</span>
                 {% endif %}
               </td>
               <td class="text-center">
@@ -158,7 +159,7 @@ Quick Scan History
               <td class="text-center">
                 <div class="btn-group mb-2 dropstart">
                   <div class="btn-group">
-                    <a href="/scan/{{current_project.slug}}/detail/{{scan_history.id}}" class="btn btn-soft-primary">View Results</a>
+                    <a href="/scan/{{current_project.slug}}/detail/{{scan_history.id}}" class="btn btn-soft-primary">{% translate "View Results" %}</a>
                     <div class="btn-group dropstart" role="group">
                       <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <i class="mdi mdi-chevron-right"></i>
@@ -167,24 +168,24 @@ Quick Scan History
                         {% if user|can:'initiate_scans_subscans' %}
                           {% if scan_history.scan_status == 0 or scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
                           <a class="dropdown-item text-primary" href="/scan/{{current_project.slug}}/start/{{scan_history.domain.id}}">
-                          <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
+                          <i class="fe-refresh-ccw"></i>&nbsp;{% translate "Rescan" %}</a>
                           {% endif %}
 
                           {% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
                           <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id={{ scan_history.id }}, subscan_id=null, reload_scan_bar=false, reload_location=true)">
-                          <i class="fe-alert-triangle"></i>&nbsp;Stop Scan</a>
+                          <i class="fe-alert-triangle"></i>&nbsp;{% translate "Stop Scan" %}</a>
                           {% endif %}
                         {% endif %}
                         {% if user|can:'modify_scan_results' %}
                           {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 or scan_history.scan_status == 0 %}
                             <a href="#" class="dropdown-item text-danger" onclick="delete_scan('{{ scan_history.id }}')">
-                            <i class="fe-trash-2"></i>&nbsp;Delete Scan Results</a>
+                            <i class="fe-trash-2"></i>&nbsp;{% translate "Delete Scan Results" %}</a>
                           {% endif %}
                           <div class="dropdown-divider"></div>
                         {% endif %}
                         {% if scan.scan_status != -1%}
                           <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{% if 'subdomain_discovery' in scan_history.scan_type.tasks %}True{% endif %}', '{% if 'vulnerability_scan' in scan_history.scan_type.tasks %}True{% endif %}', '{{ scan_history.domain.name }}')">
-                          <i class="fe-download"></i>&nbsp;Scan Report</a>
+                          <i class="fe-download"></i>&nbsp;{% translate "Scan Report" %}</a>
                         {% endif %}
                         </div>
                       </div>
@@ -203,26 +204,27 @@ Quick Scan History
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h4 class="modal-title" id="myCenterModalLabel">Download Report</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h4 class="modal-title" id="myCenterModalLabel">{% translate "Download Report" %}</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate "Close" %}"></button>
+{% load i18n %}
       </div>
       <div class="modal-body">
         <div class="alert alert-light-primary border-0 mb-4" role="alert">
-          <div id='report_alert_message'></div>
+          <div id='report_alert_message'>{% translate "Report alert message" %}</div>
         </div>
         <div class="form-group mb-4">
-          <label for="reportTypeForm">Report Type</label>
+          <label for="reportTypeForm">{% translate "Report Type" %}</label>
           <select class="form-control" id="report_type_select" name="report_type">
           </select>
         </div>
         <div class="form-group mb-4">
           <div class="form-check" id="report_info_vuln_div">
             <input type="checkbox" class="form-check-input" id="report_ignore_info_vuln" checked="">
-            <label class="form-check-label" for="report_ignore_info_vuln">Ignore Informational Vulnerabilities</label>
+            <label class="form-check-label" for="report_ignore_info_vuln">{% translate "Ignore Informational Vulnerabilities" %}</label>
           </div>
         </div>
-        <a id='generateReportButton' href="#" class="btn btn-primary float-end m-2">Download Report</a>
-        <a id='previewReportButton' href="#" class="btn btn-secondary float-end m-2">Preview Report</a>
+        <a id='generateReportButton' href="#" class="btn btn-primary float-end m-2">{% translate "Download Report" %}</a>
+        <a id='previewReportButton' href="#" class="btn btn-secondary float-end m-2">{% translate "Preview Report" %}</a>
       </div>
     </div>
   </div>
@@ -252,10 +254,10 @@ Quick Scan History
       "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
       "oLanguage": {
         "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-        "sInfo": "Showing page _PAGE_ of _PAGES_",
+        "sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
         "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-        "sSearchPlaceholder": "Search...",
-        "sLengthMenu": "Results :  _MENU_",
+        "sSearchPlaceholder": gettext("Search..."),
+        "sLengthMenu": gettext("Results :  _MENU_"),
       },
       "stripeClasses": [],
       "lengthMenu": [5, 10, 20, 30, 40, 50],
@@ -321,22 +323,23 @@ Quick Scan History
 
     // filtering for scan status
     var status_types = ['Pending', 'Scanning', 'Aborted', 'Successful', 'Failed'];
+    var status_types_lang_map = [gettext("Pending"), gettext("Scanning"), gettext("Aborted"), gettext("Successful"), gettext("Failed")];
     for (status in status_types) {
       select = document.getElementById('filterByScanStatus');
       var option = document.createElement('option');
       option.value = status_types[status];
-      option.innerHTML = status_types[status];
+      option.innerHTML = status_types_lang_map[status];
       select.appendChild(option);
     }
 
     var org_filter = document.getElementById('filterByOrganization');
     org_filter.addEventListener('click', function() {
       table.search(this.value).draw();
-      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Organization: ${this.value}
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">` + interpolate("Organization: %(orgName)s", {orgName: this.value}, true) + `
       <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
       </span>`;
       Snackbar.show({
-        text: `Filtering by organization ${this.value}`,
+        text: interpolate(`Filtering by organization %(orgName)s`, {orgName: this.value}, true),
         pos: 'top-center'
       });
     }, false);
@@ -363,11 +366,11 @@ Quick Scan History
         default:
         badge_color = 'primary'
       }
-      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-${badge_color}">Scan Status: ${this.value}
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-${badge_color}">` + interpolate("Scan Status : %(scanStatus)s", {scanStatus: this.value}, true) + `
       <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
       </span>`;
       Snackbar.show({
-        text: `Filtering by scan status ${this.value}`,
+        text: interpolate(`Filtering by scan status %(filter)s`, {filter: this.value}, true),
         pos: 'top-center'
       });
     }, false);
@@ -375,11 +378,11 @@ Quick Scan History
     var engine_filter = document.getElementById('filterByScanType');
     engine_filter.addEventListener('click', function() {
       table.search(this.value).draw();
-      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Scan Engine: ${this.value}
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">` + interpolate("Scan Engine: %(scanEngine)s", {scanEngine: this.value}, true) + `
       <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
       </span>`;
       Snackbar.show({
-        text: `Filtering by Engine ${this.value}`,
+        text: interpolate(`Filtering by Engine %(filter)s`, {filter: this.value}, true),
         pos: 'top-center'
       });
     }, false);
@@ -387,11 +390,11 @@ Quick Scan History
     var target_filter = document.getElementById('filterByTarget');
     target_filter.addEventListener('click', function() {
       table.search(this.value).draw();
-      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Target/Domain: ${this.value}
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">` + interpolate("Target/Domain : %(target)s", {target: this.value}, true) + `
       <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
       </span>`;
       Snackbar.show({
-        text: `Filtering by Engine ${this.value}`,
+        text: interpolate(`Filtering by Target %(filter)s`, {filter: this.value}, true),
         pos: 'top-center'
       });
     }, false);
@@ -448,18 +451,19 @@ Quick Scan History
     if (!checkedCount()) {
       swal({
         title: '',
-        text: "Oops! No targets has been selected!",
+        text: gettext("Oops! No targets has been selected!"),
         type: 'error',
         padding: '2em'
       })
     } else {
       // atleast one target is selected
       swal.queue([{
-        title: 'Are you sure you want to delete ' + checkedCount() + ' Scans?',
-        text: "This action is irreversible.\nThis will delete all the scan data and vulnerabilities related to the scan.",
+        title: interpolate("Are you sure you want to delete %(nbScans)s Scans?", {nbScans: checkedCount()}, true),
+        text: gettext("This action is irreversible.\nThis will delete all the scan data and vulnerabilities related to the scan."),
         type: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Delete',
+        cancelButtonText: gettext("Cancel"),
+        confirmButtonText: gettext("Delete"),
         padding: '2em',
         showLoaderOnConfirm: true,
         preConfirm: function() {
@@ -477,8 +481,7 @@ Quick Scan History
     if(report_type.value == "recon")
     {
       $("#report_info_vuln_div").hide();
-    }
-    else{
+    } else{
       $("#report_info_vuln_div").show();
     }
 });
@@ -488,35 +491,29 @@ Quick Scan History
     $('#report_alert_message').empty();
     $('#report_type_select').empty();
     if (is_subdomain_scan == 'True'  && is_vulnerability_scan == 'True') {
-      $('#report_alert_message').append(`
-        <b>Full Scan</b> will include both Reconnaissance and Vulnerability Report.<br>
-        `);
+      $('#report_alert_message').append(`<b>` + gettext("Full Scan") + `</b> ` + gettext(`will include both Reconnaissance and Vulnerability Report.`) + `<br>`);
 
         $('#report_type_select').append($('<option>', {
           value: 'full',
-          text: 'Full Scan Report'
+          text: gettext('Full Scan Report')
         }));
     }
 
     if (is_subdomain_scan == 'True') {
       // eligible for reconnaissance report
-      $('#report_alert_message').append(`
-        <b>Reconnaissance Report</b> will only include Assets Discovered Section.<br>
-        `);
+      $('#report_alert_message').append(`<b>` + gettext("Reconnaissance Report") + `</b> ` + getext("will only include Assets Discovered Section.") + `<br>`);
         $('#report_type_select').append($('<option>', {
           value: 'recon',
-          text: 'Reconnaissance Report'
+          text: gettext('Reconnaissance Report')
         }));
       }
 
     if (is_vulnerability_scan == 'True'){
       // eligible for vulnerability report
-      $('#report_alert_message').append(`
-        <b>Vulnerability Report</b> will only include details of Vulnerabilities Identified.
-        `);
+      $('#report_alert_message').append(`<b>` + gettext("Vulnerability Report") + `</b> ` + gettext("will only include details of Vulnerabilities Identified."));
         $('#report_type_select').append($('<option>', {
           value: 'vulnerability',
-          text: 'Vulnerability Report'
+          text: gettext("Vulnerability Report")
         }));
     }
     $('#generateReportButton').attr('onClick', `generate_report(${id}, '${domain_name}')`);
@@ -541,8 +538,8 @@ Quick Scan History
     }
     $('#generateReportModal').modal('hide');
     swal.queue([{
-      title: 'Generating Report!',
-      text: `Please wait until we generate a report for you!`,
+      title: gettext("Generating Report!"),
+      text: gettext("Please wait until we generate a report for you!"),
       padding: '2em',
       onOpen: function() {
         swal.showLoading()
@@ -568,7 +565,7 @@ Quick Scan History
         .catch(function() {
           swal.insertQueueStep({
             type: 'error',
-            title: 'Oops! Unable to generate report!'
+            title: gettext("Oops! Unable to generate report!"),
           })
         })
       }

@@ -1,8 +1,8 @@
 {% extends 'base/base.html' %}
 {% load static %}
-
+{% load i18n %}
 {% block title %}
-Add Organization
+{% translate "Add Organization" %}
 {% endblock title %}
 
 
@@ -11,12 +11,12 @@ Add Organization
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug %}">Organization</a></li>
-<li class="breadcrumb-item active">Add Organization</li>
+<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug %}">{% translate "Organization" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Add Organization" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Add Organization
+{% translate "Add Organization" %}
 {% endblock page_title %}
 
 
@@ -25,12 +25,12 @@ Add Organization
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <p>Organizations can be used to bundle the targets, an organization can have multiple targets. You will be able to scan the organizations just like the targets, but scanning the organization will allow you to scan all the targets within the organization together.</p>
+        {% translate "Organizations can be used to bundle the targets, an organization can have multiple targets. You will be able to scan the organizations just like the targets, but scanning the organization will allow you to scan all the targets within the organization together." %}
         <form method="POST">
           {% csrf_token %}
           <div class="row">
             <div class="col-6">
-              <label for="organizationName" class="form-label">Organization name</label>
+              <label for="organizationName" class="form-label">{% translate "Organization name" %}</label>
               {{ form.name }}
               {% if form.errors %}
               <div class="invalid-feedback" style="display: block;">
@@ -39,11 +39,11 @@ Add Organization
               {% endif %}
             </div>
             <div class="col-6">
-              <label for="organizationDescription" class="form-label">Description (Optional)</label>
+              <label for="organizationDescription" class="form-label">{% translate "Description (Optional)" %}</label>
               {{ form.description }}
             </div>
             <div class="col-12 mt-3">
-              <label for="targets" class="form-label">Select Targets</label>
+              <label for="targets" class="form-label">{% translate "Select Targets" %}</label>
               {{form.domains}}
               {% if form.errors.domains %}
               <div class="invalid-feedback text-danger" style="display: block;">
@@ -54,7 +54,7 @@ Add Organization
               {% endif %}
             </div>
           </div>
-          <button class="btn btn-primary submit-fn mt-2 float-end" disabled="true" type="submit">Add Organization</button>
+          <button class="btn btn-primary submit-fn mt-2 float-end" disabled="true" type="submit">{% translate "Add Organization" %}</button>
         </form>
       </div>
     </div>

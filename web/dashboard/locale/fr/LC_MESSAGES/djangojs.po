@@ -1,0 +1,203 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-06 20:42+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: web/dashboard/templates/dashboard/admin.html:132
+# Manually added
+msgid "Are you sure you want to delete user %(username)s?"
+msgstr "Êtes-vous sûr de vouloir supprimer l'utilisateur %(username)s?"
+
+#: web/dashboard/templates/dashboard/admin.html:133
+# Manually added
+msgid "You won't be able to revert this!"
+msgstr "Vous ne pourrez pas revenir en arrière !"
+
+#: web/dashboard/templates/dashboard/admin.html:136
+# Manually added
+msgid "Delete"
+msgstr "Supprimer"
+
+#: web/dashboard/templates/dashboard/admin.html:137
+# Manually added
+msgid "Cancel"
+msgstr "Annuler"
+
+#: web/dashboard/templates/dashboard/admin.html:157
+# Manually added
+msgid "Oops! Unable to delete the User!"
+msgstr "Oups! Impossible de supprimer l'utilisateur !"
+
+#: web/dashboard/templates/dashboard/admin.html:169
+# Manually added
+msgid "Role"
+msgstr "Rôle"
+
+#: web/dashboard/templates/dashboard/admin.html:171
+#: web/dashboard/templates/dashboard/admin.html:255
+# Manually added
+msgid "Sys Admin"
+msgstr "Administrateur système"
+
+#: web/dashboard/templates/dashboard/admin.html:172
+#: web/dashboard/templates/dashboard/admin.html:256
+# Manually added
+msgid "Penetration Tester"
+msgstr "Pentester"
+
+#: web/dashboard/templates/dashboard/admin.html:173
+#: web/dashboard/templates/dashboard/admin.html:257
+# Manually added
+msgid "Auditor"
+msgstr "Auditeur"
+
+#: web/dashboard/templates/dashboard/admin.html:191
+# Manually added
+msgid "Update User"
+msgstr "Mettre à jour l'utilisateur"
+
+#: web/dashboard/templates/dashboard/admin.html:195
+# Manually added
+msgid "Update"
+msgstr "Mettre à jour"
+
+#: web/dashboard/templates/dashboard/admin.html:222
+#: web/dashboard/templates/dashboard/admin.html:324
+# Manually added
+msgid "Oops! Unable to update user!"
+msgstr "Oups ! Impossible de mettre à jour l'utilisateur !"
+
+#: web/dashboard/templates/dashboard/admin.html:249
+#: web/dashboard/templates/dashboard/admin.html:250
+# Manually added
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+#: web/dashboard/templates/dashboard/admin.html:274
+#: web/dashboard/templates/dashboard/admin.html:278
+# Manually added
+msgid "Create User"
+msgstr "Créer un utilisateur"
+
+#: web/dashboard/templates/dashboard/admin.html:287
+# Manually added
+msgid "Oops! Passwords can't be empty!"
+msgstr "Oups ! Les mots de passe ne peuvent pas être vides !"
+
+#: web/dashboard/templates/dashboard/admin.html:314
+# Manually added
+msgid "Oops! Can't create user!"
+msgstr "Oups ! Impossible de créer l'utilisateur !"
+
+#: web/dashboard/templates/dashboard/admin.html:316
+# Manually added
+msgid "Error: %(errorMsg)s"
+msgstr "Erreur : %(errorMsg)s"
+
+#: web/dashboard/templates/dashboard/index.html:361
+msgid "Targets Added"
+msgstr "Cibles ajoutées"
+
+#: web/dashboard/templates/dashboard/index.html:397
+msgid "Subdomains Discovered"
+msgstr "Sous-domaines découverts"
+
+#: web/dashboard/templates/dashboard/index.html:348
+msgid "Endpoints Discovered"
+msgstr "Points de terminaison découverts"
+
+#: web/dashboard/templates/dashboard/index.html:365
+msgid "Vulnerabilities Discovered"
+msgstr "Vulnérabilités découvertes"
+
+#: web/dashboard/templates/dashboard/index.html:411
+msgid "Critical"
+msgstr "Critique"
+
+#: web/dashboard/templates/dashboard/index.html:411
+msgid "High"
+msgstr "Élevée"
+
+#: web/dashboard/templates/dashboard/index.html:411
+msgid "Medium"
+msgstr "Modérée"
+
+#: web/dashboard/templates/dashboard/index.html:411
+msgid "Low"
+msgstr "Faible"
+
+#: web/dashboard/templates/dashboard/index.html:411
+msgid "Info"
+msgstr "Informationnelle"
+
+#: web/dashboard/templates/dashboard/index.html:411
+msgid "Unknown"
+msgstr "Inconnue"
+
+#: web/dashboard/templates/dashboard/index.html:447
+msgid "Ip is Used By Subdomains"
+msgstr "IP est utilisée par les sous-domaines"
+
+#: web/dashboard/templates/dashboard/index.html:467
+msgid "Ports used by IPs"
+msgstr "Ports utilisés par les IPs"
+
+#: web/dashboard/templates/dashboard/index.html:487
+msgid "Tech used by Subdomains"
+msgstr "Technologies utilisée par les sous-domaines"
+
+#: web/dashboard/templates/dashboard/index.html:304
+#: web/dashboard/templates/dashboard/index.html:318
+msgid "Informational Vulnerabilities ignored in Most Vulnerable Targets."
+msgstr "Vulnérabilités informatives ignorées dans les cibles les plus vulnérables."
+
+#: web/dashboard/templates/dashboard/index.html:305
+#: web/dashboard/templates/dashboard/index.html:319
+msgid "Informational Vulnerabilities included in Most Vulnerable Targets."
+msgstr "Vulnérabilités informatives incluses dans les cibles les plus vulnérables."
+
+#: web/dashboard/templates/dashboard/index.html:605
+msgid "Total Assets"
+msgstr "Total des actifs"
+
+#: projects.html:59
+msgid "Are you sure you want to delete %(projectName)s"
+msgstr "Êtes-vous sûr de vouloir supprimée %(projectName)s"
+
+#: projects.html:60
+msgid "You won't be able to revert this, all targets and scan results also will be deleted!"
+msgstr "Vous ne pourrez pas revenir en arrière, tous les cibles et les résultats de scan seront également supprimés !"
+
+#: projects.html:71
+msgid "Oops! Unable to delete the target!"
+msgstr "Oups! Impossible de supprimer la cible!"
+
+#Embedded JS
+#: index.html:167
+msgid "Important Todo"
+msgstr "Tâche importante"
+
+#: index.html:183
+#, python-format
+msgid "Domain: %(domainName)s, Scanned %(scannedWhen)s"
+msgstr "Domaine: %(domainName)s, Scanné le %(scannedWhen)s"
+
+#: index.html:186
+#, python-format
+msgid "Subdomain: %(subDomainName)s"
+msgstr "Sous-domaine: %(subDomainName)s"

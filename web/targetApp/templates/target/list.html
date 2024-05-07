@@ -2,17 +2,18 @@
 {% load static %}
 {% load humanize %}
 {% load permission_tags %}
+{% load i18n %}
 
 {% block title %}
-List all targets
+{% translate "List all targets" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item active"><a href="{% url 'list_target' slug %}">Targets</a></li>
-<li class="breadcrumb-item"><a href="#">All Targets</a></li>
+<li class="breadcrumb-item active"><a href="{% url 'list_target' slug %}">{% translate "Targets" %}</a></li>
+<li class="breadcrumb-item"><a href="#">{% translate "All Targets" %}</a></li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
@@ -27,28 +28,28 @@ Targets
 				<div class="row">
 					<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
 						<button type="button" class="btn btn-primary dropdown-toggle mt-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="filterMenu">
-							Filter <i class="fe-filter"></i>
+							{% translate "Filter" %} <i class="fe-filter"></i>
 						</button>
 						<div class="dropdown-menu" style="width: 30%">
 							<div class="px-4 py-3">
-								<h4 class="headline-title">Filters</h4>
-								<label for="filterByOrganization" class="form-label">Filter by Organization</label>
+								<h4 class="headline-title">{% translate "Filters" %}</h4>
+								<label for="filterByOrganization" class="form-label">{% translate "Filter by Organization" %}</label>
 								<select class="form-control" id="filterByOrganization">
 								</select>
 							</div>
 							<div class="dropdown-divider"></div>
-							<a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
+							<a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">{% translate "Reset Filters" %}</a>
 						</div>
 					</div>
 					<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
 						{% if user|can:'modify_targets' %}
-						<a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets(slug='{{slug}}')" id="delete_multiple_button">Delete Multiple Targets</a>
+						<a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets(slug='{{slug}}')" id="delete_multiple_button">{% translate "Delete Multiple Targets" %}</a>
 						{% endif %}
 						{% if user|can:'initiate_scans_subscans' %}
-						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets(slug='{{slug}}')" id="scan_multiple_button">Scan Multiple Targets</a>
+						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets(slug='{{slug}}')" id="scan_multiple_button">{% translate "Scan Multiple Targets" %}</a>
 						{% endif %}
 						{% if user|can:'modify_targets' %}
-						<a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' slug %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
+						<a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' slug %}" data-toggle="tooltip" data-placement="top" title="{% translate "Add New Targets" %}">{% translate "Add Targets" %}</a>
 						{% endif %}
 					</div>
 				</div>
@@ -59,18 +60,19 @@ Targets
 <div class="row">
 	<div class="col-12">
 		<div class="card">
+			{% comment %} FIXME: shouldn't this be {% url 'start_multiple_scan' %} ? {% endcomment %}
 			<form method="POST" id="multiple_targets_form" action="../../scan/start/multiple/">
 				{% csrf_token %}
 				<table id="list_target_table" class="table dt-responsive w-100">
 					<thead>
 						<tr>
-							<th class="checkbox-column text-center">Serial Number</th>
-							<th>Serial Number</th>
-							<th>Target</th>
-							<th>Description</th>
-							<th class="text-center">Added On</th>
-							<th class="text-center">Last Scanned</th>
-							<th class="text-center">Action</th>
+							<th class="checkbox-column text-center">{% translate "Serial Number" %}</th>
+							<th>{% translate "Serial Number" %}</th>
+							<th>{% translate "Target" %}</th>
+							<th>{% translate "Description" %}</th>
+							<th class="text-center">{% translate "Added On" %}</th>
+							<th class="text-center">{% translate "Last Scanned" %}</th>
+							<th class="text-center">{% translate "Action" %}</th>
 						</tr>
 					</thead>
 				</table>
@@ -97,10 +99,10 @@ $(document).ready(function(){
 		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
 			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search...",
-			"sLengthMenu": "Results :  _MENU_",
+			"sSearchPlaceholder": gettext("Search..."),
+			"sLengthMenu": gettext("Results :  _MENU_"),
 		},
 		"fnCreatedRow": function(nRow, aData, iDataIndex) {
 			$(nRow).attr('id', 'target_row_' + aData['id']);
@@ -166,12 +168,12 @@ $(document).ready(function(){
 						if (row.organization) {
 							content += '<br>';
 							for (var org in row.organization) {
-								content += `<span class="badge badge-soft-primary me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Domain ${data} belongs to organization ${row.organization[org]}">${row.organization[org]}</span>`;
+								content += `<span class="badge badge-soft-primary me-1 mb-1" data-toggle="tooltip" data-placement="top" title="` + interpolate("Domain %(domainName)s belongs to organization %(orgName)s", {domainName: data, orgName: row.organization[org]}, true) + `>${row.organization[org]}</span>`;
 							}
 						}
 
 						if (row.most_recent_scan) {
-							content += `<br><a href="/scan/{{current_project.slug}}/detail/${row.most_recent_scan}" class="text-primary">Recent Scan&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`;
+							content += `<br><a href="/scan/{{current_project.slug}}/detail/${row.most_recent_scan}" class="text-primary">` + gettext("Recent Scan") + `&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`;
 						}
 
 						return content;
@@ -200,7 +202,7 @@ $(document).ready(function(){
 							content += `<span class="badge badge-soft-primary">${row.start_scan_date_humanized}</span>`;
 						}
 						else{
-							content += '<span class="badge badge-soft-warning">Never Scanned Before</span>';
+							content += '<span class="badge badge-soft-warning">' + gettext("Never Scanned Before") + '</span>';
 						}
 
 						content += '</div>';
@@ -215,17 +217,17 @@ $(document).ready(function(){
 						{% if user|has_role:'penetration_tester' or user|has_role:'admin'%}
 						content += `
 						<div class="btn-group float-end">
-						<a class="btn btn-soft-primary" href="/target/{{slug}}/summary/${row.id}"><i class="fe-info"></i>&nbsp;&nbsp;Target Summary</a>
-						<a href="/scan/{{slug}}/start/${row.id}" class="btn btn-soft-primary"><i class="fe-zap"></i>&nbsp;&nbsp;Initiate Scan</a>
+						<a class="btn btn-soft-primary" href="/target/{{slug}}/summary/${row.id}"><i class="fe-info"></i>&nbsp;&nbsp;` + gettext("Target Summary") + `</a>
+						<a href="/scan/{{slug}}/start/${row.id}" class="btn btn-soft-primary"><i class="fe-zap"></i>&nbsp;&nbsp;` + gettext("Initiate Scan") + `</a>
 						<div class="btn-group dropstart" role="group">
 						<button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 						<i class="mdi mdi-chevron-right"></i>
 						</button>
 						<div class="dropdown-menu" style="">
-						<a class="dropdown-item" href="/scan/{{slug}}/schedule/target/${row.id}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
+						<a class="dropdown-item" href="/scan/{{slug}}/schedule/target/${row.id}"><i class="fe-clock"></i>&nbsp;&nbsp;` + gettext("Schedule Scan") + `</a>
 						<div class="dropdown-divider"></div>
-						<a class="dropdown-item" href="/target/{{slug}}/update/target/${row.id}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
-						<a class="dropdown-item text-danger" href="#" onclick="delete_target(${row.id}, '${row.name}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
+						<a class="dropdown-item" href="/target/{{slug}}/update/target/${row.id}"><i class="fe-edit-2"></i>&nbsp;&nbsp;` + gettext("Edit Target") + `</a>
+						<a class="dropdown-item text-danger" href="#" onclick="delete_target(${row.id}, '${row.name}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;` + gettext("Delete target") + `</a>
 						</div>
 						</div>
 						</div>
@@ -233,7 +235,7 @@ $(document).ready(function(){
 						{% else %}
 						content += `
 						<div class="btn-group float-end">
-						<a class="btn btn-soft-primary" href="/target/{{slug}}/summary/${row.id}"><i class="fe-info"></i>&nbsp;&nbsp;Target Summary</a>
+						<a class="btn btn-soft-primary" href="/target/{{slug}}/summary/${row.id}"><i class="fe-info"></i>&nbsp;&nbsp;` + gettext("Target Summary") + `</a>
 						</div>
 						</div>
 						</div>
@@ -288,11 +290,11 @@ $(document).ready(function(){
 		var a = document.getElementById('filterByOrganization');
 		a.addEventListener('click', function() {
 			table.search(this.value).draw();
-			document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary m-2">Organization: ${this.value}
+			document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary m-2">` + interpolate("Organization: %(orgName)s", {orgName: this.value}, true) + `
 			<span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
 			</span>`;
 			Snackbar.show({
-				text: `Filtering by organization ${this.value}`,
+				text: interpolate("Filtering by organization %(orgName)s", {orgName: this.value}, true),
 				pos: 'top-center'
 			});
 		}, false);
@@ -310,7 +312,7 @@ $(document).ready(function(){
 	function resetFilters(table_obj) {
 		table_obj.search("").draw();
 		Snackbar.show({
-			text: `Filters Reset`,
+			text: gettext("Filters Reset"),
 			pos: 'top-center'
 		});
 		document.getElementById('filteringText').innerHTML = '';

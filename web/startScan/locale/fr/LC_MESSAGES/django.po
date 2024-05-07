@@ -1,0 +1,1557 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: startScan/templates/organization/schedule_scan_ui.html:6
+msgid "Schedule Scan for Organization"
+msgstr "Planifier un scan pour l'organisation"
+
+#: startScan/templates/organization/schedule_scan_ui.html:17
+#: startScan/templates/organization/start_scan.html:15
+#: startScan/templates/startScan/detail_scan.html:558
+#: startScan/templates/startScan/detail_scan.html:602
+#: startScan/templates/startScan/detail_scan.html:646
+msgid "Organization"
+msgstr "Organisation"
+
+#: startScan/templates/organization/schedule_scan_ui.html:18
+#: startScan/templates/startScan/schedule_scan_ui.html:7
+#: startScan/templates/startScan/schedule_scan_ui.html:19
+msgid "Schedule Scan"
+msgstr "Planifier un scan"
+
+#: startScan/templates/organization/schedule_scan_ui.html:23
+msgid "Scheduling scan for"
+msgstr "Planification du scan pour"
+
+#: startScan/templates/organization/schedule_scan_ui.html:31
+msgid "Domains associated with organization"
+msgstr "Domaines associés à l'organisation"
+
+#: startScan/templates/organization/schedule_scan_ui.html:38
+#: startScan/templates/startScan/schedule_scan_ui.html:35
+msgid "Choose the scheduler"
+msgstr "Choisissez le planificateur"
+
+#: startScan/templates/organization/schedule_scan_ui.html:42
+#: startScan/templates/startScan/schedule_scan_ui.html:39
+msgid "Periodic Scan"
+msgstr "Scan périodique"
+
+#: startScan/templates/organization/schedule_scan_ui.html:43
+#: startScan/templates/startScan/schedule_scan_ui.html:40
+msgid "Clocked Scan"
+msgstr "Scan cadencé"
+
+#: startScan/templates/organization/schedule_scan_ui.html:49
+#: startScan/templates/startScan/schedule_scan_ui.html:46
+msgid "Run scan every"
+msgstr "Exécuter le scan tous les"
+
+#: startScan/templates/organization/schedule_scan_ui.html:56
+#: startScan/templates/startScan/schedule_scan_ui.html:53
+msgid "Minutes"
+msgstr "Minutes"
+
+#: startScan/templates/organization/schedule_scan_ui.html:57
+#: startScan/templates/startScan/schedule_scan_ui.html:54
+msgid "Hours"
+msgstr "Heures"
+
+#: startScan/templates/organization/schedule_scan_ui.html:58
+#: startScan/templates/startScan/schedule_scan_ui.html:55
+msgid "Days"
+msgstr "Jours"
+
+#: startScan/templates/organization/schedule_scan_ui.html:59
+#: startScan/templates/startScan/schedule_scan_ui.html:56
+msgid "Weeks"
+msgstr "Semaines"
+
+#: startScan/templates/organization/schedule_scan_ui.html:60
+#: startScan/templates/startScan/schedule_scan_ui.html:57
+msgid "Months"
+msgstr "Mois"
+
+#: startScan/templates/organization/schedule_scan_ui.html:68
+#: startScan/templates/startScan/schedule_scan_ui.html:65
+msgid "Run scan exactly at"
+msgstr "Exécuter le scan exactement à"
+
+#: startScan/templates/organization/schedule_scan_ui.html:72
+#: startScan/templates/startScan/schedule_scan_ui.html:70
+msgid "Select Scheduler Date and time"
+msgstr "Sélectionnez la date et l'heure du planificateur"
+
+#: startScan/templates/organization/schedule_scan_ui.html:80
+#: startScan/templates/startScan/schedule_scan_ui.html:78
+#: startScan/templates/startScan/start_scan_ui.html:32
+msgid "Choose Scan Engine"
+msgstr "Choisissez le moteur de scan"
+
+#: startScan/templates/organization/schedule_scan_ui.html:82
+#: startScan/templates/organization/start_scan.html:37
+#: startScan/templates/startScan/schedule_scan_ui.html:80
+#: startScan/templates/startScan/start_scan_ui.html:34
+msgid "Select Scan Engine"
+msgstr "Sélectionnez le moteur de scan"
+
+#: startScan/templates/organization/schedule_scan_ui.html:85
+msgid "Tips!"
+msgstr "Astuces !"
+
+#: startScan/templates/organization/schedule_scan_ui.html:85
+msgid ""
+"You do not have any custom scan engines. Would you like to create your own "
+"scan engine?"
+msgstr ""
+"Vous n'avez aucun moteur de scan personnalisé. Voulez-vous créer votre "
+"propre moteur de scan ?"
+
+#: startScan/templates/organization/schedule_scan_ui.html:86
+#: startScan/templates/startScan/schedule_scan_ui.html:84
+#: startScan/templates/startScan/start_multiple_scan_ui.html:38
+#: startScan/templates/startScan/start_scan_ui.html:38
+msgid "Create Custom Scan Engine"
+msgstr "Créer un moteur de scan personnalisé"
+
+#: startScan/templates/organization/start_scan.html:6
+msgid "Initiating Scan for Organization"
+msgstr "Lancement du scan pour l'organisation"
+
+#: startScan/templates/organization/start_scan.html:16
+#: startScan/templates/startScan/start_scan_ui.html:17
+msgid "Initiate Scan"
+msgstr "Lancer le scan"
+
+#: startScan/templates/organization/start_scan.html:21
+#, python-format
+msgid "Initiating scan for %(orgName)s"
+msgstr "Lancement du scan pour %(orgName)s"
+
+#: startScan/templates/organization/start_scan.html:29
+#, python-format
+msgid "%(nDomains)s Domains associated with organization %(orgName)s"
+msgstr "%(nDomains)s Domaines associés à l'organisation %(orgName)s"
+
+#: startScan/templates/organization/start_scan.html:40
+#: startScan/templates/startScan/schedule_scan_ui.html:83
+#: startScan/templates/startScan/start_multiple_scan_ui.html:37
+#: startScan/templates/startScan/start_scan_ui.html:37
+msgid ""
+"<b>Tips! </b> You do not have any custom scan engines. Would you like to "
+"create your own scan engine?"
+msgstr ""
+"<b>Astuces ! </b> Vous n'avez aucun moteur de scan personnalisé. Voulez-vous "
+"créer votre propre moteur de scan ?"
+
+#: startScan/templates/organization/start_scan.html:45
+#: startScan/templates/startScan/start_multiple_scan_ui.html:6
+#: startScan/templates/startScan/start_multiple_scan_ui.html:46
+#: startScan/templates/startScan/start_scan_ui.html:6
+msgid "Start Scan"
+msgstr "Démarrer le scan"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:12
+msgid "Default Engine"
+msgstr "Moteur par défaut"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:14
+msgid "Custom Engine"
+msgstr "Moteur de scan personnalisé"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:22
+msgid "Engine Capabilities"
+msgstr "Capacités du moteur"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:26
+msgid "Subdomain Discovery"
+msgstr "Découverte de sous-domaines"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:38
+msgid "WAF Detection"
+msgstr "Détection de WAF"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:50
+msgid "Screenshot"
+msgstr "Capture d'écran"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:62
+#: startScan/templates/startScan/detail_scan.html:88
+#: startScan/templates/startScan/detail_scan.html:353
+msgid "OSINT"
+msgstr "OSINT"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:74
+msgid "Port Scan"
+msgstr "Scan de ports"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:86
+msgid "Directory and Files Search"
+msgstr "Recherche de fichiers et de répertoires"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:98
+msgid "Fetch Endpoints(URLs)"
+msgstr "Récupérer les points de terminaison (URLs)"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:110
+msgid "Vulnerability Scan"
+msgstr "Scan de vulnérabilités"
+
+#: startScan/templates/startScan/_items/scanEngine_select.html:123
+msgid "YAML Configuration"
+msgstr "Configuration YAML"
+
+#: startScan/templates/startScan/detail_scan.html:8
+msgid "Detailed Scan"
+msgstr "Scan détaillé"
+
+#: startScan/templates/startScan/detail_scan.html:26
+#: startScan/templates/startScan/history.html:15
+#: startScan/templates/startScan/subscan_history.html:15
+msgid "Scan History"
+msgstr "Historique des scans"
+
+#: startScan/templates/startScan/detail_scan.html:27
+#: startScan/templates/startScan/history.html:81
+msgid "Summary"
+msgstr "Résumé"
+
+#: startScan/templates/startScan/detail_scan.html:32
+msgid "Scan Findings"
+msgstr "Résultats du scan"
+
+#: startScan/templates/startScan/detail_scan.html:42
+msgid "Home"
+msgstr "Accueil"
+
+#: startScan/templates/startScan/detail_scan.html:45
+#: startScan/templates/startScan/history.html:102
+msgid "Subdomains"
+msgstr "Sous-domaines"
+
+#: startScan/templates/startScan/detail_scan.html:49
+msgid "S3 Buckets"
+msgstr "Buckets S3"
+
+#: startScan/templates/startScan/detail_scan.html:53
+msgid "Interesting Recon"
+msgstr "Recon intéressante"
+
+#: startScan/templates/startScan/detail_scan.html:56
+msgid "Recon Data Changes"
+msgstr "Changements des données de recon"
+
+#: startScan/templates/startScan/detail_scan.html:60
+msgid "Screenshots"
+msgstr "Captures d'écran"
+
+#: startScan/templates/startScan/detail_scan.html:65
+#: startScan/templates/startScan/detail_scan.html:1065
+msgid "Directories"
+msgstr "Répertoires"
+
+#: startScan/templates/startScan/detail_scan.html:69
+msgid "URLs"
+msgstr "URLs"
+
+#: startScan/templates/startScan/detail_scan.html:71
+#: startScan/templates/startScan/endpoints.html:7
+msgid "All Endpoints"
+msgstr "Tous les points de terminaison"
+
+#: startScan/templates/startScan/detail_scan.html:83
+msgid "Vulnerabilities"
+msgstr "Vulnérabilités"
+
+#: startScan/templates/startScan/detail_scan.html:92
+msgid "Visualization"
+msgstr "Visualisation"
+
+#: startScan/templates/startScan/detail_scan.html:108
+msgid "Scan Status for"
+msgstr "Statut du scan pour"
+
+#: startScan/templates/startScan/detail_scan.html:113
+#: startScan/templates/startScan/detail_scan.html:248
+#: startScan/templates/startScan/history.html:114
+#: startScan/templates/startScan/subscan_history.html:114
+msgid "Pending"
+msgstr "En attente"
+
+#: startScan/templates/startScan/detail_scan.html:116
+#: startScan/templates/startScan/detail_scan.html:212
+#: startScan/templates/startScan/detail_scan.html:250
+#: startScan/templates/startScan/history.html:116
+#: startScan/templates/startScan/subscan_history.html:116
+msgid "Failed"
+msgstr "Échoué"
+
+#: startScan/templates/startScan/detail_scan.html:119
+#: startScan/templates/startScan/history.html:119
+#: startScan/templates/startScan/subscan_history.html:118
+msgid "In Progress"
+msgstr "En cours"
+
+#: startScan/templates/startScan/detail_scan.html:122
+#: startScan/templates/startScan/detail_scan.html:214
+#: startScan/templates/startScan/detail_scan.html:254
+msgid "Completed"
+msgstr "Terminé"
+
+#: startScan/templates/startScan/detail_scan.html:125
+#: startScan/templates/startScan/detail_scan.html:256
+#: startScan/templates/startScan/history.html:123
+#: startScan/templates/startScan/subscan_history.html:122
+msgid "Aborted"
+msgstr "Avorté"
+
+#: startScan/templates/startScan/detail_scan.html:128
+#: startScan/templates/startScan/detail_scan.html:258
+#: startScan/templates/startScan/history.html:125
+#: startScan/templates/startScan/subscan_history.html:124
+msgid "Unknown"
+msgstr "Inconnu"
+
+#: startScan/templates/startScan/detail_scan.html:137
+msgid "Download All Subdomains"
+msgstr "Télécharger tous les sous-domaines"
+
+#: startScan/templates/startScan/detail_scan.html:138
+msgid "Download All Endpoints"
+msgstr "Télécharger tous les points de terminaison"
+
+#: startScan/templates/startScan/detail_scan.html:139
+msgid "Download Important Subdomains"
+msgstr "Télécharger les sous-domaines importants"
+
+#: startScan/templates/startScan/detail_scan.html:140
+#: startScan/templates/startScan/detail_scan.html:1241
+msgid "Download Interesting Subdomains"
+msgstr "Télécharger les sous-domaines intéressants"
+
+#: startScan/templates/startScan/detail_scan.html:141
+#: startScan/templates/startScan/detail_scan.html:1268
+msgid "Download Interesting Endpoints"
+msgstr "Télécharger les points de terminaison intéressants"
+
+#: startScan/templates/startScan/detail_scan.html:147
+msgid "Scan failed due to ERROR:"
+msgstr "Le scan a échoué en raison de l'ERREUR :"
+
+#: startScan/templates/startScan/detail_scan.html:150
+msgid "Scan Logs"
+msgstr "Journaux de scan"
+
+#: startScan/templates/startScan/detail_scan.html:151
+msgid "Logs"
+msgstr "Journaux"
+
+#: startScan/templates/startScan/detail_scan.html:152
+#: startScan/templates/startScan/index.html:6
+msgid "Scan Engine"
+msgstr "Moteur de scan"
+
+#: startScan/templates/startScan/detail_scan.html:154
+msgid "Scan Duration"
+msgstr "Durée du scan"
+
+#: startScan/templates/startScan/detail_scan.html:156
+msgid "Scan not yet started."
+msgstr "Le scan n'a pas encore commencé."
+
+#: startScan/templates/startScan/detail_scan.html:163
+msgid "Completed in < 1 minutes"
+msgstr "Terminé en < 1 minute"
+
+#: startScan/templates/startScan/detail_scan.html:165
+msgid "Completed in"
+msgstr "Terminé en"
+
+#: startScan/templates/startScan/detail_scan.html:168
+msgid "Aborted in"
+msgstr "Avorté en"
+
+#: startScan/templates/startScan/detail_scan.html:172
+msgid "Scan Progress"
+msgstr "Progression du scan"
+
+#: startScan/templates/startScan/detail_scan.html:198
+msgid "Tagged to Organization"
+msgstr "Marqué pour l'organisation"
+
+#: startScan/templates/startScan/detail_scan.html:200
+#, python-format
+msgid "Domain %(domainName)s belongs to organization %(organizationName)s"
+msgstr ""
+"Le domaine %(domainName)s appartient à l'organisation %(organizationName)s"
+
+#: startScan/templates/startScan/detail_scan.html:204
+msgid "Scan Timeline"
+msgstr "Chronologie du scan"
+
+#: startScan/templates/startScan/detail_scan.html:213
+msgid "In progress"
+msgstr "En cours"
+
+#: startScan/templates/startScan/detail_scan.html:220
+#, python-format
+msgid "Error: %(errorMsg)s"
+msgstr "ERREUR : %(errorMsg)s"
+
+#: startScan/templates/startScan/detail_scan.html:235
+msgid "Recent Scans for"
+msgstr "Scans récents pour"
+
+#: startScan/templates/startScan/detail_scan.html:252
+msgid "Scanning"
+msgstr "Scan en cours"
+
+#: startScan/templates/startScan/detail_scan.html:264
+#, python-format
+msgid "%(subdomainCount)s Subdomains Discovered"
+msgstr "%(subdomainCount)s sous-domaines découverts"
+
+#: startScan/templates/startScan/detail_scan.html:268
+#, python-format
+msgid "%(missing_count)s subdomains missing since last scan."
+msgstr "%(missing_count)s sous-domaines manquants depuis le dernier scan."
+
+#: startScan/templates/startScan/detail_scan.html:268
+#: startScan/templates/startScan/detail_scan.html:270
+#, python-format
+msgid "%(diff_count)s Subdomains"
+msgstr "%(diff_count)s Sous-domaines"
+
+#: startScan/templates/startScan/detail_scan.html:270
+#, python-format
+msgid "%(added_count)s subdomains added since last scan."
+msgstr "%(added_count)s sous-domaines ajoutés depuis le dernier scan."
+
+#: startScan/templates/startScan/detail_scan.html:276
+#, python-format
+msgid "ERROR: %(scanErrorMessage)s"
+msgstr "ERREUR : %(scanErrorMessage)s"
+
+#: startScan/templates/startScan/detail_scan.html:292
+msgid "Sub Scan History for"
+msgstr "Historique des sous-scans pour"
+
+#: startScan/templates/startScan/detail_scan.html:308
+msgid "Total Subdomains Discovered by reNgine during this scan"
+msgstr "Total des sous-domaines découverts par reNgine pendant ce scan"
+
+#: startScan/templates/startScan/detail_scan.html:309
+msgid "Subdomains Discovered"
+msgstr "Sous-domaines découverts"
+
+#: startScan/templates/startScan/detail_scan.html:312
+msgid "Alive Subdomains"
+msgstr "Sous-domaines actifs"
+
+#: startScan/templates/startScan/detail_scan.html:320
+msgid ""
+"Total Endpoints discovered by reNgine during this scan. This includes any "
+"URLs discovered."
+msgstr ""
+"Total des points de terminaison découverts par reNgine pendant ce scan. Cela "
+"inclut toutes les URL découvertes."
+
+#: startScan/templates/startScan/detail_scan.html:321
+msgid "Endpoints Discovered"
+msgstr "Points de terminaison découverts"
+
+#: startScan/templates/startScan/detail_scan.html:324
+msgid "Alive Endpoints"
+msgstr "Points de terminaison actifs"
+
+#: startScan/templates/startScan/detail_scan.html:332
+msgid ""
+"Total Vulnerabilities discovered by reNgine. This will be populated only if "
+"vulnerability scan is performed during this scan."
+msgstr ""
+"Total des vulnérabilités découvertes par reNgine. Cela ne sera rempli que si "
+"un scan de vulnérabilités est effectué pendant ce scan."
+
+#: startScan/templates/startScan/detail_scan.html:333
+msgid "Vulnerabilities Discovered"
+msgstr "Vulnérabilités découvertes"
+
+#: startScan/templates/startScan/detail_scan.html:337
+msgid "Critical"
+msgstr "Critique"
+
+#: startScan/templates/startScan/detail_scan.html:337
+msgid "High"
+msgstr "Élevé"
+
+#: startScan/templates/startScan/detail_scan.html:337
+msgid "Medium"
+msgstr "Moyen"
+
+#: startScan/templates/startScan/detail_scan.html:339
+msgid "Low"
+msgstr "Faible"
+
+#: startScan/templates/startScan/detail_scan.html:339
+msgid "Info"
+msgstr "Info"
+
+#: startScan/templates/startScan/detail_scan.html:339
+msgid ", and"
+msgstr ", et"
+
+#: startScan/templates/startScan/detail_scan.html:339
+msgid "Unknown Vulnerabilities"
+msgstr "Vulnérabilités inconnues"
+
+#: startScan/templates/startScan/detail_scan.html:342
+msgid "No vulnerabilities found."
+msgstr "Aucune vulnérabilité trouvée."
+
+#: startScan/templates/startScan/detail_scan.html:352
+msgid "OSINT Results"
+msgstr "Résultats OSINT"
+
+#: startScan/templates/startScan/detail_scan.html:355
+#: startScan/templates/startScan/detail_scan.html:1140
+msgid "Exposed Credentials"
+msgstr "Identifiants exposés"
+
+#: startScan/templates/startScan/detail_scan.html:356
+msgid "Email Address Discovered"
+msgstr "Adresse e-mail découverte"
+
+#: startScan/templates/startScan/detail_scan.html:357
+msgid "Employees Found"
+msgstr "Employés trouvés"
+
+#: startScan/templates/startScan/detail_scan.html:361
+msgid "OSINT hasn't been performed."
+msgstr "OSINT n'a pas été effectué."
+
+#: startScan/templates/startScan/detail_scan.html:372
+msgid "reNgine identified"
+msgstr "reNgine a identifié"
+
+#: startScan/templates/startScan/detail_scan.html:372
+#: startScan/templates/startScan/detail_scan.html:378
+#: startScan/templates/startScan/detail_scan.html:385
+#: startScan/templates/startScan/detail_scan.html:393
+#: startScan/templates/startScan/detail_scan.html:401
+msgid "Check it out!"
+msgstr "Découvrez-le !"
+
+#: startScan/templates/startScan/detail_scan.html:385
+#, python-format
+msgid "reNgine identified %(count)s domains related to %(history.domain)s."
+msgstr "reNgine a identifié %(count)s domaines liés à %(history.domain)s."
+
+#: startScan/templates/startScan/detail_scan.html:393
+#, python-format
+msgid "reNgine identified %(count)s Buckets related to %(history.domain)s."
+msgstr "reNgine a identifié %(count)s Buckets liés à %(history.domain)s."
+
+#: startScan/templates/startScan/detail_scan.html:401
+#, python-format
+msgid "%(history.domain.name)s has %(count)s registered TLDs."
+msgstr "%(history.domain.name)s a %(count)s TLD enregistrés."
+
+#: startScan/templates/startScan/detail_scan.html:409
+msgid "Reload Whois"
+msgstr "Recharger Whois"
+
+#: startScan/templates/startScan/detail_scan.html:411
+msgid "Target Information"
+msgstr "Informations sur la cible"
+
+#: startScan/templates/startScan/detail_scan.html:415
+msgid "Domain info"
+msgstr "Infos du domaine"
+
+#: startScan/templates/startScan/detail_scan.html:416
+msgid "Whois"
+msgstr "Whois"
+
+#: startScan/templates/startScan/detail_scan.html:417
+msgid "Nameservers"
+msgstr "Serveurs de noms"
+
+#: startScan/templates/startScan/detail_scan.html:418
+msgid "DNS Records"
+msgstr "Enregistrements DNS"
+
+#: startScan/templates/startScan/detail_scan.html:419
+msgid "Historical Ips"
+msgstr "IPs historiques"
+
+#: startScan/templates/startScan/detail_scan.html:421
+msgid "Related Domains"
+msgstr "Domaines liés"
+
+#: startScan/templates/startScan/detail_scan.html:427
+msgid "Related TLDs"
+msgstr "TLD liés"
+
+#: startScan/templates/startScan/detail_scan.html:437
+msgid "A Records"
+msgstr "Enregistrements A"
+
+#: startScan/templates/startScan/detail_scan.html:443
+msgid "MX Records"
+msgstr "Enregistrements MX"
+
+#: startScan/templates/startScan/detail_scan.html:449
+msgid "TXT Records"
+msgstr "Enregistrements TXT"
+
+#: startScan/templates/startScan/detail_scan.html:460
+#, python-format
+msgid ""
+"WHOIS Record Has not been fetched, would you like to <a href=\"javascript: "
+"fetch_whois('%(historyDomain)s', true);\">fetch it now?</a>"
+msgstr ""
+"L'enregistrement WHOIS n'a pas été récupéré, voulez-vous le <a "
+"href=\"javascript: fetch_whois('%(historyDomain)s', true);\">récupérer "
+"maintenant ?</a>"
+
+#: startScan/templates/startScan/detail_scan.html:464
+msgid "Fetching WHOIS records, Please wait..."
+msgstr "Récupération des enregistrements WHOIS, veuillez patienter..."
+
+#: startScan/templates/startScan/detail_scan.html:468
+msgid ""
+"WHOIS Records have been fetched, please <a href=\"javascript:location."
+"reload();\">reload the page.</a>"
+msgstr ""
+"Les enregistrements WHOIS ont été récupérés, veuillez <a href=\"javascript:"
+"location.reload();\">recharger la page.</a>"
+
+#: startScan/templates/startScan/detail_scan.html:472
+#: startScan/templates/startScan/subscan_history.html:96
+msgid "Domain"
+msgstr "Domaine"
+
+#: startScan/templates/startScan/detail_scan.html:476
+msgid "Dnssec"
+msgstr "Dnssec"
+
+#: startScan/templates/startScan/detail_scan.html:480
+msgid "Geolocation"
+msgstr "Géolocalisation"
+
+#: startScan/templates/startScan/detail_scan.html:486
+msgid "Created"
+msgstr "Créé"
+
+#: startScan/templates/startScan/detail_scan.html:490
+msgid "Updated"
+msgstr "Mis à jour"
+
+#: startScan/templates/startScan/detail_scan.html:494
+msgid "Expires"
+msgstr "Expire"
+
+#: startScan/templates/startScan/detail_scan.html:500
+msgid "Whois Server"
+msgstr "Serveur Whois"
+
+#: startScan/templates/startScan/detail_scan.html:506
+msgid "Registrar Name"
+msgstr "Nom du registraire"
+
+#: startScan/templates/startScan/detail_scan.html:510
+msgid "Registrar Phone"
+msgstr "Téléphone du registraire"
+
+#: startScan/templates/startScan/detail_scan.html:514
+msgid "Registrar Email"
+msgstr "Email du registraire"
+
+#: startScan/templates/startScan/detail_scan.html:530
+msgid "Registrant"
+msgstr "Titulaire"
+
+#: startScan/templates/startScan/detail_scan.html:535
+msgid "Administrative"
+msgstr "Administratif"
+
+#: startScan/templates/startScan/detail_scan.html:540
+msgid "Technical"
+msgstr "Technique"
+
+#: startScan/templates/startScan/detail_scan.html:550
+#: startScan/templates/startScan/detail_scan.html:594
+#: startScan/templates/startScan/detail_scan.html:638
+#: startScan/templates/startScan/detail_scan.html:932
+msgid "ID"
+msgstr "ID"
+
+#: startScan/templates/startScan/detail_scan.html:554
+#: startScan/templates/startScan/detail_scan.html:598
+#: startScan/templates/startScan/detail_scan.html:642
+#: startScan/templates/startScan/detail_scan.html:914
+msgid "Name"
+msgstr "Nom"
+
+#: startScan/templates/startScan/detail_scan.html:562
+#: startScan/templates/startScan/detail_scan.html:606
+#: startScan/templates/startScan/detail_scan.html:650
+msgid "Email"
+msgstr "Email"
+
+#: startScan/templates/startScan/detail_scan.html:566
+#: startScan/templates/startScan/detail_scan.html:610
+#: startScan/templates/startScan/detail_scan.html:654
+msgid "Phone/Fax"
+msgstr "Téléphone/Fax"
+
+#: startScan/templates/startScan/detail_scan.html:577
+#: startScan/templates/startScan/detail_scan.html:581
+#: startScan/templates/startScan/detail_scan.html:621
+#: startScan/templates/startScan/detail_scan.html:625
+#: startScan/templates/startScan/detail_scan.html:665
+#: startScan/templates/startScan/detail_scan.html:669
+msgid "Address"
+msgstr "Adresse"
+
+#: startScan/templates/startScan/detail_scan.html:582
+#: startScan/templates/startScan/detail_scan.html:626
+#: startScan/templates/startScan/detail_scan.html:670
+msgid "City"
+msgstr "Ville"
+
+#: startScan/templates/startScan/detail_scan.html:582
+#: startScan/templates/startScan/detail_scan.html:626
+#: startScan/templates/startScan/detail_scan.html:670
+msgid "State"
+msgstr "État"
+
+#: startScan/templates/startScan/detail_scan.html:582
+#: startScan/templates/startScan/detail_scan.html:626
+#: startScan/templates/startScan/detail_scan.html:670
+msgid "Zip Code"
+msgstr "Code postal"
+
+#: startScan/templates/startScan/detail_scan.html:582
+#: startScan/templates/startScan/detail_scan.html:626
+#: startScan/templates/startScan/detail_scan.html:670
+#: startScan/templates/startScan/detail_scan.html:764
+msgid "Country"
+msgstr "Pays"
+
+#: startScan/templates/startScan/detail_scan.html:681
+#, python-format
+msgid "%(count)s Historical Ips"
+msgstr "%(count)s IPs historiques"
+
+#: startScan/templates/startScan/detail_scan.html:685
+msgid "IP"
+msgstr "IP"
+
+#: startScan/templates/startScan/detail_scan.html:686
+msgid "Location"
+msgstr "Emplacement"
+
+#: startScan/templates/startScan/detail_scan.html:687
+#: startScan/templates/startScan/detail_scan.html:917
+msgid "Owner"
+msgstr "Propriétaire"
+
+#: startScan/templates/startScan/detail_scan.html:688
+msgid "Last Seen"
+msgstr "Vu pour la dernière fois"
+
+#: startScan/templates/startScan/detail_scan.html:703
+msgid "No historical IPs found!"
+msgstr "Aucune IP historique trouvée !"
+
+#: startScan/templates/startScan/detail_scan.html:708
+#, python-format
+msgid "%(count)s NameServers identified"
+msgstr "%(count)s serveurs de noms identifiés"
+
+#: startScan/templates/startScan/detail_scan.html:713
+msgid "No NameServers identified"
+msgstr "Aucun serveur de noms identifié"
+
+#: startScan/templates/startScan/detail_scan.html:718
+#, python-format
+msgid "%(count)s Related Domains identified"
+msgstr "%(count)s domaines liés identifiés"
+
+#: startScan/templates/startScan/detail_scan.html:720
+#: startScan/templates/startScan/detail_scan.html:730
+#, python-format
+msgid "Add %(domain)s as target."
+msgstr "Ajouter %(domain)s comme cible."
+
+#: startScan/templates/startScan/detail_scan.html:723
+msgid "No Related Domains identified"
+msgstr "Aucun domaine lié identifié"
+
+#: startScan/templates/startScan/detail_scan.html:728
+#, python-format
+msgid "%(count)s Related TLDs identified"
+msgstr "%(count)s TLD liés identifiés"
+
+#: startScan/templates/startScan/detail_scan.html:733
+msgid "No Related TLDs identified"
+msgstr "Aucun TLD lié identifié"
+
+#: startScan/templates/startScan/detail_scan.html:745
+msgid "HTTP Status Breakdown"
+msgstr "Répartition des statuts HTTP"
+
+#: startScan/templates/startScan/detail_scan.html:755
+msgid "Geographical Distribution of Assets"
+msgstr "Répartition géographique des actifs"
+
+#: startScan/templates/startScan/detail_scan.html:765
+msgid "Assets"
+msgstr "Actifs"
+
+#: startScan/templates/startScan/detail_scan.html:793
+msgid "Most Vulnerable Subdomain"
+msgstr "Sous-domaine le plus vulnérable"
+
+#: startScan/templates/startScan/detail_scan.html:803
+msgid "Important Subdomains"
+msgstr "Sous-domaines importants"
+
+#: startScan/templates/startScan/detail_scan.html:815
+msgid "Recon Note/Todo"
+msgstr "Note/Todo de reconnaissance"
+
+#: startScan/templates/startScan/detail_scan.html:816
+#: startScan/templates/startScan/detail_scan.html:831
+#: startScan/templates/startScan/detail_scan.html:857
+msgid "Add Recon Todo"
+msgstr "Ajouter un Todo de reconnaissance"
+
+#: startScan/templates/startScan/detail_scan.html:836
+#: startScan/templates/startScan/detail_scan.html:837
+msgid "Todo Title"
+msgstr "Titre du Todo"
+
+#: startScan/templates/startScan/detail_scan.html:841
+msgid "Select Subdomain (Optional)"
+msgstr "Sélectionner un sous-domaine (Optionnel)"
+
+#: startScan/templates/startScan/detail_scan.html:844
+msgid "Choose Subdomain..."
+msgstr "Choisir un sous-domaine..."
+
+#: startScan/templates/startScan/detail_scan.html:849
+msgid "Todo Description (Optional)"
+msgstr "Description du Todo (Optionnel)"
+
+#: startScan/templates/startScan/detail_scan.html:850
+msgid "Todo Description"
+msgstr "Description du Todo"
+
+#: startScan/templates/startScan/detail_scan.html:868
+msgid "IP Addresses"
+msgstr "Adresses IP"
+
+#: startScan/templates/startScan/detail_scan.html:869
+msgid "*IP Addresses highlighted with yellow are CDN IP"
+msgstr "*Les adresses IP surlignées en jaune sont des IP CDN"
+
+#: startScan/templates/startScan/detail_scan.html:879
+msgid "Discovered Ports"
+msgstr "Ports découverts"
+
+#: startScan/templates/startScan/detail_scan.html:880
+msgid "*Ports highlighted with red are uncommon Ports"
+msgstr "*Les ports surlignés en rouge sont des ports peu communs"
+
+#: startScan/templates/startScan/detail_scan.html:890
+msgid "Discovered Technologies"
+msgstr "Technologies découvertes"
+
+#: startScan/templates/startScan/detail_scan.html:915
+msgid "Region"
+msgstr "Région"
+
+#: startScan/templates/startScan/detail_scan.html:916
+msgid "Provider"
+msgstr "Fournisseur"
+
+#: startScan/templates/startScan/detail_scan.html:918
+msgid "Objects Count"
+msgstr "Nombre d'objets"
+
+#: startScan/templates/startScan/detail_scan.html:919
+msgid "Bucket Size"
+msgstr "Taille du bucket"
+
+#: startScan/templates/startScan/detail_scan.html:920
+msgid "Auth Users Permission"
+msgstr "Autorisation des utilisateurs authentifiés"
+
+#: startScan/templates/startScan/detail_scan.html:921
+msgid "All Users Permission"
+msgstr "Autorisation de tous les utilisateurs"
+
+#: startScan/templates/startScan/detail_scan.html:933
+msgid "Display Name"
+msgstr "Nom d'affichage"
+
+#: startScan/templates/startScan/detail_scan.html:940
+#: startScan/templates/startScan/detail_scan.html:949
+msgid "READ"
+msgstr "LIRE"
+
+#: startScan/templates/startScan/detail_scan.html:941
+#: startScan/templates/startScan/detail_scan.html:950
+msgid "WRITE"
+msgstr "ÉCRIRE"
+
+#: startScan/templates/startScan/detail_scan.html:942
+#: startScan/templates/startScan/detail_scan.html:951
+msgid "Read_ACP"
+msgstr "Lire_ACP"
+
+#: startScan/templates/startScan/detail_scan.html:943
+#: startScan/templates/startScan/detail_scan.html:952
+msgid "WRITE_ACP"
+msgstr "ÉCRIRE_ACP"
+
+#: startScan/templates/startScan/detail_scan.html:944
+#: startScan/templates/startScan/detail_scan.html:953
+msgid "FULL_CONTROL"
+msgstr "CONTRÔLE TOTAL"
+
+#: startScan/templates/startScan/detail_scan.html:977
+msgid "Filter Screenshots"
+msgstr "Filtrer les captures d'écran"
+
+#: startScan/templates/startScan/detail_scan.html:988
+#: startScan/templates/startScan/detail_scan.html:1250
+#: startScan/templates/startScan/detail_scan.html:1277
+msgid "HTTP Status"
+msgstr "Statut HTTP"
+
+#: startScan/templates/startScan/detail_scan.html:993
+msgid "IP Address"
+msgstr "Adresse IP"
+
+#: startScan/templates/startScan/detail_scan.html:999
+msgid "Running Services"
+msgstr "Services en cours d'exécution"
+
+#: startScan/templates/startScan/detail_scan.html:1004
+msgid "Ports"
+msgstr "Ports"
+
+#: startScan/templates/startScan/detail_scan.html:1010
+msgid "Technology"
+msgstr "Technologie"
+
+#: startScan/templates/startScan/detail_scan.html:1030
+msgid "Loading Screenshots..."
+msgstr "Chargement des captures d'écran..."
+
+#: startScan/templates/startScan/detail_scan.html:1057
+msgid "Display"
+msgstr "Afficher"
+
+#: startScan/templates/startScan/detail_scan.html:1061
+#: startScan/templates/startScan/detail_scan.html:1063
+#: startScan/templates/startScan/detail_scan.html:1300
+#: startScan/templates/startScan/detail_scan.html:1318
+#: startScan/templates/startScan/history.html:84
+#: startScan/templates/startScan/subscan_history.html:84
+msgid "Status"
+msgstr "Statut"
+
+#: startScan/templates/startScan/detail_scan.html:1062
+#: startScan/templates/startScan/detail_scan.html:1248
+#: startScan/templates/startScan/detail_scan.html:1298
+#: startScan/templates/startScan/detail_scan.html:1316
+msgid "Subdomain"
+msgstr "Sous-domaine"
+
+#: startScan/templates/startScan/detail_scan.html:1064
+#: startScan/templates/startScan/detail_scan.html:1249
+#: startScan/templates/startScan/detail_scan.html:1299
+#: startScan/templates/startScan/detail_scan.html:1317
+msgid "Page Title"
+msgstr "Titre de la page"
+
+#: startScan/templates/startScan/detail_scan.html:1066
+#: startScan/templates/startScan/detail_scan.html:1252
+msgid "HTTP URL"
+msgstr "URL HTTP"
+
+#: startScan/templates/startScan/detail_scan.html:1067
+msgid "Is Intereting"
+msgstr "Est intéressant"
+
+#: startScan/templates/startScan/detail_scan.html:1090
+msgid "Dorking Results"
+msgstr "Résultats de dorking"
+
+#: startScan/templates/startScan/detail_scan.html:1112
+#, python-format
+msgid "Employees/People associated with %(domain_name)s"
+msgstr "Employés/Personnes associés à %(domain_name)s"
+
+#: startScan/templates/startScan/detail_scan.html:1117
+msgid "Employee Name"
+msgstr "Nom de l'employé"
+
+#: startScan/templates/startScan/detail_scan.html:1118
+msgid "Designation"
+msgstr "Désignation"
+
+#: startScan/templates/startScan/detail_scan.html:1134
+msgid "Discovered Email addresses"
+msgstr "Adresses e-mail découvertes"
+
+#: startScan/templates/startScan/detail_scan.html:1139
+msgid "Email Address"
+msgstr "Adresse e-mail"
+
+#: startScan/templates/startScan/detail_scan.html:1156
+msgid "Discovered Metadata"
+msgstr "Métadonnées découvertes"
+
+#: startScan/templates/startScan/detail_scan.html:1161
+msgid "Document"
+msgstr "Document"
+
+#: startScan/templates/startScan/detail_scan.html:1162
+msgid "User"
+msgstr "Utilisateur"
+
+#: startScan/templates/startScan/detail_scan.html:1163
+msgid "Metadata"
+msgstr "Métadonnées"
+
+#: startScan/templates/startScan/detail_scan.html:1187
+msgid "&nbsp; &nbsp; Expand all nodes"
+msgstr "&nbsp; &nbsp; Développer tous les nœuds"
+
+#: startScan/templates/startScan/detail_scan.html:1196
+msgid "Download Visualization as png"
+msgstr "Télécharger la visualisation en png"
+
+#: startScan/templates/startScan/detail_scan.html:1206
+msgid "Loading..."
+msgstr "Chargement..."
+
+#: startScan/templates/startScan/detail_scan.html:1209
+msgid "Loading Recon Visualization..."
+msgstr "Chargement de la visualisation de la reconnaissance..."
+
+#: startScan/templates/startScan/detail_scan.html:1218
+msgid "*Subdomains highlighted with green are 20X (OK) HTTP status"
+msgstr "*Les sous-domaines surlignés en vert ont un statut HTTP 20X (OK)"
+
+#: startScan/templates/startScan/detail_scan.html:1219
+msgid "*Subdomains highlighted with orange are 30X (Redirect) HTTP status"
+msgstr ""
+"*Les sous-domaines surlignés en orange ont un statut HTTP 30X (Redirection)"
+
+#: startScan/templates/startScan/detail_scan.html:1220
+msgid "*Subdomains highlighted with red are 40X (Not found) HTTP status"
+msgstr ""
+"*Les sous-domaines surlignés en rouge ont un statut HTTP 40X (Non trouvé)"
+
+#: startScan/templates/startScan/detail_scan.html:1244
+msgid "Interesting Subdomains"
+msgstr "Sous-domaines intéressants"
+
+#: startScan/templates/startScan/detail_scan.html:1251
+#: startScan/templates/startScan/detail_scan.html:1278
+#: startScan/templates/startScan/detail_scan.html:1301
+#: startScan/templates/startScan/detail_scan.html:1319
+msgid "Content Length"
+msgstr "Longueur du contenu"
+
+#: startScan/templates/startScan/detail_scan.html:1253
+msgid "Tech Stack"
+msgstr "Pile technologique"
+
+#: startScan/templates/startScan/detail_scan.html:1271
+msgid "Interesting Endpoints"
+msgstr "Points de terminaison intéressants"
+
+#: startScan/templates/startScan/detail_scan.html:1275
+msgid "URL"
+msgstr "URL"
+
+#: startScan/templates/startScan/detail_scan.html:1276
+msgid "Title"
+msgstr "Titre"
+
+#: startScan/templates/startScan/detail_scan.html:1294
+msgid "Subdomain Changes"
+msgstr "Changements de sous-domaine"
+
+#: startScan/templates/startScan/detail_scan.html:1302
+#: startScan/templates/startScan/detail_scan.html:1320
+msgid "Change"
+msgstr "Changement"
+
+#: startScan/templates/startScan/detail_scan.html:1312
+msgid "Endpoint Changes"
+msgstr "Changements de point de terminaison"
+
+#: startScan/templates/startScan/history.html:8
+msgid "Scan history"
+msgstr "Historique des analyses"
+
+#: startScan/templates/startScan/history.html:19
+msgid "Quick Scan History"
+msgstr "Historique des analyses rapides"
+
+#: startScan/templates/startScan/history.html:30
+#: startScan/templates/startScan/subscan_history.html:30
+msgid "Filter"
+msgstr "Filtre"
+
+#: startScan/templates/startScan/history.html:36
+#: startScan/templates/startScan/start_scan_ui.html:67
+#: startScan/templates/startScan/subscan_history.html:36
+msgid "Filters"
+msgstr "Filtres"
+
+#: startScan/templates/startScan/history.html:38
+#: startScan/templates/startScan/subscan_history.html:38
+msgid "Filter by Organization"
+msgstr "Filtrer par organisation"
+
+#: startScan/templates/startScan/history.html:43
+#: startScan/templates/startScan/subscan_history.html:43
+msgid "Filter by Targets"
+msgstr "Filtrer par cibles"
+
+#: startScan/templates/startScan/history.html:48
+#: startScan/templates/startScan/subscan_history.html:48
+msgid "Filter by Scan Type"
+msgstr "Filtrer par type d'analyse"
+
+#: startScan/templates/startScan/history.html:53
+#: startScan/templates/startScan/subscan_history.html:53
+msgid "Filter by Scan Status"
+msgstr "Filtrer par statut d'analyse"
+
+#: startScan/templates/startScan/history.html:59
+#: startScan/templates/startScan/subscan_history.html:59
+msgid "Reset Filters"
+msgstr "Réinitialiser les filtres"
+
+#: startScan/templates/startScan/history.html:63
+msgid "Delete Multiple Scans"
+msgstr "Supprimer plusieurs analyses"
+
+#: startScan/templates/startScan/history.html:78
+#: startScan/templates/startScan/history.html:79
+#: startScan/templates/startScan/subscan_history.html:78
+#: startScan/templates/startScan/subscan_history.html:79
+msgid "Serial Number"
+msgstr "Numéro de série"
+
+#: startScan/templates/startScan/history.html:80
+msgid "Domain Name"
+msgstr "Nom de domaine"
+
+#: startScan/templates/startScan/history.html:82
+msgid "Scan Engine Used"
+msgstr "Moteur d'analyse utilisé"
+
+#: startScan/templates/startScan/history.html:83
+msgid "Last Scan"
+msgstr "Dernière analyse"
+
+#: startScan/templates/startScan/history.html:85
+msgid "Progress"
+msgstr "Progression"
+
+#: startScan/templates/startScan/history.html:86
+#: startScan/templates/startScan/schedule_scan_list.html:36
+#: startScan/templates/startScan/subscan_history.html:85
+msgid "Action"
+msgstr "Action"
+
+#: startScan/templates/startScan/history.html:98
+#, python-format
+msgid ""
+"Domain %(scan_history.domain.name)s belongs to organization "
+"%(organization.name)s"
+msgstr ""
+"Le domaine %(scan_history.domain.name)s appartient à l'organisation "
+"%(organization.name)s"
+
+#: startScan/templates/startScan/history.html:103
+msgid "Endpoints"
+msgstr "Points de terminaison"
+
+#: startScan/templates/startScan/history.html:104
+#, python-format
+msgid ""
+"%(critVulnCount)s Critical, %(highVulnCount)s High, %(medVulnCount)s Medium "
+"Vulnerabilities"
+msgstr ""
+"Vulnérabilités : %(critVulnCount)s critiques, %(highVulnCount)s élevées, "
+"%(medVulnCount)s modérées"
+
+#: startScan/templates/startScan/history.html:114
+#: startScan/templates/startScan/subscan_history.html:114
+msgid "Waiting for other scans to complete"
+msgstr "En attente de la fin des autres analyses"
+
+#: startScan/templates/startScan/history.html:117
+#, python-format
+msgid "Scan Failed due to: %(errMsg)s"
+msgstr "L'analyse a échoué en raison de : %(errMsg)s"
+
+#: startScan/templates/startScan/history.html:121
+#: startScan/templates/startScan/subscan_history.html:120
+msgid "Successful"
+msgstr "Réussi"
+
+#: startScan/templates/startScan/history.html:162
+#: startScan/templates/startScan/subscan_history.html:130
+msgid "View Results"
+msgstr "Voir les résultats"
+
+#: startScan/templates/startScan/history.html:171
+msgid "Rescan"
+msgstr "Réanalyser"
+
+#: startScan/templates/startScan/history.html:176
+msgid "Stop Scan"
+msgstr "Arrêter l'analyse"
+
+#: startScan/templates/startScan/history.html:182
+msgid "Delete Scan Results"
+msgstr "Supprimer les résultats de l'analyse"
+
+#: startScan/templates/startScan/history.html:188
+msgid "Scan Report"
+msgstr "Rapport d'analyse"
+
+#: startScan/templates/startScan/history.html:207
+#: startScan/templates/startScan/history.html:226
+msgid "Download Report"
+msgstr "Télécharger le rapport"
+
+#: startScan/templates/startScan/history.html:208
+msgid "Close"
+msgstr "Fermer"
+
+#: startScan/templates/startScan/history.html:213
+msgid "Report alert message"
+msgstr "Message d'alerte du rapport"
+
+#: startScan/templates/startScan/history.html:216
+msgid "Report Type"
+msgstr "Type de rapport"
+
+#: startScan/templates/startScan/history.html:223
+msgid "Ignore Informational Vulnerabilities"
+msgstr "Ignorer les vulnérabilités informationnelles"
+
+#: startScan/templates/startScan/history.html:227
+msgid "Preview Report"
+msgstr "Aperçu du rapport"
+
+#: startScan/templates/startScan/schedule_scan_list.html:8
+msgid "Scheduled Scan"
+msgstr "Scan planifié"
+
+#: startScan/templates/startScan/schedule_scan_list.html:16
+#: startScan/templates/startScan/schedule_scan_list.html:20
+msgid "Scheduled Scans"
+msgstr "Scans planifiés"
+
+#: startScan/templates/startScan/schedule_scan_list.html:30
+msgid "Description"
+msgstr "Description"
+
+#: startScan/templates/startScan/schedule_scan_list.html:31
+msgid "Frequency"
+msgstr "Fréquence"
+
+#: startScan/templates/startScan/schedule_scan_list.html:32
+msgid "Last Run"
+msgstr "Dernière exécution"
+
+#: startScan/templates/startScan/schedule_scan_list.html:33
+msgid "Run Count"
+msgstr "Nombre de passes"
+
+#: startScan/templates/startScan/schedule_scan_list.html:34
+msgid "One Off Task"
+msgstr "Tâche unique"
+
+#: startScan/templates/startScan/schedule_scan_list.html:35
+msgid "Enabled"
+msgstr "Activé"
+
+#: startScan/templates/startScan/schedule_scan_list.html:47
+#, python-format
+msgid "Will run %(interval)s"
+msgstr "Sera exécuté %(interval)s"
+
+#: startScan/templates/startScan/schedule_scan_list.html:49
+#, python-format
+msgid "Will run exactly at %(clocked_time)s UTC"
+msgstr "Sera exécuté exactement à %(clocked_time)s UTC"
+
+#: startScan/templates/startScan/schedule_scan_list.html:70
+msgid "Delete Scheduled Task"
+msgstr "Supprimer la tâche planifiée"
+
+#: startScan/templates/startScan/schedule_scan_ui.html:18
+#: startScan/templates/startScan/start_multiple_scan_ui.html:14
+#: startScan/templates/startScan/start_scan_ui.html:16
+msgid "Target"
+msgstr "Cible"
+
+#: startScan/templates/startScan/schedule_scan_ui.html:20
+#, python-format
+msgid "%(domain_name)s"
+msgstr "%(domain_name)s"
+
+#: startScan/templates/startScan/schedule_scan_ui.html:24
+#, python-format
+msgid "Scheduling scan for %(domain_name)s"
+msgstr "Lancement du scan pour %(domain_name)s"
+
+#: startScan/templates/startScan/schedule_scan_ui.html:89
+#: startScan/templates/startScan/start_scan_ui.html:43
+msgid "Import/Ignore Subdomains"
+msgstr "Importer/Ignorer les sous-domaines"
+
+#: startScan/templates/startScan/schedule_scan_ui.html:92
+#: startScan/templates/startScan/start_scan_ui.html:46
+msgid "Import Subdomains(Optional)"
+msgstr "Importer des sous-domaines (Optionnel)"
+
+#: startScan/templates/startScan/schedule_scan_ui.html:93
+#: startScan/templates/startScan/schedule_scan_ui.html:103
+#: startScan/templates/startScan/start_scan_ui.html:47
+#: startScan/templates/startScan/start_scan_ui.html:57
+#, python-format
+msgid ""
+"You can import subdomains for <b>%(domain_name)s</b> using your private "
+"recon tools."
+msgstr ""
+"Vous pouvez importer des sous-domaines pour <b>%(domain_name)s</b> en "
+"utilisant vos outils de reconnaissance privés."
+
+#: startScan/templates/startScan/schedule_scan_ui.html:96
+#: startScan/templates/startScan/start_scan_ui.html:50
+#, python-format
+msgid ""
+"Separate the subdomains using <b>new line</b>. If the subdomain does not "
+"belong to <b>%(domain_name)s</b> it will be skipped."
+msgstr ""
+"Séparez les sous-domaines en utilisant un <b>saut de ligne</b>. Si le sous-"
+"domaine n'appartient pas à <b>%(domain_name)s</b>, il sera ignoré."
+
+#: startScan/templates/startScan/schedule_scan_ui.html:98
+#: startScan/templates/startScan/start_scan_ui.html:52
+msgid "Subdomains List"
+msgstr "Liste des sous-domaines"
+
+#: startScan/templates/startScan/schedule_scan_ui.html:102
+#: startScan/templates/startScan/start_scan_ui.html:56
+msgid "Out of Scope Subdomains(Optional)"
+msgstr "Sous-domaines hors périmètre (Optionnel)"
+
+#: startScan/templates/startScan/schedule_scan_ui.html:106
+#: startScan/templates/startScan/start_scan_ui.html:60
+msgid ""
+"Separate the out of scope subdomains/keywords using new line.(No regex "
+"currently supported.)"
+msgstr ""
+"Séparez les sous-domaines/mots-clés hors périmètre en utilisant un saut de "
+"ligne. (Les expressions régulières ne sont actuellement pas prises en "
+"charge.)"
+
+#: startScan/templates/startScan/schedule_scan_ui.html:108
+#: startScan/templates/startScan/start_scan_ui.html:62
+msgid "Out of Scope Subdomains List"
+msgstr "Liste des sous-domaines hors périmètre"
+
+#: startScan/templates/startScan/start_multiple_scan_ui.html:15
+msgid "Initiate Multiple Scans"
+msgstr "Lancer des analyses multiples"
+
+#: startScan/templates/startScan/start_multiple_scan_ui.html:19
+msgid "Initiate Scan for Multiple Targets"
+msgstr "Lancer une analyse pour plusieurs cibles"
+
+#: startScan/templates/startScan/start_multiple_scan_ui.html:27
+#, python-format
+msgid "Initiating multiple scan for %(domain_count)s targets:"
+msgstr "Lancement d'une analyse multiple pour %(domain_count)s cibles :"
+
+#: startScan/templates/startScan/start_multiple_scan_ui.html:33
+msgid "Select the scan type"
+msgstr "Sélectionnez le type d'analyse"
+
+#: startScan/templates/startScan/start_scan_ui.html:22
+#, python-format
+msgid "Initiating scan for %(domain_name)s"
+msgstr "Lancement de l'analyse pour %(domain_name)s"
+
+#: startScan/templates/startScan/start_scan_ui.html:70
+msgid "Filters (Optional)"
+msgstr "Filtres (Optionnel)"
+
+#: startScan/templates/startScan/start_scan_ui.html:71
+#, python-format
+msgid "You can filter on a specific path for <b>%(domain_name)s</b>."
+msgstr ""
+"Vous pouvez filtrer sur un chemin spécifique pour <b>%(domain_name)s</b>."
+
+#: startScan/templates/startScan/start_scan_ui.html:73
+msgid "Path filter"
+msgstr "Filtre de chemin"
+
+#: startScan/templates/startScan/subdomains.html:8
+msgid "All subdomains"
+msgstr "Tous les sous-domaines"
+
+#: startScan/templates/startScan/subdomains.html:134
+msgid "WAF Detected"
+msgstr "WAF détecté"
+
+#: startScan/templates/startScan/subscan_history.html:8
+msgid "Subscan History"
+msgstr "Historique des sous-analyses"
+
+#: startScan/templates/startScan/subscan_history.html:19
+msgid "SubScan History"
+msgstr "Historique des sous-analyses"
+
+#: startScan/templates/startScan/subscan_history.html:64
+msgid "Delete Multiple SubScans"
+msgstr "Supprimer plusieurs sous-analyses"
+
+#: startScan/templates/startScan/subscan_history.html:80
+#: startScan/templates/startScan/subscan_history.html:94
+msgid "Scanned Subdomain"
+msgstr "Sous-domaine analysé"
+
+#: startScan/templates/startScan/subscan_history.html:81
+msgid "Task"
+msgstr "Tâche"
+
+#: startScan/templates/startScan/subscan_history.html:82
+msgid "Engine"
+msgstr "Moteur"
+
+#: startScan/templates/startScan/subscan_history.html:83
+msgid "Scan Started"
+msgstr "Analyse démarrée"
+
+#: startScan/templates/startScan/subscan_history.html:98
+#, python-format
+msgid "Domain %(domain_name)s belongs to organization %(organization_name)s"
+msgstr ""
+"Le domaine %(domain_name)s appartient à l'organisation %(organization_name)s"
+
+#: startScan/templates/startScan/subscan_history.html:101
+msgid "Recent Scan"
+msgstr "Analyse récente"
+
+#: startScan/templates/startScan/subscan_history.html:138
+msgid "Stop Subscan"
+msgstr "Arrêter la sous-analyse"
+
+#: startScan/templates/startScan/subscan_history.html:142
+msgid "Delete Subscan"
+msgstr "Supprimer la sous-analyse"
+
+#: startScan/templates/startScan/vulnerabilities.html:8
+msgid "All Vulnerabilities"
+msgstr "Toutes les vulnérabilités"
+
+#: startScan/views.py:295
+#, python-format
+msgid "Scan Started for %(domainName)s"
+msgstr "Scan démarré pour %(domainName)s"
+
+#: startScan/views.py:351
+msgid "Scan Started for multiple targets"
+msgstr "Scan démarré pour plusieurs cibles"
+
+#: startScan/views.py:440
+msgid "Scan history successfully deleted!"
+msgstr "Historique de scan supprimé avec succès!"
+
+#: startScan/views.py:447 startScan/views.py:604
+msgid "Oops! something went wrong!"
+msgstr "Oups ! quelque chose s'est mal passé!"
+
+#: startScan/views.py:471
+msgid "Scan aborted"
+msgstr "Scan annulé"
+
+#: startScan/views.py:476
+msgid "Scan successfully stopped!"
+msgstr "Scan arrêté avec succès!"
+
+#: startScan/views.py:484
+#, python-format
+msgid "Scan failed to stop ! Error: %(errMsg)s"
+msgstr "Scan échoué à arrêter ! Erreur: %(errMsg)s"
+
+#: startScan/views.py:557
+#, python-format
+msgid "Scan Scheduled for %(domainName)s"
+msgstr "Scan planifié pour %(domainName)s"
+
+#: startScan/views.py:598
+msgid "Scheduled Scan successfully deleted!"
+msgstr "Scan planifié supprimé avec succès!"
+
+#: startScan/views.py:655
+msgid "All Scan History successfully deleted!"
+msgstr "Tout l'historique des scans supprimé avec succès!"
+
+#: startScan/views.py:667
+msgid "Screenshots successfully deleted!"
+msgstr "Les captures d'écran ont été supprimées avec succès!"
+
+#: startScan/views.py:710 startScan/views.py:798
+#, python-format
+msgid "Scan Started for %(domainCount)d domains in organization %(orgName)s"
+msgstr ""
+"Scan démarré pour %(domainCount)d domaines dans l'organisation %(orgName)s"
+
+#: startScan/views.py:852
+msgid "Reconnaissance Report"
+msgstr "Rapport de reconnaissance"
+
+#: startScan/views.py:856
+msgid "Vulnerability Report"
+msgstr "Rapport de vulnérabilité"
+
+#: startScan/views.py:861
+msgid "Full Scan Report"
+msgstr "Rapport de scan complet"

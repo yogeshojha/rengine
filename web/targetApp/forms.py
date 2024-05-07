@@ -1,5 +1,6 @@
 from django import forms
 from reNgine.validators import validate_domain
+from django.utils.translation import gettext as _
 
 from .models import *
 
@@ -12,7 +13,7 @@ class AddTargetForm(forms.Form):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "domainName",
-                "placeholder": "example.com"
+                "placeholder": _("example.com")
             }
         ))
     description = forms.CharField(
@@ -21,7 +22,7 @@ class AddTargetForm(forms.Form):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "domainDescription",
-                "placeholder": "Target Description"
+                "placeholder": _("Target Description")
             }
         ))
     h1_team_handle = forms.CharField(
@@ -30,7 +31,7 @@ class AddTargetForm(forms.Form):
             attrs={
                 "class": "form-control form-control-lg ",
                 "id": "h1_team_handle",
-                "placeholder": "team_handle"
+                "placeholder": _("team_handle")
             }
         ))
 
@@ -46,7 +47,7 @@ class AddOrganizationForm(forms.Form):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "organizationName",
-                "placeholder": "Organization Name"
+                "placeholder": _("Organization Name")
             }
         ))
 
@@ -68,7 +69,7 @@ class AddOrganizationForm(forms.Form):
                 "data-toggle": "select2",
                 "data-width": "100%",
                 "multiple": "multiple",
-                "data-placeholder": "Choose Targets",
+                "data-placeholder": _("Choose Targets"),
                 "id": "domains",
             }
         )

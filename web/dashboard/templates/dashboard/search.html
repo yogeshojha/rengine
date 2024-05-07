@@ -1,20 +1,21 @@
 {% extends 'base/base.html' %}
 {% load humanize %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Universal Search
+{% translate "Universal Search..." %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
 {% block page_title %}
-Search Results
+{% translate "Search Results" %}
 {% endblock page_title %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item active">Universal Search</li>
+<li class="breadcrumb-item active">{% translate "Universal Search..." %}</li>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -27,16 +28,12 @@ Search Results
 						<div class="pt-3 pb-4">
 							<form class="app-search" method="get" action="/{{current_project.slug}}/search">
 							<div class="input-group">
-								{% if request.GET.query %}
-								<input type="search" class="form-control" placeholder="Universal Search..." id="top-search" name="query" value="{{request.GET.query}}">
-								{% else %}
-								<input type="search" class="form-control" placeholder="Universal Search..." id="top-search" name="query">
-								{% endif %}
-								<button type="submit" class="input-group-text btn waves-effect waves-light btn-primary"><i class="fa fa-search me-1"></i> Search</button>
+								<input type="search" class="form-control" placeholder="{% translate "Universal Search..." %}" id="top-search" name="query"{% if request.GET.query %} value="{{request.GET.query}}"{% endif %}>
+								<button type="submit" class="input-group-text btn waves-effect waves-light btn-primary"><i class="fa fa-search me-1"></i> {% translate "Search" %}</button>
 							</div>
 						</form>
 							<div class="mt-3 text-center">
-								<h4>Search Results For "{{ request.GET.query }}"</h4>
+								<h4>{% blocktranslate with query=request.GET.query %}Search Results For "{{ query }}"{% endblocktranslate %}</h4>
 							</div>
 						</div>
 					</div>
@@ -55,25 +52,25 @@ Search Results
 					<ul class="nav nav-tabs nav-bordered">
 						<li class="nav-item subdomains">
 							<a href="#subdomains-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link" id="nav-item-subdomains">
-								Subdomains <span class="badge bg-primary ms-1" id="search-subdomains-count-badge"></span>
+								{% translate "Subdomains" %} <span class="badge bg-primary ms-1" id="search-subdomains-count-badge"></span>
 							</a>
 						</li>
 
 						<li class="nav-item endpoints">
 							<a href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" id="nav-item-endpoints">
-								Endpoints <span class="badge bg-primary ms-1" id="search-endpoints-count-badge"></span>
+								{% translate "Endpoints" %} <span class="badge bg-primary ms-1" id="search-endpoints-count-badge"></span>
 							</a>
 						</li>
 
 						<li class="nav-item vulnerabilities">
 							<a href="#vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" id="nav-item-vulnerabilities">
-								Vulnerabilities <span class="badge bg-primary ms-1" id="search-vulnerabilities-count-badge"></span>
+								{% translate "Vulnerabilities" %} <span class="badge bg-primary ms-1" id="search-vulnerabilities-count-badge"></span>
 							</a>
 						</li>
 
 						<li class="nav-item others">
 							<a href="#others-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
-								Others <span class="badge bg-primary ms-1" id="search-others-count-badge"></span>
+								{% translate "Others" %} <span class="badge bg-primary ms-1" id="search-others-count-badge"></span>
 							</a>
 						</li>
 					</ul>
@@ -229,7 +226,7 @@ $(document).ready(function() {
 			else{
 				$('#search-result-content-div').hide();
 				$('#search-message-div').append(`<div class="alert alert-warning show" role="alert">
-						Could not find any search results for "${htmlEncode(search_val)}".
+						` + interpolate('Could not find any search results for "%(searchValue)s"', {searchValue: htmlEncode(search_val)}, true) + `.
 					</div>
 				`)
 			}

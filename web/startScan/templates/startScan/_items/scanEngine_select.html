@@ -1,3 +1,4 @@
+{% load i18n %}
 <div class="accordion mt-3" id="engine_accordion">
   {% for engine in engines.all %}
     <div class="accordion-item">
@@ -8,9 +9,9 @@
             <label class="form-check-label lead" for="accordion_{{engine.id}}">{{engine.engine_name}}
               &nbsp;&nbsp;&nbsp;
               {% if engine.default_engine %}
-                <span class="badge badge-soft-primary rounded-pill">Default Engine</span>
+                <span class="badge badge-soft-primary rounded-pill">{% translate "Default Engine" %}</span>
               {% else %}
-                <span class="badge badge-soft-danger rounded-pill">Custom Engine</span>
+                <span class="badge badge-soft-danger rounded-pill">{% translate "Custom Engine" %}</span>
               {% endif %}
             </label>
           </div>
@@ -18,11 +19,11 @@
       </h2>
       <div id="collapse_{{engine.id}}" class="accordion-collapse collapse" aria-labelledby="heading_{{engine.id}}" data-bs-parent="#engine_accordion">
         <div class="accordion-body">
-          <span class="lead">Engine Capabilities</span>
+          <span class="lead">{% translate "Engine Capabilities" %}</span>
           <table class="mt-2">
             <tr>
               <td>
-                <p class="mr-2 mt-1">Subdomain Discovery</>
+                <p class="mr-2 mt-1">{% translate "Subdomain Discovery" %}</p>
               </td>
               <td>
                 {% if 'subdomain_discovery' in engine.tasks %}
@@ -34,7 +35,7 @@
             </tr>
             <tr>
               <td>
-                <p class="mr-2 mt-1">WAF Detection</>
+                <p class="mr-2 mt-1">{% translate "WAF Detection" %}</>
               </td>
               <td>
                 {% if 'waf_detection' in engine.tasks %}
@@ -46,7 +47,7 @@
             </tr>
             <tr>
               <td>
-                <p class="mr-2 mt-1">Screenshot</>
+                <p class="mr-2 mt-1">{% translate "Screenshot" %}</>
               </td>
               <td>
                 {% if 'screenshot' in engine.tasks %}
@@ -58,7 +59,7 @@
             </tr>
             <tr>
               <td>
-                <p class="mr-2 mt-1">OSINT</>
+                <p class="mr-2 mt-1">{% translate "OSINT" %}</>
               </td>
               <td>
                 {% if 'osint' in engine.tasks %}
@@ -70,7 +71,7 @@
             </tr>
             <tr>
               <td>
-                <p class="mr-2 mt-1">Port Scan</p>
+                <p class="mr-2 mt-1">{% translate "Port Scan" %}</p>
               </td>
               <td>
                 {% if 'port_scan' in engine.tasks%}
@@ -82,7 +83,7 @@
             </tr>
             <tr>
               <td>
-                <p class="mr-2 mt-1">Directory and Files Search</p>
+                <p class="mr-2 mt-1">{% translate "Directory and Files Search" %}</p>
               </td>
               <td>
                 {% if 'dir_file_fuzz' in engine.tasks %}
@@ -94,7 +95,7 @@
             </tr>
             <tr>
               <td>
-                <p class="mr-2 mt-1">Fetch Endpoints(URLs)</p>
+                <p class="mr-2 mt-1">{% translate "Fetch Endpoints(URLs)" %}</p>
               </td>
               <td>
                 {% if 'fetch_url' in engine.tasks %}
@@ -106,7 +107,7 @@
             </tr>
             <tr>
               <td>
-                <p class="mr-2 mt-1">Vulnerability Scan</p>
+                <p class="mr-2 mt-1">{% translate "Vulnerability Scan" %}</p>
               </td>
               <td>
                 {% if 'vulnerability_scan' in engine.tasks %}
@@ -119,7 +120,7 @@
           </table>
           <div class="card">
             <a data-bs-toggle="collapse" class="card-header bg-primary py-3 text-light p-4" href="#cardCollpase{{engine.id}}" role="button" aria-expanded="false" aria-controls="cardCollpase2">
-              <h5 class="card-title mb-0 text-light">YAML Configuration <i class="fe-chevron-down float-end"></i></h5>
+              <h5 class="card-title mb-0 text-light">{% translate "YAML Configuration" %} <i class="fe-chevron-down float-end"></i></h5>
             </a>
             <div id="cardCollpase{{engine.id}}" class="collapse">
               <div class="card-body">

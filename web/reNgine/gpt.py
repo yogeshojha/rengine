@@ -1,3 +1,4 @@
+from django.utils.translation import gettext as _
 import openai
 import re
 from reNgine.common_func import get_open_ai_key, extract_between
@@ -26,7 +27,7 @@ class GPTVulnerabilityReportGenerator:
 		if not self.api_key:
 			return {
 				'status': False,
-				'error': 'No OpenAI keys provided.'
+				'error': _('No OpenAI keys provided.')
 			}
 		openai.api_key = self.api_key
 		try:

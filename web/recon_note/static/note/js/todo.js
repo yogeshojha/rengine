@@ -81,11 +81,12 @@ function populateTodofunction(project=null){
 
     var $_targetText = '';
 
-    if ($_taskScanHistory != 'Choose Scan History...') {
+    // FIXME: UI actions should never be based on textual representation of data
+    if ($_taskScanHistory != gettext('Choose Scan History...')) {
       $_targetText = $_taskScanHistory;
     }
 
-    if ($_taskSubdomain != 'Choose Subdomain...') {
+    if ($_taskSubdomain != gettext('Choose Subdomain...')) {
       $_targetText += ' Subdomain : ' + $_taskSubdomain;
     }
 
@@ -111,8 +112,8 @@ function populateTodofunction(project=null){
     '</a>'+
 
     '<div class="dropdown-menu">'+
-    '<a class="important dropdown-item" href="javascript:void(0);">Toggle Important</a>'+
-    '<a class="dropdown-item delete" href="javascript:void(0);">Delete</a>'+
+    '<a class="important dropdown-item" href="javascript:void(0);">' + gettext("Toggle Important") + '</a>'+
+    '<a class="dropdown-item delete" href="javascript:void(0);">' + gettext("Delete") + '</a>'+
     '</div>'+
     '</div>'+
     '</div>'+
@@ -135,11 +136,12 @@ function populateTodofunction(project=null){
       'description': $_taskDescriptionText
     }
 
-    if ($("#scanHistoryIDropdown").val() && $("#scanHistoryIDropdown").val() != 'Choose Scan History...') {
+    // FIXME
+    if ($("#scanHistoryIDropdown").val() && $("#scanHistoryIDropdown").val() != gettext('Choose Scan History...')) {
       data['scan_history'] = parseInt($("#scanHistoryIDropdown").val());
     }
 
-    if ($("#subdomainDropdown").val() != 'Choose Subdomain...') {
+    if ($("#subdomainDropdown").val() != gettext('Choose Subdomain...')) {
       data['subdomain'] = parseInt($("#subdomainDropdown").val());
     }
 
@@ -240,11 +242,12 @@ function deleteDropdown() {
     var id = this.id.split('_')[1];
     var main_this = this;
     swal.queue([{
-      title: 'Are you sure you want to delete this Recon Note?',
-      text: "You won't be able to revert this!",
+      title: gettext('Are you sure you want to delete this Recon Note?'),
+      text: gettext("You won't be able to revert this!"),
       type: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Delete',
+      confirmButtonText: gettext('Delete'),
+      cancelButtonText: gettext('Cancel'),
       padding: '2em',
       showLoaderOnConfirm: true,
       preConfirm: function() {
@@ -287,7 +290,7 @@ function deleteDropdown() {
         .catch(function() {
           swal.insertQueueStep({
             type: 'error',
-            title: 'Oops! Unable to delete todo!'
+            title: gettext('Oops! Unable to delete todo!')
           })
         })
       }
@@ -329,7 +332,7 @@ function importantDropdown() {
 
       badge = `
       <div class="dropdown p-dropdown">
-      <span class="text-danger bs-tooltip" title="Important Task">
+      <span class="text-danger bs-tooltip" title="` + gettext("Important Task") + `">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
       </span>
       </div>`

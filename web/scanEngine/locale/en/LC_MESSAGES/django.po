@@ -1,0 +1,1759 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: scanEngine/forms.py:19 scanEngine/templates/scanEngine/index.html:47
+msgid "Engine Name"
+msgstr "Engine Name"
+
+#: scanEngine/forms.py:41 scanEngine/templates/scanEngine/index.html:69
+msgid "Custom Engine"
+msgstr "Custom Engine"
+
+#: scanEngine/forms.py:58
+msgid "my awesome wordlist"
+msgstr "my awesome wordlist"
+
+#: scanEngine/forms.py:66
+msgid "my_awesome_wordlist"
+msgstr "my_awesome_wordlist"
+
+#: scanEngine/forms.py:85
+msgid "Configuration Name"
+msgstr "Configuration Name"
+
+#: scanEngine/forms.py:93
+msgid "my_awesome_configuration"
+msgstr "my_awesome_configuration"
+
+#: scanEngine/forms.py:119
+msgid "Interesting Keywords"
+msgstr "Interesting Keywords"
+
+#: scanEngine/forms.py:219
+msgid "Bot Token"
+msgstr "Bot Token"
+
+#: scanEngine/forms.py:228
+msgid "Bot Chat ID"
+msgstr "Bot Chat ID"
+
+#: scanEngine/forms.py:350
+msgid "http://username:password@proxyip.com:port"
+msgstr "http://username:password@proxyip.com:port"
+
+#: scanEngine/forms.py:376
+msgid "Your Hackerone Username"
+msgstr "Your Hackerone Username"
+
+#: scanEngine/forms.py:385
+msgid "Hackerone API Token"
+msgstr "Hackerone API Token"
+
+#: scanEngine/forms.py:465
+#: scanEngine/templates/scanEngine/settings/report.html:69
+msgid "Company Name"
+msgstr "Company Name"
+
+#: scanEngine/forms.py:474
+#: scanEngine/templates/scanEngine/settings/report.html:73
+msgid "Company Address"
+msgstr "Company Address"
+
+#: scanEngine/forms.py:483
+msgid "Company Website https://company.com"
+msgstr "Company Website https://company.com"
+
+#: scanEngine/forms.py:492
+msgid "email@yourcompany.com"
+msgstr "email@yourcompany.com"
+
+#: scanEngine/forms.py:510
+msgid "Footer Text © Your Company"
+msgstr "Footer Text © Your Company"
+
+#: scanEngine/forms.py:604
+msgid "My Awesome Tool"
+msgstr "My Awesome Tool"
+
+#: scanEngine/forms.py:620
+msgid "https://github.com/user/tool/blob/master/LICENSE.md"
+msgstr "https://github.com/user/tool/blob/master/LICENSE.md"
+
+#: scanEngine/forms.py:628
+msgid "http://example.com/logo.png"
+msgstr "http://example.com/logo.png"
+
+#: scanEngine/forms.py:636
+msgid "Explain what this tool is used for."
+msgstr "Explain what this tool is used for."
+
+#: scanEngine/forms.py:647
+msgid "Tool Installation Command"
+msgstr "Tool Installation Command"
+
+#: scanEngine/forms.py:655
+msgid "Tool Update Command"
+msgstr "Tool Update Command"
+
+#: scanEngine/forms.py:686
+msgid "Subdomain Gathering Command"
+msgstr "Subdomain Gathering Command"
+
+#: scanEngine/forms.py:687
+#, python-brace-format
+msgid "tool_name -d {TARGET} -o {OUTPUT}"
+msgstr "tool_name -d {TARGET} -o {OUTPUT}"
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:4
+msgid "Engine name"
+msgstr "Engine name"
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:115
+msgid "YAML Configurations"
+msgstr "YAML Configurations"
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:117
+msgid ""
+"reNgine supports YAML based configurations for customizing the scan. The "
+"default settings are given below, you may choose to proceed with the default "
+"settings or configure it according to your choice."
+msgstr ""
+"reNgine supports YAML based configurations for customizing the scan. The "
+"default settings are given below, you may choose to proceed with the default "
+"settings or configure it according to your choice."
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:119
+msgid "reNgine YAML Documentation"
+msgstr "reNgine YAML Documentation"
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:120
+msgid "To learn more about YAML config visit the official documentation at"
+msgstr "To learn more about YAML config visit the official documentation at"
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:122
+msgid "Note: Invalid YAML configuration may crash scans."
+msgstr "Note: Invalid YAML configuration may crash scans."
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:124
+msgid ""
+"Please, do not modify the configuration unless you know what what you are "
+"doing."
+msgstr ""
+"Please, do not modify the configuration unless you know what what you are "
+"doing."
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:126
+msgid "If default YAML configuration doesn't automatically load,"
+msgstr "If default YAML configuration doesn't automatically load,"
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:126
+msgid "download default configuration from here"
+msgstr "download default configuration from here"
+
+#: scanEngine/templates/scanEngine/_items/form_engine.html:126
+msgid ""
+"and paste it. (Firefox may have issues loading default YAML configuration.)"
+msgstr ""
+"and paste it. (Firefox may have issues loading default YAML configuration.)"
+
+#: scanEngine/templates/scanEngine/add_engine.html:7
+#: scanEngine/templates/scanEngine/add_engine.html:28
+#: scanEngine/templates/scanEngine/add_engine.html:32
+#: scanEngine/templates/scanEngine/add_engine.html:49
+#: scanEngine/templates/scanEngine/index.html:32
+msgid "Add Scan Engine"
+msgstr "Add Scan Engine"
+
+#: scanEngine/templates/scanEngine/add_engine.html:27
+#: scanEngine/templates/scanEngine/index.html:14
+#: scanEngine/templates/scanEngine/lookup.html:15
+#: scanEngine/templates/scanEngine/update_engine.html:26
+msgid "Engines"
+msgstr "Engines"
+
+#: scanEngine/templates/scanEngine/add_engine.html:40
+#: scanEngine/templates/scanEngine/index.html:19
+msgid "Scan Engines"
+msgstr "Scan Engines"
+
+#: scanEngine/templates/scanEngine/add_engine.html:42
+msgid ""
+"<code>Scan Engines</code> are the most crucial part of reNgine. They define "
+"how a <code>scan</code> is performed against a target. <code>Scan Engines</"
+"code> allow you to define the configuration and use it against multiple "
+"targets."
+msgstr ""
+"<code>Scan Engines</code> are the most crucial part of reNgine. They define "
+"how a <code>scan</code> is performed against a target. <code>Scan Engines</"
+"code> allow you to define the configuration and use it against multiple "
+"targets."
+
+#: scanEngine/templates/scanEngine/add_engine.html:44
+msgid ""
+"YAML configuration allows you fine tuning the engines such as rate, "
+"templates to be used, or configurations to be used."
+msgstr ""
+"YAML configuration allows you fine tuning the engines such as rate, "
+"templates to be used, or configurations to be used."
+
+#: scanEngine/templates/scanEngine/index.html:7
+msgid "Scan Engine"
+msgstr "Scan Engine"
+
+#: scanEngine/templates/scanEngine/index.html:15
+msgid "All Scan Engines"
+msgstr "All Scan Engines"
+
+#: scanEngine/templates/scanEngine/index.html:32
+msgid "Add New Scan Engine"
+msgstr "Add New Scan Engine"
+
+#: scanEngine/templates/scanEngine/index.html:46
+msgid "ID"
+msgstr "ID"
+
+#: scanEngine/templates/scanEngine/index.html:48
+msgid "Type"
+msgstr "Type"
+
+#: scanEngine/templates/scanEngine/index.html:49
+msgid "Subdomain Discovery"
+msgstr "Subdomain Discovery"
+
+#: scanEngine/templates/scanEngine/index.html:50
+msgid "WAF Detection"
+msgstr "WAF Detection"
+
+#: scanEngine/templates/scanEngine/index.html:51
+msgid "Screenshot"
+msgstr "Screenshot"
+
+#: scanEngine/templates/scanEngine/index.html:52
+msgid "OSINT"
+msgstr "OSINT"
+
+#: scanEngine/templates/scanEngine/index.html:53
+msgid "Port Scan"
+msgstr "Port Scan"
+
+#: scanEngine/templates/scanEngine/index.html:54
+msgid "Directory & Files Discovery"
+msgstr "Directory & Files Discovery"
+
+#: scanEngine/templates/scanEngine/index.html:55
+msgid "Fetch URLs"
+msgstr "Fetch URLs"
+
+#: scanEngine/templates/scanEngine/index.html:56
+msgid "Vulnerability Scan"
+msgstr "Vulnerability Scan"
+
+#: scanEngine/templates/scanEngine/index.html:57
+#: scanEngine/templates/scanEngine/wordlist/index.html:46
+msgid "Action"
+msgstr "Action"
+
+#: scanEngine/templates/scanEngine/index.html:67
+msgid "Default Engine"
+msgstr "Default Engine"
+
+#: scanEngine/templates/scanEngine/index.html:130
+msgid "Edit Engine"
+msgstr "Edit Engine"
+
+#: scanEngine/templates/scanEngine/index.html:135
+#, python-format
+msgid "Delete %(engine_name)s Engine"
+msgstr "Delete %(engine_name)s Engine"
+
+#: scanEngine/templates/scanEngine/lookup.html:7
+msgid "Interesting entries Lookup"
+msgstr "Interesting entries Lookup"
+
+#: scanEngine/templates/scanEngine/lookup.html:16
+#: scanEngine/templates/scanEngine/lookup.html:20
+#: scanEngine/templates/scanEngine/lookup.html:28
+msgid "Interesting Lookup"
+msgstr "Interesting Lookup"
+
+#: scanEngine/templates/scanEngine/lookup.html:30
+msgid ""
+"reNgine supports lookup for interesting keyword in recon data. This could be "
+"either looking up in subdomains, URLs or in page title.\n"
+"          You can enter the keywords to lookup and reNgine will highlight "
+"the matched entries."
+msgstr ""
+"reNgine supports lookup for interesting keyword in recon data. This could be "
+"either looking up in subdomains, URLs or in page title.\n"
+"          You can enter the keywords to lookup and reNgine will highlight "
+"the matched entries."
+
+#: scanEngine/templates/scanEngine/lookup.html:34
+msgid "Keywords are case insensitive."
+msgstr "HTTP Status is 200"
+
+#: scanEngine/templates/scanEngine/lookup.html:36
+msgid "Default Keywords"
+msgstr "Update Lookup"
+
+#: scanEngine/templates/scanEngine/lookup.html:37
+msgid ""
+"reNgine will use these default keywords to find the interesting subdomains "
+"or URLs from recon data."
+msgstr ""
+"reNgine will use these default keywords to find the interesting subdomains "
+"or URLs from recon data."
+
+#: scanEngine/templates/scanEngine/lookup.html:45
+msgid "Custom Keywords"
+msgstr "Custom Keywords"
+
+#: scanEngine/templates/scanEngine/lookup.html:48
+msgid "Interesting Keywords to look for"
+msgstr "Interesting Keywords to look for"
+
+#: scanEngine/templates/scanEngine/lookup.html:52
+msgid "Please use a comma (,) to separate the keywords."
+msgstr "Please use a comma (,) to separate the keywords."
+
+#: scanEngine/templates/scanEngine/lookup.html:53
+msgid "Lookup in"
+msgstr "Lookup in"
+
+#: scanEngine/templates/scanEngine/lookup.html:56
+msgid "Subdomains/URLs"
+msgstr "Subdomains/URLs"
+
+#: scanEngine/templates/scanEngine/lookup.html:59
+msgid "Page Title"
+msgstr "Page Title"
+
+#: scanEngine/templates/scanEngine/lookup.html:60
+msgid "Lookup Conditions"
+msgstr "Lookup Conditions"
+
+#: scanEngine/templates/scanEngine/lookup.html:61
+msgid "reNgine will lookup the keywords only when below conditions are met."
+msgstr "reNgine will lookup the keywords only when below conditions are met."
+
+#: scanEngine/templates/scanEngine/lookup.html:62
+msgid "Lookup only when"
+msgstr "Lookup only when"
+
+#: scanEngine/templates/scanEngine/lookup.html:64
+msgid "HTTP Status is 200"
+msgstr "HTTP Status is 200"
+
+#: scanEngine/templates/scanEngine/lookup.html:65
+msgid "Update Lookup"
+msgstr "Update Lookup"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:4
+msgid "Tool Name"
+msgstr "Tool Name"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:4
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:28
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:53
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:62
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:79
+msgid "Required"
+msgstr "Required"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:15
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:74
+msgid "Tool Category"
+msgstr "Tool Category"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:17
+msgid "Does this tool gathers subdomains?"
+msgstr "Does this tool gathers subdomains?"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:23
+msgid ""
+"If you have chosen this tool as subdomain gathering tool, you'll be able to "
+"use it in scan engine configuration and provide this tool name inside"
+msgstr ""
+"If you have chosen this tool as subdomain gathering tool, you'll be able to "
+"use it in scan engine configuration and provide this tool name inside"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:23
+msgid ""
+"If not, you will still be able to use this tool in our custom scripting "
+"engine."
+msgstr ""
+"If not, you will still be able to use this tool in our custom scripting "
+"engine."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:28
+msgid "Github URL"
+msgstr "Github URL"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:30
+msgid "Github URL is required to check the recent releases and updates."
+msgstr "Github URL is required to check the recent releases and updates."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:41
+msgid "Tool Logo (URL)"
+msgstr "Tool Logo (URL)"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:41
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:47
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:86
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:105
+msgid "Optional"
+msgstr "Optional"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:47
+msgid "Tool License URL"
+msgstr "Tool License URL"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:53
+msgid "Description"
+msgstr "Description"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:57
+msgid "Tool Installation Process"
+msgstr "Tool Installation Process"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:59
+msgid ""
+"Please note that any commands here will directly execute in shell, so please "
+"be careful of the commands you are using."
+msgstr ""
+"Please note that any commands here will directly execute in shell, so please "
+"be careful of the commands you are using."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:62
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:79
+msgid "Installation Command"
+msgstr "Installation Command"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:66
+msgid ""
+"If the tool has to be installed using github clone, then your installation "
+"command would be"
+msgstr ""
+"If the tool has to be installed using github clone, then your installation "
+"command would be"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:71
+msgid ""
+"If the tool has to be installed using go, the your installation command "
+"would be"
+msgstr ""
+"If the tool has to be installed using go, the your installation command "
+"would be"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:75
+msgid ""
+"Please note that, go get command is no longer supported by go. Instead you "
+"should use go install."
+msgstr ""
+"Please note that, go get command is no longer supported by go. Instead you "
+"should use go install."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:75
+msgid "Learn why!"
+msgstr "Learn why!"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:86
+msgid "How does this tool update?"
+msgstr "How does this tool update?"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:89
+msgid "If the tool was installed using git clone, it is recommended to use"
+msgstr "If the tool was installed using git clone, it is recommended to use"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:89
+msgid "for updating."
+msgstr "for updating."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:90
+msgid ""
+"If the tool was installed using go, it is recommended to use the same "
+"command as go install."
+msgstr ""
+"If the tool was installed using go, it is recommended to use the same "
+"command as go install."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:92
+msgid ""
+"If update command is not provided, you will not be able to update the tools."
+msgstr ""
+"If update command is not provided, you will not be able to update the tools."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:94
+msgid "Update command"
+msgstr "Update command"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:105
+msgid "How do you check the version in this tool?"
+msgstr "How do you check the version in this tool?"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:107
+msgid ""
+"reNgine will use this command to check the version of the tool and let you "
+"know if there is any update available. Most tools will display the version "
+"either of these ways"
+msgstr ""
+"reNgine will use this command to check the version of the tool and let you "
+"know if there is any update available. Most tools will display the version "
+"either of these ways"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:114
+msgid ""
+"You can provide these commands depending on your tool, and reNgine will "
+"identify the version number."
+msgstr ""
+"You can provide these commands depending on your tool, and reNgine will "
+"identify the version number."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:116
+msgid "Version Lookup Command"
+msgstr "Version Lookup Command"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:117
+msgid "(We have auto generated this for you based on your installation steps)"
+msgstr "(We have auto generated this for you based on your installation steps)"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:128
+msgid "Version match regex (Optional)"
+msgstr "Version match regex (Optional)"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:130
+msgid ""
+"reNgine needs version match regex to find out if there is any update "
+"available or not. You can check how the tool displays the version number and "
+"we can generate the regex for you, or you can do that manually as well."
+msgstr ""
+"reNgine needs version match regex to find out if there is any update "
+"available or not. You can check how the tool displays the version number and "
+"we can generate the regex for you, or you can do that manually as well."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:132
+msgid ""
+"If version regex is not given, reNgine will not be able to check the updates "
+"automatically. However, you can still force update the tools."
+msgstr ""
+"If version regex is not given, reNgine will not be able to check the updates "
+"automatically. However, you can still force update the tools."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:134
+msgid ""
+"Additionally, we can also generate the version regext for you. You can "
+"select how this tool displays the version number."
+msgstr ""
+"Additionally, we can also generate the version regext for you. You can "
+"select how this tool displays the version number."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:134
+msgid "See, how the tool names the release version."
+msgstr "See, how the tool names the release version."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:136
+msgid "v1.2 / V1.2 / 1.2"
+msgstr "v1.2 / V1.2 / 1.2"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:137
+msgid "v1.2.3 / V1.2.3 / 1.2.3"
+msgstr "v1.2.3 / V1.2.3 / 1.2.3"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:138
+msgid "v1.2.3.4 / V1.2.3.4 / 1.2.3.4"
+msgstr "v1.2.3.4 / V1.2.3.4 / 1.2.3.4"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:141
+msgid "Version Regex"
+msgstr "Version Regex"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:151
+msgid "Subdomain Gathering Tool Additional Information"
+msgstr "Subdomain Gathering Tool Additional Information"
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:152
+msgid ""
+"Please note that this subdomain gathering tool must support subdomain output "
+"in the form of txt file."
+msgstr ""
+"Please note that this subdomain gathering tool must support subdomain output "
+"in the form of txt file."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:153
+msgid ""
+"Since you have chosen this tool as subdomain gathering tool, we require "
+"additional information on how this tool runs."
+msgstr ""
+"Since you have chosen this tool as subdomain gathering tool, we require "
+"additional information on how this tool runs."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:156
+msgid ""
+"reNgine needs to know how this tool accepts target and output the subdomain "
+"results."
+msgstr ""
+"reNgine needs to know how this tool accepts target and output the subdomain "
+"results."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:157
+#, python-brace-format
+msgid ""
+"Use the below syntax wherever required, but remember that <code>{TARGET}</"
+"code> and <code>{OUTPUT}</code> <strong>are mandatory placeholders</strong>."
+msgstr ""
+"Use the below syntax wherever required, but remember that <code>{TARGET}</"
+"code> and <code>{OUTPUT}</code> <strong>are mandatory placeholders</strong>."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:159
+msgid ""
+"(mandatory), Use this for the command-line arg that takes in domain as input "
+"target. Example."
+msgstr ""
+"(mandatory), Use this for the command-line arg that takes in domain as input "
+"target. Example."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:160
+msgid ""
+"(mandatory), Use this for the command-line arg that takes the output arg. "
+"Example."
+msgstr ""
+"(mandatory), Use this for the command-line arg that takes the output arg. "
+"Example."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:161
+msgid ", Use this if your tool is github cloned. Example."
+msgstr ", Use this if your tool is github cloned. Example."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:162
+msgid ", Use this if your tool supports proxy. Example."
+msgstr ", Use this if your tool supports proxy. Example."
+
+#: scanEngine/templates/scanEngine/settings/_items/external_tool_form.html:164
+msgid ""
+"You can use the combinations of the above syntax and also you can use any "
+"other command-line argument that your tool supports."
+msgstr ""
+"You can use the combinations of the above syntax and also you can use any "
+"other command-line argument that your tool supports."
+
+#: scanEngine/templates/scanEngine/settings/add_tool.html:6
+#: scanEngine/templates/scanEngine/settings/add_tool.html:13
+#: scanEngine/templates/scanEngine/settings/add_tool.html:16
+msgid "Add Tool"
+msgstr "Add Tool"
+
+#: scanEngine/templates/scanEngine/settings/add_tool.html:12
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:7
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:15
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:19
+#: scanEngine/templates/scanEngine/settings/update_tool.html:11
+msgid "Tool Arsenal"
+msgstr "Tool Arsenal"
+
+#: scanEngine/templates/scanEngine/settings/api.html:7
+#: scanEngine/templates/scanEngine/settings/rengine.html:7
+#: scanEngine/templates/scanEngine/settings/rengine.html:15
+#: scanEngine/templates/scanEngine/settings/rengine.html:19
+msgid "reNgine Settings"
+msgstr "reNgine Settings"
+
+#: scanEngine/templates/scanEngine/settings/api.html:14
+#: scanEngine/templates/scanEngine/settings/hackerone.html:15
+#: scanEngine/templates/scanEngine/settings/hackerone.html:17
+#: scanEngine/templates/scanEngine/settings/notification.html:17
+#: scanEngine/templates/scanEngine/settings/proxy.html:14
+#: scanEngine/templates/scanEngine/settings/rengine.html:14
+#: scanEngine/templates/scanEngine/settings/report.html:18
+#: scanEngine/templates/scanEngine/settings/tool.html:14
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:14
+msgid "Settings"
+msgstr "Settings"
+
+#: scanEngine/templates/scanEngine/settings/api.html:15
+#: scanEngine/templates/scanEngine/settings/api.html:19
+msgid "API Vault"
+msgstr "API Vault"
+
+#: scanEngine/templates/scanEngine/settings/api.html:32
+msgid "OpenAI"
+msgstr "OpenAI"
+
+#: scanEngine/templates/scanEngine/settings/api.html:32
+#: scanEngine/templates/scanEngine/settings/notification.html:130
+#: scanEngine/templates/scanEngine/settings/notification.html:145
+msgid "Recommended"
+msgstr "Recommended"
+
+#: scanEngine/templates/scanEngine/settings/api.html:32
+msgid "Experimental"
+msgstr "Experimental"
+
+#: scanEngine/templates/scanEngine/settings/api.html:33
+msgid ""
+"OpenAI keys will be used to generate vulnerability description, remediation, "
+"impact and vulnerability report writing using ChatGPT."
+msgstr ""
+"OpenAI keys will be used to generate vulnerability description, remediation, "
+"impact and vulnerability report writing using ChatGPT."
+
+#: scanEngine/templates/scanEngine/settings/api.html:34
+msgid "Enter OpenAI Key"
+msgstr "Enter OpenAI Key"
+
+#: scanEngine/templates/scanEngine/settings/api.html:35
+msgid "This is optional but recommended."
+msgstr "This is optional but recommended."
+
+#: scanEngine/templates/scanEngine/settings/api.html:38
+msgid "Netlas"
+msgstr "Netlas"
+
+#: scanEngine/templates/scanEngine/settings/api.html:39
+msgid "Netlas keys will be used to get whois information and other OSINT data."
+msgstr ""
+"Netlas keys will be used to get whois information and other OSINT data."
+
+#: scanEngine/templates/scanEngine/settings/api.html:40
+msgid "Enter Netlas Key"
+msgstr "Enter Netlas Key"
+
+#: scanEngine/templates/scanEngine/settings/api.html:41
+msgid "This is optional"
+msgstr "This is optional"
+
+#: scanEngine/templates/scanEngine/settings/api.html:44
+msgid "Update API Keys"
+msgstr "Update API Keys"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:8
+#: scanEngine/templates/scanEngine/settings/hackerone.html:16
+msgid "Hackerone Settings"
+msgstr "Hackerone Settings"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:21
+msgid "HackerOne Settings"
+msgstr "HackerOne Settings"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:28
+msgid "Hackerone Automatic Vulnerability Report Settings"
+msgstr "Hackerone Automatic Vulnerability Report Settings"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:30
+msgid "Use this feature with caution! Please do not spam triagers!"
+msgstr "Use this feature with caution! Please do not spam triagers!"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:31
+msgid ""
+"We do not allow sending vulnerability report for low severity and "
+"informational vulnerabilities to avoid spamming triagers!"
+msgstr ""
+"We do not allow sending vulnerability report for low severity and "
+"informational vulnerabilities to avoid spamming triagers!"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:32
+msgid "You can send them manually from Vulnerability Section inside reNgine."
+msgstr "You can send them manually from Vulnerability Section inside reNgine."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:34
+msgid ""
+"reNgine Automatically Reports vulnerabilities to your bug bounty programs on "
+"Hackerone, if any vulnerabilities are identified."
+msgstr ""
+"reNgine Automatically Reports vulnerabilities to your bug bounty programs on "
+"Hackerone, if any vulnerabilities are identified."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:35
+msgid "A valid Hackerone API token and username is required."
+msgstr "A valid Hackerone API token and username is required."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:36
+msgid "More details on how to generate your hackerone api token is provided by"
+msgstr ""
+"More details on how to generate your hackerone api token is provided by"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:36
+msgid "Hackerone Documentation"
+msgstr "Hackerone Documentation"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:41
+msgid "Your Hackerone Username (Not email)"
+msgstr "Your Hackerone Username (Not email)"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:44
+msgid "Generate your"
+msgstr "Generate your"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:44
+msgid "API Token from here"
+msgstr "API Token from here"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:48
+msgid "Test my hackerone api key"
+msgstr "Test my hackerone api key"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:50
+msgid "Report Vulnerability to hackerone when"
+msgstr "Report Vulnerability to hackerone when"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:53
+msgid "Critical Severity is found. (Default)"
+msgstr "Critical Severity is found. (Default)"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:57
+msgid "High Severity is found. (Default)"
+msgstr "High Severity is found. (Default)"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:61
+msgid "Medium Severity is found."
+msgstr "Medium Severity is found."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:65
+msgid "Vulnerability Report Template"
+msgstr "Vulnerability Report Template"
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:67
+msgid ""
+"You can customize the vulnerability report template using markdown language. "
+"Replace the below syntax wherever you require. Curly braces are must!"
+msgstr ""
+"You can customize the executive summary and methodology template using "
+"markdown. Replace the below syntax wherever you require."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:70
+msgid "Vulnerability Title/Name."
+msgstr "Vulnerability Title/Name."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:71
+msgid "Vulnerable URL."
+msgstr "Vulnerable URL."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:72
+msgid "Vulnerability Severity."
+msgstr "Vulnerability Severity."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:73
+msgid "Description of vulnerability generated by Nuclei."
+msgstr "Description of vulnerability generated by Nuclei."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:74
+msgid "Vulnerability Results extracted by Nuclei."
+msgstr "Vulnerability Results extracted by Nuclei."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:75
+msgid "Additional Reference to vulnerability."
+msgstr "Additional Reference to vulnerability."
+
+#: scanEngine/templates/scanEngine/settings/hackerone.html:79
+msgid "Save"
+msgstr "Save"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:7
+#: scanEngine/templates/scanEngine/settings/notification.html:18
+#: scanEngine/templates/scanEngine/settings/notification.html:22
+msgid "Notification Settings"
+msgstr "Notification Settings"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:30
+msgid "Send Notifications to:"
+msgstr "Send Notifications to:"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:34
+msgid "Slack"
+msgstr "Slack"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:76
+msgid "Discord Webhook API Documentation"
+msgstr "Discord Webhook API Documentation"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:80
+msgid "Telegram"
+msgstr "Telegram"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:102
+msgid "How to Create Telegram Bot"
+msgstr "How to Create Telegram Bot"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:106
+msgid "Send me notification for"
+msgstr "Send me notification for"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:109
+msgid "Scan related updates (e.g. Scan initiated, Scan completed)"
+msgstr "Scan related updates (e.g. Scan initiated, Scan completed)"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:112
+msgid "Interesting subdomains"
+msgstr "Interesting subdomains"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:115
+msgid "Vulnerabilities Found"
+msgstr "Vulnerabilities Found"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:117
+msgid "*Informational vulnerabilities will not be notified."
+msgstr "*Informational vulnerabilities will not be notified."
+
+#: scanEngine/templates/scanEngine/settings/notification.html:121
+msgid "Subdomain changes"
+msgstr "Subdomain changes"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:124
+msgid ""
+"(e.g. when new Subdomains are discovered or subdomains are no longer "
+"available)"
+msgstr ""
+"(e.g. when new Subdomains are discovered or subdomains are no longer "
+"available)"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:130
+#: scanEngine/templates/scanEngine/settings/notification.html:145
+msgid "Upload Scan Results"
+msgstr "Upload Scan Results"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:134
+msgid "Send scan output (e.g. Subdomain gathered file)"
+msgstr "Send scan output (e.g. Subdomain gathered file)"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:136
+#: scanEngine/templates/scanEngine/settings/notification.html:151
+msgid "Discord only"
+msgstr "Discord only"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:139
+msgid "(upload scan results to your Discord)"
+msgstr "(upload scan results to your Discord)"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:149
+msgid "Send tasks tracebacks"
+msgstr "Send tasks tracebacks"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:154
+msgid "(upload task failed tasks tracebacks to your Discord)"
+msgstr "(upload task failed tasks tracebacks to your Discord)"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:161
+msgid "Save & Test Notification"
+msgstr "Save & Test Notification"
+
+#: scanEngine/templates/scanEngine/settings/notification.html:164
+msgid "*Once saved, a test message will be sent to all the enabled services."
+msgstr "*Once saved, a test message will be sent to all the enabled services."
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:7
+#: scanEngine/templates/scanEngine/settings/proxy.html:15
+#: scanEngine/templates/scanEngine/settings/proxy.html:19
+#: scanEngine/templates/scanEngine/settings/proxy.html:27
+msgid "Proxy Settings"
+msgstr "Proxy Settings"
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:28
+msgid ""
+"Every website has a limit to certain number of requests allowed for a "
+"certain period of time from an particular IP Address, exceeding the limit "
+"will block any incoming requests from that particular IP Address for a "
+"specific period of time.\n"
+"          This results in unreliable recon results. Suppose if you were to "
+"run Nuclei on a particular target with all the templates, your IP is likely "
+"to get banned because of the number of requests made by Nuclei."
+msgstr ""
+"Every website has a limit to certain number of requests allowed for a "
+"certain period of time from an particular IP Address, exceeding the limit "
+"will block any incoming requests from that particular IP Address for a "
+"specific period of time.\n"
+"          This results in unreliable recon results. Suppose if you were to "
+"run Nuclei on a particular target with all the templates, your IP is likely "
+"to get banned because of the number of requests made by Nuclei."
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:31
+msgid ""
+"And this is especially true for dorking and other OSINT reNgine does. After "
+"certain dorking attempts Google is likely to ban your IP for certain period "
+"of time."
+msgstr ""
+"And this is especially true for dorking and other OSINT reNgine does. After "
+"certain dorking attempts Google is likely to ban your IP for certain period "
+"of time."
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:34
+msgid "Using proxies is recommended."
+msgstr "Using proxies is recommended."
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:40
+msgid "Use Proxy"
+msgstr "Use Proxy"
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:42
+msgid "Proxy List"
+msgstr "Proxy List"
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:43
+msgid "You can enter as many proxies as you want, reNgine will"
+msgstr "You can enter as many proxies as you want, reNgine will"
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:43
+msgid "randomly"
+msgstr "randomly"
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:43
+msgid "pick one among them during the scan."
+msgstr "pick one among them during the scan."
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:44
+msgid "Separate the proxies by new line."
+msgstr "Separate the proxies by new line."
+
+#: scanEngine/templates/scanEngine/settings/proxy.html:46
+msgid "Save Proxies"
+msgstr "Save Proxies"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:27
+#: scanEngine/templates/scanEngine/settings/rengine.html:34
+msgid "Danger Zone"
+msgstr "Danger Zone"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:31
+msgid "Total Storage:"
+msgstr "Total Storage:"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:31
+#, python-format
+msgid "%(totalSpaceSize)s Gb"
+msgstr "%(totalSpaceSize)s Gb"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:31
+msgid "Used Space:"
+msgstr "Used Space:"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:31
+#, python-format
+msgid "%(usedSpaceSize)s Gb"
+msgstr "%(usedSpaceSize)s Gb"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:31
+msgid "Free Space:"
+msgstr "Free Space:"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:31
+#, python-format
+msgid "%(freeSpaceSize)s Gb"
+msgstr "%(freeSpaceSize)s Gb"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:39
+msgid "Delete all scan results"
+msgstr "Delete all scan results"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:42
+msgid "Once you delete all scan results, there is no going back."
+msgstr "Once you delete all scan results, there is no going back."
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:43
+msgid ""
+"This will delete all the scan history and also screenshots and likely to "
+"free up disk space."
+msgstr ""
+"This will delete all the scan history and also screenshots and likely to "
+"free up disk space."
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:47
+msgid "Delete All Scan Results"
+msgstr "Delete All Scan Results"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:54
+msgid "Delete all Screenshots"
+msgstr "Delete all Screenshots"
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:57
+msgid ""
+"Once you delete all screenshots, you are likely to free up some disk space."
+msgstr ""
+"Once you delete all screenshots, you are likely to free up some disk space."
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:58
+msgid "Scan history will not be able to show any screenshots after deleted."
+msgstr "Scan history will not be able to show any screenshots after deleted."
+
+#: scanEngine/templates/scanEngine/settings/rengine.html:62
+msgid "Delete All Screenshots"
+msgstr "Delete All Screenshots"
+
+#: scanEngine/templates/scanEngine/settings/report.html:8
+#: scanEngine/templates/scanEngine/settings/report.html:19
+#: scanEngine/templates/scanEngine/settings/report.html:31
+msgid "Customize Report"
+msgstr "Customize Report"
+
+#: scanEngine/templates/scanEngine/settings/report.html:23
+msgid "reNgine PDF Report Settings"
+msgstr "reNgine PDF Report Settings"
+
+#: scanEngine/templates/scanEngine/settings/report.html:32
+msgid ""
+"reNgine allows you to generate PDF report. PDF reports are fully "
+"customizable. While downloading PDF Report, you can choose whether to "
+"download Vulnerability Report or Reconnaissance Report or both."
+msgstr ""
+"reNgine allows you to generate PDF report. PDF reports are fully "
+"customizable. While downloading PDF Report, you can choose whether to "
+"download Vulnerability Report or Reconnaissance Report or both."
+
+#: scanEngine/templates/scanEngine/settings/report.html:33
+msgid ""
+"This section allows you to customize the report, such as colors, and "
+"sections to include in the report."
+msgstr ""
+"This section allows you to customize the report, such as colors, and "
+"sections to include in the report."
+
+#: scanEngine/templates/scanEngine/settings/report.html:37
+msgid "Color"
+msgstr "Color"
+
+#: scanEngine/templates/scanEngine/settings/report.html:41
+msgid "Primary Color"
+msgstr "Primary Color"
+
+#: scanEngine/templates/scanEngine/settings/report.html:43
+msgid ""
+"(Primary Color is the color used for the Main Title, Footer Background and "
+"Page Counters.)"
+msgstr ""
+"(Primary Color is the color used for the Main Title, Footer Background and "
+"Page Counters.)"
+
+#: scanEngine/templates/scanEngine/settings/report.html:54
+msgid "Secondary Color"
+msgstr "Secondary Color"
+
+#: scanEngine/templates/scanEngine/settings/report.html:56
+msgid "(Secondary color is currently being used for cover background.)"
+msgstr "(Secondary color is currently being used for cover background.)"
+
+#: scanEngine/templates/scanEngine/settings/report.html:66
+msgid "Report Generated by"
+msgstr "Report Generated by"
+
+#: scanEngine/templates/scanEngine/settings/report.html:77
+msgid "Company Website"
+msgstr "Company Website"
+
+#: scanEngine/templates/scanEngine/settings/report.html:81
+msgid "Company Email"
+msgstr "Company Email"
+
+#: scanEngine/templates/scanEngine/settings/report.html:86
+msgid "Show Footer Text?"
+msgstr "Show Footer Text?"
+
+#: scanEngine/templates/scanEngine/settings/report.html:91
+msgid ""
+"This could be copyright text, or year of generation and the placement for "
+"footer text is bottom left."
+msgstr ""
+"This could be copyright text, or year of generation and the placement for "
+"footer text is bottom left."
+
+#: scanEngine/templates/scanEngine/settings/report.html:92
+msgid "Footer Text"
+msgstr "Footer Text"
+
+#: scanEngine/templates/scanEngine/settings/report.html:95
+msgid "Show reNgine Banner/Credits?"
+msgstr "Show reNgine Banner/Credits?"
+
+#: scanEngine/templates/scanEngine/settings/report.html:100
+msgid "If turned on, generated report will contain 'Generated by reNgine'."
+msgstr "If turned on, generated report will contain 'Generated by reNgine'."
+
+#: scanEngine/templates/scanEngine/settings/report.html:102
+msgid "Show Executive Summary?"
+msgstr "Show Executive Summary?"
+
+#: scanEngine/templates/scanEngine/settings/report.html:107
+msgid ""
+"If turned on, reNgine will include Executive Summary in the report. You can "
+"customize the executive summary section."
+msgstr ""
+"If turned on, reNgine will include Executive Summary in the report. You can "
+"customize the executive summary section."
+
+#: scanEngine/templates/scanEngine/settings/report.html:109
+msgid ""
+"Please note that, the Executive Summary section will appear before quick "
+"summary."
+msgstr ""
+"Please note that, the Executive Summary section will appear before quick "
+"summary."
+
+#: scanEngine/templates/scanEngine/settings/report.html:111
+msgid ""
+"You can customize the executive summary and methodology template using "
+"markdown. Replace the below syntax wherever you require."
+msgstr ""
+"You can customize the executive summary and methodology template using "
+"markdown. Replace the below syntax wherever you require."
+
+#: scanEngine/templates/scanEngine/settings/report.html:111
+msgid "Curly braces are must!"
+msgstr "Curly braces are must!"
+
+#: scanEngine/templates/scanEngine/settings/report.html:112
+msgid "Executive Summary Syntax"
+msgstr "Executive Summary Syntax"
+
+#: scanEngine/templates/scanEngine/settings/report.html:114
+msgid "Target Scan Date Ex. 25 June, 2020 ."
+msgstr "Target Scan Date Ex. 25 June, 2020 ."
+
+#: scanEngine/templates/scanEngine/settings/report.html:115
+msgid "Company which performed Vulnerability/Reconnaissance Audit."
+msgstr "Company which performed Vulnerability/Reconnaissance Audit."
+
+#: scanEngine/templates/scanEngine/settings/report.html:116
+msgid "Target Domain Name."
+msgstr "Target Domain Name."
+
+#: scanEngine/templates/scanEngine/settings/report.html:117
+msgid "Target Description."
+msgstr "Target Description."
+
+#: scanEngine/templates/scanEngine/settings/report.html:118
+msgid "Total number of subdomains discovered."
+msgstr "Total number of subdomains discovered."
+
+#: scanEngine/templates/scanEngine/settings/report.html:119
+msgid "Total number of Vulnerabilities identified."
+msgstr "Total number of Vulnerabilities identified."
+
+#: scanEngine/templates/scanEngine/settings/report.html:120
+msgid "Total number of Critical Severity Vulnerabilities identified."
+msgstr "Total number of Critical Severity Vulnerabilities identified."
+
+#: scanEngine/templates/scanEngine/settings/report.html:121
+msgid "Total number of High Severity Vulnerabilities identified."
+msgstr "Total number of High Severity Vulnerabilities identified."
+
+#: scanEngine/templates/scanEngine/settings/report.html:122
+msgid "Total number of Medium Severity Vulnerabilities identified."
+msgstr "Total number of Medium Severity Vulnerabilities identified."
+
+#: scanEngine/templates/scanEngine/settings/report.html:123
+msgid "Total number of Low Severity Vulnerabilities identified."
+msgstr "Total number of Low Severity Vulnerabilities identified."
+
+#: scanEngine/templates/scanEngine/settings/report.html:124
+msgid "Total number of Informational Vulnerabilities identified."
+msgstr "Total number of Informational Vulnerabilities identified."
+
+#: scanEngine/templates/scanEngine/settings/report.html:125
+msgid "Total number of Vulnerabilities with Unknown Severity identified."
+msgstr "Total number of Vulnerabilities with Unknown Severity identified."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:7
+#: scanEngine/templates/scanEngine/settings/tool.html:19
+msgid "Settings, API Keys & Tool Settings"
+msgstr "Settings, API Keys & Tool Settings"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:15
+msgid "Tool Specific Settings"
+msgstr "Tool Specific Settings"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:27
+msgid "GF Patterns"
+msgstr "GF Patterns"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:29
+msgid ""
+"This section lets you upload custom gf patterns. You can find more "
+"information about the"
+msgstr ""
+"This section lets you upload custom gf patterns. You can find more "
+"information about the"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:29
+msgid "GF Tool here"
+msgstr "GF Tool here"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:31
+msgid ""
+"Please note that only json files are supported and the name of the pattern "
+"will be the filename."
+msgstr ""
+"Please note that only json files are supported and the name of the pattern "
+"will be the filename."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:32
+msgid "If the pattern name is"
+msgstr "If the pattern name is"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:32
+msgid "the pattern name is"
+msgstr "the pattern name is"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:32
+msgid "and this has to be used this in YAML configuration."
+msgstr "and this has to be used this in YAML configuration."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:34
+msgid "Currently available GF patterns"
+msgstr "Currently available GF patterns"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:37
+msgid "Click to View Pattern"
+msgstr "Click to View Pattern"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:43
+msgid "Upload GF Pattern JSON"
+msgstr "Upload GF Pattern JSON"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:46
+#: scanEngine/templates/scanEngine/settings/tool.html:120
+msgid "Upload"
+msgstr "Upload"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:52
+#: scanEngine/templates/scanEngine/settings/tool.html:54
+msgid "Subfinder"
+msgstr "Subfinder"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:54
+#: scanEngine/templates/scanEngine/settings/tool.html:69
+#: scanEngine/templates/scanEngine/settings/tool.html:141
+#: scanEngine/templates/scanEngine/settings/tool.html:156
+msgid "This section lets you modify"
+msgstr "This section lets you modify"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:54
+#: scanEngine/templates/scanEngine/settings/tool.html:69
+#: scanEngine/templates/scanEngine/settings/tool.html:141
+#: scanEngine/templates/scanEngine/settings/tool.html:156
+msgid "config file. You can find more information about the"
+msgstr "config file. You can find more information about the"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:54
+msgid "Subfinder config here."
+msgstr "Subfinder config here."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:55
+#: scanEngine/templates/scanEngine/settings/tool.html:70
+#: scanEngine/templates/scanEngine/settings/tool.html:142
+#: scanEngine/templates/scanEngine/settings/tool.html:158
+msgid "Please note that only YAML config is supported."
+msgstr "Please note that only YAML config is supported."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:59
+msgid "Current Subfinder Configuration"
+msgstr "Current Subfinder Configuration"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:60
+#: scanEngine/templates/scanEngine/settings/tool.html:75
+#: scanEngine/templates/scanEngine/settings/tool.html:130
+#: scanEngine/templates/scanEngine/settings/tool.html:147
+#: scanEngine/templates/scanEngine/settings/tool.html:163
+msgid "Double click the configuration to edit."
+msgstr "Double click the configuration to edit."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:67
+#: scanEngine/templates/scanEngine/settings/tool.html:69
+msgid "Amass"
+msgstr "Amass"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:69
+msgid "Amass config here."
+msgstr "Amass config here."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:74
+msgid "Current Amass Configuration"
+msgstr "Current Amass Configuration"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:84
+msgid "Nuclei"
+msgstr "Nuclei"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:88
+msgid "Nuclei Patterns"
+msgstr "Nuclei Patterns"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:93
+msgid "Nuclei Config File"
+msgstr "Nuclei Config File"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:100
+msgid ""
+"This section lets you upload Nuclei templates. You can find more information "
+"about the"
+msgstr ""
+"This section lets you upload Nuclei templates. You can find more information "
+"about the"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:100
+msgid "Nuclei Templates here."
+msgstr "Nuclei Templates here."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:101
+msgid ""
+"Please note that only YAML files are supported and the name of the pattern "
+"will be the filename."
+msgstr ""
+"Please note that only YAML files are supported and the name of the pattern "
+"will be the filename."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:102
+msgid "If the template name is"
+msgstr "If the template name is"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:102
+msgid "then"
+msgstr "then"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:102
+msgid "is to be used this in YAML configuration."
+msgstr "is to be used this in YAML configuration."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:104
+msgid "Currently available custom Nuclei templates"
+msgstr "Currently available custom Nuclei templates"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:107
+msgid "Click to View Template"
+msgstr "Click to View Template"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:111
+msgid "No custom nuclei templates detected!"
+msgstr "No custom nuclei templates detected!"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:117
+msgid "Upload Nuclei Template YAML"
+msgstr "Upload Nuclei Template YAML"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:125
+msgid ""
+"This section lets you configure Nuclei config file. You can find more "
+"information about the"
+msgstr ""
+"This section lets you configure Nuclei config file. You can find more "
+"information about the"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:125
+msgid "Nuclei config here."
+msgstr "Nuclei config here."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:129
+msgid "Current Nuclei Configuration"
+msgstr "Current Nuclei Configuration"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:139
+#: scanEngine/templates/scanEngine/settings/tool.html:141
+msgid "Naabu"
+msgstr "Naabu"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:141
+msgid "Naabu config here."
+msgstr "Naabu config here."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:146
+msgid "Current Naabu Configuration"
+msgstr "Current Naabu Configuration"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:154
+msgid "theHarvester"
+msgstr "theHarvester"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:156
+msgid "the Harvester"
+msgstr "the Harvester"
+
+#: scanEngine/templates/scanEngine/settings/tool.html:156
+msgid "the Harvester config here."
+msgstr "the Harvester config here."
+
+#: scanEngine/templates/scanEngine/settings/tool.html:162
+msgid "Current theHarvester Configuration"
+msgstr "Current theHarvester Configuration"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:25
+msgid "Add new tool"
+msgstr "Add new tool"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:31
+msgid "All"
+msgstr "All"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:34
+msgid "Default"
+msgstr "Default"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:35
+msgid "Custom"
+msgstr "Custom"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:52
+msgid "Default Tool"
+msgstr "Default Tool"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:54
+msgid "Custom Tool"
+msgstr "Custom Tool"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:60
+msgid "Uninstall Tool"
+msgstr "Uninstall Tool"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:61
+#: scanEngine/templates/scanEngine/settings/update_tool.html:28
+msgid "Modify Tool"
+msgstr "Modify Tool"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:68
+msgid "logo"
+msgstr "logo"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:74
+msgid "Subdomain Enumeration Tool"
+msgstr "Subdomain Enumeration Tool"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:78
+msgid "Tool Type"
+msgstr "Tool Type"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:80
+msgid "Github"
+msgstr "Github"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:82
+msgid "License"
+msgstr "License"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:88
+msgid "Current Installed Version"
+msgstr "Current Installed Version"
+
+#: scanEngine/templates/scanEngine/settings/tool_arsenal.html:97
+msgid "Check Update"
+msgstr "Check Update"
+
+#: scanEngine/templates/scanEngine/settings/update_tool.html:6
+#: scanEngine/templates/scanEngine/settings/update_tool.html:12
+#: scanEngine/templates/scanEngine/settings/update_tool.html:15
+msgid "Update Tool"
+msgstr "Update Tool"
+
+#: scanEngine/templates/scanEngine/update_engine.html:6
+#: scanEngine/templates/scanEngine/update_engine.html:27
+#: scanEngine/templates/scanEngine/update_engine.html:31
+#: scanEngine/templates/scanEngine/update_engine.html:39
+#: scanEngine/templates/scanEngine/update_engine.html:43
+msgid "Update Scan Engine"
+msgstr "Update Scan Engine"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:6
+#: scanEngine/templates/scanEngine/wordlist/index.html:18
+#: scanEngine/templates/scanEngine/wordlist/index.html:30
+msgid "Add New Wordlist"
+msgstr "Add New Wordlist"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:14
+#: scanEngine/templates/scanEngine/wordlist/index.html:6
+#: scanEngine/templates/scanEngine/wordlist/index.html:13
+msgid "Wordlist"
+msgstr "Wordlist"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:15
+msgid "Add Worldlist"
+msgstr "Add Worldlist"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:19
+msgid "Add New Wordlist for Bruteforce"
+msgstr "Add New Wordlist for Bruteforce"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:27
+msgid ""
+"Wordlist can be used for directory bruteforce or subdomain bruteforce. "
+"Instructions on how to use the wordlist are"
+msgstr ""
+"Wordlist can be used for directory bruteforce or subdomain bruteforce. "
+"Instructions on how to use the wordlist are"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:27
+msgid "found here"
+msgstr "found here"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:32
+#: scanEngine/templates/scanEngine/wordlist/index.html:43
+msgid "Wordlist Name"
+msgstr "Wordlist Name"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:36
+msgid "Short Name"
+msgstr "Short Name"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:43
+msgid ""
+"Please keep the short names without spaces, like my-wordlist or my_wordlist. "
+"The short names will be later used to reference wordlist in the YAML "
+"settings."
+msgstr ""
+"Please keep the short names without spaces, like my-wordlist or my_wordlist. "
+"The short names will be later used to reference wordlist in the YAML "
+"settings."
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:46
+msgid "Select the wordlist file"
+msgstr "Select the wordlist file"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:47
+msgid ""
+"Your wordlist must be a *.txt file and wordlists must be separated by a new "
+"line."
+msgstr ""
+"Your wordlist must be a *.txt file and wordlists must be separated by a new "
+"line."
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:50
+msgid "Choose *.txt file"
+msgstr "Choose *.txt file"
+
+#: scanEngine/templates/scanEngine/wordlist/add.html:54
+msgid "Upload Wordlist"
+msgstr "Upload Wordlist"
+
+#: scanEngine/templates/scanEngine/wordlist/index.html:14
+msgid "All Worldlists"
+msgstr "All Worldlists"
+
+#: scanEngine/templates/scanEngine/wordlist/index.html:44
+msgid "Shortname"
+msgstr "Shortname"
+
+#: scanEngine/templates/scanEngine/wordlist/index.html:45
+msgid "Wordlist Count"
+msgstr "Wordlist Count"
+
+#: scanEngine/templates/scanEngine/wordlist/index.html:56
+msgid "Delete Wordlist"
+msgstr "Delete Wordlist"
+
+#: scanEngine/views.py:42
+msgid "Scan Engine Added successfully"
+msgstr "Scan Engine Added successfully"
+
+#: scanEngine/views.py:60
+msgid "Engine successfully deleted!"
+msgstr "Engine successfully deleted!"
+
+#: scanEngine/views.py:66
+msgid "Oops! Engine could not be deleted!"
+msgstr "Oops! Engine could not be deleted!"
+
+#: scanEngine/views.py:85
+msgid "Engine edited successfully"
+msgstr "Engine edited successfully"
+
+#: scanEngine/views.py:126
+#, python-format
+msgid "Wordlist %(wlistName)s added successfully"
+msgstr "Wordlist %(wlistName)s added successfully"
+
+#: scanEngine/views.py:149
+msgid "Wordlist successfully deleted!"
+msgstr "Wordlist successfully deleted!"
+
+#: scanEngine/views.py:155
+msgid "Oops! Wordlist could not be deleted!"
+msgstr "Oops! Wordlist could not be deleted!"
+
+#: scanEngine/views.py:183
+msgid "Lookup Keywords updated successfully"
+msgstr "Lookup Keywords updated successfully"
+
+#: scanEngine/views.py:205
+msgid "Invalid GF Pattern, upload only *.json extension"
+msgstr "Invalid GF Pattern, upload only *.json extension"
+
+#: scanEngine/views.py:213
+#, python-format
+msgid "GF Pattern %(patternName)s successfully uploaded"
+msgstr "GF Pattern %(patternName)s successfully uploaded"
+
+#: scanEngine/views.py:220
+msgid "Invalid Nuclei Pattern, upload only *.yaml extension"
+msgstr "Invalid Nuclei Pattern, upload only *.yaml extension"
+
+#: scanEngine/views.py:227
+#, python-format
+msgid "Nuclei Pattern %(patternName)s successfully uploaded"
+msgstr "Nuclei Pattern %(patternName)s successfully uploaded"
+
+#: scanEngine/views.py:233
+msgid "Nuclei config updated!"
+msgstr "Nuclei config updated!"
+
+#: scanEngine/views.py:239
+msgid "Subfinder config updated!"
+msgstr "Subfinder config updated!"
+
+#: scanEngine/views.py:245
+msgid "Naabu config updated!"
+msgstr "Naabu config updated!"
+
+#: scanEngine/views.py:251
+msgid "Amass config updated!"
+msgstr "Amass config updated!"
+
+#: scanEngine/views.py:257
+msgid "theHarvester config updated!"
+msgstr "theHarvester config updated!"
+
+#: scanEngine/views.py:308 scanEngine/views.py:309
+msgid ""
+"*reNgine*\n"
+"Congratulations! your notification services are working."
+msgstr ""
+"*reNgine*\n"
+"Congratulations! your notification services are working."
+
+#: scanEngine/views.py:310
+msgid ""
+"**reNgine**\n"
+"Congratulations! your notification services are working."
+msgstr ""
+"**reNgine**\n"
+"Congratulations! your notification services are working."
+
+#: scanEngine/views.py:314
+msgid "Notification Settings updated successfully and test message was sent."
+msgstr ""
+"**reNgine**\n"
+"Notification Settings updated successfully and test message was sent."
+
+#: scanEngine/views.py:401
+msgid "Hackerone Settings updated."
+msgstr "Hackerone Settings updated."
+
+#: scanEngine/views.py:439
+msgid "Report Settings updated."
+msgstr "Report Settings updated."
+
+#: scanEngine/views.py:518
+msgid "External Tool Successfully Added!"
+msgstr "External Tool Successfully Added!"
+
+#: scanEngine/views.py:538
+msgid "Tool modified successfully"
+msgstr "Tool modified successfully"

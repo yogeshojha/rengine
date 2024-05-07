@@ -1,4 +1,5 @@
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,11 +58,11 @@
                     </span>
                   </a>
                 </div>
-                <h3 class="">Login to reNgine</h3>
-                <p>Current release: v2.0.5</p>
+                <h3 class="">{% translate "Login to reNgine" %}</h3>
+                <p>{% translate "Current release: v2.0.5" %}</p>
               </div>
               <div class="alert alert-primary" role="alert">
-                <a href="https://rengine.wiki" target="_blank">Learn how to create reNgine account.</a>
+                <a href="https://rengine.wiki" target="_blank">{% translate "Learn how to create reNgine account." %}</a>
               </div>
               {% if messages %}
               <p class="">
@@ -70,22 +71,22 @@
                       {{message}}
                     </div>
                   {% endfor %}
-              <span>If you have any issues or feature request, feel free to <a href="https://github.com/yogeshojha/rengine/issues" class="text-primary">raise issue on Github.</a></span>
+              <span>{% translate "If you have any issues or feature request, feel free to" %} <a href="https://github.com/yogeshojha/rengine/issues" class="text-primary">{% translate "raise issue on Github." %}</a></span>
               </p>
               {% endif %}
               <form method="POST">
                 {% csrf_token %}
                 <div class="mb-3">
-                  <label for="username" class="form-label">Username</label>
+                  <label for="username" class="form-label">{% translate "Username" %}</label>
                   <div class="input-group">
                     <span class="input-group-text" id="basic-addon1">@</span>
-                    <input id="username" name="username" type="text" class="form-control {% if form.errors %}is-invalid{% endif %}" placeholder="username" required>
+                    <input id="username" name="username" type="text" class="form-control {% if form.errors %}is-invalid{% endif %}" placeholder="{% translate "username" %}" required>
                   </div>
                 </div>
                 <div class="mb-3">
-                  <label for="password" class="form-label">Password</label>
+                  <label for="password" class="form-label">{% translate "Password" %}</label>
                   <div class="input-group input-group-merge">
-                    <input id="password" name="password" type="password" class="form-control {% if form.errors %}is-invalid{% endif %}" placeholder="Password" required>
+                    <input id="password" name="password" type="password" class="form-control {% if form.errors %}is-invalid{% endif %}" placeholder="{% translate "Password" %}" required>
                     <div class="input-group-text" data-password="false">
                       <span class="password-eye"></span>
                     </div>
@@ -94,14 +95,14 @@
                 {% if form.errors %}
                 <div class="col-12 text-danger">
                     <p class="text-danger">
-                        <strong>Oops! Invalid username or password.</strong>
+                        <strong>{% translate "Oops! Invalid username or password." %}</strong>
                         <br>
-                        Please note, both password and username are case-sensitive.
+                        {% translate "Please note, both password and username are case-sensitive." %}
                     </p>
                 </div>
                 {% endif %}
                 <div class="text-center d-grid">
-                  <button class="btn btn-primary" type="submit"> Log In </button>
+                  <button class="btn btn-primary" type="submit">{% translate "Log In" %}</button>
                 </div>
               </form>
             </div>

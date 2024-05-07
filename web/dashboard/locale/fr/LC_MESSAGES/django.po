@@ -1,0 +1,528 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: dashboard/templates/dashboard/admin.html:9
+#: dashboard/templates/dashboard/profile.html:7
+msgid "Profile"
+msgstr "Profil"
+
+#: dashboard/templates/dashboard/admin.html:20
+#: dashboard/templates/dashboard/index.html:8
+#: dashboard/templates/dashboard/index.html:12
+#: dashboard/templates/dashboard/profile.html:18
+#: dashboard/templates/dashboard/projects.html:18
+msgid "Dashboard"
+msgstr "Tableau de bord"
+
+#: dashboard/templates/dashboard/admin.html:21
+msgid "Admin settings"
+msgstr "Paramètres d'administration"
+
+#: dashboard/templates/dashboard/admin.html:32
+msgid "Add User"
+msgstr "Ajouter un utilisateur"
+
+#: dashboard/templates/dashboard/admin.html:44
+msgid "Users"
+msgstr "Utilisateurs"
+
+#: dashboard/templates/dashboard/admin.html:49
+#: dashboard/templates/dashboard/profile.html:31
+#: dashboard/templates/dashboard/profile.html:32
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+#: dashboard/templates/dashboard/admin.html:50
+msgid "Name"
+msgstr "Nom"
+
+#: dashboard/templates/dashboard/admin.html:51
+#: dashboard/templates/dashboard/onboarding.html:48
+msgid "Role"
+msgstr "Rôle"
+
+#: dashboard/templates/dashboard/admin.html:52
+msgid "Created on"
+msgstr "Créé le"
+
+#: dashboard/templates/dashboard/admin.html:53
+msgid "Last Logged in"
+msgstr "Dernière connexion"
+
+#: dashboard/templates/dashboard/admin.html:54
+msgid "Status"
+msgstr "Statut"
+
+#: dashboard/templates/dashboard/admin.html:55
+msgid "Actions"
+msgstr "Actions"
+
+#: dashboard/templates/dashboard/admin.html:79
+#: dashboard/templates/dashboard/onboarding.html:50
+msgid "Sys Admin"
+msgstr "Administrateur système"
+
+#: dashboard/templates/dashboard/admin.html:81
+#: dashboard/templates/dashboard/onboarding.html:52
+msgid "Auditor"
+msgstr "Auditeur"
+
+#: dashboard/templates/dashboard/admin.html:83
+#: dashboard/templates/dashboard/onboarding.html:51
+msgid "Penetration Tester"
+msgstr "Testeur d'intrusion"
+
+#: dashboard/templates/dashboard/admin.html:91
+msgid "Never Logged In"
+msgstr "Jamais connecté"
+
+#: dashboard/templates/dashboard/admin.html:96
+msgid "Active"
+msgstr "Actif"
+
+#: dashboard/templates/dashboard/admin.html:98
+msgid "Disabled"
+msgstr "Désactivé"
+
+#: dashboard/templates/dashboard/admin.html:104
+msgid "Disable Account"
+msgstr "Compte désactivé"
+
+#: dashboard/templates/dashboard/admin.html:106
+msgid "Enable Account"
+msgstr "Activer le compte"
+
+#: dashboard/templates/dashboard/admin.html:111
+msgid "Update User Detail"
+msgstr "Mettre à jour les détails de l'utilisateur"
+
+#: dashboard/templates/dashboard/admin.html:113
+msgid "Delete Account"
+msgstr "Supprimer le compte"
+
+#: dashboard/templates/dashboard/index.html:30
+msgid "Total Number of Targets/Domains"
+msgstr "Nombre total de cibles/domaines"
+
+#: dashboard/templates/dashboard/index.html:31
+msgid "Total Targets"
+msgstr "Total des cibles"
+
+#: dashboard/templates/dashboard/index.html:44
+msgid "Total Number of Subdomains discovered by reNgine across all targets."
+msgstr ""
+"Nombre total de sous-domaines découverts par reNgine sur toutes les cibles."
+
+#: dashboard/templates/dashboard/index.html:45
+msgid "Total Subdomains"
+msgstr "Total des sous-domaines"
+
+#: dashboard/templates/dashboard/index.html:49
+msgid "Alive Subdomains:"
+msgstr "Sous-domaines actifs :"
+
+#: dashboard/templates/dashboard/index.html:58
+msgid ""
+"Total Endpoints/URLs discovered by reNgine across all targets & subdomains."
+msgstr ""
+"Nombre total de points de terminaison/URL découverts par reNgine sur toutes "
+"les cibles et sous-domaines."
+
+#: dashboard/templates/dashboard/index.html:59
+msgid "Total Endpoints"
+msgstr "Total des points de terminaison"
+
+#: dashboard/templates/dashboard/index.html:63
+msgid "Alive Endpoints"
+msgstr "Points de terminaison actifs"
+
+#: dashboard/templates/dashboard/index.html:72
+msgid ""
+"Total Vulnerabilities discovered by reNgine across all targets, subdomains & "
+"endpoints."
+msgstr ""
+"Nombre total de vulnérabilités découvertes par reNgine sur toutes les "
+"cibles, sous-domaines et points de terminaison."
+
+#: dashboard/templates/dashboard/index.html:73
+msgid "Total Vulnerabilities"
+msgstr "Total des vulnérabilités"
+
+#: dashboard/templates/dashboard/index.html:76
+#, python-format
+msgid ""
+"%(critical_count)s Critical, %(high_count)s High, %(medium_count)s Medium"
+msgstr ""
+"%(critical_count)s Critiques, %(high_count)s Élevées, %(medium_count)s "
+"Modérées"
+
+#: dashboard/templates/dashboard/index.html:78
+#, python-format
+msgid ""
+"%(low_count)s Low, %(info_count)s Info, %(unknown_count)s Unknown "
+"Vulnerabilities"
+msgstr ""
+"%(low_count)s Faibles, %(info_count)s informationnelles, %(unknown_count)s "
+"inconnues"
+
+#: dashboard/templates/dashboard/index.html:91
+msgid "Activity Feed"
+msgstr "Activité récente"
+
+#: dashboard/templates/dashboard/index.html:112
+msgid "Completed"
+msgstr "Terminé"
+
+#: dashboard/templates/dashboard/index.html:112
+msgid "Initiated"
+msgstr "Initié"
+
+#: dashboard/templates/dashboard/index.html:112
+msgid "Aborted"
+msgstr "Avorté"
+
+#: dashboard/templates/dashboard/index.html:112
+msgid "for"
+msgstr "pour"
+
+#: dashboard/templates/dashboard/index.html:120
+msgid "Feed will be automatically generated while the scan is running."
+msgstr "Le flux sera automatiquement généré pendant l'exécution du scan."
+
+#: dashboard/templates/dashboard/index.html:132
+msgid "Vulnerability Feed"
+msgstr "Flux de vulnérabilité"
+
+#: dashboard/templates/dashboard/index.html:171
+msgid "Info"
+msgstr "Info"
+
+#: dashboard/templates/dashboard/index.html:173
+msgid "Low"
+msgstr "Faible"
+
+#: dashboard/templates/dashboard/index.html:175
+msgid "Medium"
+msgstr "Moyen"
+
+#: dashboard/templates/dashboard/index.html:177
+msgid "High"
+msgstr "Élevé"
+
+#: dashboard/templates/dashboard/index.html:179
+msgid "Critical"
+msgstr "Critique"
+
+#: dashboard/templates/dashboard/index.html:181
+msgid "Unknown"
+msgstr "Inconnu"
+
+#: dashboard/templates/dashboard/index.html:184
+#, python-format
+msgid "detected on %(subdomain)s"
+msgstr "détecté sur %(subdomain)s"
+
+#: dashboard/templates/dashboard/index.html:191
+msgid ""
+"Feed will be automatically generated once the vulnerability scan is "
+"completed."
+msgstr ""
+"Le flux sera automatiquement généré une fois l'analyse de vulnérabilité "
+"terminée."
+
+#: dashboard/templates/dashboard/index.html:206
+msgid "Geographical Distribution of Assets"
+msgstr "Distribution géographique des actifs"
+
+#: dashboard/templates/dashboard/index.html:215
+msgid "Country"
+msgstr "Pays"
+
+#: dashboard/templates/dashboard/index.html:216
+msgid "Assets"
+msgstr "Actifs"
+
+#: dashboard/templates/dashboard/index.html:241
+msgid "Most Vulnerable Target"
+msgstr "Cible la plus vulnérable"
+
+#: dashboard/templates/dashboard/index.html:255
+msgid "Most common IP Address"
+msgstr "Adresse IP la plus courante"
+
+#: dashboard/templates/dashboard/index.html:265
+msgid "Most common Ports"
+msgstr "Ports les plus courants"
+
+#: dashboard/templates/dashboard/index.html:275
+msgid "Most common Technology"
+msgstr "Technologie la plus courante"
+
+#: dashboard/templates/dashboard/index.html:686
+msgid "Total Assets"
+msgstr "Total des actifs"
+
+#: dashboard/templates/dashboard/onboarding.html:8
+msgid "reNgine Onboarding"
+msgstr "Intégration dans reNgine"
+
+#: dashboard/templates/dashboard/onboarding.html:22
+#, python-format
+msgid "Hey %(username)s! Welcome to reNgine"
+msgstr "Salut %(username)s! Bienvenue sur reNgine"
+
+#: dashboard/templates/dashboard/onboarding.html:23
+msgid ""
+"You will need to create your first project before you start using reNgine. "
+"Projects are now a part of reNgine 2.0!"
+msgstr ""
+"Vous devrez créer votre premier projet avant de commencer à utiliser "
+"reNgine. Les projets font maintenant partie de reNgine 2.0!"
+
+#: dashboard/templates/dashboard/onboarding.html:23
+msgid "Learn more about projects."
+msgstr "En savoir plus sur les projets."
+
+#: dashboard/templates/dashboard/onboarding.html:32
+msgid "Project"
+msgstr "Projet"
+
+#: dashboard/templates/dashboard/onboarding.html:34
+msgid "Project name"
+msgstr "Nom du projet"
+
+#: dashboard/templates/dashboard/onboarding.html:37
+msgid "Additional User"
+msgstr "Utilisateur supplémentaire"
+
+#: dashboard/templates/dashboard/onboarding.html:38
+msgid ""
+"You can add additional users and assign them roles. You may add additional "
+"users and also change their roles at any point in future."
+msgstr ""
+"Vous pouvez ajouter des utilisateurs supplémentaires et leur attribuer des "
+"rôles. Vous pouvez ajouter des utilisateurs supplémentaires et modifier "
+"leurs rôles à tout moment à l'avenir."
+
+#: dashboard/templates/dashboard/onboarding.html:40
+msgid "User name"
+msgstr "Nom d'utilisateur"
+
+#: dashboard/templates/dashboard/onboarding.html:44
+msgid "Password"
+msgstr "Mot de passe"
+
+#: dashboard/templates/dashboard/onboarding.html:59
+msgid "Default API Keys"
+msgstr "Clés API par défaut"
+
+#: dashboard/templates/dashboard/onboarding.html:60
+msgid "If you have API keys for these services, please enter them here."
+msgstr "Si vous avez des clés API pour ces services, veuillez les saisir ici."
+
+#: dashboard/templates/dashboard/onboarding.html:62
+msgid "Recommended"
+msgstr "Recommandé"
+
+#: dashboard/templates/dashboard/onboarding.html:62
+msgid "Experimental"
+msgstr "Expérimental"
+
+#: dashboard/templates/dashboard/onboarding.html:63
+msgid ""
+"OpenAI keys will be used to generate vulnerability description, remediation, "
+"impact and vulnerability report writing using ChatGPT."
+msgstr ""
+"Les clés OpenAI seront utilisées pour générer la description des "
+"vulnérabilités, la remédiation, l'impact et la rédaction des rapports de "
+"vulnérabilités en utilisant ChatGPT."
+
+#: dashboard/templates/dashboard/onboarding.html:64
+msgid "Enter OpenAI Key"
+msgstr "Saisir la clé OpenAI"
+
+#: dashboard/templates/dashboard/onboarding.html:65
+msgid "This is optional but recommended."
+msgstr "Ceci est optionnel mais recommandé."
+
+#: dashboard/templates/dashboard/onboarding.html:69
+msgid "Netlas keys will be used to get whois information and other OSINT data."
+msgstr ""
+"Les clés Netlas seront utilisées pour obtenir des informations whois et "
+"d'autres données OSINT."
+
+#: dashboard/templates/dashboard/onboarding.html:70
+msgid "Enter Netlas Key"
+msgstr "Saisir la clé Netlas"
+
+#: dashboard/templates/dashboard/onboarding.html:71
+msgid "This is optional"
+msgstr "Ceci est optionnel"
+
+#: dashboard/templates/dashboard/onboarding.html:74
+msgid "Proceed"
+msgstr "Continuer"
+
+#: dashboard/templates/dashboard/profile.html:14
+#: dashboard/templates/dashboard/profile.html:19
+msgid "My Profile"
+msgstr "Mon profil"
+
+#: dashboard/templates/dashboard/profile.html:27
+#, python-format
+msgid "Hi %(username)s!"
+msgstr "Bonjour %(username)s !"
+
+#: dashboard/templates/dashboard/profile.html:44
+msgid "Language"
+msgstr "Langue"
+
+#: dashboard/templates/dashboard/profile.html:56
+msgid "Change Settings"
+msgstr "Modifier les paramètres"
+
+#: dashboard/templates/dashboard/profile.html:60
+#: dashboard/templates/dashboard/profile.html:87
+msgid "Change Password"
+msgstr "Changer le mot de passe"
+
+#: dashboard/templates/dashboard/profile.html:65
+msgid "Old Password"
+msgstr "Ancien mot de passe"
+
+#: dashboard/templates/dashboard/profile.html:74
+msgid "New Password"
+msgstr "Nouveau mot de passe"
+
+#: dashboard/templates/dashboard/profile.html:78
+msgid "Confirm Password"
+msgstr "Confirmer le mot de passe"
+
+#: dashboard/templates/dashboard/projects.html:7
+#: dashboard/templates/dashboard/projects.html:19
+msgid "Projects"
+msgstr "Projets"
+
+#: dashboard/templates/dashboard/projects.html:14
+msgid "All Projects"
+msgstr "Tous les projets"
+
+#: dashboard/templates/dashboard/projects.html:31
+msgid "Project Name"
+msgstr "Nom du projet"
+
+#: dashboard/templates/dashboard/projects.html:32
+msgid "Slug"
+msgstr "Slug"
+
+#: dashboard/templates/dashboard/projects.html:33
+msgid "Action"
+msgstr "Action"
+
+#: dashboard/templates/dashboard/projects.html:42
+msgid "Current Project"
+msgstr "Projet actuel"
+
+#: dashboard/templates/dashboard/projects.html:51
+msgid "Current Project cannot be deleted."
+msgstr "Le projet actuel ne peut pas être supprimé."
+
+#: dashboard/templates/dashboard/search.html:7
+#: dashboard/templates/dashboard/search.html:18
+#: dashboard/templates/dashboard/search.html:31
+msgid "Universal Search..."
+msgstr "Recherche universelle..."
+
+#: dashboard/templates/dashboard/search.html:14
+msgid "Search Results"
+msgstr "Résultats de recherche"
+
+#: dashboard/templates/dashboard/search.html:32
+msgid "Search"
+msgstr "Rechercher"
+
+#: dashboard/templates/dashboard/search.html:36
+#, python-format
+msgid "Search Results For \"%(query)s\""
+msgstr "Résultats de recherche pour \"%(query)s\""
+
+#: dashboard/templates/dashboard/search.html:55
+msgid "Subdomains"
+msgstr "Sous-domaines"
+
+#: dashboard/templates/dashboard/search.html:61
+msgid "Endpoints"
+msgstr "Points de terminaison"
+
+#: dashboard/templates/dashboard/search.html:67
+msgid "Vulnerabilities"
+msgstr "Vulnérabilités"
+
+#: dashboard/templates/dashboard/search.html:73
+msgid "Others"
+msgstr "Autres"
+
+#: dashboard/views.py:190
+msgid "Your password was successfully changed!"
+msgstr "Votre mot de passe a été changé avec succès !"
+
+#: dashboard/views.py:196
+msgid "Your settings were successfully changed!"
+msgstr "Vos paramètres ont été changés avec succès !"
+
+#: dashboard/views.py:202
+msgid "Please correct the error below."
+msgstr "Veuillez corriger l'erreur ci-dessous."
+
+#: dashboard/views.py:248
+#, python-format
+msgid "User %(username)s successfully deleted."
+msgstr "L'utilisateur %(username)s a été supprimé avec succès."
+
+#: dashboard/views.py:272
+msgid "Empty passwords are not allowed"
+msgstr "Les mots de passe vides ne sont pas autorisés"
+
+#: dashboard/views.py:293
+msgid "You have been successfully logged out. Thank you for using reNgine."
+msgstr "Vous avez été déconnecté avec succès. Merci d'avoir utilisé reNgine."
+
+#: dashboard/views.py:301
+#, python-format
+msgid "Hi @%(username)s welcome back!"
+msgstr "Bonjour @%(username)s bon retour parmi nous !"
+
+#: dashboard/views.py:328
+msgid "Project successfully deleted!"
+msgstr "Le projet a été supprimé avec succès !"
+
+#: dashboard/views.py:334
+msgid "Oops! Project could not be deleted!"
+msgstr "Oups ! Le projet ne peut pas être supprimé !"
+
+#: dashboard/views.py:360
+#, python-format
+msgid " Could not create project, Error: %(errMsg)s"
+msgstr " Impossible de créer le projet, Erreur: %(errMsg)s"
+
+#: dashboard/views.py:372
+#, python-format
+msgid " Could not create User, Error: %(errMsg)s"
+msgstr " Impossible de créer l'utilisateur, Erreur: %(errMsg)s"

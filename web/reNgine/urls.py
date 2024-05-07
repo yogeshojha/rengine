@@ -4,9 +4,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
+from django.views.i18n import JavaScriptCatalog
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+
+from . import views
+
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -42,7 +46,7 @@ urlpatterns = [
         include('recon_note.urls')),
     path(
         'login/',
-        auth_views.LoginView.as_view(template_name='base/login.html'),
+        views.LoginView.as_view(template_name='base/login.html'),
         name='login'),
     path(
         'logout/',
@@ -53,5 +57,7 @@ urlpatterns = [
         include(
             'api.urls',
             'api')),
+    path("jsi18n/", JavaScriptCatalog.as_view(
+    ), name="javascript-catalog"),
 ] + static(settings.MEDIA_URL, document_root=settings.RENGINE_RESULTS) + \
     static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

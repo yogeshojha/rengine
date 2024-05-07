@@ -1,0 +1,610 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: targetApp/static/targetApp/js/custom_domain.js:5
+#: targetApp/static/targetApp/js/custom_organization.js:5
+msgid "You won't be able to revert this!"
+msgstr "Vous ne pourrez pas revenir en arrière !"
+
+#: targetApp/static/targetApp/js/custom_domain.js:8
+#: targetApp/static/targetApp/js/custom_domain.js:82
+#: targetApp/static/targetApp/js/custom_organization.js:8
+msgid "Delete"
+msgstr "Supprimer"
+
+#: targetApp/static/targetApp/js/custom_domain.js:9
+#: targetApp/static/targetApp/js/custom_domain.js:83
+#: targetApp/static/targetApp/js/custom_organization.js:9
+msgid "Cancel"
+msgstr "Annuler"
+
+#: targetApp/static/targetApp/js/custom_domain.js:30
+#: targetApp/static/targetApp/js/custom_organization.js:30
+msgid "Oops! Unable to delete the target!"
+msgstr "Oups ! Impossible de supprimer la cible !"
+
+#: targetApp/static/targetApp/js/custom_domain.js:53
+#: targetApp/static/targetApp/js/custom_domain.js:70
+msgid "Oops! No targets has been selected!"
+msgstr "Oups ! Aucune cible n'a été sélectionnée !"
+
+#: targetApp/static/targetApp/js/custom_domain.js:79
+msgid ""
+"This action is irreversible.\n"
+"This will also delete all the scan history and vulnerabilities related to "
+"the targets."
+msgstr ""
+"Cette action est irréversible.\n"
+"Cela supprimera également l'historique des scans et les vulnérabilités "
+"relatives aux cibles."
+
+#: targetApp/static/targetApp/js/custom_organization.js:4
+msgid "Are you sure you want to delete?"
+msgstr "Êtes-vous sûr de vouloir supprimer?"
+
+# Embedded JS
+msgid "Loading targets..."
+msgstr "Chargement des cibles..."
+
+msgid "Error loading Vulnerabilities Summary"
+msgstr "Erreur lors du chargement du résumé des vulnérabilités"
+
+msgid "Showing page _PAGE_ of _PAGES_"
+msgstr "Affichage de la page _PAGE_ sur _PAGES_"
+
+msgid "Search..."
+msgstr "Rechercher..."
+
+msgid "Results :  _MENU_"
+msgstr "Résultats :  _MENU_"
+
+msgid "%(count)s targets in organization %(orgName)s"
+msgstr "%(count)s cibles dans l'organisation %(orgName)s"
+
+msgid "Fetching domains"
+msgstr "Récupération des domaines"
+
+msgid ""
+"Please wait while we fetch domains associated with IP address or CIDR "
+"%(IP)s"
+msgstr ""
+"Veuillez patienter pendant que nous récupérons les domaines associés à "
+"l'adresse IP %(IP)s"
+
+msgid "%(countDomains)s domain associated with IP Address %(IP)s"
+msgid_plural "%(countDomains)s domains associated with IP Address %(IP)s"
+msgstr[0] "%(countDomains)s domaine associé à l'adresse IP %(IP)s"
+msgstr[1] "%(countDomains)s domaines associés à l'adresse IP %(IP)s"
+
+msgid "Please select the domains to import."
+msgstr "Veuillez sélectionner les domaines à importer."
+
+msgid "Sorry, no domains associated with IP Address %(IP)s"
+msgstr "Désolé, aucun domaine associé à l'adresse IP %(IP)s"
+
+msgid "Oops! Unable to fetch domains for this IP!"
+msgstr "Oups ! Impossible de récupérer les domaines pour cette adresse IP!"
+
+msgid "Selected file: %(filename)s"
+msgstr "Fichier sélectionné : %(filename)s"
+
+msgid "Never Scanned Before"
+msgstr "Jamais analysé"
+
+msgid "Target Summary"
+msgstr "Résumé des cibles"
+
+msgid "Initiate Scan"
+msgstr "Lancer le scan"
+
+msgid "Schedule Scan"
+msgstr "Planifier le scan"
+
+msgid "Edit Target"
+msgstr "Modifier la cible"
+
+msgid "Delete target"
+msgstr "Supprimer la cible"
+
+msgid "Organization: %(orgName)s"
+msgstr "Organisation : %(orgName)s"
+
+msgid "Filtering by organization %(orgName)s"
+msgstr "Filtrage par organisation %(orgName)s"
+
+msgid "Filters Reset"
+msgstr "Réinitialiser les filtres"
+
+msgid "Domain %(domainName)s belongs to organization %(orgName)s"
+msgstr "Le domaine %(domainName)s appartient à l'organisation %(orgName)s"
+
+msgid "Recent Scan"
+msgstr "Scan récent"
+
+msgid "Tooltip text: Filtering by organization %(orgName)s"
+msgstr "Texte de l'info-bulle : Filtrage par organisation %(orgName)s"
+
+msgid "Tooltip text: Filters Reset"
+msgstr "Texte de l'info-bulle : Réinitialiser les filtres"
+
+msgid "Copied!"
+msgstr "Copié !"
+
+msgid "Copy Subdomain!"
+msgstr "Copier le sous-domaine !"
+
+msgid "Interesting Subdomain"
+msgstr "Sous-domaine intéressant"
+
+msgid "Interesting"
+msgstr "Intéressant"
+
+msgid "Content Type"
+msgstr "Type de contenu"
+
+msgid "Web Server"
+msgstr "Serveur Web"
+
+msgid "WAF Detected by wafw00f!"
+msgstr "WAF détecté par wafw00f !"
+
+msgid "WAF Detected"
+msgstr "WAF détecté"
+
+msgid "WAF Manufacturer: %(manufacturer)s"
+msgstr "Fabricant du WAF : %(manufacturer)s"
+
+msgid "All Vulnerabilities"
+msgstr "Toutes les vulnérabilités"
+
+msgid "Informational Vulnerabilities"
+msgstr "Vulnérabilités informationnelles"
+
+msgid "Info"
+msgstr "Info"
+
+msgid "Low Severity Vulnerabilities"
+msgstr "Vulnérabilités de faible gravité"
+
+msgid "Low"
+msgstr "Faible"
+
+msgid "Medium Severity Vulnerabilities"
+msgstr "Vulnérabilités de gravité modérée"
+
+msgid "Medium"
+msgstr "Modérée"
+
+msgid "High Severity Vulnerabilities"
+msgstr "Vulnérabilités de gravité élevée"
+
+msgid "High"
+msgstr "Élevée"
+
+msgid "Critical Vulnerabilities"
+msgstr "Vulnérabilités critiques"
+
+msgid "Critical"
+msgstr "Critique"
+
+msgid "Endpoints"
+msgstr "Points de terminaison"
+
+msgid "Directories"
+msgstr "Répertoires"
+
+msgid "SubScans"
+msgstr "Sous-scans"
+
+msgid "Todos"
+msgstr "Tâches"
+
+msgid "Show Attack Surface"
+msgstr "Afficher la surface d'attaque"
+
+msgid "Further Scan Subdomain"
+msgstr "Analyser plus en détail le sous-domaine"
+
+msgid "Add Recon Todo/Note"
+msgstr "Ajouter une tâche/note de reconnaissance"
+
+msgid "Mark Important Subdomain"
+msgstr "Marquer le sous-domaine comme important"
+
+msgid "Detect CMS"
+msgstr "Détecter le CMS"
+
+msgid "Delete Subdomain"
+msgstr "Supprimer le sous-domaine"
+
+msgid "Delete Subdomain!"
+msgstr "Supprimer le sous-domaine !"
+
+msgid ""
+"Do you really want to delete this subdomain? This action cannot be undone."
+msgstr ""
+"Voulez-vous vraiment supprimer ce sous-domaine ? Cette action est "
+"irréversible."
+
+msgid "Deleting Subdomain..."
+msgstr "Suppression du sous-domaine..."
+
+msgid "Subdomain successfully deleted!"
+msgstr "Sous-domaine supprimé avec succès !"
+
+msgid "Could not delete Subdomain!"
+msgstr "Impossible de supprimer le sous-domaine !"
+
+msgid "Fetch GPT Vulnerability Details"
+msgstr "Récupérer les détails de la vulnérabilité GPT"
+
+msgid "Report to Hackerone"
+msgstr "Signaler à Hackerone"
+
+msgid "Delete Vulnerability"
+msgstr "Supprimer la vulnérabilité"
+
+msgid "Tags"
+msgstr "Étiquettes"
+
+msgid "CVSS Metrics"
+msgstr "Métriques CVSS"
+
+msgid "CVE ID"
+msgstr "ID CVE"
+
+msgid "CWE ID"
+msgstr "ID CWE"
+
+msgid "Reported to hackerone"
+msgstr "Signalé à hackerone"
+
+msgid "CVSS Score"
+msgstr "Score CVSS"
+
+msgid "OPEN"
+msgstr "OUVERT"
+
+msgid "RESOLVED"
+msgstr "RÉSOLU"
+
+msgid "Informational Vulnerabilities ignored in Most Vulnerable Targets."
+msgstr ""
+"Les vulnérabilités informationnelles sont ignorées dans les cibles les "
+"plus vulnérables."
+
+msgid "Informational Vulnerabilities included in Most Vulnerable Targets."
+msgstr ""
+"Les vulnérabilités informationnelles sont incluses dans les cibles les "
+"plus vulnérables."
+
+msgid ""
+"Informational Vulnerabilities ignored for Most Common Vulnerabilities."
+msgstr ""
+"Les vulnérabilités informationnelles sont ignorées pour les "
+"vulnérabilités les plus courantes."
+
+msgid ""
+"Informational Vulnerabilities included for Most Common Vulnerabilities."
+msgstr ""
+"Les vulnérabilités informationnelles sont incluses pour les "
+"vulnérabilités les plus courantes."
+
+msgid "Subdomains"
+msgstr "Sous-domaines"
+
+msgid "Close"
+msgstr "Fermer"
+
+msgid "Fetching WHOIS records, Please wait..."
+msgstr "Récupération des enregistrements WHOIS, veuillez patienter..."
+
+msgid "WHOIS Records have been fetched, please"
+msgstr "Les enregistrements WHOIS ont été récupérés, veuillez"
+
+msgid "reload the page."
+msgstr "recharger la page."
+
+msgid "Domain"
+msgstr "Domaine"
+
+msgid "Dnssec"
+msgstr "Dnssec"
+
+msgid "Geolocation"
+msgstr "Géolocalisation"
+
+msgid "Created"
+msgstr "Créé"
+
+msgid "Updated"
+msgstr "Mis à jour"
+
+msgid "Expires"
+msgstr "Expire"
+
+msgid "Whois Server"
+msgstr "Serveur Whois"
+
+msgid "Registrar Name"
+msgstr "Nom du registraire"
+
+msgid "Registrar Phone"
+msgstr "Téléphone du registraire"
+
+msgid "Registrar Email"
+msgstr "Email du registraire"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Name"
+msgstr "Nom"
+
+msgid "Organization"
+msgstr "Organisation"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Phone/Fax"
+msgstr "Téléphone/Fax"
+
+msgid "Address"
+msgstr "Adresse"
+
+msgid "City"
+msgstr "Ville"
+
+msgid "State"
+msgstr "État"
+
+msgid "Zip Code"
+msgstr "Code postal"
+
+msgid "Country"
+msgstr "Pays"
+
+msgid "Registrant"
+msgstr "Titulaire"
+
+msgid "Administrative"
+msgstr "Administratif"
+
+msgid "Technical"
+msgstr "Technique"
+
+msgid "A Records"
+msgstr "Enregistrements A"
+
+msgid "MX Records"
+msgstr "Enregistrements MX"
+
+msgid "TXT Records"
+msgstr "Enregistrements TXT"
+
+msgid "NameServers identified"
+msgstr "Serveurs de noms identifiés"
+
+msgid "No NameServers identified"
+msgstr "Aucun serveur de noms identifié"
+
+msgid "Historical Ips"
+msgstr "IPs historiques"
+
+msgid "No historical IPs found!"
+msgstr "Aucune IP historique trouvée !"
+
+msgid "IP"
+msgstr "IP"
+
+msgid "Location"
+msgstr "Emplacement"
+
+msgid "Owner"
+msgstr "Propriétaire"
+
+msgid "Last Seen"
+msgstr "Dernière fois vu"
+
+msgid "HTTP Status Breakdown"
+msgstr "Répartition des statuts HTTP"
+
+msgid "Geographical Distribution of Assets"
+msgstr "Répartition géographique des actifs"
+
+msgid "Assets"
+msgstr "Actifs"
+
+msgid "Total Assets: %(count)s"
+msgstr "Total des actifs : %(count)s"
+
+msgid "Scan Timeline"
+msgstr "Chronologie des analyses"
+
+msgid ""
+"Target <span class=\"badge badge-soft-primary\">%(targetName)s</span> has "
+"been scanned <b>%(scan_count)s</b> times."
+msgstr ""
+"La cible <span class=\"badge badge-soft-primary\">%(targetName)s</span> a "
+"été analysée <b>%(scan_count)s</b> fois."
+
+msgid "The most recent scan was performed on"
+msgstr "La dernière analyse a été effectuée le"
+
+msgid "Pending"
+msgstr "En attente"
+
+msgid "Failed"
+msgstr "Échoué"
+
+msgid "Scanning"
+msgstr "Analyse en cours"
+
+msgid "Completed"
+msgstr "Terminé"
+
+msgid "Aborted"
+msgstr "Interrompu"
+
+msgid "Unknown"
+msgstr "Inconnu"
+
+msgid "ERROR: %(errorMsg)s"
+msgstr "ERREUR : %(errorMsg)s"
+
+msgid "%(subDomainCount)s Subdomains Discovered"
+msgstr "%(subDomainCount)s sous-domaines découverts"
+
+msgid "%(subDomainCount)s Subdomains"
+msgstr "%(subDomainCount)s sous-domaines"
+
+msgid " Subdomains"
+msgstr " Sous-domaines"
+
+msgid "Sub Scans"
+msgstr "Sous-analyses"
+
+msgid "Related Domains"
+msgstr "Domaines liés"
+
+msgid "%(relatedDomainsCount)s Domains related to %(targetName)s"
+msgstr "%(relatedDomainsCount)s domaines liés à %(targetName)s"
+
+msgid "Add %(domain)s as target."
+msgstr "Ajouter %(domain)s comme cible."
+
+msgid "Oops! Could not identify any Related Domains."
+msgstr "Oops ! Aucun domaine lié n'a pu être identifié."
+
+msgid "Related TLDs"
+msgstr "TLD liés"
+
+msgid "%(relatedTLDsCount)s TLDs related to %(targetName)s"
+msgstr "%(relatedTLDsCount)s TLD liés à %(targetName)s"
+
+msgid "Oops! Could not identify any Related TLDs."
+msgstr "Oops ! Aucun TLD lié n'a pu être identifié."
+
+msgid "The total times %(targetName)s is scanned."
+msgstr "Le nombre total de fois où %(targetName)s a été analysé."
+
+msgid "%(this_week_scan_count)s Scans this week"
+msgstr "%(this_week_scan_count)s analyses cette semaine"
+
+msgid "Total Subdomains Discovered by reNgine during this scan"
+msgstr ""
+"Nombre total de sous-domaines découverts par reNgine lors de cette analyse"
+
+msgid "Alive Subdomains: %(alive_count)s"
+msgstr "Sous-domaines actifs : %(alive_count)s"
+
+msgid ""
+"Total Endpoints discovered for this target. This includes any URLs "
+"discovered."
+msgstr ""
+"Nombre total de points de terminaison découverts pour cette cible. Cela "
+"inclut toutes les URL découvertes."
+
+msgid "Alive Endpoints: %(endpoint_alive_count)s"
+msgstr "Points de terminaison actifs : %(endpoint_alive_count)s"
+
+msgid ""
+"Total Vulnerabilities discovered for this target. This will be populated "
+"only if vulnerability scan is performed during any scan."
+msgstr ""
+"Nombre total de vulnérabilités découvertes pour cette cible. Cela ne sera "
+"renseigné que si une analyse de vulnérabilités est effectuée lors d'une "
+"analyse."
+
+msgid "%(critical_count)s Critical"
+msgstr "%(critical_count)s critiques"
+
+msgid "%(high_count)s High"
+msgstr "%(high_count)s élevées"
+
+msgid "%(medium_count)s Medium"
+msgstr "%(medium_count)s modérées"
+
+msgid "%(low_count)s Low"
+msgstr "%(low_count)s faibles"
+
+msgid "%(info_count)s Info Vulnerabilities"
+msgstr "%(info_count)s vulnérabilités d'information"
+
+msgid "Target Information"
+msgstr "Informations sur la cible"
+
+msgid "Home"
+msgstr "Accueil"
+
+msgid "URLs"
+msgstr "URLs"
+
+msgid "Vulnerabilities"
+msgstr "Vulnérabilités"
+
+msgid "Todo Title"
+msgstr "Titre de la tâche"
+
+msgid "Select Subdomain (Optional)"
+msgstr "Sélectionner un sous-domaine (facultatif)"
+
+msgid "Choose Subdomain..."
+msgstr "Choisir un sous-domaine..."
+
+msgid "Todo Description (Optional)"
+msgstr "Description de la tâche (facultatif)"
+
+msgid "Todo Description"
+msgstr "Description de la tâche"
+
+msgid "Add Recon Todo"
+msgstr "Ajouter une tâche de reconnaissance"
+
+msgid "Important Subdomains"
+msgstr "Sous-domaines importants"
+
+msgid "Recon Note/Todo"
+msgstr "Note/Tâche de reconnaissance"
+
+msgid "IP Addresses"
+msgstr "Adresses IP"
+
+msgid "*IP Addresses highlighted with yellow are CDN IP"
+msgstr "*Les adresses IP mises en évidence en jaune sont des IP de CDN"
+
+msgid "Discovered Ports"
+msgstr "Ports découverts"
+
+msgid "*Ports highlighted with red are uncommon Ports"
+msgstr "*Les ports mis en évidence en rouge sont des ports peu communs"
+
+msgid "Uncommon Port - %(uncommonPort)s"
+msgstr "Port peu commun - %(uncommonPort)s"
+
+msgid "Discovered Technologies"
+msgstr "Technologies découvertes"
+
+msgid "*CDN IP Address"
+msgstr "*Adresse IP de CDN"
+
+msgid "CDN IP Address"
+msgstr "Adresse IP de CDN"

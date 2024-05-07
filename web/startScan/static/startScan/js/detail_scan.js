@@ -1,40 +1,38 @@
-function get_ips_from_port(port_number, history_id){
-	document.getElementById("detailScanModalLabel").innerHTML='IPs with port ' + port_number + ' OPEN';
+function get_ips_from_port(port_number, history_id) {
+	document.getElementById("detailScanModalLabel").innerHTML = interpolate('IPs with port %(portNumber)s OPEN', {portNumber: port_number}, true);
 	var ip_badge = '';
 	fetch('../port/ip/'+port_number+'/'+history_id+'/')
 	.then(response => response.json())
 	.then(data => render_ips(data));
 }
 
-function get_ports_for_ip(ip, history_id){
+function get_ports_for_ip(ip, history_id) {
 	console.log(ip, history_id);
-	document.getElementById("detailScanModalLabel").innerHTML='Open Ports identified for ' + ip;
+	document.getElementById("detailScanModalLabel").innerHTML = interpolate('Open Ports identified for %(IP)s', {IP: ip}, true);
 	var port_badge = '';
 	fetch('../ip/ports/'+ip+'/'+history_id+'/')
 	.then(response => response.json())
 	.then(data => render_ports(data));
 }
 
-function render_ports(data)
-{
+function render_ports(data) {
 	var port_badge = ''
 	ip_address_content = document.getElementById("detailScanModalContent");
 	Object.entries(JSON.parse(data)).forEach(([key, value]) => {
 		badge_color = value[3] ? 'danger' : 'info';
-		title = value[3] ? 'Uncommon Port - ' + value[2] : value[2];
+		title = value[3] ? interpolate('Uncommon Port - %(uncommonPort)s', {uncommonPort: value[2]}, true) : value[2];
 		port_badge += `<span class='m-1 badge  badge-soft-${badge_color} bs-tooltip' title='${title}'>${value[0]}/${value[1]}</span>`
 	});
 	ip_address_content.innerHTML = port_badge;
 	$('.bs-tooltip').tooltip();
 }
 
-function render_ips(data)
-{
+function render_ips(data) {
 	var ip_badge = ''
 	content = document.getElementById("detailScanModalContent");
 	Object.entries(JSON.parse(data)).forEach(([key, value]) => {
 		badge_color = value[1] ? 'warning' : 'info';
-		title = value[1] ? 'CDN IP Address' : '';
+		title = value[1] ? gettext('CDN IP Address') : '';
 		ip_badge += `<span class='m-1 badge  badge-soft-${badge_color} bs-tooltip' title='${title}'>${value[0]}</span>`
 	});
 	content.innerHTML = ip_badge;
@@ -42,7 +40,7 @@ function render_ips(data)
 }
 
 
-function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=null){
+function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=null) {
 	var is_endpoint_grouping = false;
 	var endpoint_grouping_col = 6;
 
@@ -50,12 +48,11 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 
 	if (scan_history_id) {
 		lookup_url += `&scan_history=${scan_history_id}`;
-	}
-	else if (domain_id) {
+	} else if (domain_id) {
 		lookup_url += `&target_id=${domain_id}`;
 	}
 
-	if (gf_tags){
+	if (gf_tags) {
 		lookup_url += `&gf_tag=${gf_tags}`
 	}
 	var endpoint_datatable_columns = [
@@ -75,9 +72,9 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 		"processing": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-			"sInfo": "Showing page _PAGE_ of _PAGES_",
-			"sLengthMenu": "Results :  _MENU_",
-			"sProcessing": "Processing... Please wait..."
+			"sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
+			"sLengthMenu": gettext("Results :  _MENU_"),
+			"sProcessing": gettext("Processing... Please wait...")
 		},
 		"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
 		"<'table-responsive'tr>" +
@@ -91,7 +88,7 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 		},
 		"rowGroup": {
 			"startRender": function(rows, group) {
-				return group + ' (' + rows.count() + ' Endpoints)';
+				return interpolate('%(group)s (%(count)s Endpoints)', {group: group, count: rows.count()}, true);
 			}
 		},
 		"order": [[ 6, "desc" ]],
@@ -111,19 +108,19 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 				"render": function ( data, type, row ) {
 					var tech_badge = '';
 					var web_server = '';
-					if (row['techs']){
+					if (row['techs']) {
 						tech_badge = `</br>` + parse_technology(row['techs'], "primary", outline=true);
 					}
 
 					if (row['webserver']) {
-						web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="Web Server">${row['webserver']}</span>`;
+						web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="` + gettext("Web Server") + `">${row['webserver']}</span>`;
 					}
 
 					var url = split_into_lines(data, 70);
 					var action_icons = `
 					<div class="float-left subdomain-table-action-icons mt-2">
 					<span class="m-1">
-					<a href="javascript:;" data-clipboard-action="copy" class="badge-link text-primary copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Url!" data-clipboard-target="#url-${row['id']}" id="#url-${row['id']}" onclick="setTooltip(this.id, 'Copied!')">
+					<a href="javascript:;" data-clipboard-action="copy" class="badge-link text-primary copyable text-primary" data-toggle="tooltip" data-placement="top" title="` + gettext("Copy Url!") + `" data-clipboard-target="#url-${row['id']}" id="#url-${row['id']}" onclick="setTooltip(this.id, 'Copied!')">
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
 					</a>
 					</div>
@@ -148,7 +145,7 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 			},
 			{
 				"render": function ( data, type, row ) {
-					if (data){
+					if (data) {
 						return parse_comma_values_into_span(data, "info");
 					}
 					return "";
@@ -157,7 +154,7 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 			},
 			{
 				"render": function ( data, type, row ) {
-					if (data){
+					if (data) {
 						return parse_comma_values_into_span(data, "danger", outline=true);
 					}
 					return "";
@@ -166,7 +163,7 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 			},
 			{
 				"render": function ( data, type, row ) {
-					if (data){
+					if (data) {
 						return get_response_time_text(data);
 					}
 					return "";
@@ -209,7 +206,7 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 				api.order([col_index, 'asc']).draw();
 				endpoint_table.rowGroup().dataSrc(this.value);
 	      Snackbar.show({
-	        text: 'Endpoints grouped by ' + this.value,
+	        text: interpolate('Endpoints grouped by %(eptGpBy)s', {eptGpBy: this.value}, true),
 	        pos: 'top-right',
 	        duration: 2500
 	      });
@@ -270,26 +267,25 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 	});
 }
 
-function get_subdomain_changes(scan_history_id){
+function get_subdomain_changes(scan_history_id) {
 	$('#table-subdomain-changes').DataTable({
 		"drawCallback": function(settings, start, end, max, total, pre) {
 			if (this.fnSettings().fnRecordsTotal() > 0) {
 				$('#subdomain_change_count').empty();
 				$("#subdomain_change_count").html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</span>`);
 				$('.recon-changes-tab-show').removeAttr('style');
-				$('#subdomain_changes_alert').html(`${this.fnSettings().fnRecordsTotal()} Subdomain changes.`)
-			}
-			else{
+				$('#subdomain_changes_alert').html(interpolate(`%(subDomainChangesCount)s Subdomain changes.`, {subDomainChangesCount: this.fnSettings().fnRecordsTotal()}), true);
+			} else{
 				$('#recon_changes_subdomain_div').remove();
 			}
 			$("#subdomain-changes-loader").remove();
 		},
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
 			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search...",
-			"sLengthMenu": "Results :  _MENU_",
+			"sSearchPlaceholder": gettext("Search..."),
+			"sLengthMenu": gettext("Results :  _MENU_"),
 		},
 		"processing": true,
 		"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
@@ -326,19 +322,19 @@ function get_subdomain_changes(scan_history_id){
 					interesting_badge = '';
 					if (row['is_cdn'])
 					{
-						cdn_badge = "<span class='m-1 badge  badge-soft-warning'>CDN</span>"
+						cdn_badge = "<span class='m-1 badge  badge-soft-warning'>" + gettext("CDN") + "</span>"
 					}
-					if(row['is_interesting'])
+					if (row['is_interesting'])
 					{
-						interesting_badge = "<span class='m-1 badge  badge-soft-danger'>Interesting</span>"
+						interesting_badge = "<span class='m-1 badge  badge-soft-danger'>" + gettext("Interesting") + "</span>"
 					}
-					if(cdn_badge || interesting_badge)
+					if (cdn_badge || interesting_badge)
 					{
 						badges = cdn_badge + interesting_badge + '</br>';
 					}
 					if (row['http_url']) {
 						if (row['cname']) {
-							return badges + `<a href="`+row['http_url']+`" class="text-primary" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
+							return badges + `<a href="`+row['http_url']+`" class="text-primary" target="_blank">`+data+`</a><br><span class="text-dark">` + gettext("CNAME") + `<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
 						}
 						return badges + `<a href="`+row['http_url']+`" class="text-primary" target="_blank">`+data+`</a>`;
 					}
@@ -352,11 +348,9 @@ function get_subdomain_changes(scan_history_id){
 					// green for http status 2XX, orange for 3XX and warning for everything else
 					if (data >= 200 && data < 300) {
 						return "<span class='badge  badge-soft-success'>"+data+"</span>";
-					}
-					else if (data >= 300 && data < 400) {
+					} else if (data >= 300 && data < 400) {
 						return "<span class='badge  badge-soft-warning'>"+data+"</span>";
-					}
-					else if (data == 0){
+					} else if (data == 0) {
 						// datatable throws error when no data is returned
 						return "";
 					}
@@ -366,7 +360,7 @@ function get_subdomain_changes(scan_history_id){
 			},
 			{
 				"render": function ( data, type, row ) {
-					if (data){
+					if (data) {
 						return `<span class='text-center' style="display:block; text-align:center; margin:0 auto;">${data}</span>`;
 					}
 					return "";
@@ -375,11 +369,10 @@ function get_subdomain_changes(scan_history_id){
 			},
 			{
 				"render": function ( data, type, row ) {
-					if (data == 'added'){
-						return `<span class='badge badge-soft-success'><i class="fe-plus-circle"></i> Added</span>`;
-					}
-					else{
-						return `<span class='badge badge-soft-danger'><i class="fe-minus-circle"></i> Removed</span>`;
+					if (data == 'added') {
+						return `<span class='badge badge-soft-success'><i class="fe-plus-circle"></i> ` + gettext("Added") + `</span>`;
+					} else{
+						return `<span class='badge badge-soft-danger'><i class="fe-minus-circle"></i> ` + gettext("Removed") + `</span>`;
 					}
 				},
 				"targets": 4,
@@ -388,25 +381,24 @@ function get_subdomain_changes(scan_history_id){
 	});
 }
 
-function get_endpoint_changes(scan_history_id){
+function get_endpoint_changes(scan_history_id) {
 	$('#table-endpoint-changes').DataTable({
 		"drawCallback": function(settings, start, end, max, total, pre) {
 			if (this.fnSettings().fnRecordsTotal() > 0) {
 				$("#endpoint_change_count").empty();
 				$("#endpoint_change_count").html(`${this.fnSettings().fnRecordsTotal()}`);
 				$('.recon-changes-tab-show').removeAttr('style');
-			}
-			else{
+			} else{
 				$("#endpoint-changes-div").remove();
 			}
 			$("#endpoint-changes-loader").remove();
 		},
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
 			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search...",
-			"sLengthMenu": "Results :  _MENU_",
+			"sSearchPlaceholder": gettext("Search..."),
+			"sLengthMenu": gettext("Results :  _MENU_"),
 		},
 		"processing": true,
 		"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
@@ -440,11 +432,9 @@ function get_endpoint_changes(scan_history_id){
 					// green for http status 2XX, orange for 3XX and warning for everything else
 					if (data >= 200 && data < 300) {
 						return "<span class='badge  badge-soft-success'>"+data+"</span>";
-					}
-					else if (data >= 300 && data < 400) {
+					} else if (data >= 300 && data < 400) {
 						return "<span class='badge  badge-soft-warning'>"+data+"</span>";
-					}
-					else if (data == 0){
+					} else if (data == 0) {
 						// datatable throws error when no data is returned
 						return "";
 					}
@@ -454,11 +444,10 @@ function get_endpoint_changes(scan_history_id){
 			},
 			{
 				"render": function ( data, type, row ) {
-					if (data == 'added'){
-						return `<span class='badge badge-soft-success'><i class="fe-plus-circle"></i> Added</span>`;
-					}
-					else{
-						return `<span class='badge badge-soft-danger'><i class="fe-minus-circle"></i> Removed</span>`;
+					if (data == 'added') {
+						return `<span class='badge badge-soft-success'><i class="fe-plus-circle"></i> ` + gettext("Added") + `</span>`;
+					} else{
+						return `<span class='badge badge-soft-danger'><i class="fe-minus-circle"></i> ` + gettext("Removed") + `</span>`;
 					}
 				},
 				"targets": 4,
@@ -467,22 +456,22 @@ function get_endpoint_changes(scan_history_id){
 	});
 }
 
-function get_osint_users(scan_id){
+function get_osint_users(scan_id) {
 	$.getJSON(`/api/queryOsintUsers/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#osint-users-count').empty();
-		for (var val in data['users']){
+		for (var val in data['users']) {
 			user = data['users'][val]
 			$("#osint-users").append(`<span class='badge badge-soft-info  m-1'>${user['author']}</span>`);
 		}
 		$('#osint-users-count').html(`<span class="badge badge-soft-primary">${data['users'].length}</span>`);
 		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
-	}).fail(function(){
+	}).fail(function() {
 		$('#osint-users-count').empty();
-		$("#osint-users").append(`<p>No Users discovered.</p>`);
+		$("#osint-users").append(`<p>` + gettext("No Users discovered.") + `</p>`);
 	});
 }
 
-function get_screenshot(scan_id){
+function get_screenshot(scan_id) {
 	var port_array = [];
 	var service_array = [];
 	var tech_array = [];
@@ -505,7 +494,7 @@ function get_screenshot(scan_id){
 			interesting_field = data[subdomain]['is_interesting'] ? 'interesting' : '';
 			var ips = data[subdomain]['ip_addresses'];
 			var ip_search_values = '';
-			for(var ip in ips){
+			for (var ip in ips) {
 				ip_address = ips[ip]['address'];
 				ip_search_values += ip_address + ' ';
 			}
@@ -528,10 +517,9 @@ function get_screenshot(scan_id){
 			var figcaption = document.createElement('figcaption');
 			figcaption.setAttribute('class', 'gridzyCaption');
 			http_status_badge = 'danger';
-			if (data[subdomain]['http_status'] >=200 && data[subdomain]['http_status'] < 300){
+			if (data[subdomain]['http_status'] >=200 && data[subdomain]['http_status'] < 300) {
 				http_status_badge = 'success';
-			}
-			else if (data[subdomain]['http_status'] >=300 && data[subdomain]['http_status'] < 400){
+			} else if (data[subdomain]['http_status'] >=300 && data[subdomain]['http_status'] < 400) {
 				http_status_badge = 'warning';
 			}
 			page_title = data[subdomain]['page_title'] ? data[subdomain]['page_title'] + '</br>': '' ;
@@ -549,7 +537,7 @@ function get_screenshot(scan_id){
 			// dynamic filtering menu
 			http_status = data[subdomain]['http_status'];
 			http_status_select = document.getElementById('http_select_filter');
-			if(!$('#http_select_filter').find("option:contains('" + http_status + "')").length){
+			if (!$('#http_select_filter').find("option:contains('" + http_status + "')").length) {
 				var option = document.createElement('option');
 				option.value = ".http_" + http_status;
 				option.innerHTML = http_status;
@@ -558,25 +546,25 @@ function get_screenshot(scan_id){
 
 			// ip, port and services filtering
 			ips = data[subdomain]['ip_addresses']
-			for(var ip in ips){
+			for (var ip in ips) {
 				ip_address = ips[ip]['address'];
 				filter_values += 'ip_' + ip_address.replace(/\./g,"_") + ' ';
-				if (ip_array.indexOf(ip_address) === -1){
+				if (ip_array.indexOf(ip_address) === -1) {
 					ip_array.push(ip_address);
 				}
 
 				ports = ips[ip]['ports'];
-				for(var port in ports){
+				for (var port in ports) {
 					port_number = ips[ip]['ports'][port]['number'];
 					service_name = ips[ip]['ports'][port]['service_name'];
 
 					filter_values += 'port_' + port_number + ' ';
-					if (port_array.indexOf(port_number) === -1){
+					if (port_array.indexOf(port_number) === -1) {
 						port_array.push(port_number);
 					}
 
 					filter_values += 'service_' + service_name + ' ';
-					if (service_array.indexOf(service_name) === -1){
+					if (service_array.indexOf(service_name) === -1) {
 						service_array.push(service_name);
 					}
 				}
@@ -584,10 +572,10 @@ function get_screenshot(scan_id){
 
 			// technology stack filtering
 			technology = data[subdomain]['technologies'];
-			for(var tech in technology){
+			for (var tech in technology) {
 				tech_name = technology[tech]['name']
 				filter_values += 'tech_' + tech_name.replace(/ /g,"_").toLowerCase() + ' ';
-				if (tech_array.indexOf(tech_name) === -1){
+				if (tech_array.indexOf(tech_name) === -1) {
 					tech_array.push(tech_name);
 				}
 
@@ -600,8 +588,8 @@ function get_screenshot(scan_id){
 		port_select = document.getElementById('ports_select_filter');
 		if (port_select) {
 			port_array.sort((a, b) => a - b);
-			for(var port in port_array){
-				if(!$('#ports_select_filter').find("option:contains('" + port_array[port] + "')").length){
+			for (var port in port_array) {
+				if (!$('#ports_select_filter').find("option:contains('" + port_array[port] + "')").length) {
 					var option = document.createElement('option');
 					option.value = ".port_" + port_array[port];
 					option.innerHTML = port_array[port];
@@ -612,8 +600,8 @@ function get_screenshot(scan_id){
 
 		// add ip to select
 		ip_select = document.getElementById('ips_select_filter');
-		for(var ip in ip_array){
-			if(!$('#ips_select_filter').find("option:contains('" + ip_array[ip] + "')").length){
+		for (var ip in ip_array) {
+			if (!$('#ips_select_filter').find("option:contains('" + ip_array[ip] + "')").length) {
 				var option = document.createElement('option');
 				option.value = ".ip_" + ip_array[ip];
 				option.innerHTML = ip_array[ip];
@@ -624,8 +612,8 @@ function get_screenshot(scan_id){
 		service_array.sort();
 		service_select = document.getElementById('services_select_filter');
 		if (service_select) {
-			for(var service in service_array){
-				if(!$('#services_select_filter').find("option:contains('" + service_array[service] + "')").length){
+			for (var service in service_array) {
+				if (!$('#services_select_filter').find("option:contains('" + service_array[service] + "')").length) {
 					var option = document.createElement('option');
 					option.value = ".service_" + service_array[service];
 					option.innerHTML = service_array[service];
@@ -635,8 +623,8 @@ function get_screenshot(scan_id){
 		}
 
 		tech_select = document.getElementById('tech_select_filter');
-		for(var tech in tech_array){
-			if(!$('#tech_select_filter').find("option:contains('" + tech_array[tech] + "')").length){
+		for (var tech in tech_array) {
+			if (!$('#tech_select_filter').find("option:contains('" + tech_array[tech] + "')").length) {
 				var option = document.createElement('option');
 				option.value = ".tech_" + tech_array[tech].replace(/ /g,"_").toLowerCase();
 				option.innerHTML = tech_array[tech];
@@ -695,19 +683,19 @@ function get_screenshot(scan_id){
 		$('#http_select_filter, #ips_select_filter, #services_select_filter, #ports_select_filter, #tech_select_filter').on('change', function() {
 			values = $(this).val();
 			console.log(values);
-			if(values.length && this.id == 'ips_select_filter'){
-				var replaces_str = values.map(function(values){return values.replace(/(?<=\..*)\./g, '_');});
+			if (values.length && this.id == 'ips_select_filter') {
+				var replaces_str = values.map(function(values) {
+					return values.replace(/(?<=\..*)\./g, '_');
+				});
 				console.log(replaces_str);
 				gridzyInstance.setOptions({
 					filter: replaces_str
 				});
-			}
-			else if(values.length && this.id != 'ips_select_filter'){
+			} else if (values.length && this.id != 'ips_select_filter') {
 				gridzyInstance.setOptions({
 					filter: values
 				});
-			}
-			else{
+			} else {
 				gridzyInstance.setOptions({
 					filter: '*'
 				});
@@ -716,43 +704,37 @@ function get_screenshot(scan_id){
 	});
 }
 
-function get_metadata(scan_id){
+function get_metadata(scan_id) {
 	// populate detail table
 	$.getJSON(`/api/queryMetadata/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#metadata-count').empty();
 		$('#metadata-table-body').empty();
-		for (var val in data['metadata']){
+		for (var val in data['metadata']) {
 			doc = data['metadata'][val];
 			rand_id = get_randid();
 			$('#metadata-table-body').append(`<tr id=${rand_id}></tr>`);
-			if (doc['doc_name']) {
-				filename = `<a href=${doc['url']} target="_blank" class="text-primary">${truncate(doc['doc_name'], 30)}</a>`;
-			}
-			else{
-				filename = ''
-			}
-			subdomain = `<span class='text-muted bs-tooltip' title='Subdomain'>${doc['subdomain']['name']}</span>`;
+			let filename = (doc['doc_name']) ? `<a href=${doc['url']} target="_blank" class="text-primary">${truncate(doc['doc_name'], 30)}</a>` : '';
+
+			subdomain = `<span class='text-muted bs-tooltip' title='` + gettext("Subdomain") + `'>${doc['subdomain']['name']}</span>`;
 			$(`#${rand_id}`).append(`<td class="td-content">${filename}</br>${subdomain}</td>`);
-			if (doc['author']){
+			if (doc['author']) {
 				$(`#${rand_id}`).append(`<td class="td-content text-center">${doc['author']}</td>`);
-			}
-			else{
+			} else {
 				$(`#${rand_id}`).append('<td></td>')
 			}
 			if (doc['producer'] || doc['creator'] || doc['os']) {
 				metadata = '';
-				metadata += doc['producer'] ? 'Software: ' + doc['producer'] : '';
+				metadata += doc['producer'] ? interpolate('Software: %(producer)s', {producer: doc['producer']}, true) : '';
 				metadata += doc['creator'] ? '/' + doc['creator'] : 'dsdd';
-				metadata += doc['os'] ? `<br> <span class='badge badge-soft-danger'> OS: ` + doc['os'] + '</span>': '';
+				metadata += doc['os'] ? `<br> <span class='badge badge-soft-danger'> ` + interpolate("OS: %(os)s", {os: doc['os']}, true) + '</span>': '';
 				if (doc['creation_date']) {
-					metadata += `<br>Created On: ${doc['creation_date']}`;
+					metadata += `<br>` + interpolate('Created On: %(creationDate)s', {creationDate: doc['creation_date']}, true);
 				}
 				if (doc['modified_date']) {
-					metadata += `<br>Modified On: ${doc['modified_date']}`;
+					metadata += `<br>` + interpolate('Modified On: %(modifiedDate)s', {modifiedDate: doc['modified_date']}, true);
 				}
 				$(`#${rand_id}`).append(`<td class="td-content">${metadata}</td>`);
-			}
-			else{
+			} else {
 				$(`#${rand_id}`).append('<td></td>')
 			}
 		}
@@ -762,12 +744,12 @@ function get_metadata(scan_id){
 }
 
 
-function get_emails(scan_id){
+function get_emails(scan_id) {
 	var exposed_count = 0;
 	$.getJSON(`/api/queryEmails/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#emails-count').empty();
 		$('#email-table-body').empty();
-		for (var val in data['emails']){
+		for (var val in data['emails']) {
 			email = data['emails'][val];
 			rand_id = get_randid();
 			$('#email-table-body').append(`<tr id=${rand_id}></tr>`);
@@ -785,11 +767,11 @@ function get_emails(scan_id){
 }
 
 
-function get_employees(scan_id){
+function get_employees(scan_id) {
 	$.getJSON(`/api/queryEmployees/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#employees-count').empty();
 		$('#employees-table-body').empty();
-		for (var val in data['employees']){
+		for (var val in data['employees']) {
 			emp = data['employees'][val];
 			rand_id = get_randid();
 			$('#employees-table-body').append(`<tr id=${rand_id}></tr>`);
@@ -801,7 +783,7 @@ function get_employees(scan_id){
 }
 
 
-function get_dorks(scan_id){
+function get_dorks(scan_id) {
 	$("#dorking_result_card").hide();
 	$.getJSON(`/api/queryDorks/?scan_id=${scan_id}&format=json`, function(data) {
 		if ($.isEmptyObject(data['dorks'])) {
@@ -810,12 +792,11 @@ function get_dorks(scan_id){
 		// unhide div
 		$("#dorking_result_card").show();
 		var is_first = true;
-		for (var val in data['dorks']){
+		for (var val in data['dorks']) {
 			var dorks = data['dorks'][val];
 			if (is_first) {
 				active = 'active show';
-			}
-			else {
+			} else {
 				active = '';
 			}
 			$("#dork_type_vertical_tablist").append(`<a class="nav-link ${active} mb-1" id="v-${val}-tab" data-bs-toggle="pill" href="#v-${val}" role="tab" aria-controls="v-${val}" aria-selected="true"> ${convertToCamelCase(val)}</a>`);
@@ -833,10 +814,10 @@ function get_dorks(scan_id){
 }
 
 //
-// function get_dork_summary(scan_id){
+// function get_dork_summary(scan_id) {
 // 	$.getJSON(`/api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
 // 		$('#dork-category-count').empty();
-// 		for (var val in data['dorks']){
+// 		for (var val in data['dorks']) {
 // 			dork = data['dorks'][val]
 // 			$("#osint-dork").append(`<span class='badge badge-soft-info  m-1' data-toggle="tooltip" title="${dork['count']} Results found in this dork category." onclick="get_dork_details('${dork['type']}', ${scan_id})">${dork['type']}</span>`);
 // 		}
@@ -846,7 +827,7 @@ function get_dorks(scan_id){
 // }
 
 
-function get_dork_details(dork_type, scan_id){
+function get_dork_details(dork_type, scan_id) {
 	// render tab modal
 	$('.modal-title').html('Dorking Results in category: <b>' + dork_type + '</b>');
 	$('#modal_dialog').modal('show');
@@ -854,9 +835,9 @@ function get_dork_details(dork_type, scan_id){
 	$('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
 	$.getJSON(`/api/queryDorks/?scan_id=${scan_id}&type=${dork_type}&format=json`, function(data) {
 		$('#modal-loader').empty();
-		$('#modal-content').append(`<b>${data['dorks'].length} results found in this dork category.</b>`);
+		$('#modal-content').append(`<b>` + interpolate('%(nDorks)s results found in this dork category.', {nDorks: data['dorks'].length}, true) + `</b>`);
 		$('#modal-content').append(`<ul id="dork-detail-modal-ul"></ul>`);
-		for (dork in data['dorks']){
+		for (dork in data['dorks']) {
 			dork_obj = data['dorks'][dork];
 			$("#dork-detail-modal-ul").append(`<li><a href="${dork_obj['url']}" target="_blank" class="text-primary">${dork_obj['description']}</a></li>`);
 		}
@@ -864,7 +845,7 @@ function get_dork_details(dork_type, scan_id){
 }
 
 
-function get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=null, subdomain_name=null){
+function get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=null, subdomain_name=null) {
 	var url = `/api/listVulnerability/?&format=json`;
 
 	if (scan_id) {
@@ -885,19 +866,19 @@ function get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=null,
 	// }
 	switch (severity) {
 		case 0:
-		severity_title = 'Informational'
+		severity_title = gettext('Informational')
 		break;
 		case 1:
-		severity_title = 'Low'
+		severity_title = gettext('Low')
 		break;
 		case 2:
-		severity_title = 'Medium'
+		severity_title = gettext('Medium')
 		break;
 		case 3:
-		severity_title = 'High'
+		severity_title = gettext('High')
 		break;
 		case 4:
-		severity_title = 'Critical'
+		severity_title = gettext('Critical')
 		break;
 		default:
 		severity_title = ''
@@ -908,7 +889,7 @@ function get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=null,
 	$('#xl-modal-footer').empty();
 
 	Swal.fire({
-		title: `Fetching ${severity_title} vulnerabilities for ${subdomain_name}...`
+		title: interpolate(`Fetching %(severityTitle)s vulnerabilities for %(subDomainName)s...`, {severityTitle: severity_title, subDomainName: subdomain_name}, true),
 	});
 	swal.showLoading();
 
@@ -933,7 +914,7 @@ function get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=null,
 }
 
 
-function get_endpoint_modal(project, scan_id, subdomain_id, subdomain_name){
+function get_endpoint_modal(project, scan_id, subdomain_id, subdomain_name) {
 	// This function will display a xl modal with datatable for displaying endpoints
 	// associated with the subdomain
 	$('#xl-modal-title').empty();
@@ -942,8 +923,7 @@ function get_endpoint_modal(project, scan_id, subdomain_id, subdomain_name){
 
 	if (scan_id) {
 		url = `/api/listEndpoints/?project=${project}&scan_id=${scan_id}&subdomain_id=${subdomain_id}&format=json`
-	}
-	else{
+	} else {
 		url = `/api/listEndpoints/?project=${project}&subdomain_id=${subdomain_id}&format=json`
 	}
 
@@ -972,7 +952,7 @@ function get_endpoint_modal(project, scan_id, subdomain_id, subdomain_name){
 
 }
 
-function get_directory_modal(scan_id=null, subdomain_id=null, subdomain_name=null){
+function get_directory_modal(scan_id=null, subdomain_id=null, subdomain_name=null) {
 	// This function will display a xl modal with datatable for displaying endpoints
 	// associated with the subdomain
 	$('#xl-modal-title').empty();
@@ -981,13 +961,12 @@ function get_directory_modal(scan_id=null, subdomain_id=null, subdomain_name=nul
 
 	if (scan_id) {
 		url = `/api/listDirectories/?scan_id=${scan_id}&subdomain_id=${subdomain_id}&format=json`
-	}
-	else{
+	} else {
 		url = `/api/listDirectories/?subdomain_id=${subdomain_id}&format=json`
 	}
 
 	Swal.fire({
-		title: `Fetching Directories for ${subdomain_name}...`
+		title: interpolate(`Fetching Directories for %(subDomainName)s...`, {subDomainName: subdomain_name}, true),
 	});
 	swal.showLoading();
 
@@ -1019,7 +998,7 @@ function create_log_element(log) {
 		<b>${log.command}</b>
 	  </p>
 	</p>`
-	if (log.output != ''){
+	if (log.output != '') {
 		innerHTML += `<div class="collapse" id="collapse${log.id}"><div style="white-space: pre-line" class="card card-body">${log.output}</div></div>`;
 	}
 	logElement.innerHTML = innerHTML;
@@ -1036,11 +1015,10 @@ function get_logs_modal(scan_id=null, activity_id=null) {
 
 	if (scan_id) {
 		url = `/api/listScanLogs?scan_id=${scan_id}&format=json`
-		title = `Fetching logs for scan ${scan_id}`
-	}
-	else{
+		title = interpolate(`Fetching logs for scan %(scanId)s`, {scanId: scan_id}, true);
+	} else {
 		url = `/api/listActivityLogs?activity_id=${activity_id}&format=json`
-		title = `Fetching logs for activity ${activity_id}`
+		title = interpolate(`Fetching logs for activity %(activityId)s`, {activityId: activity_id}, true);
 	}
 
 	Swal.fire({
@@ -1054,7 +1032,7 @@ function get_logs_modal(scan_id=null, activity_id=null) {
 	.then(data => {
 		console.log(data);
 		swal.close();
-		$('#xl-modal_title').html(`Logs for scan #${scan_history_id}`);
+		$('#xl-modal_title').html(interpolate(`Logs for scan #%(scanId)s`, {scanId: scan_id}, true)); 
 		data.results.forEach(log => {
 			$('#xl-modal-content').append(create_log_element(log));
 		})
@@ -1065,15 +1043,15 @@ function get_logs_modal(scan_id=null, activity_id=null) {
 	});
 }
 
-function add_todo_for_scanhistory_modal(scan_history_id){
+function add_todo_for_scanhistory_modal(scan_history_id) {
 	$("#todoTitle").val('');
 	$("#todoDescription").val('');
 
 	$('#addTaskModal').modal('show');
 	subdomain_dropdown = document.getElementById('todoSubdomainDropdown');
 	$.getJSON(`/api/querySubdomains?scan_id=${scan_history_id}&no_lookup_interesting&format=json`, function(data) {
-		document.querySelector("#selectedSubdomainCount").innerHTML = data['subdomains'].length + ' Subdomains';
-		for (var subdomain in data['subdomains']){
+		document.querySelector("#selectedSubdomainCount").innerHTML = interpolate('%(nbSubdomains)s Subdomains', {nbSubdomains: data['subdomains'].length}, true);
+		for (var subdomain in data['subdomains']) {
 			subdomain_obj = data['subdomains'][subdomain];
 			var option = document.createElement('option');
 			option.value = subdomain_obj['id'];
@@ -1085,7 +1063,7 @@ function add_todo_for_scanhistory_modal(scan_history_id){
 
 // listen to save todo event
 
-$(".add-scan-history-todo").click(function(){
+$(".add-scan-history-todo").click(function() {
 	var title = document.getElementById('todoTitle').value;
 
 	var description = document.getElementById('todoDescription').value;
@@ -1115,14 +1093,13 @@ $(".add-scan-history-todo").click(function(){
 		console.log(response);
 		if (response.status) {
 			Snackbar.show({
-				text: 'Todo Added.',
+				text: gettext('Todo Added.'),
 				pos: 'top-right',
 				duration: 1500,
 			});
-		}
-		else{
-			swal.fire("Error!", "Could not add recon note, " + response.message, "warning", {
-				button: "Okay",
+		} else{
+			swal.fire("Error!", interpolate("Could not add recon note, %(errorMsg)s", {errorMsg: response.message}, true), "warning", {
+				button: gettext("Okay"),
 			});
 		}
 		$('#addTaskModal').modal('hide');
@@ -1131,7 +1108,7 @@ $(".add-scan-history-todo").click(function(){
 });
 
 
-function add_note_for_subdomain(subdomain_id, subdomain_name){
+function add_note_for_subdomain(subdomain_id, subdomain_name) {
 	console.log(subdomain_name);
 	$('#todo-modal-subdomain-name').html(subdomain_name);
 	$("#subdomainTodoTitle").val('');
@@ -1145,7 +1122,7 @@ function add_note_for_subdomain(subdomain_id, subdomain_name){
 }
 
 
-function add_note_for_subdomain_handler(subdomain_id){
+function add_note_for_subdomain_handler(subdomain_id) {
 	var title = document.getElementById('subdomainTodoTitle').value;
 	var description = document.getElementById('subdomainTodoDescription').value;
 	var project = document.querySelector('input[name="current_project"]').value;
@@ -1175,10 +1152,9 @@ function add_note_for_subdomain_handler(subdomain_id){
 				pos: 'top-right',
 				duration: 1500,
 			});
-		}
-		else{
-			swal.fire("Error!", response.message, "warning", {
-				button: "Okay",
+		} else {
+			swal.fire(gettext("Error!"), response.message, "warning", {
+				button: gettext("Okay"),
 			});
 		}
 		$('#subdomain_scan_results').DataTable().ajax.reload();
@@ -1187,25 +1163,23 @@ function add_note_for_subdomain_handler(subdomain_id){
 
 }
 
-function download_subdomains(scan_id=null, domain_id=null, domain_name=null){
+function download_subdomains(scan_id=null, domain_id=null, domain_name=null) {
 	Swal.fire({
-		title: 'Querying Subdomains...'
+		title: gettext('Querying Subdomains...')
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
 	var url = `/api/querySubdomains?format=json&no_lookup_interesting`;
 	if (scan_id) {
 		url += `&scan_id=${scan_id}`;
-	}
-	else if(domain_id){
+	} else if (domain_id) {
 		url += `&target_id=${domain_id}`;
 	}
 
 	if (domain_name) {
-		$('.modal-title').html(count + ' Subdomains for : <b>' + domain_name + '</b>');
-	}
-	else{
-		$('.modal-title').html(count + ' Subdomains');
+		$('.modal-title').html(interpolate('%(modalCount)s Subdomains for : <b>%(domainName)s</b>', {modalCount: count, domainName: domain_name}, true));
+	} else {
+		$('.modal-title').html(interpolate('%(modalCount)s Subdomains', {modalCount: count}, true));
 	}
 
 	$('.modal-text').empty(); $('#modal-footer').empty();
@@ -1219,46 +1193,43 @@ function download_subdomains(scan_id=null, domain_id=null, domain_name=null){
 			$('#modal-content').empty();
 			subdomains = '';
 			$('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="all_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
-			for (subdomain in data['subdomains']){
+			for (subdomain in data['subdomains']) {
 				subdomain_obj = data['subdomains'][subdomain];
 				subdomains += subdomain_obj['name'] + '\n'
 			}
 			$('#all_subdomains_text_area').append(subdomains);
 			$("#modal-footer").empty();
-			$("#modal-footer").append(`<a href="javascript:download('subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
-			$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
-		}
-		else{
-			swal.fire("No Subdomains", "Could not find any subdomains.", "warning", {
+			$("#modal-footer").append(`<a href="javascript:download('subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> ` + gettext("Download Subdomains as txt") + `</a>`);
+			$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="` + gettext("Copy Subdomains!") + `" data-clipboard-target="#all_subdomains_text_area"><i class="fe-copy me-1"></i> ` + gettext("Copy Subdomains") + `</a>`);
+		} else {
+			swal.fire(gettext("No Subdomains"), gettext("Could not find any subdomains."), "warning", {
 				button: "Okay",
 			});
 		}
-	}).fail(function(){
-		swal.fire("No Subdomains", "Could not find any subdomains.", "warning", {
+	}).fail(function() {
+		swal.fire(gettext("No Subdomains"), gettext("Could not find any subdomains."), "warning", {
 			button: "Okay",
 		});
 	});
 }
 
-function download_interesting_subdomains(project, scan_id=null, domain_id=null, domain_name=null){
+function download_interesting_subdomains(project, scan_id=null, domain_id=null, domain_name=null) {
 	Swal.fire({
-		title: 'Querying Interesting Subdomains...'
+		title: gettext('Querying Interesting Subdomains...')
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
 	var url = `/api/queryInterestingSubdomains/?format=json&project=${project}`;
 	if (scan_id) {
 		url += `&scan_id=${scan_id}`;
-	}
-	else if(domain_id){
+	} else if (domain_id) {
 		url += `&target_id=${domain_id}`;
 	}
 
 	if (domain_name) {
-		$('.modal-title').html( count + ' Interesting Subdomains for : <b>' + domain_name + '</b>');
-	}
-	else{
-		$('.modal-title').html( count + ' Interesting Subdomains');
+		$('.modal-title').html(interpolate('%(modalCount)s Interesting Subdomains for : <b>%(domainName)s</b>', {modalCount: count, domainName: domain_name}, true));
+	} else {
+		$('.modal-title').html(interpolate('%(modalCount)s Interesting Subdomains', {modalCount: count}, true));
 	}
 	$('.modal-text').empty(); $('#modal-footer').empty();
 	// query subdomains
@@ -1270,44 +1241,42 @@ function download_interesting_subdomains(project, scan_id=null, domain_id=null, 
 			$('#modal-content').empty();
 			subdomains = '';
 			$('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="interesting_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
-			for (subdomain in data){
+			for (subdomain in data) {
 				subdomains += data[subdomain]['name'] + '\n'
 			}
 			$('#interesting_subdomains_text_area').append(subdomains);
 			$("#modal-footer").empty();
-			$("#modal-footer").append(`<a href="javascript:download('interesting_subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
-			$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#interesting_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
-		}
-		else{
-			swal.fire("No Interesting Subdomains", "Could not find any interesting subdomains.", "warning", {
-				button: "Okay",
+			$("#modal-footer").append(`<a href="javascript:download('interesting_subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> ` + gettext("Download Subdomains as txt") + `</a>`);
+			$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="` + gettext('Copy Subdomains!') + `" data-clipboard-target="#interesting_subdomains_text_area"><i class="fe-copy me-1"></i> ` + gettext("Copy Subdomains") + `</a>`);
+		} else{
+			swal.fire(gettext("No Interesting Subdomains"), gettext("Could not find any interesting subdomains."), "warning", {
+				button: gettext("Okay"),
 			});
 		}
 
-	}).fail(function(){
-		swal.fire("No Interesting Subdomains", "Could not find any interesting subdomains.", "warning", {
-			button: "Okay",
+	}).fail(function() {
+		swal.fire(gettext("No Interesting Subdomains"), gettext("Could not find any interesting subdomains."), "warning", {
+			button: gettext("Okay"),
 		});
 	});
 }
 
-function download_interesting_endpoints(scan_id, domain_name){
+function download_interesting_endpoints(scan_id, domain_name) {
 	Swal.fire({
-		title: 'Querying Interesting Endpoints...'
+		title: gettext('Querying Interesting Endpoints...')
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
 	if (scan_id) {
 		url = `/api/listInterestingEndpoints/?scan_id=${scan_id}&format=json&no_page`;
-	}
-	else{
+	} else {
 		url = `/api/listInterestingEndpoints/?format=json&no_page`;
 	}
+
 	if (domain_name) {
-		$('.modal-title').html( count + ' Interesting Endpoints for : <b>' + domain_name + '</b>');
-	}
-	else{
-		$('.modal-title').html( count + ' Interesting Endpoints');
+		$('.modal-title').html(interpolate('%(modalCount)s Interesting Endpoints for : <b>%(domainName)s</b>', {modalCount: count, domainName: domain_name}, true));
+	} else {
+		$('.modal-title').html(interpolate('%(modalCount)s Interesting Endpoints', {modalCount: count}, true));
 	}
 	$('.modal-text').empty(); $('#modal-footer').empty();
 	// query subdomains
@@ -1319,46 +1288,44 @@ function download_interesting_endpoints(scan_id, domain_name){
 			$('#modal-content').empty();
 			endpoints = '';
 			$('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="interesting_endpoints_text_area" rows="10" spellcheck="false"></textarea>`);
-			for (endpoint in data){
+			for (endpoint in data) {
 				endpoints += data[endpoint]['http_url'] + '\n'
 			}
 			$('#interesting_endpoints_text_area').append(endpoints);
 			$("#modal-footer").empty();
-			$("#modal-footer").append(`<a href="javascript:download('interesting_endpoints-${domain_name}.txt', endpoints);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Endpoints as txt</a>`);
-			$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Endpoints!" data-clipboard-target="#interesting_endpoints_text_area"><i class="fe-copy me-1"></i> Copy Endpoints</a>`);
-		}
-		else{
-			swal.fire("No Interesting Endpoints", "Could not find any interesting Endpoints.", "warning", {
+			$("#modal-footer").append(`<a href="javascript:download('interesting_endpoints-${domain_name}.txt', endpoints);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> ` + gettext("Download Endpoints as txt") + `</a>`);
+			$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="` + gettext("Copy Endpoints!") + `" data-clipboard-target="#interesting_endpoints_text_area"><i class="fe-copy me-1"></i> ` + gettext("Copy Endpoints") + `</a>`);
+		} else{
+			swal.fire(gettext("No Interesting Endpoints"), gettext("Could not find any interesting Endpoints."), "warning", {
 				button: "Okay",
 			});
 		}
 
-	}).fail(function(){
-		swal.fire("No Interesting Endpoints", "Could not find any interesting Endpoints.", "warning", {
+	}).fail(function() {
+		swal.fire(gettext("No Interesting Endpoints") , gettext("Could not find any interesting Endpoints."), "warning", {
 			button: "Okay",
 		});
 	});
 }
 
 
-function download_important_subdomains(scan_id=null, domain_id=null, domain_name=null){
+function download_important_subdomains(scan_id=null, domain_id=null, domain_name=null) {
 	Swal.fire({
-		title: 'Querying Interesting Subdomains...'
+		title: gettext('Querying Interesting Subdomains...')
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
 	var url = `/api/querySubdomains?format=json&no_lookup_interesting&only_important`;
 	if (scan_id) {
 		url = `/api/querySubdomains?format=json&no_lookup_interesting&only_important&scan_id=${scan_id}`;
-	}
-	else if (domain_id){
+	} else if (domain_id) {
 		url = `/api/querySubdomains?format=json&no_lookup_interesting&only_important&target_id=${domain_id}`;
 	}
+
 	if (domain_name) {
-		$('.modal-title').html(count + ' Subdomains marked as important : <b>' + domain_name + '</b>');
-	}
-	else{
-		$('.modal-title').html(count + ' Subdomains marked as important');
+		$('.modal-title').html(interpolate('%(modalCount)s Subdomains marked as important : <b>%(domainName)s</b>', {modalCount: count, domainName: domain_name}, true));
+	} else {
+		$('.modal-title').html(interpolate('%(modalCount)s Subdomains marked as important', {modalCount: count}, true));
 	}
 	$('.modal-text').empty(); $('#modal-footer').empty();
 	// query subdomains
@@ -1370,40 +1337,38 @@ function download_important_subdomains(scan_id=null, domain_id=null, domain_name
 			$('#modal-content').empty();
 			subdomains = '';
 			$('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="all_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
-			for (subdomain in data['subdomains']){
+			for (subdomain in data['subdomains']) {
 				subdomain_obj = data['subdomains'][subdomain];
 				subdomains += subdomain_obj['name'] + '\n'
 			}
 			$('#all_subdomains_text_area').append(subdomains);
 			$("#modal-footer").empty();
-			$("#modal-footer").append(`<a href="javascript:download('important-subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-primary copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
-			$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-dark copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
-		}
-		else{
-			swal.fire("No Important Endpoints", "No subdomains has been marked as important.", "warning", {
+			$("#modal-footer").append(`<a href="javascript:download('important-subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-primary copyable float-end btn-md"><i class="fe-download me-1"></i> ` + gettext("Download Subdomains as txt") + `</a>`);
+			$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-dark copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="` + gettext("Copy Subdomains!") + `" data-clipboard-target="#all_subdomains_text_area"><i class="fe-copy me-1"></i> ` + gettext("Copy Subdomains") + `</a>`);
+		} else{
+			swal.fire(gettext("No Important Endpoints"), gettext("No subdomains has been marked as important."), "warning", {
 				button: "Okay",
 			});
 		}
-	}).fail(function(){
-		swal.fire("No Important Endpoints", "No subdomains has been marked as important.", "warning", {
+	}).fail(function() {
+		swal.fire(gettext("No Important Endpoints"), gettext("No subdomains has been marked as important."), "warning", {
 			button: "Okay",
 		});
 	});
 }
 
-function download_endpoints(scan_id=null, domain_id=null, domain_name='', pattern=null){
+function download_endpoints(scan_id=null, domain_id=null, domain_name='', pattern=null) {
 	Swal.fire({
-		title: 'Querying Endpoints...'
+		title: gettext('Querying Endpoints...')
 	});
 	swal.showLoading();
-	var count = `<span class="modal_count">Loading... </span>`;
+	var count = `<span class="modal_count">` + gettext("Loading...") + ` </span>`;
 
 	var url = `/api/queryEndpoints/?format=json&only_urls`;
 
 	if (scan_id) {
 		url += `&scan_id=${scan_id}`;
-	}
-	else if (domain_id) {
+	} else if (domain_id) {
 		url += `&target_id=${domain_id}`;
 	}
 
@@ -1412,10 +1377,9 @@ function download_endpoints(scan_id=null, domain_id=null, domain_name='', patter
 	}
 
 	if (domain_name) {
-		$('.modal-title').html( count + ' Endpoints for : <b>' + domain_name + '</b>');
-	}
-	else{
-		$('.modal-title').html(count + ' Endpoints');
+		$('.modal-title').html(interpolate('%(modalCount)s Endpoints for : <b>%(domainName)s</b>', {modalCount: count, domainName: domain_name}, true));
+	} else {
+		$('.modal-title').html(interpolate('%(modalCount)s Endpoints', {modalCount: count}, true));
 	}
 	$('.modal-text').empty(); $('#modal-footer').empty();
 	// query subdomains
@@ -1426,37 +1390,36 @@ function download_endpoints(scan_id=null, domain_id=null, domain_name='', patter
 		$('#modal-content').empty();
 		endpoints = '';
 		$('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="all_endpoints_text_area" rows="10" spellcheck="false"></textarea>`);
-		for (endpoint in data['endpoints']){
+		for (endpoint in data['endpoints']) {
 			endpoint_obj = data['endpoints'][endpoint];
 			endpoints += endpoint_obj['http_url'] + '\n'
 		}
 		$('#all_endpoints_text_area').append(endpoints);
 		$("#modal-footer").empty();
 		if (domain_name) {
-			$("#modal-footer").append(`<a href="javascript:download('endpoints-${domain_name}.txt', endpoints);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Endpoints as txt</a>`);
+			$("#modal-footer").append(`<a href="javascript:download('endpoints-${domain_name}.txt', endpoints);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> ` + gettext("Download Endpoints as txt") + `</a>`);
+		} else{
+			$("#modal-footer").append(`<a href="javascript:download('endpoints-all.txt', endpoints);" class="m-1 btn btn-primary copyable float-end btn-md"><i class="fe-download me-1"></i> ` + gettext("Download Endpoints as txt") + `</a>`);
 		}
-		else{
-			$("#modal-footer").append(`<a href="javascript:download('endpoints-all.txt', endpoints);" class="m-1 btn btn-primary copyable float-end btn-md"><i class="fe-download me-1"></i> Download Endpoints as txt</a>`);
-		}
-		$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_endpoints_text_area"><i class="fe-copy me-1"></i> Copy Endpoints</a>`);
-	}).fail(function(){
+		$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="` + gettext("Copy Subdomains!") + `" data-clipboard-target="#all_endpoints_text_area"><i class="fe-copy me-1"></i> ` + gettext("Copy Endpoints") + `</a>`);
+	}).fail(function() {
 	});
 }
 
-function initiate_subscan(subdomain_ids){
+function initiate_subscan(subdomain_ids) {
 	var engine_id = $('#subtaskScanEngine').val();
 	var tasks = []
 	var $engine_tasks = $('#engineTasks').find('input')
-	$engine_tasks.each(function(i){
-		if ($(this).is(':checked')){
+	$engine_tasks.each(function(i) {
+		if ($(this).is(':checked')) {
 			tasks.push(this.id)
 		}
 	})
 	console.log(tasks)
 	if (tasks.length === 0) {
 		Swal.fire({
-			title: 'Oops!',
-			text: 'No subtasks selected. Please choose at least one subtask !',
+			title: gettext('Oops!'),
+			text: gettext('No subtasks selected. Please choose at least one subtask !'),
 			icon: 'error'
 		});
 		return;
@@ -1467,7 +1430,7 @@ function initiate_subscan(subdomain_ids){
 		'engine_id': engine_id,
 	};
 	Swal.fire({
-		title: 'Initiating subtask...',
+		title: gettext('Initiating subtask...'),
 		allowOutsideClick: false
 	});
 	swal.showLoading();
@@ -1485,14 +1448,13 @@ function initiate_subscan(subdomain_ids){
 		swal.close();
 		if (response['status']) {
 			Snackbar.show({
-				text: 'Subtask initiated successfully!',
+				text: gettext('Subtask initiated successfully!'),
 				pos: 'top-right',
 				duration: 2500
 			});
-		}
-		else{
+		} else{
 			Swal.fire({
-				title:  'Could not initiate subtask!',
+				title:  gettext('Could not initiate subtask!'),
 				icon: 'fail',
 			});
 		}
@@ -1502,7 +1464,7 @@ function initiate_subscan(subdomain_ids){
 
 
 // initiate sub scan
-$('#btn-initiate-subtask').on('click', function(){
+$('#btn-initiate-subtask').on('click', function() {
 	$('#subscan-modal').modal('hide');
 	if ($('#btn-initiate-subtask').attr('multiple-subscan') === 'true') {
 		var subdomain_item = document.getElementsByClassName("subdomain_checkbox");
@@ -1513,8 +1475,7 @@ $('#btn-initiate-subtask').on('click', function(){
 			}
 		}
 		initiate_subscan(subdomain_ids);
-	}
-	else{
+	} else{
 		var subdomain_id = $('#subtask_subdomain_id').val();
 		initiate_subscan([subdomain_id]);
 	}
@@ -1522,7 +1483,7 @@ $('#btn-initiate-subtask').on('click', function(){
 
 
 // Load engine tasks on modal load and engine input change
-function load_engine_tasks(engine_name){
+function load_engine_tasks(engine_name) {
 	var tasks = []
 	var html = ''
 	var url = `/api/listEngines/?format=json`;
@@ -1532,14 +1493,14 @@ function load_engine_tasks(engine_name){
 		var engines = data.engines
 		console.log(engines);
 		console.log(engine_name);
-		$.each(engines, function(i, engine){
+		$.each(engines, function(i, engine) {
 			console.log(`${engine.engine_name} == ${engine_name}`)
-			if (engine.engine_name === engine_name){
+			if (engine.engine_name === engine_name) {
 				tasks = engine.tasks
 				console.log(tasks)
 			}
 		})
-		$.each(tasks, function(i, task){
+		$.each(tasks, function(i, task) {
 			html += `
 			<div class="mt-1">
 				<div class="form-check">
@@ -1558,22 +1519,22 @@ $('#subscan-modal').on('shown.bs.modal', function () {
 	load_engine_tasks(engine_name);
 })
 
-$('#subtaskScanEngine').on('change', function(){
+$('#subtaskScanEngine').on('change', function() {
 	var engine_name = $('#subtaskScanEngine option:selected').text();
 	load_engine_tasks(engine_name);
 })
 
 // download subdomains
-function downloadSelectedSubdomains(domain_name){
+function downloadSelectedSubdomains(domain_name) {
 	if (!checkedCount()) {
 		Swal.fire({
-			title: 'Oops! No Subdomains has been selected!',
+			title: gettext('Oops! No Subdomains has been selected!'),
 			icon: 'error',
 			padding: '2em'
 		})
 	} else {
 		Swal.fire({
-			title: 'Querying Selected Subdomains...'
+			title: gettext('Querying Selected Subdomains...')
 		});
 		swal.showLoading();
 
@@ -1603,18 +1564,17 @@ function downloadSelectedSubdomains(domain_name){
 				$('#modal-content').empty();
 				subdomains = '';
 				$('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="selected_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
-				for (subdomain in response['results']){
+				for (subdomain in response['results']) {
 					subdomain_obj = response['results'][subdomain];
 					subdomains += subdomain_obj + '\n'
 				}
 				$('#selected_subdomains_text_area').append(subdomains);
 				$("#modal-footer").empty();
-				$("#modal-footer").append(`<a href="javascript:download('subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
-				$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#selected_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
-			}
-			else{
+				$("#modal-footer").append(`<a href="javascript:download('subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> ` + gettext("Download Subdomains as txt") + `</a>`);
+				$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="` + gettext("Copy Subdomains!") + `" data-clipboard-target="#selected_subdomains_text_area"><i class="fe-copy me-1"></i> ` + gettext("Copy Subdomains") + `</a>`);
+			} else{
 				Swal.fire({
-					title: 'Oops! Could not download selected subdomains.',
+					title: gettext('Oops! Could not download selected subdomains.'),
 					icon: 'error',
 					padding: '2em'
 				});
@@ -1624,10 +1584,10 @@ function downloadSelectedSubdomains(domain_name){
 }
 
 
-function deleteMultipleSubdomains(){
+function deleteMultipleSubdomains() {
 	if (!checkedCount()) {
 		Swal.fire({
-			title: 'Oops! No Subdomains has been selected!',
+			title: gettext('Oops! No Subdomains has been selected!'),
 			icon: 'error',
 			padding: '2em'
 		});
@@ -1635,14 +1595,15 @@ function deleteMultipleSubdomains(){
 		// atleast one target is selected
 		Swal.fire({
 			showCancelButton: true,
-			title: 'Are you sure you want to delete ' + checkedCount() + ' Subdomains?',
-			text: 'Do you really want to delete these subdomains? This action cannot be undone.',
+			title: interpolate('Are you sure you want to delete %(subDomainsCount)s Subdomains?', {subDomainsCount: checkedCount()}, true),
+			text: gettext('Do you really want to delete these subdomains? This action cannot be undone.'),
 			icon: 'error',
-			confirmButtonText: 'Delete',
+			confirmButtonText: gettext('Delete'),
+			cancelButtonText: gettext('Cancel'),
 		}).then((result) => {
 			if (result.isConfirmed) {
 				Swal.fire({
-					title: 'Deleting Subdomain...',
+					title: gettext('Deleting Subdomain...'),
 					allowOutsideClick: false
 				});
 				swal.showLoading();
@@ -1674,14 +1635,13 @@ function deleteMultipleSubdomains(){
 							table.row('#subdomain_row_' + id).remove().draw();
 						}
 						Snackbar.show({
-							text: 'Subdomain successfully deleted!',
+							text: gettext('Subdomain successfully deleted!'),
 							pos: 'top-right',
 							duration: 2500
 						});
-					}
-					else{
+					} else{
 						Swal.fire({
-							title:  'Could not delete Subdomain!',
+							title:  gettext('Could not delete Subdomain!'),
 							icon: 'fail',
 						});
 					}
@@ -1692,7 +1652,7 @@ function deleteMultipleSubdomains(){
 }
 
 
-function initiateMultipleSubscan(){
+function initiateMultipleSubscan() {
 		$('#subscan-modal').modal('show');
 		$('a[data-toggle="tooltip"]').tooltip("hide")
 		// to distinguish multiple subscan or single, put a extra attribute on button
@@ -1700,28 +1660,27 @@ function initiateMultipleSubscan(){
 }
 
 
-function detect_subdomain_cms(http_url, http_status){
+function detect_subdomain_cms(http_url, http_status) {
 	if (http_status == 0) {
-		var message = `reNgine has earlier identified that this subdomain did not return any HTTP status and likely the subdomain is not alive. reNgine may not be able to detect any CMS, would you still like to continue?`;
-	}
-	else if (http_status != 200) {
-		var message = `reNgine has earlier identified that this subdomain has HTTP status as ${http_status} and likely that reNgine will not detect any CMS, would you still like to continue?`;
+		var message = gettext(`reNgine has earlier identified that this subdomain did not return any HTTP status and likely the subdomain is not alive. reNgine may not be able to detect any CMS, would you still like to continue?`);
+	} else if (http_status != 200) {
+		var message = interpolate(`reNgine has earlier identified that this subdomain has HTTP status as %(httpStatus)s and likely that reNgine will not detect any CMS, would you still like to continue?`, {httpStatus: http_status}, true);
 	}
 
 	if (http_status != 200 || http_status == 0) {
 		Swal.fire({
 			showCancelButton: true,
-			title: 'Detect CMS',
+			title: gettext('Detect CMS'),
 			text: message,
 			icon: 'warning',
-			confirmButtonText: 'Detect CMS',
+			confirmButtonText: gettext('Detect CMS'),
+			cancelButtonText: gettext('Cancel'),
 		}).then((result) => {
 			if (result.isConfirmed) {
 				cms_detector_api_call(http_url);
 			}
 		});
-	}
-	else{
+	} else{
 		cms_detector_api_call(http_url);
 	}
 }

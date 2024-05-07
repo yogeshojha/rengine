@@ -1,5 +1,6 @@
 {% load permission_tags %}
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -91,6 +92,7 @@
       {% include 'base/_items/offcanvas.html' %}
     </div>
     {% include 'base/_items/right_bar.html' %}
+    <script src="{% url 'javascript-catalog' %}"></script>
     <script src="{% static 'assets/js/vendor.min.js' %}"></script>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
@@ -121,7 +123,7 @@
         }
         // tippy for notification or scan acitivity
         tippy('.top-activity-counter', {
-          content: 'Scan Activity',
+          content: gettext('Scan Activity'),
         });
         if (localStorage.getItem('rengine-theme') == "dark") {
           $('#dark-mode-check').prop("checked", true).change();
@@ -146,7 +148,7 @@
           }
           else{
             $('#search-history-items').append(`
-              <span class="ms-2">No recent searches.</span>
+              <span class="ms-2">` + gettext("No recent searches.") + `</span>
             `);
           }
         });
@@ -158,7 +160,7 @@
         }
         else{
           Swal.fire({
-            title: 'Checking reNgine latest version...',
+            title: gettext("Checking reNgine latest version..."),
             allowOutsideClick: false
           });
           swal.showLoading();
@@ -169,8 +171,8 @@
             swal.close();
             if (response['description'] == 'RateLimited') {
               Swal.fire({
-                title: 'Oops!',
-                text: 'Github rate limit exceeded, please try again in an hour!',
+                title: gettext("Oops!"),
+                text: gettext("Github rate limit exceeded, please try again in an hour!"),
                 icon: 'error'
               });
               window.localStorage.setItem('update_available', false);
@@ -185,23 +187,22 @@
               window.localStorage.setItem('update_available', false);
               $('.rengine_update_available').hide();
               Swal.fire({
-                title: 'Update not available',
-                text: 'You are running the latest version of reNgine!',
+                title: gettext("Update not available"),
+                text: gettext("You are running the latest version of reNgine!"),
                 icon: 'info'
               });
             }
           });
         }
       }
-
       function update_available(latest_version_number, changelog){
         Swal.fire({
-          title: 'Update Available!',
-          html: `<h5>reNgine's new update ${latest_version_number} is available, please follow the update instructions.</h5><pre>${changelog}</pre>`,
+          title: gettext("Update Available!"),
+          html: `<h5>` + interpolate("reNgine's new update %(vNumber)s is available, please follow the update instructions.", {vNumber: latest_version_number}, true) + `</h5><pre>${changelog}</pre>`,
           icon: 'info',
-          confirmButtonText: 'Update Instructions',
+          confirmButtonText: gettext("Update Instructions"),
           showCancelButton: true,
-          cancelButtonText: 'Dismiss',
+          cancelButtonText: gettext("Dismiss"),
           width: '60%',
         }).then((result) => {
           if (result.isConfirmed) {
@@ -213,7 +214,7 @@
       // Source : https://stackoverflow.com/a/32428268
       function checkDailyUpdate(){
         if( !hasOneDayPassed() ) return false;
-        console.log('Checking Daily Update...')
+        console.log(gettext('Checking Daily Update...'))
         fetch('/api/rengine/update/')
         .then(response => response.json())
         .then(function (response) {

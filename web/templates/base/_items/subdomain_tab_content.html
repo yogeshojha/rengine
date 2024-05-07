@@ -1,3 +1,4 @@
+{% load i18n %}
 {% load permission_tags %}
 
 <div class="row justify-content-center">
@@ -6,7 +7,7 @@
 			<div class="search-input">
 				<a href="" target="_blank" hidden></a>
 				<div class="input-group">
-					<input type="text" class="form-control" placeholder="Filter Subdomains" aria-label="Filter Subdomains" id="subdomains-search">
+					<input type="text" class="form-control" placeholder="{% translate "Filter Subdomains" %}" aria-label="{% translate "Filter Subdomains" %}" id="subdomains-search">
 					<div class="input-group-append">
 						<button id="subdomain-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
 					</div>
@@ -24,105 +25,105 @@
 				<div class="row">
 					<div class="col-6 float-start">
 						{% if user|can:'initiate_scans' %}
-						<a class="disabled btn btn-soft-primary ms-2" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Initiate Multiple Subscans" onclick="initiateMultipleSubscan()">
+						<a class="disabled btn btn-soft-primary ms-2" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="{% translate 'Initiate Multiple Subscans' %}" onclick="initiateMultipleSubscan()">
 							<i class="fe-zap"></i>
-							Initiate Subscan
+							{% translate 'Initiate Subscan' %}
 						</a>
 						{% endif %}
-						<a class="disabled btn btn-soft-info" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Download Selected Subdomains" onclick="downloadSelectedSubdomains('{{history.domain.name}}')">
+						<a class="disabled btn btn-soft-info" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="{% translate 'Download Selected Subdomains' %}" onclick="downloadSelectedSubdomains('{{history.domain.name}}')">
 							<i class="fe-download"></i>
-							Download Selected Subdomains
+							{% translate 'Download Selected Subdomains' %}
 						</a>
 						{% if user|can:'initiate_scans' %}
-						<a class="disabled btn btn-soft-danger" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Delete Multiple Subdomains" onclick="deleteMultipleSubdomains()">
+						<a class="disabled btn btn-soft-danger" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="{% translate 'Delete Multiple Subdomains' %}" onclick="deleteMultipleSubdomains()">
 							<i class="fe-trash"></i>
-							Delete Multiple Subdomains
+							{% translate 'Delete Multiple Subdomains' %}
 						</a>
 						{% endif %}
 						<div class="ms-2 mt-2" id="">
-							<a href="#" class="badge badge-soft-primary" id="subdomain_selected_count" onclick="uncheckSubdomains()"  data-toggle="tooltip" data-placement="top" title="Clear Subdomains"></a>
+							<a href="#" class="badge badge-soft-primary" id="subdomain_selected_count" onclick="uncheckSubdomains()"  data-toggle="tooltip" data-placement="top" title="{% translate 'Clear Subdomains' %}"></a>
 						</div>
 					</div>
 					<div class="col-6">
 						<div class="btn-group mb-2 float-end dropstart">
-							<button class="btn btn-soft-primary dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Filter Columns">
+							<button class="btn btn-soft-primary dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="{% translate 'Filter Columns' %}">
 								<i class="fe-filter"></i>
 							</button>
 							<div class="dropdown-menu" style="">
 								<div class="dropdown-item">
 									<div class="form-check">
 										<input type="checkbox" class="form-check-input" id="sub_http_status_filter_checkbox" name="sub_http_status_filter_checkbox" checked>
-										<label class="form-check-label" for="http_status_filter_checkbox">HTTP Status</label>
+										<label class="form-check-label" for="http_status_filter_checkbox">{% translate 'HTTP Status' %}</label>
 									</div>
 								</div>
 								<div class="dropdown-item">
 									<div class="form-check">
 										<input type="checkbox" class="form-check-input" id="sub_page_title_filter_checkbox" name="sub_page_title_filter_checkbox" checked>
-										<label class="form-check-label" for="page_title_filter_checkbox">Page Title</label>
+										<label class="form-check-label" for="page_title_filter_checkbox">{% translate 'Page Title' %}</label>
 									</div>
 								</div>
 								<div class="dropdown-item">
 									<div class="form-check">
 										<input type="checkbox" class="form-check-input" id="sub_ip_filter_checkbox" name="sub_ip_filter_checkbox" checked>
-										<label class="form-check-label" for="ip_filter_checkbox">IP Address</label>
+										<label class="form-check-label" for="ip_filter_checkbox">{% translate 'IP Address' %}</label>
 									</div>
 								</div>
 								<div class="dropdown-item">
 									<div class="form-check">
 										<input type="checkbox" class="form-check-input" id="sub_ports_filter_checkbox" name="sub_ports_filter_checkbox" checked>
-										<label class="form-check-label" for="ports_filter_checkbox">Ports</label>
+										<label class="form-check-label" for="ports_filter_checkbox">{% translate 'Ports' %}</label>
 									</div>
 								</div>
 								<div class="dropdown-item">
 									<div class="form-check">
 										<input type="checkbox" class="form-check-input" id="sub_content_length_filter_checkbox" name="sub_content_length_filter_checkbox" checked>
-										<label class="form-check-label" for="content_length_filter_checkbox">Content Length</label>
+										<label class="form-check-label" for="content_length_filter_checkbox">{% translate 'Content Length' %}</label>
 									</div>
 								</div>
 								<div class="dropdown-item">
 									<div class="form-check">
 										<input type="checkbox" class="form-check-input" id="sub_response_time_filter_checkbox" name="sub_response_time_filter_checkbox" checked>
-										<label class="form-check-label" for="response_time_filter_checkbox">Response Time</label>
+										<label class="form-check-label" for="response_time_filter_checkbox">{% translate 'Response Time' %}</label>
 									</div>
 								</div>
 								<div class="dropdown-item">
 									<div class="form-check">
 										<input type="checkbox" class="form-check-input" id="sub_screenshot_filter_checkbox" name="sub_screenshot_filter_checkbox" checked>
-										<label class="form-check-label" for="sub_screenshot_filter_checkbox">Screenshot</label>
+										<label class="form-check-label" for="sub_screenshot_filter_checkbox">{% translate 'Screenshot' %}</label>
 									</div>
 								</div>
 							</div>
 
-							<a class="btn btn-soft-primary ms-2 me-2" data-toggle="tooltip" data-placement="top" title="Reload Subdomains" id="reload_subdomain_table_btn">
+							<a class="btn btn-soft-primary ms-2 me-2" data-toggle="tooltip" data-placement="top" title="{% translate "Reload Subdomains" %}" id="reload_subdomain_table_btn">
 								<i class="fe-refresh-cw"></i>
 							</a>
 
-							<button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Download Subdomains">
+							<button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="{% translate "Download Subdomains" %}">
 								<i class="fe-download"></i>
 							</button>
 							<div class="dropdown-menu" style="">
 								{% if detail_scan %}
-									<a class="dropdown-item" href="javascript:download_subdomains(scan_id={{scan_history_id}}, domain_id=null, domain_name='{{history.domain.name}}')">Download All Subdomains</a>
-									<a class="dropdown-item" href="javascript:download_interesting_subdomains(scan_id={{scan_history_id}}, domain_id=null, domain_name='{{history.domain.name}}');">Download Interesting Subdomains</a>
-									<a class="dropdown-item" href="javascript:download_important_subdomains(scan_id={{scan_history_id}}, domain_id=null, domain_name='{{history.domain.name}}');">Download Important Subdomains</a>
+									<a class="dropdown-item" href="javascript:download_subdomains(scan_id={{scan_history_id}}, domain_id=null, domain_name='{{history.domain.name}}')">{% translate 'Download All Subdomains' %}</a>
+									<a class="dropdown-item" href="javascript:download_interesting_subdomains(scan_id={{scan_history_id}}, domain_id=null, domain_name='{{history.domain.name}}');">{% translate 'Download Interesting Subdomains' %}</a>
+									<a class="dropdown-item" href="javascript:download_important_subdomains(scan_id={{scan_history_id}}, domain_id=null, domain_name='{{history.domain.name}}');">{% translate 'Download Important Subdomains' %}</a>
 								{% endif %}
 
 								{% if target_summary %}
-									<a class="dropdown-item" href="javascript:download_subdomains(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}')">Download All Subdomains</a>
-									<a class="dropdown-item" href="javascript:download_interesting_subdomains(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}');">Download Interesting Subdomains</a>
-									<a class="dropdown-item" href="javascript:download_important_subdomains(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}');">Download Important Subdomains</a>
+									<a class="dropdown-item" href="javascript:download_subdomains(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}')">{% translate 'Download All Subdomains' %}</a>
+									<a class="dropdown-item" href="javascript:download_interesting_subdomains(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}');">{% translate 'Download Interesting Subdomains' %}</a>
+									<a class="dropdown-item" href="javascript:download_important_subdomains(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}');">{% translate 'Download Important Subdomains' %}</a>
 								{% endif %}
 
 								{% if all_subdomains %}
-									<a class="dropdown-item" href="javascript:download_subdomains()">Download All Subdomains</a>
-									<a class="dropdown-item" href="javascript:download_interesting_subdomains()">Download Interesting Subdomains</a>
-									<a class="dropdown-item" href="javascript:download_important_subdomains()">Download Important Subdomains</a>
+									<a class="dropdown-item" href="javascript:download_subdomains()">{% translate 'Download All Subdomains' %}</a>
+									<a class="dropdown-item" href="javascript:download_interesting_subdomains()">{% translate 'Download Interesting Subdomains' %}</a>
+									<a class="dropdown-item" href="javascript:download_important_subdomains()">{% translate 'Download Important Subdomains' %}</a>
 								{% endif %}
 							</div>
 
 						</div>
 						<div class="btn-group mb-2 float-end dropstart">
-							<button class="btn btn-soft-info dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Vulnerability Grouping">
+							<button class="btn btn-soft-info dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="{% translate "Vulnerability Grouping" %}">
 								<i class="fe-layout"></i>
 							</button>
 							<div class="dropdown-menu" style="">
@@ -147,33 +148,33 @@
 						<table id="subdomain_scan_results" class="table dt-responsive w-100">
 							<thead>
 								<tr>
-									<th class="checkbox-column">Status</th>
-									<th>Subdomain</th>
-									<th class="text-center">Endpoints</th>
-									<th class="text-center">Vulnerabilities</th>
-									<th class="text-center">Status</th>
-									<th class="text-center">Title</th>
-									<th class="text-center">IP</th>
-									<th class="text-center">Ports</th>
-									<th class="text-center">Content Length</th>
-									<th class="text-center">Screenshot</th>
-									<th class="text-center">Response Time</th>
-									<th>Technology</th>
-									<th>Checked</th>
-									<th>HTTP URL</th>
-									<th>CNAME</th>
-									<th>is_interesting</th>
-									<th>Info</th>
-									<th>Low</th>
-									<th>Medium</th>
-									<th>High</th>
-									<th>Critical</th>
-									<th>Todos</th>
-									<th>Is Important</th>
-									<th>Webserver</th>
-									<th>Action</th>
-									<th>Directories Count</th>
-									<th>Subscan Count</th>
+									<th class="checkbox-column">{% translate 'Status' %}</th>
+									<th>{% translate 'Subdomain' %}</th>
+									<th class="text-center">{% translate 'Endpoints' %}</th>
+									<th class="text-center">{% translate 'Vulnerabilities' %}</th>
+									<th class="text-center">{% translate 'Status' %}</th>
+									<th class="text-center">{% translate 'Title' %}</th>
+									<th class="text-center">{% translate 'IP' %}</th>
+									<th class="text-center">{% translate 'Ports' %}</th>
+									<th class="text-center">{% translate 'Content Length' %}</th>
+									<th class="text-center">{% translate 'Screenshot' %}</th>
+									<th class="text-center">{% translate 'Response Time' %}</th>
+									<th>{% translate 'Technology' %}</th>
+									<th>{% translate 'Checked' %}</th>
+									<th>{% translate 'HTTP URL' %}</th>
+									<th>{% translate 'CNAME' %}</th>
+									<th>{% translate 'is_interesting' %}</th>
+									<th>{% translate 'Info' %}</th>
+									<th>{% translate 'Low' %}</th>
+									<th>{% translate 'Medium' %}</th>
+									<th>{% translate 'High' %}</th>
+									<th>{% translate 'Critical' %}</th>
+									<th>{% translate 'Todos' %}</th>
+									<th>{% translate 'Is Important' %}</th>
+									<th>{% translate 'Webserver' %}</th>
+									<th>{% translate 'Action' %}</th>
+									<th>{% translate 'Directories Count' %}</th>
+									<th>{% translate 'Subscan Count' %}</th>
 								</tr>
 							</thead>
 						</table>

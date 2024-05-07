@@ -1,10 +1,11 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load i18n %}
 {% load custom_tags %}
 {% load permission_tags %}
 
 {% block title %}
-Scheduled Scan
+{% translate "Scheduled Scan" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
@@ -12,11 +13,11 @@ Scheduled Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item active" aria-current="page">Scheduled Scans</li>
+<li class="breadcrumb-item active" aria-current="page">{% translate "Scheduled Scans" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Scheduled Scans
+{% translate "Scheduled Scans" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -26,13 +27,13 @@ Scheduled Scans
       <table id="scheduled_scan_table" class="table dt-responsive w-100">
         <thead>
           <tr>
-            <th>Description</th>
-            <th>Frequency</th>
-            <th>Last Run</th>
-            <th class="text-center">Run Count</th>
-            <th class="text-center">One Off Task</th>
-            <th class="text-center">Enabled</th>
-            <th class="text-center">Action</th>
+            <th>{% translate "Description" %}</th>
+            <th>{% translate "Frequency" %}</th>
+            <th>{% translate "Last Run" %}</th>
+            <th class="text-center">{% translate "Run Count" %}</th>
+            <th class="text-center">{% translate "One Off Task" %}</th>
+            <th class="text-center">{% translate "Enabled" %}</th>
+            <th class="text-center">{% translate "Action" %}</th>
           </tr>
         </thead>
         <tbody>
@@ -43,9 +44,9 @@ Scheduled Scans
             {% endwith %}
             <td>
               {% if task.interval %}
-              Will run  {{ task.interval }}
+              {% blocktranslate with interval=task.interval %}Will run {{ interval }}{% endblocktranslate %}
               {% elif task.clocked %}
-              Will run exactly at {{ task.clocked.clocked_time}} UTC
+              {% blocktranslate with clocked_time=task.clocked.clocked_time %}Will run exactly at {{ clocked_time }} UTC{% endblocktranslate %}
               {% endif %}
             </td>
             <td>{{ task.last_run_at|none_or_never }}</td>
@@ -66,7 +67,7 @@ Scheduled Scans
             </td>
             {% if user|can:'modify_scan_results' %}
             <td class="text-center">
-              <a onclick="deleteScheduledScan({{ task.id }})" class="text-danger btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scheduled Task">
+              <a onclick="deleteScheduledScan({{ task.id }})" class="text-danger btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="{% translate "Delete Scheduled Task" %}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -90,10 +91,10 @@ $(document).ready(function() {
   var scheduled_scan_table = $('#scheduled_scan_table').DataTable({
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-      "sInfo": "Showing page _PAGE_ of _PAGES_",
+      "sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
       "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-      "sSearchPlaceholder": "Search...",
-      "sLengthMenu": "Results :  _MENU_",
+      "sSearchPlaceholder": gettext("Search..."),
+      "sLengthMenu": gettext("Results :  _MENU_"),
     },
     "lengthMenu": [5, 10, 20, 30, 50, 100],
     "pageLength": 10,

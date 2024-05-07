@@ -2,20 +2,22 @@
 {% load static %}
 {% load humanize %}
 {% load permission_tags %}
+{% load i18n %}
+
 
 {% block title %}
-Organizations
+{% translate "Organizations" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item active"><a href="{% url 'list_organization' current_project.slug %}">Organization</a></li>
+<li class="breadcrumb-item active"><a href="{% url 'list_organization' current_project.slug %}">{% translate "Organizations" %}</a></li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Organizations
+{% translate "Organizations" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -28,7 +30,7 @@ Organizations
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             {% if user|can:'modify_targets' %}
-            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_organization' current_project.slug %}" data-toggle="tooltip" data-placement="top" title="Add Organization">Add New Organization</a>
+            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_organization' current_project.slug %}" data-toggle="tooltip" data-placement="top" title="{% translate "Add Organization" %}">{% translate "Add New Organization" %}</a>
             {% endif %}
           </div>
         </div>
@@ -42,11 +44,11 @@ Organizations
       <table id="list_organization_table" class="table dt-responsive w-100">
         <thead>
           <tr>
-            <th class="">Organization</th>
-            <th class="text-center">Description</th>
-            <th class="text-center">Total Targets</th>
-            <th class="text-center">Added</th>
-            <th class="text-center">Action</th>
+            <th class="">{% translate "Organization Name" %}</th>
+            <th class="text-center">{% translate "Description" %}</th>
+            <th class="text-center">{% translate "Total Targets" %}</th>
+            <th class="text-center">{% translate "Added" %}</th>
+            <th class="text-center">{% translate "Action" %}</th>
           </tr>
         </thead>
         <tbody>
@@ -58,26 +60,26 @@ Organizations
             <td class="text-center"><span data-toggle="tooltip" data-placement="top" title="{{organization.insert_date}}">{{organization.insert_date|naturaltime}}</span></td></td>
             <td class="text-center">
               {% if user|can:'initiate_scans_subscans' %}
-              <a href="/scan/{{current_project.slug}}/start/organization/{{organization.id}}" data-toggle="tooltip" data-placement="top" title="Quick Scan Entire Organization">
+              <a href="/scan/{{current_project.slug}}/start/organization/{{organization.id}}" data-toggle="tooltip" data-placement="top" title="{% translate "Quick Scan Entire Organization" %}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                 </svg>
               </a>
               {% endif %}
               {% if user|can:'initiate_scans_subscans' %}
-              <a href="{% url 'schedule_organization_scan' current_project.slug organization.id %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Schedule Scan">
+              <a href="{% url 'schedule_organization_scan' current_project.slug organization.id %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="{% translate "Schedule Scan" %}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-watch table-schedule"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg>
               </a>
               {% endif %}
               {% if user|can:'modify_targets' %}
-              <a href="/target/{{current_project.slug}}/update/organization/{{organization.id}}" class="text-primary open-domain" data-toggle="tooltip" data-placement="top" title="Update Organization">
+              <a href="/target/{{current_project.slug}}/update/organization/{{organization.id}}" class="text-primary open-domain" data-toggle="tooltip" data-placement="top" title="{% translate "Update Organization" %}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
                   <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                 </svg>
               </a>
               {% endif %}
               {% if user|can:'modify_targets' %}
-              <a onclick="delete_organization({{ organization.id }})" class="text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete Organization">
+              <a onclick="delete_organization({{ organization.id }})" class="text-danger" href="#" data-toggle="tooltip" data-placement="top" title="{% translate "Delete Organization" %}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -104,10 +106,10 @@ $(document).ready(function() {
   list_organization_table = $('#list_organization_table').DataTable({
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-      "sInfo": "Showing page _PAGE_ of _PAGES_",
+      "sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
       "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-      "sSearchPlaceholder": "Search...",
-      "sLengthMenu": "Results :  _MENU_",
+      "sSearchPlaceholder": gettext("Search..."),
+      "sLengthMenu": gettext("Results :  _MENU_"),
     },
     "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
     "<'table-responsive'tr>" +
@@ -122,14 +124,14 @@ $(document).ready(function() {
 });
 
 function get_target_modal(organization_id){
-  $('.modal-title').html(`<b>Loading targets...</b>`);
+  $('.modal-title').html(`<b>` + gettext("Loading targets...")`</b>`);
   $('#modal_dialog').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/queryTargetsInOrganization/?organization_id=${organization_id}&format=json`, function(data) {
     organization_name = htmlEncode(data['organization'][0]['name']);
     $('#modal-loader').empty();
-    $('.modal-title').html(`${data['domains'].length} targets in organization ${organization_name}`);
+    $('.modal-title').html(interpolate(`%(count)s targets in organization %(orgName)s`, {'count': data['domains'].length, orgName: organization_name}, true));
     $('#modal-content').append(`<ul id="target-detail-modal-ul"></ul>`);
     for (domain in data['domains']){
       domain_obj = data['domains'][domain];
@@ -137,7 +139,7 @@ function get_target_modal(organization_id){
     }
   }).fail(function(){
     $('#modal-loader').empty();
-    $("#modal-content").append(`<p class='text-danger'>Error loading Vulnerabilities Summary</p>`);
+    $("#modal-content").append(`<p class='text-danger'>` + gettext("Error loading Vulnerabilities Summary") + `</p>`);
   });
 }
 

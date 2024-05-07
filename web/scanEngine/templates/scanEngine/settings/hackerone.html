@@ -2,87 +2,81 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load custom_tags %}
-{% block title %}
-Hackerone Settings
-{% endblock title %}
+{% load i18n %}
 
+{% block title %}
+{% translate "Hackerone Settings" %}
+{% endblock title %}
 {% block custom_js_css_link %}
 <link href="{% static 'plugins/markdown/simplemde.min.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="#">Settings</a></li>
-<li class="breadcrumb-item active">Hackerone Settings</li>
+<li class="breadcrumb-item"><a href="#">{% translate "Settings" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Hackerone Settings" %}</li>
+<li class="breadcrumb-item"><a href="#">{% translate "Settings" %}</a></li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-HackerOne Settings
+{% translate "HackerOne Settings" %}
 {% endblock page_title %}
-
 {% block main_content %}
 <div class="row">
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h4 class="header-title">Hackerone Automatic Vulnerability Report Settings</h4>
-        <img src="https://www.hackerone.com/assets/images/logo.png" alt="" height="30px">
+        <h4 class="header-title">{% translate "Hackerone Automatic Vulnerability Report Settings" %}</h4>
         <div class="alert alert-danger border-0 mb-3 mt-3" role="alert">
-          Use this feature with caution! Please do not spam triagers!
-          <br>We do not allow sending vulnerability report for low severity and informational vulnerabilities to avoid spamming triagers!
-          You can send them manually from Vulnerability Section inside reNgine.
-        </div>
+          {% translate "Use this feature with caution! Please do not spam triagers!" %}
+          <br>{% translate "We do not allow sending vulnerability report for low severity and informational vulnerabilities to avoid spamming triagers!" %}
+          {% translate "You can send them manually from Vulnerability Section inside reNgine." %}
         <p class="mt-3">
-          reNgine Automatically Reports vulnerabilities to your bug bounty programs on Hackerone, if any vulnerabilities are identified.
-          <br>
-          <span class="text-danger">A valid Hackerone API token and username is required.</span>
-          <br>
-          More details on how to generate your hackerone api token is provided by <a href="https://api.hackerone.com/getting-started-hacker-api/#getting-started-hacker-api" class="text-primary" target="_blank">Hackerone Documentation <i class="fe-external-link"></i></a>
-        </p>
+          {% translate "reNgine Automatically Reports vulnerabilities to your bug bounty programs on Hackerone, if any vulnerabilities are identified." %}
+          <span class="text-danger">{% translate "A valid Hackerone API token and username is required." %}</span>
+          {% translate "More details on how to generate your hackerone api token is provided by" %} <a href="https://api.hackerone.com/getting-started-hacker-api/#getting-started-hacker-api" class="text-primary" target="_blank">{% translate "Hackerone Documentation" %} <i class="fe-external-link"></i></a>
         <form method="post">
           {% csrf_token %}
           <div class="row">
             <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-              <label for="hackerone_username"  class="form-label">Your Hackerone Username (Not email)</label>
-              {{form.username}}
+              <label for="hackerone_username"  class="form-label">{% translate "Your Hackerone Username (Not email)" %}</label>
             </div>
             <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-              <label for="hackerone_api_token" class="form-label">Generate your <a href="https://hackerone.com/settings/api_token/edit" target="_blank">API Token from here <i class="fe-external-link"></i></a></label>
-              {{form.api_key}}
+              <label for="hackerone_api_token" class="form-label">{% translate "Generate your" %} <a href="https://hackerone.com/settings/api_token/edit" target="_blank">{% translate "API Token from here" %} <i class="fe-external-link"></i></a></label>
             </div>
           </div>
           <a class="btn btn-primary float-end mt-3" href="javascript:test_hackerone()" role="button">
-            &nbsp;&nbsp;Test my hackerone api key
+            &nbsp;&nbsp;{% translate "Test my hackerone api key" %}
           </a>
-          <h4 class="header-title text-danger mt-3">Report Vulnerability to hackerone when</h4>
+          <h4 class="header-title text-danger mt-3">{% translate "Report Vulnerability to hackerone when" %}</h4>
           <table>
             <tr>
-              <td>Critical Severity is found. (Default)</td>
+              <td>{% translate "Critical Severity is found. (Default)" %}</td>
               <td><span class="ms-3">{{form.send_critical}}</span></td>
             </tr>
             <tr>
-              <td>High Severity is found. (Default)</td>
+              <td>{% translate "High Severity is found. (Default)" %}</td>
               <td><span class="ms-3">{{form.send_high}}</span></td>
             </tr>
             <tr>
-              <td>Medium Severity is found.</td>
+              <td>{% translate "Medium Severity is found." %}</td>
               <td><span class="ms-3">{{form.send_medium}}</span></td>
             </tr>
           </table>
-          <h4 class="header-title mt-3">Vulnerability Report Template</h4>
+          <h4 class="header-title mt-3">{% translate "Vulnerability Report Template" %}</h4>
           <div class="alert alert-info border-0 mb-3 mt-3" role="alert">
-            You can customize the vulnerability report template using markdown language. Replace the below syntax wherever you require. Curly braces are must!
+            {% translate "You can customize the vulnerability report template using markdown language. Replace the below syntax wherever you require. Curly braces are must!" %}
           </div>
           <ul>
-            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_name}</span> Vulnerability Title/Name.</li>
-            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerable_url}</span> Vulnerable URL.</li>
-            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_severity}</span> Vulnerability Severity.</li>
-            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_description}</span> Description of vulnerability generated by Nuclei.</li>
-            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_extracted_results}</span> Vulnerability Results extracted by Nuclei.</li>
-            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_reference}</span> Additional Reference to vulnerability.</li>
+            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_name}</span> {% translate "Vulnerability Title/Name." %}</li>
+            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerable_url}</span> {% translate "Vulnerable URL." %}</li>
+            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_severity}</span> {% translate "Vulnerability Severity." %}</li>
+            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_description}</span> {% translate "Description of vulnerability generated by Nuclei." %}</li>
+            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_extracted_results}</span> {% translate "Vulnerability Results extracted by Nuclei." %}</li>
+            <li class="text-dark"><span class="badge bg-primary mt-2">{vulnerability_reference}</span> {% translate "Additional Reference to vulnerability." %}</li>
           </ul>
           <!-- Default Template: https://raw.githubusercontent.com/ZephrFish/BugBountyTemplates/master/Blank.md -->
           {{form.report_template}}
-          <input type="submit" value="Save" class="btn btn-primary float-end">
+          <input type="submit" value="{% translate "Save" %}" class="btn btn-primary float-end">
         </form>
       </div>
     </div>
@@ -120,10 +114,9 @@ function test_hackerone() {
     var username = $("#username").val();
     var api_key = $("#api_key").val();
     swal.queue([{
-      title: 'Hackerone Configuration',
-      confirmButtonText: 'Test my hackerone API Key',
-      text:
-      'This will test if your hackerone API keys are working.',
+      title: gettext("Hackerone Configuration"),
+      confirmButtonText: gettext("Test my hackerone API Key"),
+      text: gettext("This will test if your hackerone API keys are working."),
       showLoaderOnConfirm: true,
       preConfirm: function() {
         return fetch(hackerone_api, {
@@ -143,20 +136,20 @@ function test_hackerone() {
           $("#api_key").addClass("is-valid");
           $("#username").removeClass("is-invalid");
           $("#api_key").removeClass("is-invalid");
-          return swal.insertQueueStep("Your hackerone Credentials are working.")
+          return swal.insertQueueStep(gettext("Your hackerone Credentials are working."))
         }
         else{
           $("#username").addClass("is-invalid");
           $("#api_key").addClass("is-invalid");
           $("#username").removeClass("is-valid");
           $("#api_key").removeClass("is-valid");
-          return swal.insertQueueStep("Oops! Your hackerone Credentials are not working, check your username and/or api_key.")
+          return swal.insertQueueStep(gettext("Oops! Your hackerone Credentials are not working, check your username and/or api_key."))
         }
       })
       .catch(function() {
         swal.insertQueueStep({
           type: 'error',
-          title: 'Unable to get your public IP'
+          title: gettext("Unable to get your public IP")
         })
       })
     }

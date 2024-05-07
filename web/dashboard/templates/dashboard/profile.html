@@ -1,21 +1,22 @@
 {% extends 'base/base.html' %}
 {% load humanize %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Profile
+{% translate "Profile" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
 {% block page_title %}
-My Profile
+{% translate "My Profile" %}
 {% endblock page_title %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="/{{current_project.slug}}/dashboard">Dashboard</a></li>
-<li class="breadcrumb-item active">My Profile</li>
+<li class="breadcrumb-item"><a href="/{{current_project.slug}}/dashboard">{% translate "Dashboard" %}</a></li>
+<li class="breadcrumb-item active">{% translate "My Profile" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -23,42 +24,67 @@ My Profile
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h4>Hi {{user.get_username}}!</h4>
+        <h4>{% blocktranslate with username=user.get_username %}Hi {{username}}!{% endblocktranslate %}</h4>
         <div class="row">
           <div class="col-12 mt-2">
             <div class="mb-4">
-              <label for="username" class="form-label">Username</label>
-              <input type="text" class="form-control" id="username" placeholder="username" value="@{{user.get_username}}" disabled>
+              <label for="username" class="form-label">{% translate "Username" %}</label>
+              <input type="text" class="form-control" id="username" placeholder="{% translate "Username" %}" value="@{{user.get_username}}" disabled>
             </div>
           </div>
-          <h4>Change Password</h4>
+          <form method="POST">
+            {% csrf_token %}
+            <div class="col-12 mt-2">
+              <div class="mb-4">
+                {% if forms.userSettings.errors and forms.userSettings.errors.language %}
+                  {% for error in forms.userSettings.errors.language %}
+                    <p class="text-danger">{{error}}</p>
+                  {% endfor %}
+                {% endif %}
+                <label for="{{ forms.userSettings.language.id_for_label }}" class="form-label">{% translate "Language" %}</label>
+                <select class="form-select" autocomplete="off" id="{{ forms.userSettings.language.id_for_label }}" name="{{ forms.userSettings.language.html_name }}">
+                  {% for lang in LANGUAGES %}
+                      <option value="{{ lang.0 }}"
+                          {% ifequal lang.0 user.language %}
+                              selected="yes"
+                          {% endifequal %}
+                      >{{ lang.1 }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <input type="submit" class="btn btn-soft-primary float-end" value="{% translate "Change Settings" %}">
+          </form>
+        </div>
+        <div class="row">
+          <h4>{% translate "Change Password" %}</h4>
           <form method="POST">
             {% csrf_token %}
             <div class="row">
               <div class="col-12 mt-2">
-                <label for="old_password" class="form-label">Old Password</label>
-                <input type="password" name="old_password" autocomplete="current-password" autofocus="" required="" id="old_password" class="form-control mb-4 {% if form.errors.old_password %}is-invalid{% endif %}">
-                {% if form.errors.old_password %}
-                  {% for error in form.errors.old_password %}
+                <label for="old_password" class="form-label">{% translate "Old Password" %}</label>
+                <input type="password" name="old_password" autocomplete="current-password" autofocus="" required="" id="old_password" class="form-control mb-4 {% if forms.password.errors.old_password %}is-invalid{% endif %}">
+                {% if forms.password.errors.old_password %}
+                  {% for error in forms.password.errors.old_password %}
                     <p class="text-danger">{{error}}</p>
                   {% endfor %}
                 {% endif %}
               </div>
               <div class="col-6">
-                <label for="new_password1" class="form-label">New Password</label>
-                <input type="password" name="new_password1" autocomplete="new-password" required="" id="new_password1" class="form-control mb-4 {% if form.errors.new_password2 %}is-invalid{% endif %}">
+                <label for="new_password1" class="form-label">{% translate "New Password" %}</label>
+                <input type="password" name="new_password1" autocomplete="new-password" required="" id="new_password1" class="form-control mb-4 {% if forms.password.errors.new_password2 %}is-invalid{% endif %}">
               </div>
               <div class="col-6">
-                <label for="new_password2" class="form-label">Confirm Password</label>
-                <input type="password" name="new_password2" autocomplete="new-password" required="" id="new_password2" class="form-control mb-4 {% if form.errors.new_password2 %}is-invalid{% endif %}">
+                <label for="new_password2" class="form-label">{% translate "Confirm Password" %}</label>
+                <input type="password" name="new_password2" autocomplete="new-password" required="" id="new_password2" class="form-control mb-4 {% if forms.password.errors.new_password2 %}is-invalid{% endif %}">
               </div>
             </div>
-            {% if form.errors.new_password2 %}
-              {% for error in form.errors.new_password2 %}
+            {% if forms.password.errors.new_password2 %}
+              {% for error in forms.password.errors.new_password2 %}
                 <p class="text-danger">{{error}}</p>
               {% endfor %}
             {% endif %}
-            <input type="submit" class="btn btn-soft-primary float-end" value="Change Password">
+            <input type="submit" class="btn btn-soft-primary float-end" value="{% translate "Change Password" %}">
           </form>
         </div>
       </div>

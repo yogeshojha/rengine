@@ -1,8 +1,9 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Update Target
+{% translate "Update Target" %}
 {% endblock title %}
 
 
@@ -10,7 +11,7 @@ Update Target
 {% endblock custom_js_css_link %}
 
 {% block page_title %}
-Update Target   {{ form.name.value }}
+{% blocktranslate with targetName=form.name.value %}Update Target {{ targetName }}{% endblocktranslate %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -18,13 +19,13 @@ Update Target   {{ form.name.value }}
   <div class="col-xl-12">
     <div class="card">
       <div class="card-body">
-        <h4 class="header-title">Update Target</h4>
+        <h4 class="header-title">{% translate "Update Target" %}</h4>
         <form method="POST">
           {% csrf_token %}
           <div class="row mb-3">
             <div class="col-6">
               <div>
-                <label for="simpleinput" class="form-label">Domain name</label>
+                <label for="simpleinput" class="form-label">{% translate "Domain name" %}</label>
                 {{ form.name }}
                 {% if form.errors %}
                 <div class="invalid-feedback" style="display: block;">
@@ -34,18 +35,18 @@ Update Target   {{ form.name.value }}
               </div>
             </div>
             <div class="col-6">
-              <label for="domainDescription" class="form-label">Description (Optional)</label>
+              <label for="domainDescription" class="form-label">{% translate "Description (Optional)" %}</label>
               {{ form.description }}
             </div>
           </div>
           <div class="col-12">
-            <label for="domainDescription" class="form-label">HackerOne Target Team Handle
+            <label for="domainDescription" class="form-label">{% translate "HackerOne Target Team Handle" %}
               <br>
-              This is used to send vulnerability reports to the HackerOne Program automatically. Team handle can be found from the program URL, hackerone.com/team_handle.
+              {% translate "This is used to send vulnerability reports to the HackerOne Program automatically. Team handle can be found from the program URL, hackerone.com/team_handle." %}
             </label>
             {{ form.h1_team_handle }}
           </div>
-          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Update Target</button>
+          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">{% translate "Update Target" %}</button>
         </form>
       </div>
     </div>

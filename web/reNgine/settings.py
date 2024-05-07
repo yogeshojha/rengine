@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'scanEngine.apps.ScanengineConfig',
     'startScan.apps.StartscanConfig',
     'recon_note.apps.ReconNoteConfig',
+    "users",
     'django_ace',
     'django_celery_beat',
     'mathfilters',
@@ -76,6 +77,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "django.middleware.locale.LocaleMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -144,6 +146,17 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+
+LANGUAGES = [
+    ('en', 'English'),
+    ('fr', 'French'),
+]
+
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, "locale"),
+]
+
+AUTH_USER_MODEL = 'users.User'
 
 # Temporary fix for celery beat crash
 # See https://github.com/yogeshojha/rengine/issues/971

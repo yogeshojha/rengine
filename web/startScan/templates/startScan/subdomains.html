@@ -1,9 +1,11 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load humanize %}
+{% load i18n %}
 {% load custom_tags %}
+
 {% block title %}
-All subdomains
+{% translate "All subdomains" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
@@ -64,7 +66,7 @@ $(document).ready(function() {
 		},
 		"rowGroup": {
 			"startRender": function(rows, group) {
-				return group + ' (' + rows.count() + ' Subdomains)';
+				return interpolate("%(group)s (%(count)s Subdomains)", {group: group, count: rows.count()}, true);
 			}
 		},
 		"order": [[ 8, "desc" ]],
@@ -101,15 +103,15 @@ $(document).ready(function() {
 						}
 						if(row['is_interesting'])
 						{
-							interesting_badge = `<div><span class='me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span></div>`;
+							interesting_badge = `<div><span class='me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="` + gettext("Interesting Subdomain") + `">` + gettext("Interesting") + `</span></div>`;
 						}
 
 						if (row['content_type']) {
-							content_type = `<div><span class='mt-1 badge badge-soft-blue bs-tooltip' title="Content Type">${row['content_type']}</span></div>`;
+							content_type = `<div><span class='mt-1 badge badge-soft-blue bs-tooltip' title="` + gettext("Content Type") + `">${row['content_type']}</span></div>`;
 						}
 
 						if (row['webserver']) {
-							web_server = `<div><span class='mt-1 badge badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span></div>`;
+							web_server = `<div><span class='mt-1 badge badge-soft-info bs-tooltip' title="` + gettext("Web Server") + `">${row['webserver']}</span></div>`;
 						}
 
 						if (interesting_badge) {
@@ -120,46 +122,46 @@ $(document).ready(function() {
 						todo_badge = '';
 
 						if (row['todos_count']) {
-							todo_badge = `<span class="text-danger badge badge-link badge-soft-danger float-end mt-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
+							todo_badge = `<span class="text-danger badge badge-link badge-soft-danger float-end mt-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} ` + gettext("Todos") + `&nbsp;</span>`
 						}
 
 						endpoint_count_badge = '';
 						if (row['endpoint_count']) {
-							endpoint_count_badge = `<span class="pl-2 pr-2 me-1 badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal(project='{{current_project.slug}}', scan_id=null, subdomain_id=${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
+							endpoint_count_badge = `<span class="pl-2 pr-2 me-1 badge badge-soft-primary badge-link bs-tooltip" title="` + gettext("Endpoints") + `" onclick="get_endpoint_modal(project='{{current_project.slug}}', scan_id=null, subdomain_id=${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
 						}
 
 						if(row['waf'].length){
-							waf_badge = `<div><span class="pl-2 pr-2 my-1 badge badge-soft-danger" bs-tooltip" title="WAF Detected by wafw00f!""><i class="fe-cloud-lightning mx-1"></i>WAF Detected</span>`;
+							waf_badge = `<div><span class="pl-2 pr-2 my-1 badge badge-soft-danger bs-tooltip" title="` + gettext("WAF Detected by wafw00f!") + `"><i class="fe-cloud-lightning mx-1"></i>{% translate "WAF Detected" %}</span>`;
 							for (var waf in row['waf']) {
 								var waf_object = row['waf'][waf];
-								waf_badge += `<span class="mx-1 my-1 badge badge-soft-danger" bs-tooltip" title="WAF Manufacturer: ${waf_object.manufacturer}">${waf_object.name}</span>`;
+								waf_badge += `<span class="mx-1 my-1 badge badge-soft-danger" bs-tooltip" title="` + gettext("WAF Manufacturer") `": ${waf_object.manufacturer}">${waf_object.name}</span>`;
 							}
 							waf_badge += `</div>`;
 						}
 
 						vuln_count_badge = '';
-						total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="All Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
-						info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=0, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count']} Info</span>`;
-						low_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=1, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['low_count']} Low</span>`;
-						medium_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=2, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['medium_count']} Med</span>`;
-						high_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=3, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['high_count']} High</span>`;
-						critical_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=4, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['critical_count']} Critical</span>`;
+						total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="` + gettext("All Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
+						info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="` + gettext("Informational Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=0, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count']} ` + gettext("Info") + `</span>`;
+						low_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-low bs-tooltip badge-link' title="` + gettext("Low Severity Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=1, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['low_count']} ` + gettext("Low") + `</span>`;
+						medium_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="` + gettext("Medium Severity Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=2, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['medium_count']} ` + gettext("Medium") + `</span>`;
+						high_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="` + gettext("High Severity Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=3, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['high_count']} ` + gettext("High") + `</span>`;
+						critical_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="` + gettext("Critical Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=4, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['critical_count']} ` + gettext("Critical") + `</span>`;
 						vuln_count_badge = `<div class="">` + (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '') + `</div>`;
 
 						vuln_count_badge = (row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count'] > 0? total_vuln_badge : '') + vuln_count_badge;
 
 						copy_icon = `
-						<a href="javascript:;" data-clipboard-action="copy" class="action-icon copyable" data-toggle="tooltip" data-placement="top" title="Copy Subdomain!" data-clipboard-target="#subdomain-${row['id']}" id="#subdomain-${row['id']}" onclick="setTooltip(this.id, 'Copied!')"> <i class="text-primary mdi mdi-content-copy"></i></a>
+						<a href="javascript:;" data-clipboard-action="copy" class="action-icon copyable" data-toggle="tooltip" data-placement="top" title="` + gettext("Copy Subdomain!") + `" data-clipboard-target="#subdomain-${row['id']}" id="#subdomain-${row['id']}" onclick="setTooltip(this.id, '` + gettext("Copied!") + `')"> <i class="text-primary mdi mdi-content-copy"></i></a>
 						`;
 
 						var directory_count_badge = '';
 						if (row['directories_count']){
-							directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal(scan_id=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
+							directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="` + gettext("Directories") + `" onclick="get_directory_modal(scan_id=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
 						}
 
 						var subscan_count_badge = '';
 						if (row['subscan_count']){
-							subscan_count_badge = `<span class="badge me-1 badge-soft-blue badge-link bs-tooltip" title="SubScans" onclick="get_and_render_subscan_history(${row['id']}, '${row['name']}')">${row['subscan_count']} <i class="fas fa-history"></i></span>`;
+							subscan_count_badge = `<span class="badge me-1 badge-soft-blue badge-link bs-tooltip" title="` + gettext("SubScans") + `" onclick="get_and_render_subscan_history(${row['id']}, '${row['name']}')">${row['subscan_count']} <i class="fas fa-history"></i></span>`;
 						}
 
 						tech_badge += content_type;
@@ -169,7 +171,7 @@ $(document).ready(function() {
 
 						if (row['http_url']) {
 							if (row['cname']) {
-								cname_badge = `<div><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + `</div>`;
+								cname_badge = `<div><span class="text-dark">` + gettext("CNAME") + `<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + `</div>`;
 								return badges + `<div class="clipboard copy-txt"><a href="` + row['http_url'] + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + cname_badge + waf_badge + end_vuln_badge + tech_badge + todo_badge;
 							}
 							return badges + `<div class="clipboard copy-txt"><a href="` + row['http_url'] + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + waf_badge + end_vuln_badge + tech_badge + todo_badge;
@@ -215,7 +217,7 @@ $(document).ready(function() {
 						{
 							Object.entries(data).forEach(([key, value]) => {
 								if (value['is_cdn']) {
-									ip_badge += `<span class='m-1 badge badge-soft-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', scan_id=null, domain_id=null)">${value.address}</span>`
+									ip_badge += `<span class='m-1 badge badge-soft-warning badge-link' title="` + gettext("CDN IP Address") + `" onclick="get_ip_details('${value.address}', scan_id=null, domain_id=null)">${value.address}</span>`
 								}
 								else{
 									ip_badge += `<span class='m-1 badge badge-soft-primary badge-link' onclick="get_ip_details('${value.address}', scan_id=null, domain_id=null)">${value.address}</span>`
@@ -237,7 +239,7 @@ $(document).ready(function() {
 								for (port in ports){
 									port_obj = data[ip]['ports'][port]
 									badge_color = port_obj['is_uncommon'] ? 'danger' : 'primary';
-									title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
+									title = port_obj['is_uncommon'] ? interpolate("Uncommon Port - %(description)s", {'description': port_obj['description']}, true) : port_obj['description'];
 									port_badge += `<span class='m-1 badge badge-soft-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, scan_id=null, domain_id=null)">${port_obj['number']}/${port_obj['service_name']}</span>`
 								}
 							}
@@ -284,14 +286,14 @@ $(document).ready(function() {
 						const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
 						return `
 						<div class="btn-group mt-2">
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Show Attack Surface" class="btn btn-primary me-1 bs-tooltip" onclick="show_attack_surface_modal(${row['id']})"><i class="fe-eye"></i></button>
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1 bs-tooltip" id="${row['id']}"><i class="fe-zap"></i></button>
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1 bs-tooltip" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="` + gettext("Show Attack Surface") + `" class="btn btn-primary me-1 bs-tooltip" onclick="show_attack_surface_modal(${row['id']})"><i class="fe-eye"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="` + gettext("Further Scan Subdomain") + `" class="btn btn-primary btn-scan-subdomain me-1 bs-tooltip" id="${row['id']}"><i class="fe-zap"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="` + gettext("Add Recon Todo/Note") + `" class="btn btn-primary me-1 bs-tooltip" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
 							<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
 							<div class="dropdown-menu dropdown-menu-end">
-							<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>
-							<a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>Detect CMS</a>
-							<a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>Delete Subdomain</a>
+							<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>` + gettext("Mark Important Subdomain") + `</a>
+							<a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>` + gettext("Detect CMS") + `</a>
+							<a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>` + gettext("Delete Subdomain") + `</a>
 							</div>
 						</div>
 						`;
@@ -414,14 +416,15 @@ $(document).ready(function() {
 			var row = this;
 			Swal.fire({
 				showCancelButton: true,
-				title: 'Delete Subdomain!',
-				text: 'Do you really want to delete this subdomain? This action cannot be undone.',
+				cancelButtonText: gettext("Cancel"),
+				title: gettext("Delete Subdomain!"),
+				text: gettext("Do you really want to delete this subdomain? This action cannot be undone."),
 				icon: 'error',
-				confirmButtonText: 'Delete',
+				confirmButtonText: gettext("Delete"),
 			}).then((result) => {
 				if (result.isConfirmed) {
 					Swal.fire({
-						title: 'Deleting Subdomain...',
+						title: gettext("Deleting Subdomain..."),
 						allowOutsideClick: false
 					});
 					swal.showLoading();
@@ -440,14 +443,14 @@ $(document).ready(function() {
 						if (response['status']) {
 							$(row).parent().parent().parent().remove();
 							Snackbar.show({
-								text: 'Subdomain successfully deleted!',
+								text: gettext('Subdomain successfully deleted!'),
 								pos: 'top-right',
 								duration: 2500
 							});
 						}
 						else{
 							Swal.fire({
-								title:  'Could not delete Subdomain!',
+								title:  gettext('Could not delete Subdomain!'),
 								icon: 'fail',
 							});
 						}

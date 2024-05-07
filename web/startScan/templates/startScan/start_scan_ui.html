@@ -1,8 +1,9 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Start Scan
+{% translate "Start Scan" %}
 {% endblock title %}
 
 
@@ -12,15 +13,14 @@ Start Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">Target</a></li>
-<li class="breadcrumb-item active">Initiate Scan</li>
-<li class="breadcrumb-item active" aria-current="page">{{domain.name}}</li>
+<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">{% translate "Target" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Initiate Scan" %}</li>
+<li class="breadcrumb-item active" aria-current="page">{{ domain_name }}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Initiating scan for {{domain.name}}
+{% blocktranslate with domain_name=domain.name %}Initiating scan for {{ domain_name }}{% endblocktranslate %}
 {% endblock page_title %}
-
 {% block main_content %}
 <div class="row">
   <div class="col-12">
@@ -29,48 +29,48 @@ Initiating scan for {{domain.name}}
         <form method="POST" id="start-scan-form">
           {% csrf_token %}
           <div id="select_engine">
-            <h4>Choose Scan Engine</h4>
+            <h4>{% translate "Choose Scan Engine" %}</h4>
             <div class="">
-              <h4>Select Scan Engine</h4>
+              <h4>{% translate "Select Scan Engine" %}</h4>
               {% if custom_engine_count == 0 %}
               <div class="alert bg-soft-primary border-0 mb-4" role="alert">
-                <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
-                <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">Create Custom Scan Engine</a>
+                <span>{% translate "<b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?" %}</span>
+                <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">{% translate "Create Custom Scan Engine" %}</a>
               </div>
               {% endif %}
               {% include "startScan/_items/scanEngine_select.html" %}
             </div>
-            <h4>Import/Ignore Subdomains</h4>
+            <h4>{% translate "Import/Ignore Subdomains" %}</h4>
             <div class="">
               <div class="mb-3">
-                <h4 class="text-info">Import Subdomains(Optional)</h4>
-                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
+                <h4 class="text-info">{% translate "Import Subdomains(Optional)" %}</h4>
+                <span class="">{% blocktranslate with domain_name=domain.name %}You can import subdomains for <b>{{ domain_name }}</b> using your private recon tools.{% endblocktranslate %}</span>
                 <br>
                 <div class="alert bg-soft-primary border-0 mt-1 mb-1" role="alert">
-                  <span class="">Separate the subdomains using <b>new line</b>. If the subdomain does not belong to <b>{{domain.name}}</b> it will be skipped.</span>
+                  <span class="">{% blocktranslate with domain_name=domain.name %}Separate the subdomains using <b>new line</b>. If the subdomain does not belong to <b>{{ domain_name }}</b> it will be skipped.{% endblocktranslate %}</span>
                 </div>
-                <label for="importSubdomainFormControlTextarea" class="form-label mt-1">Subdomains List</label>
+                <label for="importSubdomainFormControlTextarea" class="form-label mt-1">{% translate "Subdomains List" %}</label>
                 <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false"></textarea>
               </div>
               <div class="mb-3">
-                <h4 class="text-warning">Out of Scope Subdomains(Optional)</h4>
-                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
+                <h4 class="text-warning">{% translate "Out of Scope Subdomains(Optional)" %}</h4>
+                <span class="">{% blocktranslate with domain_name=domain.name %}You can import subdomains for <b>{{ domain_name }}</b> using your private recon tools.{% endblocktranslate %}</span>
                 <br>
                 <div class="alert bg-soft-warning border-0 mt-1 mb-1" role="alert">
-                  <span class="">Separate the out of scope subdomains/keywords using new line.(No regex currently supported.)</span>
+                  <span class="">{% translate "Separate the out of scope subdomains/keywords using new line.(No regex currently supported.)" %}</span>
                 </div>
-                <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">Out of Scope Subdomains List</label>
+                <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">{% translate "Out of Scope Subdomains List" %}</label>
                 <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false"></textarea>
               </div>
             </div>
 
-            <h4>Filters</h4>
+            <h4>{% translate "Filters" %}</h4>
             <div class="">
               <div class="mb-3">
-                <h4 class="text-info">Filters (Optional)</h4>
-                <span class="">You can filter on a specific path for <b>{{domain.name}}</b>.</span>
+                <h4 class="text-info">{% translate "Filters (Optional)" %}</h4>
+                <span class="">{% blocktranslate with domain_name=domain.name %}You can filter on a specific path for <b>{{ domain_name }}</b>.{% endblocktranslate %}</span>
                 <br>
-                <label for="filterPath" class="form-label mt-1">Path filter</label>
+                <label for="filterPath" class="form-label mt-1">{% translate "Path filter" %}</label>
                 <textarea class="form-control" id="filterPath" name="filterPath" rows="6" spellcheck="false"></textarea>
               </div>
             </div>
@@ -126,7 +126,7 @@ $(function(){
     cssClass: 'pill wizard',
     enableKeyNavigation: false,
     onStepChanging: updateButton,
-    labels: {finish: "Start Scan"},
+    labels: {finish: gettext("Start Scan")},
     onInit :function (event, current) {
       $(".actions ul li:nth-child(3) a").attr('onclick', `$(this).closest('form').submit()`);
     }

@@ -2,9 +2,11 @@
 {% load static %}
 {% load humanize %}
 {% load custom_tags %}
+{% load i18n %}
+
 {% block title %}
 {% load mathfilters %}
-Target Summary for {{target.name}}
+{% blocktranslate with targetName=target.name %}Target Summary for {{targetName}}{% endblocktranslate %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
@@ -16,13 +18,13 @@ Target Summary for {{target.name}}
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">Targets</a></li>
-<li class="breadcrumb-item active">Target Summary</li>
+<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">{% translate "Targets" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Target Summary" %}</li>
 <li class="breadcrumb-item active" aria-current="page">{{target.name}}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Target Summary
+{% translate "Target Summary" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -32,16 +34,16 @@ Target Summary
 		<div class="card">
 			<ul class="nav nav-tabs nav-bordered m-1">
 				<li class="nav-item">
-					<a class="nav-link active" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">Home</a>
+					<a class="nav-link active" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">{% translate "Home" %}</a>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
+					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">{% translate "Subdomains" %}</a>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link" id="pills-endpoints-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#endpoints-tab">URLs</a>
+					<a class="nav-link" id="pills-endpoints-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#endpoints-tab">{% translate "URLs" %}</a>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#vulnerabilities-tab">Vulnerabilities</a>
+					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#vulnerabilities-tab">{% translate "Vulnerabilities" %}</a>
 				</li>
 			</ul>
 		</div>
@@ -58,15 +60,15 @@ Target Summary
 						<div class="d-flex align-items-start mb-3">
 							<div class="w-100">
 								<h5 class="mt-0 mb-0 font-15">
-									Scan Timeline
+									{% translate "Scan Timeline" %}
 								</h5>
 								<div class="mt-1">
 									<small>
-										Target <span class="badge badge-soft-primary">{{target.name}}</span> has been scanned <b>{{scan_count}}</b> times.
+										{% blocktranslate with targetName=target.name scan_count=scan_count %}Target <span class="badge badge-soft-primary">{{targetName}}</span> has been scanned <b>{{scan_count}}</b> times.{% endblocktranslate%}
 										<br>
 										<br>
 										{% if scan_count %}
-										The most recent scan was performed on <span class="text-primary">&nbsp;{{recent_scans.0.start_scan_date}} , {{recent_scans.0.start_scan_date|naturaltime}}</span>
+										{% translate "The most recent scan was performed on" %} <span class="text-primary">&nbsp;{{recent_scans.0.start_scan_date}} , {{recent_scans.0.start_scan_date|naturaltime}}</span>
 										{% endif %}
 									</small>
 								</div>
@@ -78,33 +80,33 @@ Target Summary
 												<h5 class="mt-0 mb-1">
 													{{scan.scan_type.engine_name}}
 													{% if scan.scan_status == -1 %}
-													<span class="badge badge-soft-warning float-end">Pending</span>
+													<span class="badge badge-soft-warning float-end">{% translate "Pending" %}</span>
 													{% elif scan.scan_status == 0 %}
-													<span class="badge badge-soft-danger float-end">Failed</span>
+													<span class="badge badge-soft-danger float-end">{% translate "Failed" %}</span>
 													{% elif scan.scan_status == 1 %}
-													<span class="badge badge-soft-primary float-end">Scanning</span>
+													<span class="badge badge-soft-primary float-end">{% translate "Scanning" %}</span>
 													{% elif scan.scan_status == 2 %}
-													<span class="badge badge-soft-success float-end">Completed</span>
+													<span class="badge badge-soft-success float-end">{% translate "Completed" %}</span>
 													{% elif scan.scan_status == 3 %}
-													<span class="badge badge-soft-danger float-end">Aborted</span>
+													<span class="badge badge-soft-danger float-end">{% translate "Aborted" %}</span>
 													{% else %}
-													<span class="badge badge-soft-danger float-end">Unknown</span>
+													<span class="badge badge-soft-danger float-end">{% translate "Unknown" %}</span>
 													{% endif %}
 												</h5>
 												<p class="text-muted">{{scan.start_scan_date|naturaltime}}<br><small class="text-muted">{{scan.start_scan_date}}</small></p>
 												{% if scan.scan_status == 0 %}
 													{% if scan.error_message %}
-														<p class="text-danger">ERROR: {{scan.error_message}}</p>
+														<p class="text-danger">{% blocktranslate with errorMsg=scan.error_message %}ERROR: {{errorMsg}}{% endblocktranslate %}</p>
 													{% endif %}
 												{% endif %}
 												<p class="text-primary">
-													{{scan.get_subdomain_count}} Subdomains Discovered
+													{% blocktranslate with subDomainCount=scan.get_subdomain_count %}{{subDomainCount}} Subdomains Discovered{%endblocktranslate %}
 													<span class="float-end text-dark">
 														{% with next_element=recent_scans|next:forloop.counter0 %}
 														{% if next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count > scan.get_subdomain_count %}
-														<span class="text-danger" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count|abs}} subdomains missing since last scan."><i class="fa fa-caret-down text-danger me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
+														<span class="text-danger" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count|abs}} subdomains missing since last scan."><i class="fa fa-caret-down text-danger me-1"></i>{% blocktranslate with subDomainCount=scan.get_subdomain_count|sub:next_element.get_subdomain_count %}{{subDomainCount}} Subdomains{% endblocktranslate %}</span>
 														{% elif next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count < scan.get_subdomain_count %}
-														<span class="text-success" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} subdomains added since last scan."><i class="fa fa-caret-up text-success me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
+														<span class="text-success" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} subdomains added since last scan."><i class="fa fa-caret-up text-success me-1"></i>{% blocktranslate with subDomainCount=scan.get_subdomain_count|sub:next_element.get_subdomain_count %}{{subDomainCount}} Subdomains{% endblocktranslate %}</span>
 														{% endif %}
 														{% endwith %}
 													</span>
@@ -123,7 +125,7 @@ Target Summary
 						<div class="d-flex align-items-start mb-3">
 							<div class="w-100">
 								<h5 class="mt-0 mb-0 font-15">
-									<span id="sub_scan_history_count"></span> Sub Scans</span>
+									<span id="sub_scan_history_count"></span> {% translate "Sub Scans" %}</span>
 								</h5>
 								<div data-simplebar style="max-height: 510px;" class="p-2">
 									<div id="subscan_history_widget">
@@ -141,18 +143,18 @@ Target Summary
 									<div class="header-title">
 										<span class="text-primary">
 										<span class="fe-link-2"></span></span>&nbsp;
-										Related Domains
+										{% translate "Related Domains" %}
 									</div>
 									<div class="sub-header">
-										{{target.domain_info.related_domains.all.count}} Domains related to {{target.name}}
+										{% blocktranslate with relatedDomainsCount=target.domain_info.related_domains.all.count targetName=target.name %}{{relatedDomainsCount}} Domains related to {{targetName}}{% endblocktranslate %}
 									</div>
 								</h5>
 								<div data-simplebar style="max-height: 550px;" class="p-2">
 									{% for domain in target.domain_info.related_domains.all %}
-										<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+										<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="{% blocktranslate with domain=domain %}Add {{domain}} as target.{% endblocktranslate %}" onclick="add_target('{{domain}}')">{{domain}}</span>
 									{% empty %}
 									<div class="alert alert-warning" role="alert">
-										<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not identify any Related Domains.
+										<i class="mdi mdi-alert-outline me-2"></i> {% translate "Oops! Could not identify any Related Domains." %}
 									</div>
 									{% endfor %}
 								</div>
@@ -168,18 +170,18 @@ Target Summary
 									<div class="header-title">
 										<span class="text-primary">
 										<span class="fe-link-2"></span></span>&nbsp;
-										Related TLDs
+										{% translate "Related TLDs" %}
 									</div>
 									<div class="sub-header">
-										{{target.domain_info.related_tlds.all.count}} TLDs related to {{target.name}}
+										{% blocktranslate with relatedTLDsCount=target.domain_info.related_tlds.all.count targetName=target.name %}{{relatedTLDsCount}} TLDs related to {{targetName}}{% endblocktranslate %}
 									</div>
 								</h5>
 								<div data-simplebar style="max-height: 450px;" class="p-2">
 									{% for domain in target.domain_info.related_tlds.all %}
-										<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+										<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="{% blocktranslate with domain=domain %}Add {{domain}} as target.{% endblocktranslate %}" onclick="add_target('{{domain}}')">{{domain}}</span>
 									{% empty %}
 									<div class="alert alert-warning" role="alert">
-										<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not identify any Related TLDs.
+										<i class="mdi mdi-alert-outline me-2"></i> {% translate "Oops! Could not identify any Related TLDs." %}
 									</div>
 									{% endfor %}
 								</div>
@@ -193,11 +195,11 @@ Target Summary
 					<div class="col-xl-3 col-lg-3 col-6">
 						<div class="card" id="tooltip-container">
 							<div class="card-body">
-								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="The total times {{target.name}} is scanned."></i>
-								<h4 class="mt-0 font-16">Times target is scanned</h4>
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% blocktranslate with targetName=target.name %}The total times {{targetName}} is scanned.{% endblocktranslate %}"></i>
+								<h4 class="mt-0 font-16">{% translate "Times target is scanned" %}</h4>
 								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{scan_count|intcomma}}</span></h2>
 								<br>
-								<p class="mb-0"><span class="badge badge-soft-primary">{{this_week_scan_count}} Scans this week</span></p>
+								<p class="mb-0"><span class="badge badge-soft-primary">{% blocktranslate with this_week_scan_count=this_week_scan_count %}{{this_week_scan_count}} Scans this week{% endblocktranslate %}</span></p>
 							</div>
 						</div>
 					</div>
@@ -205,11 +207,11 @@ Target Summary
 					<div class="col-xl-3 col-lg-3 col-6">
 						<div class="card" id="tooltip-container">
 							<div class="card-body">
-								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Subdomains Discovered by reNgine during this scan"></i>
-								<h4 class="mt-0 font-16">Subdomains Discovered</h4>
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% translate "Total Subdomains Discovered by reNgine during this scan" %}"></i>
+								<h4 class="mt-0 font-16">{% translate "Subdomains Discovered" %}</h4>
 								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></h2>
 								<br>
-								<p class="mb-0"><span class="badge badge-soft-success">Alive Subdomains: {{alive_count}}</span></p>
+								<p class="mb-0"><span class="badge badge-soft-success">{% blocktranslate with alive_count=alive_count %}Alive Subdomains: {{alive_count}}{% endblocktranslate %}</span></p>
 							</div>
 						</div>
 					</div>
@@ -217,11 +219,11 @@ Target Summary
 					<div class="col-xl-3 col-lg-3 col-6">
 						<div class="card" id="tooltip-container1">
 							<div class="card-body">
-								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Endpoints discovered for this target. This includes any URLs discovered."></i>
-								<h4 class="mt-0 font-16">Endpoints Discovered</h4>
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% translate "Total Endpoints discovered for this target. This includes any URLs discovered." %}"></i>
+								<h4 class="mt-0 font-16">{% translate "Endpoints Discovered" %}</h4>
 								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{endpoint_count|intcomma}}</span></h2>
 								<br>
-								<p class="text-success mb-0"><span class="badge badge-soft-success">Alive Endpoints: {{endpoint_alive_count}}</span></p>
+								<p class="text-success mb-0"><span class="badge badge-soft-success">{% blocktranslate with endpoint_alive_count=endpoint_alive_count %}Alive Endpoints: {{endpoint_alive_count}}{% endblocktranslate %}</span></p>
 							</div>
 						</div>
 					</div>
@@ -229,13 +231,13 @@ Target Summary
 					<div class="col-xl-3 col-lg-3 col-6">
 						<div class="card" id="tooltip-container2">
 							<div class="card-body">
-								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered for this target. This will be populated only if vulnerability scan is performed during any scan."></i>
-								<h4 class="mt-0 font-16">Vulnerabilities Discovered</h4>
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% translate "Total Vulnerabilities discovered for this target. This will be populated only if vulnerability scan is performed during any scan." %}"></i>
+								<h4 class="mt-0 font-16">{% translate "Vulnerabilities Discovered" %}</h4>
 								<h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{vulnerability_count|intcomma}}</span></h2>
 								<p class="text-muted mb-0">
-									<span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
+									<span class="w-title text-danger">{% blocktranslate with critical_count=critical_count %}{{critical_count}} Critical{% endblocktranslate %}, {% blocktranslate with high_count=high_count %}{{high_count}} High{% endblocktranslate %}, {% blocktranslate with medium_count=medium_count %}{{medium_count}} Medium{% endblocktranslate %}</span>
 									<br>
-									<span class="w-title text-primary">{{low_count}} Low, {{info_count}} Info Vulnerabilities</span>
+									<span class="w-title text-primary">{% blocktranslate with low_count=low_count %}{{low_count}} Low{% endblocktranslate %}, {% blocktranslate with info_count=info_count %}{{info_count}} Info Vulnerabilities{% endblocktranslate %}</span>
 								</p>
 							</div>
 						</div>
@@ -247,17 +249,17 @@ Target Summary
 						<div class="card" style="height: 95%">
 							<div class="card-body">
 								<div class="card-widgets">
-									<a href="javascript: fetch_whois('{{target.name}}', true);" data-toggle="tooltip" title="Reload Whois"><i class="mdi mdi-refresh"></i></a>
+									<a href="javascript: fetch_whois('{{target.name}}', true);" data-toggle="tooltip" title="{% translate "Reload Whois" %}"><i class="mdi mdi-refresh"></i></a>
 								</div>
-								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-activity"></i></span>&nbsp;Target Information</h4>
+								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-activity"></i></span>&nbsp;{% translate "Target Information" %}</h4>
 								<div class="row mt-3">
 									<div class="col-sm-3">
 										<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-											<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
-											<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
-											<a class="nav-link mb-1" id="v-pills-dns-tab" data-bs-toggle="pill" href="#v-pills-dns" role="tab" aria-controls="v-pills-dns" aria-selected="false">DNS Records</a>
-											<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
-											<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">Historical Ips</a>
+											<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">{% translate "Domain info" %}</a>
+											<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">{% translate "Whois" %}</a>
+											<a class="nav-link mb-1" id="v-pills-dns-tab" data-bs-toggle="pill" href="#v-pills-dns" role="tab" aria-controls="v-pills-dns" aria-selected="false">{% translate "DNS Records" %}</a>
+											<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">{% translate "Nameservers" %}</a>
+											<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">{% translate "Historical Ips" %}</a>
 										</div>
 									</div> <!-- end col-->
 									<div class="col-sm-9">
@@ -265,62 +267,62 @@ Target Summary
 											<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="min-height: 300px;">
 												{% if not target.domain_info %}
 												<div class="alert alert-danger alert-dismissible fade show" role="alert" id="whois_not_fetched_alert">
-													<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-													WHOIS Record Has not been fetched, would you like to <a href="javascript: fetch_whois('{{target}}', true);">fetch it now?</a>
+													<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% translate 'Close' %}"></button>
+													{% translate 'WHOIS Record Has not been fetched, would you like to' %} <a href="javascript: fetch_whois('{{target}}', true);">{% translate 'fetch it now?' %}</a>
 												</div>
 												{% endif %}
 												<div class="alert alert-info alert-dismissible fade show" role="alert" id="whois_fetching_alert" style="display: none">
-													Fetching WHOIS records, Please wait...
+													{% translate 'Fetching WHOIS records, Please wait...' %}
 													<div class="spinner-border spinner-border-sm float-end" role="status"></div>
 												</div>
 												<div class="alert alert-success alert-dismissible fade show" role="alert" id="whois_fetched_alert" style="display: none">
-													WHOIS Records have been fetched, please <a href="javascript:location.reload();">reload the page.</a>
+													{% translate 'WHOIS Records have been fetched, please' %} <a href="javascript:location.reload();">{% translate 'reload the page.' %}</a>
 												</div>
 												<div class="row">
 													<div class="col-4">
-														<small class="sub-header">Domain</small>
+														<small class="sub-header">{% translate 'Domain' %}</small>
 														<h5>{{target.name}}</h5>
 													</div>
 													<div class="col-4">
-														<small class="sub-header">Dnssec</small>
+														<small class="sub-header">{% translate 'Dnssec' %}</small>
 														<h5>{{target.domain_info.dnssec}}</h5>
 													</div>
 													<div class="col-4">
-														<small class="sub-header">Geolocation</small>
+														<small class="sub-header">{% translate 'Geolocation' %}</small>
 														<h5>{{target.domain_info.geolocation_iso|upper}}<span class="ms-2 fi fi-{{target.domain_info.geolocation_iso|lower}}"></span></h5>
 													</div>
 												</div>
 												<div class="row">
 													<div class="col-4">
-														<small class="sub-header">Created</small>
+														<small class="sub-header">{% translate 'Created' %}</small>
 														<h5>{{target.domain_info.created}}</h5>
 													</div>
 													<div class="col-4">
-														<small class="sub-header">Updated</small>
+														<small class="sub-header">{% translate 'Updated' %}</small>
 														<h5>{{target.domain_info.updated}}</h5>
 													</div>
 													<div class="col-4">
-														<small class="sub-header">Expires</small>
+														<small class="sub-header">{% translate 'Expires' %}</small>
 														<h5>{{target.domain_info.expires}}</h5>
 													</div>
 												</div>
 												<div class="row">
 													<div class="col-6">
-														<small class="sub-header">Whois Server</small>
+														<small class="sub-header">{% translate 'Whois Server' %}</small>
 														<h5>{{target.domain_info.whois_server}}</h5>
 													</div>
 												</div>
 												<div class="row">
 													<div class="col-4">
-														<small class="sub-header">Registrar Name</small>
+														<small class="sub-header">{% translate 'Registrar Name' %}</small>
 														<h5>{{target.domain_info.registrar.name}}</h5>
 													</div>
 													<div class="col-4">
-														<smal class="sub-header"l>Registrar Phone</small>
+														<smal class="sub-header">{% translate 'Registrar Phone' %}</small>
 														<h5>{{target.domain_info.registrar.phone}}</h5>
 													</div>
 													<div class="col-4">
-														<small class="sub-header">Registrar Email</small>
+														<small class="sub-header">{% translate 'Registrar Email' %}</small>
 														<h5>{{target.domain_info.registrar.email}}</h5>
 													</div>
 												</div>
@@ -336,17 +338,17 @@ Target Summary
 												<ul class="nav nav-tabs nav-bordered nav-justified">
 													<li class="nav-item">
 														<a href="#registrant-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
-															Registrant
+															{% translate 'Registrant' %}
 														</a>
 													</li>
 													<li class="nav-item">
 														<a href="#admin-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
-															Administrative
+															{% translate 'Administrative' %}
 														</a>
 													</li>
 													<li class="nav-item">
 														<a href="#technical-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
-															Technical
+															{% translate 'Technical' %}
 														</a>
 													</li>
 												</ul>
@@ -356,23 +358,23 @@ Target Summary
 															<table class="table mb-0">
 																<tbody>
 																	<tr class="table-info">
-																		<td><b>ID</b></td>
+																		<td><b>{% translate 'ID' %}</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.registrant.id_str}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Name</b></td>
+																		<td><b>{% translate 'Name' %}</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.registrant.name}}</td>
 																	</tr>
 																	<tr class="table-primary">
-																		<td><b>Organization</b></td>
+																		<td><b>{% translate 'Organization' %}</b></td>
 																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.registrant.organization}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Email</b></td>
+																		<td><b>{% translate 'Email' %}</b></td>
 																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.registrant.email}}</td>
 																	</tr>
 																	<tr class="table-info">
-																		<td><b>Phone/Fax</b></td>
+																		<td><b>{% translate 'Phone/Fax' %}</b></td>
 																		<td>
 																			{% if target.domain_info.registrant.phone %}
 																			<span class="fe-phone"></span>&nbsp;{{target.domain_info.registrant.phone}}
@@ -383,12 +385,12 @@ Target Summary
 																		{% endif %}
 																	</tr>
 																	<tr class="">
-																		<td><b>Address</b></td>
+																		<td><b>{% translate 'Address' %}</b></td>
 																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.registrant.address}}</td>
 																	</tr>
 																	<tr class="table-danger">
-																		<td><b>Address</b></td>
-																		<td><b>City: </b>{{target.domain_info.registrant.city}} <b>State: </b>{{target.domain_info.registrant.state}} <b>Zip Code: </b>{{target.domain_info.registrant.zip_code}} <b>Country:
+																		<td><b>{% translate 'Address' %}</b></td>
+																		<td><b>{% translate 'City' %}: </b>{{target.domain_info.registrant.city}} <b>{% translate 'State' %}: </b>{{target.domain_info.registrant.state}} <b>{% translate 'Zip Code' %}: </b>{{target.domain_info.registrant.zip_code}} <b>{% translate 'Country' %}:
 																		</b>{{target.domain_info.registrant.country}} </td>
 																	</tr>
 																</tbody>
@@ -400,23 +402,23 @@ Target Summary
 															<table class="table mb-0">
 																<tbody>
 																	<tr class="table-info">
-																		<td><b>ID</b></td>
+																		<td><b>{% translate 'ID' %}</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin.id_str}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Name</b></td>
+																		<td><b>{% translate 'Name' %}</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin.name}}</td>
 																	</tr>
 																	<tr class="table-primary">
-																		<td><b>Organization</b></td>
+																		<td><b>{% translate 'Organization' %}</b></td>
 																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.admin.organization}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Email</b></td>
+																		<td><b>{% translate 'Email' %}</b></td>
 																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.admin.email}}</td>
 																	</tr>
 																	<tr class="table-info">
-																		<td><b>Phone/Fax</b></td>
+																		<td><b>{% translate 'Phone/Fax' %}</b></td>
 																		<td>
 																			{% if target.domain_info.admin.phone %}
 																			<span class="fe-phone"></span>&nbsp;{{target.domain_info.admin.phone}}
@@ -427,12 +429,12 @@ Target Summary
 																		{% endif %}
 																	</tr>
 																	<tr class="">
-																		<td><b>Address</b></td>
+																		<td><b>{% translate 'Address' %}</b></td>
 																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.admin.address}}</td>
 																	</tr>
 																	<tr class="table-danger">
-																		<td><b>Address</b></td>
-																		<td><b>City: </b>{{target.domain_info.admin.city}} <b>State: </b>{{target.domain_info.admin.state}} <b>Zip Code: </b>{{target.domain_info.admin.zip_code}} <b>Country:
+																		<td><b>{% translate 'Address' %}</b></td>
+																		<td><b>{% translate 'City' %}: </b>{{target.domain_info.admin.city}} <b>{% translate 'State' %}: </b>{{target.domain_info.admin.state}} <b>{% translate 'Zip Code' %}: </b>{{target.domain_info.admin.zip_code}} <b>{% translate 'Country' %}:
 																		</b>{{target.domain_info.admin.country}} </td>
 																	</tr>
 																</tbody>
@@ -444,23 +446,23 @@ Target Summary
 															<table class="table mb-0">
 																<tbody>
 																	<tr class="table-info">
-																		<td><b>ID</b></td>
+																		<td><b>{% translate 'ID' %}</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin.id_str}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Name</b></td>
+																		<td><b>{% translate 'Name' %}</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin.name}}</td>
 																	</tr>
 																	<tr class="table-primary">
-																		<td><b>Organization</b></td>
+																		<td><b>{% translate 'Organization' %}</b></td>
 																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.admin.organization}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Email</b></td>
+																		<td><b>{% translate 'Email' %}</b></td>
 																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.admin.email}}</td>
 																	</tr>
 																	<tr class="table-info">
-																		<td><b>Phone/Fax</b></td>
+																		<td><b>{% translate 'Phone/Fax' %}</b></td>
 																		<td>
 																			{% if target.domain_info.admin.phone %}
 																			<span class="fe-phone"></span>&nbsp;{{target.domain_info.admin.phone}}
@@ -471,12 +473,12 @@ Target Summary
 																		{% endif %}
 																	</tr>
 																	<tr class="">
-																		<td><b>Address</b></td>
+																		<td><b>{% translate 'Address' %}</b></td>
 																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.admin.address}}</td>
 																	</tr>
 																	<tr class="table-danger">
-																		<td><b>Address</b></td>
-																		<td><b>City: </b>{{target.domain_info.tech.city}} <b>State: </b>{{target.domain_info.tech.state}} <b>Zip Code: </b>{{target.domain_info.tech.zip_code}} <b>Country:
+																		<td><b>{% translate 'Address' %}</b></td>
+																		<td><b>{% translate 'City' %}: </b>{{target.domain_info.tech.city}} <b>{% translate 'State' %}: </b>{{target.domain_info.tech.state}} <b>{% translate 'Zip Code' %}: </b>{{target.domain_info.tech.zip_code}} <b>{% translate 'Country' %}:
 																		</b>{{target.domain_info.tech.country}} </td>
 																	</tr>
 																</tbody>
@@ -487,14 +489,14 @@ Target Summary
 											</div>
 											<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 												{% if target.domain_info.historical_ips.all %}
-												<div class="alert alert-success">{{target.domain_info.historical_ips.all.count}} Historical Ips</div>
+												<div class="alert alert-success">{{target.domain_info.historical_ips.all.count}} {% translate 'Historical Ips' %}</div>
 												<table id="basic-datatable" class="table dt-responsive w-100">
 													<thead>
 															<tr>
-																	<th>IP</th>
-																	<th>Location</th>
-																	<th>Owner</th>
-																	<th>Last Seen</th>
+																	<th>{% translate 'IP' %}</th>
+																	<th>{% translate 'Location' %}</th>
+																	<th>{% translate 'Owner' %}</th>
+																	<th>{% translate 'Last Seen' %}</th>
 															</tr>
 													</thead>
 													<tbody>
@@ -509,23 +511,23 @@ Target Summary
 													</tbody>
 												</table>
 												{% else %}
-												<div class="alert alert-info">No historical IPs found!</div>
+												<div class="alert alert-info">{% translate 'No historical IPs found!' %}</div>
 												{% endif %}
 											</div>
 											<div class="tab-pane fade" id="v-pills-dns" role="tabpanel" aria-labelledby="v-pills-dns-tab" data-simplebar style="min-height: 300px;">
-												<h4>A Records</h4>
+												<h4>{% translate 'A Records' %}</h4>
 												{% for dns in target.domain_info.dns_records.all %}
 													{% if dns.type == 'a' %}
 														<span class="badge badge-soft-primary me-1 mt-1">{{ dns }}</span>
 													{% endif %}
 												{% endfor %}
-												<h4>MX Records</h4>
+												<h4>{% translate 'MX Records' %}</h4>
 												{% for dns in target.domain_info.dns_records.all %}
 													{% if dns.type == 'mx' %}
 														<span class="badge badge-soft-primary me-1 mt-1">{{ dns }}</span>
 													{% endif %}
 												{% endfor %}
-												<h4>TXT Records</h4>
+												<h4>{% translate 'TXT Records' %}</h4>
 												{% for dns in target.domain_info.dns_records.all %}
 													{% if dns.type == 'txt' %}
 														<span class="badge badge-soft-secondary me-1 mt-1">{{ dns }}</span>
@@ -534,12 +536,12 @@ Target Summary
 											</div>
 											<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 												{% if target.domain_info.name_servers.all %}
-													<div class="alert alert-success">{{target.domain_info.name_servers.all.count}} NameServers identified</div>
+													<div class="alert alert-success">{{target.domain_info.name_servers.all.count}} {% translate 'NameServers identified' %}</div>
 													{% for nameserver in target.domain_info.name_servers.all %}
 														<span class="badge badge-soft-primary me-1 mt-1">{{ nameserver}}</span>
 													{% endfor %}
 												{% else %}
-													<div class="alert alert-info">No NameServers identified</div>
+													<div class="alert alert-info">{% translate 'No NameServers identified' %}</div>
 												{% endif %}
 											</div>
 										</div>
@@ -551,7 +553,7 @@ Target Summary
 					<div class="col-xl-5 col-lg-5 col-12">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
-								<h4 class="header-title mb-0">HTTP Status Breakdown</h4>
+								<h4 class="header-title mb-0">{% translate 'HTTP Status Breakdown' %}</h4>
 								<div id="http_status_chart" class="apex-charts"></div>
 							</div>
 						</div>
@@ -561,7 +563,7 @@ Target Summary
 							<div class="card-body">
 								<div class="row">
 									<div class="col-9">
-										<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
+										<h4 class="header-title mb-0">{% translate 'Geographical Distribution of Assets' %}</h4>
 										<div id="world_map" style="height: 520px"></div>
 									</div>
 									<div class="col-3">
@@ -570,8 +572,8 @@ Target Summary
 												<thead class="table-light">
 													<tr>
 														<th>&nbsp;</th>
-														<th>Country</th>
-														<th>Assets</th>
+														<th>{% translate 'Country' %}</th>
+														<th>{% translate 'Assets' %}</th>
 													</tr>
 												</thead>
 												<tbody>
@@ -598,7 +600,8 @@ Target Summary
 					</div>
 					{% include 'base/_items/most_common_cve_cwe_tag_template.html' %}
 					<div class="col-xl-6 col-lg-6 col-12">
-						{% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title='Most Vulnerable Subdomain'%}
+						{% translate 'Most Vulnerable Subdomain' as i18n_vuln_widget_title %}
+						{% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title=i18n_vuln_widget_title%}
 					</div>
 					<div class="col-xl-6 col-lg-6 col-12">
 						{% include 'base/_items/most_common_vuln.html' %}
@@ -606,7 +609,7 @@ Target Summary
 					<div class="col-xl-6 col-lg-6 col-12">
 						<div class="card">
 							<div class="card-body">
-								<h4 class="header-title mb-0"><span id="important-count"><span class="spinner-border spinner-border-sm me-1"></span></span>Important Subdomains</h4>
+								<h4 class="header-title mb-0"><span id="important-count"><span class="spinner-border spinner-border-sm me-1"></span></span>{% translate 'Important Subdomains' %}</h4>
 								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
 									<div id="important-subdomains-list">
 									</div>
@@ -618,7 +621,7 @@ Target Summary
 						<div class="card">
 							<div class="card-body">
 								<h4 class="header-title mb-0"><span id="tasks-count"><span class="spinner-border spinner-border-sm me-1"></span></span>
-									Recon Note/Todo
+									{% translate 'Recon Note/Todo' %}
 									<!--<span class="text-primary float-end" data-toggle="tooltip" data-placement="top" title="Add Recon Todo" onclick="add_todo_for_scanhistory_modal({{history.id}})">
 									<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
 								</span>-->
@@ -634,33 +637,33 @@ Target Summary
 										<div class="modal-body">
 											<div class="compose-box">
 												<div class="compose-content" id="addTaskModalTitle">
-													<h4 class="header-title">Add Recon Todo</h4>
+													<h4 class="header-title">{% translate 'Add Recon Todo' %}</h4>
 													<form>
 														<input type="hidden" name="summary_identifier" value="{{target.id}}" id="summary_identifier_val">
 
 														<div class="mt-2">
-															<label for="todoTitle" class="form-label">Todo Title</label>
-															<input id="todoTitle" type="text" placeholder="Todo Title" class="form-control" name="task">
+															<label for="todoTitle" class="form-label">{% translate 'Todo Title' %}</label>
+															<input id="todoTitle" type="text" placeholder="{% translate 'Todo Title' %}" class="form-control" name="task">
 														</div>
 
 														<div class="mt-2">
-															<label for="todoSubdomainDropdown" class="form-label">Select Subdomain (Optional)</label>
+															<label for="todoSubdomainDropdown" class="form-label">{% translate 'Select Subdomain (Optional)' %}</label>
 															<span id="selectedSubdomainCount"></span>
 															<select class="w-100 form-control" data-toggle="select2" data-width="100%" id="todoSubdomainDropdown">
-																<option>Choose Subdomain...</option>
+																<option>{% translate 'Choose Subdomain...' %}</option>
 															</select>
 														</div>
 
 														<div class="">
-															<label for="todoDescription" class="form-label">Todo Description (Optional)</label>
-															<textarea class="form-control" id="todoDescription" rows="5" spellcheck="false" placeholder="Todo Description"></textarea>
+															<label for="todoDescription" class="form-label">{% translate 'Todo Description (Optional)' %}</label>
+															<textarea class="form-control" id="todoDescription" rows="5" spellcheck="false" placeholder="{% translate 'Todo Description' %}"></textarea>
 														</div>
 													</form>
 												</div>
 											</div>
 										</div>
 										<div class="modal-footer">
-											<button class="btn btn-primary add-scan-history-todo">Add Recon Todo</button>
+											<button class="btn btn-primary add-scan-history-todo">{% translate 'Add Recon Todo' %}</button>
 										</div>
 									</div>
 								</div>
@@ -671,8 +674,8 @@ Target Summary
 				<div class="col-xl-4 col-lg-4 col-12">
 					<div class="card">
 						<div class="card-body">
-							<h4 class="header-title mb-0"><span id="ip-address-count"><span class="spinner-border spinner-border-sm me-1"></span></span> IP Addresses</h4>
-							<span class="text-warning float-end">*IP Addresses highlighted with yellow are CDN IP</span>
+							<h4 class="header-title mb-0"><span id="ip-address-count"><span class="spinner-border spinner-border-sm me-1"></span></span> {% translate 'IP Addresses' %}</h4>
+							<span class="text-warning float-end">{% translate '*IP Addresses highlighted with yellow are CDN IP' %}</span>
 							<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
 								<div id="ip-address" class="mt-2"></div>
 							</div>
@@ -682,8 +685,8 @@ Target Summary
 				<div class="col-xl-4 col-lg-4 col-12">
 					<div class="card">
 						<div class="card-body">
-							<h4 class="header-title mb-0"><span id="ports-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Ports</h4>
-							<span class="text-danger float-end">*Ports highlighted with red are uncommon Ports</span>
+							<h4 class="header-title mb-0"><span id="ports-count"><span class="spinner-border spinner-border-sm me-1"></span></span> {% translate 'Discovered Ports' %}</h4>
+							<span class="text-danger float-end">{% translate '*Ports highlighted with red are uncommon Ports' %}</span>
 							<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
 								<div id="ports" class="mt-2"></div>
 							</div>
@@ -693,7 +696,7 @@ Target Summary
 				<div class="col-xl-4 col-lg-4 col-12">
 					<div class="card">
 						<div class="card-body">
-							<h4 class="header-title mb-0"><span id="technologies-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Technologies</h4>
+							<h4 class="header-title mb-0"><span id="technologies-count"><span class="spinner-border spinner-border-sm me-1"></span></span> {% translate 'Discovered Technologies' %}</h4>
 							<span class="text-warning float-end">&nbsp;</span>
 							<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
 								<div id="technologies" class="mt-2"></div>
@@ -770,7 +773,7 @@ $(document).ready(function(){
 	// http_status chart
 	var options = {
 		series: [{
-			name: 'Subdomains',
+			name: '{% translate "Subdomains" %}',
 			data: [{% for status in http_status_breakdown %}
 				{{status.http_status__count}},
 				{% endfor %}]
@@ -875,7 +878,7 @@ $(document).ready(function(){
 			}
 		},
 		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}, {{unknown_count}}],
-		labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
+		labels: [gettext("Critical"), gettext("High"), gettext("Medium"), gettext("Low"), gettext("Info"), gettext("Unknown")],
 		responsive: [{
 			breakpoint: 1599,
 			options: {
@@ -930,8 +933,11 @@ $(document).ready(function(){
 			},
 			"rowGroup": {
 				"startRender": function(rows, group) {
-					return group + ' (' + rows.count() + ' Subdomains)';
-				}
+					return interpolate("%(group)s (%(count)s Subdomains)", {
+						"group": group,
+						"count": rows.count()
+					});
+				},
 			},
 			"order": [[ 8, "desc" ]],
 			"columns": subdomain_datatable_columns,
@@ -967,15 +973,15 @@ $(document).ready(function(){
 							}
 							if(row['is_interesting'])
 							{
-								interesting_badge = `<div><span class='me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span></div>`;
+								interesting_badge = `<div><span class='me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="` + gettext("Interesting Subdomain") + `">` + gettext("Interesting") + `</span></div>`;
 							}
 
 							if (row['content_type']) {
-								content_type = `<div><span class='mt-1 badge badge-soft-blue bs-tooltip' title="Content Type">${row['content_type']}</span></div>`;
+								content_type = `<div><span class='mt-1 badge badge-soft-blue bs-tooltip' title="` + gettext("Content Type") + `">${row['content_type']}</span></div>`;
 							}
 
 							if (row['webserver']) {
-								web_server = `<div><span class='mt-1 badge badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span></div>`;
+								web_server = `<div><span class='mt-1 badge badge-soft-info bs-tooltip' title="` + gettext("Web Server") + `">${row['webserver']}</span></div>`;
 							}
 
 							if (interesting_badge) {
@@ -986,46 +992,46 @@ $(document).ready(function(){
 							todo_badge = '';
 
 							if (row['todos_count']) {
-								todo_badge = `<span class="text-danger badge badge-link badge-soft-danger float-end mt-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
+								todo_badge = `<span class="text-danger badge badge-link badge-soft-danger float-end mt-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} ` + gettext("Todos") + `&nbsp;</span>`
 							}
 
 							endpoint_count_badge = '';
 							if (row['endpoint_count']) {
-								endpoint_count_badge = `<span class="pl-2 pr-2 me-1 badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal('{{current_project.slug}}', null, ${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
+								endpoint_count_badge = `<span class="pl-2 pr-2 me-1 badge badge-soft-primary badge-link bs-tooltip" title="` + gettext("Endpoints") + `" onclick="get_endpoint_modal('{{current_project.slug}}', null, ${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
 							}
 
 							if(row['waf'].length){
-								waf_badge = `<div><span class="pl-2 pr-2 my-1 badge badge-soft-danger" bs-tooltip" title="WAF Detected by wafw00f!""><i class="fe-cloud-lightning mx-1"></i>WAF Detected</span>`;
+								waf_badge = `<div><span class="pl-2 pr-2 my-1 badge badge-soft-danger bs-tooltip" title="` + gettext("WAF Detected by wafw00f!") + `"><i class="fe-cloud-lightning mx-1"></i>`+ gettext("WAF Detected") + `</span>`;
 								for (var waf in row['waf']) {
 									var waf_object = row['waf'][waf];
-									waf_badge += `<span class="mx-1 my-1 badge badge-soft-danger" bs-tooltip" title="WAF Manufacturer: ${waf_object.manufacturer}">${waf_object.name}</span>`;
+									waf_badge += `<span class="mx-1 my-1 badge badge-soft-danger" bs-tooltip" title="` + interpolate("WAF Manufacturer: %(manufacturer)s", {manufacturer: waf_object.manufacturer}, true) + `">${waf_object.name}</span>`;
 								}
 								waf_badge += `</div>`;
 							}
 
 							vuln_count_badge = '';
-							total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="All Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
-							info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=0, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count']} Info</span>`;
-							low_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=1, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['low_count']} Low</span>`;
-							medium_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=2, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['medium_count']} Med</span>`;
-							high_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=3, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['high_count']} High</span>`;
-							critical_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=4, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['critical_count']} Critical</span>`;
+							total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="` + gettext("All Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
+							info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="` + gettext("Informational Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=0, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count']} ` + gettext("Info") + `</span>`;
+							low_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-low bs-tooltip badge-link' title="` + gettext("Low Severity Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=1, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['low_count']} ` + gettext("Low") + `</span>`;
+							medium_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="` + gettext("Medium Severity Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=2, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['medium_count']} ` + gettext("Medium") + `</span>`;
+							high_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="` + gettext("High Severity Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=3, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['high_count']} ` + gettext("High") + `</span>`;
+							critical_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="` + gettext("Critical Vulnerabilities") + `" onclick="get_vulnerability_modal(scan_id=null, severity=4, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['critical_count']} ` + gettext("Critical") + `</span>`;
 							vuln_count_badge = `<div class="">` + (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '') + `</div>`;
 
 							vuln_count_badge = (row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count'] > 0? total_vuln_badge : '') + vuln_count_badge;
 
 							copy_icon = `
-							<a href="javascript:;" data-clipboard-action="copy" class="action-icon copyable" data-toggle="tooltip" data-placement="top" title="Copy Subdomain!" data-clipboard-target="#subdomain-${row['id']}" id="#subdomain-${row['id']}" onclick="setTooltip(this.id, 'Copied!')"> <i class="text-primary mdi mdi-content-copy"></i></a>
+							<a href="javascript:;" data-clipboard-action="copy" class="action-icon copyable" data-toggle="tooltip" data-placement="top" title="` + gettext("Copy Subdomain!") + `" data-clipboard-target="#subdomain-${row['id']}" id="#subdomain-${row['id']}" onclick="setTooltip(this.id, '` + gettext("Copied!") + `')"> <i class="text-primary mdi mdi-content-copy"></i></a>
 							`;
 
 							var directory_count_badge = '';
 							if (row['directories_count']){
-								directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal(scan_id=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
+								directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="` + gettext("Directories") + `" onclick="get_directory_modal(scan_id=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
 							}
 
 							var subscan_count_badge = '';
 							if (row['subscan_count']){
-								subscan_count_badge = `<span class="badge me-1 badge-soft-blue badge-link bs-tooltip" title="SubScans" onclick="get_and_render_subscan_history(${row['id']}, '${row['name']}')">${row['subscan_count']} <i class="fas fa-history"></i></span>`;
+								subscan_count_badge = `<span class="badge me-1 badge-soft-blue badge-link bs-tooltip" title="` + gettext("SubScans") + `" onclick="get_and_render_subscan_history(${row['id']}, '${row['name']}')">${row['subscan_count']} <i class="fas fa-history"></i></span>`;
 							}
 
 							tech_badge += content_type;
@@ -1035,7 +1041,7 @@ $(document).ready(function(){
 
 							if (row['http_url']) {
 								if (row['cname']) {
-									cname_badge = `<div><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + `</div>`;
+									cname_badge = `<div><span class="text-dark">` + gettext("CNAME") + `<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + `</div>`;
 									return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data  +`${copy_icon} </span></a>`+ `</div>` + cname_badge + waf_badge  + end_vuln_badge + tech_badge + todo_badge;
 								}
 								return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + waf_badge + end_vuln_badge + tech_badge + todo_badge;
@@ -1081,7 +1087,7 @@ $(document).ready(function(){
 							{
 								Object.entries(data).forEach(([key, value]) => {
 									if (value['is_cdn']) {
-										ip_badge += `<span class='m-1 badge badge-soft-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', {{target.id}})">${value.address}</span>`
+										ip_badge += `<span class='m-1 badge badge-soft-warning badge-link' title="` + gettext("CDN IP Address")" onclick="get_ip_details('${value.address}', {{target.id}})">${value.address}</span>`
 									}
 									else{
 										ip_badge += `<span class='m-1 badge badge-soft-primary badge-link' onclick="get_ip_details('${value.address}', {{target.id}})">${value.address}</span>`
@@ -1103,7 +1109,7 @@ $(document).ready(function(){
 									for (port in ports){
 										port_obj = data[ip]['ports'][port]
 										badge_color = port_obj['is_uncommon'] ? 'danger' : 'primary';
-										title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
+										title = port_obj['is_uncommon'] ? interpolate("Uncommon Port - %(uncommonPort)s", {uncommonPort: port_obj['description']}, true) : port_obj['description'];
 										port_badge += `<span class='m-1 badge badge-soft-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, {{target.id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
 									}
 								}
@@ -1150,14 +1156,14 @@ $(document).ready(function(){
 							const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
 							return `
 							<div class="btn-group mt-2">
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Show Attack Surface" class="btn btn-primary me-1 bs-tooltip" onclick="show_attack_surface_modal(${row['id']})"><i class="fe-eye"></i></button>
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="` + gettext("Show Attack Surface") + `" class="btn btn-primary me-1 bs-tooltip" onclick="show_attack_surface_modal(${row['id']})"><i class="fe-eye"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="` + gettext("Further Scan Subdomain") + `" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="` + gettext("Add Recon Todo/Note") + `" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
 							<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
 							<div class="dropdown-menu dropdown-menu-end">
-							<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>
-							<a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>Detect CMS</a>
-							<a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>Delete Subdomain</a>
+							<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>` + gettext("Mark Important Subdomain") + `</a>
+							<a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>` + gettext("Detect CMS") + `</a>
+							<a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>` + gettext("Delete Subdomain") + `</a>
 							</div>
 							</div>
 							`;
@@ -1199,7 +1205,7 @@ $(document).ready(function(){
 						api.order([col_index, 'asc']).draw();
 						subdomain_datatables.rowGroup().dataSrc(this.value);
 						Snackbar.show({
-							text: 'Subdomains grouped by ' + this.value,
+							text: interpolate("Subdomains grouped by %(subdomainsGpBy)s", {subdomainsGpBy: this.value}, true),
 							pos: 'top-right',
 							duration: 2500
 						});
@@ -1281,14 +1287,15 @@ $(document).ready(function(){
 			var row = this;
 			Swal.fire({
 				showCancelButton: true,
-				title: 'Delete Subdomain!',
-				text: 'Do you really want to delete this subdomain? This action cannot be undone.',
+				title: gettext("Delete Subdomain!"),
+				text: gettext("Do you really want to delete this subdomain? This action cannot be undone."),
 				icon: 'error',
-				confirmButtonText: 'Delete',
+				confirmButtonText: gettext("Delete"),
+				cancelButtonText: gettext("Cancel"),
 			}).then((result) => {
 				if (result.isConfirmed) {
 					Swal.fire({
-						title: 'Deleting Subdomain...',
+						title: gettext("Deleting Subdomain..."),
 						allowOutsideClick: false
 					});
 					swal.showLoading();
@@ -1307,13 +1314,13 @@ $(document).ready(function(){
 							if (response['status']) {
 								$(row).parent().parent().parent().remove();
 								Snackbar.show({
-									text: 'Subdomain successfully deleted!',
+									text: gettext("Subdomain successfully deleted!"),
 									pos: 'top-right',
 									duration: 2500
 								});
 							} else {
 								Swal.fire({
-									title: 'Could not delete Subdomain!',
+									title: gettext("Could not delete Subdomain!"),
 									icon: 'fail',
 								});
 							}
@@ -1355,10 +1362,10 @@ $(document).ready(function(){
 					"sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
 					"sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
 				},
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
+				"sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
 				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Search...",
-				"sLengthMenu": "Results :  _MENU_",
+				"sSearchPlaceholder": gettext("Search..."),
+				"sLengthMenu": gettext("Results :  _MENU_"),
 			},
 			"processing": true,
 			"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
@@ -1450,30 +1457,30 @@ $(document).ready(function(){
 					if (row['tags']) {
 						tags = '<div>';
 						row['tags'].forEach(tag => {
-							tags += `<span class="badge badge-${badge_color} me-1 mt-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
+							tags += `<span class="badge badge-${badge_color} me-1 mt-1" data-toggle="tooltip" data-placement="top" title="` + gettext("Tags") + `">${tag.name}</span>`;
 						});
 						tags += '</div>';
 					}
 					if (row['cvss_metrics']) {
-						cvss_metrics_badge = `<div><span class="badge badge-outline-primary mt-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
+						cvss_metrics_badge = `<div><span class="badge badge-outline-primary mt-1" data-toggle="tooltip" data-placement="top" title="` + gettext("CVSS Metrics") + `">${row['cvss_metrics']}</span></div>`;
 					}
 					if (row['cve_ids'] || row['cwe_ids']) {
 						cve_cwe_badge += '<br>';
 					}
 					if (row['cve_ids']) {
 						row['cve_ids'].forEach(cve => {
-							cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
+							cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="` + gettext("CVE ID") + `">${cve.name.toUpperCase()}</a>`;
 						});
 					}
 					if (row['cwe_ids']) {
 						row['cwe_ids'].forEach(cwe => {
-							cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
+							cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="` + gettext("CWE ID") + `">${cwe.name.toUpperCase()}</a>`;
 						});
 					}
 					// if (cve_cwe_badge != "") {
 					// 	cve_cwe_badge
 					// }
-					hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+					hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">` + gettext("Reported to hackerone") + `</a></div>` : "";
 					return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + cve_cwe_badge + tags + hackerone_report;
 				},
 				"targets": 3,
@@ -1496,7 +1503,7 @@ $(document).ready(function(){
 						} else {
 							badge = 'danger';
 						}
-						return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${data}</span>`;
+						return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="` + gettext("CVSS Score") + `">${data}</span>`;
 					}
 					return '';
 				},
@@ -1514,9 +1521,9 @@ $(document).ready(function(){
 			{
 				"render": function(data, type, row) {
 					if (data) {
-						return '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
+						return '<span class="badge badge-soft-danger">&nbsp;&nbsp;' + gettext("OPEN") + '&nbsp;&nbsp;</span>'
 					} else {
-						return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
+						return '<span class="badge badge-soft-success">&nbsp;&nbsp;' + gettext("RESOLVED") + '&nbsp;&nbsp;</span>'
 					}
 				},
 				"targets": 15,
@@ -1525,16 +1532,16 @@ $(document).ready(function(){
 				"render": function(data, type, row) {
 					if (!data) {
 						return `
-									<div class="btn-group mb-2 dropstart">
-									<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+							<div class="btn-group mb-2 dropstart">
+								<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 									<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-									</a>
-									<div class="dropdown-menu" style="">
-									<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">Fetch GPT Vulnerability Details</a>
-									<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
-									<a class="text-danger dropdown-item btn-delete-vulnerability" href="#" id="${row['id']}">Delete Vulnerability</a>
-									</div>
-									</div>`;
+								</a>
+								<div class="dropdown-menu" style="">
+									<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">` + gettext("Fetch GPT Vulnerability Details") + `</a>
+									<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">` + gettext("Report to Hackerone") + `</a>
+									<a class="text-danger dropdown-item btn-delete-vulnerability" href="#" id="${row['id']}">` + gettext("Delete Vulnerability") + `</a>
+								</div>
+							</div>`;
 					} else {
 						return '';
 					}
@@ -1561,7 +1568,7 @@ $(document).ready(function(){
 						is_grouping = true;
 						grouping_col = col_index;
 						Snackbar.show({
-							text: 'Vulnerabilities grouped by ' + this.value,
+							text: interpolate("Vulnerabilities grouped by %(vulnGpBy)s", {vulnGpBy: this.value}, true),
 							pos: 'top-right',
 							duration: 2500
 						});
@@ -1665,7 +1672,7 @@ $(document).ready(function(){
 
 	var clipboard = new Clipboard('.copyable');
 	clipboard.on('success', function(e) {
-		setTooltip(e.trigger, 'Copied!');
+		setTooltip(e.trigger, gettext("Copied!"));
 		hideTooltip(e.trigger);
 	});
 
@@ -1673,10 +1680,10 @@ $(document).ready(function(){
 	// listener for info checkbox on most vulnerable target
 	$('#ignore_info_most_vuln_checkbox').change(function() {
 		if (this.checked) {
-			var text_msg = 'Informational Vulnerabilities ignored in Most Vulnerable Targets.';
+			var text_msg = gettext("Informational Vulnerabilities ignored in Most Vulnerable Targets.");
 		}
 		else{
-			var text_msg = 'Informational Vulnerabilities included in Most Vulnerable Targets.';
+			var text_msg = gettext("Informational Vulnerabilities included in Most Vulnerable Targets.");
 		}
 		get_most_vulnerable_target(slug='{{current_project.slug}}', scan_id=null, target_id={{target.id}}, ignore_info=this.checked);
 		Snackbar.show({
@@ -1690,10 +1697,10 @@ $(document).ready(function(){
 	// listener for info checkbox on most vulnerable target
 	$('#ignore_info_most_common_vuln_checkbox').change(function() {
 		if (this.checked) {
-			var text_msg = 'Informational Vulnerabilities ignored for Most Common Vulnerabilities.';
+			var text_msg = gettext("Informational Vulnerabilities ignored for Most Common Vulnerabilities.");
 		}
 		else{
-			var text_msg = 'Informational Vulnerabilities included for Most Common Vulnerabilities.';
+			var text_msg = gettext("Informational Vulnerabilities included for Most Common Vulnerabilities.");
 		}
 		get_most_common_vulnerability(slug='{{current_project.slug}}', scan_id=null, target_id={{target.id}}, ignore_info=this.checked);
 		Snackbar.show({
@@ -1762,12 +1769,10 @@ $(document).ready(function(){
 			}]
 		},
 		onRegionTipShow: function(e, el, code){
-			if (code in countriesData) {
-				el.html(el.html()+' (Total Assets : '+ countriesData[code]+')');
-			}
-			else{
-				el.html(el.html()+' (Total Assets : 0)');
-			}
+			el.html(
+				el.html() + ' ' + 
+				interpolate("Total Assets: %(count)s", {count: ((code in countriesData) ? countriesData[code] : "0")}, true)
+			);
 		}
 	});
 

@@ -1,8 +1,10 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load custom_tags %}
+{% load i18n %}
+
 {% block title %}
-Notification Settings
+{% translate "Notification Settings" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
@@ -12,12 +14,12 @@ Notification Settings
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="#">Settings</a></li>
-<li class="breadcrumb-item active">Notification Settings</li>
+<li class="breadcrumb-item"><a href="#">{% translate "Settings" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Notification Settings" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Notification Settings
+{% translate "Notification Settings" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -25,11 +27,11 @@ Notification Settings
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h4 class="header-title">Send Notifications to: </h4>
+        <h4 class="header-title">{% translate "Send Notifications to:" %}</h4>
         <form method="POST">
           {% csrf_token %}
           <div class="row">
-            <label for="slack_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">Slack</label>
+            <label for="slack_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">{% translate "Slack" %}</label>
             <div class="col-xl-10 col-lg-9 col-sm-10">
               <div class="input-group mb-4">
                 <div class="input-group-prepend">
@@ -71,11 +73,11 @@ Notification Settings
               </div>
             </div>
             <div class="col-12">
-              <a href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks" target="_blank" class="float-end text-primary">Discord Webhook API Documentation</a>
+              <a href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks" target="_blank" class="float-end text-primary">{% translate "Discord Webhook API Documentation" %}</a>
             </div>
           </div>
           <div class="row mt-3">
-            <label for="slack_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">Telegram</label>
+            <label for="slack_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">{% translate "Telegram" %}</label>
             <div class="col-xl-10 col-lg-9 col-sm-10">
               <div class="input-group mb-4">
                 <div class="input-group-prepend">
@@ -97,69 +99,69 @@ Notification Settings
               </div>
             </div>
             <div class="col-12">
-              <a href="https://medium.com/shibinco/create-a-telegram-bot-using-botfather-and-get-the-api-token-900ba00e0f39" target="_blank" class="float-end text-primary">How to Create Telegram Bot</a>
+              <a href="https://medium.com/shibinco/create-a-telegram-bot-using-botfather-and-get-the-api-token-900ba00e0f39" target="_blank" class="float-end text-primary">{% translate "How to Create Telegram Bot" %}</a>
             </div>
           </div>
           <div class="row">
-            <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">Send me notification for</h4>
+            <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">{% translate "Send me notification for" %}</h4>
             <div class="col-xl-9 col-lg-9 col-sm-10">
               {{form.send_scan_status_notif}}
-              <label class="form-label" for="send_scan_status_notif">Scan related updates (e.g. Scan initiated, Scan completed)</label>
+              <label class="form-label" for="send_scan_status_notif">{% translate "Scan related updates (e.g. Scan initiated, Scan completed)" %}</label>
               <br>
               {{form.send_interesting_notif}}
-              <label class="form-label" for="send_interesting_notif">Interesting subdomains</label>
+              <label class="form-label" for="send_interesting_notif">{% translate "Interesting subdomains" %}</label>
               <br>
               {{form.send_vuln_notif}}
-              <label class="form-label" for="send_vuln_notif">Vulnerabilities Found</label>
+              <label class="form-label" for="send_vuln_notif">{% translate "Vulnerabilities Found" %}</label>
               <br>
-              <span class="text-muted">*Informational vulnerabilities will not be notified.</span>
+              <span class="text-muted">{% translate "*Informational vulnerabilities will not be notified." %}</span>
               <br>
               {{form.send_subdomain_changes_notif}}
               <label class="form-label" for="send_subdomain_changes_notif">
-                Subdomain changes
+                {% translate "Subdomain changes" %}
                 <br>
                 <span class="text-muted">
-                  (e.g. when new Subdomains are discovered or subdomains are no longer available)
+                  {% translate "(e.g. when new Subdomains are discovered or subdomains are no longer available)" %}
                 </span>
               </label>
             </div>
           </div>
           <div class="row mt-3">
-            <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">Upload Scan Results<br>(Recommended)</h4>
+            <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">{% translate "Upload Scan Results" %}<br>({% translate "Recommended" %})</h4>
             <div class="col-xl-9 col-lg-9 col-sm-10">
               {{form.send_scan_output_file}}
               <label class="form-label" for="send_scan_output_file">
-                Send scan output (e.g. Subdomain gathered file)
+                {% translate "Send scan output (e.g. Subdomain gathered file)" %}
                 <br>
-                <span class="text-primary">Discord only</span>
+                <span class="text-primary">{% translate "Discord only" %}</span>
                 <br>
                 <span class="text-muted">
-                  (upload scan results to your Discord)
+                  {% translate "(upload scan results to your Discord)" %}
                 </span>
               </label>
             </div>
           </div>
           <div class="row mt-3">
-            <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">Upload Scan Results<br>(Recommended)</h4>
+            <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">{% translate "Upload Scan Results" %}<br>({% translate "Recommended" %})</h4>
             <div class="col-xl-9 col-lg-9 col-sm-10">
               {{form.send_scan_tracebacks}}
               <label class="form-label" for="send_scan_output_file">
-                Send tasks tracebacks
+                {% translate "Send tasks tracebacks" %}
                 <br>
-                <span class="text-primary">Discord only</span>
+                <span class="text-primary">{% translate "Discord only" %}</span>
                 <br>
                 <span class="text-muted">
-                  (upload task failed tasks tracebacks to your Discord)
+                  {% translate "(upload task failed tasks tracebacks to your Discord)" %}
                 </span>
               </label>
             </div>
           </div>
           <div class="row">
             <div class="col-12">
-              <button type="submit" class="btn btn-primary mt-3 float-end">Save & Test Notification</button>
+              <button type="submit" class="btn btn-primary mt-3 float-end">{% translate "Save & Test Notification" %}</button>
             </div>
             <div class="col-12">
-              <p class="text-muted float-end">*Once saved, a test message will be sent to all the enabled services.</p>
+              <p class="text-muted float-end">{% translate "*Once saved, a test message will be sent to all the enabled services." %}</p>
             </div>
           </div>
         </form>

@@ -1,21 +1,22 @@
 {% extends 'base/base.html' %}
 {% load humanize %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Projects
+{% translate "Projects" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
 {% block page_title %}
-All Projects
+{% translate "All Projects" %}
 {% endblock page_title %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="/{{current_project.slug}}/">Dashboard</a></li>
-<li class="breadcrumb-item active">Projects</li>
+<li class="breadcrumb-item"><a href="/{{current_project.slug}}/">{% translate "Dashboard" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Projects" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -27,9 +28,9 @@ All Projects
            <table class="table table-borderless table-hover table-nowrap table-centered m-0">
               <thead class="table-light">
                  <tr>
-                    <th>Project Name</th>
-                    <th>Slug</th>
-                    <th>Action</th>
+                    <th>{% translate "Project Name" %}</th>
+                    <th>{% translate "Slug" %}</th>
+                    <th>{% translate "Action" %}</th>
                  </tr>
               </thead>
               <tbody>
@@ -38,7 +39,7 @@ All Projects
                     <td>
                       <h5 class="m-0 fw-normal">{{project.name}}</h5>
                       {% if current_project.slug == project.slug %}
-                          <span class="badge bg-soft-primary text-primary mt-1">Current Project</span>
+                          <span class="badge bg-soft-primary text-primary mt-1">{% translate "Current Project" %}</span>
                       {% endif %}
                       <p class="mb-0 text-muted"><small>Created {{project.insert_date|naturaltime}}</small></p>
                     </td>
@@ -47,7 +48,7 @@ All Projects
                     </td>
                     <td>
                       {% if current_project.slug == project.slug %}
-                      <span class="badge bg-info text-white">Current Project cannot be deleted.</span>
+                      <span class="badge bg-info text-white">{% translate "Current Project cannot be deleted." %}</span>
                       {% else %}
                       <a href="#" onclick="delete_project({{project.id}}, '{{project.name}}')" class="btn btn-xs btn-danger"><i class="mdi mdi-trash-can-outline"></i></a>
                       {% endif %}
@@ -69,11 +70,12 @@ All Projects
   function delete_project(id, project_name){
     const delAPI = "../../delete/project/" + id;
     swal.queue([{
-      title: 'Are you sure you want to delete '+project_name +'?',
-      text: "You won't be able to revert this, all targets and scan results also will be deleted!",
+      title: interpolate("Are you sure you want to delete %(projectName)s", {projectName: project_name}, true),
+      text: gettext("You won't be able to revert this, all targets and scan results also will be deleted!"),
       type: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Delete',
+      cancelButtonText: gettext("Cancel"),
+      confirmButtonText: gettext("Delete"),
       padding: '2em',
       showLoaderOnConfirm: true,
       preConfirm: function() {
@@ -94,7 +96,7 @@ All Projects
         .catch(function() {
           swal.insertQueueStep({
             type: 'error',
-            title: 'Oops! Unable to delete the target!'
+            title: gettext("Oops! Unable to delete the target!")
           })
         })
       }

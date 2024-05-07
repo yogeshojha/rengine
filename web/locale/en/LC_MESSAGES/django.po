@@ -1,0 +1,1229 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: reNgine/definitions.py:444
+msgid ""
+"\n"
+"    You are a highly skilled penetration tester who has recently completed a "
+"penetration testing.\n"
+"    You will be given with a\n"
+"        - Vulnerability title\n"
+"        - Vulnerable URL\n"
+"        - and some description about the vulnerability.\n"
+"    Your job is to write a detailed technical penetration testing report "
+"based on the given Vulnerability details.\n"
+"    The purpose of this report is to provide an in-depth analysis of the "
+"vulnerabilities discovered during the penetration testing engagement.\n"
+"\n"
+"    The penetration testing report must contain all separated by \n"
+"\n"
+"\n"
+"\n"
+"    - Vulnerability description\n"
+"        Include a detailed vulnerability description, include any known CVE "
+"IDs, any known existing vulnerabilities.\n"
+"    - Impact\n"
+"        Include what this vulnerability can impact for web applications.\n"
+"    - Remediation\n"
+"        Include steps to remediate this vulnerability. Separate each new "
+"remediations by - and a new line \n"
+"\n"
+"    - References\n"
+"        Include any references URL about this vulnerability, any existing "
+"CVE ID, or news articles etc. Separate each new references by - and a new "
+"line \n"
+". Only include http urls\n"
+"\n"
+"    Do not write 'Penetration Testing Report:' on the title.\n"
+msgstr ""
+
+#: reNgine/definitions.py:468
+msgid ""
+"\n"
+"    You are a highly skilled penetration tester who has recently completed a "
+"reconnaissance on a target.\n"
+"    As a penetration tester, I've conducted a thorough reconnaissance on a "
+"specific subdomain.\n"
+"    Based on my reconnaissance you will be given with a\n"
+"        - Subdomain Name\n"
+"        - Subdomain Page Title\n"
+"        - Open Ports if any detected\n"
+"        - HTTP Status\n"
+"        - Technologies Detected\n"
+"        - Content Type\n"
+"        - Web Server\n"
+"        - Page Content Length\n"
+"    I'm seeking insights into potential technical web application attacks "
+"that could be executed on this subdomain, along with explanations for why "
+"these attacks are feasible given the discovered information.\n"
+"    Please provide a detailed list of these attack types and their "
+"underlying technical rationales on every attacks you suggested.\n"
+"    Also suggest if any CVE ID, known exploits, existing vulnerabilities, "
+"any news articles URL related to the information provided to you.\n"
+msgstr ""
+
+#: reNgine/gpt.py:30
+msgid "No OpenAI keys provided."
+msgstr "No OpenAI keys provided."
+
+#: reNgine/tasks.py:178
+#, fuzzy
+#| msgid "Subdomains"
+msgid "Subdomain discovery"
+msgstr "Subdomains"
+
+#: reNgine/tasks.py:179
+msgid "OS Intelligence"
+msgstr ""
+
+#: reNgine/tasks.py:181
+#, fuzzy
+#| msgid "Ports"
+msgid "Port scan"
+msgstr "Ports"
+
+#: reNgine/tasks.py:182
+msgid "Fetch URL"
+msgstr ""
+
+#: reNgine/tasks.py:184
+#, fuzzy
+#| msgid "Directories Count"
+msgid "Directories & files fuzz"
+msgstr "Directories Count"
+
+#: reNgine/tasks.py:185
+#, fuzzy
+#| msgid "Vulnerability"
+msgid "Vulnerability scan"
+msgstr "Vulnerability"
+
+#: reNgine/tasks.py:186 templates/base/_items/subdomain_tab_content.html:92
+#: templates/base/_items/subdomain_tab_content.html:160
+#: templates/base/_items/subdomain_toolbar.html:64
+msgid "Screenshot"
+msgstr "Screenshot"
+
+#: reNgine/tasks.py:187
+#, fuzzy
+#| msgid "WAF Detector"
+msgid "WAF detection"
+msgstr "WAF Detector"
+
+#: reNgine/tasks.py:2011
+#, fuzzy
+#| msgid "Scheduled Scan"
+msgid "Nuclei Scan"
+msgstr "Scheduled Scan"
+
+#: reNgine/tasks.py:2019
+msgid "CRLFuzz Scan"
+msgstr ""
+
+#: reNgine/tasks.py:2027
+msgid "Dalfox XSS Scan"
+msgstr ""
+
+#: reNgine/tasks.py:2034
+msgid "Misconfigured S3 Buckets Scanner"
+msgstr ""
+
+#: reNgine/tasks.py:2414
+#, python-format
+msgid "Nuclei Scan with severity %(severity)s"
+msgstr ""
+
+#: reNgine/tasks.py:3515
+#, python-format
+msgid " Evidence: %(evidence)s <br>"
+msgstr ""
+
+#: reNgine/tasks.py:3516
+#, python-format
+msgid " Message: %(msg)s <br>"
+msgstr ""
+
+#: reNgine/tasks.py:3517
+#, python-format
+msgid " Payload: %(payload)s <br>"
+msgstr ""
+
+#: reNgine/tasks.py:3518
+#, python-format
+msgid " Vulnerable Parameter: %(vulnParam)s <br>"
+msgstr ""
+
+#: reNgine/tasks.py:3521
+msgid "XSS (Cross Site Scripting)"
+msgstr ""
+
+#: reNgine/tasks.py:3541
+msgid "CRLF (HTTP Response Splitting)"
+msgstr ""
+
+#: reNgine/tasks.py:3544
+msgid "A CRLF (HTTP Response Splitting) vulnerability has been discovered."
+msgstr ""
+
+#: reNgine/tasks.py:3767 reNgine/tasks.py:3768
+msgid "Netlas limit exceeded."
+msgstr ""
+
+#: reNgine/tasks.py:3963
+msgid "unable to fetch records from WHOIS database."
+msgstr ""
+
+#: reNgine/validators.py:10
+#, python-format
+msgid "%(value)s is not a valid domain Name"
+msgstr "%(value)s is not a valid domain Name"
+
+#: reNgine/validators.py:16
+#, python-format
+msgid "%(value)s is not a valid URL Name"
+msgstr "%(value)s is not a valid URL Name"
+
+#: reNgine/validators.py:23
+#, python-format
+msgid "%(value)s is not a valid short name, can only contain - and _"
+msgstr "%(value)s is not a valid short name, can only contain - and _"
+
+#: templates/404.html:24
+msgid "404!"
+msgstr "404!"
+
+#: templates/404.html:34
+msgid "Oops-a-Daisy! You've Found Our Top-Secret Interdimensional Rabbit Hole!"
+msgstr ""
+"Oops-a-Daisy! You've Found Our Top-Secret Interdimensional Rabbit Hole!"
+
+#: templates/404.html:35
+msgid "Back to Dashboard"
+msgstr "Back to Dashboard"
+
+#: templates/base/_items/center_spinner.html:4
+msgid "Loading..."
+msgstr "Loading..."
+
+#: templates/base/_items/endpoint_tab_content.html:8
+msgid "Filter Endpoints"
+msgstr "Filter Endpoints"
+
+#: templates/base/_items/endpoint_tab_content.html:10
+#: templates/base/_items/vulnerability_tab_content.html:10
+msgid "Search"
+msgstr "Search"
+
+#: templates/base/_items/endpoint_tab_content.html:26
+#: templates/base/_items/subdomain_tab_content.html:126
+#: templates/base/_items/vulnerability_tab_content.html:63
+msgid "Vulnerability Grouping"
+msgstr "Vulnerability Grouping"
+
+#: templates/base/_items/endpoint_tab_content.html:33
+#: templates/base/_items/endpoint_tab_content.html:56
+#: templates/base/_items/endpoint_tab_content.html:116
+#: templates/base/_items/subdomain_tab_content.html:62
+#: templates/base/_items/subdomain_toolbar.html:34
+msgid "Page Title"
+msgstr "Page Title"
+
+#: templates/base/_items/endpoint_tab_content.html:39
+#: templates/base/_items/endpoint_tab_content.html:50
+#: templates/base/_items/subdomain_tab_content.html:56
+#: templates/base/_items/subdomain_toolbar.html:28
+#: templates/report/template.html:622 templates/report/template.html:735
+msgid "HTTP Status"
+msgstr "HTTP Status"
+
+#: templates/base/_items/endpoint_tab_content.html:43
+#: templates/base/_items/subdomain_tab_content.html:49
+#: templates/base/_items/subdomain_toolbar.html:21
+#: templates/base/_items/vulnerability_tab_content.html:26
+msgid "Filter Columns"
+msgstr "Filter Columns"
+
+#: templates/base/_items/endpoint_tab_content.html:62
+#: templates/base/_items/endpoint_tab_content.html:117
+#: templates/base/_items/vulnerability_tab_content.html:104
+msgid "Tags"
+msgstr "Tags"
+
+#: templates/base/_items/endpoint_tab_content.html:68
+#: templates/base/_items/endpoint_tab_content.html:118
+msgid "Content Type"
+msgstr "Content Type"
+
+#: templates/base/_items/endpoint_tab_content.html:74
+#: templates/base/_items/endpoint_tab_content.html:119
+#: templates/base/_items/subdomain_tab_content.html:80
+#: templates/base/_items/subdomain_tab_content.html:159
+#: templates/base/_items/subdomain_toolbar.html:52
+msgid "Content Length"
+msgstr "Content Length"
+
+#: templates/base/_items/endpoint_tab_content.html:80
+#: templates/base/_items/subdomain_tab_content.html:86
+#: templates/base/_items/subdomain_tab_content.html:161
+#: templates/base/_items/subdomain_toolbar.html:58
+msgid "Response Time"
+msgstr "Response Time"
+
+#: templates/base/_items/endpoint_tab_content.html:89
+#: templates/base/_items/endpoint_tab_content.html:100
+#: templates/base/_items/endpoint_tab_content.html:104
+msgid "Download All Endpoints"
+msgstr "Download All Endpoints"
+
+#: templates/base/_items/endpoint_tab_content.html:93
+#, python-format
+msgid "Download Endpoints with pattern %(pKey)s"
+msgstr "Download Endpoints with pattern %(pKey)s"
+
+#: templates/base/_items/endpoint_tab_content.html:113
+msgid "ID"
+msgstr "ID"
+
+#: templates/base/_items/endpoint_tab_content.html:114
+#: templates/base/_items/subdomain_tab_content.html:164
+msgid "HTTP URL"
+msgstr "HTTP URL"
+
+#: templates/base/_items/endpoint_tab_content.html:115
+#: templates/base/_items/subdomain_tab_content.html:151
+#: templates/base/_items/subdomain_tab_content.html:155
+#: templates/base/_items/vulnerability_tab_content.html:54
+#: templates/base/_items/vulnerability_tab_content.html:98
+#: templates/base/_items/vulnerability_tab_content.html:115
+msgid "Status"
+msgstr "Status"
+
+#: templates/base/_items/endpoint_tab_content.html:120
+#: templates/base/_items/subdomain_tab_content.html:162
+msgid "Technology"
+msgstr "Technology"
+
+#: templates/base/_items/endpoint_tab_content.html:121
+#: templates/base/_items/subdomain_tab_content.html:174
+msgid "Webserver"
+msgstr "Webserver"
+
+#: templates/base/_items/endpoint_tab_content.html:122
+msgid "Response time"
+msgstr "Response time"
+
+#: templates/base/_items/most_common_cve_cwe_tag_template.html:5
+msgid "Most Common CVE IDs"
+msgstr "Most Common CVE IDs"
+
+#: templates/base/_items/most_common_cve_cwe_tag_template.html:13
+msgid "Most Common CWE IDs"
+msgstr "Most Common CWE IDs"
+
+#: templates/base/_items/most_common_cve_cwe_tag_template.html:21
+msgid "Most Common Vulnerability Tags"
+msgstr "Most Common Vulnerability Tags"
+
+#: templates/base/_items/most_common_vuln.html:7
+msgid "Most Common Vulnerabilities"
+msgstr "Most Common Vulnerabilities"
+
+#: templates/base/_items/most_common_vuln.html:12
+#: templates/base/_items/most_vuln_target.html:13
+msgid "Ignore Info Vulnerabilities"
+msgstr "Ignore Info Vulnerabilities"
+
+#: templates/base/_items/recon_note_modal.html:6
+msgid "Add Todo for"
+msgstr "Add Todo for"
+
+#: templates/base/_items/recon_note_modal.html:18
+msgid "Todo Title"
+msgstr "Todo Title"
+
+#: templates/base/_items/recon_note_modal.html:27
+msgid "Recon Todo/Note"
+msgstr "Recon Todo/Note"
+
+#: templates/base/_items/recon_note_modal.html:35
+msgid "Add Recon Todo"
+msgstr "Add Recon Todo"
+
+#: templates/base/_items/right_bar.html:9 templates/base/_items/top_nav.html:28
+#: templates/base/_items/top_nav.html:32
+msgid "Scan History"
+msgstr "Scan History"
+
+#: templates/base/_items/right_bar.html:14
+msgid "Tasks"
+msgstr "Tasks"
+
+#: templates/base/_items/right_bar.html:20
+msgid "Currently Scanning"
+msgstr "Currently Scanning"
+
+#: templates/base/_items/right_bar.html:24
+#: templates/base/_items/right_bar.html:44
+msgid "Recently Completed"
+msgstr "Recently Completed"
+
+#: templates/base/_items/right_bar.html:28
+#: templates/base/_items/right_bar.html:48
+msgid "Show All"
+msgstr "Show All"
+
+#: templates/base/_items/right_bar.html:31
+#: templates/base/_items/right_bar.html:51
+msgid "Upcoming"
+msgstr "Upcoming"
+
+#: templates/base/_items/right_bar.html:40
+msgid "Currently Running"
+msgstr "Currently Running"
+
+#: templates/base/_items/right_bar.html:60
+msgid "Reload"
+msgstr "Reload"
+
+#: templates/base/_items/subdomain_tab_content.html:10
+msgid "Filter Subdomains"
+msgstr "Filter Subdomains"
+
+#: templates/base/_items/subdomain_tab_content.html:28
+#: templates/base/_items/subdomain_toolbar.html:3
+msgid "Initiate Multiple Subscans"
+msgstr "Initiate Multiple Subscans"
+
+#: templates/base/_items/subdomain_tab_content.html:30
+#: templates/base/_items/subdomain_toolbar.html:5
+msgid "Initiate Subscan"
+msgstr "Initiate Subscan"
+
+#: templates/base/_items/subdomain_tab_content.html:33
+#: templates/base/_items/subdomain_tab_content.html:35
+#: templates/base/_items/subdomain_toolbar.html:7
+#: templates/base/_items/subdomain_toolbar.html:9
+msgid "Download Selected Subdomains"
+msgstr "Download Selected Subdomains"
+
+#: templates/base/_items/subdomain_tab_content.html:38
+#: templates/base/_items/subdomain_tab_content.html:40
+#: templates/base/_items/subdomain_toolbar.html:11
+#: templates/base/_items/subdomain_toolbar.html:13
+msgid "Delete Multiple Subdomains"
+msgstr "Delete Multiple Subdomains"
+
+#: templates/base/_items/subdomain_tab_content.html:44
+#: templates/base/_items/subdomain_toolbar.html:16
+msgid "Clear Subdomains"
+msgstr "Clear Subdomains"
+
+#: templates/base/_items/subdomain_tab_content.html:68
+#: templates/base/_items/subdomain_toolbar.html:40
+msgid "IP Address"
+msgstr "IP Address"
+
+#: templates/base/_items/subdomain_tab_content.html:74
+#: templates/base/_items/subdomain_tab_content.html:158
+#: templates/base/_items/subdomain_toolbar.html:46
+msgid "Ports"
+msgstr "Ports"
+
+#: templates/base/_items/subdomain_tab_content.html:97
+#: templates/base/_items/subdomain_toolbar.html:69
+msgid "Reload Subdomains"
+msgstr "Reload Subdomains"
+
+#: templates/base/_items/subdomain_tab_content.html:101
+#: templates/base/_items/subdomain_toolbar.html:73
+msgid "Download Subdomains"
+msgstr "Download Subdomains"
+
+#: templates/base/_items/subdomain_tab_content.html:106
+#: templates/base/_items/subdomain_tab_content.html:112
+#: templates/base/_items/subdomain_tab_content.html:118
+#: templates/base/_items/subdomain_toolbar.html:78
+#: templates/base/_items/subdomain_toolbar.html:84
+#: templates/base/_items/subdomain_toolbar.html:90
+msgid "Download All Subdomains"
+msgstr "Download All Subdomains"
+
+#: templates/base/_items/subdomain_tab_content.html:107
+#: templates/base/_items/subdomain_tab_content.html:113
+#: templates/base/_items/subdomain_tab_content.html:119
+#: templates/base/_items/subdomain_toolbar.html:79
+#: templates/base/_items/subdomain_toolbar.html:85
+#: templates/base/_items/subdomain_toolbar.html:91
+msgid "Download Interesting Subdomains"
+msgstr "Download Interesting Subdomains"
+
+#: templates/base/_items/subdomain_tab_content.html:108
+#: templates/base/_items/subdomain_tab_content.html:114
+#: templates/base/_items/subdomain_tab_content.html:120
+#: templates/base/_items/subdomain_toolbar.html:80
+#: templates/base/_items/subdomain_toolbar.html:86
+#: templates/base/_items/subdomain_toolbar.html:92
+msgid "Download Important Subdomains"
+msgstr "Download Important Subdomains"
+
+#: templates/base/_items/subdomain_tab_content.html:152
+#: templates/report/template.html:616 templates/report/template.html:729
+msgid "Subdomain"
+msgstr "Subdomain"
+
+#: templates/base/_items/subdomain_tab_content.html:153
+#: templates/report/template.html:507
+msgid "Endpoints"
+msgstr "Endpoints"
+
+#: templates/base/_items/subdomain_tab_content.html:154
+#: templates/base/_items/top_nav.html:42 templates/report/template.html:515
+#: templates/report/template.html:845
+msgid "Vulnerabilities"
+msgstr "Vulnerabilities"
+
+#: templates/base/_items/subdomain_tab_content.html:156
+#: templates/base/_items/vulnerability_tab_content.html:102
+msgid "Title"
+msgstr "Title"
+
+#: templates/base/_items/subdomain_tab_content.html:157
+#: templates/report/template.html:760
+msgid "IP"
+msgstr "IP"
+
+#: templates/base/_items/subdomain_tab_content.html:163
+msgid "Checked"
+msgstr "Checked"
+
+#: templates/base/_items/subdomain_tab_content.html:165
+msgid "CNAME"
+msgstr "CNAME"
+
+#: templates/base/_items/subdomain_tab_content.html:166
+msgid "is_interesting"
+msgstr "is_interesting"
+
+#: templates/base/_items/subdomain_tab_content.html:167
+#: templates/base/_items/widgets/vulnerability_breakdown_by_severity_chart.html:24
+#: templates/base/_items/widgets/vulnerability_highlights.html:38
+#: templates/report/template.html:564 templates/report/template.html:911
+msgid "Info"
+msgstr "Info"
+
+#: templates/base/_items/subdomain_tab_content.html:168
+#: templates/base/_items/widgets/vulnerability_breakdown_by_severity_chart.html:20
+#: templates/base/_items/widgets/vulnerability_highlights.html:40
+#: templates/report/template.html:556 templates/report/template.html:693
+#: templates/report/template.html:903
+msgid "Low"
+msgstr "Low"
+
+#: templates/base/_items/subdomain_tab_content.html:169
+#: templates/base/_items/widgets/vulnerability_breakdown_by_severity_chart.html:16
+#: templates/base/_items/widgets/vulnerability_highlights.html:42
+#: templates/report/template.html:548 templates/report/template.html:696
+#: templates/report/template.html:895
+msgid "Medium"
+msgstr "Medium"
+
+#: templates/base/_items/subdomain_tab_content.html:170
+#: templates/base/_items/widgets/vulnerability_breakdown_by_severity_chart.html:12
+#: templates/base/_items/widgets/vulnerability_highlights.html:44
+#: templates/report/template.html:540 templates/report/template.html:699
+#: templates/report/template.html:887
+msgid "High"
+msgstr "High"
+
+#: templates/base/_items/subdomain_tab_content.html:171
+#: templates/base/_items/widgets/vulnerability_breakdown_by_severity_chart.html:8
+#: templates/base/_items/widgets/vulnerability_highlights.html:46
+#: templates/report/template.html:532 templates/report/template.html:702
+#: templates/report/template.html:879
+msgid "Critical"
+msgstr "Critical"
+
+#: templates/base/_items/subdomain_tab_content.html:172
+msgid "Todos"
+msgstr "Todos"
+
+#: templates/base/_items/subdomain_tab_content.html:173
+msgid "Is Important"
+msgstr "Is Important"
+
+#: templates/base/_items/subdomain_tab_content.html:175
+#: templates/base/_items/vulnerability_tab_content.html:116
+msgid "Action"
+msgstr "Action"
+
+#: templates/base/_items/subdomain_tab_content.html:176
+msgid "Directories Count"
+msgstr "Directories Count"
+
+#: templates/base/_items/subdomain_tab_content.html:177
+msgid "Subscan Count"
+msgstr "Subscan Count"
+
+#: templates/base/_items/subscan_modal.html:6
+#: templates/base/_items/subscan_modal.html:29
+msgid "Initiate subscan"
+msgstr "Initiate subscan"
+
+#: templates/base/_items/subscan_modal.html:7
+#: templates/base/_items/subscan_modal.html:28
+msgid "Close"
+msgstr "Close"
+
+#: templates/base/_items/subscan_modal.html:11
+msgid "Select the scan engine"
+msgstr "Select the scan engine"
+
+#: templates/base/_items/subscan_modal.html:11
+msgid "default engine Selected"
+msgstr "default engine Selected"
+
+#: templates/base/_items/subscan_modal.html:22
+msgid "Select the engine's subtasks to perform"
+msgstr "Select the engine's subtasks to perform"
+
+#: templates/base/_items/top_bar.html:12
+msgid "Universal Search..."
+msgstr "Universal Search..."
+
+#: templates/base/_items/top_bar.html:19
+msgid "Search History"
+msgstr "Search History"
+
+#: templates/base/_items/top_bar.html:39
+msgid "Create New Project"
+msgstr "Create New Project"
+
+#: templates/base/_items/top_bar.html:45
+msgid "Quick Add"
+msgstr "Quick Add"
+
+#: templates/base/_items/top_bar.html:52
+msgid "Target"
+msgstr "Target"
+
+#: templates/base/_items/top_bar.html:56 templates/base/_items/top_nav.html:52
+msgid "Organization"
+msgstr "Organization"
+
+#: templates/base/_items/top_bar.html:62 templates/base/_items/top_nav.html:58
+msgid "Scan Engine"
+msgstr "Scan Engine"
+
+#: templates/base/_items/top_bar.html:68
+msgid "External Tool"
+msgstr "External Tool"
+
+#: templates/base/_items/top_bar.html:74
+msgid "Wordlist"
+msgstr "Wordlist"
+
+#: templates/base/_items/top_bar.html:86
+msgid "Toolbox"
+msgstr "Toolbox"
+
+#: templates/base/_items/top_bar.html:91
+msgid "Whois"
+msgstr "Whois"
+
+#: templates/base/_items/top_bar.html:97
+msgid "CMS Detector"
+msgstr "CMS Detector"
+
+#: templates/base/_items/top_bar.html:103
+msgid "CVE Lookup"
+msgstr "CVE Lookup"
+
+#: templates/base/_items/top_bar.html:109
+msgid "WAF Detector"
+msgstr "WAF Detector"
+
+#: templates/base/_items/top_bar.html:125
+#, python-format
+msgid "Welcome %(username)s!"
+msgstr "Welcome %(username)s!"
+
+#: templates/base/_items/top_bar.html:129
+msgid "My Account"
+msgstr "My Account"
+
+#: templates/base/_items/top_bar.html:134
+msgid "Admin settings"
+msgstr "Admin settings"
+
+#: templates/base/_items/top_bar.html:139
+msgid "Check reNgine Update"
+msgstr "Check reNgine Update"
+
+#: templates/base/_items/top_bar.html:139
+msgid "Update available!"
+msgstr "Update available!"
+
+#: templates/base/_items/top_bar.html:145
+msgid "Logout"
+msgstr "Logout"
+
+#: templates/base/_items/top_nav.html:12
+msgid "Dashboard"
+msgstr "Dashboard"
+
+#: templates/base/_items/top_nav.html:17
+msgid "Projects"
+msgstr "Projects"
+
+#: templates/base/_items/top_nav.html:22
+msgid "Targets"
+msgstr "Targets"
+
+#: templates/base/_items/top_nav.html:33
+msgid "Sub Scan History"
+msgstr "Sub Scan History"
+
+#: templates/base/_items/top_nav.html:34
+msgid "Scheduled Scan"
+msgstr "Scheduled Scan"
+
+#: templates/base/_items/top_nav.html:36
+msgid "All Subdomains"
+msgstr "All Subdomains"
+
+#: templates/base/_items/top_nav.html:37
+msgid "All Endpoints"
+msgstr "All Endpoints"
+
+#: templates/base/_items/top_nav.html:47
+msgid "Todo"
+msgstr "Todo"
+
+#: templates/base/_items/top_nav.html:63
+msgid "Scan Engines"
+msgstr "Scan Engines"
+
+#: templates/base/_items/top_nav.html:66
+msgid "Wordlists"
+msgstr "Wordlists"
+
+#: templates/base/_items/top_nav.html:69
+msgid "Interesting Lookup"
+msgstr "Interesting Lookup"
+
+#: templates/base/_items/top_nav.html:76
+msgid "Settings"
+msgstr "Settings"
+
+#: templates/base/_items/top_nav.html:81
+msgid "Proxies"
+msgstr "Proxies"
+
+#: templates/base/_items/top_nav.html:82
+msgid "Tool Settings"
+msgstr "Tool Settings"
+
+#: templates/base/_items/top_nav.html:85
+msgid "API Vault"
+msgstr "API Vault"
+
+#: templates/base/_items/top_nav.html:86
+msgid "Tools Arsenal"
+msgstr "Tools Arsenal"
+
+#: templates/base/_items/top_nav.html:89
+msgid "Report Settings"
+msgstr "Report Settings"
+
+#: templates/base/_items/top_nav.html:92
+msgid "reNgine Settings"
+msgstr "reNgine Settings"
+
+#: templates/base/_items/top_nav.html:95
+msgid "Hackerone Settings"
+msgstr "Hackerone Settings"
+
+#: templates/base/_items/top_nav.html:96
+msgid "Notification Settings"
+msgstr "Notification Settings"
+
+#: templates/base/_items/top_nav.html:102
+msgid "Current Project"
+msgstr "Current Project"
+
+#: templates/base/_items/vulnerability_tab_content.html:8
+msgid "Filter Vulnerabilities"
+msgstr "Filter Vulnerabilities"
+
+#: templates/base/_items/vulnerability_tab_content.html:33
+#: templates/base/_items/vulnerability_tab_content.html:82
+msgid "Vulnerability Source"
+msgstr "Vulnerability Source"
+
+#: templates/base/_items/vulnerability_tab_content.html:40
+#: templates/base/_items/vulnerability_tab_content.html:76
+#: templates/base/_items/vulnerability_tab_content.html:107
+#: templates/base/_items/widgets/vulnerability_highlights.html:17
+#: templates/report/template.html:671
+msgid "Severity"
+msgstr "Severity"
+
+#: templates/base/_items/vulnerability_tab_content.html:47
+#: templates/base/_items/vulnerability_tab_content.html:88
+#: templates/base/_items/vulnerability_tab_content.html:111
+#: templates/base/_items/widgets/vulnerability_highlights.html:18
+msgid "Vulnerable URL"
+msgstr "Vulnerable URL"
+
+#: templates/base/_items/vulnerability_tab_content.html:58
+msgid "Reload Vulnerabilities"
+msgstr "Reload Vulnerabilities"
+
+#: templates/base/_items/vulnerability_tab_content.html:70
+#: templates/report/template.html:665
+msgid "Vulnerability Name"
+msgstr "Vulnerability Name"
+
+#: templates/base/_items/vulnerability_tab_content.html:99
+msgid "Source"
+msgstr "Source"
+
+#: templates/base/_items/vulnerability_tab_content.html:100
+#: templates/base/_items/widgets/vulnerability_highlights.html:15
+msgid "Type"
+msgstr "Type"
+
+#: templates/base/_items/vulnerability_tab_content.html:103
+msgid "CVSS Metrics"
+msgstr "CVSS Metrics"
+
+#: templates/base/_items/vulnerability_tab_content.html:105
+msgid "Hackerone ID"
+msgstr "Hackerone ID"
+
+#: templates/base/_items/vulnerability_tab_content.html:108
+msgid "CVSS Score"
+msgstr "CVSS Score"
+
+#: templates/base/_items/vulnerability_tab_content.html:109
+#: templates/base/_items/vulnerability_tab_content.html:110
+msgid "CVE/CWE"
+msgstr "CVE/CWE"
+
+#: templates/base/_items/vulnerability_tab_content.html:112
+#: templates/report/template.html:989
+msgid "Description"
+msgstr "Description"
+
+#: templates/base/_items/vulnerability_tab_content.html:113
+msgid "Reference"
+msgstr "Reference"
+
+#: templates/base/_items/vulnerability_tab_content.html:114
+msgid "Discovered on"
+msgstr "Discovered on"
+
+#: templates/base/_items/vulnerability_tab_content.html:119
+msgid "Extracted Results"
+msgstr "Extracted Results"
+
+#: templates/base/_items/vulnerability_tab_content.html:120
+msgid "CURL command"
+msgstr "CURL command"
+
+#: templates/base/_items/vulnerability_tab_content.html:121
+msgid "Matcher Name"
+msgstr "Matcher Name"
+
+#: templates/base/_items/widgets/vulnerability_breakdown_by_severity_chart.html:4
+#: templates/report/template.html:876
+msgid "Vulnerability Breakdown by Severity"
+msgstr "Vulnerability Breakdown by Severity"
+
+#: templates/base/_items/widgets/vulnerability_breakdown_by_severity_chart.html:28
+#: templates/base/_items/widgets/vulnerability_highlights.html:48
+#: templates/report/template.html:576 templates/report/template.html:687
+#: templates/report/template.html:923 templates/report/template.html:945
+msgid "Unknown"
+msgstr "Unknown"
+
+#: templates/base/_items/widgets/vulnerability_highlights.html:5
+msgid "Vulnerability Highlights"
+msgstr "Vulnerability Highlights"
+
+#: templates/base/_items/widgets/vulnerability_highlights.html:10
+msgid "Not enough data!"
+msgstr "Not enough data!"
+
+#: templates/base/_items/widgets/vulnerability_highlights.html:16
+msgid "Vulnerability"
+msgstr "Vulnerability"
+
+#: templates/base/_items/widgets/vulnerability_highlights.html:30
+msgid "CVE ID"
+msgstr "CVE ID"
+
+#: templates/base/_items/widgets/vulnerability_highlights.html:34
+msgid "Discovered"
+msgstr "Discovered"
+
+#: templates/base/login.html:61
+msgid "Login to reNgine"
+msgstr "Login to reNgine"
+
+#: templates/base/login.html:62
+msgid "Current release: v2.0.5"
+msgstr "Current release: v2.0.5"
+
+#: templates/base/login.html:65
+msgid "Learn how to create reNgine account."
+msgstr "Learn how to create reNgine account."
+
+#: templates/base/login.html:74
+msgid "If you have any issues or feature request, feel free to"
+msgstr "If you have any issues or feature request, feel free to"
+
+#: templates/base/login.html:74
+msgid "raise issue on Github."
+msgstr "raise issue on Github."
+
+#: templates/base/login.html:80
+msgid "Username"
+msgstr "Username"
+
+#: templates/base/login.html:83
+msgid "username"
+msgstr "username"
+
+#: templates/base/login.html:87 templates/base/login.html:89
+msgid "Password"
+msgstr "Password"
+
+#: templates/base/login.html:98
+msgid "Oops! Invalid username or password."
+msgstr "Oops! Invalid username or password."
+
+#: templates/base/login.html:100
+msgid "Please note, both password and username are case-sensitive."
+msgstr "Please note, both password and username are case-sensitive."
+
+#: templates/base/login.html:105
+msgid "Log In"
+msgstr "Log In"
+
+#: templates/base/logout.html:23
+msgid "Thank you for using reNgine."
+msgstr "Thank you for using reNgine."
+
+#: templates/base/logout.html:25
+msgid "You have been successfully logged out!"
+msgstr "You have been successfully logged out!"
+
+#: templates/base/logout.html:26
+msgid "For any issues or feature request, please feel free to"
+msgstr "For any issues or feature request, please feel free to"
+
+#: templates/base/logout.html:26
+msgid "raise issue on github"
+msgstr "raise issue on github"
+
+#: templates/report/template.html:445
+msgid ""
+"Generated by reNgine\n"
+"        https://github.com/yogeshojha/rengine"
+msgstr ""
+"Generated by reNgine\n"
+"        https://github.com/yogeshojha/rengine"
+
+#: templates/report/template.html:453
+msgid "Table of contents"
+msgstr "Table of contents"
+
+#: templates/report/template.html:482
+msgid "Executive summary"
+msgstr "Executive summary"
+
+#: templates/report/template.html:489
+msgid "Quick Summary"
+msgstr "Quick Summary"
+
+#: templates/report/template.html:490
+msgid "This section contains quick summary of scan performed on"
+msgstr "This section contains quick summary of scan performed on"
+
+#: templates/report/template.html:496
+msgid "Reconnaissance"
+msgstr "Reconnaissance"
+
+#: templates/report/template.html:499 templates/report/template.html:719
+msgid "Subdomains"
+msgstr "Subdomains"
+
+#: templates/report/template.html:529
+msgid "Vulnerability Summary"
+msgstr "Vulnerability Summary"
+
+#: templates/report/template.html:588
+msgid "Timeline of the Assessment"
+msgstr "Timeline of the Assessment"
+
+#: templates/report/template.html:590
+#, python-format
+msgid "Scan started on: %(start_date)s"
+msgstr "Scan started on: %(start_date)s"
+
+#: templates/report/template.html:592
+msgid "Total time taken:"
+msgstr "Total time taken:"
+
+#: templates/report/template.html:599
+msgid "Completed in < 1 minutes"
+msgstr "Completed in < 1 minutes"
+
+#: templates/report/template.html:599
+#, python-format
+msgid "Completed in %(timeCompleted)s"
+msgstr "Completed in %(timeCompleted)s"
+
+#: templates/report/template.html:599
+#, python-format
+msgid ""
+"Aborted in\n"
+"          %(timeAbort)s"
+msgstr ""
+"Aborted in\n"
+"          %(timeAbort)s"
+
+#: templates/report/template.html:601
+#, python-format
+msgid "Report Generated on: %(dateGen)s"
+msgstr "Report Generated on: %(dateGen)s"
+
+#: templates/report/template.html:608
+msgid "Interesting Recon Data"
+msgstr "Interesting Recon Data"
+
+#: templates/report/template.html:609
+#, python-format
+msgid ""
+"Listed below are the %(interestingSubdomainsCount)s interesting subdomains "
+"identified on"
+msgstr ""
+"Listed below are the %(interestingSubdomainsCount)s interesting subdomains "
+"identified on"
+
+#: templates/report/template.html:619 templates/report/template.html:732
+msgid "Page title"
+msgstr "Page title"
+
+#: templates/report/template.html:656
+msgid "Summary of Vulnerabilities Identified"
+msgstr "Summary of Vulnerabilities Identified"
+
+#: templates/report/template.html:658
+msgid "Listed below are the vulnerabilities identified on"
+msgstr "Listed below are the vulnerabilities identified on"
+
+#: templates/report/template.html:668
+msgid "Times Identified"
+msgstr "Times Identified"
+
+#: templates/report/template.html:690
+msgid "Informational"
+msgstr "Informational"
+
+#: templates/report/template.html:708
+msgid "No Vulnerabilities were Discovered."
+msgstr "No Vulnerabilities were Discovered."
+
+#: templates/report/template.html:718
+msgid "Discovered Assets"
+msgstr "Discovered Assets"
+
+#: templates/report/template.html:721
+#, python-format
+msgid ""
+"During the reconnaissance phase, %(subDomainCount)s subdomains were "
+"discovered.\n"
+"          Out of %(subDomainCount)s subdomains, %(aliveCount)s returned HTTP "
+"status 200.\n"
+"          %(interestingCount)s interesting subdomains were also identified "
+"based on the interesting keywords used."
+msgstr ""
+"During the reconnaissance phase, %(subDomainCount)s subdomains were "
+"discovered.\n"
+"          Out of %(subDomainCount)s subdomains, %(aliveCount)s returned HTTP "
+"status 200.\n"
+"          %(interestingCount)s interesting subdomains were also identified "
+"based on the interesting keywords used."
+
+#: templates/report/template.html:725
+#, python-format
+msgid "%(subDomainCount)s subdomains identified on"
+msgstr "%(subDomainCount)s subdomains identified on"
+
+#: templates/report/template.html:755
+msgid "IP Addresses"
+msgstr "IP Addresses"
+
+#: templates/report/template.html:756
+#, python-format
+msgid "%(ipAddressesCount)s IP Addresses were identified on"
+msgstr "%(ipAddressesCount)s IP Addresses were identified on"
+
+#: templates/report/template.html:763
+msgid "Open Ports"
+msgstr "Open Ports"
+
+#: templates/report/template.html:766
+msgid "Remarks"
+msgstr "Remarks"
+
+#: templates/report/template.html:781
+msgid "CDN IP Address"
+msgstr "CDN IP Address"
+
+#: templates/report/template.html:797
+msgid "Reconnaissance Findings"
+msgstr "Reconnaissance Findings"
+
+#: templates/report/template.html:810
+msgid "N/A"
+msgstr "N/A"
+
+#: templates/report/template.html:817
+msgid "Page Title:"
+msgstr "Page Title:"
+
+#: templates/report/template.html:823
+msgid "IP Address:"
+msgstr "IP Address:"
+
+#: templates/report/template.html:829
+msgid "Open Ports:"
+msgstr "Open Ports:"
+
+#: templates/report/template.html:864
+msgid "Vulnerabilities Discovered"
+msgstr "Vulnerabilities Discovered"
+
+#: templates/report/template.html:866
+msgid "This section reports the security issues found during the audit."
+msgstr "This section reports the security issues found during the audit."
+
+#: templates/report/template.html:868
+#, python-format
+msgid " Total of %(vulnCount)s were discovered in %(dn)s"
+msgstr " Total of %(vulnCount)s were discovered in %(dn)s"
+
+#: templates/report/template.html:869
+#, python-format
+msgid "%(critVulnCount)s of them were Critical,"
+msgstr "%(critVulnCount)s of them were Critical,"
+
+#: templates/report/template.html:870
+#, python-format
+msgid "%(highVulnCount)s of them were High Severity,"
+msgstr "%(highVulnCount)s of them were High Severity,"
+
+#: templates/report/template.html:871
+#, python-format
+msgid "%(medVulnCount)s of them were Medium severity,"
+msgstr "%(medVulnCount)s of them were Medium severity,"
+
+#: templates/report/template.html:872
+#, python-format
+msgid "%(lowVulnCount)s of them were Low severity, and"
+msgstr "%(lowVulnCount)s of them were Low severity, and"
+
+#: templates/report/template.html:873
+#, python-format
+msgid "%(vulnCount)s of them were Informational."
+msgstr "%(vulnCount)s of them were Informational."
+
+#: templates/report/template.html:874
+#, python-format
+msgid "%(unknownVulnCount)s of them were Unknown Severity."
+msgstr "%(unknownVulnCount)s of them were Unknown Severity."
+
+#: templates/report/template.html:948
+msgid "INFO"
+msgstr "INFO"
+
+#: templates/report/template.html:951
+msgid "LOW"
+msgstr "LOW"
+
+#: templates/report/template.html:954
+msgid "MEDIUM"
+msgstr "MEDIUM"
+
+#: templates/report/template.html:957
+msgid "HIGH"
+msgstr "HIGH"
+
+#: templates/report/template.html:960
+msgid "CRITICAL"
+msgstr "CRITICAL"
+
+#: templates/report/template.html:965
+#, python-format
+msgid "Vulnerability Source: %(vulnSourceUpper)s"
+msgstr "Vulnerability Source: %(vulnSourceUpper)s"
+
+#: templates/report/template.html:967
+msgid "Vulnerability Classification"
+msgstr "Vulnerability Classification"
+
+#: templates/report/template.html:969
+msgid "CVSS Metrics:"
+msgstr "CVSS Metrics:"
+
+#: templates/report/template.html:973
+msgid "CVSS Score:"
+msgstr "CVSS Score:"
+
+#: templates/report/template.html:977
+msgid "CVE IDs"
+msgstr "CVE IDs"
+
+#: templates/report/template.html:982
+msgid "CWE IDs"
+msgstr "CWE IDs"
+
+#: templates/report/template.html:994
+msgid "Impact"
+msgstr "Impact"
+
+#: templates/report/template.html:999
+msgid "Remediation"
+msgstr "Remediation"
+
+#: templates/report/template.html:1003
+msgid "Vulnerable URL(s)"
+msgstr "Vulnerable URL(s)"
+
+#: templates/report/template.html:1025
+msgid "References"
+msgstr "References"
+
+#: templates/report/template.html:1044
+msgid "END OF REPORT"
+msgstr "END OF REPORT"

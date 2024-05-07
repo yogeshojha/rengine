@@ -3,16 +3,16 @@ function get_external_tool_latest_version(tool_id, tool_name){
   console.log(current_version)
   if (current_version === 'Invalid version lookup command.' || current_version === 'Version Lookup command not provided.'){
     Swal.fire({
-      title: 'Unable to fetch latest version!',
-      text: `Since the version lookup command is invalid, reNgine is not able to detect if there's a newer version. But you can still force download the latest version.`,
+      title: gettext('Unable to fetch latest version!'),
+      text: gettext(`Since the version lookup command is invalid, reNgine is not able to detect if there's a newer version. But you can still force download the latest version.`),
       icon: 'info',
-      confirmButtonText: 'Update ' +  htmlEncode(tool_name)
+      confirmButtonText: interpolate('Update %(toolName)s', {toolName: htmlEncode(tool_name)}, true),
     }).then((result) => {
       /* Read more about isConfirmed, isDenied below */
       if (result.isConfirmed) {
         Swal.fire({
-          title: 'Downloading latest version...',
-          text: 'This may take a few minutes.',
+          title: gettext('Downloading latest version...'),
+          text: gettext('This may take a few minutes.'),
           allowOutsideClick: false
         });
         swal.showLoading();
@@ -22,14 +22,14 @@ function get_external_tool_latest_version(tool_id, tool_name){
           swal.close();
           if (response['status']) {
             Swal.fire({
-              title:  htmlEncode(tool_name) + ' Updated!',
+              title: interpolate('%(toolName)s Updated!', {toolName: htmlEncode(tool_name)}, true),
               text: response['message'],
               icon: 'success',
             });
           }
           else{
             Swal.fire({
-              title:  htmlEncode(tool_name) + ' could not update!',
+              title:  interpolate('%(toolName)s could not update!', {toolName: htmlEncode(tool_name)}, true),
               text: response['message'],
               icon: 'fail',
             });
@@ -40,7 +40,7 @@ function get_external_tool_latest_version(tool_id, tool_name){
   }
   else{
     Swal.fire({
-      title: 'Finding latest version...',
+      title: gettext('Finding latest version...'),
       allowOutsideClick: false
     });
     swal.showLoading();
@@ -51,15 +51,16 @@ function get_external_tool_latest_version(tool_id, tool_name){
       if (response['message'] == 'RateLimited') {
         Swal.fire({
           showCancelButton: true,
-          title: 'Error!',
-          text: 'Github API rate limit exceeded, we can not fetch the latest version number, please try again in an hour. But you can force download the latest version.',
+          title: gettext('Error!'),
+          text: gettext('Github API rate limit exceeded, we can not fetch the latest version number, please try again in an hour. But you can force download the latest version.'),
           icon: 'error',
-          confirmButtonText: 'Force download',
+          confirmButtonText: gettext('Force download'),
+          cancelButtonText: gettext('Cancel'),
         }).then((result) => {
           if (result.isConfirmed) {
             Swal.fire({
-              title: 'Downloading latest version...',
-              text: 'This may take a few minutes.',
+              title: gettext('Downloading latest version...'),
+              text: gettext('This may take a few minutes.'),
               allowOutsideClick: false
             });
             swal.showLoading();
@@ -69,14 +70,14 @@ function get_external_tool_latest_version(tool_id, tool_name){
               swal.close();
               if (response['status']) {
                 Swal.fire({
-                  title:  htmlEncode(tool_name) + ' Updated!',
+                  title:  interpolate('%(toolName)s Updated!', {toolName: htmlEncode(tool_name)}, true),
                   text: response['message'],
                   icon: 'success',
                 });
               }
               else{
                 Swal.fire({
-                  title:  htmlEncode(tool_name) + ' could not update!',
+                  title:  interpolate('%(toolName)s could not update!', {toolName: htmlEncode(tool_name)}, true),
                   text: response['message'],
                   icon: 'fail',
                 });
@@ -87,24 +88,25 @@ function get_external_tool_latest_version(tool_id, tool_name){
       }
       else if (response['message'] == 'Tool Not found'){
         Swal.fire({
-          title: 'Oops!',
-          text: 'We ran into an error! Please raise github request.',
+          title: gettext('Oops!'),
+          text: gettext('We ran into an error! Please raise github request.'),
           icon: 'error'
         });
       }
       else if (response['message'] == 'Not Found'){
         Swal.fire({
           showCancelButton: true,
-          title: 'Oops!',
-          text: 'The github URL provided is not valid, or the project doesn\'t support releases. We are unable to check the latest version number, however, you can still force download the update',
+          title: gettext('Oops!'),
+          text: gettext(`The github URL provided is not valid, or the project doesn't support releases. We are unable to check the latest version number, however, you can still force download the update`),
           icon: 'error',
-          confirmButtonText: 'Force download',
+          confirmButtonText: gettext('Force download'),
+          cancelButtonText: gettext('Cancel'),
         }).then((result) => {
           /* Read more about isConfirmed, isDenied below */
           if (result.isConfirmed) {
             Swal.fire({
-              title: 'Downloading latest version...',
-              text: 'This may take a few minutes.',
+              title: gettext('Downloading latest version...'),
+              text: gettext('This may take a few minutes.'),
               allowOutsideClick: false
             });
             swal.showLoading();
@@ -114,14 +116,14 @@ function get_external_tool_latest_version(tool_id, tool_name){
               swal.close();
               if (response['status']) {
                 Swal.fire({
-                  title:  htmlEncode(tool_name) + ' Updated!',
+                  title:  interpolate('%(toolName)s Updated!', {toolName: htmlEncode(tool_name)}, true),
                   text: response['message'],
                   icon: 'success',
                 });
               }
               else{
                 Swal.fire({
-                  title:  htmlEncode(tool_name) + ' could not update!',
+                  title:  interpolate('%(toolName)s could not update!', {toolName: htmlEncode(tool_name)}, true),
                   text: response['message'],
                   icon: 'fail',
                 });
@@ -139,16 +141,17 @@ function get_external_tool_latest_version(tool_id, tool_name){
 
         if (current_version === 'Invalid version lookup command.' || current_version === 'Version Lookup command not provided.'){
           Swal.fire({
-            title: 'Unable to fetch latest version!',
-            text: `Since the version lookup command is invalid, reNgine is not able to detect if there's a newer version. But you can still force download the latest version. The latest version is ${latest_version}.`,
+            title: gettext('Unable to fetch latest version!'),
+            text: interpolate(`Since the version lookup command is invalid, reNgine is not able to detect if there's a newer version. But you can still force download the latest version. The latest version is %(latestVersion)s.`, {latestVersion: latest_version}, true),
             icon: 'info',
-            confirmButtonText: 'Update ' +  htmlEncode(tool_name)
+            confirmButtonText: interpolate('Update %(toolName)s', {toolName: htmlEncode(tool_name)}, true),
+            cancelButtonText: gettext('Cancel'),
           }).then((result) => {
             /* Read more about isConfirmed, isDenied below */
             if (result.isConfirmed) {
               Swal.fire({
-                title: 'Downloading latest version...',
-                text: 'This may take a few minutes.',
+                title: gettext('Downloading latest version...'),
+                text: gettext('This may take a few minutes.'),
                 allowOutsideClick: false
               });
               swal.showLoading();
@@ -157,8 +160,8 @@ function get_external_tool_latest_version(tool_id, tool_name){
               .then(function (response) {
                 swal.close();
                 Swal.fire({
-                  title:  htmlEncode(tool_name) + ' Updated!',
-                  text: `${tool_name} has now been updated to v${latest_version}!`,
+                  title:  interpolate('%(toolName)s Updated!', {toolName: htmlEncode(tool_name)}, true),
+                  text: interpolate(`%(toolName)s has now been updated to v%(latestVersion)s!`, {toolName: htmlEncode(tool_name), latestVersion: latest_version}, true),
                   icon: 'success',
                 });
               });
@@ -169,23 +172,23 @@ function get_external_tool_latest_version(tool_id, tool_name){
           current_version = current_version.charAt(0) == 'v' ? current_version.substring(1) : current_version;
           if (current_version == latest_version) {
             Swal.fire({
-              title: 'No Update available',
-              text: 'Looks like the latest version of ' +  htmlEncode(tool_name) + ' is already installed.',
+              title: gettext('No Update available'),
+              text: interpolate('Looks like the latest version of %(toolName)s is already installed.', {toolName: htmlEncode(tool_name)}, true),
               icon: 'info'
             });
           }
           else{
             // update available
             Swal.fire({
-              title: 'Update available! Version: ' + latest_version,
-              text: `Your current version of ${ htmlEncode(tool_name)} is v${current_version}, but latest version v${latest_version} is available, please update!`,
+              title: interpolate('Update available! Version: %(latestVersion)s', {latestVersion: latest_version}, true),
+              text: interpolate(`Your current version of %(toolName)s is v%(currentVersion)s, but latest version v%(latestVersion)s is available, please update!`, {toolName: htmlEncode(tool_name), currentVersion: current_version, latestVersion: latest_version}, true),
               icon: 'info',
-              confirmButtonText: 'Update ' +  htmlEncode(tool_name)
+              confirmButtonText: interpolate('Update %(toolName)s', {toolName: htmlEncode(tool_name)}, true),
             }).then((result) => {
               if (result.isConfirmed) {
                 Swal.fire({
-                  title: 'Downloading latest version...',
-                  text: 'This may take a few minutes.',
+                  title: gettext('Downloading latest version...'),
+                  text: gettext('This may take a few minutes.'),
                   allowOutsideClick: false
                 });
                 swal.showLoading();
@@ -194,8 +197,8 @@ function get_external_tool_latest_version(tool_id, tool_name){
                 .then(function (response) {
                   swal.close();
                   Swal.fire({
-                    title:  htmlEncode(tool_name) + ' Updated!',
-                    text: `${ htmlEncode(tool_name)} has now been updated to v${latest_version}!`,
+                    title:  interpolate('%(toolName)s Updated!', {toolName: htmlEncode(tool_name)}, true),
+                    text: interpolate(`%(toolName)s has now been updated to v%(lastestVersion)s!`, {toolName: htmlEncode(tool_name), lastestVersion: response.version}, true),
                     icon: 'success',
                   });
                 });
@@ -224,16 +227,16 @@ function get_external_tool_current_version(tool_id, id){
 
 function uninstall_tool(tool_id, tool_name){
   Swal.fire({
-    title: 'Are you sure you want to uninstall ' + htmlEncode(tool_name),
-    text: `This is not reversible. Please proceed with caution.`,
+    title: interpolate('Are you sure you want to uninstall %(toolName)s', {toolName: htmlEncode(tool_name)}, true),
+    text: gettext(`This is not reversible. Please proceed with caution.`),
     icon: 'warning',
-    confirmButtonText: 'Uninstall ' +  htmlEncode(tool_name)
+    confirmButtonText: interpolate('Uninstall %(toolName)s', {toolName: htmlEncode(tool_name)}, true),
   }).then((result) => {
     /* Read more about isConfirmed, isDenied below */
     if (result.isConfirmed) {
       Swal.fire({
-        title: 'Uninstalling ' + htmlEncode(tool_name),
-        text: 'This may take a few minutes...',
+        title: interpolate('Uninstalling %(toolName)s', {toolName: htmlEncode(tool_name)}, true),
+        text: gettext('This may take a few minutes...'),
         allowOutsideClick: false
       });
       swal.showLoading();
@@ -244,8 +247,8 @@ function uninstall_tool(tool_id, tool_name){
         swal.close();
         $("#tool_card_" + tool_name).remove();
         Swal.fire({
-          title:  htmlEncode(tool_name) + ' Uninstalled!',
-          text: `${tool_name} has been Uninstalled.`,
+          title:  interpolate('%(toolName)s Uninstalled!', {toolName: htmlEncode(tool_name)}, true),
+          text: interpolate(`%(toolName)s has been Uninstalled.`, {toolName: htmlEncode(tool_name)}, true),
           icon: 'success',
         });
       });
@@ -259,7 +262,7 @@ $('#btn_show_custom_tools').on('click', function () {
   $('.custom_tool').show();
   $('.default_tool').hide();
   Snackbar.show({
-    text: 'Filtered custom tools',
+    text: gettext('Filtered custom tools'),
     pos: 'top-right',
     duration: 2500
   });
@@ -272,7 +275,7 @@ $('#btn_show_default_tools').on('click', function () {
   $('.custom_tool').hide();
   $('.default_tool').show();
   Snackbar.show({
-    text: 'Filtered default tools',
+    text: gettext('Filtered default tools'),
     pos: 'top-right',
     duration: 2500
   });
@@ -285,7 +288,7 @@ $('#btn_show_all_tools').on('click', function () {
   $('.custom_tool').show();
   $('.default_tool').show();
   Snackbar.show({
-    text: 'Displaying all tools',
+    text: gettext('Displaying all tools'),
     pos: 'top-right',
     duration: 2500
   });

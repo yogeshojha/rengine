@@ -1,0 +1,412 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: startScan/static/startScan/js/detail_scan.js:35
+msgid "CDN IP Address"
+msgstr "CDN IP Address"
+
+#: startScan/static/startScan/js/detail_scan.js:75
+#: startScan/static/startScan/js/detail_scan.js:285
+#: startScan/static/startScan/js/detail_scan.js:398
+msgid "Showing page _PAGE_ of _PAGES_"
+msgstr "Showing page _PAGE_ of _PAGES_"
+
+#: startScan/static/startScan/js/detail_scan.js:76
+#: startScan/static/startScan/js/detail_scan.js:288
+#: startScan/static/startScan/js/detail_scan.js:401
+msgid "Results :  _MENU_"
+msgstr "Results :  _MENU_"
+
+#: startScan/static/startScan/js/detail_scan.js:77
+msgid "Processing... Please wait..."
+msgstr "Processing... Please wait..."
+
+#: startScan/static/startScan/js/detail_scan.js:116
+msgid "Web Server"
+msgstr "Web Server"
+
+#: startScan/static/startScan/js/detail_scan.js:123
+msgid "Copy Url!"
+msgstr "Copy Url!"
+
+#: startScan/static/startScan/js/detail_scan.js:287
+#: startScan/static/startScan/js/detail_scan.js:400
+msgid "Search..."
+msgstr "Search..."
+
+#: startScan/static/startScan/js/detail_scan.js:325
+msgid "CDN"
+msgstr "CDN"
+
+#: startScan/static/startScan/js/detail_scan.js:329
+msgid "Interesting"
+msgstr "Interesting"
+
+#: startScan/static/startScan/js/detail_scan.js:337
+msgid "CNAME"
+msgstr "CNAME"
+
+#: startScan/static/startScan/js/detail_scan.js:373
+#: startScan/static/startScan/js/detail_scan.js:448
+msgid "Added"
+msgstr "Added"
+
+#: startScan/static/startScan/js/detail_scan.js:375
+#: startScan/static/startScan/js/detail_scan.js:450
+msgid "Removed"
+msgstr "Removed"
+
+#: startScan/static/startScan/js/detail_scan.js:470
+msgid "No Users discovered."
+msgstr "No Users discovered."
+
+#: startScan/static/startScan/js/detail_scan.js:718
+msgid "Subdomain"
+msgstr "Subdomain"
+
+#: startScan/static/startScan/js/detail_scan.js:869
+msgid "Informational"
+msgstr "Informational"
+
+#: startScan/static/startScan/js/detail_scan.js:872
+msgid "Low"
+msgstr "Low"
+
+#: startScan/static/startScan/js/detail_scan.js:875
+msgid "Medium"
+msgstr "Medium"
+
+#: startScan/static/startScan/js/detail_scan.js:878
+msgid "High"
+msgstr "High"
+
+#: startScan/static/startScan/js/detail_scan.js:881
+msgid "Critical"
+msgstr "Critical"
+
+#: startScan/static/startScan/js/detail_scan.js:1096
+msgid "Todo Added."
+msgstr "Todo Added."
+
+#: startScan/static/startScan/js/detail_scan.js:1102
+#: startScan/static/startScan/js/detail_scan.js:1157
+#: startScan/static/startScan/js/detail_scan.js:1253
+#: startScan/static/startScan/js/detail_scan.js:1259
+msgid "Okay"
+msgstr "Okay"
+
+#: startScan/static/startScan/js/detail_scan.js:1156
+msgid "Error!"
+msgstr "Error!"
+
+#: startScan/static/startScan/js/detail_scan.js:1168
+msgid "Querying Subdomains..."
+msgstr "Querying Subdomains..."
+
+#: startScan/static/startScan/js/detail_scan.js:1202
+#: startScan/static/startScan/js/detail_scan.js:1249
+#: startScan/static/startScan/js/detail_scan.js:1346
+#: startScan/static/startScan/js/detail_scan.js:1573
+msgid "Download Subdomains as txt"
+msgstr "Download Subdomains as txt"
+
+#: startScan/static/startScan/js/detail_scan.js:1203
+#: startScan/static/startScan/js/detail_scan.js:1250
+#: startScan/static/startScan/js/detail_scan.js:1347
+#: startScan/static/startScan/js/detail_scan.js:1404
+#: startScan/static/startScan/js/detail_scan.js:1574
+msgid "Copy Subdomains!"
+msgstr "Copy Subdomains!"
+
+#: startScan/static/startScan/js/detail_scan.js:1203
+#: startScan/static/startScan/js/detail_scan.js:1250
+#: startScan/static/startScan/js/detail_scan.js:1347
+#: startScan/static/startScan/js/detail_scan.js:1574
+msgid "Copy Subdomains"
+msgstr "Copy Subdomains"
+
+#: startScan/static/startScan/js/detail_scan.js:1205
+#: startScan/static/startScan/js/detail_scan.js:1210
+msgid "No Subdomains"
+msgstr "No Subdomains"
+
+#: startScan/static/startScan/js/detail_scan.js:1205
+#: startScan/static/startScan/js/detail_scan.js:1210
+msgid "Could not find any subdomains."
+msgstr "Could not find any subdomains."
+
+#: startScan/static/startScan/js/detail_scan.js:1218
+#: startScan/static/startScan/js/detail_scan.js:1314
+msgid "Querying Interesting Subdomains..."
+msgstr "Querying Interesting Subdomains..."
+
+#: startScan/static/startScan/js/detail_scan.js:1252
+#: startScan/static/startScan/js/detail_scan.js:1258
+msgid "No Interesting Subdomains"
+msgstr "No Interesting Subdomains"
+
+#: startScan/static/startScan/js/detail_scan.js:1252
+#: startScan/static/startScan/js/detail_scan.js:1258
+msgid "Could not find any interesting subdomains."
+msgstr "Could not find any interesting subdomains."
+
+#: startScan/static/startScan/js/detail_scan.js:1266
+msgid "Querying Interesting Endpoints..."
+msgstr "Querying Interesting Endpoints..."
+
+#: startScan/static/startScan/js/detail_scan.js:1296
+#: startScan/static/startScan/js/detail_scan.js:1400
+#: startScan/static/startScan/js/detail_scan.js:1402
+msgid "Download Endpoints as txt"
+msgstr "Download Endpoints as txt"
+
+#: startScan/static/startScan/js/detail_scan.js:1297
+msgid "Copy Endpoints!"
+msgstr "Copy Endpoints!"
+
+#: startScan/static/startScan/js/detail_scan.js:1297
+#: startScan/static/startScan/js/detail_scan.js:1404
+msgid "Copy Endpoints"
+msgstr "Copy Endpoints"
+
+#: startScan/static/startScan/js/detail_scan.js:1299
+#: startScan/static/startScan/js/detail_scan.js:1305
+msgid "No Interesting Endpoints"
+msgstr "No Interesting Endpoints"
+
+#: startScan/static/startScan/js/detail_scan.js:1299
+#: startScan/static/startScan/js/detail_scan.js:1305
+msgid "Could not find any interesting Endpoints."
+msgstr "Could not find any interesting Endpoints."
+
+#: startScan/static/startScan/js/detail_scan.js:1349
+#: startScan/static/startScan/js/detail_scan.js:1354
+msgid "No Important Endpoints"
+msgstr "No Important Endpoints"
+
+#: startScan/static/startScan/js/detail_scan.js:1349
+#: startScan/static/startScan/js/detail_scan.js:1354
+msgid "No subdomains has been marked as important."
+msgstr "No subdomains has been marked as important."
+
+#: startScan/static/startScan/js/detail_scan.js:1362
+msgid "Querying Endpoints..."
+msgstr "Querying Endpoints..."
+
+#: startScan/static/startScan/js/detail_scan.js:1365
+msgid "Loading..."
+msgstr "Loading..."
+
+#: startScan/static/startScan/js/detail_scan.js:1421
+msgid "Oops!"
+msgstr "Oops!"
+
+#: startScan/static/startScan/js/detail_scan.js:1422
+msgid "No subtasks selected. Please choose at least one subtask !"
+msgstr "No subtasks selected. Please choose at least one subtask !"
+
+#: startScan/static/startScan/js/detail_scan.js:1433
+msgid "Initiating subtask..."
+msgstr "Initiating subtask..."
+
+#: startScan/static/startScan/js/detail_scan.js:1451
+msgid "Subtask initiated successfully!"
+msgstr "Subtask initiated successfully!"
+
+#: startScan/static/startScan/js/detail_scan.js:1457
+msgid "Could not initiate subtask!"
+msgstr "Could not initiate subtask!"
+
+#: startScan/static/startScan/js/detail_scan.js:1531
+#: startScan/static/startScan/js/detail_scan.js:1590
+msgid "Oops! No Subdomains has been selected!"
+msgstr "Oops! No Subdomains has been selected!"
+
+#: startScan/static/startScan/js/detail_scan.js:1537
+msgid "Querying Selected Subdomains..."
+msgstr "Querying Selected Subdomains..."
+
+#: startScan/static/startScan/js/detail_scan.js:1577
+msgid "Oops! Could not download selected subdomains."
+msgstr "Oops! Could not download selected subdomains."
+
+#: startScan/static/startScan/js/detail_scan.js:1599
+msgid ""
+"Do you really want to delete these subdomains? This action cannot be undone."
+msgstr ""
+"Do you really want to delete these subdomains? This action cannot be undone."
+
+#: startScan/static/startScan/js/detail_scan.js:1601
+msgid "Delete"
+msgstr "Delete"
+
+#: startScan/static/startScan/js/detail_scan.js:1602
+#: startScan/static/startScan/js/detail_scan.js:1677
+msgid "Cancel"
+msgstr "Cancel"
+
+#: startScan/static/startScan/js/detail_scan.js:1606
+msgid "Deleting Subdomain..."
+msgstr "Deleting Subdomain..."
+
+#: startScan/static/startScan/js/detail_scan.js:1638
+msgid "Subdomain successfully deleted!"
+msgstr "Subdomain successfully deleted!"
+
+#: startScan/static/startScan/js/detail_scan.js:1644
+msgid "Could not delete Subdomain!"
+msgstr "Could not delete Subdomain!"
+
+#: startScan/static/startScan/js/detail_scan.js:1665
+msgid ""
+"reNgine has earlier identified that this subdomain did not return any HTTP "
+"status and likely the subdomain is not alive. reNgine may not be able to "
+"detect any CMS, would you still like to continue?"
+msgstr ""
+"reNgine has earlier identified that this subdomain did not return any HTTP "
+"status and likely the subdomain is not alive. reNgine may not be able to "
+"detect any CMS, would you still like to continue?"
+
+#: startScan/static/startScan/js/detail_scan.js:1673
+#: startScan/static/startScan/js/detail_scan.js:1676
+msgid "Detect CMS"
+msgstr "Detect CMS"
+
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:39
+#: startScan/static/startScan/js/subdomains-suggestions.js:43
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:43
+msgid "Equals"
+msgstr "Equals"
+
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:39
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:42
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:45
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:48
+#: startScan/static/startScan/js/subdomains-suggestions.js:43
+#: startScan/static/startScan/js/subdomains-suggestions.js:46
+#: startScan/static/startScan/js/subdomains-suggestions.js:49
+#: startScan/static/startScan/js/subdomains-suggestions.js:52
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:43
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:46
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:49
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:52
+msgid "Some Value"
+msgstr "Some Value"
+
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:42
+#: startScan/static/startScan/js/subdomains-suggestions.js:46
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:46
+msgid "Not Equals"
+msgstr "Not Equals"
+
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:45
+#: startScan/static/startScan/js/subdomains-suggestions.js:49
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:49
+msgid "Greater than"
+msgstr "Greater than"
+
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:48
+#: startScan/static/startScan/js/subdomains-suggestions.js:52
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:52
+msgid "Less than"
+msgstr "Less than"
+
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:51
+#: startScan/static/startScan/js/subdomains-suggestions.js:55
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:55
+msgid "and"
+msgstr "and"
+
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:51
+msgid ""
+"Match endpoint if <span class=\"badge badge-soft-danger\">all args</span> "
+"are true"
+msgstr ""
+"Match endpoint if <span class=\"badge badge-soft-danger\">all args</span> "
+"are true"
+
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:54
+#: startScan/static/startScan/js/subdomains-suggestions.js:58
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:58
+msgid "or"
+msgstr "or"
+
+#: startScan/static/startScan/js/endpoint-datatables-suggestions.js:54
+msgid ""
+"Match endpoint if <span class=\"badge badge-soft-warning\">either of one</"
+"span> is true"
+msgstr ""
+"Match endpoint if <span class=\"badge badge-soft-warning\">either of one</"
+"span> is true"
+
+#: startScan/static/startScan/js/subdomains-suggestions.js:55
+msgid ""
+"Match subdomain if <span class=\"badge badge-soft-danger\">all args</span> "
+"are true"
+msgstr ""
+"Match subdomain if <span class=\"badge badge-soft-danger\">all args</span> "
+"are true"
+
+#: startScan/static/startScan/js/subdomains-suggestions.js:58
+msgid ""
+"Match subdomain if <span class=\"badge badge-soft-warning\">either of one</"
+"span> is true"
+msgstr ""
+"Match subdomain if <span class=\"badge badge-soft-warning\">either of one</"
+"span> is true"
+
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:55
+msgid ""
+"Match vulnerability if <span class=\"badge badge-soft-danger\">all args</"
+"span> are true"
+msgstr ""
+"Match vulnerability if <span class=\"badge badge-soft-danger\">all args</"
+"span> are true"
+
+#: startScan/static/startScan/js/vulnerability-datatables-suggestions.js:58
+msgid ""
+"Match vulnerability if <span class=\"badge badge-soft-warning\">either of "
+"one</span> is true"
+msgstr ""
+"Match vulnerability if <span class=\"badge badge-soft-warning\">either of "
+"one</span> is true"
+
+# Embedded JS
+msgid "Hackerone Configuration"
+msgstr "Hackerone Configuration"
+
+msgid "Test my hackerone API Key"
+msgstr "Test my hackerone API Key"
+
+msgid "This will test if your hackerone API keys are working."
+msgstr "This will test if your hackerone API keys are working."
+
+msgid "Your hackerone Credentials are working."
+msgstr "Your hackerone Credentials are working."
+
+msgid ""
+"Oops! Your hackerone Credentials are not working, check your username and/"
+"or api_key."
+msgstr ""
+"Oops! Your hackerone Credentials are not working, check your username and/"
+"or api_key."
+
+msgid "Unable to get your public IP"
+msgstr "Unable to get your public IP"

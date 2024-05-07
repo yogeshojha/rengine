@@ -1,11 +1,12 @@
 function delete_target(id, domain_name) {
   const delAPI = "../../delete/target/" + id;
   swal.queue([{
-    title: 'Are you sure you want to delete '+ domain_name +'?',
-    text: "You won't be able to revert this!",
+    title: interpolate('Are you sure you want to delete %(domain_name)s?', {domain_name: domain_name}, true),
+    text: gettext("You won't be able to revert this!"),
     type: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'Delete',
+    confirmButtonText: gettext('Delete'),
+    cancelButtonText: gettext('Cancel'),
     padding: '2em',
     showLoaderOnConfirm: true,
     preConfirm: function() {
@@ -26,7 +27,7 @@ function delete_target(id, domain_name) {
       .catch(function() {
         swal.insertQueueStep({
           type: 'error',
-          title: 'Oops! Unable to delete the target!'
+          title: gettext('Oops! Unable to delete the target!')
         })
       })
     }
@@ -49,7 +50,7 @@ function scanMultipleTargets(slug) {
   if (!checkedCount()) {
     swal({
       title: '',
-      text: "Oops! No targets has been selected!",
+      text: gettext("Oops! No targets has been selected!"),
       type: 'error',
       padding: '2em'
     })
@@ -66,7 +67,7 @@ function deleteMultipleTargets(slug) {
   if (!checkedCount()) {
     swal({
       title: '',
-      text: "Oops! No targets has been selected!",
+      text: gettext("Oops! No targets has been selected!"),
       type: 'error',
       padding: '2em'
     })
@@ -74,11 +75,12 @@ function deleteMultipleTargets(slug) {
   else {
     // atleast one target is selected
     swal.queue([{
-      title: 'Are you sure you want to delete '+ checkedCount() +' targets?',
-      text: "This action is irreversible.\nThis will also delete all the scan history and vulnerabilities related to the targets.",
+      title: interpolate('Are you sure you want to delete %(count)s targets?', {count: checkedCount()}, true),
+      text: gettext("This action is irreversible.\nThis will also delete all the scan history and vulnerabilities related to the targets."),
       type: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Delete',
+      confirmButtonText: gettext('Delete'),
+      cancelButtonText: gettext('Cancel'),
       padding: '2em',
       showLoaderOnConfirm: true,
       preConfirm: function() {

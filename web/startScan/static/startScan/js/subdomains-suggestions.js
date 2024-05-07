@@ -40,26 +40,27 @@ inputBox.onclick = (event) => {
   emptyArray = emptyArray.map((data)=>{
     switch (data) {
       case "=":
-      title = `Filters Subdomain <span class="badge badge-soft-success">Equals</span> Some Value`;
+      title = `Filters subdomain <span class="badge badge-soft-success">` + gettext('Equals') + `</span> ` + gettext('Some Value');
       break;
       case "!":
-      title = `Filters Subdomain <span class="badge badge-soft-danger">Not Equals</span> Some Value`;
+      title = `Filters subdomain <span class="badge badge-soft-danger">` + gettext('Not Equals') + `</span> ` + gettext('Some Value');
       break;
       case ">":
-      title = `Filters Subdomain <span class="badge badge-soft-blue">Greater than</span> Some Value`;
+      title = `Filters subdomain <span class="badge badge-soft-dark">` + gettext('Greater than') + `</span> ` + gettext('Some Value');
       break;
       case "<":
-      title = `Filters Subdomain <span class="badge badge-soft-blue">Less than</span> Some Value`;
+      title = `Filters subdomain <span class="badge badge-soft-dark">` + gettext('Less than') + `</span> ` + gettext('Some Value');
       break;
       case "&":
-      title = `<span class="badge badge-soft-danger">& and</span> Match Subdomain if <span class="badge badge-soft-danger">all args</span> are true`;
+      title = `<span class="badge badge-soft-danger">& ` + gettext("and") + `</span> ` + gettext(`Match subdomain if <span class="badge badge-soft-danger">all args</span> are true`);
       break;
       case "|":
-      title = `<span class="badge badge-soft-warning">| or</span> Match Subdomain if <span class="badge badge-soft-warning">either of one</span> is true`;
+      title = `<span class="badge badge-soft-warning">| ` + gettext("or") + `</span> ` + gettext(`Match subdomain if <span class="badge badge-soft-warning">either of one</span> is true`);
       break;
       default:
       badge_color = "primary";
-      title = `Filter subdomain that contains <span class="badge badge-soft-blue">${data}</span>`;
+      title = interpolate(`Filter subdomain that contains <span class="badge badge-soft-blue">%(data)s</span>`, {data: data}, true);
+      break
     }
     return data = `<li id="dropdown-li" class="text-dark"><div class="row"><div class="col-6" id="filter_name"><span class="text-${badge_color}">${filter_icon}</span>&nbsp;${data}</div><div class="col-6 text-dark" id="filter_name"> ${title}</span></div></div></li>`;
   });

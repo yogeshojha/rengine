@@ -2,8 +2,9 @@
 {% load static %}
 {% load permission_tags %}
 
+{% load i18n %}
 {% block title %}
-Schedule Scan
+{% translate "Schedule Scan" %}
 {% endblock title %}
 
 
@@ -14,13 +15,13 @@ Schedule Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">Target</a></li>
-<li class="breadcrumb-item active">Schedule Scan</li>
-<li class="breadcrumb-item active" aria-current="page">{{domain.name}}</li>
+<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">{% translate "Target" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Schedule Scan" %}</li>
+<li class="breadcrumb-item active" aria-current="page">{% blocktranslate with domain_name=domain.name %}{{ domain_name }}{% endblocktranslate %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Scheduling scan for {{domain.name}}
+{% blocktranslate with domain_name=domain.name %}Scheduling scan for {{ domain_name }}{% endblocktranslate %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -31,29 +32,29 @@ Scheduling scan for {{domain.name}}
         <form method="POST" id="start-scan-form">
           {% csrf_token %}
           <div id="schedule_scan_steps">
-            <h3>Choose the scheduler</h3>
+            {% translate "Choose the scheduler" %}
             <div class="">
               <div class="form-row">
                 <select class="form-select" onchange="schedulerChanged(this)" name="scheduled_mode" style="line-height: 2.0;">
-                  <option value="periodic">Periodic Scan</option>
-                  <option value="clocked">Clocked Scan</option>
+                  <option value="periodic">{% translate "Periodic Scan" %}</option>
+                  <option value="clocked">{% translate "Clocked Scan" %}</option>
                 </select>
               </div>
               <div class="tab-content" id="animateLineContent-4">
                 <div class="tab-pane fade show active" id="periodic-div" role="tabpanel" aria-labelledby="periodic-tab-tab">
                   <div class="mb-4">
-                    <h5>Run scan every</h5>
+                    <h5>{% translate "Run scan every" %}</h5>
                     <div class="row">
                       <div class='col-4'>
                         <input id="t-text" type="number" name="frequency" value="30" class="form-control form-control-lg">
                       </div>
                       <div class="col-8">
                         <select class="form-select" name="frequency_type" style="line-height: 2.0;">
-                          <option value="minutes">Minutes</option>
-                          <option value="hours">Hours</option>
-                          <option value="days">Days</option>
-                          <option value="weeks">Weeks</option>
-                          <option value="months">Months</option>
+                          <option value="minutes">{% translate "Minutes" %}</option>
+                          <option value="hours">{% translate "Hours" %}</option>
+                          <option value="days">{% translate "Days" %}</option>
+                          <option value="weeks">{% translate "Weeks" %}</option>
+                          <option value="months">{% translate "Months" %}</option>
                         </select>
                       </div>
                     </div>
@@ -61,12 +62,12 @@ Scheduling scan for {{domain.name}}
                 </div>
                 <div class="tab-pane fade" id="clocked-div" role="tabpanel" aria-labelledby="clocked-tab-tab">
                   <div class="mb-4">
-                    <h5>Run scan exactly at</h5>
+                    <h5>{% translate "Run scan exactly at" %}</h5>
                     <div class="row">
                       <div class="col-12">
                         <div class="form-group mb-0">
                           <!--<input id="clockedTime" value="{% now "Y-m-d H:i" %}" class="form-control flatpickr flatpickr-input active" type="text" placeholder="Select Date and time" name="scheduled_time">-->
-                          <input type="text" id="clockedTime" class="form-control form-control-lg flatpickr flatpickr-input active" placeholder="Select Scheduler Date and time" name="scheduled_time">
+                          <input type="text" id="clockedTime" class="form-control form-control-lg flatpickr flatpickr-input active" placeholder="{% translate "Select Scheduler Date and time" %}" name="scheduled_time">
                         </div>
                       </div>
                     </div>
@@ -74,37 +75,37 @@ Scheduling scan for {{domain.name}}
                 </div>
               </div>
             </div>
-            <h3>Choose Scan Engine</h3>
+            <h3>{% translate "Choose Scan Engine" %}</h3>
             <div class="">
-              <h4>Select Scan Engine</h4>
+              <h4>{% translate "Select Scan Engine" %}</h4>
               {% if custom_engine_count == 0 %}
               <div class="alert bg-soft-primary border-0 mb-4" role="alert">
-                <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
-                <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">Create Custom Scan Engine</a>
+                <span>{% translate "<b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?" %}</span>
+                <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">{% translate "Create Custom Scan Engine" %}</a>
               </div>
               {% endif %}
               {% include "startScan/_items/scanEngine_select.html" %}
             </div>
-            <h3>Import/Ignore Subdomains</h3>
+            <h3>{% translate "Import/Ignore Subdomains" %}</h3>
             <div class="">
               <div class="mb-3">
-                <h4 class="text-info">Import Subdomains(Optional)</h4>
-                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
+                <h4 class="text-info">{% translate "Import Subdomains(Optional)" %}</h4>
+                <span class="">{% blocktranslate with domain_name=domain.name %}You can import subdomains for <b>{{ domain_name }}</b> using your private recon tools.{% endblocktranslate %}</span>
                 <br>
                 <div class="alert bg-soft-primary border-0 mt-1 mb-1" role="alert">
-                  <span class="">Separate the subdomains using <b>new line</b>. If the subdomain does not belong to <b>{{domain.name}}</b> it will be skipped.</span>
+                  <span class="">{% blocktranslate with domain_name=domain.name %}Separate the subdomains using <b>new line</b>. If the subdomain does not belong to <b>{{ domain_name }}</b> it will be skipped.{% endblocktranslate %}</span>
                 </div>
-                <label for="importSubdomainFormControlTextarea" class="form-label mt-1">Subdomains List</label>
+                <label for="importSubdomainFormControlTextarea" class="form-label mt-1">{% translate "Subdomains List" %}</label>
                 <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false"></textarea>
               </div>
               <div class="mb-3">
-                <h4 class="text-warning">Out of Scope Subdomains(Optional)</h4>
-                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
+                <h4 class="text-warning">{% translate "Out of Scope Subdomains(Optional)" %}</h4>
+                <span class="">{% blocktranslate with domain_name=domain.name %}You can import subdomains for <b>{{ domain_name }}</b> using your private recon tools.{% endblocktranslate %}</span>
                 <br>
                 <div class="alert bg-soft-warning border-0 mt-1 mb-1" role="alert">
-                  <span class="">Separate the out of scope subdomains/keywords using new line.(No regex currently supported.)</span>
+                  <span class="">{% translate "Separate the out of scope subdomains/keywords using new line.(No regex currently supported.)" %}</span>
                 </div>
-                <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">Out of Scope Subdomains List</label>
+                <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">{% translate "Out of Scope Subdomains List" %}</label>
                 <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false"></textarea>
               </div>
             </div>
@@ -184,7 +185,7 @@ $(function(){
     cssClass: 'pill wizard',
     enableKeyNavigation: false,
     onStepChanging: updateButton,
-    labels: {finish: "Start Scan"},
+    labels: {finish: gettext("Start Scan")},
     onInit :function (event, current) {
       $('a[role="menuitem"]').addClass('text-white');
       $(".actions ul li:nth-child(3) a").attr('onclick', `$(this).closest('form').submit()`);

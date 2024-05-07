@@ -1,3 +1,4 @@
+{% load i18n %}
 {% load mathfilters %}
 <div class="card" style="height: 95%">
   <div class="card-body">
@@ -9,7 +10,7 @@
         <div class="col-6">
           <div class="form-check float-end">
             <input type="checkbox" class="form-check-input" id="ignore_info_most_vuln_checkbox">
-            <label class="form-check-label" for="ignore_info_most_vuln_checkbox">Ignore Info Vulnerabilities</label>
+            <label class="form-check-label" for="ignore_info_most_vuln_checkbox">{% translate "Ignore Info Vulnerabilities" %}</label>
           </div>
         </div>
       </div>

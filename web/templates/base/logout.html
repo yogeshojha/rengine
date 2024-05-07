@@ -1,4 +1,5 @@
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,10 +20,10 @@
             <div class="form-form-wrap">
                 <div class="form-container">
                     <div class="form-content">
-                        <h5 class="">Thank you for using reNgine.</h5>
+                        <h5 class="">{% translate "Thank you for using reNgine." %}</h5>
                         <div class='mt-4'>
-                            <p class="text-warning">You have been successfully logged out!</p>
-                            <p>For any issues or feature request, please feel free to <a href='https://github.com/yogeshojha/rengine/issues' class="text-info">raise issue on github</a></p>
+                            <p class="text-warning">{% translate "You have been successfully logged out!" %}</p>
+                            <p>{% translate "For any issues or feature request, please feel free to" %} <a href='https://github.com/yogeshojha/rengine/issues' class="text-info">{% translate "raise issue on github" %}</a></p>
                         </div>
                     </div>
                 </div>

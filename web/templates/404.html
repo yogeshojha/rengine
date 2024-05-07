@@ -1,6 +1,7 @@
 {% extends 'base/base.html' %}
 {% load humanize %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
 {% endblock title %}
@@ -20,7 +21,7 @@
       <div class="error-text-box">
          <svg viewBox="0 0 600 200">
             <symbol id="s-text">
-               <text text-anchor="middle" x="50%" y="50%" dy=".35em">404!</text>
+               <text text-anchor="middle" x="50%" y="50%" dy=".35em">{% translate "404!" %}</text>
             </symbol>
             <use class="text" xlink:href="#s-text"></use>
             <use class="text" xlink:href="#s-text"></use>
@@ -30,8 +31,8 @@
          </svg>
       </div>
       <div class="text-center">
-         <h3 class="mt-0 mb-2">Oops-a-Daisy! You've Found Our Top-Secret Interdimensional Rabbit Hole! </h3>
-         <a href="/" class="btn btn-success waves-effect waves-light">Back to Dashboard</a>
+         <h3 class="mt-0 mb-2">{% translate "Oops-a-Daisy! You've Found Our Top-Secret Interdimensional Rabbit Hole!" %}</h3>
+         <a href="/" class="btn btn-success waves-effect waves-light">{% translate "Back to Dashboard" %}</a>
       </div>
       <!-- end row -->
    </div>

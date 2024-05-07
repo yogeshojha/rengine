@@ -1,13 +1,15 @@
 {% extends 'base/base.html' %}
 {% load humanize %}
 {% load static %}
+{% load i18n %}
 {% load mathfilters %}
+
 {% block title %}
-Dashboard
+{% translate "Dashboard" %}
 {% endblock title %}
 
 {% block page_title %}
-Dashboard
+{% translate "Dashboard" %}
 {% endblock page_title %}
 
 {% block custom_js_css_link %}
@@ -25,8 +27,8 @@ Dashboard
 	<div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12">
 		<div class="card" id="tooltip-container">
 			<div class="card-body">
-				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Number of Targets/Domains"></i>
-				<h4 class="mt-0 font-16">Total Targets</h4>
+				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% translate "Total Number of Targets/Domains" %}"></i>
+				<h4 class="mt-0 font-16">{% translate "Total Targets" %}</h4>
 				<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{domain_count|intcomma}}</span></h2>
 				<div id="targets_chart"></div>
 				<p class="text-success mb-0 mt-2"><span class="badge rounded-pill float-end">&nbsp;</span></p>
@@ -39,12 +41,12 @@ Dashboard
 	<div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12">
 		<div class="card" id="tooltip-container1">
 			<div class="card-body">
-				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Number of Subdomains discovered by reNgine across all targets."></i>
-				<h4 class="mt-0 font-16">Total Subdomains</h4>
+				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% translate "Total Number of Subdomains discovered by reNgine across all targets." %}"></i>
+				<h4 class="mt-0 font-16">{% translate "Total Subdomains" %}</h4>
 				<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></h2>
 				<div id="subdomains_chart"></div>
 				<br>
-				<p class="text-success mb-0 mt-2"><span class="badge badge-soft-success rounded-pill float-end">Alive Subdomains: {{alive_count|intcomma}}</span></p>
+				<p class="text-success mb-0 mt-2"><span class="badge badge-soft-success rounded-pill float-end">{% translate "Alive Subdomains:" %} {{alive_count|intcomma}}</span></p>
 				<br>
 				<br>
 			</div>
@@ -53,12 +55,12 @@ Dashboard
 	<div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12">
 		<div class="card" id="tooltip-container2">
 			<div class="card-body">
-				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Endpoints/URLs discovered by reNgine across all targets & subdomains."></i>
-				<h4 class="mt-0 font-16">Total Endpoints</h4>
+				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% translate "Total Endpoints/URLs discovered by reNgine across all targets & subdomains." %}"></i>
+				<h4 class="mt-0 font-16">{% translate "Total Endpoints" %}</h4>
 				<h2 class="text-primary my-3 text-center">{{endpoint_count|intcomma}}</h2>
 				<div id="endpoint_chart"></div>
 				<br>
-				<p class="text-success mb-0 mt-2"><span class="badge badge-soft-success rounded-pill float-end">Alive Endpoints: {{endpoint_alive_count|intcomma}}</span></p>
+				<p class="text-success mb-0 mt-2"><span class="badge badge-soft-success rounded-pill float-end">{% translate "Alive Endpoints" %}: {{endpoint_alive_count|intcomma}}</span></p>
 				<br>
 				<br>
 			</div>
@@ -67,13 +69,13 @@ Dashboard
 	<div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12">
 		<div class="card" id="tooltip-container3">
 			<div class="card-body">
-				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container3" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered by reNgine across all targets, subdomains & endpoints."></i>
-				<h4 class="mt-0 font-16 text-danger">Total Vulnerabilities</h4>
+				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container3" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% translate "Total Vulnerabilities discovered by reNgine across all targets, subdomains & endpoints." %}"></i>
+				<h4 class="mt-0 font-16 text-danger">{% translate "Total Vulnerabilities" %}</h4>
 				<h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{total_vul_count|intcomma}}</span></h2>
 				<div id="vuln_chart"></div>
-				<p class="text-danger mb-0 mt-2"><span class="badge badge-soft-danger rounded-pill float-end"><b>{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</b></span></p>
+				<p class="text-danger mb-0 mt-2"><span class="badge badge-soft-danger rounded-pill float-end"><b>{% blocktranslate with critical_count=critical_count high_count=high_count medium_count=medium_count %}{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium{% endblocktranslate %}</b></span></p>
 				<br>
-				<p class="text-danger mb-0 mt-2"><span class="badge badge-soft-primary rounded-pill float-end">{{low_count}} Low, {{info_count}} Info, {{unknown_count}} Unknown Vulnerabilities</span></p>
+				<p class="text-danger mb-0 mt-2"><span class="badge badge-soft-primary rounded-pill float-end">{% blocktranslate with low_count=low_count info_count=info_count unknown_count=unknown_count %}{{low_count}} Low, {{info_count}} Info, {{unknown_count}} Unknown Vulnerabilities{% endblocktranslate %}</span></p>
 				<br>
 			</div>
 		</div>
@@ -86,7 +88,7 @@ Dashboard
 				<div class="d-flex align-items-start mb-3">
 					<div class="w-100">
 						<h5 class="mt-0 mb-0 font-15">
-							<i class='mdi mdi-trending-up me-2 font-18 text-primary'></i> Activity Feed
+							<i class='mdi mdi-trending-up me-2 font-18 text-primary'></i> {% translate "Activity Feed" %}
 						</h5>
 					</div>
 				</div>
@@ -107,7 +109,7 @@ Dashboard
 										<strong>{{item.title}}</strong>
 										</br>
 										<span class="text-muted">
-											{% if item.status == 2 %} {% if item.title != 'Scan Completed' %} Completed {% endif %}{% elif item.status == 1 %} Initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} Aborted {% endif %} {% endif %}</b>for <span class="badge badge-soft-info">{{item.scan_of.domain.name}}</span>
+											{% if item.status == 2 %} {% if item.title != 'Scan Completed' %} {% translate "Completed" %} {% endif %}{% elif item.status == 1 %} {% translate "Initiated" %} {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} {% translate "Aborted" %} {% endif %} {% endif %}</b>{% translate "for" %} <span class="badge badge-soft-info">{{item.scan_of.domain.name}}</span>
 										</span>
 										<br>
 										<span>{{item.time|naturaltime}}</span>
@@ -115,7 +117,7 @@ Dashboard
 								</div>
 							</div>
 							{% empty %}
-							Feed will be automatically generated while the scan is running.
+							{% translate "Feed will be automatically generated while the scan is running." %}
 							{% endfor %}
 						</ul>
 					</div>
@@ -127,7 +129,7 @@ Dashboard
 				<div class="d-flex align-items-start mb-3">
 					<div class="w-100">
 						<h5 class="mt-0 mb-0 font-15">
-							<i class='fa fa-bug me-2 font-18 text-danger'></i> Vulnerability Feed
+							<i class='fa fa-bug me-2 font-18 text-danger'></i> {% translate "Vulnerability Feed" %}
 						</h5>
 					</div>
 				</div>
@@ -166,27 +168,27 @@ Dashboard
 										text-info
 										{% endif %}
 										">{% if item.severity == 0 %}
-										<span class='badge badge-soft-primary'>Info</span>
+										<span class='badge badge-soft-primary'>{% translate "Info" %}</span>
 										{% elif item.severity == 1 %}
-										<span class='badge badge-low'>Low</span>
+										<span class='badge badge-low'>{% translate "Low" %}</span>
 										{% elif item.severity == 2 %}
-										<span class='badge badge-soft-warning'>Medium</span>
+										<span class='badge badge-soft-warning'>{% translate "Medium" %}</span>
 										{% elif item.severity == 3 %}
-										<span class='badge badge-soft-danger'>High</span>
+										<span class='badge badge-soft-danger'>{% translate "High" %}</span>
 										{% elif item.severity == 4 %}
-										<span class='badge badge-critical'>Critical</span>
+										<span class='badge badge-critical'>{% translate "Critical" %}</span>
 										{% elif item.severity == -1 %}
-										<span class='badge badge-soft-info'>Unknown</span>
+										<span class='badge badge-soft-info'>{% translate "Unknown" %}</span>
 										{% endif %}{{item.name}}</strong>
 										</br>
-										detected on {{item.subdomain}}
+										{% blocktranslate with subdomain=item.subdomain %}detected on {{subdomain}}{% endblocktranslate %}
 										<br>
 										<span class="text-muted">{{item.discovered_date|naturaltime}}</span>
 									</a>
 								</div>
 							</div>
 							{% empty %}
-							Feed will be automatically generated once the vulnerability scan is completed.
+							{% translate "Feed will be automatically generated once the vulnerability scan is completed." %}
 							{% endfor %}
 						</ul>
 					</div>
@@ -201,7 +203,7 @@ Dashboard
 					<div class="card-body">
 						<div class="row">
 							<div class="col-9">
-								<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
+								<h4 class="header-title mb-0">{% translate "Geographical Distribution of Assets" %}</h4>
 								<div id="world_map" style="height: 520px"></div>
 							</div>
 							<div class="col-3">
@@ -210,8 +212,8 @@ Dashboard
 										<thead class="table-light">
 											<tr>
 												<th>&nbsp;</th>
-												<th>Country</th>
-												<th>Assets</th>
+												<th>{% translate "Country" %}</th>
+												<th>{% translate "Assets" %}</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -236,7 +238,8 @@ Dashboard
 				{% include 'base/_items/widgets/vulnerability_breakdown_by_severity_chart.html' %}
 			</div>
 			<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-				{% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title='Most Vulnerable Target'%}
+				{% translate "Most Vulnerable Target" as i18n_vuln_widget_title %}
+				{% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title=i18n_vuln_widget_title%}
 			</div>
 			<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 				{% include 'base/_items/most_common_vuln.html' %}
@@ -249,7 +252,7 @@ Dashboard
 			<div class="col-xl-4">
 				<div class="card">
 					<div class="card-body">
-						<h4 class="header-title mb-0">Most common IP Address</h4>
+						<h4 class="header-title mb-0">{% translate "Most common IP Address" %}</h4>
 						<div id="cardCollpase8" class="collapse pt-3 show" dir="ltr">
 							<div id="most_common_ip_chart" class="apex-charts"></div>
 						</div>
@@ -259,7 +262,7 @@ Dashboard
 			<div class="col-xl-4">
 				<div class="card">
 					<div class="card-body">
-						<h4 class="header-title mb-0">Most common Ports</h4>
+						<h4 class="header-title mb-0">{% translate "Most common Ports" %}</h4>
 						<div id="cardCollpase8" class="collapse pt-3 show" dir="ltr">
 							<div id="most_common_port_chart" class="apex-charts"></div>
 						</div>
@@ -269,7 +272,7 @@ Dashboard
 			<div class="col-xl-4">
 				<div class="card">
 					<div class="card-body">
-						<h4 class="header-title mb-0">Most common Technology</h4>
+						<h4 class="header-title mb-0">{% translate "Most common Technology" %}</h4>
 						<div id="cardCollpase8" class="collapse pt-3 show" dir="ltr">
 							<div id="most_common_tech_chart" class="apex-charts"></div>
 						</div>
@@ -297,12 +300,10 @@ $(document).ready(function() {
 	// listener for info checkbox on most vulnerable target
 
 	$('#ignore_info_most_vuln_checkbox').change(function() {
-		if (this.checked) {
-			var text_msg = 'Informational Vulnerabilities ignored in Most Vulnerable Targets.';
-		}
-		else{
-			var text_msg = 'Informational Vulnerabilities included in Most Vulnerable Targets.';
-		}
+		var text_msg = (this.checked)
+			? gettext("Informational Vulnerabilities ignored in Most Vulnerable Targets.")
+			: gettext("Informational Vulnerabilities included in Most Vulnerable Targets.");
+		
 		get_most_vulnerable_target(slug='{{current_project.slug}}', scan_id=null, target_id=null, ignore_info=this.checked);
 		get_most_vulnerable_target(slug='{{current_project.slug}}', scan_id=null, target_id=null, ignore_info=this.checked);
 		Snackbar.show({
@@ -313,12 +314,10 @@ $(document).ready(function() {
 	});
 
 	$('#ignore_info_most_common_vuln_checkbox').change(function() {
-		if (this.checked) {
-			var text_msg = 'Informational Vulnerabilities ignored for Most Common Vulnerabilities.';
-		}
-		else{
-			var text_msg = 'Informational Vulnerabilities included for Most Common Vulnerabilities.';
-		}
+		var text_msg = (this.checked)
+			? gettext("Informational Vulnerabilities ignored in Most Vulnerable Targets.")
+			: gettext("Informational Vulnerabilities included in Most Vulnerable Targets.");
+
 		get_most_common_vulnerability(slug='{{current_project.slug}}', scan_id=null, target_id=null, ignore_info=this.checked);
 		Snackbar.show({
 			text: text_msg,
@@ -359,7 +358,7 @@ $(document).ready(function() {
 			opacity: .2
 		},
 		series: [{
-			name: "Targets Added",
+			name: gettext("Targets Added"),
 			data: [{{targets_in_last_week.0}},{{targets_in_last_week.1}},{{targets_in_last_week.2}},{{targets_in_last_week.3}},{{targets_in_last_week.4}},{{targets_in_last_week.5}},{{targets_in_last_week.6}}]
 		}],
 		yaxis: {
@@ -395,7 +394,7 @@ $(document).ready(function() {
 			opacity: .2
 		},
 		series: [{
-			name: "Subdomains Discovered",
+			name: gettext("Subdomains Discovered"),
 			data: [{{subdomains_in_last_week.0}},{{subdomains_in_last_week.1}},{{subdomains_in_last_week.2}},{{subdomains_in_last_week.3}},{{subdomains_in_last_week.4}},{{subdomains_in_last_week.5}},{{subdomains_in_last_week.6}}]
 		}],
 		yaxis: {
@@ -431,7 +430,7 @@ $(document).ready(function() {
 			opacity: .2
 		},
 		series: [{
-			name: "Endpoints Discovered",
+			name: gettext("Endpoints Discovered"),
 			data: [{{endpoints_in_last_week.0}},{{endpoints_in_last_week.1}},{{endpoints_in_last_week.2}},{{endpoints_in_last_week.3}},{{endpoints_in_last_week.4}},{{endpoints_in_last_week.5}},{{endpoints_in_last_week.6}}]
 		}],
 		yaxis: {
@@ -468,7 +467,7 @@ $(document).ready(function() {
 			opacity: .2
 		},
 		series: [{
-			name: "Vulnerabilities Discovered",
+			name: gettext("Vulnerabilities Discovered"),
 			data: [{{vulns_in_last_week.0}},{{vulns_in_last_week.1}},{{vulns_in_last_week.2}},{{vulns_in_last_week.3}},{{vulns_in_last_week.4}},{{vulns_in_last_week.5}},{{vulns_in_last_week.6}}]
 		}],
 		yaxis: {
@@ -549,7 +548,7 @@ $(document).ready(function() {
 			}
 		},
 		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}, {{unknown_count}}],
-		labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
+		labels: [gettext("Critical"), gettext("High"), gettext("Medium"), gettext("Low"), gettext("Info"), gettext("Unknown")],
 		responsive: [{
 			breakpoint: 1599,
 			options: {
@@ -579,7 +578,7 @@ $(document).ready(function() {
 
 	var options = {
 		series: [{
-			name: "Ip is Used By Subdomains",
+			name: gettext("Ip is Used By Subdomains"),
 			data: [{{most_used_ip.6.count}}, {{most_used_ip.5.count}}, {{most_used_ip.4.count}}, {{most_used_ip.3.count}}, {{most_used_ip.2.count}}, {{most_used_ip.1.count}}, {{most_used_ip.0.count}}]
 		}],
 		chart: {
@@ -605,7 +604,7 @@ $(document).ready(function() {
 
 	var options = {
 		series: [{
-			name: "Ports used by IPs",
+			name: gettext("Ports used by IPs"),
 			data: [{{most_used_port.6.count}}, {{most_used_port.5.count}}, {{most_used_port.4.count}}, {{most_used_port.3.count}}, {{most_used_port.2.count}}, {{most_used_port.1.count}}, {{most_used_port.0.count}}]
 		}],
 		chart: {
@@ -632,7 +631,7 @@ $(document).ready(function() {
 
 	var options = {
 		series: [{
-			name: "Tech used by Subdomains",
+			name: gettext("Tech used by Subdomains"),
 			data: [{{most_used_tech.6.count}}, {{most_used_tech.5.count}}, {{most_used_tech.4.count}}, {{most_used_tech.3.count}}, {{most_used_tech.2.count}}, {{most_used_tech.1.count}}, {{most_used_tech.0.count}}]
 		}],
 		chart: {
@@ -683,13 +682,8 @@ $(document).ready(function() {
 				normalizeFunction: 'polynomial'
 			}]
 		},
-		onRegionTipShow: function(e, el, code){
-			if (code in countriesData) {
-				el.html(el.html()+' (Total Assets : '+ countriesData[code]+')');
-			}
-			else{
-				el.html(el.html()+' (Total Assets : 0)');
-			}
+		onRegionTipShow: function(e, el, code) {
+			el.html(el.html() + ' ({% translate "Total Assets" %} : '+ ((code in countriesData) ? countriesData[code] : "0") +')');
 		}
 	});
 

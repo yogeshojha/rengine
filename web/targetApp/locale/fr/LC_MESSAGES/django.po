@@ -1,0 +1,902 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: targetApp/forms.py:16 targetApp/templates/target/add.html:146
+msgid "example.com"
+msgstr "exemple.com"
+
+#: targetApp/forms.py:25
+msgid "Target Description"
+msgstr "Description de la cible"
+
+#: targetApp/forms.py:34 targetApp/templates/target/add.html:134
+#: targetApp/templates/target/add.html:157
+msgid "team_handle"
+msgstr "identifiant_equipe"
+
+#: targetApp/forms.py:50 targetApp/templates/organization/list.html:47
+msgid "Organization Name"
+msgstr "Nom de l'organisation"
+
+#: targetApp/forms.py:72
+msgid "Choose Targets"
+msgstr "Choisir les cibles"
+
+#: targetApp/templates/organization/add.html:5
+#: targetApp/templates/organization/add.html:15
+#: targetApp/templates/organization/add.html:19
+#: targetApp/templates/organization/add.html:57
+#: targetApp/templates/organization/list.html:33
+msgid "Add Organization"
+msgstr "Ajouter une organisation"
+
+#: targetApp/templates/organization/add.html:14
+#: targetApp/templates/organization/update.html:15
+#: targetApp/templates/target/summary.html:369
+#: targetApp/templates/target/summary.html:413
+#: targetApp/templates/target/summary.html:457
+msgid "Organization"
+msgstr "Organisation"
+
+#: targetApp/templates/organization/add.html:28
+msgid ""
+"Organizations can be used to bundle the targets, an organization can have "
+"multiple targets. You will be able to scan the organizations just like the "
+"targets, but scanning the organization will allow you to scan all the "
+"targets within the organization together."
+msgstr ""
+"Les organisations peuvent être utilisées pour regrouper les cibles, une "
+"organisation peut avoir plusieurs cibles. Vous pourrez scanner les "
+"organisations comme les cibles, mais le scan de l'organisation vous "
+"permettra de scanner toutes les cibles de l'organisation ensemble."
+
+#: targetApp/templates/organization/add.html:33
+#: targetApp/templates/organization/update.html:32
+msgid "Organization name"
+msgstr "Nom de l'organisation"
+
+#: targetApp/templates/organization/add.html:42
+#: targetApp/templates/organization/update.html:41
+#: targetApp/templates/target/update.html:38
+msgid "Description (Optional)"
+msgstr "Description (Optionnel)"
+
+#: targetApp/templates/organization/add.html:46
+#: targetApp/templates/organization/update.html:45
+msgid "Select Targets"
+msgstr "Sélectionner les cibles"
+
+#: targetApp/templates/organization/list.html:9
+#: targetApp/templates/organization/list.html:16
+#: targetApp/templates/organization/list.html:20
+msgid "Organizations"
+msgstr "Organisations"
+
+#: targetApp/templates/organization/list.html:33
+msgid "Add New Organization"
+msgstr "Ajouter une nouvelle organisation"
+
+#: targetApp/templates/organization/list.html:48
+#: targetApp/templates/target/list.html:73
+msgid "Description"
+msgstr "Description"
+
+#: targetApp/templates/organization/list.html:49
+msgid "Total Targets"
+msgstr "Total des cibles"
+
+#: targetApp/templates/organization/list.html:50
+msgid "Added"
+msgstr "Ajouté"
+
+#: targetApp/templates/organization/list.html:51
+#: targetApp/templates/target/list.html:76
+msgid "Action"
+msgstr "Action"
+
+#: targetApp/templates/organization/list.html:63
+msgid "Quick Scan Entire Organization"
+msgstr "Scan rapide de toute l'organisation"
+
+#: targetApp/templates/organization/list.html:70
+msgid "Schedule Scan"
+msgstr "Planifier un scan"
+
+#: targetApp/templates/organization/list.html:75
+#: targetApp/templates/organization/update.html:6
+#: targetApp/templates/organization/update.html:16
+#: targetApp/templates/organization/update.html:20
+#: targetApp/templates/organization/update.html:56
+msgid "Update Organization"
+msgstr "Mettre à jour l'organisation"
+
+#: targetApp/templates/organization/list.html:82
+msgid "Delete Organization"
+msgstr "Supprimer l'organisation"
+
+#: targetApp/templates/target/add.html:6
+msgid "Add targets"
+msgstr "Ajouter des cibles"
+
+#: targetApp/templates/target/add.html:14
+#: targetApp/templates/target/list.html:15
+#: targetApp/templates/target/summary.html:21
+msgid "Targets"
+msgstr "Cibles"
+
+#: targetApp/templates/target/add.html:15
+#: targetApp/templates/target/add.html:135
+msgid "Add Target"
+msgstr "Ajouter une cible"
+
+#: targetApp/templates/target/add.html:19
+msgid "Add or Import Targets"
+msgstr "Ajouter ou importer des cibles"
+
+#: targetApp/templates/target/add.html:35
+#: targetApp/templates/target/list.html:52
+msgid "Add Targets"
+msgstr "Ajouter des cibles"
+
+#: targetApp/templates/target/add.html:40
+msgid "Resolve and add IP Address"
+msgstr "Résoudre et ajouter une adresse IP"
+
+#: targetApp/templates/target/add.html:46
+msgid "Import"
+msgstr "Importer"
+
+#: targetApp/templates/target/add.html:50
+msgid "Import from Text File"
+msgstr "Importer à partir d'un fichier texte"
+
+#: targetApp/templates/target/add.html:51
+msgid "Import from CSV"
+msgstr "Importer à partir d'un CSV"
+
+#: targetApp/templates/target/add.html:107
+msgid ""
+"Please enter your Target IP address, reNgine will look for the <b>A</b> "
+"records and resolve them to the domains."
+msgstr ""
+"Veuillez entrer l'adresse IP de votre cible, reNgine recherchera les "
+"enregistrements <b>A</b> et les résoudra en domaines."
+
+#: targetApp/templates/target/add.html:109
+msgid "IP Address or CIDR"
+msgstr "Adresse IP ou CIDR"
+
+#: targetApp/templates/target/add.html:109
+msgid "Example: 192.168.1.1 or 192.168.1.1/24, both are supported"
+msgstr "Exemple : 192.168.1.1 ou 192.168.1.1/24, les deux sont pris en charge"
+
+#: targetApp/templates/target/add.html:110
+msgid "X.X.X.X"
+msgstr "X.X.X.X"
+
+#: targetApp/templates/target/add.html:111
+msgid "Resolve IP Address"
+msgstr "Résoudre l'adresse IP"
+
+#: targetApp/templates/target/add.html:117
+msgid "Select All Domains"
+msgstr "Sélectionner tous les domaines"
+
+#: targetApp/templates/target/add.html:126
+#: targetApp/templates/target/add.html:149
+msgid "Target Description (Optional)"
+msgstr "Description de la cible (facultatif)"
+
+#: targetApp/templates/target/add.html:127
+#: targetApp/templates/target/add.html:150
+msgid "Interesting Target"
+msgstr "Cible intéressante"
+
+#: targetApp/templates/target/add.html:130
+#: targetApp/templates/target/add.html:153
+#: targetApp/templates/target/update.html:43
+msgid "HackerOne Target Team Handle"
+msgstr "Identifiant d'équipe cible HackerOne"
+
+#: targetApp/templates/target/add.html:132
+msgid ""
+"This is used to send vulnerability reports to the HackerOne Program "
+"automatically. Team handle can be found from the program URL, <a href=\\"
+msgstr ""
+"Ceci est utilisé pour envoyer automatiquement les rapports de vulnérabilité "
+"au programme HackerOne. L'identifiant d'équipe peut être trouvé dans l'URL "
+"du programme, <a href=\\"
+
+#: targetApp/templates/target/add.html:145
+msgid ""
+"You can add one or more targets. If you are adding multiple targets, "
+"separate them using new line. If the subdomain already exists, it will be "
+"skipped."
+msgstr ""
+"Vous pouvez ajouter une ou plusieurs cibles. Si vous ajoutez plusieurs "
+"cibles, séparez-les à l'aide d'un nouveau ligne. Si le sous-domaine existe "
+"déjà, il sera ignoré."
+
+#: targetApp/templates/target/add.html:155
+msgid ""
+"This is used to send vulnerability reports to the HackerOne Program "
+"automatically. Team handle can be found from the program URL,"
+msgstr ""
+"Ceci est utilisé pour envoyer automatiquement les rapports de vulnérabilité "
+"au programme HackerOne. L'identifiant d'équipe peut être trouvé dans l'URL "
+"du programme,"
+
+#: targetApp/templates/target/add.html:160
+msgid "Add 0 Target"
+msgstr "Ajouter 0 cible"
+
+#: targetApp/templates/target/add.html:167
+msgid "Your txt file must have list of domains separated by a new line."
+msgstr ""
+"Votre fichier txt doit contenir une liste de domaines séparés par un saut de "
+"ligne."
+
+#: targetApp/templates/target/add.html:169
+msgid ""
+"By default all domains imported from txt will have no description. If you "
+"choose to import multiple domains with description, csv import is "
+"recommended."
+msgstr ""
+"Par défaut, tous les domaines importés à partir du txt n'auront aucune "
+"description. Si vous choisissez d'importer plusieurs domaines avec une "
+"description, l'importation csv est recommandée."
+
+#: targetApp/templates/target/add.html:186
+msgid ""
+"Your csv file must be in the format of <strong>domain, description</strong> "
+"separated by a new line."
+msgstr ""
+"Votre fichier csv doit être au format <strong>domaine, description</strong> "
+"séparé par un saut de ligne."
+
+#: targetApp/templates/target/list.html:8
+msgid "List all targets"
+msgstr "Lister toutes les cibles"
+
+#: targetApp/templates/target/list.html:16
+msgid "All Targets"
+msgstr "Toutes les cibles"
+
+#: targetApp/templates/target/list.html:31
+msgid "Filter"
+msgstr "Filtrer"
+
+#: targetApp/templates/target/list.html:35
+msgid "Filters"
+msgstr "Filtres"
+
+#: targetApp/templates/target/list.html:36
+msgid "Filter by Organization"
+msgstr "Filtrer par organisation"
+
+#: targetApp/templates/target/list.html:41
+msgid "Reset Filters"
+msgstr "Réinitialiser les filtres"
+
+#: targetApp/templates/target/list.html:46
+msgid "Delete Multiple Targets"
+msgstr "Supprimer plusieurs cibles"
+
+#: targetApp/templates/target/list.html:49
+msgid "Scan Multiple Targets"
+msgstr "Scanner plusieurs cibles"
+
+#: targetApp/templates/target/list.html:52
+msgid "Add New Targets"
+msgstr "Ajouter de nouvelles cibles"
+
+#: targetApp/templates/target/list.html:70
+#: targetApp/templates/target/list.html:71
+msgid "Serial Number"
+msgstr "Numéro de série"
+
+#: targetApp/templates/target/list.html:72
+msgid "Target"
+msgstr "Cible"
+
+#: targetApp/templates/target/list.html:74
+msgid "Added On"
+msgstr "Ajouté le"
+
+#: targetApp/templates/target/list.html:75
+msgid "Last Scanned"
+msgstr "Dernière analyse"
+
+#: targetApp/templates/target/summary.html:9
+#, python-format
+msgid "Target Summary for %(targetName)s"
+msgstr "Résumé de la cible pour %(targetName)s"
+
+#: targetApp/templates/target/summary.html:22
+#: targetApp/templates/target/summary.html:27
+msgid "Target Summary"
+msgstr "Résumé de la cible"
+
+#: targetApp/templates/target/summary.html:37
+msgid "Home"
+msgstr "Accueil"
+
+#: targetApp/templates/target/summary.html:40
+#: targetApp/templates/target/summary.html:776
+msgid "Subdomains"
+msgstr "Sous-domaines"
+
+#: targetApp/templates/target/summary.html:43
+msgid "URLs"
+msgstr "URLs"
+
+#: targetApp/templates/target/summary.html:46
+msgid "Vulnerabilities"
+msgstr "Vulnérabilités"
+
+#: targetApp/templates/target/summary.html:63
+msgid "Scan Timeline"
+msgstr "Chronologie des analyses"
+
+#: targetApp/templates/target/summary.html:67
+#, python-format
+msgid ""
+"Target <span class=\"badge badge-soft-primary\">%(targetName)s</span> has "
+"been scanned <b>%(scan_count)s</b> times."
+msgstr ""
+"La cible <span class=\"badge badge-soft-primary\">%(targetName)s</span> a "
+"été analysée <b>%(scan_count)s</b> fois."
+
+#: targetApp/templates/target/summary.html:71
+msgid "The most recent scan was performed on"
+msgstr "La plus récente analyse a été effectuée le"
+
+#: targetApp/templates/target/summary.html:83
+msgid "Pending"
+msgstr "En attente"
+
+#: targetApp/templates/target/summary.html:85
+msgid "Failed"
+msgstr "Échoué"
+
+#: targetApp/templates/target/summary.html:87
+msgid "Scanning"
+msgstr "Analyse en cours"
+
+#: targetApp/templates/target/summary.html:89
+msgid "Completed"
+msgstr "Terminé"
+
+#: targetApp/templates/target/summary.html:91
+msgid "Aborted"
+msgstr "Interrompu"
+
+#: targetApp/templates/target/summary.html:93
+msgid "Unknown"
+msgstr "Inconnu"
+
+#: targetApp/templates/target/summary.html:99
+#, python-format
+msgid "ERROR: %(errorMsg)s"
+msgstr "ERREUR : %(errorMsg)s"
+
+#: targetApp/templates/target/summary.html:103
+#, python-format
+msgid "%(subDomainCount)s Subdomains Discovered"
+msgstr "%(subDomainCount)s sous-domaines découverts"
+
+#: targetApp/templates/target/summary.html:107
+#: targetApp/templates/target/summary.html:109
+#, python-format
+msgid "%(subDomainCount)s Subdomains"
+msgstr "%(subDomainCount)s sous-domaines"
+
+#: targetApp/templates/target/summary.html:128
+msgid "Sub Scans"
+msgstr "Sous-analyses"
+
+#: targetApp/templates/target/summary.html:146
+msgid "Related Domains"
+msgstr "Domaines liés"
+
+#: targetApp/templates/target/summary.html:149
+#, python-format
+msgid "%(relatedDomainsCount)s Domains related to %(targetName)s"
+msgstr "%(relatedDomainsCount)s domaines liés à %(targetName)s"
+
+#: targetApp/templates/target/summary.html:154
+#: targetApp/templates/target/summary.html:181
+#, python-format
+msgid "Add %(domain)s as target."
+msgstr "Ajouter %(domain)s comme cible."
+
+#: targetApp/templates/target/summary.html:157
+msgid "Oops! Could not identify any Related Domains."
+msgstr "Oups ! Aucun domaine lié n'a pu être identifié."
+
+#: targetApp/templates/target/summary.html:173
+msgid "Related TLDs"
+msgstr "TLD liés"
+
+#: targetApp/templates/target/summary.html:176
+#, python-format
+msgid "%(relatedTLDsCount)s TLDs related to %(targetName)s"
+msgstr "%(relatedTLDsCount)s TLD liés à %(targetName)s"
+
+#: targetApp/templates/target/summary.html:184
+msgid "Oops! Could not identify any Related TLDs."
+msgstr "Oups ! Aucun TLD lié n'a pu être identifié."
+
+#: targetApp/templates/target/summary.html:198
+#, python-format
+msgid "The total times %(targetName)s is scanned."
+msgstr "Le nombre total de fois où %(targetName)s a été analysé."
+
+#: targetApp/templates/target/summary.html:199
+msgid "Times target is scanned"
+msgstr "Nombre d'analyses de la cible"
+
+#: targetApp/templates/target/summary.html:202
+#, python-format
+msgid "%(this_week_scan_count)s Scans this week"
+msgstr "%(this_week_scan_count)s analyses cette semaine"
+
+#: targetApp/templates/target/summary.html:210
+msgid "Total Subdomains Discovered by reNgine during this scan"
+msgstr ""
+"Nombre total de sous-domaines découverts par reNgine lors de cette analyse"
+
+#: targetApp/templates/target/summary.html:211
+msgid "Subdomains Discovered"
+msgstr "Sous-domaines découverts"
+
+#: targetApp/templates/target/summary.html:214
+#, python-format
+msgid "Alive Subdomains: %(alive_count)s"
+msgstr "Sous-domaines actifs : %(alive_count)s"
+
+#: targetApp/templates/target/summary.html:222
+msgid ""
+"Total Endpoints discovered for this target. This includes any URLs "
+"discovered."
+msgstr ""
+"Nombre total de points d'entrée découverts pour cette cible. Cela inclut "
+"toutes les URL découvertes."
+
+#: targetApp/templates/target/summary.html:223
+msgid "Endpoints Discovered"
+msgstr "Points d'entrée découverts"
+
+#: targetApp/templates/target/summary.html:226
+#, python-format
+msgid "Alive Endpoints: %(endpoint_alive_count)s"
+msgstr "Points d'entrée actifs : %(endpoint_alive_count)s"
+
+#: targetApp/templates/target/summary.html:234
+msgid ""
+"Total Vulnerabilities discovered for this target. This will be populated "
+"only if vulnerability scan is performed during any scan."
+msgstr ""
+"Nombre total de vulnérabilités découvertes pour cette cible. Cela ne sera "
+"renseigné que si une analyse de vulnérabilités est effectuée lors d'une "
+"analyse."
+
+#: targetApp/templates/target/summary.html:235
+msgid "Vulnerabilities Discovered"
+msgstr "Vulnérabilités découvertes"
+
+#: targetApp/templates/target/summary.html:238
+#, python-format
+msgid "%(critical_count)s Critical"
+msgstr "%(critical_count)s critiques"
+
+#: targetApp/templates/target/summary.html:238
+#, python-format
+msgid "%(high_count)s High"
+msgstr "%(high_count)s élevées"
+
+#: targetApp/templates/target/summary.html:238
+#, python-format
+msgid "%(medium_count)s Medium"
+msgstr "%(medium_count)s modérées"
+
+#: targetApp/templates/target/summary.html:240
+#, python-format
+msgid "%(low_count)s Low"
+msgstr "%(low_count)s faibles"
+
+#: targetApp/templates/target/summary.html:240
+#, python-format
+msgid "%(info_count)s Info Vulnerabilities"
+msgstr "%(info_count)s vulnérabilités d'information"
+
+#: targetApp/templates/target/summary.html:252
+msgid "Reload Whois"
+msgstr "Recharger le Whois"
+
+#: targetApp/templates/target/summary.html:254
+msgid "Target Information"
+msgstr "Informations sur la cible"
+
+#: targetApp/templates/target/summary.html:258
+msgid "Domain info"
+msgstr "Informations sur le domaine"
+
+#: targetApp/templates/target/summary.html:259
+msgid "Whois"
+msgstr "Whois"
+
+#: targetApp/templates/target/summary.html:260
+msgid "DNS Records"
+msgstr "Enregistrements DNS"
+
+#: targetApp/templates/target/summary.html:261
+msgid "Nameservers"
+msgstr "Serveurs de noms"
+
+#: targetApp/templates/target/summary.html:262
+#: targetApp/templates/target/summary.html:492
+msgid "Historical Ips"
+msgstr "Adresses IP historiques"
+
+#: targetApp/templates/target/summary.html:270
+msgid "Close"
+msgstr "Fermer"
+
+#: targetApp/templates/target/summary.html:271
+msgid "WHOIS Record Has not been fetched, would you like to"
+msgstr "L'enregistrement WHOIS n'a pas été récupéré, voulez-vous"
+
+#: targetApp/templates/target/summary.html:271
+msgid "fetch it now?"
+msgstr "le récupérer maintenant ?"
+
+#: targetApp/templates/target/summary.html:275
+msgid "Fetching WHOIS records, Please wait..."
+msgstr "Récupération des enregistrements WHOIS, veuillez patienter..."
+
+#: targetApp/templates/target/summary.html:279
+msgid "WHOIS Records have been fetched, please"
+msgstr "Les enregistrements WHOIS ont été récupérés, veuillez"
+
+#: targetApp/templates/target/summary.html:279
+msgid "reload the page."
+msgstr "recharger la page."
+
+#: targetApp/templates/target/summary.html:283
+msgid "Domain"
+msgstr "Domaine"
+
+#: targetApp/templates/target/summary.html:287
+msgid "Dnssec"
+msgstr "Dnssec"
+
+#: targetApp/templates/target/summary.html:291
+msgid "Geolocation"
+msgstr "Géolocalisation"
+
+#: targetApp/templates/target/summary.html:297
+msgid "Created"
+msgstr "Créé"
+
+#: targetApp/templates/target/summary.html:301
+msgid "Updated"
+msgstr "Mis à jour"
+
+#: targetApp/templates/target/summary.html:305
+msgid "Expires"
+msgstr "Expire"
+
+#: targetApp/templates/target/summary.html:311
+msgid "Whois Server"
+msgstr "Serveur Whois"
+
+#: targetApp/templates/target/summary.html:317
+msgid "Registrar Name"
+msgstr "Nom du registraire"
+
+#: targetApp/templates/target/summary.html:321
+msgid "Registrar Phone"
+msgstr "Téléphone du registraire"
+
+#: targetApp/templates/target/summary.html:325
+msgid "Registrar Email"
+msgstr "Email du registraire"
+
+#: targetApp/templates/target/summary.html:341
+msgid "Registrant"
+msgstr "Titulaire"
+
+#: targetApp/templates/target/summary.html:346
+msgid "Administrative"
+msgstr "Administratif"
+
+#: targetApp/templates/target/summary.html:351
+msgid "Technical"
+msgstr "Technique"
+
+#: targetApp/templates/target/summary.html:361
+#: targetApp/templates/target/summary.html:405
+#: targetApp/templates/target/summary.html:449
+msgid "ID"
+msgstr "ID"
+
+#: targetApp/templates/target/summary.html:365
+#: targetApp/templates/target/summary.html:409
+#: targetApp/templates/target/summary.html:453
+msgid "Name"
+msgstr "Nom"
+
+#: targetApp/templates/target/summary.html:373
+#: targetApp/templates/target/summary.html:417
+#: targetApp/templates/target/summary.html:461
+msgid "Email"
+msgstr "Email"
+
+#: targetApp/templates/target/summary.html:377
+#: targetApp/templates/target/summary.html:421
+#: targetApp/templates/target/summary.html:465
+msgid "Phone/Fax"
+msgstr "Téléphone/Fax"
+
+#: targetApp/templates/target/summary.html:388
+#: targetApp/templates/target/summary.html:392
+#: targetApp/templates/target/summary.html:432
+#: targetApp/templates/target/summary.html:436
+#: targetApp/templates/target/summary.html:476
+#: targetApp/templates/target/summary.html:480
+msgid "Address"
+msgstr "Adresse"
+
+#: targetApp/templates/target/summary.html:393
+#: targetApp/templates/target/summary.html:437
+#: targetApp/templates/target/summary.html:481
+msgid "City"
+msgstr "Ville"
+
+#: targetApp/templates/target/summary.html:393
+#: targetApp/templates/target/summary.html:437
+#: targetApp/templates/target/summary.html:481
+msgid "State"
+msgstr "État"
+
+#: targetApp/templates/target/summary.html:393
+#: targetApp/templates/target/summary.html:437
+#: targetApp/templates/target/summary.html:481
+msgid "Zip Code"
+msgstr "Code postal"
+
+#: targetApp/templates/target/summary.html:393
+#: targetApp/templates/target/summary.html:437
+#: targetApp/templates/target/summary.html:481
+#: targetApp/templates/target/summary.html:575
+msgid "Country"
+msgstr "Pays"
+
+#: targetApp/templates/target/summary.html:496
+msgid "IP"
+msgstr "IP"
+
+#: targetApp/templates/target/summary.html:497
+msgid "Location"
+msgstr "Emplacement"
+
+#: targetApp/templates/target/summary.html:498
+msgid "Owner"
+msgstr "Propriétaire"
+
+#: targetApp/templates/target/summary.html:499
+msgid "Last Seen"
+msgstr "Dernière vue"
+
+#: targetApp/templates/target/summary.html:514
+msgid "No historical IPs found!"
+msgstr "Aucune IP historique trouvée !"
+
+#: targetApp/templates/target/summary.html:518
+msgid "A Records"
+msgstr "Enregistrements A"
+
+#: targetApp/templates/target/summary.html:524
+msgid "MX Records"
+msgstr "Enregistrements MX"
+
+#: targetApp/templates/target/summary.html:530
+msgid "TXT Records"
+msgstr "Enregistrements TXT"
+
+#: targetApp/templates/target/summary.html:539
+msgid "NameServers identified"
+msgstr "Serveurs de noms identifiés"
+
+#: targetApp/templates/target/summary.html:544
+msgid "No NameServers identified"
+msgstr "Aucun serveur de noms identifié"
+
+#: targetApp/templates/target/summary.html:556
+msgid "HTTP Status Breakdown"
+msgstr "Répartition des statuts HTTP"
+
+#: targetApp/templates/target/summary.html:566
+msgid "Geographical Distribution of Assets"
+msgstr "Répartition géographique des actifs"
+
+#: targetApp/templates/target/summary.html:576
+msgid "Assets"
+msgstr "Actifs"
+
+#: targetApp/templates/target/summary.html:603
+msgid "Most Vulnerable Subdomain"
+msgstr "Sous-domaine le plus vulnérable"
+
+#: targetApp/templates/target/summary.html:612
+msgid "Important Subdomains"
+msgstr "Sous-domaines importants"
+
+#: targetApp/templates/target/summary.html:624
+msgid "Recon Note/Todo"
+msgstr "Note/Tâche de reconnaissance"
+
+#: targetApp/templates/target/summary.html:640
+#: targetApp/templates/target/summary.html:666
+msgid "Add Recon Todo"
+msgstr "Ajouter une tâche de reconnaissance"
+
+#: targetApp/templates/target/summary.html:645
+#: targetApp/templates/target/summary.html:646
+msgid "Todo Title"
+msgstr "Titre de la tâche"
+
+#: targetApp/templates/target/summary.html:650
+msgid "Select Subdomain (Optional)"
+msgstr "Sélectionner un sous-domaine (Facultatif)"
+
+#: targetApp/templates/target/summary.html:653
+msgid "Choose Subdomain..."
+msgstr "Choisir un sous-domaine..."
+
+#: targetApp/templates/target/summary.html:658
+msgid "Todo Description (Optional)"
+msgstr "Description de la tâche (Facultatif)"
+
+#: targetApp/templates/target/summary.html:659
+msgid "Todo Description"
+msgstr "Description de la tâche"
+
+#: targetApp/templates/target/summary.html:677
+msgid "IP Addresses"
+msgstr "Adresses IP"
+
+#: targetApp/templates/target/summary.html:678
+msgid "*IP Addresses highlighted with yellow are CDN IP"
+msgstr "*Les adresses IP mises en évidence en jaune sont des IP de CDN"
+
+#: targetApp/templates/target/summary.html:688
+msgid "Discovered Ports"
+msgstr "Ports découverts"
+
+#: targetApp/templates/target/summary.html:689
+msgid "*Ports highlighted with red are uncommon Ports"
+msgstr "*Les ports mis en évidence en rouge sont des ports peu communs"
+
+#: targetApp/templates/target/summary.html:699
+msgid "Discovered Technologies"
+msgstr "Technologies découvertes"
+
+#: targetApp/templates/target/update.html:6
+#: targetApp/templates/target/update.html:22
+#: targetApp/templates/target/update.html:49
+msgid "Update Target"
+msgstr "Mettre à jour la cible"
+
+#: targetApp/templates/target/update.html:14
+#, python-format
+msgid "Update Target %(targetName)s"
+msgstr "Mettre à jour la cible %(targetName)s"
+
+#: targetApp/templates/target/update.html:28
+msgid "Domain name"
+msgstr "Nom de domaine"
+
+#: targetApp/templates/target/update.html:45
+msgid ""
+"This is used to send vulnerability reports to the HackerOne Program "
+"automatically. Team handle can be found from the program URL, hackerone.com/"
+"team_handle."
+msgstr ""
+"Ceci est utilisé pour envoyer automatiquement les rapports de vulnérabilité "
+"au programme HackerOne. Le nom d'équipe peut être trouvé à partir de l'URL "
+"du programme, hackerone.com/team_handle."
+
+#: targetApp/views.py:101
+#, fuzzy, python-format
+#| msgid "Domain %(domain)s is not a valid domain name. Skipping."
+msgid "%(target)s is not a valid domain, IP, or URL. Skipped."
+msgstr "Le domaine %(domain)s n'est pas un nom de domaine valide. Ignoré."
+
+#: targetApp/views.py:156
+msgid "Files uploaded are not .txt or .csv files."
+msgstr "Les fichiers téléversés ne sont pas des fichiers .txt ou.csv."
+
+#: targetApp/views.py:165
+msgid "File is not a valid TXT file"
+msgstr "Le fichier n'est pas un fichier TXT valide."
+
+#: targetApp/views.py:174 targetApp/views.py:199
+#, python-format
+msgid "Domain %(domain)s is not a valid domain name. Skipping."
+msgstr "Le domaine %(domain)s n'est pas un nom de domaine valide. Ignoré."
+
+#: targetApp/views.py:188
+msgid "File is not a valid CSV file."
+msgstr "Le fichier n'est pas un fichier CSV valide."
+
+#: targetApp/views.py:213
+#, python-format
+msgid "Exception while adding domain: %(errorMsg)s"
+msgstr "Exception lors de l'ajout du domaine: %(errorMsg)s"
+
+#: targetApp/views.py:222
+msgid ""
+"Oops! Could not import any targets, either targets already exists or is not "
+"a valid target."
+msgstr ""
+"Oups! Impossible d'importer une cible, soit les cibles existent déjà soit "
+"elles sont invalides."
+
+#: targetApp/views.py:226
+#, python-format
+msgid "%(targetCount)s targets added successfully"
+msgstr "%(targetCount)s cibles ajoutées avec succès"
+
+#: targetApp/views.py:258
+msgid "Domain successfully deleted!"
+msgstr "Le domaine a été supprimé avec succès!"
+
+#: targetApp/views.py:264
+msgid "Oops! Domain could not be deleted!"
+msgstr "Oups ! Impossible de supprimer le domaine!"
+
+#: targetApp/views.py:278
+msgid "Targets deleted!"
+msgstr "Cibles supprimées!"
+
+#: targetApp/views.py:293
+#, python-format
+msgid "Domain %(domainName)s modified!"
+msgstr "Le domaine %(domainName)s a été modifié avec succès!"
+
+#: targetApp/views.py:468
+#, python-format
+msgid "Organization %(orgName)s added successfully"
+msgstr "L'organisation %(orgName)s a été ajoutée avec succès"
+
+#: targetApp/views.py:494
+msgid "Organization successfully deleted!"
+msgstr "L'organisation a été supprimée avec succès!"
+
+#: targetApp/views.py:500
+msgid "Oops! Organization could not be deleted!"
+msgstr "Oups ! Impossible de supprimer l'organisation!"
+
+#: targetApp/views.py:524
+#, python-format
+msgid "Organization %(orgName)s modified!"
+msgstr "L'organisation %(orgName)s a été modifiée avec succès!"

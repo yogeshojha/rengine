@@ -1,4 +1,5 @@
 {% load static %}
+{% load i18n %}
 {% load permission_tags %}
 
 <div class="navbar-custom">
@@ -8,14 +9,14 @@
       <form class="app-search" method="get" action="/{{current_project.slug}}/search">
         <div class="app-search-box dropdown">
           <div class="input-group">
-            <input type="search" class="form-control" placeholder="Universal Search..." id="top-search" name="query">
+            <input type="search" class="form-control" placeholder="{% translate "Universal Search..." %}" id="top-search" name="query">
             <button class="btn input-group-text" type="submit">
               <i class="fe-search"></i>
             </button>
           </div>
           <div class="dropdown-menu dropdown-lg" id="search-dropdown">
             <div class="dropdown-header noti-title">
-              <h5 class="text-overflow mb-2">Search History</h5>
+              <h5 class="text-overflow mb-2">{% translate "Search History" %}</h5>
             </div>
             <div id="search-history-items">
             </div>
@@ -25,7 +26,7 @@
       </li>
       <li class="dropdown d-none d-xl-block">
         <a class="nav-link dropdown-toggle waves-effect waves-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
-            Projects
+            {{ i18n_projects }}
             <i class="mdi mdi-chevron-down ms-1"></i>
         </a>
         <div class="dropdown-menu">
@@ -35,42 +36,42 @@
             </a>
           {% endfor %}
           <div class="dropdown-divider"></div>
-          <a href="#" onclick="add_project_modal()" class="dropdown-item"><i class="mdi mdi-account-plus"></i> Create New Project</a>
+          <a href="#" onclick="add_project_modal()" class="dropdown-item"><i class="mdi mdi-account-plus"></i> {% translate "Create New Project" %}</a>
         </div>
       </li>
       {% if user|can:'modify_targets' or user|can:'modify_scan_configurations' or user|can:'modify_system_configurations' or user|can:'modify_wordlists' %}
       <li class="dropdown d-none d-xl-block">
         <a class="nav-link dropdown-toggle waves-effect waves-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
-          <i class="fe-plus me-1"></i> Quick Add
+          <i class="fe-plus me-1"></i> {% translate "Quick Add" %}
           <i class="mdi mdi-chevron-down"></i>
         </a>
         <div class="dropdown-menu">
           {% if user|can:'modify_targets' %}
           <a href="#" onclick="show_quick_add_target_modal()" class="dropdown-item">
             <i class="fe-crosshair me-1"></i>
-            <span>Target</span>
+            <span>{% translate "Target" %}</span>
           </a>
           <a href="{% url 'add_organization' current_project.slug %}" class="dropdown-item">
             <i class="fe-briefcase me-1"></i>
-            <span>Organization</span>
+            <span>{% translate "Organization" %}</span>
           </a>
           {% endif %}
           {% if user|can:'modify_scan_configurations' %}
           <a href="{% url 'add_engine' current_project.slug %}" class="dropdown-item">
             <i class="fe-cpu me-1"></i>
-            <span>Scan Engine</span>
+            <span>{% translate "Scan Engine" %}</span>
           </a>
           {% endif %}
           {% if user|can:'modify_system_configurations' %}
           <a href="{% url 'add_tool' current_project.slug %}" class="dropdown-item">
             <i class="mdi mdi-hammer-wrench me-1"></i>
-            <span>External Tool</span>
+            <span>{% translate "External Tool" %}</span>
           </a>
           {% endif %}
           {% if user|can:'modify_wordlists' %}
           <a href="{% url 'add_wordlist' current_project.slug %}" class="dropdown-item">
             <i class="fe-list me-1"></i>
-            <span>Wordlist</span>
+            <span>{% translate "Wordlist" %}</span>
           </a>
           {% endif %}
         </div>
@@ -82,30 +83,30 @@
         </a>
         <div class="dropdown-menu dropdown-lg dropdown-menu-end">
           <div class="p-lg-1">
-            <h5>Toolbox</h5>
+            <h5>{% translate "Toolbox" %}</h5>
             <div class="row g-0">
               <div class="col" onclick="show_whois_lookup_modal()">
                 <a class="dropdown-icon-item" href="#">
                   <img src="/staticfiles/img/global.png" alt="whois">
-                  <span>Whois</span>
+                  <span>{% translate "Whois" %}</span>
                 </a>
               </div>
               <div class="col" onclick="cms_detector()">
                 <a class="dropdown-icon-item" href="#">
                   <img src="/staticfiles/img/magnifying.png" alt="cms_detector">
-                  <span>CMS Detector</span>
+                  <span>{% translate "CMS Detector" %}</span>
                 </a>
               </div>
               <div class="col" onclick="toolbox_cve_detail()">
                 <a class="dropdown-icon-item" href="#">
                   <img src="/staticfiles/img/ladybug.png" alt="cve_lookup">
-                  <span>CVE Lookup</span>
+                  <span>{% translate "CVE Lookup" %}</span>
                 </a>
               </div>
               <div class="col" onclick="toolbox_waf_detector()">
                 <a class="dropdown-icon-item" href="#">
                   <img src="/staticfiles/img/firewall.png" alt="waf_detector">
-                  <span>WAF Detector</span>
+                  <span>{% translate "WAF Detector"%}</span>
                 </a>
               </div>
             </div>
@@ -121,27 +122,27 @@
         </a>
         <div class="dropdown-menu dropdown-menu-end profile-dropdown ">
           <div class="dropdown-header noti-title">
-            <h6 class="text-overflow m-0">Welcome {{user.get_username}}!</h6>
+            <h6 class="text-overflow m-0">{% blocktranslate with username=user.get_username %}Welcome {{username}}!{% endblocktranslate %}</h6>
           </div>
           <a href="{% url 'profile' current_project.slug %}" class="dropdown-item notify-item">
             <i class="fe-user"></i>
-            <span>My Account</span>
+            <span>{% translate "My Account" %}</span>
           </a>
           {% if user|can:'modify_system_configurations' %}
           <a href="{% url 'admin_interface' current_project.slug %}" class="dropdown-item notify-item">
             <i class="fe-settings"></i>
-            <span>Admin Settings</span>
+            <span>{% translate "Admin settings" %}</span>
           </a>
           <div class="dropdown-divider"></div>
           <a href="javascript: check_rengine_update()" class="dropdown-item notify-item">
             <i class="fe-refresh-cw"></i>
-            <span>Check reNgine Update <small class="text-danger rengine_update_available"></br>Update available!</small></span>
+            <span>{% translate "Check reNgine Update" %} <small class="text-danger rengine_update_available"></br>{% translate "Update available!" %}</small></span>
           </a>
           {% endif %}
           <div class="dropdown-divider"></div>
           <a href="{% url 'logout' %}" class="dropdown-item notify-item">
             <i class="fe-log-out"></i>
-            <span>Logout</span>
+            <span>{% translate "Logout" %}</span>
           </a>
         </div>
       </li>

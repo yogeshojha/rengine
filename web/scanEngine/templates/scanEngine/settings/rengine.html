@@ -1,20 +1,22 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load custom_tags %}
+{% load i18n %}
+
 {% block title %}
-reNgine Settings
+{% translate "reNgine Settings" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="#">Settings</a></li>
-<li class="breadcrumb-item active">reNgine Settings</li>
+<li class="breadcrumb-item"><a href="#">{% translate "Settings" %}</a></li>
+<li class="breadcrumb-item active">{% translate "reNgine Settings" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-reNgine Settings
+{% translate "reNgine Settings" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -22,42 +24,42 @@ reNgine Settings
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h4 class="header-title text-danger">Danger Zone</h4>
+        <h4 class="header-title text-danger">{% translate "Danger Zone" %}</h4>
         <div id="chart">
         </div>
         <div class="text-center">
-          Total Storage: <b>{{total}} Gb</b> Used Space: <b>{{used}} Gb</b> Free Space: <b>{{free}} Gb</b>
+          {% translate "Total Storage:"%} <b>{% blocktranslate with totalSpaceSize=total %}{{totalSpaceSize}} Gb{% endblocktranslate %}</b> {% translate "Used Space:" %} <b>{% blocktranslate with usedSpaceSize=used %}{{usedSpaceSize}} Gb{% endblocktranslate %}</b> {% translate "Free Space:" %} <b>{% blocktranslate with freeSpaceSize=free %}{{freeSpaceSize}} Gb{% endblocktranslate %}</b>
         </div>
         <div class="">
-          <h4 class="header-title text-danger">Danger Zone</h4>
+          <h4 class="header-title text-danger">{% translate "Danger Zone" %}</h4>
           <div class="widget-content widget-content-area" style="border:1px solid #e7515a;">
             <div class="row ms-2 me-2">
               <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12 mt-2">
                 <b class="header-title">
-                  Delete all scan results
+                  {% translate "Delete all scan results" %}
                 </b>
                 <p class="">
-                  <span class="text-danger">Once you delete all scan results, there is no going back.</span><br>
-                  This will delete all the scan history and also screenshots and likely to free up disk space.
+                  <span class="text-danger">{% translate "Once you delete all scan results, there is no going back." %}</span><br>
+                  {% translate "This will delete all the scan history and also screenshots and likely to free up disk space." %}
                 </p>
               </div>
               <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-2">
-                <button class="btn btn-danger mt-1 float-end" onclick="delete_all_scan_results()">Delete All Scan Results</button>
+                <button class="btn btn-danger mt-1 float-end" onclick="delete_all_scan_results()">{% translate "Delete All Scan Results" %}</button>
               </div>
             </div>
             <hr>
             <div class="row ms-2 me-2">
               <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12 mt-2">
                 <b class="header-title">
-                  Delete all Screenshots
+                  {% translate "Delete all Screenshots" %}
                 </b>
                 <p class="">
-                  Once you delete all screenshots, you are likely to free up some disk space.<br>
-                  <span class="text-danger">Scan history will not be able to show any screenshots after deleted.</span><br>
+                  {% translate "Once you delete all screenshots, you are likely to free up some disk space." %}<br>
+                  <span class="text-danger">{% translate "Scan history will not be able to show any screenshots after deleted." %}</span><br>
                 </p>
               </div>
               <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-2 mb-2">
-                <button class="btn btn-danger mt-1 float-end" onclick="delete_all_screenshots()">Delete All Screenshots</button>
+                <button class="btn btn-danger mt-1 float-end" onclick="delete_all_screenshots()">{% translate "Delete All Screenshots" %}</button>
               </div>
             </div>
           </div>

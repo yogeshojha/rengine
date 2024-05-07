@@ -1,9 +1,10 @@
 <!-- DO NOT AUTO INDENT THIS FILE DUE TO PRELOADED YAML CONF -->
 {% extends 'base/base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Add Scan Engine
+{% translate "Add Scan Engine" %}
 {% endblock title %}
 
 
@@ -23,12 +24,12 @@ Add Scan Engine
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' current_project.slug %}">Engines</a></li>
-<li class="breadcrumb-item active">Add Scan Engine</li>
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' current_project.slug %}">{% translate "Engines" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Add Scan Engine" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Add Scan Engine
+{% translate "Add Scan Engine" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -36,16 +37,16 @@ Add Scan Engine
   <div class="col-xl-12">
   <div class="card">
   <div class="card-body">
-  <h4 class="header-title">Scan Engines</h4>
+  <h4 class="header-title">{% translate "Scan Engines" %}</h4>
   <p>
-  <code>Scan Engines</code> are the most crucial part of reNgine. They define how a <code>scan</code> is performed against a target. <code>Scan Engines</code> allow you to define the configuration and use it against multiple targets.
+  {% translate "<code>Scan Engines</code> are the most crucial part of reNgine. They define how a <code>scan</code> is performed against a target. <code>Scan Engines</code> allow you to define the configuration and use it against multiple targets." %}
   <br>
-  YAML configuration allows you fine tuning the engines such as rate, templates to be used, or configurations to be used.
+  {% translate "YAML configuration allows you fine tuning the engines such as rate, templates to be used, or configurations to be used." %}
   </p>
   <form method="POST">
   {% csrf_token %}
   {% include "scanEngine/_items/form_engine.html" %}
-  <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Add Scan Engine</button>
+  <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">{% translate "Add Scan Engine" %}</button>
   </form>
   </div>
   </div>

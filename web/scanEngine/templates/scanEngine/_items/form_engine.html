@@ -1,6 +1,7 @@
+{% load i18n %}
 <div class="row">
   <div class="col-12">
-    <label for="domainName" class="form-label">Engine name</label>
+    <label for="domainName" class="form-label">{% translate "Engine name" %}</label>
     {{ form.engine_name }}
   </div>
   <!-- <div class="col-xl-4 col-md-12 col-sm-12 col-12 mt-4">
@@ -111,18 +112,18 @@
     </table>
   </div>-->
   <div class="col-xl-8 col-md-12 col-sm-12 col-12 mt-4">
-    <h4 class="text-secondary">YAML Configurations</h4>
+    <h4 class="text-secondary">{% translate "YAML Configurations" %}</h4>
     <p>
-      reNgine supports YAML based configurations for customizing the scan. The default settings are given below, you may choose to proceed with the default settings or configure it according to your choice.
+      {% translate "reNgine supports YAML based configurations for customizing the scan. The default settings are given below, you may choose to proceed with the default settings or configure it according to your choice." %}
     </p>
-    <h5 class="text-secondary">reNgine YAML Documentation</h5>
-    To learn more about YAML config visit the official documentation at <a href="https://rengine.wiki/usage/scan_engine/" class="text-primary" target="_blank">https://rengine.wiki/pentester/scan_engine/</a>
+    <h5 class="text-secondary">{% translate "reNgine YAML Documentation" %}</h5>
+    {% translate "To learn more about YAML config visit the official documentation at" %} <a href="https://rengine.wiki/usage/scan_engine/" class="text-primary" target="_blank">https://rengine.wiki/pentester/scan_engine/</a>
     <p class="mt-1 text-danger">
-      Note: Invalid YAML configuration may crash scans.
+      {% translate "Note: Invalid YAML configuration may crash scans." %}
       <br>
-      <span class="text-uppercase">Please, do not modify the configuration unless you know what what you are doing.</span>
+      <span class="text-uppercase">{% translate "Please, do not modify the configuration unless you know what what you are doing." %}</span>
       <br>
-      <span class="text-danger">If default YAML configuration doesn't automatically load, <a href="https://raw.githubusercontent.com/yogeshojha/rengine/master/default_yaml_config.yaml" target="_blank">download default configuration from here</a> and paste it. (Firefox may have issues loading default YAML configuration.)</span>
+      <span class="text-danger">{% translate "If default YAML configuration doesn't automatically load," %} <a href="https://raw.githubusercontent.com/yogeshojha/rengine/master/default_yaml_config.yaml" target="_blank">{% translate "download default configuration from here" %}</a> {% translate "and paste it. (Firefox may have issues loading default YAML configuration.)" %}</span>
     </p>
     {{form.yaml_configuration}}
   </div>

@@ -21,6 +21,9 @@ Pin-Priority: -1
 ' | tee /etc/apt/preferences.d/mozilla-firefox
 apt update
 apt install firefox -y
+apt install -y gettext
+
+python3 manage.py compilemessages
 
 # Temporary fix for whatportis bug - See https://github.com/yogeshojha/rengine/issues/984
 sed -i 's/purge()/truncate()/g' /usr/local/lib/python3.10/dist-packages/whatportis/cli.py

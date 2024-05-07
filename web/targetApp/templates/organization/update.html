@@ -1,8 +1,9 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Update Organization
+{% translate "Update Organization" %}
 {% endblock title %}
 
 
@@ -11,12 +12,12 @@ Update Organization
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug %}">Organization</a></li>
-<li class="breadcrumb-item active">Update Organization</li>
+<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug %}">{% translate "Organization" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Update Organization" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Update Organization
+{% translate "Update Organization" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -28,7 +29,7 @@ Update Organization
           {% csrf_token %}
           <div class="row">
             <div class="col-6">
-              <label for="organizationName" class="form-label">Organization name</label>
+              <label for="organizationName" class="form-label">{% translate "Organization name" %}</label>
               {{ form.name }}
               {% if form.errors %}
               <div class="invalid-feedback" style="display: block;">
@@ -37,11 +38,11 @@ Update Organization
               {% endif %}
             </div>
             <div class="col-6">
-              <label for="organizationDescription" class="form-label">Description (Optional)</label>
+              <label for="organizationDescription" class="form-label">{% translate "Description (Optional)" %}</label>
               {{ form.description }}
             </div>
             <div class="col-12 mt-3">
-              <label for="targets" class="form-label">Select Targets</label>
+              <label for="targets" class="form-label">{% translate "Select Targets" %}</label>
               {{form.domains}}
               {% if form.errors.domains %}
               <div class="invalid-feedback text-danger" style="display: block;">
@@ -52,7 +53,7 @@ Update Organization
               {% endif %}
             </div>
           </div>
-          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Update Organization</button>
+          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">{% translate "Update Organization" %}</button>
         </form>
       </div>
     </div>

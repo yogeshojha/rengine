@@ -3,6 +3,7 @@ import logging
 
 from datetime import timedelta
 
+from django.conf import settings as django_settings
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
@@ -14,6 +15,7 @@ from django.db.models.functions import TruncDay
 from django.dispatch import receiver
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from rolepermissions.roles import assign_role, clear_roles
@@ -25,6 +27,9 @@ from startScan.models import *
 from targetApp.models import Domain
 from dashboard.models import *
 from reNgine.definitions import *
+from reNgine import settings
+from .forms import UserSettingsForm
+from django.utils import translation
 
 
 logger = logging.getLogger(__name__)
@@ -175,21 +180,39 @@ def index(request, slug):
 
 def profile(request, slug):
     if request.method == 'POST':
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
+        passwordForm = PasswordChangeForm(request.user, request.POST)
+        userSettingsForm = UserSettingsForm(request.POST, instance=request.user)
+        if passwordForm.is_valid():
+            user = passwordForm.save()
             update_session_auth_hash(request, user)
             messages.success(
                 request,
-                'Your password was successfully changed!')
-            return redirect('profile')
+                _('Your password was successfully changed!'))
+            userSettingsForm = UserSettingsForm(request.user)
+        elif userSettingsForm.is_valid():
+            user = userSettingsForm.save()
+            messages.success(
+                request,
+                _('Your settings were successfully changed!'))
+            translation.activate(user.language)
+            request.session[translation.LANGUAGE_SESSION_KEY] = user.language
+            request.session.save()
+            passwordForm = PasswordChangeForm(request.user)
         else:
-            messages.error(request, 'Please correct the error below.')
+            messages.error(request, _('Please correct the error below.'))
     else:
-        form = PasswordChangeForm(request.user)
-    return render(request, 'dashboard/profile.html', {
-        'form': form
+        passwordForm = PasswordChangeForm(request.user)
+        userSettingsForm = UserSettingsForm(request.user)
+
+    response = render(request, 'dashboard/profile.html', {
+        'LANGUAGES': settings.LANGUAGES,
+        'forms': {
+            'password': passwordForm,
+            'userSettings': userSettingsForm
+        }
     })
+    response.set_cookie(django_settings.LANGUAGE_COOKIE_NAME, request.user.language)
+    return response
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
@@ -222,7 +245,7 @@ def admin_interface_update(request, slug):
                 messages.add_message(
                     request,
                     messages.INFO,
-                    f'User {user.username} successfully deleted.'
+                    _('User %(username)s successfully deleted.') % {'username': user.username}
                 )
                 messageData = {'status': True}
             except Exception as e:
@@ -246,7 +269,7 @@ def admin_interface_update(request, slug):
             try:
                 response = json.loads(request.body)
                 if not response.get('password'):
-                    messageData = {'status': False, 'error': 'Empty passwords are not allowed'}
+                    messageData = {'status': False, 'error': _('Empty passwords are not allowed')}
                     return JsonResponse(messageData)
                 UserModel = get_user_model()
                 user = UserModel.objects.create_user(
@@ -267,8 +290,7 @@ def on_user_logged_out(sender, request, **kwargs):
     messages.add_message(
         request,
         messages.INFO,
-        'You have been successfully logged out. Thank you ' +
-        'for using reNgine.')
+        _('You have been successfully logged out. Thank you for using reNgine.'))
 
 
 @receiver(user_logged_in)
@@ -276,9 +298,7 @@ def on_user_logged_in(sender, request, **kwargs):
     messages.add_message(
         request,
         messages.INFO,
-        'Hi @' +
-        request.user.username +
-        ' welcome back!')
+        _('Hi @%(username)s welcome back!') % {"username": request.user.username})
 
 
 def search(request, slug):
@@ -305,13 +325,13 @@ def delete_project(request, id):
         messages.add_message(
             request,
             messages.INFO,
-            'Project successfully deleted!')
+            _('Project successfully deleted!'))
     else:
         responseData = {'status': 'false'}
         messages.add_message(
             request,
             messages.ERROR,
-            'Oops! Project could not be deleted!')
+            _('Oops! Project could not be deleted!'))
     return JsonResponse(responseData)
 
 
@@ -337,7 +357,7 @@ def onboarding(request):
                 insert_date=insert_date
             )
         except Exception as e:
-            error = ' Could not create project, Error: ' + str(e)
+            error = _(' Could not create project, Error: %(errMsg)s') % {'errMsg': str(e)}
 
 
         try:
@@ -349,7 +369,7 @@ def onboarding(request):
                 )
                 assign_role(user, create_user_role)
         except Exception as e:
-            error = ' Could not create User, Error: ' + str(e)
+            error = _(' Could not create User, Error: %(errMsg)s') % {'errMsg': str(e)}
 
 
 

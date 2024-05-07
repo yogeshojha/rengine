@@ -1,8 +1,9 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Add targets
+{% translate "Add targets" %}
 {% endblock title %}
 
 
@@ -10,12 +11,12 @@ Add targets
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">Targets</a></li>
-<li class="breadcrumb-item active">Add Target</li>
+<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">{% translate "Targets" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Add Target" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Add or Import Targets
+{% translate "Add or Import Targets" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -31,23 +32,23 @@ Add or Import Targets
           </li> -->
           <li class="nav-item">
             <a href="#add-multiple-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
-              Add Targets
+              {% translate "Add Targets" %}
             </a>
           </li>
           <li class="nav-item">
             <a href="#ip-address-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
-              Resolve and add IP Address
+              {% translate "Resolve and add IP Address" %}
             </a>
           </li>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle arrow-none" href="#" id="import-dropdown" role="button"
             data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Import
+            {% translate "Import" %}
             <div class="arrow-down"></div>
           </a>
           <div class="dropdown-menu" aria-labelledby="import-dropdown">
-            <a class="dropdown-item" href="#import-text-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">Import from Text File</a>
-            <a class="dropdown-item" href="#import-csv-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">Import from CSV</a>
+            <a class="dropdown-item" href="#import-text-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">{% translate "Import from Text File" %}</a>
+            <a class="dropdown-item" href="#import-csv-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">{% translate "Import from CSV" %}</a>
           </div>
         </li>
       </ul>
@@ -103,17 +104,17 @@ Add or Import Targets
             <div class="row">
               <div class="col-12">
                 <div class="alert alert-primary border-0 mb-4" role="alert">
-                  Please enter your Target IP address, reNgine will look for the <b>A</b> records and resolve them to the domains.
+                  {% translate "Please enter your Target IP address, reNgine will look for the <b>A</b> records and resolve them to the domains." %}
                 </div>
-                <label for="ip_address" class="text-dark">IP Address or CIDR</br><span class="text-muted">Example: 192.168.1.1 or 192.168.1.1/24, both are supported</span></label>
-                <input type="text" name="ip_address" class="form-control form-control-lg" id="ip_address" placeholder="X.X.X.X">
-                <button class="btn btn-primary mt-2 float-end" disabled type="button" name="resolve_ip_button" id="resolve_ip_button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-repeat"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> Resolve IP Address</button>
+                <label for="ip_address" class="text-dark">{% translate "IP Address or CIDR" %}</br><span class="text-muted">{% translate "Example: 192.168.1.1 or 192.168.1.1/24, both are supported" %}</span></label>
+                <input type="text" name="ip_address" class="form-control form-control-lg" id="ip_address" placeholder="{% translate "X.X.X.X" %}">
+                <button class="btn btn-primary mt-2 float-end" disabled type="button" name="resolve_ip_button" id="resolve_ip_button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-repeat"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> {% translate "Resolve IP Address" %}</button>
               </div>
               <div class="col-12">
                 <div id='all_domains_checkbox' class='mt-2 n-chk'>
                   <div class="form-check">
                     <input type="checkbox" class="form-check-input" id="select_all_ip_domains">
-                    <label class="form-check-label" for="select_all_ip_domains">Select All Domains</label>
+                    <label class="form-check-label" for="select_all_ip_domains">{% translate "Select All Domains" %}</label>
                   </div>
                 </div>
               </div>
@@ -122,16 +123,16 @@ Add or Import Targets
                 </div>
               </div>
               <div class="col-12 mt-3">
-                <label for="targetDescription" class="form-label">Target Description (Optional)</label>
-                <input type="text" class="form-control form-control-lg" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
+                <label for="targetDescription" class="form-label">{% translate "Target Description (Optional)" %}</label>
+                <input type="text" class="form-control form-control-lg" id="targetDescription" placeholder="{% translate "Interesting Target" %}" name="targetDescription">
               </div>
               <div class="col-12 mt-3">
-                <label for="domainDescription" class="form-label">HackerOne Target Team Handle
+                <label for="domainDescription" class="form-label">{% translate "HackerOne Target Team Handle" %}
                   <br>
-                  This is used to send vulnerability reports to the HackerOne Program automatically. Team handle can be found from the program URL, <a href="https://hackerone.com/team_handle">https://hackerone.com/team_handle</a>
+                  {% translate "This is used to send vulnerability reports to the HackerOne Program automatically. Team handle can be found from the program URL, <a href=\"https://hackerone.com/team_handle\">https://hackerone.com/team_handle</a>" %}
                 </label>
-                <input type="text" class="form-control form-control-lg" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
-                <button class="btn btn-primary submit-fn mt-2 float-end" disabled type="submit" name="add-ip-target" id="add-ip-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span id="add_ip_target_btn">Add Target</span></button>
+                <input type="text" class="form-control form-control-lg" id="targetH1TeamHandle" placeholder="{% translate "team_handle" %}" name="targetH1TeamHandle">
+                <button class="btn btn-primary submit-fn mt-2 float-end" disabled type="submit" name="add-ip-target" id="add-ip-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span id="add_ip_target_btn">{% translate "Add Target" %}</span></button>
               </div>
             </form>
           </div>
@@ -141,31 +142,31 @@ Add or Import Targets
             {% csrf_token %}
             <div class="row">
               <div class="col-12">
-                <label for="importSubdomainFormControlTextarea">You can add one or more targets. If you are adding multiple targets, separate them using new line. If the subdomain already exists, it will be skipped.</label>
-                <textarea class="form-control" id="addTargets" rows="8" spellcheck="false" name="addTargets" placeholder="example.com"></textarea>
+                <label for="importSubdomainFormControlTextarea">{% translate "You can add one or more targets. If you are adding multiple targets, separate them using new line. If the subdomain already exists, it will be skipped." %}</label>
+                <textarea class="form-control" id="addTargets" rows="8" spellcheck="false" name="addTargets" placeholder="{% translate "example.com" %}"></textarea>
               </div>
               <div class="col-12 mt-3">
-                <label for="targetDescription">Target Description (Optional)</label>
-                <input type="text" class="form-control form-control-lg" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
+                <label for="targetDescription">{% translate "Target Description (Optional)" %}</label>
+                <input type="text" class="form-control form-control-lg" id="targetDescription" placeholder="{% translate "Interesting Target" %}" name="targetDescription">
               </div>
               <div class="col-12 mt-3">
-                <label for="domainDescription" class="form-label">HackerOne Target Team Handle
+                <label for="domainDescription" class="form-label">{% translate "HackerOne Target Team Handle" %}
                   <br>
-                  This is used to send vulnerability reports to the HackerOne Program automatically. Team handle can be found from the program URL, <a href="https://hackerone.com/team_handle">https://hackerone.com/team_handle</a>
+                  {% translate "This is used to send vulnerability reports to the HackerOne Program automatically. Team handle can be found from the program URL," %} <a href="https://hackerone.com/team_handle">https://hackerone.com/team_handle</a>
                 </label>
-                <input type="text" class="form-control form-control-lg" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
+                <input type="text" class="form-control form-control-lg" id="targetH1TeamHandle" placeholder="{% translate "team_handle" %}" name="targetH1TeamHandle">
               </div>
             </div>
-            <button class="btn btn-primary submit-fn mt-2 float-end" type="submit" id="add-multiple-targets" name="add-multiple-targets" value="submit">Add 0 Target</button>
+            <button class="btn btn-primary submit-fn mt-2 float-end" type="submit" id="add-multiple-targets" name="add-multiple-targets" value="submit">{% translate "Add 0 Target" %}</button>
           </form>
         </div>
         <div class="tab-pane fade" id="import-text-tab" role="tabpanel" aria-labelledby="import-text-tab">
           <div class="row">
             <div class="col-12">
               <div class="alert alert-primary border-0 mb-4" role="alert">
-                Your txt file must have list of domains separated by a new line.
+                {% translate "Your txt file must have list of domains separated by a new line." %}
                 <br><br>
-                By default all domains imported from txt will have no description. If you choose to import multiple domains with description, csv import is recommended.
+                {% translate "By default all domains imported from txt will have no description. If you choose to import multiple domains with description, csv import is recommended." %}
               </div>
               <form method="post" enctype="multipart/form-data">
                 <div class="mb-3">
@@ -182,9 +183,10 @@ Add or Import Targets
           <div class="row">
             <div class="col-12">
               <div class="alert alert-warning border-0 mb-4" role="alert">
-                Your csv file must be in the format of <strong>domain, description</strong> separated by a new line.
+                {% translate "Your csv file must be in the format of <strong>domain, description</strong> separated by a new line." %}
               </div>
               <form method="post" enctype="multipart/form-data">
+                
                 <div class="mb-3">
                   {% csrf_token %}
                   <input type="file" class="form-control" id="csvFile" required accept=".csv" name="csvFile" onchange="showname(this, '#selectedCsvFileName')">
@@ -212,7 +214,11 @@ Add or Import Targets
       var text = $("#addTargets").val();
       var lines = text.split(/\r|\r\n|\n/);
       var count = lines.length;
-      add_multiple_targets_btn.innerHTML = `Add ${count} Targets`;
+      add_multiple_targets_btn.innerHTML = interpolate(
+        ngettext("Add %(count)s Target", "Add %(count)s Targets", count),
+        [{count: count}, {count: count}],
+        true
+      );
       if (!count) {
         add_multiple_targets_btn.disabled = true;
       }
@@ -239,8 +245,8 @@ Add or Import Targets
       var ip_addr = $("#ip_address").val();
       $('#resolved_domains_div').empty();
       swal.fire({
-        title: `Fetching domains`,
-        text: `Please wait while we fetch domains associated with IP address or CIDR ${ip_address.value}`,
+        title: gettext("Fetching domains"),
+        text: interpolate("Please wait while we fetch domains associated with IP address or CIDR %(IP)s", {IP: ip_address.value}, true),
         padding: '2em',
         onOpen: function() {
           swal.showLoading()
@@ -257,8 +263,16 @@ Add or Import Targets
             if (json_data['status']) {
               // #resolved_domains_div
               $("#all_domains_checkbox").show();
-              $('#resolved_domains_div').append(`<b class='text-info'>${json_data['domains'].length} domains associated with IP Address ${ip_address.value}</b></br>`);
-              $('#resolved_domains_div').append(`<b>Please select the domains to import.</b>`);
+              $('#resolved_domains_div').append(`<b class='text-info'>` + interpolate(
+                ngettext(
+                  "%(countDomains)s domain associated with IP Address %(IP)s",
+                  "%(countDomains)s domains associated with IP Address %(IP)s",
+                  json_data['domains'].length
+                ),
+                [{ countDomains: json_data['domains'].length, IP: ip_address.value }, { countDomains: json_data['domains'].length, IP: ip_address.value }],
+                true
+              ) + `</b></br>`);
+              $('#resolved_domains_div').append(`<b>` + gettext("Please select the domains to import.") + `</b>`);
               $('#resolved_domains_div').append(`<div id='domains_checkbox' class='mt-2 row'></div>`);
               for (var domain in json_data['domains']) {
                 $('#domains_checkbox').append(`
@@ -277,7 +291,15 @@ Add or Import Targets
                 var checked_count = $('.resolved_ip_domains:checked').length;
                 if (checked_count > 0) {
                   add_multiple_targets_btn.disabled = false;
-                  $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
+                  $('#add_ip_target_btn').html(interpolate(
+                    ngettext(
+                      `Add %(checkedCount)s Target`,
+                      `Add %(checkedCount)s Targets`,
+                      checked_count
+                    ),
+                    [{checkedCount: checked_count}, {checkedCount: checked_count}],
+                    true
+                  ));
                 }
                 else{
                   add_multiple_targets_btn.disabled = true;
@@ -288,7 +310,7 @@ Add or Import Targets
               $("#all_domains_checkbox").hide();
               swal.close();
               swal({
-                title: `Sorry, no domains associated with IP Address ${ip_address.value}!`,
+                title: interpolate("Sorry, no domains associated with IP Address %(IP)s", {IP: ip_address.value}, true),
                 type: 'error',
                 padding: '2em'
               })
@@ -297,7 +319,7 @@ Add or Import Targets
           .catch(function() {
             swal.insertQueueStep({
               type: 'error',
-              title: 'Oops! Unable to fetch domains for this IP!'
+              title: gettext("Oops! Unable to fetch domains for this IP!")
             })
           })
         }
@@ -325,7 +347,7 @@ Add or Import Targets
   });
 
   function showname (file, id) {
-    $(id).html('Selected file: ' + htmlEncode(file.files.item(0).name));
+    $(id).html(interpolate('Selected file: %(filename)s', {filename: htmlEncode(file.files.item(0).name)}, true));
   };
 
   function show_whois(){

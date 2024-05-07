@@ -1,8 +1,9 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Add New Wordlist
+{% translate "Add New Wordlist" %}
 {% endblock title %}
 
 
@@ -10,12 +11,12 @@ Add New Wordlist
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'wordlist_list' current_project.slug %}">Wordlist</a></li>
-<li class="breadcrumb-item active">Add Worldlist</li>
+<li class="breadcrumb-item"><a href="{% url 'wordlist_list' current_project.slug %}">{% translate "Wordlist" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Add Worldlist" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Add New Wordlist for Bruteforce
+{% translate "Add New Wordlist for Bruteforce" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -23,34 +24,34 @@ Add New Wordlist for Bruteforce
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <p>Wordlist can be used for directory bruteforce or subdomain bruteforce. Instructions on how to use the wordlist are <a href="https://rengine.wiki/usage/wordlist/">found here <i class="fe-external-link"></i></a></p>
+        <p>{% translate "Wordlist can be used for directory bruteforce or subdomain bruteforce. Instructions on how to use the wordlist are" %} <a href="https://rengine.wiki/usage/wordlist/">{% translate "found here" %} <i class="fe-external-link"></i></a></p>
         <form class="simple-example" method="POST" enctype="multipart/form-data">
           {% csrf_token %}
           <div class="row">
             <div class="col-6">
-              <label for="name" class="form-label">Wordlist Name</label>
+              <label for="name" class="form-label">{% translate "Wordlist Name" %}</label>
               {{ form.name }}
             </div>
             <div class="col-6">
-              <label for="short_name" class="form-label">Short Name</label>
+              <label for="short_name" class="form-label">{% translate "Short Name" %}</label>
               {{ form.short_name }}
               {% if form.errors.short_name %}
               <div class="invalid-feedback" style="display: block;">
                 {{ form.errors.short_name|striptags }}
               </div>
               {% endif %}
-              <p class="text-primary mt-1">Please keep the short names without spaces, like my-wordlist or my_wordlist. The short names will be later used to reference wordlist in the YAML settings.</p>
+              <p class="text-primary mt-1">{% translate "Please keep the short names without spaces, like my-wordlist or my_wordlist. The short names will be later used to reference wordlist in the YAML settings." %}</p>
             </div>
             <div>
-              <h4 class="header-title">Select the wordlist file</h4>
-              <p class="text-primary">Your wordlist must be a *.txt file and wordlists must be separated by a new line.</p>
+              <h4 class="header-title">{% translate "Select the wordlist file" %}</h4>
+              <p class="text-primary">{% translate "Your wordlist must be a *.txt file and wordlists must be separated by a new line." %}</p>
             </div>
             <div class="custom-file mb-4">
-              <label class="form-label" for="txtFile">Choose *.txt file</label>
+              <label class="form-label" for="txtFile">{% translate "Choose *.txt file" %}</label>
               {{ form.upload_file }}
             </div>
           </div>
-          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Upload Wordlist</button>
+          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">{% translate "Upload Wordlist" %}</button>
         </form>
       </div>
     </div>

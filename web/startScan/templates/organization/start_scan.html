@@ -1,8 +1,9 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Initiating Scan for Organization
+{% translate "Initiating Scan for Organization" %}
 {% endblock title %}
 
 
@@ -11,13 +12,13 @@ Initiating Scan for Organization
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug">Organization</a></li>
-<li class="breadcrumb-item active">Initiate Scan</li>
+<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug %}">{% translate "Organization" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Initiate Scan" %}</li>
 <li class="breadcrumb-item active" aria-current="page">{{organization.name}}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Initiating scan for {{organization.name}}
+{% blocktranslate with orgName=organization.name %}Initiating scan for {{orgName}}{% endblocktranslate %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -25,7 +26,7 @@ Initiating scan for {{organization.name}}
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h4 class="heading-title">{{ domain_list|length }} Domains associated with organization {{organization.name}}</h4>
+        <h4 class="heading-title">{% blocktranslate with nDomains=domain_list|length orgName=organization.name %}{{ nDomains }} Domains associated with organization {{orgName}}{% endblocktranslate %}</h4>
         {% for domain in domain_list %}
         <span class="badge bg-dark m-1">{{domain.name}}</span>
         {% endfor %}
@@ -33,15 +34,15 @@ Initiating scan for {{organization.name}}
           {% csrf_token %}
           <div class="form-row">
             <div class="col-md-12 mb-4">
-              <h4>Select Scan Engine</h4>
+              <h4>{% translate "Select Scan Engine" %}</h4>
               {% if custom_engine_count == 0 %}
               <div class="alert bg-soft-primary border-0 mb-4" role="alert">
-                <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
+                <span>{% translate "<b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?" %}</span>
                 <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">Create Custom Scan Engine</a>
               </div>
               {% endif %}
               {% include "startScan/_items/scanEngine_select.html" %}
-              <button class="btn btn-primary submit-fn mt-2 float-end" type="submit"><i class="fe-zap"></i> Start Scan</button>
+              <button class="btn btn-primary submit-fn mt-2 float-end" type="submit"><i class="fe-zap"></i> {% translate "Start Scan" %}</button>
             </div>
             <input type="hidden" name="list_of_domain_id" value="{{domain_ids}}">
           </form>

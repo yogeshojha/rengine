@@ -1,9 +1,11 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load humanize %}
+{% load i18n %}
 {% load custom_tags %}
+
 {% block title %}
-All Vulnerabilities
+{% translate "All Vulnerabilities" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
@@ -40,10 +42,10 @@ $(document).ready(function() {
 		"destroy": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
 			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search...",
-			"sLengthMenu": "Results :  _MENU_",
+			"sSearchPlaceholder": gettext("Search..."),
+			"sLengthMenu": gettext("Results :  _MENU_"),
 		},
 		"processing": true,
 		"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
@@ -59,7 +61,10 @@ $(document).ready(function() {
 		"order": [[ 7, "desc" ]],
 		"rowGroup": {
 			"startRender": function(rows, group) {
-				return group + ' (' + rows.count() + ' Vulnerabilities)';
+				return interpolate("%(group)s (%(count)s Vulnerabilities)", {
+					"group": group,
+					"count": rows.count()
+				}, true);
 			}
 		},
 		"columns": vuln_datatable_columns,
@@ -138,30 +143,30 @@ $(document).ready(function() {
 					if (row['tags']) {
 						tags = '<div>';
 						row['tags'].forEach(tag => {
-							tags += `<span class="badge badge-${badge_color} me-1 mt-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
+							tags += `<span class="badge badge-${badge_color} me-1 mt-1" data-toggle="tooltip" data-placement="top" title="` + gettext("Tags") + `">${tag.name}</span>`;
 						});
 						tags += '</div>';
 					}
 					if (row['cvss_metrics']) {
-						cvss_metrics_badge = `<div><span class="badge badge-outline-primary mt-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
+						cvss_metrics_badge = `<div><span class="badge badge-outline-primary mt-1" data-toggle="tooltip" data-placement="top" title="`+ gettext("CVSS Metrics") + `">${row['cvss_metrics']}</span></div>`;
 					}
 					if (row['cve_ids'] || row['cwe_ids']) {
 						cve_cwe_badge += '<br>';
 					}
 					if (row['cve_ids']) {
 						row['cve_ids'].forEach(cve => {
-							cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
+							cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="` + gettext("CVE ID") + `">${cve.name.toUpperCase()}</a>`;
 						});
 					}
 					if (row['cwe_ids']) {
 						row['cwe_ids'].forEach(cwe => {
-							cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
+							cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="` + gettext("CWE ID") + `">${cwe.name.toUpperCase()}</a>`;
 						});
 					}
 					// if (cve_cwe_badge != "") {
 					// 	cve_cwe_badge += "";
 					// }
-					hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+					hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">` + gettext("Reported to hackerone") + `</a></div>` : "";
 					return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + cve_cwe_badge + tags + hackerone_report;
 				},
 				"targets": 3,
@@ -187,7 +192,7 @@ $(document).ready(function() {
 						else{
 							badge = 'danger';
 						}
-						return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${data}</span>`;
+						return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="` + gettext("CVSS Score") + `">${data}</span>`;
 					}
 					return '';
 				},
@@ -205,10 +210,10 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					if (data){
-						return '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
+						return '<span class="badge badge-soft-danger">&nbsp;&nbsp;' + gettext("OPEN") + '&nbsp;&nbsp;</span>'
 					}
 					else{
-						return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
+						return '<span class="badge badge-soft-success">&nbsp;&nbsp;' + gettext("RESOLVED") + '&nbsp;&nbsp;</span>'
 					}
 				},
 				"targets": 15,
@@ -222,9 +227,9 @@ $(document).ready(function() {
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
 						</a>
 						<div class="dropdown-menu" style="">
-						<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">Fetch GPT Vulnerability Details</a>
-						<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
-						<a class="text-danger dropdown-item btn-delete-vulnerability" href="#" id="${row['id']}">Delete Vulnerability</a>
+						<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">` + gettext("Fetch GPT Vulnerability Details") + `</a>
+						<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">` + gettext("Report to Hackerone") + `</a>
+						<a class="text-danger dropdown-item btn-delete-vulnerability" href="#" id="${row['id']}">` + gettext("Delete Vulnerability") + `</a>
 						</div>
 						</div>`;
 					}
@@ -316,7 +321,7 @@ $(document).ready(function() {
 				api.order([col_index, 'asc']).draw();
 				vulnerability_table.rowGroup().dataSrc(this.value);
 				Snackbar.show({
-					text: 'Vulnerabilities grouped by ' + this.value,
+					text: interpolate('Vulnerabilities grouped by %(vulnGpBy)s', {vulnGpBy: this.value}, true),
 					pos: 'top-right',
 					duration: 2500
 				});

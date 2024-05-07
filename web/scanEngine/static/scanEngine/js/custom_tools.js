@@ -1,6 +1,6 @@
 function load_gf_template(pattern_name){
   Swal.fire({
-		title: `Fetching GF template ${pattern_name}...`,
+		title: interpolate('Fetching GF template %(patternName)s...', {patternName: pattern_name}, true),
 	});
 	swal.showLoading();
 
@@ -11,27 +11,27 @@ function load_gf_template(pattern_name){
       $('#modal-content').empty();
       $("#modal-footer").empty();
 
-      $('#modal_title').html(`GF Pattern ` + htmlEncode(pattern_name));
+      $('#modal_title').html(interpolate('GF Pattern %(patternName)s', {patternName: htmlEncode(pattern_name)}, true));
 
       $('#modal-content').append(`<pre>${htmlEncode(response['content'])}</pre>`);
       $('#modal_dialog').modal('show');
     }
     else{
-      swal.fire("Error!", response.message, "error", {
-        button: "Okay",
+      swal.fire(gettext("Error!"), response.message, "error", {
+        button: gettext("Okay"),
       });
     }
 
   }).fail(function(){
-    swal.fire("Error!", 'Error loading gf pattern!', "error", {
-      button: "Okay",
+    swal.fire(gettext("Error!"), gettext('Error loading gf pattern!'), "error", {
+      button: gettext("Okay"),
     });
   });
 }
 
 function load_nuclei_template(pattern_name){
   Swal.fire({
-		title: `Fetching Nuclei template ${pattern_name}...`,
+		title: interpolate('Fetching Nuclei template %(patternName)s...', {patternName: pattern_name}, true),
 	});
 	swal.showLoading();
 
@@ -42,20 +42,20 @@ function load_nuclei_template(pattern_name){
       $('#modal-content').empty();
       $("#modal-footer").empty();
 
-      $('#modal_title').html(`Nuclei Template: ` + htmlEncode(pattern_name));
+      $('#modal_title').html(interpolate('Nuclei Template: %(patternName)s', {patternName: htmlEncode(pattern_name)}, true));
 
       $('#modal-content').append(`<pre>${htmlEncode(response['content'])}</pre>`);
       $('#modal_dialog').modal('show');
     }
     else{
-      swal.fire("Error!", response.message, "error", {
-        button: "Okay",
+      swal.fire(gettext("Error!"), response.message, "error", {
+        button: gettext("Okay"),
       });
     }
 
   }).fail(function(){
-    swal.fire("Error!", 'Error loading Nuclei Template!', "error", {
-      button: "Okay",
+    swal.fire(gettext("Error!"), gettext('Error loading Nuclei Template!'), "error", {
+      button: gettext("Okay"),
     });
   });
 }
@@ -67,14 +67,14 @@ $.getJSON(`/api/getFileContents?nuclei_config&format=json`, function(data) {
   $("textarea#nuclei_config_text_area").html(data['content']);
 }).fail(function(){
   $("#nuclei_config_text_area").removeAttr("readonly");
-  $("textarea#nuclei_config_text_area").html(`# Your nuclei configuration here.`);
-  $("#nuclei-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="nuclei-config-submit">');
+  $("textarea#nuclei_config_text_area").html(gettext('# Your nuclei configuration here.'));
+  $("#nuclei-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="' + gettext("Save Changes") + '" id="nuclei-config-submit">');
 });
 
 $("#nuclei_config_text_area").dblclick(function() {
   if (!document.getElementById('nuclei-config-submit')) {
     $("#nuclei_config_text_area").removeAttr("readonly");
-    $("#nuclei-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="nuclei-config-submit">');
+    $("#nuclei-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="' + gettext("Save Changes") + '" id="nuclei-config-submit">');
   }
 });
 
@@ -84,14 +84,14 @@ $.getJSON(`/api/getFileContents?subfinder_config&format=json`, function(data) {
   $("textarea#subfinder_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#subfinder_config_text_area").removeAttr("readonly");
-  $("textarea#subfinder_config_text_area").html(`# Your Subfinder configuration here.`);
-  $("#subfinder-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="subfinder-config-submit">');
+  $("textarea#subfinder_config_text_area").html(gettext(`# Your Subfinder configuration here.`));
+  $("#subfinder-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="' + gettext("Save Changes") + '" id="subfinder-config-submit">');
 });
 
 $("#subfinder_config_text_area").dblclick(function() {
   if (!document.getElementById('subfinder-config-submit')) {
     $("#subfinder_config_text_area").removeAttr("readonly");
-    $("#subfinder-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="subfinder-config-submit">');
+    $("#subfinder-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="' + gettext("Save Changes") + '" id="subfinder-config-submit">');
   }
 });
 
@@ -101,14 +101,14 @@ $.getJSON(`/api/getFileContents?naabu_config&format=json`, function(data) {
   $("textarea#naabu_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#naabu_config_text_area").removeAttr("readonly");
-  $("textarea#naabu_config_text_area").html(`# Your Naabu configuration here.`);
-  $("#naabu-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="naabu-config-submit">');
+  $("textarea#naabu_config_text_area").html(gettext(`# Your Naabu configuration here.`));
+  $("#naabu-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="' + gettext("Save Changes") + '" id="naabu-config-submit">');
 });
 
 $("#naabu_config_text_area").dblclick(function() {
   if (!document.getElementById('naabu-config-submit')) {
     $("#naabu_config_text_area").removeAttr("readonly");
-    $("#naabu-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="naabu-config-submit">');
+    $("#naabu-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="' + gettext("Save Changes") + '" id="naabu-config-submit">');
   }
 });
 
@@ -119,14 +119,14 @@ $.getJSON(`/api/getFileContents?amass_config&format=json`, function(data) {
   $("textarea#amass_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#amass_config_text_area").removeAttr("readonly");
-  $("textarea#amass_config_text_area").html(`# Your amass configuration here.`);
-  $("#amass-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="amass-config-submit">');
+  $("textarea#amass_config_text_area").html(gettext(`# Your amass configuration here.`));
+  $("#amass-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="' + gettext("Save Changes") + '" id="amass-config-submit">');
 });
 
 $("#amass_config_text_area").dblclick(function() {
   if (!document.getElementById('amass-config-submit')) {
     $("#amass_config_text_area").removeAttr("readonly");
-    $("#amass-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="amass-config-submit">');
+    $("#amass-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="' + gettext("Save Changes") + '" id="amass-config-submit">');
   }
 });
 
@@ -136,13 +136,13 @@ $.getJSON(`/api/getFileContents?theharvester_config&format=json`, function(data)
   $("textarea#theharvester_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#theharvester_config_text_area").removeAttr("readonly");
-  $("textarea#theharvester_config_text_area").html(`# Your the Harvester configuration here.`);
-  $("#theHarvester-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-right" value="Save Changes" id="theharvester-config-submit">');
+  $("textarea#theharvester_config_text_area").html(gettext(`# Your the Harvester configuration here.`));
+  $("#theHarvester-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-right" value="' + gettext("Save Changes") + '" id="theharvester-config-submit">');
 });
 
 $("#theharvester_config_text_area").dblclick(function() {
   if (!document.getElementById('theharvester-config-submit')) {
     $("#theharvester_config_text_area").removeAttr("readonly");
-    $("#theharvester-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="theharvester-config-submit">');
+    $("#theharvester-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="' + gettext("Save Changes") + '" id="theharvester-config-submit">');
   }
 });

@@ -1,8 +1,9 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
-Update Scan Engine
+{% translate "Update Scan Engine" %}
 {% endblock title %}
 
 
@@ -22,12 +23,12 @@ Update Scan Engine
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' current_project.slug %}">Engines</a></li>
-<li class="breadcrumb-item active">Update Scan Engine</li>
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' current_project.slug %}">{% translate "Engines" %}</a></li>
+<li class="breadcrumb-item active">{% translate "Update Scan Engine" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Update Scan Engine
+{% translate "Update Scan Engine" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -35,11 +36,11 @@ Update Scan Engine
 	<div class="col-xl-12">
 		<div class="card">
 			<div class="card-body">
-				<h4 class="header-title">Update Scan Engine</h4>
+				<h4 class="header-title">{% translate "Update Scan Engine" %}</h4>
 				<form method="POST">
 					{% csrf_token %}
 					{% include "scanEngine/_items/form_engine.html" %}
-					<button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Update Scan Engine</button>
+					<button class="btn btn-primary submit-fn mt-2 float-end" type="submit">{% translate "Update Scan Engine" %}</button>
 				</form>
 			</div>
 		</div>

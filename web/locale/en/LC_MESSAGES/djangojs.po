@@ -1,0 +1,1218 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: static/custom/custom.js:81
+msgid "Are you sure you want to delete this?"
+msgstr "Are you sure you want to delete this?"
+
+#: static/custom/custom.js:82
+msgid "This action can not be undone."
+msgstr "This action can not be undone."
+
+#: static/custom/custom.js:85 static/custom/custom.js:263
+#: static/custom/custom.js:296 static/custom/custom.js:415
+#: static/custom/custom.js:795 static/custom/custom.js:796
+#: static/custom/custom.js:920 static/custom/todo.js:31
+msgid "Delete"
+msgstr "Delete"
+
+#: static/custom/custom.js:86 static/custom/custom.js:264
+#: static/custom/custom.js:297 static/custom/custom.js:416
+#: static/custom/custom.js:921 static/custom/custom.js:1839
+#: static/custom/custom.js:1863 static/custom/todo.js:32
+msgid "Cancel"
+msgstr "Cancel"
+
+#: static/custom/custom.js:104
+msgid "Oops! Unable to delete the scheduled task!"
+msgstr "Oops! Unable to delete the scheduled task!"
+
+#: static/custom/custom.js:113
+msgid "Schedule Scan Started"
+msgstr "Schedule Scan Started"
+
+#: static/custom/custom.js:115
+msgid "Schedule Scan Stopped"
+msgstr "Schedule Scan Stopped"
+
+#: static/custom/custom.js:189
+msgid "INFO"
+msgstr "INFO"
+
+#: static/custom/custom.js:192
+msgid "LOW"
+msgstr "LOW"
+
+#: static/custom/custom.js:195
+msgid "MEDIUM"
+msgstr "MEDIUM"
+
+#: static/custom/custom.js:198
+msgid "HIGH"
+msgstr "HIGH"
+
+#: static/custom/custom.js:201
+msgid "CRITICAL"
+msgstr "CRITICAL"
+
+#: static/custom/custom.js:204
+msgid "UNKNOWN"
+msgstr "UNKNOWN"
+
+#: static/custom/custom.js:259
+msgid "Are you sure you want to delete all scan results?"
+msgstr "Are you sure you want to delete all scan results?"
+
+#: static/custom/custom.js:260 static/custom/custom.js:293
+#: static/custom/custom.js:792 static/custom/custom.js:832
+#: static/custom/custom.js:917 static/custom/todo.js:28
+msgid "You won't be able to revert this!"
+msgstr "You won't be able to revert this!"
+
+#: static/custom/custom.js:282
+msgid "Oops! Unable to delete Delete scan results!"
+msgstr "Oops! Unable to delete Delete scan results!"
+
+#: static/custom/custom.js:292
+msgid "Are you sure you want to delete all Screenshots?"
+msgstr "Are you sure you want to delete all Screenshots?"
+
+#: static/custom/custom.js:315
+msgid "Oops! Unable to delete Empty Screenshots!"
+msgstr "Oops! Unable to delete Empty Screenshots!"
+
+#: static/custom/custom.js:357
+msgid "Technology"
+msgstr "Technology"
+
+#: static/custom/custom.js:371
+msgid "CDN IP Address"
+msgstr "CDN IP Address"
+
+#: static/custom/custom.js:412
+msgid "Delete Vulnerability!"
+msgstr "Delete Vulnerability!"
+
+#: static/custom/custom.js:413
+msgid ""
+"Do you really want to delete this Vulnerability? This action cannot be "
+"undone."
+msgstr ""
+"Do you really want to delete this Vulnerability? This action cannot be "
+"undone."
+
+#: static/custom/custom.js:420
+msgid "Deleting Vulnerability..."
+msgstr "Deleting Vulnerability..."
+
+#: static/custom/custom.js:446
+msgid "Could not delete Vulnerability!"
+msgstr "Could not delete Vulnerability!"
+
+#: static/custom/custom.js:460
+msgid ""
+"We do not recommended sending this vulnerability report to hackerone due to "
+"the severity, do you still want to report this?"
+msgstr ""
+"We do not recommended sending this vulnerability report to hackerone due to "
+"the severity, do you still want to report this?"
+
+#: static/custom/custom.js:462
+msgid "This vulnerability report will be sent to Hackerone."
+msgstr "This vulnerability report will be sent to Hackerone."
+
+#: static/custom/custom.js:466
+msgid "Reporting vulnerability to hackerone"
+msgstr "Reporting vulnerability to hackerone"
+
+#: static/custom/custom.js:470 static/custom/custom.js:471
+msgid "Report"
+msgstr "Report"
+
+#: static/custom/custom.js:488
+msgid "Target does not has team_handle to send report to."
+msgstr "Target does not has team_handle to send report to."
+
+#: static/custom/custom.js:493
+msgid "Vulnerability report successfully submitted to hackerone."
+msgstr "Vulnerability report successfully submitted to hackerone."
+
+#: static/custom/custom.js:498
+msgid "Invalid Report."
+msgstr "Invalid Report."
+
+#: static/custom/custom.js:503
+msgid "Hackerone authentication failed."
+msgstr "Hackerone authentication failed."
+
+#: static/custom/custom.js:508
+msgid "API Key forbidden by Hackerone."
+msgstr "API Key forbidden by Hackerone."
+
+#: static/custom/custom.js:513
+msgid "Too many requests."
+msgstr "Too many requests."
+
+#: static/custom/custom.js:519
+msgid ""
+"Oops! Unable to send vulnerability report to hackerone, check your target "
+"team_handle or hackerone configurarions!"
+msgstr ""
+"Oops! Unable to send vulnerability report to hackerone, check your target "
+"team_handle or hackerone configurarions!"
+
+#: static/custom/custom.js:563 static/custom/custom.js:663
+#: static/custom/custom.js:1121 static/custom/custom.js:1251
+#: static/custom/custom.js:1305
+msgid "Showing page _PAGE_ of _PAGES_"
+msgstr "Showing page _PAGE_ of _PAGES_"
+
+#: static/custom/custom.js:565 static/custom/custom.js:665
+#: static/custom/custom.js:1123 static/custom/custom.js:1253
+#: static/custom/custom.js:1307
+msgid "Search..."
+msgstr "Search..."
+
+#: static/custom/custom.js:566 static/custom/custom.js:666
+#: static/custom/custom.js:1254 static/custom/custom.js:1308
+msgid "Results :  _MENU_"
+msgstr "Results :  _MENU_"
+
+#: static/custom/custom.js:750
+msgid "No subdomains marked as important!"
+msgstr "No subdomains marked as important!"
+
+#: static/custom/custom.js:772
+msgid "Marked Important!"
+msgstr "Marked Important!"
+
+#: static/custom/custom.js:775
+msgid "Marked Un-Important!"
+msgstr "Marked Un-Important!"
+
+#: static/custom/custom.js:791
+msgid "Are you sure you want to delete this scan history?"
+msgstr "Are you sure you want to delete this scan history?"
+
+#: static/custom/custom.js:814 static/custom/custom.js:942
+msgid "Oops! Unable to delete the scan history!"
+msgstr "Oops! Unable to delete the scan history!"
+
+#: static/custom/custom.js:831
+msgid "Are you sure you want to stop this scan?"
+msgstr "Are you sure you want to stop this scan?"
+
+#: static/custom/custom.js:854
+msgid "Scan Successfully Aborted."
+msgstr "Scan Successfully Aborted."
+
+#: static/custom/custom.js:866
+msgid "Oops! Could not abort the scan. "
+msgstr "Oops! Could not abort the scan. "
+
+#: static/custom/custom.js:874
+msgid "Oops! Unable to stop the scan"
+msgstr "Oops! Unable to stop the scan"
+
+#: static/custom/custom.js:916
+msgid "Are you sure you want to delete this subscan?"
+msgstr "Are you sure you want to delete this subscan?"
+
+#: static/custom/custom.js:937
+msgid "1 Subscan Deleted!"
+msgstr "1 Subscan Deleted!"
+
+#: static/custom/custom.js:954
+msgid "Fetching Results..."
+msgstr "Fetching Results..."
+
+#: static/custom/custom.js:967
+msgid "Scan has not yet started! Please wait for other scans to complete..."
+msgstr "Scan has not yet started! Please wait for other scans to complete..."
+
+#: static/custom/custom.js:977 static/custom/right_sidebar.js:253
+msgid "Port Scan"
+msgstr "Port Scan"
+
+#: static/custom/custom.js:979 static/custom/right_sidebar.js:259
+msgid "Vulnerability Scan"
+msgstr "Vulnerability Scan"
+
+#: static/custom/custom.js:981
+msgid "Fetch URLs"
+msgstr "Fetch URLs"
+
+#: static/custom/custom.js:983
+msgid "Directory and Files Fuzzing"
+msgstr "Directory and Files Fuzzing"
+
+#: static/custom/custom.js:990 static/custom/custom.js:1937
+#: static/custom/right_sidebar.js:127
+msgid "Running"
+msgstr "Running"
+
+#: static/custom/custom.js:993 static/custom/custom.js:1367
+#: static/custom/right_sidebar.js:77 static/custom/right_sidebar.js:166
+msgid "Failed"
+msgstr "Failed"
+
+#: static/custom/custom.js:995
+msgid "Successful"
+msgstr "Successful"
+
+#: static/custom/custom.js:998 static/custom/custom.js:1372
+#: static/custom/custom.js:1929 static/custom/right_sidebar.js:82
+#: static/custom/right_sidebar.js:172
+msgid "Aborted"
+msgstr "Aborted"
+
+#: static/custom/custom.js:1000 static/custom/right_sidebar.js:265
+msgid "Unknown"
+msgstr "Unknown"
+
+#: static/custom/custom.js:1002
+msgid "Scan Status:"
+msgstr "Scan Status:"
+
+#: static/custom/custom.js:1003
+msgid "Engine Used:"
+msgstr "Engine Used:"
+
+#: static/custom/custom.js:1011
+msgid "IP Address:"
+msgstr "IP Address:"
+
+#: static/custom/custom.js:1011
+msgid "Ports Open"
+msgstr "Ports Open"
+
+#: static/custom/custom.js:1023
+msgid "* Uncommon Ports"
+msgstr "* Uncommon Ports"
+
+#: static/custom/custom.js:1032 static/custom/custom.js:1042
+msgid "could not fetch any results."
+msgstr "could not fetch any results."
+
+#: static/custom/custom.js:1074
+msgid "HTTP URL"
+msgstr "HTTP URL"
+
+#: static/custom/custom.js:1075
+msgid "Status"
+msgstr "Status"
+
+#: static/custom/custom.js:1076
+msgid "Page Title"
+msgstr "Page Title"
+
+#: static/custom/custom.js:1077
+msgid "Tags"
+msgstr "Tags"
+
+#: static/custom/custom.js:1078
+msgid "Content Type"
+msgstr "Content Type"
+
+#: static/custom/custom.js:1079 static/custom/custom.js:1275
+msgid "Content Length"
+msgstr "Content Length"
+
+#: static/custom/custom.js:1080
+msgid "Response Time"
+msgstr "Response Time"
+
+#: static/custom/custom.js:1097
+msgid "Web Server"
+msgstr "Web Server"
+
+#: static/custom/custom.js:1145
+msgid "Type"
+msgstr "Type"
+
+#: static/custom/custom.js:1146
+msgid "Title"
+msgstr "Title"
+
+#: static/custom/custom.js:1147 static/custom/custom.js:2542
+msgid "Severity"
+msgstr "Severity"
+
+#: static/custom/custom.js:1148 static/custom/custom.js:1209
+#: static/custom/custom.js:2358 static/custom/custom.js:2808
+#: static/custom/custom.js:2811
+msgid "CVSS Score"
+msgstr "CVSS Score"
+
+#: static/custom/custom.js:1149
+msgid "CVE/CWE"
+msgstr "CVE/CWE"
+
+#: static/custom/custom.js:1150
+msgid "Vulnerable URL"
+msgstr "Vulnerable URL"
+
+#: static/custom/custom.js:1151
+msgid "Action"
+msgstr "Action"
+
+#: static/custom/custom.js:1196 static/custom/custom.js:2819
+msgid "CVSS Metrics"
+msgstr "CVSS Metrics"
+
+#: static/custom/custom.js:1214 static/custom/custom.js:2775
+#: static/custom/toolbox.js:192
+msgid "CVE ID"
+msgstr "CVE ID"
+
+#: static/custom/custom.js:1219 static/custom/custom.js:2382
+#: static/custom/custom.js:2790
+msgid "CWE ID"
+msgstr "CWE ID"
+
+#: static/custom/custom.js:1230
+msgid "Report to Hackerone"
+msgstr "Report to Hackerone"
+
+#: static/custom/custom.js:1273
+msgid "Directory"
+msgstr "Directory"
+
+#: static/custom/custom.js:1274 static/custom/custom.js:2295
+msgid "HTTP Status"
+msgstr "HTTP Status"
+
+#: static/custom/custom.js:1276
+msgid "Lines"
+msgstr "Lines"
+
+#: static/custom/custom.js:1277
+msgid "Words"
+msgstr "Words"
+
+#: static/custom/custom.js:1368
+msgid "Error:"
+msgstr "Error:"
+
+#: static/custom/custom.js:1376 static/custom/custom.js:1933
+#: static/custom/right_sidebar.js:177
+msgid "Task Completed"
+msgstr "Task Completed"
+
+#: static/custom/custom.js:1415
+msgid "Fetching WHOIS..."
+msgstr "Fetching WHOIS..."
+
+#: static/custom/custom.js:1436
+msgid "Whois Fetched..."
+msgstr "Whois Fetched..."
+
+#: static/custom/custom.js:1485 static/custom/custom.js:1517
+#: static/custom/toolbox.js:178
+msgid "Oops!"
+msgstr "Oops!"
+
+#: static/custom/custom.js:1535
+msgid "Domain info"
+msgstr "Domain info"
+
+#: static/custom/custom.js:1536
+msgid "Whois"
+msgstr "Whois"
+
+#: static/custom/custom.js:1537
+msgid "Nameservers"
+msgstr "Nameservers"
+
+#: static/custom/custom.js:1538
+msgid "DNS Records"
+msgstr "DNS Records"
+
+#: static/custom/custom.js:1539
+msgid "Historical Ips"
+msgstr "Historical Ips"
+
+#: static/custom/custom.js:1540
+msgid "Related Domains"
+msgstr "Related Domains"
+
+#: static/custom/custom.js:1541
+msgid "Related TLDs"
+msgstr "Related TLDs"
+
+#: static/custom/custom.js:1549
+msgid "Domain"
+msgstr "Domain"
+
+#: static/custom/custom.js:1553
+msgid "Dnssec"
+msgstr "Dnssec"
+
+#: static/custom/custom.js:1557
+msgid "Geolocation"
+msgstr "Geolocation"
+
+#: static/custom/custom.js:1564
+msgid "Created"
+msgstr "Created"
+
+#: static/custom/custom.js:1568
+msgid "Updated"
+msgstr "Updated"
+
+#: static/custom/custom.js:1572
+msgid "Expires"
+msgstr "Expires"
+
+#: static/custom/custom.js:1578
+msgid "Whois Server"
+msgstr "Whois Server"
+
+#: static/custom/custom.js:1584
+msgid "Registrar Name"
+msgstr "Registrar Name"
+
+#: static/custom/custom.js:1588
+msgid "Registrar Phone"
+msgstr "Registrar Phone"
+
+#: static/custom/custom.js:1592
+msgid "Registrar Email"
+msgstr "Registrar Email"
+
+#: static/custom/custom.js:1612
+msgid "Registrant"
+msgstr "Registrant"
+
+#: static/custom/custom.js:1615
+msgid "Administrative"
+msgstr "Administrative"
+
+#: static/custom/custom.js:1618
+msgid "Technical"
+msgstr "Technical"
+
+#: static/custom/custom.js:1639
+msgid "ID"
+msgstr "ID"
+
+#: static/custom/custom.js:1643
+msgid "Name"
+msgstr "Name"
+
+#: static/custom/custom.js:1647
+msgid "Organization"
+msgstr "Organization"
+
+#: static/custom/custom.js:1651
+msgid "Email"
+msgstr "Email"
+
+#: static/custom/custom.js:1655
+msgid "Phone/Fax"
+msgstr "Phone/Fax"
+
+#: static/custom/custom.js:1662 static/custom/custom.js:1666
+msgid "Address"
+msgstr "Address"
+
+#: static/custom/custom.js:1685
+msgid "A Records"
+msgstr "A Records"
+
+#: static/custom/custom.js:1690
+msgid "MX Records"
+msgstr "MX Records"
+
+#: static/custom/custom.js:1696
+msgid "TXT Records"
+msgstr "TXT Records"
+
+#: static/custom/custom.js:1708
+msgid "IP"
+msgstr "IP"
+
+#: static/custom/custom.js:1709
+msgid "Location"
+msgstr "Location"
+
+#: static/custom/custom.js:1710
+msgid "Owner"
+msgstr "Owner"
+
+#: static/custom/custom.js:1711
+msgid "Last Seen"
+msgstr "Last Seen"
+
+#: static/custom/custom.js:1749
+msgid "No Related TLDs identified"
+msgstr "No Related TLDs identified"
+
+#: static/custom/custom.js:1763
+msgid "No Related Domains identified"
+msgstr "No Related Domains identified"
+
+#: static/custom/custom.js:1787
+msgid ""
+"If you would like to add IP/CIDRs, multiple domain, Please <a href=\"/target/"
+"add/target\">click here.</a>"
+msgstr ""
+"If you would like to add IP/CIDRs, multiple domain, Please <a href=\"/target/"
+"add/target\">click here.</a>"
+
+#: static/custom/custom.js:1790
+msgid "Target Name"
+msgstr "Target Name"
+
+#: static/custom/custom.js:1791 static/custom/toolbox.js:7
+msgid "yourdomain.com"
+msgstr "yourdomain.com"
+
+#: static/custom/custom.js:1795
+msgid "Description (Optional)"
+msgstr "Description (Optional)"
+
+#: static/custom/custom.js:1796
+msgid "Target Description"
+msgstr "Target Description"
+
+#: static/custom/custom.js:1800
+msgid "Hackerone Target Team Handle (Optional)"
+msgstr "Hackerone Target Team Handle (Optional)"
+
+#: static/custom/custom.js:1801
+msgid "hackerone.com/team_handle, Only enter team_handle after /"
+msgstr "hackerone.com/team_handle, Only enter team_handle after /"
+
+#: static/custom/custom.js:1805 static/custom/custom.js:1834
+#: static/custom/custom.js:1838
+msgid "Add Target"
+msgstr "Add Target"
+
+#: static/custom/custom.js:1858
+msgid "Target Successfully added!"
+msgstr "Target Successfully added!"
+
+#: static/custom/custom.js:1859
+msgid "Do you wish to initiate the scan on new target?"
+msgstr "Do you wish to initiate the scan on new target?"
+
+#: static/custom/custom.js:1862
+msgid "Initiate Scan"
+msgstr "Initiate Scan"
+
+#: static/custom/custom.js:1879
+msgid "Oops! Unable to add target !"
+msgstr "Oops! Unable to add target !"
+
+#: static/custom/custom.js:1966
+msgid "Close"
+msgstr "Close"
+
+#: static/custom/custom.js:1967
+msgid ""
+"No Subscans has been initiated for any subdomains. You can select individual "
+"subdomains and initiate subscans like Directory Fuzzing, Vulnerability Scan "
+"etc."
+msgstr ""
+"No Subscans has been initiated for any subdomains. You can select individual "
+"subdomains and initiate subscans like Directory Fuzzing, Vulnerability Scan "
+"etc."
+
+#: static/custom/custom.js:2070 static/custom/custom.js:2158
+#: static/custom/custom.js:2238
+msgid "Interesting Subdomain"
+msgstr "Interesting Subdomain"
+
+#: static/custom/custom.js:2070 static/custom/custom.js:2158
+#: static/custom/custom.js:2238
+msgid "Interesting"
+msgstr "Interesting"
+
+#: static/custom/custom.js:2136 static/custom/custom.js:2220
+#: static/custom/custom.js:2272
+msgid "*Subdomains highlighted are 40X HTTP Status"
+msgstr "*Subdomains highlighted are 40X HTTP Status"
+
+#: static/custom/custom.js:2190
+msgid "*IP Address highlighted are CDN IP Address"
+msgstr "*IP Address highlighted are CDN IP Address"
+
+#: static/custom/custom.js:2304
+msgid "Fetching CVE Details..."
+msgstr "Fetching CVE Details..."
+
+#: static/custom/custom.js:2335
+msgid "CVE Details"
+msgstr "CVE Details"
+
+#: static/custom/custom.js:2336
+msgid "Affected Products"
+msgstr "Affected Products"
+
+#: static/custom/custom.js:2337
+msgid "Affected Versions"
+msgstr "Affected Versions"
+
+#: static/custom/custom.js:2338 static/custom/custom.js:2945
+msgid "References"
+msgstr "References"
+
+#: static/custom/custom.js:2362
+msgid "Confidentiality Impact"
+msgstr "Confidentiality Impact"
+
+#: static/custom/custom.js:2363 static/custom/custom.js:2367
+#: static/custom/custom.js:2371 static/custom/custom.js:2375
+#: static/custom/custom.js:2379 static/custom/custom.js:2383
+msgid "N/A"
+msgstr "N/A"
+
+#: static/custom/custom.js:2366
+msgid "Integrity Impact"
+msgstr "Integrity Impact"
+
+#: static/custom/custom.js:2370
+msgid "Availability Impact"
+msgstr "Availability Impact"
+
+#: static/custom/custom.js:2374
+msgid "Access Complexity"
+msgstr "Access Complexity"
+
+#: static/custom/custom.js:2378
+msgid "Authentication"
+msgstr "Authentication"
+
+#: static/custom/custom.js:2468
+msgid "Target"
+msgstr "Target"
+
+#: static/custom/custom.js:2469
+msgid "Vulnerabilities Count"
+msgstr "Vulnerabilities Count"
+
+#: static/custom/custom.js:2498
+msgid "Could not find most vulnerable targets."
+msgstr "Could not find most vulnerable targets."
+
+#: static/custom/custom.js:2500
+msgid ""
+"Once the vulnerability scan is performed, reNgine will identify the most "
+"vulnerable targets."
+msgstr ""
+"Once the vulnerability scan is performed, reNgine will identify the most "
+"vulnerable targets."
+
+#: static/custom/custom.js:2540
+msgid "Vulnerability Name"
+msgstr "Vulnerability Name"
+
+#: static/custom/custom.js:2541
+msgid "Count"
+msgstr "Count"
+
+#: static/custom/custom.js:2593
+msgid "Could not find Most Common Vulnerabilities."
+msgstr "Could not find Most Common Vulnerabilities."
+
+#: static/custom/custom.js:2595
+msgid ""
+"Once the vulnerability scan is performed, reNgine will identify the Most "
+"Common Vulnerabilities."
+msgstr ""
+"Once the vulnerability scan is performed, reNgine will identify the Most "
+"Common Vulnerabilities."
+
+#: static/custom/custom.js:2645
+msgid "Enter the project name"
+msgstr "Enter the project name"
+
+#: static/custom/custom.js:2649
+msgid "Your Awesome Project"
+msgstr "Your Awesome Project"
+
+#: static/custom/custom.js:2652
+msgid "Create Project"
+msgstr "Create Project"
+
+#: static/custom/custom.js:2664
+msgid "Duplicate project name, choose another project name!"
+msgstr "Duplicate project name, choose another project name!"
+
+#: static/custom/custom.js:2726
+msgid "ID:"
+msgstr "ID:"
+
+#: static/custom/custom.js:2727
+msgid "Discovered on:"
+msgstr "Discovered on:"
+
+#: static/custom/custom.js:2728
+msgid "URL:"
+msgstr "URL:"
+
+#: static/custom/custom.js:2729
+msgid "Severity:"
+msgstr "Severity:"
+
+#: static/custom/custom.js:2729
+msgid "Type:"
+msgstr "Type:"
+
+#: static/custom/custom.js:2729
+msgid "Source:"
+msgstr "Source:"
+
+#: static/custom/custom.js:2732
+msgid "Vulnerability Description"
+msgstr "Vulnerability Description"
+
+#: static/custom/custom.js:2733
+msgid "Vulnerability Impact"
+msgstr "Vulnerability Impact"
+
+#: static/custom/custom.js:2734
+msgid "Remediation"
+msgstr "Remediation"
+
+#: static/custom/custom.js:2760
+msgid "Vulnerability Classification"
+msgstr "Vulnerability Classification"
+
+#: static/custom/custom.js:2770
+msgid "CVE IDs"
+msgstr "CVE IDs"
+
+#: static/custom/custom.js:2785
+msgid "CWE IDs"
+msgstr "CWE IDs"
+
+#: static/custom/custom.js:2837
+msgid "Nuclei Template Details"
+msgstr "Nuclei Template Details"
+
+#: static/custom/custom.js:2844
+msgid "Template"
+msgstr "Template"
+
+#: static/custom/custom.js:2848
+msgid "Template URL"
+msgstr "Template URL"
+
+#: static/custom/custom.js:2852
+msgid "Template ID"
+msgstr "Template ID"
+
+#: static/custom/custom.js:2856
+msgid "Matcher Name"
+msgstr "Matcher Name"
+
+#: static/custom/custom.js:2870
+msgid "CURL Command"
+msgstr "CURL Command"
+
+#: static/custom/custom.js:2886
+msgid "Extracted Results"
+msgstr "Extracted Results"
+
+#: static/custom/custom.js:2916
+msgid "HTTP Request"
+msgstr "HTTP Request"
+
+#: static/custom/custom.js:2930
+msgid "HTTP Response"
+msgstr "HTTP Response"
+
+#: static/custom/custom.js:2963
+msgid "(GPT was used to generate vulnerability details.)"
+msgstr "(GPT was used to generate vulnerability details.)"
+
+#: static/custom/custom.js:2998 static/custom/custom.js:3003
+#: static/custom/custom.js:3106 static/custom/custom.js:3111
+msgid "Request failed"
+msgstr "Request failed"
+
+#: static/custom/custom.js:3009 static/custom/custom.js:3117
+msgid "Loading..."
+msgstr "Loading..."
+
+#: static/custom/custom.js:3010
+msgid "Please wait while the GPT is generating vulnerability description."
+msgstr "Please wait while the GPT is generating vulnerability description."
+
+#: static/custom/custom.js:3023 static/custom/custom.js:3032
+#: static/custom/custom.js:3133 static/custom/custom.js:3142
+msgid "Oops..."
+msgstr "Oops..."
+
+#: static/custom/custom.js:3033 static/custom/custom.js:3143
+msgid "Something went wrong!"
+msgstr "Something went wrong!"
+
+#: static/custom/custom.js:3118
+msgid "Please wait while the GPT is generating attack surface."
+msgstr "Please wait while the GPT is generating attack surface."
+
+#: static/custom/right_sidebar.js:26
+msgid "No upcoming Scans."
+msgstr "No upcoming Scans."
+
+#: static/custom/right_sidebar.js:68
+msgid "No Scans are currently running."
+msgstr "No Scans are currently running."
+
+#: static/custom/right_sidebar.js:87
+msgid "Scan Completed"
+msgstr "Scan Completed"
+
+#: static/custom/right_sidebar.js:115
+msgid "No scans have been recently completed."
+msgstr "No scans have been recently completed."
+
+#: static/custom/right_sidebar.js:138
+msgid "In Progress"
+msgstr "In Progress"
+
+#: static/custom/right_sidebar.js:154
+msgid "No tasks are currently running."
+msgstr "No tasks are currently running."
+
+#: static/custom/right_sidebar.js:202
+msgid "No tasks have been recently completed."
+msgstr "No tasks have been recently completed."
+
+#: static/custom/right_sidebar.js:210
+msgid "Upcoming"
+msgstr "Upcoming"
+
+#: static/custom/right_sidebar.js:216
+msgid "No upcoming tasks."
+msgstr "No upcoming tasks."
+
+#: static/custom/right_sidebar.js:221
+msgid "Scan Status"
+msgstr "Scan Status"
+
+#: static/custom/right_sidebar.js:224
+msgid "Subdomains"
+msgstr "Subdomains"
+
+#: static/custom/right_sidebar.js:227
+msgid "Endpoints"
+msgstr "Endpoints"
+
+#: static/custom/right_sidebar.js:230
+msgid "Vulnerabilities"
+msgstr "Vulnerabilities"
+
+#: static/custom/right_sidebar.js:233
+msgid "Scan Engine"
+msgstr "Scan Engine"
+
+#: static/custom/right_sidebar.js:237
+msgid "Scan Status Reloaded."
+msgstr "Scan Status Reloaded."
+
+#: static/custom/right_sidebar.js:250
+msgid "Directory Fuzzing"
+msgstr "Directory Fuzzing"
+
+#: static/custom/right_sidebar.js:256
+msgid "Endpoint Gathering"
+msgstr "Endpoint Gathering"
+
+#: static/custom/right_sidebar.js:262
+msgid "OSINT"
+msgstr "OSINT"
+
+#: static/custom/todo.js:27
+msgid "Are you sure you want to delete this Recon Todo?"
+msgstr "Are you sure you want to delete this Recon Todo?"
+
+#: static/custom/todo.js:48
+msgid "Recon Todo Deleted."
+msgstr "Recon Todo Deleted."
+
+#: static/custom/todo.js:57
+msgid "Oops! Unable to delete todo!"
+msgstr "Oops! Unable to delete todo!"
+
+#: static/custom/todo.js:66
+msgid "Todo Marked as Unimportant"
+msgstr "Todo Marked as Unimportant"
+
+#: static/custom/todo.js:69
+msgid "Todo Marked as Important"
+msgstr "Todo Marked as Important"
+
+#: static/custom/todo.js:107
+msgid "Important Task"
+msgstr "Important Task"
+
+#: static/custom/todo.js:180
+msgid "Mark UnImportant"
+msgstr "Mark UnImportant"
+
+#: static/custom/todo.js:183
+msgid "Mark Important"
+msgstr "Marked Important"
+
+#: static/custom/todo.js:198
+msgid "Delete Todo"
+msgstr "Delete Todo"
+
+#: static/custom/todo.js:209
+msgid "No todos or notes..."
+msgstr "No todos or notes..."
+
+#: static/custom/todo.js:209
+msgid ""
+"You can add todo for individual subdomains or you can also add using + "
+"symbol above."
+msgstr ""
+"You can add todo for individual subdomains or you can also add using + "
+"symbol above."
+
+#: static/custom/toolbox.js:2
+msgid "WHOIS Lookup"
+msgstr "WHOIS Lookup"
+
+#: static/custom/toolbox.js:6
+msgid "Domain Name/IP Address"
+msgstr "Domain Name/IP Address"
+
+#: static/custom/toolbox.js:10
+msgid "Search Whois"
+msgstr "Search Whois"
+
+#: static/custom/toolbox.js:22 static/custom/toolbox.js:49
+#: static/custom/toolbox.js:210 static/custom/toolbox.js:237
+msgid "Error!"
+msgstr "Error!"
+
+#: static/custom/toolbox.js:22
+msgid "Please enter the domain/IP Address!"
+msgstr "Please enter the domain/IP Address!"
+
+#: static/custom/toolbox.js:30 static/custom/toolbox.js:39
+msgid "Detect CMS"
+msgstr "Detect CMS"
+
+#: static/custom/toolbox.js:34 static/custom/toolbox.js:222
+msgid "HTTP URL/Domain Name"
+msgstr "HTTP URL/Domain Name"
+
+#: static/custom/toolbox.js:35 static/custom/toolbox.js:223
+msgid "https://yourdomain.com"
+msgstr "https://yourdomain.com"
+
+#: static/custom/toolbox.js:37
+msgid ""
+"(reNgine uses <a href=\"https://github.com/Tuhinshubhra/CMSeeK\" "
+"target=\"_blank\">CMSeeK</a> to detect CMS.)"
+msgstr ""
+"(reNgine uses <a href=\"https://github.com/Tuhinshubhra/CMSeeK\" "
+"target=\"_blank\">CMSeeK</a> to detect CMS.)"
+
+#: static/custom/toolbox.js:49 static/custom/toolbox.js:237
+msgid "Please enter a valid URL!"
+msgstr "Please enter a valid URL!"
+
+#: static/custom/toolbox.js:50
+msgid "Okay"
+msgstr "Okay"
+
+#: static/custom/toolbox.js:61
+msgid "Detecting CMS"
+msgstr "Detecting CMS"
+
+#: static/custom/toolbox.js:84
+msgid "Visit CMS"
+msgstr "Visit CMS"
+
+#: static/custom/toolbox.js:88
+msgid "CMS Details"
+msgstr "CMS Details"
+
+#: static/custom/toolbox.js:90
+msgid "CMS Name :"
+msgstr "CMS Name :"
+
+#: static/custom/toolbox.js:93
+msgid "CMS URL :"
+msgstr "CMS URL :"
+
+#: static/custom/toolbox.js:96
+msgid "Detection Method :"
+msgstr "Detection Method :"
+
+#: static/custom/toolbox.js:99
+msgid "URL :"
+msgstr "URL :"
+
+#: static/custom/toolbox.js:101
+msgid "(Includes redirected URL)"
+msgstr "(Includes redirected URL)"
+
+#: static/custom/toolbox.js:107
+msgid "Wordpress License"
+msgstr "Wordpress License"
+
+#: static/custom/toolbox.js:108
+msgid "Wordpress Readme File"
+msgstr "Wordpress Readme File"
+
+#: static/custom/toolbox.js:109
+msgid "Wordpress Uploads Directory"
+msgstr "Wordpress Uploads Directory"
+
+#: static/custom/toolbox.js:112
+msgid "Wordpress Users"
+msgstr "Wordpress Users"
+
+#: static/custom/toolbox.js:113
+msgid "Wordpress Version"
+msgstr "Wordpress Version"
+
+#: static/custom/toolbox.js:114
+msgid "Wordpress Plugins"
+msgstr "Wordpress Plugins"
+
+#: static/custom/toolbox.js:115
+msgid "Wordpress Themes"
+msgstr "Wordpress Themes"
+
+#: static/custom/toolbox.js:118
+msgid "Joomla Version"
+msgstr "Joomla Version"
+
+#: static/custom/toolbox.js:119
+msgid "Joomla Debug Mode"
+msgstr "Joomla Debug Mode"
+
+#: static/custom/toolbox.js:122
+msgid "Joomla Readme File"
+msgstr "Joomla Readme File"
+
+#: static/custom/toolbox.js:123
+msgid "Joomla Backup Files"
+msgstr "Joomla Backup Files"
+
+#: static/custom/toolbox.js:124
+msgid "Joomla Directory Listing"
+msgstr "Joomla Directory Listing"
+
+#: static/custom/toolbox.js:125
+msgid "Joomla Config Files"
+msgstr "Joomla Config Files"
+
+#: static/custom/toolbox.js:126
+msgid "Joomla User Registration"
+msgstr "Joomla User Registration"
+
+#: static/custom/toolbox.js:166
+msgid "Response Json"
+msgstr "Response Json"
+
+#: static/custom/toolbox.js:188
+msgid "CVE Details Lookup"
+msgstr "CVE Details Lookup"
+
+#: static/custom/toolbox.js:193
+msgid "CVE-XXXX-XXXX"
+msgstr "CVE-XXXX-XXXX"
+
+#: static/custom/toolbox.js:196
+msgid "Lookup CVE"
+msgstr "Lookup CVE"
+
+#: static/custom/toolbox.js:210
+msgid "Please enter CVE ID!"
+msgstr "Please enter CVE ID!"
+
+#: static/custom/toolbox.js:218
+msgid "WAF Detector"
+msgstr "WAF Detector"
+
+#: static/custom/toolbox.js:225
+msgid ""
+"(reNgine uses <a href=\"https://github.com/EnableSecurity/wafw00f\" "
+"target=\"_blank\">wafw00f</a> to detect WAF.)"
+msgstr ""
+"(reNgine uses <a href=\"https://github.com/EnableSecurity/wafw00f\" "
+"target=\"_blank\">wafw00f</a> to detect WAF.)"
+
+#: static/custom/toolbox.js:227
+msgid "Detect WAF"
+msgstr "Detect WAF"
+
+#: static/custom/toolbox.js:249
+msgid "Detecting WAF"
+msgstr "Detecting WAF"
+
+# EMBEDDED JS in templates
+# base.html:92
+msgid "Scan Activity"
+msgstr "Scan Activity"
+
+# base.html:124
+msgid "No recent searches."
+msgstr "No recent searches."
+
+# base.html:135
+msgid "Checking reNgine latest version..."
+msgstr "Checking reNgine latest version..."
+
+# base.html:141
+msgid "Github rate limit exceeded, please try again in an hour!"
+msgstr "Github rate limit exceeded, please try again in an hour!"
+
+# base.html:155
+msgid "Update not available"
+msgstr "Update not available"
+
+# base.html:156
+msgid "You are running the latest version of reNgine!"
+msgstr "You are running the latest version of reNgine!"
+
+# base.html:159
+msgid "Update Available!"
+msgstr "Update Available!"
+
+# base.html:160
+#, python-format
+msgid ""
+"reNgine's new update %(vNumber)s is available, please follow the update "
+"instructions."
+msgstr ""
+"reNgine's new update %(vNumber)s is available, please follow the update "
+"instructions."
+
+# base.html:162
+msgid "Update Instructions"
+msgstr "Update Instructions"
+
+# base.html:163
+msgid "Dismiss"
+msgstr "Dismiss"
+
+msgid "Checking Daily Update..."
+msgstr "Checking Daily Update..."

@@ -2,20 +2,21 @@
 {% load static %}
 {% load humanize %}
 {% load permission_tags %}
+{% load i18n %}
 
 {% block title %}
-Subscan History
+{% translate "Subscan History" %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item active" aria-current="page">Scan History</li>
+<li class="breadcrumb-item active" aria-current="page">{% translate "Scan History" %}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-SubScan History
+{% translate "SubScan History" %}
 {% endblock page_title %}
 
 {% block main_content %}
@@ -26,41 +27,41 @@ SubScan History
         <div class="row">
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="filterMenu">
-              Filter <i class="fe-filter"></i>
+              {% translate "Filter" %} <i class="fe-filter"></i>
             </button>
             <div id="filteringText" class="mt-2">
             </div>
             <div class="dropdown-menu" style="width: 30%">
               <div class="px-4 py-3">
-                <h4 class="headline-title">Filters</h4>
+                <h4 class="headline-title">{% translate "Filters" %}</h4>
                 <div class="">
-                  <label for="filterByOrganization" class="form-label">Filter by Organization</label>
+                  <label for="filterByOrganization" class="form-label">{% translate "Filter by Organization" %}</label>
                   <select class="form-control" id="filterByOrganization">
                   </select>
                 </div>
                 <div class="">
-                  <label for="filterByTarget" class="form-label">Filter by Targets</label>
+                  <label for="filterByTarget" class="form-label">{% translate "Filter by Targets" %}</label>
                   <select class="form-control" id="filterByTarget">
                   </select>
                 </div>
                 <div class="">
-                  <label for="filterByScanType" class="form-label">Filter by Scan Type</label>
+                  <label for="filterByScanType" class="form-label">{% translate "Filter by Scan Type" %}</label>
                   <select class="form-control" id="filterByScanType">
                   </select>
                 </div>
                 <div class="">
-                  <label for="filterByScanStatus" class="form-label">Filter by Scan Status</label>
+                  <label for="filterByScanStatus" class="form-label">{% translate "Filter by Scan Status" %}</label>
                   <select class="form-control" id="filterByScanStatus">
                   </select>
                 </div>
               </div>
               <div class="dropdown-divider"></div>
-              <a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
+              <a href="#" class="dropdown-item text-primary float-end" id="resetFilters">{% translate "Reset Filters" %}</a>
             </div>
           </div>
           {% if user|can:'modify_scan_results' %}
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-            <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleSubScan()" id="delete_multiple_button">Delete Multiple SubScans</a>
+            <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleSubScan()" id="delete_multiple_button">{% translate "Delete Multiple SubScans" %}</a>
           </div>
           {% endif %}
         </div>
@@ -74,14 +75,14 @@ SubScan History
       <table id="subscan_history_table" class="table dt-responsive w-100">
         <thead>
           <tr>
-            <th class="checkbox-column text-center">Serial Number</th>
-            <th class="text-center">Serial Number</th>
-            <th>Scanned Subdomain</th>
-            <th class="text-center">Task</th>
-            <th class="text-center">Engine</th>
-            <th>Scan Started</th>
-            <th class="text-center">Status</th>
-            <th class="text-center no-sorting">Action</th>
+            <th class="checkbox-column text-center">{% translate "Serial Number" %}</th>
+            <th class="text-center">{% translate "Serial Number" %}</th>
+            <th>{% translate "Scanned Subdomain" %}</th>
+            <th class="text-center">{% translate "Task" %}</th>
+            <th class="text-center">{% translate "Engine" %}</th>
+            <th>{% translate "Scan Started" %}</th>
+            <th class="text-center">{% translate "Status" %}</th>
+            <th class="text-center no-sorting">{% translate "Action" %}</th>
           </tr>
         </thead>
         <tbody>
@@ -90,14 +91,14 @@ SubScan History
             <td class="checkbox-column"> {{ subscan.id }} </td>
             <td class=""> {{ subscan.id }} </td>
             <td class="">
-              <span class="" data-toggle="tooltip" data-placement="top" title="Scanned Subdomain">{{ subscan.subdomain.name }}</span>
+              <span class="" data-toggle="tooltip" data-placement="top" title="{% translate "Scanned Subdomain" %}">{{ subscan.subdomain.name }}</span>
             </br>
-            <b><span data-toggle="tooltip" data-placement="top" title="Domain">{{ subscan.scan_history.domain.name }}</span></b>
+            <b><span data-toggle="tooltip" data-placement="top" title="{% translate "Domain" %}">{{ subscan.scan_history.domain.name }}</span></b>
             {% for organization in subscan.scan_history.domain.get_organization %}
-              <span class="badge badge-soft-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
+              <span class="badge badge-soft-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="{% blocktranslate with domain_name=domain.name organization_name=organization.name %}Domain {{ domain_name }} belongs to organization {{ organization_name }}{% endblocktranslate %}">{{ organization.name }}</span>
             {% endfor %}
           </br>
-          <a href="/scan/{{current_project.slug}}/detail/{{subscan.scan_history.id}}" class="text-info">Recent Scan&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>< svg></a>
+          <a href="/scan/{{current_project.slug}}/detail/{{subscan.scan_history.id}}" class="text-info">{% translate "Recent Scan" %}&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>< svg></a>
           </td>
           <td class="text-center">
             <span class="badge badge-soft-primary">{{ subscan.get_task_name_str }}</span>
@@ -110,23 +111,23 @@ SubScan History
           </td>
           <td class="text-center">
             {% if subscan.status == -1 %}
-            <span class="badge badge-soft-warning" data-toggle="tooltip" data-placement="top" title="Waiting for other scans to complete"><span class="spinner-border spinner-border-sm"></span> Pending</span>
+            <span class="badge badge-soft-warning" data-toggle="tooltip" data-placement="top" title="{% translate 'Waiting for other scans to complete' %}"><span class="spinner-border spinner-border-sm"></span> {% translate "Pending" %}</span>
             {% elif subscan.status == 0 %}
-            <span class="badge badge-soft-danger">Failed</span>
+            <span class="badge badge-soft-danger">{% translate "Failed" %}</span>
             {% elif subscan.status == 1 %}
-            <span class="badge badge-soft-info"><span class="spinner-border spinner-border-sm"></span> In Progress</span>
+            <span class="badge badge-soft-info"><span class="spinner-border spinner-border-sm"></span> {% translate "In Progress" %}</span>
             {% elif subscan.status == 2 %}
-            <span class="badge badge-soft-success">Successful</span>
+            <span class="badge badge-soft-success">{% translate "Successful" %}</span>
             {% elif subscan.status == 3 %}
-            <span class="badge badge-soft-danger">Aborted</span>
+            <span class="badge badge-soft-danger">{% translate "Aborted" %}</span>
             {% else %}
-            <span class="badge badge-soft-danger">Unknown</span>
+            <span class="badge badge-soft-danger">{% translate "Unknown" %}</span>
             {% endif %}
           </td>
           <td class="text-center">
             <div class="btn-group mb-2 dropstart">
               <div class="btn-group">
-                <a href="#" class="btn btn-soft-primary" onclick="show_subscan_results({{subscan.id}})">View Results</a>
+                <a href="#" class="btn btn-soft-primary" onclick="show_subscan_results({{subscan.id}})">{% translate "View Results" %}</a>
                 <div class="btn-group dropstart" role="group">
                   <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i class="mdi mdi-chevron-right"></i>
@@ -134,11 +135,11 @@ SubScan History
                   <div class="dropdown-menu" style="">
                     {% if user|can:'initiate_scans_subscans' %}
                       {% if subscan.status == 1 %}
-                        <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id=null, subscan_id={{subscan.id}}, reload_scan_bar=false, reload_location=true)"><i class="fe-alert-triangle"></i>&nbsp;Stop Subscan</a>
+                        <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id=null, subscan_id={{subscan.id}}, reload_scan_bar=false, reload_location=true)"><i class="fe-alert-triangle"></i>&nbsp;{% translate "Stop Subscan" %}</a>
                       {% endif %}
                     {% endif %}
                     {% if user|can:'modify_scan_results' %}
-                    <a href="#" class="dropdown-item text-danger" onclick="delete_subscan('{{ subscan.id }}')"><i class="fe-trash-2"></i>&nbsp;Delete Subscan</a>
+                    <a href="#" class="dropdown-item text-danger" onclick="delete_subscan('{{ subscan_id }}')"><i class="fe-trash-2"></i>&nbsp;{% translate "Delete Subscan" %}</a>
                     {% endif %}
                   </div>
                 </div>
@@ -176,10 +177,10 @@ $(document).ready(function() {
       "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
       "oLanguage": {
         "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-        "sInfo": "Showing page _PAGE_ of _PAGES_",
+        "sInfo": gettext("Showing page _PAGE_ of _PAGES_"),
         "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-        "sSearchPlaceholder": "Search...",
-        "sLengthMenu": "Results :  _MENU_",
+        "sSearchPlaceholder": gettext("Search..."),
+        "sLengthMenu": gettext("Results :  _MENU_"),
       },
       "stripeClasses": [],
       "lengthMenu": [5, 10, 20, 30, 40, 50],
@@ -245,22 +246,23 @@ $(document).ready(function() {
 
     // filtering for scan status
     var status_types = ['Pending', 'In Progress', 'Aborted', 'Successful', 'Failed'];
+    var status_types_lang_map = [gettext("Pending"), gettext("In Progress"), gettext("Aborted"), gettext("Successful"), gettext("Failed")];
     for (status in status_types) {
       select = document.getElementById('filterByScanStatus');
       var option = document.createElement('option');
       option.value = status_types[status];
-      option.innerHTML = status_types[status];
+      option.innerHTML = status_types_lang_map[status];
       select.appendChild(option);
     }
 
     var org_filter = document.getElementById('filterByOrganization');
     org_filter.addEventListener('click', function() {
       table.search(this.value).draw();
-      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Organization: ${this.value}
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">` + interpolate("Organization: %(orgName)s", {orgName: this.value}, true) + `
       <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
       </span>`;
       Snackbar.show({
-        text: `Filtering by organization ${this.value}`,
+        text: interpolate("Filtering by organization %(orgName)s", {orgName: this.value}, true),
         pos: 'top-center'
       });
     }, false);
@@ -287,11 +289,11 @@ $(document).ready(function() {
         default:
         badge_color = 'primary'
       }
-      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-${badge_color}">Scan Status: ${this.value}
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-${badge_color}">` + interpolate("Scan Status: %(scanStatus)s", {scanStatus: this.value}, true) + `
       <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
       </span>`;
       Snackbar.show({
-        text: `Filtering by scan status ${this.value}`,
+        text: interpolate(`Filtering by scan status %(scanStatus)s`, {scanStatus: this.value}, true),
         pos: 'top-center'
       });
     }, false);
@@ -299,11 +301,11 @@ $(document).ready(function() {
     var engine_filter = document.getElementById('filterByScanType');
     engine_filter.addEventListener('click', function() {
       table.search(this.value).draw();
-      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Scan Engine: ${this.value}
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">` + interpolate("Scan Engine: %(scanEngine)s", {scanEngine: this.value}, true) + `
       <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
       </span>`;
       Snackbar.show({
-        text: `Filtering by Engine ${this.value}`,
+        text: interpolate("Filtering by Engine %(scanEngine)s", {scanEngine: this.value}, true),
         pos: 'top-center'
       });
     }, false);
@@ -311,11 +313,11 @@ $(document).ready(function() {
     var target_filter = document.getElementById('filterByTarget');
     target_filter.addEventListener('click', function() {
       table.search(extractContent(this.value)).draw();
-      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Target/Domain: ${this.value}
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">` + interpolate("Target/Domain: %(target)s", {target: this.value}, true) + `
       <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
       </span>`;
       Snackbar.show({
-        text: `Filtering by Engine ${this.value}`,
+        text: interpolate("Filtering by target %(target)s", {target: this.value}, true),
         pos: 'top-center'
       });
     }, false);
@@ -331,7 +333,7 @@ $(document).ready(function() {
   function resetFilters(table_obj) {
     table_obj.search("").draw();
     Snackbar.show({
-      text: `Filters Reset`,
+      text: gettext("Filters Reset"),
       pos: 'top-center'
     });
     document.getElementById('filteringText').innerHTML = '';
@@ -372,18 +374,19 @@ $(document).ready(function() {
     if (!checkedCount()) {
       swal({
         title: '',
-        text: "Oops! No targets has been selected!",
+        text: gettext("Oops! No targets has been selected!"),
         type: 'error',
         padding: '2em'
       })
     } else {
       // atleast one target is selected
       swal.queue([{
-        title: 'Are you sure you want to delete ' + checkedCount() + ' SubScans?',
-        text: "This action is irreversible.",
+        title: interpolate("Are you sure you want to delete %(count)s SubScans?", {count: checkedCount()}, true),
+        text: gettext("This action is irreversible."),
         type: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Delete',
+        cancelButtonText: gettext("Cancel"),
+        confirmButtonText: gettext("Delete"),
         padding: '2em',
         showLoaderOnConfirm: true,
         preConfirm: function() {
@@ -407,11 +410,11 @@ $(document).ready(function() {
           }).then(res => res.json())
           .then(function (response) {
             if (response['status']) {
-              delete_datatable_rows('#subscan_history_table', selectedRows, show_snackbar=true, `${selectedRows.length} Subscans Deleted!`)
+              delete_datatable_rows('#subscan_history_table', selectedRows, show_snackbar=true, interpolate(`%(count)s Subscans Deleted!`, {count: selectedRows.length}, true))
             }
             else{
               Snackbar.show({
-                text: 'Oops! failed to delete subscan!',
+                text: gettext("Oops! failed to delete subscan!"),
                 pos: 'top-right',
                 duration: 1500,
                 actionTextColor: '#fff',

@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext as _
 from rolepermissions.decorators import has_permission_decorator
 
 from reNgine.common_func import *
@@ -97,7 +98,7 @@ def add_target(request, slug):
                             ips.append(ip_address)
                             domains.append(ip_address)
                     else:
-                        msg = f'{target} is not a valid domain, IP, or URL. Skipped.'
+                        msg = _('%(target)s is not a valid domain, IP, or URL. Skipped.') % {'target': target}
                         logger.warning(msg)
                         messages.add_message(
                             request,
@@ -152,7 +153,7 @@ def add_target(request, slug):
                     messages.add_message(
                         request,
                         messages.ERROR,
-                        'Files uploaded are not .txt or .csv files.')
+                        _('Files uploaded are not .txt or .csv files.'))
                     return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
 
                 if txt_file:
@@ -161,7 +162,7 @@ def add_target(request, slug):
                         messages.add_message(
                             request,
                             messages.ERROR,
-                            'File is not a valid TXT file')
+                            _('File is not a valid TXT file'))
                         return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
                     txt_content = txt_file.read().decode('UTF-8')
                     io_string = io.StringIO(txt_content)
@@ -170,7 +171,7 @@ def add_target(request, slug):
                         domain_query = Domain.objects.filter(name=target_domain)
                         if not domain_query.exists():
                             if not validators.domain(domain):
-                                messages.add_message(request, messages.ERROR, f'Domain {domain} is not a valid domain name. Skipping.')
+                                messages.add_message(request, messages.ERROR, _('Domain %(domain)s is not a valid domain name. Skipping.') % {'domain': target_domain})
                                 continue
                             Domain.objects.create(
                                 name=target_domain,
@@ -184,7 +185,7 @@ def add_target(request, slug):
                         messages.add_message(
                             request,
                             messages.ERROR,
-                            'File is not a valid CSV file.'
+                            _('File is not a valid CSV file.')
                         )
                         return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
                     csv_content = csv_file.read().decode('UTF-8')
@@ -195,7 +196,7 @@ def add_target(request, slug):
                         domain_query = Domain.objects.filter(name=domain)
                         if not domain_query.exists():
                             if not validators.domain(domain):
-                                messages.add_message(request, messages.ERROR, f'Domain {domain} is not a valid domain name. Skipping.')
+                                messages.add_message(request, messages.ERROR, _('Domain %(domain)s is not a valid domain name. Skipping.') % {'domain': domain})
                                 continue
                             Domain.objects.create(
                                 name=domain,
@@ -209,7 +210,7 @@ def add_target(request, slug):
             messages.add_message(
                 request,
                 messages.ERROR,
-                f'Exception while adding domain: {e}'
+                _('Exception while adding domain: %(errorMsg)s') % {'errorMsg': e}
             )
             return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
 
@@ -218,11 +219,11 @@ def add_target(request, slug):
             messages.add_message(
                 request,
                 messages.ERROR,
-                'Oops! Could not import any targets, either targets already exists or is not a valid target.')
+                _('Oops! Could not import any targets, either targets already exists or is not a valid target.'))
             return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
 
         # Targets added successfully, redirect to targets list
-        msg = f'{added_target_count} targets added successfully'
+        msg = _('%(targetCount)s targets added successfully') % {'targetCount': added_target_count}
         messages.add_message(request, messages.SUCCESS, msg)
         return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
 
@@ -254,13 +255,13 @@ def delete_target(request, id):
         messages.add_message(
             request,
             messages.INFO,
-            'Domain successfully deleted!')
+            _('Domain successfully deleted!'))
     else:
         responseData = {'status': 'false'}
         messages.add_message(
             request,
             messages.ERROR,
-            'Oops! Domain could not be deleted!')
+            _('Oops! Domain could not be deleted!'))
     return http.JsonResponse(responseData)
 
 
@@ -274,7 +275,7 @@ def delete_targets(request, slug):
         messages.add_message(
             request,
             messages.INFO,
-            'Targets deleted!')
+            _('Targets deleted!'))
     return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
 
 
@@ -289,7 +290,7 @@ def update_target(request, slug, id):
             messages.add_message(
                 request,
                 messages.INFO,
-                f'Domain {domain.name} modified!')
+                _('Domain %(domainName)s modified!') % {'domainName': domain.name})
             return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
     else:
         form.set_value(domain.name, domain.description, domain.h1_team_handle)
@@ -464,7 +465,7 @@ def add_organization(request, slug):
             messages.add_message(
                 request,
                 messages.INFO,
-                f'Organization {data["name"]} added successfully')
+                _('Organization %(orgName)s added successfully') % {orgName: data["name"]})
             return http.HttpResponseRedirect(reverse('list_organization', kwargs={'slug': slug}))
     context = {
         "organization_active": "active",
@@ -490,13 +491,13 @@ def delete_organization(request, id):
         messages.add_message(
             request,
             messages.INFO,
-            'Organization successfully deleted!')
+            _('Organization successfully deleted!'))
     else:
         responseData = {'status': 'false'}
         messages.add_message(
             request,
             messages.ERROR,
-            'Oops! Organization could not be deleted!')
+            _('Oops! Organization could not be deleted!'))
     return http.JsonResponse(responseData)
 
 
@@ -520,7 +521,7 @@ def update_organization(request, slug, id):
             for domain_id in request.POST.getlist("domains"):
                 domain = Domain.objects.get(id=domain_id)
                 organization.domains.add(domain)
-            msg = f'Organization {organization.name} modified!'
+            msg = _('Organization %(orgName)s modified!') % {'orgName': organization.name}
             logger.info(msg)
             messages.add_message(
                 request,

@@ -1,5 +1,7 @@
 from django import forms
 from django_ace import AceWidget
+from django.utils.translation import gettext as _
+
 from reNgine.validators import validate_short_name
 from scanEngine.models import *
 
@@ -14,7 +16,7 @@ class AddEngineForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
-                "placeholder": "Engine Name"}))
+                "placeholder": _("Engine Name")}))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="tomorrow_night_eighties",
@@ -36,7 +38,7 @@ class UpdateEngineForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
-                "placeholder": "Custom Engine"}))
+                "placeholder": _("Custom Engine")}))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="tomorrow_night_eighties",
@@ -53,7 +55,7 @@ class AddWordlistForm(forms.Form):
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-lg',
                    'id': 'name',
-                   'placeholder': 'my awesome wordlist', }))
+                   'placeholder': _('my awesome wordlist'), }))
     short_name = forms.CharField(
         required=True,
         validators=[validate_short_name],
@@ -61,7 +63,7 @@ class AddWordlistForm(forms.Form):
             attrs={
                 'class': 'form-control form-control-lg',
                 'id': 'short_name',
-                'placeholder': 'my_awesome_wordlist', }))
+                'placeholder': _('my_awesome_wordlist'), }))
     upload_file = forms.FileField(
         required=True,
         widget=forms.FileInput(
@@ -80,7 +82,7 @@ class ConfigurationForm(forms.ModelForm):
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-lg',
                    'id': 'name',
-                   'placeholder': 'Configuration Name', }))
+                   'placeholder': _('Configuration Name'), }))
     short_name = forms.CharField(
         required=True,
         validators=[validate_short_name],
@@ -88,7 +90,7 @@ class ConfigurationForm(forms.ModelForm):
             attrs={
                 'class': 'form-control form-control-lg',
                 'id': 'short_name',
-                'placeholder': 'my_awesome_configuration', }))
+                'placeholder': _('my_awesome_configuration'), }))
     content = forms.CharField(widget=AceWidget(
         mode="text",
         theme="monokai",
@@ -114,7 +116,7 @@ class InterestingLookupForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "keywords",
-                "placeholder": "Interesting Keywords",
+                "placeholder": _("Interesting Keywords"),
             }))
 
     custom_type = forms.BooleanField(
@@ -214,7 +216,7 @@ class NotificationForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "telegram_bot_token",
-                "placeholder": "Bot Token",
+                "placeholder": _("Bot Token"),
             }))
 
     telegram_bot_chat_id = forms.CharField(
@@ -223,7 +225,7 @@ class NotificationForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "telegram_bot_chat_id",
-                "placeholder": "Bot Chat ID",
+                "placeholder": _("Bot Chat ID"),
             }))
 
     send_scan_status_notif = forms.BooleanField(
@@ -345,7 +347,7 @@ class ProxyForm(forms.ModelForm):
                 "id": "proxies",
                 "rows": "10",
                 "spellcheck": "false",
-                "placeholder": "http://username:password@proxyip.com:port",
+                "placeholder": _("http://username:password@proxyip.com:port"),
             }))
 
     def set_value(self, key):
@@ -371,7 +373,7 @@ class HackeroneForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "username",
-                "placeholder": "Your Hackerone Username",
+                "placeholder": _("Your Hackerone Username"),
             }))
 
     api_key = forms.CharField(
@@ -380,7 +382,7 @@ class HackeroneForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "api_key",
-                "placeholder": "Hackerone API Token",
+                "placeholder": _("Hackerone API Token"),
             }))
 
     send_critical = forms.BooleanField(
@@ -460,7 +462,7 @@ class ReportForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "company_name",
-                "placeholder": "Company Name",
+                "placeholder": _("Company Name"),
             }))
 
     company_address = forms.CharField(
@@ -469,7 +471,7 @@ class ReportForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "company_address",
-                "placeholder": "Company Address",
+                "placeholder": _("Company Address"),
             }))
 
     company_website = forms.CharField(
@@ -478,7 +480,7 @@ class ReportForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "company_website",
-                "placeholder": "Company Website https://company.com",
+                "placeholder": _("Company Website https://company.com"),
             }))
 
     company_email = forms.CharField(
@@ -487,7 +489,7 @@ class ReportForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "company_email",
-                "placeholder": "email@yourcompany.com",
+                "placeholder": _("email@yourcompany.com"),
             }))
 
     show_footer = forms.BooleanField(
@@ -505,7 +507,7 @@ class ReportForm(forms.ModelForm):
             "class": "form-control form-control-lg",
             "id": "footer_text",
             "aria-label": "switch",
-            "placeholder": "Footer Text © Your Company",
+            "placeholder": _("Footer Text © Your Company"),
         }))
 
     show_rengine_banner = forms.BooleanField(
@@ -599,7 +601,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "tool_name",
-                "placeholder": "My Awesome Tool"}))
+                "placeholder": _("My Awesome Tool")}))
 
     github_url = forms.CharField(
         required=True,
@@ -615,7 +617,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "license_url",
-                "placeholder": "https://github.com/user/tool/blob/master/LICENSE.md"}))
+                "placeholder": _("https://github.com/user/tool/blob/master/LICENSE.md")}))
 
     logo_url = forms.CharField(
         required=False,
@@ -623,7 +625,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "logo_url",
-                "placeholder": "http://example.com/logo.png"}))
+                "placeholder": _("http://example.com/logo.png")}))
 
     description = forms.CharField(
         required=True,
@@ -631,7 +633,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "tool_description",
-                "placeholder": "Explain what this tool is used for.",
+                "placeholder": _("Explain what this tool is used for."),
                 "rows": 2
             }
         ))
@@ -642,7 +644,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "install_command",
-                "placeholder": "Tool Installation Command"}))
+                "placeholder": _("Tool Installation Command")}))
 
     update_command = forms.CharField(
         required=False,
@@ -650,7 +652,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "update_command",
-                "placeholder": "Tool Update Command"}))
+                "placeholder": _("Tool Update Command")}))
 
     version_match_regex = forms.CharField(
         required=False,
@@ -681,8 +683,8 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "subdomain_gathering_command",
-                "placeholder": "Subdomain Gathering Command",
-                "value": "tool_name -d {TARGET} -o {OUTPUT}"
+                "placeholder": _("Subdomain Gathering Command"),
+                "value": _("tool_name -d {TARGET} -o {OUTPUT}")
                 }))
 
     def set_value(self, key):
