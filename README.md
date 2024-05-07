@@ -246,7 +246,6 @@ fetch_url: {
     'gospider',
     'hakrawler',
     'waybackurls',
-    'gospider',
     'katana'
   ],
   'remove_duplicate_endpoints': true,
