@@ -689,6 +689,10 @@ def osint_discovery(config, host, scan_history_id, activity_id, results_dir, ctx
 	grouped_tasks = []
 
 	if 'emails' in osint_lookup:
+		emails = get_and_save_emails(scan_history, activity_id, results_dir)
+		emails_str = '\n'.join([f'• `{email}`' for email in emails])
+		# self.notify(fields={'Emails': emails_str})
+		# ctx['track'] = False
 		_task = h8mail.si(
 			config=config,
 			host=host,
@@ -4324,6 +4328,56 @@ def get_and_save_dork_results(lookup_target, results_dir, type, lookup_keywords=
 		logger.exception(e)
 
 	return results
+
+
+def get_and_save_emails(scan_history, activity_id, results_dir):
+	"""Get and save emails from Google, Bing and Baidu.
+
+	Args:
+		scan_history (startScan.ScanHistory): Scan history object.
+		activity_id: ScanActivity Object
+		results_dir (str): Results directory.
+
+	Returns:
+		list: List of emails found.
+	"""
+	emails = []
+
+	# Proxy settings
+	# get_random_proxy()
+
+	# Gather emails from Google, Bing and Baidu
+	output_file = f'{results_dir}/emails_tmp.txt'
+	history_file = f'{results_dir}/commands.txt'
+	command = f'python3 /usr/src/github/Infoga/infoga.py --domain {scan_history.domain.name} --source all --report {output_file}'
+	try:
+		run_command(
+			command,
+			shell=False,
+			history_file=history_file,
+			scan_id=scan_history.id,
+			activity_id=activity_id)
+
+		if not os.path.isfile(output_file):
+			logger.info('No Email results')
+			return []
+
+		with open(output_file) as f:
+			for line in f.readlines():
+				if 'Email' in line:
+					split_email = line.split(' ')[2]
+					emails.append(split_email)
+
+		output_path = f'{results_dir}/emails.txt'
+		with open(output_path, 'w') as output_file:
+			for email_address in emails:
+				save_email(email_address, scan_history)
+				output_file.write(f'{email_address}\n')
+
+	except Exception as e:
+		logger.exception(e)
+	return emails
+
 
 def save_metadata_info(meta_dict):
 	"""Extract metadata from Google Search.
