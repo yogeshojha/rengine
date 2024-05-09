@@ -21,7 +21,7 @@
       \ 'follow_redirect': false,\r\n  'max_time': 0,\r\n  'match_http_status': [200,
       204],\r\n  'recursive_level': 2,\r\n  'stop_on_error': false,\r\n  'timeout':
       5,\r\n  'threads': 30,\r\n  'wordlist_name': 'dicc'\r\n}\r\nfetch_url: {\r\n
-      \ 'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'gospider', 'katana', 'gau'],\r\n
+      \ 'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'katana', 'gau'],\r\n
       \ 'remove_duplicate_endpoints': true,\r\n  'duplicate_fields': ['content_length',
       'page_title'],\r\n  'enable_http_crawl': true,\r\n  'gf_patterns': ['debug_logic',
       'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce',
