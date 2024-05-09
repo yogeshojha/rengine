@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "ctfr"
+version = "0.1.0"
+description = "Certificate Transparency Logs subdomain enumeration tool"
+authors = ["UnaPibaGeek"]
+license = "GPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.31.0"
+
+
+[build-system]
+requires = ["poetry-core"]

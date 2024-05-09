@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     restart: always
@@ -10,7 +8,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - ./data/postgres_data:/var/lib/postgresql/data/
     networks:
       - rengine_network
     ports:
@@ -23,19 +21,16 @@ services:
       - rengine_network
 
   celery:
-    build:
-      context: ./web
-    restart: always
-    entrypoint: /usr/src/app/celery-entrypoint.sh
-    # command: watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO
+    image: local/rengine-celery:v0.2
+    restart: unless-stopped
     volumes:
-      - ./web:/usr/src/app
-      - github_repos:/usr/src/github
-      - wordlist:/usr/src/wordlist
-      - scan_results:/usr/src/scan_results
-      - gf_patterns:/root/.gf
-      - nuclei_templates:/root/nuclei-templates
-      - tool_config:/root/.config
+      - ./web:/home/rengine/rengine
+      # - ./data/reNgine/github_repos:/usr/src/github
+      # - ./data/reNgine/wordlist:/usr/src/wordlist
+      # - ./data/reNgine/scan_results:/usr/src/scan_results
+      # - ./data/reNgine/gf_patterns:/root/.gf
+      # - ./data/reNgine/nuclei_templates:/root/nuclei-templates
+      # - ./data/reNgine/tool_config:/root/.config
     environment:
       - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
@@ -55,7 +50,8 @@ services:
       - rengine_network
 
   celery-beat:
-    build: ./web
+    image: local/rengine-celery:v0.2
+    restart: unless-stopped
     entrypoint: /usr/src/app/beat-entrypoint.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     depends_on:
@@ -70,22 +66,19 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
     volumes:
-      - ./web:/usr/src/app
-      - github_repos:/usr/src/github
-      - wordlist:/usr/src/wordlist
-      - scan_results:/usr/src/scan_results
-      - gf_patterns:/root/.gf
-      - nuclei_templates:/root/nuclei-templates
-      - tool_config:/root/.config
+      - ./web:/home/rengine/rengine
+      # - ./data/reNgine/github_repos:/usr/src/github
+      # - ./data/reNgine/wordlist:/usr/src/wordlist
+      # - ./data/reNgine/scan_results:/usr/src/scan_results
+      # - ./data/reNgine/gf_patterns:/root/.gf
+      # - ./data/reNgine/nuclei_templates:/root/nuclei-templates
+      # - ./data/reNgine/tool_config:/root/.config
     networks:
       - rengine_network
 
   web:
-    build:
-      context: ./web
-    entrypoint: /usr/src/app/entrypoint.sh
-    restart: always
-    image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
+    image: local/rengine-web:v0.2
+    restart: unless-stopped
     environment:
       - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
@@ -100,13 +93,13 @@ services:
       # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
       - RENGINE_CURRENT_VERSION='2.0.5'
     volumes:
-      - ./web:/usr/src/app
-      - github_repos:/usr/src/github
-      - wordlist:/usr/src/wordlist
-      - scan_results:/usr/src/scan_results
-      - gf_patterns:/root/.gf
-      - nuclei_templates:/root/nuclei-templates
-      - tool_config:/root/.config
+      - ./web:/home/rengine/app
+      # - ./data/reNgine/github_repos:/usr/src/github
+      # - ./data/reNgine/wordlist:/usr/src/wordlist
+      # - ./data/reNgine/scan_results:/usr/src/scan_results
+      # - ./data/reNgine/gf_patterns:/root/.gf
+      # - ./data/reNgine/nuclei_templates:/root/nuclei-templates
+      # - ./data/reNgine/tool_config:/root/.config
     ports:
       - "8000:8000"
     depends_on:
@@ -118,11 +111,3 @@ services:
 
 networks:
   rengine_network:
-volumes:
-  tool_config:
-  postgres_data:
-  gf_patterns:
-  nuclei_templates:
-  github_repos:
-  wordlist:
-  scan_results:

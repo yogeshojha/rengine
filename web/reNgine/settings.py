@@ -1,5 +1,6 @@
 import mimetypes
 import os
+from pathlib import Path
 
 from reNgine.init import first_run
 from reNgine.utilities import RengineTaskFormatter
@@ -12,8 +13,13 @@ mimetypes.add_type("text/css", ".css", True)
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # Root env vars
-RENGINE_HOME = os.environ.get('RENGINE_HOME', '/usr/src/app')
-RENGINE_RESULTS = os.environ.get('RENGINE_RESULTS', f'{RENGINE_HOME}/scan_results')
+RENGINE_HOME = os.environ.get('RENGINE_HOME', str(Path.home() / 'rengine'))
+RENGINE_RESULTS = os.environ.get('RENGINE_RESULTS', str(Path.home() / 'scan_results'))
+RENGINE_CUSTOM_ENGINES = os.environ.get('RENGINE_CUSTOM_ENGINES', str(Path.home() / 'custom_engines'))
+RENGINE_WORDLISTS = os.environ.get('RENGINE_WORDLISTS', str(Path.home() / 'wordlists'))
+RENGINE_TOOL_PATH = os.environ.get('RENGINE_TOOL_PATH', str(Path.home() / 'tools'))
+RENGINE_TOOL_GITHUB_PATH = os.environ.get('RENGINE_TOOL_GITHUB_PATH', str(Path(RENGINE_TOOL_PATH) / '.github.com'))
+
 RENGINE_CACHE_ENABLED = bool(int(os.environ.get('RENGINE_CACHE_ENABLED', '0')))
 RENGINE_RECORD_ENABLED = bool(int(os.environ.get('RENGINE_RECORD_ENABLED', '1')))
 RENGINE_RAISE_ON_ERROR = bool(int(os.environ.get('RENGINE_RAISE_ON_ERROR', '0')))
@@ -22,7 +28,7 @@ RENGINE_RAISE_ON_ERROR = bool(int(os.environ.get('RENGINE_RAISE_ON_ERROR', '0'))
 DEBUG = bool(int(os.environ.get('DEBUG', '0')))
 DOMAIN_NAME = os.environ.get('DOMAIN_NAME', 'localhost:8000')
 TEMPLATE_DEBUG = bool(int(os.environ.get('TEMPLATE_DEBUG', '0')))
-SECRET_FILE = os.path.join(RENGINE_HOME, 'secret')
+SECRET_FILE = str(Path.home() / 'secret')
 DEFAULT_ENABLE_HTTP_CRAWL = bool(int(os.environ.get('DEFAULT_ENABLE_HTTP_CRAWL', '1')))
 DEFAULT_RATE_LIMIT = int(os.environ.get('DEFAULT_RATE_LIMIT', '150')) # requests / second
 DEFAULT_HTTP_TIMEOUT = int(os.environ.get('DEFAULT_HTTP_TIMEOUT', '5')) # seconds
@@ -226,7 +232,7 @@ LOGGING = {
         'db': {
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'brief',
-            'filename': 'db.log',
+            'filename': str(Path.home() / 'db.log'),
             'maxBytes': 1024,
             'backupCount': 3
         }

@@ -1,5 +1,5 @@
 #!/bin/bash
 
-python3 manage.py migrate
+poetry run -C $HOME/ python manage.py migrate
 
 exec "$@"

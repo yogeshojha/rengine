@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "eyewitness"
+version = "0.1.0"
+description = "EyeWitness is designed to take screenshots of websites provide some server header info, and identify default credentials if known."
+authors = ["RedSiege"]
+license = "GPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">3.9,<4"
+fuzzywuzzy = "^0.18.0"
+selenium = "4.9.1"
+python-Levenshtein = "^0.25.1"
+PyVirtualDisplay = "^3.0"
+netaddr = "^1.2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

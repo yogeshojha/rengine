@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "infoga"
+version = "0.1.0"
+description = "Infoga is a tool gathering email accounts informations (ip,hostname,country,...) from different public source (search engines, pgp key servers and shodan) and check if emails was leaked using haveibeenpwned.com API."
+authors = ["m4llOk <m4ll0k@pm.me>"]
+license = "GPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+colorama = "^0.4.6"
+requests = "^2.31.0"
+urllib3 = "^2.2.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

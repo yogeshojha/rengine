@@ -14,6 +14,7 @@ from django_celery_beat.models import (ClockedSchedule, IntervalSchedule, Period
 from rolepermissions.decorators import has_permission_decorator
 
 from reNgine.celery import app
+from reNgine.settings import RENGINE_RESULTS
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK, SUCCESS_TASK
 from reNgine.tasks import create_scan_activity, initiate_scan, run_command
@@ -279,7 +280,7 @@ def start_scan_ui(request, slug, domain_id):
             'domain_id': domain.id,
             'engine_id': engine_id,
             'scan_type': LIVE_SCAN,
-            'results_dir': '/usr/src/scan_results',
+            'results_dir': RENGINE_RESULTS,
             'imported_subdomains': subdomains_in,
             'out_of_scope_subdomains': subdomains_out,
             'url_filter': filterPath
@@ -331,7 +332,7 @@ def start_multiple_scan(request, slug):
                     'domain_id': domain_id,
                     'engine_id': engine_id,
                     'scan_type': LIVE_SCAN,
-                    'results_dir': '/usr/src/scan_results',
+                    'results_dir': RENGINE_RESULTS,
                     # TODO: Add this to multiple scan view
                     # 'imported_subdomains': subdomains_in,
                     # 'out_of_scope_subdomains': subdomains_out
@@ -658,7 +659,7 @@ def delete_all_scan_results(request):
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_all_screenshots(request):
     if request.method == 'POST':
-        run_command('rm -rf /usr/src/scan_results/*')
+        run_command('rm -rf ' + str(Path(RENGINE_RESULTS) / '*'))
         messageData = {'status': 'true'}
         messages.add_message(
             request,
@@ -692,7 +693,7 @@ def start_organization_scan(request, id, slug):
                 'domain_id': domain.id,
                 'engine_id': engine_id,
                 'scan_type': LIVE_SCAN,
-                'results_dir': '/usr/src/scan_results',
+                'results_dir': RENGINE_RESULTS,
                 # TODO: Add this to multiple scan view
                 # 'imported_subdomains': subdomains_in,
                 # 'out_of_scope_subdomains': subdomains_out

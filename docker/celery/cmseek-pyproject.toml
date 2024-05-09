@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "cmseek"
+version = "1.1.3"
+description = "A content management system (CMS) manages the creation and modification of digital content. It typically supports multiple users in a collaborative environment. Some noteable examples are: WordPress, Joomla, Drupal etc."
+authors = ["Tuhinshubhra <tuhin@r3d.ninja>"]
+license = "GPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.31.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

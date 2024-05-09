@@ -1,6 +1,9 @@
 #!/usr/bin/python
 import logging
 import re
+import os.path
+from pathlib import Path
+from .settings import RENGINE_WORDLISTS
 
 ###############################################################################
 # TOOLS DEFINITIONS
@@ -128,7 +131,7 @@ DORKS_DEFAULT_NAMES = [
 ]
 
 # ffuf
-FFUF_DEFAULT_WORDLIST_PATH = '/usr/src/wordlist/dicc.txt'
+FFUF_DEFAULT_WORDLIST_PATH = str(Path(RENGINE_WORDLISTS) / 'dicc.txt')
 FFUF_DEFAULT_MATCH_HTTP_STATUS = [200, 204]
 FFUF_DEFAULT_RECURSIVE_LEVEL = 2
 FFUF_DEFAULT_FOLLOW_REDIRECT = False
@@ -137,7 +140,7 @@ FFUF_DEFAULT_FOLLOW_REDIRECT = False
 NAABU_DEFAULT_PORTS = ['top-100']
 
 # nuclei
-NUCLEI_DEFAULT_TEMPLATES_PATH = '/root/nuclei-templates'
+NUCLEI_DEFAULT_TEMPLATES_PATH = str(Path.home() / 'nuclei-templates')
 NUCLEI_SEVERITY_MAP = {
     'info': 0,
     'low': 1,
@@ -480,4 +483,4 @@ ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
 
 
 # OSINT GooFuzz Path
-GOFUZZ_EXEC_PATH = '/usr/src/github/goofuzz/GooFuzz'
+GOFUZZ_EXEC_PATH = 'GooFuzz'
