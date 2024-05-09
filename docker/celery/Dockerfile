@@ -137,5 +137,6 @@ RUN cd $TOOLPATH/.github/OneForAll && mv /home/$USERNAME/oneforall-pyproject.tom
 
 COPY ./celery/entrypoint.sh /entrypoint.sh
 VOLUME /home/$USERNAME/rengine
+VOLUME /home/$USERNAME/scan_results
 WORKDIR /home/$USERNAME/rengine
 ENTRYPOINT ["/entrypoint.sh"]
