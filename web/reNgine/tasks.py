@@ -441,7 +441,7 @@ def subdomain_discovery(
 			elif tool == 'subfinder':
 				cmd = f'subfinder -d {host} -o ' + str(Path(self.results_dir) / 'subdomains_subfinder.txt')
 				use_subfinder_config = config.get(USE_SUBFINDER_CONFIG, False)
-				cmd += (' -config ' + Path.home() / '.config' / 'subfinder' / 'config.yaml') if use_subfinder_config else ''
+				cmd += (' -config ' + str(Path.home() / '.config' / 'subfinder' / 'config.yaml')) if use_subfinder_config else ''
 				cmd += f' -proxy {proxy}' if proxy else ''
 				cmd += f' -timeout {timeout}' if timeout else ''
 				cmd += f' -t {threads}' if threads else ''
@@ -1310,7 +1310,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 		ports_str = ','.join(ports)
 		ports_str = f' -p {ports_str}'
 	cmd += ports_str
-	cmd += (' -config ' + Path.home() / '.config' / 'naabu' / 'config.yaml') if use_naabu_config else ''
+	cmd += (' -config ' + str(Path.home() / '.config' / 'naabu' / 'config.yaml')) if use_naabu_config else ''
 	cmd += f' -proxy "{proxy}"' if proxy else ''
 	cmd += f' -c {threads}' if threads else ''
 	cmd += f' -rate {rate_limit}' if rate_limit > 0 else ''
@@ -2390,7 +2390,7 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 
 	# Build CMD
 	cmd = 'nuclei -j'
-	cmd += ' -config ' + Path.home() + '/.config/nuclei/config.yaml' if use_nuclei_conf else ''
+	cmd += (' -config ' + str(Path.home() / '.config' / 'nuclei' / 'config.yaml')) if use_nuclei_conf else ''
 	cmd += f' -irr'
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 	cmd += f' -l {input_path}'
