@@ -81,6 +81,7 @@ RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
 RUN go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
 RUN go install -v github.com/hakluke/hakrawler@latest
 RUN go install -v github.com/lc/gau/v2/cmd/gau@latest
+RUN go install -v github.com/jaeles-project/gospider@latest
 RUN go install -v github.com/owasp-amass/amass/v3/...@latest
 RUN go install -v github.com/ffuf/ffuf@latest
 RUN go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest
