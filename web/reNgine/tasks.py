@@ -73,9 +73,6 @@ def initiate_scan(
 		url_filter (str): URL path. Default: ''
 	"""
 
-	print(results_dir)
-	print(RENGINE_RESULTS)
-
 	# Get scan history
 	scan = ScanHistory.objects.get(pk=scan_history_id)
 
@@ -114,9 +111,6 @@ def initiate_scan(
 		scan.used_gf_patterns = ','.join(gf_patterns)
 	scan.save()
 
-	print("MAKING DIR")
-	# Create scan results dir
-	print(scan.results_dir)
 	try:
 		os.makedirs(scan.results_dir, exist_ok=True)
 	except:
@@ -124,7 +118,6 @@ def initiate_scan(
 
 		traceback.print_exc()
 		raise
-	print("MADE DIR")
 
 	# Build task context
 	ctx = {
@@ -154,7 +147,6 @@ def initiate_scan(
 	subdomain_name = domain.name
 	subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
 
-	print("HTTP ENDPOINT START")
 	# If enable_http_crawl is set, create an initial root HTTP endpoint so that
 	# HTTP crawling can start somewhere
 	http_url = f'{domain.name}{url_filter}' if url_filter else domain.name
@@ -165,7 +157,6 @@ def initiate_scan(
 		is_default=True,
 		subdomain=subdomain
 	)
-	print("HTTP ENDPOINT END")
 	if endpoint and endpoint.is_alive:
 		# TODO: add `root_endpoint` property to subdomain and simply do
 		# subdomain.root_endpoint = endpoint instead

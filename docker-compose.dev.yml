@@ -21,10 +21,13 @@ services:
       - rengine_network
 
   celery:
-    image: local/rengine-celery:v0.2
+    build:
+      context: docker
+      dockerfile: celery/Dockerfile
     restart: unless-stopped
     volumes:
       - ./web:/home/rengine/rengine
+      - ./scan_results:/home/rengine/scan_results
       # - ./data/reNgine/github_repos:/usr/src/github
       # - ./data/reNgine/wordlist:/usr/src/wordlist
       # - ./data/reNgine/scan_results:/usr/src/scan_results
@@ -49,35 +52,10 @@ services:
     networks:
       - rengine_network
 
-  celery-beat:
-    image: local/rengine-celery:v0.2
-    restart: unless-stopped
-    entrypoint: /usr/src/app/beat-entrypoint.sh
-    command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    depends_on:
-      - celery
-    environment:
-      - DEBUG=1
-      - CELERY_BROKER=redis://redis:6379/0
-      - CELERY_BACKEND=redis://redis:6379/0
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-    volumes:
-      - ./web:/home/rengine/rengine
-      # - ./data/reNgine/github_repos:/usr/src/github
-      # - ./data/reNgine/wordlist:/usr/src/wordlist
-      # - ./data/reNgine/scan_results:/usr/src/scan_results
-      # - ./data/reNgine/gf_patterns:/root/.gf
-      # - ./data/reNgine/nuclei_templates:/root/nuclei-templates
-      # - ./data/reNgine/tool_config:/root/.config
-    networks:
-      - rengine_network
-
   web:
-    image: local/rengine-web:v0.2
+    build:
+      context: docker
+      dockerfile: web/Dockerfile
     restart: unless-stopped
     environment:
       - DEBUG=1
@@ -94,6 +72,7 @@ services:
       - RENGINE_CURRENT_VERSION='2.0.5'
     volumes:
       - ./web:/home/rengine/app
+      - ./scan_results:/home/rengine/scan_results
       # - ./data/reNgine/github_repos:/usr/src/github
       # - ./data/reNgine/wordlist:/usr/src/wordlist
       # - ./data/reNgine/scan_results:/usr/src/scan_results
@@ -105,7 +84,6 @@ services:
     depends_on:
       - db
       - celery
-      - celery-beat
     networks:
       - rengine_network
 
