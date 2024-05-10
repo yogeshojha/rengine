@@ -32,7 +32,7 @@ services:
       # - ./data/tool_config:/root/.config
       # - ./data/static_volume:/usr/src/app/staticfiles/
     environment:
-      - DEBUG=1
+      - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - DOMAIN_NAME=${DOMAIN_NAME}
@@ -77,7 +77,7 @@ services:
     image: docker.io/talanor/rengine-web:v0.2
     restart: unless-stopped
     environment:
-      - DEBUG=1
+      - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - DOMAIN_NAME=${DOMAIN_NAME}
