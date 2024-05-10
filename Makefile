@@ -25,7 +25,7 @@ build:			## Build all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} build ${SERVICES}
 
 username:		## Generate Username (Use only after make up).
-	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py createsuperuser
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web poetry -C /home/rengine run python3 manage.py createsuperuser
 
 pull:			## Pull Docker images.
 	docker login docker.pkg.github.com
@@ -44,7 +44,7 @@ rm:				## Remove all services containers.
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) rm -f ${SERVICES}
 
 test:
-	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) exec celery python3 -m unittest tests/test_scan.py
+	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) exec celery poetry -C /home/rengine run python3 -m unittest tests/test_scan.py
 
 logs:			## Tail all logs with -n 1000.
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) logs --follow --tail=1000 ${SERVICES}
