@@ -51,8 +51,7 @@ services:
 
   celery-beat:
     image: docker.io/talanor/rengine-celery:v0.3
-    entrypoint: /beat-entrypoint.sh
-    command: 
+    entrypoint: /home/rengine/rengine/beat-entrypoint.sh
     environment:
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
@@ -64,8 +63,7 @@ services:
     depends_on:
       - celery
     volumes:
-      - ./web:/usr/src/app
-      - ./web/beat-entrypoint.sh:/beat-entrypoint.sh
+      - ./web:/home/rengine/rengine
       # - github_repos:/usr/src/github
       # - wordlist:/usr/src/wordlist
       # - scan_results:/usr/src/scan_results
