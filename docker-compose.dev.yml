@@ -1,6 +1,6 @@
 services:
   db:
-    restart: always
+    restart: unless-stopped
     image: "postgres:12.3-alpine"
     environment:
       - POSTGRES_DB=${POSTGRES_DB}

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-poetry run -C $HOME/ python3 manage.py migrate
-
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/home/rengine/rengine/" -- poetry run -C $HOME/ celery -A reNgine.tasks worker --loglevel=info --autoscale=$MAX_CONCURRENCY,$MIN_CONCURRENCY -Q main_scan_queue &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/home/rengine/rengine/" -- poetry run -C $HOME/ celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q initiate_scan_queue -n initiate_scan_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/home/rengine/rengine/" -- poetry run -C $HOME/ celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q subscan_queue -n subscan_worker &

@@ -1,6 +1,6 @@
 services:
   db:
-    restart: always
+    restart: unless-stopped
     image: "postgres:12.3-alpine"
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
@@ -49,6 +49,32 @@ services:
     networks:
       rengine_network:
 
+  celery-beat:
+    image: docker.io/talanor/rengine-celery:v0.3
+    entrypoint: /beat-entrypoint.sh
+    command: 
+    environment:
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    depends_on:
+      - celery
+    volumes:
+      - ./web:/usr/src/app
+      - ./web/beat-entrypoint.sh:/beat-entrypoint.sh
+      # - github_repos:/usr/src/github
+      # - wordlist:/usr/src/wordlist
+      # - scan_results:/usr/src/scan_results
+      # - gf_patterns:/root/.gf
+      # - nuclei_templates:/root/nuclei-templates
+      # - tool_config:/root/.config
+    networks:
+      - rengine_network
+
   web:
     image: docker.io/talanor/rengine-web:v0.2
     restart: unless-stopped
@@ -77,13 +103,14 @@ services:
     depends_on:
       - db
       - celery
+      - celery-beat
     networks:
       rengine_network:
         aliases:
           - rengine
 
   proxy:
-    restart: always
+    restart: unless-stopped
     image: nginx:alpine
     depends_on:
       - web
