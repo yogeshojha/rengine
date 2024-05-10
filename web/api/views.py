@@ -1167,7 +1167,7 @@ class GetFileContents(APIView):
 		response['status'] = False
 
 		if 'nuclei_config' in req.query_params:
-			path = Path.home() / ".config/nuclei/config.yaml"
+			path = str(Path.home() / ".config" / "nuclei" / "config.yaml")
 			if not os.path.exists(path):
 				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
@@ -1177,7 +1177,7 @@ class GetFileContents(APIView):
 			return Response(response)
 
 		if 'subfinder_config' in req.query_params:
-			path = Path.home() / ".config/subfinder/config.yaml"
+			path = str(Path.home() / ".config" / "subfinder" /" config.yaml")
 			if not os.path.exists(path):
 				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
@@ -1187,7 +1187,7 @@ class GetFileContents(APIView):
 			return Response(response)
 
 		if 'naabu_config' in req.query_params:
-			path = Path.home() / ".config/naabu/config.yaml"
+			path = str(Path.home() / ".config" / "naabu" / "config.yaml")
 			if not os.path.exists(path):
 				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
@@ -1197,7 +1197,7 @@ class GetFileContents(APIView):
 			return Response(response)
 
 		if 'theharvester_config' in req.query_params:
-			path = os.path.join(RENGINE_TOOL_PATH, '/theHarvester/api-keys.yaml')
+			path = str(Path(RENGINE_TOOL_PATH) / 'theHarvester' / 'api-keys.yaml')
 			if not os.path.exists(path):
 				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
@@ -1207,7 +1207,7 @@ class GetFileContents(APIView):
 			return Response(response)
 
 		if 'amass_config' in req.query_params:
-			path = Path.home() / ".config/amass.ini"
+			path = str(Path.home() / ".config" / "amass.ini")
 			if not os.path.exists(path):
 				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
@@ -1217,8 +1217,8 @@ class GetFileContents(APIView):
 			return Response(response)
 
 		if 'gf_pattern' in req.query_params:
-			basedir = Path.home() / '.gf'
-			path = Path.home() / '.gf' / f'{name}.json'
+			basedir = str(Path.home() / '.gf')
+			path = str(Path.home() / '.gf' / f'{name}.json')
 			if is_safe_path(basedir, path) and os.path.exists(path):
 				content = open(path, "r").read()
 				response['status'] = True
@@ -1230,8 +1230,8 @@ class GetFileContents(APIView):
 
 
 		if 'nuclei_template' in req.query_params:
-			safe_dir = Path.home() / 'nuclei-templates'
-			path = Path.home() / 'nuclei-templates' / f'{name}'
+			safe_dir = str(Path.home() / 'nuclei-templates')
+			path = str(Path.home() / 'nuclei-templates' / f'{name}')
 			if is_safe_path(safe_dir, path) and os.path.exists(path):
 				content = open(path.format(name), "r").read()
 				response['status'] = True
