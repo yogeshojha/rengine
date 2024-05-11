@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404, render
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext
 from django_celery_beat.models import (ClockedSchedule, IntervalSchedule, PeriodicTask)
 from rolepermissions.decorators import has_permission_decorator
 
@@ -292,7 +292,7 @@ def start_scan_ui(request, slug, domain_id):
         messages.add_message(
             request,
             messages.INFO,
-            _('Scan Started for %(domainName)s') % {'domainName': domain.name})
+            gettext('Scan Started for %(domainName)s') % {'domainName': domain.name})
         return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
     # GET request
@@ -348,7 +348,7 @@ def start_multiple_scan(request, slug):
             messages.add_message(
                 request,
                 messages.INFO,
-                _('Scan Started for multiple targets'))
+                gettext('Scan Started for multiple targets'))
 
             return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
@@ -437,14 +437,14 @@ def delete_scan(request, id):
         messages.add_message(
             request,
             messages.INFO,
-            _('Scan history successfully deleted!')
+            gettext('Scan history successfully deleted!')
         )
     else:
         messageData = {'status': 'false'}
         messages.add_message(
             request,
             messages.INFO,
-            _('Oops! something went wrong!')
+            gettext('Oops! something went wrong!')
         )
     return JsonResponse(messageData)
 
@@ -468,12 +468,12 @@ def stop_scan(request, id):
                 task.status = ABORTED_TASK
                 task.time = timezone.now()
                 task.save()
-            create_scan_activity(scan.id, _("Scan aborted"), SUCCESS_TASK)
+            create_scan_activity(scan.id, gettext("Scan aborted"), SUCCESS_TASK)
             response = {'status': True}
             messages.add_message(
                 request,
                 messages.INFO,
-                _('Scan successfully stopped!')
+                gettext('Scan successfully stopped!')
             )
         except Exception as e:
             logger.error(e)
@@ -481,7 +481,7 @@ def stop_scan(request, id):
             messages.add_message(
                 request,
                 messages.ERROR,
-                _('Scan failed to stop ! Error: %(errMsg)s') % {'errMsg': str(e)}
+                gettext('Scan failed to stop ! Error: %(errMsg)s') % {'errMsg': str(e)}
             )
         return JsonResponse(response)
     return scan_history(request)
@@ -554,7 +554,7 @@ def schedule_scan(request, host_id, slug):
         messages.add_message(
             request,
             messages.INFO,
-            _('Scan Scheduled for %(domainName)s') % {"domainName": domain.name}
+            gettext('Scan Scheduled for %(domainName)s') % {"domainName": domain.name}
         )
         return HttpResponseRedirect(reverse('scheduled_scan_view', kwargs={'slug': slug}))
 
@@ -595,13 +595,13 @@ def delete_scheduled_task(request, id):
         messages.add_message(
             request,
             messages.INFO,
-            _('Scheduled Scan successfully deleted!'))
+            gettext('Scheduled Scan successfully deleted!'))
     else:
         messageData = {'status': 'false'}
         messages.add_message(
             request,
             messages.INFO,
-            _('Oops! something went wrong!'))
+            gettext('Oops! something went wrong!'))
     return JsonResponse(messageData)
 
 
@@ -652,7 +652,7 @@ def delete_all_scan_results(request):
         messages.add_message(
             request,
             messages.INFO,
-            _('All Scan History successfully deleted!'))
+            gettext('All Scan History successfully deleted!'))
     return JsonResponse(messageData)
 
 
@@ -664,7 +664,7 @@ def delete_all_screenshots(request):
         messages.add_message(
             request,
             messages.INFO,
-            _('Screenshots successfully deleted!'))
+            gettext('Screenshots successfully deleted!'))
     return JsonResponse(messageData)
 
 
@@ -707,7 +707,7 @@ def start_organization_scan(request, id, slug):
         messages.add_message(
             request,
             messages.INFO,
-            _('Scan Started for %(domainCount)d domains in organization %(orgName)s') % {"domainCount": ndomains, 'orgName': organization.name})
+            gettext('Scan Started for %(domainCount)d domains in organization %(orgName)s') % {"domainCount": ndomains, 'orgName': organization.name})
         return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
     # GET request
@@ -795,7 +795,7 @@ def schedule_organization_scan(request, slug, id):
         messages.add_message(
             request,
             messages.INFO,
-            _('Scan Started for %(domainCount)d domains in organization %(orgName)s') % {"domainCount": ndomains, 'orgName': organization.name}
+            gettext('Scan Started for %(domainCount)d domains in organization %(orgName)s') % {"domainCount": ndomains, 'orgName': organization.name}
         )
         return HttpResponseRedirect(reverse('scheduled_scan_view', kwargs={'slug': slug, 'id': id}))
 
@@ -825,7 +825,7 @@ def delete_scans(request, slug):
         messages.add_message(
             request,
             messages.INFO,
-            'All Scans deleted!')
+            gettext('All Scans deleted!'))
     return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
 
@@ -849,16 +849,16 @@ def create_report(request, id):
     if report_type == 'recon':
         show_recon = True
         show_vuln = False
-        report_name = _('Reconnaissance Report')
+        report_name = gettext('Reconnaissance Report')
     elif report_type == 'vulnerability':
         show_recon = False
         show_vuln = True
-        report_name = _('Vulnerability Report')
+        report_name = gettext('Vulnerability Report')
     else:
         # default
         show_recon = True
         show_vuln = True
-        report_name = _('Full Scan Report')
+        report_name = gettext('Full Scan Report')
 
     scan = ScanHistory.objects.get(id=id)
     vulns = (

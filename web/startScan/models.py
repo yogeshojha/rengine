@@ -3,6 +3,7 @@ from django.apps import apps
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy
 from reNgine.definitions import (CELERY_TASK_STATUSES,
 								 NUCLEI_REVERSE_SEVERITY_MAP)
 from reNgine.utilities import *
@@ -159,18 +160,7 @@ class ScanHistory(models.Model):
 		return self.get_time_ago(self.start_scan_date)
 
 	def get_time_ago(self, time):
-		duration = timezone.now() - time
-		days, seconds = duration.days, duration.seconds
-		hours = days * 24 + seconds // 3600
-		minutes = (seconds % 3600) // 60
-		seconds = seconds % 60
-		if not hours and not minutes:
-			return f'{seconds} seconds'
-		elif not hours:
-			return f'{minutes} minutes'
-		elif not minutes:
-			return f'{hours} hours'
-		return f'{hours} hours {minutes} minutes'
+		return get_time_taken(timezone.now(), time)
 
 
 class Subdomain(models.Model):
@@ -331,16 +321,16 @@ class SubScan(models.Model):
 
 	def get_task_name_str(self):
 		taskmap = {
-			'subdomain_discovery': 'Subdomain discovery',
-			'dir_file_fuzz': 'Directory and File fuzzing',
-			'port_scan': 'Port Scan',
-			'fetch_url': 'Fetch URLs',
-			'vulnerability_scan': 'Vulnerability Scan',
-			'screenshot': 'Screenshot',
-			'waf_detection': 'Waf Detection',
-			'osint': 'Open-Source Intelligence'
+			'subdomain_discovery': gettext_lazy('Subdomain discovery'),
+			'dir_file_fuzz': gettext_lazy('Directory and File fuzzing'),
+			'port_scan': gettext_lazy('Port Scan'),
+			'fetch_url': gettext_lazy('Fetch URLs'),
+			'vulnerability_scan': gettext_lazy('Vulnerability Scan'),
+			'screenshot': gettext_lazy('Screenshot'),
+			'waf_detection': gettext_lazy('Waf Detection'),
+			'osint': gettext_lazy('Open-Source Intelligence')
 		}
-		return taskmap.get(self.type, 'Unknown')
+		return taskmap.get(self.type, gettext_lazy('Unknown'))
 
 class EndPoint(models.Model):
 	id = models.AutoField(primary_key=True)

@@ -15,7 +15,7 @@ from django.db.models.functions import TruncDay
 from django.dispatch import receiver
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from rolepermissions.roles import assign_role, clear_roles
@@ -187,19 +187,19 @@ def profile(request, slug):
             update_session_auth_hash(request, user)
             messages.success(
                 request,
-                _('Your password was successfully changed!'))
+                gettext('Your password was successfully changed!'))
             userSettingsForm = UserSettingsForm(request.user)
         elif userSettingsForm.is_valid():
             user = userSettingsForm.save()
             messages.success(
                 request,
-                _('Your settings were successfully changed!'))
+                gettext('Your settings were successfully changed!'))
             translation.activate(user.language)
             request.session[translation.LANGUAGE_SESSION_KEY] = user.language
             request.session.save()
             passwordForm = PasswordChangeForm(request.user)
         else:
-            messages.error(request, _('Please correct the error below.'))
+            messages.error(request, gettext('Please correct the error below.'))
     else:
         passwordForm = PasswordChangeForm(request.user)
         userSettingsForm = UserSettingsForm(request.user)
@@ -245,7 +245,7 @@ def admin_interface_update(request, slug):
                 messages.add_message(
                     request,
                     messages.INFO,
-                    _('User %(username)s successfully deleted.') % {'username': user.username}
+                    gettext('User %(username)s successfully deleted.') % {'username': user.username}
                 )
                 messageData = {'status': True}
             except Exception as e:
@@ -269,7 +269,7 @@ def admin_interface_update(request, slug):
             try:
                 response = json.loads(request.body)
                 if not response.get('password'):
-                    messageData = {'status': False, 'error': _('Empty passwords are not allowed')}
+                    messageData = {'status': False, 'error': gettext('Empty passwords are not allowed')}
                     return JsonResponse(messageData)
                 UserModel = get_user_model()
                 user = UserModel.objects.create_user(
@@ -290,7 +290,7 @@ def on_user_logged_out(sender, request, **kwargs):
     messages.add_message(
         request,
         messages.INFO,
-        _('You have been successfully logged out. Thank you for using reNgine.'))
+        gettext('You have been successfully logged out. Thank you for using reNgine.'))
 
 
 @receiver(user_logged_in)
@@ -298,7 +298,7 @@ def on_user_logged_in(sender, request, **kwargs):
     messages.add_message(
         request,
         messages.INFO,
-        _('Hi @%(username)s welcome back!') % {"username": request.user.username})
+        gettext('Hi @%(username)s welcome back!') % {"username": request.user.username})
 
 
 def search(request, slug):
@@ -325,13 +325,13 @@ def delete_project(request, id):
         messages.add_message(
             request,
             messages.INFO,
-            _('Project successfully deleted!'))
+            gettext('Project successfully deleted!'))
     else:
         responseData = {'status': 'false'}
         messages.add_message(
             request,
             messages.ERROR,
-            _('Oops! Project could not be deleted!'))
+            gettext('Oops! Project could not be deleted!'))
     return JsonResponse(responseData)
 
 
@@ -357,7 +357,7 @@ def onboarding(request):
                 insert_date=insert_date
             )
         except Exception as e:
-            error = _(' Could not create project, Error: %(errMsg)s') % {'errMsg': str(e)}
+            error = gettext(' Could not create project, Error: %(errMsg)s') % {'errMsg': str(e)}
 
 
         try:
@@ -369,9 +369,7 @@ def onboarding(request):
                 )
                 assign_role(user, create_user_role)
         except Exception as e:
-            error = _(' Could not create User, Error: %(errMsg)s') % {'errMsg': str(e)}
-
-
+            error = gettext(' Could not create User, Error: %(errMsg)s') % {'errMsg': str(e)}
 
         if key_openai:
             openai_api_key = OpenAiAPIKey.objects.first()

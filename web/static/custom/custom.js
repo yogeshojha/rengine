@@ -832,8 +832,8 @@ function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_l
 		text: gettext("You won't be able to revert this!"),
 		icon: 'warning',
 		showCancelButton: true,
-		confirmButtonText: gettex('Stop'),
-		cancelButtonText: gettex('Cancel'),
+		confirmButtonText: gettext('Stop'),
+		cancelButtonText: gettext('Cancel'),
 		padding: '2em',
 		showLoaderOnConfirm: true,
 		preConfirm: function() {

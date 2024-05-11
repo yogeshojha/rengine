@@ -2,6 +2,7 @@ import os
 
 from celery._state import get_current_task
 from celery.utils.log import ColorFormatter
+from django.utils.translation import gettext_lazy
 
 
 def is_safe_path(basedir, path, follow_symlinks=True):
@@ -30,12 +31,12 @@ def get_time_taken(latest, earlier):
 	minutes = (seconds % 3600) // 60
 	seconds = seconds % 60
 	if not hours and not minutes:
-		return '{} seconds'.format(seconds)
+		return gettext_lazy('%(seconds)s seconds') % {"seconds": seconds}
 	elif not hours:
-		return '{} minutes'.format(minutes)
+		return gettext_lazy('%(minutes)s minutes') % {"minutes": minutes}
 	elif not minutes:
-		return '{} hours'.format(hours)
-	return '{} hours {} minutes'.format(hours, minutes)
+		return gettext_lazy'%(hours)s hours' % {"hours": hours}
+	return gettext_lazy('%(hours)s hours %(minutes)s minutes') % {"hours": hours, "minutes": minutes}
 
 # Check if value is a simple string, a string with commas, a list [], a tuple (), a set {} and return an iterable
 def return_iterable(string):
@@ -70,9 +71,9 @@ class RengineTaskFormatter(ColorFormatter):
 
 def get_gpt_vuln_input_description(title, path):
 	vulnerability_description = ''
-	vulnerability_description += f'Vulnerability Title: {title}'
+	vulnerability_description += gettext_lazy('Vulnerability Title: %(vulnerabilityTitle)s') % {'vulnerabilityTitle': title}
 	# gpt gives concise vulnerability description when a vulnerable URL is provided
-	vulnerability_description += f'\nVulnerable URL: {path}'
+	vulnerability_description += gettext_lazy('\nVulnerable URL: %(path)s') % {'path': path}
 
 	return vulnerability_description
 
