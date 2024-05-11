@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"POT-Creation-Date: 2024-05-11 18:34+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,102 +17,33 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: reNgine/definitions.py:444
-msgid ""
-"\n"
-"    You are a highly skilled penetration tester who has recently completed a "
-"penetration testing.\n"
-"    You will be given with a\n"
-"        - Vulnerability title\n"
-"        - Vulnerable URL\n"
-"        - and some description about the vulnerability.\n"
-"    Your job is to write a detailed technical penetration testing report "
-"based on the given Vulnerability details.\n"
-"    The purpose of this report is to provide an in-depth analysis of the "
-"vulnerabilities discovered during the penetration testing engagement.\n"
-"\n"
-"    The penetration testing report must contain all separated by \n"
-"\n"
-"\n"
-"\n"
-"    - Vulnerability description\n"
-"        Include a detailed vulnerability description, include any known CVE "
-"IDs, any known existing vulnerabilities.\n"
-"    - Impact\n"
-"        Include what this vulnerability can impact for web applications.\n"
-"    - Remediation\n"
-"        Include steps to remediate this vulnerability. Separate each new "
-"remediations by - and a new line \n"
-"\n"
-"    - References\n"
-"        Include any references URL about this vulnerability, any existing "
-"CVE ID, or news articles etc. Separate each new references by - and a new "
-"line \n"
-". Only include http urls\n"
-"\n"
-"    Do not write 'Penetration Testing Report:' on the title.\n"
-msgstr ""
-
-#: reNgine/definitions.py:468
-msgid ""
-"\n"
-"    You are a highly skilled penetration tester who has recently completed a "
-"reconnaissance on a target.\n"
-"    As a penetration tester, I've conducted a thorough reconnaissance on a "
-"specific subdomain.\n"
-"    Based on my reconnaissance you will be given with a\n"
-"        - Subdomain Name\n"
-"        - Subdomain Page Title\n"
-"        - Open Ports if any detected\n"
-"        - HTTP Status\n"
-"        - Technologies Detected\n"
-"        - Content Type\n"
-"        - Web Server\n"
-"        - Page Content Length\n"
-"    I'm seeking insights into potential technical web application attacks "
-"that could be executed on this subdomain, along with explanations for why "
-"these attacks are feasible given the discovered information.\n"
-"    Please provide a detailed list of these attack types and their "
-"underlying technical rationales on every attacks you suggested.\n"
-"    Also suggest if any CVE ID, known exploits, existing vulnerabilities, "
-"any news articles URL related to the information provided to you.\n"
-msgstr ""
-
-#: reNgine/gpt.py:30
+#: reNgine/gpt.py:30 reNgine/gpt.py:93
 msgid "No OpenAI keys provided."
 msgstr "Pas de clés OpenAI fournies."
 
 #: reNgine/tasks.py:178
-#, fuzzy
-#| msgid "Subdomains"
 msgid "Subdomain discovery"
-msgstr "Sous-domaines"
+msgstr "Découvertes de sous-domaines"
 
 #: reNgine/tasks.py:179
 msgid "OS Intelligence"
-msgstr ""
+msgstr "Intel sur les OS"
 
 #: reNgine/tasks.py:181
-#, fuzzy
-#| msgid "Ports"
 msgid "Port scan"
-msgstr "Ports"
+msgstr "Scan de ports"
 
 #: reNgine/tasks.py:182
 msgid "Fetch URL"
-msgstr ""
+msgstr "Récupération de l'URL"
 
 #: reNgine/tasks.py:184
-#, fuzzy
-#| msgid "Directories Count"
 msgid "Directories & files fuzz"
-msgstr "Nombre de répertoires"
+msgstr "Fuzzing de fichiers et de répertoires"
 
 #: reNgine/tasks.py:185
-#, fuzzy
-#| msgid "Vulnerability"
 msgid "Vulnerability scan"
-msgstr "Vulnérabilité"
+msgstr "Scan de vulnérabilités"
 
 #: reNgine/tasks.py:186 templates/base/_items/subdomain_tab_content.html:92
 #: templates/base/_items/subdomain_tab_content.html:160
@@ -121,73 +52,103 @@ msgid "Screenshot"
 msgstr "Capture d'écran"
 
 #: reNgine/tasks.py:187
-#, fuzzy
-#| msgid "WAF Detector"
 msgid "WAF detection"
-msgstr "Détecteur de WAF"
+msgstr "Détection de WAF"
 
 #: reNgine/tasks.py:2011
-#, fuzzy
-#| msgid "Scheduled Scan"
 msgid "Nuclei Scan"
-msgstr "Scan programmé"
+msgstr "Scan nuclei"
 
 #: reNgine/tasks.py:2019
 msgid "CRLFuzz Scan"
-msgstr ""
+msgstr "Scan CRLFuzz"
 
 #: reNgine/tasks.py:2027
 msgid "Dalfox XSS Scan"
-msgstr ""
+msgstr "Scan XSS Dalfox"
 
 #: reNgine/tasks.py:2034
 msgid "Misconfigured S3 Buckets Scanner"
-msgstr ""
+msgstr "Scanneur de Buckets S3 mal configurés"
 
 #: reNgine/tasks.py:2414
 #, python-format
 msgid "Nuclei Scan with severity %(severity)s"
-msgstr ""
+msgstr "Scan Nuclei de gravité %(severity)s"
 
 #: reNgine/tasks.py:3515
 #, python-format
 msgid " Evidence: %(evidence)s <br>"
-msgstr ""
+msgstr " Preuve : %(evidence)s <br>"
 
 #: reNgine/tasks.py:3516
 #, python-format
 msgid " Message: %(msg)s <br>"
-msgstr ""
+msgstr " Message : %(msg)s <br>"
 
 #: reNgine/tasks.py:3517
 #, python-format
 msgid " Payload: %(payload)s <br>"
-msgstr ""
+msgstr " Charge utile : %(payload)s <br>"
 
 #: reNgine/tasks.py:3518
 #, python-format
 msgid " Vulnerable Parameter: %(vulnParam)s <br>"
-msgstr ""
+msgstr " Paramètre vulnérable : %(vulnParam)s <br>"
 
 #: reNgine/tasks.py:3521
 msgid "XSS (Cross Site Scripting)"
-msgstr ""
+msgstr "XSS (Cross Site Scripting)"
 
 #: reNgine/tasks.py:3541
 msgid "CRLF (HTTP Response Splitting)"
-msgstr ""
+msgstr "CRLF (HTTP Response Splitting)"
 
 #: reNgine/tasks.py:3544
 msgid "A CRLF (HTTP Response Splitting) vulnerability has been discovered."
-msgstr ""
+msgstr "Une vulnérabilité CRLF (HTTP Response Splitting) a été découverte."
 
 #: reNgine/tasks.py:3767 reNgine/tasks.py:3768
 msgid "Netlas limit exceeded."
-msgstr ""
+msgstr "Limite de Netlas dépassée."
 
 #: reNgine/tasks.py:3963
 msgid "unable to fetch records from WHOIS database."
+msgstr "Impossible de récupérer les enregistrements de la base de données WHOIS."
+
+#: reNgine/utilities.py:34
+#, python-format
+msgid "%(seconds)s seconds"
+msgstr "%(seconds)s secondes"
+
+#: reNgine/utilities.py:36
+#, python-format
+msgid "%(minutes)s minutes"
+msgstr "%(minutes)s minutes"
+
+#: reNgine/utilities.py:38
+#, python-format
+msgid "%(hours)s hours"
+msgstr "%(hours)s heures"
+
+#: reNgine/utilities.py:39
+#, python-format
+msgid "%(hours)s hours %(minutes)s minutes"
+msgstr "%(hours)s heures %(minutes)s minutes"
+
+#: reNgine/utilities.py:74
+#, python-format
+msgid "Vulnerability Title: %(vulnerabilityTitle)s"
+msgstr "Titre de la vulnérabilité : %(vulnerabilityTitle)s"
+
+#: reNgine/utilities.py:76
+#, python-format
+msgid ""
+"\n"
+"Vulnerable URL: %(path)s"
 msgstr ""
+"\n"
+"URL vulnérable : %(path)s"
 
 #: reNgine/validators.py:10
 #, python-format
@@ -403,10 +364,8 @@ msgid "Reload"
 msgstr "Recharger"
 
 #: templates/base/_items/subdomain_tab_content.html:10
-#, fuzzy
-#| msgid "Clear Subdomains"
 msgid "Filter Subdomains"
-msgstr "Effacer les sous-domaines"
+msgstr "Filtrer les sous-domaines"
 
 #: templates/base/_items/subdomain_tab_content.html:28
 #: templates/base/_items/subdomain_toolbar.html:3

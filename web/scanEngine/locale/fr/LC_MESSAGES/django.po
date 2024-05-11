@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"POT-Creation-Date: 2024-05-11 18:34+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -66,57 +66,155 @@ msgstr "Votre nom d'utilisateur Hackerone"
 msgid "Hackerone API Token"
 msgstr "Jeton d'API Hackerone"
 
-#: scanEngine/forms.py:465
+#: scanEngine/forms.py:434
+#, python-format
+msgid ""
+"Hi Team, while testing, a %(vulnerabilitySeverity)s severity vulnerability "
+"has been discovered in %(vulnerableUrl)s and below is the findings.\n"
+"\n"
+"# Vulnerability\n"
+"%(vulnerabilityName)s\n"
+"\n"
+"## Issue Description\n"
+"%(vulnerabilityDescription)s\n"
+"\n"
+"## Vulnerable URL\n"
+"- %(vulnerableUrl)s\n"
+"\n"
+"## Extracted Results/Findings\n"
+"%(vulnerabilityExtractedResults)s\n"
+"\n"
+"## References\n"
+"- %(vulnerabilityReferences)s\n"
+"\n"
+"Thank you"
+msgstr "Bonjour l'équipe, pendant le test, une vulnérabilité "
+"%(vulnerabilitySeverity)s a été découverte à %(vulnerableUrl)s, voici les "
+"informations ci-dessous.\n"
+"\n"
+"# Vulnérabilité\n"
+"%(vulnerabilityName)s\n"
+"\n"
+"## Description de l'incident\n"
+"%(vulnerabilityDescription)s\n"
+"\n"
+"## URL vulnérable\n"
+"- %(vulnerableUrl)s\n"
+"\n"
+"## Résultats extraits / recherches\n"
+"%(vulnerabilityExtractedResults)s\n"
+"\n"
+"## Références\n"
+"- %(vulnerabilityReferences)s\n"
+"\n"
+"Merci"
+
+#: scanEngine/forms.py:472
 #: scanEngine/templates/scanEngine/settings/report.html:69
 msgid "Company Name"
 msgstr "Nom de l'entreprise"
 
-#: scanEngine/forms.py:474
+#: scanEngine/forms.py:481
 #: scanEngine/templates/scanEngine/settings/report.html:73
 msgid "Company Address"
 msgstr "Adresse de l'entreprise"
 
-#: scanEngine/forms.py:483
+#: scanEngine/forms.py:490
 msgid "Company Website https://company.com"
 msgstr "Site Web de l'entreprise https://entreprise.com"
 
-#: scanEngine/forms.py:492
+#: scanEngine/forms.py:499
 msgid "email@yourcompany.com"
 msgstr "email@votre_entreprise.com"
 
-#: scanEngine/forms.py:510
+#: scanEngine/forms.py:517
 msgid "Footer Text © Your Company"
 msgstr "Texte de pied de page © Votre entreprise"
 
-#: scanEngine/forms.py:604
+#: scanEngine/forms.py:579
+#, python-format
+msgid ""
+"On **%(scanDate)s**, **%(targetName)s** engaged **%(companyName)s** to "
+"perform a security audit on their Web application.\n"
+"\n"
+"**%(companyName)s** performed both Security Audit and Reconnaissance using "
+"automated tool reNgine. https://github.com/yogeshojha/rengine .\n"
+"\n"
+"## Observations\n"
+"\n"
+"During the course of this engagement **%(companyName)s** was able to "
+"discover **%(subDomainCount)s** Subdomains and  **%(vulnerabilityCount)s** "
+"Vulnerabilities, including informational vulnerabilities and these could "
+"pose a significant risk to the security of the application.\n"
+"\n"
+"The breakdown of the Vulnerabilities Identified in **%(targetName)s** by "
+"severity are as follows:\n"
+"\n"
+"* Critical : %(criticalCount)s\n"
+"* High : %(highCount)s\n"
+"* Medium : %(mediumCount)s\n"
+"* Low : %(lowCount)s\n"
+"* Info : %(infoCount)s\n"
+"* Unknown : %(unknownCount)s\n"
+"\n"
+"**%(companyName)s** recommends that these issues be addressed in timely "
+"manner.\n"
+"\n"
+msgstr ""
+"Le **%(scanDate)s**, **%(targetName)s** a mandaté **%(companyName)s** afin "
+"de réaliser un audit de sécurité de leur application web.\n"
+"\n"
+"**%(companyName)s** a réalisé l'audit de sécurité et la reconnaissance avec l'outil "
+"reNgine. https://github.com/yogeshojha/rengine .\n"
+"\n"
+"## Observations\n"
+"\n"
+"**%(subDomainCount)s** sous-domaines et  **%(vulnerabilityCount)s** "
+"vulnérabilités on été découverts au cours de l'audit, en incluant "
+" les vulnérabilités informationnelles.\n"
+"\n"
+"Le détail du nombre de vulnérabilités par sévérité identifiées dans **%(targetName)s** "
+" est :\n"
+"\n"
+"* Critiques : %(criticalCount)s\n"
+"* Élevées : %(highCount)s\n"
+"* Modérées : %(mediumCount)s\n"
+"* Faibles : %(lowCount)s\n"
+"* Informationnelles : %(infoCount)s\n"
+"* Unknown : %(unknownCount)s\n"
+"\n"
+"**%(companyName)s** recommande la remédiation de ces vulnérabilités au plus tôt.\n"
+"\n"
+
+#: scanEngine/forms.py:624
 msgid "My Awesome Tool"
 msgstr "Mon super outil"
 
-#: scanEngine/forms.py:620
+#: scanEngine/forms.py:640
 msgid "https://github.com/user/tool/blob/master/LICENSE.md"
 msgstr "https://github.com/utilisateur/outil/blob/master/LICENSE.md"
 
-#: scanEngine/forms.py:628
+#: scanEngine/forms.py:648
 msgid "http://example.com/logo.png"
 msgstr "http://exemple.com/logo.png"
 
-#: scanEngine/forms.py:636
+#: scanEngine/forms.py:656
 msgid "Explain what this tool is used for."
 msgstr "Expliquez à quoi sert cet outil."
 
-#: scanEngine/forms.py:647
+#: scanEngine/forms.py:667
 msgid "Tool Installation Command"
 msgstr "Commande d'installation de l'outil"
 
-#: scanEngine/forms.py:655
+#: scanEngine/forms.py:675
 msgid "Tool Update Command"
 msgstr "Commande de mise à jour de l'outil"
 
-#: scanEngine/forms.py:686
+#: scanEngine/forms.py:706
 msgid "Subdomain Gathering Command"
 msgstr "Commande de récupération de sous-domaine"
 
-#: scanEngine/forms.py:687
+#: scanEngine/forms.py:707
 #, python-brace-format
 msgid "tool_name -d {TARGET} -o {OUTPUT}"
 msgstr "outil_nom -d {TARGET} -o {OUTPUT}"
@@ -1791,6 +1889,10 @@ msgid "Notification Settings updated successfully and test message was sent."
 msgstr ""
 "Paramètres de notification mis à jour avec succès et un message de test a "
 "été envoyé."
+
+#: scanEngine/views.py:349
+msgid "Proxies updated."
+msgstr "Proxies mis à jour."
 
 #: scanEngine/views.py:401
 msgid "Hackerone Settings updated."

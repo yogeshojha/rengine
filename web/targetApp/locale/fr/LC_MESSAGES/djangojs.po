@@ -608,3 +608,8 @@ msgstr "*Adresse IP de CDN"
 
 msgid "CDN IP Address"
 msgstr "Adresse IP de CDN"
+
+msgid "Add %(count)s Target"
+msgid_plural "Add %(count)s Targets"
+msgstr[0] "Ajouter %(count)s cible"
+msgstr[1] "Ajouter %(count)s cibles"

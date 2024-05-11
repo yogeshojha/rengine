@@ -35,7 +35,7 @@ def get_time_taken(latest, earlier):
 	elif not hours:
 		return gettext_lazy('%(minutes)s minutes') % {"minutes": minutes}
 	elif not minutes:
-		return gettext_lazy'%(hours)s hours' % {"hours": hours}
+		return gettext_lazy('%(hours)s hours') % {"hours": hours}
 	return gettext_lazy('%(hours)s hours %(minutes)s minutes') % {"hours": hours, "minutes": minutes}
 
 # Check if value is a simple string, a string with commas, a list [], a tuple (), a set {} and return an iterable

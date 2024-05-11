@@ -191,12 +191,12 @@ def profile(request, slug):
             userSettingsForm = UserSettingsForm(request.user)
         elif userSettingsForm.is_valid():
             user = userSettingsForm.save()
-            messages.success(
-                request,
-                gettext('Your settings were successfully changed!'))
             translation.activate(user.language)
             request.session[translation.LANGUAGE_SESSION_KEY] = user.language
             request.session.save()
+            messages.success(
+                request,
+                gettext('Your settings were successfully changed!'))
             passwordForm = PasswordChangeForm(request.user)
         else:
             messages.error(request, gettext('Please correct the error below.'))

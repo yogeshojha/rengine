@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"POT-Creation-Date: 2024-05-11 18:34+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,48 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: startScan/models.py:324
+msgid "Subdomain discovery"
+msgstr "Découverte de sous-domaines"
+
+#: startScan/models.py:325
+msgid "Directory and File fuzzing"
+msgstr "Recherche de fichiers et de répertoires"
+
+#: startScan/models.py:326
+#: startScan/templates/startScan/_items/scanEngine_select.html:74
+msgid "Port Scan"
+msgstr "Scan de ports"
+
+#: startScan/models.py:327
+msgid "Fetch URLs"
+msgstr "Récupérer les URLs"
+
+#: startScan/models.py:328
+#: startScan/templates/startScan/_items/scanEngine_select.html:110
+msgid "Vulnerability Scan"
+msgstr "Scan de vulnérabilités"
+
+#: startScan/models.py:329
+#: startScan/templates/startScan/_items/scanEngine_select.html:50
+msgid "Screenshot"
+msgstr "Capture d'écran"
+
+#: startScan/models.py:330
+msgid "Waf Detection"
+msgstr "Détection de WAF"
+
+#: startScan/models.py:331
+msgid "Open-Source Intelligence"
+msgstr "Intelligence Open-Source"
+
+#: startScan/models.py:333 startScan/templates/startScan/detail_scan.html:128
+#: startScan/templates/startScan/detail_scan.html:258
+#: startScan/templates/startScan/history.html:125
+#: startScan/templates/startScan/subscan_history.html:124
+msgid "Unknown"
+msgstr "Inconnu"
 
 #: startScan/templates/organization/schedule_scan_ui.html:6
 msgid "Schedule Scan for Organization"
@@ -188,19 +230,11 @@ msgstr "Découverte de sous-domaines"
 msgid "WAF Detection"
 msgstr "Détection de WAF"
 
-#: startScan/templates/startScan/_items/scanEngine_select.html:50
-msgid "Screenshot"
-msgstr "Capture d'écran"
-
 #: startScan/templates/startScan/_items/scanEngine_select.html:62
 #: startScan/templates/startScan/detail_scan.html:88
 #: startScan/templates/startScan/detail_scan.html:353
 msgid "OSINT"
 msgstr "OSINT"
-
-#: startScan/templates/startScan/_items/scanEngine_select.html:74
-msgid "Port Scan"
-msgstr "Scan de ports"
 
 #: startScan/templates/startScan/_items/scanEngine_select.html:86
 msgid "Directory and Files Search"
@@ -209,10 +243,6 @@ msgstr "Recherche de fichiers et de répertoires"
 #: startScan/templates/startScan/_items/scanEngine_select.html:98
 msgid "Fetch Endpoints(URLs)"
 msgstr "Récupérer les points de terminaison (URLs)"
-
-#: startScan/templates/startScan/_items/scanEngine_select.html:110
-msgid "Vulnerability Scan"
-msgstr "Scan de vulnérabilités"
 
 #: startScan/templates/startScan/_items/scanEngine_select.html:123
 msgid "YAML Configuration"
@@ -321,13 +351,6 @@ msgstr "Terminé"
 #: startScan/templates/startScan/subscan_history.html:122
 msgid "Aborted"
 msgstr "Avorté"
-
-#: startScan/templates/startScan/detail_scan.html:128
-#: startScan/templates/startScan/detail_scan.html:258
-#: startScan/templates/startScan/history.html:125
-#: startScan/templates/startScan/subscan_history.html:124
-msgid "Unknown"
-msgstr "Inconnu"
 
 #: startScan/templates/startScan/detail_scan.html:137
 msgid "Download All Subdomains"
@@ -1543,6 +1566,12 @@ msgstr "Les captures d'écran ont été supprimées avec succès!"
 msgid "Scan Started for %(domainCount)d domains in organization %(orgName)s"
 msgstr ""
 "Scan démarré pour %(domainCount)d domaines dans l'organisation %(orgName)s"
+
+#: startScan/views.py:828
+#, fuzzy
+#| msgid "All Scan History successfully deleted!"
+msgid "All Scans deleted!"
+msgstr "Tout l'historique des scans supprimé avec succès!"
 
 #: startScan/views.py:852
 msgid "Reconnaissance Report"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"POT-Creation-Date: 2024-05-11 18:34+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -826,10 +826,9 @@ msgstr ""
 "du programme, hackerone.com/team_handle."
 
 #: targetApp/views.py:101
-#, fuzzy, python-format
-#| msgid "Domain %(domain)s is not a valid domain name. Skipping."
+#, python-format
 msgid "%(target)s is not a valid domain, IP, or URL. Skipped."
-msgstr "Le domaine %(domain)s n'est pas un nom de domaine valide. Ignoré."
+msgstr "La cible %(target)s n'est pas un nom de domaine, une IP, ou une URL valide. Ignorée."
 
 #: targetApp/views.py:156
 msgid "Files uploaded are not .txt or .csv files."

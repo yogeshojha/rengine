@@ -1,6 +1,14 @@
 #!/bin/bash
 
 python3 manage.py makemigrations
+
+# Hotfix for missing users migration due to swap mid-project
+# Assumes PostgreSQL is the db used
+
+apt-get install -y postgresql-client
+echo "INSERT INTO django_migrations (app, name, applied) SELECT 'users', '0001_initial', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT app FROM django_migrations WHERE app = 'users' AND name = '0001_initial');" | python3 manage.py dbshell
+echo "UPDATE django_content_type SET app_label = 'users' WHERE app_label = 'auth' and model = 'user';" | python3 manage.py dbshell
+
 python3 manage.py migrate
 python3 manage.py collectstatic --no-input --clear
 
@@ -23,6 +31,7 @@ apt update
 apt install firefox -y
 apt install -y gettext
 
+find . -type f -name "*.po" -exec sed -i 's/^#~ //g' {} +
 python3 manage.py compilemessages
 
 # Temporary fix for whatportis bug - See https://github.com/yogeshojha/rengine/issues/984
@@ -165,6 +174,7 @@ exec "$@"
 # httpx seems to have issue, use alias instead!!!
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
 
+pip uninstall -y httpcore
 
 # watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO -Q scan_queue &
 echo "Starting Workers..."
