@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-11 21:49+0000\n"
+"POT-Creation-Date: 2024-05-11 22:08+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -900,6 +900,12 @@ msgstr "Veuillez patienter pendant que le GPT génère la surface d'attaque."
 #: static/custom/right_sidebar.js:26
 msgid "No upcoming Scans."
 msgstr "Aucun scan prévu."
+
+#: static/custom/right_sidebar.js:46
+#, fuzzy
+#| msgid "Scan Engine"
+msgid "Scanning"
+msgstr "Moteur de scan"
 
 #: static/custom/right_sidebar.js:68
 msgid "No Scans are currently running."

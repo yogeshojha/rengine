@@ -1,6 +1,6 @@
 from django import forms
 from django_ace import AceWidget
-from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy
 
 from reNgine.validators import validate_short_name
 from scanEngine.models import *
@@ -16,7 +16,7 @@ class AddEngineForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
-                "placeholder": gettext("Engine Name")}))
+                "placeholder": gettext_lazy("Engine Name")}))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="tomorrow_night_eighties",
@@ -38,7 +38,7 @@ class UpdateEngineForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
-                "placeholder": gettext("Custom Engine")}))
+                "placeholder": gettext_lazy("Custom Engine")}))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="tomorrow_night_eighties",
@@ -55,7 +55,7 @@ class AddWordlistForm(forms.Form):
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-lg',
                    'id': 'name',
-                   'placeholder': gettext('my awesome wordlist'), }))
+                   'placeholder': gettext_lazy('my awesome wordlist'), }))
     short_name = forms.CharField(
         required=True,
         validators=[validate_short_name],
@@ -63,7 +63,7 @@ class AddWordlistForm(forms.Form):
             attrs={
                 'class': 'form-control form-control-lg',
                 'id': 'short_name',
-                'placeholder': gettext('my_awesome_wordlist'), }))
+                'placeholder': gettext_lazy('my_awesome_wordlist'), }))
     upload_file = forms.FileField(
         required=True,
         widget=forms.FileInput(
@@ -82,7 +82,7 @@ class ConfigurationForm(forms.ModelForm):
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-lg',
                    'id': 'name',
-                   'placeholder': gettext('Configuration Name'), }))
+                   'placeholder': gettext_lazy('Configuration Name'), }))
     short_name = forms.CharField(
         required=True,
         validators=[validate_short_name],
@@ -90,7 +90,7 @@ class ConfigurationForm(forms.ModelForm):
             attrs={
                 'class': 'form-control form-control-lg',
                 'id': 'short_name',
-                'placeholder': gettext('my_awesome_configuration'), }))
+                'placeholder': gettext_lazy('my_awesome_configuration'), }))
     content = forms.CharField(widget=AceWidget(
         mode="text",
         theme="monokai",
@@ -116,7 +116,7 @@ class InterestingLookupForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "keywords",
-                "placeholder": gettext("Interesting Keywords"),
+                "placeholder": gettext_lazy("Interesting Keywords"),
             }))
 
     custom_type = forms.BooleanField(
@@ -216,7 +216,7 @@ class NotificationForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "telegram_bot_token",
-                "placeholder": gettext("Bot Token"),
+                "placeholder": gettext_lazy("Bot Token"),
             }))
 
     telegram_bot_chat_id = forms.CharField(
@@ -225,7 +225,7 @@ class NotificationForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "telegram_bot_chat_id",
-                "placeholder": gettext("Bot Chat ID"),
+                "placeholder": gettext_lazy("Bot Chat ID"),
             }))
 
     send_scan_status_notif = forms.BooleanField(
@@ -347,7 +347,7 @@ class ProxyForm(forms.ModelForm):
                 "id": "proxies",
                 "rows": "10",
                 "spellcheck": "false",
-                "placeholder": gettext("http://username:password@proxyip.com:port"),
+                "placeholder": gettext_lazy("http://username:password@proxyip.com:port"),
             }))
 
     def set_value(self, key):
@@ -373,7 +373,7 @@ class HackeroneForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "username",
-                "placeholder": gettext("Your Hackerone Username"),
+                "placeholder": gettext_lazy("Your Hackerone Username"),
             }))
 
     api_key = forms.CharField(
@@ -382,7 +382,7 @@ class HackeroneForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "api_key",
-                "placeholder": gettext("Hackerone API Token"),
+                "placeholder": gettext_lazy("Hackerone API Token"),
             }))
 
     send_critical = forms.BooleanField(
@@ -431,31 +431,24 @@ class HackeroneForm(forms.ModelForm):
         self.initial['send_high'] = True
         self.initial['send_medium'] = False
 
-        self.initial['report_template'] = gettext('''Hi Team, while testing, a %(vulnerabilitySeverity)s severity vulnerability has been discovered in %(vulnerableUrl)s and below is the findings.
+        self.initial['report_template'] = gettext_lazy('''Hi Team, while testing, a {vulnerability_severity} severity vulnerability has been discovered in {vulnerable_url} and below is the findings.
 
 # Vulnerability
-%(vulnerabilityName)s
+{vulnerability_name}
 
 ## Issue Description
-%(vulnerabilityDescription)s
+{vulnerability_description}
 
 ## Vulnerable URL
-- %(vulnerableUrl)s
+- {vulnerable_url}
 
 ## Extracted Results/Findings
-%(vulnerabilityExtractedResults)s
+{vulnerability_extracted_results}
 
 ## References
-- %(vulnerabilityReferences)s
+- {vulnerability_references}
 
-Thank you''') % {
-    "vulnerabilitySeverity": vulnerability_severity,
-    "vulnerableUrl": vulnerable_url,
-    "vulnerabilityName": vulnerability_name,
-    "vulnerabilityDescription": vulnerability_description,
-    "vulnerabilityExtractedResults": vulnerability_extracted_results,
-    "vulnerabilityReference": vulnerability_reference
-}
+Thank you''')
 
 
 class ReportForm(forms.ModelForm):
@@ -469,7 +462,7 @@ class ReportForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "company_name",
-                "placeholder": gettext("Company Name"),
+                "placeholder": gettext_lazy("Company Name"),
             }))
 
     company_address = forms.CharField(
@@ -478,7 +471,7 @@ class ReportForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "company_address",
-                "placeholder": gettext("Company Address"),
+                "placeholder": gettext_lazy("Company Address"),
             }))
 
     company_website = forms.CharField(
@@ -487,7 +480,7 @@ class ReportForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "company_website",
-                "placeholder": gettext("Company Website https://company.com"),
+                "placeholder": gettext_lazy("Company Website https://company.com"),
             }))
 
     company_email = forms.CharField(
@@ -496,7 +489,7 @@ class ReportForm(forms.ModelForm):
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "company_email",
-                "placeholder": gettext("email@yourcompany.com"),
+                "placeholder": gettext_lazy("email@yourcompany.com"),
             }))
 
     show_footer = forms.BooleanField(
@@ -514,7 +507,7 @@ class ReportForm(forms.ModelForm):
             "class": "form-control form-control-lg",
             "id": "footer_text",
             "aria-label": "switch",
-            "placeholder": gettext("Footer Text © Your Company"),
+            "placeholder": gettext_lazy("Footer Text © Your Company"),
         }))
 
     show_rengine_banner = forms.BooleanField(
@@ -576,38 +569,26 @@ class ReportForm(forms.ModelForm):
         self.initial['primary_color'] = '#FFB74D'
         self.initial['secondary_color'] = '#212121'
         
-        self.initial['executive_summary_description'] = gettext('''On **%(scanDate)s**, **%(targetName)s** engaged **%(companyName)s** to perform a security audit on their Web application.
+        self.initial['executive_summary_description'] = gettext_lazy('''On **{scan_date}**, **{target_name}** engaged **{company_name}** to perform a security audit on their Web application.
 
-**%(companyName)s** performed both Security Audit and Reconnaissance using automated tool reNgine. https://github.com/yogeshojha/rengine .
+**{company_name}** performed both Security Audit and Reconnaissance using automated tool reNgine. https://github.com/yogeshojha/rengine .
 
 ## Observations
 
-During the course of this engagement **%(companyName)s** was able to discover **%(subDomainCount)s** Subdomains and  **%(vulnerabilityCount)s** Vulnerabilities, including informational vulnerabilities and these could pose a significant risk to the security of the application.
+During the course of this engagement **{company_name}** was able to discover **{subdomain_count}** Subdomains and  **{vulnerability_count}** Vulnerabilities, including informational vulnerabilities and these could pose a significant risk to the security of the application.
 
-The breakdown of the Vulnerabilities Identified in **%(targetName)s** by severity are as follows:
+The breakdown of the Vulnerabilities Identified in **{target_name}** by severity are as follows:
 
-* Critical : %(criticalCount)s
-* High : %(highCount)s
-* Medium : %(mediumCount)s
-* Low : %(lowCount)s
-* Info : %(infoCount)s
-* Unknown : %(unknownCount)s
+* Critical : {critical_count}
+* High : {high_count}
+* Medium : {medium_count}
+* Low : {low_count}
+* Info : {info_count}
+* Unknown : {unknown_count}
 
-**%(companyName)s** recommends that these issues be addressed in timely manner.
+**{company_name}** recommends that these issues be addressed in timely manner.
 
-''') % {
-    'companyName': company_name,
-    'targetName': target_name,
-    'scanDate': scan_date,
-    'subDomainCount': subdomain_count,
-    'vulnerabilityCount': vulnerability_count,
-    'CriticalCount': critical_count,
-    'highCount': high_count,
-    'mediumCount': medium_count,
-    'lowCount': low_count,
-    'infoCount': info_count,
-    'unknownCount': unknown_count
-}
+''')
 
 
 class ExternalToolForm(forms.ModelForm):
@@ -621,7 +602,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "tool_name",
-                "placeholder": gettext("My Awesome Tool")}))
+                "placeholder": gettext_lazy("My Awesome Tool")}))
 
     github_url = forms.CharField(
         required=True,
@@ -637,7 +618,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "license_url",
-                "placeholder": gettext("https://github.com/user/tool/blob/master/LICENSE.md")}))
+                "placeholder": gettext_lazy("https://github.com/user/tool/blob/master/LICENSE.md")}))
 
     logo_url = forms.CharField(
         required=False,
@@ -645,7 +626,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "logo_url",
-                "placeholder": gettext("http://example.com/logo.png")}))
+                "placeholder": gettext_lazy("http://example.com/logo.png")}))
 
     description = forms.CharField(
         required=True,
@@ -653,7 +634,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "tool_description",
-                "placeholder": gettext("Explain what this tool is used for."),
+                "placeholder": gettext_lazy("Explain what this tool is used for."),
                 "rows": 2
             }
         ))
@@ -664,7 +645,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "install_command",
-                "placeholder": gettext("Tool Installation Command")}))
+                "placeholder": gettext_lazy("Tool Installation Command")}))
 
     update_command = forms.CharField(
         required=False,
@@ -672,7 +653,7 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "update_command",
-                "placeholder": gettext("Tool Update Command")}))
+                "placeholder": gettext_lazy("Tool Update Command")}))
 
     version_match_regex = forms.CharField(
         required=False,
@@ -703,8 +684,8 @@ class ExternalToolForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "subdomain_gathering_command",
-                "placeholder": gettext("Subdomain Gathering Command"),
-                "value": gettext("tool_name -d {TARGET} -o {OUTPUT}")
+                "placeholder": gettext_lazy("Subdomain Gathering Command"),
+                "value": gettext_lazy("tool_name -d {TARGET} -o {OUTPUT}")
                 }))
 
     def set_value(self, key):

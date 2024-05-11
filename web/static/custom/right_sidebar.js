@@ -43,7 +43,7 @@ function getScanStatusSidebar(project, reload) {
           <div class="card-body mini-card-body">
           <p class="card-text">
           <span class="badge badge-soft-primary float-end scan_status">
-          Scanning
+          ` + gettext("Scanning") + `
           </span>
           <span class="">
           ` + interpolate("Started %(elapsedTime)s ago.", {elapsedTime: scan_object.elapsed_time}, true) + `
