@@ -2149,7 +2149,6 @@ $(document).ready(function() {
 		var is_subd_grouping = false;
 		var subd_grouping_col = 8;
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
-			{% comment %} FIXME: no language on this one {% endcomment %}
 			"headerCallback": function(e, a, t, n, s) {
 				e.getElementsByTagName("th")[0].innerHTML=`
 				<div class="form-check ms-1 form-check-primary">
@@ -2159,7 +2158,7 @@ $(document).ready(function() {
 			},
 			"destroy": true,
 			"processing": true,
-			"oLanguage": subdomain_oLanguage,
+			"language": subdomain_oLanguage,
 			"fnCreatedRow": function (nRow, aData, iDataIndex) {
 				$(nRow).attr('id', 'subdomain_row_' + aData['id']);
 			},

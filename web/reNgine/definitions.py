@@ -436,10 +436,6 @@ PERM_INITATE_SCANS_SUBSCANS = 'initiate_scans_subscans'
 # 404 page url
 FOUR_OH_FOUR_URL = '/404/'
 
-
-# FIXME: This should not be user-dependent, but probably org dependent (since we store GPTs answers we probably don't want multiple languages)
-# That or we might want to store the GPT answers specifiying the language.
-#
 # GPT Vulnerability Report Generator
 VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
     You are a highly skilled penetration tester who has recently completed a penetration testing.
