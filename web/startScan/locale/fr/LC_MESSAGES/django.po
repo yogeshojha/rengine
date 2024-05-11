@@ -1568,8 +1568,6 @@ msgstr ""
 "Scan démarré pour %(domainCount)d domaines dans l'organisation %(orgName)s"
 
 #: startScan/views.py:828
-#, fuzzy
-#| msgid "All Scan History successfully deleted!"
 msgid "All Scans deleted!"
 msgstr "Tout l'historique des scans supprimé avec succès!"
 

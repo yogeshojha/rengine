@@ -216,7 +216,7 @@
       var count = lines.length;
       add_multiple_targets_btn.innerHTML = interpolate(
         ngettext("Add %(count)s Target", "Add %(count)s Targets", count),
-        [{count: count}, {count: count}],
+        {count: count},
         true
       );
       if (!count) {
@@ -269,7 +269,7 @@
                   "%(countDomains)s domains associated with IP Address %(IP)s",
                   json_data['domains'].length
                 ),
-                [{ countDomains: json_data['domains'].length, IP: ip_address.value }, { countDomains: json_data['domains'].length, IP: ip_address.value }],
+                { countDomains: json_data['domains'].length, IP: ip_address.value },
                 true
               ) + `</b></br>`);
               $('#resolved_domains_div').append(`<b>` + gettext("Please select the domains to import.") + `</b>`);
@@ -297,7 +297,7 @@
                       `Add %(checkedCount)s Targets`,
                       checked_count
                     ),
-                    [{checkedCount: checked_count}, {checkedCount: checked_count}],
+                    {checkedCount: checked_count},
                     true
                   ));
                 }
