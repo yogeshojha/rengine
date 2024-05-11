@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-11 18:34+0000\n"
+"POT-Creation-Date: 2024-05-11 19:48+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -262,6 +262,11 @@ msgstr ""
 "Par défaut, tous les domaines importés à partir du txt n'auront aucune "
 "description. Si vous choisissez d'importer plusieurs domaines avec une "
 "description, l'importation csv est recommandée."
+
+#: targetApp/templates/target/add.html:177
+#: targetApp/templates/target/add.html:195
+msgid "Upload"
+msgstr "Téléverser"
 
 #: targetApp/templates/target/add.html:186
 msgid ""
@@ -828,7 +833,9 @@ msgstr ""
 #: targetApp/views.py:101
 #, python-format
 msgid "%(target)s is not a valid domain, IP, or URL. Skipped."
-msgstr "La cible %(target)s n'est pas un nom de domaine, une IP, ou une URL valide. Ignorée."
+msgstr ""
+"La cible %(target)s n'est pas un nom de domaine, une IP, ou une URL valide. "
+"Ignorée."
 
 #: targetApp/views.py:156
 msgid "Files uploaded are not .txt or .csv files."

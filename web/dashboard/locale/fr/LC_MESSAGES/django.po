@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-11 18:34+0000\n"
+"POT-Creation-Date: 2024-05-11 19:48+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -308,6 +308,10 @@ msgstr "Projet"
 msgid "Project name"
 msgstr "Nom du projet"
 
+#: dashboard/templates/dashboard/onboarding.html:35
+msgid "Default"
+msgstr "Défaut"
+
 #: dashboard/templates/dashboard/onboarding.html:37
 msgid "Additional User"
 msgstr "Utilisateur supplémentaire"
@@ -483,7 +487,7 @@ msgstr "Autres"
 msgid "Your password was successfully changed!"
 msgstr "Votre mot de passe a été changé avec succès !"
 
-#: dashboard/views.py:196
+#: dashboard/views.py:199
 msgid "Your settings were successfully changed!"
 msgstr "Vos paramètres ont été changés avec succès !"
 

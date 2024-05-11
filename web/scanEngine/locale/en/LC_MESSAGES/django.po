@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-11 18:34+0000\n"
+"POT-Creation-Date: 2024-05-11 19:48+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -88,7 +88,26 @@ msgid ""
 "- %(vulnerabilityReferences)s\n"
 "\n"
 "Thank you"
-msgstr "Hi Team, while testing, a %(vulnerabilitySeverity)s severity vulnerability has been discovered in %(vulnerableUrl)s and below is the findings.\n\n# Vulnerability\n%(vulnerabilityName)s\n\n## Issue Description\n%(vulnerabilityDescription)s\n\n## Vulnerable URL\n- %(vulnerableUrl)s\n\n## Extracted Results/Findings\n%(vulnerabilityExtractedResults)s\n\n## References\n- %(vulnerabilityReferences)s\n\nThank you"
+msgstr ""
+"Hi Team, while testing, a %(vulnerabilitySeverity)s severity vulnerability "
+"has been discovered in %(vulnerableUrl)s and below is the findings.\n"
+"\n"
+"# Vulnerability\n"
+"%(vulnerabilityName)s\n"
+"\n"
+"## Issue Description\n"
+"%(vulnerabilityDescription)s\n"
+"\n"
+"## Vulnerable URL\n"
+"- %(vulnerableUrl)s\n"
+"\n"
+"## Extracted Results/Findings\n"
+"%(vulnerabilityExtractedResults)s\n"
+"\n"
+"## References\n"
+"- %(vulnerabilityReferences)s\n"
+"\n"
+"Thank you"
 
 #: scanEngine/forms.py:472
 #: scanEngine/templates/scanEngine/settings/report.html:69
@@ -737,6 +756,7 @@ msgstr ""
 #: scanEngine/templates/scanEngine/settings/add_tool.html:6
 #: scanEngine/templates/scanEngine/settings/add_tool.html:13
 #: scanEngine/templates/scanEngine/settings/add_tool.html:16
+#: scanEngine/templates/scanEngine/settings/add_tool.html:30
 msgid "Add Tool"
 msgstr "Add Tool"
 
@@ -1345,6 +1365,10 @@ msgstr "Total number of Informational Vulnerabilities identified."
 #: scanEngine/templates/scanEngine/settings/report.html:125
 msgid "Total number of Vulnerabilities with Unknown Severity identified."
 msgstr "Total number of Vulnerabilities with Unknown Severity identified."
+
+#: scanEngine/templates/scanEngine/settings/report.html:130
+msgid "Save Report Settings"
+msgstr "Save Report Settings"
 
 #: scanEngine/templates/scanEngine/settings/tool.html:7
 #: scanEngine/templates/scanEngine/settings/tool.html:19

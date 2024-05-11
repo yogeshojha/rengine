@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-07 11:44+0000\n"
+"POT-Creation-Date: 2024-05-11 19:48+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -35,8 +35,9 @@ msgstr "Delete"
 
 #: static/custom/custom.js:86 static/custom/custom.js:264
 #: static/custom/custom.js:297 static/custom/custom.js:416
-#: static/custom/custom.js:921 static/custom/custom.js:1839
-#: static/custom/custom.js:1863 static/custom/todo.js:32
+#: static/custom/custom.js:836 static/custom/custom.js:921
+#: static/custom/custom.js:1839 static/custom/custom.js:1863
+#: static/custom/todo.js:32
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -180,7 +181,7 @@ msgstr ""
 
 #: static/custom/custom.js:563 static/custom/custom.js:663
 #: static/custom/custom.js:1121 static/custom/custom.js:1251
-#: static/custom/custom.js:1305
+#: static/custom/custom.js:1305 static/custom/subdomain_datatable.js:38
 msgid "Showing page _PAGE_ of _PAGES_"
 msgstr "Showing page _PAGE_ of _PAGES_"
 
@@ -192,6 +193,7 @@ msgstr "Search..."
 
 #: static/custom/custom.js:566 static/custom/custom.js:666
 #: static/custom/custom.js:1254 static/custom/custom.js:1308
+#: static/custom/subdomain_datatable.js:41
 msgid "Results :  _MENU_"
 msgstr "Results :  _MENU_"
 
@@ -218,6 +220,10 @@ msgstr "Oops! Unable to delete the scan history!"
 #: static/custom/custom.js:831
 msgid "Are you sure you want to stop this scan?"
 msgstr "Are you sure you want to stop this scan?"
+
+#: static/custom/custom.js:835
+msgid "Stop"
+msgstr "Stop"
 
 #: static/custom/custom.js:854
 msgid "Scan Successfully Aborted."
@@ -942,6 +948,10 @@ msgstr "Endpoint Gathering"
 #: static/custom/right_sidebar.js:262
 msgid "OSINT"
 msgstr "OSINT"
+
+#: static/custom/subdomain_datatable.js:42
+msgid "Fetching Subdomains... Please wait..."
+msgstr "Fetching Subdomains... Please wait..."
 
 #: static/custom/todo.js:27
 msgid "Are you sure you want to delete this Recon Todo?"

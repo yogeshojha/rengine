@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-11 18:34+0000\n"
+"POT-Creation-Date: 2024-05-11 19:48+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -258,6 +258,11 @@ msgstr ""
 "By default all domains imported from txt will have no description. If you "
 "choose to import multiple domains with description, csv import is "
 "recommended."
+
+#: targetApp/templates/target/add.html:177
+#: targetApp/templates/target/add.html:195
+msgid "Upload"
+msgstr "Upload"
 
 #: targetApp/templates/target/add.html:186
 msgid ""
