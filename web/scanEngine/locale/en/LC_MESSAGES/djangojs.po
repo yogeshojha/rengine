@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-11 19:48+0000\n"
+"POT-Creation-Date: 2024-05-11 21:49+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,26 +18,26 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: scanEngine/static/scanEngine/js/custom_scan_engine.js:27
+#: scanEngine/static/scanEngine/js/custom_scan_engine.js:5
 msgid "Are you sure you want to delete this scan engine?"
 msgstr "Are you sure you want to delete this scan engine?"
 
-#: scanEngine/static/scanEngine/js/custom_scan_engine.js:28
+#: scanEngine/static/scanEngine/js/custom_scan_engine.js:6
 msgid "You won't be able to revert this!"
 msgstr "You won't be able to revert this!"
 
-#: scanEngine/static/scanEngine/js/custom_scan_engine.js:31
+#: scanEngine/static/scanEngine/js/custom_scan_engine.js:9
 msgid "Delete"
 msgstr "Delete"
 
-#: scanEngine/static/scanEngine/js/custom_scan_engine.js:32
+#: scanEngine/static/scanEngine/js/custom_scan_engine.js:10
 #: scanEngine/static/scanEngine/js/tool_arsenal.js:58
 #: scanEngine/static/scanEngine/js/tool_arsenal.js:103
 #: scanEngine/static/scanEngine/js/tool_arsenal.js:148
 msgid "Cancel"
 msgstr "Cancel"
 
-#: scanEngine/static/scanEngine/js/custom_scan_engine.js:53
+#: scanEngine/static/scanEngine/js/custom_scan_engine.js:31
 msgid "Oops! Unable to delete"
 msgstr "Oops! Unable to delete"
 
@@ -187,3 +187,9 @@ msgstr "Filtered default tools"
 #: scanEngine/static/scanEngine/js/tool_arsenal.js:291
 msgid "Displaying all tools"
 msgstr "Displaying all tools"
+
+msgid "No wordlist installed"
+msgstr "No wordlist installed"
+
+msgid "No engine installed"
+msgstr "No engine installed"

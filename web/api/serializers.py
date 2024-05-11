@@ -44,18 +44,18 @@ class DomainSerializer(serializers.ModelSerializer):
 		return obj.get_recent_scan_id()
 
 	def get_insert_date(self, obj):
-		return naturalday(obj.insert_date).title()
+		return naturalday(obj.insert_date)
 
 	def get_insert_date_humanized(self, obj):
-		return naturaltime(obj.insert_date).title()
+		return naturaltime(obj.insert_date)
 
 	def get_start_scan_date(self, obj):
 		if obj.start_scan_date:
-			return naturalday(obj.start_scan_date).title()
+			return naturalday(obj.start_scan_date)
 
 	def get_start_scan_date_humanized(self, obj):
 		if obj.start_scan_date:
-			return naturaltime(obj.start_scan_date).title()
+			return naturaltime(obj.start_scan_date)
 
 
 class SubScanResultSerializer(serializers.ModelSerializer):

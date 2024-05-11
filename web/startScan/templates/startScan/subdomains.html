@@ -48,7 +48,6 @@ $(document).ready(function() {
 	var url = '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables';
 	{% endif %}
 	var subdomain_datatables = $('#subdomain_scan_results').DataTable({
-		{% comment %} FIXME: No language {% endcomment %}
 		"headerCallback": function(e, a, t, n, s) {
 			e.getElementsByTagName("th")[0].innerHTML='<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
 		},

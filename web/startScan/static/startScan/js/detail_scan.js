@@ -75,8 +75,6 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 				"previous": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
 				"next": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
 			},
-			"info": gettext("Showing page _PAGE_ of _PAGES_"),
-			"lengthMenu": gettext("Results :  _MENU_"),
 			"processing": gettext("Processing... Please wait..."),
 			"zeroRecords": gettext("No endpoint detected"),
 			"infoEmpty": gettext("No endpoint detected")
@@ -286,14 +284,6 @@ function get_subdomain_changes(scan_history_id) {
 			$("#subdomain-changes-loader").remove();
 		},
 		"language": {
-			"paginate": {
-				"previous": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
-				"next": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-			},
-			"info": gettext("Showing page _PAGE_ of _PAGES_"),
-			"search": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"searchPlaceholder": gettext("Search..."),
-			"lengthMenu": gettext("Results :  _MENU_"),
 			"zeroRecords": gettext("No subdomain change"),
 			"infoEmpty": gettext("No subdomain change")
 		},
@@ -404,14 +394,6 @@ function get_endpoint_changes(scan_history_id) {
 			$("#endpoint-changes-loader").remove();
 		},
 		"language": {
-			"paginate": {
-				"previous": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
-				"next": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-			},
-			"info": gettext("Showing page _PAGE_ of _PAGES_"),
-			"search": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"searchPlaceholder": gettext("Search..."),
-			"lengthMenu": gettext("Results :  _MENU_"),
 			"zeroRecords": gettext("No endpoint change"),
 			"infoEmpty": gettext("No endpoint change")
 		},

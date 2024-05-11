@@ -1,3 +1,18 @@
+$(function() {
+	Object.assign(DataTable.defaults, {
+		language: {
+			paginate: {
+				"previous": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
+				"next": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
+			},
+			info: gettext("Showing page _PAGE_ of _PAGES_"),
+			"search": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			searchPlaceholder: gettext("Search..."),
+			lengthMenu: gettext("Results :  _MENU_"),
+		},
+	}); 
+});
+
 function getCurrentProjectSlug(){
 	return document.querySelector('input[name="current_project"]').value;
 }
@@ -556,14 +571,6 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 			}
 		},
 		"language": {
-			"paginate": {
-				"previous": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
-				"next": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-			},
-			"info": gettext("Showing page _PAGE_ of _PAGES_"),
-			"search": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"searchPlaceholder": gettext("Search..."),
-			"lengthMenu": gettext("Results :  _MENU_"),
 			"zeroRecords": gettext("No interesting subdomain"),
 			"infoEmpty": gettext("No interesting subdomain"),
 		},
@@ -658,14 +665,6 @@ function get_interesting_endpoints(project, target_id, scan_history_id) {
 			}
 		},
 		"language": {
-			"paginate": {
-				"previous": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
-				"next": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-			},
-			"info": gettext("Showing page _PAGE_ of _PAGES_"),
-			"search": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"searchPlaceholder": gettext("Search..."),
-			"lengthMenu": gettext("Results :  _MENU_"),
 			"zeroRecords": gettext("No interesting endpoint"),
 			"infoEmpty": gettext("No interesting endpoint"),
 		},
@@ -1118,14 +1117,6 @@ function render_endpoint_in_xlmodal(endpoint_count, subdomain_name, result) {
 	}
 	$("#endpoint-modal-datatable").DataTable({
 		"language": {
-			"paginate": {
-				"previous": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
-				"next": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-			},
-			"info": gettext("Showing page _PAGE_ of _PAGES_"),
-			"search": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"searchPlaceholder": gettext("Search..."),
-			"lengthMenu": "Results :  _MENU_",
 			"zeroRecords": gettext("No endpoint"),
 			"infoEmpty": gettext("No endpoint"),
 		},
@@ -1250,14 +1241,6 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 	}
 	$("#vulnerability-modal-datatable").DataTable({
 		"language": {
-			"paginate": {
-				"previous": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
-				"next": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-			},
-			"info": gettext("Showing page _PAGE_ of _PAGES_"),
-			"search": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"searchPlaceholder": gettext("Search..."),
-			"lengthMenu": gettext("Results :  _MENU_"),
 			"zeroRecords": gettext("No vulnerability"),
 			"infoEmpty": gettext("No vulnerability")
 		},
@@ -1306,14 +1289,6 @@ function render_directories_in_xl_modal(directory_count, subdomain_name, result)
 	var interesting_keywords_array = [];
 	var dir_modal_table = $("#directory-modal-datatable").DataTable({
 		"language": {
-			"paginate": {
-				"previous": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
-				"next": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-			},
-			"info": gettext("Showing page _PAGE_ of _PAGES_"),
-			"search": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"searchPlaceholder": gettext("Search..."),
-			"lengthMenu": gettext("Results :  _MENU_"),
 			"zeroRecords": gettext("No directory"),
 			"infoEmpty": gettext("No directory")
 		},

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-11 19:48+0000\n"
+"POT-Creation-Date: 2024-05-11 21:49+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,34 +22,27 @@ msgstr ""
 msgid "CDN IP Address"
 msgstr "Adresse IP du CDN"
 
-#: startScan/static/startScan/js/detail_scan.js:75
-#: startScan/static/startScan/js/detail_scan.js:285
-#: startScan/static/startScan/js/detail_scan.js:398
-msgid "Showing page _PAGE_ of _PAGES_"
-msgstr "Affichage de la page _PAGE_ sur _PAGES_"
-
-#: startScan/static/startScan/js/detail_scan.js:76
-#: startScan/static/startScan/js/detail_scan.js:288
-#: startScan/static/startScan/js/detail_scan.js:401
-msgid "Results :  _MENU_"
-msgstr "Résultats :  _MENU_"
-
-#: startScan/static/startScan/js/detail_scan.js:77
+#: startScan/static/startScan/js/detail_scan.js:78
 msgid "Processing... Please wait..."
 msgstr "Traitement en cours... Veuillez patienter..."
 
-#: startScan/static/startScan/js/detail_scan.js:116
+#: startScan/static/startScan/js/detail_scan.js:79
+#: startScan/static/startScan/js/detail_scan.js:80
+msgid "No endpoint detected"
+msgstr "Aucun point de terminaison détecté"
+
+#: startScan/static/startScan/js/detail_scan.js:119
 msgid "Web Server"
 msgstr "Serveur Web"
 
-#: startScan/static/startScan/js/detail_scan.js:123
+#: startScan/static/startScan/js/detail_scan.js:126
 msgid "Copy Url!"
 msgstr "Copier l'URL !"
 
 #: startScan/static/startScan/js/detail_scan.js:287
-#: startScan/static/startScan/js/detail_scan.js:400
-msgid "Search..."
-msgstr "Rechercher..."
+#: startScan/static/startScan/js/detail_scan.js:288
+msgid "No subdomain change"
+msgstr "Aucune modification de sous-domaine"
 
 #: startScan/static/startScan/js/detail_scan.js:325
 msgid "CDN"
@@ -64,219 +57,224 @@ msgid "CNAME"
 msgstr "CNAME"
 
 #: startScan/static/startScan/js/detail_scan.js:373
-#: startScan/static/startScan/js/detail_scan.js:448
+#: startScan/static/startScan/js/detail_scan.js:445
 msgid "Added"
 msgstr "Ajouté"
 
 #: startScan/static/startScan/js/detail_scan.js:375
-#: startScan/static/startScan/js/detail_scan.js:450
+#: startScan/static/startScan/js/detail_scan.js:447
 msgid "Removed"
 msgstr "Supprimé"
 
-#: startScan/static/startScan/js/detail_scan.js:470
+#: startScan/static/startScan/js/detail_scan.js:397
+#: startScan/static/startScan/js/detail_scan.js:398
+msgid "No endpoint change"
+msgstr "Aucune modification de point de terminaison"
+
+#: startScan/static/startScan/js/detail_scan.js:467
 msgid "No Users discovered."
 msgstr "Aucun utilisateur découvert."
 
-#: startScan/static/startScan/js/detail_scan.js:718
+#: startScan/static/startScan/js/detail_scan.js:715
 msgid "Subdomain"
 msgstr "Sous-domaine"
 
-#: startScan/static/startScan/js/detail_scan.js:869
+#: startScan/static/startScan/js/detail_scan.js:866
 msgid "Informational"
 msgstr "Informationnelle"
 
-#: startScan/static/startScan/js/detail_scan.js:872
+#: startScan/static/startScan/js/detail_scan.js:869
 msgid "Low"
 msgstr "Faible"
 
-#: startScan/static/startScan/js/detail_scan.js:875
+#: startScan/static/startScan/js/detail_scan.js:872
 msgid "Medium"
 msgstr "Modérée"
 
-#: startScan/static/startScan/js/detail_scan.js:878
+#: startScan/static/startScan/js/detail_scan.js:875
 msgid "High"
 msgstr "Élevée"
 
-#: startScan/static/startScan/js/detail_scan.js:881
+#: startScan/static/startScan/js/detail_scan.js:878
 msgid "Critical"
 msgstr "Critique"
 
-#: startScan/static/startScan/js/detail_scan.js:1096
+#: startScan/static/startScan/js/detail_scan.js:1093
 msgid "Todo Added."
 msgstr "Tâche ajoutée"
 
-#: startScan/static/startScan/js/detail_scan.js:1102
-#: startScan/static/startScan/js/detail_scan.js:1157
-#: startScan/static/startScan/js/detail_scan.js:1253
-#: startScan/static/startScan/js/detail_scan.js:1259
+#: startScan/static/startScan/js/detail_scan.js:1099
+#: startScan/static/startScan/js/detail_scan.js:1154
+#: startScan/static/startScan/js/detail_scan.js:1250
+#: startScan/static/startScan/js/detail_scan.js:1256
 msgid "Okay"
 msgstr "OK"
 
-#: startScan/static/startScan/js/detail_scan.js:1156
+#: startScan/static/startScan/js/detail_scan.js:1153
 msgid "Error!"
 msgstr "Erreur !"
 
-#: startScan/static/startScan/js/detail_scan.js:1168
+#: startScan/static/startScan/js/detail_scan.js:1165
 msgid "Querying Subdomains..."
 msgstr "Requête des sous-domaines..."
 
-#: startScan/static/startScan/js/detail_scan.js:1202
-#: startScan/static/startScan/js/detail_scan.js:1249
-#: startScan/static/startScan/js/detail_scan.js:1346
-#: startScan/static/startScan/js/detail_scan.js:1573
+#: startScan/static/startScan/js/detail_scan.js:1199
+#: startScan/static/startScan/js/detail_scan.js:1246
+#: startScan/static/startScan/js/detail_scan.js:1343
+#: startScan/static/startScan/js/detail_scan.js:1570
 msgid "Download Subdomains as txt"
 msgstr "Télécharger les sous-domaines sous forme de txt"
 
-#: startScan/static/startScan/js/detail_scan.js:1203
-#: startScan/static/startScan/js/detail_scan.js:1250
-#: startScan/static/startScan/js/detail_scan.js:1347
-#: startScan/static/startScan/js/detail_scan.js:1404
-#: startScan/static/startScan/js/detail_scan.js:1574
+#: startScan/static/startScan/js/detail_scan.js:1200
+#: startScan/static/startScan/js/detail_scan.js:1247
+#: startScan/static/startScan/js/detail_scan.js:1344
+#: startScan/static/startScan/js/detail_scan.js:1401
+#: startScan/static/startScan/js/detail_scan.js:1571
 msgid "Copy Subdomains!"
 msgstr "Copier les sous-domaines!"
 
-#: startScan/static/startScan/js/detail_scan.js:1203
-#: startScan/static/startScan/js/detail_scan.js:1250
-#: startScan/static/startScan/js/detail_scan.js:1347
-#: startScan/static/startScan/js/detail_scan.js:1574
+#: startScan/static/startScan/js/detail_scan.js:1200
+#: startScan/static/startScan/js/detail_scan.js:1247
+#: startScan/static/startScan/js/detail_scan.js:1344
+#: startScan/static/startScan/js/detail_scan.js:1571
 msgid "Copy Subdomains"
 msgstr "Copier les sous-domaines"
 
-#: startScan/static/startScan/js/detail_scan.js:1205
-#: startScan/static/startScan/js/detail_scan.js:1210
+#: startScan/static/startScan/js/detail_scan.js:1202
+#: startScan/static/startScan/js/detail_scan.js:1207
 msgid "No Subdomains"
 msgstr "Aucun sous-domaine"
 
-#: startScan/static/startScan/js/detail_scan.js:1205
-#: startScan/static/startScan/js/detail_scan.js:1210
+#: startScan/static/startScan/js/detail_scan.js:1202
+#: startScan/static/startScan/js/detail_scan.js:1207
 msgid "Could not find any subdomains."
 msgstr "Impossible de trouver de sous-domaine."
 
-#: startScan/static/startScan/js/detail_scan.js:1218
-#: startScan/static/startScan/js/detail_scan.js:1314
+#: startScan/static/startScan/js/detail_scan.js:1215
+#: startScan/static/startScan/js/detail_scan.js:1311
 msgid "Querying Interesting Subdomains..."
 msgstr "Requête des sous-domaines intéressants..."
 
-#: startScan/static/startScan/js/detail_scan.js:1252
-#: startScan/static/startScan/js/detail_scan.js:1258
+#: startScan/static/startScan/js/detail_scan.js:1249
+#: startScan/static/startScan/js/detail_scan.js:1255
 msgid "No Interesting Subdomains"
 msgstr "Aucun sous-domaine intéressant"
 
-#: startScan/static/startScan/js/detail_scan.js:1252
-#: startScan/static/startScan/js/detail_scan.js:1258
+#: startScan/static/startScan/js/detail_scan.js:1249
+#: startScan/static/startScan/js/detail_scan.js:1255
 msgid "Could not find any interesting subdomains."
 msgstr "Impossible de trouver de sous-domaine intéressant."
 
-#: startScan/static/startScan/js/detail_scan.js:1266
+#: startScan/static/startScan/js/detail_scan.js:1263
 msgid "Querying Interesting Endpoints..."
 msgstr "Requête des points de terminaison intéressants..."
 
-#: startScan/static/startScan/js/detail_scan.js:1296
-#: startScan/static/startScan/js/detail_scan.js:1400
-#: startScan/static/startScan/js/detail_scan.js:1402
+#: startScan/static/startScan/js/detail_scan.js:1293
+#: startScan/static/startScan/js/detail_scan.js:1397
+#: startScan/static/startScan/js/detail_scan.js:1399
 msgid "Download Endpoints as txt"
 msgstr "Télécharger les points de terminaison en txt"
 
-#: startScan/static/startScan/js/detail_scan.js:1297
+#: startScan/static/startScan/js/detail_scan.js:1294
 msgid "Copy Endpoints!"
 msgstr "Copier les points de terminaison !"
 
-#: startScan/static/startScan/js/detail_scan.js:1297
-#: startScan/static/startScan/js/detail_scan.js:1404
+#: startScan/static/startScan/js/detail_scan.js:1294
+#: startScan/static/startScan/js/detail_scan.js:1401
 msgid "Copy Endpoints"
 msgstr "Copier les points de terminaison"
 
-#: startScan/static/startScan/js/detail_scan.js:1299
-#: startScan/static/startScan/js/detail_scan.js:1305
+#: startScan/static/startScan/js/detail_scan.js:1296
+#: startScan/static/startScan/js/detail_scan.js:1302
 msgid "No Interesting Endpoints"
 msgstr "Aucun point de terminaison intéressant"
 
-#: startScan/static/startScan/js/detail_scan.js:1299
-#: startScan/static/startScan/js/detail_scan.js:1305
+#: startScan/static/startScan/js/detail_scan.js:1296
+#: startScan/static/startScan/js/detail_scan.js:1302
 msgid "Could not find any interesting Endpoints."
 msgstr "Impossible de trouver de point de terminaison intéressant."
 
-#: startScan/static/startScan/js/detail_scan.js:1349
-#: startScan/static/startScan/js/detail_scan.js:1354
+#: startScan/static/startScan/js/detail_scan.js:1346
+#: startScan/static/startScan/js/detail_scan.js:1351
 msgid "No Important Endpoints"
 msgstr "Aucun point de terminaison"
 
-#: startScan/static/startScan/js/detail_scan.js:1349
-#: startScan/static/startScan/js/detail_scan.js:1354
+#: startScan/static/startScan/js/detail_scan.js:1346
+#: startScan/static/startScan/js/detail_scan.js:1351
 msgid "No subdomains has been marked as important."
 msgstr "Aucun sous-domaine n'a été marqué comme important."
 
-#: startScan/static/startScan/js/detail_scan.js:1362
+#: startScan/static/startScan/js/detail_scan.js:1359
 msgid "Querying Endpoints..."
 msgstr "Requête des points de terminaison..."
 
-#: startScan/static/startScan/js/detail_scan.js:1365
+#: startScan/static/startScan/js/detail_scan.js:1362
 msgid "Loading..."
 msgstr "Chargement..."
 
-#: startScan/static/startScan/js/detail_scan.js:1421
+#: startScan/static/startScan/js/detail_scan.js:1418
 msgid "Oops!"
 msgstr "Oups !"
 
-#: startScan/static/startScan/js/detail_scan.js:1422
+#: startScan/static/startScan/js/detail_scan.js:1419
 msgid "No subtasks selected. Please choose at least one subtask !"
 msgstr ""
 "Aucune sous-tâche sélectionnée. Veuillez choisir au moins une sous-tâche !"
 
-#: startScan/static/startScan/js/detail_scan.js:1433
+#: startScan/static/startScan/js/detail_scan.js:1430
 msgid "Initiating subtask..."
 msgstr "Initialisation de la sous-tâche..."
 
-#: startScan/static/startScan/js/detail_scan.js:1451
+#: startScan/static/startScan/js/detail_scan.js:1448
 msgid "Subtask initiated successfully!"
 msgstr "Sous-tâche initiée avec succès !"
 
-#: startScan/static/startScan/js/detail_scan.js:1457
+#: startScan/static/startScan/js/detail_scan.js:1454
 msgid "Could not initiate subtask!"
 msgstr "Impossible d'initier la sous-tâche !"
 
-#: startScan/static/startScan/js/detail_scan.js:1531
-#: startScan/static/startScan/js/detail_scan.js:1590
+#: startScan/static/startScan/js/detail_scan.js:1528
+#: startScan/static/startScan/js/detail_scan.js:1587
 msgid "Oops! No Subdomains has been selected!"
 msgstr "Oups ! Aucun sous-domaine n'a été sélectionné !"
 
-#: startScan/static/startScan/js/detail_scan.js:1537
+#: startScan/static/startScan/js/detail_scan.js:1534
 msgid "Querying Selected Subdomains..."
 msgstr "Requête des sous-domaines sélectionnés..."
 
-#: startScan/static/startScan/js/detail_scan.js:1577
+#: startScan/static/startScan/js/detail_scan.js:1574
 msgid "Oops! Could not download selected subdomains."
 msgstr "Oups ! Impossible de télécharger les sous-domaines sélectionnés."
 
-#: startScan/static/startScan/js/detail_scan.js:1599
+#: startScan/static/startScan/js/detail_scan.js:1596
 msgid ""
 "Do you really want to delete these subdomains? This action cannot be undone."
 msgstr ""
 "Voulez-vous vraiment supprimer ces sous-domaines? Cette action ne peut pas "
 "être annulée."
 
-#: startScan/static/startScan/js/detail_scan.js:1601
+#: startScan/static/startScan/js/detail_scan.js:1598
 msgid "Delete"
 msgstr "Supprimer"
 
-#: startScan/static/startScan/js/detail_scan.js:1602
-#: startScan/static/startScan/js/detail_scan.js:1677
+#: startScan/static/startScan/js/detail_scan.js:1599
+#: startScan/static/startScan/js/detail_scan.js:1674
 msgid "Cancel"
 msgstr "Annuler"
 
-#: startScan/static/startScan/js/detail_scan.js:1606
+#: startScan/static/startScan/js/detail_scan.js:1603
 msgid "Deleting Subdomain..."
 msgstr "Suppression du sous-domaine..."
 
-#: startScan/static/startScan/js/detail_scan.js:1638
+#: startScan/static/startScan/js/detail_scan.js:1635
 msgid "Subdomain successfully deleted!"
 msgstr "Sous-domaine supprimé avec succès!"
 
-#: startScan/static/startScan/js/detail_scan.js:1644
+#: startScan/static/startScan/js/detail_scan.js:1641
 msgid "Could not delete Subdomain!"
 msgstr "Impossible de supprimer le sous-domaine!"
 
-#: startScan/static/startScan/js/detail_scan.js:1665
+#: startScan/static/startScan/js/detail_scan.js:1662
 msgid ""
 "reNgine has earlier identified that this subdomain did not return any HTTP "
 "status and likely the subdomain is not alive. reNgine may not be able to "
@@ -286,8 +284,8 @@ msgstr ""
 "et probablement le sous-domaine n'est pas en ligne. reNgine ne pourra pas "
 "détecter de CMS, voulez-vous toujours continuer?"
 
+#: startScan/static/startScan/js/detail_scan.js:1670
 #: startScan/static/startScan/js/detail_scan.js:1673
-#: startScan/static/startScan/js/detail_scan.js:1676
 msgid "Detect CMS"
 msgstr "Détecter CMS"
 
@@ -390,6 +388,15 @@ msgstr ""
 "Séléctinnner la vulnérabilité si <span class=\"badge badge-soft-warning\">un "
 "des arguments</span> est vrai"
 
+msgid "Showing page _PAGE_ of _PAGES_"
+msgstr "Affichage de la page _PAGE_ sur _PAGES_"
+
+msgid "Results :  _MENU_"
+msgstr "Résultats :  _MENU_"
+
+msgid "Search..."
+msgstr "Rechercher..."
+
 # Embedded JS
 msgid "Hackerone Configuration"
 msgstr "Configuration Hackerone"
@@ -412,3 +419,21 @@ msgstr ""
 
 msgid "Unable to get your public IP"
 msgstr "Impossible de récupérer votre adresse IP publique"
+
+msgid "No vulnerability detected"
+msgstr "Aucune vulnérabilité détectée"
+
+msgid "No subscan yet"
+msgstr "Aucun sous-scan pour l'instant"
+
+msgid "No scan scheduled yet"
+msgstr "Aucun scan planifié pour l'instant"
+
+msgid "No scan yet"
+msgstr "Aucun scan pour l'instant"
+
+msgid "No directory detected"
+msgstr "Aucun dossier détecté"
+
+msgid "No S3 Bucket detected"
+msgstr "Aucun Bucket S3 détecté"
