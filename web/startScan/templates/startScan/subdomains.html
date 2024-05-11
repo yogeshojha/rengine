@@ -134,7 +134,7 @@ $(document).ready(function() {
 							waf_badge = `<div><span class="pl-2 pr-2 my-1 badge badge-soft-danger bs-tooltip" title="` + gettext("WAF Detected by wafw00f!") + `"><i class="fe-cloud-lightning mx-1"></i>{% translate "WAF Detected" %}</span>`;
 							for (var waf in row['waf']) {
 								var waf_object = row['waf'][waf];
-								waf_badge += `<span class="mx-1 my-1 badge badge-soft-danger" bs-tooltip" title="` + gettext("WAF Manufacturer") `": ${waf_object.manufacturer}">${waf_object.name}</span>`;
+								waf_badge += `<span class="mx-1 my-1 badge badge-soft-danger" bs-tooltip" title="` + gettext("WAF Manufacturer") + `": ${waf_object.manufacturer}">${waf_object.name}</span>`;
 							}
 							waf_badge += `</div>`;
 						}

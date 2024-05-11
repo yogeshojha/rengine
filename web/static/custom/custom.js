@@ -999,7 +999,7 @@ function show_subscan_results(subscan_id) {
 		} else {
 			scan_status = gettext('Unknown');
 		}
-		$('#xl-modal-content').append(`<div>` + gettext("Scan Status:") +`<span class="badge bg-${badge_color}">${scan_status}</span></div>`);
+		$('#xl-modal-content').append(`<div>` + gettext("Scan Status:") + `<span class="badge bg-${badge_color}">${scan_status}</span></div>`);
 		$('#xl-modal-content').append(`<div class="mt-1">` + gettext("Engine Used:") + `<span class="badge bg-primary">${htmlEncode(response['subscan']['engine'])}</span></div>`);
 		if (response['result'].length > 0) {
 			if (response['subscan']['task'] == 'port_scan') {
@@ -1073,7 +1073,7 @@ function render_endpoint_in_xlmodal(endpoint_count, subdomain_name, result) {
 		<tr>
 		<th>` + gettext("HTTP URL") + `</th>
 		<th>` + gettext("Status") + `</th>
-		<th>` + gettext("Page Title") +`</th>
+		<th>` + gettext("Page Title") + `</th>
 		<th>` + gettext("Tags") + `</th>
 		<th>` + gettext("Content Type") + `</th>
 		<th>` + gettext("Content Length") + `</th>
@@ -1365,7 +1365,7 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 					color = 'danger';
 					bg_color = 'bg-soft-danger';
 					status_badge = '<span class="float-end badge bg-danger">' + gettext("Failed") + '</span>';
-					error_message = `</br><span class="text-danger">` + gettext("Error:") +` ${result_obj.error_message}`;
+					error_message = `</br><span class="text-danger">` + gettext("Error:") + ` ${result_obj.error_message}` + `</span>`;
 				} else if (result_obj.status == 3) {
 					color = 'danger';
 					bg_color = 'bg-soft-danger';

@@ -1087,7 +1087,7 @@ $(document).ready(function(){
 							{
 								Object.entries(data).forEach(([key, value]) => {
 									if (value['is_cdn']) {
-										ip_badge += `<span class='m-1 badge badge-soft-warning badge-link' title="` + gettext("CDN IP Address")" onclick="get_ip_details('${value.address}', {{target.id}})">${value.address}</span>`
+										ip_badge += `<span class='m-1 badge badge-soft-warning badge-link' title="` + gettext("CDN IP Address") + `" onclick="get_ip_details('${value.address}', {{target.id}})">${value.address}</span>`
 									}
 									else{
 										ip_badge += `<span class='m-1 badge badge-soft-primary badge-link' onclick="get_ip_details('${value.address}', {{target.id}})">${value.address}</span>`

@@ -124,7 +124,7 @@ $(document).ready(function() {
 });
 
 function get_target_modal(organization_id){
-  $('.modal-title').html(`<b>` + gettext("Loading targets...")`</b>`);
+  $('.modal-title').html(`<b>` + gettext("Loading targets...") + `</b>`);
   $('#modal_dialog').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
