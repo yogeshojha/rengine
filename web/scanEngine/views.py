@@ -1,4 +1,5 @@
 import glob
+import json
 import os
 import re
 import shutil
@@ -457,6 +458,26 @@ def tool_arsenal_section(request, slug):
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def api_vault_delete(request, slug):
+    response = {}
+    response["status"] = "error"
+    if request.method == "POST":
+        handler = {"key_openai": OpenAiAPIKey, "key_netlas": NetlasAPIKey}
+        response["deleted"] = []
+        j = json.loads(request.body.decode("utf-8"))
+        for key in j["keys"]:
+            try:
+                handler[key].objects.first().delete()
+                response["deleted"].append(key)
+            except KeyError:
+                pass
+        response["status"] = "OK"
+    else:
+        response["message"] = "Method not allowed"
+
+    return http.JsonResponse(response)
+
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def api_vault(request, slug):
     context = {}
     if request.method == "POST":
@@ -464,7 +485,7 @@ def api_vault(request, slug):
         key_netlas = request.POST.get('key_netlas')
 
 
-        if key_openai:
+        if key_openai and len(key_openai) > 0:
             openai_api_key = OpenAiAPIKey.objects.first()
             if openai_api_key:
                 openai_api_key.key = key_openai
@@ -472,7 +493,7 @@ def api_vault(request, slug):
             else:
                 OpenAiAPIKey.objects.create(key=key_openai)
 
-        if key_netlas:
+        if key_netlas and len(key_netlas) > 0:
             netlas_api_key = NetlasAPIKey.objects.first()
             if netlas_api_key:
                 netlas_api_key.key = key_netlas
@@ -480,10 +501,24 @@ def api_vault(request, slug):
             else:
                 NetlasAPIKey.objects.create(key=key_netlas)
 
-    openai_key = OpenAiAPIKey.objects.first()
-    netlas_key = NetlasAPIKey.objects.first()
-    context['openai_key'] = openai_key
-    context['netlas_key'] = netlas_key
+# FIXME: This should be better handled via forms, formviews & formsets
+    context["apiKeys"] = [
+        {
+            "recommended": True,
+            "optional": True,
+            "experimental": True,
+            "name": "OpenAI",
+            "text": "OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using ChatGPT.",
+            "hasKey": True if OpenAiAPIKey.objects.first() else False
+        },
+        {
+            "name": "Netlas",
+            "text": "Netlas keys will be used to get whois information and other OSINT data.",
+            "optional": True,
+            "hasKey": True if NetlasAPIKey.objects.first() else False
+        }
+    ]
+    context["slug"] = slug
     return render(request, 'scanEngine/settings/api.html', context)
 
 
