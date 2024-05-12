@@ -590,6 +590,23 @@ def send_slack_message(message):
 	hook_url = notif.slack_hook_url
 	requests.post(url=hook_url, data=json.dumps(message), headers=headers)
 
+def send_lark_message(message):
+	"""Send lark message.
+
+	Args:
+		message (str): Message.
+	"""
+	headers = {'content-type': 'application/json'}
+	message = {"msg_type":"interactive","card":{"elements":[{"tag":"div","text":{"content":message,"tag":"lark_md"}}]}}
+	notif = Notification.objects.first()
+	do_send = (
+		notif and
+		notif.send_to_lark and
+		notif.lark_hook_url)
+	if not do_send:
+		return
+	hook_url = notif.lark_hook_url
+	requests.post(url=hook_url, data=json.dumps(message), headers=headers)
 
 def send_discord_message(
 		message,

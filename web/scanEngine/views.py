@@ -12,7 +12,7 @@ from django.urls import reverse
 from rolepermissions.decorators import has_permission_decorator
 
 from reNgine.common_func import *
-from reNgine.tasks import (run_command, send_discord_message, send_slack_message, send_telegram_message)
+from reNgine.tasks import (run_command, send_discord_message, send_slack_message,send_lark_message, send_telegram_message)
 from scanEngine.forms import *
 from scanEngine.forms import ConfigurationForm
 from scanEngine.models import *
@@ -307,6 +307,7 @@ def notification_settings(request, slug):
         if form.is_valid():
             form.save()
             send_slack_message('*reNgine*\nCongratulations! your notification services are working.')
+            send_lark_message('*reNgine*\nCongratulations! your notification services are working.')
             send_telegram_message('*reNgine*\nCongratulations! your notification services are working.')
             send_discord_message('**reNgine**\nCongratulations! your notification services are working.')
             messages.add_message(
