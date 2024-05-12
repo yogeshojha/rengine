@@ -485,6 +485,10 @@ def llm_toolkit_section(request, slug):
         if model['name'] == selected_model['selected_model']:
             model['selected'] = True
     context['installed_models'] = all_models
+    # show error message for openai key, if any gpt is selected
+    openai_key = get_open_ai_key()
+    if not openai_key and 'gpt' in selected_model['selected_model']:
+        context['openai_key_error'] = True
     return render(request, 'scanEngine/settings/llm_toolkit.html', context)
 
 

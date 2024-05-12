@@ -14,7 +14,7 @@ LLM Toolkit
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-LLM Toolkit
+LLM Toolkit (Beta)
 {% endblock page_title %}
 
 {% block main_content %}
@@ -22,9 +22,13 @@ LLM Toolkit
   <div class="col-12">
     <div class="card">
       <div class="card-body">
+        <b>LLM Toolkit</b> includes the ability to download new LLMs, view available models, and delete models no longer needed, and also choose between various models.
+        <br>
         <p>reNgine makes use of various LLMs to enhance reporting process. Using various LLM AI Models penetration testers will be able to to generate detailed, insightful penetration testing reports. 
           <br>
-          <b>LLM Toolkit</b> includes the ability to download new LLMs, view available models, and delete models no longer needed, and also choose between various models.
+          If you are using custom LLM models, it is expected that response time are much slower in CPU. We recommend using GPU for better performance. Models such as llama2, or llama3 requires significant computation and GPU are required. <b>Having only CPU will result in slow response time.</b>
+          <br>
+          <b>OpenAI GPT models do not run locally, hence the requirement of GPU is not necessary.</b>
         </p>
       </div>
     </div>
@@ -35,6 +39,11 @@ LLM Toolkit
     </div>
   </div>
   <h5>{{installed_models|length}} available Models</h5>
+  {% if openai_key_error %}
+  <div class="alert alert-danger border-0 mb-3 mt-3" role="alert">
+    <b>Warning:</b> GPT model is currently selected and requires API key to be set. Please set the API key in the <a href="/scanEngine/{{current_project.slug}}/api_vault" target="_blank"> API Vault.</a>
+  </div>
+  {% endif %}
   <div class="row mt-2">
     {% for model in installed_models %}
     <div class="col-lg-4">
