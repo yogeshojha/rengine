@@ -17,6 +17,7 @@ drf-yasg==1.21.3
 gunicorn==22.0.0
 gevent==24.2.1
 humanize==4.3.0
+langchain==0.1.0
 Markdown==3.3.4
 metafinder==1.2
 netaddr==0.8.0
@@ -37,4 +38,3 @@ whatportis
 weasyprint==53.3
 wafw00f==2.2.0
 xmltodict==0.13.0
-langchain==0.0.343
