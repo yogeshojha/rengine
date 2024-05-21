@@ -27,7 +27,7 @@ PySocks==1.7.1
 psycopg2==2.9.7
 pycvesearch==1.0
 redis==5.0.3
-requests==2.31.0
+requests==2.32.0
 scapy==2.4.3
 tldextract==3.5.0
 uro==1.0.0
