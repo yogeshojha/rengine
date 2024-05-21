@@ -136,12 +136,6 @@ then
   pip install -r /usr/src/github/CMSeeK/requirements.txt
 fi
 
-if [ ! -d "/usr/src/github/Infoga" ]
-then
-  echo "Cloning Infoga"
-  git clone https://github.com/m4ll0k/Infoga /usr/src/github/Infoga
-fi
-
 # clone ctfr
 if [ ! -d "/usr/src/github/ctfr" ]
 then
@@ -161,6 +155,9 @@ exec "$@"
 
 # httpx seems to have issue, use alias instead!!!
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
+
+# TEMPORARY FIX, httpcore is causing issues with celery, removing it as temp fix
+python3 -m pip uninstall -y httpcore
 
 
 # watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO -Q scan_queue &

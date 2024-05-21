@@ -249,7 +249,12 @@ dir_file_fuzz: {
   'wordlist_name': 'dicc'
 }
 fetch_url: {
-  'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'gospider', 'katana', 'gau'],
+  'uses_tools': [
+    'gospider',
+    'hakrawler',
+    'waybackurls',
+    'katana'
+  ],
   'remove_duplicate_endpoints': true,
   'duplicate_fields': ['content_length', 'page_title'],
   'enable_http_crawl': true,
