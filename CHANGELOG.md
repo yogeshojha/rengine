@@ -1,5 +1,168 @@
 # Changelog
 
+## 2.0.6
+
+**Release Date: May 11, 2024**
+
+## What's Changed
+* Fix installation error and celery workers having issues with httpcore
+* remove duplicate gospider references by @Talanor in https://github.com/yogeshojha/rengine/pull/1245
+* Fix "subdomain" s3 bucket by @Talanor in https://github.com/yogeshojha/rengine/pull/1244
+* Fix Txt File Var Declaration by @specters312 in https://github.com/yogeshojha/rengine/pull/1239
+* Bug Correction: When dumping and loading customscanengines by @TH3xACE in https://github.com/yogeshojha/rengine/pull/1224
+* Fix/infoga removal by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1249
+* Fix #1241 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1251
+
+## New Contributors
+* @Talanor made their first contribution in https://github.com/yogeshojha/rengine/pull/1245
+* @specters312 made their first contribution in https://github.com/yogeshojha/rengine/pull/1239
+* @TH3xACE made their first contribution in https://github.com/yogeshojha/rengine/pull/1224
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.0.5...v2.0.6
+
+## 2.0.5
+
+**Release Date: April 20, 2024**
+
+* Fix #1234 reNgine unable to load celery tasks due to mismatched celery and redis versions
+
+## 2.0.4
+
+**Release Date: April 18, 2024**
+
+## What's Changed
+* chore: update version number to 2.0.3 by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1180
+* Fix various ffuf bugs by @yarysp in https://github.com/yogeshojha/rengine/pull/1199
+* Set and update default YAML config with all latest vars by @yarysp in https://github.com/yogeshojha/rengine/pull/1200
+* Add checks for placeholder in custom tool task by @yarysp in https://github.com/yogeshojha/rengine/pull/1201
+* Whatportis - Replace purge by truncate to prevent port import error by @yarysp in https://github.com/yogeshojha/rengine/pull/1203
+* ops(installation): fix nano not being installed when absent by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1143
+* Complete dev environment to debug/code easily by @yarysp in https://github.com/yogeshojha/rengine/pull/1196
+* Revert "Complete dev environment to debug/code easily" by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1225
+* Update README.md | Fixed 1 broken link to the regine.wiki by @jostasik in https://github.com/yogeshojha/rengine/pull/1226
+* Fix uninitialised variable cmd in custom_subdomain_tools by @cpandya2909 in https://github.com/yogeshojha/rengine/pull/1207
+* [FIX] security: OS Command Injection vulnerability (x2) #1219 by @0xtejas in https://github.com/yogeshojha/rengine/pull/1227
+
+## New Contributors :rocket: 
+* @yarysp made their first contribution in https://github.com/yogeshojha/rengine/pull/1199
+* @jostasik made their first contribution in https://github.com/yogeshojha/rengine/pull/1226
+* @cpandya2909 made their first contribution in https://github.com/yogeshojha/rengine/pull/1207
+* @0xtejas made their first contribution in https://github.com/yogeshojha/rengine/pull/1227
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.0.3...v2.0.4
+
+
+## 2.0.3
+
+**Release Date: January 25, 2024**
+
+## What's Changed
+* CI: update GitHub action versions by @jxdv in https://github.com/yogeshojha/rengine/pull/1136
+* Fixed (subdomain_discovery | ERROR | local variable 'use_amass_config' referenced before assignment) by @Deathpoolxrs in https://github.com/yogeshojha/rengine/pull/1149
+* chore: update LICENSE by @jxdv in https://github.com/yogeshojha/rengine/pull/1153
+* Fix subdomains list empty in Target by @psyray in https://github.com/yogeshojha/rengine/pull/1166
+* Fix top menu text overflow in low resolution by @psyray in https://github.com/yogeshojha/rengine/pull/1167
+* Update auto comment workflow due to deprecation warnings by @ErdemOzgen in https://github.com/yogeshojha/rengine/pull/1126
+* Change Redirect URL after login to prevent 500 error by @psyray in https://github.com/yogeshojha/rengine/pull/1124
+* fix-1030: Add missing slug on target summary link by @psyray in https://github.com/yogeshojha/rengine/pull/1123
+
+## New Contributors
+* @Deathpoolxrs made their first contribution in https://github.com/yogeshojha/rengine/pull/1149
+* @ErdemOzgen made their first contribution in https://github.com/yogeshojha/rengine/pull/1126
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.0.2...v2.0.3
+
+
+## 2.0.2
+
+**Release Date: December 8, 2023**
+
+
+## What's Changed
+* Added tooltip text to dashboard total vulnerabilities tooltip by @luizmlo in https://github.com/yogeshojha/rengine/pull/1029
+* ops(`uninstall.sh`): add missing volumes and echo messages by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/977
+* Fix no results in target subdomain list by @psyray in https://github.com/yogeshojha/rengine/pull/1036
+* Fix Tool Settings Broken Link by @aqhmal in https://github.com/yogeshojha/rengine/pull/1021
+* Fix subdomains list empty in Target by @psyray in https://github.com/yogeshojha/rengine/pull/1053
+* Raise page limit to 500 for popup list by @psyray in https://github.com/yogeshojha/rengine/pull/1051
+* Add directories count on Directories list by @psyray in https://github.com/yogeshojha/rengine/pull/1050
+* ops(docker-compose): upgrade to 2.23.0 by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1023
+* Fix endpoints list and count by @psyray in https://github.com/yogeshojha/rengine/pull/1041
+* Fix failing visualization when dorks are present by @psyray in https://github.com/yogeshojha/rengine/pull/1045
+* Fix note not saving by @psyray in https://github.com/yogeshojha/rengine/pull/1047
+* Count only not done todos in subdomains list by @psyray in https://github.com/yogeshojha/rengine/pull/1048
+* Fix user agent definition keyword by @psyray in https://github.com/yogeshojha/rengine/pull/1054
+* Upgrade project discovery tool at CT build by @psyray in https://github.com/yogeshojha/rengine/pull/1055
+* Add a check to not load datatables twice by @psyray in https://github.com/yogeshojha/rengine/pull/1039
+* Nmap port scan fails when Naabu return no port by @psyray in https://github.com/yogeshojha/rengine/pull/1067
+* chore(issue-templates): incorrect label name by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1066
+* Endpoints list popup empty by @psyray in https://github.com/yogeshojha/rengine/pull/1070
+* Add missing domain id value in subscan by @psyray in https://github.com/yogeshojha/rengine/pull/1069
+* Fixes for #1033, #1026, #1027 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1071
+* Temporary fix to prevent celery beat crash by @psyray in https://github.com/yogeshojha/rengine/pull/1072
+* fix: ffuf ANSI code processing preventing task to finish by @ocervell in https://github.com/yogeshojha/rengine/pull/1058
+* Update views.py by @Vijayragha1 in https://github.com/yogeshojha/rengine/pull/1074
+* Fix crash on saving endpoint (FFUF related only) by @psyray in https://github.com/yogeshojha/rengine/pull/1063
+* chore(issue-templates): fix incorrect description by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1078
+* IOError -> OSError by @jxdv in https://github.com/yogeshojha/rengine/pull/1081
+* Add directories count on Directories list by @psyray in https://github.com/yogeshojha/rengine/pull/1090
+* chore(issue-template): don't allow blank issues by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1089
+* Fix bad nuclei config name by @psyray in https://github.com/yogeshojha/rengine/pull/1098
+* disallow empty password by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1105
+* fix attribute error on scan history #1103 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1104
+* issue-633: added already-in-org filter to target dropdown in org form by @SeanOverton in https://github.com/yogeshojha/rengine/pull/1106
+* Update Dockerfile to fix silicon incompatability by @SubGlitch1 in https://github.com/yogeshojha/rengine/pull/1107
+* Add source for nmap scan by @psyray in https://github.com/yogeshojha/rengine/pull/1108
+* Spelling mistake in hackerone.html by @Linuxinet in https://github.com/yogeshojha/rengine/pull/1112
+* fix(version): incorrect number in art by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1111
+* Fix report generation when `Ignore Informational Vulnerabilities` checked by @psyray in https://github.com/yogeshojha/rengine/pull/1100
+* fix(tool_arsenal): incorrect regex version numbers by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1086
+
+## New Contributors
+* @luizmlo made their first contribution in https://github.com/yogeshojha/rengine/pull/1029 :partying_face: 
+* @aqhmal made their first contribution in https://github.com/yogeshojha/rengine/pull/1021 :partying_face: 
+* @C0wnuts made their first contribution in https://github.com/yogeshojha/rengine/pull/973 :partying_face: 
+* @ocervell made their first contribution in https://github.com/yogeshojha/rengine/pull/1058 :partying_face: 
+* @Vijayragha1 made their first contribution in https://github.com/yogeshojha/rengine/pull/1074 :partying_face: 
+* @jxdv made their first contribution in https://github.com/yogeshojha/rengine/pull/1081 :partying_face: 
+* @SeanOverton made their first contribution in https://github.com/yogeshojha/rengine/pull/1106 :partying_face: 
+* @SubGlitch1 made their first contribution in https://github.com/yogeshojha/rengine/pull/1107 :partying_face: 
+* @Linuxinet made their first contribution in https://github.com/yogeshojha/rengine/pull/1112 :partying_face: 
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.0.1...v2.0.2
+
+Once again excellent work on reNgine v2.0.2 by @AnonymousWP, @psyray, @ocervell and everybody else! :rocket: 
+
+## 2.0.1
+
+**Release Date: October 24, 2023**
+
+
+2.0.1 fixes a ton of issues in reNgine 2.0.
+
+Fixes: 
+1. Prevent duplicating Nuclei vulns for subdomain #1012 @psyray
+2. Fixes for empty subdomain returned during nuclei scan #1011 @psyray
+3. Add all the missing slug in scanEngine view & other places #1005 @psyray
+4. Foxes for missing vulscan script #1004 @psyray
+5. Fixes for missing slug in report settings saving #1003
+6. Fixes for Nmap Parsing Error #1001 #1002 @psyray
+7. Fix nmap script ports iterable args #1000 @psyray
+8. Iterate over hostnames when multiple #1002 @psyray
+8. Gau install #998, change gauplus to gau @psyray
+9. Add missing slug parameter in schedule scan #996 @psyray
+10. Add missing slug parameter in schedule scan #996, fixes #940, #937, #897, #764 @psyray
+11. Add stack trace into make logs if DEBUG True #994 @psyray
+12. Fix dirfuzz base64 name display #993 #992 @psyray
+13. Fix target subdomains list not loading #991 @psyray
+14. Change WORDLIST constant value #987, fixes #986@psyray 
+15. fix(notification_settings): submitting results in error 502 #981 fixes #970 @psyray
+16. Fixes with documentation and installation/update/uninstall scripts @anonymousWP
+17. Fix file directory popup not showing in detailed scan #912 @psyray
+
+
+@AnonymousWP and @psyray have been phenomenal in fixing these bugs. Thanks to both of you! :heart: :rocket: 
+
 
 ## 2.0.0
 

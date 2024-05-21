@@ -26,6 +26,7 @@ from dashboard.models import *
 from startScan.models import *
 from targetApp.models import *
 
+
 logger = get_task_logger(__name__)
 DISCORD_WEBHOOKS_CACHE = redis.Redis.from_url(CELERY_BROKER_URL)
 
@@ -33,38 +34,38 @@ DISCORD_WEBHOOKS_CACHE = redis.Redis.from_url(CELERY_BROKER_URL)
 # EngineType utils #
 #------------------#
 def dump_custom_scan_engines(results_dir):
-	"""Dump custom scan engines to YAML files.
+    """Dump custom scan engines to YAML files.
 
-	Args:
-		results_dir (str): Results directory (will be created if non-existent).
-	"""
-	custom_engines = EngineType.objects.filter(default_engine=False)
-	if not os.path.exists(results_dir):
-		os.makedirs(results_dir, exist_ok=True)
-	for engine in custom_engines:
-		with open(f'{results_dir}/{engine.engine_name}.yaml', 'w') as f:
-			config = yaml.safe_load(engine.yaml_configuration)
-			yaml.dump(config, f, indent=4)
+    Args:
+        results_dir (str): Results directory (will be created if non-existent).
+    """
+    custom_engines = EngineType.objects.filter(default_engine=False)
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir, exist_ok=True)
+    for engine in custom_engines:
+        with open(os.path.join(results_dir, f"{engine.engine_name}.yaml"), 'w') as f:
+            f.write(engine.yaml_configuration)
 
 def load_custom_scan_engines(results_dir):
-	"""Load custom scan engines from YAML files. The filename without .yaml will
-	be used as the engine name.
+    """Load custom scan engines from YAML files. The filename without .yaml will
+    be used as the engine name.
 
-	Args:
-		results_dir (str): Results directory containing engines configs.
-	"""
-	config_paths = [
-		f for f in os.listdir(results_dir)
-		if os.path.isfile(os.path.join(results_dir, f))
-	]
-	for path in config_paths:
-		engine_name = path.replace('.yaml', '').split('/')[-1]
-		full_path = os.path.join(results_dir, path)
-		with open(full_path, 'r') as f:
-			yaml_configuration = yaml.safe_load(f)
-		engine, _ = EngineType.objects.get_or_create(engine_name=engine_name)
-		engine.yaml_configuration = yaml.dump(yaml_configuration)
-		engine.save()
+    Args:
+        results_dir (str): Results directory containing engines configs.
+    """
+    config_paths = [
+        f for f in os.listdir(results_dir)
+        if os.path.isfile(os.path.join(results_dir, f)) and f.endswith('.yaml')
+    ]
+    for path in config_paths:
+        engine_name = os.path.splitext(os.path.basename(path))[0]
+        full_path = os.path.join(results_dir, path)
+        with open(full_path, 'r') as f:
+            yaml_configuration = f.read()
+
+        engine, _ = EngineType.objects.get_or_create(engine_name=engine_name)
+        engine.yaml_configuration = yaml_configuration
+        engine.save()
 
 
 #--------------------------------#
@@ -491,53 +492,13 @@ def get_random_proxy():
 	# os.environ['HTTPS_PROXY'] = proxy_name
 	return proxy_name
 
-
-def get_cms_details(url):
-	"""Get CMS details using cmseek.py.
-
-	Args:
-		url (str): HTTP URL.
-
-	Returns:
-		dict: Response.
-	"""
-	# this function will fetch cms details using cms_detector
-	response = {}
-	cms_detector_command = f'python3 /usr/src/github/CMSeeK/cmseek.py --random-agent --batch --follow-redirect -u {url}'
-	os.system(cms_detector_command)
-
-	response['status'] = False
-	response['message'] = 'Could not detect CMS!'
-
-	parsed_url = urlparse(url)
-
-	domain_name = parsed_url.hostname
-	port = parsed_url.port
-
-	find_dir = domain_name
-
-	if port:
-		find_dir += f'_{port}'
-
-	# subdomain may also have port number, and is stored in dir as _port
-
-	cms_dir_path =  f'/usr/src/github/CMSeeK/Result/{find_dir}'
-	cms_json_path =  cms_dir_path + '/cms.json'
-
-	if os.path.isfile(cms_json_path):
-		cms_file_content = json.loads(open(cms_json_path, 'r').read())
-		if not cms_file_content.get('cms_id'):
-			return response
-		response = {}
-		response = cms_file_content
-		response['status'] = True
-		# remove cms dir path
-		try:
-			shutil.rmtree(cms_dir_path)
-		except Exception as e:
-			print(e)
-
-	return response
+def remove_ansi_escape_sequences(text):
+	# Regular expression to match ANSI escape sequences
+	ansi_escape_pattern = r'\x1b\[.*?m'
+	
+	# Use re.sub() to replace the ANSI escape sequences with an empty string
+	plain_text = re.sub(ansi_escape_pattern, '', text)
+	return plain_text
 
 
 #--------------------#

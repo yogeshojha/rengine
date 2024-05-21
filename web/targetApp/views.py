@@ -180,10 +180,11 @@ def add_target(request, slug):
                     io_string = io.StringIO(txt_content)
                     for target in io_string:
                         target_domain = target.rstrip("\n").rstrip("\r")
+                        domain = None
                         domain_query = Domain.objects.filter(name=target_domain)
                         if not domain_query.exists():
-                            if not validators.domain(domain):
-                                messages.add_message(request, messages.ERROR, f'Domain {domain} is not a valid domain name. Skipping.')
+                            if not validators.domain(target_domain):
+                                messages.add_message(request, messages.ERROR, f'Domain {target_domain} is not a valid domain name. Skipping.')
                                 continue
                             Domain.objects.create(
                                 name=target_domain,

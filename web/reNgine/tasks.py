@@ -443,7 +443,7 @@ def subdomain_discovery(
 
 			elif tool == 'oneforall':
 				cmd = f'python3 /usr/src/github/OneForAll/oneforall.py --target {host} run'
-				cmd_extract = f'cut -d\',\' -f6 /usr/src/github/OneForAll/results/{host}.csv > {self.results_dir}/subdomains_oneforall.txt'
+				cmd_extract = f'cut -d\',\' -f6 /usr/src/github/OneForAll/results/{host}.csv | tail -n +2 > {self.results_dir}/subdomains_oneforall.txt'
 				cmd_rm = f'rm -rf /usr/src/github/OneForAll/results/{host}.csv'
 				cmd += f' && {cmd_extract} && {cmd_rm}'
 
@@ -472,6 +472,8 @@ def subdomain_discovery(
 			if not tool_query.exists():
 				logger.error(f'{tool} configuration does not exists. Skipping.')
 				continue
+			custom_tool = tool_query.first()
+			cmd = custom_tool.subdomain_gathering_command
 			if '{TARGET}' not in cmd:
 				logger.error(f'Missing {{TARGET}} placeholders in {tool} configuration. Skipping.')
 				continue
@@ -479,8 +481,7 @@ def subdomain_discovery(
 				logger.error(f'Missing {{OUTPUT}} placeholders in {tool} configuration. Skipping.')
 				continue
 
-			custom_tool = tool_query.first()
-			cmd = custom_tool.subdomain_gathering_command
+			
 			cmd = cmd.replace('{TARGET}', host)
 			cmd = cmd.replace('{OUTPUT}', f'{self.results_dir}/subdomains_{tool}.txt')
 			cmd = cmd.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in cmd else cmd
@@ -4086,7 +4087,15 @@ def remove_duplicate_endpoints(
 				logger.warning(msg)
 
 @app.task(name='run_command', bind=False, queue='run_command_queue')
-def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, activity_id=None):
+def run_command(
+		cmd, 
+		cwd=None, 
+		shell=False, 
+		history_file=None, 
+		scan_id=None, 
+		activity_id=None,
+		remove_ansi_sequence=False
+	):
 	"""Run a given command using subprocess module.
 
 	Args:
@@ -4095,7 +4104,7 @@ def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, act
 		echo (bool): Log command.
 		shell (bool): Run within separate shell if True.
 		history_file (str): Write command + output to history file.
-
+		remove_ansi_sequence (bool): Used to remove ANSI escape sequences from output such as color coding
 	Returns:
 		tuple: Tuple with return_code, output.
 	"""
@@ -4134,6 +4143,8 @@ def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, act
 			mode = 'w'
 		with open(history_file, mode) as f:
 			f.write(f'\n{cmd}\n{return_code}\n{output}\n------------------\n')
+	if remove_ansi_sequence:
+		output = remove_ansi_escape_sequences(output)
 	return return_code, output
 
 

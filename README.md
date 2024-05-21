@@ -246,7 +246,6 @@ fetch_url: {
     'gospider',
     'hakrawler',
     'waybackurls',
-    'gospider',
     'katana'
   ],
   'remove_duplicate_endpoints': true,
@@ -382,7 +381,7 @@ screenshot: {
 
 ### Installation (Mac/Windows/Other)
 
-Installation instructions can be found at [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/2.0/install/detailed/)
+Installation instructions can be found at [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/install/detailed/)
 
 ### Updating
 

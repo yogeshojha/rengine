@@ -34,7 +34,13 @@ if [ $isNonInteractive = false ]; then
           echo "Continiuing Installation!"
         ;;
         * )
-          nano .env
+          if [ -x "$(command -v nano)" ]; then
+            tput setaf 2; echo "nano already installed, skipping."
+          else
+            sudo apt update && sudo apt install nano -y
+            tput setaf 2; echo "nano installed!!!"
+          fi
+        nano .env
         ;;
     esac
 else
