@@ -17,19 +17,19 @@ fi
 tput setaf 2;
 cat web/art/reNgine.txt
 
-log "\r\nBefore running this script, please make sure Docker is running and you have made changes to .env file." 1
+log "\r\nBefore running this script, please make sure Docker is running and you have made changes to the `.env` file." 1
 log "Changing the postgres username & password from .env is highly recommended.\r\n" 1
 
 log "#########################################################################" 4
-log "Please note that, this installation script is only intended for Linux" 3
+log "Please note that this installation script is only intended for Linux" 3
 log "Only x86_64 platform are supported" 3
 log "#########################################################################\r\n" 4
 
 tput setaf 1;
-read -p "Are you sure, you made changes to .env file (y/n)? " answer
+read -p "Are you sure you made changes to the `.env` file (y/n)? " answer
 case ${answer:0:1} in
     y|Y|yes|YES|Yes )
-      log "Continiuing Installation!" 2
+      log "Continuing Installation!" 2
     ;;
     * )
       if [ -x "$(command -v nano)" ]; then
