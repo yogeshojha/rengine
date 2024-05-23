@@ -30,12 +30,11 @@
 
 # reNgine-ng
 
-### Redefining the future of reconnaissance!
 
-### Why reNgine-ng?
-reNgine-ng is a fork of [renGine](https://github.com/yogeshojha/rengine)
+## Why reNgine-ng?
+reNgine-ng is a fork of [reNgine](https://github.com/yogeshojha/rengine).
 
-### What is reNgine-ng?
+## What is reNgine-ng?
 reNgine-ng is your go-to web application reconnaissance suite that's designed to simplify and streamline the reconnaissance process for security professionals, penetration testers, and bug bounty hunters. With its highly configurable engines, data correlation capabilities, continuous monitoring, database-backed reconnaissance data, and an intuitive user interface, reNgine-ng redefines how you gather critical information about your target web applications.
 
 Traditional reconnaissance tools often fall short in terms of configurability and efficiency. reNgine-ng addresses these shortcomings and emerges as a excellent alternative to existing commercial tools.
@@ -417,7 +416,7 @@ Please do not use GitHub for support requests. Instead, [join our Discord channe
 
 ### Support
 
-We are volunteers, working hard on reNgine-ng to add new features with the sole aim of making it the de facto standard for reconnaissance. Help is welcome, you could participate by creating PR, update docs ...
+We are volunteers, working hard on reNgine-ng to add new features with the sole aim of making it the de facto standard for reconnaissance. Help is welcome, you can help us out by opening a PR.
 Come to the Discord to discuss with the reNgine-ng team.
 
 * Add a [GitHub Star](https://github.com/Security-Tools-Alliance/rengine-ng) to the project.
