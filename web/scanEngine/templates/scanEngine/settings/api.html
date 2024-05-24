@@ -2,7 +2,7 @@
 {% load static %}
 {% load custom_tags %}
 {% block title %}
-reNgine Settings
+API Vault
 {% endblock title %}
 
 {% block custom_js_css_link %}
@@ -27,8 +27,8 @@ API Vault
           <div class="col-12">
             <div class="p-sm-3">
               <div class="mb-3">
-                <label for="key_openai" class="form-label">OpenAI <span class="ms-1 badge bg-soft-danger text-danger">🔥 Recommended</span><span class="ms-1 badge bg-soft-primary text-primary">Experimental</span></label>
-                <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using ChatGPT.</p>
+                <label for="key_openai" class="form-label">OpenAI</label>
+                <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using GPT.</p>
                 {% if openai_key %}
                   <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}">
                 {% else %}
@@ -38,7 +38,7 @@ API Vault
               </div>
               <div class="mb-3">
                 <label for="key_netlas" class="form-label">Netlas</label>
-                <p class="text-muted">Netlas keys will be used to get whois information and other OSINT data.</p>
+                <p class="text-muted">Netlas keys will be used to get whois information and other OSINT related data.</p>
                 {% if netlas_key %}
                   <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}">
                 {% else %}

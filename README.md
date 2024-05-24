@@ -94,6 +94,7 @@ reNgine-ng is not an ordinary reconnaissance suite; it's a game-changer! We've t
 ⚙️&nbsp; &nbsp; Roles and Permissions! Begining reNgine-ng 2.0, we've taken your web application reconnaissance to a whole new level of control and security. Now, you can assign distinct roles to your team members—Sys Admin, Penetration Tester, and Auditor—each with precisely defined permissions to tailor their access and actions within the reNgine-ng ecosystem.
 
   - 🔐 Sys Admin: Sys Admin is a superuser that has permission to modify system and scan related configurations, scan engines, create new users, add new tools etc. Superuser can initiate scans and subscans effortlessly.
+  - 🔐 Sys Admin: Sys Admin is a superuser that has permission to modify system and scan related configurations, scan engines, create new users, add new tools etc. Superuser can initiate scans and subscans effortlessly.
   - 🔍 Penetration Tester: Penetration Tester will be allowed to modify and initiate scans and subscans, add or update targets, etc. A penetration tester will not be allowed to modify system configurations.
   - 📊 Auditor: Auditor can only view and download the report. An auditor can not change any system or scan related configurations nor can initiate any scans or subscans.
 
@@ -375,7 +376,7 @@ Installation instructions can be found at [https://github.com/Security-Tools-All
 1. Updating is as simple as running the following command:
 
     ```bash
-    cd rengine &&  sudo ./update.sh
+    cd rengine && sudo ./update.sh
     ```
 
     If `update.sh` does not have execution permissions, please change it, `sudo chmod +x update.sh`

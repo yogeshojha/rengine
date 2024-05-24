@@ -56,6 +56,10 @@ urlpatterns = [
         '<slug:slug>/tool_arsenal',
         views.tool_arsenal_section,
         name='tool_arsenal'),
+	path(
+        '<slug:slug>/llm_toolkit',
+        views.llm_toolkit_section,
+        name='llm_toolkit'),
     path(
         '<slug:slug>/rengine_settings',
         views.rengine_settings,
