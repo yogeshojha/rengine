@@ -1730,7 +1730,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 			dirscan.save()
 
 			# Get subdomain and add dirscan
-			if ctx['subdomain_id'] > 0:
+			if ctx.get('subdomain_id') and ctx['subdomain_id'] > 0:
 				subdomain = Subdomain.objects.get(id=ctx['subdomain_id'])
 			else:
 				subdomain_name = get_subdomain_from_url(endpoint.http_url)
