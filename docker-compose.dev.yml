@@ -1,14 +1,19 @@
 services:
   db:
-    restart: unless-stopped
     image: "postgres:12.3-alpine"
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
     volumes:
-      - ./data/postgres_data:/var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - rengine_network
     ports:
@@ -16,7 +21,13 @@ services:
 
   redis:
     image: "redis:alpine"
+    restart: unless-stopped
     hostname: redis
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - rengine_network
 
@@ -27,13 +38,40 @@ services:
     restart: unless-stopped
     volumes:
       - ./web:/home/rengine/rengine
-      - ./scan_results:/home/rengine/scan_results
-      # - ./data/reNgine/github_repos:/usr/src/github
-      # - ./data/reNgine/wordlist:/usr/src/wordlist
-      # - ./data/reNgine/scan_results:/usr/src/scan_results
-      # - ./data/reNgine/gf_patterns:/root/.gf
-      # - ./data/reNgine/nuclei_templates:/root/nuclei-templates
-      # - ./data/reNgine/tool_config:/root/.config
+      - scan_results:/home/rengine/scan_results
+    environment:
+      - DEBUG=1
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+      - DOMAIN_NAME=${DOMAIN_NAME}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - MAX_CONCURRENCY=${MAX_CONCURRENCY}
+      - MIN_CONCURRENCY=${MIN_CONCURRENCY}
+    healthcheck:
+      test: ["CMD", "poetry", "-C", "/home/rengine", "run", "celery","-A","reNgine","status"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rengine_network
+
+  celery-beat:
+    build:
+      context: docker
+      dockerfile: celery/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./web:/home/rengine/rengine
+      - scan_results:/home/rengine/scan_results
     environment:
       - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
@@ -47,8 +85,8 @@ services:
       - MAX_CONCURRENCY=${MAX_CONCURRENCY}
       - MIN_CONCURRENCY=${MIN_CONCURRENCY}
     depends_on:
-      - db
-      - redis
+      celery:
+        condition: service_healthy
     networks:
       - rengine_network
 
@@ -72,23 +110,29 @@ services:
       - RENGINE_CURRENT_VERSION='2.1.0'
     volumes:
       - ./web:/home/rengine/app
-      - ./scan_results:/home/rengine/scan_results
-      # - ./data/reNgine/github_repos:/usr/src/github
-      # - ./data/reNgine/wordlist:/usr/src/wordlist
-      # - ./data/reNgine/scan_results:/usr/src/scan_results
-      # - ./data/reNgine/gf_patterns:/root/.gf
-      # - ./data/reNgine/nuclei_templates:/root/nuclei-templates
-      # - ./data/reNgine/tool_config:/root/.config
+      - scan_results:/home/rengine/scan_results
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "http://localhost:8000"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
     depends_on:
-      - db
-      - celery
+      db:
+        condition: service_healthy
+      celery:
+        condition: service_healthy
+      celery-beat:
+        condition: service_started
     networks:
-      - rengine_network
+      rengine_network:
+        aliases:
+          - rengine
 
   ollama:
     image: ollama/ollama
+    restart: unless-stopped
     container_name: ollama
     volumes:
       - ollama_data:/root/.ollama

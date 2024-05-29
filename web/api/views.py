@@ -984,7 +984,7 @@ class UpdateTool(APIView):
 		elif update_command == 'git pull':
 			tool_name = tool.install_command[:-1] if tool.install_command[-1] == '/' else tool.install_command
 			tool_name = tool_name.split('/')[-1]
-			update_command = 'cd ' + os.path.join(RENGINE_TOOL_GITHUB_PATH, tool_name) + ' && git pull && cd -'
+			update_command = 'cd ' + str(Path(RENGINE_TOOL_GITHUB_PATH) / tool_name) + ' && git pull && cd -'
 
 		run_command(update_command)
 		run_command.apply_async(args=(update_command,))

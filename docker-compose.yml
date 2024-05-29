@@ -1,7 +1,7 @@
 services:
   db:
-    restart: unless-stopped
     image: "postgres:12.3-alpine"
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -20,6 +20,7 @@ services:
 
   redis:
     image: "redis:alpine"
+    restart: unless-stopped
     hostname: redis
     healthcheck:
       test: ["CMD", "redis-cli","ping"]
@@ -34,14 +35,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./web:/home/rengine/rengine
-      - ./scan_results:/home/rengine/scan_results
-      # - ./data/github_repos:/usr/src/github
-      # - ./data/wordlist:/usr/src/wordlist
-      # - ./data/scan_results:/usr/src/scan_results
-      # - ./data/gf_patterns:/root/.gf
-      # - ./data/nuclei_templates:/root/nuclei-templates
-      # - ./data/tool_config:/root/.config
-      # - ./data/static_volume:/usr/src/app/staticfiles/
+      - scan_results:/home/rengine/scan_results
     environment:
       - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
@@ -65,12 +59,13 @@ services:
       redis:
         condition: service_healthy
     networks:
-      rengine_network:
+      - rengine_network
 
   celery-beat:
     image: docker.io/talanor/rengine-celery:v0.5
     entrypoint: /entrypoint.sh
     environment:
+      - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - POSTGRES_DB=${POSTGRES_DB}
@@ -85,11 +80,6 @@ services:
       - ./web:/home/rengine/rengine
       - ./docker/beat/entrypoint.sh:/entrypoint.sh:ro
       - scan_results:/usr/src/scan_results
-      # - github_repos:/usr/src/github
-      # - wordlist:/usr/src/wordlist
-      # - gf_patterns:/root/.gf
-      # - nuclei_templates:/root/nuclei-templates
-      # - tool_config:/root/.config
     networks:
       - rengine_network
 
@@ -97,7 +87,7 @@ services:
     image: docker.io/talanor/rengine-web:v0.5
     restart: unless-stopped
     environment:
-      - DEBUG=1
+      - DEBUG=0
       - RENGINE_HOME=/home/rengine/app
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
@@ -112,14 +102,7 @@ services:
       # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
       - RENGINE_CURRENT_VERSION='2.1.0'
     volumes:
-      - ./web:/home/rengine/app
-      # - github_repos:/usr/src/github
-      # - wordlist:/usr/src/wordlist
-      # - scan_results:/usr/src/scan_results
-      # - gf_patterns:/root/.gf
-      # - nuclei_templates:/root/nuclei-templates
-      # - tool_config:/root/.config
-      # - static_volume:/usr/src/app/staticfiles/
+      - web:/home/rengine/app
     healthcheck:
       test: ["CMD", "curl", "-f", "-k", "http://localhost:8000"]
       interval: 10s
@@ -138,8 +121,8 @@ services:
           - rengine
 
   proxy:
-    restart: unless-stopped
     image: nginx:alpine
+    restart: unless-stopped
     depends_on:
       web:
         condition: service_healthy
