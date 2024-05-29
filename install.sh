@@ -71,7 +71,7 @@ tput setaf 4;
 echo "#########################################################################"
 echo "Installing docker compose"
 echo "#########################################################################"
-if [ -x "$(command -v docker compose)" ]; then
+if [ -x "$(command -v docker-compose)" ]; then
   tput setaf 2; echo "docker compose already installed, skipping."
 else
   curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
