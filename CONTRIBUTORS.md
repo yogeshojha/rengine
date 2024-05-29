@@ -8,6 +8,7 @@ Thanks to these individuals for making reNgine awesome by fixing bugs, resolving
 * [Suprita-25](https://github.com/Suprita-25)
 * [TheBinitGhimire](https://github.com/TheBinitGhimire)
 * [Vinay Leo](https://github.com/vinaynm)
+* [Erdem Ozgen](https://github.com/ErdemOzgen)
 
 *If you have created a Pull request, feel free to add your name here, because we know you are awesome and deserve thanks from the community!*
 

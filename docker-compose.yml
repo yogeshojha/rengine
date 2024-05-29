@@ -7,16 +7,29 @@ services:
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
+      - PGUSER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - rengine_network
 
   redis:
     image: "redis:alpine"
     hostname: redis
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - rengine_network
 
@@ -47,9 +60,16 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - MAX_CONCURRENCY=${MAX_CONCURRENCY}
       - MIN_CONCURRENCY=${MIN_CONCURRENCY}
+    healthcheck:
+      test: ["CMD", "celery","-A","reNgine","status"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - rengine_network
 
@@ -66,7 +86,8 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
     depends_on:
-      - celery
+      celery:
+        condition: service_healthy
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -94,9 +115,10 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
+      - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD}
       # THIS IS A MUST FOR CHECKING UPDATE, EVERYTIME A COMMIT IS MERGED INTO
       # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
-      - RENGINE_CURRENT_VERSION='2.0.5'
+      - RENGINE_CURRENT_VERSION='2.1.0'
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -107,11 +129,19 @@ services:
       - tool_config:/root/.config
       - static_volume:/usr/src/app/staticfiles/
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "http://localhost:8000"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
     depends_on:
-      - db
-      - celery
-      - celery-beat
+      db:
+        condition: service_healthy
+      celery:
+        condition: service_healthy
+      celery-beat:
+        condition: service_started
     networks:
       rengine_network:
         aliases:
@@ -124,9 +154,12 @@ services:
       - 8082:8082/tcp
       - 443:443/tcp
     depends_on:
-      - web
-      - db
-      - redis
+      web:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     secrets:
       - source: proxy.ca
         target: /etc/nginx/certs/rengine_chain.pem
@@ -140,7 +173,15 @@ services:
       - scan_results:/usr/src/scan_results
     networks:
       - rengine_network
-
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - rengine_network
 
 networks:
   rengine_network:
@@ -154,6 +195,7 @@ volumes:
   wordlist:
   scan_results:
   static_volume:
+  ollama_data:
 
 secrets:
   proxy.ca:

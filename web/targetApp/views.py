@@ -52,6 +52,7 @@ def add_target(request, slug):
                 logger.info(f'Adding multiple targets: {bulk_targets}')
                 description = request.POST.get('targetDescription', '')
                 h1_team_handle = request.POST.get('targetH1TeamHandle')
+                organization_name = request.POST.get('targetOrganization')
                 for target in bulk_targets:
                     target = target.rstrip('\n')
                     http_urls = []
@@ -121,6 +122,18 @@ def add_target(request, slug):
                             if created:
                                 logger.info(f'Added new domain {domain.name}')
 
+                            if organization_name:
+                                organization = None
+                                if Organization.objects.filter(name=organization_name).exists():
+                                    organization = organization_query[0]
+                                else:
+                                    organization = Organization.objects.create(
+                                        name=organization_name,
+                                        project=project,
+                                        insert_date=timezone.now())
+                                organization.domains.add(domain)
+
+
                     for http_url in http_urls:
                         http_url = sanitize_url(http_url)
                         endpoint, created = EndPoint.objects.get_or_create(
@@ -155,7 +168,6 @@ def add_target(request, slug):
                         'Files uploaded are not .txt or .csv files.')
                     return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
 
-                #Specters Fix
                 if txt_file:
                     is_txt = txt_file.content_type == 'text/plain' or txt_file.name.split('.')[-1] == 'txt'
                     if not is_txt:
@@ -168,10 +180,10 @@ def add_target(request, slug):
                     io_string = io.StringIO(txt_content)
                     for target in io_string:
                         target_domain = target.rstrip("\n").rstrip("\r")
-                        domain = None  # Move the domain variable declaration here
+                        domain = None
                         domain_query = Domain.objects.filter(name=target_domain)
                         if not domain_query.exists():
-                            if not validators.domain(target_domain):  # Change 'domain' to 'target_domain'
+                            if not validators.domain(target_domain):
                                 messages.add_message(request, messages.ERROR, f'Domain {target_domain} is not a valid domain name. Skipping.')
                                 continue
                             Domain.objects.create(
@@ -193,18 +205,31 @@ def add_target(request, slug):
                     io_string = io.StringIO(csv_content)
                     for column in csv.reader(io_string, delimiter=','):
                         domain = column[0]
-                        description = None if len(column) == 1 else column[1]
+                        description = None if len(column) <= 1 else column[1]
+                        organization = None if len(column) <= 2 else column[2]
                         domain_query = Domain.objects.filter(name=domain)
                         if not domain_query.exists():
                             if not validators.domain(domain):
                                 messages.add_message(request, messages.ERROR, f'Domain {domain} is not a valid domain name. Skipping.')
                                 continue
-                            Domain.objects.create(
+                            domain_obj = Domain.objects.create(
                                 name=domain,
                                 project=project,
                                 description=description,
                                 insert_date=timezone.now())
                             added_target_count += 1
+                        
+                            # Optionally add domain to organization
+                            if organization:
+                                organization_query = Organization.objects.filter(name=organization)
+                                if organization_query.exists():
+                                    organization = organization_query[0]
+                                else:
+                                    organization = Organization.objects.create(
+                                        name=organization,
+                                        project=project,
+                                        insert_date=timezone.now())
+                                organization.domains.add(domain_obj)
 
         except Exception as e:
             logger.exception(e)

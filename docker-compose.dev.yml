@@ -98,7 +98,7 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       # THIS IS A MUST FOR CHECKING UPDATE, EVERYTIME A COMMIT IS MERGED INTO
       # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
-      - RENGINE_CURRENT_VERSION='2.0.5'
+      - RENGINE_CURRENT_VERSION='2.1.0'
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -115,6 +115,17 @@ services:
       - celery-beat
     networks:
       - rengine_network
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    # ports:
+    #   - "11434:11434"
+    networks:
+      - rengine_network
+    restart: always
+    # command: ["ollama", "run", "llama2-uncensored"]
 
 networks:
   rengine_network:
@@ -126,3 +137,4 @@ volumes:
   github_repos:
   wordlist:
   scan_results:
+  ollama_data:
