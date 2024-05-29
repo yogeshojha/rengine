@@ -103,12 +103,9 @@ def get_subdomains(write_filepath=None, exclude_subdomains=False, ctx={}):
 	"""Get Subdomain objects from DB.
 
 	Args:
-		target_domain (startScan.models.Domain): Target Domain object.
-		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
 		write_filepath (str): Write info back to a file.
-		subdomain_id (int): Subdomain id.
 		exclude_subdomains (bool): Exclude subdomains, only return subdomain matching domain.
-		path (str): Add URL path to subdomain.
+		ctx (dict): ctx
 
 	Returns:
 		list: List of subdomains matching query.
@@ -289,11 +286,8 @@ def get_http_urls(
 	specific path.
 
 	Args:
-		target_domain (startScan.models.Domain): Target Domain object.
-		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
 		is_alive (bool): If True, select only alive urls.
 		is_uncrawled (bool): If True, select only urls that have not been crawled.
-		path (str): URL path.
 		write_filepath (str): Write info back to a file.
 		get_only_default_urls (bool):
 
@@ -450,7 +444,7 @@ def sanitize_url(http_url):
 	if "://" not in http_url:
 		http_url = "http://" + http_url
 	url = urlparse(http_url)
-	
+
 	if url.netloc.endswith(':80'):
 		url = url._replace(netloc=url.netloc.replace(':80', ''))
 	elif url.netloc.endswith(':443'):
@@ -501,10 +495,57 @@ def get_random_proxy():
 def remove_ansi_escape_sequences(text):
 	# Regular expression to match ANSI escape sequences
 	ansi_escape_pattern = r'\x1b\[.*?m'
-	
+
 	# Use re.sub() to replace the ANSI escape sequences with an empty string
 	plain_text = re.sub(ansi_escape_pattern, '', text)
 	return plain_text
+
+def get_cms_details(url):
+	"""Get CMS details using cmseek.py.
+
+	Args:
+		url (str): HTTP URL.
+
+	Returns:
+		dict: Response.
+	"""
+	# this function will fetch cms details using cms_detector
+	response = {}
+	cms_detector_command = f'python3 /usr/src/github/CMSeeK/cmseek.py --random-agent --batch --follow-redirect -u {url}'
+	os.system(cms_detector_command)
+
+	response['status'] = False
+	response['message'] = 'Could not detect CMS!'
+
+	parsed_url = urlparse(url)
+
+	domain_name = parsed_url.hostname
+	port = parsed_url.port
+
+	find_dir = domain_name
+
+	if port:
+		find_dir += f'_{port}'
+
+	# subdomain may also have port number, and is stored in dir as _port
+
+	cms_dir_path =  f'/usr/src/github/CMSeeK/Result/{find_dir}'
+	cms_json_path =  cms_dir_path + '/cms.json'
+
+	if os.path.isfile(cms_json_path):
+		cms_file_content = json.loads(open(cms_json_path, 'r').read())
+		if not cms_file_content.get('cms_id'):
+			return response
+		response = {}
+		response = cms_file_content
+		response['status'] = True
+		# remove cms dir path
+		try:
+			shutil.rmtree(cms_dir_path)
+		except Exception as e:
+			print(e)
+
+	return response
 
 
 #--------------------#
@@ -549,6 +590,23 @@ def send_slack_message(message):
 	hook_url = notif.slack_hook_url
 	requests.post(url=hook_url, data=json.dumps(message), headers=headers)
 
+def send_lark_message(message):
+	"""Send lark message.
+
+	Args:
+		message (str): Message.
+	"""
+	headers = {'content-type': 'application/json'}
+	message = {"msg_type":"interactive","card":{"elements":[{"tag":"div","text":{"content":message,"tag":"lark_md"}}]}}
+	notif = Notification.objects.first()
+	do_send = (
+		notif and
+		notif.send_to_lark and
+		notif.lark_hook_url)
+	if not do_send:
+		return
+	hook_url = notif.lark_hook_url
+	requests.post(url=hook_url, data=json.dumps(message), headers=headers)
 
 def send_discord_message(
 		message,
@@ -648,7 +706,7 @@ def send_discord_message(
 
 		webhook.add_embed(embed)
 
-		# Add webhook and embed objects to cache so we can pick them up later
+		# Add webhook and embed objects to cache, so we can pick them up later
 		DISCORD_WEBHOOKS_CACHE.set(title + '_webhook', pickle.dumps(webhook))
 		DISCORD_WEBHOOKS_CACHE.set(title + '_embed', pickle.dumps(embed))
 
@@ -808,6 +866,19 @@ def fmt_traceback(exc):
 # CLI BUILDERS #
 #--------------#
 
+def _build_cmd(cmd, options, flags, sep=" "):
+	for k,v in options.items():
+		if not v:
+			continue
+		cmd += f" {k}{sep}{v}"
+
+	for flag in flags:
+		if not flag:
+			continue
+		cmd += f" --{flag}"
+
+	return cmd
+
 def get_nmap_cmd(
 		input_file,
 		cmd=None,
@@ -821,41 +892,29 @@ def get_nmap_cmd(
 		flags=[]):
 	if not cmd:
 		cmd = 'nmap'
-	cmd += f' -sV' if service_detection else ''
-	cmd += f' -p {ports}' if ports else ''
-	for flag in flags:
-		cmd += flag
-	cmd += f' --script {script}' if script else ''
-	cmd += f' --script-args {script_args}' if script_args else ''
-	cmd += f' --max-rate {max_rate}' if max_rate else ''
-	cmd += f' -oX {output_file}' if output_file else ''
-	if input_file:
-		cmd += f' -iL {input_file}'
-	elif host:
-		cmd += f' {host}'
-	return cmd
 
-# TODO: replace all cmd += ' -{proxy}' if proxy else '' by this function
-# def build_cmd(cmd, options, flags, sep=' '):
-# 	for k, v in options.items():
-# 		if v is None:
-# 			continue
-#		cmd += f' {k}{sep}{v}'
-#	for flag in flags:
-#		if not flag:
-#			continue
-#		cmd += f' --{flag}'
-# 	return cmd
-# build_cmd(cmd, proxy=proxy, option_prefix='-')
+	options = {
+		"-sV": service_detection,
+		"-p": ports,
+		"--script": script,
+		"--script-args": script_args,
+		"--max-rate": max_rate,
+		"-oX": output_file
+	}
+	cmd = _build_cmd(cmd, options, flags)
+
+	if not input_file:
+		cmd += f" {host}" if host else ""
+	else:
+		cmd += f" -iL {input_file}"
+
+	return cmd
 
 
 def xml2json(xml):
-	xmlfile = open(xml)
-	xml_content = xmlfile.read()
-	xmlfile.close()
-	xmljson = json.dumps(xmltodict.parse(xml_content), indent=4, sort_keys=True)
-	jsondata = json.loads(xmljson)
-	return jsondata
+	with open(xml) as xml_file:
+		xml_content = xml_file.read()
+	return xmltodict.parse(xml_content)
 
 
 def reverse_whois(lookup_keyword):

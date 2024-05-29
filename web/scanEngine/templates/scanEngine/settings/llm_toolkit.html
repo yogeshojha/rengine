@@ -1,0 +1,286 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+{% block title %}
+LLM Toolkit
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">LLM Toolkit</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+LLM Toolkit (Beta)
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <b>LLM Toolkit</b> includes the ability to download new LLMs, view available models, and delete models no longer needed, and also choose between various models.
+        <br>
+        <p>reNgine makes use of various LLMs to enhance reporting process. Using various LLM AI Models penetration testers will be able to to generate detailed, insightful penetration testing reports. 
+          <br>
+          If you are using custom LLM models, it is expected that response time are much slower in CPU. We recommend using GPU for better performance. Models such as llama2, or llama3 requires significant computation and GPU are required. <b>Having only CPU will result in slow response time.</b>
+          <br>
+          <b>OpenAI GPT models do not run locally, hence the requirement of GPU is not necessary.</b>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="row mb-2">
+    <div class="col-sm-4">
+      <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3" onclick="showAddNewModelModal()"><i class="mdi mdi-plus"></i> Add new model</a>
+    </div>
+  </div>
+  <h5>{{installed_models|length}} available Models</h5>
+  {% if openai_key_error %}
+  <div class="alert alert-danger border-0 mb-3 mt-3" role="alert">
+    <b>Warning:</b> GPT model is currently selected and requires API key to be set. Please set the API key in the <a href="/scanEngine/{{current_project.slug}}/api_vault" target="_blank"> API Vault.</a>
+  </div>
+  {% endif %}
+  <div class="row mt-2">
+    {% for model in installed_models %}
+    <div class="col-lg-4">
+      <div class="card project-box">
+        <div class="card-body">
+          <div class="dropdown float-end">
+            <a href="#" class="dropdown-toggle card-drop arrow-none" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="mdi mdi-dots-horizontal m-0 text-muted h3"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end">
+              {% if model.is_local %}
+                <a class="dropdown-item" href="#" onClick=deleteModel('{{model.name}}')>Delete</a>
+              {% endif %}
+              {% if not model.selected %}
+                <a class="dropdown-item" href="#" onClick=selectModel('{{model.name}}')>Use Model</a>
+              {% endif %}
+            </div>
+          </div>
+          <h4 class="mt-0">
+            <span class="{% if model.selected %}text-success{% endif %}">{{model.name}} {% if model.selected %}<span class="badge bg-soft-primary text-primary ms-4">Selected Model</span>{% endif %}</span>
+          </h4>
+          </p>
+          <p class="mb-1">
+            <span class="pe-2 text-nowrap mb-2 d-inline-block">
+              <i class="mdi mdi-calendar-range text-primary"></i>
+              Modified <b>{% if model.modified_at %}{{model.modified_at|naturaltime}} {% else %} NA{% endif %}</b>
+            </span>
+            <br>
+            <span class="pe-2 text-nowrap mb-2 d-inline-block">
+              <i class="mdi mdi-database text-info"></i>
+              {% if model.is_local %}
+              Locally installed model
+              {% else %}
+              Open AI Model
+              {% endif %}
+            </span>
+            <br>
+            <span class="pe-2 text-nowrap mb-2 d-inline-block">
+              <i class="mdi mdi-numeric text-info"></i>
+              <b>{{model.details.parameter_size}}</b> Parameters 
+            </span>
+            <span class="text-nowrap mb-2 d-inline-block">
+              <i class="mdi mdi-family-tree text-success"></i>
+              <b>{{model.details.family}}</b> Family 
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-danger border-0" role="alert">
+      No LLM Models are installed. You can install models using the 'Add New LLM' button.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script type="text/javascript">
+  function deleteModel(model_name) {
+    // split model name by : and only use first part
+    model_name = model_name.split(':')[0];
+    var url = "/api/tool/ollama/?model=" + model_name;
+    swal.queue([{
+      title: 'Are you sure you want to delete this model?',
+      text: "This action can not be undone.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch(url, {
+          method: 'DELETE',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          }
+        }).then(function(response) {
+          return response.json();
+        }).then(function(data) {
+          if (data.status){
+            swal.insertQueueStep({
+              icon: 'error',
+              title: 'Oops! Unable to delete the model!'
+            })
+          }
+          else{
+            swal.queue([{
+              title: 'Model Successfully deleted!',
+              icon: 'success',
+              showCancelButton: false,
+              confirmButtonText: 'Okay',
+              padding: '2em',
+              showLoaderOnConfirm: true,
+              preConfirm: function() {
+                location.reload();
+              }
+            }]);
+          }
+          //return location.reload();
+        }).catch(function() {
+          swal.insertQueueStep({
+            icon: 'error',
+            title: 'Oops! Unable to delete the model!'
+          })
+        })
+      }
+    }])
+  }
+
+  function showAddNewModelModal(){
+    $('#modal_title').html('Add new LLM Model');
+    $('#modal-content').empty();
+    $('#modal-content').append(`
+      <p>You can find the list of supported models in <a href="https://ollama.com/library" target="_blank">Ollama Library</a></p>
+      <p>We recommend using llama2-uncensored model for better results.</p>
+      <div class="mb-3">
+        <label for="model_name" class="form-label">Model name</label>
+        <input class="form-control" type="text" id="model_name" required="" placeholder="llama2">
+      </div>
+      <div class="mb-3 text-center">
+        <button class="btn btn-primary float-end" type="submit" onclick="download_model()">Download Model</button>
+      </div>
+    `);
+    $('#modal_dialog').modal('show');
+  }
+
+  function download_model(){
+    var model_name = $('#model_name').val();
+    if (model_name == ""){
+      Swal.fire({
+        title: 'Oops!',
+        text: 'Model name is required',
+        icon: 'error'
+      });
+      return;
+    }
+    var url = "/api/tool/ollama/?model=" + model_name;
+    swal.queue([{
+      title: 'Are you sure you want to download this model?',
+      text: "Downloading models can take a long time, sometimes a few minutes. Please be patient.",
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Download',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch(url, {
+          method: 'GET',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          }
+        }).then(function(response) {
+          return response.json();
+        }).then(function(data) {
+          if (!data.status){
+            swal.insertQueueStep({
+              icon: 'error',
+              title: 'Oops! Unable to download the model, model does not exist!'
+            })
+          }
+          else{
+            swal.queue([{
+              title: 'Model Successfully downloaded!',
+              icon: 'success',
+              showCancelButton: false,
+              confirmButtonText: 'Okay',
+              padding: '2em',
+              showLoaderOnConfirm: true,
+              preConfirm: function() {
+                location.reload();
+              }
+            }]);
+          }
+          //return location.reload();
+        }).catch(function() {
+          swal.insertQueueStep({
+            icon: 'error',
+            title: 'Oops! Unable to download the model!'
+          })
+        })
+      }
+    }])
+  }
+
+  function selectModel(model_name){
+    var url = "/api/tool/ollama/?model=" + model_name;
+    swal.queue([{
+      title: 'Are you sure you want to select this model?',
+      text: "This model will be used to generate Scan Reports and Attack Suggestions.",
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Select',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch(url, {
+          method: 'PUT',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          }
+        }).then(function(response) {
+          return response.json();
+        }).then(function(data) {
+          if (!data.status){
+            swal.insertQueueStep({
+              icon: 'error',
+              title: 'Oops! Unable to select the model!'
+            })
+          }
+          else{
+            swal.queue([{
+              title: 'Model Successfully selected!',
+              icon: 'success',
+              showCancelButton: false,
+              confirmButtonText: 'Okay',
+              padding: '2em',
+              showLoaderOnConfirm: true,
+              preConfirm: function() {
+                location.reload();
+              }
+            }]);
+          }
+          //return location.reload();
+        }).catch(function() {
+          swal.insertQueueStep({
+            icon: 'error',
+            title: 'Oops! Unable to select the model!'
+          })
+        })
+      }
+    }])
+  }
+</script>
+{% endblock page_level_script %}

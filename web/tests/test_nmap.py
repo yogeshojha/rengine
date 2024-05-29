@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import unittest
@@ -6,7 +5,6 @@ import unittest
 os.environ['RENGINE_SECRET_KEY'] = 'secret'
 os.environ['CELERY_ALWAYS_EAGER'] = 'True'
 
-import yaml
 from celery.utils.log import get_task_logger
 from reNgine.settings import DEBUG
 from reNgine.tasks import parse_nmap_results, parse_nmap_vuln_output, parse_nmap_vulscan_output

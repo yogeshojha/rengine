@@ -53,9 +53,17 @@ urlpatterns = [
         views.api_vault,
         name='api_vault'),
     path(
+        '<slug:slug>/api_vault/delete',
+        views.api_vault_delete,
+        name='api_vault_delete'),
+    path(
         '<slug:slug>/tool_arsenal',
         views.tool_arsenal_section,
         name='tool_arsenal'),
+	path(
+        '<slug:slug>/llm_toolkit',
+        views.llm_toolkit_section,
+        name='llm_toolkit'),
     path(
         '<slug:slug>/rengine_settings',
         views.rengine_settings,

@@ -436,6 +436,52 @@ PERM_INITATE_SCANS_SUBSCANS = 'initiate_scans_subscans'
 FOUR_OH_FOUR_URL = '/404/'
 
 
+###############################################################################
+# OLLAMA DEFINITIONS
+###############################################################################
+OLLAMA_INSTANCE = 'http://ollama:11434'
+
+DEFAULT_GPT_MODELS = [
+    {
+        'name': 'gpt-3',
+        'model': 'gpt-3',
+        'modified_at': '',
+        'details': {
+            'family': 'GPT',
+            'parameter_size': '~175B',
+        }
+    },
+    {
+        'name': 'gpt-3.5-turbo',
+        'model': 'gpt-3.5-turbo',
+        'modified_at': '',
+        'details': {
+            'family': 'GPT',
+            'parameter_size': '~7B',
+        }
+    },
+    {
+        'name': 'gpt-4',
+        'model': 'gpt-4',
+        'modified_at': '',
+        'details': {
+            'family': 'GPT',
+            'parameter_size': '~1.7T',
+        }
+    },
+	{
+        'name': 'gpt-4-turbo',
+        'model': 'gpt-4',
+        'modified_at': '',
+        'details': {
+            'family': 'GPT',
+            'parameter_size': '~1.7T',
+        }
+    }
+]
+
+
+
 # GPT Vulnerability Report Generator
 VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
     You are a highly skilled penetration tester who has recently completed a penetration testing.

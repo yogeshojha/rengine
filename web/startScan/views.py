@@ -270,7 +270,11 @@ def start_scan_ui(request, slug, domain_id):
         engine_id = request.POST['scan_mode']
 
         # Create ScanHistory object
-        scan_history_id = create_scan_object(domain_id, engine_id)
+        scan_history_id = create_scan_object(
+            domain_id,
+            engine_id,
+            request.user
+        )
         scan = ScanHistory.objects.get(pk=scan_history_id)
 
         # Start the celery task
@@ -323,7 +327,11 @@ def start_multiple_scan(request, slug):
 
             for domain_id in list_of_domains.split(","):
                 # Start the celery task
-                scan_history_id = create_scan_object(domain_id, engine_id)
+                scan_history_id = create_scan_object(
+                    domain_id,
+                    engine_id,
+                    request.user
+                )
                 # domain = get_object_or_404(Domain, id=domain_id)
 
                 kwargs = {
@@ -621,7 +629,7 @@ def change_vuln_status(request, id):
     return HttpResponse('')
 
 
-def create_scan_object(host_id, engine_id):
+def create_scan_object(host_id, engine_id, initiated_by):
     '''
     create task with pending status so that celery task will execute when
     threads are free
@@ -636,6 +644,7 @@ def create_scan_object(host_id, engine_id):
     scan.domain = domain
     scan.scan_type = engine
     scan.start_scan_date = current_scan_time
+    scan.initiated_by = initiated_by
     scan.save()
     # save last scan date for domain model
     domain.start_scan_date = current_scan_time
@@ -684,7 +693,11 @@ def start_organization_scan(request, id, slug):
 
         # Start Celery task for each organization's domains
         for domain in organization.get_domains():
-            scan_history_id = create_scan_object(domain.id, engine_id)
+            scan_history_id = create_scan_object(
+                domain.id,
+                engine_id,
+                request.user
+            )
             scan = ScanHistory.objects.get(pk=scan_history_id)
 
             kwargs = {

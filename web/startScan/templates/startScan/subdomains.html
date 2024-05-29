@@ -349,6 +349,10 @@ $(document).ready(function() {
 			subdomain_datatables.search($("#subdomains-search").val()).draw() ;
 		});
 
+		$('#load_important_subdomain_table_btn').click(function() {
+			subdomain_datatables.search('is_important=true').draw();
+		});
+
 		$('input[name=sub_http_status_filter_checkbox]').change(function() {
 			if ($(this).is(':checked')) {
 				subdomain_datatables.column(4).visible(true);

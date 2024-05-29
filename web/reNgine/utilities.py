@@ -30,12 +30,12 @@ def get_time_taken(latest, earlier):
 	minutes = (seconds % 3600) // 60
 	seconds = seconds % 60
 	if not hours and not minutes:
-		return '{} seconds'.format(seconds)
+		return f'{seconds} seconds'
 	elif not hours:
-		return '{} minutes'.format(minutes)
+		return f'{minutes} minutes'
 	elif not minutes:
-		return '{} hours'.format(hours)
-	return '{} hours {} minutes'.format(hours, minutes)
+		return f'{hours} hours'
+	return f'{hours} hours {minutes} minutes'
 
 # Check if value is a simple string, a string with commas, a list [], a tuple (), a set {} and return an iterable
 def return_iterable(string):
