@@ -11,13 +11,11 @@ ENV DEBIAN_FRONTEND="noninteractive" \
     DATABASE="postgres"
 ENV USERNAME="rengine"
 
-RUN <<EOF
-apk add --no-cache bash postgresql-libs
-apk add --no-cache py3-pip gcc musl-dev python3-dev pango zlib-dev jpeg-dev openjpeg-dev g++ libffi-dev
-apk add --no-cache --virtual .build-deps gcc python3-dev musl-dev postgresql-dev
-addgroup --gid 1000 -S $USERNAME
-adduser -g 1000 -u 1000 -S --shell /bin/bash --ingroup $USERNAME $USERNAME
-EOF
+RUN apk add --no-cache bash postgresql-libs curl && \
+    apk add --no-cache py3-pip gcc musl-dev python3-dev pango zlib-dev jpeg-dev openjpeg-dev g++ libffi-dev && \
+    apk add --no-cache --virtual .build-deps gcc python3-dev musl-dev postgresql-dev && \
+    addgroup --gid 1000 -S $USERNAME && \
+    adduser -g 1000 -u 1000 -S --shell /bin/bash --ingroup $USERNAME $USERNAME
 
 USER $USERNAME
 ENV PATH=/home/$USERNAME/.local/bin:${PATH}

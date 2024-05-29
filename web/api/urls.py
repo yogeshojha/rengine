@@ -178,6 +178,10 @@ urlpatterns = [
         'tool/uninstall/',
         UninstallTool.as_view(),
         name='uninstall_tool'),
+	path(
+        'tool/ollama/',
+        OllamaManager.as_view(),
+        name='ollama_manager'),
     path(
         'rengine/update/',
         RengineUpdateCheck.as_view(),

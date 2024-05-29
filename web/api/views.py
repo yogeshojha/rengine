@@ -36,6 +36,82 @@ from .serializers import *
 logger = logging.getLogger(__name__)
 
 
+class OllamaManager(APIView):
+	def get(self, request):
+		"""
+		API to download Ollama Models
+		sends a POST request to download the model
+		"""
+		req = self.request
+		model_name = req.query_params.get('model')
+		response = {
+			'status': False
+		}
+		try:
+			pull_model_api = f'{OLLAMA_INSTANCE}/api/pull'
+			_response = requests.post(
+				pull_model_api, 
+				json={
+					'name': model_name,
+					'stream': False
+				}
+			).json()
+			if _response.get('error'):
+				response['status'] = False
+				response['error'] = _response.get('error')
+			else:
+				response['status'] = True
+		except Exception as e:
+			response['error'] = str(e)		
+		return Response(response)
+	
+	def delete(self, request):
+		req = self.request
+		model_name = req.query_params.get('model')
+		delete_model_api = f'{OLLAMA_INSTANCE}/api/delete'
+		response = {
+			'status': False
+		}
+		try:
+			_response = requests.delete(
+				delete_model_api, 
+				json={
+					'name': model_name
+				}
+			).json()
+			if _response.get('error'):
+				response['status'] = False
+				response['error'] = _response.get('error')
+			else:
+				response['status'] = True
+		except Exception as e:
+			response['error'] = str(e)
+		return Response(response)
+	
+	def put(self, request):
+		req = self.request
+		model_name = req.query_params.get('model')
+		# check if model_name is in DEFAULT_GPT_MODELS
+		response = {
+			'status': False
+		}
+		use_ollama = True
+		if any(model['name'] == model_name for model in DEFAULT_GPT_MODELS):
+			use_ollama = False
+		try:
+			OllamaSettings.objects.update_or_create(
+				defaults={
+					'selected_model': model_name,
+					'use_ollama': use_ollama
+				},
+				id=1
+			)
+			response['status'] = True
+		except Exception as e:
+			response['error'] = str(e)
+		return Response(response)
+
+
 class GPTAttackSuggestion(APIView):
 	def get(self, request):
 		req = self.request
@@ -174,7 +250,7 @@ class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
 
 
 			if _order_direction == 'desc':
-				order_col = '-{}'.format(order_col)
+				order_col = f'-{order_col}'
 
 			qs = self.queryset.filter(
 				Q(name__icontains=search_value) |
@@ -550,6 +626,7 @@ class AddTarget(APIView):
 		h1_team_handle = data.get('h1_team_handle')
 		description = data.get('description')
 		domain_name = data.get('domain_name')
+		organization_name = data.get('organization')
 		slug = data.get('slug')
 
 		# Validate domain name
@@ -566,6 +643,20 @@ class AddTarget(APIView):
 		if not domain.insert_date:
 			domain.insert_date = timezone.now()
 		domain.save()
+
+		# Create org object in DB
+		if organization_name:
+			organization_obj = None
+			organization_query = Organization.objects.filter(name=organization_name)
+			if organization_query.exists():
+				organization_obj = organization_query[0]
+			else:
+				organization_obj = Organization.objects.create(
+					name=organization_name,
+					project=project,
+					insert_date=timezone.now())
+			organization_obj.domains.add(domain)
+
 		return Response({
 			'status': True,
 			'message': 'Domain successfully added as target !',
@@ -715,6 +806,7 @@ class StopScan(APIView):
 				task_ids = scan.celery_ids
 				scan.scan_status = ABORTED_TASK
 				scan.stop_scan_date = timezone.now()
+				scan.aborted_by = request.user
 				scan.save()
 				create_scan_activity(
 					scan.id,
@@ -952,7 +1044,7 @@ class GithubToolCheckGetLatestRelease(APIView):
 		# if tool_github_url has https://github.com/ remove and also remove trailing /
 		tool_github_url = tool.github_url.replace('http://github.com/', '').replace('https://github.com/', '')
 		tool_github_url = remove_lead_and_trail_slash(tool_github_url)
-		github_api = 'https://api.github.com/repos/{}/releases'.format(tool_github_url)
+		github_api = f'https://api.github.com/repos/{tool_github_url}/releases'
 		response = requests.get(github_api).json()
 		# check if api rate limit exceeded
 		if 'message' in response and response['message'] == 'RateLimited':
@@ -961,7 +1053,7 @@ class GithubToolCheckGetLatestRelease(APIView):
 			return Response({'status': False, 'message': 'Not Found'})
 		elif not response:
 			return Response({'status': False, 'message': 'Not Found'})
-		
+
 		# only send latest release
 		response = response[0]
 
@@ -1070,7 +1162,6 @@ class CMSDetector(APIView):
 		#save_db = True if 'save_db' in req.query_params else False
 		response = {'status': False}
 		try:
-			# response = get_cms_details(url)
 			response = {}
 			cms_detector_command = f'cmseek'
 			cms_detector_command += ' --random-agent --batch --follow-redirect'
@@ -1145,7 +1236,7 @@ class IPToDomain(APIView):
 			response = {
 				'status': False,
 				'ip_address': ip_address,
-				'message': 'Exception {}'.format(e)
+				'message': f'Exception {e}'
 			}
 		finally:
 			return Response(response)
@@ -1791,7 +1882,7 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
 			order_col = 'content_length'
 
 		if _order_direction == 'desc':
-			order_col = '-{}'.format(order_col)
+			order_col = f'-{order_col}'
 
 		if search_value:
 			qs = self.queryset.filter(
@@ -1847,6 +1938,9 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
 		subdomains = Subdomain.objects.filter(target_domain__project__slug=project)
 
+		if 'is_important' in req.query_params:
+			subdomains = subdomains.filter(is_important=True)
+
 		if target_id:
 			self.queryset = (
 				subdomains
@@ -1898,7 +1992,7 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 		elif _order_col == '10':
 			order_col = 'response_time'
 		if _order_direction == 'desc':
-			order_col = '-{}'.format(order_col)
+			order_col = f'-{order_col}'
 		# if the search query is separated by = means, it is a specific lookup
 		# divide the search query into two half and lookup
 		if search_value:
@@ -2228,7 +2322,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			elif _order_col == '9':
 				order_col = 'response_time'
 			if _order_direction == 'desc':
-				order_col = '-{}'.format(order_col)
+				order_col = f'-{order_col}'
 			# if the search query is separated by = means, it is a specific lookup
 			# divide the search query into two half and lookup
 			if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:

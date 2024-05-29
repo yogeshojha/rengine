@@ -5,21 +5,32 @@ services:
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
+      - PGUSER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
     volumes:
-      - ./data/postgres_data:/var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - rengine_network
 
   redis:
     image: "redis:alpine"
     hostname: redis
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - rengine_network
 
   celery:
-    image: docker.io/talanor/rengine-celery:v0.3
+    image: docker.io/talanor/rengine-celery:v0.5
     restart: unless-stopped
     volumes:
       - ./web:/home/rengine/rengine
@@ -43,15 +54,22 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - MAX_CONCURRENCY=${MAX_CONCURRENCY}
       - MIN_CONCURRENCY=${MIN_CONCURRENCY}
+    healthcheck:
+      test: ["CMD", "poetry", "-C", "/home/rengine", "run", "celery","-A","reNgine","status"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       rengine_network:
 
   celery-beat:
-    image: docker.io/talanor/rengine-celery:v0.3
-    entrypoint: /home/rengine/rengine/beat-entrypoint.sh
+    image: docker.io/talanor/rengine-celery:v0.5
+    entrypoint: /entrypoint.sh
     environment:
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
@@ -61,12 +79,14 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
     depends_on:
-      - celery
+      celery:
+        condition: service_healthy
     volumes:
       - ./web:/home/rengine/rengine
+      - ./docker/beat/entrypoint.sh:/entrypoint.sh:ro
+      - scan_results:/usr/src/scan_results
       # - github_repos:/usr/src/github
       # - wordlist:/usr/src/wordlist
-      # - scan_results:/usr/src/scan_results
       # - gf_patterns:/root/.gf
       # - nuclei_templates:/root/nuclei-templates
       # - tool_config:/root/.config
@@ -74,10 +94,11 @@ services:
       - rengine_network
 
   web:
-    image: docker.io/talanor/rengine-web:v0.2
+    image: docker.io/talanor/rengine-web:v0.5
     restart: unless-stopped
     environment:
-      - DEBUG=0
+      - DEBUG=1
+      - RENGINE_HOME=/home/rengine/app
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - DOMAIN_NAME=${DOMAIN_NAME}
@@ -86,22 +107,31 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
+      - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD}
       # THIS IS A MUST FOR CHECKING UPDATE, EVERYTIME A COMMIT IS MERGED INTO
       # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
-      - RENGINE_CURRENT_VERSION='2.0.5'
+      - RENGINE_CURRENT_VERSION='2.1.0'
     volumes:
       - ./web:/home/rengine/app
-      # - ./data/static_volume:/usr/src/app/staticfiles/
-      # - ./data/github_repos:/usr/src/github
-      # - ./data/wordlist:/usr/src/wordlist
-      # - ./data/scan_results:/usr/src/scan_results
-      # - ./data/gf_patterns:/root/.gf
-      # - ./data/nuclei_templates:/root/nuclei-templates
-      # - ./datatool_config:/root/.config
+      # - github_repos:/usr/src/github
+      # - wordlist:/usr/src/wordlist
+      # - scan_results:/usr/src/scan_results
+      # - gf_patterns:/root/.gf
+      # - nuclei_templates:/root/nuclei-templates
+      # - tool_config:/root/.config
+      # - static_volume:/usr/src/app/staticfiles/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "http://localhost:8000"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
     depends_on:
-      - db
-      - celery
-      - celery-beat
+      db:
+        condition: service_healthy
+      celery:
+        condition: service_healthy
+      celery-beat:
+        condition: service_started
     networks:
       rengine_network:
         aliases:
@@ -111,9 +141,12 @@ services:
     restart: unless-stopped
     image: nginx:alpine
     depends_on:
-      - web
-      - db
-      - redis
+      web:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     secrets:
       - source: proxy.ca
         target: /etc/nginx/certs/rengine_chain.pem
@@ -124,12 +157,31 @@ services:
     volumes:
       - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
       - ./web/staticfiles:/usr/src/app/staticfiles/
-      - ./scan_results:/usr/src/scan_results
+      - scan_results:/usr/src/scan_results
+    networks:
+      - rengine_network
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    volumes:
+      - ollama_data:/root/.ollama
     networks:
       - rengine_network
 
 networks:
   rengine_network:
+
+volumes:
+  tool_config:
+  postgres_data:
+  gf_patterns:
+  nuclei_templates:
+  github_repos:
+  wordlist:
+  scan_results:
+  static_volume:
+  ollama_data:
 
 secrets:
   proxy.ca:

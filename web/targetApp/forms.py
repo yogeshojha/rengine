@@ -33,6 +33,15 @@ class AddTargetForm(forms.Form):
                 "placeholder": "team_handle"
             }
         ))
+    organization_name = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-lg",
+                "id": "organizationName",
+                "placeholder": "Organization Name"
+            }
+        ))
 
 class AddOrganizationForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -77,7 +86,7 @@ class AddOrganizationForm(forms.Form):
     def clean_name(self):
         data = self.cleaned_data['name']
         if Organization.objects.filter(name=data).count() > 0:
-            raise forms.ValidationError("{} Organization already exists".format(data))
+            raise forms.ValidationError(f"{data} Organization already exists")
         return data
 
 

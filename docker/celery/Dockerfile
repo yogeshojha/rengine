@@ -30,6 +30,7 @@ RUN apt update -y && apt install -y      \
     git                 \
     unzip               \
     curl                \
+    gettext             \
     nmap
 
 ENV USERNAME="rengine"

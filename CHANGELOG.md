@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.0.6
+
+**Release Date: May 11, 2024**
+
+## What's Changed
+* Fix installation error and celery workers having issues with httpcore
+* remove duplicate gospider references by @Talanor in https://github.com/yogeshojha/rengine/pull/1245
+* Fix "subdomain" s3 bucket by @Talanor in https://github.com/yogeshojha/rengine/pull/1244
+* Fix Txt File Var Declaration by @specters312 in https://github.com/yogeshojha/rengine/pull/1239
+* Bug Correction: When dumping and loading customscanengines by @TH3xACE in https://github.com/yogeshojha/rengine/pull/1224
+* Fix/infoga removal by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1249
+* Fix #1241 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1251
+
+## New Contributors
+* @Talanor made their first contribution in https://github.com/yogeshojha/rengine/pull/1245
+* @specters312 made their first contribution in https://github.com/yogeshojha/rengine/pull/1239
+* @TH3xACE made their first contribution in https://github.com/yogeshojha/rengine/pull/1224
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.0.5...v2.0.6
+
 ## 2.0.5
 
 **Release Date: April 20, 2024**
