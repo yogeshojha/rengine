@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('startScan', '0055_remove_dork_description'),
+        ('startScan', '0056_alter_endpoint_techs'),
     ]
 
     operations = [
