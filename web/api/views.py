@@ -547,6 +547,7 @@ class AddTarget(APIView):
 		h1_team_handle = data.get('h1_team_handle')
 		description = data.get('description')
 		domain_name = data.get('domain_name')
+		organization_name = data.get('organization')
 		slug = data.get('slug')
 
 		# Validate domain name
@@ -563,6 +564,20 @@ class AddTarget(APIView):
 		if not domain.insert_date:
 			domain.insert_date = timezone.now()
 		domain.save()
+
+		# Create org object in DB
+		if organization_name:
+			organization_obj = None
+			organization_query = Organization.objects.filter(name=organization_name)
+			if organization_query.exists():
+				organization_obj = organization_query[0]
+			else:
+				organization_obj = Organization.objects.create(
+					name=organization_name,
+					project=project,
+					insert_date=timezone.now())
+			organization_obj.domains.add(domain)
+
 		return Response({
 			'status': True,
 			'message': 'Domain successfully added as target !',
