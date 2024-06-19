@@ -17,6 +17,7 @@ services:
       - rengine_network
 
   redis:
+    restart: always
     image: "redis:alpine"
     hostname: redis
     networks:
