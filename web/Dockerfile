@@ -51,10 +51,9 @@ ARG GOVERSION="1.21.4"
 RUN echo "GOVERSION: $GOVERSION"
 ARG TARGETARCH
 RUN echo "TARGETARCH: $TARGETARCH"
-RUN wget https://golang.org/dl/go$GOVERSION.linux-$TARGETARCH.tar.gz
-RUN tar -xvf go$GOVERSION.linux-$TARGETARCH.tar.gz
-RUN rm go$GOVERSION.linux-$TARGETARCH.tar.gz
-RUN mv go /usr/local
+RUN wget https://golang.org/dl/go$GOVERSION.linux-$TARGETARCH.tar.gz && \
+    tar -xvf go$GOVERSION.linux-$TARGETARCH.tar.gz -C /usr/local && \
+    rm go$GOVERSION.linux-$TARGETARCH.tar.gz
 
 # Download geckodriver
 RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz && \
