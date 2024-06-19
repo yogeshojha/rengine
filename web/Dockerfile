@@ -76,7 +76,6 @@ RUN printf "\
     github.com/projectdiscovery/naabu/v2/cmd/naabu@latest\n\
     github.com/hakluke/hakrawler@latest\n\
     github.com/lc/gau/v2/cmd/gau@latest\n\
-    github.com/jaeles-project/gospider@latest\n\
     github.com/owasp-amass/amass/v3/...@latest\n\
     github.com/ffuf/ffuf@latest\n\
     github.com/projectdiscovery/tlsx/cmd/tlsx@latest\n\
