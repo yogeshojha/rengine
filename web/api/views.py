@@ -2,6 +2,7 @@ import logging
 import re
 import socket
 import subprocess
+from ipaddress import IPv4Network
 
 import requests
 import validators
@@ -1214,20 +1215,22 @@ class IPToDomain(APIView):
 			})
 		try:
 			logger.info(f'Resolving IP address {ip_address} ...')
-			domain, domains, ips = socket.gethostbyaddr(ip_address)
+			resolved_ips = []
+			for ip in IPv4Network(ip_address, False):
+				domains = []
+				ips = []
+				try:
+					(domain, domains, ips) = socket.gethostbyaddr(str(ip))
+				except socket.herror:
+					logger.info(f'No PTR record for {ip_address}')
+					domain = str(ip)
+				if domain not in domains:
+					domains.append(domain)
+				resolved_ips.append({'ip': str(ip),'domain': domain, 'domains': domains, 'ips': ips})
 			response = {
 				'status': True,
-				'ip_address': ip_address,
-				'domains': domains or [domain],
-				'resolves_to': domain
-			}
-		except socket.herror: # ip does not have a PTR record
-			logger.info(f'No PTR record for {ip_address}')
-			response = {
-				'status': True,
-				'ip_address': ip_address,
-				'domains': [ip_address],
-				'resolves_to': ip_address
+				'orig': ip_address,
+				'ip_address': resolved_ips,
 			}
 		except Exception as e:
 			logger.exception(e)
