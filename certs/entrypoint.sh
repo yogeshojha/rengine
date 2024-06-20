@@ -19,16 +19,21 @@ cert() {
      -out ${FILENAME}.csr \
      -subj "/C=${COUNTRY_CODE}/ST=${STATE}/L=${CITY}/O=${COMPANY}/CN=${COMMON_NAME}"
 
+  # Creating SAN extension which is needed by modern browsers
+  echo "subjectAltName=DNS:${COMMON_NAME}" > client-ext.cnf
+
   # Create a new certificate using our own CA
   openssl x509 -req -sha256 -passin pass:${AUTHORITY_PASSWORD} -days 3650 \
     -in ${FILENAME}.csr -CA ca.crt -CAkey ca.key \
-    -out ${FILENAME}.crt
+    -out ${FILENAME}.crt \
+    -extfile client-ext.cnf
 
   # Rename files and remove useless ones
   mv ${FILENAME}.crt ${FILENAME}.pem
   cp ca.crt ${FILENAME}_chain.pem
   mv ${FILENAME}.key ${FILENAME}_rsa.key
   rm ${FILENAME}.csr
+  rm client-ext.cnf
 }
 
 # Create /certs folder if it does not exist
