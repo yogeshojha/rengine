@@ -154,6 +154,7 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 * Toolbox: Comes bundled with most commonly used tools during penetration testing such as whois lookup, CMS detector, CVE lookup, etc.
 * Identification of related domains and related TLDs for targets
 * Find actionable insights such as Most Common Vulnerability, Most Common CVE ID, Most Vulnerable Target/Subdomain, etc.
+* You can now use local LLMs for Attack surface identification and vulnerability description (NEW: reNgine 2.1.0)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -504,13 +505,7 @@ Please do not use GitHub for support requests. Instead, [join our Discord channe
 
 ### Support and Sponsoring
 
-Over the past few years, I have been working hard on reNgine to add new features with the sole aim of making it the de facto standard for reconnaissance. I spend most of my free time and weekends working on reNgine. I do this in addition to my day job. I am happy to have received such overwhelming support from the community. But to keep this project alive, I am looking for financial support.
-
-|                                                                       Paypal                                                                       |                                                            Bitcoin                                                             |                                                            Ethereum                                                            |
-| :-------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: |
-|[https://www.paypal.com/paypalme/yogeshojha11](https://www.paypal.com/paypalme/yogeshojha11)                                 |                                              `35AiKyNswNZ4TZUSdriHopSCjNMPi63BCX`                                              |                                          `0xe7A337Da6ff98A28513C26A7Fec8C9b42A63d346`  
-
-OR
+Over the past few years, I have been working hard on reNgine to add new features with the sole aim of making it the de facto standard for reconnaissance. I spend most of my free time and weekends working on reNgine. I do this in addition to my day job. I am happy to have received such overwhelming support from the community. To keep this project alive, you may
 
 * Add a [GitHub Star](https://github.com/yogeshojha/rengine) to the project.
 * Tweet about this project, or maybe blogs?
@@ -520,34 +515,6 @@ OR
 It takes a considerable amount of time to add new features and make sure everything works. Donating is your way of saying: **reNgine is awesome**.
 
 Any support is greatly appreciated! Thank you!
-
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
-
-### reNgine Bug Bounty Program
-
-[![huntr](https://cdn.huntr.dev/huntr_security_badge_mono.svg)](https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine)
-
-Security researchers, welcome aboard! I'm excited to announce the reNgine bug bounty programme in collaboration with [huntr.dev](https://huntr.dev), which means that you will be rewarded for any vulnerabilities you find in reNgine.
-
-Thank you for your interest in reporting reNgine vulnerabilities! If you are aware of any potential security vulnerabilities in reNgine, we encourage you to report them immediately via [huntr.dev](https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine).
-
-**Please do not disclose vulnerabilities via GitHub issues/blogs/tweets after/before reporting to huntr.dev as this is explicitly against the disclosure policy of huntr.dev and reNgine and will not be considered for monetary rewards.**
-
-Please note that the reNgine maintainer does not set the bounty amount.
-The bounty reward is determined by an industry-first equation developed by huntr.dev to understand the popularity, impact and value of repositories to the open-source community.
-
-**What do I expect from security researchers?**
-
-* Respect for privacy and security reports: Please do not publicly disclose any vulnerabilities (including GitHub issues) before or after reporting them on huntr.dev! This is against the disclosure policy and will not be rewarded.
-* Respect the rules
-
-**What do you get in return?**
-
-* Thanks from the maintainer
-* Monetary rewards
-* CVE ID(s)
-
-Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure policy](https://www.huntr.dev/policy/) from huntr.dev.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
