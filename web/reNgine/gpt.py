@@ -93,27 +93,37 @@ class GPTVulnerabilityReportGenerator:
 class GPTAttackSuggestionGenerator:
 
 	def __init__(self):
-		self.api_key = get_open_ai_key()
-		self.model_name = 'gpt-3.5-turbo'
-		if not self.api_key:
-			self.ollama = Ollama(base_url='http://ollama:11434', model="llama2-uncensored")
+		selected_model = OllamaSettings.objects.first()
+		self.model_name = selected_model.selected_model if selected_model else 'gpt-3.5-turbo'
+		self.use_ollama = selected_model.use_ollama if selected_model else False
+		self.openai_api_key = None
+		self.ollama = None
 
-	def get_attack_suggestion(self, input):
+	def get_attack_suggestion(self, user_input):
 		'''
-			input (str): input for gpt
+			user_input (str): input for gpt
 		'''
-		if not self.api_key:
-			prompt = ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT + "\nUser: " + input
+		if self.use_ollama:
+			prompt = ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT + "\nUser: " + user_input	
+			self.ollama = Ollama(
+				base_url=OLLAMA_INSTANCE, 
+				model=self.model_name
+			)
 			response_content = self.ollama(prompt)
 		else:
-			openai.api_key = self.api_key
-			print(input)
+			openai_api_key = get_open_ai_key()
+			if not openai_api_key:
+				return {
+					'status': False,
+					'error': 'OpenAI API Key not set'
+				}
 			try:
+				openai.api_key = openai_api_key
 				gpt_response = openai.ChatCompletion.create(
 				model=self.model_name,
 				messages=[
 						{'role': 'system', 'content': ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT},
-						{'role': 'user', 'content': input}
+						{'role': 'user', 'content': user_input}
 					]
 				)
 				response_content = gpt_response['choices'][0]['message']['content']
@@ -121,11 +131,11 @@ class GPTAttackSuggestionGenerator:
 				return {
 					'status': False,
 					'error': str(e),
-					'input': input
+					'input': user_input
 				}
 		return {
 			'status': True,
 			'description': response_content,
-			'input': input
+			'input': user_input
 		}
 		

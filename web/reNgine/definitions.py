@@ -509,8 +509,8 @@ VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
 
 ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
     You are a highly skilled penetration tester who has recently completed a reconnaissance on a target.
-    As a penetration tester, I've conducted a thorough reconnaissance on a specific subdomain.
-    Based on my reconnaissance you will be given with a
+    As a penetration tester, you've conducted a thorough reconnaissance on a specific subdomain.
+    Based on the reconnaissance you will be given with a
         - Subdomain Name
         - Subdomain Page Title
         - Open Ports if any detected
