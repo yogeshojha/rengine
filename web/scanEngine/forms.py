@@ -183,6 +183,23 @@ class NotificationForm(forms.ModelForm):
                 "placeholder": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
             }))
 
+    send_to_lark = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "lark_checkbox",
+            }))
+
+    lark_hook_url = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "lark_hook_url",
+                "placeholder": "https://open.larksuite.com/open-apis/bot/v2/hook/XXXXXXXXXXXXXXXXXXXXXXXX",
+            }))
+
     send_to_discord = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(
@@ -280,10 +297,12 @@ class NotificationForm(forms.ModelForm):
 
     def set_value(self, key):
         self.initial['send_to_slack'] = key.send_to_slack
+        self.initial['send_to_lark'] = key.send_to_lark
         self.initial['send_to_discord'] = key.send_to_discord
         self.initial['send_to_telegram'] = key.send_to_telegram
 
         self.initial['slack_hook_url'] = key.slack_hook_url
+        self.initial['lark_hook_url'] = key.lark_hook_url
         self.initial['discord_hook_url'] = key.discord_hook_url
         self.initial['telegram_bot_token'] = key.telegram_bot_token
         self.initial['telegram_bot_chat_id'] = key.telegram_bot_chat_id
@@ -298,6 +317,8 @@ class NotificationForm(forms.ModelForm):
 
         if not key.send_to_slack:
             self.fields['slack_hook_url'].widget.attrs['readonly'] = True
+        if not key.send_to_lark:
+            self.fields['lark_hook_url'].widget.attrs['readonly'] = True
         if not key.send_to_discord:
             self.fields['discord_hook_url'].widget.attrs['readonly'] = True
         if not key.send_to_telegram:
@@ -307,10 +328,12 @@ class NotificationForm(forms.ModelForm):
 
     def set_initial(self):
         self.initial['send_to_slack'] = False
+        self.initial['send_to_lark'] = False
         self.initial['send_to_discord'] = False
         self.initial['send_to_telegram'] = False
 
         self.fields['slack_hook_url'].widget.attrs['readonly'] = True
+        self.fields['lark_hook_url'].widget.attrs['readonly'] = True
         self.fields['discord_hook_url'].widget.attrs['readonly'] = True
         self.fields['telegram_bot_token'].widget.attrs['readonly'] = True
         self.fields['telegram_bot_chat_id'].widget.attrs['readonly'] = True

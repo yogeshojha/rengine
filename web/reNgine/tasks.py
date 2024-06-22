@@ -548,9 +548,10 @@ def subdomain_discovery(
 
 		# Add subdomain
 		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
-		subdomain_count += 1
-		subdomains.append(subdomain)
-		urls.append(subdomain.name)
+		if subdomain:
+			subdomain_count += 1
+			subdomains.append(subdomain)
+			urls.append(subdomain.name)
 
 	# Bulk crawl subdomains
 	if enable_http_crawl:
@@ -1205,8 +1206,8 @@ def screenshot(self, ctx={}, description=None):
 	with open(output_path, 'r') as file:
 		reader = csv.reader(file)
 		for row in reader:
-			"Protocol,Port,Domain,Request Status,Screenshot Path, Source Path"
-			protocol, port, subdomain_name, status, screenshot_path, source_path = tuple(row)
+			# ('Protocol', 'Port', 'Domain', 'Resolved', 'Request Status', 'Title', 'Category', 'Default Creds', 'Screenshot Path', ' Source Path')
+			protocol, port, subdomain_name, ip, status, title, category, creds, screenshot_path, source_path = tuple(row)
 			logger.info(f'{protocol}:{port}:{subdomain_name}:{status}')
 			subdomain_query = Subdomain.objects.filter(name=subdomain_name)
 			if self.scan:
@@ -1220,7 +1221,7 @@ def screenshot(self, ctx={}, description=None):
 
 	# Remove all db, html extra files in screenshot results
 	run_command(
-		'rm -rf {0}/*.csv {0}/*.db {0}/*.js {0}/*.html {0}/*.css'.format(screenshots_path),
+		f'rm -rf {screenshots_path}/*.csv {screenshots_path}/*.db {screenshots_path}/*.js {screenshots_path}/*.html {screenshots_path}/*.css',
 		shell=True,
 		history_file=self.history_file,
 		scan_id=self.scan_id,
@@ -2937,6 +2938,7 @@ def send_notif(
 		message = enrich_notification(message, scan_history_id, subscan_id)
 	send_discord_message(message, **options)
 	send_slack_message(message)
+	send_lark_message(message)
 	send_telegram_message(message)
 
 
@@ -3141,7 +3143,7 @@ def send_hackerone_report(vulnerability_id):
 				"type": "report",
 				"attributes": {
 				  "team_handle": vulnerability.target_domain.h1_team_handle,
-				  "title": '{} found in {}'.format(vulnerability.name, vulnerability.http_url),
+				  "title": f'{vulnerability.name} found in {vulnerability.http_url}',
 				  "vulnerability_information": tpl,
 				  "severity_rating": severity_value,
 				  "impact": "More information about the impact and vulnerability can be found here: \n" + vulnerability.reference if vulnerability.reference else "NA",

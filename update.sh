@@ -2,6 +2,7 @@
 
 echo "Do you want to apply your local changes after updating? (y/n)"
 read answer
+answer=$(echo $answer | tr '[:upper:]' '[:lower:]')
 
 if [[ $answer == "y" ]]; then
   make down && git stash save && git pull && git stash apply && make build && make up

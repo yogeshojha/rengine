@@ -155,6 +155,10 @@ Add or Import Targets
                 </label>
                 <input type="text" class="form-control form-control-lg" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
               </div>
+              <div class="col-12 mt-3">
+                <label for="targetDescription">Target Organization (Optional)</label>
+                <input type="text" class="form-control form-control-lg" id="targetOrganization" placeholder="Example Org" name="targetOrganization">
+              </div>
             </div>
             <button class="btn btn-primary submit-fn mt-2 float-end" type="submit" id="add-multiple-targets" name="add-multiple-targets" value="submit">Add 0 Target</button>
           </form>
@@ -165,7 +169,7 @@ Add or Import Targets
               <div class="alert alert-primary border-0 mb-4" role="alert">
                 Your txt file must have list of domains separated by a new line.
                 <br><br>
-                By default all domains imported from txt will have no description. If you choose to import multiple domains with description, csv import is recommended.
+                By default all domains imported from txt will have no description and no organization. If you choose to import multiple domains with description and/or organization, csv import is recommended.
               </div>
               <form method="post" enctype="multipart/form-data">
                 <div class="mb-3">
@@ -182,7 +186,7 @@ Add or Import Targets
           <div class="row">
             <div class="col-12">
               <div class="alert alert-warning border-0 mb-4" role="alert">
-                Your csv file must be in the format of <strong>domain, description</strong> separated by a new line.
+                Your csv file must be in the format of <strong>domain, description, organization</strong> separated by a new line.
               </div>
               <form method="post" enctype="multipart/form-data">
                 <div class="mb-3">
@@ -257,18 +261,22 @@ Add or Import Targets
             if (json_data['status']) {
               // #resolved_domains_div
               $("#all_domains_checkbox").show();
-              $('#resolved_domains_div').append(`<b class='text-info'>${json_data['domains'].length} domains associated with IP Address ${ip_address.value}</b></br>`);
-              $('#resolved_domains_div').append(`<b>Please select the domains to import.</b>`);
-              $('#resolved_domains_div').append(`<div id='domains_checkbox' class='mt-2 row'></div>`);
-              for (var domain in json_data['domains']) {
-                $('#domains_checkbox').append(`
-                <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-                  <div class="form-check">
-                    <input type="checkbox" class="form-check-input resolved_ip_domains" name="resolved_ip_domains" id="${json_data['domains'][domain]}" value="${json_data['domains'][domain]}">
-                    <label class="form-check-label" for="${json_data['domains'][domain]}">${json_data['domains'][domain]}</label>
-                  </div>
-                </div>`
-                );
+              if(Array.isArray(json_data['ip_address'])) {
+                $('#resolved_domains_div').append(`<b class='text-info'>${json_data['ip_address'].length} domains associated with IP Address ${json_data['orig']}</b></br>`);
+                $('#resolved_domains_div').append(`<b>Please select the domains to import.</b>`);
+                $('#resolved_domains_div').append(`<div id='domains_checkbox' class='mt-2 row'></div>`);
+                json_data['ip_address'].forEach((ip_info, index, array) => {
+                  for (var domain in ip_info['domains']) {
+                    $('#domains_checkbox').append(`
+                    <div class="col-xl-2 col-md-4 col-sm-6 col-12">
+                      <div class="form-check">
+                        <input type="checkbox" class="form-check-input resolved_ip_domains" name="resolved_ip_domains" id="${ip_info['domains'][domain]}" value="${ip_info['domains'][domain]}">
+                        <label class="form-check-label" for="${ip_info['domains'][domain]}">${ip_info['domains'][domain]}</label>
+                      </div>
+                    </div>`
+                    );
+                  }
+                })
               }
               swal.close();
               // resolved_ip_domains if any is checked, then only enable add button
