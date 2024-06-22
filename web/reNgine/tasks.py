@@ -548,9 +548,10 @@ def subdomain_discovery(
 
 		# Add subdomain
 		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
-		subdomain_count += 1
-		subdomains.append(subdomain)
-		urls.append(subdomain.name)
+		if subdomain:
+			subdomain_count += 1
+			subdomains.append(subdomain)
+			urls.append(subdomain.name)
 
 	# Bulk crawl subdomains
 	if enable_http_crawl:
