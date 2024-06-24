@@ -90,11 +90,12 @@ tput setaf 4;
 echo "#########################################################################"
 echo "Installing Docker Compose"
 echo "#########################################################################"
-if [ -x "$(command -v docker compose)" ]; then
+if [ -x "$(command -v docker-compose)" ]; then
   tput setaf 2; echo "Docker Compose already installed, skipping."
 else
-  curl -L "https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-  chmod +x /usr/local/bin/docker-compose
+  VERSION_DOCKER_COMPOSE=$(curl --silent https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')
+  sudo curl -L https://github.com/docker/compose/releases/download/${VERSION_DOCKER_COMPOSE}/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+  sudo chmod 755 /usr/local/bin/docker-compose
   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
   tput setaf 2; echo "Docker Compose installed!!!"
 fi
