@@ -611,7 +611,14 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 				return `<a href="https://` + data + `" class="text-primary" target="_blank">` + data + `</a>` + tech_badge;
 			},
 			"targets": 0
-		}, {
+		}, 
+		{
+			"render": function(data, type, row) {
+				return htmlEncode(data);
+			},
+			"targets": 1
+		},
+		{
 			"render": function(data, type, row) {
 				// display badge based on http status
 				// green for http status 2XX, orange for 3XX and warning for everything else
@@ -692,7 +699,14 @@ function get_interesting_endpoints(project, target_id, scan_history_id) {
 				return "<a href='" + data + "' target='_blank' class='text-primary'>" + url + "</a>";
 			},
 			"targets": 0
-		}, {
+		}, 
+		{
+			"render": function(data, type, row) {
+				return htmlEncode(data);
+			},
+			"targets": 1
+		},
+		{
 			"render": function(data, type, row) {
 				// display badge based on http status
 				// green for http status 2XX, orange for 3XX and warning for everything else
@@ -1096,7 +1110,7 @@ function render_endpoint_in_xlmodal(endpoint_count, subdomain_name, result) {
 			<tr>
 			<td>${http_url_td}</td>
 			<td>${get_http_status_badge(endpoint['http_status'])}</td>
-			<td>${return_str_if_not_null(endpoint['page_title'])}</td>
+			<td>${return_str_if_not_null(htmlEncode(endpoint['page_title']))}</td>
 			<td>${parse_comma_values_into_span(endpoint['matched_gf_patterns'], "danger", outline=true)}</td>
 			<td>${return_str_if_not_null(endpoint['content_type'])}</td>
 			<td>${return_str_if_not_null(endpoint['content_length'])}</td>
