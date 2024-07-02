@@ -2833,7 +2833,7 @@ function render_vuln_offcanvas(vuln){
 		</a>
 		</h5>
 		<div id="description" class="collapse show mt-2">
-		<p>${description}</p>
+		<p>${htmlEncode(description)}</p>
 		</div>
 		</div>`;
 	}
@@ -2850,7 +2850,7 @@ function render_vuln_offcanvas(vuln){
 		</a>
 		</h5>
 		<div id="impact" class="collapse show mt-2">
-		<p>${impact}</p>
+		<p>${htmlEncode(impact)}</p>
 		</div>
 		</div>`;
 	}
@@ -2867,7 +2867,7 @@ function render_vuln_offcanvas(vuln){
 		</a>
 		</h5>
 		<div id="remediation" class="collapse show mt-2">
-		<p>${remediation}</p>
+		<p>${htmlEncode(remediation)}</p>
 		</div>
 		</div>`;
 	}
