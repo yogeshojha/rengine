@@ -148,6 +148,12 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 			},
 			{
 				"render": function ( data, type, row ) {
+					return htmlEncode(data);
+				},
+				"targets": 3,
+			},
+			{
+				"render": function ( data, type, row ) {
 					if (data){
 						return parse_comma_values_into_span(data, "info");
 					}
@@ -348,6 +354,15 @@ function get_subdomain_changes(scan_history_id){
 			},
 			{
 				"render": function ( data, type, row ) {
+					if (data){
+						return htmlEncode(data);
+					}
+					return "";
+				},
+				"targets": 1,
+			},
+			{
+				"render": function ( data, type, row ) {
 					// display badge based on http status
 					// green for http status 2XX, orange for 3XX and warning for everything else
 					if (data >= 200 && data < 300) {
@@ -433,6 +448,15 @@ function get_endpoint_changes(scan_history_id){
 					return "<a href='"+data+"' target='_blank' class='text-primary'>"+url+"</a>";
 				},
 				"targets": 0
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return htmlEncode(data);
+					}
+					return "";
+				},
+				"targets": 1,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -534,7 +558,7 @@ function get_screenshot(scan_id){
 			else if (data[subdomain]['http_status'] >=300 && data[subdomain]['http_status'] < 400){
 				http_status_badge = 'warning';
 			}
-			page_title = data[subdomain]['page_title'] ? data[subdomain]['page_title'] + '</br>': '' ;
+			page_title = data[subdomain]['page_title'] ? htmlEncode(data[subdomain]['page_title']) + '</br>': '' ;
 			subdomain_link = data[subdomain]['http_url'] ? `<a href="${data[subdomain]['http_url']}" target="_blank">${data[subdomain]['name']}</a>` : `<a href="https://${data[subdomain]['name']}" target="_blank">${data[subdomain]['name']}</a>`
 			http_status = data[subdomain]['http_status'] ? `<span class="m-1 float-end badge  badge-soft-${http_status_badge}">${data[subdomain]['http_status']}</span>` : '';
 			figcaption.innerHTML = data[subdomain]['is_interesting'] ? page_title + subdomain_link + interesting_badge + http_status : page_title + subdomain_link + http_status;
