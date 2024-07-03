@@ -1203,11 +1203,22 @@ def screenshot(self, ctx={}, description=None):
 
 	# Loop through results and save objects in DB
 	screenshot_paths = []
-	with open(output_path, 'r') as file:
-		reader = csv.reader(file)
+	required_cols = [
+		'Protocol',
+		'Port',
+		'Domain',
+		'Request Status',
+		'Screenshot Path'
+	]
+	with open(output_path, 'r', newline='') as file:
+		reader = csv.DictReader(file)
 		for row in reader:
-			# ('Protocol', 'Port', 'Domain', 'Resolved', 'Request Status', 'Title', 'Category', 'Default Creds', 'Screenshot Path', ' Source Path')
-			protocol, port, subdomain_name, ip, status, title, category, creds, screenshot_path, source_path = tuple(row)
+			parsed_row = {col: row[col] for col in required_cols if col in row}
+			protocol = parsed_row['Protocol']
+			port = parsed_row['Port']
+			subdomain_name = parsed_row['Domain']
+			status = parsed_row['Request Status']
+			screenshot_path = parsed_row['Screenshot Path']
 			logger.info(f'{protocol}:{port}:{subdomain_name}:{status}')
 			subdomain_query = Subdomain.objects.filter(name=subdomain_name)
 			if self.scan:
