@@ -4773,3 +4773,112 @@ def gpt_vulnerability_description(vulnerability_id):
 			vuln.save()
 
 	return response
+
+def fetch_h1_bookmarked():
+	"""
+    Fetches bookmarked programs from HackerOne API using pagination.
+
+    Returns:
+        list: A list of bookmarked program objects.
+    """
+	ALLOWED_SCOPE_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "CIDR"]
+
+	bookmarked_programs = []
+	next_link = True
+	programs_url = "https://api.hackerone.com/v1/hackers/programs?size=100"
+
+	hackerone_query = Hackerone.objects.all()
+	
+	if hackerone_query.exists():
+		hackerone = Hackerone.objects.first()
+
+		headers = {
+			'Content-Type': 'application/json',
+			'Accept': 'application/json'
+		}
+
+		while next_link:
+			response = requests.get(programs_url, auth=(hackerone.username, hackerone.api_key), headers=headers)
+			response.raise_for_status()  # Raise an exception for non-200 status codes
+
+			response_json = response.json()
+			for program in response_json["data"]:
+				if program["attributes"]["bookmarked"]:
+					program_url = f"https://api.hackerone.com/v1/hackers/programs/{program['attributes']['handle']}"
+					program_response = requests.get(program_url, auth=(hackerone.username, hackerone.api_key), headers=headers)
+					program_response.raise_for_status()
+
+					program_json = program_response.json()
+					program_scopes = []
+					for scope in program_json["relationships"]["structured_scopes"]["data"]:
+						if (
+							scope["attributes"]["asset_type"] in ALLOWED_SCOPE_TYPES
+							and scope["attributes"]["eligible_for_submission"] is True
+						):
+							program_scopes.append(scope["attributes"])
+
+					program["scopes"] = program_scopes
+					bookmarked_programs.append(program)
+
+			if "links" in response_json and "next" in response_json["links"]:
+				programs_url = response_json["links"]["next"]
+			else:
+				next_link = False
+
+	return bookmarked_programs
+
+
+@app.task(name='sync_h1_bookmarked', bind=False, queue='h1_sync_queue')
+def sync_h1_bookmarked():
+	bookmarked_programs = fetch_h1_bookmarked()
+	#organizations = Organization.objects.filter().order_by('-insert_date')
+
+	project = Project.objects.get(slug="default")
+
+	for program in bookmarked_programs:
+		domains = []
+
+		for scope in program["scopes"]:
+
+			if (scope.asset_type == "WILDCARD"){
+				domain_name = scope.asset_identifier.replace('.*', '')
+				description = ''
+				ip_address_cidr = None
+			}
+			else if (scope.asset_type == "DOMAIN"){
+				domain_name = scope.asset_identifier
+				description = ''
+				ip_address_cidr = None
+			}
+			else if (scope.asset_type == "IP_ADDRESS" or scope.asset_type == "CIDR"){
+				domain_name = scope.asset_identifier
+				description = ''
+				ip_address_cidr = scope.asset_identifier
+			}
+			else {
+				print("Scope type not supported")
+				continue
+			}
+
+			domain, created = Domain.objects.get_or_create(
+									name=domain_name,
+									description=description,
+									h1_team_handle=program['attributes']['handle'],
+									project=project,
+									ip_address_cidr=ip_address_cidr)
+			domain.insert_date = timezone.now()
+            domain.save()
+			
+			domains.append(domain)
+
+
+		organization = Organization.objects.create(
+                name=program['attributes']['handle'],
+                description='',
+                project=project,
+                insert_date=timezone.now())
+
+		for domain in domains:
+			organization.domains.add(domain)
+		
+		organization.save()
