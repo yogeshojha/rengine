@@ -8,6 +8,8 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
+from reNgine.views import serve_protected_media
+
 schema_view = get_schema_view(
    openapi.Info(
       title="reNgine API",
@@ -53,5 +55,11 @@ urlpatterns = [
         include(
             'api.urls',
             'api')),
-] + static(settings.MEDIA_URL, document_root=settings.RENGINE_RESULTS) + \
-    static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    path(
+        'media/<path:path>', 
+        serve_protected_media, 
+        name='serve_protected_media'
+    ),
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# ] + static(settings.MEDIA_URL, document_root=settings.RENGINE_RESULTS) + \
+    
