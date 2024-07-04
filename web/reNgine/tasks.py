@@ -20,6 +20,7 @@ from celery.utils.log import get_task_logger
 from django.db.models import Count
 from dotted_dict import DottedDict
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from pycvesearch import CVESearch
 from metafinder.extractor import extract_metadata_from_google_search
 
@@ -4622,3 +4623,155 @@ def llm_vulnerability_description(vulnerability_id):
 			vuln.save()
 
 	return response
+
+def fetch_h1_bookmarked():
+	"""
+    Fetches bookmarked programs from HackerOne API using pagination.
+
+    Returns:
+        list: A list of bookmarked program objects.
+    """
+	ALLOWED_SCOPE_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "CIDR", "URL"]
+
+	bookmarked_programs = []
+	next_link = True
+	programs_url = "https://api.hackerone.com/v1/hackers/programs?size=100"
+
+	hackerone_query = Hackerone.objects.all()
+
+	if hackerone_query.exists():
+		hackerone = Hackerone.objects.first()
+
+		headers = {
+			'Content-Type': 'application/json',
+			'Accept': 'application/json'
+		}
+
+		while next_link:
+			try:
+				response = requests.get(programs_url, auth=(hackerone.username, hackerone.api_key), headers=headers)
+				response.raise_for_status()  # Raise an exception for non-200 status codes
+
+				response_json = response.json()
+				for program in response_json["data"]:
+					if program["attributes"]["bookmarked"]:
+						program_url = f"https://api.hackerone.com/v1/hackers/programs/{program['attributes']['handle']}"
+						program_response = requests.get(program_url, auth=(hackerone.username, hackerone.api_key), headers=headers)
+						program_response.raise_for_status()
+
+						program_json = program_response.json()
+						program_scopes = []
+						for scope in program_json["relationships"]["structured_scopes"]["data"]:
+							if (
+								scope["attributes"]["asset_type"] in ALLOWED_SCOPE_TYPES
+								and scope["attributes"]["eligible_for_submission"] is True
+							):
+								program_scopes.append(scope["attributes"])
+
+						program["scopes"] = program_scopes
+						bookmarked_programs.append(program)
+
+				if "links" in response_json and "next" in response_json["links"]:
+					programs_url = response_json["links"]["next"]
+				else:
+					next_link = False
+
+			except requests.exceptions.RequestException as e:
+				logger.error(f"Error fetching HackerOne programs: {e}")
+				break
+
+	return bookmarked_programs
+
+@app.task(name='sync_h1_bookmarked', bind=False, queue='h1_sync_queue')
+def sync_h1_bookmarked():
+    """
+    Sync HackerOne bookmarked programs to organizations
+    """
+    try:
+        logger.info('Starting HackerOne Bookmark Sync')
+
+        # Fetch bookmarked programs and project details
+        bookmarked_programs = fetch_h1_bookmarked()
+        project = Project.objects.get(slug="default")
+        bookmarked_handles = {program['attributes']['handle']
+                              for program in bookmarked_programs}
+
+		# Get current organizations and their handles
+        current_organizations = Organization.objects.filter(project=project)
+        current_handles = {org.name for org in current_organizations}
+
+		# Delete organizations not in the bookmarked programs
+        handles_to_delete = current_handles - bookmarked_handles
+
+		# Delete organizations
+        for handle in handles_to_delete:
+            try:
+                org_to_delete = get_object_or_404(Organization, name=handle, project=project)
+                # Check if organization was added via H1 Bookmark Sync
+                if(org_to_delete.description == 'Added via H1 Bookmark Sync'):
+                    for domain in org_to_delete.get_domains():
+                        domain.delete()
+                    org_to_delete.delete()
+                    logger.info(f'Deleted organization: {handle}')
+            except Exception as e:
+                logger.error(f"Error deleting organization {handle}: {e}")
+
+        # Process bookmarked programs and create domains
+        for program in bookmarked_programs:
+
+            if program['attributes']['handle'] not in current_handles:
+                domains = []
+
+                for scope in program["scopes"]:
+                    domain_name = None
+                    description = ''
+                    ip_address_cidr = None
+
+                    if scope["asset_type"] == "WILDCARD":
+                        domain_name = scope["asset_identifier"].replace('*.', '')
+                    elif scope["asset_type"] == "DOMAIN":
+                        domain_name = scope["asset_identifier"]
+                    elif scope["asset_type"] in ["IP_ADDRESS", "CIDR"]:
+                        domain_name = scope["asset_identifier"]
+                        ip_address_cidr = scope["asset_identifier"]
+                    elif scope["asset_type"] == "URL":
+                        parsed_url = urlparse(scope["asset_identifier"])
+                        domain_name = parsed_url.netloc
+
+                    if domain_name:
+                        try:
+                            domain, created = Domain.objects.get_or_create(
+                                name=domain_name,
+                                description=description,
+                                h1_team_handle=program['attributes']['handle'],
+                                project=project,
+                                ip_address_cidr=ip_address_cidr
+                            )
+                            domain.insert_date = timezone.now()
+                            domain.save()
+                            
+                            domains.append(domain)
+                        except Exception as e:
+                            logger.error(f"Error creating/updating domain {domain_name}: {e}")
+
+                try:
+                    organization, created = Organization.objects.get_or_create(
+                        name=program['attributes']['handle'],
+                        project=project,
+                        defaults={'description': 'Added via H1 Bookmark Sync', 'insert_date': timezone.now()}
+                    )
+                    
+                    if not created:
+                        organization.insert_date = timezone.now()
+                    
+                    for domain in domains:
+                        organization.domains.add(domain)
+
+                    organization.save()
+                    logger.info(f"Added organization: program['attributes']['handle']")
+                except Exception as e:
+                    logger.error(f"Error creating/updating organization {program['attributes']['handle']}: {e}")
+
+        logger.info('Completed HackerOne Bookmark Sync')
+    except Exception as e:
+        logger.error(f"Error in sync_h1_bookmarked task: {e}")

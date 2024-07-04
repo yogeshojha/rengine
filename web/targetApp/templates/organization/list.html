@@ -28,6 +28,7 @@ Organizations
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             {% if user|can:'modify_targets' %}
+            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'sync_organization' current_project.slug %}" data-toggle="tooltip" data-placement="top" title="Sync Organization">Sync Organizations</a>
             <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_organization' current_project.slug %}" data-toggle="tooltip" data-placement="top" title="Add Organization">Add New Organization</a>
             {% endif %}
           </div>

@@ -3,8 +3,10 @@ import io
 import ipaddress
 import logging
 import validators
+import pytz
 
 from datetime import timedelta
+from django.utils import timezone
 from urllib.parse import urlparse
 from django import http
 from django.conf import settings
@@ -15,9 +17,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from rolepermissions.decorators import has_permission_decorator
+from django_celery_beat.models import (PeriodicTask, ClockedSchedule)
 
 from reNgine.common_func import *
-from reNgine.tasks import run_command, sanitize_url
+from reNgine.tasks import run_command, sanitize_url, sync_h1_bookmarked
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.forms import *
@@ -541,6 +544,12 @@ def list_organization(request, slug):
         'organizations': organizations
     }
     return render(request, 'organization/list.html', context)
+
+def sync_organization(request, slug):
+    # Start the celery task
+    sync_h1_bookmarked.apply_async()
+    
+    return http.HttpResponseRedirect(reverse('list_organization', kwargs={'slug': slug}))
 
 
 @has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
