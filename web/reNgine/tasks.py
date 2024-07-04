@@ -4840,25 +4840,21 @@ def sync_h1_bookmarked():
 
 		for scope in program["scopes"]:
 
-			if (scope.asset_type == "WILDCARD"){
+			if (scope.asset_type == "WILDCARD"):
 				domain_name = scope.asset_identifier.replace('.*', '')
 				description = ''
 				ip_address_cidr = None
-			}
-			else if (scope.asset_type == "DOMAIN"){
+			elif (scope.asset_type == "DOMAIN"):
 				domain_name = scope.asset_identifier
 				description = ''
 				ip_address_cidr = None
-			}
-			else if (scope.asset_type == "IP_ADDRESS" or scope.asset_type == "CIDR"){
+			elif (scope.asset_type == "IP_ADDRESS" or scope.asset_type == "CIDR"):
 				domain_name = scope.asset_identifier
 				description = ''
 				ip_address_cidr = scope.asset_identifier
-			}
-			else {
+			else:
 				print("Scope type not supported")
 				continue
-			}
 
 			domain, created = Domain.objects.get_or_create(
 									name=domain_name,
@@ -4867,7 +4863,7 @@ def sync_h1_bookmarked():
 									project=project,
 									ip_address_cidr=ip_address_cidr)
 			domain.insert_date = timezone.now()
-            domain.save()
+			domain.save()
 			
 			domains.append(domain)
 
