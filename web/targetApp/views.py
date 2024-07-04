@@ -15,6 +15,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from rolepermissions.decorators import has_permission_decorator
+from django_celery_beat.models import (PeriodicTask, ClockedSchedule)
 
 from reNgine.common_func import *
 from reNgine.tasks import run_command, sanitize_url
@@ -531,6 +532,24 @@ def add_organization(request, slug):
 
 def list_organization(request, slug):
     organizations = Organization.objects.filter(project__slug=slug).order_by('-insert_date')
+    context = {
+        'organization_active': 'active',
+        'organizations': organizations
+    }
+    return render(request, 'organization/list.html', context)
+
+def sync_organization(request, slug):
+    organizations = Organization.objects.filter(project__slug=slug).order_by('-insert_date')
+
+    scheduled_time = datetime.now(pytz.UTC) + timedelta(seconds=5)  # e.g., 5 seconds from now
+
+    clocked_schedule, created = ClockedSchedule.objects.get_or_create(clocked_time=scheduled_time)
+
+    PeriodicTask.objects.create(clocked=clocked_schedule,
+                                one_off=True,
+                                name='h1_org_sync',
+                                task='reNgine.tasks.h1_sync',
+                                kwargs=json.dumps(kwargs))
     context = {
         'organization_active': 'active',
         'organizations': organizations
