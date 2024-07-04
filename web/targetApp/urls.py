@@ -32,7 +32,7 @@ urlpatterns = [
         views.list_organization,
         name='list_organization'),
     path(
-        '<slug:slug>/list/organization',
+        '<slug:slug>/sync/organization',
         views.sync_organization,
         name='sync_organization'),
     path(
