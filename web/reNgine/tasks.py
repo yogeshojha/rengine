@@ -4830,8 +4830,14 @@ def fetch_h1_bookmarked():
 
 @app.task(name='sync_h1_bookmarked', bind=False, queue='h1_sync_queue')
 def sync_h1_bookmarked():
+
+	logger.info(f'Starting Hacker One Bookmark Sync')
+
 	bookmarked_programs = fetch_h1_bookmarked()
 	#organizations = Organization.objects.filter().order_by('-insert_date')
+
+
+	logger.info(bookmarked_programs)
 
 	project = Project.objects.get(slug="default")
 
