@@ -20,7 +20,7 @@ from rolepermissions.decorators import has_permission_decorator
 from django_celery_beat.models import (PeriodicTask, ClockedSchedule)
 
 from reNgine.common_func import *
-from reNgine.tasks import run_command, sanitize_url
+from reNgine.tasks import run_command, sanitize_url, sync_h1_bookmarked
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.forms import *
@@ -543,19 +543,9 @@ def list_organization(request, slug):
 def sync_organization(request, slug):
     organizations = Organization.objects.filter(project__slug=slug).order_by('-insert_date')
 
-    # Use timezone-aware datetime for scheduled_time
-    scheduled_time = timezone.now() + timedelta(seconds=5)  # e.g., 5 seconds from now
-
-    clocked_schedule, created = ClockedSchedule.objects.get_or_create(clocked_time=scheduled_time)
-
-    # Generate a unquie task name pased on the date time
-    timestr = timezone.now().strftime('%Y_%m_%d_%H_%M_%S')
-    task_name = f'h1_org_sync: {timestr}'
-
-    PeriodicTask.objects.create(clocked=clocked_schedule,
-                                one_off=True,
-                                name=task_name,
-                                task='reNgine.tasks.sync_h1_bookmarked')
+    # Start the celery task
+    sync_h1_bookmarked.apply_async()
+    
     context = {
         'organization_active': 'active',
         'organizations': organizations
