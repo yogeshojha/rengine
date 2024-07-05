@@ -4781,23 +4781,22 @@ def fetch_h1_bookmarked():
     Returns:
         list: A list of bookmarked program objects.
     """
-	ALLOWED_SCOPE_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "CIDR"]
-
 	bookmarked_programs = []
-	next_link = True
 	programs_url = "https://api.hackerone.com/v1/hackers/programs?size=100"
 
-	hackerone_query = Hackerone.objects.all()
-	
-	if hackerone_query.exists():
+	try:
 		hackerone = Hackerone.objects.first()
+
+		if not hackerone:
+			logger.warning("No Hackerone credentials found in the database.")
+			return bookmarked_programs
 
 		headers = {
 			'Content-Type': 'application/json',
 			'Accept': 'application/json'
 		}
 
-		while next_link:
+		while programs_url:
 			response = requests.get(programs_url, auth=(hackerone.username, hackerone.api_key), headers=headers)
 			response.raise_for_status()  # Raise an exception for non-200 status codes
 
@@ -4811,76 +4810,63 @@ def fetch_h1_bookmarked():
 					program_json = program_response.json()
 					program_scopes = []
 					for scope in program_json["relationships"]["structured_scopes"]["data"]:
-						if (
-							scope["attributes"]["asset_type"] in ALLOWED_SCOPE_TYPES
-							and scope["attributes"]["eligible_for_submission"] is True
-						):
+						if scope["attributes"]["asset_type"] in ALLOWED_SCOPE_TYPES and scope["attributes"]["eligible_for_submission"]:
 							program_scopes.append(scope["attributes"])
 
 					program["scopes"] = program_scopes
 					bookmarked_programs.append(program)
 
-			if "links" in response_json and "next" in response_json["links"]:
-				programs_url = response_json["links"]["next"]
-			else:
-				next_link = False
+			programs_url = response_json["links"].get("next")
+
+	except requests.RequestException as e:
+		logger.error(f"Error fetching bookmarked programs: {e}")
+	except Exception as e:
+		logger.error(f"Unexpected error: {e}")
 
 	return bookmarked_programs
 
 
 @app.task(name='sync_h1_bookmarked', bind=False, queue='h1_sync_queue')
 def sync_h1_bookmarked():
+	"""
+	Sync Hacker One book marked programs to organizations
+	"""
 
-	logger.info(f'Starting Hacker One Bookmark Sync')
+	logger.info('Starting HackerOne Bookmark Sync')
 
 	bookmarked_programs = fetch_h1_bookmarked()
-	#organizations = Organization.objects.filter().order_by('-insert_date')
-
-
-	logger.info(bookmarked_programs)
-
 	project = Project.objects.get(slug="default")
 
 	for program in bookmarked_programs:
 		domains = []
 
 		for scope in program["scopes"]:
-
-			if (scope.asset_type == "WILDCARD"):
-				domain_name = scope.asset_identifier.replace('.*', '')
-				description = ''
-				ip_address_cidr = None
-			elif (scope.asset_type == "DOMAIN"):
-				domain_name = scope.asset_identifier
-				description = ''
-				ip_address_cidr = None
-			elif (scope.asset_type == "IP_ADDRESS" or scope.asset_type == "CIDR"):
-				domain_name = scope.asset_identifier
-				description = ''
-				ip_address_cidr = scope.asset_identifier
-			else:
-				print("Scope type not supported")
-				continue
+			domain_name = scope["asset_identifier"].replace('.*', '') if scope["asset_type"] == "WILDCARD" else scope["asset_identifier"]
+			description = ''
+			ip_address_cidr = None if scope["asset_type"] in ["WILDCARD", "DOMAIN"] else scope["asset_identifier"]
 
 			domain, created = Domain.objects.get_or_create(
-									name=domain_name,
-									description=description,
-									h1_team_handle=program['attributes']['handle'],
-									project=project,
-									ip_address_cidr=ip_address_cidr)
+				name=domain_name,
+				description=description,
+				h1_team_handle=program['attributes']['handle'],
+				project=project,
+				ip_address_cidr=ip_address_cidr
+			)
 			domain.insert_date = timezone.now()
 			domain.save()
-			
+
 			domains.append(domain)
 
-
 		organization = Organization.objects.create(
-                name=program['attributes']['handle'],
-                description='',
-                project=project,
-                insert_date=timezone.now())
+			name=program['attributes']['handle'],
+			description='',
+			project=project,
+			insert_date=timezone.now()
+		)
 
 		for domain in domains:
 			organization.domains.add(domain)
-		
+
 		organization.save()
+
+	logger.info('Completed HackerOne Bookmark Sync')
