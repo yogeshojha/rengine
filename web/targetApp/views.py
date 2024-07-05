@@ -546,9 +546,12 @@ def sync_organization(request, slug):
 
     clocked_schedule, created = ClockedSchedule.objects.get_or_create(clocked_time=scheduled_time)
 
+    timestr = str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+    task_name = f'h1_org_sync: {timestr}'
+
     PeriodicTask.objects.create(clocked=clocked_schedule,
                                 one_off=True,
-                                name='h1_org_sync_ondemand',
+                                name=task_name,
                                 task='reNgine.tasks.h1_sync')
     context = {
         'organization_active': 'active',
