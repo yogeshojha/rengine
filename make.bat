@@ -6,12 +6,13 @@ set COMPOSE_ALL_FILES  = -f docker-compose.yml
 set SERVICES           = db web proxy redis celery celery-beat ollama
 
 :: Check if 'docker compose' command is available
-where docker-compose >nul 2>&1
+docker compose version >nul 2>&1
 if %errorlevel% == 0 (
-    set DOCKER_COMPOSE=docker-compose
-) else (
     set DOCKER_COMPOSE=docker compose
+) else (
+    set DOCKER_COMPOSE=docker-compose
 )
+
 
 :: Generate certificates.
 if "%1" == "certs" %DOCKER_COMPOSE% -f docker-compose.setup.yml run --rm certs
