@@ -4781,6 +4781,7 @@ def fetch_h1_bookmarked():
     Returns:
         list: A list of bookmarked program objects.
     """
+	ALLOWED_SCOPE_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "CIDR"]
 	bookmarked_programs = []
 	programs_url = "https://api.hackerone.com/v1/hackers/programs?size=100"
 
