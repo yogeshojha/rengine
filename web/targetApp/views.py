@@ -549,8 +549,7 @@ def sync_organization(request, slug):
     PeriodicTask.objects.create(clocked=clocked_schedule,
                                 one_off=True,
                                 name='h1_org_sync',
-                                task='reNgine.tasks.h1_sync',
-                                kwargs=json.dumps(kwargs))
+                                task='reNgine.tasks.h1_sync')
     context = {
         'organization_active': 'active',
         'organizations': organizations
