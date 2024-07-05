@@ -5,7 +5,8 @@ import logging
 import validators
 import pytz
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+from django.utils import timezone
 from urllib.parse import urlparse
 from django import http
 from django.conf import settings
@@ -542,11 +543,13 @@ def list_organization(request, slug):
 def sync_organization(request, slug):
     organizations = Organization.objects.filter(project__slug=slug).order_by('-insert_date')
 
-    scheduled_time = datetime.now(pytz.UTC) + timedelta(seconds=5)  # e.g., 5 seconds from now
+    # Use timezone-aware datetime for scheduled_time
+    scheduled_time = timezone.now() + timedelta(seconds=5)  # e.g., 5 seconds from now
 
     clocked_schedule, created = ClockedSchedule.objects.get_or_create(clocked_time=scheduled_time)
 
-    timestr = str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+    # Generate a unquie task name pased on the date time
+    timestr = timezone.now().strftime('%Y_%m_%d_%H_%M_%S')
     task_name = f'h1_org_sync: {timestr}'
 
     PeriodicTask.objects.create(clocked=clocked_schedule,
