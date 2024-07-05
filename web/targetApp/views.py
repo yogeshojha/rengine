@@ -555,7 +555,7 @@ def sync_organization(request, slug):
     PeriodicTask.objects.create(clocked=clocked_schedule,
                                 one_off=True,
                                 name=task_name,
-                                task='reNgine.tasks.h1_sync')
+                                task='reNgine.tasks.sync_h1_bookmarked')
     context = {
         'organization_active': 'active',
         'organizations': organizations
