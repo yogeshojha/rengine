@@ -4842,7 +4842,7 @@ def sync_h1_bookmarked():
 		domains = []
 
 		for scope in program["scopes"]:
-			domain_name = scope["asset_identifier"].replace('.*', '') if scope["asset_type"] == "WILDCARD" else scope["asset_identifier"]
+			domain_name = scope["asset_identifier"].replace('*.', '') if scope["asset_type"] == "WILDCARD" else scope["asset_identifier"]
 			description = ''
 			ip_address_cidr = None if scope["asset_type"] in ["WILDCARD", "DOMAIN"] else scope["asset_identifier"]
 
