@@ -4830,7 +4830,7 @@ def fetch_h1_bookmarked():
 @app.task(name='sync_h1_bookmarked', bind=False, queue='h1_sync_queue')
 def sync_h1_bookmarked():
 	"""
-	Sync Hacker One book marked programs to organizations
+	Sync HackerOne bookmarked programs to organizations
 	"""
 
 	logger.info('Starting HackerOne Bookmark Sync')
@@ -4842,21 +4842,33 @@ def sync_h1_bookmarked():
 		domains = []
 
 		for scope in program["scopes"]:
-			domain_name = scope["asset_identifier"].replace('*.', '') if scope["asset_type"] == "WILDCARD" else scope["asset_identifier"]
+			domain_name = None
 			description = ''
-			ip_address_cidr = None if scope["asset_type"] in ["WILDCARD", "DOMAIN"] else scope["asset_identifier"]
+			ip_address_cidr = None
 
-			domain, created = Domain.objects.get_or_create(
-				name=domain_name,
-				description=description,
-				h1_team_handle=program['attributes']['handle'],
-				project=project,
-				ip_address_cidr=ip_address_cidr
-			)
-			domain.insert_date = timezone.now()
-			domain.save()
+			if scope["asset_type"] == "WILDCARD":
+				domain_name = scope["asset_identifier"].replace('*.', '')
+			elif scope["asset_type"] == "DOMAIN":
+				domain_name = scope["asset_identifier"]
+			elif scope["asset_type"] in ["IP_ADDRESS", "CIDR"]:
+				domain_name = scope["asset_identifier"]
+				ip_address_cidr = scope["asset_identifier"]
+			elif scope["asset_type"] == "URL":
+				parsed_url = urlparse(scope["asset_identifier"])
+				domain_name = parsed_url.netloc
 
-			domains.append(domain)
+			if domain_name:
+				domain, created = Domain.objects.get_or_create(
+					name=domain_name,
+					description=description,
+					h1_team_handle=program['attributes']['handle'],
+					project=project,
+					ip_address_cidr=ip_address_cidr
+				)
+				domain.insert_date = timezone.now()
+				domain.save()
+				
+				domains.append(domain)
 
 		organization = Organization.objects.create(
 			name=program['attributes']['handle'],
