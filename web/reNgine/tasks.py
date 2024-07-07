@@ -4826,60 +4826,74 @@ def fetch_h1_bookmarked():
 
 	return bookmarked_programs
 
-
 @app.task(name='sync_h1_bookmarked', bind=False, queue='h1_sync_queue')
 def sync_h1_bookmarked():
-	"""
-	Sync HackerOne bookmarked programs to organizations
-	"""
+    """
+    Sync HackerOne bookmarked programs to organizations
+    """
+    logger.info('Starting HackerOne Bookmark Sync')
 
-	logger.info('Starting HackerOne Bookmark Sync')
+	# Get all bookmarked programs and projects
+    bookmarked_programs = fetch_h1_bookmarked()
+    project = Project.objects.get(slug="default")
+    bookmarked_handles = {program['attributes']['handle'] for program in bookmarked_programs}
 
-	bookmarked_programs = fetch_h1_bookmarked()
-	project = Project.objects.get(slug="default")
+    # Get all current organizations and their handles
+    current_organizations = Organization.objects.filter(project=project)
+    current_handles = {org.name for org in current_organizations}
 
-	for program in bookmarked_programs:
-		domains = []
+    # Delete organizations not in the bookmarked programs
+    handles_to_delete = current_handles - bookmarked_handles
+    for handle in handles_to_delete:
+        org_to_delete = get_object_or_404(Organization, name=handle, project=project)
+        org_to_delete.delete()
+        logger.info(f'Deleted organization: {handle}')
 
-		for scope in program["scopes"]:
-			domain_name = None
-			description = ''
-			ip_address_cidr = None
+	# Create domains from scopes in bookmarked programs
+    for program in bookmarked_programs:
+        domains = []
 
-			if scope["asset_type"] == "WILDCARD":
-				domain_name = scope["asset_identifier"].replace('*.', '')
-			elif scope["asset_type"] == "DOMAIN":
-				domain_name = scope["asset_identifier"]
-			elif scope["asset_type"] in ["IP_ADDRESS", "CIDR"]:
-				domain_name = scope["asset_identifier"]
-				ip_address_cidr = scope["asset_identifier"]
-			elif scope["asset_type"] == "URL":
-				parsed_url = urlparse(scope["asset_identifier"])
-				domain_name = parsed_url.netloc
+        for scope in program["scopes"]:
+            domain_name = None
+            description = ''
+            ip_address_cidr = None
 
-			if domain_name:
-				domain, created = Domain.objects.get_or_create(
-					name=domain_name,
-					description=description,
-					h1_team_handle=program['attributes']['handle'],
-					project=project,
-					ip_address_cidr=ip_address_cidr
-				)
-				domain.insert_date = timezone.now()
-				domain.save()
-				
-				domains.append(domain)
+            if scope["asset_type"] == "WILDCARD":
+                domain_name = scope["asset_identifier"].replace('*.', '')
+            elif scope["asset_type"] == "DOMAIN":
+                domain_name = scope["asset_identifier"]
+            elif scope["asset_type"] in ["IP_ADDRESS", "CIDR"]:
+                domain_name = scope["asset_identifier"]
+                ip_address_cidr = scope["asset_identifier"]
+            elif scope["asset_type"] == "URL":
+                parsed_url = urlparse(scope["asset_identifier"])
+                domain_name = parsed_url.netloc
 
-		organization = Organization.objects.create(
-			name=program['attributes']['handle'],
-			description='',
-			project=project,
-			insert_date=timezone.now()
-		)
+            if domain_name:
+                domain, created = Domain.objects.get_or_create(
+                    name=domain_name,
+                    description=description,
+                    h1_team_handle=program['attributes']['handle'],
+                    project=project,
+                    ip_address_cidr=ip_address_cidr
+                )
+                domain.insert_date = timezone.now()
+                domain.save()
+                
+                domains.append(domain)
 
-		for domain in domains:
-			organization.domains.add(domain)
+        organization, created = Organization.objects.get_or_create(
+            name=program['attributes']['handle'],
+            project=project,
+            defaults={'description': '', 'insert_date': timezone.now()}
+        )
+        
+        if not created:
+            organization.insert_date = timezone.now()
+        
+        for domain in domains:
+            organization.domains.add(domain)
 
-		organization.save()
+        organization.save()
 
-	logger.info('Completed HackerOne Bookmark Sync')
+    logger.info('Completed HackerOne Bookmark Sync')
