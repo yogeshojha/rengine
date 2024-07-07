@@ -541,16 +541,10 @@ def list_organization(request, slug):
     return render(request, 'organization/list.html', context)
 
 def sync_organization(request, slug):
-    organizations = Organization.objects.filter(project__slug=slug).order_by('-insert_date')
-
     # Start the celery task
     sync_h1_bookmarked.apply_async()
     
-    context = {
-        'organization_active': 'active',
-        'organizations': organizations
-    }
-    return render(request, 'organization/list.html', context)
+    return http.HttpResponseRedirect(reverse('list_organization', kwargs={'slug': slug}))
 
 
 @has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
