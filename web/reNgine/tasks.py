@@ -2790,7 +2790,16 @@ def http_crawl(
 		logger.info('Running From Subdomain Scan...')
 	cmd = '/go/bin/httpx'
 	cfg = self.yaml_configuration.get(HTTP_CRAWL) or {}
-	custom_header = cfg.get(CUSTOM_HEADER, '')
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	threads = cfg.get(THREADS, DEFAULT_THREADS)
 	follow_redirect = cfg.get(FOLLOW_REDIRECT, True)
 	self.output_path = None
@@ -2825,7 +2834,9 @@ def http_crawl(
 	cmd += f' -cl -ct -rt -location -td -websocket -cname -asn -cdn -probe -random-agent'
 	cmd += f' -t {threads}' if threads > 0 else ''
 	cmd += f' --http-proxy {proxy}' if proxy else ''
-	cmd += f' -H "{custom_header}"' if custom_header else ''
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
 	cmd += f' -json'
 	cmd += f' -u {urls[0]}' if len(urls) == 1 else f' -l {input_path}'
 	cmd += f' -x {method}' if method else ''
