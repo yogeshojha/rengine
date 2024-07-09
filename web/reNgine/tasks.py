@@ -1595,10 +1595,10 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	# Config
 	cmd = 'ffuf'
 	config = self.yaml_configuration.get(DIR_FILE_FUZZ) or {}
-	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	custom_headers = config.get(CUSTOM_HEADERS, [])
 	# support for custom header will be remove in next major release, as of now it will be supported
 	# for backward compatibility
-	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	custom_header = config.get(CUSTOM_HEADER)
 	if custom_header:
 		custom_headers.append(custom_header)
 	auto_calibration = config.get(AUTO_CALIBRATION, True)
@@ -1639,7 +1639,6 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
 	if formatted_headers:
 		cmd += formatted_headers
-	# cmd += f' -H "{custom_header}"' if custom_header else ''
 
 	# Grab URLs to fuzz
 	urls = get_http_urls(
