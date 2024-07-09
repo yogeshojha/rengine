@@ -1595,7 +1595,12 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	# Config
 	cmd = 'ffuf'
 	config = self.yaml_configuration.get(DIR_FILE_FUZZ) or {}
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	# support for custom header will be remove in next major release, as of now it will be supported
+	# for backward compatibility
 	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	auto_calibration = config.get(AUTO_CALIBRATION, True)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	rate_limit = config.get(RATE_LIMIT) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
@@ -1631,7 +1636,10 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	cmd += ' -fr' if follow_redirect else ''
 	cmd += ' -ac' if auto_calibration else ''
 	cmd += f' -mc {mc}' if mc else ''
-	cmd += f' -H "{custom_header}"' if custom_header else ''
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
+	# cmd += f' -H "{custom_header}"' if custom_header else ''
 
 	# Grab URLs to fuzz
 	urls = get_http_urls(
@@ -2327,7 +2335,12 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	rate_limit = config.get(RATE_LIMIT) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	retries = config.get(RETRIES) or self.yaml_configuration.get(RETRIES, DEFAULT_RETRIES)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
-	custom_headers = config.get(CUSTOM_HEADERS) # or self.yaml_configuration.get(CUSTOM_HEADER)
+	custom_headers = config.get(CUSTOM_HEADERS, [])
+	# support for custom header will be remove in next major release, as of now it will be supported
+	# for backward compatibility
+	custom_header = config.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	should_fetch_gpt_report = config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	proxy = get_random_proxy()
 	nuclei_specific_config = config.get('nuclei', {})
@@ -2395,9 +2408,9 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
 	cmd += f' -irr'
 	# cmd += f' -H "{custom_header}"' if custom_header else ''
-	_custom_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
-	if _custom_headers:
-		cmd += _custom_headers
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
 	cmd += f' -l {input_path}'
 	cmd += f' -c {str(concurrency)}' if concurrency > 0 else ''
 	cmd += f' -proxy {proxy} ' if proxy else ''
