@@ -1785,8 +1785,17 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, DEFAULT_IGNORE_FILE_EXTENSIONS)
 	tools = config.get(USES_TOOLS, ENDPOINT_SCAN_DEFAULT_TOOLS)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
-	domain_request_headers = self.domain.request_headers if self.domain else None
-	custom_header = domain_request_headers or self.yaml_configuration.get(CUSTOM_HEADER)
+	# domain_request_headers = self.domain.request_headers if self.domain else None
+	custom_headers = config.get(CUSTOM_HEADERS, [])
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
+	custom_header = config.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	exclude_subdomains = config.get(EXCLUDED_SUBDOMAINS, False)
 
 	# Get URLs to scan and save to input file
@@ -1823,15 +1832,12 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		cmd_map['gau'] += f' --threads {threads}'
 		cmd_map['gospider'] += f' -t {threads}'
 		cmd_map['katana'] += f' -c {threads}'
-	if custom_header:
-		header_string = ';;'.join([
-			f'{key}: {value}' for key, value in custom_header.items()
-		])
-		cmd_map['hakrawler'] += f' -h {header_string}'
-		cmd_map['katana'] += f' -H {header_string}'
-		header_flags = [':'.join(h) for h in header_string.split(';;')]
-		for flag in header_flags:
-			cmd_map['gospider'] += f' -H {flag}'
+	if custom_headers:
+		# gau, waybackurls does not support custom headers
+		formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+		cmd_map['gospider'] += formatted_headers
+		cmd_map['hakrawler'] += ';;'.join(header for header in custom_headers)
+		cmd_map['katana'] += formatted_headers
 	cat_input = f'cat {input_path}'
 	grep_output = f'grep -Eo {host_regex}'
 	cmd_map = {
@@ -2335,8 +2341,12 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	retries = config.get(RETRIES) or self.yaml_configuration.get(RETRIES, DEFAULT_RETRIES)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	custom_headers = config.get(CUSTOM_HEADERS, [])
-	# support for custom header will be remove in next major release, as of now it will be supported
-	# for backward compatibility
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
 	custom_header = config.get(CUSTOM_HEADER)
 	if custom_header:
 		custom_headers.append(custom_header)
