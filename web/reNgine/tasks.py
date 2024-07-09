@@ -2340,14 +2340,14 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	rate_limit = config.get(RATE_LIMIT) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	retries = config.get(RETRIES) or self.yaml_configuration.get(RETRIES, DEFAULT_RETRIES)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
-	custom_headers = config.get(CUSTOM_HEADERS, [])
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
 	'''
 	# TODO: Remove custom_header in next major release
 		support for custom_header will be remove in next major release, 
 		as of now it will be supported for backward compatibility
 		only custom_headers will be supported
 	'''
-	custom_header = config.get(CUSTOM_HEADER)
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
 	if custom_header:
 		custom_headers.append(custom_header)
 	should_fetch_gpt_report = config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
@@ -2416,7 +2416,6 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	cmd = 'nuclei -j'
 	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
 	cmd += f' -irr'
-	# cmd += f' -H "{custom_header}"' if custom_header else ''
 	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
 	if formatted_headers:
 		cmd += formatted_headers
@@ -2469,7 +2468,16 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	should_fetch_gpt_report = vuln_config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	dalfox_config = vuln_config.get(DALFOX) or {}
-	custom_header = dalfox_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	proxy = get_random_proxy()
 	is_waf_evasion = dalfox_config.get(WAF_EVASION, False)
 	blind_xss_server = dalfox_config.get(BLIND_XSS_SERVER)
@@ -2504,8 +2512,10 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' -b {blind_xss_server}' if blind_xss_server else ''
 	cmd += f' --delay {delay}' if delay else ''
 	cmd += f' --timeout {timeout}' if timeout else ''
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
 	cmd += f' --user-agent {user_agent}' if user_agent else ''
-	cmd += f' --header {custom_header}' if custom_header else ''
 	cmd += f' --worker {threads}' if threads else ''
 	cmd += f' --format json'
 
