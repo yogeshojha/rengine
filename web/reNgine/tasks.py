@@ -2604,7 +2604,16 @@ def crlfuzz_scan(self, urls=[], ctx={}, description=None):
 	"""
 	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	should_fetch_gpt_report = vuln_config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
-	custom_header = vuln_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	proxy = get_random_proxy()
 	user_agent = vuln_config.get(USER_AGENT) or self.yaml_configuration.get(USER_AGENT)
 	threads = vuln_config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
@@ -2629,7 +2638,9 @@ def crlfuzz_scan(self, urls=[], ctx={}, description=None):
 	cmd = 'crlfuzz -s'
 	cmd += f' -l {input_path}'
 	cmd += f' -x {proxy}' if proxy else ''
-	cmd += f' --H {custom_header}' if custom_header else ''
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
 	cmd += f' -o {output_path}'
 
 	run_command(
