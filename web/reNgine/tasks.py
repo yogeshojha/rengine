@@ -1595,10 +1595,10 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	# Config
 	cmd = 'ffuf'
 	config = self.yaml_configuration.get(DIR_FILE_FUZZ) or {}
-	custom_headers = config.get(CUSTOM_HEADERS, [])
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
 	# support for custom header will be remove in next major release, as of now it will be supported
 	# for backward compatibility
-	custom_header = config.get(CUSTOM_HEADER)
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
 	if custom_header:
 		custom_headers.append(custom_header)
 	auto_calibration = config.get(AUTO_CALIBRATION, True)
@@ -1786,14 +1786,14 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	tools = config.get(USES_TOOLS, ENDPOINT_SCAN_DEFAULT_TOOLS)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	# domain_request_headers = self.domain.request_headers if self.domain else None
-	custom_headers = config.get(CUSTOM_HEADERS, [])
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
 	'''
 	# TODO: Remove custom_header in next major release
 		support for custom_header will be remove in next major release, 
 		as of now it will be supported for backward compatibility
 		only custom_headers will be supported
 	'''
-	custom_header = config.get(CUSTOM_HEADER)
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
 	if custom_header:
 		custom_headers.append(custom_header)
 	exclude_subdomains = config.get(EXCLUDED_SUBDOMAINS, False)
