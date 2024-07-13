@@ -161,25 +161,30 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 ### Scan Engine
 
 ```yaml
+# Global vars for all tools
+#
+# custom_headers: ['Foo: bar', 'User-Agent: Anything']     # FFUF, Nuclei, Dalfox, CRL Fuzz, HTTP Crawl, Fetch URL, etc
+# enable_http_crawl: true           # All tools
+# threads: 30                       # All tools
+
 subdomain_discovery: {
-  'uses_tools': [
-    'subfinder',
-    'ctfr',
-    'sublist3r',
-    'tlsx',
-    'oneforall',
-    'netlas'
-  ],
+  'uses_tools': ['subfinder', 'ctfr', 'sublist3r', 'tlsx', 'oneforall', 'netlas'],  # amass-passive, amass-active, All
   'enable_http_crawl': true,
   'threads': 30,
   'timeout': 5,
+  # 'use_subfinder_config': false,
+  # 'use_amass_config': false,
+  # 'amass_wordlist': 'deepmagic.com-prefixes-top50000'
 }
-http_crawl: {}
+http_crawl: {
+  # 'threads': 30,
+  # 'follow_redirect': true
+}
 port_scan: {
   'enable_http_crawl': true,
   'timeout': 5,
   # 'exclude_ports': [],
-  # 'exclude_subdomains': true,
+  # 'exclude_subdomains': [],
   'ports': ['top-100'],
   'rate_limit': 150,
   'threads': 30,
@@ -212,16 +217,7 @@ osint: {
     'db_files',
     'git_exposed'
   ],
-  'custom_dorks': [
-    {
-      'lookup_site': 'google.com',
-      'lookup_keywords': '/home/'
-    },
-    {
-      'lookup_site': '_target_',
-      'lookup_extensions': 'jpg,png'
-    }
-  ],
+  # 'custom_dorks': [],
   'intensity': 'normal',
   'documents_limit': 50
 }
@@ -240,27 +236,20 @@ dir_file_fuzz: {
   'wordlist_name': 'dicc'
 }
 fetch_url: {
-  'uses_tools': [
-    'gospider',
-    'hakrawler',
-    'waybackurls',
-    'katana'
-  ],
+  'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'katana', 'gau'],
   'remove_duplicate_endpoints': true,
-  'duplicate_fields': [
-    'content_length',
-    'page_title'
-  ],
+  'duplicate_fields': ['content_length', 'page_title'],
   'enable_http_crawl': true,
   'gf_patterns': ['debug_logic', 'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce', 'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],
-  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']
-  # 'exclude_subdomains': true
+  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],
+  'threads': 30,
+  # 'exclude_subdomains': false
 }
 vulnerability_scan: {
-  'run_nuclei': false,
+  'run_nuclei': true,
   'run_dalfox': false,
   'run_crlfuzz': false,
-  'run_s3scanner': true,
+  'run_s3scanner': false,
   'enable_http_crawl': true,
   'concurrency': 50,
   'intensity': 'normal',
@@ -270,38 +259,21 @@ vulnerability_scan: {
   'fetch_gpt_report': true,
   'nuclei': {
     'use_nuclei_config': false,
-    'severities': [
-      'unknown',
-      'info',
-      'low',
-      'medium',
-      'high',
-      'critical'
-    ],
-    # 'tags': [],
-    # 'templates': [],
-    # 'custom_templates': [],
-  },
-  's3scanner': {
-    'threads': 100,
-    'providers': [
-      'aws',
-      'gcp',
-      'digitalocean',
-      'dreamhost',
-      'linode'
-    ]
+    'severities': ['unknown', 'info', 'low', 'medium', 'high', 'critical'],
+    # 'tags': [],                 # Nuclei tags (https://github.com/projectdiscovery/nuclei-templates)
+    # 'templates': [],            # Nuclei templates (https://github.com/projectdiscovery/nuclei-templates)
+    # 'custom_templates': []      # Nuclei custom templates uploaded in reNgine
   }
 }
-waf_detection: {}
+waf_detection: {
+  'enable_http_crawl': true
+}
 screenshot: {
   'enable_http_crawl': true,
   'intensity': 'normal',
   'timeout': 10,
   'threads': 40
 }
-
-# custom_header: "Cookie: Test"
 ```
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
