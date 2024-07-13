@@ -109,6 +109,14 @@
     <script src="https://cdn.datatables.net/rowgroup/1.4.0/js/dataTables.rowGroup.min.js"></script>
     <script type="text/javascript">
       $(document).ready(function(){
+        // for tabs with urls, we need to append the hash in the url
+        $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+          var href = $(e.target).attr('href');
+          if (href && href.startsWith('#')) {
+            history.pushState(null, null, href);
+          }
+        });
+        $(window).on('hashchange', handleHashInUrl);
         render_search_history('{{current_project.slug}}');
 
         // rengine will also check everyday if update exists for rengine
@@ -132,6 +140,7 @@
         else{
           $('#dark-mode-check').prop("checked", false).change();
         }
+        handleHashInUrl();
       });
 
       function render_search_history(slug){
