@@ -25,6 +25,7 @@ from scanEngine.models import *
 from dashboard.models import *
 from startScan.models import *
 from targetApp.models import *
+from reNgine.utilities import is_valid_url
 
 
 logger = get_task_logger(__name__)
@@ -334,7 +335,7 @@ def get_http_urls(
 		endpoints = [e for e in endpoints if e.is_alive]
 
 	# Grab only http_url from endpoint objects
-	endpoints = [e.http_url for e in endpoints]
+	endpoints = [e.http_url for e in endpoints if is_valid_url(e.http_url)]
 	if ignore_files: # ignore all files
 		extensions_path = f'{RENGINE_HOME}/fixtures/extensions.txt'
 		with open(extensions_path, 'r') as f:
