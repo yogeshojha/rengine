@@ -141,7 +141,7 @@ class GPTAttackSuggestion(APIView):
 		tech_used = ''
 		for tech in subdomain.technologies.all():
 			tech_used += f'{tech.name}, '
-		input = f'''
+		llm_input = f'''
 			Subdomain Name: {subdomain.name}
 			Subdomain Page Title: {subdomain.page_title}
 			Open Ports: {open_ports_str}
@@ -151,8 +151,9 @@ class GPTAttackSuggestion(APIView):
 			Web Server: {subdomain.webserver}
 			Page Content Length: {subdomain.content_length}
 		'''
-		gpt = GPTAttackSuggestionGenerator()
-		response = gpt.get_attack_suggestion(input)
+		llm_input = re.sub(r'\t', '', llm_input)
+		gpt = GPTAttackSuggestionGenerator(logger)
+		response = gpt.get_attack_suggestion(llm_input)
 		response['subdomain_name'] = subdomain.name
 		if response.get('status'):
 			subdomain.attack_surface = response.get('description')

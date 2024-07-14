@@ -25,7 +25,6 @@ from pycvesearch import CVESearch
 from metafinder.extractor import extract_metadata_from_google_search
 
 from reNgine.celery import app
-from reNgine.gpt import GPTVulnerabilityReportGenerator
 from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *
 from reNgine.definitions import *
@@ -2276,7 +2275,7 @@ def get_vulnerability_gpt_report(vuln):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
-		report = GPTVulnerabilityReportGenerator()
+		report = GPTVulnerabilityReportGenerator(logger=logger)
 		vulnerability_description = get_gpt_vuln_input_description(
 			title,
 			path
@@ -4789,6 +4788,7 @@ def gpt_vulnerability_description(vulnerability_id):
 	# check in db GPTVulnerabilityReport model if vulnerability description and path matches
 	stored = GPTVulnerabilityReport.objects.filter(url_path=path).filter(title=lookup_vulnerability.name).first()
 	if stored:
+		logger.info('Found cached GPT Vulnerability Description')
 		response = {
 			'status': True,
 			'description': stored.description,
@@ -4797,13 +4797,14 @@ def gpt_vulnerability_description(vulnerability_id):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
+		logger.info('Fetching new GPT Vulnerability Description')
 		vulnerability_description = get_gpt_vuln_input_description(
 			lookup_vulnerability.name,
 			path
 		)
 		# one can add more description here later
 
-		gpt_generator = GPTVulnerabilityReportGenerator()
+		gpt_generator = GPTVulnerabilityReportGenerator(logger=logger)
 		response = gpt_generator.get_vulnerability_description(vulnerability_description)
 		add_gpt_description_db(
 			lookup_vulnerability.name,
