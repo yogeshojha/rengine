@@ -20,6 +20,7 @@ EMAIL_REGEX = re.compile(r'[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+')
 ALL = 'all'
 AMASS_WORDLIST = 'amass_wordlist'
 AUTO_CALIBRATION = 'auto_calibration'
+CUSTOM_HEADERS = 'custom_headers'
 CUSTOM_HEADER = 'custom_header'
 FETCH_GPT_REPORT = 'fetch_gpt_report'
 RUN_NUCLEI = 'run_nuclei'

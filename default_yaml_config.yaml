@@ -1,7 +1,6 @@
 # Global vars for all tools
 #
-# custom_header: 'Cookie: Test'     # FFUF, Nuclei, Dalfox, CRL Fuzz, HTTP Crawl, Fetch URL
-# user_agent: ''                    # Dalfox only
+# custom_headers: ['Foo: bar', 'User-Agent: Anything']     # FFUF, Nuclei, Dalfox, CRL Fuzz, HTTP Crawl, Fetch URL, etc
 # enable_http_crawl: true           # All tools
 # timeout: 10                       # Subdomain discovery, Screenshot, Port scan, FFUF, Nuclei                       
 # threads: 30                       # All tools
@@ -19,7 +18,6 @@ subdomain_discovery: {
   # 'amass_wordlist': 'deepmagic.com-prefixes-top50000'
 }
 http_crawl: {
-  # 'custom_header': 'Cookie: Test',
   # 'threads': 30,
   # 'follow_redirect': true
 }

@@ -33,7 +33,7 @@
       true,\r\n  'nuclei': {\r\n    'use_nuclei_config': false,\r\n    'severities': ['unknown',
       'info', 'low', 'medium', 'high', 'critical']\r\n  }\r\n}\r\nwaf_detection: {\r\n\r\n}\r\nscreenshot:
       {\r\n  'enable_http_crawl': true,\r\n  'intensity': 'normal',\r\n  'timeout':
-      10,\r\n  'threads': 40\r\n}\r\n\r\n# custom_header: \"Cookie: Test\""
+      10,\r\n  'threads': 40\r\n}\r\n\r\n# custom_headers: [\"Cookie: Test\"]"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 2
