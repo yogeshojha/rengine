@@ -40,7 +40,7 @@ class GPTVulnerabilityReportGenerator:
 				model=self.model_name
 			)
 			response_content = llm.invoke(prompt)
-			self.logger.info(response_content)
+			# self.logger.info(response_content)
 		else:
 			self.logger.info(f'Using OpenAI API for Vulnerability Description Generation')
 			openai_api_key = get_open_ai_key()

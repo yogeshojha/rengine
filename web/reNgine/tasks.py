@@ -4788,7 +4788,7 @@ def gpt_vulnerability_description(vulnerability_id):
 	# check in db GPTVulnerabilityReport model if vulnerability description and path matches
 	stored = GPTVulnerabilityReport.objects.filter(url_path=path).filter(title=lookup_vulnerability.name).first()
 	if stored:
-		logger.info('Found cached GPT Vulnerability Description')
+		logger.info('Found cached Vulnerability Description')
 		response = {
 			'status': True,
 			'description': stored.description,
@@ -4797,7 +4797,7 @@ def gpt_vulnerability_description(vulnerability_id):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
-		logger.info('Fetching new GPT Vulnerability Description')
+		logger.info('Fetching new Vulnerability Description')
 		vulnerability_description = get_gpt_vuln_input_description(
 			lookup_vulnerability.name,
 			path
@@ -4806,6 +4806,7 @@ def gpt_vulnerability_description(vulnerability_id):
 
 		gpt_generator = GPTVulnerabilityReportGenerator(logger=logger)
 		response = gpt_generator.get_vulnerability_description(vulnerability_description)
+		logger.info(response)
 		add_gpt_description_db(
 			lookup_vulnerability.name,
 			path,
@@ -4815,19 +4816,19 @@ def gpt_vulnerability_description(vulnerability_id):
 			response.get('references', [])
 		)
 
-	# for all vulnerabilities with the same vulnerability name this description has to be stored.
-	# also the consition is that the url must contain a part of this.
+		# for all vulnerabilities with the same vulnerability name this description has to be stored.
+		# also the condition is that the url must contain a part of this.
 
-	for vuln in Vulnerability.objects.filter(name=lookup_vulnerability.name, http_url__icontains=path):
-		vuln.description = response.get('description', vuln.description)
-		vuln.impact = response.get('impact')
-		vuln.remediation = response.get('remediation')
-		vuln.is_gpt_used = True
-		vuln.save()
-
-		for url in response.get('references', []):
-			ref, created = VulnerabilityReference.objects.get_or_create(url=url)
-			vuln.references.add(ref)
+		for vuln in Vulnerability.objects.filter(name=lookup_vulnerability.name, http_url__icontains=path):
+			vuln.description = response.get('description', vuln.description)
+			vuln.impact = response.get('impact')
+			vuln.remediation = response.get('remediation')
+			vuln.is_gpt_used = True
 			vuln.save()
+
+			for url in response.get('references', []):
+				ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+				vuln.references.add(ref)
+				vuln.save()
 
 	return response
