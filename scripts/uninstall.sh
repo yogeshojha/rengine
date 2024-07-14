@@ -5,33 +5,54 @@ echo "Uninstalling reNgine"
 
 if [ "$EUID" -ne 0 ]
   then
-  echo "Error uninstalling reNgine, Please run this script as root!"
-  echo "Example: sudo ./uninstall.sh"
+  echo -e "\e[31mError uninstalling reNgine, Please run this script as root!\e[0m"
+  echo -e "\e[31mExample: sudo ./uninstall.sh\e[0m"
   exit
 fi
 
-echo "Stopping reNgine"
-docker stop rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery-beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
+DANGER='\e[31m'
+SUCCESS='\e[32m'
+WARNING='\e[33m'
+INFO='\e[34m'
+RESET='\e[0m'
 
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-  echo "Stopping reNgine"
-  docker stop rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
-  echo "Stopped reNgine"
+print_status() {
+    echo -e "${INFO}--------------------------------------------------${RESET}"
+    echo -e "${INFO}$1${RESET}"
+    echo -e "${INFO}--------------------------------------------------${RESET}"
+}
 
-  echo "Removing all containers related to reNgine"
-  docker rm rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
-  echo "Removed all containers related to reNgine"
+print_status "WARNING: You are about to uninstall rengine"
+echo -e "${DANGER}This action is not reversible. All containers, volumes, networks, and scan results will be removed.${RESET}"
+echo -e "${DANGER}There is no going back after this point.${RESET}"
+read -p "$(echo -e ${WARNING}"Are you sure you want to proceed? (y/Y/yes/YES to confirm): "${RESET})" -r CONFIRM
 
-  echo "Removing all volumes related to reNgine"
-  docker volume rm rengine_gf_patterns rengine_github_repos rengine_nuclei_templates rengine_postgres_data rengine_scan_results rengine_tool_config rengine_static_volume rengine_wordlist
-  echo "Removed all volumes related to reNgine"
+# change answer to lowecase for comparison
+ANSWER_LC=$(echo "$CONFIRM" | tr '[:upper:]' '[:lower:]')
 
-  echo "Removing all networks related to reNgine"
-  docker network rm rengine_rengine_network rengine_default
-  echo "Removed all networks related to reNgine"
-else
-  exit 1
+if [[ "$ANSWER_LC" != "y" && "$ANSWER_LC" != "yes" ]]; then
+    print_status "${YELLOW}Uninstall aborted by user.${RESET}"
+    exit 0
 fi
 
-echo "Finished Uninstalling."
+print_status "${INFO}Proceeding with uninstalling reNgine${RESET}"
+
+print_status "Stopping all containers related to reNgine..."
+docker stop $(docker ps -a -q --filter name=rengine-) 2>/dev/null
+
+print_status "Removing all containers related to reNgine..."
+docker rm $(docker ps -a -q --filter name=rengine-) 2>/dev/null
+
+print_status "Removing all volumes related to reNgine..."
+docker volume rm $(docker volume ls -q --filter name=rengine-) 2>/dev/null
+
+print_status "Removing all networks related to reNgine..."
+docker network rm $(docker network ls -q --filter name=rengine-) 2>/dev/null
+
+print_status "Removing all images related to reNgine..."
+docker rmi $(docker images -q --filter reference=rengine-) 2>/dev/null
+
+print_status "Performing final cleanup"
+docker system prune -f --volumes --filter "label=com.docker.compose.project=rengine"
+
+print_status "${SUCCESS}reNgine uninstall process has been completed.${RESET}"
