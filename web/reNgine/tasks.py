@@ -4772,8 +4772,8 @@ def query_ip_history(domain):
 	return get_domain_historical_ip_address(domain)
 
 
-@app.task(name='gpt_vulnerability_description', bind=False, queue='gpt_queue')
-def gpt_vulnerability_description(vulnerability_id):
+@app.task(name='llm_vulnerability_description', bind=False, queue='llm_queue')
+def llm_vulnerability_description(vulnerability_id):
 	"""Generate and store Vulnerability Description using GPT.
 
 	Args:

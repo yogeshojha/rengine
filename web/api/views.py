@@ -170,7 +170,7 @@ class LLMVulnerabilityReportGenerator(APIView):
 				'status': False,
 				'error': 'Missing GET param Vulnerability `id`'
 			})
-		task = gpt_vulnerability_description.apply_async(args=(vulnerability_id,))
+		task = llm_vulnerability_description.apply_async(args=(vulnerability_id,))
 		response = task.wait()
 		return Response(response)
 
