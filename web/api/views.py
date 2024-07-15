@@ -22,7 +22,7 @@ from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
 from reNgine.tasks import *
-from reNgine.gpt import GPTAttackSuggestionGenerator
+from reNgine.llm import *
 from reNgine.utilities import is_safe_path
 from scanEngine.models import *
 from startScan.models import *
@@ -152,7 +152,7 @@ class GPTAttackSuggestion(APIView):
 			Page Content Length: {subdomain.content_length}
 		'''
 		llm_input = re.sub(r'\t', '', llm_input)
-		gpt = GPTAttackSuggestionGenerator(logger)
+		gpt = LLMAttackSuggestionGenerator(logger)
 		response = gpt.get_attack_suggestion(llm_input)
 		response['subdomain_name'] = subdomain.name
 		if response.get('status'):
@@ -161,7 +161,7 @@ class GPTAttackSuggestion(APIView):
 		return Response(response)
 
 
-class GPTVulnerabilityReportGenerator(APIView):
+class LLMVulnerabilityReportGenerator(APIView):
 	def get(self, request):
 		req = self.request
 		vulnerability_id = req.query_params.get('id')

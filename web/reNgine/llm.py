@@ -8,7 +8,7 @@ from langchain_community.llms import Ollama
 from dashboard.models import OllamaSettings
 
 
-class GPTVulnerabilityReportGenerator:
+class LLMVulnerabilityReportGenerator:
 
 	def __init__(self, logger):
 		selected_model = OllamaSettings.objects.first()
@@ -84,7 +84,8 @@ class GPTVulnerabilityReportGenerator:
 			'references': response.get('references', []),
 		}
 
-class GPTAttackSuggestionGenerator:
+
+class LLMAttackSuggestionGenerator:
 
 	def __init__(self, logger):
 		selected_model = OllamaSettings.objects.first()

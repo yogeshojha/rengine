@@ -29,7 +29,7 @@ from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
-from reNgine.gpt import *
+from reNgine.llm import *
 from reNgine.utilities import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification, Proxy)
 from startScan.models import *
@@ -2277,7 +2277,7 @@ def get_vulnerability_gpt_report(vuln):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
-		report = GPTVulnerabilityReportGenerator(logger=logger)
+		report = LLMVulnerabilityReportGenerator(logger=logger)
 		vulnerability_description = get_gpt_vuln_input_description(
 			title,
 			path
@@ -4811,7 +4811,7 @@ def gpt_vulnerability_description(vulnerability_id):
 		)
 		# one can add more description here later
 
-		gpt_generator = GPTVulnerabilityReportGenerator(logger=logger)
+		gpt_generator = LLMVulnerabilityReportGenerator(logger=logger)
 		response = gpt_generator.get_vulnerability_description(vulnerability_description)
 		logger.info(response)
 		add_gpt_description_db(
