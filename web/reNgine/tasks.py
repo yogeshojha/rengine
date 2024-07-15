@@ -4855,6 +4855,8 @@ def sync_h1_bookmarked():
         for handle in handles_to_delete:
             try:
                 org_to_delete = get_object_or_404(Organization, name=handle, project=project)
+				for domain in org_to_delete.get_domains():
+					domain.delete()
                 org_to_delete.delete()
                 logger.info(f'Deleted organization: {handle}')
             except Exception as e:
