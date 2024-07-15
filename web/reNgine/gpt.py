@@ -1,6 +1,7 @@
+
 import openai
 import re
-from reNgine.common_func import get_open_ai_key, extract_between
+from reNgine.common_func import get_open_ai_key, parse_llm_vulnerability_report
 from reNgine.definitions import VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE, ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT, OLLAMA_INSTANCE
 from langchain_community.llms import Ollama
 
@@ -66,34 +67,21 @@ class GPTVulnerabilityReportGenerator:
 					'status': False,
 					'error': str(e)
 				}
-		vuln_description_pattern = re.compile(
-			r"[Vv]ulnerability [Dd]escription:(.*?)(?:\n\n[Ii]mpact:|$)",
-			re.DOTALL
-		)
-		impact_pattern = re.compile(
-			r"[Ii]mpact:(.*?)(?:\n\n[Rr]emediation:|$)",
-			re.DOTALL
-		)
-		remediation_pattern = re.compile(
-			r"[Rr]emediation:(.*?)(?:\n\n[Rr]eferences:|$)",
-			re.DOTALL
-		)
+			
+		response = parse_llm_vulnerability_report(response_content)
 
-		description_section = extract_between(response_content, vuln_description_pattern)
-		impact_section = extract_between(response_content, impact_pattern)
-		remediation_section = extract_between(response_content, remediation_pattern)
-		references_start_index = response_content.find("References:")
-		references_section = response_content[references_start_index + len("References:"):].strip()
-
-		url_pattern = re.compile(r'https://\S+')
-		urls = url_pattern.findall(references_section)
+		if not response:
+			return {
+				'status': False,
+				'error': 'Failed to parse LLM response'
+			}
 
 		return {
 			'status': True,
-			'description': description_section,
-			'impact': impact_section,
-			'remediation': remediation_section,
-			'references': urls,
+			'description': response.get('description', ''),
+			'impact': response.get('impact', ''),
+			'remediation': response.get('remediation', ''),
+			'references': response.get('references', []),
 		}
 
 class GPTAttackSuggestionGenerator:
