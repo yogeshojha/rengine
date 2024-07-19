@@ -25,12 +25,11 @@ from pycvesearch import CVESearch
 from metafinder.extractor import extract_metadata_from_google_search
 
 from reNgine.celery import app
-from reNgine.gpt import GPTVulnerabilityReportGenerator
 from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
-from reNgine.gpt import *
+from reNgine.llm import *
 from reNgine.utilities import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification, Proxy)
 from startScan.models import *
@@ -2261,6 +2260,8 @@ def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, sh
 def get_vulnerability_gpt_report(vuln):
 	title = vuln[0]
 	path = vuln[1]
+	if not path:
+		path = '/'
 	logger.info(f'Getting GPT Report for {title}, PATH: {path}')
 	# check if in db already exists
 	stored = GPTVulnerabilityReport.objects.filter(
@@ -2268,7 +2269,7 @@ def get_vulnerability_gpt_report(vuln):
 	).filter(
 		title=title
 	).first()
-	if stored:
+	if stored and stored.description and stored.impact and stored.remediation:
 		response = {
 			'description': stored.description,
 			'impact': stored.impact,
@@ -2276,7 +2277,7 @@ def get_vulnerability_gpt_report(vuln):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
-		report = GPTVulnerabilityReportGenerator()
+		report = LLMVulnerabilityReportGenerator(logger=logger)
 		vulnerability_description = get_gpt_vuln_input_description(
 			title,
 			path
@@ -2306,6 +2307,9 @@ def get_vulnerability_gpt_report(vuln):
 
 
 def add_gpt_description_db(title, path, description, impact, remediation, references):
+	logger.info(f'Adding GPT Report to DB for {title}, PATH: {path}')
+	if not path:
+		path = '/'
 	gpt_report = GPTVulnerabilityReport()
 	gpt_report.url_path = path
 	gpt_report.title = title
@@ -4768,8 +4772,8 @@ def query_ip_history(domain):
 	return get_domain_historical_ip_address(domain)
 
 
-@app.task(name='gpt_vulnerability_description', bind=False, queue='gpt_queue')
-def gpt_vulnerability_description(vulnerability_id):
+@app.task(name='llm_vulnerability_description', bind=False, queue='llm_queue')
+def llm_vulnerability_description(vulnerability_id):
 	"""Generate and store Vulnerability Description using GPT.
 
 	Args:
@@ -4787,8 +4791,11 @@ def gpt_vulnerability_description(vulnerability_id):
 		}
 
 	# check in db GPTVulnerabilityReport model if vulnerability description and path matches
+	if not path:
+		path = '/'
 	stored = GPTVulnerabilityReport.objects.filter(url_path=path).filter(title=lookup_vulnerability.name).first()
-	if stored:
+	if stored and stored.description and stored.impact and stored.remediation:
+		logger.info('Found cached Vulnerability Description')
 		response = {
 			'status': True,
 			'description': stored.description,
@@ -4797,14 +4804,16 @@ def gpt_vulnerability_description(vulnerability_id):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
+		logger.info('Fetching new Vulnerability Description')
 		vulnerability_description = get_gpt_vuln_input_description(
 			lookup_vulnerability.name,
 			path
 		)
 		# one can add more description here later
 
-		gpt_generator = GPTVulnerabilityReportGenerator()
+		gpt_generator = LLMVulnerabilityReportGenerator(logger=logger)
 		response = gpt_generator.get_vulnerability_description(vulnerability_description)
+		logger.info(response)
 		add_gpt_description_db(
 			lookup_vulnerability.name,
 			path,
@@ -4815,7 +4824,7 @@ def gpt_vulnerability_description(vulnerability_id):
 		)
 
 	# for all vulnerabilities with the same vulnerability name this description has to be stored.
-	# also the consition is that the url must contain a part of this.
+	# also the condition is that the url must contain a part of this.
 
 	for vuln in Vulnerability.objects.filter(name=lookup_vulnerability.name, http_url__icontains=path):
 		vuln.description = response.get('description', vuln.description)

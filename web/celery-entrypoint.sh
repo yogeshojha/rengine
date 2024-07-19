@@ -159,6 +159,9 @@ echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
 # TEMPORARY FIX, httpcore is causing issues with celery, removing it as temp fix
 python3 -m pip uninstall -y httpcore
 
+# TEMPORARY FIX FOR langchain
+pip install tenacity==8.2.2
+
 loglevel='info'
 if [ "$DEBUG" == "1" ]; then
     loglevel='debug'
@@ -183,7 +186,7 @@ watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/re
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=50 --loglevel=$loglevel -Q run_command_queue -n run_command_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q query_reverse_whois_queue -n query_reverse_whois_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q query_ip_history_queue -n query_ip_history_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=$loglevel -Q gpt_queue -n gpt_worker &
+watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=$loglevel -Q llm_queue -n llm_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q dorking_queue -n dorking_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q osint_discovery_queue -n osint_discovery_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q h8mail_queue -n h8mail_worker &

@@ -22,7 +22,7 @@ from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
 from reNgine.tasks import *
-from reNgine.gpt import GPTAttackSuggestionGenerator
+from reNgine.llm import *
 from reNgine.utilities import is_safe_path
 from scanEngine.models import *
 from startScan.models import *
@@ -141,7 +141,7 @@ class GPTAttackSuggestion(APIView):
 		tech_used = ''
 		for tech in subdomain.technologies.all():
 			tech_used += f'{tech.name}, '
-		input = f'''
+		llm_input = f'''
 			Subdomain Name: {subdomain.name}
 			Subdomain Page Title: {subdomain.page_title}
 			Open Ports: {open_ports_str}
@@ -151,8 +151,9 @@ class GPTAttackSuggestion(APIView):
 			Web Server: {subdomain.webserver}
 			Page Content Length: {subdomain.content_length}
 		'''
-		gpt = GPTAttackSuggestionGenerator()
-		response = gpt.get_attack_suggestion(input)
+		llm_input = re.sub(r'\t', '', llm_input)
+		gpt = LLMAttackSuggestionGenerator(logger)
+		response = gpt.get_attack_suggestion(llm_input)
 		response['subdomain_name'] = subdomain.name
 		if response.get('status'):
 			subdomain.attack_surface = response.get('description')
@@ -160,7 +161,7 @@ class GPTAttackSuggestion(APIView):
 		return Response(response)
 
 
-class GPTVulnerabilityReportGenerator(APIView):
+class LLMVulnerabilityReportGenerator(APIView):
 	def get(self, request):
 		req = self.request
 		vulnerability_id = req.query_params.get('id')
@@ -169,7 +170,7 @@ class GPTVulnerabilityReportGenerator(APIView):
 				'status': False,
 				'error': 'Missing GET param Vulnerability `id`'
 			})
-		task = gpt_vulnerability_description.apply_async(args=(vulnerability_id,))
+		task = llm_vulnerability_description.apply_async(args=(vulnerability_id,))
 		response = task.wait()
 		return Response(response)
 

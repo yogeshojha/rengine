@@ -3080,7 +3080,7 @@ function render_vuln_offcanvas(vuln){
 	}
 
 	if (vuln.is_gpt_used) {
-		body += `<small class="text-muted float-end">(GPT was used to generate vulnerability details.)</small>`;
+		body += `<small class="text-muted float-end">(LLM was used to generate vulnerability details.)</small>`;
 	}
 
 

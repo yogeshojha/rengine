@@ -35,38 +35,38 @@ DISCORD_WEBHOOKS_CACHE = redis.Redis.from_url(CELERY_BROKER_URL)
 # EngineType utils #
 #------------------#
 def dump_custom_scan_engines(results_dir):
-    """Dump custom scan engines to YAML files.
+	"""Dump custom scan engines to YAML files.
 
-    Args:
-        results_dir (str): Results directory (will be created if non-existent).
-    """
-    custom_engines = EngineType.objects.filter(default_engine=False)
-    if not os.path.exists(results_dir):
-        os.makedirs(results_dir, exist_ok=True)
-    for engine in custom_engines:
-        with open(os.path.join(results_dir, f"{engine.engine_name}.yaml"), 'w') as f:
-            f.write(engine.yaml_configuration)
+	Args:
+		results_dir (str): Results directory (will be created if non-existent).
+	"""
+	custom_engines = EngineType.objects.filter(default_engine=False)
+	if not os.path.exists(results_dir):
+		os.makedirs(results_dir, exist_ok=True)
+	for engine in custom_engines:
+		with open(os.path.join(results_dir, f"{engine.engine_name}.yaml"), 'w') as f:
+			f.write(engine.yaml_configuration)
 
 def load_custom_scan_engines(results_dir):
-    """Load custom scan engines from YAML files. The filename without .yaml will
-    be used as the engine name.
+	"""Load custom scan engines from YAML files. The filename without .yaml will
+	be used as the engine name.
 
-    Args:
-        results_dir (str): Results directory containing engines configs.
-    """
-    config_paths = [
-        f for f in os.listdir(results_dir)
-        if os.path.isfile(os.path.join(results_dir, f)) and f.endswith('.yaml')
-    ]
-    for path in config_paths:
-        engine_name = os.path.splitext(os.path.basename(path))[0]
-        full_path = os.path.join(results_dir, path)
-        with open(full_path, 'r') as f:
-            yaml_configuration = f.read()
+	Args:
+		results_dir (str): Results directory containing engines configs.
+	"""
+	config_paths = [
+		f for f in os.listdir(results_dir)
+		if os.path.isfile(os.path.join(results_dir, f)) and f.endswith('.yaml')
+	]
+	for path in config_paths:
+		engine_name = os.path.splitext(os.path.basename(path))[0]
+		full_path = os.path.join(results_dir, path)
+		with open(full_path, 'r') as f:
+			yaml_configuration = f.read()
 
-        engine, _ = EngineType.objects.get_or_create(engine_name=engine_name)
-        engine.yaml_configuration = yaml_configuration
-        engine.save()
+		engine, _ = EngineType.objects.get_or_create(engine_name=engine_name)
+		engine.yaml_configuration = yaml_configuration
+		engine.save()
 
 
 #--------------------------------#
@@ -1005,9 +1005,27 @@ def get_netlas_key():
 	netlas_key = NetlasAPIKey.objects.all()
 	return netlas_key[0] if netlas_key else None
 
-
-def extract_between(text, pattern):
-	match = pattern.search(text)
-	if match:
-		return match.group(1).strip()
-	return ""
+def parse_llm_vulnerability_report(report):
+	report = report.replace('**', '')
+	data = {}
+	sections = re.split(r'\n(?=(?:Description|Impact|Remediation|References):)', report.strip())
+	
+	try:
+		for section in sections:
+			if not section.strip():
+				continue
+			
+			section_title, content = re.split(r':\n', section.strip(), maxsplit=1)
+			
+			if section_title == 'Description':
+				data['description'] = content.strip()
+			elif section_title == 'Impact':
+				data['impact'] = content.strip()
+			elif section_title == 'Remediation':
+				data['remediation'] = content.strip()
+			elif section_title == 'References':
+				data['references'] = [ref.strip() for ref in content.split('\n') if ref.strip()]
+	except Exception as e:
+		return data
+	
+	return data
