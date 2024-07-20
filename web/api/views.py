@@ -577,13 +577,14 @@ class AddReconNote(APIView):
 			note.description = description
 
 			# get scan history for subdomain_id
-			subdomain = Subdomain.objects.get(id=subdomain_id)
-			note.subdomain = subdomain
+			if subdomain_id:
+				subdomain = Subdomain.objects.get(id=subdomain_id)
+				note.subdomain = subdomain
 
-			# also get scan history
-			scan_history_id = subdomain.scan_history.id
-			scan_history = ScanHistory.objects.get(id=scan_history_id)
-			note.scan_history = scan_history
+				# also get scan history
+				scan_history_id = subdomain.scan_history.id
+				scan_history = ScanHistory.objects.get(id=scan_history_id)
+				note.scan_history = scan_history
 
 			note.project = project
 			note.save()
