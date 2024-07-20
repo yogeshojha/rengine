@@ -1138,3 +1138,81 @@ def create_scan_object(host_id, engine_id, initiated_by_id=None):
 	domain.start_scan_date = current_scan_time
 	domain.save()
 	return scan.id
+
+
+def get_port_service_description(port):
+	"""
+		Retrieves the standard service name and description for a given port 
+		number using whatportis and the builtin socket library as fallback.
+
+		Args:
+			port (int or str): The port number to look up. 
+				Can be an integer or a string representation of an integer.
+
+		Returns:
+			dict: A dictionary containing the service name and description for the port number.
+	"""
+	logger.info('Fetching Port Service Name and Description')
+	try:
+		port = int(port)
+		whatportis_result = whatportis.get_ports(str(port))
+		
+		if whatportis_result and whatportis_result[0].name:
+			return {
+				"service_name": whatportis_result[0].name,
+				"description": whatportis_result[0].description
+			}
+		else:
+			try:
+				service = socket.getservbyport(port)
+				return {
+					"service_name": service,
+					"description": "" # Keep description blank when using socket
+				}
+			except OSError:
+				# If both whatportis and socket fail
+				return {
+					"service_name": "",
+					"description": ""
+				}
+	except:
+		# port is not a valid int or any other exception
+		return {
+			"service_name": "",
+			"description": ""
+		}
+
+
+def update_or_create_port(port_number, service_name=None, description=None):
+	"""
+		Updates or creates a new Port object with the provided information to 
+		avoid storing duplicate entries when service or description information is updated.
+
+		Args:
+			port_number (int): The port number to update or create.
+			service_name (str, optional): The name of the service associated with the port.
+			description (str, optional): A description of the service associated with the port.
+
+		Returns:
+			Tuple: A tuple containing the Port object and a boolean indicating whether the object was created.
+	"""
+	created = False
+	try:
+		port = Port.objects.get(number=port_number)
+		
+		# avoid updating None values in service and description if they already exist
+		if service_name is not None and port.service_name != service_name:
+			port.service_name = service_name
+		if description is not None and port.description != description:
+			port.description = description
+		port.save()	
+	except Port.DoesNotExist:
+		# for cases if the port doesn't exist, create a new one
+		port = Port.objects.create(
+			number=port_number,
+			service_name=service_name,
+			description=description
+		)
+		created = True
+	finally:
+		return port, created
