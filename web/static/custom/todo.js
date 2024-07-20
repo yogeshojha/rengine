@@ -8,7 +8,7 @@ function todoCheckboxListener(){
     else if ($(this).is(":not(:checked)")) {
       $("#todo_parent_"+note_id).removeClass('text-strike');
     }
-    fetch('../../recon_note/flip_todo_status', {
+    fetch('../../../recon_note/flip_todo_status', {
       method: 'post',
       headers: {
         "X-CSRFToken": getCookie("csrftoken")
@@ -32,7 +32,7 @@ function delete_todo(todo_id){
     padding: '2em',
     showLoaderOnConfirm: true,
     preConfirm: function() {
-      return fetch('../../recon_note/delete_note', {
+      return fetch('../../../recon_note/delete_note', {
         method: 'POST',
         credentials: "same-origin",
         headers: {
@@ -68,7 +68,7 @@ function change_todo_priority(todo_id, imp_type){
     snackbar_text = 'Todo Marked as Important';
   }
   scan_id = parseInt(document.getElementById('summary_identifier_val').value);
-  fetch('../../recon_note/flip_important_status', {
+  fetch('../../../recon_note/flip_important_status', {
     method: 'post',
     headers: {
       "X-CSRFToken": getCookie("csrftoken")
