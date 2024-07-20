@@ -1,5 +1,61 @@
 # Changelog
 
+## 2.1.1
+
+**Release Date: July 20, 2024**
+
+## What's Changed and Fixed
+* Update contribution guidelines reference by @emmanuel-ferdman in https://github.com/yogeshojha/rengine/pull/1286
+* fix xss on page title fix #1185 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1296
+* fix context key error #1263 #1209 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1294
+* fix xss on vulnerability description payloads #1262 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1298
+* (bug) fix screenshot csv parser #1299 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1300
+* (Security) Fixes #1202 bug risk of leaking the scan result files by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1301
+* Fix #1291 Refactor Makefiles for windows/linux to accomodate both v1 and v2 of docker compose by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1302
+* Fix custom_header to accept multiple headers using custom_headers by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1303
+* Handle hash in url, added navigation for Tabs, Fixes #1155 bug href link with html id does not link to the expected url by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1306
+* Optimize uninstall scripts to perform operations only related to reNgine Fixes # 1187 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1307
+* Added validators to validate URL fixes #1176 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1308
+* Fix LLM/langchain issue for fetching vulnerability report using local LLM model Fixed #1292  local model dont use fetch gpt vulnerability details by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1311
+* Fixes for Clocked and Periodic Scans Fix #1287 Fixes #1015 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1313
+* Fix Not able to add todo from All Subdomains Section Fixes #1310 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1314
+* Fix #1315 Fix for todo URLs not compatible with slugs by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1316
+* Fixes #1122 But in port service lookup that caused multiple entries of Port with same port number but different service name/description by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1317
+
+## New Contributors
+* @emmanuel-ferdman made their first contribution in https://github.com/yogeshojha/rengine/pull/1286
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.0...v2.1.1
+
+## 2.1.0
+
+**Release Date: June 22, 2024**
+
+## What's Changed
+* ARM support
+* Add LLM Toolkit by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1259
+* use django-env by @fopina in https://github.com/yogeshojha/rengine/pull/1230
+* Add Lark to notifications. by @iuime in https://github.com/yogeshojha/rengine/pull/1137
+* Added restart: always to redis container by @null-ref-0000 in https://github.com/yogeshojha/rengine/pull/1275
+* Dockerfile cleanup: reduce image size 3x by @sa7mon in https://github.com/yogeshojha/rengine/pull/1212
+* Support for ARM-based platforms and remove obsolete composer version by @metehan-arslan in https://github.com/yogeshojha/rengine/pull/1242
+* Fix importing CIDR blocks by @pbehnke in https://github.com/yogeshojha/rengine/pull/1205
+* Added SAN extension to the generated certs by @michschl in https://github.com/yogeshojha/rengine/pull/1282
+* Release/2.1.0 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1147
+* Dockerfile Build Multiple Platforms by @vncloudsco in https://github.com/yogeshojha/rengine/pull/1210
+
+## New Contributors
+* @fopina made their first contribution in https://github.com/yogeshojha/rengine/pull/1230
+* @iuime made their first contribution in https://github.com/yogeshojha/rengine/pull/1137
+* @null-ref-0000 made their first contribution in https://github.com/yogeshojha/rengine/pull/1275
+* @sa7mon made their first contribution in https://github.com/yogeshojha/rengine/pull/1212
+* @metehan-arslan made their first contribution in https://github.com/yogeshojha/rengine/pull/1242
+* @pbehnke made their first contribution in https://github.com/yogeshojha/rengine/pull/1205
+* @michschl made their first contribution in https://github.com/yogeshojha/rengine/pull/1282
+* @vncloudsco made their first contribution in https://github.com/yogeshojha/rengine/pull/1210
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.0.6...v2.1.0
+
 ## 2.0.6
 
 **Release Date: May 11, 2024**
