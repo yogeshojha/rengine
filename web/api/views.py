@@ -566,7 +566,6 @@ class AddReconNote(APIView):
 		data = req.data
 
 		subdomain_id = data.get('subdomain_id')
-		scan_history_id = data.get('scan_history_id')
 		title = data.get('title')
 		description = data.get('description')
 		project = data.get('project')
@@ -577,19 +576,14 @@ class AddReconNote(APIView):
 			note.title = title
 			note.description = description
 
-			if scan_history_id:
-				scan_history = ScanHistory.objects.get(id=scan_history_id)
-				note.scan_history = scan_history
-
 			# get scan history for subdomain_id
-			if subdomain_id:
-				subdomain = Subdomain.objects.get(id=subdomain_id)
-				note.subdomain = subdomain
+			subdomain = Subdomain.objects.get(id=subdomain_id)
+			note.subdomain = subdomain
 
-				# also get scan history
-				scan_history_id = subdomain.scan_history.id
-				scan_history = ScanHistory.objects.get(id=scan_history_id)
-				note.scan_history = scan_history
+			# also get scan history
+			scan_history_id = subdomain.scan_history.id
+			scan_history = ScanHistory.objects.get(id=scan_history_id)
+			note.scan_history = scan_history
 
 			note.project = project
 			note.save()
