@@ -5,7 +5,6 @@ import pprint
 import subprocess
 import time
 import validators
-import whatportis
 import xmltodict
 import yaml
 import tldextract
@@ -1367,16 +1366,17 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 			urls.append(http_url)
 
 		# Add Port in DB
-		port_details = whatportis.get_ports(str(port_number))
-		service_name = port_details[0].name if len(port_details) > 0 else 'unknown'
-		description = port_details[0].description if len(port_details) > 0 else ''
-
+		res = get_port_service_description(port_number)
 		# get or create port
-		port, created = Port.objects.get_or_create(
-			number=port_number,
-			service_name=service_name,
-			description=description
+		port, created = update_or_create_port(
+			port_number=port_number,
+			service_name=res.get('service_name', ''),
+			description=res.get('description', '')
 		)
+
+		if created:
+			logger.warning(f'Added new port {port_number} to DB')
+
 		if port_number in UNCOMMON_WEB_PORTS:
 			port.is_uncommon = True
 			port.save()
