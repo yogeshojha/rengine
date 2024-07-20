@@ -135,17 +135,19 @@ function populateTodofunction(project=null){
       'description': $_taskDescriptionText
     }
 
-    if ($("#scanHistoryIDropdown").val() && $("#scanHistoryIDropdown").val() != 'Choose Scan History...') {
-      data['scan_history'] = parseInt($("#scanHistoryIDropdown").val());
-    }
+    // if ($("#scanHistoryIDropdown").val() && $("#scanHistoryIDropdown").val() != 'Choose Scan History...') {
+    //   data['scan_history'] = parseInt($("#scanHistoryIDropdown").val());
+    // }
 
     if ($("#subdomainDropdown").val() != 'Choose Subdomain...') {
-      data['subdomain'] = parseInt($("#subdomainDropdown").val());
+      data['subdomain_id'] = parseInt($("#subdomainDropdown").val());
     }
 
     if (project) {
       data['project'] = project;
     }
+
+    console.log(data);
 
     fetch('/api/add/recon_note/', {
       method: 'post',
