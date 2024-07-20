@@ -1029,3 +1029,32 @@ def parse_llm_vulnerability_report(report):
 		return data
 	
 	return data
+
+
+def create_scan_object(host_id, engine_id, initiated_by_id=None):
+	'''
+	create task with pending status so that celery task will execute when
+	threads are free
+	Args:
+		host_id: int: id of Domain model
+		engine_id: int: id of EngineType model
+		initiated_by_id: int : id of User model (Optional)
+	'''
+	# get current time
+	current_scan_time = timezone.now()
+	# fetch engine and domain object
+	engine = EngineType.objects.get(pk=engine_id)
+	domain = Domain.objects.get(pk=host_id)
+	scan = ScanHistory()
+	scan.scan_status = INITIATED_TASK
+	scan.domain = domain
+	scan.scan_type = engine
+	scan.start_scan_date = current_scan_time
+	if initiated_by_id:
+		user = User.objects.get(pk=initiated_by_id)
+		scan.initiated_by = user
+	scan.save()
+	# save last scan date for domain model
+	domain.start_scan_date = current_scan_time
+	domain.save()
+	return scan.id
