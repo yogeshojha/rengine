@@ -494,20 +494,68 @@ Quick Scan History
       })
     } else {
       // atleast one target is selected
-      swal.queue([{
+      Swal.fire({
         title: 'Are you sure you want to stop ' + checkedCount() + ' Scans?',
         text: "This action is irreversible.\nThis will stop all the selected scans if they are running.",
-        type: 'warning',
+        icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Delete',
-        padding: '2em',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Stop',
+        cancelButtonText: 'Cancel',
         showLoaderOnConfirm: true,
         preConfirm: function() {
-          deleteForm = document.getElementById("scan_history_form");
-          deleteForm.action = "../stop/multiple";
-          deleteForm.submit();
+          var selected_scan_ids = [];
+          $('.targets_checkbox:checked').each(function() {
+            selected_scan_ids.push($(this).val());
+          });
+          data = {
+            'scan_ids': selected_scan_ids
+          }
+          fetch('/api/action/stop/scan/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+          }).then(function(response) {
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Network response was not ok.');
+          }).then(function(data) {
+            if (data['status']) {
+              Swal.fire({
+                title: 'Success',
+                text: data['message'],
+                icon: 'success',
+                showConfirmButton: false,
+                timer: 1500
+              });
+              setTimeout(function() {
+                location.reload();
+              }, 1500);
+            } else {
+              Swal.fire({
+                title: 'Error',
+                text: data['message'],
+                icon: 'error',
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
+          }).catch(function(error) {
+            Swal.fire({
+              title: 'Error',
+              text: 'An error occurred while stopping the scans',
+              icon: 'error',
+              showConfirmButton: false,
+              timer: 1500
+            });
+          });
         }
-      }])
+      });
     }
   }
 

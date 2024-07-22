@@ -772,65 +772,89 @@ class StopScan(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-		scan_id = data.get('scan_id')
-		subscan_id = data.get('subscan_id')
-		response = {}
-		task_ids = []
-		scan = None
-		subscan = None
-		if subscan_id:
+		scan_ids = data.get('scan_ids', [])
+		subscan_ids = data.get('subscan_ids', [])
+
+		scan_ids = [int(id) for id in scan_ids]
+		subscan_ids = [int(id) for id in subscan_ids]
+
+
+		def abort_scan(scan):
+			response = {}
+			logger.info(f'Aborting scan History')
 			try:
-				subscan = get_object_or_404(SubScan, id=subscan_id)
-				scan = subscan.scan_history
+				logger.info(f"Setting scan {scan} status to ABORTED_TASK")
+				task_ids = scan.celery_ids
+				scan.scan_status = ABORTED_TASK
+				scan.stop_scan_date = timezone.now()
+				scan.aborted_by = request.user
+				scan.save()
+				for task_id in task_ids:
+					app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+
+				tasks = (
+					ScanActivity.objects
+					.filter(scan_of=scan)
+					.filter(status=RUNNING_TASK)
+					.order_by('-pk')
+				)
+				for task in tasks:
+					task.status = ABORTED_TASK
+					task.time = timezone.now()
+					task.save()
+
+				create_scan_activity(
+					scan.id,
+					"Scan aborted",
+					ABORTED_TASK
+				)
+				response['status'] = True
+			except Exception as e:
+				logger.error(e)
+				response = {'status': False, 'message': str(e)}
+
+			return response
+
+		def abort_subscan(subscan):
+			response = {}
+			logger.info(f'Aborting subscan')
+			try:
+				logger.info(f"Setting scan {subscan} status to ABORTED_TASK")
 				task_ids = subscan.celery_ids
+
+				for task_id in task_ids:
+					app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+
 				subscan.status = ABORTED_TASK
 				subscan.stop_scan_date = timezone.now()
 				subscan.save()
 				create_scan_activity(
 					subscan.scan_history.id,
-					f'Subscan {subscan_id} aborted',
-					ABORTED_TASK)
+					f'Subscan aborted',
+					ABORTED_TASK
+				)
 				response['status'] = True
 			except Exception as e:
 				logger.error(e)
 				response = {'status': False, 'message': str(e)}
-		elif scan_id:
+
+			return response
+
+		for scan_id in scan_ids:
 			try:
-				logger.info(f'Aborting scan History')
-				scan = get_object_or_404(ScanHistory, id=scan_id)
-				task_ids = scan.celery_ids
-				logger.info(f"Setting scan {scan} status to ABORTED_TASK")
-				scan.scan_status = ABORTED_TASK
-				scan.stop_scan_date = timezone.now()
-				scan.aborted_by = request.user
-				scan.save()
-				create_scan_activity(
-					scan.id,
-					"Scan aborted",
-					ABORTED_TASK)
-				response['status'] = True
+				scan = ScanHistory.objects.get(id=scan_id)
+				response = abort_scan(scan)
 			except Exception as e:
 				logger.error(e)
 				response = {'status': False, 'message': str(e)}
-
-		logger.warning(f'Revoking tasks {task_ids}')
-		for task_id in task_ids:
-			app.control.revoke(task_id, terminate=True, signal='SIGKILL')
-
-		# Abort running tasks
-		tasks = (
-			ScanActivity.objects
-			.filter(scan_of=scan)
-			.filter(status=RUNNING_TASK)
-			.order_by('-pk')
-		)
-		if tasks.exists():
-			for task in tasks:
-				if subscan_id and task.id not in subscan.celery_ids:
-					continue
-				task.status = ABORTED_TASK
-				task.time = timezone.now()
-				task.save()
+			
+		for subscan_id in subscan_ids:
+			try:
+				subscan = SubScan.objects.get(id=subscan_id)
+				response = abort_subscan(subscan)
+			except Exception as e:
+				logger.error(e)
+				response = {'status': False, 'message': str(e)}
 
 		return Response(response)
 
