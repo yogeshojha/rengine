@@ -778,6 +778,7 @@ class StopScan(APIView):
 		scan_ids = [int(id) for id in scan_ids]
 		subscan_ids = [int(id) for id in subscan_ids]
 
+		response = {'status': False}
 
 		def abort_scan(scan):
 			response = {}
