@@ -789,7 +789,7 @@ class StopScan(APIView):
 				create_scan_activity(
 					subscan.scan_history.id,
 					f'Subscan {subscan_id} aborted',
-					SUCCESS_TASK)
+					ABORTED_TASK)
 				response['status'] = True
 			except Exception as e:
 				logging.error(e)
@@ -805,7 +805,7 @@ class StopScan(APIView):
 				create_scan_activity(
 					scan.id,
 					"Scan aborted",
-					SUCCESS_TASK)
+					ABORTED_TASK)
 				response['status'] = True
 			except Exception as e:
 				logging.error(e)
