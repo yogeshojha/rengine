@@ -462,11 +462,13 @@ def delete_scan(request, id):
 def stop_scan(request, id):
     if request.method == "POST":
         scan = get_object_or_404(ScanHistory, id=id)
-        scan.scan_status = ABORTED_TASK
-        scan.save()
         try:
             for task_id in scan.celery_ids:
                 app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+            
+            # after celery task is stopped, update the scan status
+            scan.scan_status = ABORTED_TASK
+            scan.save()
             tasks = (
                 ScanActivity.objects
                 .filter(scan_of=scan)
@@ -474,10 +476,11 @@ def stop_scan(request, id):
                 .order_by('-pk')
             )
             for task in tasks:
+                app.control.revoke(task.celery_id, terminate=True, signal='SIGKILL')
                 task.status = ABORTED_TASK
                 task.time = timezone.now()
                 task.save()
-            create_scan_activity(scan.id, "Scan aborted", SUCCESS_TASK)
+            create_scan_activity(scan.id, "Scan aborted", ABORTED_TASK)
             response = {'status': True}
             messages.add_message(
                 request,
@@ -494,6 +497,44 @@ def stop_scan(request, id):
             )
         return JsonResponse(response)
     return scan_history(request)
+
+
+@has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
+def stop_scans(request, slug):
+    if request.method == "POST":
+        for key, value in request.POST.items():
+            if key == 'scan_history_table_length' or key == 'csrfmiddlewaretoken':
+                continue
+            scan = get_object_or_404(ScanHistory, id=value)
+            try:
+                for task_id in scan.celery_ids:
+                    app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+                tasks = (
+                    ScanActivity.objects
+                    .filter(scan_of=scan)
+                    .filter(status=RUNNING_TASK)
+                    .order_by('-pk')
+                )
+                for task in tasks:
+                    app.control.revoke(task.celery_id, terminate=True, signal='SIGKILL')
+                    task.status = ABORTED_TASK
+                    task.time = timezone.now()
+                    task.save()
+                create_scan_activity(scan.id, "Scan aborted", ABORTED_TASK)
+                messages.add_message(
+                    request,
+                    messages.INFO,
+                    'Multiple scans successfully stopped!'
+                )
+            except Exception as e:
+                logger.error(e)
+                messages.add_message(
+                    request,
+                    messages.ERROR,
+                    f'Scans failed to stop ! Error: {str(e)}'
+                )
+    return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
+
 
 
 @has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
@@ -825,7 +866,7 @@ def delete_scans(request, slug):
         messages.add_message(
             request,
             messages.INFO,
-            'All Scans deleted!')
+            'Multiple scans successfully deleted!')
     return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
 
