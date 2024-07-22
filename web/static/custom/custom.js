@@ -830,10 +830,10 @@ function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_l
 	const stopAPI = "/api/action/stop/scan/";
 
 	if (scan_id) {
-		var data = {'scan_id': scan_id}
+		var data = {'scan_ids': [scan_id]}
 	}
 	else if (subscan_id) {
-		var data = {'subscan_id': subscan_id}
+		var data = {'subscan_ids': [subscan_id]}
 	}
 	swal.queue([{
 		title: 'Are you sure you want to stop this scan?',
@@ -857,17 +857,21 @@ function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_l
 			}).then(function(data) {
 				// TODO Look for better way
 				if (data.status) {
-					Snackbar.show({
-						text: 'Scan Successfully Aborted.',
-						pos: 'top-right',
-						duration: 1500
+					Swal.fire({
+						title: 'Success',
+						text: data['message'],
+						icon: 'success',
+						showConfirmButton: false,
+						timer: 1500
 					});
-					if (reload_scan_bar) {
-						getScanStatusSidebar();
-					}
-					if (reload_location) {
-						window.location.reload();
-					}
+					setTimeout(function() {
+						if (reload_scan_bar) {
+							getScanStatusSidebar();
+						}
+						if (reload_location) {
+							window.location.reload();
+						}
+					}, 1500);
 				} else {
 					Snackbar.show({
 						text: 'Oops! Could not abort the scan. ' + data.message,
