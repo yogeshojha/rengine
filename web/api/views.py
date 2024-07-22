@@ -794,12 +794,14 @@ class StopScan(APIView):
 					ABORTED_TASK)
 				response['status'] = True
 			except Exception as e:
-				logging.error(e)
+				logger.error(e)
 				response = {'status': False, 'message': str(e)}
 		elif scan_id:
 			try:
+				logger.info(f'Aborting scan History')
 				scan = get_object_or_404(ScanHistory, id=scan_id)
 				task_ids = scan.celery_ids
+				logger.info(f"Setting scan {scan} status to ABORTED_TASK")
 				scan.scan_status = ABORTED_TASK
 				scan.stop_scan_date = timezone.now()
 				scan.aborted_by = request.user
@@ -810,7 +812,7 @@ class StopScan(APIView):
 					ABORTED_TASK)
 				response['status'] = True
 			except Exception as e:
-				logging.error(e)
+				logger.error(e)
 				response = {'status': False, 'message': str(e)}
 
 		logger.warning(f'Revoking tasks {task_ids}')
