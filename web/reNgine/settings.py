@@ -303,6 +303,11 @@ LOGGING = {
             'handlers': ['task'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False
+        },
+        'api.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False
         }
     },
 }
