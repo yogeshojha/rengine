@@ -58,9 +58,10 @@ SubScan History
               <a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
             </div>
           </div>
-          {% if user|can:'modify_scan_results' %}
+          {% if user|can:'initiate_scans_subscans' %}
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleSubScan()" id="delete_multiple_button">Delete Multiple SubScans</a>
+            <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="stopMultipleSubScan()" id="stop_multiple_button">Stop Multiple SubScans</a>
           </div>
           {% endif %}
         </div>
@@ -353,17 +354,21 @@ $(document).ready(function() {
   function toggleMultipleTargetButton() {
     if (checkedCount() > 0) {
       $("#delete_multiple_button").removeClass("disabled");
+      $("#stop_multiple_button").removeClass("disabled");
     } else {
       $("#delete_multiple_button").addClass("disabled");
+      $("#stop_multiple_button").addClass("disabled");
     }
   }
 
   function mainCheckBoxSelected(checkbox) {
     if (checkbox.checked) {
       $("#delete_multiple_button").removeClass("disabled");
+      $("#stop_multiple_button").removeClass("disabled");
       $(".targets_checkbox").prop('checked', true);
     } else {
       $("#delete_multiple_button").addClass("disabled");
+      $("#stop_multiple_button").addClass("disabled");
       $(".targets_checkbox").prop('checked', false);
     }
   }
@@ -423,5 +428,82 @@ $(document).ready(function() {
       }])
     }
   }
+
+
+  function stopMultipleSubScan() {
+    if (!checkedCount()) {
+      swal({
+        title: '',
+        text: "Oops! You haven't selected any subscans to stop.",
+        type: 'error',
+        padding: '2em'
+      })
+    } else {
+      // atleast one target is selected
+      Swal.fire({
+        title: 'Are you sure you want to stop ' + checkedCount() + ' SubScans?',
+        text: "This action is irreversible.\nThis will stop all the selected subscans if they are running.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Stop',
+        cancelButtonText: 'Cancel',
+        showLoaderOnConfirm: true,
+        preConfirm: function() {
+          var selected_subscan_ids = [];
+          $('.targets_checkbox:checked').each(function() {
+            selected_subscan_ids.push($(this).val());
+          });
+          data = {
+            'subscan_ids': selected_subscan_ids
+          }
+          fetch('/api/action/stop/scan/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+          }).then(function(response) {
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Network response was not ok.');
+          }).then(function(data) {
+            if (data['status']) {
+              Swal.fire({
+                title: 'Success',
+                text: data['message'],
+                icon: 'success',
+                showConfirmButton: false,
+                timer: 1500
+              });
+              setTimeout(function() {
+                location.reload();
+              }, 1500);
+            } else {
+              Swal.fire({
+                title: 'Error',
+                text: data['message'],
+                icon: 'error',
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
+          }).catch(function(error) {
+            Swal.fire({
+              title: 'Error',
+              text: 'An error occurred while stopping the subscans',
+              icon: 'error',
+              showConfirmButton: false,
+              timer: 1500
+            });
+          });
+        }
+      });
+    }
+  }
+
   </script>
   {% endblock page_level_script %}
