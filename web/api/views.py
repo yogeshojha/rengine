@@ -1,6 +1,7 @@
 import logging
 import re
 import socket
+import shlex
 import subprocess
 from ipaddress import IPv4Network
 
@@ -269,12 +270,22 @@ class WafDetector(APIView):
 		response = {}
 		response['status'] = False
 
-		wafw00f_command = f'wafw00f {url}'
-		output = subprocess.check_output(wafw00f_command, shell=True)
-		# use regex to get the waf
-		regex = "behind \\\\x1b\[1;96m(.*)\\\\x1b"
-		group = re.search(regex, str(output))
+		# validate url as a first step to avoid command injection
+		if not (validators.url(url) or validators.domain(url)):
+			response['message'] = 'Invalid Domain/URL provided!'
+			return Response(response)
+		
+		# valid domain or url provided now run wafw00f
+		# escape the url using shlex
+		safe_url = shlex.quote(url)
 
+		wafw00f_command = ['wafw00f', safe_url]
+		output = subprocess.check_output(wafw00f_command, stderr=subprocess.STDOUT, text=True)
+		ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+		clean_output = ansi_escape.sub('', output)
+		# use regex to get the waf
+		regex = r"behind (.*?) WAF"
+		group = re.search(regex, clean_output)
 		if group:
 			response['status'] = True
 			response['results'] = group.group(1)
