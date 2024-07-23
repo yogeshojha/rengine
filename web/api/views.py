@@ -1,7 +1,6 @@
 import logging
 import re
 import socket
-import subprocess
 from ipaddress import IPv4Network
 
 import requests
@@ -269,12 +268,15 @@ class WafDetector(APIView):
 		response = {}
 		response['status'] = False
 
+		# validate url as a first step to avoid command injection
+		if not (validators.url(url) or validators.domain(url)):
+			response['message'] = 'Invalid Domain/URL provided!'
+			return Response(response)
+		
 		wafw00f_command = f'wafw00f {url}'
-		output = subprocess.check_output(wafw00f_command, shell=True)
-		# use regex to get the waf
-		regex = "behind \\\\x1b\[1;96m(.*)\\\\x1b"
-		group = re.search(regex, str(output))
-
+		_, output = run_command(wafw00f_command, remove_ansi_sequence=True)
+		regex = r"behind (.*?) WAF"
+		group = re.search(regex, output)
 		if group:
 			response['status'] = True
 			response['results'] = group.group(1)
@@ -1155,6 +1157,11 @@ class CMSDetector(APIView):
 		url = req.query_params.get('url')
 		#save_db = True if 'save_db' in req.query_params else False
 		response = {'status': False}
+
+		if not (validators.url(url) or validators.domain(url)):
+			response['message'] = 'Invalid Domain/URL provided!'
+			return Response(response)
+
 		try:
 			# response = get_cms_details(url)
 			response = {}
