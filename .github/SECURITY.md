@@ -28,6 +28,10 @@ Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure pol
 
 Thanks to these individuals for reporting Security Issues in reNgine.
 
+### 2024
+
+* [HIGH] [Command Injection](https://github.com/yogeshojha/rengine/security/advisories/GHSA-fx7f-f735-vgh4) in Waf Detector, Reported by [n-thumann](https://github.com/n-thumann)
+
 ### 2022
 
 * [HIGH] [Blind command injection](https://huntr.dev/bounties/b255cf59-9ecd-4255-b9a2-b40b5ec6c572/) in CMS Detector, Reported by [Abdulrahman Abdullah](https://github.com/ph33rr)
