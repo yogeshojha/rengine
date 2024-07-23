@@ -1,8 +1,6 @@
 import logging
 import re
 import socket
-import shlex
-import subprocess
 from ipaddress import IPv4Network
 
 import requests
@@ -275,17 +273,10 @@ class WafDetector(APIView):
 			response['message'] = 'Invalid Domain/URL provided!'
 			return Response(response)
 		
-		# valid domain or url provided now run wafw00f
-		# escape the url using shlex
-		safe_url = shlex.quote(url)
-
-		wafw00f_command = ['wafw00f', safe_url]
-		output = subprocess.check_output(wafw00f_command, stderr=subprocess.STDOUT, text=True)
-		ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-		clean_output = ansi_escape.sub('', output)
-		# use regex to get the waf
+		wafw00f_command = f'wafw00f {url}'
+		_, output = run_command(wafw00f_command, remove_ansi_sequence=True)
 		regex = r"behind (.*?) WAF"
-		group = re.search(regex, clean_output)
+		group = re.search(regex, output)
 		if group:
 			response['status'] = True
 			response['results'] = group.group(1)
@@ -1166,6 +1157,11 @@ class CMSDetector(APIView):
 		url = req.query_params.get('url')
 		#save_db = True if 'save_db' in req.query_params else False
 		response = {'status': False}
+
+		if not (validators.url(url) or validators.domain(url)):
+			response['message'] = 'Invalid Domain/URL provided!'
+			return Response(response)
+
 		try:
 			# response = get_cms_details(url)
 			response = {}
