@@ -65,7 +65,7 @@ Detailed documentation available at [https://rengine.wiki](https://rengine.wiki)
 * [Contributing](#contributing)
 * [reNgine Support](#rengine-support)
 * [Support and Sponsoring](#support-and-sponsoring)
-* [reNgine Bug Bounty Program](#rengine-bug-bounty-program)
+* [Reporting Security Vulnerabilities](#reporting-security-vulnerabilities)
 * [License](#license)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
@@ -524,4 +524,32 @@ Distributed under the GNU GPL v3 License. See [LICENSE](LICENSE) for more inform
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-<p align="right"><i>Note: Parts of this README were written or refined using AI language models such as ChatGPT, Claude, or other LLMs.</i></p>
+
+## Reporting Security Vulnerabilities
+
+We appreciate your efforts to responsibly disclose your findings and will make every effort to acknowledge your contributions.
+
+To report a security vulnerability, please follow these steps:
+
+1. **Do Not** disclose the vulnerability publicly on GitHub issues or any other public forum.
+
+2. Go to the [Security tab](https://github.com/yogeshojha/rengine/security) of the reNgine repository.
+
+3. Click on "Report a vulnerability" to open GitHub's private vulnerability reporting form.
+
+4. Provide a detailed description of the vulnerability, including:
+   - Steps to reproduce
+   - Potential impact
+   - Any suggested fixes or mitigations (if you have them)
+
+5. I will review your report and respond as quickly as possible, usually within 48-72 hours.
+
+6. Please allow some time to investigate and address the vulnerability before disclosing it to others.
+
+We are committed to working with security researchers to verify and address any potential vulnerabilities reported to us. After fixing the issue, we will publicly acknowledge your responsible disclosure, unless you prefer to remain anonymous.
+
+Thank you for helping to keep reNgine and its users safe!
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+<p align="right"><i>Note: Parts of this README were written or refined using AI language models.</i></p>
