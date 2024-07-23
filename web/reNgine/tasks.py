@@ -3840,7 +3840,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 		netlas_key = get_netlas_key()
 		command += f' -a {netlas_key}' if netlas_key else ''
 
-		result = subprocess.check_output(command.split()).decode('utf-8')
+		_, result = run_command(command, remove_ansi_sequence=True)
 		if 'Failed to parse response data' in result:
 			# do fallback
 			return {
