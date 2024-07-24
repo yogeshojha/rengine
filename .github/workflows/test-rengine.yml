@@ -40,4 +40,4 @@ jobs:
 
       - name: Gracefullly removing rengine
         run: |
-          sudo bash ./scripts/uninstall.sh
+          yes | sudo bash ./scripts/uninstall.sh
