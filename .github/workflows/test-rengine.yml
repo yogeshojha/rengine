@@ -24,11 +24,15 @@ jobs:
       - name: Install Chrome and hxn
         run: |
           which google-chrome >/dev/null 2>&1 && echo "Chrome already installed" || sudo apt install -y google-chrome
-          cargo install hxn && echo "hxn installed"
+          wget https://github.com/pwnwriter/haylxon/releases/download/v1.0.0/haylxon-1.0.0-x86_64-unknown-linux-gnu.tar.gz
+          tar -xvf haylxon-1.0.0-x86_64-unknown-linux-gnu.tar.gz
+          sudo mv haylxon-1.0.0/hxn /usr/local/bin/hxn && echo "hxn installed"
 
       - name: Take screenshot of the app
         run: |
+          ls -lah
           hxn -b $(which google-chrome) -u http://127.0.0.1:8000 -o $(pwd)
+          ls -lah
           
       - name: Upload it to 0x0.st
         run: |
