@@ -1,0 +1,34 @@
+name: Install rengine inside GH CI for test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  install_base:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install base using install.sh (non-interactive mode)
+        run: |
+          bash ./install.sh -n
+
+      - name: Install Chrome and hxn
+        run: |
+          which google-chrome >/dev/null 2>&1 && echo "Chrome already installed" || sudo apt install -y google-chrome
+          cargo install hxn && echo "hxn installed"
+
+      - name: Take screenshot of the app
+        run: |
+          hxn -b $(which google-chrome) -u http://127.0.0.1:8000 -o $(pwd)
+          
+      - name: Upload it to 0x0.st
+        run: |
+          curl -s -F "file=@httplocalhost8000.png" https://0x0.st
