@@ -18,7 +18,8 @@ jobs:
 
       - name: Install base using install.sh (non-interactive mode)
         run: |
-          bash ./install.sh -n
+          export TERM=${TERM:-xterm}
+          sudo ./install.sh -n
 
       - name: Install Chrome and hxn
         run: |
