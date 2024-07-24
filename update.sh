@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 echo "Do you want to apply your local changes after updating? (y/n)"
 read answer
