@@ -18,8 +18,6 @@ jobs:
 
       - name: Install base using install.sh (non-interactive mode)
         run: |
-          pwd
-          ls -lah
           export TERM=${TERM:-xterm}
           sudo bash ./install.sh -n
 
