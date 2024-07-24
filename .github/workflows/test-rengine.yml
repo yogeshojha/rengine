@@ -30,10 +30,8 @@ jobs:
 
       - name: Take screenshot of the app
         run: |
-          ls -lah
           hxn -b $(which google-chrome) -u http://127.0.0.1:8000 -o $(pwd)
-          ls -lah
           
       - name: Upload it to 0x0.st
         run: |
-          curl -s -F "file=@httplocalhost8000.png" https://0x0.st
+          curl -s -F "file=@http1270018000.png" https://0x0.st
