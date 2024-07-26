@@ -399,12 +399,14 @@ class HackeroneForm(forms.ModelForm):
 
     api_key = forms.CharField(
         required=True,
-        widget=forms.TextInput(
+        widget=forms.PasswordInput(
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "api_key",
                 "placeholder": "Hackerone API Token",
-            }))
+            },
+            render_value=True
+        ))
 
     send_critical = forms.BooleanField(
         required=False,
