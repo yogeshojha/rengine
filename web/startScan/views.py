@@ -797,7 +797,7 @@ def schedule_organization_scan(request, slug, id):
             messages.INFO,
             f'Scan started for {ndomains} domains in organization {organization.name}'
         )
-        return HttpResponseRedirect(reverse('scheduled_scan_view', kwargs={'slug': slug, 'id': id}))
+        return HttpResponseRedirect(reverse('scheduled_scan_view', kwargs={'slug': slug}))
 
     # GET request
     engine = EngineType.objects
