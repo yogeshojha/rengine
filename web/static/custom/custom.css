@@ -71,11 +71,15 @@ input[type="color"]:focus,
 }
 
 input[type="text"][disabled] {
-  background-color: #dddddd;
+  background-color: #E0E0E0;
+  color: #6C6C6C;
+  border-color: #BDBDBD;
 }
 
-form-control:disabled, .form-control[readonly]{
-  background-color: #dddddd;
+.form-control:disabled, .form-control[readonly] {
+  background-color: #E0E0E0;
+  color: #6C6C6C;
+  border-color: #BDBDBD;
 }
 
 .accordion-item{
