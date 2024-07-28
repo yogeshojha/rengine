@@ -361,8 +361,7 @@ def proxy_settings(request, slug):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def test_hackerone(request):
-    context = {}
+def test_hackerone(request, slug):
     if request.method == "POST":
         headers = {
             'Accept': 'application/json'
