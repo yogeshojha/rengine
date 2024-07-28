@@ -29,13 +29,13 @@ API Vault
               <div class="mb-3">
                 <label for="key_openai" class="form-label">OpenAI</label>
                 <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using GPT.</p>
-                <div class="input-group input-group-merge">
+                <div class="flex-grow-1 position-relative">
                 {% if openai_key %}
                   <input class="form-control" type="password" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}">
                 {% else %}
                   <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key">
                 {% endif %}
-                  <div class="input-group-text" data-password="false">
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
                     <span class="password-eye"></span>
                   </div>
                 </div>
@@ -44,13 +44,13 @@ API Vault
               <div class="mb-3">
                 <label for="key_netlas" class="form-label">Netlas</label>
                 <p class="text-muted">Netlas keys will be used to get whois information and other OSINT related data.</p>
-                <div class="input-group input-group-merge">
+                <div class="flex-grow-1 position-relative">
                 {% if netlas_key %}
                   <input class="form-control" type="password" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}">
                 {% else %}
                   <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key">
                 {% endif %}
-                  <div class="input-group-text" data-password="false">
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
                     <span class="password-eye"></span>
                   </div>
                 </div>
