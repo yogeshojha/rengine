@@ -197,7 +197,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.PasswordInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control h-100",
                 "id": "lark_hook_url",
                 "placeholder": "https://open.larksuite.com/open-apis/bot/v2/hook/XXXXXXXXXXXXXXXXXXXXXXXX",
             },
@@ -216,7 +216,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.PasswordInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control h-100",
                 "id": "discord_hook_url",
                 "placeholder": "https://discord.com/api/webhooks/000000000000000000/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             },
