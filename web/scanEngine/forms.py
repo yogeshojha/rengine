@@ -235,7 +235,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.PasswordInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control h-100",
                 "id": "telegram_bot_token",
                 "placeholder": "Bot Token",
             },
@@ -246,7 +246,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.PasswordInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control h-100",
                 "id": "telegram_bot_chat_id",
                 "placeholder": "Bot Chat ID",
             },
