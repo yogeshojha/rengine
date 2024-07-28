@@ -427,13 +427,11 @@
     border: solid 1px #bfc9d4; }
 
 .pill.wizard > .steps a {
-  border-bottom: 2px solid #f1f2f3;
   font-size: 15px;
   font-weight: 600;
   margin-right: 6px;
   border-radius: 20px; }
   .pill.wizard > .steps a:hover, .pill.wizard > .steps a:active {
-    border-bottom: 2px solid #f1f2f3;
     font-size: 15px;
     font-weight: 600;
     margin-right: 6px;
