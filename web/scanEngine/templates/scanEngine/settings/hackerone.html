@@ -43,15 +43,15 @@ HackerOne Settings
           <div class="row">
             <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
               <label for="hackerone_username"  class="form-label">Your Hackerone Username (Not email)</label>
-              {{form.username}}
+              {{ form.username }}
             </div>
             <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
               <label for="hackerone_api_token" class="form-label">Generate your <a href="https://hackerone.com/settings/api_token/edit" target="_blank">API Token from here <i class="fe-external-link"></i></a></label>
-              <div class="input-group input-group-merge">
-              {{form.api_key}}
-                <div class="input-group-text" data-password="false">
-                  <span class="password-eye"></span>
-                </div>
+              <div class="flex-grow-1 position-relative">
+              {{ form.api_key }}
+              <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                <span class="password-eye"></span>
+              </div>
               </div>
             </div>
           </div>
