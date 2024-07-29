@@ -982,10 +982,14 @@ class UpdateTool(APIView):
 			tool_name = tool_name.split('/')[-1]
 			update_command = 'cd /usr/src/github/' + tool_name + ' && git pull && cd -'
 
-		run_command(update_command)
-		run_command.apply_async(args=(update_command,))
-		return Response({'status': True, 'message': tool.name + ' updated successfully.'})
-
+		
+		try:
+			run_command(update_command, shell=True)
+			run_command.apply_async(args=[update_command], kwargs={'shell': True})
+			return Response({'status': True, 'message': tool.name + ' updated successfully.'})
+		except Exception as e:
+			logger.error(str(e))
+			return Response({'status': False, 'message': str(e)})
 
 class GetExternalToolCurrentVersion(APIView):
 	def get(self, request):
