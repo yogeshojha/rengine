@@ -1,0 +1,195 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_tags %}
+{% block title %}
+{% load mathfilters %}
+Target Summary for {{target.name}}
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link href="{% static 'plugins/select2/select2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/j-map/jquery-jvectormap.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.3/css/flag-icons.min.css" integrity="sha512-uvXdJud8WaOlQFjlz9B15Yy2Au/bMAvz79F7Xa6OakCl2jvQPdHD0hb3dEqZRdSwG4/sknePXlE7GiarwA/9Wg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">Targets</a></li>
+<li class="breadcrumb-item active">Target Summary</li>
+<li class="breadcrumb-item active" aria-current="page">{{target.name}}</li>
+{% endblock breadcrumb_title %}
+
+
+{% block page_title %}
+Target Summary
+{% endblock page_title %}
+
+{% block main_content %}
+<span aria-current="page" style="display: none">{{target.name}}</span>
+<div class="row">
+	<div class="col-12">
+		<div class="card">
+			<ul class="nav nav-tabs nav-bordered m-1">
+				<li class="nav-item">
+					<a class="nav-link active" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">Home</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" id="pills-endpoints-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#endpoints-tab">URLs</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#vulnerabilities-tab">Vulnerabilities</a>
+				</li>
+			</ul>
+		</div>
+	</div>
+</div>
+<input type="hidden" name="summary_identifier" value="{{target.id}}" id="summary_identifier_val">
+
+<div class="tab-content no-padding-tab">
+	<div class="tab-pane show active" id="summary-tab">
+		<div class="row">
+			<div class="col-xl-3 col-lg-4">
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex align-items-start mb-3">
+							<div class="w-100">
+								<h5 class="mt-0 mb-0 font-15">
+									Scan Timeline
+								</h5>
+								<div class="mt-1">
+									<small>
+										Target <span class="badge badge-soft-primary">{{target.name}}</span> has been scanned <b>{{scan_count}}</b> times.
+										<br>
+										<br>
+										{% if scan_count %}
+										The most recent scan was performed on <span class="text-primary">&nbsp;{{recent_scans.0.start_scan_date}} , {{recent_scans.0.start_scan_date|naturaltime}}</span>
+										{% endif %}
+									</small>
+								</div>
+								<div class="track-order-list mt-3">
+									<ul class="list-unstyled">
+										{% for scan in recent_scans %}
+										<li class="completed">
+											<a href="{% url 'detail_scan' scan.id %}">
+												<h5 class="mt-0 mb-1">
+													{{scan.scan_type.engine_name}}
+													{% if scan.scan_status == -1 %}
+													<span class="badge badge-soft-warning float-end">Pending</span>
+													{% elif scan.scan_status == 0 %}
+													<span class="badge badge-soft-danger float-end">Failed</span>
+													{% elif scan.scan_status == 1 %}
+													<span class="badge badge-soft-primary float-end">Scanning</span>
+													{% elif scan.scan_status == 2 %}
+													<span class="badge badge-soft-success float-end">Completed</span>
+													{% elif scan.scan_status == 3 %}
+													<span class="badge badge-soft-danger float-end">Aborted</span>
+													{% else %}
+													<span class="badge badge-soft-danger float-end">Unknown</span>
+													{% endif %}
+												</h5>
+												<p class="text-muted">{{scan.start_scan_date|naturaltime}}<br><small class="text-muted">{{scan.start_scan_date}}</small></p>
+												{% if scan.scan_status == 0 %}
+													{% if scan.error_message %}
+														<p class="text-danger">ERROR: {{scan.error_message}}</p>
+													{% endif %}
+												{% endif %}
+												<p class="text-primary">
+													{{scan.get_subdomain_count}} Subdomains Discovered
+													<span class="float-end text-dark">
+														{% with next_element=recent_scans|next:forloop.counter0 %}
+														{% if next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count > scan.get_subdomain_count %}
+														<span class="text-danger" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count|abs}} subdomains missing since last scan."><i class="fa fa-caret-down text-danger me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
+														{% elif next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count < scan.get_subdomain_count %}
+														<span class="text-success" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} subdomains added since last scan."><i class="fa fa-caret-up text-success me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
+														{% endif %}
+														{% endwith %}
+													</span>
+												</p>
+											</a>
+										</li>
+										{% endfor %}
+									</ul>
+								</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex align-items-start mb-3">
+							<div class="w-100">
+								<h5 class="mt-0 mb-0 font-15">
+									<span id="sub_scan_history_count"></span> Sub Scans</span>
+								</h5>
+								<div data-simplebar style="max-height: 510px;" class="p-2">
+									<div id="subscan_history_widget">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+            </div>
+
+			<div class="col-xl-9 col-lg-8">
+				<div class="row">
+					<div class="col-xl-3 col-lg-3 col-6">
+						<div class="card" id="tooltip-container">
+							<div class="card-body">
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="The total times {{target.name}} is scanned."></i>
+								<h4 class="mt-0 font-16">Times target is scanned</h4>
+								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{scan_count|intcomma}}</span></h2>
+								<br>
+								<p class="mb-0"><span class="badge badge-soft-primary">{{this_week_scan_count}} Scans this week</span></p>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-3 col-lg-3 col-6">
+						<div class="card" id="tooltip-container">
+							<div class="card-body">
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Subdomains Discovered by reNgine during this scan"></i>
+								<h4 class="mt-0 font-16">Subdomains Discovered</h4>
+								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></h2>
+								<br>
+								<p class="mb-0"><span class="badge badge-soft-success">Alive Subdomains: {{alive_count}}</span></p>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-xl-3 col-lg-3 col-6">
+						<div class="card" id="tooltip-container1">
+							<div class="card-body">
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Endpoints discovered for this target. This includes any URLs discovered."></i>
+								<h4 class="mt-0 font-16">Endpoints Discovered</h4>
+								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{endpoint_count|intcomma}}</span></h2>
+								<br>
+								<p class="text-success mb-0"><span class="badge badge-soft-success">Alive Endpoints: {{endpoint_alive_count}}</span></p>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-xl-3 col-lg-3 col-6">
+						<div class="card" id="tooltip-container2">
+							<div class="card-body">
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered for this target. This will be populated only if vulnerability scan is performed during any scan."></i>
+								<h4 class="mt-0 font-16">Vulnerabilities Discovered</h4>
+								<h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{vulnerability_count|intcomma}}</span></h2>
+								<p class="text-muted mb-0">
+									<span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
+									<br>
+									<span class="w-title text-primary">{{low_count}} Low, {{info_count}} Info Vulnerabilities</span>
+								</p>
+							</div>
+						</div>
+					</div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}

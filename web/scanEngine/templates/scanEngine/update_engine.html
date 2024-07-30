@@ -1,0 +1,54 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}
+Update Scan Engine
+{% endblock title %}
+
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/switches/switches.min.css' %}">
+{{ form.media }}
+<style media="screen">
+.ace_editor {
+	width:100%;
+	height:450px;
+	border:1px solid #CCC;
+}
+.django-ace-toolbar{
+	display: none;
+}
+</style>
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' current_project.slug %}">Engines</a></li>
+<li class="breadcrumb-item active">Update Scan Engine</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+Update Scan Engine
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+	<div class="col-xl-12">
+		<div class="card">
+			<div class="card-body">
+				<h4 class="header-title">Update Scan Engine</h4>
+				<form method="POST">
+					{% csrf_token %}
+					{% include "scanEngine/_items/form_engine.html" %}
+					<button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Update Scan Engine</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+
+{% endblock main_content %}
+
+{% block page_level_script %}
+<script type="text/javascript">
+</script>
+{% endblock page_level_script %}

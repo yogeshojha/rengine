@@ -1,0 +1,30 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}
+Scan Engine
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_miscellaneous.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
+<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+{% endblock custom_js_css_link %}
+
+{% block main_content %}
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>
+<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+{% endblock page_level_script %}

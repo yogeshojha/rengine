@@ -1,0 +1,134 @@
+services:
+  db:
+    restart: always
+    image: "postgres:12.3-alpine"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    networks:
+      - rengine_network
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: "redis:alpine"
+    hostname: redis
+    networks:
+      - rengine_network
+
+  celery:
+    build:
+      context: ./web
+    restart: always
+    entrypoint: /usr/src/app/celery-entrypoint.sh
+    # command: watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO
+    volumes:
+      - ./web:/usr/src/app
+      - github_repos:/usr/src/github
+      - wordlist:/usr/src/wordlist
+      - scan_results:/usr/src/scan_results
+      - gf_patterns:/root/.gf
+      - nuclei_templates:/root/nuclei-templates
+      - tool_config:/root/.config
+    environment:
+      - DEBUG=1
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+      - DOMAIN_NAME=${DOMAIN_NAME}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - MAX_CONCURRENCY=${MAX_CONCURRENCY}
+      - MIN_CONCURRENCY=${MIN_CONCURRENCY}
+    depends_on:
+      - db
+      - redis
+    networks:
+      - rengine_network
+
+  celery-beat:
+    build: ./web
+    entrypoint: /usr/src/app/beat-entrypoint.sh
+    command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - celery
+    environment:
+      - DEBUG=1
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    volumes:
+      - ./web:/usr/src/app
+      - github_repos:/usr/src/github
+      - wordlist:/usr/src/wordlist
+      - scan_results:/usr/src/scan_results
+      - gf_patterns:/root/.gf
+      - nuclei_templates:/root/nuclei-templates
+      - tool_config:/root/.config
+    networks:
+      - rengine_network
+
+  web:
+    build:
+      context: ./web
+    entrypoint: /usr/src/app/entrypoint.sh
+    restart: always
+    image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
+    environment:
+      - DEBUG=1
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+      - DOMAIN_NAME=${DOMAIN_NAME}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      # THIS IS A MUST FOR CHECKING UPDATE, EVERYTIME A COMMIT IS MERGED INTO
+      # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
+      - RENGINE_CURRENT_VERSION='2.1.1'
+    volumes:
+      - ./web:/usr/src/app
+      - github_repos:/usr/src/github
+      - wordlist:/usr/src/wordlist
+      - scan_results:/usr/src/scan_results
+      - gf_patterns:/root/.gf
+      - nuclei_templates:/root/nuclei-templates
+      - tool_config:/root/.config
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - celery
+      - celery-beat
+    networks:
+      - rengine_network
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - rengine_network
+    restart: always
+
+networks:
+  rengine_network:
+volumes:
+  tool_config:
+  postgres_data:
+  gf_patterns:
+  nuclei_templates:
+  github_repos:
+  wordlist:
+  scan_results:
+  ollama_data:

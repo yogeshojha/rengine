@@ -1,0 +1,66 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% block title %}
+Add Tool
+{% endblock title %}
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/switches/switches.min.css' %}">
+{% endblock custom_js_css_link %}
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="{% url 'tool_arsenal' current_project.slug %}">Tool Arsenal</a></li>
+<li class="breadcrumb-item active">Add Tool</li>
+{% endblock breadcrumb_title %}
+{% block page_title %}
+Add Tool
+{% endblock page_title %}
+{% block main_content %}
+<div class="row">
+  <div class="col-xl-12">
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row">
+            {% include "scanEngine/settings/_items/external_tool_form.html" %}
+          </div>
+          <div class="row mt-3">
+            <div class="col-12">
+              <input type="submit" class="btn btn-primary float-end ps-4 pe-4" value="Add Tool">
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+{% block page_level_script %}
+<script src="{% static 'custom/custom.js' %}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+  $('#subdomain_extra').hide();
+  $('#v1_2').click(function() {
+    $('#version_match_regex').val('[vV]*(\d+\.)?(\d+\.)')
+  });
+
+  $('#v1_2_3').click(function() {
+    $('#version_match_regex').val('[vV]*(\d+\.)?(\d+\.)?(\*|\d+)')
+  });
+
+  $('#v1_2_3_4').click(function() {
+    $('#version_match_regex').val('[vV]*(\d+\.)?(\d+\.)?(\*|\d+)?(\*|\d+)')
+  });
+
+  $('#is_subdomain_gathering').change(function() {
+
+    if(this.checked) {
+      $('#subdomain_extra').show();
+    }
+    else{
+      $('#subdomain_extra').hide();
+    }
+  });
+
+});
+</script>
+{% endblock page_level_script %}

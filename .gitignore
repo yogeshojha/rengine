@@ -1,0 +1,64 @@
+web/custom_engines*
+Pipfile*
+resume.cfg
+*.txt
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+
+### Django.Python Stack ###
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+
+# Sphinx documentation
+docs/_build/
+
+# pyenv
+.python-version
+
+**/.DS_Store
+staticfiles/
+
+secret
+/secrets
+
+get-docker.sh
+
+# Environment variables
+.env

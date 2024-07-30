@@ -1,0 +1,136 @@
+<div class="accordion mt-3" id="engine_accordion">
+  {% for engine in engines.all %}
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="heading_{{engine.id}}">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{engine.id}}" aria-expanded="false" aria-controls="collapse_{{engine.id}}">
+          <div class="form-check form-check-primary">
+            <input class="form-check-input rounded-circle" type="radio" id="accordion_{{engine.id}}" name="scan_mode" value="{{engine.id}}" required>
+            <label class="form-check-label lead" for="accordion_{{engine.id}}">{{engine.engine_name}}
+              &nbsp;&nbsp;&nbsp;
+              {% if engine.default_engine %}
+                <span class="badge badge-soft-primary rounded-pill">Default Engine</span>
+              {% else %}
+                <span class="badge badge-soft-danger rounded-pill">Custom Engine</span>
+              {% endif %}
+            </label>
+          </div>
+        </button>
+      </h2>
+      <div id="collapse_{{engine.id}}" class="accordion-collapse collapse" aria-labelledby="heading_{{engine.id}}" data-bs-parent="#engine_accordion">
+        <div class="accordion-body">
+          <span class="lead">Engine Capabilities</span>
+          <table class="mt-2">
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Subdomain Discovery</>
+              </td>
+              <td>
+                {% if 'subdomain_discovery' in engine.tasks %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">WAF Detection</>
+              </td>
+              <td>
+                {% if 'waf_detection' in engine.tasks %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Screenshot</>
+              </td>
+              <td>
+                {% if 'screenshot' in engine.tasks %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">OSINT</>
+              </td>
+              <td>
+                {% if 'osint' in engine.tasks %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Port Scan</p>
+              </td>
+              <td>
+                {% if 'port_scan' in engine.tasks%}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Directory and Files Search</p>
+              </td>
+              <td>
+                {% if 'dir_file_fuzz' in engine.tasks %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Fetch Endpoints(URLs)</p>
+              </td>
+              <td>
+                {% if 'fetch_url' in engine.tasks %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Vulnerability Scan</p>
+              </td>
+              <td>
+                {% if 'vulnerability_scan' in engine.tasks %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+          <div class="card">
+            <a data-bs-toggle="collapse" class="card-header bg-primary py-3 text-light p-4" href="#cardCollpase{{engine.id}}" role="button" aria-expanded="false" aria-controls="cardCollpase2">
+              <h5 class="card-title mb-0 text-light">YAML Configuration <i class="fe-chevron-down float-end"></i></h5>
+            </a>
+            <div id="cardCollpase{{engine.id}}" class="collapse">
+              <div class="card-body">
+                <pre>
+                  {{engine.yaml_configuration|linebreaks}}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>

@@ -1,0 +1,84 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}
+Add Organization
+{% endblock title %}
+
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/select2/select2.min.css' %}">
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug %}">Organization</a></li>
+<li class="breadcrumb-item active">Add Organization</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+Add Organization
+{% endblock page_title %}
+
+
+{% block main_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <p>Organizations can be used to bundle the targets, an organization can have multiple targets. You will be able to scan the organizations just like the targets, but scanning the organization will allow you to scan all the targets within the organization together.</p>
+        <form method="POST">
+          {% csrf_token %}
+          <div class="row">
+            <div class="col-6">
+              <label for="organizationName" class="form-label">Organization name</label>
+              {{ form.name }}
+              {% if form.errors %}
+              <div class="invalid-feedback" style="display: block;">
+                {{ form.errors.name|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-6">
+              <label for="organizationDescription" class="form-label">Description (Optional)</label>
+              {{ form.description }}
+            </div>
+            <div class="col-12 mt-3">
+              <label for="targets" class="form-label">Select Targets</label>
+              {{form.domains}}
+              {% if form.errors.domains %}
+              <div class="invalid-feedback text-danger" style="display: block;">
+                <p class="text-danger">
+                  {{ form.errors.domains|striptags }}
+                </p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <button class="btn btn-primary submit-fn mt-2 float-end" disabled="true" type="submit">Add Organization</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'plugins/select2/select2.min.js' %}"></script>
+<script type="text/javascript">
+  $(document).ready(function(){
+    // $(".tagging").select2({
+    //   tags: true,
+    // });
+    $('select').select2({closeOnSelect: false}).on("change", function(e) {
+      var counter = $(".select2-selection__choice").length;
+      if (counter) {
+        $(':input[type="submit"]').prop('disabled', false);
+      }
+      else{
+        $(':input[type="submit"]').prop('disabled', true);
+      }
+    });
+  });
+</script>
+{% endblock page_level_script %}

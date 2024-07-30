@@ -1,0 +1,320 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+{% load permission_tags %}
+
+{% block title %}
+List all targets
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item active"><a href="{% url 'list_target' slug %}">Targets</a></li>
+<li class="breadcrumb-item"><a href="#">All Targets</a></li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+Targets
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+	<div class="col-12">
+		<div class="card">
+			<div class="p-2">
+				<div class="row">
+					<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+						<button type="button" class="btn btn-primary dropdown-toggle mt-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="filterMenu">
+							Filter <i class="fe-filter"></i>
+						</button>
+						<div class="dropdown-menu" style="width: 30%">
+							<div class="px-4 py-3">
+								<h4 class="headline-title">Filters</h4>
+								<label for="filterByOrganization" class="form-label">Filter by Organization</label>
+								<select class="form-control" id="filterByOrganization">
+								</select>
+							</div>
+							<div class="dropdown-divider"></div>
+							<a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
+						</div>
+					</div>
+					<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+						{% if user|can:'modify_targets' %}
+						<a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets(slug='{{slug}}')" id="delete_multiple_button">Delete Multiple Targets</a>
+						{% endif %}
+						{% if user|can:'initiate_scans_subscans' %}
+						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets(slug='{{slug}}')" id="scan_multiple_button">Scan Multiple Targets</a>
+						{% endif %}
+						{% if user|can:'modify_targets' %}
+						<a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' slug %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-12">
+		<div class="card">
+			<form method="POST" id="multiple_targets_form" action="../../scan/start/multiple/">
+				{% csrf_token %}
+				<table id="list_target_table" class="table dt-responsive w-100">
+					<thead>
+						<tr>
+							<th class="checkbox-column text-center">Serial Number</th>
+							<th>Serial Number</th>
+							<th>Target</th>
+							<th>Description</th>
+							<th class="text-center">Added On</th>
+							<th class="text-center">Last Scanned</th>
+							<th class="text-center">Action</th>
+						</tr>
+					</thead>
+				</table>
+			</form>
+		</div>
+	</div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'custom/custom.js' %}"></script>
+<script src="{% static 'targetApp/js/custom_domain.js' %}"></script>
+<script>
+$(document).ready(function(){
+	var table = $('#list_target_table').DataTable({
+		"headerCallback": function(e, a, t, n, s) {
+			e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
+		},
+		"destroy": true,
+		"processing": true,
+		"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+		"<'table-responsive'tr>" +
+		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"fnCreatedRow": function(nRow, aData, iDataIndex) {
+			$(nRow).attr('id', 'target_row_' + aData['id']);
+		},
+		"stripeClasses": [],
+			"lengthMenu": [5, 10, 20, 30, 40, 50, 100, 500, 1000],
+			"pageLength": 20,
+			'serverSide': true,
+			"ajax": '/api/listTargets/?format=datatables&slug={{slug}}',
+			"order": [
+				[1, "desc"]
+			],
+			"columns": [
+				{
+					'data': 'id'
+				},
+				{
+					'data': 'id'
+				},
+				{
+					'data': 'name'
+				},
+				{
+					'data': 'description'
+				},
+				{
+					'data': 'id'
+				},
+				{
+					'data': 'start_scan_date'
+				},
+				{
+					'data': 'id'
+				},
+				{
+					'data': 'organization'
+				},
+				{
+					'data': 'most_recent_scan'
+				},
+				{
+					'data': 'insert_date'
+				},
+				{
+					'data': 'insert_date_humanized'
+				},
+				{
+					'data': 'start_scan_date_humanized'
+				},
+			],
+			"columnDefs":[
+				{ 'orderable': false, 'targets': [0, 3, 6]},
+				{ 'visible': false, 'targets': [1, 7, 8, 9, 10, 11] },
+				{
+					"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+					return'<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>'
+					}
+				},
+				{
+					"render": function(data, type, row) {
+						var content = '';
+						content += `<b>${data}</b>&nbsp;&nbsp;<a href="#" onclick="get_target_whois('${data}')">(view whois)</a>`;
+						if (row.organization) {
+							content += '<br>';
+							for (var org in row.organization) {
+								content += `<span class="badge badge-soft-primary me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Domain ${data} belongs to organization ${row.organization[org]}">${row.organization[org]}</span>`;
+							}
+						}
+
+						if (row.most_recent_scan) {
+							content += `<br><a href="/scan/{{current_project.slug}}/detail/${row.most_recent_scan}" class="text-primary">Recent Scan&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`;
+						}
+
+						return content;
+					},
+					"targets": 2,
+				},
+				{
+					"render": function(data, type, row) {
+						var content = '<div class="text-center">';
+
+						content += `
+							<span class="badge badge-soft-primary">${row.insert_date}, ${row.insert_date_humanized}</span>
+						`;
+
+						content += '</div>';
+
+						return content;
+					},
+					"targets": 4,
+				},
+				{
+					"render": function(data, type, row) {
+						var content = '<div class="text-center">';
+
+						if (data) {
+							content += `<span class="badge badge-soft-primary">${row.start_scan_date_humanized}</span>`;
+						}
+						else{
+							content += '<span class="badge badge-soft-warning">Never Scanned Before</span>';
+						}
+
+						content += '</div>';
+
+						return content;
+					},
+					"targets": 5,
+				},
+				{
+					"render": function(data, type, row) {
+						var content = '';
+						{% if user|has_role:'penetration_tester' or user|has_role:'admin'%}
+						content += `
+						<div class="btn-group float-end">
+						<a class="btn btn-soft-primary" href="/target/{{slug}}/summary/${row.id}"><i class="fe-info"></i>&nbsp;&nbsp;Target Summary</a>
+						<a href="/scan/{{slug}}/start/${row.id}" class="btn btn-soft-primary"><i class="fe-zap"></i>&nbsp;&nbsp;Initiate Scan</a>
+						<div class="btn-group dropstart" role="group">
+						<button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<i class="mdi mdi-chevron-right"></i>
+						</button>
+						<div class="dropdown-menu" style="">
+						<a class="dropdown-item" href="/scan/{{slug}}/schedule/target/${row.id}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
+						<div class="dropdown-divider"></div>
+						<a class="dropdown-item" href="/target/{{slug}}/update/target/${row.id}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
+						<a class="dropdown-item text-danger" href="#" onclick="delete_target(${row.id}, '${row.name}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
+						</div>
+						</div>
+						</div>
+						`;
+						{% else %}
+						content += `
+						<div class="btn-group float-end">
+						<a class="btn btn-soft-primary" href="/target/{{slug}}/summary/${row.id}"><i class="fe-info"></i>&nbsp;&nbsp;Target Summary</a>
+						</div>
+						</div>
+						</div>
+						`;
+						{% endif %}
+
+						return content;
+					},
+					"targets": 6,
+				},
+			],
+			drawCallback: function() {
+				$('.badge').tooltip({
+					template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+				})
+				$('.bs-tooltip').tooltip();
+			},
+		});
+		multiCheck(table);
+		// Handle form submission event
+		$('#frm-example').on('submit', function(e){
+			var form = this;
+			table.$('input[type="checkbox"]').each(function(){
+				if(!$.contains(document, this)){
+					if(this.checked){
+						$(form).append(
+							$('<input>')
+							.attr('type', 'hidden')
+							.attr('name', this.name)
+							.val(this.value)
+						);
+					}
+				}
+			});
+			e.preventDefault();
+		});
+
+		// filter organization populate
+		$.getJSON(`/api/listOrganizations?&format=json`, function(data) {
+			data = data['organizations']
+			for (organization in data) {
+				name = htmlEncode(data[organization]['name']);
+				select = document.getElementById('filterByOrganization');
+				var option = document.createElement('option');
+				option.value = name;
+				option.innerHTML = name;
+				select.appendChild(option);
+			}
+		}).fail(function(){
+		});
+
+		var a = document.getElementById('filterByOrganization');
+		a.addEventListener('click', function() {
+			table.search(this.value).draw();
+			document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary m-2">Organization: ${this.value}
+			<span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+			</span>`;
+			Snackbar.show({
+				text: `Filtering by organization ${this.value}`,
+				pos: 'top-center'
+			});
+		}, false);
+
+		// reset filtering
+		var reset_filter = document.getElementById('resetFilters');
+		reset_filter.addEventListener('click', function() {
+			resetFilters(table);
+		}, false);
+
+		$('[data-toggle=tooltip]').tooltip();
+
+	});
+
+	function resetFilters(table_obj) {
+		table_obj.search("").draw();
+		Snackbar.show({
+			text: `Filters Reset`,
+			pos: 'top-center'
+		});
+		document.getElementById('filteringText').innerHTML = '';
+	}
+
+</script>
+{% endblock page_level_script %}

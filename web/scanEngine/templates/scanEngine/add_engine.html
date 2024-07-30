@@ -1,0 +1,204 @@
+<!-- DO NOT AUTO INDENT THIS FILE DUE TO PRELOADED YAML CONF -->
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}
+Add Scan Engine
+{% endblock title %}
+
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/switches/switches.min.css' %}">
+{{ form.media }}
+<style media="screen">
+.ace_editor {
+  width:100%;
+  height:450px;
+  border:1px solid #CCC;
+}
+.django-ace-toolbar{
+  display: none;
+}
+</style>
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' current_project.slug %}">Engines</a></li>
+<li class="breadcrumb-item active">Add Scan Engine</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+Add Scan Engine
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-xl-12">
+  <div class="card">
+  <div class="card-body">
+  <h4 class="header-title">Scan Engines</h4>
+  <p>
+  <code>Scan Engines</code> are the most crucial part of reNgine. They define how a <code>scan</code> is performed against a target. <code>Scan Engines</code> allow you to define the configuration and use it against multiple targets.
+  <br>
+  YAML configuration allows you fine tuning the engines such as rate, templates to be used, or configurations to be used.
+  </p>
+  <form method="POST">
+  {% csrf_token %}
+  {% include "scanEngine/_items/form_engine.html" %}
+  <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Add Scan Engine</button>
+  </form>
+  </div>
+  </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+{% block page_level_script %}
+<script type="text/javascript">
+$(document).ready(function() {
+  $('.ace_text-input').attr('id','editor');
+  document.getElementById("editor").innerHTML = `subdomain_discovery: {
+  'uses_tools': [
+    'subfinder',
+    'ctfr',
+    'sublist3r',
+    'tlsx',
+    'oneforall',
+    'netlas'
+  ],
+  'enable_http_crawl': true,
+  'threads': 30,
+  'timeout': 5,
+}
+http_crawl: {}
+port_scan: {
+  'enable_http_crawl': true,
+  'timeout': 5,
+  # 'exclude_ports': [],
+  # 'exclude_subdomains': true,
+  'ports': ['top-100'],
+  'rate_limit': 150,
+  'threads': 30,
+  'passive': false,
+  # 'use_naabu_config': false,
+  # 'enable_nmap': true,
+  # 'nmap_cmd': '',
+  # 'nmap_script': '',
+  # 'nmap_script_args': ''
+}
+osint: {
+  'discover': [
+      'emails',
+      'metainfo',
+      'employees'
+    ],
+  'dorks': [
+    'login_pages',
+    'admin_panels',
+    'dashboard_pages',
+    'stackoverflow',
+    'social_media',
+    'project_management',
+    'code_sharing',
+    'config_files',
+    'jenkins',
+    'wordpress_files',
+    'php_error',
+    'exposed_documents',
+    'db_files',
+    'git_exposed'
+  ],
+  'custom_dorks': [
+    {
+      'lookup_site': 'google.com',
+      'lookup_keywords': '/home/'
+    },
+    {
+      'lookup_site': '_target_',
+      'lookup_extensions': 'jpg,png'
+    }
+  ],
+  'intensity': 'normal',
+  'documents_limit': 50
+}
+dir_file_fuzz: {
+  'auto_calibration': true,
+  'enable_http_crawl': true,
+  'rate_limit': 150,
+  'extensions': ['html', 'php','git','yaml','conf','cnf','config','gz','env','log','db','mysql','bak','asp','aspx','txt','conf','sql','json','yml','pdf'],
+  'follow_redirect': false,
+  'max_time': 0,
+  'match_http_status': [200, 204],
+  'recursive_level': 2,
+  'stop_on_error': false,
+  'timeout': 5,
+  'threads': 30,
+  'wordlist_name': 'dicc'
+}
+fetch_url: {
+  'uses_tools': [
+    'gospider',
+    'hakrawler',
+    'waybackurls',
+    'katana',
+    'gau'
+  ],
+  'remove_duplicate_endpoints': true,
+  'duplicate_fields': [
+    'content_length',
+    'page_title'
+  ],
+  'enable_http_crawl': true,
+  'gf_patterns': ['debug_logic', 'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce', 'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],
+  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],
+  'threads': 30
+  # 'exclude_subdomains': true
+}
+vulnerability_scan: {
+  'run_nuclei': false,
+  'run_dalfox': false,
+  'run_crlfuzz': false,
+  'run_s3scanner': true,
+  'enable_http_crawl': true,
+  'concurrency': 50,
+  'rate_limit': 150,
+  'retries': 1,
+  'timeout': 5,
+  'fetch_gpt_report': true,
+  'nuclei': {
+    # 'tags': [],
+    # 'templates': [],
+    # 'custom_templates': [],
+    'use_nuclei_config': false,
+    'severities': [
+      'unknown',
+      'info',
+      'low',
+      'medium',
+      'high',
+      'critical'
+    ]
+  },
+  's3scanner': {
+    'threads': 100,
+    'providers': [
+      'aws',
+      'gcp',
+      'digitalocean',
+      'dreamhost',
+      'linode'
+    ]
+  }
+}
+waf_detection: {}
+screenshot: {
+  'enable_http_crawl': true,
+  'intensity': 'normal',
+  'timeout': 10,
+  'threads': 40
+}
+#custom_headers: ['Foo: Bar', 'X-Forwarded-For: 127.0.0.1']
+`;
+});
+</script>
+{% endblock page_level_script %}

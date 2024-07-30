@@ -1,0 +1,32 @@
+<div id="subscan-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title" id="standard-modalLabel">Initiate subscan</h4>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<div class="mt-2">
+					<h5>Select the scan engine <small>(default engine Selected)</small></h5>
+					<select class="form-select" id="subtaskScanEngine" name="subtaskScanEngine">
+					{% for engine in scan_engines %}
+						{% if engine.engine_name == history.scan_type.engine_name %}
+							<option value="{{engine.id}}" selected>{{engine}}</option>
+							{% else %}
+							<option value="{{engine.id}}">{{engine}}</option>
+						{% endif %}
+					{% endfor %}
+					</select>
+				</div>
+				<h5>Select the engine's subtasks to perform</h5>
+				<div id="engineTasks" name="engineTasks">
+				<!-- dynamically populated based on engine input -->
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-primary" id="btn-initiate-subtask"><i class="fe-zap ms-1 me-1"></i>Initiate subscan</button>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,67 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+Proxy Settings
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">Proxy Settings</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+Proxy Settings
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="header-title">Proxy Settings</h4>
+        <p>Every website has a limit to certain number of requests allowed for a certain period of time from an particular IP Address, exceeding the limit will block any incoming requests from that particular IP Address for a specific period of time.
+          This results in unreliable recon results. Suppose if you were to run Nuclei on a particular target with all the templates, your IP is likely to get banned because of the number of requests made by Nuclei.
+          <br>
+          And this is especially true for dorking and other OSINT reNgine does. After certain dorking attempts Google is likely to ban your IP for certain period of time.
+        </p>
+        <div class="alert alert-primary border-0" role="alert">
+          Using proxies is recommended.
+        </div>
+        <form method="POST">
+          {% csrf_token %}
+          <div class="form-check mb-2 form-check-primary">
+            {{form.use_proxy}}
+            <label class="form-check-label" for="use_proxy">Use Proxy</label>
+          </div>
+          <h4 class="header-title">Proxy List</h4>
+          <p>You can enter as many proxies as you want, reNgine will <span class="text-primary">randomly</span> pick one among them during the scan.</p>
+          <label class="form-label" for="proxies">Separate the proxies by new line.</label>
+          {{form.proxies}}
+          <button type="submit" class="btn btn-primary mt-3 float-end">Save Proxies</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script type="text/javascript">
+$(document).ready(function(){
+  var use_proxy = document.getElementById("use_proxy");
+  use_proxy.addEventListener('change', function() {
+    if (this.checked) {
+      document.getElementById("proxies").readOnly = false;
+    }
+    else{
+      document.getElementById("proxies").readOnly = true;
+    }
+  });
+});
+</script>
+{% endblock page_level_script %}

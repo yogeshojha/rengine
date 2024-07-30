@@ -1,0 +1,66 @@
+<div class="right-bar">
+  <div data-simplebar class="h-100">
+    <div class="tab-content pt-0">
+      <div class="tab-pane active" id="tasks-tab" role="tabpanel">
+        <ul class="nav nav-tabs nav-bordered mt-3">
+          <li class="nav-item active">
+            <a href="#tasks" data-bs-toggle="tab" aria-expanded="true" class="nav-link active">
+              Scan History
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#subscan" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+              Tasks
+            </a>
+          </li>
+        </ul>
+        <div class="tab-content px-2">
+          <div class="tab-pane show active" id="tasks">
+            <h6 class="fw-medium mt-1 text-uppercase">Currently Scanning</h6>
+            <h5><span class="badge bg-primary rounded-pill" id="current_scan_count"></span></h5>
+            <div id="currently_scanning">
+            </div>
+            <h6 class="fw-medium mt-1 text-uppercase">Recently Completed</h6>
+            <div id="completed" class="">
+            </div>
+            <div class="">
+              <a href="{% url 'scan_history' current_project.slug %}" class="float-end">Show All</a>
+            </div>
+            <br>
+            <h6 class="fw-medium mt-2 text-uppercase">Upcoming</h6>
+            <div class="">
+              <h5><span class="badge bg-warning rounded-pill float-end" id="pending_scan_count"></span></h5>
+              <div id="upcoming_scans">
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane" id="subscan">
+            <h6 class="fw-medium mt-1 text-uppercase">Currently Running</h6>
+            <h5><span class="badge bg-primary rounded-pill" id="current_task_count"></span></h5>
+            <div id="currently_running_tasks">
+            </div>
+            <h6 class="fw-medium mt-1 text-uppercase">Recently Completed</h6>
+            <div id="completed_tasks" class="">
+            </div>
+            <div class="">
+              <a href="{% url 'subscan_history' current_project.slug %}" class="float-end">Show All</a>
+            </div>
+            <br>
+            <h6 class="fw-medium mt-2 text-uppercase">Upcoming</h6>
+            <div class="">
+              <h5><span class="badge bg-warning rounded-pill float-end" id="pending_task_count"></span></h5>
+              <div id="upcoming_tasks">
+              </div>
+            </div>
+          </div>
+          <div class="text-center mt-3 mb-4">
+            <a href="javascript:getScanStatusSidebar(project='{{current_project.slug}}', reload=true)" class="btn btn-md btn-primary">
+              Reload
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

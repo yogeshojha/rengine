@@ -1,0 +1,242 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}
+Universal Search
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block page_title %}
+Search Results
+{% endblock page_title %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item active">Universal Search</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="row">
+	<div class="col-lg-12">
+		<div class="search-result-box card">
+			<div class="card-body">
+				<div class="row">
+					<div class="col-md-8 offset-md-2">
+						<div class="pt-3 pb-4">
+							<form class="app-search" method="get" action="/{{current_project.slug}}/search">
+							<div class="input-group">
+								{% if request.GET.query %}
+								<input type="search" class="form-control" placeholder="Universal Search..." id="top-search" name="query" value="{{request.GET.query}}">
+								{% else %}
+								<input type="search" class="form-control" placeholder="Universal Search..." id="top-search" name="query">
+								{% endif %}
+								<button type="submit" class="input-group-text btn waves-effect waves-light btn-primary"><i class="fa fa-search me-1"></i> Search</button>
+							</div>
+						</form>
+							<div class="mt-3 text-center">
+								<h4>Search Results For "{{ request.GET.query }}"</h4>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row" id="search-spinner">
+					<div class="d-flex justify-content-center">
+						<div class="spinner-border avatar-md text-primary m-2" role="status"></div>
+					</div>
+				</div>
+
+				<div id="search-message-div">
+				</div>
+
+				<div id="search-result-content-div">
+					<ul class="nav nav-tabs nav-bordered">
+						<li class="nav-item subdomains">
+							<a href="#subdomains-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link" id="nav-item-subdomains">
+								Subdomains <span class="badge bg-primary ms-1" id="search-subdomains-count-badge"></span>
+							</a>
+						</li>
+
+						<li class="nav-item endpoints">
+							<a href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" id="nav-item-endpoints">
+								Endpoints <span class="badge bg-primary ms-1" id="search-endpoints-count-badge"></span>
+							</a>
+						</li>
+
+						<li class="nav-item vulnerabilities">
+							<a href="#vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" id="nav-item-vulnerabilities">
+								Vulnerabilities <span class="badge bg-primary ms-1" id="search-vulnerabilities-count-badge"></span>
+							</a>
+						</li>
+
+						<li class="nav-item others">
+							<a href="#others-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+								Others <span class="badge bg-primary ms-1" id="search-others-count-badge"></span>
+							</a>
+						</li>
+					</ul>
+				</div>
+				<div class="tab-content">
+					<div class="tab-pane" id="subdomains-tab">
+					</div>
+					<div class="tab-pane" id="endpoints-tab">
+					</div>
+					<div class="tab-pane" id="vulnerabilities-tab">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+
+<script type="text/javascript">
+$(document).ready(function() {
+	var search_val = '{{ request.GET.query }}';
+	$('#search-spinner').hide();
+	$('.subdomains').hide();
+	$('.endpoints').hide();
+	$('.vulnerabilities').hide();
+	$('.others').hide();
+
+	if (search_val) {
+		search(search_val);
+	}
+
+	function search(search_val){
+		// hide all contents
+		$('#search-spinner').show();
+		fetch(`/api/search/?format=json&query=${search_val}`, {
+			method: 'GET',
+			credentials: "same-origin",
+			headers: {
+				"X-CSRFToken": getCookie("csrftoken"),
+				"Content-Type": 'application/json',
+			}
+		}).then(function(response) {
+			return response.json();
+		}).then(function(response) {
+			$('#search-spinner').hide();
+			if (response.status) {
+				var is_active_tab_set = false;
+				if (response.results.subdomains.length) {
+					$('.subdomains').show();
+					if (!is_active_tab_set) {
+						$('#subdomains-tab').addClass('active');
+						$('#nav-item-subdomains').addClass('active');
+						is_active_tab_set = true;
+					}
+					$('#search-subdomains-count-badge').append(`${response.results.subdomains.length}`);
+
+					for (var subdomain in response.results.subdomains) {
+						var subdomain_obj = response.results.subdomains[subdomain];
+						var http_url = subdomain_obj.http_url ? subdomain_obj.http_url : 'https://' + subdomain_obj.name;
+
+						var append_content = `<div class="search-item"><a href="/scan/{{current_project.slug}}/all/subdomains?name=${subdomain_obj.name}" target="_blank">`;
+
+						append_content += `<h4 class="mb-1"><span class="me-2 text-primary">${highlight_search(search_val, subdomain_obj.name)}</span>${get_http_status_badge(subdomain_obj.http_status)}</h4>`;
+
+						if (subdomain_obj.page_title) {
+							append_content += `<div class="font-13 text-dark mb-2 text-truncate">
+								${highlight_search(search_val, subdomain_obj.page_title)}
+							</div>`;
+						}
+
+						if (subdomain_obj.http_url) {
+							append_content += `<span class="text-muted">URL: ${highlight_search(search_val, subdomain_obj.http_url)}</span>`
+						}
+
+						if (subdomain_obj.cname) {
+							if (subdomain_obj.http_url) {
+								append_content += `</br>`;
+							}
+							append_content += `<span class="text-muted">CNAME: ${highlight_search(search_val, subdomain_obj.cname)}</span>`
+						}
+
+						append_content += '</a></div>';
+
+						$('#subdomains-tab').append(append_content);
+					}
+
+				}
+				if (response.results.endpoints.length) {
+					$('.endpoints').show();
+					if (!is_active_tab_set) {
+						$('#endpoints-tab').addClass('active');
+						$('#nav-item-endpoints').addClass('active');
+						is_active_tab_set = true;
+					}
+					$('#search-endpoints-count-badge').append(`${response.results.endpoints.length}`);
+
+					for (var endpoint in response.results.endpoints) {
+						var endpoint_obj = response.results.endpoints[endpoint];
+
+						var append_content = `<div class="search-item"><a href="/scan/{{current_project.slug}}/detail/all/endpoint?url=${endpoint_obj.http_url}" target="_blank">`;
+
+						append_content += `<h4 class="mb-1"><span class="me-2 text-primary">${highlight_search(search_val, endpoint_obj.http_url)}</span>${get_http_status_badge(endpoint_obj.http_status)}</h4>`;
+
+						if (endpoint_obj.page_title) {
+							append_content += `<div class="font-13 text-dark mb-2 text-truncate">
+								${highlight_search(search_val, endpoint_obj.page_title)}
+							</div>`;
+						}
+
+						append_content += '</a></div>';
+
+						$('#endpoints-tab').append(append_content);
+					}
+
+				}
+				if (response.results.vulnerabilities.length) {
+					$('.vulnerabilities').show();
+					if (!is_active_tab_set) {
+						$('#vulnerabilities-tab').addClass('active');
+						$('#nav-item-vulnerabilities').addClass('active');
+						is_active_tab_set = true;
+					}
+					$('#search-vulnerabilities-count-badge').append(`${response.results.vulnerabilities.length}`);
+
+					for (var vuln in response.results.vulnerabilities) {
+						var vuln_obj = response.results.vulnerabilities[vuln];
+						var append_content = `<div class="search-item"><a href="/scan/detail/vuln?vulnerability_name=${vuln_obj.name}" target="_blank">`;
+
+						append_content += `<h4 class="mb-1"><span class="me-2 text-primary">${highlight_search(search_val, vuln_obj.name)}</span>${get_severity_badge(vuln_obj.severity)}</h4>`;
+
+						if (vuln_obj.http_url) {
+							append_content += `<span class="text-muted">Vulnerable URL: ${highlight_search(search_val, vuln_obj.http_url)}</span>`
+						}
+
+						if (vuln_obj.description) {
+							append_content += `<p class="text-dark mt-2">Description: ${highlight_search(search_val, vuln_obj.description)}</p>`;
+						}
+
+						append_content += '</a></div>';
+
+						$('#vulnerabilities-tab').append(append_content);
+					}
+
+				}
+				if (response.results.others.length) {
+					$('.others').show();
+					$('#search-others-count-badge').append(`${response.results.others.length}`);
+				}
+			}
+			else{
+				$('#search-result-content-div').hide();
+				$('#search-message-div').append(`<div class="alert alert-warning show" role="alert">
+						Could not find any search results for "${htmlEncode(search_val)}".
+					</div>
+				`)
+			}
+		});
+	}
+
+});
+</script>
+
+{% endblock page_level_script %}

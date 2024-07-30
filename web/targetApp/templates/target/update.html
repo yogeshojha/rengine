@@ -1,0 +1,58 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}
+Update Target
+{% endblock title %}
+
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block page_title %}
+Update Target   {{ form.name.value }}
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-xl-12">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="header-title">Update Target</h4>
+        <form method="POST">
+          {% csrf_token %}
+          <div class="row mb-3">
+            <div class="col-6">
+              <div>
+                <label for="simpleinput" class="form-label">Domain name</label>
+                {{ form.name }}
+                {% if form.errors %}
+                <div class="invalid-feedback" style="display: block;">
+                  {{ form.errors.name|striptags }}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <label for="domainDescription" class="form-label">Description (Optional)</label>
+              {{ form.description }}
+            </div>
+          </div>
+          <div class="col-12">
+            <label for="domainDescription" class="form-label">HackerOne Target Team Handle
+              <br>
+              This is used to send vulnerability reports to the HackerOne Program automatically. Team handle can be found from the program URL, hackerone.com/team_handle.
+            </label>
+            {{ form.h1_team_handle }}
+          </div>
+          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Update Target</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+{% endblock page_level_script %}

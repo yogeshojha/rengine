@@ -1,0 +1,13 @@
+services:
+  certs:
+    build: ./certs
+    environment:
+      - AUTHORITY_NAME=${AUTHORITY_NAME:-CA}
+      - AUTHORITY_PASSWORD=${AUTHORITY_PASSWORD:-CHANGE_IT}
+      - COMPANY=${COMPANY:-Company}
+      - DOMAIN_NAME=${DOMAIN_NAME:-example.com}
+      - COUNTRY_CODE=${COUNTRY_CODE:-CC}
+      - STATE=${STATE:-State}
+      - CITY=${CITY:-City}
+    volumes:
+      - ./secrets/certs:/certs:rw

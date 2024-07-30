@@ -1,0 +1,45 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_tags %}
+{% block title %}
+All Endpoints
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
+{% endblock custom_js_css_link %}
+
+{% block main_content %}
+<div class="row justify-content-center">
+  {% include 'base/_items/endpoint_tab_content.html' with all_endpoints=True%}
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'startScan/js/detail_scan.js' %}"></script>
+<script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
+<script src="{% static 'assets/js/clipboard.min.js' %}"></script>
+<script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+  const ps = new PerfectScrollbar(document.querySelector('.endpoint-search'));
+  get_endpoints('{{current_project.slug}}', null, null, null);
+  var filter_cols = [
+    'end_http_status_filter_checkbox',
+    'end_page_title_filter_checkbox',
+    'end_tags_filter_checkbox',
+    'end_content_type_filter_checkbox',
+    'end_content_length_filter_checkbox',
+    'end_response_time_filter_checkbox',
+  ];
+
+  for (var col in filter_cols) {
+    if(window.localStorage.getItem(filter_cols[col]) != null && window.localStorage.getItem(filter_cols[col]) === 'false'){
+      $('#' + filter_cols[col]).prop('checked', false);
+    }
+  }
+});
+</script>
+{% endblock page_level_script %}

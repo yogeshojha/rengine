@@ -1,0 +1,190 @@
+
+/** BASIC SETUP START **/
+
+.gridzy {
+	display: block;
+	will-change: width, height;
+}
+
+/* Hint for browsers to make animations even smoother */
+.gridzy > .gridzyItem {
+	will-change: left, top, width, height, opacity, transform;
+}
+
+/* Prevent initial visibility of items */
+.gridzy > *:not(.gridzyItem) {
+	visibility: hidden;
+}
+
+/* Fully visible state of items (transitions see below) */
+.gridzyItemVisible {
+}
+
+/* Fully hidden state of items (transitions see below) */
+.gridzyItemHidden {
+	display: none;
+}
+
+/** BASIC SETUP END **/
+
+
+
+
+
+
+/** SKIN SETUP START **/
+
+/* Provides possibility to use semantic HTML without needing any skin, by using class "gridzyImage" */
+.gridzy .gridzyImage {
+	vertical-align: middle;
+	width: 100%;
+	height: 100%;
+}
+
+/** SKIN SETUP END **/
+
+
+
+
+
+
+/** ANIMATION START  **/
+
+/* transitions for several dynamic style changes */
+.gridzyAnimated {
+	height: 0;
+	transition: height .4s;
+}
+
+.gridzyAnimated .gridzyItem {
+	transition: all .4s;
+}
+
+/* Animation for appearing items on start of gallery */
+.gridzyAnimated .gridzyItemInitialToVisible {
+	animation-name: gridzyItemInitialToVisibleAnimation;
+	animation-fill-mode: forwards;
+	animation-duration: .4s;
+}
+
+@keyframes gridzyItemInitialToVisibleAnimation {
+	0% {
+		opacity: 0;
+		transform: scale(.9);
+	}
+
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* Animation for appearing items while changing filter */
+.gridzyAnimated .gridzyItemHiddenToVisible {
+	animation-name: gridzyItemHiddenToVisibleAnimation;
+	animation-fill-mode: forwards;
+	animation-duration: .4s;
+}
+
+@keyframes gridzyItemHiddenToVisibleAnimation {
+	0% {
+		opacity: 0;
+		transform: scale(.9);
+	}
+
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* Animation for disappearing items while changing filter */
+.gridzyAnimated .gridzyItemVisibleToHidden {
+	animation-name: gridzyItemVisibleToHiddenAnimation;
+	animation-fill-mode: forwards;
+	animation-duration: .4s;
+}
+
+@keyframes gridzyItemVisibleToHiddenAnimation {
+	0% {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	100% {
+		opacity: 0;
+		transform: scale(.9);
+	}
+}
+
+/* Here you can add an animation for items which stay visible while changing filter */
+/*
+.gridzyAnimated .gridzyItemVisibleToVisible {
+	animation-name: gridzyItemVisibleToVisibleAnimation;
+	animation-fill-mode: forwards;
+	animation-duration: .4s;
+}
+
+@keyframes gridzyItemVisibleToVisibleAnimation {
+	0% {
+		transform: rotate(0deg);
+	}
+
+	100% {
+		transform: rotate(360deg);
+	}
+}
+*/
+
+/** ANIMATION END  **/
+
+
+
+
+
+
+/** PROGRESS INDICATOR START **/
+
+.gridzyItem {
+	opacity: 1;
+}
+
+.gridzyItemLoading {
+	opacity: .3;
+	box-shadow: inset 0 0 15px -5px #666;
+}
+
+.gridzyItemLoading::before {
+	content: " ";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 50px;
+	height: 50px;
+	margin: -25px 0 0 -25px;
+	padding: 0;
+	z-index: 1;
+	opacity: 1;
+	background: none;
+	border: 2px solid;
+	border-color: transparent transparent rgb(0, 0, 0) rgb(0, 0, 0);
+	border-radius: 50%;
+	outline: none;
+	animation-duration: 1s;
+	animation-name: gridzyProgressIndicator;
+	animation-iteration-count: infinite;
+	animation-timing-function: linear;
+}
+
+@keyframes gridzyProgressIndicator {
+	0% {
+		transform: rotate(0deg);
+		left: 50%;
+	}
+	100% {
+		transform: rotate(360deg);
+		left: 50%;
+	}
+}
+
+/** PROGRESS INDICATOR END **/

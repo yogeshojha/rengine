@@ -1,0 +1,172 @@
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_name" class="form-label">Tool Name <span class="text-danger">(Required)</span></label>
+    {{form.name}}
+    {% if form.errors.name %}
+    <span class="text-danger">
+      {{form.errors.name}}
+    </span>
+    {% endif %}
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_category" class="form-label">Tool Category</label>
+    <br>
+    <span class="me-4">Does this tool gathers subdomains?</span>
+    <label class="switch s-icons s-outline s-outline-info">
+      {{form.is_subdomain_gathering}}
+      <span class="slider round"></span>
+    </label>
+    <br>
+    <span class="text-muted">If you have chosen this tool as subdomain gathering tool, you'll be able to use it in scan engine configuration and provide this tool name inside <code>uses_tools</code>. If not, you will still be able to use this tool in our custom scripting engine.</span>
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="github_url" class="form-label">Github URL <span class="text-danger">(Required)</span></label>
+    <br>
+    <label class="form-label text-primary">Github URL is required to check the recent releases and updates.</label>
+    {{form.github_url}}
+    {% if form.errors.github_url %}
+    <span class="text-danger">
+      {{form.errors.github_url}}
+    </span>
+    {% endif %}
+  </div>
+</div>
+<div class="col-md-6">
+  <div class="mb-3">
+    <label for="tool_logo_url" class="form-label">Tool Logo (URL) <span class="text-muted">(Optional)</span></label>
+    {{form.logo_url}}
+  </div>
+</div>
+<div class="col-md-6">
+  <div class="mb-3">
+    <label for="license_url" class="form-label">Tool License URL <span class="text-muted">(Optional)</span></label>
+    {{form.license_url}}
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_description" class="form-label">Description <span class="text-danger">(Required)</span></label>
+    {{form.description}}
+  </div>
+</div>
+<h5>Tool Installation Process</h5>
+<div class="row">
+  <p class="text-danger">Please note that any commands here will directly execute in shell, so please be careful of the commands you are using.</p>
+  <div class="col-md-12">
+    <div class="mb-3">
+      <label for="tool_logo_url" class="form-label">Installation Command <span class="text-danger">(Required)</span></label>
+      <p>
+        <ul>
+          <li>
+            If the tool has to be installed using github clone, then your installation command would be
+            <br>
+            <code> git clone https://github.com/user/tool </code>
+          </li>
+          <li>
+            If the tool has to be installed using go, the your installation command would be
+            <br>
+            <code>go install -v github.com/tool@latest</code>
+            <br>
+            Please note that, go get command is no longer supported by go. Instead you should use go install. <a href="https://go.dev/doc/go-get-install-deprecation"> Learn why! </a>
+          </li>
+        </ul>
+      </p>
+      <label for="install_command" class="form-label">Installation Command <span class="text-danger">(Required)</span></label>
+      {{form.install_command}}
+    </div>
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_update" class="form-label">How does this tool update? (Optional)</label>
+    <p>
+      <ul>
+        <li>If the tool was installed using git clone, it is recommended to use <code>git pull</code> for updating.</li>
+        <li>If the tool was installed using go, it is recommended to use the same command as go install.</li>
+      </ul>
+      <strong>If update command is not provided, you will not be able to update the tools.</strong>
+    </p>
+    <label for="update_command" class="form-label">Update command</label>
+    {{form.update_command}}
+    {% if form.errors.update_command %}
+    <span class="text-danger">
+      {{form.errors.update_command}}
+    </span>
+    {% endif %}
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_update" class="form-label">How do you check the version in this tool? (Optional)</label>
+    <p>
+      reNgine will use this command to check the version of the tool and let you know if there is any update available. Most tools will display the version either of these ways
+      <ul>
+        <li>toolname -v</li>
+        <li>toolname -V</li>
+        <li>toolname --version</li>
+        <li>python tool_name.py -v</li>
+      </ul>
+      You can provide these commands depending on your tool, and reNgine will identify the version number.
+    </p>
+    <label for="version_lookup_command" class="form-label">Version Lookup Command</label>
+    <span class="text-muted">(We have auto generated this for you based on your installation steps)</span>
+    {{form.version_lookup_command}}
+    {% if form.errors.version_lookup_command %}
+    <span class="text-danger">
+      {{form.errors.version_lookup_command}}
+    </span>
+    {% endif %}
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_update" class="form-label">Version match regex (Optional)</label>
+    <p>
+      reNgine needs version match regex to find out if there is any update available or not. You can check how the tool displays the version number and we can generate the regex for you, or you can do that manually as well.
+      <br>
+      <strong>If version regex is not given, reNgine will not be able to check the updates automatically. However, you can still force update the tools.</strong>
+      <br>
+      <strong>Additionally, we can also generate the version regext for you. You can select how this tool displays the version number. <br>See, how the tool names the release version. https://github.com/user/tool/releases</strong>
+    </p>
+    <button type="button" class="btn btn-outline-primary waves-effect waves-light" id="v1_2">v1.2 / V1.2 / 1.2</button>
+    <button type="button" class="btn btn-outline-primary waves-effect waves-light" id="v1_2_3">v1.2.3 / V1.2.3 / 1.2.3</button>
+    <button type="button" class="btn btn-outline-primary waves-effect waves-light" id="v1_2_3_4">v1.2.3.4 / V1.2.3.4 / 1.2.3.4</button>
+    <br>
+    <br>
+    <label for="version_match_regex" class="form-label">Version Regex</label>
+    {{form.version_match_regex}}
+    {% if form.errors.version_match_regex %}
+    <span class="text-danger">
+      {{form.errors.version_match_regex}}
+    </span>
+    {% endif %}
+  </div>
+  <!-- <div class="row" id="subdomain_extra"> -->
+  <div class="row">
+    <h5>Subdomain Gathering Tool Additional Information</h5>
+    <h6 class="text-danger">Please note that this subdomain gathering tool must support subdomain output in the form of txt file.</h6>
+    <p>Since you have chosen this tool as subdomain gathering tool, we require additional information on how this tool runs.</p>
+    <div class="">
+      <span class="font-16">
+        reNgine needs to know how this tool accepts target and output the subdomain results.<br>
+        <strong>Use the below syntax wherever required, but remember that <code>{TARGET}</code> and <code>{OUTPUT}</code> <strong>are mandatory placeholders</strong>.</strong>
+        <ul>
+          <li><code>{TARGET}</code> (mandatory), Use this for the command-line arg that takes in domain as input target. Example. <code>subfinder -d {TARGET}</code></li>
+          <li><code>{OUTPUT}</code> (mandatory), Use this for the command-line arg that takes the output arg. Example. <code>subfinder -d {TARGET} -o {OUTPUT}</code></li>
+          <li><code>{PATH}</code>, Use this if your tool is github cloned. Example. <code>python3 {PATH}/subdomain.py</code></li>
+          <li><code>{PROXY}</code>, Use this if your tool supports proxy. Example. <code>tool_name -p {PROXY}</code></li>
+        </ul>
+        You can use the combinations of the above syntax and also you can use any other command-line argument that your tool supports.
+      </span>
+    </div>
+    <div class="col-md-12">
+      <div class="mb-3">
+        {{form.subdomain_gathering_command}}
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,117 @@
+# Global vars for all tools
+#
+# custom_headers: ['Foo: bar', 'User-Agent: Anything']     # FFUF, Nuclei, Dalfox, CRL Fuzz, HTTP Crawl, Fetch URL, etc
+# enable_http_crawl: true           # All tools
+# timeout: 10                       # Subdomain discovery, Screenshot, Port scan, FFUF, Nuclei                       
+# threads: 30                       # All tools
+# rate_limit: 150                   # Port scan, FFUF, Nuclei
+# intensity: 'normal'               # Screenshot (grab only the root endpoints of each subdomain), Nuclei (reduce number of endpoints to scan), OSINT (not implemented yet)
+# retries: 1                        # Nuclei
+
+subdomain_discovery: {
+  'uses_tools': ['subfinder', 'ctfr', 'sublist3r', 'tlsx', 'oneforall', 'netlas'],  # amass-passive, amass-active, All
+  'enable_http_crawl': true,
+  'threads': 30,
+  'timeout': 5,
+  # 'use_subfinder_config': false,
+  # 'use_amass_config': false,
+  # 'amass_wordlist': 'deepmagic.com-prefixes-top50000'
+}
+http_crawl: {
+  # 'threads': 30,
+  # 'follow_redirect': true
+}
+port_scan: {
+  'enable_http_crawl': true,
+  'timeout': 5,
+  # 'exclude_ports': [],
+  # 'exclude_subdomains': [],
+  'ports': ['top-100'],
+  'rate_limit': 150,
+  'threads': 30,
+  'passive': false,
+  # 'use_naabu_config': false,
+  # 'enable_nmap': true,
+  # 'nmap_cmd': '',
+  # 'nmap_script': '',
+  # 'nmap_script_args': ''
+}
+osint: {
+  'discover': [
+      'emails',
+      'metainfo',
+      'employees'
+    ],
+  'dorks': [
+    'login_pages',
+    'admin_panels',
+    'dashboard_pages',
+    'stackoverflow',
+    'social_media',
+    'project_management',
+    'code_sharing',
+    'config_files',
+    'jenkins',
+    'wordpress_files',
+    'php_error',
+    'exposed_documents',
+    'db_files',
+    'git_exposed'
+  ],
+  # 'custom_dorks': [],
+  'intensity': 'normal',
+  'documents_limit': 50
+}
+dir_file_fuzz: {
+  'auto_calibration': true,
+  'enable_http_crawl': true,
+  'rate_limit': 150,
+  'extensions': ['html', 'php','git','yaml','conf','cnf','config','gz','env','log','db','mysql','bak','asp','aspx','txt','conf','sql','json','yml','pdf'],
+  'follow_redirect': false,
+  'max_time': 0,
+  'match_http_status': [200, 204],
+  'recursive_level': 2,
+  'stop_on_error': false,
+  'timeout': 5,
+  'threads': 30,
+  'wordlist_name': 'dicc'
+}
+fetch_url: {
+  'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'katana', 'gau'],
+  'remove_duplicate_endpoints': true,
+  'duplicate_fields': ['content_length', 'page_title'],
+  'enable_http_crawl': true,
+  'gf_patterns': ['debug_logic', 'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce', 'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],
+  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],
+  'threads': 30,
+  # 'exclude_subdomains': false
+}
+vulnerability_scan: {
+  'run_nuclei': true,
+  'run_dalfox': false,
+  'run_crlfuzz': false,
+  'run_s3scanner': false,
+  'enable_http_crawl': true,
+  'concurrency': 50,
+  'intensity': 'normal',
+  'rate_limit': 150,
+  'retries': 1,
+  'timeout': 5,
+  'fetch_gpt_report': true,
+  'nuclei': {
+    'use_nuclei_config': false,
+    'severities': ['unknown', 'info', 'low', 'medium', 'high', 'critical'],
+    # 'tags': [],                 # Nuclei tags (https://github.com/projectdiscovery/nuclei-templates)
+    # 'templates': [],            # Nuclei templates (https://github.com/projectdiscovery/nuclei-templates)
+    # 'custom_templates': []      # Nuclei custom templates uploaded in reNgine
+  }
+}
+waf_detection: {
+  'enable_http_crawl': true
+}
+screenshot: {
+  'enable_http_crawl': true,
+  'intensity': 'normal',
+  'timeout': 10,
+  'threads': 40
+}

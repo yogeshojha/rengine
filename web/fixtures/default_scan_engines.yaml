@@ -1,0 +1,104 @@
+- model: scanEngine.enginetype
+  pk: 1
+  fields:
+    engine_name: Full Scan
+    yaml_configuration: "subdomain_discovery: {\r\n  'uses_tools': ['subfinder', 'ctfr',
+      'sublist3r', 'tlsx', 'oneforall', 'netlas'],\r\n  'enable_http_crawl': true,\r\n
+      \ 'threads': 30,\r\n  'timeout': 5,\r\n}\r\nhttp_crawl: {}\r\nport_scan: {\r\n
+      \ 'enable_http_crawl': true,\r\n  'timeout': 5,\r\n  # 'exclude_ports': [],\r\n
+      \ # 'exclude_subdomains': [],\r\n  'ports': ['top-100'],\r\n  'rate_limit':
+      150,\r\n  'threads': 30,\r\n  'passive': false,\r\n  # 'use_naabu_config': false,\r\n
+      \ # 'enable_nmap': true,\r\n  # 'nmap_cmd': '',\r\n  # 'nmap_script': '',\r\n
+      \ # 'nmap_script_args': ''\r\n}\r\nosint: {\r\n  'discover': [\r\n      'emails',\r\n
+      \     'metainfo',\r\n      'employees'\r\n    ],\r\n  'dorks': [\r\n    'login_pages',\r\n
+      \   'admin_panels',\r\n    'dashboard_pages',\r\n    'stackoverflow',\r\n    'social_media',\r\n
+      \   'project_management',\r\n    'code_sharing',\r\n    'config_files',\r\n
+      \   'jenkins',\r\n    'wordpress_files',\r\n    'php_error',\r\n    'exposed_documents',\r\n
+      \   'db_files',\r\n    'git_exposed'\r\n  ],\r\n  'intensity': 'normal',\r\n
+      \ 'documents_limit': 50\r\n}\r\ndir_file_fuzz: {\r\n  'auto_calibration': true,\r\n
+      \ 'enable_http_crawl': true,\r\n  'rate_limit': 150,\r\n  'extensions': ['html',
+      'php','git','yaml','conf','cnf','config','gz','env','log','db','mysql','bak','asp','aspx','txt','conf','sql','json','yml','pdf'],\r\n
+      \ 'follow_redirect': false,\r\n  'max_time': 0,\r\n  'match_http_status': [200,
+      204],\r\n  'recursive_level': 2,\r\n  'stop_on_error': false,\r\n  'timeout':
+      5,\r\n  'threads': 30,\r\n  'wordlist_name': 'dicc'\r\n}\r\nfetch_url: {\r\n
+      \ 'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'katana', 'gau'],\r\n
+      \ 'remove_duplicate_endpoints': true,\r\n  'duplicate_fields': ['content_length',
+      'page_title'],\r\n  'enable_http_crawl': true,\r\n  'gf_patterns': ['debug_logic',
+      'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce',
+      'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],\r\n  'ignore_file_extensions': ['png',
+      'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],\r\n  'threads': 30\r\n}\r\nvulnerability_scan: {\r\n
+      \ 'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
+      \ 'enable_http_crawl': true,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
+      \ 'rate_limit': 150,\r\n  'retries': 1,\r\n  'timeout': 5,\r\n  'fetch_gpt_report':
+      true,\r\n  'nuclei': {\r\n    'use_nuclei_config': false,\r\n    'severities': ['unknown',
+      'info', 'low', 'medium', 'high', 'critical']\r\n  }\r\n}\r\nwaf_detection: {\r\n\r\n}\r\nscreenshot:
+      {\r\n  'enable_http_crawl': true,\r\n  'intensity': 'normal',\r\n  'timeout':
+      10,\r\n  'threads': 40\r\n}\r\n\r\n# custom_headers: [\"Cookie: Test\"]"
+    default_engine: true
+- model: scanEngine.enginetype
+  pk: 2
+  fields:
+    engine_name: Subdomain Scan
+    yaml_configuration: "subdomain_discovery: {\r\n  'uses_tools': [\r\n    'subfinder',
+      \r\n    'ctfr', \r\n    'sublist3r', \r\n    'tlsx', \r\n    'oneforall', \r\n
+      \   'netlas'\r\n  ],\r\n  'enable_http_crawl': true,\r\n  'threads': 30,\r\n
+      \ 'timeout': 5,\r\n}\r\nhttp_crawl: {}"
+    default_engine: true
+- model: scanEngine.enginetype
+  pk: 3
+  fields:
+    engine_name: OSINT
+    yaml_configuration: "osint: {\r\n  'discover': [\r\n      'emails',\r\n      'metainfo',\r\n
+      \     'employees'\r\n    ],\r\n  'dorks': [\r\n    'login_pages',\r\n    'admin_panels',\r\n
+      \   'dashboard_pages',\r\n    'stackoverflow',\r\n    'social_media',\r\n    'project_management',\r\n
+      \   'code_sharing',\r\n    'config_files',\r\n    'jenkins',\r\n    'wordpress_files',\r\n
+      \   'php_error',\r\n    'exposed_documents',\r\n    'db_files',\r\n    'git_exposed'\r\n
+      \ ],\r\n  'custom_dorks': [\r\n    {'lookup_site': '_target_', 'lookup_extensions':
+      'php'}\r\n  ],\r\n  'intensity': 'normal',\r\n  'documents_limit': 50\r\n}"
+    default_engine: true
+- model: scanEngine.enginetype
+  pk: 4
+  fields:
+    engine_name: Vulnerability Scan
+    yaml_configuration: "subdomain_discovery: {\r\n  'uses_tools': ['subfinder', 'ctfr',
+      'sublist3r', 'tlsx', 'oneforall', 'netlas'],\r\n  'enable_http_crawl': true,\r\n
+      \ 'threads': 30,\r\n  'timeout': 5,\r\n}\r\nhttp_crawl: {}\r\nosint: {\r\n  'discover':
+      [\r\n      'emails',\r\n      'metainfo',\r\n      'employees'\r\n    ],\r\n
+      \ 'dorks': [\r\n    'login_pages',\r\n    'admin_panels',\r\n    'dashboard_pages',\r\n
+      \   'stackoverflow',\r\n    'social_media',\r\n    'project_management',\r\n
+      \   'code_sharing',\r\n    'config_files',\r\n    'jenkins',\r\n    'wordpress_files',\r\n
+      \   'php_error',\r\n    'exposed_documents',\r\n    'db_files',\r\n    'git_exposed'\r\n
+      \ ],\r\n  'intensity': 'normal',\r\n  'documents_limit': 50\r\n}\r\nvulnerability_scan:
+      {\r\n  'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
+      \ 'enable_http_crawl': true,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
+      \ 'rate_limit': 150,\r\n  'retries': 1,\r\n  'timeout': 5,\r\n  'fetch_gpt_report':
+      true,\r\n  'nuclei': {\r\n    'use_nuclei_config': false,\r\n    'severities': ['unknown',
+      'info', 'low', 'medium', 'high', 'critical']\r\n  }\r\n}"
+    default_engine: true
+- model: scanEngine.enginetype
+  pk: 5
+  fields:
+    engine_name: Port Scan
+    yaml_configuration: "http_crawl: {}\r\nport_scan: {\r\n  'enable_http_crawl':
+      true,\r\n  'timeout': 5,\r\n  # 'exclude_ports': [],\r\n  # 'exclude_subdomains':
+      [],\r\n  'ports': ['top-100'],\r\n  'rate_limit': 150,\r\n  'threads': 30,\r\n
+      \ 'passive': false,\r\n  # 'use_naabu_config': false,\r\n  # 'enable_nmap':
+      true,\r\n  # 'nmap_cmd': '',\r\n  # 'nmap_script': '',\r\n  # 'nmap_script_args':
+      ''\r\n}"
+    default_engine: true
+- model: scanEngine.enginetype
+  pk: 6
+  fields:
+    engine_name: reNgine Recommended
+    yaml_configuration: "subdomain_discovery: {\r\n  'uses_tools': ['subfinder', 'ctfr',
+      'sublist3r', 'tlsx', 'oneforall', 'netlas'],\r\n  'enable_http_crawl': true,\r\n
+      \ 'threads': 30,\r\n  'timeout': 5,\r\n}\r\nhttp_crawl: {}\r\nosint: {\r\n  'discover':
+      [\r\n      'emails',\r\n      'metainfo'\r\n    ],\r\n  'dorks': [\r\n    'login_pages',\r\n
+      \   'admin_panels',\r\n    'dashboard_pages',\r\n    'config_files',\r\n    'exposed_documents',\r\n
+      \ ],\r\n  'intensity': 'normal',\r\n  'documents_limit': 50\r\n}\r\nvulnerability_scan:
+      {\r\n  'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
+      \ 'enable_http_crawl': false,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
+      \ 'rate_limit': 150,\r\n  'retries': 1,\r\n  'timeout': 5,\r\n  'fetch_gpt_report':
+      true,\r\n  'nuclei': {\r\n    'use_nuclei_config': false,\r\n    'severities': ['low',
+      'medium', 'high', 'critical']\r\n  }\r\n}"
+    default_engine: true

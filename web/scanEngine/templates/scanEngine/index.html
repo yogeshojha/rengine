@@ -1,0 +1,180 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load permission_tags %}
+
+{% block title %}
+Scan Engine
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' current_project.slug %}">Engines</a></li>
+<li class="breadcrumb-item active">All Scan Engines</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+Scan Engines
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="p-2">
+        <div class="row">
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+          </div>
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+            {% if user|can:'add_modify_scan_settings' %}
+            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_engine' current_project.slug %}" data-toggle="tooltip" data-placement="top" title="Add New Scan Engine">Add Scan Engine</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <table id="scan_engine_table" class="table dt-responsive w-100">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Engine Name</th>
+            <th class="text-center">Type</th>
+            <th class="text-center">Subdomain Discovery</th>
+            <th class="text-center">WAF Detection</th>
+            <th class="text-center">Screenshot</th>
+            <th class="text-center">OSINT</th>
+            <th class="text-center">Port Scan</th>
+            <th class="text-center">Directory & Files Discovery</th>
+            <th class="text-center">Fetch URLs</th>
+            <th class="text-center">Vulnerability Scan</th>
+            <th class="text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for engine in engine_type.all %}
+          <tr>
+            <td>{{engine.id}}</td>
+            <td class="text-primary">{{engine.engine_name}}</td>
+            <td class="text-center">
+              {% if engine.default_engine %}
+              <span class="badge badge-soft-primary p-1">Default Engine</span>
+              {% else %}
+              <span class="badge badge-soft-danger p-1">Custom Engine</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if 'subdomain_discovery' in engine.tasks %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td class="text-center">
+              {% if 'waf_detection' in engine.tasks %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td class="text-center">
+              {% if 'screenshot' in engine.tasks %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td class="text-center">
+              {% if 'osint' in engine.tasks %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td class="text-center">
+              {% if 'port_scan' in engine.tasks %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td class="text-center">
+              {% if 'dir_file_fuzz' in engine.tasks %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td class="text-center">
+              {% if 'fetch_url' in engine.tasks %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td class="text-center">
+              {% if 'vulnerability_scan' in engine.tasks %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td class="text-center">
+              {% if user|can:'add_modify_scan_settings' %}
+                <a href="/scanEngine/{{current_project.slug}}/update/{{engine.id}}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Edit Engine">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                  </svg>
+                </a>
+                <a onclick="delete_api({{ engine.id }}, 'engine')" class="btnDelDomain text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete {{engine.engine_name}} Engine">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                  </svg>
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    var scan_engine_table = $('#scan_engine_table').DataTable({
+      "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+      "<'table-responsive'tr>" +
+      "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+      "oLanguage": {
+        "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+        "sInfo": "Showing page _PAGE_ of _PAGES_",
+        "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+        "sSearchPlaceholder": "Search...",
+        "sLengthMenu": "Results :  _MENU_",
+      },
+      "columnDefs":[
+      { 'visible': false, 'targets': [0] },
+      ],
+      "stripeClasses": [],
+      "lengthMenu": [20, 30, 40, 50],
+      "pageLength": 20,
+      "initComplete": function(settings, json) {
+        $('[data-toggle="tooltip"]').tooltip();
+      }
+    });
+  });
+</script>
+{% endblock page_level_script %}

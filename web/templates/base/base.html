@@ -1,0 +1,274 @@
+{% load permission_tags %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{% block title %} {% endblock title %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="shortcut icon" href="/staticfiles/img/favicon.png">
+    <link href="{% static 'bootstrap/bootstrap.min.css' %}" rel="stylesheet" type="text/css" id="bootstrap-stylesheet" />
+    <link href="{% static 'assets/css/app.min.css' %}" rel="stylesheet" type="text/css" id="main-stylesheet" />
+    <link href="{% static 'bootstrap/bootstrap-dark.min.css' %}" rel="stylesheet" type="text/css" id="bootstrap-dark-stylesheet" />
+    <link href="{% static 'assets/css/app-dark.min.css' %}" rel="stylesheet" type="text/css" id="main-dark-stylesheet" />
+    <link href="{% static 'assets/css/icons.min.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'plugins/snackbar/snackbar.min.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'plugins/sweetalert2/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'plugins/switches/switches.min.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'custom/custom.css' %}" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
+    <!-- <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}"> -->
+    <link href="https://cdn.datatables.net/rowgroup/1.4.0/css/rowGroup.dataTables.min.css" rel="stylesheet" type="text/css" />
+    <style media="screen">
+      @font-face {
+        font-family: "Cerebri Sans,sans-serif";
+        src: url("{% static 'fonts/cerebrisans-light.eot' %}");
+        src: local("Cerebri-sans Light"), url("{% static 'fonts/cerebrisans-light.woff' %}") format("woff");
+        font-weight: 300; }
+
+      @font-face {
+        font-family: "Cerebri Sans,sans-serif";
+        src: url("{% static 'fonts/cerebrisans-regular.eot' %}");
+        src: local("Cerebri-sans Regular"), url("{% static 'fonts/cerebrisans-regular.woff' %}") format("woff");
+        font-weight: 400; }
+
+      @font-face {
+        font-family: "Cerebri Sans,sans-serif";
+        src: url("{% static 'fonts/cerebrisans-medium.eot' %}");
+        src: local("Cerebri-sans Medium"), url("{% static 'fonts/cerebrisans-medium.woff' %}") format("woff");
+        font-weight: 500; }
+
+      @font-face {
+        font-family: "Cerebri Sans,sans-serif";
+        src: url("{% static 'fonts/cerebrisans-semibold.eot' %}");
+        src: local("Cerebri-sans Semibold"), url("{% static 'fonts/cerebrisans-semibold.woff' %}") format("woff");
+        font-weight: 600; }
+
+      @font-face {
+        font-family: "Cerebri Sans,sans-serif";
+        src: url("{% static 'fonts/cerebrisans-bold.eot' %}");
+        src: local("Cerebri-sans Bold"), url("{% static 'fonts/cerebrisans-bold.woff' %}") format("woff");
+        font-weight: 700; }
+    </style>
+    <!-- load any page wise jquery or stylesheet -->
+    {% block custom_js_css_link %}
+    {% endblock custom_js_css_link %}
+  </head>
+
+  <body class="loading" data-layout-mode="horizontal">
+    <!-- Topbar begins -->
+    {% include 'base/_items/top_bar.html' %}
+    {# topbar ends #}
+    <div id="wrapper"></div>
+      {# top nav begins #}
+      {% include 'base/_items/top_nav.html' %}
+      {# top nav ends #}
+      <input type="hidden" name="current_project" value="{{current_project.slug}}">
+      <div class="content-page">
+        <div class="content">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-12">
+                <div class="page-title-box">
+                  <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                      {% block breadcrumb_title %}
+                      {% endblock breadcrumb_title %}
+                    </ol>
+                  </div>
+                  <h4 class="page-title">{% block page_title %}{% endblock page_title %}</h4>
+                </div>
+              </div>
+            </div>
+            {% block main_content %}
+            {% endblock main_content %}
+          </div>
+          <div id="additional-content"></div>
+        </div>
+        {% include 'base/_items/modal.html' %}
+        {% include 'base/_items/xl_scrollable_modal.html' %}
+        {% include 'base/_items/offcanvas.html' %}
+      </div>
+      {% include 'base/_items/right_bar.html' %}
+      {% include 'base/_items/footer.html' %}
+    </div>
+    <script src="{% static 'assets/js/vendor.min.js' %}"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.8/purify.min.js"></script>
+    <script src="{% static 'assets/js/app.min.js' %}"></script>
+    <script src="{% static 'custom/custom.js' %}"></script>
+    <script src="{% static 'custom/toolbox.js' %}"></script>
+    <script src="{% static 'custom/right_sidebar.js' %}"></script>
+    <script src="{% static 'plugins/snackbar/snackbar.min.js' %}"></script>
+    <script src="{% static 'plugins/sweetalert2/sweetalert2.all.min.js' %}"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/rowgroup/1.4.0/js/dataTables.rowGroup.min.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function(){
+        // for tabs with urls, we need to append the hash in the url
+        $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+          var href = $(e.target).attr('href');
+          if (href && href.startsWith('#')) {
+            history.pushState(null, null, href);
+          }
+        });
+        $(window).on('hashchange', handleHashInUrl);
+        render_search_history('{{current_project.slug}}');
+
+        // rengine will also check everyday if update exists for rengine
+        checkDailyUpdate();
+
+        getScanStatusSidebar(project='{{current_project.slug}}', reload=false);
+        // hide badge if update does not exists
+        if (window.localStorage.getItem('update_available') && window.localStorage.getItem('update_available') === 'true') {
+          $('.rengine_update_available').show();
+        }
+        else{
+          $('.rengine_update_available').hide();
+        }
+        // tippy for notification or scan acitivity
+        tippy('.top-activity-counter', {
+          content: 'Scan Activity',
+        });
+        if (localStorage.getItem('rengine-theme') == "dark") {
+          $('#dark-mode-check').prop("checked", true).change();
+        }
+        else{
+          $('#dark-mode-check').prop("checked", false).change();
+        }
+        handleHashInUrl();
+      });
+
+      function render_search_history(slug){
+        fetch('/api/search/history/')
+        .then(response => response.json())
+        .then(function (response) {
+          if (response.status) {
+            for (var history in response.results) {
+              $('#search-history-items').append(`
+                <a href="/${slug}/search?query=${response.results[history].query}" class="dropdown-item notify-item">
+                  <span>${response.results[history].query}</span>
+                </a>
+              `);
+            }
+          }
+          else{
+            $('#search-history-items').append(`
+              <span class="ms-2">No recent searches.</span>
+            `);
+          }
+        });
+      }
+
+      function check_rengine_update(){
+        if (window.localStorage.getItem('update_available') && window.localStorage.getItem('update_available') === 'true') {
+          update_available();
+        }
+        else{
+          Swal.fire({
+            title: 'Checking reNgine latest version...',
+            allowOutsideClick: false
+          });
+          swal.showLoading();
+          fetch('/api/rengine/update/')
+          .then(response => response.json())
+          .then(function (response) {
+            console.log(response);
+            swal.close();
+            if (response['description'] == 'RateLimited') {
+              Swal.fire({
+                title: 'Oops!',
+                text: 'Github rate limit exceeded, please try again in an hour!',
+                icon: 'error'
+              });
+              window.localStorage.setItem('update_available', false);
+              $('.rengine_update_available').hide();
+            }
+            else if (response['update_available']){
+              window.localStorage.setItem('update_available', true);
+              $('.rengine_update_available').show();
+              update_available(response['latest_version'], response['changelog']);
+            }
+            else{
+              window.localStorage.setItem('update_available', false);
+              $('.rengine_update_available').hide();
+              Swal.fire({
+                title: 'Update not available',
+                text: 'You are running the latest version of reNgine!',
+                icon: 'info'
+              });
+            }
+          });
+        }
+      }
+
+      function update_available(latest_version_number, changelog){
+        Swal.fire({
+          title: 'Update Available!',
+          html: `<h5>reNgine's new update ${latest_version_number} is available, please follow the update instructions.</h5><pre>${changelog}</pre>`,
+          icon: 'info',
+          confirmButtonText: 'Update Instructions',
+          showCancelButton: true,
+          cancelButtonText: 'Dismiss',
+          width: '60%',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.open("https://www.rengine.wiki/update","_blank")
+          }
+        });
+      }
+
+      // Source : https://stackoverflow.com/a/32428268
+      function checkDailyUpdate(){
+        if( !hasOneDayPassed() ) return false;
+        console.log('Checking Daily Update...')
+        fetch('/api/rengine/update/')
+        .then(response => response.json())
+        .then(function (response) {
+          if (response['update_available']){
+            window.localStorage.setItem('update_available', true);
+            $('.rengine_update_available').show();
+            update_available(response['latest_version'], response['changelog'])
+          }
+          else{
+            window.localStorage.setItem('update_available', false);
+            $('.rengine_update_available').hide();
+          }
+        });
+      }
+
+      // Source: https://stackoverflow.com/a/32428268
+      function hasOneDayPassed(){
+        var date = new Date().toLocaleDateString();
+        if(window.localStorage.getItem('last_update_checked') == date){
+          return false;
+        }
+        window.localStorage.setItem('last_update_checked', date);
+        return true;
+      }
+    </script>
+    {% if messages %}
+      {% for message in messages %}
+        <script type="text/javascript">
+          Snackbar.show({
+            text: '{{ message }}',
+            pos: 'top-right',
+            {% if message.tags == 'error'%}
+              actionTextColor: '#fff',
+              backgroundColor: '#e7515a',
+            {% else %}
+            actionTextColor: '#42A5F5',
+            {% endif %}
+            duration: 2500
+          });
+        </script>
+      {% endfor %}
+    {% endif %}
+    {% block page_level_script %}
+    {% endblock page_level_script%}
+  </body>
+</html>

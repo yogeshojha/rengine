@@ -1,0 +1,134 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+reNgine Settings
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">reNgine Settings</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+reNgine Settings
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="header-title text-danger">Danger Zone</h4>
+        <div id="chart">
+        </div>
+        <div class="text-center">
+          Total Storage: <b>{{total}} Gb</b> Used Space: <b>{{used}} Gb</b> Free Space: <b>{{free}} Gb</b>
+        </div>
+        <div class="">
+          <h4 class="header-title text-danger">Danger Zone</h4>
+          <div class="widget-content widget-content-area" style="border:1px solid #e7515a;">
+            <div class="row ms-2 me-2">
+              <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12 mt-2">
+                <b class="header-title">
+                  Delete all scan results
+                </b>
+                <p class="">
+                  <span class="text-danger">Once you delete all scan results, there is no going back.</span><br>
+                  This will delete all the scan history and also screenshots and likely to free up disk space.
+                </p>
+              </div>
+              <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-2">
+                <button class="btn btn-danger mt-1 float-end" onclick="delete_all_scan_results()">Delete All Scan Results</button>
+              </div>
+            </div>
+            <hr>
+            <div class="row ms-2 me-2">
+              <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12 mt-2">
+                <b class="header-title">
+                  Delete all Screenshots
+                </b>
+                <p class="">
+                  Once you delete all screenshots, you are likely to free up some disk space.<br>
+                  <span class="text-danger">Scan history will not be able to show any screenshots after deleted.</span><br>
+                </p>
+              </div>
+              <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-2 mb-2">
+                <button class="btn btn-danger mt-1 float-end" onclick="delete_all_screenshots()">Delete All Screenshots</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.29.0/apexcharts.min.js" integrity="sha512-fe6OklXva8AWoqdwgkE7Ni4uWgHGWxFQWZx4lYehzY2Qrst5YfogjAbnLd6egsoTrnjGI9/LYt1Ont2cKNbP2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+  var options = {
+    chart: {
+      height: 350,
+      type: "radialBar",
+    },
+
+    series: [{{consumed_percent}}],
+    colors: ["#20E647"],
+    plotOptions: {
+      radialBar: {
+        hollow: {
+          margin: 0,
+          size: "70%",
+          background: "#293450"
+        },
+        track: {
+          dropShadow: {
+            enabled: true,
+            top: 2,
+            left: 0,
+            blur: 4,
+            opacity: 0.15
+          }
+        },
+        dataLabels: {
+          name: {
+            offsetY: -10,
+            color: "#fff",
+            fontSize: "13px"
+          },
+          value: {
+            color: "#fff",
+            fontSize: "30px",
+            show: true
+          }
+        }
+      }
+    },
+    fill: {
+      type: "gradient",
+      gradient: {
+        shade: "dark",
+        type: "vertical",
+        gradientToColors: ["#87D4F9"],
+        stops: [0, 100]
+      }
+    },
+    stroke: {
+      lineCap: "round"
+    },
+    labels: ["Disk Space Consumed"]
+  };
+
+  var chart = new ApexCharts(document.querySelector("#chart"), options);
+
+  chart.render();
+});
+</script>
+{% endblock page_level_script %}

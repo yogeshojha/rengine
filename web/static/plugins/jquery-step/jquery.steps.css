@@ -1,0 +1,661 @@
+.wizard, .tabcontrol {
+  display: block;
+  width: 100%;
+  overflow: hidden; }
+
+.wizard a, .tabcontrol a {
+  outline: 0; }
+
+.wizard ul, .tabcontrol ul {
+  list-style: none !important;
+  padding: 0;
+  margin: 0; }
+
+.wizard ul > li, .tabcontrol ul > li {
+  display: block;
+  padding: 0; }
+
+/* Accessibility */
+.wizard > .steps .current-info, .tabcontrol > .steps .current-info, .wizard > .content > .title, .tabcontrol > .content > .title {
+  position: absolute;
+  left: -999em; }
+
+/*
+    Wizard
+*/
+.wizard > .steps {
+  position: relative;
+  display: block;
+  width: 100%; }
+
+.wizard.vertical > .steps {
+  display: inline;
+  float: left;
+  width: 30%; }
+
+.wizard.vertical > .steps > ul > li {
+  float: none;
+  width: 100%; }
+
+.wizard.vertical > .content {
+  display: inline;
+  float: left;
+  margin: 0 2.5% 0.5em 2.5%;
+  width: 65%; }
+
+.wizard.vertical > .actions {
+  -ms-flex: 0 0 100%;
+  flex: 0 0 100%;
+  max-width: 100%; }
+
+.wizard.vertical > .actions > ul > li {
+  margin: 0 0 0 1em; }
+
+.wizard > .steps .number {
+  font-size: 1.429em; }
+
+.wizard > .steps > ul > li {
+  float: left; }
+
+.wizard > .actions > ul > li {
+  float: left; }
+
+.wizard > .steps a {
+  display: block;
+  width: auto;
+  padding: 10px;
+  text-decoration: none;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0; }
+  .wizard > .steps a:hover, .wizard > .steps a:active {
+    display: block;
+    width: auto;
+    padding: 10px;
+    text-decoration: none;
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0; }
+
+.wizard > .steps .disabled a {
+  background: #ebedf2;
+  color: #aaa;
+  cursor: default; }
+  .wizard > .steps .disabled a:hover, .wizard > .steps .disabled a:active {
+    background: #ebedf2;
+    color: #aaa;
+    cursor: default; }
+
+.wizard > .steps .current a {
+  background: #4361ee;
+  color: #fff;
+  cursor: default; }
+  .wizard > .steps .current a:hover, .wizard > .steps .current a:active {
+    background: #4361ee;
+    color: #fff;
+    cursor: default; }
+
+.wizard > .steps .done a {
+  background: #3b3f5c;
+  color: #fff; }
+  .wizard > .steps .done a:hover, .wizard > .steps .done a:active {
+    background: #3b3f5c;
+    color: #fff; }
+
+.wizard > .steps .error a {
+  background: #ff3111;
+  color: #fff; }
+  .wizard > .steps .error a:hover, .wizard > .steps .error a:active {
+    background: #ff3111;
+    color: #fff; }
+
+.wizard > .content {
+  background: #f1f2f3;
+  display: block;
+  margin-top: 27px;
+  min-height: 18em;
+  overflow: hidden;
+  position: relative;
+  width: auto;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px; }
+  .wizard > .content section.body:not(.current) {
+    display: none !important; }
+
+.wizard > .content > .body {
+  padding: 4.5%; }
+  .wizard > .content > .body ul {
+    list-style: disc !important; }
+    .wizard > .content > .body ul > li {
+      display: list-item; }
+  .wizard > .content > .body > iframe {
+    border: 0 none;
+    width: 100%;
+    height: 100%; }
+  .wizard > .content > .body input {
+    display: block;
+    border: 1px solid #ccc; }
+    .wizard > .content > .body input[type="checkbox"] {
+      display: inline-block; }
+    .wizard > .content > .body input.error {
+      background: #fbe3e4;
+      border: 1px solid #fbc2c4;
+      color: #8a1f11; }
+  .wizard > .content > .body label.error {
+    color: #8a1f11;
+    display: inline-block;
+    margin-left: 1.5em; }
+
+.wizard > .actions {
+  margin-top: 30px;
+  margin-bottom: 24px; }
+
+.wizard > .actions > ul {
+  display: inline-block;
+  text-align: right; }
+  .wizard > .actions > ul > li {
+    margin: 0 0.5em; }
+
+.wizard > .actions a {
+  background-color: #4361ee;
+  color: #fff;
+  display: block;
+  padding: 0.5em 1em;
+  text-decoration: none;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px; }
+  .wizard > .actions a:hover, .wizard > .actions a:active {
+    background-color: #4361ee;
+    color: #fff;
+    display: block;
+    padding: 0.5em 1em;
+    text-decoration: none;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px; }
+
+.wizard > .actions .disabled a {
+  background: #ebedf2;
+  color: #888ea8; }
+  .wizard > .actions .disabled a:hover, .wizard > .actions .disabled a:active {
+    background: #ebedf2;
+    color: #888ea8; }
+
+/*
+    Tabcontrol
+*/
+.tabcontrol > .steps {
+  position: relative;
+  display: block;
+  width: 100%; }
+  .tabcontrol > .steps > ul {
+    position: relative;
+    margin: 6px 0 0 0;
+    top: 1px;
+    z-index: 1; }
+    .tabcontrol > .steps > ul > li {
+      float: left;
+      margin: 5px 2px 0 0;
+      padding: 1px;
+      -webkit-border-top-left-radius: 5px;
+      -webkit-border-top-right-radius: 5px;
+      -moz-border-radius-topleft: 5px;
+      -moz-border-radius-topright: 5px;
+      border-top-left-radius: 5px;
+      border-top-right-radius: 5px; }
+      .tabcontrol > .steps > ul > li:hover {
+        background: #edecec;
+        border: 1px solid #bbb;
+        padding: 0; }
+      .tabcontrol > .steps > ul > li.current {
+        background: #fff;
+        border: 1px solid #bbb;
+        border-bottom: 0 none;
+        padding: 0 0 1px 0;
+        margin-top: 0; }
+        .tabcontrol > .steps > ul > li.current > a {
+          padding: 15px 30px 10px 30px; }
+      .tabcontrol > .steps > ul > li > a {
+        color: #5f5f5f;
+        display: inline-block;
+        border: 0 none;
+        margin: 0;
+        padding: 10px 30px;
+        text-decoration: none; }
+        .tabcontrol > .steps > ul > li > a:hover {
+          text-decoration: none; }
+
+.tabcontrol > .content {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  height: 35em;
+  overflow: hidden;
+  border-top: 1px solid #bbb;
+  padding-top: 20px; }
+  .tabcontrol > .content > .body {
+    float: left;
+    position: absolute;
+    width: 95%;
+    height: 95%;
+    padding: 2.5%; }
+    .tabcontrol > .content > .body ul {
+      list-style: disc !important; }
+      .tabcontrol > .content > .body ul > li {
+        display: list-item; }
+
+/*Vertical*/
+.wizard.vertical > .steps a {
+  margin-bottom: 5px; }
+  .wizard.vertical > .steps a:hover, .wizard.vertical > .steps a:active {
+    margin-bottom: 5px; }
+
+.wizard > .steps .disabled a {
+  background-color: transparent;
+  color: #888ea8; }
+  .wizard > .steps .disabled a:hover, .wizard > .steps .disabled a:active {
+    background-color: transparent;
+    color: #888ea8; }
+
+.wizard > .steps a {
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0; }
+  .wizard > .steps a:hover, .wizard > .steps a:active {
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0; }
+
+.wizard > .steps .current a .number, .wizard > .steps .current a:hover .number, .wizard > .steps .current a:active .number {
+  border-color: #fff; }
+
+.wizard > .steps .done a .number, .wizard > .steps .done a:hover .number, .wizard > .steps .done a:active .number, .wizard > .steps .done a .number, .wizard > .steps .done a:hover .number, .wizard > .steps .done a:active .number {
+  border-color: #fff; }
+
+.wizard > .steps .last.current.done a {
+  background: #4361ee;
+  color: #fff; }
+  .wizard > .steps .last.current.done a:hover, .wizard > .steps .last.current.done a:active {
+    background: #4361ee;
+    color: #fff; }
+
+.wizard > .actions > ul > li {
+  margin: 0; }
+
+.wizard > .steps .done a {
+  border-bottom: 3px solid #888ea8; }
+  .wizard > .steps .done a:hover, .wizard > .steps .done a:active {
+    border-bottom: 3px solid #888ea8; }
+
+.wizard > .steps .number {
+  font-size: 15px;
+  padding: 2px 5px;
+  border: 1px solid #fff;
+  border-radius: 20px; }
+
+/*  Simple */
+/*Circle*/
+.circle.wizard ul, .circle.wizard.tabcontrol ul {
+  display: flex;
+  justify-content: space-around; }
+
+.circle.wizard .actions ul {
+  justify-content: space-between; }
+
+.circle.wizard > .steps > ul > li {
+  float: none;
+  width: 100%;
+  text-align: center;
+  position: relative; }
+
+.circle.wizard > .steps .number {
+  font-size: 15px;
+  border: 2px solid #000;
+  border-radius: 53px;
+  display: block;
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 50px;
+  height: 50px;
+  margin-left: auto;
+  margin-right: auto; }
+
+.circle.wizard > .steps .current a {
+  background: transparent;
+  color: #3b3f5c;
+  cursor: default;
+  text-align: center; }
+  .circle.wizard > .steps .current a:hover, .circle.wizard > .steps .current a:active {
+    background: transparent;
+    color: #3b3f5c;
+    cursor: default;
+    text-align: center; }
+
+.circle.wizard > .steps ul li::after, .circle.wizard > .steps ul li::before {
+  content: '';
+  z-index: 9;
+  display: block;
+  position: absolute;
+  top: 35px;
+  width: 235%;
+  height: 3px;
+  right: 0;
+  left: 0;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: #f1f2f3; }
+
+.circle.wizard > .content {
+  margin-top: 0; }
+
+.circle.wizard > .steps a .number, .circle.wizard > .steps a:hover .number, .circle.wizard > .steps a:active .number {
+  border-color: #ebedf2;
+  background-color: #fff;
+  position: relative;
+  z-index: 10;
+  text-align: center; }
+
+.circle.wizard > .steps .disabled a .number, .circle.wizard > .steps .disabled a:hover .number, .circle.wizard > .steps .disabled a:active .number {
+  border-color: #f1f2f3;
+  background-color: #f1f2f3; }
+
+.circle.wizard > .steps .current:not(.done) a .number, .circle.wizard > .steps .current:not(.done) a:hover .number, .circle.wizard > .steps .current:not(.done) a:active .number {
+  border-color: #4361ee;
+  background-color: #4361ee;
+  color: #fff; }
+
+.circle.wizard > .steps .done a {
+  border: none;
+  background-color: transparent;
+  color: #3b3f5c;
+  font-weight: 600; }
+  .circle.wizard > .steps .done a:hover, .circle.wizard > .steps .done a:active {
+    border: none;
+    background-color: transparent;
+    color: #3b3f5c;
+    font-weight: 600; }
+  .circle.wizard > .steps .done a .number {
+    border-color: #4361ee; }
+
+.circle.wizard > .steps ul li.done::after, .circle.wizard > .steps ul li.done::before {
+  background-color: #4361ee; }
+
+.circle.wizard > .steps .last.current.done a {
+  border: none;
+  background-color: transparent;
+  color: #3b3f5c; }
+  .circle.wizard > .steps .last.current.done a:hover, .circle.wizard > .steps .last.current.done a:active {
+    border: none;
+    background-color: transparent;
+    color: #3b3f5c; }
+
+.wizard > .steps .done a, .classic.wizard > .steps .current a, .wizard > .steps .disabled a {
+  cursor: pointer !important; }
+
+/* Pill  */
+.pill.wizard ul, .pill.wizard.tabcontrol ul {
+  display: flex;
+  justify-content: space-around; }
+
+.pill.wizard .actions ul {
+  justify-content: space-between; }
+
+.pill.wizard > .steps > ul > li {
+  float: none;
+  width: 100%;
+  text-align: center;
+  position: relative; }
+
+.pill.wizard > .steps a i {
+  display: block;
+  font-size: 24px; }
+
+.pill.wizard > .steps li.disabled {
+  opacity: .5; }
+
+.pill.wizard > .steps .disabled a {
+  background-color: #ebedf2;
+  color: #3b3f5c;
+  border: solid 1px #bfc9d4; }
+  .pill.wizard > .steps .disabled a:hover, .pill.wizard > .steps .disabled a:active {
+    background-color: #ebedf2;
+    color: #3b3f5c;
+    border: solid 1px #bfc9d4; }
+
+.pill.wizard > .steps a {
+  font-size: 15px;
+  font-weight: 600;
+  margin-right: 6px;
+  border-radius: 20px; }
+  .pill.wizard > .steps a:hover, .pill.wizard > .steps a:active {
+    font-size: 15px;
+    font-weight: 600;
+    margin-right: 6px;
+    border-radius: 20px; }
+
+.pill.wizard > .content {
+  margin-top: 0;
+  background: transparent; }
+
+.pill.wizard > .steps a .number, .pill.wizard > .steps a:hover .number, .pill.wizard > .steps a:active .number {
+  border: none; }
+
+.pill.wizard > .steps .done a {
+  border: 1px solid #bfc9d4;
+  background-color: transparent;
+  color: #3b3f5c; }
+  .pill.wizard > .steps .done a:hover, .pill.wizard > .steps .done a:active {
+    border: 1px solid #bfc9d4;
+    background-color: transparent;
+    color: #3b3f5c; }
+  .pill.wizard > .steps .done a .number {
+    border-color: #4361ee; }
+
+.pill.wizard > .steps ul li.done:not(.last)::after, .pill.wizard > .steps ul li.done:not(.last)::before {
+  background-color: #4361ee; }
+
+.pill.wizard > .steps .last.current.done a {
+  border: 1px solid #bfc9d4;
+  background-color: transparent;
+  color: #3b3f5c; }
+  .pill.wizard > .steps .last.current.done a:hover, .pill.wizard > .steps .last.current.done a:active {
+    border: 1px solid #bfc9d4;
+    background-color: transparent;
+    color: #3b3f5c; }
+
+/*Circle Vertical*/
+.circle.vertical.wizard {
+  display: flex;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap; }
+  .circle.vertical.wizard > .steps {
+    -ms-flex: 0 0 30%;
+    flex: 0 0 30%;
+    max-width: 30%; }
+  .circle.vertical.wizard ul, .circle.vertical.wizard.tabcontrol ul {
+    display: block; }
+  .circle.vertical.wizard .actions ul {
+    justify-content: space-between;
+    display: flex; }
+  .circle.vertical.wizard > .steps > ul > li {
+    float: none;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    padding-top: 26px;
+    padding-bottom: 10px; }
+  .circle.vertical.wizard > .steps .number {
+    font-size: 15px;
+    border: 2px solid #000;
+    border-radius: 53px;
+    display: block;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    margin-left: auto;
+    margin-right: auto; }
+  .circle.vertical.wizard > .steps .current a {
+    background: transparent;
+    color: #3b3f5c;
+    cursor: default;
+    text-align: center; }
+    .circle.vertical.wizard > .steps .current a:hover, .circle.vertical.wizard > .steps .current a:active {
+      background: transparent;
+      color: #3b3f5c;
+      cursor: default;
+      text-align: center; }
+  .circle.vertical.wizard > .steps ul li::after, .circle.vertical.wizard > .steps ul li::before {
+    content: '';
+    z-index: 9;
+    display: block;
+    position: absolute;
+    top: 0;
+    width: 3px;
+    height: 110%;
+    right: 0;
+    left: 0;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #f1f2f3; }
+  .circle.vertical.wizard > .content {
+    -ms-flex: 0 0 50%;
+    flex: 0 0 70%;
+    max-width: 70%;
+    margin: 0; }
+  .circle.vertical.wizard > .steps a .number, .circle.vertical.wizard > .steps a:hover .number, .circle.vertical.wizard > .steps a:active .number {
+    border-color: #3b3f5c;
+    background-color: #fff;
+    position: relative;
+    z-index: 10;
+    text-align: center; }
+  .circle.vertical.wizard > .steps .disabled a .number, .circle.vertical.wizard > .steps .disabled a:hover .number, .circle.vertical.wizard > .steps .disabled a:active .number {
+    border-color: #f1f2f3;
+    background-color: #f1f2f3; }
+  .circle.vertical.wizard > .steps .done a {
+    border: none;
+    background-color: transparent;
+    color: #3b3f5c; }
+    .circle.vertical.wizard > .steps .done a:hover, .circle.vertical.wizard > .steps .done a:active {
+      border: none;
+      background-color: transparent;
+      color: #3b3f5c; }
+    .circle.vertical.wizard > .steps .done a .number {
+      border-color: #4361ee; }
+  .circle.vertical.wizard > .steps ul li.done::after, .circle.vertical.wizard > .steps ul li.done::before {
+    background-color: #4361ee; }
+  .circle.vertical.wizard > .steps .last.current.done a {
+    border: none;
+    background-color: transparent;
+    color: #3b3f5c; }
+    .circle.vertical.wizard > .steps .last.current.done a:hover, .circle.vertical.wizard > .steps .last.current.done a:active {
+      border: none;
+      background-color: transparent;
+      color: #3b3f5c; }
+
+/*Pill Vertical*/
+.pills.vertical.wizard {
+  display: flex;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap; }
+  .pills.vertical.wizard > .steps {
+    -ms-flex: 0 0 30%;
+    flex: 0 0 30%;
+    max-width: 30%; }
+  .pills.vertical.wizard ul, .pills.vertical.wizard.tabcontrol ul {
+    display: flow-root;
+    justify-content: space-around; }
+  .pills.vertical.wizard .actions ul {
+    justify-content: space-between;
+    display: flex; }
+  .pills.vertical.wizard > .steps > ul > li {
+    float: none;
+    width: 100%;
+    text-align: center;
+    position: relative; }
+  .pills.vertical.wizard > .steps .number {
+    font-size: 15px;
+    border: none;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center; }
+  .pills.vertical.wizard > .steps li.disabled {
+    opacity: .5; }
+  .pills.vertical.wizard > .steps a {
+    font-weight: 600;
+    margin-right: 6px;
+    border-radius: 20px;
+    margin-bottom: 25px; }
+    .pills.vertical.wizard > .steps a:hover, .pills.vertical.wizard > .steps a:active {
+      font-weight: 600;
+      margin-right: 6px;
+      border-radius: 20px;
+      margin-bottom: 25px; }
+  .pills.vertical.wizard > .steps .disabled a {
+    background-color: #ebedf2;
+    color: #3b3f5c;
+    border: solid 1px #bfc9d4; }
+    .pills.vertical.wizard > .steps .disabled a:hover, .pills.vertical.wizard > .steps .disabled a:active {
+      background-color: #ebedf2;
+      color: #3b3f5c;
+      border: solid 1px #bfc9d4; }
+  .pills.vertical.wizard > .steps .current a {
+    cursor: default;
+    text-align: center;
+    border-radius: 30px;
+    margin-right: 5px; }
+    .pills.vertical.wizard > .steps .current a:hover, .pills.vertical.wizard > .steps .current a:active {
+      cursor: default;
+      text-align: center;
+      border-radius: 30px;
+      margin-right: 5px; }
+  .pills.vertical.wizard > .content {
+    -ms-flex: 0 0 50%;
+    flex: 0 0 70%;
+    max-width: 70%;
+    margin: 0; }
+  .pills.vertical.wizard > .steps .done a {
+    border: 1px solid #bfc9d4;
+    background-color: transparent;
+    color: #3b3f5c; }
+    .pills.vertical.wizard > .steps .done a:hover, .pills.vertical.wizard > .steps .done a:active {
+      border: 1px solid #bfc9d4;
+      background-color: transparent;
+      color: #3b3f5c; }
+    .pills.vertical.wizard > .steps .done a .number {
+      border-color: #4361ee; }
+  .pills.vertical.wizard > .steps ul li.done:not(.last)::after, .pills.vertical.wizard > .steps ul li.done:not(.last)::before {
+    background-color: #4361ee; }
+  .pills.vertical.wizard > .steps .last.current.done a {
+    border: 1px solid #bfc9d4;
+    background-color: transparent;
+    color: #3b3f5c; }
+    .pills.vertical.wizard > .steps .last.current.done a:hover, .pills.vertical.wizard > .steps .last.current.done a:active {
+      border: 1px solid #bfc9d4;
+      background-color: transparent;
+      color: #3b3f5c; }
+
+/*For Validation Checkbox */
+label.custom-control-label {
+  margin-left: 30px; }
+
+@media (max-width: 575px) {
+  .pill.wizard ul[role="tablist"] {
+    display: block; }
+    .pill.wizard ul[role="tablist"] li {
+      margin-bottom: 2rem; }
+  .pills.vertical.wizard > .steps, .pills.vertical.wizard > .content {
+    -ms-flex: 0 0 100%;
+    flex: 0 0 100%;
+    max-width: 100%; } }
