@@ -106,7 +106,7 @@ RUN nuclei -update-templates
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
-RUN pip3 install --upgrade setuptools pip && \
+RUN pip3 install --upgrade setuptools==72.1.0 pip && \
     pip3 install -r /tmp/requirements.txt --no-cache-dir
 
 # install eyewitness
