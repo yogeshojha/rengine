@@ -430,8 +430,29 @@ def get_domain_from_subdomain(subdomain):
 	Returns:
 		str: Domain name.
 	"""
-	ext = tldextract.extract(subdomain)
-	return '.'.join(ext[1:3])
+	# ext = tldextract.extract(subdomain)
+	# return '.'.join(ext[1:3])
+
+	if not validators.domain(subdomain):
+		return None
+	
+	# Use tldextract to parse the subdomain
+	extracted = tldextract.extract(subdomain)
+
+	# if tldextract recognized the tld then its the final result
+	if extracted.suffix:
+		domain = f"{extracted.domain}.{extracted.suffix}"
+	else:
+		# Fallback method for unknown TLDs, like .clouds or .local etc
+		parts = subdomain.split('.')
+		if len(parts) >= 2:
+			domain = '.'.join(parts[-2:])
+		else:
+			return None
+		
+	# Validate the domain before returning
+	return domain if validators.domain(domain) else None
+
 
 
 def sanitize_url(http_url):
