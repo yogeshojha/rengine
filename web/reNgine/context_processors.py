@@ -1,5 +1,3 @@
-import requests
-
 from dashboard.models import *
 from django.conf import settings
 
@@ -14,12 +12,6 @@ def projects(request):
     return {
         'projects': projects,
         'current_project': project
-    }
-
-def misc(request):
-    externalIp = requests.get('https://checkip.amazonaws.com').text.strip()
-    return {
-        'external_ip': externalIp
     }
 
 def version_context(request):
