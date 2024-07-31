@@ -215,16 +215,6 @@ def tool_specific_settings(request, slug):
                     file.close()
                     upload_count += 1
             messages.add_message(request, messages.INFO, f'{upload_count} GF files successfully uploaded')
-                original_filename = re.sub(r'[\\/*?:"<>|]',"", original_filename)
-                file_extension = original_filename.split('.')[len(gf_file.name.split('.'))-1]
-                if file_extension == 'json':
-                    base_filename = os.path.splitext(original_filename)[0]
-                    file_path = '/root/.gf/' + base_filename + '.json'
-                    file = open(file_path, "w")
-                    file.write(gf_file.read().decode("utf-8"))
-                    file.close()
-                    upload_count += 1
-            messages.add_message(request, messages.INFO, f'{upload_count} GF files successfully uploaded')
             return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'nucleiFileUpload[]' in request.FILES:
