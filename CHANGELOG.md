@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.1.2
+
+**Release Date: July 30, 2024**
+
+## What's Changed
+
+### Security update
+* (Security) CVE-2024-41661 Fix Authenticated command injection in WAF detection tool reported by @n-thumann Advisory https://github.com/yogeshojha/rengine/security/advisories/GHSA-fx7f-f735-vgh4
+
+### Bug Fixes
+
+* Fix issue while initiating periodic and clocked scan #1322 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1328
+* Fix 500 error on "Test Hackerone api Key" by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1332
+* UI Typos and bug Fixes #1333 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1334
+* Fix error during tool update Fixes #1152 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1335
+* Upgrade setuptools to 72.1.0 to resolve installation error by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1338
+* (chores) Fix github pages build by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1339
+* Fix subdomain import for subdomains with suffixes more than 4 chars Fixes #1128 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1340
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.1...v2.1.2
+
+
 ## 2.1.1
 
 **Release Date: July 20, 2024**
