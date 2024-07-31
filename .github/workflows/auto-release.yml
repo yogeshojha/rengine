@@ -1,4 +1,4 @@
-name: Update Version and Changelog
+name: Update Version and Changelog and Readme
 
 on:
   release:
@@ -42,6 +42,10 @@ jobs:
             sed '1,2d' CHANGELOG.md >> CHANGELOG.md.new
           fi
           mv CHANGELOG.md.new CHANGELOG.md
+
+      - name: Update README.md
+        run: |
+          sed -i 's|https://img.shields.io/badge/version-.*-informational|https://img.shields.io/badge/version-${{ steps.get_release.outputs.tag_name }}-informational|g' README.md
 
       - name: Commit and push changes
         run: |
