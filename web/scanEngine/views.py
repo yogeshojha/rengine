@@ -174,9 +174,7 @@ def interesting_lookup(request, slug):
             form = InterestingLookupForm(request.POST, instance=lookup_keywords)
         else:
             form = InterestingLookupForm(request.POST or None)
-        print(form.errors)
         if form.is_valid():
-            print(form.cleaned_data)
             form.save()
             messages.add_message(
                 request,
@@ -198,7 +196,6 @@ def tool_specific_settings(request, slug):
     # check for incoming form requests
     if request.method == "POST":
 
-        print(request.FILES)
         if 'gfFileUpload[]' in request.FILES:
             gf_files = request.FILES.getlist('gfFileUpload[]')
             upload_count = 0
@@ -536,7 +533,6 @@ def add_tool(request, slug):
     form = ExternalToolForm()
     if request.method == "POST":
         form = ExternalToolForm(request.POST)
-        print(form.errors)
         if form.is_valid():
             # add tool
             install_command = form.data['install_command']
