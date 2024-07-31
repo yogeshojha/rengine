@@ -176,12 +176,14 @@ class NotificationForm(forms.ModelForm):
 
     slack_hook_url = forms.CharField(
         required=False,
-        widget=forms.TextInput(
+        widget=forms.PasswordInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control h-100",
                 "id": "slack_hook_url",
                 "placeholder": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
-            }))
+            },
+            render_value=True
+        ))
 
     send_to_lark = forms.BooleanField(
         required=False,
@@ -193,12 +195,14 @@ class NotificationForm(forms.ModelForm):
 
     lark_hook_url = forms.CharField(
         required=False,
-        widget=forms.TextInput(
+        widget=forms.PasswordInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control h-100",
                 "id": "lark_hook_url",
                 "placeholder": "https://open.larksuite.com/open-apis/bot/v2/hook/XXXXXXXXXXXXXXXXXXXXXXXX",
-            }))
+            },
+            render_value=True
+        ))
 
     send_to_discord = forms.BooleanField(
         required=False,
@@ -210,12 +214,14 @@ class NotificationForm(forms.ModelForm):
 
     discord_hook_url = forms.CharField(
         required=False,
-        widget=forms.TextInput(
+        widget=forms.PasswordInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control h-100",
                 "id": "discord_hook_url",
                 "placeholder": "https://discord.com/api/webhooks/000000000000000000/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-            }))
+            },
+            render_value=True
+        ))
 
     send_to_telegram = forms.BooleanField(
         required=False,
@@ -227,21 +233,25 @@ class NotificationForm(forms.ModelForm):
 
     telegram_bot_token = forms.CharField(
         required=False,
-        widget=forms.TextInput(
+        widget=forms.PasswordInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control h-100",
                 "id": "telegram_bot_token",
                 "placeholder": "Bot Token",
-            }))
+            },
+            render_value=True
+        ))
 
     telegram_bot_chat_id = forms.CharField(
         required=False,
-        widget=forms.TextInput(
+        widget=forms.PasswordInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control h-100",
                 "id": "telegram_bot_chat_id",
                 "placeholder": "Bot Chat ID",
-            }))
+            },
+            render_value=True
+        ))
 
     send_scan_status_notif = forms.BooleanField(
         required=False,
@@ -399,12 +409,14 @@ class HackeroneForm(forms.ModelForm):
 
     api_key = forms.CharField(
         required=True,
-        widget=forms.TextInput(
+        widget=forms.PasswordInput(
             attrs={
                 "class": "form-control form-control-lg",
                 "id": "api_key",
                 "placeholder": "Hackerone API Token",
-            }))
+            },
+            render_value=True
+        ))
 
     send_critical = forms.BooleanField(
         required=False,
