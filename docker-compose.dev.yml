@@ -94,9 +94,6 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
-      # THIS IS A MUST FOR CHECKING UPDATE, EVERYTIME A COMMIT IS MERGED INTO
-      # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
-      - RENGINE_CURRENT_VERSION='2.1.1'
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github

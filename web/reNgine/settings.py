@@ -39,6 +39,22 @@ DEFAULT_RETRIES = env.int('DEFAULT_RETRIES', default=1)
 DEFAULT_THREADS = env.int('DEFAULT_THREADS', default=30)
 DEFAULT_GET_GPT_REPORT = env.bool('DEFAULT_GET_GPT_REPORT', default=True)
 
+# Rengine version
+# reads current version from a file called .version
+VERSION_FILE = os.path.join(BASE_DIR, '.version')
+if os.path.exists(VERSION_FILE):
+    with open(VERSION_FILE, 'r') as f:
+        _version = f.read().strip()
+else:
+    _version = 'unknown'
+
+# removes v from _version if exists
+if _version.startswith('v'):
+    _version = _version[1:]
+
+RENGINE_CURRENT_VERSION = _version
+
+
 # Globals
 ALLOWED_HOSTS = ['*']
 SECRET_KEY = first_run(SECRET_FILE, BASE_DIR)
@@ -103,7 +119,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'reNgine.context_processors.projects',
-                'reNgine.context_processors.misc'
+                'reNgine.context_processors.misc',
+                'reNgine.context_processors.version_context'
             ],
     },
 }]
