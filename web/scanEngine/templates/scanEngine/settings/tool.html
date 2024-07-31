@@ -39,7 +39,8 @@ Settings, API Keys & Tool Settings
           {% csrf_token %}
           <div class="mb-3 mb-xl-0">
             <label for="gfFileUpload" class="form-label">Upload GF Pattern JSON</label>
-            <input class="form-control" type="file" id="gfFileUpload" accept="application/JSON" name="gfFileUpload">
+            <small class="text-muted">(Multiple files can be uploaded.)</small>
+            <input class="form-control" type="file" id="gfFileUpload" accept=".json" name="gfFileUpload[]" multiple>
           </div>
           <input type="submit" class="btn btn-primary mt-3 float-end" value="Upload">
         </form>
