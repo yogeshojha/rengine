@@ -114,7 +114,8 @@ Settings, API Keys & Tool Settings
               {% csrf_token %}
               <div class="form-group mb-4 mt-3">
                 <label for="nucleiFileUpload" class="form-label">Upload Nuclei Template YAML</label>
-                <input type="file" class="form-control" name="nucleiFileUpload" id="nucleiFileUpload" accept=".yaml">
+                <small class="text-muted">(Multiple files can be uploaded.)</small>
+                <input type="file" class="form-control" name="nucleiFileUpload[]" id="nucleiFileUpload" accept=".yaml,.yml" multiple>
               </div>
               <input type="submit" class="btn btn-primary mt-3 float-end" value="Upload">
             </form>

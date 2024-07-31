@@ -215,20 +215,35 @@ def tool_specific_settings(request, slug):
                     file.close()
                     upload_count += 1
             messages.add_message(request, messages.INFO, f'{upload_count} GF files successfully uploaded')
+                original_filename = re.sub(r'[\\/*?:"<>|]',"", original_filename)
+                file_extension = original_filename.split('.')[len(gf_file.name.split('.'))-1]
+                if file_extension == 'json':
+                    base_filename = os.path.splitext(original_filename)[0]
+                    file_path = '/root/.gf/' + base_filename + '.json'
+                    file = open(file_path, "w")
+                    file.write(gf_file.read().decode("utf-8"))
+                    file.close()
+                    upload_count += 1
+            messages.add_message(request, messages.INFO, f'{upload_count} GF files successfully uploaded')
             return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
-        elif 'nucleiFileUpload' in request.FILES:
-            nuclei_file = request.FILES['nucleiFileUpload']
-            file_extension = nuclei_file.name.split('.')[len(nuclei_file.name.split('.'))-1]
-            if file_extension != 'yaml':
+        elif 'nucleiFileUpload[]' in request.FILES:
+            nuclei_files = request.FILES.getlist('nucleiFileUpload[]')
+            upload_count = 0
+            for nuclei_file in nuclei_files:
+                original_filename = nuclei_file.name if isinstance(nuclei_file.name, str) else nuclei_file.name.decode('utf-8')
+                original_filename = re.sub(r'[\\/*?:"<>|]',"", original_filename)
+                file_extension = original_filename.split('.')[len(nuclei_file.name.split('.'))-1]
+                if file_extension in ['yaml', 'yml']:
+                    base_filename = os.path.splitext(original_filename)[0]
+                    file_path = '/root/nuclei-templates/' + base_filename + '.yaml'
+                    file = open(file_path, "w")
+                    file.write(nuclei_file.read().decode("utf-8"))
+                    file.close()
+                    upload_count += 1
+            if upload_count == 0:
                 messages.add_message(request, messages.ERROR, 'Invalid Nuclei Pattern, upload only *.yaml extension')
-            else:
-                filename = re.sub(r'[\\/*?:"<>|]',"", nuclei_file.name)
-                file_path = '/root/nuclei-templates/' + filename
-                file = open(file_path, "w")
-                file.write(nuclei_file.read().decode("utf-8"))
-                file.close()
-                messages.add_message(request, messages.INFO, f'Nuclei Pattern {nuclei_file.name[:-5]} successfully uploaded')
+            messages.add_message(request, messages.INFO, f'{upload_count} Nuclei Patterns successfully uploaded')
             return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'nuclei_config_text_area' in request.POST:

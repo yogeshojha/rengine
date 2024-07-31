@@ -311,3 +311,8 @@ LOGGING = {
         }
     },
 }
+
+'''
+File upload settings
+'''
+DATA_UPLOAD_MAX_NUMBER_FIELDS = None
