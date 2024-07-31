@@ -118,7 +118,6 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'reNgine.context_processors.projects',
-                'reNgine.context_processors.misc',
                 'reNgine.context_processors.version_context'
             ],
     },
