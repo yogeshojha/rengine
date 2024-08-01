@@ -259,12 +259,7 @@ def start_scan_ui(request, slug, domain_id):
         subdomains_in = [s.rstrip() for s in subdomains_in if s]
         subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
-        paths = request.POST['filterPath'].split()
-        filterPath = [s.rstrip() for s in paths if s]
-        if len(filterPath) > 0:
-            filterPath = filterPath[0]
-        else:
-            filterPath = ''
+        starting_point_url = request.POST['startingPointUrl'].split()
 
         # Get engine type
         engine_id = request.POST['scan_mode']
@@ -286,7 +281,7 @@ def start_scan_ui(request, slug, domain_id):
             'results_dir': '/usr/src/scan_results',
             'imported_subdomains': subdomains_in,
             'out_of_scope_subdomains': subdomains_out,
-            'url_filter': filterPath,
+            'starting_point_url': starting_point_url,
             'initiated_by_id': request.user.id
         }
         initiate_scan.apply_async(kwargs=kwargs)
@@ -306,11 +301,14 @@ def start_scan_ui(request, slug, domain_id):
         .filter(default_engine=False)
         .count()
     )
+    excluded_paths = ','.join(DEFAULT_EXCLUDED_PATHS)
     context = {
         'scan_history_active': 'active',
         'domain': domain,
         'engines': engine,
-        'custom_engine_count': custom_engine_count}
+        'custom_engine_count': custom_engine_count,
+        'excluded_paths': excluded_paths
+    }
     return render(request, 'startScan/start_scan_ui.html', context)
 
 

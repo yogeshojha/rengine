@@ -9,6 +9,7 @@ Start Scan
 {% block custom_js_css_link %}
 <link href="{% static 'plugins/jquery-step/jquery.steps.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/accordions/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/selectize/css/selectize.bootstrap3.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -64,15 +65,33 @@ Initiating scan for {{domain.name}}
               </div>
             </div>
 
-            <h4>Filters</h4>
-            <div class="">
+            <h4>URL Scope and Exclusions</h4>
+            <div class="mb-4">
               <div class="mb-3">
-                <h4 class="text-info">Filters (Optional)</h4>
-                <span class="">You can filter on a specific path for <b>{{domain.name}}</b>.</span>
-                <br>
-                <label for="filterPath" class="form-label mt-1">Path filter</label>
-                <textarea class="form-control" id="filterPath" name="filterPath" rows="6" spellcheck="false"></textarea>
+                <h4 class="text-info">Starting Point URL (Optional)</h4>
+                <input type="email" class="form-control" id="startingPointUrl" placeholder="e.g. /home">
+                <small class="form-text text-muted">
+                  Defines where the scan should begin. Leave blank to scan from the root (/) and include all subdomains. 
+                  </br>
+                  If a path is provided (e.g., /home), the scan will focus only on that path and its subpaths, 
+                  skipping subdomain scanning. For example, entering '/home' for {{domain.name}} will scan 
+                  https://{{domain.name}}/home, but not other parts of {{domain.name}} or its subdomains.
+                </small>
               </div>
+              <div class="mb-3">
+                <h4 class="text-warning">Excluded Paths (Optional)</h4>
+                <input type="text" id="excludedPaths" value="{{excluded_paths}}">
+                <small class="form-text text-muted">
+                Enter paths or regex patterns to exclude from the scan. Type a path or pattern and press Enter to add it.
+                Supports both exact path matching and regex patterns. Examples:<br>
+                • <code>/admin</code> excludes paths starting with '/admin'<br>
+                • <code>/images/.*\.jpg</code> excludes all .jpg files in the images directory<br>
+                • <code>/static/(?:css|js)/</code> excludes all contents of /static/css/ and /static/js/<br>
+                <b>Common exclusions:</b><br>
+                • Static assets: <code>/images/.*</code>, <code>/css/.*</code><br>
+                <br>
+                <b>Note: Use regex patterns carefully. While exclusions can speed up scans, be cautious not to exclude critical areas that may contain vulnerabilities. Test your patterns to ensure they match as intended.</b>
+              </small>
             </div>
           </div>
         </form>
@@ -85,40 +104,13 @@ Initiating scan for {{domain.name}}
 
 {% block page_level_script %}
 <script src="{% static 'plugins/jquery-step/jquery.steps.min.js' %}"></script>
+<script src="{% static 'plugins/selectize/js/standalone/selectize.min.js' %}"></script>
 <script type="text/javascript">
-var buttonEnabled = true;
-var globalTimeout = 0;
 
-function initTimer() {
-  if (globalTimeout) clearTimeout(globalTimeout);
-  globalTimeout = setTimeout(updateButton, 400);
-}
+$(document).ready(function() {
+  var buttonEnabled = true;
+  var globalTimeout = 0;
 
-function disableNext(){
-  var nextButton = $(".actions ul li:nth-child(2) a");
-  nextButton.attr("href", "#");
-  buttonEnabled = $(".actions ul li:nth-child(2)").addClass("disabled").attr("aria-disabled", "true");
-}
-
-function enableNext(){
-  var nextButton = $(".actions ul li:nth-child(2) a");
-  nextButton.attr("href", "#next");
-  buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
-}
-
-function updateButton(){
-  $('a[role="menuitem"]').addClass('btn btn-primary waves-effect waves-light');
-  var text = $("input[type=radio][name=scan_mode]").val();
-  if(text === ''){
-    disableNext();
-    return false;
-  }else{
-    enableNext();
-    return true;
-  }
-}
-
-$(function(){
   $("#select_engine").steps({
     headerTag: "h4",
     bodyTag: "div",
@@ -134,8 +126,41 @@ $(function(){
   $("input[type=radio][name=scan_mode]").change(initTimer).keyup(initTimer);
   disableNext();
   $('a[role="menuitem"]').addClass('text-white');
+
+  function initTimer() {
+    if (globalTimeout) clearTimeout(globalTimeout);
+    globalTimeout = setTimeout(updateButton, 400);
+  }
+  function disableNext(){
+    var nextButton = $(".actions ul li:nth-child(2) a");
+    nextButton.attr("href", "#");
+    buttonEnabled = $(".actions ul li:nth-child(2)").addClass("disabled").attr("aria-disabled", "true");
+  }
+
+  function enableNext(){
+    var nextButton = $(".actions ul li:nth-child(2) a");
+    nextButton.attr("href", "#next");
+    buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
+  }
+
+  function updateButton(){
+    $('a[role="menuitem"]').addClass('btn btn-primary waves-effect waves-light');
+    var text = $("input[type=radio][name=scan_mode]").val();
+    if(text === ''){
+      disableNext();
+      return false;
+    }else{
+      enableNext();
+      return true;
+    }
+  }
+
+  $('#excludedPaths').selectize({
+    persist: false,
+    createOnBlur: true,
+    create: true,
+  });
+
 });
-
-
 </script>
 {% endblock page_level_script %}
