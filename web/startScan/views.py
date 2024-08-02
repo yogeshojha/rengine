@@ -260,7 +260,10 @@ def start_scan_ui(request, slug, domain_id):
         subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
         starting_point_url = request.POST['startingPointUrl'].strip()
-        excluded_paths = request.POST['excludedPaths']
+        excluded_paths = request.POST['excludedPaths'] # string separated by ,
+
+        # split excluded paths by ,
+        excluded_paths = [path.strip() for path in excluded_paths.split(',')]
 
         # Get engine type
         engine_id = request.POST['scan_mode']

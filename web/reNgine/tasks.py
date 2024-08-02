@@ -2839,13 +2839,8 @@ def http_crawl(
 	input_path = f'{self.results_dir}/httpx_input.txt'
 	history_file = f'{self.results_dir}/commands.txt'
 	if urls: # direct passing URLs to check
-		print(vars(self).items())
 		if self.starting_point_url:
 			urls = [u for u in urls if self.starting_point_url in u]
-
-		# exclude urls by pattern
-		if self.excluded_paths:
-			urls = exclude_urls_by_patterns(self.excluded_paths, urls)
 
 		with open(input_path, 'w') as f:
 			f.write('\n'.join(urls))
@@ -2856,6 +2851,10 @@ def http_crawl(
 			ctx=ctx
 		)
 		# logger.debug(urls)
+
+	# exclude urls by pattern
+	if self.excluded_paths:
+		urls = exclude_urls_by_patterns(self.excluded_paths, urls)
 
 	# If no URLs found, skip it
 	if not urls:

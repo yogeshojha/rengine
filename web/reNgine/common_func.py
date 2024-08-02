@@ -1173,6 +1173,7 @@ def exclude_urls_by_patterns(exclude_paths, urls):
 		Returns:
 			list of str: A new list containing URLs that don't match any exclusion pattern.
 	"""
+	logger.info('exclude_urls_by_patterns')
 	if not exclude_paths:
 		# if no exclude paths are passed and is empty list return all urls as it is
 		return urls
