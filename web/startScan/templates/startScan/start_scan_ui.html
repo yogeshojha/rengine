@@ -69,7 +69,7 @@ Initiating scan for {{domain.name}}
             <div class="mb-4">
               <div class="mb-3">
                 <h4 class="text-info">Starting Point URL (Optional)</h4>
-                <input type="email" class="form-control" id="startingPointUrl" placeholder="e.g. /home">
+                <input type="email" class="form-control" id="startingPointUrl" placeholder="e.g. /home" name="startingPointUrl">
                 <small class="form-text text-muted">
                   Defines where the scan should begin. Leave blank to scan from the root (/) and include all subdomains. 
                   </br>
@@ -80,7 +80,7 @@ Initiating scan for {{domain.name}}
               </div>
               <div class="mb-3">
                 <h4 class="text-warning">Excluded Paths (Optional)</h4>
-                <input type="text" id="excludedPaths" value="{{excluded_paths}}">
+                <input type="text" id="excludedPaths" value="{{excluded_paths}}" name="excludedPaths">
                 <small class="form-text text-muted">
                 Enter paths or regex patterns to exclude from the scan. Type a path or pattern and press Enter to add it.
                 Supports both exact path matching and regex patterns. Examples:<br>

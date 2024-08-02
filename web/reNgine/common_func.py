@@ -1159,3 +1159,48 @@ def update_or_create_port(port_number, service_name=None, description=None):
 		created = True
 	finally:
 		return port, created
+	
+
+def exclude_urls_by_patterns(exclude_paths, urls):
+	"""
+		Filter out URLs based on a list of exclusion patterns provided from user
+		
+		Args:
+			exclude_patterns (list of str): A list of patterns to exclude. 
+			These can be plain path or regex.
+			urls (list of str): A list of URLs to filter from.
+			
+		Returns:
+			list of str: A new list containing URLs that don't match any exclusion pattern.
+	"""
+	if not exclude_paths:
+		# if no exclude paths are passed and is empty list return all urls as it is
+		return urls
+	
+	compiled_patterns = []
+	for path in exclude_paths:
+		# treat each path as either regex or plain path
+		try:
+			raw_pattern = r"{}".format(path)
+			compiled_patterns.append(re.compile(raw_pattern))
+		except re.error:
+			compiled_patterns.append(path)
+
+	filtered_urls = []
+	for url in urls:
+		exclude = False
+		for pattern in compiled_patterns:
+			if isinstance(pattern, re.Pattern):
+				if pattern.search(url):
+					exclude = True
+					break
+			else:
+				if pattern in url: #if the word matches anywhere in url exclude
+					exclude = True
+					break
+		
+		# if none conditions matches then add the url to filtered urls
+		if not exclude:
+			filtered_urls.append(url)
+
+	return filtered_urls

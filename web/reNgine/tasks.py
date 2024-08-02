@@ -128,6 +128,7 @@ def initiate_scan(
 			'domain_id': domain.id,
 			'results_dir': scan.results_dir,
 			'starting_point_url': starting_point_url,
+			'excluded_paths': excluded_paths,
 			'yaml_configuration': config,
 			'out_of_scope_subdomains': out_of_scope_subdomains
 		}
@@ -227,7 +228,9 @@ def initiate_subscan(
 		engine_id=None,
 		scan_type=None,
 		results_dir=RENGINE_RESULTS,
-		starting_point_url=''):
+		starting_point_url='',
+		excluded_paths=[],
+	):
 	"""Initiate a new subscan.
 
 	Args:
@@ -237,6 +240,7 @@ def initiate_subscan(
 		scan_type (int): Scan type (periodic, live).
 		results_dir (str): Results directory.
 		starting_point_url (str): URL path. Default: ''
+		excluded_paths (list): Excluded paths. Default: [], url paths to exclude from scan.
 	"""
 
 	# Get Subdomain, Domain and ScanHistory
@@ -294,7 +298,8 @@ def initiate_subscan(
 		'subdomain_id': subdomain.id,
 		'yaml_configuration': config,
 		'results_dir': results_dir,
-		'starting_point_url': starting_point_url
+		'starting_point_url': starting_point_url,
+		'excluded_paths': excluded_paths,
 	}
 
 	# Create initial endpoints in DB: find domain HTTP endpoint so that HTTP
@@ -1936,6 +1941,10 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	if self.starting_point_url:
 		all_urls = [url for url in all_urls if self.starting_point_url in url]
 
+	# if exclude_paths is found, then remove urls matching those paths
+	if self.excluded_paths:
+		all_urls = exclude_urls_by_patterns(self.excluded_paths, all_urls)
+
 	# Write result to output path
 	with open(self.output_path, 'w') as f:
 		f.write('\n'.join(all_urls))
@@ -2830,8 +2839,14 @@ def http_crawl(
 	input_path = f'{self.results_dir}/httpx_input.txt'
 	history_file = f'{self.results_dir}/commands.txt'
 	if urls: # direct passing URLs to check
+		print(vars(self).items())
 		if self.starting_point_url:
 			urls = [u for u in urls if self.starting_point_url in u]
+
+		# exclude urls by pattern
+		if self.excluded_paths:
+			urls = exclude_urls_by_patterns(self.excluded_paths, urls)
+
 		with open(input_path, 'w') as f:
 			f.write('\n'.join(urls))
 	else:
