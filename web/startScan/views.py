@@ -259,7 +259,8 @@ def start_scan_ui(request, slug, domain_id):
         subdomains_in = [s.rstrip() for s in subdomains_in if s]
         subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
-        starting_point_url = request.POST['startingPointUrl'].split()
+        starting_point_url = request.POST['startingPointUrl'].strip()
+        excluded_paths = request.POST['excludedPaths']
 
         # Get engine type
         engine_id = request.POST['scan_mode']
@@ -282,6 +283,7 @@ def start_scan_ui(request, slug, domain_id):
             'imported_subdomains': subdomains_in,
             'out_of_scope_subdomains': subdomains_out,
             'starting_point_url': starting_point_url,
+            'excluded_paths': excluded_paths,
             'initiated_by_id': request.user.id
         }
         initiate_scan.apply_async(kwargs=kwargs)
