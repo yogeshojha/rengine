@@ -74,10 +74,6 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Make directory for app
 WORKDIR /usr/src/app
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
 ENV GO111MODULE=on 
 RUN printf "\
     github.com/jaeles-project/gospider@latest\n\
