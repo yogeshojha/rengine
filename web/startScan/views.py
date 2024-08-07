@@ -332,7 +332,6 @@ def start_multiple_scan(request, slug):
             subdomains_out = [s.rstrip() for s in subdomains_out if s]
             starting_point_url = request.POST['startingPointUrl'].strip()
             excluded_paths = request.POST['excludedPaths'] # string separated by ,
-
             # split excluded paths by ,
             excluded_paths = [path.strip() for path in excluded_paths.split(',')]
 
@@ -732,6 +731,15 @@ def start_organization_scan(request, id, slug):
     if request.method == "POST":
         engine_id = request.POST['scan_mode']
 
+        subdomains_in = request.POST['importSubdomainTextArea'].split()
+        subdomains_in = [s.rstrip() for s in subdomains_in if s]
+        subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
+        subdomains_out = [s.rstrip() for s in subdomains_out if s]
+        starting_point_url = request.POST['startingPointUrl'].strip()
+        excluded_paths = request.POST['excludedPaths'] # string separated by ,
+        # split excluded paths by ,
+        excluded_paths = [path.strip() for path in excluded_paths.split(',')]
+
         # Start Celery task for each organization's domains
         for domain in organization.get_domains():
             scan_history_id = create_scan_object(
@@ -748,9 +756,10 @@ def start_organization_scan(request, id, slug):
                 'scan_type': LIVE_SCAN,
                 'results_dir': '/usr/src/scan_results',
                 'initiated_by_id': request.user.id,
-                # TODO: Add this to multiple scan view
-                # 'imported_subdomains': subdomains_in,
-                # 'out_of_scope_subdomains': subdomains_out
+                'imported_subdomains': subdomains_in,
+                'out_of_scope_subdomains': subdomains_out,
+                'starting_point_url': starting_point_url,
+                'excluded_paths': excluded_paths,
             }
             initiate_scan.apply_async(kwargs=kwargs)
             scan.save()
@@ -768,13 +777,17 @@ def start_organization_scan(request, id, slug):
     engine = EngineType.objects.order_by('engine_name')
     custom_engine_count = EngineType.objects.filter(default_engine=False).count()
     domain_list = organization.get_domains()
+    excluded_paths = ','.join(DEFAULT_EXCLUDED_PATHS)
+
     context = {
         'organization_data_active': 'true',
         'list_organization_li': 'active',
         'organization': organization,
         'engines': engine,
         'domain_list': domain_list,
-        'custom_engine_count': custom_engine_count}
+        'custom_engine_count': custom_engine_count,
+        'excluded_paths': excluded_paths
+    }
     return render(request, 'organization/start_scan.html', context)
 
 
