@@ -300,8 +300,8 @@ def start_scan_ui(request, slug, domain_id):
         return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
     # GET request
-    engine = EngineType.objects.order_by('engine_name')
-    custom_engine_count = (
+    engines = EngineType.objects.order_by('engine_name')
+    custom_engines_count = (
         EngineType.objects
         .filter(default_engine=False)
         .count()
@@ -310,8 +310,8 @@ def start_scan_ui(request, slug, domain_id):
     context = {
         'scan_history_active': 'active',
         'domain': domain,
-        'engines': engine,
-        'custom_engine_count': custom_engine_count,
+        'engines': engines,
+        'custom_engines_count': custom_engines_count,
         'excluded_paths': excluded_paths
     }
     return render(request, 'startScan/start_scan_ui.html', context)
@@ -325,11 +325,20 @@ def start_multiple_scan(request, slug):
             # if scan mode is available, then start the scan
             # get engine type
             engine_id = request.POST['scan_mode']
-            list_of_domains = request.POST['list_of_domain_id']
+            list_of_domain_ids = request.POST['domain_ids']
+            subdomains_in = request.POST['importSubdomainTextArea'].split()
+            subdomains_in = [s.rstrip() for s in subdomains_in if s]
+            subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
+            subdomains_out = [s.rstrip() for s in subdomains_out if s]
+            starting_point_url = request.POST['startingPointUrl'].strip()
+            excluded_paths = request.POST['excludedPaths'] # string separated by ,
+
+            # split excluded paths by ,
+            excluded_paths = [path.strip() for path in excluded_paths.split(',')]
 
             grouped_scans = []
 
-            for domain_id in list_of_domains.split(","):
+            for domain_id in list_of_domain_ids.split(","):
                 # Start the celery task
                 scan_history_id = create_scan_object(
                     host_id=domain_id,
@@ -344,10 +353,11 @@ def start_multiple_scan(request, slug):
                     'engine_id': engine_id,
                     'scan_type': LIVE_SCAN,
                     'results_dir': '/usr/src/scan_results',
-                    'initiated_by_id': request.user.id
-                    # TODO: Add this to multiple scan view
-                    # 'imported_subdomains': subdomains_in,
-                    # 'out_of_scope_subdomains': subdomains_out
+                    'initiated_by_id': request.user.id,
+                    'imported_subdomains': subdomains_in,
+                    'out_of_scope_subdomains': subdomains_out,
+                    'starting_point_url': starting_point_url,
+                    'excluded_paths': excluded_paths,
                 }
 
                 _scan_task = initiate_scan.si(**kwargs)
@@ -383,12 +393,14 @@ def start_multiple_scan(request, slug):
         .filter(default_engine=False)
         .count()
     )
+    excluded_paths = ','.join(DEFAULT_EXCLUDED_PATHS)
     context = {
         'scan_history_active': 'active',
         'engines': engines,
         'domain_list': list_of_domain_name,
         'domain_ids': domain_ids,
-        'custom_engine_count': custom_engine_count
+        'custom_engine_count': custom_engine_count,
+        'excluded_paths': excluded_paths
     }
     return render(request, 'startScan/start_multiple_scan_ui.html', context)
 
