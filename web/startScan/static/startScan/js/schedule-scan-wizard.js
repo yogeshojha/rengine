@@ -59,7 +59,7 @@ $("#schedule_scan_steps").steps({
   cssClass: "pill wizard",
   enableKeyNavigation: false,
   onStepChanging: updateButton,
-  labels: { finish: "Start Scan" },
+  labels: { finish: "Schedule Scan" },
   onInit: function (event, current) {
     $('a[role="menuitem"]').addClass("text-white");
     $(".actions ul li:nth-child(3) a").attr(
