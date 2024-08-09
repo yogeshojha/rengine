@@ -20,6 +20,7 @@ from celery.utils.log import get_task_logger
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Q
 from dotted_dict import DottedDict
+from tempfile import NamedTemporaryFile
 
 from reNgine.common_serializers import *
 from reNgine.definitions import *
@@ -968,12 +969,15 @@ def reverse_whois(lookup_keyword):
 	response = requests.get(url, headers=headers)
 	soup = BeautifulSoup(response.content, 'lxml')
 	table = soup.find("table", {"border" : "1"})
-	for row in table or []:
-		dom = row.findAll('td')[0].getText()
-		created_on = row.findAll('td')[1].getText()
-		if dom == 'Domain Name':
-			continue
-		domains.append({'name': dom, 'created_on': created_on})
+	try:
+		for row in table or []:
+			dom = row.findAll('td')[0].getText()
+			created_on = row.findAll('td')[1].getText()
+			if dom == 'Domain Name':
+				continue
+			domains.append({'name': dom, 'created_on': created_on})
+	except Exception as e:
+		logger.error(f'Error while fetching reverse whois info: {e}')
 	return domains
 
 
