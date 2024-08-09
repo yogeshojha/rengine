@@ -3706,11 +3706,15 @@ def query_whois(target, force_reload_whois=False):
 	domain_info = DottedDict()
 
 	domain_info.historical_ips = get_domain_historical_ip_address(target)
-	domain_info.related_tlds = fetch_related_tlds_and_domains(target)
-	related_domains = reverse_whois(target)
-	# add to related domains from related_tlds
+	domain_info.related_tlds, tlsx_related_domain = fetch_related_tlds_and_domains(target)
 
-	domain_info.relaed_domains = related_domains
+	related_domains = reverse_whois(target)
+	if tlsx_related_domain:
+		related_domains += tlsx_related_domain
+	
+	# remove duplicate ones
+	related_domains = list(set(related_domains))
+	domain_info.related_domains = related_domains
 
 	whois_data = fetch_whois_data_using_netlas(target)
 	if not whois_data['status']:
