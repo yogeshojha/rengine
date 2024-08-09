@@ -1,0 +1,43 @@
+name: Install rengine inside GH CI for test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  install_base:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install base using install.sh (non-interactive mode)
+        run: |
+          export TERM=${TERM:-xterm}
+          chmod +x ./install.sh
+          chmod +x ./scripts/uninstall.sh
+          sudo bash ./install.sh -n
+
+      - name: Install Chrome and hxn
+        run: |
+          which google-chrome >/dev/null 2>&1 && echo "Chrome already installed" || sudo apt install -y google-chrome
+          wget https://github.com/pwnwriter/haylxon/releases/download/v1.0.0/haylxon-1.0.0-x86_64-unknown-linux-gnu.tar.gz
+          tar -xvf haylxon-1.0.0-x86_64-unknown-linux-gnu.tar.gz
+          sudo mv haylxon-1.0.0/hxn /usr/local/bin/hxn && echo "hxn installed"
+
+      - name: Take screenshot of the app
+        run: |
+          hxn -b $(which google-chrome) -u http://127.0.0.1:8000 -o $(pwd)
+          
+      - name: Upload it to 0x0.st
+        run: |
+          curl -s -F "file=@http1270018000.png" https://0x0.st
+
+      - name: Gracefullly removing rengine
+        run: |
+          yes | sudo bash ./scripts/uninstall.sh
