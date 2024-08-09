@@ -74,7 +74,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Install Rust for orjson
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-RUN pip install maturin
+RUN pip3 install maturin
 
 # Make directory for app
 WORKDIR /usr/src/app
