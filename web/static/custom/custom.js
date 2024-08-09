@@ -1412,7 +1412,7 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 function fetch_whois(domain_name, force_reload_whois=false) {
 	// this function will fetch WHOIS record for any subdomain and also display
 	// snackbar once whois is fetched
-	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`;
+	var url = `/api/tools/whois/?format=json&target=${domain_name}`;
 	if (force_reload_whois) {
 		url+='&is_reload=true'
 	}
@@ -1456,7 +1456,7 @@ function fetch_whois(domain_name, force_reload_whois=false) {
 }
 
 function get_target_whois(domain_name) {
-    const url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`;
+    const url = `/api/tools/whois/?format=json&target=${domain_name}`;
     
     Swal.fire({
         title: `Fetching WHOIS details for ${domain_name}...`,
@@ -1507,7 +1507,7 @@ function get_target_whois(domain_name) {
 }
 
 function get_domain_whois(domain_name, show_add_target_btn = false) {
-    const url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`;
+    const url = `/api/tools/whois/?format=json&target=${domain_name}`;
     
     Swal.fire({
         title: `Fetching WHOIS details for ${domain_name}...`,
@@ -1586,7 +1586,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 				<div class="row">
 					<div class="col-4">
 						<small class="sub-header">Domain</small>
-						<h5>${response.ip_domain}</h5>
+						<h5>${response.target}</h5>
 					</div>
 					<div class="col-4">
 						<small class="sub-header">Dnssec</small>
@@ -1877,7 +1877,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 
 	if (show_add_target_btn) {
 		content += `<div class="text-center">
-			<button class="btn btn-primary float-end mt-4" type="submit" id="search_whois_toolbox_btn" onclick="add_target('${response['ip_domain']}')">Add ${response['ip_domain']} as target</button>
+			<button class="btn btn-primary float-end mt-4" type="submit" id="search_whois_toolbox_btn" onclick="add_target('${response['target']}')">Add ${response['target']} as target</button>
 		</div>`
 	}
 
