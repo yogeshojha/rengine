@@ -3727,7 +3727,7 @@ def query_whois(target, force_reload_whois=False):
 	whois_data = whois_data['data']
 
 	parse_whois_data(domain_info, whois_data)
-	# saved_domain_info = save_domain_info_to_db(target, domain_info)
+	saved_domain_info = save_domain_info_to_db(target, domain_info)
 	return format_whois_response(domain_info)
 
 

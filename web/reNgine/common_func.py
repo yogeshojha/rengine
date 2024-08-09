@@ -1390,102 +1390,103 @@ def parse_dns_records(domain_info, dns):
 	})
 
 
-def save_domain_info_to_db(ip_domain, domain_info):
+def save_domain_info_to_db(target, domain_info):
 	"""Save domain info to the database."""
-	domain, _ = Domain.objects.get_or_create(name=ip_domain)
-	
-	# Create or update DomainInfo
-	domain_info_obj, created = DomainInfo.objects.get_or_create(domain=domain)
-	
-	# Update basic domain information
-	domain_info_obj.dnssec = domain_info.get('dnssec', False)
-	domain_info_obj.created = domain_info.get('created')
-	domain_info_obj.updated = domain_info.get('updated')
-	domain_info_obj.expires = domain_info.get('expires')
-	domain_info_obj.whois_server = domain_info.get('whois_server')
-	domain_info_obj.geolocation_iso = domain_info.get('registrant_country')
+	if Domain.objects.filter(name=target).exists():
+		domain, _ = Domain.objects.get_or_create(name=target)
+		
+		# Create or update DomainInfo
+		domain_info_obj, created = DomainInfo.objects.get_or_create(domain=domain)
+		
+		# Update basic domain information
+		domain_info_obj.dnssec = domain_info.get('dnssec', False)
+		domain_info_obj.created = domain_info.get('created')
+		domain_info_obj.updated = domain_info.get('updated')
+		domain_info_obj.expires = domain_info.get('expires')
+		domain_info_obj.whois_server = domain_info.get('whois_server')
+		domain_info_obj.geolocation_iso = domain_info.get('registrant_country')
 
-	# Save or update Registrar
-	registrar, _ = Registrar.objects.get_or_create(
-		name=domain_info.get('registrar_name', ''),
-		defaults={
-			'email': domain_info.get('registrar_email'),
-			'phone': domain_info.get('registrar_phone'),
-			'url': domain_info.get('registrar_url'),
-		}
-	)
-	domain_info_obj.registrar = registrar
-
-	# Save or update Registrations (registrant, admin, tech)
-	for role in ['registrant', 'admin', 'tech']:
-		registration, _ = DomainRegistration.objects.get_or_create(
-			name=domain_info.get(f'{role}_name', ''),
+		# Save or update Registrar
+		registrar, _ = Registrar.objects.get_or_create(
+			name=domain_info.get('registrar_name', ''),
 			defaults={
-				'organization': domain_info.get(f'{role}_organization'),
-				'address': domain_info.get(f'{role}_address'),
-				'city': domain_info.get(f'{role}_city'),
-				'state': domain_info.get(f'{role}_state'),
-				'zip_code': domain_info.get(f'{role}_zip_code'),
-				'country': domain_info.get(f'{role}_country'),
-				'email': domain_info.get(f'{role}_email'),
-				'phone': domain_info.get(f'{role}_phone'),
-				'fax': domain_info.get(f'{role}_fax'),
-				'id_str': domain_info.get(f'{role}_id'),
+				'email': domain_info.get('registrar_email'),
+				'phone': domain_info.get('registrar_phone'),
+				'url': domain_info.get('registrar_url'),
 			}
 		)
-		setattr(domain_info_obj, role, registration)
+		domain_info_obj.registrar = registrar
 
-	# Save domain statuses
-	domain_info_obj.status.clear()
-	for status in domain_info.get('status', []):
-		status_obj, _ = WhoisStatus.objects.get_or_create(name=status)
-		domain_info_obj.status.add(status_obj)
-
-	# Save name servers
-	domain_info_obj.name_servers.clear()
-	for ns in domain_info.get('ns_records', []):
-		ns_obj, _ = NameServer.objects.get_or_create(name=ns)
-		domain_info_obj.name_servers.add(ns_obj)
-
-	# Save DNS records
-	domain_info_obj.dns_records.clear()
-	for record_type in ['a', 'mx', 'txt']:
-		for record in domain_info.get(f'{record_type}_records', []):
-			dns_record, _ = DNSRecord.objects.get_or_create(
-				name=record,
-				type=record_type
+		# Save or update Registrations (registrant, admin, tech)
+		for role in ['registrant', 'admin', 'tech']:
+			registration, _ = DomainRegistration.objects.get_or_create(
+				name=domain_info.get(f'{role}_name', ''),
+				defaults={
+					'organization': domain_info.get(f'{role}_organization'),
+					'address': domain_info.get(f'{role}_address'),
+					'city': domain_info.get(f'{role}_city'),
+					'state': domain_info.get(f'{role}_state'),
+					'zip_code': domain_info.get(f'{role}_zip_code'),
+					'country': domain_info.get(f'{role}_country'),
+					'email': domain_info.get(f'{role}_email'),
+					'phone': domain_info.get(f'{role}_phone'),
+					'fax': domain_info.get(f'{role}_fax'),
+					'id_str': domain_info.get(f'{role}_id'),
+				}
 			)
-			domain_info_obj.dns_records.add(dns_record)
+			setattr(domain_info_obj, role, registration)
 
-	# Save related domains and TLDs
-	domain_info_obj.related_domains.clear()
-	for related_domain in domain_info.get('related_domains', []):
-		related_domain_obj, _ = RelatedDomain.objects.get_or_create(name=related_domain)
-		domain_info_obj.related_domains.add(related_domain_obj)
+		# Save domain statuses
+		domain_info_obj.status.clear()
+		for status in domain_info.get('status', []):
+			status_obj, _ = WhoisStatus.objects.get_or_create(name=status)
+			domain_info_obj.status.add(status_obj)
 
-	domain_info_obj.related_tlds.clear()
-	for related_tld in domain_info.get('related_tlds', []):
-		related_tld_obj, _ = RelatedDomain.objects.get_or_create(name=related_tld)
-		domain_info_obj.related_tlds.add(related_tld_obj)
+		# Save name servers
+		domain_info_obj.name_servers.clear()
+		for ns in domain_info.get('ns_records', []):
+			ns_obj, _ = NameServer.objects.get_or_create(name=ns)
+			domain_info_obj.name_servers.add(ns_obj)
 
-	# Save historical IPs
-	domain_info_obj.historical_ips.clear()
-	for ip_info in domain_info.get('historical_ips', []):
-		historical_ip, _ = HistoricalIP.objects.get_or_create(
-			ip=ip_info['ip'],
-			defaults={
-				'owner': ip_info.get('owner'),
-				'location': ip_info.get('location'),
-				'last_seen': ip_info.get('last_seen'),
-			}
-		)
-		domain_info_obj.historical_ips.add(historical_ip)
+		# Save DNS records
+		domain_info_obj.dns_records.clear()
+		for record_type in ['a', 'mx', 'txt']:
+			for record in domain_info.get(f'{record_type}_records', []):
+				dns_record, _ = DNSRecord.objects.get_or_create(
+					name=record,
+					type=record_type
+				)
+				domain_info_obj.dns_records.add(dns_record)
 
-	# Save the DomainInfo object
-	domain_info_obj.save()
+		# Save related domains and TLDs
+		domain_info_obj.related_domains.clear()
+		for related_domain in domain_info.get('related_domains', []):
+			related_domain_obj, _ = RelatedDomain.objects.get_or_create(name=related_domain)
+			domain_info_obj.related_domains.add(related_domain_obj)
 
-	# Update the Domain object with the new DomainInfo
-	domain.domain_info = domain_info_obj
-	domain.save()
+		domain_info_obj.related_tlds.clear()
+		for related_tld in domain_info.get('related_tlds', []):
+			related_tld_obj, _ = RelatedDomain.objects.get_or_create(name=related_tld)
+			domain_info_obj.related_tlds.add(related_tld_obj)
 
-	return domain_info_obj
+		# Save historical IPs
+		domain_info_obj.historical_ips.clear()
+		for ip_info in domain_info.get('historical_ips', []):
+			historical_ip, _ = HistoricalIP.objects.get_or_create(
+				ip=ip_info['ip'],
+				defaults={
+					'owner': ip_info.get('owner'),
+					'location': ip_info.get('location'),
+					'last_seen': ip_info.get('last_seen'),
+				}
+			)
+			domain_info_obj.historical_ips.add(historical_ip)
+
+		# Save the DomainInfo object
+		domain_info_obj.save()
+
+		# Update the Domain object with the new DomainInfo
+		domain.domain_info = domain_info_obj
+		domain.save()
+
+		return domain_info_obj
