@@ -11,6 +11,7 @@ Schedule Scan
 <link href="{% static 'plugins/jquery-step/jquery.steps.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/accordions/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/flatpickr/flatpickr.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/selectize/css/selectize.bootstrap3.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -24,186 +25,13 @@ Scheduling scan for {{domain.name}}
 {% endblock page_title %}
 
 {% block main_content %}
-<div class="row">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-body">
-        <form method="POST" id="start-scan-form">
-          {% csrf_token %}
-          <div id="schedule_scan_steps">
-            <h3>Choose the scheduler</h3>
-            <div class="">
-              <div class="form-row">
-                <select class="form-select" onchange="schedulerChanged(this)" name="scheduled_mode" style="line-height: 2.0;">
-                  <option value="periodic">Periodic Scan</option>
-                  <option value="clocked">Clocked Scan</option>
-                </select>
-              </div>
-              <div class="tab-content" id="animateLineContent-4">
-                <div class="tab-pane fade show active" id="periodic-div" role="tabpanel" aria-labelledby="periodic-tab-tab">
-                  <div class="mb-4">
-                    <h5>Run scan every</h5>
-                    <div class="row">
-                      <div class='col-4'>
-                        <input id="t-text" type="number" name="frequency" value="30" class="form-control form-control-lg">
-                      </div>
-                      <div class="col-8">
-                        <select class="form-select" name="frequency_type" style="line-height: 2.0;">
-                          <option value="minutes">Minutes</option>
-                          <option value="hours">Hours</option>
-                          <option value="days">Days</option>
-                          <option value="weeks">Weeks</option>
-                          <option value="months">Months</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="tab-pane fade" id="clocked-div" role="tabpanel" aria-labelledby="clocked-tab-tab">
-                  <div class="mb-4">
-                    <h5>Run scan exactly at</h5>
-                    <div class="row">
-                      <div class="col-12">
-                        <div class="form-group mb-0">
-                          <!--<input id="clockedTime" value="{% now "Y-m-d H:i" %}" class="form-control flatpickr flatpickr-input active" type="text" placeholder="Select Date and time" name="scheduled_time">-->
-                          <input type="text" id="clockedTime" class="form-control form-control-lg flatpickr flatpickr-input active" placeholder="Select Scheduler Date and time" name="scheduled_time">
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <h3>Choose Scan Engine</h3>
-            <div class="">
-              <h4>Select Scan Engine</h4>
-              {% if custom_engine_count == 0 %}
-              <div class="alert bg-soft-primary border-0 mb-4" role="alert">
-                <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
-                <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">Create Custom Scan Engine</a>
-              </div>
-              {% endif %}
-              {% include "startScan/_items/scanEngine_select.html" %}
-            </div>
-            <h3>Import/Ignore Subdomains</h3>
-            <div class="">
-              <div class="mb-3">
-                <h4 class="text-info">Import Subdomains(Optional)</h4>
-                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
-                <br>
-                <div class="alert bg-soft-primary border-0 mt-1 mb-1" role="alert">
-                  <span class="">Separate the subdomains using <b>new line</b>. If the subdomain does not belong to <b>{{domain.name}}</b> it will be skipped.</span>
-                </div>
-                <label for="importSubdomainFormControlTextarea" class="form-label mt-1">Subdomains List</label>
-                <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false"></textarea>
-              </div>
-              <div class="mb-3">
-                <h4 class="text-warning">Out of Scope Subdomains(Optional)</h4>
-                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
-                <br>
-                <div class="alert bg-soft-warning border-0 mt-1 mb-1" role="alert">
-                  <span class="">Separate the out of scope subdomains/keywords using new line.(No regex currently supported.)</span>
-                </div>
-                <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">Out of Scope Subdomains List</label>
-                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false"></textarea>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
+  {% include "startScan/_items/schedule_scan_wizard.html" %}
 {% endblock main_content %}
 
 
 {% block page_level_script %}
 <script src="{% static 'plugins/jquery-step/jquery.steps.min.js' %}"></script>
 <script src="{% static 'plugins/flatpickr/flatpickr.min.js' %}"></script>
-<script type="text/javascript">
-
-function schedulerChanged(selectObject){
-  selectedValue = selectObject.value;
-  if (selectedValue == 'periodic') {
-    var clockedDiv = document.getElementById("clocked-div");
-    clockedDiv.classList.remove("show");
-    clockedDiv.classList.remove("active");
-    var periodicDiv = document.getElementById("periodic-div");
-    periodicDiv.classList.add("show");
-    periodicDiv.classList.add("active");
-  }
-  else if (selectedValue == 'clocked') {
-    var periodicDiv = document.getElementById("periodic-div");
-    periodicDiv.classList.remove("show");
-    periodicDiv.classList.remove("active");
-    var clockedDiv = document.getElementById("clocked-div");
-    clockedDiv.classList.add("show");
-    clockedDiv.classList.add("active");
-  }
-}
-
-
-var buttonEnabled = true;
-var globalTimeout = 0;
-
-
-function disableNext(){
-  var nextButton = $(".actions ul li:nth-child(2) a");
-  nextButton.attr("href", "#");
-  buttonEnabled = $(".actions ul li:nth-child(2)").addClass("disabled").attr("aria-disabled", "true");
-}
-
-function enableNext(){
-  var nextButton = $(".actions ul li:nth-child(2) a");
-  nextButton.attr("href", "#next");
-  buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
-}
-
-
-function updateButton(){
-  var text = $("input[type=radio][name=scan_mode]").val();
-  if(text === ''){
-    disableNext();
-    return false;
-  }else{
-    enableNext();
-    return true;
-  }
-}
-
-function initTimer() {
-  if (globalTimeout) clearTimeout(globalTimeout);
-  globalTimeout = setTimeout(updateButton, 400);
-}
-
-$(function(){
-  $("#schedule_scan_steps").steps({
-    headerTag: "h3",
-    bodyTag: "div",
-    transitionEffect: "slide",
-    cssClass: 'pill wizard',
-    enableKeyNavigation: false,
-    onStepChanging: updateButton,
-    labels: {finish: "Start Scan"},
-    onInit :function (event, current) {
-      $('a[role="menuitem"]').addClass('text-white');
-      $(".actions ul li:nth-child(3) a").attr('onclick', `$(this).closest('form').submit()`);
-      flatpickr(document.getElementById('clockedTime'), {
-        enableTime: true,
-        dateFormat: "Y-m-d H:i",
-      });
-      // $(".basic").select2({
-      //   minimumResultsForSearch: -1
-      // });
-    },
-    onStepChanged: function (event, currentIndex, priorIndex) {
-      if (currentIndex == 1){
-        $("input[type=radio][name=scan_mode]").change(initTimer).keyup(initTimer);
-        disableNext();
-      }
-    }
-  });
-});
-
-</script>
+<script src="{% static 'plugins/selectize/js/standalone/selectize.min.js' %}"></script>
+<script src="{% static 'startScan/js/schedule-scan-wizard.js' %}"></script>
 {% endblock page_level_script %}

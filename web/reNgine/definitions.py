@@ -423,6 +423,22 @@ DEFAULT_DIR_FILE_FUZZ_EXTENSIONS =  [
     '.pdf',
 ]
 
+# Default Excluded Paths during Initate Scan
+# Mostly static files and directories
+DEFAULT_EXCLUDED_PATHS = [
+    # Static assets (using regex patterns)
+    '/static/.*',
+    '/assets/.*',
+    '/css/.*',
+    '/js/.*',
+    '/images/.*',
+    '/img/.*',
+    '/fonts/.*',
+
+    # File types (using regex patterns)
+    '.*\.ico',
+]
+
 # Roles and Permissions
 PERM_MODIFY_SYSTEM_CONFIGURATIONS = 'modify_system_configurations'
 PERM_MODIFY_SCAN_CONFIGURATIONS = 'modify_scan_configurations'
