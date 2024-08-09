@@ -71,6 +71,11 @@ RUN ARCH=$(dpkg --print-architecture) \
     && rm ${GECKOPATH} \
     && mv geckodriver /usr/bin
 
+# Install Rust for orjson
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN pip3 install maturin
+
 # Make directory for app
 WORKDIR /usr/src/app
 
@@ -102,11 +107,11 @@ RUN nuclei -update-templates
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
-RUN pip3 install --upgrade setuptools==72.1.0 pip && \
-    pip3 install -r /tmp/requirements.txt --no-cache-dir
+RUN pip3 install --upgrade setuptools==72.1.0
+RUN pip3 install -r /tmp/requirements.txt --no-cache-dir
 
 # install eyewitness
-RUN python3 -m pip install --no-cache-dir fuzzywuzzy \
+RUN pip3 install --no-cache-dir fuzzywuzzy \
     selenium==4.9.1 \
     python-Levenshtein \
     pyvirtualdisplay \
