@@ -5,7 +5,7 @@ ARG GECKOVERSION=0.33.0
 ARG GOVERSION=1.21.5
 
 RUN ARCH=$(dpkg --print-architecture) \ 
-    && if [ "${ARCH}" ! "arm64" ] || [ "${ARCH}" ! "amd64" ]; then \
+    && if [ "${ARCH}" != "arm64" ] && [ "${ARCH}" != "amd64" ] && [ "${ARCH}" != "armhf" ]; then \
       echo "reNgine not supported, encountered unknown architecture: ${TARGETPLATFORM}" \
       && exit 1; \
     fi
@@ -55,16 +55,27 @@ RUN apt install -y --no-install-recommends \
 
 RUN add-apt-repository ppa:mozillateam/ppa
 
-RUN ARCH=$(dpkg --print-architecture) \ 
-    && wget https://go.dev/dl/go${GOVERSION}.linux-${ARCH}.tar.gz \
-    && tar -xvf go${GOVERSION}.linux-${ARCH}.tar.gz -C /usr/local \
-    && rm go${GOVERSION}.linux-${ARCH}.tar.gz
+# Download and install Go
+RUN ARCH=$(dpkg --print-architecture) \
+    && if [ "${ARCH}" = "arm64" ]; then \
+      GOFILE="go${GOVERSION}.linux-arm64.tar.gz"; \
+    elif [ "${ARCH}" = "amd64" ]; then \
+      GOFILE="go${GOVERSION}.linux-amd64.tar.gz"; \
+    elif [ "${ARCH}" = "armhf" ]; then \
+      GOFILE="go${GOVERSION}.linux-armv6l.tar.gz"; \
+    fi \
+    && wget https://go.dev/dl/${GOFILE} \
+    && tar -xvf ${GOFILE} -C /usr/local \
+    && rm ${GOFILE}
 
+# Download and install Geckodriver
 RUN ARCH=$(dpkg --print-architecture) \ 
     && if [ "${ARCH}" = "arm64" ]; then \
       GECKOPATH="geckodriver-v${GECKOVERSION}-linux-aarch64.tar.gz"; \
     elif [ "${ARCH}" = "amd64" ]; then \
       GECKOPATH="geckodriver-v${GECKOVERSION}-linux64.tar.gz"; \
+    elif [ "${ARCH}" = "armhf" ]; then \
+      GECKOPATH="geckodriver-v${GECKOVERSION}-linux-armv7l.tar.gz"; \
     fi \
     && wget https://github.com/mozilla/geckodriver/releases/download/v${GECKOVERSION}/${GECKOPATH} \
     && tar -xvf ${GECKOPATH} \
@@ -78,6 +89,10 @@ RUN pip3 install maturin
 
 # Make directory for app
 WORKDIR /usr/src/app
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
 ENV GO111MODULE=on 
 RUN printf "\
