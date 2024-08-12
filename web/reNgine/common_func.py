@@ -1348,11 +1348,11 @@ def parse_whois_data(domain_info, whois_data):
 
 	# Parse basic domain information
 	domain_info.update({
-		'created': whois.get('created_date'),
-		'expires': whois.get('expiration_date'),
-		'updated': whois.get('updated_date'),
-		'whois_server': whois.get('whois_server'),
-		'dnssec': bool(whois.get('dnssec')),
+		'created': whois.get('created_date', None),
+		'expires': whois.get('expiration_date', None),
+		'updated': whois.get('updated_date', None),
+		'whois_server': whois.get('whois_server', None),
+		'dnssec': bool(whois.get('dnssec', False)),
 		'status': whois.get('status', []),
 	})
 
@@ -1373,10 +1373,10 @@ def parse_whois_data(domain_info, whois_data):
 def parse_registrar_info(domain_info, registrar):
 	"""Parse registrar information."""
 	domain_info.update({
-		'registrar_name': registrar.get('name'),
-		'registrar_email': registrar.get('email'),
-		'registrar_phone': registrar.get('phone'),
-		'registrar_url': registrar.get('url'),
+		'registrar_name': registrar.get('name', None),
+		'registrar_email': registrar.get('email', None),
+		'registrar_phone': registrar.get('phone', None),
+		'registrar_url': registrar.get('url', None),
 	})
 
 def parse_registration_info(domain_info, registration, role):

@@ -3740,23 +3740,17 @@ def query_whois(target, force_reload_whois=False):
 					logger.error(f'An error occurred while fetching {func_name} for {target}: {str(e)}')
 					continue
 
+		logger.info(f'All concurrent whosi lookup tasks finished for target {target}')
+
 		if 'tlsx_related_domain' in locals():
 			related_domains += tlsx_related_domain
-
-		# whois_data = fetch_whois_data_using_netlas(target)
-		if whois_data is None or not whois_data['status']:
-			return {
-				'status': False, 
-				'target': target, 
-				'result': whois_data['message']
-			}
-		
 		
 		whois_data = whois_data.get('data', {})
+
 		# related domains can also be fetched from whois_data
 		whois_related_domains = whois_data.get('related_domains', [])
 		related_domains += whois_related_domains
-		
+
 		# remove duplicate ones
 		related_domains = list(set(related_domains))
 		domain_info.related_domains = related_domains
