@@ -1181,14 +1181,24 @@ def get_domain_info_from_db(target):
 		if not domain.insert_date:
 			domain.insert_date = timezone.now()
 			domain.save()
-		return extract_domain_info(domain.domain_info)
+		return extract_domain_info(domain)
 	except Domain.DoesNotExist:
 		return None
 	
-def extract_domain_info(domain_info_db):
-	"""Extract domain info from the domain_info_db."""
-	if not domain_info_db:
+def extract_domain_info(domain):
+	"""
+		Extract domain info from the domain_info_db.
+		Args:
+			domain: Domain object
+
+		Returns:
+			DottedDict: The domain info object.
+	"""
+	if not domain:
 		return DottedDict()
+	
+	domain_name = domain.name
+	domain_info_db = domain.domain_info
 	
 	try:
 		domain_info = DottedDict({
@@ -1245,6 +1255,8 @@ def extract_domain_info(domain_info_db):
 			}
 			for ip in domain_info_db.historical_ips.all()
 		]
+
+		domain_info['target'] = domain_name
 	except Exception as e:
 		logger.error(f'Error while extracting domain info: {e}')
 		domain_info = DottedDict()
@@ -1260,6 +1272,7 @@ def format_whois_response(domain_info):
 		Returns:
 			dict: The formatted whois response.	
 	"""
+	print(domain_info)
 	return {
 		'status': True,
 		'target': domain_info.get('target'),

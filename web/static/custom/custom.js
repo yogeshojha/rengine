@@ -1562,6 +1562,7 @@ function get_domain_whois(domain_name, show_add_target_btn = false) {
 
 
 function display_whois_on_modal(response, show_add_target_btn=false) {
+	console.log(response);
 	// this function will display whois data on modal, should be followed after get_domain_whois()
 	$('#modal_dialog').modal('show');
 	$('#modal-content').empty();
