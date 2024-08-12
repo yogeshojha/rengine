@@ -75,7 +75,7 @@ RUN ARCH=$(dpkg --print-architecture) \
     elif [ "${ARCH}" = "amd64" ]; then \
       GECKOPATH="geckodriver-v${GECKOVERSION}-linux64.tar.gz"; \
     elif [ "${ARCH}" = "armhf" ]; then \
-      GECKOPATH="geckodriver-v${GECKOVERSION}-linux-armv7l.tar.gz"; \
+      GECKOPATH="geckodriver-v${GECKOVERSION}-linux-aarch64.tar.gz"; \
     fi \
     && wget https://github.com/mozilla/geckodriver/releases/download/v${GECKOVERSION}/${GECKOPATH} \
     && tar -xvf ${GECKOPATH} \
