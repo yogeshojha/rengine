@@ -569,7 +569,7 @@ def get_cms_details(url):
 		try:
 			shutil.rmtree(cms_dir_path)
 		except Exception as e:
-			print(e)
+			logger.error(e)
 
 	return response
 
@@ -972,10 +972,10 @@ def reverse_whois(lookup_keyword):
 	try:
 		for row in table or []:
 			dom = row.findAll('td')[0].getText()
-			created_on = row.findAll('td')[1].getText()
+			# created_on = row.findAll('td')[1].getText() TODO: add this in 3.0
 			if dom == 'Domain Name':
 				continue
-			domains.append({'name': dom, 'created_on': created_on})
+			domains.append(dom)
 	except Exception as e:
 		logger.error(f'Error while fetching reverse whois info: {e}')
 	return domains
@@ -1272,7 +1272,6 @@ def format_whois_response(domain_info):
 		Returns:
 			dict: The formatted whois response.	
 	"""
-	print(domain_info)
 	return {
 		'status': True,
 		'target': domain_info.get('target'),

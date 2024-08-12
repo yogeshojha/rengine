@@ -3704,9 +3704,12 @@ def query_whois(target, force_reload_whois=False):
 	logger.info(f'Querying WHOIS information for {target} from WHOIS server...')
 
 	domain_info = DottedDict()
+	domain_info.target = target
 
 	domain_info.historical_ips = get_domain_historical_ip_address(target)
 	domain_info.related_tlds, tlsx_related_domain = fetch_related_tlds_and_domains(target)
+
+	logger.info('Identified historical ips, related TLDs and domains')
 
 	related_domains = reverse_whois(target)
 	if tlsx_related_domain:
