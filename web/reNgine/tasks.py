@@ -4844,19 +4844,20 @@ def sync_h1_bookmarked():
         # Fetch bookmarked programs and project details
         bookmarked_programs = fetch_h1_bookmarked()
         project = Project.objects.get(slug="default")
-        bookmarked_handles = {program['attributes']['handle'] for program in bookmarked_programs}
+        bookmarked_handles = {program['attributes']['handle']
+                              for program in bookmarked_programs}
 
-        # Get current organizations and their handles
+		# Get current organizations and their handles
         current_organizations = Organization.objects.filter(project=project)
         current_handles = {org.name for org in current_organizations}
 
-        # Delete organizations not in the bookmarked programs
+		# Delete organizations not in the bookmarked programs
         handles_to_delete = current_handles - bookmarked_handles
         for handle in handles_to_delete:
             try:
                 org_to_delete = get_object_or_404(Organization, name=handle, project=project)
-				for domain in org_to_delete.get_domains():
-					domain.delete()
+                for domain in org_to_delete.get_domains():
+                    domain.delete()
                 org_to_delete.delete()
                 logger.info(f'Deleted organization: {handle}')
             except Exception as e:
