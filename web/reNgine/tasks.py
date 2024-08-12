@@ -3693,45 +3693,85 @@ def query_whois(target, force_reload_whois=False):
 	Returns:
 		dict: WHOIS information.
 	"""
-	if not force_reload_whois:
-		logger.info(f'Querying WHOIS information for {target} from db...')
-		domain_info = get_domain_info_from_db(target)
-		if domain_info:
-			return format_whois_response(domain_info)
+	try:
+		if not force_reload_whois:
+			logger.info(f'Querying WHOIS information for {target} from db...')
+			domain_info = get_domain_info_from_db(target)
+			if domain_info:
+				return format_whois_response(domain_info)
+			
+		# Query WHOIS information as not found in db
+		logger.info(f'Whois info not found in db')
+		logger.info(f'Querying WHOIS information for {target} from WHOIS server...')
+
+		domain_info = DottedDict()
+		domain_info.target = target
+
+		whois_data = None
+		related_domains = []
+
+		with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+			futures_func = {
+				executor.submit(get_domain_historical_ip_address, target): 'historical_ips',
+				executor.submit(fetch_related_tlds_and_domains, target): 'related_tlds_and_domains',
+				executor.submit(reverse_whois, target): 'reverse_whois',
+				executor.submit(fetch_whois_data_using_netlas, target): 'whois_data',
+			}
+
+			for future in concurrent.futures.as_completed(futures_func):
+				func_name = futures_func[future]
+				try:
+					result = future.result()
+					if func_name == 'historical_ips':
+						domain_info.historical_ips = result
+					elif func_name == 'related_tlds_and_domains':
+						domain_info.related_tlds, tlsx_related_domain = result
+					elif func_name == 'reverse_whois':
+						related_domains = result
+					elif func_name == 'whois_data':
+						whois_data = result
+
+					logger.debug('*'*100)
+					logger.info(f'Task {func_name} finished for target {target}')
+					logger.debug(result)
+					logger.debug('*'*100)
+
+				except Exception as e:
+					logger.error(f'An error occurred while fetching {func_name} for {target}: {str(e)}')
+					continue
+
+		if 'tlsx_related_domain' in locals():
+			related_domains += tlsx_related_domain
+
+		# whois_data = fetch_whois_data_using_netlas(target)
+		if whois_data is None or not whois_data['status']:
+			return {
+				'status': False, 
+				'target': target, 
+				'result': whois_data['message']
+			}
 		
-	# Query WHOIS information as not found in db
-	logger.info(f'Whois info not found in db')
-	logger.info(f'Querying WHOIS information for {target} from WHOIS server...')
+		
+		whois_data = whois_data.get('data', {})
+		# related domains can also be fetched from whois_data
+		whois_related_domains = whois_data.get('related_domains', [])
+		related_domains += whois_related_domains
+		
+		# remove duplicate ones
+		related_domains = list(set(related_domains))
+		domain_info.related_domains = related_domains
 
-	domain_info = DottedDict()
-	domain_info.target = target
 
-	domain_info.historical_ips = get_domain_historical_ip_address(target)
-	domain_info.related_tlds, tlsx_related_domain = fetch_related_tlds_and_domains(target)
-
-	logger.info('Identified historical ips, related TLDs and domains')
-
-	related_domains = reverse_whois(target)
-	if tlsx_related_domain:
-		related_domains += tlsx_related_domain
-	
-	# remove duplicate ones
-	related_domains = list(set(related_domains))
-	domain_info.related_domains = related_domains
-
-	whois_data = fetch_whois_data_using_netlas(target)
-	if not whois_data['status']:
+		parse_whois_data(domain_info, whois_data)
+		saved_domain_info = save_domain_info_to_db(target, domain_info)
+		return format_whois_response(domain_info)
+	except Exception as e:
+		logger.error(f'An error occurred while querying WHOIS information for {target}: {str(e)}')
 		return {
 			'status': False, 
 			'target': target, 
-			'result': whois_data['message']
+			'result': f'An error occurred while querying WHOIS information for {target}: {str(e)}'
 		}
-	
-	whois_data = whois_data['data']
-
-	parse_whois_data(domain_info, whois_data)
-	saved_domain_info = save_domain_info_to_db(target, domain_info)
-	return format_whois_response(domain_info)
 
 
 def fetch_related_tlds_and_domains(domain):
@@ -3745,6 +3785,7 @@ def fetch_related_tlds_and_domains(domain):
 	Returns:
 		tuple: A tuple containing two lists (related_tlds, related_domains).
 	"""
+	logger.info(f"Fetching related TLDs and domains for {domain}")
 	related_tlds = set()
 	related_domains = set()
 	
@@ -3785,6 +3826,7 @@ def fetch_whois_data_using_netlas(target):
 		Returns:
 			dict: WHOIS information.
 	"""
+	logger.info(f'Fetching WHOIS data for {target} using Netlas...')
 	command = f'netlas host {target} -f json'
 	netlas_key = get_netlas_key()
 	if netlas_key:

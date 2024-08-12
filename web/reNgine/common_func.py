@@ -950,6 +950,7 @@ def reverse_whois(lookup_keyword):
 		Input: lookup keyword like email or registrar name
 		Returns a list of domains as string.
 	'''
+	logger.info(f'Querying reverse whois for {lookup_keyword}')
 	url = f"https://viewdns.info:443/reversewhois/?q={lookup_keyword}"
 	headers = {
 		"Sec-Ch-Ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"104\"",
@@ -987,6 +988,7 @@ def get_domain_historical_ip_address(domain):
 		This function will use viewdns to fetch historical IP address
 		for a domain
 	'''
+	logger.info(f'Fetching historical IP address for domain {domain}')
 	url = f"https://viewdns.info/iphistory/?domain={domain}"
 	headers = {
 		"Sec-Ch-Ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"104\"",
