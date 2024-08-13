@@ -11,7 +11,7 @@ class HistoricalIP(models.Model):
 	last_seen = models.CharField(max_length=500)
 
 	def __str__(self):
-		return self.name
+		return self.ip
 
 
 class RelatedDomain(models.Model):
