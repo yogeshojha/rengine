@@ -1,13 +1,15 @@
-name: 🚀 Build Docker image
+name: 🚀 Build and Push Docker image
 
 on:
   push:
     branches: [ master ]
+  release:
+    types: [published]
   schedule:
-    - cron: '0 0 */5 * *'
+    - cron: '0 0 */5 * *'  # Run every 5 days at midnight UTC
 
 jobs:
-  build:
+  build-and-push:
     name: 🐳 Build and Push Docker image
     runs-on: ubuntu-latest
     steps:
@@ -33,7 +35,10 @@ jobs:
           images: yogeshojha/rengine
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
             type=schedule,pattern={{date 'YYYYMMDD'}}
 
       - name: 🏗️ Build and push Docker image
@@ -41,7 +46,7 @@ jobs:
         with:
           context: web/
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

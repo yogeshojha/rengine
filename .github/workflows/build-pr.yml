@@ -32,8 +32,10 @@ jobs:
         with:
           images: yogeshojha/rengine
           tags: |
+            type=raw,value=pr-${{ github.event.pull_request.number }}
+            type=sha,prefix=sha-
+            type=ref,event=branch
             type=ref,event=pr
-            type=sha,prefix={{branch}}-
 
       - name: 🏗️ Build Docker image
         uses: docker/build-push-action@v5
