@@ -20,7 +20,6 @@ from celery.utils.log import get_task_logger
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Q
 from dotted_dict import DottedDict
-from tempfile import NamedTemporaryFile
 
 from reNgine.common_serializers import *
 from reNgine.definitions import *
