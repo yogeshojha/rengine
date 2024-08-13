@@ -234,6 +234,12 @@ $(document).ready(function() {
 				},
 				"targets": 16,
 			},
+			{
+				"render": function ( data, type, row ) {
+					return htmlEncode(data);
+				},
+				"targets": 17,
+			}
 		],
 		"initComplete": function(settings, json) {
 			api = this.api();
