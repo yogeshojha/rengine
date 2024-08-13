@@ -3694,6 +3694,8 @@ def query_whois(target, force_reload_whois=False):
 		dict: WHOIS information.
 	"""
 	try:
+		# TODO: Implement cache whois only for 48 hours otherwise get from whois server
+		# TODO: in 3.0
 		if not force_reload_whois:
 			logger.info(f'Querying WHOIS information for {target} from db...')
 			domain_info = get_domain_info_from_db(target)
