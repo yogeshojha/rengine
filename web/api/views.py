@@ -1126,13 +1126,15 @@ class ScanStatus(APIView):
 class Whois(APIView):
 	def get(self, request):
 		req = self.request
-		ip_domain = req.query_params.get('ip_domain')
-		if not (validators.domain(ip_domain) or validators.ipv4(ip_domain) or validators.ipv6(ip_domain)):
-			print(f'Ip address or domain "{ip_domain}" did not pass validator.')
+		target = req.query_params.get('target')
+		if not target:
+			return Response({'status': False, 'message': 'Target IP/Domain required!'})
+		if not (validators.domain(target) or validators.ipv4(target) or validators.ipv6(target)):
+			print(f'Ip address or domain "{target}" did not pass validator.')
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
 		is_force_update = req.query_params.get('is_reload')
 		is_force_update = True if is_force_update and 'true' == is_force_update.lower() else False
-		task = query_whois.apply_async(args=(ip_domain,is_force_update))
+		task = query_whois.apply_async(args=(target,is_force_update))
 		response = task.wait()
 		return Response(response)
 
