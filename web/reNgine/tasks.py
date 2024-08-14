@@ -1187,7 +1187,7 @@ def screenshot(self, ctx={}, description=None):
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 
 	# If intensity is normal, grab only the root endpoints of each subdomain
-	strict = True if intensity == 'normal' else False
+	strict = intensity == 'normal'
 
 	# Get URLs to take screenshot of
 	get_http_urls(
