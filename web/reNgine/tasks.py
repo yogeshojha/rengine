@@ -1729,7 +1729,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 			endpoint, created = save_endpoint(url, crawl=False, ctx=ctx)
 
 			# Continue to next line if endpoint returned is None
-			if endpoint == None:
+			if endpoint is None:
 				continue
 
 			# Save endpoint data from FFUF output
