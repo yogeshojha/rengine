@@ -1131,7 +1131,7 @@ class Whois(APIView):
 			print(f'Ip address or domain "{ip_domain}" did not pass validator.')
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
 		is_force_update = req.query_params.get('is_reload')
-		is_force_update = True if is_force_update and 'true' == is_force_update.lower() else False
+		is_force_update = bool(is_force_update and 'true' == is_force_update.lower())
 		task = query_whois.apply_async(args=(ip_domain,is_force_update))
 		response = task.wait()
 		return Response(response)
