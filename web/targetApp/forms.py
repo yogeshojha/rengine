@@ -73,7 +73,6 @@ class AddOrganizationForm(forms.Form):
         widget=forms.Select(
             attrs={
                 "class": "form-control select2-multiple",
-                "multiple": "multiple",
                 "data-toggle": "select2",
                 "data-width": "100%",
                 "multiple": "multiple",
