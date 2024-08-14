@@ -75,10 +75,13 @@ RUN pip3 install maturin
 # Set working directory
 WORKDIR /usr/src/app
 
-# Set Go environment variables
+# Set environment variables
+ENV HOME=/root
 ENV GOROOT=/usr/local/go
 ENV GOPATH=/go
 ENV PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+
+# Your other RUN commands go here
 
 # Install Go tools
 RUN printf "\
