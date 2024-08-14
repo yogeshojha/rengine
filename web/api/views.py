@@ -421,7 +421,7 @@ class FetchMostCommonVulnerability(APIView):
 					)
 
 
-			most_common_vulnerabilities = [vuln for vuln in most_common_vulnerabilities]
+			most_common_vulnerabilities = list(most_common_vulnerabilities)
 
 			if most_common_vulnerabilities:
 				response['status'] = True
