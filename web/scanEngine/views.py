@@ -160,10 +160,7 @@ def delete_wordlist(request, slug, id):
 @has_permission_decorator(PERM_MODIFY_INTERESTING_LOOKUP, redirect_url=FOUR_OH_FOUR_URL)
 def interesting_lookup(request, slug):
     lookup_keywords = None
-    context = {}
-    context['scan_engine_nav_active'] = 'active'
-    context['interesting_lookup_li'] = 'active'
-    context['engine_ul_show'] = 'show'
+    context = {'scan_engine_nav_active': 'active', 'interesting_lookup_li': 'active', 'engine_ul_show': 'show'}
     form = InterestingLookupForm()
     if InterestingLookupModel.objects.filter(custom_type=True).exists():
         lookup_keywords = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0]
