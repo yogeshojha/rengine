@@ -845,7 +845,7 @@ def create_report(request, id):
     secondary_color = '#212121'
     # get report type
     report_type = request.GET['report_type'] if 'report_type' in request.GET  else 'full'
-    is_ignore_info_vuln = True if 'ignore_info_vuln' in request.GET else False
+    is_ignore_info_vuln = 'ignore_info_vuln' in request.GET
     if report_type == 'recon':
         show_recon = True
         show_vuln = False
