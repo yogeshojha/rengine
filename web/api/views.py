@@ -265,8 +265,7 @@ class WafDetector(APIView):
 	def get(self, request):
 		req = self.request
 		url= req.query_params.get('url')
-		response = {}
-		response['status'] = False
+		response = {'status': False}
 
 		# validate url as a first step to avoid command injection
 		if not (validators.url(url) or validators.domain(url)):
