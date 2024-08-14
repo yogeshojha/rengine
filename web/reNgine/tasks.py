@@ -4444,7 +4444,7 @@ def save_metadata_info(meta_dict):
 		subdomain = Subdomain.objects.get(
 			scan_history=meta_dict.scan_id,
 			name=meta_dict.osint_target)
-		metadata = DottedDict({k: v for k, v in data.items()})
+		metadata = DottedDict(dict(data.items()))
 		meta_finder_document = MetaFinderDocument(
 			subdomain=subdomain,
 			target_domain=meta_dict.domain,
