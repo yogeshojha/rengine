@@ -198,7 +198,7 @@ def tool_specific_settings(request, slug):
         print(request.FILES)
         if 'gfFileUpload' in request.FILES:
             gf_file = request.FILES['gfFileUpload']
-            file_extension = gf_file.name.split('.')[len(gf_file.name.split('.'))-1]
+            file_extension = gf_file.name.split('.')[-1]
             if file_extension != 'json':
                 messages.add_message(request, messages.ERROR, 'Invalid GF Pattern, upload only *.json extension')
             else:
@@ -213,7 +213,7 @@ def tool_specific_settings(request, slug):
 
         elif 'nucleiFileUpload' in request.FILES:
             nuclei_file = request.FILES['nucleiFileUpload']
-            file_extension = nuclei_file.name.split('.')[len(nuclei_file.name.split('.'))-1]
+            file_extension = nuclei_file.name.split('.')[-1]
             if file_extension != 'yaml':
                 messages.add_message(request, messages.ERROR, 'Invalid Nuclei Pattern, upload only *.yaml extension')
             else:
