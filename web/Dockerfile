@@ -11,16 +11,17 @@ ARG SUPPORTED_ARCH="amd64 arm64 armv6 armv7 armhf i386"
 # Labels
 LABEL name="reNgine" \
       author="Yogesh Ojha <yogesh.ojha11@gmail.com>" \
-      description="reNgine is an automated pipeline of recon process, useful for information gathering during web application penetration testing."
+      description="reNgine is an automated pipeline for recon processes, useful for information gathering during web application penetration testing."
 
 # Environment variables
 ENV DEBIAN_FRONTEND="noninteractive" \
     DATABASE="postgres" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    HOME="/root" \
     GOROOT="/usr/local/go" \
-    GOPATH="$HOME/go" \
-    PATH="$PATH:$GOROOT/bin:$GOPATH/bin" \
+    GOPATH="/root/go" \
+    PATH="$PATH:/usr/local/go/bin:/root/go/bin" \
     GO111MODULE=on
 
 # Install required packages and add Mozilla Team PPA
@@ -68,20 +69,16 @@ RUN ARCH=$(dpkg --print-architecture) \
     && rm ${GECKOPATH}
 
 # Install Rust for orjson
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && echo "source $HOME/.cargo/env" >> $HOME/.bashrc
+
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Install Maturin for Python bindings
 RUN pip3 install maturin
 
 # Set working directory
 WORKDIR /usr/src/app
-
-# Set environment variables
-ENV HOME=/root
-ENV GOROOT=/usr/local/go
-ENV GOPATH=/go
-ENV PATH=$PATH:$GOROOT/bin:$GOPATH/bin
-
-# Your other RUN commands go here
 
 # Install Go tools
 RUN printf "\
