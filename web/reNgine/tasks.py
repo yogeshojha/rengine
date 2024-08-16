@@ -1187,7 +1187,7 @@ def screenshot(self, ctx={}, description=None):
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 
 	# If intensity is normal, grab only the root endpoints of each subdomain
-	strict = True if intensity == 'normal' else False
+	strict = intensity == 'normal'
 
 	# Get URLs to take screenshot of
 	get_http_urls(
@@ -1729,7 +1729,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 			endpoint, created = save_endpoint(url, crawl=False, ctx=ctx)
 
 			# Continue to next line if endpoint returned is None
-			if endpoint == None:
+			if endpoint is None:
 				continue
 
 			# Save endpoint data from FFUF output
@@ -4210,7 +4210,7 @@ def save_metadata_info(meta_dict):
 		subdomain = Subdomain.objects.get(
 			scan_history=meta_dict.scan_id,
 			name=meta_dict.osint_target)
-		metadata = DottedDict({k: v for k, v in data.items()})
+		metadata = DottedDict(dict(data.items()))
 		meta_finder_document = MetaFinderDocument(
 			subdomain=subdomain,
 			target_domain=meta_dict.domain,

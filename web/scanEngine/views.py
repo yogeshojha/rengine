@@ -160,10 +160,7 @@ def delete_wordlist(request, slug, id):
 @has_permission_decorator(PERM_MODIFY_INTERESTING_LOOKUP, redirect_url=FOUR_OH_FOUR_URL)
 def interesting_lookup(request, slug):
     lookup_keywords = None
-    context = {}
-    context['scan_engine_nav_active'] = 'active'
-    context['interesting_lookup_li'] = 'active'
-    context['engine_ul_show'] = 'show'
+    context = {'scan_engine_nav_active': 'active', 'interesting_lookup_li': 'active', 'engine_ul_show': 'show'}
     form = InterestingLookupForm()
     if InterestingLookupModel.objects.filter(custom_type=True).exists():
         lookup_keywords = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0]
@@ -201,7 +198,7 @@ def tool_specific_settings(request, slug):
         print(request.FILES)
         if 'gfFileUpload' in request.FILES:
             gf_file = request.FILES['gfFileUpload']
-            file_extension = gf_file.name.split('.')[len(gf_file.name.split('.'))-1]
+            file_extension = gf_file.name.split('.')[-1]
             if file_extension != 'json':
                 messages.add_message(request, messages.ERROR, 'Invalid GF Pattern, upload only *.json extension')
             else:
@@ -216,7 +213,7 @@ def tool_specific_settings(request, slug):
 
         elif 'nucleiFileUpload' in request.FILES:
             nuclei_file = request.FILES['nucleiFileUpload']
-            file_extension = nuclei_file.name.split('.')[len(nuclei_file.name.split('.'))-1]
+            file_extension = nuclei_file.name.split('.')[-1]
             if file_extension != 'yaml':
                 messages.add_message(request, messages.ERROR, 'Invalid Nuclei Pattern, upload only *.yaml extension')
             else:
@@ -262,7 +259,7 @@ def tool_specific_settings(request, slug):
     context['tool_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
     gf_list = (subprocess.check_output(['gf', '-list'])).decode("utf-8")
-    nuclei_custom_pattern = [f for f in glob.glob("/root/nuclei-templates/*.yaml")]
+    nuclei_custom_pattern = list(glob.glob("/root/nuclei-templates/*.yaml"))
     context['nuclei_templates'] = nuclei_custom_pattern
     context['gf_patterns'] = sorted(gf_list.split('\n'))
     return render(request, 'scanEngine/settings/tool.html', context)

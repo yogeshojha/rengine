@@ -265,8 +265,7 @@ class WafDetector(APIView):
 	def get(self, request):
 		req = self.request
 		url= req.query_params.get('url')
-		response = {}
-		response['status'] = False
+		response = {'status': False}
 
 		# validate url as a first step to avoid command injection
 		if not (validators.url(url) or validators.domain(url)):
@@ -290,8 +289,7 @@ class SearchHistoryView(APIView):
 	def get(self, request):
 		req = self.request
 
-		response = {}
-		response['status'] = False
+		response = {'status': False}
 
 		scan_history = SearchHistory.objects.all().order_by('-id')[:5]
 
@@ -307,14 +305,11 @@ class UniversalSearch(APIView):
 		req = self.request
 		query = req.query_params.get('query')
 
-		response = {}
-		response['status'] = False
+		response = {'status': False, 'results': {}}
 
 		if not query:
 			response['message'] = 'No query parameter provided!'
 			return Response(response)
-
-		response['results'] = {}
 
 		# search history to be saved
 		SearchHistory.objects.get_or_create(
@@ -366,8 +361,7 @@ class FetchMostCommonVulnerability(APIView):
 			target_id = data.get('target_id')
 			is_ignore_info = data.get('ignore_info', False)
 
-			response = {}
-			response['status'] = False
+			response = {'status': False}
 
 			if project_slug:
 				project = Project.objects.get(slug=project_slug)
@@ -427,7 +421,7 @@ class FetchMostCommonVulnerability(APIView):
 					)
 
 
-			most_common_vulnerabilities = [vuln for vuln in most_common_vulnerabilities]
+			most_common_vulnerabilities = list(most_common_vulnerabilities)
 
 			if most_common_vulnerabilities:
 				response['status'] = True
@@ -450,8 +444,7 @@ class FetchMostVulnerable(APIView):
 		limit = data.get('limit', 20)
 		is_ignore_info = data.get('ignore_info', False)
 
-		response = {}
-		response['status'] = False
+		response = {'status': False}
 
 		if project_slug:
 			project = Project.objects.get(slug=project_slug)
@@ -714,8 +707,7 @@ class ListSubScans(APIView):
 		subdomain_id = data.get('subdomain_id', None)
 		scan_history = data.get('scan_history_id', None)
 		domain_id = data.get('domain_id', None)
-		response = {}
-		response['status'] = False
+		response = {'status': False}
 
 		if subdomain_id:
 			subscans = (
@@ -1133,8 +1125,8 @@ class Whois(APIView):
 			print(f'Ip address or domain "{target}" did not pass validator.')
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
 		is_force_update = req.query_params.get('is_reload')
-		is_force_update = True if is_force_update and 'true' == is_force_update.lower() else False
-		task = query_whois.apply_async(args=(target,is_force_update))
+		is_force_update = bool(is_force_update and 'true' == is_force_update.lower())
+		task = query_whois.apply_async(args=(ip_domain,is_force_update))
 		response = task.wait()
 		return Response(response)
 
@@ -1264,8 +1256,7 @@ class GetFileContents(APIView):
 		req = self.request
 		name = req.query_params.get('name')
 
-		response = {}
-		response['status'] = False
+		response = {'status': False, 'message': 'Invalid Query Params'}
 
 		if 'nuclei_config' in req.query_params:
 			path = "/root/.config/nuclei/config.yaml"
@@ -1342,7 +1333,6 @@ class GetFileContents(APIView):
 				response['status'] = False
 			return Response(response)
 
-		response['message'] = 'Invalid Query Params'
 		return Response(response)
 
 

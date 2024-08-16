@@ -367,7 +367,7 @@ def start_multiple_scan(request, slug):
             list_of_domain_name = []
             list_of_domain_id = []
             for key, value in request.POST.items():
-                if key != "list_target_table_length" and key != "csrfmiddlewaretoken":
+                if key not in ("list_target_table_length", "csrfmiddlewaretoken"):
                     domain = get_object_or_404(Domain, id=value)
                     list_of_domain_name.append(domain.name)
                     list_of_domain_id.append(value)
@@ -816,7 +816,7 @@ def schedule_organization_scan(request, slug, id):
 def delete_scans(request, slug):
     if request.method == "POST":
         for key, value in request.POST.items():
-            if key == 'scan_history_table_length' or key == 'csrfmiddlewaretoken':
+            if key in ('scan_history_table_length', 'csrfmiddlewaretoken'):
                 continue
             scan = get_object_or_404(ScanHistory, id=value)
             delete_dir = scan.results_dir
@@ -845,7 +845,7 @@ def create_report(request, id):
     secondary_color = '#212121'
     # get report type
     report_type = request.GET['report_type'] if 'report_type' in request.GET  else 'full'
-    is_ignore_info_vuln = True if 'ignore_info_vuln' in request.GET else False
+    is_ignore_info_vuln = 'ignore_info_vuln' in request.GET
     if report_type == 'recon':
         show_recon = True
         show_vuln = False
