@@ -56,9 +56,7 @@ RUN apt install -y --no-install-recommends \
 RUN add-apt-repository ppa:mozillateam/ppa
 
 RUN ARCH=$(dpkg --print-architecture) \ 
-    && wget https://go.dev/dl/go${GOVERSION}.linux-${ARCH}.tar.gz \
-    && tar -xvf go${GOVERSION}.linux-${ARCH}.tar.gz -C /usr/local \
-    && rm go${GOVERSION}.linux-${ARCH}.tar.gz
+    && curl -L https://go.dev/dl/go${GOVERSION}.linux-${ARCH}.tar.gz | tar -xzC /usr/local
 
 RUN ARCH=$(dpkg --print-architecture) \ 
     && if [ "${ARCH}" = "arm64" ]; then \
@@ -72,7 +70,7 @@ RUN ARCH=$(dpkg --print-architecture) \
     && mv geckodriver /usr/bin
 
 # Install Rust for orjson
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN set -e; curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN pip3 install maturin
 
