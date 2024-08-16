@@ -11,7 +11,7 @@ logger = logging.getLogger('django')
 # TOOLS DEFINITIONS
 ###############################################################################
 
-EMAIL_REGEX = re.compile(r'[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+')
+EMAIL_REGEX = re.compile(r'[\w\.-]+@[\w\.-]+')
 
 ###############################################################################
 # YAML CONFIG DEFINITIONS

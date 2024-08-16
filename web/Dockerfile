@@ -56,9 +56,7 @@ RUN apt install -y --no-install-recommends \
 RUN add-apt-repository ppa:mozillateam/ppa
 
 RUN ARCH=$(dpkg --print-architecture) \ 
-    && wget https://go.dev/dl/go${GOVERSION}.linux-${ARCH}.tar.gz \
-    && tar -xvf go${GOVERSION}.linux-${ARCH}.tar.gz -C /usr/local \
-    && rm go${GOVERSION}.linux-${ARCH}.tar.gz
+    && curl -L https://go.dev/dl/go${GOVERSION}.linux-${ARCH}.tar.gz | tar -xzC /usr/local
 
 RUN ARCH=$(dpkg --print-architecture) \ 
     && if [ "${ARCH}" = "arm64" ]; then \
@@ -70,6 +68,11 @@ RUN ARCH=$(dpkg --print-architecture) \
     && tar -xvf ${GECKOPATH} \
     && rm ${GECKOPATH} \
     && mv geckodriver /usr/bin
+
+# Install Rust for orjson
+RUN set -e; curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN pip3 install maturin
 
 # Make directory for app
 WORKDIR /usr/src/app
@@ -102,11 +105,11 @@ RUN nuclei -update-templates
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
-RUN pip3 install --upgrade setuptools==72.1.0 pip && \
-    pip3 install -r /tmp/requirements.txt --no-cache-dir
+RUN pip3 install --upgrade setuptools==72.1.0
+RUN pip3 install -r /tmp/requirements.txt --no-cache-dir
 
 # install eyewitness
-RUN python3 -m pip install --no-cache-dir fuzzywuzzy \
+RUN pip3 install --no-cache-dir fuzzywuzzy \
     selenium==4.9.1 \
     python-Levenshtein \
     pyvirtualdisplay \

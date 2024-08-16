@@ -1,37 +1,60 @@
-name: 👋 Auto Comment
-on: [issues, pull_request]
+name: 💬 Auto Comment
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened, closed]
+
 jobs:
-  run:
+  auto_comment:
     runs-on: ubuntu-latest
     steps:
-      - uses: bubkoo/auto-comment@v1.1.2
+      - name: 🤖 Auto Comment on Issues and PRs
+        uses: actions/github-script@v7
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          issuesOpened: >
-            👋 Hi @{{ author }},
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const { owner, repo } = context.repo;
+            const author = context.payload.sender.login;
+            
+            if (context.eventName === 'issues' && context.payload.action === 'opened') {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner,
+                repo,
+                body: `👋 Hi @${author},
 
-            Issues is only for reporting a bug/feature request. Please read documentation before raising an issue https://rengine.wiki
+                Issues are only for reporting bugs or feature requests. Please read the documentation before raising an issue: https://rengine.wiki
 
-            For very limited support, questions, and discussions, please join reNgine Discord channel: https://discord.gg/azv6fzhNCE
+                Please include all the requested and relevant information when opening a bug report. Improper reports will be closed without any response.`
+              });
+            } else if (context.eventName === 'pull_request' && context.payload.action === 'opened') {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner,
+                repo,
+                body: `👋 Hi @${author},
 
-            Please include all the requested and relevant information when opening a bug report. Improper reports will be closed without any response.
+                Thank you for sending this pull request.
 
-          pullRequestOpened: >
-            👋 Hi @{{ author }},
+                Please make sure you have followed our [contribution guidelines](https://github.com/yogeshojha/rengine/blob/master/.github/CONTRIBUTING.md).
 
-            Thank you for sending this pull request.
+                We will review this PR as soon as possible. Thank you for your patience.`
+              });
+            } else if (context.eventName === 'pull_request' && context.payload.action === 'closed') {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner,
+                repo,
+                body: `🚀 Hi @${author},
 
-            Please make sure you have followed our [contribution guidelines](https://github.com/yogeshojha/rengine/blob/master/.github/CONTRIBUTING.md).
+                You are amazing! Thank you for your contributions. Your contributions are what makes reNgine awesome!
 
-            We will review this PR as soon as possible. Thank you for your patience.
+                This pull request has now been closed.
 
-          pullRequestClosed: >
-            🚀 Hi @{{ author }},
+                We look forward to your future contributions and support.
 
-            You are amazing! Thank you for your contributions. Your contributions are what makes reNgine awesome!
-
-            This pull request has now been closed.
-
-            We look forward to your more contributions and support.
-
-            Thanks
+                Thanks`
+              });
+            }

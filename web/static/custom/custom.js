@@ -1416,7 +1416,7 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 function fetch_whois(domain_name, force_reload_whois=false) {
 	// this function will fetch WHOIS record for any subdomain and also display
 	// snackbar once whois is fetched
-	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`;
+	var url = `/api/tools/whois/?format=json&target=${domain_name}`;
 	if (force_reload_whois) {
 		url+='&is_reload=true'
 	}
@@ -1460,79 +1460,113 @@ function fetch_whois(domain_name, force_reload_whois=false) {
 }
 
 function get_target_whois(domain_name) {
-	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`
-	Swal.fire({
-		title: `Fetching WHOIS details for ${domain_name}...`
-	});
-	swal.showLoading();
-	fetch(url, {
-		method: 'GET',
-		credentials: "same-origin",
-		headers: {
-			"X-CSRFToken": getCookie("csrftoken"),
-			'Content-Type': 'application/json'
-		},
-	}).then(response => response.json()).then(function(response) {
-		console.log(response);
-		if (response.status) {
-			swal.close();
-			display_whois_on_modal(response);
-		} else {
-			fetch(`/api/tools/whois/?format=json&ip_domain=${domain_name}`, {
-				method: 'GET',
-				credentials: "same-origin",
-				headers: {
-					"X-CSRFToken": getCookie("csrftoken"),
-					'Content-Type': 'application/json'
-				},
-			}).then(response => response.json()).then(function(response) {
-				console.log(response);
-				if (response.status) {
-					swal.close();
-					display_whois_on_modal(response);
-				} else {
-					Swal.fire({
-						title: 'Oops!',
-						text: `reNgine could not fetch WHOIS records for ${domain_name}!`,
-						icon: 'error'
-					});
-				}
-			});
-		}
-	});
+    const url = `/api/tools/whois/?format=json&target=${domain_name}`;
+    
+    Swal.fire({
+        title: `Fetching WHOIS details for ${domain_name}...`,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    fetch(url, {
+        method: 'GET',
+        credentials: "same-origin",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            'Content-Type': 'application/json'
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log(data);
+        if (data.status) {
+            Swal.close();
+            display_whois_on_modal(data);
+        } else {
+            throw new Error(data.result || 'Failed to fetch WHOIS data');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        let errorMessage = error.message;
+        if (errorMessage.includes('Netlas limit exceeded')) {
+            errorMessage = 'Rate limit exceeded. Please try again later.';
+        } else if (errorMessage.includes('Invalid domain')) {
+            errorMessage = 'Invalid domain or no WHOIS data available.';
+        }
+        Swal.fire({
+            title: 'Error!',
+            text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
+            icon: 'error'
+        });
+    });
 }
 
-function get_domain_whois(domain_name, show_add_target_btn=false) {
-	// this function will get whois for domains that are not targets, this will
-	// not store whois into db nor create target
-	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`
-	Swal.fire({
-		title: `Fetching WHOIS details for ${domain_name}...`
-	});
-	$('.modal').modal('hide');
-	swal.showLoading();
-	fetch(url, {
-		method: 'GET',
-		credentials: "same-origin",
-		headers: {
-			"X-CSRFToken": getCookie("csrftoken"),
-			'Content-Type': 'application/json'
-		},
-	}).then(response => response.json()).then(function(response) {
-		swal.close();
-		if (response.status) {
-			display_whois_on_modal(response, show_add_target_btn=show_add_target_btn);
-		} else {
-			Swal.fire({
-				title: 'Oops!',
-				text: `reNgine could not fetch WHOIS records for ${domain_name}! ${response['message']}`,
-				icon: 'error'
-			});
-		}
-	});
+function get_domain_whois(domain_name, show_add_target_btn = false) {
+    const url = `/api/tools/whois/?format=json&target=${domain_name}`;
+    
+    Swal.fire({
+        title: `Fetching WHOIS details for ${domain_name}...`,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    $('.modal').modal('hide');
+
+    fetch(url, {
+        method: 'GET',
+        credentials: "same-origin",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            'Content-Type': 'application/json'
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log(data);
+        Swal.close();
+        if (data.status) {
+            display_whois_on_modal(data, show_add_target_btn);
+        } else {
+            throw new Error(data.result || 'Failed to fetch WHOIS data');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        let errorMessage = error.message;
+        if (errorMessage.includes('Netlas limit exceeded')) {
+            errorMessage = 'Rate limit exceeded. Please try again later.';
+        } else if (errorMessage.includes('Invalid domain')) {
+            errorMessage = 'Invalid domain or no WHOIS data available.';
+        }
+        Swal.fire({
+            title: 'Error!',
+            text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
+            icon: 'error'
+        });
+    });
 }
+
+
 
 function display_whois_on_modal(response, show_add_target_btn=false) {
+	console.log(response);
 	// this function will display whois data on modal, should be followed after get_domain_whois()
 	$('#modal_dialog').modal('show');
 	$('#modal-content').empty();
@@ -1557,7 +1591,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 				<div class="row">
 					<div class="col-4">
 						<small class="sub-header">Domain</small>
-						<h5>${response.ip_domain}</h5>
+						<h5>${response.target}</h5>
 					</div>
 					<div class="col-4">
 						<small class="sub-header">Dnssec</small>
@@ -1848,7 +1882,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 
 	if (show_add_target_btn) {
 		content += `<div class="text-center">
-			<button class="btn btn-primary float-end mt-4" type="submit" id="search_whois_toolbox_btn" onclick="add_target('${response['ip_domain']}')">Add ${response['ip_domain']} as target</button>
+			<button class="btn btn-primary float-end mt-4" type="submit" id="search_whois_toolbox_btn" onclick="add_target('${response['target']}')">Add ${response['target']} as target</button>
 		</div>`
 	}
 
