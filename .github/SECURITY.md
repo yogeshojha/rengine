@@ -40,6 +40,7 @@ Thanks to these individuals for reporting Security Issues in reNgine.
 ### 2024
 
 * [HIGH] [Command Injection](https://github.com/yogeshojha/rengine/security/advisories/GHSA-fx7f-f735-vgh4) in Waf Detector, Reported by [n-thumann](https://github.com/n-thumann)
+* [MEDIUM] [Stored XSS](https://github.com/yogeshojha/rengine/security/advisories/GHSA-96q4-fj2m-jqf7) in in Vulnerability Page, Reported by [Touhid M Shaikh](https://github.com/touhidshaikh)
 
 ### 2022
 
