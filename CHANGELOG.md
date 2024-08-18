@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.1.3
+
+## What's Changed
+
+### Security update
+* (Security) CVE-2024-43381 Stored Cross-Site Scripting (XSS) via DNS Record Poisoning reported by @touhidshaikh Advisory https://github.com/yogeshojha/rengine/security/advisories/GHSA-96q4-fj2m-jqf7
+
+### Bug Fixes
+
+* remove redundant docker environment variables by @jxdv in https://github.com/yogeshojha/rengine/pull/1353
+* fix: reNgine installation issue due to orjson and langchain #1362 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1363
+* #1364 FIx whois lookup and improve performance by executing various modules of whois lookup to run concurrently by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1368
+* chores: Add error handling for the curl command by @gitworkflows in https://github.com/yogeshojha/rengine/pull/1367
+* chores: Update Github Actions Workflows by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1369
+* chores: Fix docker build on github actions by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1373
+
+## New Contributors
+* @gitworkflows made their first contribution in https://github.com/yogeshojha/rengine/pull/1367
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.2...v2.1.3
+
 ## 2.1.2
 
 **Release Date: July 30, 2024**
