@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.1.3
+
+**Release Date: Aug 18, 2024**
+
+## What's Changed
+
+### Security Update
+
+* (Security) CVE-2024-41661 Stored Cross-Site Scripting (XSS) via DNS Record Poisoning reported by @touhidshaikh Advisory https://github.com/yogeshojha/rengine/security/advisories/GHSA-96q4-fj2m-jqf7
+
+### Bug Fixes
+
+* remove redundant docker environment variables by @jxdv in https://github.com/yogeshojha/rengine/pull/1353
+* fix: reNgine installation issue due to orjson and langchain #1362 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1363
+* #1364 FIx whois lookup and improve performance by executing various modules of whois lookup to run concurrently by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1368
+* chores: Add error handling for the curl command by @gitworkflows in https://github.com/yogeshojha/rengine/pull/1367
+* Update Github Actions Workflows by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1369
+* chores: Fix docker build on master by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1373
+
+#### New Contributors
+* @gitworkflows made their first contribution in https://github.com/yogeshojha/rengine/pull/1367
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.2...v2.1.3
+
 ## 2.1.2
 
 **Release Date: July 30, 2024**
@@ -44,7 +68,7 @@
 * Fix #1315 Fix for todo URLs not compatible with slugs by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1316
 * Fixes #1122 But in port service lookup that caused multiple entries of Port with same port number but different service name/description by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1317
 
-## New Contributors
+#### New Contributors
 * @emmanuel-ferdman made their first contribution in https://github.com/yogeshojha/rengine/pull/1286
 
 **Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.0...v2.1.1
@@ -66,7 +90,7 @@
 * Release/2.1.0 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1147
 * Dockerfile Build Multiple Platforms by @vncloudsco in https://github.com/yogeshojha/rengine/pull/1210
 
-## New Contributors
+#### New Contributors
 * @fopina made their first contribution in https://github.com/yogeshojha/rengine/pull/1230
 * @iuime made their first contribution in https://github.com/yogeshojha/rengine/pull/1137
 * @null-ref-0000 made their first contribution in https://github.com/yogeshojha/rengine/pull/1275
@@ -91,7 +115,7 @@
 * Fix/infoga removal by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1249
 * Fix #1241 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1251
 
-## New Contributors
+#### New Contributors
 * @Talanor made their first contribution in https://github.com/yogeshojha/rengine/pull/1245
 * @specters312 made their first contribution in https://github.com/yogeshojha/rengine/pull/1239
 * @TH3xACE made their first contribution in https://github.com/yogeshojha/rengine/pull/1224
@@ -121,7 +145,7 @@
 * Fix uninitialised variable cmd in custom_subdomain_tools by @cpandya2909 in https://github.com/yogeshojha/rengine/pull/1207
 * [FIX] security: OS Command Injection vulnerability (x2) #1219 by @0xtejas in https://github.com/yogeshojha/rengine/pull/1227
 
-## New Contributors :rocket: 
+### New Contributors :rocket: 
 * @yarysp made their first contribution in https://github.com/yogeshojha/rengine/pull/1199
 * @jostasik made their first contribution in https://github.com/yogeshojha/rengine/pull/1226
 * @cpandya2909 made their first contribution in https://github.com/yogeshojha/rengine/pull/1207
@@ -144,7 +168,7 @@
 * Change Redirect URL after login to prevent 500 error by @psyray in https://github.com/yogeshojha/rengine/pull/1124
 * fix-1030: Add missing slug on target summary link by @psyray in https://github.com/yogeshojha/rengine/pull/1123
 
-## New Contributors
+### New Contributors
 * @Deathpoolxrs made their first contribution in https://github.com/yogeshojha/rengine/pull/1149
 * @ErdemOzgen made their first contribution in https://github.com/yogeshojha/rengine/pull/1126
 
@@ -196,7 +220,7 @@
 * Fix report generation when `Ignore Informational Vulnerabilities` checked by @psyray in https://github.com/yogeshojha/rengine/pull/1100
 * fix(tool_arsenal): incorrect regex version numbers by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1086
 
-## New Contributors
+### New Contributors
 * @luizmlo made their first contribution in https://github.com/yogeshojha/rengine/pull/1029 :partying_face: 
 * @aqhmal made their first contribution in https://github.com/yogeshojha/rengine/pull/1021 :partying_face: 
 * @C0wnuts made their first contribution in https://github.com/yogeshojha/rengine/pull/973 :partying_face: 

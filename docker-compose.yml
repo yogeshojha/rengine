@@ -98,7 +98,7 @@ services:
       - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD}
       # THIS IS A MUST FOR CHECKING UPDATE, EVERYTIME A COMMIT IS MERGED INTO
       # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
-      - RENGINE_CURRENT_VERSION='2.1.2'
+      - RENGINE_CURRENT_VERSION='2.1.3'
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
