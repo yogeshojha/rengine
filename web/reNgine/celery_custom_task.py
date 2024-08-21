@@ -67,7 +67,7 @@ class RengineTask(Task):
 		self.subscan_id = ctx.get('subscan_id')
 		self.engine_id = ctx.get('engine_id')
 		self.filename = ctx.get('filename')
-		self.starting_point_url = ctx.get('starting_point_url', '')
+		self.starting_point_path = ctx.get('starting_point_path', '')
 		self.excluded_paths = ctx.get('excluded_paths', [])
 		self.results_dir = ctx.get('results_dir', RENGINE_RESULTS)
 		self.yaml_configuration = ctx.get('yaml_configuration', {})

@@ -57,7 +57,7 @@ def initiate_scan(
 		imported_subdomains=[],
 		out_of_scope_subdomains=[],
 		initiated_by_id=None,
-		starting_point_url='',
+		starting_point_path='',
 		excluded_paths=[],
 	):
 	"""Initiate a new scan.
@@ -70,7 +70,7 @@ def initiate_scan(
 		results_dir (str): Results directory.
 		imported_subdomains (list): Imported subdomains.
 		out_of_scope_subdomains (list): Out-of-scope subdomains.
-		starting_point_url (str): URL path. Default: '' Defined where to start the scan.
+		starting_point_path (str): URL path. Default: '' Defined where to start the scan.
 		initiated_by (int): User ID initiating the scan.
 		excluded_paths (list): Excluded paths. Default: [], url paths to exclude from scan.
 	"""
@@ -92,7 +92,7 @@ def initiate_scan(
 		domain.save()
 
 		# Get path filter
-		starting_point_url = starting_point_url.rstrip('/')
+		starting_point_path = starting_point_path.rstrip('/')
 
 		# for live scan scan history id is passed as scan_history_id 
 		# and no need to create scan_history object
@@ -114,6 +114,11 @@ def initiate_scan(
 		scan.tasks = engine.tasks
 		scan.results_dir = f'{results_dir}/{domain.name}_{scan.id}'
 		add_gf_patterns = gf_patterns and 'fetch_url' in engine.tasks
+		# add configs to scan object, cfg_ prefix is used to avoid conflicts with other scan object fields
+		scan.cfg_starting_point_path = starting_point_path
+		scan.cfg_excluded_paths = excluded_paths
+		scan.cfg_out_of_scope_subdomains = out_of_scope_subdomains
+
 		if add_gf_patterns:
 			scan.used_gf_patterns = ','.join(gf_patterns)
 		scan.save()
@@ -127,7 +132,7 @@ def initiate_scan(
 			'engine_id': engine_id,
 			'domain_id': domain.id,
 			'results_dir': scan.results_dir,
-			'starting_point_url': starting_point_url,
+			'starting_point_path': starting_point_path,
 			'excluded_paths': excluded_paths,
 			'yaml_configuration': config,
 			'out_of_scope_subdomains': out_of_scope_subdomains
@@ -152,7 +157,7 @@ def initiate_scan(
 
 		# If enable_http_crawl is set, create an initial root HTTP endpoint so that
 		# HTTP crawling can start somewhere
-		http_url = f'{domain.name}{starting_point_url}' if starting_point_url else domain.name
+		http_url = f'{domain.name}{starting_point_path}' if starting_point_path else domain.name
 		endpoint, _ = save_endpoint(
 			http_url,
 			ctx=ctx,
@@ -228,7 +233,7 @@ def initiate_subscan(
 		engine_id=None,
 		scan_type=None,
 		results_dir=RENGINE_RESULTS,
-		starting_point_url='',
+		starting_point_path='',
 		excluded_paths=[],
 	):
 	"""Initiate a new subscan.
@@ -239,7 +244,7 @@ def initiate_subscan(
 		engine_id (int): Engine ID.
 		scan_type (int): Scan type (periodic, live).
 		results_dir (str): Results directory.
-		starting_point_url (str): URL path. Default: ''
+		starting_point_path (str): URL path. Default: ''
 		excluded_paths (list): Excluded paths. Default: [], url paths to exclude from scan.
 	"""
 
@@ -298,13 +303,13 @@ def initiate_subscan(
 		'subdomain_id': subdomain.id,
 		'yaml_configuration': config,
 		'results_dir': results_dir,
-		'starting_point_url': starting_point_url,
+		'starting_point_path': starting_point_path,
 		'excluded_paths': excluded_paths,
 	}
 
 	# Create initial endpoints in DB: find domain HTTP endpoint so that HTTP
 	# crawling can start somewhere
-	base_url = f'{subdomain.name}{starting_point_url}' if starting_point_url else subdomain.name
+	base_url = f'{subdomain.name}{starting_point_path}' if starting_point_path else subdomain.name
 	endpoint, _ = save_endpoint(
 		base_url,
 		crawl=enable_http_crawl,
@@ -406,8 +411,8 @@ def subdomain_discovery(
 	if not host:
 		host = self.subdomain.name if self.subdomain else self.domain.name
 
-	if self.starting_point_url:
-		logger.warning(f'Ignoring subdomains scan as an URL path filter was passed ({self.starting_point_url}).')
+	if self.starting_point_path:
+		logger.warning(f'Ignoring subdomains scan as an URL path filter was passed ({self.starting_point_path}).')
 		return
 
 	# Config
@@ -1929,7 +1934,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 
 		if base_url and urlpath:
 			subdomain = urlparse(base_url)
-			url = f'{subdomain.scheme}://{subdomain.netloc}{self.starting_point_url}'
+			url = f'{subdomain.scheme}://{subdomain.netloc}{self.starting_point_path}'
 
 		if not validators.url(url):
 			logger.warning(f'Invalid URL "{url}". Skipping.')
@@ -1938,8 +1943,8 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 			all_urls.append(url)
 
 	# Filter out URLs if a path filter was passed
-	if self.starting_point_url:
-		all_urls = [url for url in all_urls if self.starting_point_url in url]
+	if self.starting_point_path:
+		all_urls = [url for url in all_urls if self.starting_point_path in url]
 
 	# if exclude_paths is found, then remove urls matching those paths
 	if self.excluded_paths:
@@ -2839,8 +2844,8 @@ def http_crawl(
 	input_path = f'{self.results_dir}/httpx_input.txt'
 	history_file = f'{self.results_dir}/commands.txt'
 	if urls: # direct passing URLs to check
-		if self.starting_point_url:
-			urls = [u for u in urls if self.starting_point_url in u]
+		if self.starting_point_path:
+			urls = [u for u in urls if self.starting_point_path in u]
 
 		with open(input_path, 'w') as f:
 			f.write('\n'.join(urls))

@@ -259,7 +259,7 @@ def start_scan_ui(request, slug, domain_id):
         subdomains_in = [s.rstrip() for s in subdomains_in if s]
         subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
-        starting_point_url = request.POST['startingPointUrl'].strip()
+        starting_point_path = request.POST['startingPointPath'].strip()
         excluded_paths = request.POST['excludedPaths'] # string separated by ,
         # split excluded paths by ,
         excluded_paths = [path.strip() for path in excluded_paths.split(',')]
@@ -284,7 +284,7 @@ def start_scan_ui(request, slug, domain_id):
             'results_dir': '/usr/src/scan_results',
             'imported_subdomains': subdomains_in,
             'out_of_scope_subdomains': subdomains_out,
-            'starting_point_url': starting_point_url,
+            'starting_point_path': starting_point_path,
             'excluded_paths': excluded_paths,
             'initiated_by_id': request.user.id
         }
@@ -329,7 +329,7 @@ def start_multiple_scan(request, slug):
             subdomains_in = [s.rstrip() for s in subdomains_in if s]
             subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
             subdomains_out = [s.rstrip() for s in subdomains_out if s]
-            starting_point_url = request.POST['startingPointUrl'].strip()
+            starting_point_path = request.POST['startingPointPath'].strip()
             excluded_paths = request.POST['excludedPaths'] # string separated by ,
             # split excluded paths by ,
             excluded_paths = [path.strip() for path in excluded_paths.split(',')]
@@ -354,7 +354,7 @@ def start_multiple_scan(request, slug):
                     'initiated_by_id': request.user.id,
                     'imported_subdomains': subdomains_in,
                     'out_of_scope_subdomains': subdomains_out,
-                    'starting_point_url': starting_point_url,
+                    'starting_point_path': starting_point_path,
                     'excluded_paths': excluded_paths,
                 }
 
@@ -562,7 +562,7 @@ def schedule_scan(request, host_id, slug):
         subdomains_in = [s.rstrip() for s in subdomains_in if s]
         subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
-        starting_point_url = request.POST['startingPointUrl'].strip()
+        starting_point_path = request.POST['startingPointPath'].strip()
         excluded_paths = request.POST['excludedPaths'] # string separated by ,
         # split excluded paths by ,
         excluded_paths = [path.strip() for path in excluded_paths.split(',')]
@@ -596,7 +596,7 @@ def schedule_scan(request, host_id, slug):
                 'scan_type': SCHEDULED_SCAN,
                 'imported_subdomains': subdomains_in,
                 'out_of_scope_subdomains': subdomains_out,
-                'starting_point_url': starting_point_url,
+                'starting_point_path': starting_point_path,
                 'excluded_paths': excluded_paths,
                 'initiated_by_id': request.user.id
             }
@@ -617,7 +617,7 @@ def schedule_scan(request, host_id, slug):
                 'scan_type': SCHEDULED_SCAN,
                 'imported_subdomains': subdomains_in,
                 'out_of_scope_subdomains': subdomains_out,
-                'starting_point_url': starting_point_url,
+                'starting_point_path': starting_point_path,
                 'excluded_paths': excluded_paths,
                 'initiated_by_id': request.user.id
             }
@@ -745,7 +745,7 @@ def start_organization_scan(request, id, slug):
         subdomains_in = [s.rstrip() for s in subdomains_in if s]
         subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
-        starting_point_url = request.POST['startingPointUrl'].strip()
+        starting_point_path = request.POST['startingPointPath'].strip()
         excluded_paths = request.POST['excludedPaths'] # string separated by ,
         # split excluded paths by ,
         excluded_paths = [path.strip() for path in excluded_paths.split(',')]
@@ -768,7 +768,7 @@ def start_organization_scan(request, id, slug):
                 'initiated_by_id': request.user.id,
                 'imported_subdomains': subdomains_in,
                 'out_of_scope_subdomains': subdomains_out,
-                'starting_point_url': starting_point_url,
+                'starting_point_path': starting_point_path,
                 'excluded_paths': excluded_paths,
             }
             initiate_scan.apply_async(kwargs=kwargs)
@@ -814,7 +814,7 @@ def schedule_organization_scan(request, slug, id):
         subdomains_in = [s.rstrip() for s in subdomains_in if s]
         subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
-        starting_point_url = request.POST['startingPointUrl'].strip()
+        starting_point_path = request.POST['startingPointPath'].strip()
         excluded_paths = request.POST['excludedPaths'] # string separated by ,
         # split excluded paths by ,
         excluded_paths = [path.strip() for path in excluded_paths.split(',')]
@@ -852,7 +852,7 @@ def schedule_organization_scan(request, slug, id):
                     'initiated_by_id': request.user.id,
                     'imported_subdomains': subdomains_in,
                     'out_of_scope_subdomains': subdomains_out,
-                    'starting_point_url': starting_point_url,
+                    'starting_point_path': starting_point_path,
                     'excluded_paths': excluded_paths,
                 })
                 PeriodicTask.objects.create(
@@ -876,7 +876,7 @@ def schedule_organization_scan(request, slug, id):
                     'initiated_by_id': request.user.id,
                     'imported_subdomains': subdomains_in,
                     'out_of_scope_subdomains': subdomains_out,
-                    'starting_point_url': starting_point_url,
+                    'starting_point_path': starting_point_path,
                     'excluded_paths': excluded_paths,
                 })
                 PeriodicTask.objects.create(clocked=clock,
