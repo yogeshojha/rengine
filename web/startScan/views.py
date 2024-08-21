@@ -686,6 +686,24 @@ def delete_scheduled_task(request, id):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_RESULTS, redirect_url=FOUR_OH_FOUR_URL)
+def delete_scheduled_scans(request, slug):
+    if request.method == "POST":
+        for key, value in request.POST.items():
+            if 'task' in key or key == 'csrfmiddlewaretoken':
+                continue
+            try:
+                scan = get_object_or_404(PeriodicTask, id=value)
+                scan.delete()
+            except Exception as e:
+                logger.error(e)
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Multiple scheduled scans successfully deleted!')
+        return HttpResponseRedirect(reverse('scheduled_scan_view', kwargs={'slug': slug}))
+
+
+@has_permission_decorator(PERM_MODIFY_SCAN_RESULTS, redirect_url=FOUR_OH_FOUR_URL)
 def change_scheduled_task_status(request, id):
     if request.method == 'POST':
         task = PeriodicTask.objects.get(id=id)

@@ -476,6 +476,14 @@ Quick Scan History
         padding: '2em',
         showLoaderOnConfirm: true,
         preConfirm: function() {
+          Swal.fire({
+          title: 'Deleting...',
+          text: 'Please wait while the scans are being deleted.',
+          icon: 'info',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false
+        });
           deleteForm = document.getElementById("scan_history_form");
           deleteForm.action = "../delete/multiple";
           deleteForm.submit();
