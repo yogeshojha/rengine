@@ -186,6 +186,14 @@ function deleteMultipleScheduledScan() {
       padding: '2em',
       showLoaderOnConfirm: true,
       preConfirm: function() {
+        Swal.fire({
+          title: 'Deleting...',
+          text: 'Please wait while the scheduled scans are being deleted.',
+          icon: 'info',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false
+        });
         deleteForm = document.getElementById("scheduled_scan_history_form");
         deleteForm.action = "../delete/multiple/scheduled";
         deleteForm.submit();
