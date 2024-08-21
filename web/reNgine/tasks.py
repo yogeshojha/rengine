@@ -420,6 +420,7 @@ def subdomain_discovery(
 	custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
 	send_subdomain_changes, send_interesting = False, False
 	notif = Notification.objects.first()
+	subdomain_scope_checker = SubdomainScopeChecker(self.out_of_scope_subdomains)
 	if notif:
 		send_subdomain_changes = notif.send_subdomain_changes_notif
 		send_interesting = notif.send_interesting_notif
@@ -565,7 +566,7 @@ def subdomain_discovery(
 		if valid_url:
 			subdomain_name = urlparse(subdomain_name).netloc
 
-		if subdomain_name in self.out_of_scope_subdomains:
+		if subdomain_scope_checker.is_out_of_scope(subdomain_name):
 			logger.error(f'Subdomain {subdomain_name} is out of scope. Skipping.')
 			continue
 
@@ -4421,6 +4422,7 @@ def save_subdomain(subdomain_name, ctx={}):
 	scan_id = ctx.get('scan_history_id')
 	subscan_id = ctx.get('subscan_id')
 	out_of_scope_subdomains = ctx.get('out_of_scope_subdomains', [])
+	subdomain_checker = SubdomainScopeChecker(out_of_scope_subdomains)
 	valid_domain = (
 		validators.domain(subdomain_name) or
 		validators.ipv4(subdomain_name) or
@@ -4430,7 +4432,7 @@ def save_subdomain(subdomain_name, ctx={}):
 		logger.error(f'{subdomain_name} is not an invalid domain. Skipping.')
 		return None, False
 
-	if subdomain_name in out_of_scope_subdomains:
+	if subdomain_checker.is_out_of_scope(subdomain_name):
 		logger.error(f'{subdomain_name} is out-of-scope. Skipping.')
 		return None, False
 

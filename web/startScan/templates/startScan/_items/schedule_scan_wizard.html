@@ -75,14 +75,15 @@
                                 <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false"></textarea>
                             </div>
                             <div class="mb-3">
-                                <h4 class="text-warning">Out of Scope Subdomains(Optional)</h4>
-                                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
-                                <br>
-                                <div class="alert bg-soft-warning border-0 mt-1 mb-1" role="alert">
-                                    <span class="">Separate the out of scope subdomains/keywords using new line.(No regex currently supported.)</span>
+                                <h4 class="text-warning">Out of Scope Subdomains (Optional)</h4>
+                                <p>Specify subdomains of <strong>{{domain.name}}</strong> to exclude from scanning. These subdomains will be omitted from all subsequent scans, including URL discovery and vulnerability assessments.</p>
+                                <p>Enter one subdomain or pattern per line. Both plain text and regex patterns are supported. <span class="badge bg-soft-primary text-primary ms-2">New</span></p>
+                                <div class="mt-2 mb-2">
+                                <li>For plain text: <code>admin.example.com</code></li>
+                                <li>For regex: <code>^.*outofscope.*\.com$</code>, <code>admin.*</code> etc</li>
                                 </div>
                                 <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">Out of Scope Subdomains List</label>
-                                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false"></textarea>
+                                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false" placeholder="Enter subdomains or patterns, one per line"></textarea>
                             </div>
                         </div>
                         <h3>URL Scope and Exclusions</h3>
