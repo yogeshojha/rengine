@@ -689,11 +689,13 @@ def delete_scheduled_task(request, id):
 def delete_scheduled_scans(request, slug):
     if request.method == "POST":
         for key, value in request.POST.items():
-            if key == 'csrfmiddlewaretoken':
+            if 'task' in key or key == 'csrfmiddlewaretoken':
                 continue
-            print(value)
-            scan = get_object_or_404(PeriodicTask, id=value)
-            scan.delete()
+            try:
+                scan = get_object_or_404(PeriodicTask, id=value)
+                scan.delete()
+            except Exception as e:
+                logger.error(e)
         messages.add_message(
             request,
             messages.INFO,
