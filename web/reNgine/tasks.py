@@ -118,6 +118,7 @@ def initiate_scan(
 		scan.cfg_starting_point_path = starting_point_path
 		scan.cfg_excluded_paths = excluded_paths
 		scan.cfg_out_of_scope_subdomains = out_of_scope_subdomains
+		scan.cfg_imported_subdomains = imported_subdomains
 
 		if add_gf_patterns:
 			scan.used_gf_patterns = ','.join(gf_patterns)
