@@ -97,6 +97,10 @@ Quick Scan History
               <td class="">
                 {{ scan_history.domain.name }}
                 <br>
+                {% if scan_history.cfg_starting_point_path %}
+                  <span><i class=""></i>Path: <code>{{scan_history.cfg_starting_point_path}}</code></span>
+                {% endif %}
+                <br>
                 {% for organization in scan_history.domain.get_organization %}
                 <span class="badge badge-soft-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
                 {% endfor %}
@@ -173,6 +177,7 @@ Quick Scan History
                         <i class="mdi mdi-chevron-right"></i>
                       </button>
                       <div class="dropdown-menu" style="">
+                        <a class="dropdown-item text-primary" href="javascript:show_scan_configuration('{{scan_history.cfg_starting_point_path}}', {{scan_history.cfg_out_of_scope_subdomains}}, {{scan_history.cfg_excluded_paths}}, {{scan_history.cfg_imported_subdomains}})"><i class="fe-settings"></i>&nbsp;Show Configurations</a>
                         {% if user|can:'initiate_scans_subscans' %}
                           {% if scan_history.scan_status == 0 or scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
                           <a class="dropdown-item text-primary" href="/scan/{{current_project.slug}}/start/{{scan_history.domain.id}}">
