@@ -395,3 +395,15 @@ mark{
   padding-left: 0.8rem !important;
   padding-right: 0.8rem !important;
 }
+
+.scan-config-modal .config-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-left: 20px;
+}
+.scan-config-modal .config-list li {
+  padding: 5px 0;
+}
+.scan-config-modal .badge {
+  margin-left: 5px;
+}

@@ -1460,107 +1460,107 @@ function fetch_whois(domain_name, force_reload_whois=false) {
 }
 
 function get_target_whois(domain_name) {
-    const url = `/api/tools/whois/?format=json&target=${domain_name}`;
-    
-    Swal.fire({
-        title: `Fetching WHOIS details for ${domain_name}...`,
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        willOpen: () => {
-            Swal.showLoading();
-        }
-    });
+	const url = `/api/tools/whois/?format=json&target=${domain_name}`;
+	
+	Swal.fire({
+		title: `Fetching WHOIS details for ${domain_name}...`,
+		allowOutsideClick: false,
+		showConfirmButton: false,
+		willOpen: () => {
+			Swal.showLoading();
+		}
+	});
 
-    fetch(url, {
-        method: 'GET',
-        credentials: "same-origin",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            'Content-Type': 'application/json'
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log(data);
-        if (data.status) {
-            Swal.close();
-            display_whois_on_modal(data);
-        } else {
-            throw new Error(data.result || 'Failed to fetch WHOIS data');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        let errorMessage = error.message;
-        if (errorMessage.includes('Netlas limit exceeded')) {
-            errorMessage = 'Rate limit exceeded. Please try again later.';
-        } else if (errorMessage.includes('Invalid domain')) {
-            errorMessage = 'Invalid domain or no WHOIS data available.';
-        }
-        Swal.fire({
-            title: 'Error!',
-            text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
-            icon: 'error'
-        });
-    });
+	fetch(url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
+		},
+	})
+	.then(response => {
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		return response.json();
+	})
+	.then(data => {
+		console.log(data);
+		if (data.status) {
+			Swal.close();
+			display_whois_on_modal(data);
+		} else {
+			throw new Error(data.result || 'Failed to fetch WHOIS data');
+		}
+	})
+	.catch(error => {
+		console.error('Error:', error);
+		let errorMessage = error.message;
+		if (errorMessage.includes('Netlas limit exceeded')) {
+			errorMessage = 'Rate limit exceeded. Please try again later.';
+		} else if (errorMessage.includes('Invalid domain')) {
+			errorMessage = 'Invalid domain or no WHOIS data available.';
+		}
+		Swal.fire({
+			title: 'Error!',
+			text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
+			icon: 'error'
+		});
+	});
 }
 
 function get_domain_whois(domain_name, show_add_target_btn = false) {
-    const url = `/api/tools/whois/?format=json&target=${domain_name}`;
-    
-    Swal.fire({
-        title: `Fetching WHOIS details for ${domain_name}...`,
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        willOpen: () => {
-            Swal.showLoading();
-        }
-    });
+	const url = `/api/tools/whois/?format=json&target=${domain_name}`;
+	
+	Swal.fire({
+		title: `Fetching WHOIS details for ${domain_name}...`,
+		allowOutsideClick: false,
+		showConfirmButton: false,
+		willOpen: () => {
+			Swal.showLoading();
+		}
+	});
 
-    $('.modal').modal('hide');
+	$('.modal').modal('hide');
 
-    fetch(url, {
-        method: 'GET',
-        credentials: "same-origin",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            'Content-Type': 'application/json'
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log(data);
-        Swal.close();
-        if (data.status) {
-            display_whois_on_modal(data, show_add_target_btn);
-        } else {
-            throw new Error(data.result || 'Failed to fetch WHOIS data');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        let errorMessage = error.message;
-        if (errorMessage.includes('Netlas limit exceeded')) {
-            errorMessage = 'Rate limit exceeded. Please try again later.';
-        } else if (errorMessage.includes('Invalid domain')) {
-            errorMessage = 'Invalid domain or no WHOIS data available.';
-        }
-        Swal.fire({
-            title: 'Error!',
-            text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
-            icon: 'error'
-        });
-    });
+	fetch(url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
+		},
+	})
+	.then(response => {
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		return response.json();
+	})
+	.then(data => {
+		console.log(data);
+		Swal.close();
+		if (data.status) {
+			display_whois_on_modal(data, show_add_target_btn);
+		} else {
+			throw new Error(data.result || 'Failed to fetch WHOIS data');
+		}
+	})
+	.catch(error => {
+		console.error('Error:', error);
+		let errorMessage = error.message;
+		if (errorMessage.includes('Netlas limit exceeded')) {
+			errorMessage = 'Rate limit exceeded. Please try again later.';
+		} else if (errorMessage.includes('Invalid domain')) {
+			errorMessage = 'Invalid domain or no WHOIS data available.';
+		}
+		Swal.fire({
+			title: 'Error!',
+			text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
+			icon: 'error'
+		});
+	});
 }
 
 
@@ -3328,4 +3328,52 @@ function handleHashInUrl(){
 			}, 100);
 		}
 	}
+}
+
+function show_scan_configuration(starting_path, out_of_scope_subdomains, excluded_paths, imported_subdomains) {
+	$('#modal_title').html('Scan Configuration');
+	$('#modal-content').empty();
+	var content = `
+	<div class="scan-config-modal">
+		<div class="starting-path mb-3">
+			<h5>Starting Path: <code>${starting_path || '/'}</code></h5>
+		</div>
+		<ul class="nav nav-tabs nav-bordered" role="tablist">
+			<li class="nav-item" role="presentation">
+				<a href="#outofscope" data-bs-toggle="tab" aria-expanded="true" class="nav-link active" role="tab">
+					Out of Scope Subdomains <span class="badge bg-secondary">${out_of_scope_subdomains.length}</span>
+				</a>
+			</li>
+			<li class="nav-item" role="presentation">
+				<a href="#imported" data-bs-toggle="tab" aria-expanded="false" class="nav-link" role="tab">
+					Imported Subdomains <span class="badge bg-secondary">${imported_subdomains.length}</span>
+				</a>
+			</li>
+			<li class="nav-item" role="presentation">
+				<a href="#excluded" data-bs-toggle="tab" aria-expanded="false" class="nav-link" role="tab">
+					Excluded Paths <span class="badge bg-secondary">${excluded_paths.length}</span>
+				</a>
+			</li>
+		</ul>
+		<div class="tab-content">
+			<div class="tab-pane fade show active" id="outofscope" role="tabpanel">
+				<ul class="config-list">
+					${out_of_scope_subdomains.map(domain => `<li><code>${domain}</code></li>`).join('')}
+				</ul>
+			</div>
+			<div class="tab-pane fade" id="imported" role="tabpanel">
+				<ul class="config-list">
+					${imported_subdomains.map(domain => `<li><code>${domain}</code></li>`).join('')}
+				</ul>
+			</div>
+			<div class="tab-pane fade" id="excluded" role="tabpanel">
+				<ul class="config-list">
+					${excluded_paths.map(path => `<li><code>${path}</code></li>`).join('')}
+				</ul>
+			</div>
+		</div>
+	</div>
+	`;
+	$('#modal-content').append(content);
+	$('#modal_dialog').modal('show');
 }
