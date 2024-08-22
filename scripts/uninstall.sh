@@ -30,8 +30,8 @@ read -p "$(echo -e ${WARNING}"Are you sure you want to proceed? (y/Y/yes/YES to 
 # change answer to lowecase for comparison
 ANSWER_LC=$(echo "$CONFIRM" | tr '[:upper:]' '[:lower:]')
 
-if [[ "$ANSWER_LC" != "y" && "$ANSWER_LC" != "yes" ]]; then
-    print_status "${YELLOW}Uninstall aborted by user.${RESET}"
+if [ -z "$CONFIRM" ] || { [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ] && [ "$CONFIRM" != "yes" ] && [ "$CONFIRM" != "Yes" ] && [ "$CONFIRM" != "YES" ]; }; then
+    print_status "${WARNING}Uninstall aborted by user.${RESET}"
     exit 0
 fi
 
