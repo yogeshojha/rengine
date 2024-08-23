@@ -299,19 +299,44 @@ def start_scan_ui(request, slug, domain_id):
         return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
     # GET request
+
+    is_rescan = request.GET.get('rescan', 'false').lower() == 'true'
+    history_id = request.GET.get('history_id', None)
+
+    # default values
+    subdomains_in = []
+    subdomains_out = []
+    starting_point_path = None
+    excluded_paths = []
+    selected_engine_id = None
+
+    if is_rescan and history_id:
+        previous_scan = get_object_or_404(ScanHistory, id=history_id)
+        selected_engine_id = getattr(previous_scan.scan_type, 'id', None)
+        subdomains_in = getattr(previous_scan, 'cfg_imported_subdomains', None)
+        subdomains_out = getattr(previous_scan, 'cfg_out_of_scope_subdomains', None)
+        starting_point_path = getattr(previous_scan, 'cfg_starting_point_path', None)
+        excluded_paths = getattr(previous_scan, 'cfg_excluded_paths', None)
+
     engines = EngineType.objects.order_by('engine_name')
     custom_engines_count = (
         EngineType.objects
         .filter(default_engine=False)
         .count()
     )
-    excluded_paths = ','.join(DEFAULT_EXCLUDED_PATHS)
+    excluded_paths = ','.join(DEFAULT_EXCLUDED_PATHS) if not excluded_paths else ','.join(excluded_paths)
+
+    # context values
     context = {
         'scan_history_active': 'active',
         'domain': domain,
         'engines': engines,
         'custom_engines_count': custom_engines_count,
-        'excluded_paths': excluded_paths
+        'excluded_paths': excluded_paths,
+        'subdomains_in': subdomains_in,
+        'subdomains_out': subdomains_out,
+        'starting_point_path': starting_point_path,
+        'selected_engine_id': selected_engine_id,
     }
     return render(request, 'startScan/start_scan_ui.html', context)
 
