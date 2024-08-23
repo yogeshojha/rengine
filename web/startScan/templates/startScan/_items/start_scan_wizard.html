@@ -34,7 +34,12 @@
                   <span>Enter one subdomain per line. Subdomains not belonging to <strong>{{domain.name}}</strong> will be automatically skipped.</span>
                 </div>
                 <label for="importSubdomainFormControlTextarea" class="form-label mt-1">Subdomains List</label>
+                {% if subdomains_in %}
+                <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false">{% for subdomain in subdomains_in %}{{ subdomain }}{% if not forloop.last %}
+{% endif %}{% endfor %}</textarea>
+                {% else %}
                 <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false"></textarea>
+                {% endif %}
               </div>
               <div class="mb-3">
                 <h4 class="text-warning">Out of Scope Subdomains (Optional)</h4>
@@ -45,7 +50,12 @@
                   <li>For regex: <code>^.*outofscope.*\.com$</code>, <code>admin.*</code> etc</li>
                 </div>
                 <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">Out of Scope Subdomains List</label>
-                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false" placeholder="Enter subdomains or patterns, one per line"></textarea>
+                {% if subdomains_out %}
+                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false">{% for subdomain in subdomains_out %}{{ subdomain }}{% if not forloop.last %}
+{% endif %}{% endfor %}</textarea>
+                {% else %}
+                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false" placeholder="Enter subdomains or patterns, one per line"></textarea>
+                {% endif %}
               </div>
             </div>
 
@@ -53,7 +63,11 @@
             <div class="mb-4">
               <div class="mb-3">
                 <h4 class="text-info">Starting Point Path (Optional)</h4>
-                <input type="email" class="form-control" id="startingPointPath" placeholder="e.g. /home" name="startingPointPath">
+                {% if starting_point_path %}
+                  <input type="email" class="form-control" id="startingPointPath" placeholder="e.g. /home" name="startingPointPath" value="{{starting_point_path}}">
+                {% else %}
+                  <input type="email" class="form-control" id="startingPointPath" placeholder="e.g. /home" name="startingPointPath">
+                {% endif %}
                 <small class="form-text text-muted">
                   Defines where the scan should begin. Leave blank to scan from the root (/) and include all subdomains. 
                   </br>
