@@ -568,8 +568,17 @@
                 This section provides a summary of the findings.
             </p>
         </div>
-        <h3 class="primary">Subdomain Breakdown by HTTP Status</h3>
+        <h3 class="primary">Subdomains Breakdown by HTTP Status</h3>
         <img class="center-img" src="data:image/png;base64,{{ subdomain_http_status_chart }}"/>
+        {% if show_vuln and unique_vulnerabilities %}
+        <h3 class="primary">Vulnerabilities Breakdown by Severity</h3>
+        <img class="center-img" src="data:image/png;base64,{{ vulns_severity_chart }}"/>
+        {% endif %}
+    </article>
+
+    <article id="vulnerability-breakdown-chart-page" style="page-break-before: always">
+        <h2 class="page-title">Vulnerabilities Breakdown by Severity</h2>
+        
     </article>
 
     <article id="end-of-report">

@@ -1,7 +1,7 @@
 import markdown
 
 from celery import group
-from weasyprint import HTML
+from weasyprint import HTML, CSS
 from datetime import datetime
 from django.contrib import messages
 from django.db.models import Count
@@ -14,6 +14,7 @@ from django_celery_beat.models import (ClockedSchedule, IntervalSchedule, Period
 from rolepermissions.decorators import has_permission_decorator
 
 from reNgine.celery import app
+from reNgine.charts import *
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK, SUCCESS_TASK
 from reNgine.tasks import create_scan_activity, initiate_scan, run_command
@@ -1074,9 +1075,13 @@ def create_report(request, id):
     data['primary_color'] = primary_color
     data['secondary_color'] = secondary_color
 
-    template = get_template('report/template.html')
+    data['subdomain_http_status_chart'] = generate_subdomain_chart_by_http_status(subdomains)
+    data['vulns_severity_chart'] = generate_vulnerability_chart_by_severity(vulns) if vulns else ''
+
+    template = get_template('report/modern.html')
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
+    # pdf = HTML(string=html).write_pdf(stylesheets=[CSS(string='@page { size: A4; margin: 0; }')])
 
     if 'download' in request.GET:
         response = HttpResponse(pdf, content_type='application/octet-stream')
