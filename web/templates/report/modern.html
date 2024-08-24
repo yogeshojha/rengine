@@ -190,7 +190,7 @@
       {% comment %} table of content page {% endcomment %}
       .toc-modern {
           background-color: white;
-          padding: 20mm;
+          padding: 15mm;
           font-family: 'Inter', sans-serif;
       }
 
@@ -239,15 +239,27 @@
       #executive-summary-page {
           justify-content: space-between;
           background-color: white;
-          padding: 20mm;
+          padding: 15mm;
           font-family: 'Inter', sans-serif;
       }
 
       #quick-summary-page {
           justify-content: space-between;
           background-color: white;
-          padding: 20mm;
+          padding: 15mm;
           font-family: 'Inter', sans-serif;
+      }
+
+      #summary-of-finding-page {
+          justify-content: space-between;
+          background-color: white;
+          padding: 15mm;
+          font-family: 'Inter', sans-serif;
+      }
+
+      #summary-of-finding-page h2 {
+          font-size: 24pt;
+          color: {{primary_color}};
       }
 
       #executive-summary-page h2 {
@@ -373,6 +385,13 @@
       .info .number, .info::before { color: #3498db; border-right-color: #3498db; }
       .unknown .number, .unknown::before { color: #95a5a6; border-right-color: #95a5a6; }
       .primary { color: {{primary_color}}; }
+
+      .center-img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        width: 50%;
+    }
     </style>
   </head>
   <body>
@@ -522,6 +541,8 @@
       {% endif %}
 
       <div class="section">
+      <br>
+      <br>
       <h2 id="assessment-timeline" class="page-title">Assessment Timeline</h2>
       <p>
         Scan started on: {{scan_object.start_scan_date|date:"F j, Y h:i"}}
@@ -538,7 +559,17 @@
         Report Generated on: {% now "F j, Y" %}
       </p>
       </div>
-
+    </article>
+    
+    <article id="summary-of-finding-page" style="page-break-before: always">
+        <h2 class="page-title">Summary of Findings</h2>
+        <div class="">
+            <p>
+                This section provides a summary of the findings.
+            </p>
+        </div>
+        <h3 class="primary">Subdomain Breakdown by HTTP Status</h3>
+        <img class="center-img" src="data:image/png;base64,{{ subdomain_http_status_chart }}"/>
     </article>
 
     <article id="end-of-report">
@@ -547,5 +578,7 @@
         <div class="fading-line-both"></div>
       </div>
     </article>
+
+
   </body>
 </html>
