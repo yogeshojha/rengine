@@ -1,388 +1,532 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Penetration Testing Report</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        @page {
-            size: A4;
-            margin: 0;
+      @page {
+          size: A4;
+          margin: 0;
 
-            {% if show_footer %}
-                @bottom-left {
-                    content: "{{footer_text}}";
-                    font-size: 9pt;
-                    height: 1cm;
-                    vertical-align: middle;
-                    width: 100%;
-                }
-            {% endif %}
-            
-        }
+          {% if show_footer %}
+              @bottom-left {
+                  content: "{{footer_text}}";
+                  font-size: 9pt;
+                  height: 1cm;
+                  vertical-align: middle;
+                  width: 100%;
+              }
+          {% endif %}
 
-         html {
-            color: #696969;
-            font-family: 'Inter';
-            font-weight: 300;
-            font-size: 11pt;
-            line-height: 1.5;
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            width: 210mm;
-            height: 297mm;
-            font-family: 'Inter', sans-serif;
-        }
+      }
 
-        * {
-            font-family: inherit;
-        }
-        
-        #cover {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: {{secondary_color}};
-        }
-        
-        .background-element {
-            position: absolute;
-            background: linear-gradient(15deg, {{primary_color}}, {{secondary_color}});
-            opacity: 0.4;
-        }
-        
-        .circle {
-            width: 300mm;
-            height: 300mm;
-            border-radius: 50%;
-            top: -100mm;
-            left: -100mm;
-        }
-        
-        .rectangle {
-            width: 200mm;
-            height: 100mm;
-            transform: rotate(40deg);
-            bottom: -50mm;
-            right: -50mm;
-        }
-        
-        .content {
-            position: absolute;
-            top: 20%;
-            left: 15%;
-            right: 15%;
-        }
-        
-        h1 {
-            font-weight: 200;
-            font-size: 38pt;
-            color: {{primary_color}};
-            margin: 0 0 10mm 0;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-family: 'Inter';
-            position: relative;
-            display: block;
-        }
+       html {
+          color: #696969;
+          font-family: 'Inter';
+          font-weight: 300;
+          font-size: 11pt;
+          line-height: 1.5;
+      }
 
-        h2,
-        h3,
-        h4 {
-            font-family: 'Inter';
-            font-weight: 200;
-            color: black;
-            font-weight: 400;
-            line-height: normal;
-            position: relative;
-            display: block;
-        }
+      body {
+          margin: 0;
+          padding: 0;
+          width: 210mm;
+          height: 297mm;
+          font-family: 'Inter', sans-serif;
+      }
 
-        h1::after, h2::after {
-            content: '';
-            display: block;
-            height: 1.2px;
-            width: 100%;
-            position: absolute;
-            bottom: -2mm;
-            left: 0;
-            background: linear-gradient(to right, {{primary_color}}, rgba(255, 255, 255, 0));
-        }
+      * {
+          font-family: inherit;
+      }
 
-        .no-fade-line::after {
-            content: none;
-        }
-        
-        .subheading {
-            font-weight: 200;
-            font-size: 24pt;
-            color: {{primary_color}};
-            margin: 0 0 5mm 0;
-        }
-        
-        .date {
-            font-weight: 300;
-            font-size: 14pt;
-            color: {{primary_color}};
-            margin: 0 0 20mm 0;
-        }
-        
-        .cover-line {
-            width: 95%;
-            height: 1.5px;
-            background: linear-gradient(to right, {{primary_color}}, {{secondary_color}});
-            margin: 0 0 20mm 0;
-        }
-        
-        .abstract-shape {
-            position: absolute;
-            border: 2px solid {{primary_color}};
-            opacity: 0.3;
-        }
-        
-        .shape1 {
-            width: 40mm;
-            height: 40mm;
-            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-            top: 10%;
-            right: 10%;
-        }
-        
-        .shape2 {
-            width: 60mm;
-            height: 60mm;
-            border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
-            bottom: 20%;
-            left: 5%;
-        }
-        
-        .footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: {{primary_color}};
-            color: {{secondary_color}};
-            padding: 10mm;
-            font-size: 10pt;
-            text-align: center;
-        }
-        
-        .rengine-banner {
-            margin-top: 5mm;
-            font-size: 8pt;
-            opacity: 0.8;
-        }
+      .container {
+          width: 170mm;
+          height: 257mm;
+      }
 
-        {% comment %} table of content page {% endcomment %}
-        .toc-modern {
-            background-color: white;
-            padding: 20mm;
-            font-family: 'Inter', sans-serif;
-        }
+      #cover {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          background-color: {{secondary_color}};
+      }
 
-        .toc-title {
-            font-size: 24pt;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: {{primary_color}};
-            padding: 5mm 0;
-        }
+      .background-element {
+          position: absolute;
+          background: linear-gradient(15deg, {{primary_color}}, {{secondary_color}});
+          opacity: 0.4;
+      }
 
-        .toc-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10mm;
-        }
+      .circle {
+          width: 300mm;
+          height: 300mm;
+          border-radius: 50%;
+          top: -100mm;
+          left: -100mm;
+      }
 
-        .toc-item {
-            display: flex;
-            align-items: center;
-            padding: 5mm 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
+      .rectangle {
+          width: 200mm;
+          height: 100mm;
+          transform: rotate(40deg);
+          bottom: -50mm;
+          right: -50mm;
+      }
 
-        .toc-number {
-            font-size: 14pt;
-            font-weight: 700;
-            color: {{primary_color}};
-            margin-left: auto;
-            float: none;
-        }
+      .content {
+          position: absolute;
+          top: 20%;
+          left: 15%;
+          right: 15%;
+      }
 
-        .toc-number::after {
-            content: target-counter(attr(data-href), page);
-            margin-left: 5mm;
-        }
+      h1 {
+          font-weight: 200;
+          font-size: 38pt;
+          color: {{primary_color}};
+          margin: 0 0 10mm 0;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          font-family: 'Inter';
+          position: relative;
+          display: block;
+      }
 
-        .toc-link::before {
-            margin-right: 20px;
-            margin-left: 50px;
-            color: {{primary_color}};
-            font-size: 30pt;
-        }
+      h2,
+      h3,
+      h4 {
+          font-family: 'Inter';
+          font-weight: 200;
+          color: black;
+          font-weight: 400;
+          line-height: normal;
+          position: relative;
+          display: block;
+          color: #696969;
+      }
 
-        .toc-link {
-            color: {{secondary_color}};
-            text-decoration: none;
-            font-size: 15pt;
-            font-weight: 500;
-        }
+      h1::after, h2::after {
+          content: '';
+          display: block;
+          height: 1.2px;
+          width: 100%;
+          position: absolute;
+          bottom: -2mm;
+          left: 0;
+          background: linear-gradient(to right, {{primary_color}}, rgba(255, 255, 255, 0));
+      }
 
-        #executive-summary-page {
-            justify-content: space-between;
-            background-color: white;
-            padding: 20mm;
-            font-family: 'Inter', sans-serif;
-        }
+      .no-fade-line::after {
+          content: none;
+      }
 
-        #executive-summary-page h2 {
-            font-size: 24pt;
-            color: {{primary_color}};
-        }
+      .subheading {
+          font-weight: 200;
+          font-size: 24pt;
+          color: {{primary_color}};
+          margin: 0 0 5mm 0;
+      }
 
-        @page end-of-report {
-            background: {{primary_color}};
-            margin: 0;
+      .date {
+          font-weight: 300;
+          font-size: 14pt;
+          color: {{primary_color}};
+          margin: 0 0 20mm 0;
+      }
 
-            @top-left {
-            content: none
-            }
+      .cover-line {
+          width: 95%;
+          height: 1.5px;
+          background: linear-gradient(to right, {{primary_color}}, {{secondary_color}});
+          margin: 0 0 20mm 0;
+      }
 
-            @top-center {
-            content: none
-            }
+      .abstract-shape {
+          position: absolute;
+          border: 2px solid {{primary_color}};
+          opacity: 0.3;
+      }
 
-            @top-right {
-            content: none
-            }
-        }
+      .shape1 {
+          width: 40mm;
+          height: 40mm;
+          border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+          top: 10%;
+          right: 10%;
+      }
 
-        .content-wrapper {
-            text-align: center;
-        }
+      .shape2 {
+          width: 60mm;
+          height: 60mm;
+          border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+          bottom: 20%;
+          left: 5%;
+      }
 
-        #end-of-report {
-            align-items: center;
-            display: flex;
-            height: 297mm;
-            justify-content: center;
-            page: end-of-report;
-            background-color: {{secondary_color}};
-        }
+      .footer {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background-color: {{primary_color}};
+          color: {{secondary_color}};
+          padding: 10mm;
+          font-size: 10pt;
+          text-align: center;
+      }
 
-        #end-of-report h1 {
-            color: {{primary_color}};
-            font-size: 48pt;
-            font-weight: 200;
-            margin: 0 0 20mm 0;
-        }
+      .rengine-banner {
+          margin-top: 5mm;
+          font-size: 8pt;
+          opacity: 0.8;
+      }
+
+      {% comment %} table of content page {% endcomment %}
+      .toc-modern {
+          background-color: white;
+          padding: 20mm;
+          font-family: 'Inter', sans-serif;
+      }
+
+      .toc-title {
+          font-size: 24pt;
+          font-weight: 400;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          color: {{primary_color}};
+          padding: 5mm 0;
+      }
+
+      .toc-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10mm;
+      }
+
+      .toc-item {
+          display: flex;
+          align-items: center;
+          padding: 5mm 0;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      }
+
+      .toc-number {
+          font-size: 14pt;
+          font-weight: 700;
+          color: {{primary_color}};
+          margin-left: auto;
+          float: none;
+      }
+
+      .toc-number::after {
+          content: target-counter(attr(data-href), page);
+          margin-left: 5mm;
+      }
+
+      .toc-link {
+          color: #696969;
+          text-decoration: none;
+          font-size: 14pt;
+          font-weight: 400;
+      }
+
+      #executive-summary-page {
+          justify-content: space-between;
+          background-color: white;
+          padding: 20mm;
+          font-family: 'Inter', sans-serif;
+      }
+
+      #quick-summary-page {
+          justify-content: space-between;
+          background-color: white;
+          padding: 20mm;
+          font-family: 'Inter', sans-serif;
+      }
+
+      #executive-summary-page h2 {
+          font-size: 24pt;
+          color: {{primary_color}};
+      }
+
+      #quick-summary-page h2 {
+          font-size: 24pt;
+          color: {{primary_color}};
+      }
+
+      @page end-of-report {
+          background: {{primary_color}};
+          margin: 0;
+
+          @top-left {
+          content: none
+          }
+
+          @top-center {
+          content: none
+          }
+
+          @top-right {
+          content: none
+          }
+      }
+
+      .content-wrapper {
+          text-align: center;
+      }
+
+      #end-of-report {
+          align-items: center;
+          display: flex;
+          height: 297mm;
+          justify-content: center;
+          page: end-of-report;
+          background-color: {{secondary_color}};
+      }
+
+      #end-of-report h1 {
+          color: {{primary_color}};
+          font-size: 48pt;
+          font-weight: 200;
+          margin: 0 0 20mm 0;
+      }
 
 
-        {% comment %} this line fades from both sides {% endcomment %}
-        .fading-line-both {
-            width: 180mm;
-            height: 1px;
-            margin: 0 auto;
-            background: linear-gradient(to right, 
-                transparent, 
-                {{primary_color}} 20%, 
-                {{primary_color}} 80%, 
-                transparent
-            );
-        }
+      {% comment %} this line fades from both sides {% endcomment %}
+      .fading-line-both {
+          width: 180mm;
+          height: 1px;
+          margin: 0 auto;
+          background: linear-gradient(to right,
+              transparent,
+              {{primary_color}} 20%,
+              {{primary_color}} 80%,
+              transparent
+          );
+      }
 
+      {% comment %} for the quick summary boxes {% endcomment %}
+      {% comment %} .section {
+          margin-bottom: 15mm;
+      } {% endcomment %}
+      .grid {
+          display: flex;
+          justify-content: space-between;
+          width: 170mm;
+          margin-bottom: 8mm;
+      }
+      .box {
+          width: 50mm;
+          height: 20mm;
+          background-color: #f8f9fa;
+          border-radius: 2mm;
+          padding: 2mm;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 1mm 2mm rgba(0,0,0,0.1);
+      }
+      .box::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          border-style: solid;
+          border-width: 0 6mm 6mm 0;
+          border-color: transparent #3498db transparent transparent;
+      }
+      .box h4 {
+          font-size: 9pt;
+          margin: 0 0 1mm 0;
+          display: flex;
+          align-items: center;
+      }
+      .box .number {
+          font-size: 25pt;
+          font-weight: 200;
+          position: absolute;
+          bottom: 2mm;
+          right: 2mm;
+      }
+      .icon {
+          width: 3mm;
+          height: 3mm;
+          margin-right: 1mm;
+          display: inline-block;
+          vertical-align: middle;
+      }
+      .critical { border-left: 1mm solid #e74c3c; }
+      .high { border-left: 1mm solid #e67e22; }
+      .medium { border-left: 1mm solid #f39c12; }
+      .low { border-left: 1mm solid #27ae60; }
+      .info { border-left: 1mm solid #3498db; }
+      .unknown { border-left: 1mm solid #95a5a6; }
+      .critical .number, .critical::before { color: #e74c3c; border-right-color: #e74c3c; }
+      .high .number, .high::before { color: #e67e22; border-right-color: #e67e22; }
+      .medium .number, .medium::before { color: #f39c12; border-right-color: #f39c12; }
+      .low .number, .low::before { color: #27ae60; border-right-color: #27ae60; }
+      .info .number, .info::before { color: #3498db; border-right-color: #3498db; }
+      .unknown .number, .unknown::before { color: #95a5a6; border-right-color: #95a5a6; }
+      .primary { color: {{primary_color}}; }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     {% comment %} cover page {% endcomment %}
     <article id="cover">
-        <div class="background-element circle"></div>
-        <div class="background-element rectangle"></div>
-        <div class="abstract-shape shape1"></div>
-        <div class="abstract-shape shape2"></div>
-        <div class="content">
-            <h1 class="no-fade-line">{{report_name}}</h1>
-            <div class="subheading">{{scan_object.domain.name}}</div>
-            <div class="date">{% now "F j, Y" %}</div>
-            <div class="cover-line"></div>
+      <div class="background-element circle"></div>
+      <div class="background-element rectangle"></div>
+      <div class="abstract-shape shape1"></div>
+      <div class="abstract-shape shape2"></div>
+      <div class="content">
+        <h1 class="no-fade-line">{{report_name}}</h1>
+        <div class="subheading">{{scan_object.domain.name}}</div>
+        <div class="date">{% now "F j, Y" %}</div>
+        <div class="cover-line"></div>
+      </div>
+      <div class="footer">
+        {{company_name}} | {{company_address}} | {{company_email}} |
+        {{company_website}} {% if show_rengine_banner %}
+        <div class="rengine-banner">
+          Generated by reNgine<br />
+          https://github.com/yogeshojha/rengine
         </div>
-        <div class="footer">
-            {{company_name}} | {{company_address}} | {{company_email}} | {{company_website}}
-            {% if show_rengine_banner %}
-                <div class="rengine-banner">
-                    Generated by reNgine<br>
-                    https://github.com/yogeshojha/rengine
-                </div>
-            {% endif %}
-        </div>
+        {% endif %}
+      </div>
     </article>
 
     {% comment %} table of contents {% endcomment %}
     <article class="toc-modern">
-        <h1 class="toc-title page-title">Table of Contents</h1>
-        <div class="toc-list">
-            {% if show_executive_summary %}
-            <div class="toc-item">
-                <a href="#executive-summary" class="toc-link">Executive Summary</a>
-                <span class="toc-number" data-href="#executive-summary"></span>
-            </div>
-            {% endif %}
-            <div class="toc-item">
-                <a href="#quick-summary" class="toc-link">Quick Summary</a>
-                <span class="toc-number" data-href="#quick-summary"></span>
-            </div>
-            <div class="toc-item">
-                <a href="#assessment-timeline" class="toc-link">Assessment Timeline</a>
-                <span class="toc-number" data-href="#assessment-timeline"></span>
-            </div>
-            {% if show_vuln %}
-            <div class="toc-item">
-                <a href="#vulnerability-summary" class="toc-link">Vulnerability Summary</a>
-                <span class="toc-number" data-href="#vulnerability-summary"></span>
-            </div>
-            {% endif %}
-            {% if show_recon %}
-            <div class="toc-item">
-                <a href="#reconnaissance-results" class="toc-link">Reconnaissance Results</a>
-                <span class="toc-number" data-href="#reconnaissance-results"></span>
-            </div>
-            {% endif %}
-            {% if show_vuln %}
-            <div class="toc-item">
-                <a href="#vulnerabilities-discovered" class="toc-link">Vulnerabilities Discovered</a>
-                <span class="toc-number" data-href="#vulnerabilities-discovered"></span>
-            </div>
-            {% endif %}
+      <h1 class="toc-title page-title">Table of Contents</h1>
+      <div class="toc-list">
+        {% if show_executive_summary %}
+        <div class="toc-item">
+          <a href="#executive-summary" class="toc-link">Executive Summary</a>
+          <span class="toc-number" data-href="#executive-summary"></span>
         </div>
+        {% endif %}
+        <div class="toc-item">
+          <a href="#quick-summary" class="toc-link">Quick Summary</a>
+          <span class="toc-number" data-href="#quick-summary"></span>
+        </div>
+        <div class="toc-item">
+          <a href="#assessment-timeline" class="toc-link"
+            >Assessment Timeline</a
+          >
+          <span class="toc-number" data-href="#assessment-timeline"></span>
+        </div>
+        {% if show_vuln %}
+        <div class="toc-item">
+          <a href="#vulnerability-summary" class="toc-link"
+            >Vulnerability Summary</a
+          >
+          <span class="toc-number" data-href="#vulnerability-summary"></span>
+        </div>
+        {% endif %} {% if show_recon %}
+        <div class="toc-item">
+          <a href="#reconnaissance-results" class="toc-link"
+            >Reconnaissance Results</a
+          >
+          <span class="toc-number" data-href="#reconnaissance-results"></span>
+        </div>
+        {% endif %} {% if show_vuln %}
+        <div class="toc-item">
+          <a href="#vulnerabilities-discovered" class="toc-link"
+            >Vulnerabilities Discovered</a
+          >
+          <span
+            class="toc-number"
+            data-href="#vulnerabilities-discovered"
+          ></span>
+        </div>
+        {% endif %}
+      </div>
     </article>
 
     {% if show_executive_summary %}
-      <article id="executive-summary-page" style="page-break-before: always">
-        <h2 id="executive-summary" class="page_title">Executive Summary</h2>
-        <br>
-        {{executive_summary_description | safe }}
-      </article>
+    <article id="executive-summary-page" style="page-break-before: always">
+      <h2 id="executive-summary" class="page-title">Executive Summary</h2>
+      <br />
+      {{executive_summary_description | safe }}
+    </article>
     {% endif %}
 
-    <article id="summary" style="page-break-before: always">
+    <article id="quick-summary-page" style="page-break-before: always">
       <h2 id="quick-summary" class="page-title">Quick Summary</h2>
-      <p>This section contains quick summary of scan performed on <span class="primary-color">{{scan_object.domain.name}}</span></p>
-      <br>
+      <p>
+        This section contains quick summary of scan performed on
+        <span class="primary-color">{{scan_object.domain.name}}</span>
+      </p>
+      <br />
+      {% if show_recon %}
+      <div class="section">
+        <h3 class="primary">Reconnaissance</h3>
+        <div class="grid">
+          <div class="box info">
+            <h3>Subdomains</h3>
+            <div class="number">{{scan_object.get_subdomain_count}}</div>
+          </div>
+          <div class="box info">
+            <h3>Endpoints</h3>
+            <div class="number">{{scan_object.get_endpoint_count}}</div>
+          </div>
+          <div class="box critical">
+            <h3>Vulnerabilities</h3>
+            <div class="number">{{all_vulnerabilities_count}}</div>
+          </div>
+        </div>
+      </div>
+      {% endif %} 
+      {% if show_vuln %}
+      <div class="section">
+        <h3 class="primary">Vulnerability Summary</h3>
+        <div class="grid">
+          <div class="box critical">
+            <h3>Critical</h3>
+            <div class="number">{{scan_object.get_critical_vulnerability_count}}</div>
+          </div>
+          <div class="box high">
+            <h3>High</h3>
+            <div class="number">{{scan_object.get_high_vulnerability_count}}</div>
+          </div>
+          <div class="box medium">
+            <h3>Medium</h3>
+            <div class="number">{{scan_object.get_medium_vulnerability_count}}</div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="box low">
+            <h3>Low</h3>
+            <div class="number">{{scan_object.get_low_vulnerability_count}}</div>
+          </div>
+          <div class="box info">
+            <h3>Info</h3>
+            <div class="number">
+            {% if is_ignore_info_vuln %}
+            0
+            {% else %}
+            {{scan_object.get_info_vulnerability_count}}
+            {% endif %}
+            </div>
+          </div>
+          <div class="box unknown">
+            <h3>Unknown</h3>
+            <div class="number">{{scan_object.get_unknown_vulnerability_count}}</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
     </article>
 
     <article id="end-of-report">
-        <div class="content-wrapper">
-            <h1>END OF REPORT</h1>
-            <div class="fading-line-both"></div>
-        </div>
+      <div class="content-wrapper">
+        <h1 class="no-fade-line">END OF REPORT</h1>
+        <div class="fading-line-both"></div>
+      </div>
     </article>
-
-</body>
+  </body>
 </html>
