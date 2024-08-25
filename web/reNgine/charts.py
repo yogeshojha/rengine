@@ -59,6 +59,14 @@ def generate_subdomain_chart_by_http_status(subdomains):
         margin=dict(t=60, b=60, l=60, r=60),
         width=700,
         height=700,
+        legend=dict(
+            font=dict(size=18),
+            orientation="v",
+            yanchor="middle",
+            y=0.5,
+            xanchor="left",
+            x=1.05
+        ),
     )
 
     img_bytes = to_image(fig, format="png")
@@ -123,6 +131,14 @@ def generate_vulnerability_chart_by_severity(vulnerabilities):
         margin=dict(t=60, b=60, l=60, r=60),
         width=700,
         height=700,
+        legend=dict(
+            font=dict(size=18),
+            orientation="v",
+            yanchor="middle",
+            y=0.5,
+            xanchor="left",
+            x=1.05
+        ),
     )
 
 

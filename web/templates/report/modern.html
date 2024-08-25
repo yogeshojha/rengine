@@ -257,6 +257,13 @@
           font-family: 'Inter', sans-serif;
       }
 
+      #vulnerability-breakdown-chart-page {
+          justify-content: space-between;
+          background-color: white;
+          padding: 15mm;
+          font-family: 'Inter', sans-serif;
+      }
+
       #summary-of-finding-page h2 {
           font-size: 24pt;
           color: {{primary_color}};
@@ -268,6 +275,11 @@
       }
 
       #quick-summary-page h2 {
+          font-size: 24pt;
+          color: {{primary_color}};
+      }
+
+      #vulnerability-breakdown-chart-page h2 {
           font-size: 24pt;
           color: {{primary_color}};
       }
@@ -386,6 +398,63 @@
       .unknown .number, .unknown::before { color: #95a5a6; border-right-color: #95a5a6; }
       .primary { color: {{primary_color}}; }
 
+      {% comment %} table related {% endcomment %}
+      .vuln-summary-table-container {
+        width: 100%;
+        margin: auto auto;
+        background-color: #ffffff;
+        border-radius: 4mm;
+        overflow: hidden;
+      }
+      .vuln-summary-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0.5mm;
+        background-color: #ffffff;
+      }
+      .vuln-summary-table th, .vuln-summary-table td {
+        padding: 2.5mm 3mm;
+        text-align: center;
+        vertical-align: middle;
+      }
+      .vuln-summary-table th {
+        background-color: #4a5568;
+        color: white;
+        font-weight: bold;
+      }
+      .vuln-summary-table .vulnerability-td {
+        text-align: left !important;
+      }
+      .vulnerability-td a {
+        color: inherit;
+        text-decoration: none;
+        font-weight: inherit;
+      }
+      .number-td {
+        width: 5mm;
+        text-align: center;
+        color: rgba(0, 0, 0, 0.5);
+        font-weight: normal;
+      }
+      .vulnerability-td {
+        width: 100mm;
+        text-align: left;
+      }
+      .instances-td {
+        width: 10mm;
+        text-align: center;
+      }
+      .severity-td {
+        width: 10mm;
+        text-align: center;
+        font-weight: bold;
+      }
+      .unknown-td { background-color: #f7f7f7; color: #777777; }
+      .info-td { background-color: #e3f2fd; color: #1565c0; }
+      .low-td { background-color: #e8f5e9; color: #2e7d32; }
+      .medium-td { background-color: #fff3e0; color: #ef6c00; }
+      .high-td { background-color: #fbe9e7; color: #d84315; }
+      .critical-td { background-color: #ffebee; color: #c62828; }
       .center-img {
         display: block;
         margin-left: auto;
@@ -440,10 +509,10 @@
         </div>
         {% if show_vuln %}
         <div class="toc-item">
-          <a href="#vulnerability-summary" class="toc-link"
+          <a href="#vulnerability-breakdown-chart-page" class="toc-link"
             >Vulnerability Summary</a
           >
-          <span class="toc-number" data-href="#vulnerability-summary"></span>
+          <span class="toc-number" data-href="#vulnerability-breakdown-chart-page"></span>
         </div>
         {% endif %} {% if show_recon %}
         <div class="toc-item">
@@ -577,8 +646,47 @@
     </article>
 
     <article id="vulnerability-breakdown-chart-page" style="page-break-before: always">
-        <h2 class="page-title">Vulnerabilities Breakdown by Severity</h2>
-        
+        <h2 class="page-title">Summary of Vulnerabilities Identified</h2>
+        <p>Listed below are the vulnerabilities identified on <span class="primary-color">{{scan_object.domain.name}}</span></p>
+        <div class="vuln-summary-table-container">
+        <table class="vuln-summary-table">
+            <tr>
+                <th class="number-td">#</th>
+                <th class="vulnerability-td">Vulnerability Name</th>
+                <th class="instances-td">Instances</th>
+                <th class="severity-td">Severity</th>
+            </tr>
+            {% for vulnerability in unique_vulnerabilities %}
+            <tr class="{% if vulnerability.severity == -1 %}unknown-td
+                {% elif vulnerability.severity == 0 %}info-td
+                {% elif vulnerability.severity == 1 %}low-td
+                {% elif vulnerability.severity == 2 %}medium-td
+                {% elif vulnerability.severity == 3 %}high-td
+                {% elif vulnerability.severity == 4 %}critical-td
+                {% else %}unknown-td{% endif %}">
+                <td class="number-td">{{ forloop.counter }}</td>
+                <td class="vulnerability-td"><a href="#vuln_{{vulnerability.name.split|join:'_'}}">{{vulnerability.name}}</a></td>
+                <td class="instances-td">{{vulnerability.count}}</td>
+                <td class="severity-td">
+                    {% if vulnerability.severity == -1 %}
+                        Unknown
+                    {% elif vulnerability.severity == 0 %}
+                        Informational
+                    {% elif vulnerability.severity == 1 %}
+                        Low
+                    {% elif vulnerability.severity == 2 %}
+                        Medium
+                    {% elif vulnerability.severity == 3 %}
+                        High
+                    {% elif vulnerability.severity == 4 %}
+                        Critical
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
     </article>
 
     <article id="end-of-report">
