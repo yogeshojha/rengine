@@ -272,22 +272,7 @@
           font-family: 'Inter', sans-serif;
       }
 
-      #summary-of-finding-page h2 {
-          font-size: 24pt;
-          color: {{primary_color}};
-      }
-
-      #executive-summary-page h2 {
-          font-size: 24pt;
-          color: {{primary_color}};
-      }
-
-      #quick-summary-page h2 {
-          font-size: 24pt;
-          color: {{primary_color}};
-      }
-
-      #vulnerability-breakdown-chart-page h2 {
+      .page-title {
           font-size: 24pt;
           color: {{primary_color}};
       }
@@ -470,6 +455,13 @@
         margin-right: auto;
         width: 50%;
       }
+      {% comment %} stripped table {% endcomment %}
+        .table-stripped tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+        .table-stripped tr:nth-child(even) {
+           background-color: #f2f2f2;
+        }
 
       {% comment %} interesting-subdomain-table {% endcomment %}
       .interesting-subdomain-table-container {
@@ -505,6 +497,10 @@
         width: 10mm;
         text-align: center;
         font-weight: bold;
+      }
+      .normal-td {
+        width: 10mm;
+        text-align: center;
       }
         </style>
     </head>
@@ -784,7 +780,9 @@
                     <li>
                         <strong>Interesting Subdomains:</strong> {{ interesting_subdomains.count }}
                         <ul>
-                            <li>High-priority subdomains identified through keyword analysis (e.g., admin, api, test), suggesting a focused investigation.</li>
+                            <li>
+                                High-priority subdomains identified through keyword analysis (e.g., admin, api, test), suggesting a focused investigation.
+                            </li>
                         </ul>
                     </li>
                 </ol>
@@ -799,9 +797,7 @@
                             <th class="page-title-td">Page Title</th>
                             <th class="status-td">HTTP Status</th>
                             {% comment %} if show vuln is there we may also show total vulnerbaility count {% endcomment %}
-                            {% if show_vuln %}
-                                <th class="status-td">Vulnerabilities Count</th>
-                            {% endif %}
+                            {% if show_vuln %}<th class="status-td">Vulnerabilities Count</th>{% endif %}
                         </tr>
                         {% for subdomain in subdomains %}
                             <tr class=" {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %} ">
@@ -826,13 +822,55 @@
                         {% endfor %}
                     </table>
                 </div>
+                {% if ip_addresses.count > 0 %}
+                    <h3 class="primary">IP Assets</h3>
+                    <p>In addition to subdomains, various IP assets associated with the target infrastructure were also identified:</p>
+                    <ol>
+                        <li>
+                            <strong>Total IP Addresses:</strong> {{ ip_addresses.count }}
+                            <ul>
+                                <li>
+                                    This represents the range of unique IP addresses associated with the discovered subdomains and other network assets.
+                                </li>
+                            </ul>
+                        </li>
+                    </ol>
+                    <div class="interesting-subdomain-table-container">
+                        <table class="interesting-subdomain-table table-stripped">
+                            <tr>
+                                <th class="number-td">#</th>
+                                <th class="interesting-subdomain-td">IP</th>
+                                <th class="page-title-td">Open Ports</th>
+                                <th class="normal-td">Geo Location</th>
+                                <th class="normal-td">Remarks</th>
+                            </tr>
+                            {% for ip in ip_addresses %}
+                                <tr>
+                                    <td class="number-td">{{ forloop.counter }}</td>
+                                    <td class="subdomain-name-td">{{ ip.address }}</td>
+                                    <td class="page-title-td">
+                                        {% for port in ip.ports.all %}
+                                            {{ port.number }}/{{ port.service_name }}
+                                            {% if not forloop.last %},{% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <td class="normal-td">
+                                        {% if ip.geo_iso %}{{ ip.geo_iso }}{% endif %}
+                                        <td class="normal-td">
+                                            {% if ip.is_cdn %}CDN{% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    {% endif %}
+                </article>
+            {% endif %}
+            <article id="end-of-report">
+                <div class="content-wrapper">
+                    <h1 class="no-fade-line">END OF REPORT</h1>
+                    <div class="fading-line-both"></div>
+                </div>
             </article>
-        {% endif %}
-        <article id="end-of-report">
-            <div class="content-wrapper">
-                <h1 class="no-fade-line">END OF REPORT</h1>
-                <div class="fading-line-both"></div>
-            </div>
-        </article>
-    </body>
-</html>
+        </body>
+    </html>
