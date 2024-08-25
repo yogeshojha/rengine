@@ -552,6 +552,10 @@
                         <a href="#assessment-timeline" class="toc-link">Assessment Timeline</a>
                         <span class="toc-number" data-href="#assessment-timeline"></span>
                     </div>
+                    <div class="toc-item">
+                        <a href="#summary-of-finding-page" class="toc-link">Summary of Findings</a>
+                        <span class="toc-number" data-href="#summary-of-finding-page"></span>
+                    </div>
                     {% if show_vuln %}
                         <div class="toc-item">
                             <a href="#vulnerability-breakdown-chart-page" class="toc-link">Vulnerability Summary</a>
@@ -685,9 +689,7 @@
                 <img class="center-img"
                      src="data:image/png;base64,{{ vulns_severity_chart }}" />
             {% endif %}
-        </article>
-        <article id="interesting-subdomains-page">
-            <h2 class="page-title">Interesting Subdomains</h2>
+            <h3 class="primary">Interesting Subdomains</h3>
             <p>
                 Listed below are the interesting subdomains identified on <span class="primary-color">{{ scan_object.domain.name }}</span>
             </p>
@@ -700,10 +702,12 @@
                         <th class="status-td">HTTP Status</th>
                     </tr>
                     {% for subdomain in interesting_subdomains %}
-                        <tr>
+                        <tr class=" {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %} ">
                             <td class="number-td">{{ forloop.counter }}</td>
                             <td class="subdomain-name-td">{{ subdomain.name }}</td>
-                            <td class="page-title-td">{{ subdomain.ip_address }}</td>
+                            <td class="page-title-td">
+                                {% if subdomain.page_title %}{{ subdomain.page_title }}{% endif %}
+                            </td>
                             <td class="status-td">
                                 {% if subdomain.http_status %}{{ subdomain.http_status }}{% endif %}
                             </td>
@@ -713,47 +717,44 @@
             </div>
         </article>
         {% if show_vuln %}
-            <article id="vulnerability-breakdown-chart-page"
-                     style="page-break-before: always">
-                <h2 class="page-title">Summary of Vulnerabilities Identified</h2>
-                <p>
-                    Listed below are the vulnerabilities identified on <span class="primary-color">{{ scan_object.domain.name }}</span>
-                </p>
-                <div class="vuln-summary-table-container">
-                    <table class="vuln-summary-table">
-                        <tr>
-                            <th class="number-td">#</th>
-                            <th class="vulnerability-td">Vulnerability Name</th>
-                            <th class="instances-td">Instances</th>
-                            <th class="severity-td">Severity</th>
+            <h3 class="primary">Summary of Vulnerabilities Identified</h3>
+            <p>
+                Listed below are the vulnerabilities identified on <span class="primary-color">{{ scan_object.domain.name }}</span>
+            </p>
+            <div class="vuln-summary-table-container">
+                <table class="vuln-summary-table">
+                    <tr>
+                        <th class="number-td">#</th>
+                        <th class="vulnerability-td">Vulnerability Name</th>
+                        <th class="instances-td">Instances</th>
+                        <th class="severity-td">Severity</th>
+                    </tr>
+                    {% for vulnerability in unique_vulnerabilities %}
+                        <tr class="{% if vulnerability.severity == -1 %}unknown-td {% elif vulnerability.severity == 0 %}info-td {% elif vulnerability.severity == 1 %}low-td {% elif vulnerability.severity == 2 %}medium-td {% elif vulnerability.severity == 3 %}high-td {% elif vulnerability.severity == 4 %}critical-td {% else %}unknown-td{% endif %}">
+                            <td class="number-td">{{ forloop.counter }}</td>
+                            <td class="vulnerability-td">
+                                <a href="#vuln_{{ vulnerability.name.split|join:'_' }}">{{ vulnerability.name }}</a>
+                            </td>
+                            <td class="instances-td">{{ vulnerability.count }}</td>
+                            <td class="severity-td">
+                                {% if vulnerability.severity == -1 %}
+                                    Unknown
+                                {% elif vulnerability.severity == 0 %}
+                                    Informational
+                                {% elif vulnerability.severity == 1 %}
+                                    Low
+                                {% elif vulnerability.severity == 2 %}
+                                    Medium
+                                {% elif vulnerability.severity == 3 %}
+                                    High
+                                {% elif vulnerability.severity == 4 %}
+                                    Critical
+                                {% endif %}
+                            </td>
                         </tr>
-                        {% for vulnerability in unique_vulnerabilities %}
-                            <tr class="{% if vulnerability.severity == -1 %}unknown-td {% elif vulnerability.severity == 0 %}info-td {% elif vulnerability.severity == 1 %}low-td {% elif vulnerability.severity == 2 %}medium-td {% elif vulnerability.severity == 3 %}high-td {% elif vulnerability.severity == 4 %}critical-td {% else %}unknown-td{% endif %}">
-                                <td class="number-td">{{ forloop.counter }}</td>
-                                <td class="vulnerability-td">
-                                    <a href="#vuln_{{ vulnerability.name.split|join:'_' }}">{{ vulnerability.name }}</a>
-                                </td>
-                                <td class="instances-td">{{ vulnerability.count }}</td>
-                                <td class="severity-td">
-                                    {% if vulnerability.severity == -1 %}
-                                        Unknown
-                                    {% elif vulnerability.severity == 0 %}
-                                        Informational
-                                    {% elif vulnerability.severity == 1 %}
-                                        Low
-                                    {% elif vulnerability.severity == 2 %}
-                                        Medium
-                                    {% elif vulnerability.severity == 3 %}
-                                        High
-                                    {% elif vulnerability.severity == 4 %}
-                                        Critical
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </table>
-                </div>
-            </article>
+                    {% endfor %}
+                </table>
+            </div>
         {% endif %}
         <article id="end-of-report">
             <div class="content-wrapper">
