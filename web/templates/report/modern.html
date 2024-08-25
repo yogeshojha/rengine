@@ -718,43 +718,115 @@
         </article>
         {% if show_vuln %}
             <h3 class="primary">Summary of Vulnerabilities Identified</h3>
-            <p>
-                Listed below are the vulnerabilities identified on <span class="primary-color">{{ scan_object.domain.name }}</span>
-            </p>
-            <div class="vuln-summary-table-container">
-                <table class="vuln-summary-table">
-                    <tr>
-                        <th class="number-td">#</th>
-                        <th class="vulnerability-td">Vulnerability Name</th>
-                        <th class="instances-td">Instances</th>
-                        <th class="severity-td">Severity</th>
-                    </tr>
-                    {% for vulnerability in unique_vulnerabilities %}
-                        <tr class="{% if vulnerability.severity == -1 %}unknown-td {% elif vulnerability.severity == 0 %}info-td {% elif vulnerability.severity == 1 %}low-td {% elif vulnerability.severity == 2 %}medium-td {% elif vulnerability.severity == 3 %}high-td {% elif vulnerability.severity == 4 %}critical-td {% else %}unknown-td{% endif %}">
-                            <td class="number-td">{{ forloop.counter }}</td>
-                            <td class="vulnerability-td">
-                                <a href="#vuln_{{ vulnerability.name.split|join:'_' }}">{{ vulnerability.name }}</a>
-                            </td>
-                            <td class="instances-td">{{ vulnerability.count }}</td>
-                            <td class="severity-td">
-                                {% if vulnerability.severity == -1 %}
-                                    Unknown
-                                {% elif vulnerability.severity == 0 %}
-                                    Informational
-                                {% elif vulnerability.severity == 1 %}
-                                    Low
-                                {% elif vulnerability.severity == 2 %}
-                                    Medium
-                                {% elif vulnerability.severity == 3 %}
-                                    High
-                                {% elif vulnerability.severity == 4 %}
-                                    Critical
-                                {% endif %}
-                            </td>
+            {% if all_vulnerabilities.count == 0 %}
+                <p>
+                    No vulnerabilities were identified on <span class="primary">{{ scan_object.domain.name }}</span>
+                </p>
+            {% else %}
+                <p>
+                    Listed below are the vulnerabilities identified on <span class="primary-color">{{ scan_object.domain.name }}</span>
+                </p>
+                <div class="vuln-summary-table-container">
+                    <table class="vuln-summary-table">
+                        <tr>
+                            <th class="number-td">#</th>
+                            <th class="vulnerability-td">Vulnerability Name</th>
+                            <th class="instances-td">Instances</th>
+                            <th class="severity-td">Severity</th>
                         </tr>
-                    {% endfor %}
-                </table>
-            </div>
+                        {% for vulnerability in unique_vulnerabilities %}
+                            <tr class="{% if vulnerability.severity == -1 %}unknown-td {% elif vulnerability.severity == 0 %}info-td {% elif vulnerability.severity == 1 %}low-td {% elif vulnerability.severity == 2 %}medium-td {% elif vulnerability.severity == 3 %}high-td {% elif vulnerability.severity == 4 %}critical-td {% else %}unknown-td{% endif %}">
+                                <td class="number-td">{{ forloop.counter }}</td>
+                                <td class="vulnerability-td">
+                                    <a href="#vuln_{{ vulnerability.name.split|join:'_' }}">{{ vulnerability.name }}</a>
+                                </td>
+                                <td class="instances-td">{{ vulnerability.count }}</td>
+                                <td class="severity-td">
+                                    {% if vulnerability.severity == -1 %}
+                                        Unknown
+                                    {% elif vulnerability.severity == 0 %}
+                                        Informational
+                                    {% elif vulnerability.severity == 1 %}
+                                        Low
+                                    {% elif vulnerability.severity == 2 %}
+                                        Medium
+                                    {% elif vulnerability.severity == 3 %}
+                                        High
+                                    {% elif vulnerability.severity == 4 %}
+                                        Critical
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            {% endif %}
+        {% endif %}
+        {% if show_recon %}
+            <article style="page-break-before: always">
+                <h2 class="page-title">Discovered Assets</h2>
+                <p>This section provides a list of assets discovered during the reconnaissance phase.</p>
+                <h3 class="primary">Subdomains</h3>
+                <p>During the reconnaissance phase, our subdomain enumeration process revealed:</p>
+                <ol>
+                    <li>
+                        <strong>Total Subdomains:</strong> {{ scan_object.get_subdomain_count }}
+                        <ul>
+                            <li>This extensive list provides a comprehensive view of the target's online footprint.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Active Subdomains:</strong> {{ subdomain_alive_count }}
+                        <ul>
+                            <li>These subdomains returned an HTTP status 200 (OK), indicating live web assets.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Interesting Subdomains:</strong> {{ interesting_subdomains.count }}
+                        <ul>
+                            <li>High-priority subdomains identified through keyword analysis (e.g., admin, api, test), suggesting a focused investigation.</li>
+                        </ul>
+                    </li>
+                </ol>
+                <h4>
+                    {{ scan_object.get_subdomain_count }} subdomains identified on <span class="primary">{{ scan_object.domain.name }}</span>
+                </h4>
+                <div class="interesting-subdomain-table-container">
+                    <table class="interesting-subdomain-table">
+                        <tr>
+                            <th class="number-td">#</th>
+                            <th class="interesting-subdomain-td">Subdomain</th>
+                            <th class="page-title-td">Page Title</th>
+                            <th class="status-td">HTTP Status</th>
+                            {% comment %} if show vuln is there we may also show total vulnerbaility count {% endcomment %}
+                            {% if show_vuln %}
+                                <th class="status-td">Vulnerabilities Count</th>
+                            {% endif %}
+                        </tr>
+                        {% for subdomain in subdomains %}
+                            <tr class=" {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %} ">
+                                <td class="number-td">{{ forloop.counter }}</td>
+                                <td class="subdomain-name-td">{{ subdomain.name }}</td>
+                                <td class="page-title-td">
+                                    {% if subdomain.page_title %}{{ subdomain.page_title }}{% endif %}
+                                </td>
+                                <td class="status-td">
+                                    {% if subdomain.http_status %}{{ subdomain.http_status }}{% endif %}
+                                </td>
+                                {% if show_vuln %}
+                                    <td class="status-td">
+                                        {% if subdomain.get_total_vulnerability_count %}
+                                            {{ subdomain.get_total_vulnerability_count }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </article>
         {% endif %}
         <article id="end-of-report">
             <div class="content-wrapper">
