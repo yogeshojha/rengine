@@ -10,7 +10,7 @@
     <style>
       @page {
           size: A4;
-          margin: 0;
+          margin: 25mm 15mm;
 
           {% if show_footer %}
               @bottom-left {
@@ -21,6 +21,16 @@
                   width: 100%;
               }
           {% endif %}
+
+          @page :first {
+            padding: 0;
+            margin: 0;
+        }
+
+        @page end-of-report {
+            padding: 0;
+            margin: 0;
+        }
 
       }
 
@@ -35,8 +45,6 @@
       body {
           margin: 0;
           padding: 0;
-          width: 210mm;
-          height: 297mm;
           font-family: 'Inter', sans-serif;
       }
 
@@ -44,17 +52,25 @@
           font-family: inherit;
       }
 
-      .container {
-          width: 170mm;
-          height: 257mm;
-      }
+      .page-content-wrapper {
+            width: 186mm;
+            height: 273mm;
+            padding: 0;
+            margin: 0 auto;
+            box-sizing: border-box;
+            max-width: 186mm;
+        }
 
       #cover {
           position: relative;
-          width: 100%;
-          height: 100%;
           overflow: hidden;
           background-color: {{secondary_color}};
+          width: 210mm;
+          height: 297mm;
+      }
+
+      @page :first {
+        margin: 0 !important;
       }
 
       .background-element {
@@ -190,7 +206,6 @@
       {% comment %} table of content page {% endcomment %}
       .toc-modern {
           background-color: white;
-          padding: 15mm;
           font-family: 'Inter', sans-serif;
       }
 
@@ -200,7 +215,6 @@
           text-transform: uppercase;
           letter-spacing: 2px;
           color: {{primary_color}};
-          padding: 5mm 0;
       }
 
       .toc-list {
@@ -239,28 +253,24 @@
       #executive-summary-page {
           justify-content: space-between;
           background-color: white;
-          padding: 15mm;
           font-family: 'Inter', sans-serif;
       }
 
       #quick-summary-page {
           justify-content: space-between;
           background-color: white;
-          padding: 15mm;
           font-family: 'Inter', sans-serif;
       }
 
       #summary-of-finding-page {
           justify-content: space-between;
           background-color: white;
-          padding: 15mm;
           font-family: 'Inter', sans-serif;
       }
 
       #vulnerability-breakdown-chart-page {
           justify-content: space-between;
           background-color: white;
-          padding: 15mm;
           font-family: 'Inter', sans-serif;
       }
 
@@ -303,6 +313,7 @@
 
       .content-wrapper {
           text-align: center;
+          width: 100%;
       }
 
       #end-of-report {
@@ -489,49 +500,51 @@
 
     {% comment %} table of contents {% endcomment %}
     <article class="toc-modern">
-      <h1 class="toc-title page-title">Table of Contents</h1>
-      <div class="toc-list">
-        {% if show_executive_summary %}
-        <div class="toc-item">
-          <a href="#executive-summary" class="toc-link">Executive Summary</a>
-          <span class="toc-number" data-href="#executive-summary"></span>
+      <div class="page-content-wrapper">
+        <h1 class="toc-title page-title">Table of Contents</h1>
+        <div class="toc-list">
+            {% if show_executive_summary %}
+            <div class="toc-item">
+            <a href="#executive-summary" class="toc-link">Executive Summary</a>
+            <span class="toc-number" data-href="#executive-summary"></span>
+            </div>
+            {% endif %}
+            <div class="toc-item">
+            <a href="#quick-summary" class="toc-link">Quick Summary</a>
+            <span class="toc-number" data-href="#quick-summary"></span>
+            </div>
+            <div class="toc-item">
+            <a href="#assessment-timeline" class="toc-link"
+                >Assessment Timeline</a
+            >
+            <span class="toc-number" data-href="#assessment-timeline"></span>
+            </div>
+            {% if show_vuln %}
+            <div class="toc-item">
+            <a href="#vulnerability-breakdown-chart-page" class="toc-link"
+                >Vulnerability Summary</a
+            >
+            <span class="toc-number" data-href="#vulnerability-breakdown-chart-page"></span>
+            </div>
+            {% endif %} {% if show_recon %}
+            <div class="toc-item">
+            <a href="#reconnaissance-results" class="toc-link"
+                >Reconnaissance Results</a
+            >
+            <span class="toc-number" data-href="#reconnaissance-results"></span>
+            </div>
+            {% endif %} {% if show_vuln %}
+            <div class="toc-item">
+            <a href="#vulnerabilities-discovered" class="toc-link"
+                >Vulnerabilities Discovered</a
+            >
+            <span
+                class="toc-number"
+                data-href="#vulnerabilities-discovered"
+            ></span>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
-        <div class="toc-item">
-          <a href="#quick-summary" class="toc-link">Quick Summary</a>
-          <span class="toc-number" data-href="#quick-summary"></span>
-        </div>
-        <div class="toc-item">
-          <a href="#assessment-timeline" class="toc-link"
-            >Assessment Timeline</a
-          >
-          <span class="toc-number" data-href="#assessment-timeline"></span>
-        </div>
-        {% if show_vuln %}
-        <div class="toc-item">
-          <a href="#vulnerability-breakdown-chart-page" class="toc-link"
-            >Vulnerability Summary</a
-          >
-          <span class="toc-number" data-href="#vulnerability-breakdown-chart-page"></span>
-        </div>
-        {% endif %} {% if show_recon %}
-        <div class="toc-item">
-          <a href="#reconnaissance-results" class="toc-link"
-            >Reconnaissance Results</a
-          >
-          <span class="toc-number" data-href="#reconnaissance-results"></span>
-        </div>
-        {% endif %} {% if show_vuln %}
-        <div class="toc-item">
-          <a href="#vulnerabilities-discovered" class="toc-link"
-            >Vulnerabilities Discovered</a
-          >
-          <span
-            class="toc-number"
-            data-href="#vulnerabilities-discovered"
-          ></span>
-        </div>
-        {% endif %}
       </div>
     </article>
 
