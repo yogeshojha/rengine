@@ -502,6 +502,42 @@
         width: 10mm;
         text-align: center;
       }
+        /* recon finding card table */
+        .subdomain-card {
+            width: 100%;
+            margin-bottom: 3mm;
+            border: 1px solid #ddd;
+            border-radius: 4mm;
+            overflow: hidden;
+            box-shadow: 0 1mm 2mm rgba(0, 0, 0, 0.1);
+        }
+        .subdomain-card-header {
+            background-color: #f0f0f0;
+            padding: 2mm;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .subdomain-card-name {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 11pt;
+        }
+        .subdomain-card-http-status {
+            padding: 1mm 2mm;
+            border-radius: 1mm;
+            font-size: 13pt;
+        }
+        .subdomain-card-content {
+            padding: 3mm;
+        }
+        .subdomain-card-page-title {
+            font-style: italic !important;
+            color: #7f8c8d;
+            margin-bottom: 1mm;
+            font-size: 10pt;
+        }
         </style>
     </head>
     <body>
@@ -686,31 +722,37 @@
                      src="data:image/png;base64,{{ vulns_severity_chart }}" />
             {% endif %}
             <h3 class="primary">Interesting Subdomains</h3>
-            <p>
-                Listed below are the interesting subdomains identified on <span class="primary-color">{{ scan_object.domain.name }}</span>
-            </p>
-            <div class="interesting-subdomain-table-container">
-                <table class="interesting-subdomain-table">
-                    <tr>
-                        <th class="number-td">#</th>
-                        <th class="interesting-subdomain-td">Subdomain</th>
-                        <th class="page-title-td">Page Title</th>
-                        <th class="status-td">HTTP Status</th>
-                    </tr>
-                    {% for subdomain in interesting_subdomains %}
-                        <tr class=" {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %} ">
-                            <td class="number-td">{{ forloop.counter }}</td>
-                            <td class="subdomain-name-td">{{ subdomain.name }}</td>
-                            <td class="page-title-td">
-                                {% if subdomain.page_title %}{{ subdomain.page_title }}{% endif %}
-                            </td>
-                            <td class="status-td">
-                                {% if subdomain.http_status %}{{ subdomain.http_status }}{% endif %}
-                            </td>
+            {% if interesting_subdomains %}
+                <p>
+                    Listed below are the interesting subdomains identified on <span class="primary-color">{{ scan_object.domain.name }}</span>
+                </p>
+                <div class="interesting-subdomain-table-container">
+                    <table class="interesting-subdomain-table">
+                        <tr>
+                            <th class="number-td">#</th>
+                            <th class="interesting-subdomain-td">Subdomain</th>
+                            <th class="page-title-td">Page Title</th>
+                            <th class="status-td">HTTP Status</th>
                         </tr>
-                    {% endfor %}
-                </table>
-            </div>
+                        {% for subdomain in interesting_subdomains %}
+                            <tr class=" {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %} ">
+                                <td class="number-td">{{ forloop.counter }}</td>
+                                <td class="subdomain-name-td">{{ subdomain.name }}</td>
+                                <td class="page-title-td">
+                                    {% if subdomain.page_title %}{{ subdomain.page_title }}{% endif %}
+                                </td>
+                                <td class="status-td">
+                                    {% if subdomain.http_status %}{{ subdomain.http_status }}{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            {% else %}
+                <p>
+                    No interesting subdomains were identified on <span class="primary">{{ scan_object.domain.name }}</span>
+                </p>
+            {% endif %}
         </article>
         {% if show_vuln %}
             <h3 class="primary">Summary of Vulnerabilities Identified</h3>
@@ -866,6 +908,61 @@
                     {% endif %}
                 </article>
             {% endif %}
+             {% if show_recon %}
+                <article style="page-break-before: always">
+                <h2 class="page-title">Reconnaissance Findings</h2>
+                <p>
+                    This section contains list of all the subdomains identified during the reconnaissance phase.
+                </p>
+                {% for subdomain in subdomains %}
+                    <div class="subdomain-card">
+                        <div class="subdomain-card-header">
+                            <span class="subdomain-card-name">{{ subdomain.name }}</span>
+                            {% if subdomain.http_status %}
+                                <span class="subdomain-card-http-status {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %}">{{ subdomain.http_status }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="subdomain-card-content">
+                            {% if subdomain.page_title %}
+                                <div class="subdomain-card-page-title">{{ subdomain.page_title }}</div>
+                            {% endif %}
+                            {% if subdomain.ip_addresses.all %}
+                            <div>
+                                <h4>IP Addresses:</h4>
+                                <ul>
+                                    {% for ip in subdomain.ip_addresses.all %}
+                                    <li>
+                                        {{ip.address}}
+                                        {% if ip.ports.all %}
+                                        <ul>
+                                            {% for port in ip.ports.all %}
+                                            <li>{{ port.number }}/{{ port.service_name }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                        {% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            {% if subdomain.get_vulnerabilities_without_info %}
+                            <div>
+                                <h4>Vulnerabilities:</h4>
+                                {% regroup subdomain.get_vulnerabilities_without_info by name as vuln_list %}
+                                <ul>
+                                    {% for vulnerability in vuln_list %}
+                                    <li>
+                                        <a href="#vuln_{{vulnerability.list.0.name.split|join:'_'}}" class="primary">{{ vulnerability.grouper }}</a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                </article>
+                {% endif %}
             <article id="end-of-report">
                 <div class="content-wrapper">
                     <h1 class="no-fade-line">END OF REPORT</h1>
