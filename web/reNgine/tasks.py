@@ -4851,13 +4851,14 @@ def sync_h1_bookmarked():
         current_organizations = Organization.objects.filter(project=project)
         current_handles = {org.name for org in current_organizations}
 
-		logger.info(current_handles)
+        logger.info(current_handles)
 
 		# Delete organizations not in the bookmarked programs
         handles_to_delete = current_handles - bookmarked_handles
 
-		logger.info(handles_to_delete)
+        logger.info(handles_to_delete)
 
+		# Delete organizations
         for handle in handles_to_delete:
             try:
                 org_to_delete = get_object_or_404(Organization, name=handle, project=project)
