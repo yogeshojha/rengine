@@ -582,7 +582,7 @@
             font-weight: bold;
             text-transform: uppercase;
             margin-right: 3mm;
-            margin-top: 1mm;
+            margin-bottom: 2mm;
         }
         .badge-source {
             background-color: #2ecc71;
@@ -638,6 +638,10 @@
             color: #3498db;
             text-decoration: none;
         }
+        .no-style-a{
+            color: #3498db;
+            text-decoration: none;
+        }
         </style>
     </head>
     <body>
@@ -688,16 +692,10 @@
                         <a href="#summary-of-finding-page" class="toc-link">Summary of Findings</a>
                         <span class="toc-number" data-href="#summary-of-finding-page"></span>
                     </div>
-                    {% if show_vuln %}
-                        <div class="toc-item">
-                            <a href="#vulnerability-breakdown-chart-page" class="toc-link">Vulnerability Summary</a>
-                            <span class="toc-number" data-href="#vulnerability-breakdown-chart-page"></span>
-                        </div>
-                    {% endif %}
                     {% if show_recon %}
                         <div class="toc-item">
-                            <a href="#reconnaissance-results" class="toc-link">Reconnaissance Results</a>
-                            <span class="toc-number" data-href="#reconnaissance-results"></span>
+                            <a href="#reconnaissance-findings" class="toc-link">Reconnaissance Findings</a>
+                            <span class="toc-number" data-href="#reconnaissance-findings"></span>
                         </div>
                     {% endif %}
                     {% if show_vuln %}
@@ -944,7 +942,7 @@
                         {% for subdomain in subdomains %}
                             <tr class=" {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %} ">
                                 <td class="number-td">{{ forloop.counter }}</td>
-                                <td class="subdomain-name-td">{{ subdomain.name }}</td>
+                                <td class="subdomain-name-td"><a href="#subdomain_{{subdomain.name}}" class="no-style-a">{{ subdomain.name }}</a></td>
                                 <td class="page-title-td">
                                     {% if subdomain.page_title %}{{ subdomain.page_title }}{% endif %}
                                 </td>
@@ -1013,7 +1011,7 @@
                     <h2 class="page-title" id="reconnaissance-findings">Reconnaissance Findings</h2>
                     <p>This section contains list of all the subdomains identified during the reconnaissance phase.</p>
                     {% for subdomain in subdomains %}
-                        <div class="subdomain-card">
+                        <div class="subdomain-card" id="subdomain_{{subdomain.name}}">
                             <div class="subdomain-card-header">
                                 <span class="subdomain-card-name">{{ subdomain.name }}</span>
                                 {% if subdomain.http_status %}
@@ -1073,7 +1071,7 @@
                     {% regroup all_vulnerabilities by get_path as grouped_vulnerabilities %}
                     {% for vulnerabilities in grouped_vulnerabilities %}
                         {% for vulnerability in vulnerabilities.list %}
-                            <div class="vuln-card">
+                            <div class="vuln-card" id="vuln_{{ vulnerability.name.split|join:'_' }}">
                                 <div class="vuln-card-header {% if vulnerability.severity == 0 %}info-td{% elif vulnerability.severity == 1 %}low-td{% elif vulnerability.severity == 2 %}medium-td{% elif vulnerability.severity == 3 %}high-td{% elif vulnerability.severity == 4 %}critical-td{% endif %}">
                                     <h4>
                                         {{ vulnerability.name }}
@@ -1102,63 +1100,59 @@
                                     <div class="vuln-section">
                                         <span class="vuln-badge badge-source">{{vulnerability.source|upper}}</span>
                                         {% if vulnerability.cvss_score %}
-                                            <span class="vuln-badge badge-cvss">CVSS: {{vulnerability.cvss_score}}</span>
+                                            <span class="vuln-badge badge-cvss">CVSS: {{vulnerability.cvss_score|upper}}</span>
                                         {% endif %}
                                         {% if vulnerability.cve_ids.all %}
-                                        {% for cve in vulnerability.cve_ids.all %}<span class="vuln-badge badge-cvss">{{cve}}</span>{% endfor %}
+                                        {% for cve in vulnerability.cve_ids.all %}<span class="vuln-badge badge-cvss">{{cve|upper}}</span>{% endfor %}
                                         {% endif %}
                                         {% if vulnerability.cwe_ids.all %}
-                                        {% for cwe in vulnerability.cwe_ids.all %}<span class="vuln-badge badge-cwe">{{cwe}}</span>{% endfor %}
+                                        {% for cwe in vulnerability.cwe_ids.all %}<span class="vuln-badge badge-cwe">{{cwe|upper}}</span>{% endfor %}
                                         {% endif %}
                                     </div>
+                                    {% if vulnerability.cvss_metrics %}
                                     <div class="vuln-section">
                                         <p class="section-title">CVSS</p>
-                                        <div class="vuln-cvss-details">CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</div>
+                                        <div class="vuln-cvss-details">{{vulnerability.cvss_metrics}}</div>
                                     </div>
+                                    {% endif %}
+                                    {% if vulnerability.description %}
                                     <div class="vuln-section">
                                         <p class="section-title">Description</p>
                                         <p>
-                                            A SQL injection vulnerability was discovered in the login form, allowing potential attackers to manipulate database queries. This vulnerability arises from improper input validation and could potentially affect multiple areas of the application where user input interacts with database operations.
+                                            {{vulnerability.description|linebreaks}}
                                         </p>
                                     </div>
-                                    <div class="vuln-section">
-                                        <p class="section-title">Impact</p>
-                                        <p>
-                                            This vulnerability could lead to unauthorized access, data theft, or manipulation of the database. An attacker could potentially:
-                                        </p>
-                                        <ul>
-                                            <li>Bypass authentication mechanisms</li>
-                                            <li>Read, modify, or delete sensitive data</li>
-                                            <li>Execute administration operations on the database</li>
-                                            <li>Issue commands to the operating system</li>
-                                        </ul>
-                                    </div>
+                                    {% endif %}
+                                     {% if vulnerability.impact %}
+                                        <div class="vuln-section">
+                                            <p class="section-title">Impact</p>
+                                            <p>
+                                                {{vulnerability.impact|linebreaks}}
+                                            </p>
+                                        </div>
+                                    {% endif %}
+                                    {% if vulnerability.remediation %}
                                     <div class="vuln-section">
                                         <p class="section-title">Remediation</p>
-                                        <p>To address this vulnerability, implement the following measures:</p>
-                                        <ul>
-                                            <li>Use prepared statements or parameterized queries to prevent SQL injection attacks</li>
-                                            <li>Implement proper input validation and sanitization for all user inputs</li>
-                                            <li>Apply the principle of least privilege to database accounts used by the application</li>
-                                            <li>Regularly update and patch the database management system</li>
-                                        </ul>
+                                        <p>{{vulnerability.remediation|linebreaks}}</p>
                                     </div>
+                                    {% endif %}
                                     <div class="vuln-section">
                                         <p class="section-title">Vulnerable URLs</p>
-                                        <div class="vulnerable-url-li">https://example.com/login.php</div>
-                                        <div class="vulnerable-url-li">https://example.com/user.php?id=1</div>
+                                        <div class="vulnerable-url-li">{{vulnerability.http_url}}</div>
                                     </div>
+                                    {% if vulnerability.references.all %}
                                     <div class="vuln-section references-li">
                                         <p class="section-title">References</p>
                                         <ul>
+                                            {% for ref in vulnerability.references.all %}
                                             <li>
-                                                <a href="#">OWASP SQL Injection</a>
+                                                <a href="{{ref}}" target="_blank" rel="noopener noreferrer">{{ref}}</a>
                                             </li>
-                                            <li>
-                                                <a href="#">CWE-89: Improper Neutralization of Special Elements used in an SQL Command</a>
-                                            </li>
+                                            {% endfor %}
                                         </ul>
                                     </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% endfor %}
