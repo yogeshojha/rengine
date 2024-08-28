@@ -449,6 +449,16 @@
       .medium-td { background-color: #fff3e0; color: #ef6c00; }
       .high-td { background-color: #fbe9e7; color: #d84315; }
       .critical-td { background-color: #ffebee; color: #c62828; }
+
+      .unknown-severity-badge { background-color: rgba(200, 200, 200, 0.2); }
+      .info-severity-badge { background-color: rgba(144, 202, 249, 0.2); }
+      .low-severity-badge { background-color: rgba(165, 214, 167, 0.2); }
+      .medium-severity-badge { background-color: rgba(255, 204, 128, 0.2); }
+      .high-severity-badge { background-color: rgba(239, 154, 154, 0.2); }
+      .critical-severity-badge { background-color: rgba(239, 154, 154, 0.2); }
+
+
+
       .center-img {
         display: block;
         margin-left: auto;
@@ -537,6 +547,96 @@
             color: #7f8c8d;
             margin-bottom: 1mm;
             font-size: 10pt;
+        }
+        {% comment %} vuln finding related css {% endcomment %}
+        .vuln-card {
+            background-color: #ffffff;
+            margin-bottom: 7mm;
+            border-radius: 4mm;
+            box-shadow: 0 2mm 4mm rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .vuln-card-header {
+            padding: 1mm 4mm;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-header h4 {
+            font-size: 14pt;
+            margin: 0;
+            font-weight: 500;
+        }
+        .vuln-severity {
+            font-size: 11pt;
+            font-weight: bold;
+            padding: 1mm 3mm;
+            border-radius: 2mm;
+        }
+        .vuln-badge {
+            display: inline-block;
+            padding: 1mm 3mm;
+            border-radius: 2mm;
+            font-size: 9pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-right: 3mm;
+            margin-top: 1mm;
+        }
+        .badge-source {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .badge-cvss {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .badge-cve {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .badge-cwe {
+            background-color: #9b59b6;
+            color: white;
+        }
+        .vuln-card-body {
+            padding: 5mm 2mm;
+        }
+        .vuln-section {
+            margin-bottom: 4mm;
+            padding-bottom: 4mm;
+            border-bottom: 1pt solid #e0e0e0;
+        }
+        .vuln-section:last-child {
+            border-bottom: none;
+        }
+        .section-title {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 11pt;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+        }
+        .vuln-cvss-details {
+            background-color: #f8f9fa;
+            padding: 4mm;
+            border-radius: 2mm;
+            font-family: monospace;
+            font-size: 9pt;
+        }
+        .vulnerable-url-li {
+            background-color: #fff3cd;
+            padding: 2mm 4mm;
+            margin-bottom: 2mm;
+            border-radius: 2mm;
+            font-family: monospace;
+            font-size: 9pt;
+        }
+        .references-li a {
+            color: #3498db;
+            text-decoration: none;
         }
         </style>
     </head>
@@ -908,61 +1008,163 @@
                     {% endif %}
                 </article>
             {% endif %}
-             {% if show_recon %}
+            {% if show_recon %}
                 <article style="page-break-before: always">
-                <h2 class="page-title">Reconnaissance Findings</h2>
-                <p>
-                    This section contains list of all the subdomains identified during the reconnaissance phase.
-                </p>
-                {% for subdomain in subdomains %}
-                    <div class="subdomain-card">
-                        <div class="subdomain-card-header">
-                            <span class="subdomain-card-name">{{ subdomain.name }}</span>
-                            {% if subdomain.http_status %}
-                                <span class="subdomain-card-http-status {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %}">{{ subdomain.http_status }}</span>
-                            {% endif %}
-                        </div>
-                        <div class="subdomain-card-content">
-                            {% if subdomain.page_title %}
-                                <div class="subdomain-card-page-title">{{ subdomain.page_title }}</div>
-                            {% endif %}
-                            {% if subdomain.ip_addresses.all %}
-                            <div>
-                                <h4>IP Addresses:</h4>
-                                <ul>
-                                    {% for ip in subdomain.ip_addresses.all %}
-                                    <li>
-                                        {{ip.address}}
-                                        {% if ip.ports.all %}
+                    <h2 class="page-title" id="reconnaissance-findings">Reconnaissance Findings</h2>
+                    <p>This section contains list of all the subdomains identified during the reconnaissance phase.</p>
+                    {% for subdomain in subdomains %}
+                        <div class="subdomain-card">
+                            <div class="subdomain-card-header">
+                                <span class="subdomain-card-name">{{ subdomain.name }}</span>
+                                {% if subdomain.http_status %}
+                                    <span class="subdomain-card-http-status {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %}">{{ subdomain.http_status }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="subdomain-card-content">
+                                {% if subdomain.page_title %}<div class="subdomain-card-page-title">{{ subdomain.page_title }}</div>{% endif %}
+                                {% if subdomain.ip_addresses.all %}
+                                    <div>
+                                        <h4>IP Addresses:</h4>
                                         <ul>
-                                            {% for port in ip.ports.all %}
-                                            <li>{{ port.number }}/{{ port.service_name }}</li>
+                                            {% for ip in subdomain.ip_addresses.all %}
+                                                <li>
+                                                    {{ ip.address }}
+                                                    {% if ip.ports.all %}
+                                                        <ul>
+                                                            {% for port in ip.ports.all %}<li>{{ port.number }}/{{ port.service_name }}</li>{% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                </li>
                                             {% endfor %}
                                         </ul>
-                                        {% endif %}
-                                    </li>
-                                    {% endfor %}
-                                </ul>
+                                    </div>
+                                {% endif %}
+                                {% if show_vuln %}
+                                    {% if subdomain.get_vulnerabilities_without_info %}
+                                        <div>
+                                            <h4>Vulnerabilities:</h4>
+                                            {% regroup subdomain.get_vulnerabilities_without_info by name as vuln_list %}
+                                            <ul>
+                                                {% for vulnerability in vuln_list %}
+                                                    <li>
+                                                        <a href="#vuln_{{ vulnerability.list.0.name.split|join:'_' }}"
+                                                           class="primary">{{ vulnerability.grouper }}</a>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
                             </div>
-                            {% endif %}
-                            {% if subdomain.get_vulnerabilities_without_info %}
-                            <div>
-                                <h4>Vulnerabilities:</h4>
-                                {% regroup subdomain.get_vulnerabilities_without_info by name as vuln_list %}
-                                <ul>
-                                    {% for vulnerability in vuln_list %}
-                                    <li>
-                                        <a href="#vuln_{{vulnerability.list.0.name.split|join:'_'}}" class="primary">{{ vulnerability.grouper }}</a>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            {% endif %}
                         </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
                 </article>
-                {% endif %}
+            {% endif %}
+            {% if show_vuln %}
+                <article id="vulnerabilities-discovered" style="page-break-before: always">
+                    <h2 class="page-title primary">Vulnerabilities Discovered</h2>
+                    <p>
+                    This section details the security vulnerabilities identified during our penetration testing engagement. Each finding is documented with its description, potential impact, and recommended remediation steps.
+                    <br>
+                    Vulnerabilities are categorized by severity (Critical, High, Medium, Low, Info) to prioritize remediation efforts. This assessment is based on the potential impact to confidentiality, integrity, and availability of the systems and data.
+                    <br>
+                    The information presented here is crucial for understanding your current security posture and should guide your remediation strategy to enhance overall security.</p>
+                    <br>
+                    {% regroup all_vulnerabilities by get_path as grouped_vulnerabilities %}
+                    {% for vulnerabilities in grouped_vulnerabilities %}
+                        {% for vulnerability in vulnerabilities.list %}
+                            <div class="vuln-card">
+                                <div class="vuln-card-header {% if vulnerability.severity == 0 %}info-td{% elif vulnerability.severity == 1 %}low-td{% elif vulnerability.severity == 2 %}medium-td{% elif vulnerability.severity == 3 %}high-td{% elif vulnerability.severity == 4 %}critical-td{% endif %}">
+                                    <h4>
+                                        {{ vulnerability.name }}
+                                        {% if vulnerabilities.grouper %}
+                                            <br>
+                                            in {{ vulnerabilities.grouper }}
+                                        {% endif %}
+                                    </h4>
+                                    <div class="vuln-severity {% if vulnerability.severity == -1 %}unknown-severity-badge{% elif vulnerability.severity == 0 %}info-severity-badge{% elif vulnerability.severity == 1 %}low-severity-badge{% elif vulnerability.severity == 2 %}medium-severity-badge{% elif vulnerability.severity == 3 %}high-severity-badge{% elif vulnerability.severity == 4 %}critical-severity-badge{% endif %}">
+                                        {% if vulnerability.severity == -1 %}
+                                            Unknown
+                                        {% elif vulnerability.severity == 0 %}
+                                            INFO
+                                        {% elif vulnerability.severity == 1 %}
+                                            LOW
+                                        {% elif vulnerability.severity == 2 %}
+                                            MEDIUM
+                                        {% elif vulnerability.severity == 3 %}
+                                            HIGH
+                                        {% elif vulnerability.severity == 4 %}
+                                            CRITICAL
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="vuln-card-body">
+                                    <div class="vuln-section">
+                                        <span class="vuln-badge badge-source">{{vulnerability.source|upper}}</span>
+                                        {% if vulnerability.cvss_score %}
+                                            <span class="vuln-badge badge-cvss">CVSS: {{vulnerability.cvss_score}}</span>
+                                        {% endif %}
+                                        {% if vulnerability.cve_ids.all %}
+                                        {% for cve in vulnerability.cve_ids.all %}<span class="vuln-badge badge-cvss">{{cve}}</span>{% endfor %}
+                                        {% endif %}
+                                        {% if vulnerability.cwe_ids.all %}
+                                        {% for cwe in vulnerability.cwe_ids.all %}<span class="vuln-badge badge-cwe">{{cwe}}</span>{% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="vuln-section">
+                                        <p class="section-title">CVSS</p>
+                                        <div class="vuln-cvss-details">CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</div>
+                                    </div>
+                                    <div class="vuln-section">
+                                        <p class="section-title">Description</p>
+                                        <p>
+                                            A SQL injection vulnerability was discovered in the login form, allowing potential attackers to manipulate database queries. This vulnerability arises from improper input validation and could potentially affect multiple areas of the application where user input interacts with database operations.
+                                        </p>
+                                    </div>
+                                    <div class="vuln-section">
+                                        <p class="section-title">Impact</p>
+                                        <p>
+                                            This vulnerability could lead to unauthorized access, data theft, or manipulation of the database. An attacker could potentially:
+                                        </p>
+                                        <ul>
+                                            <li>Bypass authentication mechanisms</li>
+                                            <li>Read, modify, or delete sensitive data</li>
+                                            <li>Execute administration operations on the database</li>
+                                            <li>Issue commands to the operating system</li>
+                                        </ul>
+                                    </div>
+                                    <div class="vuln-section">
+                                        <p class="section-title">Remediation</p>
+                                        <p>To address this vulnerability, implement the following measures:</p>
+                                        <ul>
+                                            <li>Use prepared statements or parameterized queries to prevent SQL injection attacks</li>
+                                            <li>Implement proper input validation and sanitization for all user inputs</li>
+                                            <li>Apply the principle of least privilege to database accounts used by the application</li>
+                                            <li>Regularly update and patch the database management system</li>
+                                        </ul>
+                                    </div>
+                                    <div class="vuln-section">
+                                        <p class="section-title">Vulnerable URLs</p>
+                                        <div class="vulnerable-url-li">https://example.com/login.php</div>
+                                        <div class="vulnerable-url-li">https://example.com/user.php?id=1</div>
+                                    </div>
+                                    <div class="vuln-section references-li">
+                                        <p class="section-title">References</p>
+                                        <ul>
+                                            <li>
+                                                <a href="#">OWASP SQL Injection</a>
+                                            </li>
+                                            <li>
+                                                <a href="#">CWE-89: Improper Neutralization of Special Elements used in an SQL Command</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </article>
+            {% endif %}
             <article id="end-of-report">
                 <div class="content-wrapper">
                     <h1 class="no-fade-line">END OF REPORT</h1>
