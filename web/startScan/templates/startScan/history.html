@@ -660,9 +660,10 @@ function initiate_report(id, has_subdomain_scan, has_vulnerability_scan, domain_
 }
 
 function preview_report(id, domain_name){
-  var report_type = $("#report_type_select option:selected").val();
+  var report_type = $('input[name="reportType"]:checked').val();
+  var is_ignore_info_vuln = $('#excludeInfoFindings').is(":checked");
   var url = `/scan/create_report/${id}?report_type=${report_type}`;
-  if ($('#report_ignore_info_vuln').is(":checked")) {
+  if (is_ignore_info_vuln) {
     url += `&ignore_info_vuln`
   }
   $('#generateReportModal').modal('hide');
@@ -670,9 +671,10 @@ function preview_report(id, domain_name){
 }
 
   function generate_report(id, domain_name) {
-    var report_type = $("#report_type_select option:selected").val();
+    var report_type = $('input[name="reportType"]:checked').val();
+    var is_ignore_info_vuln = $('#excludeInfoFindings').is(":checked");
     var url = `/scan/create_report/${id}?report_type=${report_type}&download`;
-    if ($('#report_ignore_info_vuln').is(":checked")) {
+    if (is_ignore_info_vuln) {
       url += `&ignore_info_vuln`
     }
     $('#generateReportModal').modal('hide');
