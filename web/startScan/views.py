@@ -4,7 +4,7 @@ from celery import group
 from weasyprint import HTML, CSS
 from datetime import datetime
 from django.contrib import messages
-from django.db.models import Count
+from django.db.models import Count, Case, When, IntegerField
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import get_template
@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django_celery_beat.models import (ClockedSchedule, IntervalSchedule, PeriodicTask)
 from rolepermissions.decorators import has_permission_decorator
+
 
 from reNgine.celery import app
 from reNgine.charts import *
@@ -1017,6 +1018,29 @@ def create_report(request, id):
         .count()
     )
     interesting_subdomains = get_interesting_subdomains(scan_history=id)
+    interesting_subdomains = interesting_subdomains.annotate(
+        sort_order=Case(
+            When(http_status__gte=200, http_status__lt=300, then=1),
+            When(http_status__gte=300, http_status__lt=400, then=2),
+            When(http_status__gte=400, http_status__lt=500, then=3),
+            default=4,
+            output_field=IntegerField(),
+        )
+    ).order_by('sort_order', 'http_status')
+
+    subdomains = subdomains.annotate(
+        sort_order=Case(
+            When(http_status__gte=200, http_status__lt=300, then=1),
+            When(http_status__gte=300, http_status__lt=400, then=2),
+            When(http_status__gte=400, http_status__lt=500, then=3),
+            default=4,
+            output_field=IntegerField(),
+        )
+    ).order_by('sort_order', 'http_status')
+
+
+
+
     ip_addresses = (
         IpAddress.objects
         .filter(ip_addresses__in=subdomains)
