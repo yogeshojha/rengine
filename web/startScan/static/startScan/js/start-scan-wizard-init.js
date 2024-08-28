@@ -10,24 +10,32 @@ $("#select_engine").steps({
   onStepChanging: updateButton,
   labels: { finish: "Start Scan" },
   onInit: function (event, current) {
-    $(".actions ul li:nth-child(3) a").attr(
-      "onclick",
-      `$(this).closest('form').submit()`
+    $(".actions ul li:nth-child(3) a")
+      .attr("onclick", `$(this).closest('form').submit()`)
+      .addClass("text-white");
+    $(".actions ul li:nth-child(1) a[href='#previous']").removeClass(
+      "btn btn-primary waves-effect waves-light"
     );
+    disableNext();
+    updateButton();
+    updatePreviousButton();
   },
 });
+
 $("input[type=radio][name=scan_mode]").change(initTimer).keyup(initTimer);
-disableNext();
-$('a[role="menuitem"]').addClass("text-white");
+// $('a[role="menuitem"]').addClass("text-white");
 
 function initTimer() {
   if (globalTimeout) clearTimeout(globalTimeout);
   globalTimeout = setTimeout(updateButton, 400);
 }
+
 function disableNext() {
   var nextButton = $(".actions ul li:nth-child(2) a");
   nextButton.attr("href", "#");
-  buttonEnabled = $(".actions ul li:nth-child(2)")
+  nextButton.removeClass("btn btn-primary waves-effect waves-light text-white");
+  buttonEnabled = false;
+  $(".actions ul li:nth-child(2)")
     .addClass("disabled")
     .attr("aria-disabled", "true");
 }
@@ -35,22 +43,36 @@ function disableNext() {
 function enableNext() {
   var nextButton = $(".actions ul li:nth-child(2) a");
   nextButton.attr("href", "#next");
-  buttonEnabled = $(".actions ul li:nth-child(2)")
+  buttonEnabled = true;
+  nextButton.addClass("btn btn-primary waves-effect waves-light text-white");
+  $(".actions ul li:nth-child(2)")
     .removeClass("disabled")
     .attr("aria-disabled", "false");
 }
 
 function updateButton() {
-  $('a[role="menuitem"]').addClass("btn btn-primary waves-effect waves-light");
-  var text = $("input[type=radio][name=scan_mode]").val();
-  if (text === "") {
-    disableNext();
-    return false;
-  } else {
+  var selectedEngine = $("input[type=radio][name=scan_mode]:checked").val();
+  if (selectedEngine) {
     enableNext();
-    return true;
+  } else {
+    disableNext();
+  }
+  updatePreviousButton();
+  return buttonEnabled;
+}
+
+function updatePreviousButton() {
+  var previousButton = $("a[href='#previous']");
+  if (previousButton.parent().hasClass("disabled")) {
+    previousButton.removeClass("text-white");
+  } else {
+    previousButton.addClass("text-white");
   }
 }
+
+$("#select_engine").on("steps.change", function (e, currentIndex, newIndex) {
+  setTimeout(updatePreviousButton, 0);
+});
 
 $("#excludedPaths").selectize({
   persist: false,
