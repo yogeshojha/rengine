@@ -963,6 +963,8 @@ def create_report(request, id):
     secondary_color = '#212121'
     # get report type
     report_type = request.GET['report_type'] if 'report_type' in request.GET  else 'full'
+    report_template = request.GET['report_template'] if 'report_template' in request.GET else 'default'
+
     is_ignore_info_vuln = True if 'ignore_info_vuln' in request.GET else False
     if report_type == 'recon':
         show_recon = True
@@ -1102,7 +1104,11 @@ def create_report(request, id):
     data['subdomain_http_status_chart'] = generate_subdomain_chart_by_http_status(subdomains)
     data['vulns_severity_chart'] = generate_vulnerability_chart_by_severity(vulns) if vulns else ''
 
-    template = get_template('report/modern.html')
+    if report_template == 'modern':
+        template = get_template('report/modern.html')
+    else:
+        template = get_template('report/default.html')
+
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
     # pdf = HTML(string=html).write_pdf(stylesheets=[CSS(string='@page { size: A4; margin: 0; }')])

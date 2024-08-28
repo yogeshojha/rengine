@@ -642,6 +642,7 @@ function initiate_report(id, has_subdomain_scan, has_vulnerability_scan, domain_
   //select full report type by default
   $('input[name="reportType"][value="full"]').prop('checked', true);
   $('input[name="excludeInfoFindings"]').prop('checked', true);
+  $('#templateSelect').val('modern');
   $('#generateReportModal').modal('show');
   if (has_subdomain_scan) {
     $('input[name="reportType"][value="recon"]').prop('disabled', false);
@@ -662,7 +663,9 @@ function initiate_report(id, has_subdomain_scan, has_vulnerability_scan, domain_
 function preview_report(id, domain_name){
   var report_type = $('input[name="reportType"]:checked').val();
   var is_ignore_info_vuln = $('#excludeInfoFindings').is(":checked");
+  var report_template = $('#templateSelect').val();
   var url = `/scan/create_report/${id}?report_type=${report_type}`;
+  url += `&report_template=${report_template}`;
   if (is_ignore_info_vuln) {
     url += `&ignore_info_vuln`
   }
@@ -673,7 +676,9 @@ function preview_report(id, domain_name){
   function generate_report(id, domain_name) {
     var report_type = $('input[name="reportType"]:checked').val();
     var is_ignore_info_vuln = $('#excludeInfoFindings').is(":checked");
+    var report_template = $('#templateSelect').val();
     var url = `/scan/create_report/${id}?report_type=${report_type}&download`;
+    url += `&report_template=${report_template}`;
     if (is_ignore_info_vuln) {
       url += `&ignore_info_vuln`
     }
