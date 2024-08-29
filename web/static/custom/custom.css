@@ -407,3 +407,107 @@ mark{
 .scan-config-modal .badge {
   margin-left: 5px;
 }
+
+/*.notification-a-icon {
+  
+}*/
+
+.badge-notif-count {
+  font-size: 10px !important;
+}
+
+.notif-counter {
+  top: 9px !important;
+  right: 5px !important;
+}
+
+.notification-panel-dropdown {
+  width: 380px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  overflow: hidden;
+}
+
+.notification-panel-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.notification-panel-clear-link {
+  color: #6c757d;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
+}
+
+.notification-panel-clear-link:hover {
+  color: #495057;
+}
+
+.notification-panel-body {
+  max-height: 400px;
+  /* overflow-y: auto; */
+}
+
+.notification-panel-item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+.notification-panel-item:last-child {
+  border-bottom: none;
+}
+
+.notification-panel-item:hover {
+  background-color: #f8f9fa;
+}
+
+.notification-panel-unread {
+  background-color: #fafbff;
+  border-left: 3px solid #4a90e2;
+}
+
+.notification-panel-unread:hover {
+  background-color: #f0f4ff;
+}
+
+.notification-panel-icon {
+  font-size: 1.25rem;
+}
+
+.notification-panel-title {
+  color: #212529;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.notification-panel-description {
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+.notification-panel-time {
+  color: #adb5bd;
+  font-size: 0.75rem;
+}
+
+.notification-panel-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.notification-panel-view-all {
+  color: #007bff;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.notification-panel-view-all:hover {
+  color: #0056b3;
+}
