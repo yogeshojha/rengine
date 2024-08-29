@@ -51,10 +51,10 @@
                 </div>
                 <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">Out of Scope Subdomains List</label>
                 {% if subdomains_out %}
-                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false">{% for subdomain in subdomains_out %}{{ subdomain }}{% if not forloop.last %}
+                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false">{% for subdomain in subdomains_out %}{{ subdomain }}{% if not forloop.last %}
 {% endif %}{% endfor %}</textarea>
                 {% else %}
-                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false" placeholder="Enter subdomains or patterns, one per line"></textarea>
+                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false" placeholder="Enter subdomains or patterns, one per line"></textarea>
                 {% endif %}
               </div>
             </div>
