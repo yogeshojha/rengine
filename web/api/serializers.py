@@ -7,14 +7,17 @@ from rest_framework import serializers
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
-from dashboard.models import Notification
+from dashboard.models import InAppNotification
 
 
-class NotificationSerializer(serializers.ModelSerializer):
+class InAppNotificationSerializer(serializers.ModelSerializer):
 	class Meta:
-		model = Notification
-		fields = ['id', 'title', 'description', 'icon', 'is_read', 'created_at']
+		model = InAppNotification
+		fields = ['id', 'title', 'description', 'icon', 'is_read', 'created_at', 'notification_type', 'project']
 		read_only_fields = ['id', 'created_at']
+
+	def get_project_name(self, obj):
+		return obj.project.name if obj.project else None
 
 
 class SearchHistorySerializer(serializers.ModelSerializer):

@@ -34,23 +34,36 @@ from .serializers import *
 logger = logging.getLogger(__name__)
 
 
-class NotificationManagerViewSet(viewsets.ModelViewSet):
+class InAppNotificationManagerViewSet(viewsets.ModelViewSet):
 	"""
 		This class manages the notification model, provided CRUD operation on notif model
 		such as read notif, clear all, fetch all notifications etc
 	"""
-	serializer_class = NotificationSerializer
+	serializer_class = InAppNotificationSerializer
 	pagination_class = None
 
 	def get_queryset(self):
 		# we will see later if user based notif is needed
-		# return Notification.objects.filter(user=self.request.user)
-		return Notification.objects.all()
+		# return InAppNotification.objects.filter(user=self.request.user)
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = InAppNotification.objects.all()
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		return queryset.order_by('-created_at')
 
 	@action(detail=False, methods=['post'])
 	def mark_all_read(self, request):
 		# marks all notification read
-		self.get_queryset().update(is_read=True)
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = self.get_queryset()
+
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		queryset.update(is_read=True)
 		return Response(status=HTTP_204_NO_CONTENT)
 
 	@action(detail=True, methods=['post'])
@@ -64,13 +77,25 @@ class NotificationManagerViewSet(viewsets.ModelViewSet):
 	@action(detail=False, methods=['get'])
 	def unread_count(self, request):
 		# this fetches the count for unread notif mainly for the badge
-		count = self.get_queryset().filter(is_read=False).count()
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = self.get_queryset()
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		count = queryset.filter(is_read=False).count()
 		return Response({'count': count})
 
 	@action(detail=False, methods=['post'])
 	def clear_all(self, request):
 		# when clicked on the clear button this must be called to clear all notif
-		self.get_queryset().delete()
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = self.get_queryset()
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		queryset.delete()
 		return Response(status=HTTP_204_NO_CONTENT)
 
 

@@ -2,7 +2,12 @@
 // all the functions and event listeners for the notification panel
 
 function updateNotifications() {
-  fetch("/api/notifications/", {
+  let api_url = "/api/notifications/";
+  const currentProjectSlug = getCurrentProjectSlug();
+  if (currentProjectSlug) {
+    api_url += `?project_slug=${currentProjectSlug}`;
+  }
+  fetch(api_url, {
     method: "GET",
     credentials: "same-origin",
     headers: {
@@ -60,7 +65,12 @@ function updateNotifications() {
 }
 
 function updateUnreadCount() {
-  fetch("/api/notifications/unread_count/", {
+  let api_url = "/api/notifications/unread_count/";
+  const currentProjectSlug = getCurrentProjectSlug();
+  if (currentProjectSlug) {
+    api_url += `?project_slug=${currentProjectSlug}`;
+  }
+  fetch(api_url, {
     method: "GET",
     credentials: "same-origin",
     headers: {
@@ -92,6 +102,11 @@ function notificationAction(notificationId) {
 }
 
 function clearAllNotifications() {
+  let api_url = "/api/notifications/clear_all/";
+  const currentProjectSlug = getCurrentProjectSlug();
+  if (currentProjectSlug) {
+    api_url += `?project_slug=${currentProjectSlug}`;
+  }
   fetch("/api/notifications/clear_all/", {
     method: "POST",
     credentials: "same-origin",
@@ -112,3 +127,9 @@ document.addEventListener("DOMContentLoaded", () => {
   updateNotifications();
   setInterval(updateNotifications, 30000);
 });
+
+
+function getCurrentProjectSlug() {
+  const hiddenInput = document.querySelector('input[name="current_project"]');
+  return hiddenInput ? hiddenInput.value : null;
+}

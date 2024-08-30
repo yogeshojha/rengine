@@ -43,10 +43,16 @@ class NetlasAPIKey(models.Model):
 		return self.key
 
 
-class Notification(models.Model):
+class InAppNotification(models.Model):
+	NOTIFICATION_TYPES = (
+		('system', 'System-wide'),
+		('project', 'Project-specific'),
+	)
+	project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=True)
+	notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES, default='system')
 	title = models.CharField(max_length=255)
 	description = models.TextField()
-	icon = models.CharField(max_length=50)
+	icon = models.CharField(max_length=50) # mdi icon class name
 	is_read = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)
 
@@ -54,4 +60,12 @@ class Notification(models.Model):
 		ordering = ['-created_at']
 
 	def __str__(self):
-		return f"Notif {self.title}"
+		if self.notification_type == 'system':
+			return f"System wide notif: {self.title}"
+		else:
+			return f"Project wide notif: {self.project.name}: {self.title}"
+		
+	@property
+	def is_system_wide(self):
+		# property to determine if the notification is system wide or project specific
+		return self.notification_type == 'system'

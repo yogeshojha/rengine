@@ -19,7 +19,7 @@ router.register(r'listEndPointChanges', EndPointChangesViewSet)
 router.register(r'listIps', IpAddressViewSet)
 router.register(r'listActivityLogs', ListActivityLogsViewSet)
 router.register(r'listScanLogs', ListScanLogsViewSet)
-router.register(r'notifications', NotificationManagerViewSet, basename='notification')
+router.register(r'notifications', InAppNotificationManagerViewSet, basename='notification')
 
 urlpatterns = [
     url('^', include(router.urls)),
