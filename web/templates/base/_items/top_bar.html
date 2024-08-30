@@ -165,55 +165,19 @@
           <div class="notification-bell-icon">
             <i class="fe-bell font-22"></i>
           </div>
-          <span class="badge bg-danger rounded-circle noti-icon-badge badge-notif-count notif-counter">3</span>
+          <span class="badge bg-danger rounded-circle noti-icon-badge badge-notif-count notif-counter" id="notification-counter"></span>
         </a>
         <div class="dropdown-menu dropdown-menu-end notification-panel-dropdown">
           <div class="notification-panel-header d-flex justify-content-between align-items-center p-3">
             <h6 class="m-0">Notifications</h6>
-            <a href="javascript: void(0);" class="notification-panel-clear-link">Clear All</a>
+            <a href="javascript: void(0);" class="notification-panel-clear-link" id="clear-notif-btn">Clear All</a>
           </div>
           <div class="px-1" style="max-height: 400px;" data-simplebar>
             <div class="notification-panel-body">
-              <div class="notification-panel-item d-flex align-items-start p-3 notification-panel-unread">
-                <div class="notification-panel-content flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="notification-panel-title mb-0">Scan Completed</h6>
-                    <span class="notification-panel-icon">
-                      <i class="mdi mdi-check-circle text-success"></i>
-                    </span>
-                  </div>
-                  <p class="notification-panel-description mb-1">Subdomain scan finished for target example.com</p>
-                  <small class="notification-panel-time">2 min ago</small>
-                </div>
-              </div>
-              <div class="notification-panel-item d-flex align-items-start p-3 notification-panel-unread">
-                <div class="notification-panel-content flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="notification-panel-title mb-0">reNgine Update Available</h6>
-                    <span class="notification-panel-icon">
-                      <i class="mdi mdi-update text-primary"></i>
-                    </span>
-                  </div>
-                  <p class="notification-panel-description mb-1">A new version (v1.2.0) of reNgine is available. Click to update.</p>
-                  <small class="notification-panel-time">1 hour ago</small>
-                </div>
-              </div>
-              <div class="notification-panel-item d-flex align-items-start p-3">
-                <div class="notification-panel-content flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="notification-panel-title mb-0">Scan Configuration Changed</h6>
-                    <span class="notification-panel-icon">
-                      <i class="mdi mdi-cog text-warning"></i>
-                    </span>
-                  </div>
-                  <p class="notification-panel-description mb-1">Default scan configuration updated. Please review the changes.</p>
-                  <small class="notification-panel-time">1 day ago</small>
-                </div>
-              </div>
-            </div>
+              {% comment %} populate the notifications here {% endcomment %}
           </div>
           <div class="notification-panel-footer text-center p-2">
-            <a href="javascript:void(0);" class="notification-panel-view-all">View All</a>
+            <a href="javascript:void(0);" class="notification-panel-view-all">Mark all as read</a>
           </div>
         </div>
       </li>
