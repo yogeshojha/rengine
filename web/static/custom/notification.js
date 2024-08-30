@@ -16,12 +16,21 @@ function updateNotifications() {
       );
       notificationPanel.innerHTML = "";
 
-      data.forEach((notification) => {
-        const notificationItem = document.createElement("div");
-        notificationItem.className = `notification-panel-item d-flex align-items-start p-3 ${
-          notification.is_read ? "" : "notification-panel-unread"
-        }`;
-        notificationItem.innerHTML = `
+      if (data.length === 0) {
+        const noNotificationsMessage = document.createElement("div");
+        noNotificationsMessage.className =
+          "notification-panel-item d-flex align-items-center justify-content-center p-3";
+        noNotificationsMessage.innerHTML = `
+            <p class="text-muted mb-0">Ping? Pong! No notifications, moving along</p>
+        `;
+        notificationPanel.appendChild(noNotificationsMessage);
+      } else {
+        data.forEach((notification) => {
+          const notificationItem = document.createElement("div");
+          notificationItem.className = `notification-panel-item d-flex align-items-start p-3 ${
+            notification.is_read ? "" : "notification-panel-unread"
+          }`;
+          notificationItem.innerHTML = `
                     <div class="notification-panel-content flex-grow-1">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="notification-panel-title mb-0">${
@@ -39,11 +48,12 @@ function updateNotifications() {
                         ).toLocaleString()}</small>
                     </div>
                 `;
-        notificationItem.addEventListener("click", () =>
-          notificationAction(notification.id)
-        );
-        notificationPanel.appendChild(notificationItem);
-      });
+          notificationItem.addEventListener("click", () =>
+            notificationAction(notification.id)
+          );
+          notificationPanel.appendChild(notificationItem);
+        });
+      }
 
       updateUnreadCount();
     });
