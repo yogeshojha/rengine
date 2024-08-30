@@ -4907,7 +4907,7 @@ def sync_h1_bookmarked():
                     organization, created = Organization.objects.get_or_create(
                         name=program['attributes']['handle'],
                         project=project,
-                        defaults={'description': '', 'insert_date': timezone.now()}
+                        defaults={'description': 'Added via H1 Bookmark Sync', 'insert_date': timezone.now()}
                     )
                     
                     if not created:
