@@ -14,7 +14,8 @@ from django.template.defaultfilters import slugify
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.status import HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT
+from rest_framework.decorators import action
 
 from recon_note.models import *
 from reNgine.celery import app
@@ -31,6 +32,45 @@ from targetApp.models import *
 from .serializers import *
 
 logger = logging.getLogger(__name__)
+
+
+class NotificationManagerViewSet(viewsets.ModelViewSet):
+	"""
+		This class manages the notification model, provided CRUD operation on notif model
+		such as read notif, clear all, fetch all notifications etc
+	"""
+	serializer_class = NotificationSerializer
+
+	def get_queryset(self):
+		# we will see later if user based notif is needed
+		# return Notification.objects.filter(user=self.request.user)
+		return Notification.objects.all()
+
+	@action(detail=False, methods=['post'])
+	def mark_all_read(self, request):
+		# marks all notification read
+		self.get_queryset().update(is_read=True)
+		return Response(status=HTTP_204_NO_CONTENT)
+
+	@action(detail=True, methods=['post'])
+	def mark_read(self, request, pk=None):
+		# mark individual notification read when cliked
+		notification = self.get_object()
+		notification.is_read = True
+		notification.save()
+		return Response(status=HTTP_204_NO_CONTENT)
+
+	@action(detail=False, methods=['get'])
+	def unread_count(self, request):
+		# this fetches the count for unread notif mainly for the badge
+		count = self.get_queryset().filter(is_read=False).count()
+		return Response({'count': count})
+
+	@action(detail=False, methods=['post'])
+	def clear_all(self, request):
+		# when clicked on the clear button this must be called to clear all notif
+		self.get_queryset().delete()
+		return Response(status=HTTP_204_NO_CONTENT)
 
 
 class OllamaManager(APIView):
