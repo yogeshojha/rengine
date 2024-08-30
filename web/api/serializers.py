@@ -1,6 +1,5 @@
 from dashboard.models import *
-from django.contrib.humanize.templatetags.humanize import (naturalday,
-														   naturaltime)
+from django.contrib.humanize.templatetags.humanize import (naturalday, naturaltime)
 from django.db.models import F, JSONField, Value
 from recon_note.models import *
 from reNgine.common_func import *
@@ -8,6 +7,14 @@ from rest_framework import serializers
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
+from dashboard.models import Notification
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Notification
+		fields = ['id', 'title', 'description', 'icon', 'is_read', 'created_at']
+		read_only_fields = ['id', 'created_at']
 
 
 class SearchHistorySerializer(serializers.ModelSerializer):
