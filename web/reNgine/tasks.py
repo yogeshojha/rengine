@@ -4851,12 +4851,8 @@ def sync_h1_bookmarked():
         current_organizations = Organization.objects.filter(project=project)
         current_handles = {org.name for org in current_organizations}
 
-        logger.info(current_handles)
-
 		# Delete organizations not in the bookmarked programs
         handles_to_delete = current_handles - bookmarked_handles
-
-        logger.info(handles_to_delete)
 
 		# Delete organizations
         for handle in handles_to_delete:
@@ -4871,56 +4867,58 @@ def sync_h1_bookmarked():
 
         # Process bookmarked programs and create domains
         for program in bookmarked_programs:
-            domains = []
 
-            for scope in program["scopes"]:
-                domain_name = None
-                description = ''
-                ip_address_cidr = None
+            if program['attributes']['handle'] not in current_handles:
+                domains = []
 
-                if scope["asset_type"] == "WILDCARD":
-                    domain_name = scope["asset_identifier"].replace('*.', '')
-                elif scope["asset_type"] == "DOMAIN":
-                    domain_name = scope["asset_identifier"]
-                elif scope["asset_type"] in ["IP_ADDRESS", "CIDR"]:
-                    domain_name = scope["asset_identifier"]
-                    ip_address_cidr = scope["asset_identifier"]
-                elif scope["asset_type"] == "URL":
-                    parsed_url = urlparse(scope["asset_identifier"])
-                    domain_name = parsed_url.netloc
+                for scope in program["scopes"]:
+                    domain_name = None
+                    description = ''
+                    ip_address_cidr = None
 
-                if domain_name:
-                    try:
-                        domain, created = Domain.objects.get_or_create(
-                            name=domain_name,
-                            description=description,
-                            h1_team_handle=program['attributes']['handle'],
-                            project=project,
-                            ip_address_cidr=ip_address_cidr
-                        )
-                        domain.insert_date = timezone.now()
-                        domain.save()
-                        
-                        domains.append(domain)
-                    except Exception as e:
-                        logger.error(f"Error creating/updating domain {domain_name}: {e}")
+                    if scope["asset_type"] == "WILDCARD":
+                        domain_name = scope["asset_identifier"].replace('*.', '')
+                    elif scope["asset_type"] == "DOMAIN":
+                        domain_name = scope["asset_identifier"]
+                    elif scope["asset_type"] in ["IP_ADDRESS", "CIDR"]:
+                        domain_name = scope["asset_identifier"]
+                        ip_address_cidr = scope["asset_identifier"]
+                    elif scope["asset_type"] == "URL":
+                        parsed_url = urlparse(scope["asset_identifier"])
+                        domain_name = parsed_url.netloc
 
-            try:
-                organization, created = Organization.objects.get_or_create(
-                    name=program['attributes']['handle'],
-                    project=project,
-                    defaults={'description': '', 'insert_date': timezone.now()}
-                )
-                
-                if not created:
-                    organization.insert_date = timezone.now()
-                
-                for domain in domains:
-                    organization.domains.add(domain)
+                    if domain_name:
+                        try:
+                            domain, created = Domain.objects.get_or_create(
+                                name=domain_name,
+                                description=description,
+                                h1_team_handle=program['attributes']['handle'],
+                                project=project,
+                                ip_address_cidr=ip_address_cidr
+                            )
+                            domain.insert_date = timezone.now()
+                            domain.save()
+                            
+                            domains.append(domain)
+                        except Exception as e:
+                            logger.error(f"Error creating/updating domain {domain_name}: {e}")
 
-                organization.save()
-            except Exception as e:
-                logger.error(f"Error creating/updating organization {program['attributes']['handle']}: {e}")
+                try:
+                    organization, created = Organization.objects.get_or_create(
+                        name=program['attributes']['handle'],
+                        project=project,
+                        defaults={'description': '', 'insert_date': timezone.now()}
+                    )
+                    
+                    if not created:
+                        organization.insert_date = timezone.now()
+                    
+                    for domain in domains:
+                        organization.domains.add(domain)
+
+                    organization.save()
+                except Exception as e:
+                    logger.error(f"Error creating/updating organization {program['attributes']['handle']}: {e}")
 
         logger.info('Completed HackerOne Bookmark Sync')
     except Exception as e:
