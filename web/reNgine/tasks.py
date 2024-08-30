@@ -4858,10 +4858,12 @@ def sync_h1_bookmarked():
         for handle in handles_to_delete:
             try:
                 org_to_delete = get_object_or_404(Organization, name=handle, project=project)
-                for domain in org_to_delete.get_domains():
-                    domain.delete()
-                org_to_delete.delete()
-                logger.info(f'Deleted organization: {handle}')
+                # Check if organization was added via H1 Bookmark Sync
+                if(org_to_delete.get_description() == 'Added via H1 Bookmark Sync'):
+                    for domain in org_to_delete.get_domains():
+                        domain.delete()
+                    org_to_delete.delete()
+                    logger.info(f'Deleted organization: {handle}')
             except Exception as e:
                 logger.error(f"Error deleting organization {handle}: {e}")
 
@@ -4917,7 +4919,7 @@ def sync_h1_bookmarked():
                         organization.domains.add(domain)
 
                     organization.save()
-                    logger.info(f'Added organization: program['attributes']['handle']')
+                    logger.info(f"Added organization: program['attributes']['handle']")
                 except Exception as e:
                     logger.error(f"Error creating/updating organization {program['attributes']['handle']}: {e}")
 
