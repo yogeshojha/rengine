@@ -4917,6 +4917,7 @@ def sync_h1_bookmarked():
                         organization.domains.add(domain)
 
                     organization.save()
+                    logger.info(f'Added organization: program['attributes']['handle']')
                 except Exception as e:
                     logger.error(f"Error creating/updating organization {program['attributes']['handle']}: {e}")
 
