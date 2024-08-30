@@ -41,3 +41,17 @@ class NetlasAPIKey(models.Model):
 
 	def __str__(self):
 		return self.key
+
+
+class Notification(models.Model):
+	title = models.CharField(max_length=255)
+	description = models.TextField()
+	icon = models.CharField(max_length=50)
+	is_read = models.BooleanField(default=False)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['-created_at']
+
+	def __str__(self):
+		return f"Notif {self.title}"
