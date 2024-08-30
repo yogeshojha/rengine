@@ -40,6 +40,7 @@ class NotificationManagerViewSet(viewsets.ModelViewSet):
 		such as read notif, clear all, fetch all notifications etc
 	"""
 	serializer_class = NotificationSerializer
+	pagination_class = None
 
 	def get_queryset(self):
 		# we will see later if user based notif is needed
