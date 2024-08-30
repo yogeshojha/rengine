@@ -4859,7 +4859,7 @@ def sync_h1_bookmarked():
             try:
                 org_to_delete = get_object_or_404(Organization, name=handle, project=project)
                 # Check if organization was added via H1 Bookmark Sync
-                if(org_to_delete.get_description() == 'Added via H1 Bookmark Sync'):
+                if(org_to_delete.description == 'Added via H1 Bookmark Sync'):
                     for domain in org_to_delete.get_domains():
                         domain.delete()
                     org_to_delete.delete()
