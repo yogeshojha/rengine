@@ -511,3 +511,18 @@ mark{
 .notification-panel-view-all:hover {
   color: #0056b3;
 }
+
+@keyframes notification-buzz {
+  0% { transform: translateX(0) rotate(0); }
+  15% { transform: translateX(-5px) rotate(-5deg); }
+  30% { transform: translateX(5px) rotate(5deg); }
+  45% { transform: translateX(-4px) rotate(-4deg); }
+  60% { transform: translateX(4px) rotate(4deg); }
+  75% { transform: translateX(-2px) rotate(-2deg); }
+  90% { transform: translateX(2px) rotate(2deg); }
+  100% { transform: translateX(0) rotate(0); }
+}
+
+.notification-bell-icon.buzz {
+  animation: notification-buzz 0.8s ease-out;
+}
