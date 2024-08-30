@@ -8,7 +8,7 @@
 
 ### Security Update
 
-* (Security) CVE-2024-41661 Stored Cross-Site Scripting (XSS) via DNS Record Poisoning reported by @touhidshaikh Advisory https://github.com/yogeshojha/rengine/security/advisories/GHSA-96q4-fj2m-jqf7
+* (Security) CVE-2023-50094 Stored Cross-Site Scripting (XSS) via DNS Record Poisoning reported by @touhidshaikh Advisory https://github.com/yogeshojha/rengine/security/advisories/GHSA-96q4-fj2m-jqf7
 
 ### Bug Fixes
 
@@ -31,7 +31,7 @@
 ## What's Changed
 
 ### Security update
-* (Security) CVE-2024-41661 Fix Authenticated command injection in WAF detection tool reported by @n-thumann Advisory https://github.com/yogeshojha/rengine/security/advisories/GHSA-fx7f-f735-vgh4
+* (Security) CVE-2023-50094 Fix Authenticated command injection in WAF detection tool reported by @n-thumann Advisory https://github.com/yogeshojha/rengine/security/advisories/GHSA-fx7f-f735-vgh4
 
 ### Bug Fixes
 
