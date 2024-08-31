@@ -76,6 +76,16 @@
                           {% endif %}
                           <span class="text-muted float-end">This is optional</span>
                         </div>
+                        <div class="mb-3">
+                          <label for="key_netlas" class="form-label">Chaos by Project Discovery</label>
+                          <p class="text-muted">Chaos keys will be used for subdomain enumeration and recon data for Public Bug Bounty Programs.</p>
+                          {% if chaos_key %}
+                            <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key" value="{{chaos_key}}">
+                          {% else %}
+                            <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key">
+                          {% endif %}
+                          <span class="text-muted float-end optional-text">This is optional but recommended. Get your API key from <a href="https://cloud.projectdiscovery.io" target="_blank">https://cloud.projectdiscovery.io</a></span>
+                        </div>
                         <div class="mb-0">
                           <button class="btn btn-info float-sm-end my-4" type="submit"> Proceed </button>
                         </div>

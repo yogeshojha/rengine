@@ -39,7 +39,7 @@ API Vault
                     <span class="password-eye"></span>
                   </div>
                 </div>
-                <span class="text-muted float-end">This is optional but recommended.</span>
+                <span class="text-muted float-end optional-text">This is optional but recommended. Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">https://platform.openai.com/api-keys</a></span>
               </div>
               <div class="mb-3">
                 <label for="key_netlas" class="form-label">Netlas</label>
@@ -54,12 +54,27 @@ API Vault
                     <span class="password-eye"></span>
                   </div>
                 </div>
-                <span class="text-muted float-end">This is optional</span>
+                <span class="text-muted float-end optional-text">This is optional. Get your API key from <a href="https://netlas.io" target="_blank">https://netlas.io</a></span>
               </div>
+              <div class="mb-3">
+                <label for="key_chaos" class="form-label">Chaos</label>
+                <p class="text-muted">Chaos keys will be used for subdomain enumeration and recon data for Public Bug Bounty Programs.</p>
+                <div class="flex-grow-1 position-relative">
+                {% if chaos_key %}
+                  <input class="form-control" type="password" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key" value="{{chaos_key}}">
+                {% else %}
+                  <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key">
+                {% endif %}
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                    <span class="password-eye"></span>
+                  </div>
+                </div>
+                <span class="text-muted float-end optional-text">This is optional but recommended. Get your API key from <a href="https://cloud.projectdiscovery.io" target="_blank">https://cloud.projectdiscovery.io</a></span>
+              </div>
+            </div>
               <div class="mb-0">
                 <button class="btn btn-info float-sm-end my-4" type="submit"> Update API Keys</button>
               </div>
-            </div>
           </div>
         </form>
       </div>
