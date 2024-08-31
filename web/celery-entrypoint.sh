@@ -157,7 +157,7 @@ exec "$@"
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
 
 # TEMPORARY FIX, httpcore is causing issues with celery, removing it as temp fix
-python3 -m pip uninstall -y httpcore
+#python3 -m pip uninstall -y httpcore
 
 # TEMPORARY FIX FOR langchain
 pip install tenacity==8.2.2
