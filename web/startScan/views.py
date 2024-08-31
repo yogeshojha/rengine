@@ -1,10 +1,10 @@
 import markdown
 
 from celery import group
-from weasyprint import HTML
+from weasyprint import HTML, CSS
 from datetime import datetime
 from django.contrib import messages
-from django.db.models import Count
+from django.db.models import Count, Case, When, IntegerField
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import get_template
@@ -13,7 +13,9 @@ from django.utils import timezone
 from django_celery_beat.models import (ClockedSchedule, IntervalSchedule, PeriodicTask)
 from rolepermissions.decorators import has_permission_decorator
 
+
 from reNgine.celery import app
+from reNgine.charts import *
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK, SUCCESS_TASK
 from reNgine.tasks import create_scan_activity, initiate_scan, run_command
@@ -986,6 +988,8 @@ def create_report(request, id):
     secondary_color = '#212121'
     # get report type
     report_type = request.GET['report_type'] if 'report_type' in request.GET  else 'full'
+    report_template = request.GET['report_template'] if 'report_template' in request.GET else 'default'
+
     is_ignore_info_vuln = True if 'ignore_info_vuln' in request.GET else False
     if report_type == 'recon':
         show_recon = True
@@ -1041,6 +1045,29 @@ def create_report(request, id):
         .count()
     )
     interesting_subdomains = get_interesting_subdomains(scan_history=id)
+    interesting_subdomains = interesting_subdomains.annotate(
+        sort_order=Case(
+            When(http_status__gte=200, http_status__lt=300, then=1),
+            When(http_status__gte=300, http_status__lt=400, then=2),
+            When(http_status__gte=400, http_status__lt=500, then=3),
+            default=4,
+            output_field=IntegerField(),
+        )
+    ).order_by('sort_order', 'http_status')
+
+    subdomains = subdomains.annotate(
+        sort_order=Case(
+            When(http_status__gte=200, http_status__lt=300, then=1),
+            When(http_status__gte=300, http_status__lt=400, then=2),
+            When(http_status__gte=400, http_status__lt=500, then=3),
+            default=4,
+            output_field=IntegerField(),
+        )
+    ).order_by('sort_order', 'http_status')
+
+
+
+
     ip_addresses = (
         IpAddress.objects
         .filter(ip_addresses__in=subdomains)
@@ -1099,9 +1126,17 @@ def create_report(request, id):
     data['primary_color'] = primary_color
     data['secondary_color'] = secondary_color
 
-    template = get_template('report/template.html')
+    data['subdomain_http_status_chart'] = generate_subdomain_chart_by_http_status(subdomains)
+    data['vulns_severity_chart'] = generate_vulnerability_chart_by_severity(vulns) if vulns else ''
+
+    if report_template == 'modern':
+        template = get_template('report/modern.html')
+    else:
+        template = get_template('report/default.html')
+
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
+    # pdf = HTML(string=html).write_pdf(stylesheets=[CSS(string='@page { size: A4; margin: 0; }')])
 
     if 'download' in request.GET:
         response = HttpResponse(pdf, content_type='application/octet-stream')
