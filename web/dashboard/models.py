@@ -41,6 +41,14 @@ class NetlasAPIKey(models.Model):
 
 	def __str__(self):
 		return self.key
+	
+
+class ChaosAPIKey(models.Model):
+	id = models.AutoField(primary_key=True)
+	key = models.CharField(max_length=500)
+
+	def __str__(self):
+		return self.key
 
 
 class InAppNotification(models.Model):

@@ -85,6 +85,7 @@ RUN printf "\
     github.com/tomnomnom/waybackurls@latest\n\
     github.com/projectdiscovery/httpx/cmd/httpx@latest\n\
     github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest\n\
+    github.com/projectdiscovery/chaos-client/cmd/chaos@latest\n\
     github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest\n\
     github.com/projectdiscovery/naabu/v2/cmd/naabu@latest\n\
     github.com/hakluke/hakrawler@latest\n\
