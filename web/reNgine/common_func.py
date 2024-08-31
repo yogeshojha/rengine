@@ -1558,7 +1558,9 @@ def create_inappnotification(
 		project_slug=None,
 		icon="mdi-bell",
 		is_read=False,
-		status='info'
+		status='info',
+		redirect_link=None,
+		open_in_new_tab=False
 ):
 	"""
 		This function will create an inapp notification
@@ -1575,6 +1577,8 @@ def create_inappnotification(
 			icon: str: Icon of the notification, only use mdi icons
 			is_read: bool: Whether the notification is read or not, default is False
 			status: str: Status of the notification (success, info, warning, error), default is info
+			redirect_link: str: Link to redirect when notification is clicked
+			open_in_new_tab: bool: Whether to open the redirect link in a new tab, default is False
 
 		Returns:
 			ValueError: if error
@@ -1603,7 +1607,9 @@ def create_inappnotification(
 		project=project,
 		icon=icon,
 		is_read=is_read,
-		status=status
+		status=status,
+		redirect_link=redirect_link,
+		open_in_new_tab=open_in_new_tab
 	)
 	notification.save()
 	return notification

@@ -1,7 +1,4 @@
-// notifications.js
 // all the functions and event listeners for the notification panel
-
-// notifications.js
 
 function updateNotifications() {
   let api_url = "/api/notifications/";
@@ -55,9 +52,9 @@ function updateNotifications() {
                         )}</small>
                     </div>
                 `;
-          notificationItem.addEventListener("click", () =>
-            notificationAction(notification.id)
-          );
+          notificationItem.addEventListener("click", (event) => {
+            notificationAction(notification.id, notification.redirect_link, notification.open_in_new_tab);
+          });
           notificationPanel.appendChild(notificationItem);
         });
       }
@@ -87,7 +84,7 @@ function updateUnreadCount() {
     });
 }
 
-function notificationAction(notificationId) {
+function notificationAction(notificationId, redirectLink, openInNewTab) {
   // depending on notification we may also need to redirect to a specific page
   // for example if the notification is related to scan, we may take to scan detail page
 
@@ -100,6 +97,16 @@ function notificationAction(notificationId) {
     },
   }).then(() => {
     updateNotifications();
+
+    // this is where we handle all the notification actions such as redirecting to a specific page
+    if (redirectLink) {
+      if (openInNewTab) {
+        window.open(redirectLink, '_blank');
+      } else {
+        window.location.href = redirectLink;
+      }
+    }
+
   });
 }
 

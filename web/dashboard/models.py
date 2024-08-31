@@ -52,6 +52,8 @@ class InAppNotification(models.Model):
 	icon = models.CharField(max_length=50) # mdi icon class name
 	is_read = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)
+	redirect_link = models.URLField(max_length=255, blank=True, null=True)
+	open_in_new_tab = models.BooleanField(default=False)
 
 	class Meta:
 		ordering = ['-created_at']

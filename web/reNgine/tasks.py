@@ -3112,6 +3112,7 @@ def generate_inapp_notification(scan, subscan, status, engine, fields):
 	scan_type = "Subscan" if subscan else "Scan"
 	domain = subscan.domain.name if subscan else scan.domain.name
 	duration_msg = None
+	redirect_link = None
 	
 	if status == 'RUNNING':
 		title = f"{scan_type} Started"
@@ -3142,6 +3143,9 @@ def generate_inapp_notification(scan, subscan, status, engine, fields):
 	if duration_msg:
 		description += f"<br>{duration_msg}"
 
+	if status != 'RUNNING':
+		redirect_link = f"/scan/{slug}/detail/{scan.id}" if scan else None
+
 	create_inappnotification(
 		title=title,
 		description=description,
@@ -3149,7 +3153,9 @@ def generate_inapp_notification(scan, subscan, status, engine, fields):
 		project_slug=slug,
 		icon=icon,
 		is_read=False,
-		status=notif_status
+		status=notif_status,
+		redirect_link=redirect_link,
+		open_in_new_tab=False
 	)
 
 
