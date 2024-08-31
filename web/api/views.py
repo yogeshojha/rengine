@@ -988,7 +988,7 @@ class RengineUpdateCheck(APIView):
 
 		# get current version_number
 		# remove quotes from current_version
-		current_version = RENGINE_CURRENT_VERSION
+		current_version = '1.9.1'
 
 		# for consistency remove v from both if exists
 		latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
@@ -1009,8 +1009,21 @@ class RengineUpdateCheck(APIView):
 		return_response['status'] = True
 		return_response['latest_version'] = latest_version
 		return_response['current_version'] = current_version
-		return_response['update_available'] = version.parse(current_version) < version.parse(latest_version)
-		if version.parse(current_version) < version.parse(latest_version):
+		is_version_update_available = version.parse(current_version) < version.parse(latest_version)
+
+		# if is_version_update_available then we should create inapp notification
+		create_inappnotification(
+			title='reNgine Update Available',
+			description=f'Update to version {latest_version} is available',
+			notification_type=SYSTEM_LEVEL_NOTIFICATION,
+			project_slug=None,
+			icon='mdi-update',
+			redirect_link='https://github.com/yogeshojha/rengine/releases',
+			open_in_new_tab=True
+		)
+
+		return_response['update_available'] = is_version_update_available
+		if is_version_update_available:
 			return_response['changelog'] = response[0]['body']
 
 		return Response(return_response)
