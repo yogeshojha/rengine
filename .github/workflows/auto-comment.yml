@@ -6,6 +6,10 @@ on:
   pull_request:
     types: [opened, closed]
 
+permissions:
+  issues: write
+  pull-requests: write
+
 jobs:
   auto_comment:
     runs-on: ubuntu-latest
@@ -18,39 +22,69 @@ jobs:
             const { owner, repo } = context.repo;
             const author = context.payload.sender.login;
             
-            if (context.eventName === 'issues' && context.payload.action === 'opened') {
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner,
-                repo,
-                body: `Hey @${author}! 👋 Thanks for flagging this! 🐛🐞
+            try {
+              if (context.eventName === 'issues' && context.payload.action === 'opened') {
+                const issue = await github.rest.issues.get({
+                  owner,
+                  repo,
+                  issue_number: context.issue.number
+                });
+                
+                const isFeatureRequest = issue.data.title.toLowerCase().includes('feat');
+                
+                let commentBody;
+                if (isFeatureRequest) {
+                  commentBody = `Hey @${author}! 👋 Thanks for your feature request! 💡
 
-            Before we dig in, Let's make sure you have
+                  We love hearing new ideas from our community. Here's what happens next:
 
-            🔍 Gone through the documentation: https://rengine.wiki
-            🕵️ Make sure it's not a known issue
-            📝 Provided us all the details related to this bug`
-              });
-            } else if (context.eventName === 'pull_request' && context.payload.action === 'opened') {
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner,
-                repo,
-                body: `Woohoo @${author}! 🎉 You've just dropped some hot new code! 🔥
+                  1. 📋 Our team will review your suggestion
+                  2. 💬 We might reach out for more details if needed
+                  3. 🔍 We'll evaluate how it fits with our roadmap
+                  4. 📢 We'll update you on the status
 
-            Hang tight while we review this! You rock! 🤘`
-              });
-            } else if (context.eventName === 'pull_request' && context.payload.action === 'closed') {
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner,
-                repo,
-                body: `Holy smokes, @${author}! 🤯 You've just made reNgine even more awesome!
+                  Thanks for helping make reNgine even better! 🚀`;
+                } else {
+                  commentBody = `Hey @${author}! 👋 Thanks for flagging this! 🐛🐞
 
-            Your code is now part of the reNgine hall of fame. 🏆 
-            
-            Keep the cool ideas coming - maybe next time you'll break the internet! 💻💥
+                  Before we dig in, Let's make sure you have:
 
-            Virtual high fives all around! 🙌`
-              });
+                  🔍 Gone through the documentation: https://rengine.wiki
+                  🕵️ Make sure it's not a known issue
+                  📝 Provided us all the details related to this bug`;
+                }
+                
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner,
+                  repo,
+                  body: commentBody
+                });
+              } else if (context.eventName === 'pull_request' && context.payload.action === 'opened') {
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner,
+                  repo,
+                  body: `Woohoo @${author}! 🎉 You've just dropped some hot new code! 🔥
+
+              Hang tight while we review this! You rock! 🤘`
+                });
+              } else if (context.eventName === 'pull_request' && context.payload.action === 'closed') {
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner,
+                  repo,
+                  body: `Holy smokes, @${author}! 🤯 You've just made reNgine even more awesome!
+
+              Your code is now part of the reNgine hall of fame. 🏆 
+              
+              Keep the cool ideas coming - maybe next time you'll break the internet! 💻💥
+
+              Virtual high fives all around! 🙌`
+                });
+              }
+              console.log('Comment created successfully');
+            } catch (error) {
+              console.error('Error creating comment:', error);
+              core.setFailed(`Action failed with error: ${error}`);
             }
