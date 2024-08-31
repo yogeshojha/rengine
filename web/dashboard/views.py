@@ -320,11 +320,11 @@ def onboarding(request):
     error = ''
 
     # check is any projects exists, then redirect to project list else onboarding
-    # project = Project.objects.first()
+    project = Project.objects.first()
 
-    # if project:
-    #     slug = project.slug
-    #     return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
+    if project:
+        slug = project.slug
+        return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
 
     if request.method == "POST":
         project_name = request.POST.get('project_name')
