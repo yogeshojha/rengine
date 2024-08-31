@@ -582,3 +582,8 @@ mark{
 .notification-bell-icon.buzz {
   animation: notification-buzz 0.8s ease-out;
 }
+
+
+.optional-text {
+  margin-top: 4px;
+}

@@ -1034,6 +1034,12 @@ def get_netlas_key():
 	netlas_key = NetlasAPIKey.objects.all()
 	return netlas_key[0] if netlas_key else None
 
+
+def get_chaos_key():
+	chaos_key = ChaosAPIKey.objects.all()
+	return chaos_key[0] if chaos_key else None
+
+
 def parse_llm_vulnerability_report(report):
 	report = report.replace('**', '')
 	data = {}

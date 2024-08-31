@@ -503,6 +503,7 @@ def api_vault(request, slug):
     if request.method == "POST":
         key_openai = request.POST.get('key_openai')
         key_netlas = request.POST.get('key_netlas')
+        key_chaos = request.POST.get('key_chaos')
 
 
         if key_openai:
@@ -521,10 +522,21 @@ def api_vault(request, slug):
             else:
                 NetlasAPIKey.objects.create(key=key_netlas)
 
+        if key_chaos:
+            chaos_api_key = ChaosAPIKey.objects.first()
+            if chaos_api_key:
+                chaos_api_key.key = key_chaos
+                chaos_api_key.save()
+            else:
+                ChaosAPIKey.objects.create(key=key_chaos)
+
     openai_key = OpenAiAPIKey.objects.first()
     netlas_key = NetlasAPIKey.objects.first()
+    chaos_key = ChaosAPIKey.objects.first()
+
     context['openai_key'] = openai_key
     context['netlas_key'] = netlas_key
+    context['chaos_key'] = chaos_key
     return render(request, 'scanEngine/settings/api.html', context)
 
 
