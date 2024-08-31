@@ -497,6 +497,15 @@ def subdomain_discovery(
 				cmd_extract = f"grep -oE '([a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?\.)+{host}'"
 				cmd += f' | {cmd_extract} > {results_file}'
 
+			elif tool == 'chaos':
+				# we need to find api key if not ignore
+				chaos_key = get_chaos_key()
+				if not chaos_key:
+					logger.error('Chaos API key not found. Skipping.')
+					continue
+				results_file = self.results_dir + '/subdomains_chaos.txt'
+				cmd = f'chaos -d {host} -silent -key {chaos_key} -o {results_file}'
+
 		elif tool in custom_subdomain_tools:
 			tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
 			if not tool_query.exists():
