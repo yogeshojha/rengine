@@ -72,7 +72,7 @@ jobs:
               let commentBody;
 
               if (isPRMerged) {
-                commentBody = `Holy smokes, @${author}! 🤯 You've just made reNgine even more awesome!
+                commentBody = `Holy smokes! 🤯 You've just made reNgine even more awesome!
 
             Your code is now part of the reNgine hall of fame. 🏆 
             
@@ -80,7 +80,7 @@ jobs:
 
             Virtual high fives all around! 🙌`;
               } else {
-                commentBody = `Hey @${author}, thanks for your contribution! 🙏
+                commentBody = `Hey, thanks for your contribution! 🙏
 
             We appreciate the time and effort you put into this PR. Sadly this is not the right fit for reNgine at the moment.
             
