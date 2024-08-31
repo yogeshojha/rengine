@@ -13,7 +13,7 @@ from dashboard.models import InAppNotification
 class InAppNotificationSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = InAppNotification
-		fields = ['id', 'title', 'description', 'icon', 'is_read', 'created_at', 'notification_type', 'project']
+		fields = ['id', 'title', 'description', 'icon', 'is_read', 'created_at', 'notification_type', 'status', 'project']
 		read_only_fields = ['id', 'created_at']
 
 	def get_project_name(self, obj):

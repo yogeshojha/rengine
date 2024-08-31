@@ -422,7 +422,7 @@ mark{
 }
 
 .notification-panel-dropdown {
-  width: 380px;
+  width: 400px;
   border: none;
   border-radius: 8px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -452,8 +452,9 @@ mark{
 }
 
 .notification-panel-item {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  transition: background-color 0.2s ease;
+  border-left: 4px solid transparent;
+  transition: all 0.3s ease;
+  margin-bottom: 2px;
 }
 
 .notification-panel-item:last-child {
@@ -461,38 +462,77 @@ mark{
 }
 
 .notification-panel-item:hover {
-  background-color: #f8f9fa;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 0px rgba(0, 0, 0, 0.10);
+}
+
+/* status */
+.notification-panel-status-success {
+  border-left-color: #10B981;
+}
+
+.notification-panel-status-info {
+  border-left-color: #3B82F6;
+}
+
+.notification-panel-status-warning {
+  border-left-color: #F59E0B;
+}
+
+.notification-panel-status-error {
+  border-left-color: #EF4444;
 }
 
 .notification-panel-unread {
-  background-color: #fafbff;
-  border-left: 3px solid #4a90e2;
+  background-color: #F3F4F6;
 }
 
 .notification-panel-unread:hover {
-  background-color: #f0f4ff;
+  background-color: #E5E7EB;
 }
 
 .notification-panel-icon {
   font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #E5E7EB;
 }
 
 .notification-panel-title {
-  color: #212529;
   font-size: 0.95rem;
   font-weight: 600;
 }
 
+.notification-panel-status-success .notification-panel-title {
+  color: #10B981;
+}
+
+.notification-panel-status-info .notification-panel-title {
+  color: #3B82F6;
+}
+
+.notification-panel-status-warning .notification-panel-title {
+  color: #F59E0B;
+}
+
+.notification-panel-status-error .notification-panel-title {
+  color: #EF4444;
+}
+
 .notification-panel-description {
-  color: #6c757d;
+  color: #4B5563;
   font-size: 0.875rem;
   margin-bottom: 0.25rem;
   line-height: 1.4;
 }
 
 .notification-panel-time {
-  color: #adb5bd;
-  font-size: 0.75rem;
+  color: #6B7280;
+  font-size: 0.8rem;
 }
 
 .notification-panel-footer {
@@ -510,6 +550,22 @@ mark{
 
 .notification-panel-view-all:hover {
   color: #0056b3;
+}
+
+.notification-panel-status-success .notification-panel-icon {
+  color: #10B981;
+}
+
+.notification-panel-status-info .notification-panel-icon {
+  color: #3B82F6;
+}
+
+.notification-panel-status-warning .notification-panel-icon {
+  color: #F59E0B;
+}
+
+.notification-panel-status-error .notification-panel-icon {
+  color: #EF4444;
 }
 
 @keyframes notification-buzz {

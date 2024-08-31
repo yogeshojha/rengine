@@ -1,5 +1,5 @@
 from django.db import models
-
+from reNgine.definitions import *
 
 class SearchHistory(models.Model):
 	query = models.CharField(max_length=1000)
@@ -44,12 +44,9 @@ class NetlasAPIKey(models.Model):
 
 
 class InAppNotification(models.Model):
-	NOTIFICATION_TYPES = (
-		('system', 'System-wide'),
-		('project', 'Project-specific'),
-	)
 	project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=True)
 	notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES, default='system')
+	status = models.CharField(max_length=10, choices=NOTIFICATION_STATUS_TYPES, default='info')
 	title = models.CharField(max_length=255)
 	description = models.TextField()
 	icon = models.CharField(max_length=50) # mdi icon class name

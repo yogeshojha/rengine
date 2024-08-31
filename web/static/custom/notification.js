@@ -1,6 +1,8 @@
 // notifications.js
 // all the functions and event listeners for the notification panel
 
+// notifications.js
+
 function updateNotifications() {
   let api_url = "/api/notifications/";
   const currentProjectSlug = getCurrentProjectSlug();
@@ -34,7 +36,7 @@ function updateNotifications() {
           const notificationItem = document.createElement("div");
           notificationItem.className = `notification-panel-item d-flex align-items-start p-3 ${
             notification.is_read ? "" : "notification-panel-unread"
-          }`;
+          } notification-panel-status-${notification.status}`;
           notificationItem.innerHTML = `
                     <div class="notification-panel-content flex-grow-1">
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -48,9 +50,9 @@ function updateNotifications() {
                         <p class="notification-panel-description mb-1">${
                           notification.description
                         }</p>
-                        <small class="notification-panel-time">${new Date(
-                          notification.created_at
-                        ).toLocaleString()}</small>
+                        <small class="notification-panel-time">${timeago.format(
+                          new Date(notification.created_at)
+                        )}</small>
                     </div>
                 `;
           notificationItem.addEventListener("click", () =>
@@ -123,13 +125,52 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearAllLink = document.querySelector("#clear-notif-btn");
   clearAllLink.addEventListener("click", clearAllNotifications);
 
+  const markAllReadBtn = document.querySelector("#mark-all-read-btn");
+  markAllReadBtn.addEventListener("click", markAllAsRead);
+
   // Update notifications every 30 seconds
   updateNotifications();
   setInterval(updateNotifications, 30000);
-});
 
+  setInterval(updateTimes, 60000);
+});
 
 function getCurrentProjectSlug() {
   const hiddenInput = document.querySelector('input[name="current_project"]');
   return hiddenInput ? hiddenInput.value : null;
+}
+
+function markAllAsRead() {
+  fetch("/api/notifications/mark_all_read/", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/json",
+    },
+  })
+    .then((response) => {
+      if (response.ok) {
+        document
+          .querySelectorAll(".notification-panel-item")
+          .forEach((item) => {
+            item.classList.remove("notification-panel-unread");
+          });
+        updateUnreadCount();
+      }
+    })
+    .catch((error) =>
+      console.error("Error marking all notifications as read:", error)
+    );
+}
+
+function updateTimes() {
+  document
+    .querySelectorAll(".notification-panel-time")
+    .forEach((timeElement) => {
+      const datetime = timeElement.getAttribute("datetime");
+      if (datetime) {
+        timeElement.textContent = timeago.format(new Date(datetime));
+      }
+    });
 }

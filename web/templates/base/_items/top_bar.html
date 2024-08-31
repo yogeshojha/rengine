@@ -170,14 +170,15 @@
         <div class="dropdown-menu dropdown-menu-end notification-panel-dropdown">
           <div class="notification-panel-header d-flex justify-content-between align-items-center p-3">
             <h6 class="m-0">Notifications</h6>
-            <a href="javascript: void(0);" class="notification-panel-clear-link" id="clear-notif-btn">Clear All</a>
+            <div>
+              <a href="javascript: void(0);" class="notification-panel-mark-read-link me-3" id="mark-all-read-btn">Mark all as read</a>
+              <a href="javascript: void(0);" class="notification-panel-clear-link" id="clear-notif-btn">Clear All</a>
+            </div>
           </div>
           <div class="px-1" style="max-height: 400px;" data-simplebar>
             <div class="notification-panel-body">
-              {% comment %} populate the notifications here {% endcomment %}
-          </div>
-          <div class="notification-panel-footer text-center p-2">
-            <a href="javascript:void(0);" class="notification-panel-view-all">Mark all as read</a>
+              <!-- populate the notifications here -->
+            </div>
           </div>
         </div>
       </li>

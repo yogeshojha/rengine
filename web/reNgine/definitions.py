@@ -548,3 +548,18 @@ ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
 
 # OSINT GooFuzz Path
 GOFUZZ_EXEC_PATH = '/usr/src/github/goofuzz/GooFuzz'
+
+
+# In App Notification Definitions
+SYSTEM_LEVEL_NOTIFICATION = 'system'
+PROJECT_LEVEL_NOTIFICATION = 'project'
+NOTIFICATION_TYPES = (
+    ('system', SYSTEM_LEVEL_NOTIFICATION),
+    ('project', PROJECT_LEVEL_NOTIFICATION),
+)
+NOTIFICATION_STATUS_TYPES = (
+    ('success', 'Success'),
+    ('info', 'Informational'),
+    ('warning', 'Warning'),
+    ('error', 'Error'),
+)
