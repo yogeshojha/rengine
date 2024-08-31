@@ -155,10 +155,15 @@ def add_target(request, slug):
                         if created:
                             logger.warning(f'Added new IP {ip}')
 
-                    for port in ports:
-                        port, created = Port.objects.get_or_create(number=port_number)
+                    for port_number in ports:
+                        res = get_port_service_description(port_number)
+                        port, created = update_or_create_port(
+                            port_number=port_number,
+                            service_name=res.get('service_name', ''),
+                            description=res.get('description', '')
+                        )
                         if created:
-                            logger.warning(f'Added new port {port.number}.')
+                            logger.warning(f'Added new port {port_number} to DB')
 
             # Import from txt / csv
             elif 'import-txt-target' in request.POST or 'import-csv-target' in request.POST:

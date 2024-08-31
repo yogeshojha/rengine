@@ -156,7 +156,7 @@ urlpatterns = [
         name='waf_detector'),
     path(
         'tools/gpt_vulnerability_report/',
-        GPTVulnerabilityReportGenerator.as_view(),
+        LLMVulnerabilityReportGenerator.as_view(),
         name='gpt_vulnerability_report_generator'),
     path(
         'tools/gpt_get_possible_attacks/',

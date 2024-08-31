@@ -17,11 +17,11 @@ drf-yasg==1.21.3
 gunicorn==22.0.0
 gevent==24.2.1
 humanize==4.3.0
-langchain==0.1.0
+langchain-community==0.2.7
 Markdown==3.3.4
 metafinder==1.2
 netaddr==0.8.0
-netlas==0.4.1
+netlas==0.5.1
 openai==0.28.0
 PyYAML==6.0.1
 PySocks==1.7.1
@@ -30,6 +30,7 @@ pycvesearch==1.0
 redis==5.0.3
 requests==2.31.0
 scapy==2.4.3
+sqlalchemy==1.4.52
 tldextract==3.5.0
 uro==1.0.0
 validators==0.18.2

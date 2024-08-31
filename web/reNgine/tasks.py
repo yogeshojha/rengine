@@ -5,7 +5,6 @@ import pprint
 import subprocess
 import time
 import validators
-import whatportis
 import xmltodict
 import yaml
 import tldextract
@@ -26,12 +25,11 @@ from pycvesearch import CVESearch
 from metafinder.extractor import extract_metadata_from_google_search
 
 from reNgine.celery import app
-from reNgine.gpt import GPTVulnerabilityReportGenerator
 from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
-from reNgine.gpt import *
+from reNgine.llm import *
 from reNgine.utilities import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification, Proxy)
 from startScan.models import *
@@ -59,6 +57,7 @@ def initiate_scan(
 		results_dir=RENGINE_RESULTS,
 		imported_subdomains=[],
 		out_of_scope_subdomains=[],
+		initiated_by_id=None,
 		url_filter=''):
 	"""Initiate a new scan.
 
@@ -70,137 +69,153 @@ def initiate_scan(
 		results_dir (str): Results directory.
 		imported_subdomains (list): Imported subdomains.
 		out_of_scope_subdomains (list): Out-of-scope subdomains.
-		url_filter (str): URL path. Default: ''
+		url_filter (str): URL path. Default: ''.
+		initiated_by (int): User ID initiating the scan.
 	"""
+	logger.info('Initiating scan on celery')
+	scan = None
+	try:
+		# Get scan engine
+		engine_id = engine_id or scan.scan_type.id # scan history engine_id
+		engine = EngineType.objects.get(pk=engine_id)
 
-	# Get scan history
-	scan = ScanHistory.objects.get(pk=scan_history_id)
+		# Get YAML config
+		config = yaml.safe_load(engine.yaml_configuration)
+		enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
+		gf_patterns = config.get(GF_PATTERNS, [])
 
-	# Get scan engine
-	engine_id = engine_id or scan.scan_type.id # scan history engine_id
-	engine = EngineType.objects.get(pk=engine_id)
+		# Get domain and set last_scan_date
+		domain = Domain.objects.get(pk=domain_id)
+		domain.last_scan_date = timezone.now()
+		domain.save()
 
-	# Get YAML config
-	config = yaml.safe_load(engine.yaml_configuration)
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
-	gf_patterns = config.get(GF_PATTERNS, [])
+		# Get path filter
+		url_filter = url_filter.rstrip('/')
 
-	# Get domain and set last_scan_date
-	domain = Domain.objects.get(pk=domain_id)
-	domain.last_scan_date = timezone.now()
-	domain.save()
+		# for live scan scan history id is passed as scan_history_id 
+		# and no need to create scan_history object
+	
+		if scan_type == SCHEDULED_SCAN: # scheduled
+			# we need to create scan_history object for each scheduled scan 
+			scan_history_id = create_scan_object(
+				host_id=domain_id,
+				engine_id=engine_id,
+				initiated_by_id=initiated_by_id,
+			)
 
-	# Get path filter
-	url_filter = url_filter.rstrip('/')
-
-	# Get or create ScanHistory() object
-	if scan_type == LIVE_SCAN: # immediate
 		scan = ScanHistory.objects.get(pk=scan_history_id)
 		scan.scan_status = RUNNING_TASK
-	elif scan_type == SCHEDULED_SCAN: # scheduled
-		scan = ScanHistory()
-		scan.scan_status = INITIATED_TASK
-	scan.scan_type = engine
-	scan.celery_ids = [initiate_scan.request.id]
-	scan.domain = domain
-	scan.start_scan_date = timezone.now()
-	scan.tasks = engine.tasks
-	scan.results_dir = f'{results_dir}/{domain.name}_{scan.id}'
-	add_gf_patterns = gf_patterns and 'fetch_url' in engine.tasks
-	if add_gf_patterns:
-		scan.used_gf_patterns = ','.join(gf_patterns)
-	scan.save()
+		scan.scan_type = engine
+		scan.celery_ids = [initiate_scan.request.id]
+		scan.domain = domain
+		scan.start_scan_date = timezone.now()
+		scan.tasks = engine.tasks
+		scan.results_dir = f'{results_dir}/{domain.name}_{scan.id}'
+		add_gf_patterns = gf_patterns and 'fetch_url' in engine.tasks
+		if add_gf_patterns:
+			scan.used_gf_patterns = ','.join(gf_patterns)
+		scan.save()
 
-	# Create scan results dir
-	os.makedirs(scan.results_dir)
+		# Create scan results dir
+		os.makedirs(scan.results_dir)
 
-	# Build task context
-	ctx = {
-		'scan_history_id': scan_history_id,
-		'engine_id': engine_id,
-		'domain_id': domain.id,
-		'results_dir': scan.results_dir,
-		'url_filter': url_filter,
-		'yaml_configuration': config,
-		'out_of_scope_subdomains': out_of_scope_subdomains
-	}
-	ctx_str = json.dumps(ctx, indent=2)
+		# Build task context
+		ctx = {
+			'scan_history_id': scan_history_id,
+			'engine_id': engine_id,
+			'domain_id': domain.id,
+			'results_dir': scan.results_dir,
+			'url_filter': url_filter,
+			'yaml_configuration': config,
+			'out_of_scope_subdomains': out_of_scope_subdomains
+		}
+		ctx_str = json.dumps(ctx, indent=2)
 
-	# Send start notif
-	logger.warning(f'Starting scan {scan_history_id} with context:\n{ctx_str}')
-	send_scan_notif.delay(
-		scan_history_id,
-		subscan_id=None,
-		engine_id=engine_id,
-		status=CELERY_TASK_STATUS_MAP[scan.scan_status])
+		# Send start notif
+		logger.warning(f'Starting scan {scan_history_id} with context:\n{ctx_str}')
+		send_scan_notif.delay(
+			scan_history_id,
+			subscan_id=None,
+			engine_id=engine_id,
+			status=CELERY_TASK_STATUS_MAP[scan.scan_status])
 
-	# Save imported subdomains in DB
-	save_imported_subdomains(imported_subdomains, ctx=ctx)
+		# Save imported subdomains in DB
+		save_imported_subdomains(imported_subdomains, ctx=ctx)
 
-	# Create initial subdomain in DB: make a copy of domain as a subdomain so
-	# that other tasks using subdomains can use it.
-	subdomain_name = domain.name
-	subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
+		# Create initial subdomain in DB: make a copy of domain as a subdomain so
+		# that other tasks using subdomains can use it.
+		subdomain_name = domain.name
+		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
 
-	# If enable_http_crawl is set, create an initial root HTTP endpoint so that
-	# HTTP crawling can start somewhere
-	http_url = f'{domain.name}{url_filter}' if url_filter else domain.name
-	endpoint, _ = save_endpoint(
-		http_url,
-		ctx=ctx,
-		crawl=enable_http_crawl,
-		is_default=True,
-		subdomain=subdomain
-	)
-	if endpoint and endpoint.is_alive:
-		# TODO: add `root_endpoint` property to subdomain and simply do
-		# subdomain.root_endpoint = endpoint instead
-		logger.warning(f'Found subdomain root HTTP URL {endpoint.http_url}')
-		subdomain.http_url = endpoint.http_url
-		subdomain.http_status = endpoint.http_status
-		subdomain.response_time = endpoint.response_time
-		subdomain.page_title = endpoint.page_title
-		subdomain.content_type = endpoint.content_type
-		subdomain.content_length = endpoint.content_length
-		for tech in endpoint.techs.all():
-			subdomain.technologies.add(tech)
-		subdomain.save()
-
-
-	# Build Celery tasks, crafted according to the dependency graph below:
-	# subdomain_discovery --> port_scan --> fetch_url --> dir_file_fuzz
-	# osint								             	  vulnerability_scan
-	# osint								             	  dalfox xss scan
-	#						 	   		         	  	  screenshot
-	#													  waf_detection
-	workflow = chain(
-		group(
-			subdomain_discovery.si(ctx=ctx, description='Subdomain discovery'),
-			osint.si(ctx=ctx, description='OS Intelligence')
-		),
-		port_scan.si(ctx=ctx, description='Port scan'),
-		fetch_url.si(ctx=ctx, description='Fetch URL'),
-		group(
-			dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
-			vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
-			screenshot.si(ctx=ctx, description='Screenshot'),
-			waf_detection.si(ctx=ctx, description='WAF detection')
+		# If enable_http_crawl is set, create an initial root HTTP endpoint so that
+		# HTTP crawling can start somewhere
+		http_url = f'{domain.name}{url_filter}' if url_filter else domain.name
+		endpoint, _ = save_endpoint(
+			http_url,
+			ctx=ctx,
+			crawl=enable_http_crawl,
+			is_default=True,
+			subdomain=subdomain
 		)
-	)
+		if endpoint and endpoint.is_alive:
+			# TODO: add `root_endpoint` property to subdomain and simply do
+			# subdomain.root_endpoint = endpoint instead
+			logger.warning(f'Found subdomain root HTTP URL {endpoint.http_url}')
+			subdomain.http_url = endpoint.http_url
+			subdomain.http_status = endpoint.http_status
+			subdomain.response_time = endpoint.response_time
+			subdomain.page_title = endpoint.page_title
+			subdomain.content_type = endpoint.content_type
+			subdomain.content_length = endpoint.content_length
+			for tech in endpoint.techs.all():
+				subdomain.technologies.add(tech)
+			subdomain.save()
 
-	# Build callback
-	callback = report.si(ctx=ctx).set(link_error=[report.si(ctx=ctx)])
 
-	# Run Celery chord
-	logger.info(f'Running Celery workflow with {len(workflow.tasks) + 1} tasks')
-	task = chain(workflow, callback).on_error(callback).delay()
-	scan.celery_ids.append(task.id)
-	scan.save()
+		# Build Celery tasks, crafted according to the dependency graph below:
+		# subdomain_discovery --> port_scan --> fetch_url --> dir_file_fuzz
+		# osint								             	  vulnerability_scan
+		# osint								             	  dalfox xss scan
+		#						 	   		         	  	  screenshot
+		#													  waf_detection
+		workflow = chain(
+			group(
+				subdomain_discovery.si(ctx=ctx, description='Subdomain discovery'),
+				osint.si(ctx=ctx, description='OS Intelligence')
+			),
+			port_scan.si(ctx=ctx, description='Port scan'),
+			fetch_url.si(ctx=ctx, description='Fetch URL'),
+			group(
+				dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
+				vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
+				screenshot.si(ctx=ctx, description='Screenshot'),
+				waf_detection.si(ctx=ctx, description='WAF detection')
+			)
+		)
 
-	return {
-		'success': True,
-		'task_id': task.id
-	}
+		# Build callback
+		callback = report.si(ctx=ctx).set(link_error=[report.si(ctx=ctx)])
+
+		# Run Celery chord
+		logger.info(f'Running Celery workflow with {len(workflow.tasks) + 1} tasks')
+		task = chain(workflow, callback).on_error(callback).delay()
+		scan.celery_ids.append(task.id)
+		scan.save()
+
+		return {
+			'success': True,
+			'task_id': task.id
+		}
+	except Exception as e:
+		logger.exception(e)
+		if scan:
+			scan.scan_status = FAILED_TASK
+			scan.error_message = str(e)
+			scan.save()
+		return {
+			'success': False,
+			'error': str(e)
+		}
 
 
 @app.task(name='initiate_subscan', bind=False, queue='subscan_queue')
@@ -1369,16 +1384,17 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 			urls.append(http_url)
 
 		# Add Port in DB
-		port_details = whatportis.get_ports(str(port_number))
-		service_name = port_details[0].name if len(port_details) > 0 else 'unknown'
-		description = port_details[0].description if len(port_details) > 0 else ''
-
+		res = get_port_service_description(port_number)
 		# get or create port
-		port, created = Port.objects.get_or_create(
-			number=port_number,
-			service_name=service_name,
-			description=description
+		port, created = update_or_create_port(
+			port_number=port_number,
+			service_name=res.get('service_name', ''),
+			description=res.get('description', '')
 		)
+
+		if created:
+			logger.warning(f'Added new port {port_number} to DB')
+
 		if port_number in UNCOMMON_WEB_PORTS:
 			port.is_uncommon = True
 			port.save()
@@ -1596,7 +1612,12 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	# Config
 	cmd = 'ffuf'
 	config = self.yaml_configuration.get(DIR_FILE_FUZZ) or {}
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	# support for custom header will be remove in next major release, as of now it will be supported
+	# for backward compatibility
 	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	auto_calibration = config.get(AUTO_CALIBRATION, True)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	rate_limit = config.get(RATE_LIMIT) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
@@ -1632,7 +1653,9 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	cmd += ' -fr' if follow_redirect else ''
 	cmd += ' -ac' if auto_calibration else ''
 	cmd += f' -mc {mc}' if mc else ''
-	cmd += f' -H "{custom_header}"' if custom_header else ''
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
 
 	# Grab URLs to fuzz
 	urls = get_http_urls(
@@ -1779,8 +1802,17 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, DEFAULT_IGNORE_FILE_EXTENSIONS)
 	tools = config.get(USES_TOOLS, ENDPOINT_SCAN_DEFAULT_TOOLS)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
-	domain_request_headers = self.domain.request_headers if self.domain else None
-	custom_header = domain_request_headers or self.yaml_configuration.get(CUSTOM_HEADER)
+	# domain_request_headers = self.domain.request_headers if self.domain else None
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	exclude_subdomains = config.get(EXCLUDED_SUBDOMAINS, False)
 
 	# Get URLs to scan and save to input file
@@ -1817,15 +1849,12 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		cmd_map['gau'] += f' --threads {threads}'
 		cmd_map['gospider'] += f' -t {threads}'
 		cmd_map['katana'] += f' -c {threads}'
-	if custom_header:
-		header_string = ';;'.join([
-			f'{key}: {value}' for key, value in custom_header.items()
-		])
-		cmd_map['hakrawler'] += f' -h {header_string}'
-		cmd_map['katana'] += f' -H {header_string}'
-		header_flags = [':'.join(h) for h in header_string.split(';;')]
-		for flag in header_flags:
-			cmd_map['gospider'] += f' -H {flag}'
+	if custom_headers:
+		# gau, waybackurls does not support custom headers
+		formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+		cmd_map['gospider'] += formatted_headers
+		cmd_map['hakrawler'] += ';;'.join(header for header in custom_headers)
+		cmd_map['katana'] += formatted_headers
 	cat_input = f'cat {input_path}'
 	grep_output = f'grep -Eo {host_regex}'
 	cmd_map = {
@@ -2249,6 +2278,8 @@ def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, sh
 def get_vulnerability_gpt_report(vuln):
 	title = vuln[0]
 	path = vuln[1]
+	if not path:
+		path = '/'
 	logger.info(f'Getting GPT Report for {title}, PATH: {path}')
 	# check if in db already exists
 	stored = GPTVulnerabilityReport.objects.filter(
@@ -2256,7 +2287,7 @@ def get_vulnerability_gpt_report(vuln):
 	).filter(
 		title=title
 	).first()
-	if stored:
+	if stored and stored.description and stored.impact and stored.remediation:
 		response = {
 			'description': stored.description,
 			'impact': stored.impact,
@@ -2264,7 +2295,7 @@ def get_vulnerability_gpt_report(vuln):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
-		report = GPTVulnerabilityReportGenerator()
+		report = LLMVulnerabilityReportGenerator(logger=logger)
 		vulnerability_description = get_gpt_vuln_input_description(
 			title,
 			path
@@ -2294,6 +2325,9 @@ def get_vulnerability_gpt_report(vuln):
 
 
 def add_gpt_description_db(title, path, description, impact, remediation, references):
+	logger.info(f'Adding GPT Report to DB for {title}, PATH: {path}')
+	if not path:
+		path = '/'
 	gpt_report = GPTVulnerabilityReport()
 	gpt_report.url_path = path
 	gpt_report.title = title
@@ -2328,7 +2362,16 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	rate_limit = config.get(RATE_LIMIT) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	retries = config.get(RETRIES) or self.yaml_configuration.get(RETRIES, DEFAULT_RETRIES)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
-	custom_header = config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	should_fetch_gpt_report = config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	proxy = get_random_proxy()
 	nuclei_specific_config = config.get('nuclei', {})
@@ -2395,7 +2438,9 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	cmd = 'nuclei -j'
 	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
 	cmd += f' -irr'
-	cmd += f' -H "{custom_header}"' if custom_header else ''
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
 	cmd += f' -l {input_path}'
 	cmd += f' -c {str(concurrency)}' if concurrency > 0 else ''
 	cmd += f' -proxy {proxy} ' if proxy else ''
@@ -2445,7 +2490,16 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	should_fetch_gpt_report = vuln_config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	dalfox_config = vuln_config.get(DALFOX) or {}
-	custom_header = dalfox_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	proxy = get_random_proxy()
 	is_waf_evasion = dalfox_config.get(WAF_EVASION, False)
 	blind_xss_server = dalfox_config.get(BLIND_XSS_SERVER)
@@ -2480,8 +2534,10 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' -b {blind_xss_server}' if blind_xss_server else ''
 	cmd += f' --delay {delay}' if delay else ''
 	cmd += f' --timeout {timeout}' if timeout else ''
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
 	cmd += f' --user-agent {user_agent}' if user_agent else ''
-	cmd += f' --header {custom_header}' if custom_header else ''
 	cmd += f' --worker {threads}' if threads else ''
 	cmd += f' --format json'
 
@@ -2570,7 +2626,16 @@ def crlfuzz_scan(self, urls=[], ctx={}, description=None):
 	"""
 	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	should_fetch_gpt_report = vuln_config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
-	custom_header = vuln_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	proxy = get_random_proxy()
 	user_agent = vuln_config.get(USER_AGENT) or self.yaml_configuration.get(USER_AGENT)
 	threads = vuln_config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
@@ -2595,7 +2660,9 @@ def crlfuzz_scan(self, urls=[], ctx={}, description=None):
 	cmd = 'crlfuzz -s'
 	cmd += f' -l {input_path}'
 	cmd += f' -x {proxy}' if proxy else ''
-	cmd += f' --H {custom_header}' if custom_header else ''
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
 	cmd += f' -o {output_path}'
 
 	run_command(
@@ -2745,7 +2812,16 @@ def http_crawl(
 		logger.info('Running From Subdomain Scan...')
 	cmd = '/go/bin/httpx'
 	cfg = self.yaml_configuration.get(HTTP_CRAWL) or {}
-	custom_header = cfg.get(CUSTOM_HEADER, '')
+	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
+	'''
+	# TODO: Remove custom_header in next major release
+		support for custom_header will be remove in next major release, 
+		as of now it will be supported for backward compatibility
+		only custom_headers will be supported
+	'''
+	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
+	if custom_header:
+		custom_headers.append(custom_header)
 	threads = cfg.get(THREADS, DEFAULT_THREADS)
 	follow_redirect = cfg.get(FOLLOW_REDIRECT, True)
 	self.output_path = None
@@ -2780,7 +2856,9 @@ def http_crawl(
 	cmd += f' -cl -ct -rt -location -td -websocket -cname -asn -cdn -probe -random-agent'
 	cmd += f' -t {threads}' if threads > 0 else ''
 	cmd += f' --http-proxy {proxy}' if proxy else ''
-	cmd += f' -H "{custom_header}"' if custom_header else ''
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		cmd += formatted_headers
 	cmd += f' -json'
 	cmd += f' -u {urls[0]}' if len(urls) == 1 else f' -l {input_path}'
 	cmd += f' -x {method}' if method else ''
@@ -3607,435 +3685,201 @@ def geo_localize(host, ip_id=None):
 
 
 @app.task(name='query_whois', bind=False, queue='query_whois_queue')
-def query_whois(ip_domain, force_reload_whois=False):
+def query_whois(target, force_reload_whois=False):
 	"""Query WHOIS information for an IP or a domain name.
 
 	Args:
-		ip_domain (str): IP address or domain name.
+		target (str): IP address or domain name.
 		save_domain (bool): Whether to save domain or not, default False
 	Returns:
 		dict: WHOIS information.
 	"""
-	if not force_reload_whois and Domain.objects.filter(name=ip_domain).exists() and Domain.objects.get(name=ip_domain).domain_info:
-		domain = Domain.objects.get(name=ip_domain)
-		if not domain.insert_date:
-			domain.insert_date = timezone.now()
-			domain.save()
-		domain_info_db = domain.domain_info
-		domain_info = DottedDict(
-			dnssec=domain_info_db.dnssec,
-			created=domain_info_db.created,
-			updated=domain_info_db.updated,
-			expires=domain_info_db.expires,
-			geolocation_iso=domain_info_db.geolocation_iso,
-			status=[status['name'] for status in DomainWhoisStatusSerializer(domain_info_db.status, many=True).data],
-			whois_server=domain_info_db.whois_server,
-			ns_records=[ns['name'] for ns in NameServersSerializer(domain_info_db.name_servers, many=True).data],
-			registrar_name=domain_info_db.registrar.name,
-			registrar_phone=domain_info_db.registrar.phone,
-			registrar_email=domain_info_db.registrar.email,
-			registrar_url=domain_info_db.registrar.url,
-			registrant_name=domain_info_db.registrant.name,
-			registrant_id=domain_info_db.registrant.id_str,
-			registrant_organization=domain_info_db.registrant.organization,
-			registrant_city=domain_info_db.registrant.city,
-			registrant_state=domain_info_db.registrant.state,
-			registrant_zip_code=domain_info_db.registrant.zip_code,
-			registrant_country=domain_info_db.registrant.country,
-			registrant_phone=domain_info_db.registrant.phone,
-			registrant_fax=domain_info_db.registrant.fax,
-			registrant_email=domain_info_db.registrant.email,
-			registrant_address=domain_info_db.registrant.address,
-			admin_name=domain_info_db.admin.name,
-			admin_id=domain_info_db.admin.id_str,
-			admin_organization=domain_info_db.admin.organization,
-			admin_city=domain_info_db.admin.city,
-			admin_state=domain_info_db.admin.state,
-			admin_zip_code=domain_info_db.admin.zip_code,
-			admin_country=domain_info_db.admin.country,
-			admin_phone=domain_info_db.admin.phone,
-			admin_fax=domain_info_db.admin.fax,
-			admin_email=domain_info_db.admin.email,
-			admin_address=domain_info_db.admin.address,
-			tech_name=domain_info_db.tech.name,
-			tech_id=domain_info_db.tech.id_str,
-			tech_organization=domain_info_db.tech.organization,
-			tech_city=domain_info_db.tech.city,
-			tech_state=domain_info_db.tech.state,
-			tech_zip_code=domain_info_db.tech.zip_code,
-			tech_country=domain_info_db.tech.country,
-			tech_phone=domain_info_db.tech.phone,
-			tech_fax=domain_info_db.tech.fax,
-			tech_email=domain_info_db.tech.email,
-			tech_address=domain_info_db.tech.address,
-			related_tlds=[domain['name'] for domain in RelatedDomainSerializer(domain_info_db.related_tlds, many=True).data],
-			related_domains=[domain['name'] for domain in RelatedDomainSerializer(domain_info_db.related_domains, many=True).data],
-			historical_ips=[ip for ip in HistoricalIPSerializer(domain_info_db.historical_ips, many=True).data],
-		)
-		if domain_info_db.dns_records:
-			a_records = []
-			txt_records = []
-			mx_records = []
-			dns_records = [{'name': dns['name'], 'type': dns['type']} for dns in DomainDNSRecordSerializer(domain_info_db.dns_records, many=True).data]
-			for dns in dns_records:
-				if dns['type'] == 'a':
-					a_records.append(dns['name'])
-				elif dns['type'] == 'txt':
-					txt_records.append(dns['name'])
-				elif dns['type'] == 'mx':
-					mx_records.append(dns['name'])
-			domain_info.a_records = a_records
-			domain_info.txt_records = txt_records
-			domain_info.mx_records = mx_records
-	else:
-		logger.info(f'Domain info for "{ip_domain}" not found in DB, querying whois')
+	try:
+		# TODO: Implement cache whois only for 48 hours otherwise get from whois server
+		# TODO: in 3.0
+		if not force_reload_whois:
+			logger.info(f'Querying WHOIS information for {target} from db...')
+			domain_info = get_domain_info_from_db(target)
+			if domain_info:
+				return format_whois_response(domain_info)
+			
+		# Query WHOIS information as not found in db
+		logger.info(f'Whois info not found in db')
+		logger.info(f'Querying WHOIS information for {target} from WHOIS server...')
+
 		domain_info = DottedDict()
-		# find domain historical ip
+		domain_info.target = target
+
+		whois_data = None
+		related_domains = []
+
+		with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+			futures_func = {
+				executor.submit(get_domain_historical_ip_address, target): 'historical_ips',
+				executor.submit(fetch_related_tlds_and_domains, target): 'related_tlds_and_domains',
+				executor.submit(reverse_whois, target): 'reverse_whois',
+				executor.submit(fetch_whois_data_using_netlas, target): 'whois_data',
+			}
+
+			for future in concurrent.futures.as_completed(futures_func):
+				func_name = futures_func[future]
+				try:
+					result = future.result()
+					if func_name == 'historical_ips':
+						domain_info.historical_ips = result
+					elif func_name == 'related_tlds_and_domains':
+						domain_info.related_tlds, tlsx_related_domain = result
+					elif func_name == 'reverse_whois':
+						related_domains = result
+					elif func_name == 'whois_data':
+						whois_data = result
+
+					logger.debug('*'*100)
+					logger.info(f'Task {func_name} finished for target {target}')
+					logger.debug(result)
+					logger.debug('*'*100)
+
+				except Exception as e:
+					logger.error(f'An error occurred while fetching {func_name} for {target}: {str(e)}')
+					continue
+
+		logger.info(f'All concurrent whosi lookup tasks finished for target {target}')
+
+		if 'tlsx_related_domain' in locals():
+			related_domains += tlsx_related_domain
+		
+		whois_data = whois_data.get('data', {})
+
+		# related domains can also be fetched from whois_data
+		whois_related_domains = whois_data.get('related_domains', [])
+		related_domains += whois_related_domains
+
+		# remove duplicate ones
+		related_domains = list(set(related_domains))
+		domain_info.related_domains = related_domains
+
+
+		parse_whois_data(domain_info, whois_data)
+		saved_domain_info = save_domain_info_to_db(target, domain_info)
+		return format_whois_response(domain_info)
+	except Exception as e:
+		logger.error(f'An error occurred while querying WHOIS information for {target}: {str(e)}')
+		return {
+			'status': False, 
+			'target': target, 
+			'result': f'An error occurred while querying WHOIS information for {target}: {str(e)}'
+		}
+
+
+def fetch_related_tlds_and_domains(domain):
+	"""
+	Fetch related TLDs and domains using TLSx.
+	related domains are those that are not part of related TLDs.
+	
+	Args:
+		domain (str): The domain to find related TLDs and domains for.
+	
+	Returns:
+		tuple: A tuple containing two lists (related_tlds, related_domains).
+	"""
+	logger.info(f"Fetching related TLDs and domains for {domain}")
+	related_tlds = set()
+	related_domains = set()
+	
+	# Extract the base domain
+	extracted = tldextract.extract(domain)
+	base_domain = f"{extracted.domain}.{extracted.suffix}"
+	
+	cmd = f'tlsx -san -cn -silent -ro -host {domain}'
+	_, result = run_command(cmd, shell=True)
+
+	for line in result.splitlines():
 		try:
-			historical_ips = get_domain_historical_ip_address(ip_domain)
-			domain_info.historical_ips = historical_ips
+				line = line.strip()
+				if line == "":
+					continue
+				extracted_result = tldextract.extract(line)
+				full_domain = f"{extracted_result.domain}.{extracted_result.suffix}"
+				
+				if extracted_result.domain == extracted.domain:
+					if full_domain != base_domain:
+						related_tlds.add(full_domain)
+				elif extracted_result.domain != extracted.domain or extracted_result.subdomain:
+					related_domains.add(line)
 		except Exception as e:
-			logger.error(f'HistoricalIP for {ip_domain} not found!\nError: {str(e)}')
-			historical_ips = []
-		# find associated domains using ip_domain
-		try:
-			related_domains = reverse_whois(ip_domain.split('.')[0])
-		except Exception as e:
-			logger.error(f'Associated domain not found for {ip_domain}\nError: {str(e)}')
-			similar_domains = []
-		# find related tlds using TLSx
-		try:
-			related_tlds = []
-			output_path = '/tmp/ip_domain_tlsx.txt'
-			tlsx_command = f'tlsx -san -cn -silent -ro -host {ip_domain} -o {output_path}'
-			run_command(
-				tlsx_command,
-				shell=True,
-			)
-			tlsx_output = []
-			with open(output_path) as f:
-				tlsx_output = f.readlines()
+			logger.error(f"An error occurred while fetching related TLDs and domains for {domain}: {str(e)}")
+			continue
+	
+	logger.info(f"Found {len(related_tlds)} related TLDs and {len(related_domains)} related domains for {domain}")
+	return list(related_tlds), list(related_domains)
 
-			tldextract_target = tldextract.extract(ip_domain)
-			for doms in tlsx_output:
-				doms = doms.strip()
-				tldextract_res = tldextract.extract(doms)
-				if ip_domain != doms and tldextract_res.domain == tldextract_target.domain and tldextract_res.subdomain == '':
-					related_tlds.append(doms)
 
-			related_tlds = list(set(related_tlds))
-			domain_info.related_tlds = related_tlds
-		except Exception as e:
-			logger.error(f'Associated domain not found for {ip_domain}\nError: {str(e)}')
-			similar_domains = []
 
-		related_domains_list = []
-		if Domain.objects.filter(name=ip_domain).exists():
-			domain = Domain.objects.get(name=ip_domain)
-			db_domain_info = domain.domain_info if domain.domain_info else DomainInfo()
-			db_domain_info.save()
-			for _domain in related_domains:
-				domain_related = RelatedDomain.objects.get_or_create(
-					name=_domain['name'],
-				)[0]
-				db_domain_info.related_domains.add(domain_related)
-				related_domains_list.append(_domain['name'])
+def fetch_whois_data_using_netlas(target):
+	"""
+		Fetch WHOIS data using netlas.
+		Args:
+			target (str): IP address or domain name.
+		Returns:
+			dict: WHOIS information.
+	"""
+	logger.info(f'Fetching WHOIS data for {target} using Netlas...')
+	command = f'netlas host {target} -f json'
+	netlas_key = get_netlas_key()
+	if netlas_key:
+		command += f' -a {netlas_key}'
 
-			for _domain in related_tlds:
-				domain_related = RelatedDomain.objects.get_or_create(
-					name=_domain,
-				)[0]
-				db_domain_info.related_tlds.add(domain_related)
-
-			for _ip in historical_ips:
-				historical_ip = HistoricalIP.objects.get_or_create(
-					ip=_ip['ip'],
-					owner=_ip['owner'],
-					location=_ip['location'],
-					last_seen=_ip['last_seen'],
-				)[0]
-				db_domain_info.historical_ips.add(historical_ip)
-			domain.domain_info = db_domain_info
-			domain.save()
-
-		command = f'netlas host {ip_domain} -f json'
-		# check if netlas key is provided
-		netlas_key = get_netlas_key()
-		command += f' -a {netlas_key}' if netlas_key else ''
-
-		result = subprocess.check_output(command.split()).decode('utf-8')
+	try:
+		_, result = run_command(command, remove_ansi_sequence=True)
+		
+		# catch errors
 		if 'Failed to parse response data' in result:
-			# do fallback
 			return {
-				'status': False,
-				'ip_domain': ip_domain,
-				'result': "Netlas limit exceeded.",
+				'status': False, 
 				'message': 'Netlas limit exceeded.'
 			}
-		try:
-			result = json.loads(result)
-			logger.info(result)
-			whois = result.get('whois') if result.get('whois') else {}
-
-			domain_info.created = whois.get('created_date')
-			domain_info.expires = whois.get('expiration_date')
-			domain_info.updated = whois.get('updated_date')
-			domain_info.whois_server = whois.get('whois_server')
-
-
-			if 'registrant' in whois:
-				registrant = whois.get('registrant')
-				domain_info.registrant_name = registrant.get('name')
-				domain_info.registrant_country = registrant.get('country')
-				domain_info.registrant_id = registrant.get('id')
-				domain_info.registrant_state = registrant.get('province')
-				domain_info.registrant_city = registrant.get('city')
-				domain_info.registrant_phone = registrant.get('phone')
-				domain_info.registrant_address = registrant.get('street')
-				domain_info.registrant_organization = registrant.get('organization')
-				domain_info.registrant_fax = registrant.get('fax')
-				domain_info.registrant_zip_code = registrant.get('postal_code')
-				email_search = EMAIL_REGEX.search(str(registrant.get('email')))
-				field_content = email_search.group(0) if email_search else None
-				domain_info.registrant_email = field_content
-
-			if 'administrative' in whois:
-				administrative = whois.get('administrative')
-				domain_info.admin_name = administrative.get('name')
-				domain_info.admin_country = administrative.get('country')
-				domain_info.admin_id = administrative.get('id')
-				domain_info.admin_state = administrative.get('province')
-				domain_info.admin_city = administrative.get('city')
-				domain_info.admin_phone = administrative.get('phone')
-				domain_info.admin_address = administrative.get('street')
-				domain_info.admin_organization = administrative.get('organization')
-				domain_info.admin_fax = administrative.get('fax')
-				domain_info.admin_zip_code = administrative.get('postal_code')
-				mail_search = EMAIL_REGEX.search(str(administrative.get('email')))
-				field_content = email_search.group(0) if email_search else None
-				domain_info.admin_email = field_content
-
-			if 'technical' in whois:
-				technical = whois.get('technical')
-				domain_info.tech_name = technical.get('name')
-				domain_info.tech_country = technical.get('country')
-				domain_info.tech_state = technical.get('province')
-				domain_info.tech_id = technical.get('id')
-				domain_info.tech_city = technical.get('city')
-				domain_info.tech_phone = technical.get('phone')
-				domain_info.tech_address = technical.get('street')
-				domain_info.tech_organization = technical.get('organization')
-				domain_info.tech_fax = technical.get('fax')
-				domain_info.tech_zip_code = technical.get('postal_code')
-				mail_search = EMAIL_REGEX.search(str(technical.get('email')))
-				field_content = email_search.group(0) if email_search else None
-				domain_info.tech_email = field_content
-
-			if 'dns' in result:
-				dns = result.get('dns')
-				domain_info.mx_records = dns.get('mx')
-				domain_info.txt_records = dns.get('txt')
-				domain_info.a_records = dns.get('a')
-
-			domain_info.ns_records = whois.get('name_servers')
-			domain_info.dnssec = True if whois.get('dnssec') else False
-			domain_info.status = whois.get('status')
-
-			if 'registrar' in whois:
-				registrar = whois.get('registrar')
-				domain_info.registrar_name = registrar.get('name')
-				domain_info.registrar_email = registrar.get('email')
-				domain_info.registrar_phone = registrar.get('phone')
-				domain_info.registrar_url = registrar.get('url')
-
-			# find associated domains if registrant email is found
-			related_domains = reverse_whois(domain_info.get('registrant_email')) if domain_info.get('registrant_email') else []
-			for _domain in related_domains:
-				related_domains_list.append(_domain['name'])
-
-			# remove duplicate domains from related domains list
-			related_domains_list = list(set(related_domains_list))
-			domain_info.related_domains = related_domains_list
-
-			# save to db if domain exists
-			if Domain.objects.filter(name=ip_domain).exists():
-				domain = Domain.objects.get(name=ip_domain)
-				db_domain_info = domain.domain_info if domain.domain_info else DomainInfo()
-				db_domain_info.save()
-				for _domain in related_domains:
-					domain_rel = RelatedDomain.objects.get_or_create(
-						name=_domain['name'],
-					)[0]
-					db_domain_info.related_domains.add(domain_rel)
-
-				db_domain_info.dnssec = domain_info.get('dnssec')
-				#dates
-				db_domain_info.created = domain_info.get('created')
-				db_domain_info.updated = domain_info.get('updated')
-				db_domain_info.expires = domain_info.get('expires')
-				#registrar
-				db_domain_info.registrar = Registrar.objects.get_or_create(
-					name=domain_info.get('registrar_name'),
-					email=domain_info.get('registrar_email'),
-					phone=domain_info.get('registrar_phone'),
-					url=domain_info.get('registrar_url'),
-				)[0]
-				db_domain_info.registrant = DomainRegistration.objects.get_or_create(
-					name=domain_info.get('registrant_name'),
-					organization=domain_info.get('registrant_organization'),
-					address=domain_info.get('registrant_address'),
-					city=domain_info.get('registrant_city'),
-					state=domain_info.get('registrant_state'),
-					zip_code=domain_info.get('registrant_zip_code'),
-					country=domain_info.get('registrant_country'),
-					email=domain_info.get('registrant_email'),
-					phone=domain_info.get('registrant_phone'),
-					fax=domain_info.get('registrant_fax'),
-					id_str=domain_info.get('registrant_id'),
-				)[0]
-				db_domain_info.admin = DomainRegistration.objects.get_or_create(
-					name=domain_info.get('admin_name'),
-					organization=domain_info.get('admin_organization'),
-					address=domain_info.get('admin_address'),
-					city=domain_info.get('admin_city'),
-					state=domain_info.get('admin_state'),
-					zip_code=domain_info.get('admin_zip_code'),
-					country=domain_info.get('admin_country'),
-					email=domain_info.get('admin_email'),
-					phone=domain_info.get('admin_phone'),
-					fax=domain_info.get('admin_fax'),
-					id_str=domain_info.get('admin_id'),
-				)[0]
-				db_domain_info.tech = DomainRegistration.objects.get_or_create(
-					name=domain_info.get('tech_name'),
-					organization=domain_info.get('tech_organization'),
-					address=domain_info.get('tech_address'),
-					city=domain_info.get('tech_city'),
-					state=domain_info.get('tech_state'),
-					zip_code=domain_info.get('tech_zip_code'),
-					country=domain_info.get('tech_country'),
-					email=domain_info.get('tech_email'),
-					phone=domain_info.get('tech_phone'),
-					fax=domain_info.get('tech_fax'),
-					id_str=domain_info.get('tech_id'),
-				)[0]
-				for status in domain_info.get('status') or []:
-					_status = WhoisStatus.objects.get_or_create(
-						name=status
-					)[0]
-					_status.save()
-					db_domain_info.status.add(_status)
-
-				for ns in domain_info.get('ns_records') or []:
-					_ns = NameServer.objects.get_or_create(
-						name=ns
-					)[0]
-					_ns.save()
-					db_domain_info.name_servers.add(_ns)
-
-				for a in domain_info.get('a_records') or []:
-					_a = DNSRecord.objects.get_or_create(
-						name=a,
-						type='a'
-					)[0]
-					_a.save()
-					db_domain_info.dns_records.add(_a)
-				for mx in domain_info.get('mx_records') or []:
-					_mx = DNSRecord.objects.get_or_create(
-						name=mx,
-						type='mx'
-					)[0]
-					_mx.save()
-					db_domain_info.dns_records.add(_mx)
-				for txt in domain_info.get('txt_records') or []:
-					_txt = DNSRecord.objects.get_or_create(
-						name=txt,
-						type='txt'
-					)[0]
-					_txt.save()
-					db_domain_info.dns_records.add(_txt)
-
-				db_domain_info.geolocation_iso = domain_info.get('registrant_country')
-				db_domain_info.whois_server = domain_info.get('whois_server')
-				db_domain_info.save()
-				domain.domain_info = db_domain_info
-				domain.save()
-
-		except Exception as e:
+		
+		if 'api key doesn\'t exist' in result:
 			return {
-				'status': False,
-				'ip_domain': ip_domain,
-				'result': "unable to fetch records from WHOIS database.",
-				'message': str(e)
+				'status': False, 
+				'message': 'Invalid Netlas API Key!'
 			}
+		
+		if 'Request limit' in result:
+			return {
+				'status': False, 
+				'message': 'Netlas request limit exceeded.'
+			}
+		
+		data = json.loads(result)
 
-	return {
-		'status': True,
-		'ip_domain': ip_domain,
-		'dnssec': domain_info.get('dnssec'),
-		'created': domain_info.get('created'),
-		'updated': domain_info.get('updated'),
-		'expires': domain_info.get('expires'),
-		'geolocation_iso': domain_info.get('registrant_country'),
-		'domain_statuses': domain_info.get('status'),
-		'whois_server': domain_info.get('whois_server'),
-		'dns': {
-			'a': domain_info.get('a_records'),
-			'mx': domain_info.get('mx_records'),
-			'txt': domain_info.get('txt_records'),
-		},
-		'registrar': {
-			'name': domain_info.get('registrar_name'),
-			'phone': domain_info.get('registrar_phone'),
-			'email': domain_info.get('registrar_email'),
-			'url': domain_info.get('registrar_url'),
-		},
-		'registrant': {
-			'name': domain_info.get('registrant_name'),
-			'id': domain_info.get('registrant_id'),
-			'organization': domain_info.get('registrant_organization'),
-			'address': domain_info.get('registrant_address'),
-			'city': domain_info.get('registrant_city'),
-			'state': domain_info.get('registrant_state'),
-			'zipcode': domain_info.get('registrant_zip_code'),
-			'country': domain_info.get('registrant_country'),
-			'phone': domain_info.get('registrant_phone'),
-			'fax': domain_info.get('registrant_fax'),
-			'email': domain_info.get('registrant_email'),
-		},
-		'admin': {
-			'name': domain_info.get('admin_name'),
-			'id': domain_info.get('admin_id'),
-			'organization': domain_info.get('admin_organization'),
-			'address':domain_info.get('admin_address'),
-			'city': domain_info.get('admin_city'),
-			'state': domain_info.get('admin_state'),
-			'zipcode': domain_info.get('admin_zip_code'),
-			'country': domain_info.get('admin_country'),
-			'phone': domain_info.get('admin_phone'),
-			'fax': domain_info.get('admin_fax'),
-			'email': domain_info.get('admin_email'),
-		},
-		'technical_contact': {
-			'name': domain_info.get('tech_name'),
-			'id': domain_info.get('tech_id'),
-			'organization': domain_info.get('tech_organization'),
-			'address': domain_info.get('tech_address'),
-			'city': domain_info.get('tech_city'),
-			'state': domain_info.get('tech_state'),
-			'zipcode': domain_info.get('tech_zip_code'),
-			'country': domain_info.get('tech_country'),
-			'phone': domain_info.get('tech_phone'),
-			'fax': domain_info.get('tech_fax'),
-			'email': domain_info.get('tech_email'),
-		},
-		'nameservers': domain_info.get('ns_records'),
-		# 'similar_domains': domain_info.get('similar_domains'),
-		'related_domains': domain_info.get('related_domains'),
-		'related_tlds': domain_info.get('related_tlds'),
-		'historical_ips': domain_info.get('historical_ips'),
-	}
+		if not data:
+			return {
+				'status': False, 
+				'message': 'No data available for the given domain or IP.'
+			}
+		# if 'whois' not in data:
+		# 	return {
+		# 		'status': False, 
+		# 		'message': 'Invalid domain or no WHOIS data available.'
+		# 	}
 
+		return {
+			'status': True, 
+			'data': data
+		}
+
+	except json.JSONDecodeError:
+		return {
+			'status': False, 
+			'message': 'Failed to parse JSON response from Netlas.'
+		}
+	except Exception as e:
+		return {
+			'status': False, 
+			'message': f'An error occurred while fetching WHOIS data: {str(e)}'
+		}
+	
 
 @app.task(name='remove_duplicate_endpoints', bind=False, queue='remove_duplicate_endpoints_queue')
 def remove_duplicate_endpoints(
@@ -4712,8 +4556,8 @@ def query_ip_history(domain):
 	return get_domain_historical_ip_address(domain)
 
 
-@app.task(name='gpt_vulnerability_description', bind=False, queue='gpt_queue')
-def gpt_vulnerability_description(vulnerability_id):
+@app.task(name='llm_vulnerability_description', bind=False, queue='llm_queue')
+def llm_vulnerability_description(vulnerability_id):
 	"""Generate and store Vulnerability Description using GPT.
 
 	Args:
@@ -4731,8 +4575,11 @@ def gpt_vulnerability_description(vulnerability_id):
 		}
 
 	# check in db GPTVulnerabilityReport model if vulnerability description and path matches
+	if not path:
+		path = '/'
 	stored = GPTVulnerabilityReport.objects.filter(url_path=path).filter(title=lookup_vulnerability.name).first()
-	if stored:
+	if stored and stored.description and stored.impact and stored.remediation:
+		logger.info('Found cached Vulnerability Description')
 		response = {
 			'status': True,
 			'description': stored.description,
@@ -4741,14 +4588,16 @@ def gpt_vulnerability_description(vulnerability_id):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
+		logger.info('Fetching new Vulnerability Description')
 		vulnerability_description = get_gpt_vuln_input_description(
 			lookup_vulnerability.name,
 			path
 		)
 		# one can add more description here later
 
-		gpt_generator = GPTVulnerabilityReportGenerator()
+		gpt_generator = LLMVulnerabilityReportGenerator(logger=logger)
 		response = gpt_generator.get_vulnerability_description(vulnerability_description)
+		logger.info(response)
 		add_gpt_description_db(
 			lookup_vulnerability.name,
 			path,
@@ -4759,7 +4608,7 @@ def gpt_vulnerability_description(vulnerability_id):
 		)
 
 	# for all vulnerabilities with the same vulnerability name this description has to be stored.
-	# also the consition is that the url must contain a part of this.
+	# also the condition is that the url must contain a part of this.
 
 	for vuln in Vulnerability.objects.filter(name=lookup_vulnerability.name, http_url__icontains=path):
 		vuln.description = response.get('description', vuln.description)

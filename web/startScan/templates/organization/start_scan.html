@@ -27,7 +27,7 @@ Initiating scan for {{organization.name}}
       <div class="card-body">
         <h4 class="heading-title">{{ domain_list|length }} Domains associated with organization {{organization.name}}</h4>
         {% for domain in domain_list %}
-        <span class="badge bg-dark m-1">{{domain.name}}</span>
+        <span class="badge bg-soft-dark text-dark m-1">{{domain.name}}</span>
         {% endfor %}
         <form method="POST">
           {% csrf_token %}

@@ -2,7 +2,11 @@
 <a href="https://rengine.wiki"><img src=".github/screenshots/banner.gif" alt=""/></a>
 </p>
 
-<p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v2.1.0-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a>&nbsp;<a href="https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine" target="_blank"><img src="https://cdn.huntr.dev/huntr_security_badge_mono.svg" alt="" /></a>&nbsp;</p>
+<p align="center">
+  <h3>reNgine: The Ultimate Web Reconnaissance & Vulnerability Scanner 🚀</h3>
+</p>
+
+<p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v2.1.3-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a></p>
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=Xk_YH83IQgg" target="_blank"><img src="https://img.shields.io/badge/BlackHat--Arsenal--Asia-2023-blue.svg?logo=none" alt="" /></a>&nbsp;
@@ -30,10 +34,8 @@
 <h3>reNgine 2.1.0 is released!</h3>
 <p align="left">Unleash the power of LLM toolkit! Now you can use local LLM models to generate attack surface and vulnerability reports!, Checkout the release-notes!</p>
 
-<h3>reNgine 2.0-jasper<br>Redefining the future of reconnaissance!</h3>
-
 <h4>What is reNgine?</h4>
-<p align="left">reNgine is your go-to web application reconnaissance suite that's designed to simplify and streamline the reconnaissance process for security professionals, penetration testers, and bug bounty hunters. With its highly configurable engines, data correlation capabilities, continuous monitoring, database-backed reconnaissance data, and an intuitive user interface, reNgine redefines how you gather critical information about your target web applications.
+reNgine is your ultimate web application reconnaissance suite, designed to supercharge the recon process for security pros, pentesters, and bug bounty hunters. It is go-to web application reconnaissance suite that's designed to simplify and streamline the reconnaissance process for all the needs of security professionals, penetration testers, and bug bounty hunters. With its highly configurable engines, data correlation capabilities, continuous monitoring, database-backed reconnaissance data, and an intuitive user interface, reNgine redefines how you gather critical information about your target web applications.
 
 Traditional reconnaissance tools often fall short in terms of configurability and efficiency. reNgine addresses these shortcomings and emerges as an excellent alternative to existing commercial tools.
 
@@ -44,13 +46,14 @@ reNgine was created to address the limitations of traditional reconnaissance too
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### Documentation
+## Documentation
 
-You can find detailed documentation at [https://rengine.wiki](https://rengine.wiki)
+Detailed documentation available at [https://rengine.wiki](https://rengine.wiki) 
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### Table of Contents
+
+## Table of Contents
 
 * [About reNgine](#about-rengine)
 * [Workflow](#workflow)
@@ -62,12 +65,12 @@ You can find detailed documentation at [https://rengine.wiki](https://rengine.wi
 * [Contributing](#contributing)
 * [reNgine Support](#rengine-support)
 * [Support and Sponsoring](#support-and-sponsoring)
-* [reNgine Bug Bounty Program](#rengine-bug-bounty-program)
+* [Reporting Security Vulnerabilities](#reporting-security-vulnerabilities)
 * [License](#license)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### About reNgine
+## About reNgine
 
 reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turbocharged the traditional workflow with groundbreaking features that is sure to ease your reconnaissance game. reNgine redefines the art of reconnaissance with highly configurable scan engines, recon data correlation, continuous monitoring, GPT powered Vulnerability Report, Project Management and role based access control etc.
 
@@ -99,13 +102,13 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### Workflow
+## Workflow
 
 <img src="https://github.com/yogeshojha/rengine/assets/17223002/10c475b8-b4a8-440d-9126-77fe2038a386">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### Features
+## Features
 
 * Reconnaissance:
   * Subdomain Discovery
@@ -158,28 +161,33 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### Scan Engine
+## Scan Engine
 
 ```yaml
+# Global vars for all tools
+#
+# custom_headers: ['Foo: bar', 'User-Agent: Anything']     # FFUF, Nuclei, Dalfox, CRL Fuzz, HTTP Crawl, Fetch URL, etc
+# enable_http_crawl: true           # All tools
+# threads: 30                       # All tools
+
 subdomain_discovery: {
-  'uses_tools': [
-    'subfinder',
-    'ctfr',
-    'sublist3r',
-    'tlsx',
-    'oneforall',
-    'netlas'
-  ],
+  'uses_tools': ['subfinder', 'ctfr', 'sublist3r', 'tlsx', 'oneforall', 'netlas'],  # amass-passive, amass-active, All
   'enable_http_crawl': true,
   'threads': 30,
   'timeout': 5,
+  # 'use_subfinder_config': false,
+  # 'use_amass_config': false,
+  # 'amass_wordlist': 'deepmagic.com-prefixes-top50000'
 }
-http_crawl: {}
+http_crawl: {
+  # 'threads': 30,
+  # 'follow_redirect': true
+}
 port_scan: {
   'enable_http_crawl': true,
   'timeout': 5,
   # 'exclude_ports': [],
-  # 'exclude_subdomains': true,
+  # 'exclude_subdomains': [],
   'ports': ['top-100'],
   'rate_limit': 150,
   'threads': 30,
@@ -212,16 +220,7 @@ osint: {
     'db_files',
     'git_exposed'
   ],
-  'custom_dorks': [
-    {
-      'lookup_site': 'google.com',
-      'lookup_keywords': '/home/'
-    },
-    {
-      'lookup_site': '_target_',
-      'lookup_extensions': 'jpg,png'
-    }
-  ],
+  # 'custom_dorks': [],
   'intensity': 'normal',
   'documents_limit': 50
 }
@@ -240,27 +239,20 @@ dir_file_fuzz: {
   'wordlist_name': 'dicc'
 }
 fetch_url: {
-  'uses_tools': [
-    'gospider',
-    'hakrawler',
-    'waybackurls',
-    'katana'
-  ],
+  'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'katana', 'gau'],
   'remove_duplicate_endpoints': true,
-  'duplicate_fields': [
-    'content_length',
-    'page_title'
-  ],
+  'duplicate_fields': ['content_length', 'page_title'],
   'enable_http_crawl': true,
   'gf_patterns': ['debug_logic', 'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce', 'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],
-  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']
-  # 'exclude_subdomains': true
+  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],
+  'threads': 30,
+  # 'exclude_subdomains': false
 }
 vulnerability_scan: {
-  'run_nuclei': false,
+  'run_nuclei': true,
   'run_dalfox': false,
   'run_crlfuzz': false,
-  'run_s3scanner': true,
+  'run_s3scanner': false,
   'enable_http_crawl': true,
   'concurrency': 50,
   'intensity': 'normal',
@@ -270,59 +262,44 @@ vulnerability_scan: {
   'fetch_gpt_report': true,
   'nuclei': {
     'use_nuclei_config': false,
-    'severities': [
-      'unknown',
-      'info',
-      'low',
-      'medium',
-      'high',
-      'critical'
-    ],
-    # 'tags': [],
-    # 'templates': [],
-    # 'custom_templates': [],
-  },
-  's3scanner': {
-    'threads': 100,
-    'providers': [
-      'aws',
-      'gcp',
-      'digitalocean',
-      'dreamhost',
-      'linode'
-    ]
+    'severities': ['unknown', 'info', 'low', 'medium', 'high', 'critical'],
+    # 'tags': [],                 # Nuclei tags (https://github.com/projectdiscovery/nuclei-templates)
+    # 'templates': [],            # Nuclei templates (https://github.com/projectdiscovery/nuclei-templates)
+    # 'custom_templates': []      # Nuclei custom templates uploaded in reNgine
   }
 }
-waf_detection: {}
+waf_detection: {
+  'enable_http_crawl': true
+}
 screenshot: {
   'enable_http_crawl': true,
   'intensity': 'normal',
   'timeout': 10,
   'threads': 40
 }
-
-# custom_header: "Cookie: Test"
 ```
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### Quick Installation
+## Quick Installation
 
-**Note:** Only Ubuntu/VPS
+### Quick Setup for Ubuntu/VPS
 
-1. Clone this repo
+1. Clone the repository
 
     ```bash
     git clone https://github.com/yogeshojha/rengine && cd rengine
     ```
 
-1. Edit the `.env` file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!**
+1. Configure the environment
 
     ```bash
     nano .env
     ```
 
-1. **Optional, only for non-interactive install**: In the `.env` file, **please make sure to change the super admin values!**
+    **Ensure you change the `POSTGRES_PASSWORD` for security.**
+
+1. (Optional) For non-interactive install, set admin credentials in `.env`
 
     ```bash
     DJANGO_SUPERUSER_USERNAME=yourUsername
@@ -331,13 +308,13 @@ screenshot: {
     ```
     If you need to carry out a non-interactive installation, you can setup the login, email and password of the web interface admin directly from the .env file (instead of manually setting them from prompts during the installation process). This option can be interesting for automated installation (via ansible, vagrant, etc.).
 
-    `DJANGO_SUPERUSER_USERNAME`: web interface admin username (used to login to the web interface).
+    * `DJANGO_SUPERUSER_USERNAME`: web interface admin username (used to login to the web interface).
 
-    `DJANGO_SUPERUSER_EMAIL`: web interface admin email.
+    * `DJANGO_SUPERUSER_EMAIL`: web interface admin email.
 
-    `DJANGO_SUPERUSER_PASSWORD`: web interface admin password (used to login to the web interface).
+    * `DJANGO_SUPERUSER_PASSWORD`: web interface admin password (used to login to the web interface).
 
-1. In the dotenv file, you may also modify the Scaling Configurations
+1. Adjust Celery worker scaling in `.env`
 
     ```bash
     MAX_CONCURRENCY=80
@@ -359,169 +336,220 @@ screenshot: {
     This is just an ideal value which developers have tested and tried out and works! But feel free to play around with the values.
     Maximum number of scans is determined by various factors, your network bandwidth, RAM, number of CPUs available. etc
 
-1. Run the installation script, Please keep an eye for any prompt, you will also be asked for username and password for reNgine.
+1. Run the installation script:
 
     ```bash
     sudo ./install.sh
     ```
 
-    Or for a non-interactive installation, use `-n` argument (make sure you've modified the `.env` file before launching the installation).
+    For non-interactive install: `sudo ./install.sh -n`
 
-    ```bash
-    sudo ./install.sh -n
-    ```
-
-    If `install.sh` does not have install permission, please change it, `chmod +x install.sh`
+    *Note: If needed, run `chmod +x install.sh` to grant execution permissions.*
 
 **reNgine can now be accessed from <https://127.0.0.1> or if you're on the VPS <https://your_vps_ip_address>**
 
 **Unless you are on development branch, please do not access reNgine via any ports**
 
-### Installation (Mac/Windows/Other)
+### Installation on Other Platforms
 
-Installation instructions can be found at [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/install/detailed/)
+For Mac, Windows, or other systems, refer to our detailed installation guide [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/install/detailed/)
 
-### Updating
+## Updating
 
-1. Updating is as simple as running the following command:
+1. To update reNgine, run:
 
     ```bash
     cd rengine &&  sudo ./update.sh
     ```
 
-    If `update.sh` does not have execution permissions, please change it, `sudo chmod +x update.sh`
+    If `update.sh` lacks execution permissions, use:
 
-    **NOTE:** if you're updating from 1.3.6, and you're getting a 'password authentication failed' error, consider uninstalling 1.3.6 first, then install 2.x.x as you'd normally do.
+    ```bash
+    sudo chmod +x update.sh
+    ```
 
-### Changelog
+## Changelog
 
-[Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
+For the latest updates and changes, please check our [changelog.](https://rengine.wiki/changelog/)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)  
 
-### Screenshots
+## Screenshots
 
-#### Scan Results
+### Scan Results
 
 ![](.github/screenshots/scan_results.gif)
 
-#### General Usage
+### General Usage
 
 <img src="https://user-images.githubusercontent.com/17223002/164993781-b6012995-522b-480a-a8bf-911193d35894.gif">
 
-#### Initiating Subscan
+### Initiating Subscan
 
 <img src="https://user-images.githubusercontent.com/17223002/164993749-1ad343d6-8ce7-43d6-aee7-b3add0321da7.gif">
 
-#### Recon Data filtering
+### Recon Data filtering
 
 <img src="https://user-images.githubusercontent.com/17223002/164993687-b63f3de8-e033-4ac0-808e-a2aa377d3cf8.gif">
 
-#### Report Generation
+### Report Generation
 
 <img src="https://user-images.githubusercontent.com/17223002/164993689-c796c6cd-eb61-43f4-800d-08aba9740088.gif">
 
-#### Toolbox
+### Toolbox
 
 <img src="https://user-images.githubusercontent.com/17223002/164993751-d687e88a-eb79-440f-9dc0-0ad006901620.gif">
 
-#### Adding Custom tool in Tools Arsenal
+### Adding Custom tool in Tools Arsenal
 
 <img src="https://user-images.githubusercontent.com/17223002/164993670-466f6459-9499-498b-a9bd-526476d735a7.gif">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### Contributing
+## Contributing
 
-Contributions are what make the open-source community such an amazing place to learn, inspire and create. Every contribution you make is **greatly appreciated**. Your contributions can be as simple as fixing the indentation or UI, or as complex as adding new modules and features.
+We welcome contributions of all sizes! The open-source community thrives on collaboration, and your input is invaluable. Whether you're fixing a typo, improving UI, or adding new features, every contribution matters.
 
-See the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
+How you can contribute:
+  * Code improvements
+  * Documentation updates
+  * Bug reports and fixes
+  * New feature suggestions and implementations
+  * UI/UX enhancements
 
-You can also [join our Discord channel #development](https://discord.gg/JuhHdHTtwd) for any development related questions.
+To get started:
 
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+  1. Check our [Contributing Guide](.github/CONTRIBUTING.md)
+  2. Pick an [open issue](https://github.com/yogeshojha/rengine/issues) or propose a new one
+  3. Fork the repository and create your branch
+  4. Make your changes and submit a pull request
 
-### Submitting issues
-
-You can submit issues related to this project, but you should do it in a way that helps developers to resolve it as quickly as possible.
-
-For that, you need to add as much valuable information as possible.
-
-You can have this valuable information by following these steps:
-
-- Go to the root of the git cloned project
-- Edit `web/entrypoint.sh` and add `export DEBUG=1` at the top
-This should give you this result
-
-  ```python
-  #!/bin/bash
-
-  export DEBUG=1
-
-  python3 manage.py migrate
-  python3 manage.py runserver 0.0.0.0:8000
-
-  exec "$@"
-  ```
-- Restart the web container: `docker-compose restart web`
-- To deactivate, set **DEBUG** to **0** and restart the web container again
-
-Then, with **DEBUG** set to **1**, in the `make logs` output you could see the full stack trace to debug reNgine.
-
-Example with the tool arsenal version check API bug.
-
-```
-web_1          |   File "/usr/local/lib/python3.10/dist-packages/celery/app/task.py", line 411, in __call__
-web_1          |     return self.run(*args, **kwargs)
-web_1          | TypeError: run_command() got an unexpected keyword argument 'echo'
-```
-Now you know the real error is `TypeError: run_command() got an unexpected keyword argument 'echo'`
-
-And you can post the full stack trace to your newly created issue to help developers to track the root cause of the bug and correct the bug easily
-
-**Activating debug like this also give you the full stack trace in the browser** instead of an error 500 without any details.
-So don't forget to open the developer console and check for any XHR request with error 500.
-If there's any, check the response of this request to get your detailed error.
-
-<img src="https://user-images.githubusercontent.com/1230954/276260955-ed1e1168-7c8f-43a3-b54d-b6285d52b771.png">
-
-Happy issuing ;)
+Remember, no contribution is too small. Your efforts help make reNgine better for everyone!
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### First-time Open Source contributors
+## Submitting issues
 
-Please note that reNgine is beginner-friendly. If you have never done open-source before, we encourage you to do so. **We will be happy and proud of your first PR ever.**
+When submitting issues, provide as much valuable information as possible to help developers resolve the problem quickly. Follow these steps to gather detailed debug information:
 
-You can start by resolving any [open issues](https://github.com/yogeshojha/rengine/issues).
+1. Enable Debug Mode:
+   - Edit `web/entrypoint.sh` in the project root
+   - Add `export DEBUG=1` at the top of the file:
+     ```bash
+     #!/bin/bash
+
+     export DEBUG=1
+
+     python3 manage.py migrate
+     python3 manage.py runserver 0.0.0.0:8000
+
+     exec "$@"
+     ```
+   - Restart the web container: `docker-compose restart web`
+
+2. View Debug Output:
+   - Run `make logs` to see the full stack trace
+   - Check the browser's developer console for XHR requests with 500 errors
+
+3. Example Debug Output:
+    ```
+    web_1          |   File "/usr/local/lib/python3.10/dist-packages/celery/app/task.py", line 411, in __call__
+    web_1          |     return self.run(*args, **kwargs)
+    web_1          | TypeError: run_command() got an unexpected keyword argument 'echo'
+    ```
+
+4. Submit Your Issue:
+    - Include the full stack trace in your GitHub issue
+    - Describe the steps to reproduce the problem
+    - Mention any relevant system information
+
+5. Disable Debug Mode:
+    - Set `DEBUG=0` in `web/entrypoint.sh`
+    - Restart the web container
+
+By providing this detailed information, you significantly help developers identify and fix issues more efficiently.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### reNgine Support
+## First-time Open Source contributors
 
-Please do not use GitHub for support requests. Instead, [join our Discord channel #support](https://discord.gg/azv6fzhNCE).
+reNgine is an open-source project that welcomes contributors of all experience levels, including beginners. If you've never contributed to open source before, we encourage you to start here!
+
+* We're proud to support your first Pull Request (PR)
+* Check our [open issues](https://github.com/yogeshojha/rengine/issues) for starter-friendly tasks
+* Don't hesitate to ask questions in our community channels
+
+Your contribution, no matter how small, is valuable to us.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### Support and Sponsoring
+## reNgine Support
 
-Over the past few years, I have been working hard on reNgine to add new features with the sole aim of making it the de facto standard for reconnaissance. I spend most of my free time and weekends working on reNgine. I do this in addition to my day job. I am happy to have received such overwhelming support from the community. To keep this project alive, you may
+Before seeking support:
+
+* Please carefully read the README and documentation at [rengine.wiki](https://rengine.wiki).
+* Most common questions and issues are addressed there.
+
+If you still need assistance:
+
+* Do not use GitHub issues for support requests.
+* Join our [community-maintained Discord channel](https://discord.gg/azv6fzhNCE).
+
+Please note:
+* The Discord channel is maintained by the community.
+* While we strive to help, there's no guarantee of support or response time.
+* For confirmed bugs or feature requests, consider opening a GitHub issue.
+
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+## Support and Sponsoring
+
+reNgine is a passion project developed in my free time, alongside my day job. Your support helps keep this project alive and growing. Here's how you can contribute:
 
 * Add a [GitHub Star](https://github.com/yogeshojha/rengine) to the project.
-* Tweet about this project, or maybe blogs?
-* Maybe nominate me for [GitHub Stars?](https://stars.github.com/nominate/)
-* Join DigitalOcean using my [referral link](https://m.do.co/c/e353502d19fc) your profit is **$100** and I get $25 DO credit. This will help me test reNgine on VPS before I release any major features.
+* Share about reNgine on social media or in blog posts
+* Nominate me for [GitHub Stars?](https://stars.github.com/nominate/)
+* Use my [DigitalOcean referral link](https://m.do.co/c/e353502d19fc) to get $100 credit (I receive $25)
 
-It takes a considerable amount of time to add new features and make sure everything works. Donating is your way of saying: **reNgine is awesome**.
+Your support, whether through donations or simply giving a star, tells me that reNgine is valuable to you. It motivates me to continue improving and adding features to make reNgine the go-to tool for reconnaissance.
 
-Any support is greatly appreciated! Thank you!
+Thank you for your support!
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### License
+## License
 
 Distributed under the GNU GPL v3 License. See [LICENSE](LICENSE) for more information.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-<p align="right">(ChatGPT was used to write some or most part of this README section.)</p>
+
+## Reporting Security Vulnerabilities
+
+We appreciate your efforts to responsibly disclose your findings and will make every effort to acknowledge your contributions.
+
+To report a security vulnerability, please follow these steps:
+
+1. **Do Not** disclose the vulnerability publicly on GitHub issues or any other public forum.
+
+2. Go to the [Security tab](https://github.com/yogeshojha/rengine/security) of the reNgine repository.
+
+3. Click on "Report a vulnerability" to open GitHub's private vulnerability reporting form.
+
+4. Provide a detailed description of the vulnerability, including:
+   - Steps to reproduce
+   - Potential impact
+   - Any suggested fixes or mitigations (if you have them)
+
+5. I will review your report and respond as quickly as possible, usually within 48-72 hours.
+
+6. Please allow some time to investigate and address the vulnerability before disclosing it to others.
+
+We are committed to working with security researchers to verify and address any potential vulnerabilities reported to us. After fixing the issue, we will publicly acknowledge your responsible disclosure, unless you prefer to remain anonymous.
+
+Thank you for helping to keep reNgine and its users safe!
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+<p align="right"><i>Note: Parts of this README were written or refined using AI language models.</i></p>
