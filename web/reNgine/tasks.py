@@ -3085,6 +3085,7 @@ def send_scan_notif(
 	url = get_scan_url(scan_history_id, subscan_id)
 	title = get_scan_title(scan_history_id, subscan_id)
 	fields = get_scan_fields(engine, scan, subscan, status, tasks)
+
 	severity = None
 	msg = f'{title} {status}\n'
 	msg += '\n🡆 '.join(f'**{k}:** {v}' for k, v in fields.items())
@@ -3098,12 +3099,58 @@ def send_scan_notif(
 	}
 	logger.warning(f'Sending notification "{title}" [{severity}]')
 
+	generate_inapp_notification(scan, subscan, status, engine, fields)
+
 	# Send notification
 	send_notif(
 		msg,
 		scan_history_id,
 		subscan_id,
 		**opts)
+	
+def generate_inapp_notification(scan, subscan, status, engine, fields):
+	scan_type = "Subscan" if subscan else "Scan"
+	domain = subscan.domain.name if subscan else scan.domain.name
+	duration_msg = None
+	
+	if status == 'RUNNING':
+		title = f"{scan_type} Started"
+		description = f"{scan_type} has been initiated for {domain}"
+		icon = "mdi-play-circle-outline"
+		notif_status = 'info'
+	elif status == 'SUCCESS':
+		title = f"{scan_type} Completed"
+		description = f"{scan_type} was successful for {domain}"
+		icon = "mdi-check-circle-outline"
+		notif_status = 'success'
+		duration_msg = f'Completed in {fields.get("Duration")}'
+	elif status == 'ABORTED':
+		title = f"{scan_type} Aborted"
+		description = f"{scan_type} was aborted for {domain}"
+		icon = "mdi-alert-circle-outline"
+		notif_status = 'warning'
+		duration_msg = f'Aborted in {fields.get("Duration")}'
+	elif status == 'FAILED':
+		title = f"{scan_type} Failed"
+		description = f"{scan_type} has failed for {domain}"
+		icon = "mdi-close-circle-outline"
+		notif_status = 'error'
+		duration_msg = f'Failed in {fields.get("Duration")}'
+
+	description += f"<br>Engine: {engine.engine_name if engine else 'N/A'}"
+	slug = scan.domain.project.slug if scan else subscan.history.domain.project.slug
+	if duration_msg:
+		description += f"<br>{duration_msg}"
+
+	create_inappnotification(
+		title=title,
+		description=description,
+		notification_type='project',
+		project_slug=slug,
+		icon=icon,
+		is_read=False,
+		status=notif_status
+	)
 
 
 @app.task(name='send_task_notif', bind=False, queue='send_task_notif_queue')

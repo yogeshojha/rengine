@@ -128,11 +128,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const markAllReadBtn = document.querySelector("#mark-all-read-btn");
   markAllReadBtn.addEventListener("click", markAllAsRead);
 
-  // Update notifications every 30 seconds
+  // Update notifications every 15 seconds
   updateNotifications();
-  setInterval(updateNotifications, 30000);
+  setInterval(updateNotifications, 15000);
 
-  setInterval(updateTimes, 60000);
+  setInterval(updateTimes, 30000);
 });
 
 function getCurrentProjectSlug() {

@@ -1549,3 +1549,61 @@ def save_domain_info_to_db(target, domain_info):
 		domain.save()
 
 		return domain_info_obj
+
+
+def create_inappnotification(
+		title,
+		description,
+		notification_type=SYSTEM_LEVEL_NOTIFICATION,
+		project_slug=None,
+		icon="mdi-bell",
+		is_read=False,
+		status='info'
+):
+	"""
+		This function will create an inapp notification
+		Inapp Notification not to be confused with Notification model 
+		that is used for sending alerts on telegram, slack etc.
+		Inapp notification is used to show notification on the web app
+
+		Args: 
+			title: str: Title of the notification
+			description: str: Description of the notification
+			notification_type: str: Type of the notification, it can be either
+				SYSTEM_LEVEL_NOTIFICATION or PROJECT_LEVEL_NOTIFICATION
+			project_slug: str: Slug of the project, if notification is PROJECT_LEVEL_NOTIFICATION
+			icon: str: Icon of the notification, only use mdi icons
+			is_read: bool: Whether the notification is read or not, default is False
+			status: str: Status of the notification (success, info, warning, error), default is info
+
+		Returns:
+			ValueError: if error
+			InAppNotification: InAppNotification object if successful
+	"""
+	logger.info('Creating InApp Notification with title: %s', title)
+	if notification_type not in [SYSTEM_LEVEL_NOTIFICATION, PROJECT_LEVEL_NOTIFICATION]:
+		raise ValueError("Invalid notification type")
+	
+	if status not in [choice[0] for choice in NOTIFICATION_STATUS_TYPES]:
+		raise ValueError("Invalid notification status")
+	
+	project = None
+	if notification_type == PROJECT_LEVEL_NOTIFICATION:
+		if not project_slug:
+			raise ValueError("Project slug is required for project level notification")
+		try:
+			project = Project.objects.get(slug=project_slug)
+		except Project.DoesNotExist as e:
+			raise ValueError(f"No project exists: {e}")
+		
+	notification = InAppNotification(
+		title=title,
+		description=description,
+		notification_type=notification_type,
+		project=project,
+		icon=icon,
+		is_read=is_read,
+		status=status
+	)
+	notification.save()
+	return notification

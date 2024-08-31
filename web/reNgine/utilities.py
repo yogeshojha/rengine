@@ -159,3 +159,4 @@ class SubdomainScopeChecker:
 		if subdomain in self.plain_patterns:
 			return True
 		return any(pattern.search(subdomain) for pattern in self.regex_patterns)
+
