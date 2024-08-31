@@ -1,5 +1,9 @@
 // all the functions and event listeners for the notification panel
 
+// this is to check and compare the last notification id with the current notification id
+let lastNotificationId = null;
+let isInitialLoad = true;
+
 function updateNotifications() {
   let api_url = "/api/notifications/";
   const currentProjectSlug = getCurrentProjectSlug();
@@ -29,6 +33,12 @@ function updateNotifications() {
         `;
         notificationPanel.appendChild(noNotificationsMessage);
       } else {
+        // decisive part to show the Snackbar
+        if (!isInitialLoad && data[0].id !== lastNotificationId) {
+          showNotificationSnackbar(data[0]);
+        }
+        lastNotificationId = data[0].id;
+
         data.forEach((notification) => {
           const notificationItem = document.createElement("div");
           notificationItem.className = `notification-panel-item d-flex align-items-start p-3 ${
@@ -53,14 +63,51 @@ function updateNotifications() {
                     </div>
                 `;
           notificationItem.addEventListener("click", (event) => {
-            notificationAction(notification.id, notification.redirect_link, notification.open_in_new_tab);
+            notificationAction(
+              notification.id,
+              notification.redirect_link,
+              notification.open_in_new_tab
+            );
           });
           notificationPanel.appendChild(notificationItem);
         });
       }
 
       updateUnreadCount();
+
+      // set first load to false
+      isInitialLoad = false;
     });
+}
+
+function showNotificationSnackbar(notification) {
+  let backgroundColor, actionTextColor;
+
+  switch (notification.status) {
+    case "error":
+      backgroundColor = "#e7515a";
+      actionTextColor = "#fff";
+      break;
+    case "warning":
+      backgroundColor = "#e2a03f";
+      actionTextColor = "#fff";
+      break;
+    case "success":
+      backgroundColor = "#8dbf42";
+      actionTextColor = "#fff";
+      break;
+    default:
+      backgroundColor = "#2196f3";
+      actionTextColor = "#fff";
+  }
+
+  Snackbar.show({
+    text: `New notification: ${notification.title}`,
+    pos: "top-right",
+    actionTextColor: actionTextColor,
+    backgroundColor: backgroundColor,
+    duration: 2500,
+  });
 }
 
 function updateUnreadCount() {
@@ -101,12 +148,11 @@ function notificationAction(notificationId, redirectLink, openInNewTab) {
     // this is where we handle all the notification actions such as redirecting to a specific page
     if (redirectLink) {
       if (openInNewTab) {
-        window.open(redirectLink, '_blank');
+        window.open(redirectLink, "_blank");
       } else {
         window.location.href = redirectLink;
       }
     }
-
   });
 }
 
