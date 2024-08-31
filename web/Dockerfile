@@ -104,6 +104,9 @@ RUN printf "\
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update-templates
 
+# update chaos
+RUN chaos -update
+
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install --upgrade setuptools==72.1.0
