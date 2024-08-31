@@ -1,6 +1,5 @@
 from dashboard.models import *
-from django.contrib.humanize.templatetags.humanize import (naturalday,
-														   naturaltime)
+from django.contrib.humanize.templatetags.humanize import (naturalday, naturaltime)
 from django.db.models import F, JSONField, Value
 from recon_note.models import *
 from reNgine.common_func import *
@@ -8,6 +7,29 @@ from rest_framework import serializers
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
+from dashboard.models import InAppNotification
+
+
+class InAppNotificationSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = InAppNotification
+		fields = [
+			'id', 
+			'title', 
+			'description', 
+			'icon', 
+			'is_read', 
+			'created_at', 
+			'notification_type', 
+			'status',
+			'redirect_link',
+			'open_in_new_tab',
+			'project'
+		]
+		read_only_fields = ['id', 'created_at']
+
+	def get_project_name(self, obj):
+		return obj.project.name if obj.project else None
 
 
 class SearchHistorySerializer(serializers.ModelSerializer):

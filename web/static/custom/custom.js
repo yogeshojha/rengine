@@ -1,3 +1,26 @@
+function loadScript(src) {
+	// helper function to load a script asynchronously
+	return new Promise((resolve, reject) => {
+		const script = document.createElement('script');
+		script.src = src;
+		script.onload = resolve;
+		script.onerror = reject;
+		document.head.appendChild(script);
+	});
+}
+
+function loadCSS(href) {
+	// helper function to load a css asynchronously
+	return new Promise((resolve, reject) => {
+		const link = document.createElement('link');
+		link.rel = 'stylesheet';
+		link.href = href;
+		link.onload = resolve;
+		link.onerror = reject;
+		document.head.appendChild(link);
+	});
+}
+
 function getCurrentProjectSlug(){
 	return document.querySelector('input[name="current_project"]').value;
 }
@@ -3377,3 +3400,5 @@ function show_scan_configuration(starting_path, out_of_scope_subdomains, exclude
 	$('#modal-content').append(content);
 	$('#modal_dialog').modal('show');
 }
+
+

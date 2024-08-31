@@ -161,6 +161,7 @@ class SubdomainScopeChecker:
 		return any(pattern.search(subdomain) for pattern in self.regex_patterns)
 
 
+
 def sorting_key(subdomain):
 	# sort subdomains based on their http status code with priority 200 < 300 < 400 < rest
 	status = subdomain['http_status']
