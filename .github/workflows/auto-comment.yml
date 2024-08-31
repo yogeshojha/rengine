@@ -6,10 +6,6 @@ on:
   pull_request:
     types: [opened, closed]
 
-permissions:
-  issues: write
-  pull-requests: write
-
 jobs:
   auto_comment:
     runs-on: ubuntu-latest
@@ -17,12 +13,29 @@ jobs:
       - name: 🤖 Auto Comment on Issues and PRs
         uses: actions/github-script@v7
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{ secrets.PAT_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
             const author = context.payload.sender.login;
             
+            async function createComment(issueNumber, body) {
+              try {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  body: body
+                });
+                console.log(`Comment created successfully for ${context.eventName} #${issueNumber}`);
+              } catch (error) {
+                console.error(`Error creating comment for ${context.eventName} #${issueNumber}:`, error);
+                core.setFailed(`Failed to create comment: ${error.message}`);
+              }
+            }
+            
             try {
+              console.log('Event details:', JSON.stringify(context.payload, null, 2));
+              
               if (context.eventName === 'issues' && context.payload.action === 'opened') {
                 const issue = await github.rest.issues.get({
                   owner,
@@ -30,7 +43,8 @@ jobs:
                   issue_number: context.issue.number
                 });
                 
-                const isFeatureRequest = issue.data.title.toLowerCase().includes('feat');
+                const isFeatureRequest = issue.data.title.toLowerCase().includes('feature request') || 
+                                         issue.data.body.toLowerCase().includes('feature request');
                 
                 let commentBody;
                 if (isFeatureRequest) {
@@ -54,37 +68,33 @@ jobs:
                   📝 Provided us all the details related to this bug`;
                 }
                 
-                await github.rest.issues.createComment({
-                  issue_number: context.issue.number,
-                  owner,
-                  repo,
-                  body: commentBody
-                });
-              } else if (context.eventName === 'pull_request' && context.payload.action === 'opened') {
-                await github.rest.issues.createComment({
-                  issue_number: context.issue.number,
-                  owner,
-                  repo,
-                  body: `Woohoo @${author}! 🎉 You've just dropped some hot new code! 🔥
+                await createComment(context.issue.number, commentBody);
+              } else if (context.eventName === 'pull_request') {
+                console.log('Processing pull request event');
+                const prNumber = context.payload.pull_request.number;
+                let commentBody;
+                
+                if (context.payload.action === 'opened') {
+                  commentBody = `Woohoo @${author}! 🎉 You've just dropped some hot new code!!! 🔥
 
-              Hang tight while we review this! You rock! 🤘`
-                });
-              } else if (context.eventName === 'pull_request' && context.payload.action === 'closed') {
-                await github.rest.issues.createComment({
-                  issue_number: context.issue.number,
-                  owner,
-                  repo,
-                  body: `Holy smokes, @${author}! 🤯 You've just made reNgine even more awesome!
+                  Hang tight while we review this! You rock! 🤘`;
+                } else if (context.payload.action === 'closed') {
+                  commentBody = `Holy smokes, @${author}! 🤯 You've just made reNgine even more awesome!
 
-              Your code is now part of the reNgine hall of fame. 🏆 
-              
-              Keep the cool ideas coming - maybe next time you'll break the internet! 💻💥
+                  Your code is now part of the reNgine hall of fame. 🏆 
+                  
+                  Keep the cool ideas coming - maybe next time you'll break the internet! 💻💥
 
-              Virtual high fives all around! 🙌`
-                });
+                  Virtual high fives all around! 🙌`;
+                }
+                
+                if (commentBody) {
+                  await createComment(prNumber, commentBody);
+                } else {
+                  console.log(`No action taken for pull request ${context.payload.action} event`);
+                }
               }
-              console.log('Comment created successfully');
             } catch (error) {
-              console.error('Error creating comment:', error);
-              core.setFailed(`Action failed with error: ${error}`);
+              console.error('Error in workflow:', error);
+              core.setFailed(`Workflow failed with error: ${error.message}`);
             }
