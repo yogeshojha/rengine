@@ -3,6 +3,8 @@ name: 💬 Auto Comment
 on:
   issues:
     types: [opened]
+  pull_request:
+    types: [opened, closed]
   pull_request_target:
     types: [opened, closed]
 
@@ -47,7 +49,7 @@ jobs:
             🕵️ Make sure it's not a known issue
             📝 Provide all the juicy details about this sneaky bug
             
-            Together, we'll make reNgine bulletproof! 💪`;
+            Once again - thanks for your vigilance! 🛠️🚀`;
               }
               
               github.rest.issues.createComment({
@@ -56,7 +58,7 @@ jobs:
                 repo,
                 body: commentBody
               });
-            } else if (context.eventName === 'pull_request_target' && context.payload.action === 'opened') {
+            } else if ((context.eventName === 'pull_request' || context.eventName === 'pull_request_target') && context.payload.action === 'opened') {
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner,
@@ -65,7 +67,7 @@ jobs:
 
             Hang tight while we review this! You rock! 🤘`
               });
-            } else if (context.eventName === 'pull_request_target' && context.payload.action === 'closed') {
+            } else if ((context.eventName === 'pull_request' || context.eventName === 'pull_request_target') && context.payload.action === 'closed') {
               const isPRMerged = context.payload.pull_request.merged;
               let commentBody;
 
@@ -80,11 +82,11 @@ jobs:
               } else {
                 commentBody = `Hey @${author}, thanks for your contribution! 🙏
 
-            We appreciate the time and effort you put into this PR.
+            We appreciate the time and effort you put into this PR. Sadly this is not the right fit for reNgine at the moment.
             
             While we couldn't merge it this time, we value your interest in improving reNgine.
             
-            Feel free to reach out if you have any questions. Thanks again! 👍`;
+            Feel free to reach out if you have any questions. Thanks again!`;
               }
 
               github.rest.issues.createComment({
