@@ -3,10 +3,8 @@ import io
 import ipaddress
 import logging
 import validators
-import pytz
 
 from datetime import timedelta
-from django.utils import timezone
 from urllib.parse import urlparse
 from django import http
 from django.conf import settings
@@ -17,7 +15,6 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from rolepermissions.decorators import has_permission_decorator
-from django_celery_beat.models import (PeriodicTask, ClockedSchedule)
 
 from reNgine.common_func import *
 from reNgine.tasks import run_command, sanitize_url, sync_h1_bookmarked
