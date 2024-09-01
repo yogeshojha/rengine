@@ -43,6 +43,21 @@ DEFAULT_GET_GPT_REPORT = env.bool('DEFAULT_GET_GPT_REPORT', default=True)
 ALLOWED_HOSTS = ['*']
 SECRET_KEY = first_run(SECRET_FILE, BASE_DIR)
 
+# Rengine version
+# reads current version from a file called .version
+VERSION_FILE = os.path.join(BASE_DIR, '.version')
+if os.path.exists(VERSION_FILE):
+    with open(VERSION_FILE, 'r') as f:
+        _version = f.read().strip()
+else:
+    _version = 'unknown'
+
+# removes v from _version if exists
+if _version.startswith('v'):
+    _version = _version[1:]
+
+RENGINE_CURRENT_VERSION = _version
+
 # Databases
 DATABASES = {
     'default': {
@@ -103,7 +118,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'reNgine.context_processors.projects',
-                'reNgine.context_processors.misc'
+                'reNgine.context_processors.version_context'
             ],
     },
 }]
@@ -303,6 +318,16 @@ LOGGING = {
             'handlers': ['task'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False
+        },
+        'api.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False
         }
     },
 }
+
+'''
+File upload settings
+'''
+DATA_UPLOAD_MAX_NUMBER_FIELDS = None

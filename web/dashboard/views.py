@@ -319,6 +319,13 @@ def onboarding(request):
     context = {}
     error = ''
 
+    # check is any projects exists, then redirect to project list else onboarding
+    project = Project.objects.first()
+
+    if project:
+        slug = project.slug
+        return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
+
     if request.method == "POST":
         project_name = request.POST.get('project_name')
         slug = slugify(project_name)
@@ -327,6 +334,7 @@ def onboarding(request):
         create_user_role = request.POST.get('create_user_role')
         key_openai = request.POST.get('key_openai')
         key_netlas = request.POST.get('key_netlas')
+        key_chaos = request.POST.get('key_chaos')
 
         insert_date = timezone.now()
 
@@ -369,15 +377,19 @@ def onboarding(request):
             else:
                 NetlasAPIKey.objects.create(key=key_netlas)
 
+        if key_chaos:
+            chaos_api_key = ChaosAPIKey.objects.first()
+            if chaos_api_key:
+                chaos_api_key.key = key_chaos
+                chaos_api_key.save()
+            else:
+                ChaosAPIKey.objects.create(key=key_chaos)
+
     context['error'] = error
-    # check is any projects exists, then redirect to project list else onboarding
-    project = Project.objects.first()
+    
 
     context['openai_key'] = OpenAiAPIKey.objects.first()
     context['netlas_key'] = NetlasAPIKey.objects.first()
-
-    if project:
-        slug = project.slug
-        return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
+    context['chaos_key'] = ChaosAPIKey.objects.first()
 
     return render(request, 'dashboard/onboarding.html', context)

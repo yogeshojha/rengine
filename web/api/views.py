@@ -14,7 +14,8 @@ from django.template.defaultfilters import slugify
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.status import HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT
+from rest_framework.decorators import action
 
 from recon_note.models import *
 from reNgine.celery import app
@@ -31,6 +32,71 @@ from targetApp.models import *
 from .serializers import *
 
 logger = logging.getLogger(__name__)
+
+
+class InAppNotificationManagerViewSet(viewsets.ModelViewSet):
+	"""
+		This class manages the notification model, provided CRUD operation on notif model
+		such as read notif, clear all, fetch all notifications etc
+	"""
+	serializer_class = InAppNotificationSerializer
+	pagination_class = None
+
+	def get_queryset(self):
+		# we will see later if user based notif is needed
+		# return InAppNotification.objects.filter(user=self.request.user)
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = InAppNotification.objects.all()
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		return queryset.order_by('-created_at')
+
+	@action(detail=False, methods=['post'])
+	def mark_all_read(self, request):
+		# marks all notification read
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = self.get_queryset()
+
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		queryset.update(is_read=True)
+		return Response(status=HTTP_204_NO_CONTENT)
+
+	@action(detail=True, methods=['post'])
+	def mark_read(self, request, pk=None):
+		# mark individual notification read when cliked
+		notification = self.get_object()
+		notification.is_read = True
+		notification.save()
+		return Response(status=HTTP_204_NO_CONTENT)
+
+	@action(detail=False, methods=['get'])
+	def unread_count(self, request):
+		# this fetches the count for unread notif mainly for the badge
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = self.get_queryset()
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		count = queryset.filter(is_read=False).count()
+		return Response({'count': count})
+
+	@action(detail=False, methods=['post'])
+	def clear_all(self, request):
+		# when clicked on the clear button this must be called to clear all notif
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = self.get_queryset()
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		queryset.delete()
+		return Response(status=HTTP_204_NO_CONTENT)
 
 
 class OllamaManager(APIView):
@@ -774,63 +840,95 @@ class StopScan(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-		scan_id = data.get('scan_id')
-		subscan_id = data.get('subscan_id')
-		response = {}
-		task_ids = []
-		scan = None
-		subscan = None
-		if subscan_id:
+		scan_ids = data.get('scan_ids', [])
+		subscan_ids = data.get('subscan_ids', [])
+
+		scan_ids = [int(id) for id in scan_ids]
+		subscan_ids = [int(id) for id in subscan_ids]
+
+		response = {'status': False}
+
+		def abort_scan(scan):
+			response = {}
+			logger.info(f'Aborting scan History')
 			try:
-				subscan = get_object_or_404(SubScan, id=subscan_id)
-				scan = subscan.scan_history
-				task_ids = subscan.celery_ids
-				subscan.status = ABORTED_TASK
-				subscan.stop_scan_date = timezone.now()
-				subscan.save()
-				create_scan_activity(
-					subscan.scan_history.id,
-					f'Subscan {subscan_id} aborted',
-					SUCCESS_TASK)
-				response['status'] = True
-			except Exception as e:
-				logging.error(e)
-				response = {'status': False, 'message': str(e)}
-		elif scan_id:
-			try:
-				scan = get_object_or_404(ScanHistory, id=scan_id)
+				logger.info(f"Setting scan {scan} status to ABORTED_TASK")
 				task_ids = scan.celery_ids
 				scan.scan_status = ABORTED_TASK
 				scan.stop_scan_date = timezone.now()
 				scan.aborted_by = request.user
 				scan.save()
+				for task_id in task_ids:
+					app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+
+				tasks = (
+					ScanActivity.objects
+					.filter(scan_of=scan)
+					.filter(status=RUNNING_TASK)
+					.order_by('-pk')
+				)
+				for task in tasks:
+					task.status = ABORTED_TASK
+					task.time = timezone.now()
+					task.save()
+
 				create_scan_activity(
 					scan.id,
 					"Scan aborted",
-					SUCCESS_TASK)
+					ABORTED_TASK
+				)
 				response['status'] = True
 			except Exception as e:
-				logging.error(e)
+				logger.error(e)
 				response = {'status': False, 'message': str(e)}
 
-		logger.warning(f'Revoking tasks {task_ids}')
-		for task_id in task_ids:
-			app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+			return response
 
-		# Abort running tasks
-		tasks = (
-			ScanActivity.objects
-			.filter(scan_of=scan)
-			.filter(status=RUNNING_TASK)
-			.order_by('-pk')
-		)
-		if tasks.exists():
-			for task in tasks:
-				if subscan_id and task.id not in subscan.celery_ids:
+		def abort_subscan(subscan):
+			response = {}
+			logger.info(f'Aborting subscan')
+			try:
+				logger.info(f"Setting scan {subscan} status to ABORTED_TASK")
+				task_ids = subscan.celery_ids
+
+				for task_id in task_ids:
+					app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+
+				subscan.status = ABORTED_TASK
+				subscan.stop_scan_date = timezone.now()
+				subscan.save()
+				create_scan_activity(
+					subscan.scan_history.id,
+					f'Subscan aborted',
+					ABORTED_TASK
+				)
+				response['status'] = True
+			except Exception as e:
+				logger.error(e)
+				response = {'status': False, 'message': str(e)}
+
+			return response
+
+		for scan_id in scan_ids:
+			try:
+				scan = ScanHistory.objects.get(id=scan_id)
+				# if scan is already successful or aborted then do nothing
+				if scan.scan_status == SUCCESS_TASK or scan.scan_status == ABORTED_TASK:
 					continue
-				task.status = ABORTED_TASK
-				task.time = timezone.now()
-				task.save()
+				response = abort_scan(scan)
+			except Exception as e:
+				logger.error(e)
+				response = {'status': False, 'message': str(e)}
+			
+		for subscan_id in subscan_ids:
+			try:
+				subscan = SubScan.objects.get(id=subscan_id)
+				if subscan.scan_status == SUCCESS_TASK or subscan.scan_status == ABORTED_TASK:
+					continue
+				response = abort_subscan(subscan)
+			except Exception as e:
+				logger.error(e)
+				response = {'status': False, 'message': str(e)}
 
 		return Response(response)
 
@@ -890,10 +988,7 @@ class RengineUpdateCheck(APIView):
 
 		# get current version_number
 		# remove quotes from current_version
-		current_version = ((os.environ['RENGINE_CURRENT_VERSION'
-							])[1:] if os.environ['RENGINE_CURRENT_VERSION'
-							][0] == 'v'
-							else os.environ['RENGINE_CURRENT_VERSION']).replace("'", "")
+		current_version = RENGINE_CURRENT_VERSION
 
 		# for consistency remove v from both if exists
 		latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
@@ -914,8 +1009,21 @@ class RengineUpdateCheck(APIView):
 		return_response['status'] = True
 		return_response['latest_version'] = latest_version
 		return_response['current_version'] = current_version
-		return_response['update_available'] = version.parse(current_version) < version.parse(latest_version)
-		if version.parse(current_version) < version.parse(latest_version):
+		is_version_update_available = version.parse(current_version) < version.parse(latest_version)
+
+		# if is_version_update_available then we should create inapp notification
+		create_inappnotification(
+			title='reNgine Update Available',
+			description=f'Update to version {latest_version} is available',
+			notification_type=SYSTEM_LEVEL_NOTIFICATION,
+			project_slug=None,
+			icon='mdi-update',
+			redirect_link='https://github.com/yogeshojha/rengine/releases',
+			open_in_new_tab=True
+		)
+
+		return_response['update_available'] = is_version_update_available
+		if is_version_update_available:
 			return_response['changelog'] = response[0]['body']
 
 		return Response(return_response)
@@ -1015,7 +1123,11 @@ class GetExternalToolCurrentVersion(APIView):
 
 		version_number = None
 		_, stdout = run_command(tool.version_lookup_command)
-		version_number = re.search(re.compile(tool.version_match_regex), str(stdout))
+		if tool.version_match_regex:
+			version_number = re.search(re.compile(tool.version_match_regex), str(stdout))
+		else:
+			version_match_regex = r'(?i:v)?(\d+(?:\.\d+){2,})'
+			version_number = re.search(version_match_regex, str(stdout))
 		if not version_number:
 			return Response({'status': False, 'message': 'Invalid version lookup command.'})
 

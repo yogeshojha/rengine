@@ -58,7 +58,9 @@ def initiate_scan(
 		imported_subdomains=[],
 		out_of_scope_subdomains=[],
 		initiated_by_id=None,
-		url_filter=''):
+		starting_point_path='',
+		excluded_paths=[],
+	):
 	"""Initiate a new scan.
 
 	Args:
@@ -69,8 +71,9 @@ def initiate_scan(
 		results_dir (str): Results directory.
 		imported_subdomains (list): Imported subdomains.
 		out_of_scope_subdomains (list): Out-of-scope subdomains.
-		url_filter (str): URL path. Default: ''.
+		starting_point_path (str): URL path. Default: '' Defined where to start the scan.
 		initiated_by (int): User ID initiating the scan.
+		excluded_paths (list): Excluded paths. Default: [], url paths to exclude from scan.
 	"""
 	logger.info('Initiating scan on celery')
 	scan = None
@@ -90,7 +93,7 @@ def initiate_scan(
 		domain.save()
 
 		# Get path filter
-		url_filter = url_filter.rstrip('/')
+		starting_point_path = starting_point_path.rstrip('/')
 
 		# for live scan scan history id is passed as scan_history_id 
 		# and no need to create scan_history object
@@ -112,6 +115,12 @@ def initiate_scan(
 		scan.tasks = engine.tasks
 		scan.results_dir = f'{results_dir}/{domain.name}_{scan.id}'
 		add_gf_patterns = gf_patterns and 'fetch_url' in engine.tasks
+		# add configs to scan object, cfg_ prefix is used to avoid conflicts with other scan object fields
+		scan.cfg_starting_point_path = starting_point_path
+		scan.cfg_excluded_paths = excluded_paths
+		scan.cfg_out_of_scope_subdomains = out_of_scope_subdomains
+		scan.cfg_imported_subdomains = imported_subdomains
+
 		if add_gf_patterns:
 			scan.used_gf_patterns = ','.join(gf_patterns)
 		scan.save()
@@ -125,7 +134,8 @@ def initiate_scan(
 			'engine_id': engine_id,
 			'domain_id': domain.id,
 			'results_dir': scan.results_dir,
-			'url_filter': url_filter,
+			'starting_point_path': starting_point_path,
+			'excluded_paths': excluded_paths,
 			'yaml_configuration': config,
 			'out_of_scope_subdomains': out_of_scope_subdomains
 		}
@@ -149,7 +159,7 @@ def initiate_scan(
 
 		# If enable_http_crawl is set, create an initial root HTTP endpoint so that
 		# HTTP crawling can start somewhere
-		http_url = f'{domain.name}{url_filter}' if url_filter else domain.name
+		http_url = f'{domain.name}{starting_point_path}' if starting_point_path else domain.name
 		endpoint, _ = save_endpoint(
 			http_url,
 			ctx=ctx,
@@ -225,7 +235,9 @@ def initiate_subscan(
 		engine_id=None,
 		scan_type=None,
 		results_dir=RENGINE_RESULTS,
-		url_filter=''):
+		starting_point_path='',
+		excluded_paths=[],
+	):
 	"""Initiate a new subscan.
 
 	Args:
@@ -234,7 +246,8 @@ def initiate_subscan(
 		engine_id (int): Engine ID.
 		scan_type (int): Scan type (periodic, live).
 		results_dir (str): Results directory.
-		url_filter (str): URL path. Default: ''
+		starting_point_path (str): URL path. Default: ''
+		excluded_paths (list): Excluded paths. Default: [], url paths to exclude from scan.
 	"""
 
 	# Get Subdomain, Domain and ScanHistory
@@ -292,12 +305,13 @@ def initiate_subscan(
 		'subdomain_id': subdomain.id,
 		'yaml_configuration': config,
 		'results_dir': results_dir,
-		'url_filter': url_filter
+		'starting_point_path': starting_point_path,
+		'excluded_paths': excluded_paths,
 	}
 
 	# Create initial endpoints in DB: find domain HTTP endpoint so that HTTP
 	# crawling can start somewhere
-	base_url = f'{subdomain.name}{url_filter}' if url_filter else subdomain.name
+	base_url = f'{subdomain.name}{starting_point_path}' if starting_point_path else subdomain.name
 	endpoint, _ = save_endpoint(
 		base_url,
 		crawl=enable_http_crawl,
@@ -399,8 +413,8 @@ def subdomain_discovery(
 	if not host:
 		host = self.subdomain.name if self.subdomain else self.domain.name
 
-	if self.url_filter:
-		logger.warning(f'Ignoring subdomains scan as an URL path filter was passed ({self.url_filter}).')
+	if self.starting_point_path:
+		logger.warning(f'Ignoring subdomains scan as an URL path filter was passed ({self.starting_point_path}).')
 		return
 
 	# Config
@@ -413,6 +427,7 @@ def subdomain_discovery(
 	custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
 	send_subdomain_changes, send_interesting = False, False
 	notif = Notification.objects.first()
+	subdomain_scope_checker = SubdomainScopeChecker(self.out_of_scope_subdomains)
 	if notif:
 		send_subdomain_changes = notif.send_subdomain_changes_notif
 		send_interesting = notif.send_interesting_notif
@@ -482,6 +497,15 @@ def subdomain_discovery(
 				cmd += f' -a {netlas_key}' if netlas_key else ''
 				cmd_extract = f"grep -oE '([a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?\.)+{host}'"
 				cmd += f' | {cmd_extract} > {results_file}'
+
+			elif tool == 'chaos':
+				# we need to find api key if not ignore
+				chaos_key = get_chaos_key()
+				if not chaos_key:
+					logger.error('Chaos API key not found. Skipping.')
+					continue
+				results_file = self.results_dir + '/subdomains_chaos.txt'
+				cmd = f'chaos -d {host} -silent -key {chaos_key} -o {results_file}'
 
 		elif tool in custom_subdomain_tools:
 			tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
@@ -558,7 +582,7 @@ def subdomain_discovery(
 		if valid_url:
 			subdomain_name = urlparse(subdomain_name).netloc
 
-		if subdomain_name in self.out_of_scope_subdomains:
+		if subdomain_scope_checker.is_out_of_scope(subdomain_name):
 			logger.error(f'Subdomain {subdomain_name} is out of scope. Skipping.')
 			continue
 
@@ -1922,7 +1946,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 
 		if base_url and urlpath:
 			subdomain = urlparse(base_url)
-			url = f'{subdomain.scheme}://{subdomain.netloc}{self.url_filter}'
+			url = f'{subdomain.scheme}://{subdomain.netloc}{self.starting_point_path}'
 
 		if not validators.url(url):
 			logger.warning(f'Invalid URL "{url}". Skipping.')
@@ -1931,8 +1955,12 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 			all_urls.append(url)
 
 	# Filter out URLs if a path filter was passed
-	if self.url_filter:
-		all_urls = [url for url in all_urls if self.url_filter in url]
+	if self.starting_point_path:
+		all_urls = [url for url in all_urls if self.starting_point_path in url]
+
+	# if exclude_paths is found, then remove urls matching those paths
+	if self.excluded_paths:
+		all_urls = exclude_urls_by_patterns(self.excluded_paths, all_urls)
 
 	# Write result to output path
 	with open(self.output_path, 'w') as f:
@@ -2828,8 +2856,9 @@ def http_crawl(
 	input_path = f'{self.results_dir}/httpx_input.txt'
 	history_file = f'{self.results_dir}/commands.txt'
 	if urls: # direct passing URLs to check
-		if self.url_filter:
-			urls = [u for u in urls if self.url_filter in u]
+		if self.starting_point_path:
+			urls = [u for u in urls if self.starting_point_path in u]
+
 		with open(input_path, 'w') as f:
 			f.write('\n'.join(urls))
 	else:
@@ -2839,6 +2868,10 @@ def http_crawl(
 			ctx=ctx
 		)
 		# logger.debug(urls)
+
+	# exclude urls by pattern
+	if self.excluded_paths:
+		urls = exclude_urls_by_patterns(self.excluded_paths, urls)
 
 	# If no URLs found, skip it
 	if not urls:
@@ -3062,6 +3095,7 @@ def send_scan_notif(
 	url = get_scan_url(scan_history_id, subscan_id)
 	title = get_scan_title(scan_history_id, subscan_id)
 	fields = get_scan_fields(engine, scan, subscan, status, tasks)
+
 	severity = None
 	msg = f'{title} {status}\n'
 	msg += '\n🡆 '.join(f'**{k}:** {v}' for k, v in fields.items())
@@ -3075,12 +3109,64 @@ def send_scan_notif(
 	}
 	logger.warning(f'Sending notification "{title}" [{severity}]')
 
+	generate_inapp_notification(scan, subscan, status, engine, fields)
+
 	# Send notification
 	send_notif(
 		msg,
 		scan_history_id,
 		subscan_id,
 		**opts)
+	
+def generate_inapp_notification(scan, subscan, status, engine, fields):
+	scan_type = "Subscan" if subscan else "Scan"
+	domain = subscan.domain.name if subscan else scan.domain.name
+	duration_msg = None
+	redirect_link = None
+	
+	if status == 'RUNNING':
+		title = f"{scan_type} Started"
+		description = f"{scan_type} has been initiated for {domain}"
+		icon = "mdi-play-circle-outline"
+		notif_status = 'info'
+	elif status == 'SUCCESS':
+		title = f"{scan_type} Completed"
+		description = f"{scan_type} was successful for {domain}"
+		icon = "mdi-check-circle-outline"
+		notif_status = 'success'
+		duration_msg = f'Completed in {fields.get("Duration")}'
+	elif status == 'ABORTED':
+		title = f"{scan_type} Aborted"
+		description = f"{scan_type} was aborted for {domain}"
+		icon = "mdi-alert-circle-outline"
+		notif_status = 'warning'
+		duration_msg = f'Aborted in {fields.get("Duration")}'
+	elif status == 'FAILED':
+		title = f"{scan_type} Failed"
+		description = f"{scan_type} has failed for {domain}"
+		icon = "mdi-close-circle-outline"
+		notif_status = 'error'
+		duration_msg = f'Failed in {fields.get("Duration")}'
+
+	description += f"<br>Engine: {engine.engine_name if engine else 'N/A'}"
+	slug = scan.domain.project.slug if scan else subscan.history.domain.project.slug
+	if duration_msg:
+		description += f"<br>{duration_msg}"
+
+	if status != 'RUNNING':
+		redirect_link = f"/scan/{slug}/detail/{scan.id}" if scan else None
+
+	create_inappnotification(
+		title=title,
+		description=description,
+		notification_type='project',
+		project_slug=slug,
+		icon=icon,
+		is_read=False,
+		status=notif_status,
+		redirect_link=redirect_link,
+		open_in_new_tab=False
+	)
 
 
 @app.task(name='send_task_notif', bind=False, queue='send_task_notif_queue')
@@ -4405,6 +4491,7 @@ def save_subdomain(subdomain_name, ctx={}):
 	scan_id = ctx.get('scan_history_id')
 	subscan_id = ctx.get('subscan_id')
 	out_of_scope_subdomains = ctx.get('out_of_scope_subdomains', [])
+	subdomain_checker = SubdomainScopeChecker(out_of_scope_subdomains)
 	valid_domain = (
 		validators.domain(subdomain_name) or
 		validators.ipv4(subdomain_name) or
@@ -4414,7 +4501,7 @@ def save_subdomain(subdomain_name, ctx={}):
 		logger.error(f'{subdomain_name} is not an invalid domain. Skipping.')
 		return None, False
 
-	if subdomain_name in out_of_scope_subdomains:
+	if subdomain_checker.is_out_of_scope(subdomain_name):
 		logger.error(f'{subdomain_name} is out-of-scope. Skipping.')
 		return None, False
 

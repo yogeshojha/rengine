@@ -29,27 +29,52 @@ API Vault
               <div class="mb-3">
                 <label for="key_openai" class="form-label">OpenAI</label>
                 <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using GPT.</p>
+                <div class="flex-grow-1 position-relative">
                 {% if openai_key %}
-                  <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}">
+                  <input class="form-control" type="password" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}">
                 {% else %}
                   <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key">
                 {% endif %}
-                <span class="text-muted float-end">This is optional but recommended.</span>
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                    <span class="password-eye"></span>
+                  </div>
+                </div>
+                <span class="text-muted float-end optional-text">This is optional but recommended. Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">https://platform.openai.com/api-keys</a></span>
               </div>
               <div class="mb-3">
                 <label for="key_netlas" class="form-label">Netlas</label>
                 <p class="text-muted">Netlas keys will be used to get whois information and other OSINT related data.</p>
+                <div class="flex-grow-1 position-relative">
                 {% if netlas_key %}
-                  <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}">
+                  <input class="form-control" type="password" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}">
                 {% else %}
                   <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key">
                 {% endif %}
-                <span class="text-muted float-end">This is optional</span>
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                    <span class="password-eye"></span>
+                  </div>
+                </div>
+                <span class="text-muted float-end optional-text">This is optional. Get your API key from <a href="https://netlas.io" target="_blank">https://netlas.io</a></span>
               </div>
+              <div class="mb-3">
+                <label for="key_chaos" class="form-label">Chaos</label>
+                <p class="text-muted">Chaos keys will be used for subdomain enumeration and recon data for Public Bug Bounty Programs.</p>
+                <div class="flex-grow-1 position-relative">
+                {% if chaos_key %}
+                  <input class="form-control" type="password" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key" value="{{chaos_key}}">
+                {% else %}
+                  <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key">
+                {% endif %}
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                    <span class="password-eye"></span>
+                  </div>
+                </div>
+                <span class="text-muted float-end optional-text">This is optional but recommended. Get your API key from <a href="https://cloud.projectdiscovery.io" target="_blank">https://cloud.projectdiscovery.io</a></span>
+              </div>
+            </div>
               <div class="mb-0">
                 <button class="btn btn-info float-sm-end my-4" type="submit"> Update API Keys</button>
               </div>
-            </div>
           </div>
         </form>
       </div>
