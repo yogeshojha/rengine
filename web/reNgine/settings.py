@@ -331,3 +331,13 @@ LOGGING = {
 File upload settings
 '''
 DATA_UPLOAD_MAX_NUMBER_FIELDS = None
+
+'''
+    Caching Settings
+'''
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'TIMEOUT': 60 * 30,  # 30 minutes caching will be used
+    }
+}
