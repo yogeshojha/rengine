@@ -1,13 +1,11 @@
-import logging
 import re
 import socket
-from ipaddress import IPv4Network
-
+import logging
 import requests
 import validators
-from dashboard.models import *
+
+from ipaddress import IPv4Network
 from django.db.models import CharField, Count, F, Q, Value
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from packaging import version
 from django.template.defaultfilters import slugify
@@ -16,7 +14,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT
 from rest_framework.decorators import action
+from django.core.exceptions import ObjectDoesNotExist
 
+from dashboard.models import *
 from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
@@ -28,10 +28,86 @@ from scanEngine.models import *
 from startScan.models import *
 from startScan.models import EndPoint
 from targetApp.models import *
+from django.core.cache import cache
 
 from .serializers import *
 
 logger = logging.getLogger(__name__)
+
+
+class HackerOneProgramViewSet(viewsets.ViewSet):
+	"""
+		This class manages the HackerOne Program model, 
+		provides basic fetching of programs and caching
+	"""
+	CACHE_KEY = 'hackerone_programs'
+	CACHE_TIMEOUT = 60 * 30 # 30 minutes
+
+
+	def list(self, request):
+		programs = self.get_cached_programs()
+		serializer = HackerOneProgramSerializer(programs, many=True)
+		return Response(serializer.data)
+	
+	def get_api_credentials(self):
+		try:
+			api_key = HackerOneAPIKey.objects.first()
+			if not api_key:
+				raise ObjectDoesNotExist("HackerOne API credentials not found")
+			return api_key.username, api_key.key
+		except ObjectDoesNotExist:
+			raise Exception("HackerOne API credentials not configured")
+
+	@action(detail=False, methods=['get'])
+	def bookmarked_programs(self, request):
+		# do not cache bookmarked programs due to the user specific nature
+		programs = self.fetch_programs_from_hackerone()
+		bookmarked = [p for p in programs if p['attributes']['bookmarked']]
+		serializer = HackerOneProgramSerializer(bookmarked, many=True)
+		return Response(serializer.data)
+	
+	@action(detail=False, methods=['get'])
+	def bounty_programs(self, request):
+		programs = self.get_cached_programs()
+		bounty_programs = [p for p in programs if p['attributes']['offers_bounties']]
+		serializer = HackerOneProgramSerializer(bounty_programs, many=True)
+		return Response(serializer.data)
+
+	def get_cached_programs(self):
+		programs = cache.get(self.CACHE_KEY)
+		if programs is None:
+			programs = self.fetch_programs_from_hackerone()
+			cache.set(self.CACHE_KEY, programs, self.CACHE_TIMEOUT)
+		return programs
+
+	def fetch_programs_from_hackerone(self):
+		url = 'https://api.hackerone.com/v1/hackers/programs'
+		headers = {'Accept': 'application/json'}
+		all_programs = []
+		username, api_key = self.get_api_credentials()
+
+		while url:
+			response = requests.get(
+				url,
+				headers=headers,
+				auth=(username, api_key)
+			)
+
+			if response.status_code != 200:
+				raise Exception(f"HackerOne API request failed with status code {response.status_code}")
+
+			data = response.json()
+			all_programs.extend(data['data'])
+			
+			url = data['links'].get('next')
+
+		return all_programs
+
+	@action(detail=False, methods=['post'])
+	def refresh_cache(self, request):
+		programs = self.fetch_programs_from_hackerone()
+		cache.set(self.CACHE_KEY, programs, self.CACHE_TIMEOUT)
+		return Response({"status": "Cache refreshed successfully"})
 
 
 class InAppNotificationManagerViewSet(viewsets.ModelViewSet):
