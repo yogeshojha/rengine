@@ -409,3 +409,13 @@ def onboarding(request):
     context['hackerone_username'] = HackerOneAPIKey.objects.first().username
 
     return render(request, 'dashboard/onboarding.html', context)
+
+
+
+def list_bountyhub_programs(request, slug):
+    context = {}
+    # get parameter to device which platform is being requested
+    platform = request.GET.get('platform') or 'hackerone'
+    context['platform'] = platform.capitalize()
+    
+    return render(request, 'dashboard/bountyhub_programs.html', context)

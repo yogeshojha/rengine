@@ -587,3 +587,26 @@ mark{
 .optional-text {
   margin-top: 4px;
 }
+
+.bbp-bookmark-container {
+  transition: transform 0.3s ease;
+  z-index: 1;
+}
+.bbp-bookmark-checkbox:checked + .bbp-bookmark-label i {
+  color: #ffc107;
+  transform: scale(1.2);
+}
+.bbp-bookmark-label i {
+  transition: all 0.3s ease;
+  color: #6c757d;
+}
+.bbp-card:hover .bbp-bookmark-container {
+  transform: translateY(5px);
+}
+.bbp-badge {
+  transition: transform 0.3s ease;
+  background-color: transparent !important;
+}
+.bbp-badge:hover {
+  transform: translateY(-2px);
+}
