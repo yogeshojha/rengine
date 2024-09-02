@@ -3402,60 +3402,76 @@ function show_scan_configuration(starting_path, out_of_scope_subdomains, exclude
 }
 
 
-function test_hackerone() {
-	if ($("#username").val().length == 0 || $("#api_key").val().length == 0) {
-	  if ($("#username").val().length == 0) {
-		$("#username").addClass("is-invalid");
-	  }
-	  if ($("#api_key").val().length == 0) {
-		$("#api_key").addClass("is-invalid");
-	  }
-	}
-	else{
-	  const hackerone_api = 'testHackerone/';
-	  var username = $("#username").val();
-	  var api_key = $("#api_key").val();
-	  swal.queue([{
-		title: 'Hackerone Configuration',
-		confirmButtonText: 'Test my hackerone API Key',
-		text:
-		'This will test if your hackerone API keys are working.',
-		showLoaderOnConfirm: true,
-		preConfirm: function() {
-		  return fetch(hackerone_api, {
-			method: 'POST',
-			headers: {
-			  "X-CSRFToken": getCookie("csrftoken"),
-			  "Content-Type": "application/json"
+async function test_hackerone() {
+	const username = $("#username_hackerone");
+	const apiKey = $("#key_hackerone");
+	const fields = [username, apiKey];
+
+	const isValid = fields.every(field => field.val().trim().length > 0); 
+	fields.forEach(field => {
+		field.toggleClass("is-invalid", field.val().trim().length === 0);
+	});
+
+	if (!isValid) return;
+
+	try {
+		const result = await Swal.fire({
+			title: 'HackerOne Configuration',
+			text: 'This will test if your HackerOne API keys are working.',
+			icon: 'info',
+			showCancelButton: true,
+			confirmButtonText: 'Test my HackerOne API Key',
+			showLoaderOnConfirm: true,
+			preConfirm: async () => {
+			try {
+				const response = await fetch('testHackerone/', {
+				method: 'POST',
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken"),
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					username: username.val().trim(),
+					api_key: apiKey.val().trim()
+				}),
+				});
+	
+				if (!response.ok) {
+				throw new Error('Network response was not ok');
+				}
+	
+				const data = await response.json();
+				return data;
+			} catch (error) {
+				Swal.showValidationMessage(`Request failed: ${error}`);
+			}
 			},
-			body: JSON.stringify({'username': username, 'api_key': api_key}),
-		  },
-		).then(function (response) {
-		  return response.json();
-		})
-		.then(function(data) {
-		  if (data.status == 200) {
-			$("#username").addClass("is-valid");
-			$("#api_key").addClass("is-valid");
-			$("#username").removeClass("is-invalid");
-			$("#api_key").removeClass("is-invalid");
-			return swal.insertQueueStep("Your hackerone Credentials are working.")
-		  }
-		  else{
-			$("#username").addClass("is-invalid");
-			$("#api_key").addClass("is-invalid");
-			$("#username").removeClass("is-valid");
-			$("#api_key").removeClass("is-valid");
-			return swal.insertQueueStep("Oops! Your hackerone Credentials are not working, check your username and/or api_key.")
-		  }
-		})
-		.catch(function() {
-		  swal.insertQueueStep({
-			type: 'error',
-			title: 'Test Hackerone API Key',
-		  })
-		})
-	  }
-	}]);
-  }
+			allowOutsideClick: () => !Swal.isLoading()
+		});
+
+		if (result.isConfirmed) {
+			const data = result.value;
+			const isWorking = data.status === 200;
+	
+			fields.forEach(field => {
+			field.toggleClass("is-valid", isWorking);
+			field.toggleClass("is-invalid", !isWorking);
+			});
+	
+			await Swal.fire({
+			title: isWorking ? 'Success' : 'Error',
+			text: isWorking
+				? 'Your HackerOne Credentials are working.'
+				: 'Your HackerOne Credentials are not working. Please check your username and/or API key.',
+			icon: isWorking ? 'success' : 'error'
+			});
+		}
+	} catch (error) {
+		console.error('Error:', error);
+		await Swal.fire({
+			title: 'Error',
+			text: 'An unexpected error occurred while testing the HackerOne API Key.',
+			icon: 'error'
+		});
+	}
 }
