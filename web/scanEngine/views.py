@@ -504,6 +504,8 @@ def api_vault(request, slug):
         key_openai = request.POST.get('key_openai')
         key_netlas = request.POST.get('key_netlas')
         key_chaos = request.POST.get('key_chaos')
+        key_hackerone = request.POST.get('key_hackerone')
+        username_hackerone = request.POST.get('username_hackerone')
 
 
         if key_openai:
@@ -530,13 +532,30 @@ def api_vault(request, slug):
             else:
                 ChaosAPIKey.objects.create(key=key_chaos)
 
+        if key_hackerone and username_hackerone:
+            hackerone_api_key = HackerOneAPIKey.objects.first()
+            if hackerone_api_key:
+                hackerone_api_key.username = username_hackerone
+                hackerone_api_key.key = key_hackerone
+                hackerone_api_key.save()
+            else:
+                HackerOneAPIKey.objects.create(
+                    username=username_hackerone, 
+                    key=key_hackerone
+                )
+
     openai_key = OpenAiAPIKey.objects.first()
     netlas_key = NetlasAPIKey.objects.first()
     chaos_key = ChaosAPIKey.objects.first()
+    hackerone_key = HackerOneAPIKey.objects.first().key
+    hackerone_username = HackerOneAPIKey.objects.first().username
 
     context['openai_key'] = openai_key
     context['netlas_key'] = netlas_key
     context['chaos_key'] = chaos_key
+    context['hackerone_key'] = hackerone_key
+    context['hackerone_username'] = hackerone_username
+    
     return render(request, 'scanEngine/settings/api.html', context)
 
 
