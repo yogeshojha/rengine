@@ -84,7 +84,9 @@
                   <p>To get started with reNgine, you'll need to create your first project. Projects help you organize and manage your security assessments efficiently. <a href="https://rengine.wiki/usage/projects/" target="_blank">Learn more about projects.</a>
                   </p> {% if error %} <div class="alert alert-danger">
                     {{error}}
-                  </div> {% endif %} <div class="row">
+                  </div> 
+                  {% endif %} 
+                  <div class="row">
                     <div class="col-lg-12">
                       <div class="p-sm-3">
                         <h4 class="mt-0">Project</h4>
@@ -119,7 +121,7 @@
                         <div class="accordion" id="apiKeysAccordion">
                           <div class="accordion-item">
                             <h2 class="accordion-header" id="headingOpenAI">
-                              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOpenAI" aria-expanded="true" aria-controls="collapseOpenAI">OpenAI Key</button>
+                              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOpenAI" aria-expanded="true" aria-controls="collapseOpenAI">OpenAI</button>
                             </h2>
                             <div id="collapseOpenAI" class="accordion-collapse collapse" aria-labelledby="headingOpenAI" data-bs-parent="#apiKeysAccordion">
                               <div class="accordion-body">
@@ -145,6 +147,32 @@
                               <div class="accordion-body">
                                 <p class="text-muted">Chaos keys enhance your reconnaissance capabilities by providing subdomain enumeration and valuable data for Public Bug Bounty Programs.</p> {% if chaos_key %} <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key" value="{{chaos_key}}"> {% else %} <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key"> {% endif %} <small class="text-muted float-end mt-2 mb-2">This is optional but recommended. Get your API key from <a href="https://cloud.projectdiscovery.io" target="_blank">https://cloud.projectdiscovery.io</a>
                                 </small>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingHackerone">
+                              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHackerone" aria-expanded="false" aria-controls="collapseChaos"> Hackerone </button>
+                            </h2>
+                            <div id="collapseHackerone" class="accordion-collapse collapse" aria-labelledby="headingHackerone" data-bs-parent="#apiKeysAccordion">
+                              <div class="accordion-body">
+                                <div class="row">
+                                  <p class="text-muted">Hackerone Keys can be used to import targets, bookmarked programs, and submit automated vulnerability report to Hackerone. This is a bug bounty specific feature.</p> 
+                                  </small>
+                                  <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+                                    <label for="hackerone_username"  class="form-label">Hackerone Username (Not email)</label>
+                                    {% if hackerone_username %} <input class="form-control" type="text" id="username_hackerone" name="username_hackerone" placeholder="Enter Hackerone Username" value="{{hackerone_username}}"> {% else %} <input class="form-control" type="text" id="username_hackerone" name="username_hackerone" placeholder="Enter Hackerone Username"> {% endif %}
+                                  </div>
+                                  <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+                                    <label for="hackerone_api_token" class="form-label">Generate your <a href="https://hackerone.com/settings/api_token/edit" target="_blank">API Token from here <i class="fe-external-link"></i></a></label>
+                                    <div class="flex-grow-1 position-relative">
+                                    {% if hackerone_key %} <input class="form-control" type="text" id="key_hackerone" name="key_hackerone" placeholder="Enter Hackerone Key" value="{{hackerone_key}}"> {% else %} <input class="form-control" type="text" id="key_hackerone" name="key_hackerone" placeholder="Enter Hackerone Token"> {% endif %}
+                                    </div>
+                                  </div>
+                                  <div class="col-12">
+                                    <small class="text-muted float-end mt-2 mb-2">This is optional but recommended for bug hunters. Get your API key from <a href="https://api.hackerone.com/getting-started-hacker-api/#getting-started-hacker-api" class="text-primary" target="_blank">Hackerone Documentation</a>
+                                  </div
+                                </div>
                               </div>
                             </div>
                           </div>
