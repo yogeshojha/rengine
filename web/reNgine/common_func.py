@@ -1040,9 +1040,13 @@ def get_chaos_key():
 	return chaos_key[0] if chaos_key else None
 
 
-def get_hackerone_key():
+def get_hackerone_key_username():
+	"""
+		Get the HackerOne API key username from the database.
+		Returns: a tuple of the username and api key
+	"""
 	hackerone_key = HackerOneAPIKey.objects.all()
-	return hackerone_key[0] if hackerone_key else None
+	return (hackerone_key[0].username, hackerone_key[0].key) if hackerone_key else None
 
 
 def parse_llm_vulnerability_report(report):

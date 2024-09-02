@@ -3402,3 +3402,60 @@ function show_scan_configuration(starting_path, out_of_scope_subdomains, exclude
 }
 
 
+function test_hackerone() {
+	if ($("#username").val().length == 0 || $("#api_key").val().length == 0) {
+	  if ($("#username").val().length == 0) {
+		$("#username").addClass("is-invalid");
+	  }
+	  if ($("#api_key").val().length == 0) {
+		$("#api_key").addClass("is-invalid");
+	  }
+	}
+	else{
+	  const hackerone_api = 'testHackerone/';
+	  var username = $("#username").val();
+	  var api_key = $("#api_key").val();
+	  swal.queue([{
+		title: 'Hackerone Configuration',
+		confirmButtonText: 'Test my hackerone API Key',
+		text:
+		'This will test if your hackerone API keys are working.',
+		showLoaderOnConfirm: true,
+		preConfirm: function() {
+		  return fetch(hackerone_api, {
+			method: 'POST',
+			headers: {
+			  "X-CSRFToken": getCookie("csrftoken"),
+			  "Content-Type": "application/json"
+			},
+			body: JSON.stringify({'username': username, 'api_key': api_key}),
+		  },
+		).then(function (response) {
+		  return response.json();
+		})
+		.then(function(data) {
+		  if (data.status == 200) {
+			$("#username").addClass("is-valid");
+			$("#api_key").addClass("is-valid");
+			$("#username").removeClass("is-invalid");
+			$("#api_key").removeClass("is-invalid");
+			return swal.insertQueueStep("Your hackerone Credentials are working.")
+		  }
+		  else{
+			$("#username").addClass("is-invalid");
+			$("#api_key").addClass("is-invalid");
+			$("#username").removeClass("is-valid");
+			$("#api_key").removeClass("is-valid");
+			return swal.insertQueueStep("Oops! Your hackerone Credentials are not working, check your username and/or api_key.")
+		  }
+		})
+		.catch(function() {
+		  swal.insertQueueStep({
+			type: 'error',
+			title: 'Test Hackerone API Key',
+		  })
+		})
+	  }
+	}]);
+  }
+}
