@@ -2227,13 +2227,24 @@ def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, sh
 				fields,
 				add_meta_info=False)
 
-		# Send report to hackerone
-		hackerone_query = Hackerone.objects.all()
+		"""
+			Send report to hackerone when
+			1. send_report is True from Hackerone model in ScanEngine
+			2. username and key is set in HackerOneAPIKey in Dashboard
+			3. severity is not info or low
+		"""
+		hackerone_query = Hackerone.objects.filter(send_report=True)
+		api_key_check_query = HackerOneAPIKey.objects.filter(
+			Q(username__isnull=False) & Q(key__isnull=False)
+		)
+
 		send_report = (
 			hackerone_query.exists() and
+			api_key_check_query.exists() and
 			severity not in ('info', 'low') and
 			vuln.target_domain.h1_team_handle
 		)
+		
 		if send_report:
 			hackerone = hackerone_query.first()
 			if hackerone.send_critical and severity == 'critical':
@@ -3315,23 +3326,23 @@ def send_hackerone_report(vulnerability_id):
 			tpl = tpl.replace('{vulnerability_reference}', vulnerability.reference if vulnerability.reference else '')
 
 			data = {
-			  "data": {
-				"type": "report",
-				"attributes": {
-				  "team_handle": vulnerability.target_domain.h1_team_handle,
-				  "title": f'{vulnerability.name} found in {vulnerability.http_url}',
-				  "vulnerability_information": tpl,
-				  "severity_rating": severity_value,
-				  "impact": "More information about the impact and vulnerability can be found here: \n" + vulnerability.reference if vulnerability.reference else "NA",
-				}
+				"data": {
+					"type": "report",
+					"attributes": {
+						"team_handle": vulnerability.target_domain.h1_team_handle,
+						"title": f'{vulnerability.name} found in {vulnerability.http_url}',
+						"vulnerability_information": tpl,
+						"severity_rating": severity_value,
+						"impact": "More information about the impact and vulnerability can be found here: \n" + vulnerability.reference if vulnerability.reference else "NA",
+					}
 			  }
 			}
 
 			r = requests.post(
-			  'https://api.hackerone.com/v1/hackers/reports',
-			  auth=(hackerone.username, hackerone.api_key),
-			  json=data,
-			  headers=headers
+				'https://api.hackerone.com/v1/hackers/reports',
+				auth=(hackerone.username, hackerone.api_key),
+				json=data,
+				headers=headers
 			)
 			response = r.json()
 			status_code = r.status_code
