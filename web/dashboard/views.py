@@ -335,6 +335,8 @@ def onboarding(request):
         key_openai = request.POST.get('key_openai')
         key_netlas = request.POST.get('key_netlas')
         key_chaos = request.POST.get('key_chaos')
+        key_hackerone = request.POST.get('key_hackerone')
+        username_hackerone = request.POST.get('username_hackerone')
 
         insert_date = timezone.now()
 
@@ -385,11 +387,25 @@ def onboarding(request):
             else:
                 ChaosAPIKey.objects.create(key=key_chaos)
 
+        if key_hackerone and username_hackerone:
+            hackerone_api_key = HackerOneAPIKey.objects.first()
+            if hackerone_api_key:
+                hackerone_api_key.username = username_hackerone
+                hackerone_api_key.key = key_hackerone
+                hackerone_api_key.save()
+            else:
+                HackerOneAPIKey.objects.create(
+                    username=username_hackerone, 
+                    key=key_hackerone
+                )
+
     context['error'] = error
     
 
     context['openai_key'] = OpenAiAPIKey.objects.first()
     context['netlas_key'] = NetlasAPIKey.objects.first()
     context['chaos_key'] = ChaosAPIKey.objects.first()
+    context['hackerone_key'] = HackerOneAPIKey.objects.first().key
+    context['hackerone_username'] = HackerOneAPIKey.objects.first().username
 
     return render(request, 'dashboard/onboarding.html', context)

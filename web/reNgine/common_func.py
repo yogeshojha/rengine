@@ -1040,6 +1040,11 @@ def get_chaos_key():
 	return chaos_key[0] if chaos_key else None
 
 
+def get_hackerone_key():
+	hackerone_key = HackerOneAPIKey.objects.all()
+	return hackerone_key[0] if hackerone_key else None
+
+
 def parse_llm_vulnerability_report(report):
 	report = report.replace('**', '')
 	data = {}
