@@ -10,21 +10,66 @@
     <style>
       .accordion-item {
         border: none;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        transition: box-shadow 0.3s ease;
+      }
+
+      .accordion-item:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
       }
 
       .accordion-button {
         background-color: #f8f9fa;
-        padding: 15px;
+        color: #333333;
+        font-weight: 500;
+        padding: 15px 20px;
+        transition: all 0.3s ease;
+      }
+
+      .accordion-item:first-child {
+        margin-top: 0;
+      }
+
+      .accordion-button:hover {
+        background-color: #e9ecef;
       }
 
       .accordion-button:not(.collapsed) {
-        background-color: #f8f9fa;
+        background-color: #e9ecef;
         box-shadow: none;
       }
 
       .accordion-button:focus {
         box-shadow: none;
+        border-color: transparent;
+      }
+
+      .accordion-button::after {
+        transition: transform 0.3s ease;
+      }
+
+      .accordion-button:not(.collapsed)::after {
+        transform: rotate(-180deg);
+      }
+
+      .accordion-body {
+        background-color: #ffffff;
+        padding: 20px;
+      }
+
+      .form-control {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 10px 15px;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+      }
+
+      .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
       }
     </style>
   </head>
@@ -78,8 +123,7 @@
                             </h2>
                             <div id="collapseOpenAI" class="accordion-collapse collapse" aria-labelledby="headingOpenAI" data-bs-parent="#apiKeysAccordion">
                               <div class="accordion-body">
-                                <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using ChatGPT.</p> {% if openai_key %} <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}"> {% else %} <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key"> {% endif %} 
-                                <small class="text-muted float-end mt-2 mb-2">This is optional but recommended.</small>
+                                <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using ChatGPT.</p> {% if openai_key %} <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}"> {% else %} <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key"> {% endif %} <small class="text-muted float-end mt-2 mb-2">This is optional but recommended.</small>
                               </div>
                             </div>
                           </div>
@@ -89,8 +133,7 @@
                             </h2>
                             <div id="collapseNetlas" class="accordion-collapse collapse" aria-labelledby="headingNetlas" data-bs-parent="#apiKeysAccordion">
                               <div class="accordion-body">
-                                <p class="text-muted">Netlas keys will be used to get whois information and other OSINT data.</p> {% if netlas_key %} <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}"> {% else %} <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key"> {% endif %} 
-                                <small class="text-muted float-end mt-2 mb-2">This is optional</small>
+                                <p class="text-muted">Netlas keys will be used to get whois information and other OSINT data.</p> {% if netlas_key %} <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}"> {% else %} <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key"> {% endif %} <small class="text-muted float-end mt-2 mb-2">This is optional</small>
                               </div>
                             </div>
                           </div>
@@ -100,14 +143,17 @@
                             </h2>
                             <div id="collapseChaos" class="accordion-collapse collapse" aria-labelledby="headingChaos" data-bs-parent="#apiKeysAccordion">
                               <div class="accordion-body">
-                                <p class="text-muted">Chaos keys will be used for subdomain enumeration and recon data for Public Bug Bounty Programs.</p> {% if chaos_key %} <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key" value="{{chaos_key}}"> {% else %} <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key"> {% endif %} 
-                                <small class="text-muted float-end mt-2 mb-2">This is optional but recommended. Get your API key from <a href="https://cloud.projectdiscovery.io" target="_blank">https://cloud.projectdiscovery.io</a></small>
+                                <p class="text-muted">Chaos keys enhance your reconnaissance capabilities by providing subdomain enumeration and valuable data for Public Bug Bounty Programs.</p> {% if chaos_key %} <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key" value="{{chaos_key}}"> {% else %} <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key"> {% endif %} <small class="text-muted float-end mt-2 mb-2">This is optional but recommended. Get your API key from <a href="https://cloud.projectdiscovery.io" target="_blank">https://cloud.projectdiscovery.io</a>
+                                </small>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
+                  </div>
+                  <div class="mb-0">
+                    <button class="btn btn-info float-sm-end my-4" type="submit"> Proceed </button>
                   </div>
                 </div>
               </div>
