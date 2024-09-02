@@ -68,6 +68,30 @@
               {% endif %}
             </div>
           </li>
+          <li class="nav-item dropdown {{bountyhub_active}}">
+            <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-bountyhub" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <i class="fe-command me-1"></i> Bounty Hub
+              <div class="arrow-down"></div>
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="bountyHubDropdown">
+              <li class="dropdown-item dropdown">
+                <a class="dropdown-toggle" href="#" id="hackerOneDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  HackerOne
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="hackerOneDropdown">
+                  <li><a class="dropdown-item" href="#">
+                    <i class="fe-download me-1"></i> Import Programs
+                  </a></li>
+                  <li><a class="dropdown-item" href="#">
+                    <i class="fe-bookmark me-1"></i> Bookmarked Programs
+                  </a></li>
+                  <li><a class="dropdown-item" href="#">
+                    <i class="fe-refresh-cw me-1"></i> Sync Programs
+                  </a></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
           <li class="nav-item dropdown {{settings_nav_active}}">
             <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-settings" role="button"
               data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
