@@ -38,16 +38,15 @@ document.addEventListener('DOMContentLoaded', function() {
         displayErrorMessage("An error occurred while fetching the data. Please try again later. Make sure you have hackerone api key set in your API Vault.");
         console.error('Error:', error);
     });
-
     function displayPrograms(programs) {
         const container = document.getElementById('program_cards');
         container.innerHTML = '';
-    
+
         if (!programs || programs.length === 0) {
             displayErrorMessage("No programs available at the moment.");
             return;
         }
-    
+
         programs.forEach(program => {
             const { id, attributes } = program;
             const card = document.createElement('div');
@@ -62,15 +61,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h5 class="card-title mb-0">${attributes.name}&nbsp;
                         ${attributes.bookmarked ? '<i class="text-warning mdi mdi-bookmark-check" data-bs-toggle="tooltip" data-bs-placement="top" title="Bookmarked Program"></i>' : ''}
                     </h5>
-                    <small class="text-muted">@${attributes.handle}</small>
+                    <small class="text-muted"><a href="https://hackerone.com/${attributes.handle}" id="handle-link" target="_blank">@${attributes.handle}</a></small>
                     </div>
                 </div>
 
                 <div class="mb-2">
                     <span class="badge ${attributes.submission_state === 'open' ? 'bg-success' : 'bg-danger'} bg-opacity-10 text-${attributes.submission_state === 'open' ? 'success' : 'danger'} me-1 mb-1">${attributes.submission_state === 'open' ? 'Open for Submission' : 'Closed'}</span>
                     <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">${attributes.state === 'public_mode' ? 'Public Program' : 'Private Program'}</span>
-                    ${attributes.offers_bounties ? '<span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">Bounty $$$</span>' : ''}
+                    ${attributes.offers_bounties ? '<span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">Bounty $$$</span>' : '<span class="badge bg-danger bg-opacity-10 text-danger me-1 mb-1">VDP</span>'}
                     ${attributes.open_scope ? '<span class="badge bg-warning bg-opacity-10 text-warning mb-1">Open Scope</span>' : ''}
+                    ${isProgramNew(attributes.started_accepting_at) ? '<span class="badge bg-primary bg-opacity-10 text-primary mb-1"><i class="fe-zap"></i>&nbsp;New</span>' : ''}
                 </div>
 
                 <div class="d-flex justify-content-between mb-2 small">
@@ -102,6 +102,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function isProgramNew(startedAcceptingAt) {
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        const startedAcceptingDate = new Date(startedAcceptingAt);
+        return startedAcceptingDate > threeMonthsAgo;
+    }
+
     function displayErrorMessage(message) {
         const container = document.getElementById('program_cards');
         container.innerHTML = `
@@ -127,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function toggleCardSelection(event, card) {
-        if (event.target.closest('#btn-see-details')) {
+        if (event.target.closest('#btn-see-details') || event.target.closest('#handle-link')) {
             // If it's the "See details" button, don't toggle selection, maybe we need other actions in the future here
             return;
         }
