@@ -1,242 +1,141 @@
-// this js file will be used to do everything js related to the bountyhub page
+// all the js code for the bountyhub page
 
 document.addEventListener('DOMContentLoaded', function() {
+    let allPrograms = [];
+    const container = document.getElementById('program_cards');
+    const importBtn = document.getElementById('importProgramsBtn');
+    const clearBtn = document.getElementById('clearSelectionsLink');
+    const filterSelect = document.querySelector('select[aria-label="Program type"]');
+    const searchInput = document.querySelector('#search-program-box');
+    const showClosedCheckbox = document.getElementById('show-closed-programs');
+    const sortSelect = document.getElementById('sort-select');
 
-    function fetchPrograms(isSortingRequest = false){
+    // Debounce function for search input to avoid making too many requests
+    const debounce = (func, delay) => {
+        let timeoutId;
+        return (...args) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(null, args), delay);
+        };
+    };
+
+    async function fetchPrograms(isSortingRequest = false) {
+        if (isSortingRequest) {
+            showLoadingIndicator("Sorting...");
+        } else {
+            showLoadingIndicator("Loading HackerOne Programs");
+        }
+
         let api_url = '/api/hackerone-programs/';
         const sortParams = updateSortingParams();
         const queryParams = new URLSearchParams(sortParams).toString();
 
-        if (queryParams){
-            api_url += '?' + queryParams
+        if (queryParams) {
+            api_url += '?' + queryParams;
         }
 
-
-        if (isSortingRequest) {
-            Swal.fire({
-                title: 'Sorting...',
-                text: 'Please wait',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                willOpen: () => {
-                    Swal.showLoading();
+        try {
+            const response = await fetch(api_url, {
+                method: "GET",
+                credentials: "same-origin",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
                 },
-                customClass: {
-                    popup: 'small-swal'
-                }
             });
-        } else {
-            Swal.fire({
-                title: "Loading HackerOne Programs",
-                text: "Fetching the latest data...",
-                icon: "info",
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-        }
-    
-        fetch(api_url, {
-            method: "GET",
-            credentials: "same-origin",
-            headers: {
-                "X-CSRFToken": getCookie("csrftoken"),
-            },
-        })
-        .then(response => {
+
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
-            return response.json();
-        })
-        .then(data => {
-            Swal.close();
+
+            const data = await response.json();
+            allPrograms = data;
             displayPrograms(data);
-        })
-        .catch(error => {
-            Swal.close();
+        } catch (error) {
             displayErrorMessage("An error occurred while fetching the hackerone programs. Please try again later. Make sure you have hackerone api key set in your API Vault.");
             console.error('Error:', error);
-        });
+        } finally {
+            hideLoadingIndicator();
+        }
     }
 
     function displayPrograms(programs) {
-        const container = document.getElementById('program_cards');
-        container.innerHTML = '';
+        container.innerHTML = ''; // clear up the html content
 
         if (!programs || programs.length === 0) {
             displayErrorMessage("No programs available at the moment.");
             return;
         }
 
-        programs.forEach(program => {
-            const { id, attributes } = program;
-            const card = document.createElement('div');
-            card.className = 'col-md-6 col-lg-4 col-xl-3 mb-3 program-card-wrapper';
-            card.innerHTML = `
-            <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable" data-offers-bounties="${attributes.offers_bounties}" data-program-state="${attributes.state}">
+        const fragment = document.createDocumentFragment();
+        const template = document.createElement('template');
 
-                <div class="card-body py-2 px-3">
-                <div class="d-flex align-items-center mb-2">
-                    <img src="${attributes.profile_picture}" alt="${attributes.name}" class="rounded-circle me-3" width="40" height="40" loading="lazy">
-                    <div>
-                    <h5 class="card-title mb-0">${attributes.name}&nbsp;
-                        ${attributes.bookmarked ? '<i class="text-warning mdi mdi-bookmark-check" data-bs-toggle="tooltip" data-bs-placement="top" title="Bookmarked Program"></i>' : ''}
-                    </h5>
-                    <small class="text-muted"><a href="https://hackerone.com/${attributes.handle}" id="handle-link" target="_blank">@${attributes.handle}</a></small>
+        programs.forEach(program => {
+            const { attributes } = program;
+            template.innerHTML = `
+                <div class="col-md-6 col-lg-4 col-xl-3 mb-3 program-card-wrapper">
+                    <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable" data-offers-bounties="${attributes.offers_bounties}" data-program-state="${attributes.state}">
+                        <div class="card-body py-2 px-3">
+                            <!-- Card content -->
+                        </div>
                     </div>
                 </div>
+            `;
+            const cardNode = template.content.firstElementChild.cloneNode(true);
+            cardNode.querySelector('.card-body').innerHTML = generateCardContent(attributes);
+            fragment.appendChild(cardNode);
+        });
 
-                <div class="mb-2">
-                    <span class="badge ${attributes.submission_state === 'open' ? 'bg-success' : 'bg-danger'} bg-opacity-10 text-${attributes.submission_state === 'open' ? 'success' : 'danger'} me-1 mb-1">${attributes.submission_state === 'open' ? 'Open for Submission' : 'Closed'}</span>
-                    <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">${attributes.state === 'public_mode' ? 'Public Program' : 'Private Program'}</span>
-                    ${attributes.offers_bounties ? '<span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">Bounty $$$</span>' : '<span class="badge bg-danger bg-opacity-10 text-danger me-1 mb-1">VDP</span>'}
-                    ${attributes.open_scope ? '<span class="badge bg-warning bg-opacity-10 text-warning mb-1">Open Scope</span>' : ''}
-                    ${isProgramNew(attributes.started_accepting_at) ? '<span class="badge bg-primary bg-opacity-10 text-primary mb-1"><i class="fe-zap"></i>&nbsp;New</span>' : ''}
-                </div>
+        container.appendChild(fragment);
+        initializeFilter();
+    }
 
-                <div class="d-flex justify-content-between mb-2 small">
-                    <div><i class="bi bi-flag me-1"></i> My Reports: ${attributes.number_of_reports_for_user}</div>
-                    <div><i class="bi bi-currency-dollar me-1"></i> My Earnings: $${attributes.bounty_earned_for_user.toFixed(2)}</div>
-                </div>
-
-                <hr class="my-2">
-
-                <div class="d-flex justify-content-between text-muted small mb-2">
-                    <div><i class="bi bi-calendar me-1"></i> Since ${new Date(attributes.started_accepting_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
-                    <div><i class="bi bi-globe me-1"></i> ${attributes.currency.toUpperCase()}</div>
-                </div>
-                <a href="#" class="btn btn-outline-primary btn-sm w-100 mt-2" id="btn-see-details">See details</a>
+    function generateCardContent(attributes) {
+        return `
+            <div class="d-flex align-items-center mb-2">
+                <img src="${attributes.profile_picture}" alt="${attributes.name}" class="rounded-circle me-3" width="40" height="40" loading="lazy">
+                <div>
+                    <h5 class="card-title mb-0">${attributes.name}${attributes.bookmarked ? '<i class="text-warning mdi mdi-bookmark-check" title="Bookmarked Program"></i>' : ''}</h5>
+                    <small class="text-muted"><a href="https://hackerone.com/${attributes.handle}" class="handle-link" target="_blank">@${attributes.handle}</a></small>
                 </div>
             </div>
-            `;
-
-
-            // Initialize tooltips esp for bookmarked programs
-            const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-            tooltips.forEach((tooltip) => {
-                new bootstrap.Tooltip(tooltip);
-            });
-            container.appendChild(card);
-
-            initializeFilter();
-
-        });
+            <div class="mb-2">
+                <span class="badge ${attributes.submission_state === 'open' ? 'bg-success' : 'bg-danger'} bg-opacity-10 text-${attributes.submission_state === 'open' ? 'success' : 'danger'} me-1 mb-1">${attributes.submission_state === 'open' ? 'Open' : 'Closed'}</span>
+                <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">${attributes.state === 'public_mode' ? 'Public' : 'Private'}</span>
+                ${attributes.offers_bounties ? '<span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">Bounty</span>' : '<span class="badge bg-danger bg-opacity-10 text-danger me-1 mb-1">VDP</span>'}
+                ${attributes.open_scope ? '<span class="badge bg-warning bg-opacity-10 text-warning mb-1">Open Scope</span>' : ''}
+                ${isProgramNew(attributes.started_accepting_at) ? '<span class="badge bg-primary bg-opacity-10 text-primary mb-1"><i class="fe-zap"></i> New</span>' : ''}
+            </div>
+            <div class="d-flex justify-content-between mb-2 small">
+                <div><i class="bi bi-flag me-1"></i> Reports: ${attributes.number_of_reports_for_user}</div>
+                <div><i class="bi bi-currency-dollar me-1"></i> Earnings: $${attributes.bounty_earned_for_user.toFixed(2)}</div>
+            </div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between text-muted small mb-2">
+                <div><i class="bi bi-calendar me-1"></i> Since ${new Date(attributes.started_accepting_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
+                <div><i class="bi bi-globe me-1"></i> ${attributes.currency.toUpperCase()}</div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm w-100 mt-2 btn-see-details">See details</button>
+        `;
     }
 
     function isProgramNew(startedAcceptingAt) {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-        const startedAcceptingDate = new Date(startedAcceptingAt);
-        return startedAcceptingDate > threeMonthsAgo;
+        return new Date(startedAcceptingAt) > threeMonthsAgo;
     }
 
-    function displayErrorMessage(message) {
-        const container = document.getElementById('program_cards');
-        container.innerHTML = `
-            <div class="col-12">
-                <div class="alert alert-danger" role="alert">
-                    <i class="fe-alert-triangle me-2"></i>
-                    ${message}
-                </div>
-            </div>
-        `;
-    }
-
-    // below has everything to do with card selection and import button
-    const container = document.getElementById('program_cards');
-    const importBtn = document.getElementById('importProgramsBtn');
-    const clearBtn = document.getElementById('clearSelectionsLink');
-
-    container.addEventListener('click', function(event) {
-        const card = event.target.closest('.card-selectable');
-        if (card) {
-            toggleCardSelection(event, card);
-        }
-    });
-
-    function toggleCardSelection(event, card) {
-        if (event.target.closest('#btn-see-details') || event.target.closest('#handle-link')) {
-            // If it's the "See details" button, don't toggle selection, maybe we need other actions in the future here
-            return;
-        }
-
-        card.classList.toggle('card-selected');
-        updateImportButton();
-    }
-
-    function updateImportButton() {
-        const selectedCards = container.querySelectorAll('.card-selected');
-        const count = selectedCards.length;
-        
-        if (count === 0) {
-            importBtn.disabled = true;
-            importBtn.innerHTML = '<i class="fe-download-cloud"></i> Import Programs';
-            clearBtn.style.display = 'none';
-        } else {
-            importBtn.disabled = false;
-            importBtn.innerHTML = `<i class="fe-download-cloud"></i> Import ${count} Program${count !== 1 ? 's' : ''}`;
-            clearBtn.style.display = 'inline';
-        }
-    }
-
-    function clearAllSelections() {
-        const selectedCards = container.querySelectorAll('.card-selected');
-        selectedCards.forEach(card => card.classList.remove('card-selected'));
-        updateImportButton();
-    }
-
-    // clear btn listener
-    clearBtn.addEventListener('click', function(event) {
-        event.preventDefault();
-        clearAllSelections();
-    });
-
-
-    // init state
-    updateImportButton();
-
-
-    // we begin filtering here
     function initializeFilter() {
-        const filterSelect = document.querySelector('select[aria-label="Program type"]');
-        const container = document.getElementById('program_cards');
         const allCards = Array.from(container.querySelectorAll('.program-card-wrapper'));
-        const searchInput = document.querySelector('#search-program-box');
-        const showClosedCheckbox = document.getElementById('show-closed-programs');
-    
-        // Pre-compute card data to avoid querying the DOM on each filter/search
-        const cardData = allCards.map(cardWrapper => {
-            const card = cardWrapper.querySelector('.bbp-card');
-            return {
-                wrapper: cardWrapper,
-                name: card.querySelector('h5').textContent.toLowerCase(),
-                offersBounties: card.dataset.offersBounties === 'true',
-                isPrivate: card.dataset.programState === 'private_mode',
-                isClosed: card.querySelector('.badge').textContent.trim() !== 'Open for Submission'
-            };
-        });
-    
-        let lastFilter = '';
-        let lastSearch = '';
-    
-        function filterAndSearchCards() {
+        const cardData = allCards.map(createCardData);
+
+        const filterAndSearchCards = debounce(() => {
             const selectedFilter = filterSelect.value;
             const searchTerm = searchInput.value.toLowerCase().trim();
             const showClosed = showClosedCheckbox.checked;
-    
-            if (selectedFilter === lastFilter && searchTerm === lastSearch && showClosed === lastShowClosed) return;
-            lastFilter = selectedFilter;
-            lastSearch = searchTerm;
-            lastShowClosed = showClosed;
-    
+
             const visibleCards = cardData.filter(({ offersBounties, isPrivate, name, isClosed }) => {
                 let shouldShow = true;
-    
+
                 switch(selectedFilter) {
                     case 'Bounty Eligible':
                         shouldShow = offersBounties;
@@ -248,71 +147,99 @@ document.addEventListener('DOMContentLoaded', function() {
                         shouldShow = isPrivate;
                         break;
                 }
-    
-                shouldShow = shouldShow && (!searchTerm || name.includes(searchTerm));
 
+                shouldShow = shouldShow && (!searchTerm || name.includes(searchTerm));
                 shouldShow = shouldShow && (showClosed || !isClosed);
 
                 return shouldShow;
             });
-    
-            // Batch DOM updates to avoid reflows and make the transition smoother
+
             requestAnimationFrame(() => {
-                cardData.forEach(({ wrapper }) => {
-                    wrapper.style.display = 'none';
-                    wrapper.classList.add('filtering-hide');
-                });
-    
-                visibleCards.forEach(({ wrapper }) => {
-                    wrapper.style.display = '';
-                    wrapper.classList.remove('filtering-hide');
-                });
+                cardData.forEach(({ wrapper }) => wrapper.style.display = 'none');
+                visibleCards.forEach(({ wrapper }) => wrapper.style.display = '');
             });
-        }
-    
+        }, 100);
+
         filterSelect.addEventListener('change', filterAndSearchCards);
         searchInput.addEventListener('input', filterAndSearchCards);
         showClosedCheckbox.addEventListener('change', filterAndSearchCards);
         
-        filterAndSearchCards(); // init call
+        filterAndSearchCards();
     }
 
-    // in this function, we handle the sort select
+    function createCardData(cardWrapper) {
+        const card = cardWrapper.querySelector('.bbp-card');
+        return {
+            wrapper: cardWrapper,
+            name: card.querySelector('h5').textContent.toLowerCase(),
+            offersBounties: card.dataset.offersBounties === 'true',
+            isPrivate: card.dataset.programState === 'private_mode',
+            isClosed: card.querySelector('.badge').textContent.trim() !== 'Open'
+        };
+    }
+
     function updateSortingParams() {
-        const sortSelect = document.getElementById('sort-select');
-        let sortBy, sortOrder;
-    
-        if (sortSelect.value === 'Sort by' || !sortSelect.value) {
-            sortBy = 'age';
-            sortOrder = 'desc';
-        } else {
-            [sortBy, sortOrder] = sortSelect.value.split('-');
-        }
+        const [sortBy, sortOrder] = sortSelect.value.split('-');
+        const apiSortBy = {
+            name: 'name',
+            reports: 'reports',
+            posted: 'age'
+        }[sortBy] || 'age';
         
-        let apiSortBy;
-        
-        switch (sortBy) {
-            case 'name':
-                apiSortBy = 'name';
-                break;
-            case 'reports':
-                apiSortBy = 'reports';
-                break;
-            case 'posted':
-                apiSortBy = 'age';
-                break;
-            default:
-                apiSortBy = 'age';
-        }
-        
-        return { sort_by: apiSortBy, sort_order: sortOrder };
+        return { sort_by: apiSortBy, sort_order: sortOrder || 'desc' };
     }
 
-
-    // init call to fetch programs
-    const sortSelect = document.getElementById('sort-select');
+    // Event listeners
     sortSelect.addEventListener('change', () => fetchPrograms(true));
+    container.addEventListener('click', handleCardClick);
+    clearBtn.addEventListener('click', clearAllSelections);
+
+    function handleCardClick(event) {
+        const card = event.target.closest('.card-selectable');
+        if (card) {
+            if (event.target.closest('.btn-see-details') || event.target.closest('.handle-link')) {
+                // Handle "See details" button or handle link click
+                return;
+            }
+            toggleCardSelection(card);
+        }
+    }
+
+    function toggleCardSelection(card) {
+        card.classList.toggle('card-selected');
+        updateImportButton();
+    }
+
+    function updateImportButton() {
+        const selectedCards = container.querySelectorAll('.card-selected');
+        const count = selectedCards.length;
+        
+        importBtn.disabled = count === 0;
+        importBtn.innerHTML = count === 0 ? '<i class="fe-download-cloud"></i> Import Programs' : `<i class="fe-download-cloud"></i> Import ${count} Program${count !== 1 ? 's' : ''}`;
+        clearBtn.style.display = count === 0 ? 'none' : 'inline';
+    }
+
+    function clearAllSelections() {
+        container.querySelectorAll('.card-selected').forEach(card => card.classList.remove('card-selected'));
+        updateImportButton();
+    }
+
+    function showLoadingIndicator(message) {
+        Swal.fire({
+            title: message,
+            text: "Please wait",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            willOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
+
+    function hideLoadingIndicator() {
+        Swal.close();
+    }
 
     fetchPrograms(false);
-
 });
