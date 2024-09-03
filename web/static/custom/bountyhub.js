@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const card = document.createElement('div');
             card.className = 'col-md-6 col-lg-4 col-xl-3 mb-3';
             card.innerHTML = `
-                <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable" onclick="toggleCardSelection(this)">
+                <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable">
 
                     <div class="card-body py-2 px-3">
                         <div class="d-flex align-items-center mb-2">
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div><i class="bi bi-calendar me-1"></i> Since ${new Date(attributes.started_accepting_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
                             <div><i class="bi bi-globe me-1"></i> ${attributes.currency.toUpperCase()}</div>
                         </div>
-                        <a href="#" class="btn btn-outline-primary btn-sm w-100 mt-2">See details</a>
+                        <a href="#" class="btn btn-outline-primary btn-sm w-100 mt-2" id="btn-see-details">See details</a>
                     </div>
                 </div>
             `;
@@ -111,21 +111,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // below has everything to do with card selection and import button
+    const container = document.getElementById('program_cards');
+    const importBtn = document.getElementById('importProgramsBtn');
 
-    function toggleCardSelection(card) {
+
+    container.addEventListener('click', function(event) {
+        const card = event.target.closest('.card-selectable');
+        if (card) {
+            toggleCardSelection(event, card);
+        }
+    });
+
+    function toggleCardSelection(event, card) {
+        if (event.target.closest('#btn-see-details')) {
+            // If it's the "See details" button, don't toggle selection, maybe we need other actions in the future here
+            return;
+        }
+
         card.classList.toggle('card-selected');
         updateImportButton();
     }
 
-    // lets create func and listeners if cards are selected
-    const importBtn = document.getElementById('importProgramsBtn');
-    const container = document.getElementById('program_cards');
-
     function updateImportButton() {
         const selectedCards = container.querySelectorAll('.card-selected');
-        importBtn.disabled = selectedCards.length === 0;
+        const count = selectedCards.length;
+        
+        if (count === 0) {
+            importBtn.disabled = true;
+            importBtn.innerHTML = '<i class="fe-download-cloud"></i> Import Programs';
+            importBtn.classList.remove('button-updated');
+        } else {
+            importBtn.disabled = false;
+            importBtn.innerHTML = `<i class="fe-download-cloud"></i> Import ${count} Program${count !== 1 ? 's' : ''}`;
+            
+            // Trigger the animation
+            importBtn.classList.remove('button-updated');
+            void importBtn.offsetWidth; // Trigger reflow
+            importBtn.classList.add('button-updated');
+        }
     }
-
-    window.toggleCardSelection = toggleCardSelection;
 
 });

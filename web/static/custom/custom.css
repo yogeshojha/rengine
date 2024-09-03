@@ -703,3 +703,37 @@ mark{
 .import-programs-btn:disabled {
   animation: disableButton 0.3s ease forwards;
 }
+
+/* update on counter increase */
+@keyframes gentlePulse {
+  0% {
+      box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+  }
+  70% {
+      box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+  }
+  100% {
+      box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+  }
+}
+
+@keyframes colorTransition {
+  0% {
+      background-color: #007bff;
+  }
+  100% {
+      background-color: #007bff;
+  }
+}
+
+.import-programs-btn {
+  transition: all 0.3s ease;
+}
+
+.import-programs-btn:not(:disabled) {
+  animation: gentlePulse 1.5s infinite;
+}
+
+.import-programs-btn.button-updated {
+  animation: gentlePulse 1.5s infinite, colorTransition 0.5s ease;
+}
