@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.querySelector('#search-program-box');
     const showClosedCheckbox = document.getElementById('show-closed-programs');
     const sortSelect = document.getElementById('sort-select');
+    const showBookmarkedCheckbox = document.getElementById('show-bookmarked-programs');
 
     // Debounce function for search input to avoid making too many requests
     const debounce = (func, delay) => {
@@ -19,14 +20,17 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     };
 
-    async function fetchPrograms(isSortingRequest = false) {
+    async function fetchPrograms(isSortingRequest = false, isBookmarkedRequest = false) {
         if (isSortingRequest) {
             showLoadingIndicator("Sorting...");
+        } else if (isBookmarkedRequest) {
+            showLoadingIndicator("Loading Bookmarked Programs");
         } else {
             showLoadingIndicator("Loading HackerOne Programs");
         }
 
-        let api_url = '/api/hackerone-programs/';
+        let api_url = isBookmarkedRequest ? '/api/hackerone-programs/bookmarked_programs/' : '/api/hackerone-programs/';
+
         const sortParams = updateSortingParams();
         const queryParams = new URLSearchParams(sortParams).toString();
 
@@ -136,15 +140,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initializeFilter() {
-        const allCards = Array.from(container.querySelectorAll('.program-card-wrapper'));
-        const cardData = allCards.map(createCardData);
-
         const filterAndSearchCards = debounce(() => {
             const selectedFilter = filterSelect.value;
             const searchTerm = searchInput.value.toLowerCase().trim();
             const showClosed = showClosedCheckbox.checked;
 
-            const visibleCards = cardData.filter(({ offersBounties, isPrivate, name, isClosed }) => {
+            const visibleCards = Array.from(container.querySelectorAll('.program-card-wrapper')).filter(cardWrapper => {
+                const card = cardWrapper.querySelector('.bbp-card');
+                const name = card.querySelector('h5').textContent.toLowerCase();
+                const offersBounties = card.dataset.offersBounties === 'true';
+                const isPrivate = card.dataset.programState === 'private_mode';
+                const isClosed = card.querySelector('.badge').textContent.trim() !== 'Open';
+
                 let shouldShow = true;
 
                 switch(selectedFilter) {
@@ -165,27 +172,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 return shouldShow;
             });
 
-            requestAnimationFrame(() => {
-                cardData.forEach(({ wrapper }) => {
-                    wrapper.style.opacity = '0';
-                    wrapper.style.transform = 'translateY(20px)';
-                });
-                setTimeout(() => {
-                    cardData.forEach(({ wrapper }) => wrapper.style.display = 'none');
-                    visibleCards.forEach(({ wrapper }, index) => {
-                        wrapper.style.display = '';
-                        setTimeout(() => {
-                            wrapper.style.opacity = '1';
-                            wrapper.style.transform = 'translateY(0)';
-                        }, index * 50);
-                    });
-                }, 300);
-            });
+            container.querySelectorAll('.program-card-wrapper').forEach(card => card.style.display = 'none');
+            visibleCards.forEach(card => card.style.display = '');
         }, 100);
 
         filterSelect.addEventListener('change', filterAndSearchCards);
         searchInput.addEventListener('input', filterAndSearchCards);
         showClosedCheckbox.addEventListener('change', filterAndSearchCards);
+        showBookmarkedCheckbox.addEventListener('change', async (event) => {
+            if (event.target.checked) {
+                await fetchPrograms(false, true);
+            } else {
+                await fetchPrograms(false, false);
+            }
+            filterAndSearchCards();
+        });
         
         filterAndSearchCards();
     }
@@ -213,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Event listeners
-    sortSelect.addEventListener('change', () => fetchPrograms(true));
+    sortSelect.addEventListener('change', () => fetchPrograms(true, false));
     container.addEventListener('click', handleCardClick);
     clearBtn.addEventListener('click', clearAllSelections);
 
@@ -264,5 +265,5 @@ document.addEventListener('DOMContentLoaded', function() {
         Swal.close();
     }
 
-    fetchPrograms(false);
+    fetchPrograms(false, false);
 });
