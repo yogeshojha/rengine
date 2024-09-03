@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
         programs.forEach(program => {
             const { id, attributes } = program;
             const card = document.createElement('div');
-            card.className = 'col-md-6 col-lg-4 col-xl-3 mb-3';
+            card.className = 'col-md-6 col-lg-4 col-xl-3 mb-3 program-card-wrapper';
             card.innerHTML = `
             <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable" data-offers-bounties="${attributes.offers_bounties}" data-program-state="${attributes.state}">
 
@@ -96,6 +96,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 new bootstrap.Tooltip(tooltip);
             });
             container.appendChild(card);
+
+            initializeFilter();
+
         });
     }
 
@@ -165,4 +168,49 @@ document.addEventListener('DOMContentLoaded', function() {
     updateImportButton();
 
 
+    // we begin filtering here
+    function initializeFilter() {
+        const filterSelect = document.querySelector('select[aria-label="Program type"]');
+        const container = document.getElementById('program_cards');
+        const allCards = container.querySelectorAll('.program-card-wrapper');
+    
+        function filterCards() {
+            const selectedFilter = filterSelect.value;
+            
+            allCards.forEach(card => card.classList.add('filtering-hide'));
+            
+            setTimeout(() => {
+                allCards.forEach(cardWrapper => {
+                    const card = cardWrapper.querySelector('.bbp-card');
+                    let shouldShow = false;
+                    
+                    switch(selectedFilter) {
+                        case 'All programs':
+                            shouldShow = true;
+                            break;
+                        case 'Bounty Eligible':
+                            shouldShow = card.dataset.offersBounties === 'true';
+                            break;
+                        case 'VDP':
+                            shouldShow = card.dataset.offersBounties === 'false' || card.dataset.offersBounties === 'null';
+                            break;
+                        case 'Private Programs':
+                            shouldShow = card.dataset.programState === 'private_mode';
+                            break;
+                    }
+                    
+                    if (shouldShow) {
+                        cardWrapper.style.display = '';
+                        setTimeout(() => cardWrapper.classList.remove('filtering-hide'), 10);
+                    } else {
+                        cardWrapper.style.display = 'none';
+                    }
+                });
+            }, 50);
+        }
+    
+        filterSelect.addEventListener('change', filterCards);
+        
+        filterCards(); // init call for filter state
+    }
 });
