@@ -24,7 +24,7 @@
     <div class="col-12 col-xl-12">
         <div class="card">
             <div class="card-body">
-                <form>
+                <form id="program-filter-form">
                     <div class="row g-3 align-items-center">
                         <div class="col-md-4 col-lg-3">
                             <div class="input-group">
@@ -48,6 +48,14 @@
                                 <option>Most reports</option>
                                 <option>Least reports</option>
                             </select>
+                        </div>
+                        <div class="col-md-2 col-lg-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="show-closed-programs">
+                                <label class="form-check-label" for="show-closed-programs">
+                                    Show closed programs
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </form>

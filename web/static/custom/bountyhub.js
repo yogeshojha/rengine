@@ -174,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('program_cards');
         const allCards = Array.from(container.querySelectorAll('.program-card-wrapper'));
         const searchInput = document.querySelector('#search-program-box');
+        const showClosedCheckbox = document.getElementById('show-closed-programs');
     
         // Pre-compute card data to avoid querying the DOM on each filter/search
         const cardData = allCards.map(cardWrapper => {
@@ -182,7 +183,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 wrapper: cardWrapper,
                 name: card.querySelector('h5').textContent.toLowerCase(),
                 offersBounties: card.dataset.offersBounties === 'true',
-                isPrivate: card.dataset.programState === 'private_mode'
+                isPrivate: card.dataset.programState === 'private_mode',
+                isClosed: card.querySelector('.badge').textContent.trim() !== 'Open for Submission'
             };
         });
     
@@ -192,12 +194,14 @@ document.addEventListener('DOMContentLoaded', function() {
         function filterAndSearchCards() {
             const selectedFilter = filterSelect.value;
             const searchTerm = searchInput.value.toLowerCase().trim();
+            const showClosed = showClosedCheckbox.checked;
     
-            if (selectedFilter === lastFilter && searchTerm === lastSearch) return;
+            if (selectedFilter === lastFilter && searchTerm === lastSearch && showClosed === lastShowClosed) return;
             lastFilter = selectedFilter;
             lastSearch = searchTerm;
+            lastShowClosed = showClosed;
     
-            const visibleCards = cardData.filter(({ offersBounties, isPrivate, name }) => {
+            const visibleCards = cardData.filter(({ offersBounties, isPrivate, name, isClosed }) => {
                 let shouldShow = true;
     
                 switch(selectedFilter) {
@@ -212,7 +216,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         break;
                 }
     
-                return shouldShow && (!searchTerm || name.includes(searchTerm));
+                shouldShow = shouldShow && (!searchTerm || name.includes(searchTerm));
+
+                shouldShow = shouldShow && (showClosed || !isClosed);
+
+                return shouldShow;
             });
     
             // Batch DOM updates to avoid reflows and make the transition smoother
@@ -231,6 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
         filterSelect.addEventListener('change', filterAndSearchCards);
         searchInput.addEventListener('input', filterAndSearchCards);
+        showClosedCheckbox.addEventListener('change', filterAndSearchCards);
         
         filterAndSearchCards(); // init call
     }
