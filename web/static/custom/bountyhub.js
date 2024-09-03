@@ -172,45 +172,66 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeFilter() {
         const filterSelect = document.querySelector('select[aria-label="Program type"]');
         const container = document.getElementById('program_cards');
-        const allCards = container.querySelectorAll('.program-card-wrapper');
+        const allCards = Array.from(container.querySelectorAll('.program-card-wrapper'));
+        const searchInput = document.querySelector('#search-program-box');
     
-        function filterCards() {
+        // Pre-compute card data to avoid querying the DOM on each filter/search
+        const cardData = allCards.map(cardWrapper => {
+            const card = cardWrapper.querySelector('.bbp-card');
+            return {
+                wrapper: cardWrapper,
+                name: card.querySelector('h5').textContent.toLowerCase(),
+                offersBounties: card.dataset.offersBounties === 'true',
+                isPrivate: card.dataset.programState === 'private_mode'
+            };
+        });
+    
+        let lastFilter = '';
+        let lastSearch = '';
+    
+        function filterAndSearchCards() {
             const selectedFilter = filterSelect.value;
-            
-            allCards.forEach(card => card.classList.add('filtering-hide'));
-            
-            setTimeout(() => {
-                allCards.forEach(cardWrapper => {
-                    const card = cardWrapper.querySelector('.bbp-card');
-                    let shouldShow = false;
-                    
-                    switch(selectedFilter) {
-                        case 'All programs':
-                            shouldShow = true;
-                            break;
-                        case 'Bounty Eligible':
-                            shouldShow = card.dataset.offersBounties === 'true';
-                            break;
-                        case 'VDP':
-                            shouldShow = card.dataset.offersBounties === 'false' || card.dataset.offersBounties === 'null';
-                            break;
-                        case 'Private Programs':
-                            shouldShow = card.dataset.programState === 'private_mode';
-                            break;
-                    }
-                    
-                    if (shouldShow) {
-                        cardWrapper.style.display = '';
-                        setTimeout(() => cardWrapper.classList.remove('filtering-hide'), 10);
-                    } else {
-                        cardWrapper.style.display = 'none';
-                    }
+            const searchTerm = searchInput.value.toLowerCase().trim();
+    
+            if (selectedFilter === lastFilter && searchTerm === lastSearch) return;
+            lastFilter = selectedFilter;
+            lastSearch = searchTerm;
+    
+            const visibleCards = cardData.filter(({ offersBounties, isPrivate, name }) => {
+                let shouldShow = true;
+    
+                switch(selectedFilter) {
+                    case 'Bounty Eligible':
+                        shouldShow = offersBounties;
+                        break;
+                    case 'VDP':
+                        shouldShow = !offersBounties;
+                        break;
+                    case 'Private Programs':
+                        shouldShow = isPrivate;
+                        break;
+                }
+    
+                return shouldShow && (!searchTerm || name.includes(searchTerm));
+            });
+    
+            // Batch DOM updates to avoid reflows and make the transition smoother
+            requestAnimationFrame(() => {
+                cardData.forEach(({ wrapper }) => {
+                    wrapper.style.display = 'none';
+                    wrapper.classList.add('filtering-hide');
                 });
-            }, 50);
+    
+                visibleCards.forEach(({ wrapper }) => {
+                    wrapper.style.display = '';
+                    wrapper.classList.remove('filtering-hide');
+                });
+            });
         }
     
-        filterSelect.addEventListener('change', filterCards);
+        filterSelect.addEventListener('change', filterAndSearchCards);
+        searchInput.addEventListener('input', filterAndSearchCards);
         
-        filterCards(); // init call for filter state
+        filterAndSearchCards(); // init call
     }
 });
