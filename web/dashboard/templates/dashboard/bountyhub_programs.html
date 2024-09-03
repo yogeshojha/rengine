@@ -61,9 +61,14 @@
 
 <div class="row" id="program_cards">
 </div>
-<button id="importProgramsBtn" class="import-programs-btn" disabled>
+<div class="floating-action-container">
+  <button id="importProgramsBtn" class="btn btn-primary import-programs-btn" disabled>
     <i class="fe-download-cloud"></i> Import Programs
-</button>
+  </button>
+  <a href="#" id="clearSelectionsLink" class="clear-selections-link" style="display: none;">
+    Clear all <i class="fe-x-circle"></i>
+  </a>
+</div>
 {% endblock main_content %}
 
 

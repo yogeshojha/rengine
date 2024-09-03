@@ -635,12 +635,17 @@ mark{
   color: #ffc107;
 }
 
-
-.import-programs-btn {
+.floating-action-container {
   position: fixed;
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.import-programs-btn {
   padding: 12px 24px;
   font-size: 16px;
   font-weight: bold;
@@ -658,21 +663,45 @@ mark{
 .import-programs-btn:not(:disabled) {
   opacity: 1;
   pointer-events: auto;
-  animation: enableButton 0.5s ease;
 }
 
 .import-programs-btn:hover {
-  transform: translateX(-50%) translateY(-5px);
+  transform: translateY(-3px);
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
 .import-programs-btn:active {
-  transform: translateX(-50%) translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: 0 5px 7px rgba(0, 0, 0, 0.1);
 }
 
 .import-programs-btn i {
   margin-right: 8px;
+}
+
+.clear-selections-link {
+  font-size: 14px;
+  color: #6c757d;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.clear-selections-link:hover {
+  color: #495057;
+  background-color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.clear-selections-link i {
+  font-size: 16px;
 }
 
 @keyframes enableButton {

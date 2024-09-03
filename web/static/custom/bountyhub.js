@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // below has everything to do with card selection and import button
     const container = document.getElementById('program_cards');
     const importBtn = document.getElementById('importProgramsBtn');
-
+    const clearBtn = document.getElementById('clearSelectionsLink');
 
     container.addEventListener('click', function(event) {
         const card = event.target.closest('.card-selectable');
@@ -139,16 +139,29 @@ document.addEventListener('DOMContentLoaded', function() {
         if (count === 0) {
             importBtn.disabled = true;
             importBtn.innerHTML = '<i class="fe-download-cloud"></i> Import Programs';
-            importBtn.classList.remove('button-updated');
+            clearBtn.style.display = 'none';
         } else {
             importBtn.disabled = false;
             importBtn.innerHTML = `<i class="fe-download-cloud"></i> Import ${count} Program${count !== 1 ? 's' : ''}`;
-            
-            // Trigger the animation
-            importBtn.classList.remove('button-updated');
-            void importBtn.offsetWidth; // Trigger reflow
-            importBtn.classList.add('button-updated');
+            clearBtn.style.display = 'inline';
         }
     }
+
+    function clearAllSelections() {
+        const selectedCards = container.querySelectorAll('.card-selected');
+        selectedCards.forEach(card => card.classList.remove('card-selected'));
+        updateImportButton();
+    }
+
+    // clear btn listener
+    clearBtn.addEventListener('click', function(event) {
+        event.preventDefault();
+        clearAllSelections();
+    });
+
+
+    // init state
+    updateImportButton();
+
 
 });
