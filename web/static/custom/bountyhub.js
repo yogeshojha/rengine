@@ -53,41 +53,42 @@ document.addEventListener('DOMContentLoaded', function() {
             const card = document.createElement('div');
             card.className = 'col-md-6 col-lg-4 col-xl-3 mb-3';
             card.innerHTML = `
-                <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable">
+            <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable" data-offers-bounties="${attributes.offers_bounties}" data-program-state="${attributes.state}">
 
-                    <div class="card-body py-2 px-3">
-                        <div class="d-flex align-items-center mb-2">
-                            <img src="${attributes.profile_picture}" alt="${attributes.name}" class="rounded-circle me-3" width="40" height="40">
-                            <div>
-                                <h5 class="card-title mb-0">${attributes.name}&nbsp;
-                                    ${attributes.bookmarked ? '<i class="text-warning mdi mdi-bookmark-check" data-bs-toggle="tooltip" data-bs-placement="top" title="Bookmarked Program"></i>' : ''}
-                                </h5>
-                                <small class="text-muted">@${attributes.handle}</small>
-                            </div>
-                        </div>
-
-                        <div class="mb-2">
-                            <span class="badge bg-success bg-opacity-10 text-success me-1 mb-1">${attributes.submission_state === 'open' ? 'Open for Submission' : 'Closed'}</span>
-                            <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">${attributes.state === 'public_mode' ? 'Public Program' : 'Private Program'}</span>
-                            ${attributes.offers_bounties ? '<span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">Bounty $$$</span>' : ''}
-                            ${attributes.open_scope ? '<span class="badge bg-warning bg-opacity-10 text-warning mb-1">Open Scope</span>' : ''}
-                        </div>
-
-                        <div class="d-flex justify-content-between mb-2 small">
-                            <div><i class="bi bi-flag me-1"></i> My Reports: ${attributes.number_of_reports_for_user}</div>
-                            <div><i class="bi bi-currency-dollar me-1"></i> My Earnings: $${attributes.bounty_earned_for_user.toFixed(2)}</div>
-                        </div>
-
-                        <hr class="my-2">
-
-                        <div class="d-flex justify-content-between text-muted small mb-2">
-                            <div><i class="bi bi-calendar me-1"></i> Since ${new Date(attributes.started_accepting_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
-                            <div><i class="bi bi-globe me-1"></i> ${attributes.currency.toUpperCase()}</div>
-                        </div>
-                        <a href="#" class="btn btn-outline-primary btn-sm w-100 mt-2" id="btn-see-details">See details</a>
+                <div class="card-body py-2 px-3">
+                <div class="d-flex align-items-center mb-2">
+                    <img src="${attributes.profile_picture}" alt="${attributes.name}" class="rounded-circle me-3" width="40" height="40" loading="lazy">
+                    <div>
+                    <h5 class="card-title mb-0">${attributes.name}&nbsp;
+                        ${attributes.bookmarked ? '<i class="text-warning mdi mdi-bookmark-check" data-bs-toggle="tooltip" data-bs-placement="top" title="Bookmarked Program"></i>' : ''}
+                    </h5>
+                    <small class="text-muted">@${attributes.handle}</small>
                     </div>
                 </div>
+
+                <div class="mb-2">
+                    <span class="badge ${attributes.submission_state === 'open' ? 'bg-success' : 'bg-danger'} bg-opacity-10 text-${attributes.submission_state === 'open' ? 'success' : 'danger'} me-1 mb-1">${attributes.submission_state === 'open' ? 'Open for Submission' : 'Closed'}</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">${attributes.state === 'public_mode' ? 'Public Program' : 'Private Program'}</span>
+                    ${attributes.offers_bounties ? '<span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">Bounty $$$</span>' : ''}
+                    ${attributes.open_scope ? '<span class="badge bg-warning bg-opacity-10 text-warning mb-1">Open Scope</span>' : ''}
+                </div>
+
+                <div class="d-flex justify-content-between mb-2 small">
+                    <div><i class="bi bi-flag me-1"></i> My Reports: ${attributes.number_of_reports_for_user}</div>
+                    <div><i class="bi bi-currency-dollar me-1"></i> My Earnings: $${attributes.bounty_earned_for_user.toFixed(2)}</div>
+                </div>
+
+                <hr class="my-2">
+
+                <div class="d-flex justify-content-between text-muted small mb-2">
+                    <div><i class="bi bi-calendar me-1"></i> Since ${new Date(attributes.started_accepting_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
+                    <div><i class="bi bi-globe me-1"></i> ${attributes.currency.toUpperCase()}</div>
+                </div>
+                <a href="#" class="btn btn-outline-primary btn-sm w-100 mt-2" id="btn-see-details">See details</a>
+                </div>
+            </div>
             `;
+
 
             // Initialize tooltips esp for bookmarked programs
             const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
