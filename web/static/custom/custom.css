@@ -610,3 +610,96 @@ mark{
 .bbp-badge:hover {
   transform: translateY(-2px);
 }
+
+.card-selectable {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.card-selectable:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.card-selected {
+  border: 2px solid #007bff;
+  background-color: rgba(0,123,255,0.05);
+}
+
+.bbp-bookmark-label {
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+.bbp-bookmark-label:hover {
+  color: #ffc107;
+}
+.bbp-bookmark-checkbox:checked + .bbp-bookmark-label {
+  color: #ffc107;
+}
+
+
+.import-programs-btn {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.import-programs-btn:not(:disabled) {
+  opacity: 1;
+  pointer-events: auto;
+  animation: enableButton 0.5s ease;
+}
+
+.import-programs-btn:hover {
+  transform: translateX(-50%) translateY(-5px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.import-programs-btn:active {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 5px 7px rgba(0, 0, 0, 0.1);
+}
+
+.import-programs-btn i {
+  margin-right: 8px;
+}
+
+@keyframes enableButton {
+  0% {
+      transform: translateX(-50%) scale(0.9);
+      opacity: 0.7;
+  }
+  50% {
+      transform: translateX(-50%) scale(1.05);
+  }
+  100% {
+      transform: translateX(-50%) scale(1);
+      opacity: 1;
+  }
+}
+
+@keyframes disableButton {
+  0% {
+      transform: translateX(-50%) scale(1);
+      opacity: 1;
+  }
+  100% {
+      transform: translateX(-50%) scale(0.9);
+      opacity: 0.7;
+  }
+}
+
+.import-programs-btn:disabled {
+  animation: disableButton 0.3s ease forwards;
+}

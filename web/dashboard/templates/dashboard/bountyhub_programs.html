@@ -60,60 +60,13 @@
 </div>
 
 <div class="row" id="program_cards">
-    <div class="col-md-6 col-lg-4 col-xl-3 mb-4">
-        <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card">
-            <div class="position-absolute top-0 end-0 p-2 bbp-bookmark-container">
-            <input type="checkbox" id="bookmark-22746" class="bbp-bookmark-checkbox d-none" checked>
-            <label for="bookmark-22746" class="bbp-bookmark-label" data-bs-toggle="tooltip" data-bs-placement="left"
-                title="Bookmarked Program">
-                <i class="fe-star fs-4"></i>
-            </label>
-            </div>
-
-            <div class="card-body">
-            <div class="d-flex align-items-center mb-3">
-                <img
-                src="https://profile-photos.hackerone-user-content.com/variants/gx1qb7440tyefirbxv1tkl1ty186/a11a5f547ea25bb14fce3951b07a50f6288859555c2028feb0c3aad3e1aea36d"
-                alt="Grammarly" class="rounded-circle me-3" width="48" height="48">
-                <div>
-                <h5 class="card-title mb-0">Grammarly</h5>
-                <small class="text-muted">@grammarly</small>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <span class="badge border border-success text-success me-1 mt-1 bbp-badge">Open for Submission</span>
-                <span class="badge border border-primary text-primary me-1 mt-1 bbp-badge">Public Program</span>
-                <span class="badge border border-info text-info me-1 mt-1 bbp-badge">Bounty $$$</span>
-                <span class="badge border border-warning text-warning mt-1 bbp-badge">Open Scope</span>
-            </div>
-
-            <div class="d-flex justify-content-between mb-3 small">
-                <div><i class="fe-file-text me-1"></i> My Reports: 0</div>
-                <div><i class="fe-dollar-sign me-1"></i> My Earnings: $0.00</div>
-            </div>
-
-            <hr>
-
-            <div class="d-flex justify-content-between text-muted small mb-3">
-                <div><i class="fe-calendar me-1"></i> Since Sep 2017</div>
-                <div><i class="fe-globe me-1"></i> USD</div>
-            </div>
-            </div>
-
-            <div class="card-footer bg-transparent border-0 pt-0">
-            <a href="#" class="btn btn-outline-primary w-100">See details</a>
-            </div>
-        </div>
-    </div>
 </div>
-
-
+<button id="importProgramsBtn" class="import-programs-btn" disabled>
+    <i class="fe-download-cloud"></i> Import Programs
+</button>
 {% endblock main_content %}
 
 
 {% block page_level_script %}
-<script type="text/javascript">
-
-</script>
+<script src="{% static 'custom/bountyhub.js' %}"></script>
 {% endblock page_level_script %}
