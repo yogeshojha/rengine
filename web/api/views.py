@@ -43,9 +43,24 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 	CACHE_KEY = 'hackerone_programs'
 	CACHE_TIMEOUT = 60 * 30 # 30 minutes
 
-
 	def list(self, request):
+		sort_by = request.query_params.get('sort_by', 'age')
+		sort_order = request.query_params.get('sort_order', 'desc')  # Changed default to 'desc'
+
 		programs = self.get_cached_programs()
+
+		if sort_by == 'name':
+			programs = sorted(programs, key=lambda x: x['attributes']['name'].lower(), 
+					reverse=(sort_order.lower() == 'desc'))
+		elif sort_by == 'reports':
+			programs = sorted(programs, key=lambda x: x['attributes'].get('number_of_reports_for_user', 0), 
+					reverse=(sort_order.lower() == 'desc'))
+		elif sort_by == 'age':
+			programs = sorted(programs, 
+				key=lambda x: datetime.strptime(x['attributes'].get('started_accepting_at', '1970-01-01T00:00:00.000Z'), '%Y-%m-%dT%H:%M:%S.%fZ'), 
+				reverse=(sort_order.lower() == 'desc')
+			)
+
 		serializer = HackerOneProgramSerializer(programs, many=True)
 		return Response(serializer.data)
 	

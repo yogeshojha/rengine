@@ -1,43 +1,69 @@
 // this js file will be used to do everything js related to the bountyhub page
 
 document.addEventListener('DOMContentLoaded', function() {
-    const api_url = '/api/hackerone-programs/';
 
-    Swal.fire({
-        title: "Loading HackerOne Programs",
-        text: "Fetching the latest data...",
-        icon: "info",
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-            Swal.showLoading();
+    function fetchPrograms(isSortingRequest = false){
+        let api_url = '/api/hackerone-programs/';
+        const sortParams = updateSortingParams();
+        const queryParams = new URLSearchParams(sortParams).toString();
+
+        if (queryParams){
+            api_url += '?' + queryParams
         }
-    });
 
-    fetch(api_url, {
-        method: "GET",
-        credentials: "same-origin",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+
+        if (isSortingRequest) {
+            Swal.fire({
+                title: 'Sorting...',
+                text: 'Please wait',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                },
+                customClass: {
+                    popup: 'small-swal'
+                }
+            });
+        } else {
+            Swal.fire({
+                title: "Loading HackerOne Programs",
+                text: "Fetching the latest data...",
+                icon: "info",
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
         }
-        return response.json();
-    })
-    .then(data => {
-        Swal.close();
+    
+        fetch(api_url, {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            Swal.close();
+            displayPrograms(data);
+        })
+        .catch(error => {
+            Swal.close();
+            displayErrorMessage("An error occurred while fetching the hackerone programs. Please try again later. Make sure you have hackerone api key set in your API Vault.");
+            console.error('Error:', error);
+        });
+    }
 
-        displayPrograms(data);
-    })
-    .catch(error => {
-        Swal.close();
-        displayErrorMessage("An error occurred while fetching the data. Please try again later. Make sure you have hackerone api key set in your API Vault.");
-        console.error('Error:', error);
-    });
     function displayPrograms(programs) {
         const container = document.getElementById('program_cards');
         container.innerHTML = '';
@@ -250,4 +276,43 @@ document.addEventListener('DOMContentLoaded', function() {
         
         filterAndSearchCards(); // init call
     }
+
+    // in this function, we handle the sort select
+    function updateSortingParams() {
+        const sortSelect = document.getElementById('sort-select');
+        let sortBy, sortOrder;
+    
+        if (sortSelect.value === 'Sort by' || !sortSelect.value) {
+            sortBy = 'age';
+            sortOrder = 'desc';
+        } else {
+            [sortBy, sortOrder] = sortSelect.value.split('-');
+        }
+        
+        let apiSortBy;
+        
+        switch (sortBy) {
+            case 'name':
+                apiSortBy = 'name';
+                break;
+            case 'reports':
+                apiSortBy = 'reports';
+                break;
+            case 'posted':
+                apiSortBy = 'age';
+                break;
+            default:
+                apiSortBy = 'age';
+        }
+        
+        return { sort_by: apiSortBy, sort_order: sortOrder };
+    }
+
+
+    // init call to fetch programs
+    const sortSelect = document.getElementById('sort-select');
+    sortSelect.addEventListener('change', () => fetchPrograms(true));
+
+    fetchPrograms(false);
+
 });
