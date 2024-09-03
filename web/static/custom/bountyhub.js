@@ -69,10 +69,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const fragment = document.createDocumentFragment();
         const template = document.createElement('template');
 
-        programs.forEach(program => {
+        programs.forEach((program) => {
             const { attributes } = program;
             template.innerHTML = `
-                <div class="col-md-6 col-lg-4 col-xl-3 mb-3 program-card-wrapper">
+                <div class="col-md-6 col-lg-4 col-xl-3 mb-3 program-card-wrapper" style="opacity: 0; transform: translateY(20px); transition: opacity 0.3s ease, transform 0.3s ease;">
                     <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable" data-offers-bounties="${attributes.offers_bounties}" data-program-state="${attributes.state}">
                         <div class="card-body py-2 px-3">
                             <!-- Card content -->
@@ -86,7 +86,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         container.appendChild(fragment);
+        animateCards();
         initializeFilter();
+    }
+
+    function animateCards() {
+        const cards = container.querySelectorAll('.program-card-wrapper');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 50); // staggering anims for sort, search and filter and even first load
+        });
     }
 
     function generateCardContent(attributes) {
@@ -155,8 +166,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             requestAnimationFrame(() => {
-                cardData.forEach(({ wrapper }) => wrapper.style.display = 'none');
-                visibleCards.forEach(({ wrapper }) => wrapper.style.display = '');
+                cardData.forEach(({ wrapper }) => {
+                    wrapper.style.opacity = '0';
+                    wrapper.style.transform = 'translateY(20px)';
+                });
+                setTimeout(() => {
+                    cardData.forEach(({ wrapper }) => wrapper.style.display = 'none');
+                    visibleCards.forEach(({ wrapper }, index) => {
+                        wrapper.style.display = '';
+                        setTimeout(() => {
+                            wrapper.style.opacity = '1';
+                            wrapper.style.transform = 'translateY(0)';
+                        }, index * 50);
+                    });
+                }, 300);
             });
         }, 100);
 
