@@ -129,14 +129,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div><i class="bi bi-calendar me-1"></i> Since ${new Date(attributes.started_accepting_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
                 <div><i class="bi bi-globe me-1"></i> ${attributes.currency.toUpperCase()}</div>
             </div>
-            <button class="btn btn-outline-primary btn-sm w-100 mt-2 btn-see-details">See details</button>
+            <button class="btn btn-outline-primary btn-sm w-100 mt-2 btn-see-details" onclick="see_detail('${attributes.handle}')">See details</button>
         `;
-    }
-
-    function isProgramNew(startedAcceptingAt) {
-        const threeMonthsAgo = new Date();
-        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-        return new Date(startedAcceptingAt) > threeMonthsAgo;
     }
 
     function initializeFilter() {
@@ -267,3 +261,198 @@ document.addEventListener('DOMContentLoaded', function() {
 
     fetchPrograms(false, false);
 });
+
+function isProgramNew(startedAcceptingAt) {
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    return new Date(startedAcceptingAt) > threeMonthsAgo;
+}
+
+// see detail function call
+function see_detail(handle) {
+    Swal.fire({
+        title: 'Loading...',
+        html: 'Fetching program details',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    fetch(`/api/hackerone-programs/${handle}/program_details/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            Swal.close();
+
+            populateModal(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'There was an error fetching the program details. Please try again.',
+            });
+        });
+}
+
+
+function populateModal(data) {
+    const attributes = data.attributes;
+
+    const modalHTML = `
+    <div class="modal fade" id="programDetailModal" tabindex="-1" aria-labelledby="programDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="programDetailModalLabel">
+                        <img src="${attributes.profile_picture}" alt="${attributes.name}" class="program-profile-picture me-3">
+                        <span class="program-name">${attributes.name}</span>
+                        ${attributes.bookmarked ? '<i class="fas fa-bookmark text-muted ms-2" title="Bookmarked Program"></i>' : ''}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <div id="badgeContainer" class="mb-3"></div>
+                            <p class="text-muted">
+                                <i class="fas fa-user me-2"></i>
+                                <a href="https://hackerone.com/${attributes.handle}" class="handle-link" target="_blank">@${attributes.handle}</a>
+                            </p>
+                            <p class="text-muted">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                Program active since ${new Date(attributes.started_accepting_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="program-stat-card mb-3">
+                                <h6 class="text-muted">Reports</h6>
+                                <h3>${attributes.number_of_reports_for_user || '0'}</h3>
+                            </div>
+                            <div class="program-stat-card">
+                                <h6 class="text-muted">Earnings</h6>
+                                <h3>$${(attributes.bounty_earned_for_user || 0).toFixed(2)} ${attributes.currency.toUpperCase()}</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="section-title mb-3">Assets on Scope</h5>
+                    <div class="accordion custom-program-accordion" id="assetAccordion"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="https://hackerone.com/${attributes.handle}" target="_blank" class="btn btn-primary">See full details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+
+    // Remove any existing modal
+    const existingModal = document.getElementById('programDetailModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    populateBadges(attributes);
+
+    populateAssetAccordion(data);
+
+    const modal = new bootstrap.Modal(document.getElementById('programDetailModal'));
+    modal.show();
+}
+function populateBadges(attributes) {
+    const badgeContainer = document.getElementById('badgeContainer');
+    const badges = [
+        {
+            condition: true,
+            classes: `${attributes.submission_state === 'open' ? 'bg-success' : 'bg-danger'} text-white`,
+            text: attributes.submission_state === 'open' ? 'Open' : 'Closed'
+        },
+        {
+            condition: true,
+            classes: 'bg-primary text-white',
+            text: attributes.state === 'public_mode' ? 'Public' : 'Private'
+        },
+        {
+            condition: true,
+            classes: attributes.offers_bounties ? 'badge bg-info bg-opacity-10 text-info' : 'badge bg-danger bg-opacity-10 text-danger',
+            text: attributes.offers_bounties ? 'Bounty' : 'VDP'
+        },
+        {
+            condition: attributes.open_scope,
+            classes: 'bg-success text-white',
+            text: 'Open Scope'
+        },
+        {
+            condition: isProgramNew(attributes.started_accepting_at),
+            classes: 'bg-primary text-white',
+            text: 'New',
+            icon: 'fe-zap'
+        }
+    ];
+
+    badges.forEach(badge => {
+        if (badge.condition) {
+            badgeContainer.innerHTML += `
+                <span class="badge ${badge.classes}">
+                    ${badge.icon ? `<i class="${badge.icon} me-1"></i>` : ''}${badge.text}
+                </span>
+            `;
+        }
+    });
+}
+
+function populateAssetAccordion(data) {
+    const accordion = document.getElementById('assetAccordion');
+    const assetTypes = {
+        WILDCARD: [], DOMAIN: [], IP_ADDRESS: [], CIDR: [], URL: []
+    };
+
+    data.relationships.structured_scopes.data.forEach(scope => {
+        const type = scope.attributes.asset_type;
+        if (assetTypes.hasOwnProperty(type)) {
+            assetTypes[type].push(scope.attributes.asset_identifier);
+        }
+    });
+
+    Object.entries(assetTypes).forEach(([type, assets], index) => {
+        if (assets.length > 0) {
+            const item = createAccordionItem(type, assets, index);
+            accordion.appendChild(item);
+        }
+    });
+}
+
+function createAccordionItem(type, assets, index) {
+    const item = document.createElement('div');
+    item.className = 'accordion-item border-0 mb-2';
+    item.innerHTML = `
+        <h2 class="accordion-header" id="heading${type}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                    data-bs-target="#collapse${type}" aria-expanded="">
+                ${type}s (${assets.length})
+            </button>
+        </h2>
+        <div id="collapse${type}" class="accordion-collapse collapse" 
+             aria-labelledby="heading${type}" data-bs-parent="#assetAccordion">
+            <div class="accordion-body">
+                <ul>
+                    ${assets.map(asset => `<li>${asset}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
+    `;
+    return item;
+}

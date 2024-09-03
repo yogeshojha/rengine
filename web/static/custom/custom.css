@@ -774,3 +774,55 @@ mark{
 .import-programs-btn.button-updated {
   animation: gentlePulse 1.5s infinite, colorTransition 0.5s ease;
 }
+
+
+
+.program-profile-picture {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #e9ecef;
+}
+
+.program-stat-card {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.program-stat-card:hover {
+  background-color: #e9ecef;
+}
+
+.custom-program-accordion .accordion-button {
+  background-color: #f8f9fa;
+  color: #333;
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.custom-program-accordion .accordion-button:not(.collapsed) {
+  background-color: #e9ecef;
+  color: #0d6efd;
+}
+
+.custom-program-accordion .accordion-body {
+  background-color: #ffffff;
+  border-radius: 0 0 4px 4px;
+  border: 1px solid #e9ecef;
+  padding: 0.75rem;
+}
+
+.custom-program-accordion .accordion-body ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+
+.custom-program-accordion .accordion-body li {
+  padding: 0.25rem 0;
+}
