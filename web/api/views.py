@@ -42,6 +42,11 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 	"""
 	CACHE_KEY = 'hackerone_programs'
 	CACHE_TIMEOUT = 60 * 30 # 30 minutes
+	PROGRAM_CACHE_KEY = 'hackerone_program_{}'
+
+	API_BASE = 'https://api.hackerone.com/v1/hackers'
+
+	ALLOWED_ASSET_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "CIDR", "URL"]
 
 	def list(self, request):
 		sort_by = request.query_params.get('sort_by', 'age')
@@ -96,7 +101,7 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 		return programs
 
 	def fetch_programs_from_hackerone(self):
-		url = 'https://api.hackerone.com/v1/hackers/programs'
+		url = f'{self.API_BASE}/programs'
 		headers = {'Accept': 'application/json'}
 		all_programs = []
 		username, api_key = self.get_api_credentials()
@@ -123,6 +128,46 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 		programs = self.fetch_programs_from_hackerone()
 		cache.set(self.CACHE_KEY, programs, self.CACHE_TIMEOUT)
 		return Response({"status": "Cache refreshed successfully"})
+	
+	@action(detail=True, methods=['get'])
+	def program_details(self, request, pk=None):
+		program_handle = pk
+		cache_key = self.PROGRAM_CACHE_KEY.format(program_handle)
+		program_details = cache.get(cache_key)
+
+		if program_details is None:
+			program_details = self.fetch_program_details_from_hackerone(program_handle)
+			if program_details:
+				cache.set(cache_key, program_details, self.CACHE_TIMEOUT)
+
+		if program_details:
+			filtered_scopes = [
+				scope for scope in program_details.get('relationships', {}).get('structured_scopes', {}).get('data', [])
+				if scope.get('attributes', {}).get('asset_type') in self.ALLOWED_ASSET_TYPES
+			]
+
+			program_details['relationships']['structured_scopes']['data'] = filtered_scopes
+
+			return Response(program_details)
+		else:
+			return Response({"error": "Program not found"}, status=404)
+		
+
+	def fetch_program_details_from_hackerone(self, program_handle):
+		url = f'{self.API_BASE}/programs/{program_handle}'
+		headers = {'Accept': 'application/json'}
+		username, api_key = self.get_api_credentials()
+
+		response = requests.get(
+			url,
+			headers=headers,
+			auth=(username, api_key)
+		)
+
+		if response.status_code == 200:
+			return response.json()
+		else:
+			return None
 
 
 class InAppNotificationManagerViewSet(viewsets.ModelViewSet):
