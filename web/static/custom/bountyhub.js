@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 card.style.opacity = '1';
                 card.style.transform = 'translateY(0)';
-            }, index * 50); // staggering anims for sort, search and filter and even first load
+            }, index * 5); // staggering anims for sort, search and filter and even first load
         });
     }
 
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="d-flex align-items-center mb-2">
                 <img src="${attributes.profile_picture}" alt="${attributes.name}" class="rounded-circle me-3" width="40" height="40" loading="lazy">
                 <div>
-                    <h5 class="card-title mb-0">${attributes.name}${attributes.bookmarked ? '<i class="text-warning mdi mdi-bookmark-check" title="Bookmarked Program"></i>' : ''}</h5>
+                    <h5 class="card-title mb-0">${attributes.name}&nbsp;&nbsp;${attributes.bookmarked ? '<i class="text-warning mdi mdi-bookmark-check" title="Bookmarked Program"></i>' : ''}</h5>
                     <small class="text-muted"><a href="https://hackerone.com/${attributes.handle}" class="handle-link" target="_blank">@${attributes.handle}</a></small>
                 </div>
             </div>
