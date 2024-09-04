@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const { attributes } = program;
             template.innerHTML = `
                 <div class="col-md-6 col-lg-4 col-xl-3 mb-3 program-card-wrapper" style="opacity: 0; transform: translateY(20px); transition: opacity 0.3s ease, transform 0.3s ease;">
-                    <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable" data-offers-bounties="${attributes.offers_bounties}" data-program-state="${attributes.state}">
+                    <div class="card h-100 shadow-sm position-relative overflow-hidden bbp-card card-selectable" data-offers-bounties="${attributes.offers_bounties}" data-program-state="${attributes.state}" data-handle="${attributes.handle}">
                         <div class="card-body py-2 px-3">
                             <!-- Card content -->
                         </div>
@@ -267,6 +267,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     fetchPrograms(false, false);
+
+    // event listener for multiple program cards click
+    document.getElementById('importProgramsBtn').addEventListener('click', () => {
+        const selectedHandles = getSelectedProgramHandles();
+        if (selectedHandles.length > 0) {
+            handleProgramImportswal(selectedHandles);
+        }
+    });
+
+    // event btn listener for individual click from modal
+    document.body.addEventListener('click', (event) => {
+        if (event.target.id === 'importIndividualProgram') {
+            event.preventDefault();
+            const handle = event.target.closest('.modal-content').querySelector('.handle-link').textContent.slice(1);
+            handleProgramImportswal([handle]);
+        }
+    });
+
+
 });
 
 function isProgramNew(startedAcceptingAt) {
@@ -357,7 +376,8 @@ function populateModal(data) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                    <a href="https://hackerone.com/${attributes.handle}" target="_blank" class="btn btn-primary">See full details</a>
+                    <a href="#" class="btn btn-outline-primary" id="importIndividualProgram"><i class="fe-download-cloud me-2"></i> Import Program</a>
+                    <a href="https://hackerone.com/${attributes.handle}" target="_blank" class="btn btn-primary"><i class="fe-info me-2"></i> See full details</a>
                 </div>
             </div>
         </div>
@@ -488,4 +508,74 @@ function getIconForAssetType(type) {
         'URL': 'fe-link',
     };
     return iconMap[type] || 'fe-file';
+}
+
+// now we handle import functionalities
+function getSelectedProgramHandles() {
+    const selectedCards = document.querySelectorAll('.card-selected');
+    return Array.from(selectedCards).map(card => card.dataset.handle);
+}
+
+async function importPrograms(handles) {
+    // this function accepts a list of handles that are to be imported
+    try {
+        const response = await fetch('/import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie("csrftoken")
+            },
+            body: JSON.stringify({ handles })
+        });
+
+        if (!response.ok) {
+            throw new Error('Import failed');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error importing programs:', error);
+        throw error;
+    }
+}
+
+function handleProgramImportswal(handles) {
+    // swal loader to handle the import
+    Swal.fire({
+        title: 'Confirm Import',
+        text: `Are you sure you want to import ${handles.length} program(s)?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, import',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Importing...',
+                text: 'Please wait while we import the selected programs.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            importPrograms(handles)
+                .then(() => {
+                    Swal.fire(
+                        'Import Successful',
+                        'The selected programs have been imported successfully.',
+                        'success'
+                    );
+                })
+                .catch(() => {
+                    Swal.fire(
+                        'Import Failed',
+                        'There was an error importing the selected programs. Please try again.',
+                        'error'
+                    );
+                });
+        }
+    });
 }
