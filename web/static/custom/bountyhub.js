@@ -129,7 +129,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div><i class="bi bi-calendar me-1"></i> Since ${new Date(attributes.started_accepting_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
                 <div><i class="bi bi-globe me-1"></i> ${attributes.currency.toUpperCase()}</div>
             </div>
-            <button class="btn btn-outline-primary btn-sm w-100 mt-2 btn-see-details" onclick="see_detail('${attributes.handle}')">See details</button>
+            <div class="d-flex justify-content-between mt-3">
+                <!-- <button class="btn btn-primary btn-sm flex-grow-1 me-2 btn-import-hackerone" onclick="import_hackerone_program('${attributes.handle}')">
+                    <i class="fas fa-file-import me-1"></i> Import
+                </button> -->
+                <button class="btn btn-outline-primary btn-sm flex-grow-1 btn-see-details" onclick="see_detail('${attributes.handle}')">
+                    <i class="fas fa-info-circle me-1"></i> Details
+                </button>
+            </div>
         `;
     }
 
@@ -215,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleCardClick(event) {
         const card = event.target.closest('.card-selectable');
         if (card) {
-            if (event.target.closest('.btn-see-details') || event.target.closest('.handle-link')) {
+            if (event.target.closest('.btn-see-details') || event.target.closest('.handle-link') || event.target.closest('.btn-import-hackerone')) {
                 // Handle "See details" button or handle link click
                 return;
             }
@@ -320,7 +327,7 @@ function populateModal(data) {
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body program-modal-body" data-simplebar>
                     <div class="row mb-4">
                         <div class="col-md-8">
                             <div id="badgeContainer" class="mb-3"></div>
@@ -387,7 +394,7 @@ function populateBadges(attributes) {
         },
         {
             condition: true,
-            classes: attributes.offers_bounties ? 'badge bg-info bg-opacity-10 text-info' : 'badge bg-danger bg-opacity-10 text-danger',
+            classes: attributes.offers_bounties ? 'bg-info text-white' : 'badge bg-danger bg-opacity-10 text-danger',
             text: attributes.offers_bounties ? 'Bounty' : 'VDP'
         },
         {
@@ -437,22 +444,48 @@ function populateAssetAccordion(data) {
 
 function createAccordionItem(type, assets, index) {
     const item = document.createElement('div');
-    item.className = 'accordion-item border-0 mb-2';
+    item.className = 'accordion-item border-0 mb-3';
     item.innerHTML = `
         <h2 class="accordion-header" id="heading${type}">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
-                    data-bs-target="#collapse${type}" aria-expanded="">
-                ${type}s (${assets.length})
+            <button class="accordion-button collapsed bg-light" type="button" data-bs-toggle="collapse" 
+                    data-bs-target="#collapse${type}" aria-expanded="false">
+                <i class="fe-folder me-2"></i> ${type}s <span class="badge bg-primary ms-2">${assets.length}</span>
             </button>
         </h2>
         <div id="collapse${type}" class="accordion-collapse collapse" 
              aria-labelledby="heading${type}" data-bs-parent="#assetAccordion">
-            <div class="accordion-body">
-                <ul>
-                    ${assets.map(asset => `<li>${asset}</li>`).join('')}
-                </ul>
+            <div class="accordion-body p-4">
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    ${assets.map(asset => `
+                        <div class="col">
+                            <div class="card h-100 asset-card shadow-sm program-modal-asset-card" onclick="add_target('${asset}')">
+                                <div class="card-body d-flex flex-column justify-content-between">
+                                    <h5 class="card-title program-asset-name" data-bs-toggle="tooltip" title="${asset}">
+                                        <i class="${getIconForAssetType(type)} me-2"></i>
+                                        <span class="program-asset-name-text">${asset}</span>
+                                    </h5>
+                                    <small class="text-muted">${asset}</small>
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <button class="btn btn-outline-primary btn-sm w-100">
+                                        <i class="fe-plus-circle me-2"></i>Add Target
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
         </div>
     `;
     return item;
+}
+
+function getIconForAssetType(type) {
+    const iconMap = {
+        'Domain': 'fe-globe',
+        'IP': 'fe-server',
+        'URL': 'fe-link',
+    };
+    return iconMap[type] || 'fe-file';
 }

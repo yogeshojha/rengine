@@ -584,33 +584,6 @@ mark{
 }
 
 
-.optional-text {
-  margin-top: 4px;
-}
-
-.bbp-bookmark-container {
-  transition: transform 0.3s ease;
-  z-index: 1;
-}
-.bbp-bookmark-checkbox:checked + .bbp-bookmark-label i {
-  color: #ffc107;
-  transform: scale(1.2);
-}
-.bbp-bookmark-label i {
-  transition: all 0.3s ease;
-  color: #6c757d;
-}
-.bbp-card:hover .bbp-bookmark-container {
-  transform: translateY(5px);
-}
-.bbp-badge {
-  transition: transform 0.3s ease;
-  background-color: transparent !important;
-}
-.bbp-badge:hover {
-  transform: translateY(-2px);
-}
-
 .card-selectable {
   transition: all 0.3s ease;
   cursor: pointer;
@@ -825,4 +798,54 @@ mark{
 
 .custom-program-accordion .accordion-body li {
   padding: 0.25rem 0;
+}
+
+.program-modal-asset-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.program-modal-asset-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.program-modal-asset-card:active {
+  transform: translateY(-2px);
+}
+
+.accordion-button:not(.collapsed) {
+  color: #0d6efd;
+  background-color: #e7f1ff;
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: rgba(0,0,0,.125);
+}
+
+.program-asset-name {
+  line-height: 1.2;
+  max-height: 2.4em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+}
+
+.program-asset-name-text {
+  word-break: break-word;
+  font-size: small;
+}
+
+.program-modal-body {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.program-modal-body::-webkit-scrollbar {
+  display: none; /* replace with data scrollbar */
+}
+
+.program-modal-body {
+  scrollbar-width: none; /* firefox */
 }
