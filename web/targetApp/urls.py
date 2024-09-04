@@ -32,10 +32,6 @@ urlpatterns = [
         views.list_organization,
         name='list_organization'),
     path(
-        '<slug:slug>/sync/organization',
-        views.sync_organization,
-        name='sync_organization'),
-    path(
         'delete/target/<int:id>',
         views.delete_target,
         name='delete_target'),

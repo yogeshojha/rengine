@@ -2,8 +2,9 @@
 import requests
 
 from reNgine.common_func import create_inappnotification, get_hackerone_key_username
-from reNgine.definitions import PROJECT_LEVEL_NOTIFICATION
+from reNgine.definitions import PROJECT_LEVEL_NOTIFICATION, HACKERONE_ALLOWED_ASSET_TYPES
 from reNgine.celery import app
+from reNgine.database_utils import bulk_import_targets
 
 @app.task(name='import_hackerone_programs_task', bind=False, queue='api_queue')
 def import_hackerone_programs_task(handles, project_slug):
@@ -36,11 +37,41 @@ def import_hackerone_programs_task(handles, project_slug):
 	for handle in handles:
 		program_details = fetch_program_details_from_hackerone(handle)
 		if program_details:
-			# TODO: Implement actual import logic to reNgine here
-
-			program_name = program_details['attributes']['name']
-			
+			# Thanks, some parts of this logics were originally written by @null-ref-0000
+			# via PR https://github.com/yogeshojha/rengine/pull/1410
 			try:
+				program_name = program_details['attributes']['name']
+
+				assets = []
+				scopes = program_details['relationships']['structured_scopes']['data']
+				for scope in scopes:
+					asset_type = scope['attributes']['asset_type']
+					asset_identifier = scope['attributes']['asset_identifier']
+
+					# we need to filter the scope that are supported by reNgine now
+					if asset_type in HACKERONE_ALLOWED_ASSET_TYPES:
+						assets.append(asset_identifier)
+					
+					# in some cases asset_type is OTHER and may contain the asset
+					elif asset_type == 'OTHER' and ('.' in asset_identifier or asset_identifier.startswith('http')):
+						assets.append(asset_identifier)
+
+				# cleanup assets
+				assets = list(set(assets))
+
+				# convert assets to list of dict with name and description
+				assets = [{'name': asset, 'description': None} for asset in assets]
+				print('0'*100)
+				print(assets)
+				print('0'*100)
+				bulk_import_targets(
+					targets=assets,
+					project_slug=project_slug,
+					organization_name=program_name,
+					org_description=None,
+					h1_team_handle=handle
+				)
+			
 				create_inappnotification(
 					title=f"HackerOne Program Imported: {handle}",
 					description=f"The program '{program_name}' from hackerone has been successfully imported.",

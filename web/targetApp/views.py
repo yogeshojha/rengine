@@ -1,6 +1,5 @@
 import csv
 import io
-import ipaddress
 import logging
 import validators
 
@@ -17,7 +16,7 @@ from django.utils.safestring import mark_safe
 from rolepermissions.decorators import has_permission_decorator
 
 from reNgine.common_func import *
-from reNgine.tasks import run_command, sanitize_url, sync_h1_bookmarked
+from reNgine.tasks import run_command, sanitize_url
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.forms import *
@@ -542,12 +541,6 @@ def list_organization(request, slug):
     }
     return render(request, 'organization/list.html', context)
 
-def sync_organization(request, slug):
-    # Start the celery task
-    sync_h1_bookmarked.apply_async()
-    
-    return http.HttpResponseRedirect(reverse('list_organization', kwargs={'slug': slug}))
-
 
 @has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_organization(request, id):
@@ -608,20 +601,3 @@ def update_organization(request, slug, id):
     }
     return render(request, 'organization/update.html', context)
 
-def get_ip_info(ip_address):
-    is_ipv4 = bool(validators.ipv4(ip_address))
-    is_ipv6 = bool(validators.ipv6(ip_address))
-    ip_data = None
-    if is_ipv4:
-        ip_data = ipaddress.IPv4Address(ip_address)
-    elif is_ipv6:
-        ip_data = ipaddress.IPv6Address(ip_address)
-    else:
-        return None
-    return ip_data
-
-def get_ips_from_cidr_range(target):
-    try:
-        return [str(ip) for ip in ipaddress.IPv4Network(target, False)]
-    except Exception as e:
-        logger.error(f'{target} is not a valid CIDR range. Skipping.')
