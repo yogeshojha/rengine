@@ -118,16 +118,17 @@ def store_domain(domain_name, project, description, h1_team_handle):
 
 	logger.info(f'Added new domain {new_domain.name}')
 
+	return new_domain
+
 def store_url(url, project, description, h1_team_handle):
 	parsed_url = urlparse(url)
 	http_url = parsed_url.geturl()
 	domain_name = parsed_url.netloc
 
-	existing_domain = Domain.objects.filter(name=domain_name).first()
+	domain = Domain.objects.filter(name=domain_name).first()
 
-	if existing_domain:
+	if domain:
 		logger.info(f'Domain {domain_name} already exists. skipping...')
-		domain = existing_domain
 
 	else:
 		domain = Domain.objects.create(
@@ -144,29 +145,31 @@ def store_url(url, project, description, h1_team_handle):
 		http_url=sanitize_url(http_url)
 	)
 
+	return domain
+
 def store_ip(ip_address, project, description, h1_team_handle):
-	domain, created = Domain.objects.get_or_create(
-		name=ip_address,
-		defaults={
-			'description': description,
-			'h1_team_handle': h1_team_handle,
-			'project': project,
-			'insert_date': timezone.now(),
-			'ip_address_cidr': ip_address
-		}
-	)
-	if created:
-		logger.info(f'Added new IP domain {domain.name}')
-	elif description:
-		domain.description = description
-		domain.save()
+
+	domain = Domain.objects.filter(name=ip_address).first()
+	
+	if domain:
+		logger.info(f'Domain {ip_address} already exists. skipping...')
+	else:
+		domain = Domain.objects.create(
+			name=ip_address,
+			description=description,
+			h1_team_handle=h1_team_handle,
+			project=project,
+			insert_date=timezone.now(),
+			ip_address_cidr=ip_address
+		)
+		logger.info(f'Added new domain {domain.name}')
 	
 	ip_data = get_ip_info(ip_address)
-	ip, _ = IpAddress.objects.get_or_create(
-		address=ip_address,
-		defaults={
-			'reverse_pointer': ip_data.reverse_pointer,
-			'is_private': ip_data.is_private,
-			'version': ip_data.version
-		}
-	)
+	ip_data = get_ip_info(ip_address)
+	ip, created = IpAddress.objects.get_or_create(address=ip_address)
+	ip.reverse_pointer = ip_data.reverse_pointer
+	ip.is_private = ip_data.is_private
+	ip.version = ip_data.version
+	ip.save()
+
+	return domain
