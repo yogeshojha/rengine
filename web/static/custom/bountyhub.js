@@ -518,8 +518,10 @@ function getSelectedProgramHandles() {
 
 async function importPrograms(handles) {
     // this function accepts a list of handles that are to be imported
+    const currentProjectSlug = document.body.getAttribute('data-current-project');
+    console.log(JSON.stringify({ handles }));
     try {
-        const response = await fetch('/import', {
+        const response = await fetch(`/api/hackerone-programs/import_programs/?project_slug=${currentProjectSlug}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -543,39 +545,43 @@ function handleProgramImportswal(handles) {
     // swal loader to handle the import
     Swal.fire({
         title: 'Confirm Import',
-        text: `Are you sure you want to import ${handles.length} program(s)?`,
+        html: `
+            <p>Are you sure you want to import ${handles.length} program(s)?</p>
+            <p class="text-muted">This process will run in the background.</p>
+        `,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Yes, import',
-        cancelButtonText: 'Cancel'
+        confirmButtonText: 'Yes, start import',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
     }).then((result) => {
         if (result.isConfirmed) {
-            Swal.fire({
-                title: 'Importing...',
-                text: 'Please wait while we import the selected programs.',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                willOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
             importPrograms(handles)
                 .then(() => {
-                    Swal.fire(
-                        'Import Successful',
-                        'The selected programs have been imported successfully.',
-                        'success'
-                    );
+                    Swal.fire({
+                        title: 'Import Started',
+                        html: `
+                            <p>The import process for ${handles.length} program(s) has begun.</p>
+                            <p>You will receive notifications about the progress and completion of the import.</p>
+                        `,
+                        icon: 'info',
+                        confirmButtonText: 'Got it',
+                        confirmButtonColor: '#3085d6',
+                    });
                 })
                 .catch(() => {
-                    Swal.fire(
-                        'Import Failed',
-                        'There was an error importing the selected programs. Please try again.',
-                        'error'
-                    );
+                    Swal.fire({
+                        title: 'Import Initiation Failed',
+                        text: 'There was an error starting the import process. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6',
+                    });
                 });
+                // clear all selected cards
+                const container = document.getElementById('program_cards');
+                container.querySelectorAll('.card-selected').forEach(card => card.classList.remove('card-selected'));
         }
     });
 }

@@ -12,9 +12,11 @@ from django.template.defaultfilters import slugify
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT, HTTP_202_ACCEPTED
 from rest_framework.decorators import action
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.cache import cache
+
 
 from dashboard.models import *
 from recon_note.models import *
@@ -28,7 +30,7 @@ from scanEngine.models import *
 from startScan.models import *
 from startScan.models import EndPoint
 from targetApp.models import *
-from django.core.cache import cache
+from api.shared_api_tasks import import_hackerone_programs_task
 
 from .serializers import *
 
@@ -101,7 +103,7 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 		return programs
 
 	def fetch_programs_from_hackerone(self):
-		url = f'{self.API_BASE}/programs'
+		url = f'{self.API_BASE}/programs?page[size]=100'
 		headers = {'Accept': 'application/json'}
 		all_programs = []
 		username, api_key = self.get_api_credentials()
@@ -168,6 +170,27 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 			return response.json()
 		else:
 			return None
+		
+	@action(detail=False, methods=['post'])
+	def import_programs(self, request):
+		project_slug = request.query_params.get('project_slug')
+		handles = request.data.get('handles', [])
+
+		if not handles:
+			return Response({"error": "No program handles provided"}, status=HTTP_400_BAD_REQUEST)
+
+		import_hackerone_programs_task.delay(handles, project_slug)
+
+		create_inappnotification(
+			title="HackerOne Program Import Started",
+			description=f"Import process for {len(handles)} program(s) has begun.",
+			notification_type=PROJECT_LEVEL_NOTIFICATION,
+			project_slug=project_slug,
+			icon="mdi-download",
+			status='info'
+		)
+
+		return Response({"message": f"Import process for {len(handles)} program(s) has begun."}, status=HTTP_202_ACCEPTED)
 
 
 class InAppNotificationManagerViewSet(viewsets.ModelViewSet):
