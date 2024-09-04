@@ -61,9 +61,6 @@ def import_hackerone_programs_task(handles, project_slug):
 
 				# convert assets to list of dict with name and description
 				assets = [{'name': asset, 'description': None} for asset in assets]
-				print('0'*100)
-				print(assets)
-				print('0'*100)
 				bulk_import_targets(
 					targets=assets,
 					project_slug=project_slug,
