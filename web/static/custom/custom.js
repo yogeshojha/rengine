@@ -3475,3 +3475,57 @@ async function test_hackerone() {
 		});
 	}
 }
+
+function handleSyncBookmarkedProgramsSwal() {
+	Swal.fire({
+		title: 'Sync Bookmarked Programs',
+		html: `
+			<p>Are you sure you want to sync your bookmarked HackerOne programs?</p>
+			<p class="text-muted">This process will run in the background and may take some time.</p>
+		`,
+		icon: 'question',
+		showCancelButton: true,
+		confirmButtonText: 'Yes, start sync',
+		cancelButtonText: 'Cancel',
+		confirmButtonColor: '#3085d6',
+		cancelButtonColor: '#d33',
+	}).then((result) => {
+		if (result.isConfirmed) {
+			const currentProjectSlug = document.body.getAttribute('data-current-project');
+			fetch(`/api/hackerone-programs/sync_bookmarked?project_slug=${currentProjectSlug}`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': getCookie("csrftoken")
+				},
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(() => {
+				Swal.fire({
+					title: 'Sync Process Initiated',
+					html: `
+						<p>The sync process for your bookmarked HackerOne programs has begun.</p>
+						<p>You will receive notifications about the progress and completion of the sync process.</p>
+					`,
+					icon: 'info',
+					confirmButtonText: 'Got it',
+					confirmButtonColor: '#3085d6',
+				});
+			})
+			.catch((error) => {
+				Swal.fire({
+					title: 'Sync Process Initiation Failed',
+					text: `There was an error starting the sync process: ${error.message}`,
+					icon: 'error',
+					confirmButtonText: 'OK',
+					confirmButtonColor: '#3085d6',
+				});
+			});
+		}
+	});
+}

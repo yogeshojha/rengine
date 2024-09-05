@@ -30,7 +30,7 @@ from scanEngine.models import *
 from startScan.models import *
 from startScan.models import EndPoint
 from targetApp.models import *
-from api.shared_api_tasks import import_hackerone_programs_task
+from api.shared_api_tasks import import_hackerone_programs_task, sync_bookmarked_programs_task
 
 from .serializers import *
 
@@ -174,6 +174,8 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 	@action(detail=False, methods=['post'])
 	def import_programs(self, request):
 		project_slug = request.query_params.get('project_slug')
+		if not project_slug:
+			return Response({"error": "Project slug is required"}, status=HTTP_400_BAD_REQUEST)
 		handles = request.data.get('handles', [])
 
 		if not handles:
@@ -191,6 +193,25 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 		)
 
 		return Response({"message": f"Import process for {len(handles)} program(s) has begun."}, status=HTTP_202_ACCEPTED)
+	
+	@action(detail=False, methods=['get'])
+	def sync_bookmarked(self, request):
+		project_slug = request.query_params.get('project_slug')
+		if not project_slug:
+			return Response({"error": "Project slug is required"}, status=HTTP_400_BAD_REQUEST)
+
+		sync_bookmarked_programs_task.delay(project_slug)
+
+		create_inappnotification(
+			title="HackerOne Bookmarked Programs Sync Started",
+			description="Sync process for bookmarked programs has begun.",
+			notification_type=PROJECT_LEVEL_NOTIFICATION,
+			project_slug=project_slug,
+			icon="mdi-sync",
+			status='info'
+		)
+
+		return Response({"message": "Sync process for bookmarked programs has begun."}, status=HTTP_202_ACCEPTED)
 
 
 class InAppNotificationManagerViewSet(viewsets.ModelViewSet):

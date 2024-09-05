@@ -105,3 +105,77 @@ def import_hackerone_programs_task(handles, project_slug):
 		icon="mdi-check-all",
 		status='success'
 	)
+
+
+@app.task(name='sync_bookmarked_programs_task', bind=False, queue='api_queue')
+def sync_bookmarked_programs_task(project_slug):
+	"""
+		Runs in the background to sync bookmarked programs from HackerOne
+
+		Args:
+			project_slug (str): Slug of the project
+		Returns:
+			None
+			Creates in-app notifications for progress and results
+	"""
+
+	def fetch_bookmarked_programs():
+		url = f'https://api.hackerone.com/v1/hackers/programs?&page[size]=100'
+		headers = {'Accept': 'application/json'}
+		bookmarked_programs = []
+		username, api_key = get_hackerone_key_username()
+
+		while url:
+			response = requests.get(
+				url,
+				headers=headers,
+				auth=(username, api_key)
+			)
+
+			if response.status_code != 200:
+				raise Exception(f"HackerOne API request failed with status code {response.status_code}")
+
+			data = response.json()
+			programs = data['data']
+			bookmarked = [p for p in programs if p['attributes']['bookmarked']]
+			bookmarked_programs.extend(bookmarked)
+			
+			url = data['links'].get('next')
+
+		return bookmarked_programs
+
+	try:
+		bookmarked_programs = fetch_bookmarked_programs()
+		handles = [program['attributes']['handle'] for program in bookmarked_programs]
+
+		if not handles:
+			create_inappnotification(
+				title="HackerOne Bookmarked Programs Sync Completed",
+				description="No bookmarked programs found.",
+				notification_type=PROJECT_LEVEL_NOTIFICATION,
+				project_slug=project_slug,
+				icon="mdi-information",
+				status='info'
+			)
+			return
+
+		import_hackerone_programs_task.delay(handles, project_slug)
+
+		create_inappnotification(
+			title="HackerOne Bookmarked Programs Sync Progress",
+			description=f"Found {len(handles)} bookmarked program(s). Starting import process.",
+			notification_type=PROJECT_LEVEL_NOTIFICATION,
+			project_slug=project_slug,
+			icon="mdi-progress-check",
+			status='info'
+		)
+
+	except Exception as e:
+		create_inappnotification(
+			title="HackerOne Bookmarked Programs Sync Failed",
+			description=f"Failed to sync bookmarked programs: {str(e)}",
+			notification_type=PROJECT_LEVEL_NOTIFICATION,
+			project_slug=project_slug,
+			icon="mdi-alert-circle",
+			status='error'
+		)
