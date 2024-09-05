@@ -337,6 +337,7 @@ def onboarding(request):
         key_chaos = request.POST.get('key_chaos')
         key_hackerone = request.POST.get('key_hackerone')
         username_hackerone = request.POST.get('username_hackerone')
+        bug_bounty_mode = request.POST.get('bug_bounty_mode') == 'on'
 
         insert_date = timezone.now()
 
@@ -350,18 +351,29 @@ def onboarding(request):
             error = ' Could not create project, Error: ' + str(e)
 
 
+        # update currently logged in user's preferences for bug bounty mode
+        user_preferences, _ = UserPreferences.objects.get_or_create(user=request.user)
+        user_preferences.bug_bounty_mode = bug_bounty_mode
+        user_preferences.save()
+
+
         try:
             if create_username and create_password and create_user_role:
                 UserModel = get_user_model()
-                user = UserModel.objects.create_user(
+                new_user = UserModel.objects.create_user(
                     username=create_username,
                     password=create_password
                 )
-                assign_role(user, create_user_role)
+                assign_role(new_user, create_user_role)
+
+
+                # initially bug bounty mode is enabled for new user as selected for current user
+                new_user_preferences, _ = UserPreferences.objects.get_or_create(user=new_user)
+                new_user_preferences.bug_bounty_mode = bug_bounty_mode
+                new_user_preferences.save()
+                
         except Exception as e:
             error = ' Could not create User, Error: ' + str(e)
-
-
 
         if key_openai:
             openai_api_key = OpenAiAPIKey.objects.first()
@@ -407,6 +419,10 @@ def onboarding(request):
     context['chaos_key'] = ChaosAPIKey.objects.first()
     context['hackerone_key'] = HackerOneAPIKey.objects.first().key
     context['hackerone_username'] = HackerOneAPIKey.objects.first().username
+
+    context['user_preferences'], _ = UserPreferences.objects.get_or_create(
+        user=request.user
+    )
 
     return render(request, 'dashboard/onboarding.html', context)
 

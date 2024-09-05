@@ -3,13 +3,15 @@ import socket
 import logging
 import requests
 import validators
+import requests
 
 from ipaddress import IPv4Network
 from django.db.models import CharField, Count, F, Q, Value
 from django.utils import timezone
 from packaging import version
 from django.template.defaultfilters import slugify
-from rest_framework import viewsets
+from datetime import datetime
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT, HTTP_202_ACCEPTED
@@ -31,19 +33,23 @@ from startScan.models import *
 from startScan.models import EndPoint
 from targetApp.models import *
 from api.shared_api_tasks import import_hackerone_programs_task, sync_bookmarked_programs_task
-
 from .serializers import *
+
 
 logger = logging.getLogger(__name__)
 
 
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
-from datetime import datetime
-import requests
+class ToggleBugBountyModeView(APIView):
+	"""
+		This class manages the user bug bounty mode
+	"""
+	def post(self, request, *args, **kwargs):
+		user_preferences = get_object_or_404(UserPreferences, user=request.user)
+		user_preferences.bug_bounty_mode = not user_preferences.bug_bounty_mode
+		user_preferences.save()
+		return Response({
+			'bug_bounty_mode': user_preferences.bug_bounty_mode
+		}, status=status.HTTP_200_OK)
 
 
 class HackerOneProgramViewSet(viewsets.ViewSet):

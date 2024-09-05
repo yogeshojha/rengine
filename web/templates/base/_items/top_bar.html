@@ -170,6 +170,17 @@
             <i class="fe-user"></i>
             <span>My Account</span>
           </a>
+          <div class="dropdown-divider"></div>
+          <a href="javascript:toggleBugBountyMode()" class="dropdown-item notify-item">
+            <i class="fe-target"></i>
+            <span>
+              {% if user_preferences.bug_bounty_mode %}
+                Disable Bug Bounty Mode
+              {% else %}
+                Enable Bug Bounty Mode
+              {% endif %}
+            </span>
+          </a>
           {% if user|can:'modify_system_configurations' %}
           <a href="{% url 'admin_interface' current_project.slug %}" class="dropdown-item notify-item">
             <i class="fe-settings"></i>

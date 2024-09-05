@@ -8,68 +8,33 @@
     <link href="{% static 'bootstrap/bootstrap.min.css' %}" rel="stylesheet" type="text/css" id="bootstrap-stylesheet" />
     <link href="{% static 'assets/css/app.min.css' %}" rel="stylesheet" type="text/css" id="main-stylesheet" />
     <style>
-      .accordion-item {
-        border: none;
-        margin-bottom: 15px;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        transition: box-shadow 0.3s ease;
-      }
-
-      .accordion-item:hover {
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      }
-
-      .accordion-button {
-        background-color: #f8f9fa;
-        color: #333333;
-        font-weight: 500;
-        padding: 15px 20px;
+      .card {
         transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
       }
-
-      .accordion-item:first-child {
-        margin-top: 0;
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
       }
-
-      .accordion-button:hover {
-        background-color: #e9ecef;
-      }
-
-      .accordion-button:not(.collapsed) {
-        background-color: #e9ecef;
-        box-shadow: none;
-      }
-
-      .accordion-button:focus {
-        box-shadow: none;
-        border-color: transparent;
-      }
-
-      .accordion-button::after {
-        transition: transform 0.3s ease;
-      }
-
-      .accordion-button:not(.collapsed)::after {
-        transform: rotate(-180deg);
-      }
-
-      .accordion-body {
-        background-color: #ffffff;
-        padding: 20px;
-      }
-
-      .form-control {
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        padding: 10px 15px;
-        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-      }
-
-      .form-control:focus {
+      .form-control:focus, .form-select:focus {
         border-color: #80bdff;
         box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+      .form-switch {
+        padding-left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .form-switch .form-check-input {
+        margin-left: 0.5em;
+        width: 3em;
+        height: 1.5em;
+      }
+      .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
       }
     </style>
   </head>
@@ -77,113 +42,104 @@
     <div class="account-pages mt-5 mb-5">
       <div class="container">
         <div class="row justify-content-center">
-          <div class="col-xl-9">
-            <form method="POST" autocomplete="off"> {% csrf_token %} <div class="card bg-pattern">
-                <div class="card-body p-4">
-                  <h3 class="text-center">Hey {{user.username}}! Welcome to reNgine</h3>
-                  <p>To get started with reNgine, you'll need to create your first project. Projects help you organize and manage your security assessments efficiently. <a href="https://rengine.wiki/usage/projects/" target="_blank">Learn more about projects.</a>
-                  </p> {% if error %} <div class="alert alert-danger">
-                    {{error}}
-                  </div> 
-                  {% endif %} 
-                  <div class="row">
-                    <div class="col-lg-12">
-                      <div class="p-sm-3">
-                        <h4 class="mt-0">Project</h4>
-                        <div class="mb-2">
-                          <label for="project_name" class="form-label">Project name</label>
-                          <input class="form-control" type="text" id="project_name" name="project_name" required value="Default">
-                        </div>
-                        <h4 class="mt-0">Additional User</h4>
-                        <p class="text-muted">You can add additional users and assign them roles. You can manage users and their roles anytime in the future.</p>
-                        <div class="mb-2">
-                          <label for="create_username" class="form-label">User name</label>
-                          <input class="form-control" type="text" id="create_username" name="create_username" autocomplete="off">
-                        </div>
-                        <div class="mb-2">
-                          <label for="create_password" class="form-label">Password</label>
-                          <input class="form-control" type="password" id="create_password" name="create_password" autocomplete="new-password">
-                        </div>
-                        <div class="form">
-                          <label for="create_user_role" class="form-label float-start">Role</label>
-                          <select class="form-select" id="create_user_role" name="create_user_role">
-                            <option value='sys_admin'>Sys Admin</option>
-                            <option value='penetration_tester'>Penetration Tester</option>
-                            <option value='auditor'>Auditor</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-lg-12">
-                      <div class="p-sm-3">
-                        <h4 class="mt-lg-0">API Keys</h4>
-                        <p class="text-muted mb-2">If you have API keys for these services, please enter them here.</p>
-                        <div class="accordion" id="apiKeysAccordion">
-                          <div class="accordion-item">
-                            <h2 class="accordion-header" id="headingOpenAI">
-                              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOpenAI" aria-expanded="true" aria-controls="collapseOpenAI">OpenAI</button>
-                            </h2>
-                            <div id="collapseOpenAI" class="accordion-collapse collapse" aria-labelledby="headingOpenAI" data-bs-parent="#apiKeysAccordion">
-                              <div class="accordion-body">
-                                <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using ChatGPT.</p> {% if openai_key %} <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}"> {% else %} <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key"> {% endif %} <small class="text-muted float-end mt-2 mb-2">This is optional but recommended.</small>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="accordion-item">
-                            <h2 class="accordion-header" id="headingNetlas">
-                              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNetlas" aria-expanded="false" aria-controls="collapseNetlas"> Netlas </button>
-                            </h2>
-                            <div id="collapseNetlas" class="accordion-collapse collapse" aria-labelledby="headingNetlas" data-bs-parent="#apiKeysAccordion">
-                              <div class="accordion-body">
-                                <p class="text-muted">Netlas keys will be used to get whois information and other OSINT data.</p> {% if netlas_key %} <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}"> {% else %} <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key"> {% endif %} <small class="text-muted float-end mt-2 mb-2">This is optional</small>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="accordion-item">
-                            <h2 class="accordion-header" id="headingChaos">
-                              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseChaos" aria-expanded="false" aria-controls="collapseChaos"> Chaos by Project Discovery </button>
-                            </h2>
-                            <div id="collapseChaos" class="accordion-collapse collapse" aria-labelledby="headingChaos" data-bs-parent="#apiKeysAccordion">
-                              <div class="accordion-body">
-                                <p class="text-muted">Chaos keys enhance your reconnaissance capabilities by providing subdomain enumeration and valuable data for Public Bug Bounty Programs.</p> {% if chaos_key %} <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key" value="{{chaos_key}}"> {% else %} <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key"> {% endif %} <small class="text-muted float-end mt-2 mb-2">This is optional but recommended. Get your API key from <a href="https://cloud.projectdiscovery.io" target="_blank">https://cloud.projectdiscovery.io</a>
-                                </small>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="accordion-item">
-                            <h2 class="accordion-header" id="headingHackerone">
-                              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHackerone" aria-expanded="false" aria-controls="collapseChaos"> Hackerone </button>
-                            </h2>
-                            <div id="collapseHackerone" class="accordion-collapse collapse" aria-labelledby="headingHackerone" data-bs-parent="#apiKeysAccordion">
-                              <div class="accordion-body">
-                                <div class="row">
-                                  <p class="text-muted">Hackerone Keys can be used to import targets, bookmarked programs, and submit automated vulnerability report to Hackerone. This is a bug bounty specific feature.</p> 
-                                  </small>
-                                  <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-                                    <label for="hackerone_username"  class="form-label">Hackerone Username (Not email)</label>
-                                    {% if hackerone_username %} <input class="form-control" type="text" id="username_hackerone" name="username_hackerone" placeholder="Enter Hackerone Username" value="{{hackerone_username}}"> {% else %} <input class="form-control" type="text" id="username_hackerone" name="username_hackerone" placeholder="Enter Hackerone Username"> {% endif %}
-                                  </div>
-                                  <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-                                    <label for="hackerone_key" class="form-label">Generate your <a href="https://hackerone.com/settings/api_token/edit" target="_blank">API Token from here <i class="fe-external-link"></i></a></label>
-                                    <div class="flex-grow-1 position-relative">
-                                    {% if hackerone_key %} <input class="form-control" type="text" id="key_hackerone" name="key_hackerone" placeholder="Enter Hackerone Key" value="{{hackerone_key}}"> {% else %} <input class="form-control" type="text" id="key_hackerone" name="key_hackerone" placeholder="Enter Hackerone Token"> {% endif %}
-                                    </div>
-                                  </div>
-                                  <div class="col-12">
-                                    <small class="text-muted float-end mt-2 mb-2">This is optional but recommended for bug hunters. Get your API key from <a href="https://api.hackerone.com/getting-started-hacker-api/#getting-started-hacker-api" class="text-primary" target="_blank">Hackerone Documentation</a>
-                                  </div
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="mb-0">
-                    <button class="btn btn-info float-sm-end my-4" type="submit"> Proceed </button>
+          <div class="col-xl-10">
+            <form method="POST" autocomplete="off"> {% csrf_token %}
+              <div class="text-center mb-4">
+                <h3 class="text-white">Welcome to reNgine</h3>
+                <p class="text-muted">Let's set up your environment to get started with reNgine.</p>
+              </div>
+              {% if error %}
+              <div class="alert alert-danger">
+                {{error}}
+              </div>
+              {% endif %}
+              <div class="card mb-4">
+                <div class="card-body">
+                  <h5 class="card-title"><i class="fe-folder text-primary me-2"></i>Project</h5>
+                  <p class="card-text text-muted">Create your first project to organize and manage your security assessments.</p>
+                  <div class="mb-3">
+                    <label for="project_name" class="form-label">Project name</label>
+                    <input class="form-control" type="text" id="project_name" name="project_name" required value="Default">
                   </div>
                 </div>
+              </div>
+              <div class="card mb-4">
+                <div class="card-body">
+                  <h5 class="card-title"><i class="fe-user-plus text-primary me-2"></i>Additional User</h5>
+                  <p class="card-text text-muted">Add an additional user and assign them a role. You can manage users and their roles anytime in the future.</p>
+                  <div class="mb-3">
+                    <label for="create_username" class="form-label">Username</label>
+                    <input class="form-control" type="text" id="create_username" name="create_username" autocomplete="off">
+                  </div>
+                  <div class="mb-3">
+                    <label for="create_password" class="form-label">Password</label>
+                    <input class="form-control" type="password" id="create_password" name="create_password" autocomplete="new-password">
+                  </div>
+                  <div class="mb-3">
+                    <label for="create_user_role" class="form-label">Role</label>
+                    <select class="form-select" id="create_user_role" name="create_user_role">
+                      <option value='sys_admin'>Sys Admin</option>
+                      <option value='penetration_tester'>Penetration Tester</option>
+                      <option value='auditor'>Auditor</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="card mb-4">
+                <div class="card-body">
+                  <h5 class="card-title"><i class="fe-settings text-primary me-2"></i>User Preferences</h5>
+                  <p class="card-text text-muted">Customize your reNgine experience with these preferences.</p>
+                  <div class="mb-3">
+                    <div class="form-check form-switch">
+                      <label class="form-check-label" for="bug_bounty_mode">
+                        <i class="fe-target text-primary me-2"></i>
+                        <span class="fw-bold">Bug Bounty Mode</span>
+                      </label>
+                      <input class="form-check-input" type="checkbox" id="bug_bounty_mode" name="bug_bounty_mode" {% if user_preferences.bug_bounty_mode %}checked{% endif %}>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                      Enabling Bug Bounty Mode will:
+                      <ul class="mt-1">
+                        <li>Activate automatic reporting to HackerOne</li>
+                        <li>Enable the Bounty Hub for importing HackerOne programs</li>
+                        <li>Provide bug bounty specific features and optimizations</li>
+                      </ul>
+                    </small>
+                  </div>
+                </div>
+              </div>
+              <div class="card mb-4">
+                <div class="card-body">
+                  <h5 class="card-title"><i class="fe-key text-primary me-2"></i>API Keys</h5>
+                  <p class="card-text text-muted">Enter your API keys for various services to enhance reNgine's capabilities.</p>
+                  <div class="mb-3">
+                    <label for="key_openai" class="form-label">OpenAI Key</label>
+                    <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}">
+                    <small class="text-muted">Used for generating vulnerability descriptions, remediation, impact, and report writing using ChatGPT.</small>
+                  </div>
+                  <div class="mb-3">
+                    <label for="key_netlas" class="form-label">Netlas Key</label>
+                    <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}">
+                    <small class="text-muted">Used to get whois information and other OSINT data.</small>
+                  </div>
+                  <div class="mb-3">
+                    <label for="key_chaos" class="form-label">Chaos Key</label>
+                    <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key" value="{{chaos_key}}">
+                    <small class="text-muted">Enhances reconnaissance capabilities for Public Bug Bounty Programs. <a href="https://cloud.projectdiscovery.io" target="_blank">Get your API key</a></small>
+                  </div>
+                  <div class="mb-3">
+                    <label for="username_hackerone" class="form-label">HackerOne Username</label>
+                    <input class="form-control" type="text" id="username_hackerone" name="username_hackerone" placeholder="Enter HackerOne Username" value="{{hackerone_username}}">
+                  </div>
+                  <div class="mb-3">
+                    <label for="key_hackerone" class="form-label">HackerOne API Token</label>
+                    <input class="form-control" type="text" id="key_hackerone" name="key_hackerone" placeholder="Enter HackerOne Token" value="{{hackerone_key}}">
+                    <small class="text-muted">Used for importing targets, bookmarked programs, and submitting automated vulnerability reports. <a href="https://hackerone.com/settings/api_token/edit" target="_blank">Generate your API Token</a></small>
+                  </div>
+                </div>
+              </div>
+              <div class="text-end">
+                <button class="btn btn-primary" type="submit">Complete Setup</button>
               </div>
             </form>
           </div>

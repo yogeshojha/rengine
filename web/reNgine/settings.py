@@ -105,6 +105,7 @@ MIDDLEWARE = [
     'login_required.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'reNgine.middleware.UserPreferencesMiddleware',
 ]
 TEMPLATES = [
     {
@@ -118,7 +119,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'reNgine.context_processors.projects',
-                'reNgine.context_processors.version_context'
+                'reNgine.context_processors.version_context',
+                'reNgine.context_processors.user_preferences',
             ],
     },
 }]

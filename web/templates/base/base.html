@@ -161,6 +161,36 @@
         });
       }
 
+      function toggleBugBountyMode() {
+        fetch('/api/toggle-bug-bounty-mode/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            Snackbar.show({
+              {% if user_preferences.bug_bounty_mode %}
+                text: 'Bug Bounty Mode disabled successfully',
+              {% else %}
+                text: 'Bug Bounty Mode enabled successfully',
+              {% endif %}
+              pos: 'top-right',
+              actionTextColor: '#42A5F5',
+              duration: 1400
+            });
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to toggle Bug Bounty Mode', 'error');
+        });
+    }
+
     </script>
     {% if messages %}
       {% for message in messages %}
