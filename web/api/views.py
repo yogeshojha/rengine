@@ -1055,6 +1055,9 @@ class DeleteMultipleRows(APIView):
 			if data['type'] == 'subscan':
 				for row in data['rows']:
 					SubScan.objects.get(id=row).delete()
+			elif data['type'] == 'organization':
+				for row in data['rows']:
+					Organization.objects.get(id=row).delete()
 			response = True
 		except Exception as e:
 			response = False
