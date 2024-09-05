@@ -31,6 +31,7 @@ def bulk_import_targets(
 			org_description (str): description of the organization
 			h1_team_handle (str): hackerone team handle (if imported from hackerone)
 	"""
+	new_targets_imported = False
 	project = Project.objects.get(slug=project_slug)
 
 	all_targets = []
@@ -61,6 +62,7 @@ def bulk_import_targets(
 
 		if target_obj:
 			all_targets.append(target_obj)
+			new_targets_imported = True
 
 		if organization_name and all_targets:
 			org_name = organization_name.strip()
@@ -86,6 +88,8 @@ def bulk_import_targets(
 				org.domains.add(target)
 
 			logger.info(f"{'Created' if created else 'Updated'} organization {org_name} with {len(all_targets)} targets")
+
+	return new_targets_imported
 
 
 

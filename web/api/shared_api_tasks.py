@@ -7,13 +7,14 @@ from reNgine.celery import app
 from reNgine.database_utils import bulk_import_targets
 
 @app.task(name='import_hackerone_programs_task', bind=False, queue='api_queue')
-def import_hackerone_programs_task(handles, project_slug):
+def import_hackerone_programs_task(handles, project_slug, is_sync = False):
 	"""
 	Runs in the background to import programs from HackerOne
 
 	Args:
 		handles (list): List of handles to import
 		project_slug (str): Slug of the project
+		is_sync (bool): If the import is a sync operation
 	Returns:
 		None
 		rather creates inapp notifications
@@ -61,22 +62,23 @@ def import_hackerone_programs_task(handles, project_slug):
 
 				# convert assets to list of dict with name and description
 				assets = [{'name': asset, 'description': None} for asset in assets]
-				bulk_import_targets(
+				new_targets_added = bulk_import_targets(
 					targets=assets,
 					project_slug=project_slug,
 					organization_name=program_name,
 					org_description=None,
 					h1_team_handle=handle
 				)
-			
-				create_inappnotification(
-					title=f"HackerOne Program Imported: {handle}",
-					description=f"The program '{program_name}' from hackerone has been successfully imported.",
-					notification_type=PROJECT_LEVEL_NOTIFICATION,
-					project_slug=project_slug,
-					icon="mdi-check-circle",
-					status='success'
-				)
+
+				if new_targets_added:
+					create_inappnotification(
+						title=f"HackerOne Program Imported: {handle}",
+						description=f"The program '{program_name}' from hackerone has been successfully imported.",
+						notification_type=PROJECT_LEVEL_NOTIFICATION,
+						project_slug=project_slug,
+						icon="mdi-check-circle",
+						status='success'
+					)
 
 			except Exception as e:
 				create_inappnotification(
@@ -97,9 +99,16 @@ def import_hackerone_programs_task(handles, project_slug):
 				status='error'
 			)
 
+	if is_sync:
+		title = "HackerOne Program Sync Completed"
+		description = f"Sync process for {len(handles)} program(s) has completed."
+	else:
+		title = "HackerOne Program Import Completed"
+		description = f"Import process for {len(handles)} program(s) has completed."
+
 	create_inappnotification(
-		title="HackerOne Program Import Completed",
-		description=f"Import process for {len(handles)} program(s) has completed.",
+		title=title,
+		description=description,
 		notification_type=PROJECT_LEVEL_NOTIFICATION,
 		project_slug=project_slug,
 		icon="mdi-check-all",
@@ -159,7 +168,7 @@ def sync_bookmarked_programs_task(project_slug):
 			)
 			return
 
-		import_hackerone_programs_task.delay(handles, project_slug)
+		import_hackerone_programs_task.delay(handles, project_slug, is_sync=True)
 
 		create_inappnotification(
 			title="HackerOne Bookmarked Programs Sync Progress",
