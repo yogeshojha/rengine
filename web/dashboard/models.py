@@ -1,5 +1,7 @@
 from django.db import models
 from reNgine.definitions import *
+from django.contrib.auth.models import User
+
 
 class SearchHistory(models.Model):
 	query = models.CharField(max_length=1000)
@@ -85,3 +87,11 @@ class InAppNotification(models.Model):
 	def is_system_wide(self):
 		# property to determine if the notification is system wide or project specific
 		return self.notification_type == 'system'
+
+
+class UserPreferences(models.Model):
+	user = models.OneToOneField(User, on_delete=models.CASCADE)
+	bug_bounty_mode = models.BooleanField(default=True)
+	
+	def __str__(self):
+		return f"{self.user.username}'s preferences"
