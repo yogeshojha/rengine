@@ -3402,3 +3402,130 @@ function show_scan_configuration(starting_path, out_of_scope_subdomains, exclude
 }
 
 
+async function test_hackerone() {
+	const username = $("#username_hackerone");
+	const apiKey = $("#key_hackerone");
+	const fields = [username, apiKey];
+
+	const isValid = fields.every(field => field.val().trim().length > 0); 
+	fields.forEach(field => {
+		field.toggleClass("is-invalid", field.val().trim().length === 0);
+	});
+
+	if (!isValid) return;
+
+	try {
+		const result = await Swal.fire({
+			title: 'HackerOne Configuration',
+			text: 'This will test if your HackerOne API keys are working.',
+			icon: 'info',
+			showCancelButton: true,
+			confirmButtonText: 'Test my HackerOne API Key',
+			showLoaderOnConfirm: true,
+			preConfirm: async () => {
+			try {
+				const response = await fetch('testHackerone/', {
+				method: 'POST',
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken"),
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					username: username.val().trim(),
+					api_key: apiKey.val().trim()
+				}),
+				});
+	
+				if (!response.ok) {
+				throw new Error('Network response was not ok');
+				}
+	
+				const data = await response.json();
+				return data;
+			} catch (error) {
+				Swal.showValidationMessage(`Request failed: ${error}`);
+			}
+			},
+			allowOutsideClick: () => !Swal.isLoading()
+		});
+
+		if (result.isConfirmed) {
+			const data = result.value;
+			const isWorking = data.status === 200;
+	
+			fields.forEach(field => {
+			field.toggleClass("is-valid", isWorking);
+			field.toggleClass("is-invalid", !isWorking);
+			});
+	
+			await Swal.fire({
+			title: isWorking ? 'Success' : 'Error',
+			text: isWorking
+				? 'Your HackerOne Credentials are working.'
+				: 'Your HackerOne Credentials are not working. Please check your username and/or API key.',
+			icon: isWorking ? 'success' : 'error'
+			});
+		}
+	} catch (error) {
+		console.error('Error:', error);
+		await Swal.fire({
+			title: 'Error',
+			text: 'An unexpected error occurred while testing the HackerOne API Key.',
+			icon: 'error'
+		});
+	}
+}
+
+function handleSyncBookmarkedProgramsSwal() {
+	Swal.fire({
+		title: 'Sync Bookmarked Programs',
+		html: `
+			<p>Are you sure you want to sync your bookmarked HackerOne programs?</p>
+			<p class="text-muted">This process will run in the background and may take some time.</p>
+		`,
+		icon: 'question',
+		showCancelButton: true,
+		confirmButtonText: 'Yes, start sync',
+		cancelButtonText: 'Cancel',
+		confirmButtonColor: '#3085d6',
+		cancelButtonColor: '#d33',
+	}).then((result) => {
+		if (result.isConfirmed) {
+			const currentProjectSlug = document.body.getAttribute('data-current-project');
+			fetch(`/api/hackerone-programs/sync_bookmarked?project_slug=${currentProjectSlug}`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': getCookie("csrftoken")
+				},
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(() => {
+				Swal.fire({
+					title: 'Sync Process Initiated',
+					html: `
+						<p>The sync process for your bookmarked HackerOne programs has begun.</p>
+						<p>You will receive notifications about the progress and completion of the sync process.</p>
+					`,
+					icon: 'info',
+					confirmButtonText: 'Got it',
+					confirmButtonColor: '#3085d6',
+				});
+			})
+			.catch((error) => {
+				Swal.fire({
+					title: 'Sync Process Initiation Failed',
+					text: `There was an error starting the sync process: ${error.message}`,
+					icon: 'error',
+					confirmButtonText: 'OK',
+					confirmButtonColor: '#3085d6',
+				});
+			});
+		}
+	});
+}

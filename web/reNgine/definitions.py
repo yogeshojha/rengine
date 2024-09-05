@@ -563,3 +563,6 @@ NOTIFICATION_STATUS_TYPES = (
     ('warning', 'Warning'),
     ('error', 'Error'),
 )
+
+# Bountyhub Definitions
+HACKERONE_ALLOWED_ASSET_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "URL"]

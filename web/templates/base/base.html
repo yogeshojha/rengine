@@ -57,7 +57,7 @@
     {% endblock custom_js_css_link %}
   </head>
 
-  <body class="loading" data-layout-mode="horizontal" data-rengine-version="{{ RENGINE_CURRENT_VERSION }}">
+  <body class="loading" data-layout-mode="horizontal" data-rengine-version="{{ RENGINE_CURRENT_VERSION }}" data-current-project="{{ current_project.slug }}">
     <!-- Topbar begins -->
     {% include 'base/_items/top_bar.html' %}
     {# topbar ends #}

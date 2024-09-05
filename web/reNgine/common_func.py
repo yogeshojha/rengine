@@ -6,14 +6,14 @@ import pickle
 import random
 import shutil
 import traceback
-from time import sleep
-
+import ipaddress
 import humanize
 import redis
 import requests
 import tldextract
 import xmltodict
 
+from time import sleep
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from celery.utils.log import get_task_logger
@@ -1040,6 +1040,15 @@ def get_chaos_key():
 	return chaos_key[0] if chaos_key else None
 
 
+def get_hackerone_key_username():
+	"""
+		Get the HackerOne API key username from the database.
+		Returns: a tuple of the username and api key
+	"""
+	hackerone_key = HackerOneAPIKey.objects.all()
+	return (hackerone_key[0].username, hackerone_key[0].key) if hackerone_key else None
+
+
 def parse_llm_vulnerability_report(report):
 	report = report.replace('**', '')
 	data = {}
@@ -1619,3 +1628,21 @@ def create_inappnotification(
 	)
 	notification.save()
 	return notification
+
+def get_ip_info(ip_address):
+	is_ipv4 = bool(validators.ipv4(ip_address))
+	is_ipv6 = bool(validators.ipv6(ip_address))
+	ip_data = None
+	if is_ipv4:
+		ip_data = ipaddress.IPv4Address(ip_address)
+	elif is_ipv6:
+		ip_data = ipaddress.IPv6Address(ip_address)
+	else:
+		return None
+	return ip_data
+
+def get_ips_from_cidr_range(target):
+	try:
+		return [str(ip) for ip in ipaddress.IPv4Network(target, False)]
+	except Exception as e:
+		logger.error(f'{target} is not a valid CIDR range. Skipping.')

@@ -20,6 +20,7 @@ from celery.utils.log import get_task_logger
 from django.db.models import Count
 from dotted_dict import DottedDict
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from pycvesearch import CVESearch
 from metafinder.extractor import extract_metadata_from_google_search
 
@@ -2226,13 +2227,24 @@ def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, sh
 				fields,
 				add_meta_info=False)
 
-		# Send report to hackerone
-		hackerone_query = Hackerone.objects.all()
+		"""
+			Send report to hackerone when
+			1. send_report is True from Hackerone model in ScanEngine
+			2. username and key is set in HackerOneAPIKey in Dashboard
+			3. severity is not info or low
+		"""
+		hackerone_query = Hackerone.objects.filter(send_report=True)
+		api_key_check_query = HackerOneAPIKey.objects.filter(
+			Q(username__isnull=False) & Q(key__isnull=False)
+		)
+
 		send_report = (
 			hackerone_query.exists() and
+			api_key_check_query.exists() and
 			severity not in ('info', 'low') and
 			vuln.target_domain.h1_team_handle
 		)
+
 		if send_report:
 			hackerone = hackerone_query.first()
 			if hackerone.send_critical and severity == 'critical':
@@ -3292,58 +3304,64 @@ def send_hackerone_report(vulnerability_id):
 	"""
 	vulnerability = Vulnerability.objects.get(id=vulnerability_id)
 	severities = {v: k for k,v in NUCLEI_SEVERITY_MAP.items()}
+
+	# can only send vulnerability report if team_handle exists and send_report is True and api_key exists
+	hackerone = Hackerone.objects.filter(send_report=True).first()
+	api_key = HackerOneAPIKey.objects.filter(username__isnull=False, key__isnull=False).first()
+
+	if not (vulnerability.target_domain.h1_team_handle and hackerone and api_key):
+		logger.error('Missing required data: team handle, Hackerone config, or API key.')
+		return {"status_code": 400, "message": "Missing required data"}
+
+	severity_value = severities[vulnerability.severity]
+	tpl = hackerone.report_template or ""
+
+	tpl_vars = {
+		'{vulnerability_name}': vulnerability.name,
+		'{vulnerable_url}': vulnerability.http_url,
+		'{vulnerability_severity}': severity_value,
+		'{vulnerability_description}': vulnerability.description or '',
+		'{vulnerability_extracted_results}': vulnerability.extracted_results or '',
+		'{vulnerability_reference}': vulnerability.reference or '',
+	}
+
+	# Replace syntax of report template with actual content
+	for key, value in tpl_vars.items():
+		tpl = tpl.replace(key, value)
+
+	data = {
+		"data": {
+			"type": "report",
+			"attributes": {
+				"team_handle": vulnerability.target_domain.h1_team_handle,
+				"title": f'{vulnerability.name} found in {vulnerability.http_url}',
+				"vulnerability_information": tpl,
+				"severity_rating": severity_value,
+				"impact": "More information about the impact and vulnerability can be found here: \n" + vulnerability.reference if vulnerability.reference else "NA",
+			}
+		}
+	}
+
 	headers = {
 		'Content-Type': 'application/json',
 		'Accept': 'application/json'
 	}
 
-	# can only send vulnerability report if team_handle exists
-	if len(vulnerability.target_domain.h1_team_handle) !=0:
-		hackerone_query = Hackerone.objects.all()
-		if hackerone_query.exists():
-			hackerone = Hackerone.objects.first()
-			severity_value = severities[vulnerability.severity]
-			tpl = hackerone.report_template
-
-			# Replace syntax of report template with actual content
-			tpl = tpl.replace('{vulnerability_name}', vulnerability.name)
-			tpl = tpl.replace('{vulnerable_url}', vulnerability.http_url)
-			tpl = tpl.replace('{vulnerability_severity}', severity_value)
-			tpl = tpl.replace('{vulnerability_description}', vulnerability.description if vulnerability.description else '')
-			tpl = tpl.replace('{vulnerability_extracted_results}', vulnerability.extracted_results if vulnerability.extracted_results else '')
-			tpl = tpl.replace('{vulnerability_reference}', vulnerability.reference if vulnerability.reference else '')
-
-			data = {
-			  "data": {
-				"type": "report",
-				"attributes": {
-				  "team_handle": vulnerability.target_domain.h1_team_handle,
-				  "title": f'{vulnerability.name} found in {vulnerability.http_url}',
-				  "vulnerability_information": tpl,
-				  "severity_rating": severity_value,
-				  "impact": "More information about the impact and vulnerability can be found here: \n" + vulnerability.reference if vulnerability.reference else "NA",
-				}
-			  }
-			}
-
-			r = requests.post(
-			  'https://api.hackerone.com/v1/hackers/reports',
-			  auth=(hackerone.username, hackerone.api_key),
-			  json=data,
-			  headers=headers
-			)
-			response = r.json()
-			status_code = r.status_code
-			if status_code == 201:
-				vulnerability.hackerone_report_id = response['data']["id"]
-				vulnerability.open_status = False
-				vulnerability.save()
-			return status_code
-
-	else:
-		logger.error('No team handle found.')
-		status_code = 111
-		return status_code
+	r = requests.post(
+		'https://api.hackerone.com/v1/hackers/reports',
+		auth=(api_key.username, api_key.key),
+		json=data,
+		headers=headers
+	)
+	response = r.json()
+	status_code = r.status_code
+	if status_code == 201:
+		vulnerability.hackerone_report_id = response['data']["id"]
+		vulnerability.open_status = False
+		vulnerability.save()
+		return {"status_code": r.status_code, "message": "Report sent successfully"}
+	logger.error(f"Error sending report to HackerOne")
+	return {"status_code": r.status_code, "message": response}
 
 
 #-------------#

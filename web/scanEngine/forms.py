@@ -398,25 +398,13 @@ class HackeroneForm(forms.ModelForm):
         model = Hackerone
         fields = '__all__'
 
-    username = forms.CharField(
-        required=True,
-        widget=forms.TextInput(
+    send_report = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
             attrs={
-                "class": "form-control form-control-lg",
-                "id": "username",
-                "placeholder": "Your Hackerone Username",
+                "class": "form-check-input",
+                "id": "send_report",
             }))
-
-    api_key = forms.CharField(
-        required=True,
-        widget=forms.PasswordInput(
-            attrs={
-                "class": "form-control form-control-lg",
-                "id": "api_key",
-                "placeholder": "Hackerone API Token",
-            },
-            render_value=True
-        ))
 
     send_critical = forms.BooleanField(
         required=False,
@@ -453,6 +441,7 @@ class HackeroneForm(forms.ModelForm):
         self.initial['username'] = key.username
         self.initial['api_key'] = key.api_key
 
+        self.initial['send_report'] = key.send_report
         self.initial['send_critical'] = key.send_critical
         self.initial['send_high'] = key.send_high
         self.initial['send_medium'] = key.send_medium
@@ -460,6 +449,7 @@ class HackeroneForm(forms.ModelForm):
         self.initial['report_template'] = key.report_template
 
     def set_initial(self):
+        self.initial['send_report'] = False
         self.initial['send_critical'] = True
         self.initial['send_high'] = True
         self.initial['send_medium'] = False
