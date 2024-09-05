@@ -37,6 +37,15 @@ from .serializers import *
 logger = logging.getLogger(__name__)
 
 
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
+from datetime import datetime
+import requests
+
+
 class HackerOneProgramViewSet(viewsets.ViewSet):
 	"""
 		This class manages the HackerOne Program model, 
@@ -51,25 +60,28 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 	ALLOWED_ASSET_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "CIDR", "URL"]
 
 	def list(self, request):
-		sort_by = request.query_params.get('sort_by', 'age')
-		sort_order = request.query_params.get('sort_order', 'desc')  # Changed default to 'desc'
+		try:
+			sort_by = request.query_params.get('sort_by', 'age')
+			sort_order = request.query_params.get('sort_order', 'desc')
 
-		programs = self.get_cached_programs()
+			programs = self.get_cached_programs()
 
-		if sort_by == 'name':
-			programs = sorted(programs, key=lambda x: x['attributes']['name'].lower(), 
-					reverse=(sort_order.lower() == 'desc'))
-		elif sort_by == 'reports':
-			programs = sorted(programs, key=lambda x: x['attributes'].get('number_of_reports_for_user', 0), 
-					reverse=(sort_order.lower() == 'desc'))
-		elif sort_by == 'age':
-			programs = sorted(programs, 
-				key=lambda x: datetime.strptime(x['attributes'].get('started_accepting_at', '1970-01-01T00:00:00.000Z'), '%Y-%m-%dT%H:%M:%S.%fZ'), 
-				reverse=(sort_order.lower() == 'desc')
-			)
+			if sort_by == 'name':
+				programs = sorted(programs, key=lambda x: x['attributes']['name'].lower(), 
+						reverse=(sort_order.lower() == 'desc'))
+			elif sort_by == 'reports':
+				programs = sorted(programs, key=lambda x: x['attributes'].get('number_of_reports_for_user', 0), 
+						reverse=(sort_order.lower() == 'desc'))
+			elif sort_by == 'age':
+				programs = sorted(programs, 
+					key=lambda x: datetime.strptime(x['attributes'].get('started_accepting_at', '1970-01-01T00:00:00.000Z'), '%Y-%m-%dT%H:%M:%S.%fZ'), 
+					reverse=(sort_order.lower() == 'desc')
+				)
 
-		serializer = HackerOneProgramSerializer(programs, many=True)
-		return Response(serializer.data)
+			serializer = HackerOneProgramSerializer(programs, many=True)
+			return Response(serializer.data)
+		except Exception as e:
+			return self.handle_exception(e)
 	
 	def get_api_credentials(self):
 		try:
@@ -82,18 +94,24 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 
 	@action(detail=False, methods=['get'])
 	def bookmarked_programs(self, request):
-		# do not cache bookmarked programs due to the user specific nature
-		programs = self.fetch_programs_from_hackerone()
-		bookmarked = [p for p in programs if p['attributes']['bookmarked']]
-		serializer = HackerOneProgramSerializer(bookmarked, many=True)
-		return Response(serializer.data)
+		try:
+			# do not cache bookmarked programs due to the user specific nature
+			programs = self.fetch_programs_from_hackerone()
+			bookmarked = [p for p in programs if p['attributes']['bookmarked']]
+			serializer = HackerOneProgramSerializer(bookmarked, many=True)
+			return Response(serializer.data)
+		except Exception as e:
+			return self.handle_exception(e)
 	
 	@action(detail=False, methods=['get'])
 	def bounty_programs(self, request):
-		programs = self.get_cached_programs()
-		bounty_programs = [p for p in programs if p['attributes']['offers_bounties']]
-		serializer = HackerOneProgramSerializer(bounty_programs, many=True)
-		return Response(serializer.data)
+		try:
+			programs = self.get_cached_programs()
+			bounty_programs = [p for p in programs if p['attributes']['offers_bounties']]
+			serializer = HackerOneProgramSerializer(bounty_programs, many=True)
+			return Response(serializer.data)
+		except Exception as e:
+			return self.handle_exception(e)
 
 	def get_cached_programs(self):
 		programs = cache.get(self.CACHE_KEY)
@@ -106,7 +124,10 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 		url = f'{self.API_BASE}/programs?page[size]=100'
 		headers = {'Accept': 'application/json'}
 		all_programs = []
-		username, api_key = self.get_api_credentials()
+		try:
+			username, api_key = self.get_api_credentials()
+		except Exception as e:
+			raise Exception("API credentials error: " + str(e))
 
 		while url:
 			response = requests.get(
@@ -115,7 +136,9 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 				auth=(username, api_key)
 			)
 
-			if response.status_code != 200:
+			if response.status_code == 401:
+				raise Exception("Invalid API credentials")
+			elif response.status_code != 200:
 				raise Exception(f"HackerOne API request failed with status code {response.status_code}")
 
 			data = response.json()
@@ -127,38 +150,46 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 
 	@action(detail=False, methods=['post'])
 	def refresh_cache(self, request):
-		programs = self.fetch_programs_from_hackerone()
-		cache.set(self.CACHE_KEY, programs, self.CACHE_TIMEOUT)
-		return Response({"status": "Cache refreshed successfully"})
+		try:
+			programs = self.fetch_programs_from_hackerone()
+			cache.set(self.CACHE_KEY, programs, self.CACHE_TIMEOUT)
+			return Response({"status": "Cache refreshed successfully"})
+		except Exception as e:
+			return self.handle_exception(e)
 	
 	@action(detail=True, methods=['get'])
 	def program_details(self, request, pk=None):
-		program_handle = pk
-		cache_key = self.PROGRAM_CACHE_KEY.format(program_handle)
-		program_details = cache.get(cache_key)
+		try:
+			program_handle = pk
+			cache_key = self.PROGRAM_CACHE_KEY.format(program_handle)
+			program_details = cache.get(cache_key)
 
-		if program_details is None:
-			program_details = self.fetch_program_details_from_hackerone(program_handle)
+			if program_details is None:
+				program_details = self.fetch_program_details_from_hackerone(program_handle)
+				if program_details:
+					cache.set(cache_key, program_details, self.CACHE_TIMEOUT)
+
 			if program_details:
-				cache.set(cache_key, program_details, self.CACHE_TIMEOUT)
+				filtered_scopes = [
+					scope for scope in program_details.get('relationships', {}).get('structured_scopes', {}).get('data', [])
+					if scope.get('attributes', {}).get('asset_type') in self.ALLOWED_ASSET_TYPES
+				]
 
-		if program_details:
-			filtered_scopes = [
-				scope for scope in program_details.get('relationships', {}).get('structured_scopes', {}).get('data', [])
-				if scope.get('attributes', {}).get('asset_type') in self.ALLOWED_ASSET_TYPES
-			]
+				program_details['relationships']['structured_scopes']['data'] = filtered_scopes
 
-			program_details['relationships']['structured_scopes']['data'] = filtered_scopes
-
-			return Response(program_details)
-		else:
-			return Response({"error": "Program not found"}, status=404)
-		
+				return Response(program_details)
+			else:
+				return Response({"error": "Program not found"}, status=status.HTTP_404_NOT_FOUND)
+		except Exception as e:
+			return self.handle_exception(e)
 
 	def fetch_program_details_from_hackerone(self, program_handle):
 		url = f'{self.API_BASE}/programs/{program_handle}'
 		headers = {'Accept': 'application/json'}
-		username, api_key = self.get_api_credentials()
+		try:
+			username, api_key = self.get_api_credentials()
+		except Exception as e:
+			raise Exception("API credentials error: " + str(e))
 
 		response = requests.get(
 			url,
@@ -166,53 +197,68 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 			auth=(username, api_key)
 		)
 
-		if response.status_code == 200:
+		if response.status_code == 401:
+			raise Exception("Invalid API credentials")
+		elif response.status_code == 200:
 			return response.json()
 		else:
 			return None
 		
 	@action(detail=False, methods=['post'])
 	def import_programs(self, request):
-		project_slug = request.query_params.get('project_slug')
-		if not project_slug:
-			return Response({"error": "Project slug is required"}, status=HTTP_400_BAD_REQUEST)
-		handles = request.data.get('handles', [])
+		try:
+			project_slug = request.query_params.get('project_slug')
+			if not project_slug:
+				return Response({"error": "Project slug is required"}, status=status.HTTP_400_BAD_REQUEST)
+			handles = request.data.get('handles', [])
 
-		if not handles:
-			return Response({"error": "No program handles provided"}, status=HTTP_400_BAD_REQUEST)
+			if not handles:
+				return Response({"error": "No program handles provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-		import_hackerone_programs_task.delay(handles, project_slug)
+			import_hackerone_programs_task.delay(handles, project_slug)
 
-		create_inappnotification(
-			title="HackerOne Program Import Started",
-			description=f"Import process for {len(handles)} program(s) has begun.",
-			notification_type=PROJECT_LEVEL_NOTIFICATION,
-			project_slug=project_slug,
-			icon="mdi-download",
-			status='info'
-		)
+			create_inappnotification(
+				title="HackerOne Program Import Started",
+				description=f"Import process for {len(handles)} program(s) has begun.",
+				notification_type=PROJECT_LEVEL_NOTIFICATION,
+				project_slug=project_slug,
+				icon="mdi-download",
+				status='info'
+			)
 
-		return Response({"message": f"Import process for {len(handles)} program(s) has begun."}, status=HTTP_202_ACCEPTED)
+			return Response({"message": f"Import process for {len(handles)} program(s) has begun."}, status=status.HTTP_202_ACCEPTED)
+		except Exception as e:
+			return self.handle_exception(e)
 	
 	@action(detail=False, methods=['get'])
 	def sync_bookmarked(self, request):
-		project_slug = request.query_params.get('project_slug')
-		if not project_slug:
-			return Response({"error": "Project slug is required"}, status=HTTP_400_BAD_REQUEST)
+		try:
+			project_slug = request.query_params.get('project_slug')
+			if not project_slug:
+				return Response({"error": "Project slug is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-		sync_bookmarked_programs_task.delay(project_slug)
+			sync_bookmarked_programs_task.delay(project_slug)
 
-		create_inappnotification(
-			title="HackerOne Bookmarked Programs Sync Started",
-			description="Sync process for bookmarked programs has begun.",
-			notification_type=PROJECT_LEVEL_NOTIFICATION,
-			project_slug=project_slug,
-			icon="mdi-sync",
-			status='info'
-		)
+			create_inappnotification(
+				title="HackerOne Bookmarked Programs Sync Started",
+				description="Sync process for bookmarked programs has begun.",
+				notification_type=PROJECT_LEVEL_NOTIFICATION,
+				project_slug=project_slug,
+				icon="mdi-sync",
+				status='info'
+			)
 
-		return Response({"message": "Sync process for bookmarked programs has begun."}, status=HTTP_202_ACCEPTED)
+			return Response({"message": "Sync process for bookmarked programs has begun."}, status=status.HTTP_202_ACCEPTED)
+		except Exception as e:
+			return self.handle_exception(e)
 
+	def handle_exception(self, exc):
+		if isinstance(exc, ObjectDoesNotExist):
+			return Response({"error": "HackerOne API credentials not configured"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+		elif str(exc) == "Invalid API credentials":
+			return Response({"error": "Invalid HackerOne API credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+		else:
+			return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class InAppNotificationManagerViewSet(viewsets.ModelViewSet):
 	"""

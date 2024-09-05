@@ -28,16 +28,16 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             showLoadingIndicator("Loading HackerOne Programs");
         }
-
+    
         let api_url = isBookmarkedRequest ? '/api/hackerone-programs/bookmarked_programs/' : '/api/hackerone-programs/';
-
+    
         const sortParams = updateSortingParams();
         const queryParams = new URLSearchParams(sortParams).toString();
-
+    
         if (queryParams) {
             api_url += '?' + queryParams;
         }
-
+    
         try {
             const response = await fetch(api_url, {
                 method: "GET",
@@ -46,17 +46,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     "X-CSRFToken": getCookie("csrftoken"),
                 },
             });
-
+    
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'An error occurred while fetching the programs.');
             }
-
+    
             const data = await response.json();
             allPrograms = data;
             displayPrograms(data);
         } catch (error) {
-            displayErrorMessage("An error occurred while fetching the hackerone programs. Please try again later. Make sure you have hackerone api key set in your API Vault.");
             console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message,
+                confirmButtonText: 'OK'
+            });
         } finally {
             hideLoadingIndicator();
         }
@@ -263,7 +269,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function hideLoadingIndicator() {
-        Swal.close();
+        // Only close the Swal if it's a loading indicator
+        if (Swal.isVisible() && Swal.getTitle().textContent.includes('Loading')) {
+            Swal.close();
+        }
     }
 
     fetchPrograms(false, false);
@@ -310,7 +319,9 @@ function see_detail(handle) {
     fetch(`/api/hackerone-programs/${handle}/program_details/`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                return response.json().then(errorData => {
+                    throw new Error(errorData.error || 'An error occurred while fetching program details.');
+                });
             }
             return response.json();
         })
@@ -321,11 +332,10 @@ function see_detail(handle) {
         })
         .catch(error => {
             console.error('Error:', error);
-            
             Swal.fire({
                 icon: 'error',
-                title: 'Oops...',
-                text: 'There was an error fetching the program details. Please try again.',
+                title: 'Error',
+                text: error.message,
             });
         });
 }
@@ -531,7 +541,8 @@ async function importPrograms(handles) {
         });
 
         if (!response.ok) {
-            throw new Error('Import failed');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Import failed');
         }
 
         return await response.json();
@@ -542,7 +553,6 @@ async function importPrograms(handles) {
 }
 
 function handleProgramImportswal(handles) {
-    // swal loader to handle the import
     Swal.fire({
         title: 'Confirm Import',
         html: `
@@ -558,11 +568,11 @@ function handleProgramImportswal(handles) {
     }).then((result) => {
         if (result.isConfirmed) {
             importPrograms(handles)
-                .then(() => {
+                .then((response) => {
                     Swal.fire({
                         title: 'Import Started',
                         html: `
-                            <p>The import process for ${handles.length} program(s) has begun.</p>
+                            <p>${response.message}</p>
                             <p>You will receive notifications about the progress and completion of the import.</p>
                         `,
                         icon: 'info',
@@ -570,18 +580,18 @@ function handleProgramImportswal(handles) {
                         confirmButtonColor: '#3085d6',
                     });
                 })
-                .catch(() => {
+                .catch((error) => {
                     Swal.fire({
                         title: 'Import Initiation Failed',
-                        text: 'There was an error starting the import process. Please try again.',
+                        text: error.message,
                         icon: 'error',
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#3085d6',
                     });
                 });
-                // clear all selected cards
-                const container = document.getElementById('program_cards');
-                container.querySelectorAll('.card-selected').forEach(card => card.classList.remove('card-selected'));
+            // clear all selected cards
+            const container = document.getElementById('program_cards');
+            container.querySelectorAll('.card-selected').forEach(card => card.classList.remove('card-selected'));
         }
     });
 }

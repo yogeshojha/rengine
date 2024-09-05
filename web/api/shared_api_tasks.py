@@ -22,7 +22,12 @@ def import_hackerone_programs_task(handles, project_slug, is_sync = False):
 	def fetch_program_details_from_hackerone(program_handle):
 		url = f'https://api.hackerone.com/v1/hackers/programs/{program_handle}'
 		headers = {'Accept': 'application/json'}
-		username, api_key = get_hackerone_key_username()
+		creds = get_hackerone_key_username()
+
+		if not creds:
+			raise Exception("HackerOne API credentials not configured")
+		
+		username, api_key = creds
 
 		response = requests.get(
 			url,
@@ -132,7 +137,12 @@ def sync_bookmarked_programs_task(project_slug):
 		url = f'https://api.hackerone.com/v1/hackers/programs?&page[size]=100'
 		headers = {'Accept': 'application/json'}
 		bookmarked_programs = []
-		username, api_key = get_hackerone_key_username()
+		
+		credentials = get_hackerone_key_username()
+		if not credentials:
+			raise Exception("HackerOne API credentials not configured")
+		
+		username, api_key = credentials
 
 		while url:
 			response = requests.get(
