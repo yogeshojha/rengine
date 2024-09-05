@@ -1710,7 +1710,11 @@ $(document).ready(function() {
 							// if (cve_cwe_badge != "") {
 							// 	cve_cwe_badge
 							// }
-							hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+							{% if user_preferences.bug_bounty_mode %}
+								hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+							{% else %}
+								hackerone_report = "";
+							{% endif %}
 							return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + cve_cwe_badge + tags + hackerone_report;
 						},
 						"targets": 3,
@@ -1772,7 +1776,9 @@ $(document).ready(function() {
 								</a>
 								<div class="dropdown-menu" style="">
 								<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">Fetch GPT Vulnerability Details</a>
-								<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+								{% if user_preferences.bug_bounty_mode %}
+									<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+								{% endif %}
 								<a class="text-danger dropdown-item" href="javascript:delete_vulnerability(${row['id']});">Delete Vulnerability</a>
 								</div>
 								</div>`;
