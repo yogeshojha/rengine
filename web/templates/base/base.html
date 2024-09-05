@@ -161,6 +161,24 @@
         });
       }
 
+      function toggleBugBountyMode() {
+        fetch('/api/toggle-bug-bounty-mode/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to toggle Bug Bounty Mode', 'error');
+        });
+    }
+
     </script>
     {% if messages %}
       {% for message in messages %}
