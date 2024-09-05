@@ -269,8 +269,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function hideLoadingIndicator() {
-        // Only close the Swal if it's a loading indicator
-        if (Swal.isVisible() && Swal.getTitle().textContent.includes('Loading')) {
+        // Only close the Swal if it's a loading indicator and not an error
+        if (Swal.isVisible() && !Swal.getTitle().textContent.includes('Error')) {
             Swal.close();
         }
     }

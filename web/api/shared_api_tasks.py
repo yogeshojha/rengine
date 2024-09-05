@@ -35,6 +35,9 @@ def import_hackerone_programs_task(handles, project_slug, is_sync = False):
 			auth=(username, api_key)
 		)
 
+		if response.status_code == 401:
+			raise Exception("HackerOne API credentials are invalid")
+
 		if response.status_code == 200:
 			return response.json()
 		else:
@@ -151,7 +154,9 @@ def sync_bookmarked_programs_task(project_slug):
 				auth=(username, api_key)
 			)
 
-			if response.status_code != 200:
+			if response.status_code == 401:
+				raise Exception("HackerOne API credentials are invalid")
+			elif response.status_code != 200:
 				raise Exception(f"HackerOne API request failed with status code {response.status_code}")
 
 			data = response.json()
