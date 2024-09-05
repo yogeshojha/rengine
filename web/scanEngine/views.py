@@ -547,8 +547,13 @@ def api_vault(request, slug):
     openai_key = OpenAiAPIKey.objects.first()
     netlas_key = NetlasAPIKey.objects.first()
     chaos_key = ChaosAPIKey.objects.first()
-    hackerone_key = HackerOneAPIKey.objects.first().key
-    hackerone_username = HackerOneAPIKey.objects.first().username
+    h1_key = HackerOneAPIKey.objects.first()
+    if h1_key:
+        hackerone_key = h1_key.key
+        hackerone_username = h1_key.username
+    else:
+        hackerone_key = None
+        hackerone_username = None
 
     context['openai_key'] = openai_key
     context['netlas_key'] = netlas_key
