@@ -171,7 +171,19 @@
         })
         .then(response => response.json())
         .then(data => {
-            location.reload();
+            Snackbar.show({
+              {% if user_preferences.bug_bounty_mode %}
+                text: 'Bug Bounty Mode disabled successfully',
+              {% else %}
+                text: 'Bug Bounty Mode enabled successfully',
+              {% endif %}
+              pos: 'top-right',
+              actionTextColor: '#42A5F5',
+              duration: 1400
+            });
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
         })
         .catch(error => {
             console.error('Error:', error);
