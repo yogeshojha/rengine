@@ -83,7 +83,7 @@ RUN ARCH=$(dpkg --print-architecture) \
     && mv geckodriver /usr/bin
 
 # Install Rust for orjson
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN set -e; curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN pip3 install maturin
 
