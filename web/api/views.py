@@ -920,6 +920,11 @@ class AddTarget(APIView):
 		h1_team_handle = data.get('h1_team_handle')
 		description = data.get('description')
 		domain_name = data.get('domain_name')
+		# remove wild card from domain
+		domain_name = domain_name.replace('*', '')
+		# if domain_name begins with . remove that
+		if domain_name.startswith('.'):
+			domain_name = domain_name[1:]
 		organization_name = data.get('organization')
 		slug = data.get('slug')
 

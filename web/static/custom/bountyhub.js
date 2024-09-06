@@ -454,6 +454,8 @@ function populateBadges(attributes) {
 
 function populateAssetAccordion(data) {
     const accordion = document.getElementById('assetAccordion');
+    const hackerone_handle = data.attributes.handle;
+    const program_name = data.attributes.name;
     const assetTypes = {
         WILDCARD: [], DOMAIN: [], IP_ADDRESS: [], CIDR: [], URL: []
     };
@@ -469,13 +471,13 @@ function populateAssetAccordion(data) {
     Object.entries(assetTypes).forEach(([type, assets], index) => {
         console.log(assets)
         if (assets.length > 0) {
-            const item = createInScopeAccordionItem(type, assets, index);
+            const item = createInScopeAccordionItem(type, assets, hackerone_handle, program_name);
             accordion.appendChild(item);
         }
     });
 }
 
-function createInScopeAccordionItem(type, assets, index) {
+function createInScopeAccordionItem(type, assets, hackerone_handle, program_name) {
     const item = document.createElement('div');
     item.className = 'accordion-item border-0 mb-3';
     item.innerHTML = `
@@ -491,7 +493,7 @@ function createInScopeAccordionItem(type, assets, index) {
                 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                     ${assets.map(asset => `
                         <div class="col">
-                            <div class="card h-100 asset-card shadow-sm program-modal-asset-card" onclick="add_target('${asset}')">
+                            <div class="card h-100 asset-card shadow-sm program-modal-asset-card" onclick="add_target(domain_name='${asset}', h1_handle='${hackerone_handle}', description='${program_name} (Hackerone Program)')">
                                 <div class="card-body d-flex flex-column justify-content-between">
                                     <h5 class="card-title program-asset-name" data-bs-toggle="tooltip" title="${asset}">
                                         <i class="${getIconForAssetType(type)} me-2"></i>
