@@ -331,11 +331,12 @@ def delete_targets(request, slug):
         list_of_domains = []
         for key, value in request.POST.items():
             if key != "list_target_table_length" and key != "csrfmiddlewaretoken":
+                list_of_domains.append(value)
                 Domain.objects.filter(id=value).delete()
         messages.add_message(
             request,
             messages.INFO,
-            'Targets deleted!')
+            f'{len(list_of_domains)} targets deleted!')
     return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
 
 
