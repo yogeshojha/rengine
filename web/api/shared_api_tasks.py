@@ -56,9 +56,13 @@ def import_hackerone_programs_task(handles, project_slug, is_sync = False):
 				for scope in scopes:
 					asset_type = scope['attributes']['asset_type']
 					asset_identifier = scope['attributes']['asset_identifier']
+					eligible_for_submission = scope['attributes']['eligible_for_submission']
+
+					# for now we should ignore the scope that are not eligible for submission
+					# in future release we will add this in target out_of_scope
 
 					# we need to filter the scope that are supported by reNgine now
-					if asset_type in HACKERONE_ALLOWED_ASSET_TYPES:
+					if asset_type in HACKERONE_ALLOWED_ASSET_TYPES and eligible_for_submission:
 						assets.append(asset_identifier)
 					
 					# in some cases asset_type is OTHER and may contain the asset
