@@ -21,10 +21,8 @@ jobs:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4
 
-      - name: 🖥️ Set up QEMU
+      - name: 🖥️ Set up QEMU and Docker Buildx
         uses: docker/setup-qemu-action@v3
-
-      - name: 🛠️ Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: 🔑 Log in to Docker Hub
@@ -56,14 +54,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: 📦 Build and push multi-arch image
+          load: true
+
+      - name: 📦 Push multi-arch image
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v5
         with:
           context: web/
           platforms: ${{ matrix.platform }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: yogeshojha/rengine:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          load: true
