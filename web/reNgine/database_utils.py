@@ -30,6 +30,9 @@ def bulk_import_targets(
 			organization_name (str): name of the organization to tag these targets
 			org_description (str): description of the organization
 			h1_team_handle (str): hackerone team handle (if imported from hackerone)
+
+		Returns:
+			bool: True if new targets are imported, False otherwise
 	"""
 	new_targets_imported = False
 	project = Project.objects.get(slug=project_slug)

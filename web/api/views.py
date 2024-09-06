@@ -24,6 +24,7 @@ from dashboard.models import *
 from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
+from reNgine.database_utils import *
 from reNgine.definitions import ABORTED_TASK
 from reNgine.tasks import *
 from reNgine.llm import *
@@ -932,35 +933,26 @@ class AddTarget(APIView):
 		if not validators.domain(domain_name):
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
 
-		project = Project.objects.get(slug=slug)
+		status = bulk_import_targets(
+			targets=[{
+				'name': domain_name,
+				'description': description,
+			}],
+			organization_name=organization_name,
+			h1_team_handle=h1_team_handle,
+			project_slug=slug
+		)
 
-		# Create domain object in DB
-		domain, _ = Domain.objects.get_or_create(name=domain_name)
-		domain.project = project
-		domain.h1_team_handle = h1_team_handle
-		domain.description = description
-		if not domain.insert_date:
-			domain.insert_date = timezone.now()
-		domain.save()
-
-		# Create org object in DB
-		if organization_name:
-			organization_obj = None
-			organization_query = Organization.objects.filter(name=organization_name)
-			if organization_query.exists():
-				organization_obj = organization_query[0]
-			else:
-				organization_obj = Organization.objects.create(
-					name=organization_name,
-					project=project,
-					insert_date=timezone.now())
-			organization_obj.domains.add(domain)
-
+		if status:
+			return Response({
+				'status': True,
+				'message': 'Domain successfully added as target !',
+				'domain_name': domain_name,
+				# 'domain_id': domain.id
+			})
 		return Response({
-			'status': True,
-			'message': 'Domain successfully added as target !',
-			'domain_name': domain_name,
-			'domain_id': domain.id
+			'status': False,
+			'message': 'Failed to add as target !'
 		})
 
 
