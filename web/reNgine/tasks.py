@@ -4643,7 +4643,7 @@ def query_reverse_whois(lookup_keyword):
 		dict: Reverse WHOIS information.
 	"""
 
-	return get_associated_domains(lookup_keyword)
+	return reverse_whois(lookup_keyword)
 
 
 @app.task(name='query_ip_history', bind=False, queue='query_ip_history_queue')
