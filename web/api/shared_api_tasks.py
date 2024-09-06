@@ -74,7 +74,7 @@ def import_hackerone_programs_task(handles, project_slug, is_sync = False):
 					targets=assets,
 					project_slug=project_slug,
 					organization_name=program_name,
-					org_description=None,
+					org_description='Imported from Hackerone',
 					h1_team_handle=handle
 				)
 
