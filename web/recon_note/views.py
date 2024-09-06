@@ -8,8 +8,7 @@ from startScan.models import *
 
 
 def list_note(request, slug):
-    context = {}
-    context['recon_note_active'] = 'active'
+    context = {'recon_note_active': 'active'}
     return render(request, 'note/index.html', context)
 
 def flip_todo_status(request):

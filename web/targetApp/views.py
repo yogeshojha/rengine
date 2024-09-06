@@ -331,7 +331,7 @@ def delete_targets(request, slug):
     if request.method == "POST":
         list_of_domains = []
         for key, value in request.POST.items():
-            if key != "list_target_table_length" and key != "csrfmiddlewaretoken":
+            if key not in ("list_target_table_length", "csrfmiddlewaretoken"):
                 Domain.objects.filter(id=value).delete()
         messages.add_message(
             request,
