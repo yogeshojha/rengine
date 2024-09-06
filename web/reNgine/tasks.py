@@ -3090,7 +3090,8 @@ def send_scan_notif(
 		subscan_id (int, optional): SuScan id.
 		engine_id (int, optional): EngineType id.
 	"""
-
+	# send inmap notification in any case
+	generate_inapp_notification(scan, subscan, status, engine, fields)
 	# Skip send if notification settings are not configured
 	notif = Notification.objects.first()
 	if not (notif and notif.send_scan_status_notif):
@@ -3119,8 +3120,6 @@ def send_scan_notif(
 		'severity': severity
 	}
 	logger.warning(f'Sending notification "{title}" [{severity}]')
-
-	generate_inapp_notification(scan, subscan, status, engine, fields)
 
 	# Send notification
 	send_notif(
