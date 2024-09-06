@@ -60,7 +60,7 @@ jobs:
               });
             } else if ((context.eventName === 'pull_request' || context.eventName === 'pull_request_target') && context.payload.action === 'opened') {
               github.rest.issues.createComment({
-                issue_number: context.issue.number,
+                issue_number: context.payload.pull_request.number,
                 owner,
                 repo,
                 body: `Woohoo @${author}! 🎉 You've just dropped some hot new code! 🔥
@@ -90,7 +90,7 @@ jobs:
               }
 
               github.rest.issues.createComment({
-                issue_number: context.issue.number,
+                issue_number: context.payload.pull_request.number,
                 owner,
                 repo,
                 body: commentBody
