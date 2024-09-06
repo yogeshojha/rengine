@@ -328,7 +328,7 @@ function see_detail(handle) {
         .then(data => {
             Swal.close();
 
-            populateModal(data);
+            populateHackeroneDetailModel(data);
         })
         .catch(error => {
             console.error('Error:', error);
@@ -341,7 +341,7 @@ function see_detail(handle) {
 }
 
 
-function populateModal(data) {
+function populateHackeroneDetailModel(data) {
     const attributes = data.attributes;
 
     const modalHTML = `
@@ -409,6 +409,7 @@ function populateModal(data) {
     const modal = new bootstrap.Modal(document.getElementById('programDetailModal'));
     modal.show();
 }
+
 function populateBadges(attributes) {
     const badgeContainer = document.getElementById('badgeContainer');
     const badges = [
@@ -459,20 +460,22 @@ function populateAssetAccordion(data) {
 
     data.relationships.structured_scopes.data.forEach(scope => {
         const type = scope.attributes.asset_type;
-        if (assetTypes.hasOwnProperty(type)) {
+        const eligible_for_submission = scope.attributes.eligible_for_submission;
+        if (assetTypes.hasOwnProperty(type) && eligible_for_submission) {
             assetTypes[type].push(scope.attributes.asset_identifier);
         }
     });
 
     Object.entries(assetTypes).forEach(([type, assets], index) => {
+        console.log(assets)
         if (assets.length > 0) {
-            const item = createAccordionItem(type, assets, index);
+            const item = createInScopeAccordionItem(type, assets, index);
             accordion.appendChild(item);
         }
     });
 }
 
-function createAccordionItem(type, assets, index) {
+function createInScopeAccordionItem(type, assets, index) {
     const item = document.createElement('div');
     item.className = 'accordion-item border-0 mb-3';
     item.innerHTML = `
