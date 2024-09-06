@@ -39,7 +39,9 @@ RUN ARCH=$(dpkg --print-architecture) \
 
 # Install Go
 RUN ARCH=$(dpkg --print-architecture) \
-    && curl -L https://go.dev/dl/go${GOVERSION}.linux-${ARCH}.tar.gz | tar -xzC /usr/local
+     && curl -s -L -o /tmp/go.tar.gz https://go.dev/dl/go${GOVERSION}.linux-${ARCH}.tar.gz \
+     && tar -xzC /usr/local -f /tmp/go.tar.gz \
+     && rm /tmp/go.tar.gz
 
 # Install Gecko Driver
 RUN ARCH=$(dpkg --print-architecture) \
