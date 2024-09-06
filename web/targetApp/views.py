@@ -50,7 +50,7 @@ def add_target(request, slug):
                 bulk_targets = [t.rstrip() for t in request.POST['addTargets'].split('\n') if t]
                 logger.info(f'Adding multiple targets: {bulk_targets}')
                 description = request.POST.get('targetDescription', '')
-                h1_team_handle = request.POST.get('targetH1TeamHandle')
+                h1_team_handle = request.POST.get('targetH1TeamHandle', '')
                 organization_name = request.POST.get('targetOrganization')
                 for target in bulk_targets:
                     target = target.rstrip('\n')
@@ -242,7 +242,7 @@ def add_target(request, slug):
                     is_domain = bool(validators.domain(ip))
                     is_ip = bool(validators.ipv4(ip)) or bool(validators.ipv6(ip))
                     description = request.POST.get('targetDescription', '')
-                    h1_team_handle = request.POST.get('targetH1TeamHandle')
+                    h1_team_handle = request.POST.get('targetH1TeamHandle', '')
                     if not Domain.objects.filter(name=ip).exists():
                         domain, created = Domain.objects.get_or_create(
                             name=ip,

@@ -80,6 +80,7 @@ Add or Import Targets
                 <label for="targetDescription" class="form-label">Target Description (Optional)</label>
                 <input type="text" class="form-control form-control-lg" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
               </div>
+              {% if user_preferences.bug_bounty_mode %}
               <div class="col-12 mt-3">
                 <label for="domainDescription" class="form-label">HackerOne Target Team Handle
                   <br>
@@ -88,6 +89,7 @@ Add or Import Targets
                 <input type="text" class="form-control form-control-lg" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
                 <button class="btn btn-primary submit-fn mt-2 float-end" disabled type="submit" name="add-ip-target" id="add-ip-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span id="add_ip_target_btn">Add Target</span></button>
               </div>
+              {% endif %}
             </form>
           </div>
         </div>
@@ -103,6 +105,7 @@ Add or Import Targets
                 <label for="targetDescription">Target Description (Optional)</label>
                 <input type="text" class="form-control form-control-lg" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
               </div>
+              {% if user_preferences.bug_bounty_mode %}
               <div class="col-12 mt-3">
                 <label for="domainDescription" class="form-label">HackerOne Target Team Handle
                   <br>
@@ -110,6 +113,7 @@ Add or Import Targets
                 </label>
                 <input type="text" class="form-control form-control-lg" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
               </div>
+              {% endif %}
               <div class="col-12 mt-3">
                 <label for="targetDescription">Target Organization (Optional)</label>
                 <input type="text" class="form-control form-control-lg" id="targetOrganization" placeholder="Example Org" name="targetOrganization">
