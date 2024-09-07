@@ -6,7 +6,7 @@
   <h3>reNgine: The Ultimate Web Reconnaissance & Vulnerability Scanner 🚀</h3>
 </p>
 
-<p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v2.1.3-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a></p>
+<p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v2.2.0-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a></p>
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=Xk_YH83IQgg" target="_blank"><img src="https://img.shields.io/badge/BlackHat--Arsenal--Asia-2023-blue.svg?logo=none" alt="" /></a>&nbsp;
@@ -33,7 +33,7 @@
 <h4>reNgine 2.2.0 is released!</h4>
 <p>
   reNgine 2.2.0 comes with bounty hub where you can sync and import your hackerone programs, in app notifications, chaos as subdomain enumeration tool, ability to upload multiple nuclei and gf patterns, support for regex in out of scope subdomain config, additional pdf report template and many more. 
-  <b>Check out <a href="https://rengine.wiki/whatisnew/2.2.0">What's new in reNgine 2.2.0!</a></b>
+  <b>Check out <a href="https://rengine.wiki/whats-new/2_2_0/">What's new in reNgine 2.2.0!</a></b>
 </p>
 
 
