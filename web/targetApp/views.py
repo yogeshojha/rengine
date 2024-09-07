@@ -1,6 +1,5 @@
 import csv
 import io
-import ipaddress
 import logging
 import validators
 
@@ -51,7 +50,7 @@ def add_target(request, slug):
                 bulk_targets = [t.rstrip() for t in request.POST['addTargets'].split('\n') if t]
                 logger.info(f'Adding multiple targets: {bulk_targets}')
                 description = request.POST.get('targetDescription', '')
-                h1_team_handle = request.POST.get('targetH1TeamHandle')
+                h1_team_handle = request.POST.get('targetH1TeamHandle', '')
                 organization_name = request.POST.get('targetOrganization')
                 for target in bulk_targets:
                     target = target.rstrip('\n')
@@ -243,7 +242,7 @@ def add_target(request, slug):
                     is_domain = bool(validators.domain(ip))
                     is_ip = bool(validators.ipv4(ip)) or bool(validators.ipv6(ip))
                     description = request.POST.get('targetDescription', '')
-                    h1_team_handle = request.POST.get('targetH1TeamHandle')
+                    h1_team_handle = request.POST.get('targetH1TeamHandle', '')
                     if not Domain.objects.filter(name=ip).exists():
                         domain, created = Domain.objects.get_or_create(
                             name=ip,
@@ -332,11 +331,12 @@ def delete_targets(request, slug):
         list_of_domains = []
         for key, value in request.POST.items():
             if key != "list_target_table_length" and key != "csrfmiddlewaretoken":
+                list_of_domains.append(value)
                 Domain.objects.filter(id=value).delete()
         messages.add_message(
             request,
             messages.INFO,
-            'Targets deleted!')
+            f'{len(list_of_domains)} targets deleted!')
     return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
 
 
@@ -602,20 +602,3 @@ def update_organization(request, slug, id):
     }
     return render(request, 'organization/update.html', context)
 
-def get_ip_info(ip_address):
-    is_ipv4 = bool(validators.ipv4(ip_address))
-    is_ipv6 = bool(validators.ipv6(ip_address))
-    ip_data = None
-    if is_ipv4:
-        ip_data = ipaddress.IPv4Address(ip_address)
-    elif is_ipv6:
-        ip_data = ipaddress.IPv6Address(ip_address)
-    else:
-        return None
-    return ip_data
-
-def get_ips_from_cidr_range(target):
-    try:
-        return [str(ip) for ip in ipaddress.IPv4Network(target, False)]
-    except Exception as e:
-        logger.error(f'{target} is not a valid CIDR range. Skipping.')

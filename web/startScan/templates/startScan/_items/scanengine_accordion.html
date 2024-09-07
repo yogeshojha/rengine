@@ -4,7 +4,7 @@
       <h2 class="accordion-header" id="heading_{{engine.id}}">
         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{engine.id}}" aria-expanded="false" aria-controls="collapse_{{engine.id}}">
           <div class="form-check form-check-primary">
-            <input class="form-check-input rounded-circle" type="radio" id="accordion_{{engine.id}}" name="scan_mode" value="{{engine.id}}" required>
+            <input class="form-check-input rounded-circle" type="radio" id="accordion_{{engine.id}}" name="scan_mode" value="{{engine.id}}" required {% if engine.id == selected_engine_id %}checked{% endif %}>
             <label class="form-check-label lead" for="accordion_{{engine.id}}">{{engine.engine_name}}
               &nbsp;&nbsp;&nbsp;
               {% if engine.default_engine %}

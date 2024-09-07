@@ -1,5 +1,6 @@
 from dashboard.models import *
-import requests
+from django.conf import settings
+
 
 def projects(request):
     projects = Project.objects.all()
@@ -13,8 +14,12 @@ def projects(request):
         'current_project': project
     }
 
-def misc(request):
-    externalIp = requests.get('https://checkip.amazonaws.com').text.strip()
+def version_context(request):
     return {
-        'external_ip': externalIp
+        'RENGINE_CURRENT_VERSION': settings.RENGINE_CURRENT_VERSION
     }
+
+def user_preferences(request):
+    if hasattr(request, 'user_preferences'):
+        return {'user_preferences': request.user_preferences}
+    return {}

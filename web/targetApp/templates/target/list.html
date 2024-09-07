@@ -150,10 +150,13 @@ $(document).ready(function(){
 				{
 					'data': 'start_scan_date_humanized'
 				},
+				{
+					'data': 'h1_team_handle'
+				}
 			],
 			"columnDefs":[
 				{ 'orderable': false, 'targets': [0, 3, 6]},
-				{ 'visible': false, 'targets': [1, 7, 8, 9, 10, 11] },
+				{ 'visible': false, 'targets': [1, 7, 8, 9, 10, 11, 12] },
 				{
 					"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
 					return'<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>'
@@ -173,6 +176,11 @@ $(document).ready(function(){
 						if (row.most_recent_scan) {
 							content += `<br><a href="/scan/{{current_project.slug}}/detail/${row.most_recent_scan}" class="text-primary">Recent Scan&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`;
 						}
+
+						// if bounty mode is enabled show target hackerone handle, when clicked must take to hackerone program
+						{% if user_preferences.bug_bounty_mode %}
+							content += `<br><a class="badge badge-soft-pink me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Hackerone Handle" href="https://hackerone.com/${row.h1_team_handle}" target="_blank">${row.h1_team_handle}</a>`;
+						{% endif %}
 
 						return content;
 					},
