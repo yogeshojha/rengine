@@ -1,24 +1,30 @@
-import logging
 import re
 import socket
-from ipaddress import IPv4Network
-
+import logging
 import requests
 import validators
-from dashboard.models import *
+import requests
+
+from ipaddress import IPv4Network
 from django.db.models import CharField, Count, F, Q, Value
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from packaging import version
 from django.template.defaultfilters import slugify
-from rest_framework import viewsets
+from datetime import datetime
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.status import HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT, HTTP_202_ACCEPTED
+from rest_framework.decorators import action
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.cache import cache
 
+
+from dashboard.models import *
 from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
+from reNgine.database_utils import *
 from reNgine.definitions import ABORTED_TASK
 from reNgine.tasks import *
 from reNgine.llm import *
@@ -27,10 +33,303 @@ from scanEngine.models import *
 from startScan.models import *
 from startScan.models import EndPoint
 from targetApp.models import *
-
+from api.shared_api_tasks import import_hackerone_programs_task, sync_bookmarked_programs_task
 from .serializers import *
 
+
 logger = logging.getLogger(__name__)
+
+
+class ToggleBugBountyModeView(APIView):
+	"""
+		This class manages the user bug bounty mode
+	"""
+	def post(self, request, *args, **kwargs):
+		user_preferences = get_object_or_404(UserPreferences, user=request.user)
+		user_preferences.bug_bounty_mode = not user_preferences.bug_bounty_mode
+		user_preferences.save()
+		return Response({
+			'bug_bounty_mode': user_preferences.bug_bounty_mode
+		}, status=status.HTTP_200_OK)
+
+
+class HackerOneProgramViewSet(viewsets.ViewSet):
+	"""
+		This class manages the HackerOne Program model, 
+		provides basic fetching of programs and caching
+	"""
+	CACHE_KEY = 'hackerone_programs'
+	CACHE_TIMEOUT = 60 * 30 # 30 minutes
+	PROGRAM_CACHE_KEY = 'hackerone_program_{}'
+
+	API_BASE = 'https://api.hackerone.com/v1/hackers'
+
+	ALLOWED_ASSET_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "CIDR", "URL"]
+
+	def list(self, request):
+		try:
+			sort_by = request.query_params.get('sort_by', 'age')
+			sort_order = request.query_params.get('sort_order', 'desc')
+
+			programs = self.get_cached_programs()
+
+			if sort_by == 'name':
+				programs = sorted(programs, key=lambda x: x['attributes']['name'].lower(), 
+						reverse=(sort_order.lower() == 'desc'))
+			elif sort_by == 'reports':
+				programs = sorted(programs, key=lambda x: x['attributes'].get('number_of_reports_for_user', 0), 
+						reverse=(sort_order.lower() == 'desc'))
+			elif sort_by == 'age':
+				programs = sorted(programs, 
+					key=lambda x: datetime.strptime(x['attributes'].get('started_accepting_at', '1970-01-01T00:00:00.000Z'), '%Y-%m-%dT%H:%M:%S.%fZ'), 
+					reverse=(sort_order.lower() == 'desc')
+				)
+
+			serializer = HackerOneProgramSerializer(programs, many=True)
+			return Response(serializer.data)
+		except Exception as e:
+			return self.handle_exception(e)
+	
+	def get_api_credentials(self):
+		try:
+			api_key = HackerOneAPIKey.objects.first()
+			if not api_key:
+				raise ObjectDoesNotExist("HackerOne API credentials not found")
+			return api_key.username, api_key.key
+		except ObjectDoesNotExist:
+			raise Exception("HackerOne API credentials not configured")
+
+	@action(detail=False, methods=['get'])
+	def bookmarked_programs(self, request):
+		try:
+			# do not cache bookmarked programs due to the user specific nature
+			programs = self.fetch_programs_from_hackerone()
+			bookmarked = [p for p in programs if p['attributes']['bookmarked']]
+			serializer = HackerOneProgramSerializer(bookmarked, many=True)
+			return Response(serializer.data)
+		except Exception as e:
+			return self.handle_exception(e)
+	
+	@action(detail=False, methods=['get'])
+	def bounty_programs(self, request):
+		try:
+			programs = self.get_cached_programs()
+			bounty_programs = [p for p in programs if p['attributes']['offers_bounties']]
+			serializer = HackerOneProgramSerializer(bounty_programs, many=True)
+			return Response(serializer.data)
+		except Exception as e:
+			return self.handle_exception(e)
+
+	def get_cached_programs(self):
+		programs = cache.get(self.CACHE_KEY)
+		if programs is None:
+			programs = self.fetch_programs_from_hackerone()
+			cache.set(self.CACHE_KEY, programs, self.CACHE_TIMEOUT)
+		return programs
+
+	def fetch_programs_from_hackerone(self):
+		url = f'{self.API_BASE}/programs?page[size]=100'
+		headers = {'Accept': 'application/json'}
+		all_programs = []
+		try:
+			username, api_key = self.get_api_credentials()
+		except Exception as e:
+			raise Exception("API credentials error: " + str(e))
+
+		while url:
+			response = requests.get(
+				url,
+				headers=headers,
+				auth=(username, api_key)
+			)
+
+			if response.status_code == 401:
+				raise Exception("Invalid API credentials")
+			elif response.status_code != 200:
+				raise Exception(f"HackerOne API request failed with status code {response.status_code}")
+
+			data = response.json()
+			all_programs.extend(data['data'])
+			
+			url = data['links'].get('next')
+
+		return all_programs
+
+	@action(detail=False, methods=['post'])
+	def refresh_cache(self, request):
+		try:
+			programs = self.fetch_programs_from_hackerone()
+			cache.set(self.CACHE_KEY, programs, self.CACHE_TIMEOUT)
+			return Response({"status": "Cache refreshed successfully"})
+		except Exception as e:
+			return self.handle_exception(e)
+	
+	@action(detail=True, methods=['get'])
+	def program_details(self, request, pk=None):
+		try:
+			program_handle = pk
+			cache_key = self.PROGRAM_CACHE_KEY.format(program_handle)
+			program_details = cache.get(cache_key)
+
+			if program_details is None:
+				program_details = self.fetch_program_details_from_hackerone(program_handle)
+				if program_details:
+					cache.set(cache_key, program_details, self.CACHE_TIMEOUT)
+
+			if program_details:
+				filtered_scopes = [
+					scope for scope in program_details.get('relationships', {}).get('structured_scopes', {}).get('data', [])
+					if scope.get('attributes', {}).get('asset_type') in self.ALLOWED_ASSET_TYPES
+				]
+
+				program_details['relationships']['structured_scopes']['data'] = filtered_scopes
+
+				return Response(program_details)
+			else:
+				return Response({"error": "Program not found"}, status=status.HTTP_404_NOT_FOUND)
+		except Exception as e:
+			return self.handle_exception(e)
+
+	def fetch_program_details_from_hackerone(self, program_handle):
+		url = f'{self.API_BASE}/programs/{program_handle}'
+		headers = {'Accept': 'application/json'}
+		try:
+			username, api_key = self.get_api_credentials()
+		except Exception as e:
+			raise Exception("API credentials error: " + str(e))
+
+		response = requests.get(
+			url,
+			headers=headers,
+			auth=(username, api_key)
+		)
+
+		if response.status_code == 401:
+			raise Exception("Invalid API credentials")
+		elif response.status_code == 200:
+			return response.json()
+		else:
+			return None
+		
+	@action(detail=False, methods=['post'])
+	def import_programs(self, request):
+		try:
+			project_slug = request.query_params.get('project_slug')
+			if not project_slug:
+				return Response({"error": "Project slug is required"}, status=status.HTTP_400_BAD_REQUEST)
+			handles = request.data.get('handles', [])
+
+			if not handles:
+				return Response({"error": "No program handles provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+			import_hackerone_programs_task.delay(handles, project_slug)
+
+			create_inappnotification(
+				title="HackerOne Program Import Started",
+				description=f"Import process for {len(handles)} program(s) has begun.",
+				notification_type=PROJECT_LEVEL_NOTIFICATION,
+				project_slug=project_slug,
+				icon="mdi-download",
+				status='info'
+			)
+
+			return Response({"message": f"Import process for {len(handles)} program(s) has begun."}, status=status.HTTP_202_ACCEPTED)
+		except Exception as e:
+			return self.handle_exception(e)
+	
+	@action(detail=False, methods=['get'])
+	def sync_bookmarked(self, request):
+		try:
+			project_slug = request.query_params.get('project_slug')
+			if not project_slug:
+				return Response({"error": "Project slug is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+			sync_bookmarked_programs_task.delay(project_slug)
+
+			create_inappnotification(
+				title="HackerOne Bookmarked Programs Sync Started",
+				description="Sync process for bookmarked programs has begun.",
+				notification_type=PROJECT_LEVEL_NOTIFICATION,
+				project_slug=project_slug,
+				icon="mdi-sync",
+				status='info'
+			)
+
+			return Response({"message": "Sync process for bookmarked programs has begun."}, status=status.HTTP_202_ACCEPTED)
+		except Exception as e:
+			return self.handle_exception(e)
+
+	def handle_exception(self, exc):
+		if isinstance(exc, ObjectDoesNotExist):
+			return Response({"error": "HackerOne API credentials not configured"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+		elif str(exc) == "Invalid API credentials":
+			return Response({"error": "Invalid HackerOne API credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+		else:
+			return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class InAppNotificationManagerViewSet(viewsets.ModelViewSet):
+	"""
+		This class manages the notification model, provided CRUD operation on notif model
+		such as read notif, clear all, fetch all notifications etc
+	"""
+	serializer_class = InAppNotificationSerializer
+	pagination_class = None
+
+	def get_queryset(self):
+		# we will see later if user based notif is needed
+		# return InAppNotification.objects.filter(user=self.request.user)
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = InAppNotification.objects.all()
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		return queryset.order_by('-created_at')
+
+	@action(detail=False, methods=['post'])
+	def mark_all_read(self, request):
+		# marks all notification read
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = self.get_queryset()
+
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		queryset.update(is_read=True)
+		return Response(status=HTTP_204_NO_CONTENT)
+
+	@action(detail=True, methods=['post'])
+	def mark_read(self, request, pk=None):
+		# mark individual notification read when cliked
+		notification = self.get_object()
+		notification.is_read = True
+		notification.save()
+		return Response(status=HTTP_204_NO_CONTENT)
+
+	@action(detail=False, methods=['get'])
+	def unread_count(self, request):
+		# this fetches the count for unread notif mainly for the badge
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = self.get_queryset()
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		count = queryset.filter(is_read=False).count()
+		return Response({'count': count})
+
+	@action(detail=False, methods=['post'])
+	def clear_all(self, request):
+		# when clicked on the clear button this must be called to clear all notif
+		project_slug = self.request.query_params.get('project_slug')
+		queryset = self.get_queryset()
+		if project_slug:
+			queryset = queryset.filter(
+				Q(project__slug=project_slug) | Q(notification_type='system')
+			)
+		queryset.delete()
+		return Response(status=HTTP_204_NO_CONTENT)
 
 
 class OllamaManager(APIView):
@@ -622,6 +921,11 @@ class AddTarget(APIView):
 		h1_team_handle = data.get('h1_team_handle')
 		description = data.get('description')
 		domain_name = data.get('domain_name')
+		# remove wild card from domain
+		domain_name = domain_name.replace('*', '')
+		# if domain_name begins with . remove that
+		if domain_name.startswith('.'):
+			domain_name = domain_name[1:]
 		organization_name = data.get('organization')
 		slug = data.get('slug')
 
@@ -629,35 +933,26 @@ class AddTarget(APIView):
 		if not validators.domain(domain_name):
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
 
-		project = Project.objects.get(slug=slug)
+		status = bulk_import_targets(
+			targets=[{
+				'name': domain_name,
+				'description': description,
+			}],
+			organization_name=organization_name,
+			h1_team_handle=h1_team_handle,
+			project_slug=slug
+		)
 
-		# Create domain object in DB
-		domain, _ = Domain.objects.get_or_create(name=domain_name)
-		domain.project = project
-		domain.h1_team_handle = h1_team_handle
-		domain.description = description
-		if not domain.insert_date:
-			domain.insert_date = timezone.now()
-		domain.save()
-
-		# Create org object in DB
-		if organization_name:
-			organization_obj = None
-			organization_query = Organization.objects.filter(name=organization_name)
-			if organization_query.exists():
-				organization_obj = organization_query[0]
-			else:
-				organization_obj = Organization.objects.create(
-					name=organization_name,
-					project=project,
-					insert_date=timezone.now())
-			organization_obj.domains.add(domain)
-
+		if status:
+			return Response({
+				'status': True,
+				'message': 'Domain successfully added as target !',
+				'domain_name': domain_name,
+				# 'domain_id': domain.id
+			})
 		return Response({
-			'status': True,
-			'message': 'Domain successfully added as target !',
-			'domain_name': domain_name,
-			'domain_id': domain.id
+			'status': False,
+			'message': 'Failed to add as target !'
 		})
 
 
@@ -763,6 +1058,9 @@ class DeleteMultipleRows(APIView):
 			if data['type'] == 'subscan':
 				for row in data['rows']:
 					SubScan.objects.get(id=row).delete()
+			elif data['type'] == 'organization':
+				for row in data['rows']:
+					Organization.objects.get(id=row).delete()
 			response = True
 		except Exception as e:
 			response = False
@@ -774,63 +1072,95 @@ class StopScan(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-		scan_id = data.get('scan_id')
-		subscan_id = data.get('subscan_id')
-		response = {}
-		task_ids = []
-		scan = None
-		subscan = None
-		if subscan_id:
+		scan_ids = data.get('scan_ids', [])
+		subscan_ids = data.get('subscan_ids', [])
+
+		scan_ids = [int(id) for id in scan_ids]
+		subscan_ids = [int(id) for id in subscan_ids]
+
+		response = {'status': False}
+
+		def abort_scan(scan):
+			response = {}
+			logger.info(f'Aborting scan History')
 			try:
-				subscan = get_object_or_404(SubScan, id=subscan_id)
-				scan = subscan.scan_history
-				task_ids = subscan.celery_ids
-				subscan.status = ABORTED_TASK
-				subscan.stop_scan_date = timezone.now()
-				subscan.save()
-				create_scan_activity(
-					subscan.scan_history.id,
-					f'Subscan {subscan_id} aborted',
-					SUCCESS_TASK)
-				response['status'] = True
-			except Exception as e:
-				logging.error(e)
-				response = {'status': False, 'message': str(e)}
-		elif scan_id:
-			try:
-				scan = get_object_or_404(ScanHistory, id=scan_id)
+				logger.info(f"Setting scan {scan} status to ABORTED_TASK")
 				task_ids = scan.celery_ids
 				scan.scan_status = ABORTED_TASK
 				scan.stop_scan_date = timezone.now()
 				scan.aborted_by = request.user
 				scan.save()
+				for task_id in task_ids:
+					app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+
+				tasks = (
+					ScanActivity.objects
+					.filter(scan_of=scan)
+					.filter(status=RUNNING_TASK)
+					.order_by('-pk')
+				)
+				for task in tasks:
+					task.status = ABORTED_TASK
+					task.time = timezone.now()
+					task.save()
+
 				create_scan_activity(
 					scan.id,
 					"Scan aborted",
-					SUCCESS_TASK)
+					ABORTED_TASK
+				)
 				response['status'] = True
 			except Exception as e:
-				logging.error(e)
+				logger.error(e)
 				response = {'status': False, 'message': str(e)}
 
-		logger.warning(f'Revoking tasks {task_ids}')
-		for task_id in task_ids:
-			app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+			return response
 
-		# Abort running tasks
-		tasks = (
-			ScanActivity.objects
-			.filter(scan_of=scan)
-			.filter(status=RUNNING_TASK)
-			.order_by('-pk')
-		)
-		if tasks.exists():
-			for task in tasks:
-				if subscan_id and task.id not in subscan.celery_ids:
+		def abort_subscan(subscan):
+			response = {}
+			logger.info(f'Aborting subscan')
+			try:
+				logger.info(f"Setting scan {subscan} status to ABORTED_TASK")
+				task_ids = subscan.celery_ids
+
+				for task_id in task_ids:
+					app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+
+				subscan.status = ABORTED_TASK
+				subscan.stop_scan_date = timezone.now()
+				subscan.save()
+				create_scan_activity(
+					subscan.scan_history.id,
+					f'Subscan aborted',
+					ABORTED_TASK
+				)
+				response['status'] = True
+			except Exception as e:
+				logger.error(e)
+				response = {'status': False, 'message': str(e)}
+
+			return response
+
+		for scan_id in scan_ids:
+			try:
+				scan = ScanHistory.objects.get(id=scan_id)
+				# if scan is already successful or aborted then do nothing
+				if scan.scan_status == SUCCESS_TASK or scan.scan_status == ABORTED_TASK:
 					continue
-				task.status = ABORTED_TASK
-				task.time = timezone.now()
-				task.save()
+				response = abort_scan(scan)
+			except Exception as e:
+				logger.error(e)
+				response = {'status': False, 'message': str(e)}
+			
+		for subscan_id in subscan_ids:
+			try:
+				subscan = SubScan.objects.get(id=subscan_id)
+				if subscan.scan_status == SUCCESS_TASK or subscan.scan_status == ABORTED_TASK:
+					continue
+				response = abort_subscan(subscan)
+			except Exception as e:
+				logger.error(e)
+				response = {'status': False, 'message': str(e)}
 
 		return Response(response)
 
@@ -890,10 +1220,7 @@ class RengineUpdateCheck(APIView):
 
 		# get current version_number
 		# remove quotes from current_version
-		current_version = ((os.environ['RENGINE_CURRENT_VERSION'
-							])[1:] if os.environ['RENGINE_CURRENT_VERSION'
-							][0] == 'v'
-							else os.environ['RENGINE_CURRENT_VERSION']).replace("'", "")
+		current_version = RENGINE_CURRENT_VERSION
 
 		# for consistency remove v from both if exists
 		latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
@@ -914,8 +1241,21 @@ class RengineUpdateCheck(APIView):
 		return_response['status'] = True
 		return_response['latest_version'] = latest_version
 		return_response['current_version'] = current_version
-		return_response['update_available'] = version.parse(current_version) < version.parse(latest_version)
-		if version.parse(current_version) < version.parse(latest_version):
+		is_version_update_available = version.parse(current_version) < version.parse(latest_version)
+
+		# if is_version_update_available then we should create inapp notification
+		create_inappnotification(
+			title='reNgine Update Available',
+			description=f'Update to version {latest_version} is available',
+			notification_type=SYSTEM_LEVEL_NOTIFICATION,
+			project_slug=None,
+			icon='mdi-update',
+			redirect_link='https://github.com/yogeshojha/rengine/releases',
+			open_in_new_tab=True
+		)
+
+		return_response['update_available'] = is_version_update_available
+		if is_version_update_available:
 			return_response['changelog'] = response[0]['body']
 
 		return Response(return_response)
@@ -1015,7 +1355,11 @@ class GetExternalToolCurrentVersion(APIView):
 
 		version_number = None
 		_, stdout = run_command(tool.version_lookup_command)
-		version_number = re.search(re.compile(tool.version_match_regex), str(stdout))
+		if tool.version_match_regex:
+			version_number = re.search(re.compile(tool.version_match_regex), str(stdout))
+		else:
+			version_match_regex = r'(?i:v)?(\d+(?:\.\d+){2,})'
+			version_number = re.search(version_match_regex, str(stdout))
 		if not version_number:
 			return Response({'status': False, 'message': 'Invalid version lookup command.'})
 

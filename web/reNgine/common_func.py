@@ -6,14 +6,14 @@ import pickle
 import random
 import shutil
 import traceback
-from time import sleep
-
+import ipaddress
 import humanize
 import redis
 import requests
 import tldextract
 import xmltodict
 
+from time import sleep
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from celery.utils.log import get_task_logger
@@ -1034,6 +1034,21 @@ def get_netlas_key():
 	netlas_key = NetlasAPIKey.objects.all()
 	return netlas_key[0] if netlas_key else None
 
+
+def get_chaos_key():
+	chaos_key = ChaosAPIKey.objects.all()
+	return chaos_key[0] if chaos_key else None
+
+
+def get_hackerone_key_username():
+	"""
+		Get the HackerOne API key username from the database.
+		Returns: a tuple of the username and api key
+	"""
+	hackerone_key = HackerOneAPIKey.objects.all()
+	return (hackerone_key[0].username, hackerone_key[0].key) if hackerone_key else None
+
+
 def parse_llm_vulnerability_report(report):
 	report = report.replace('**', '')
 	data = {}
@@ -1165,6 +1180,52 @@ def update_or_create_port(port_number, service_name=None, description=None):
 		created = True
 	finally:
 		return port, created
+	
+
+def exclude_urls_by_patterns(exclude_paths, urls):
+	"""
+		Filter out URLs based on a list of exclusion patterns provided from user
+		
+		Args:
+			exclude_patterns (list of str): A list of patterns to exclude. 
+			These can be plain path or regex.
+			urls (list of str): A list of URLs to filter from.
+			
+		Returns:
+			list of str: A new list containing URLs that don't match any exclusion pattern.
+	"""
+	logger.info('exclude_urls_by_patterns')
+	if not exclude_paths:
+		# if no exclude paths are passed and is empty list return all urls as it is
+		return urls
+	
+	compiled_patterns = []
+	for path in exclude_paths:
+		# treat each path as either regex or plain path
+		try:
+			raw_pattern = r"{}".format(path)
+			compiled_patterns.append(re.compile(raw_pattern))
+		except re.error:
+			compiled_patterns.append(path)
+
+	filtered_urls = []
+	for url in urls:
+		exclude = False
+		for pattern in compiled_patterns:
+			if isinstance(pattern, re.Pattern):
+				if pattern.search(url):
+					exclude = True
+					break
+			else:
+				if pattern in url: #if the word matches anywhere in url exclude
+					exclude = True
+					break
+		
+		# if none conditions matches then add the url to filtered urls
+		if not exclude:
+			filtered_urls.append(url)
+
+	return filtered_urls
 	
 
 def get_domain_info_from_db(target):
@@ -1503,3 +1564,85 @@ def save_domain_info_to_db(target, domain_info):
 		domain.save()
 
 		return domain_info_obj
+
+
+def create_inappnotification(
+		title,
+		description,
+		notification_type=SYSTEM_LEVEL_NOTIFICATION,
+		project_slug=None,
+		icon="mdi-bell",
+		is_read=False,
+		status='info',
+		redirect_link=None,
+		open_in_new_tab=False
+):
+	"""
+		This function will create an inapp notification
+		Inapp Notification not to be confused with Notification model 
+		that is used for sending alerts on telegram, slack etc.
+		Inapp notification is used to show notification on the web app
+
+		Args: 
+			title: str: Title of the notification
+			description: str: Description of the notification
+			notification_type: str: Type of the notification, it can be either
+				SYSTEM_LEVEL_NOTIFICATION or PROJECT_LEVEL_NOTIFICATION
+			project_slug: str: Slug of the project, if notification is PROJECT_LEVEL_NOTIFICATION
+			icon: str: Icon of the notification, only use mdi icons
+			is_read: bool: Whether the notification is read or not, default is False
+			status: str: Status of the notification (success, info, warning, error), default is info
+			redirect_link: str: Link to redirect when notification is clicked
+			open_in_new_tab: bool: Whether to open the redirect link in a new tab, default is False
+
+		Returns:
+			ValueError: if error
+			InAppNotification: InAppNotification object if successful
+	"""
+	logger.info('Creating InApp Notification with title: %s', title)
+	if notification_type not in [SYSTEM_LEVEL_NOTIFICATION, PROJECT_LEVEL_NOTIFICATION]:
+		raise ValueError("Invalid notification type")
+	
+	if status not in [choice[0] for choice in NOTIFICATION_STATUS_TYPES]:
+		raise ValueError("Invalid notification status")
+	
+	project = None
+	if notification_type == PROJECT_LEVEL_NOTIFICATION:
+		if not project_slug:
+			raise ValueError("Project slug is required for project level notification")
+		try:
+			project = Project.objects.get(slug=project_slug)
+		except Project.DoesNotExist as e:
+			raise ValueError(f"No project exists: {e}")
+		
+	notification = InAppNotification(
+		title=title,
+		description=description,
+		notification_type=notification_type,
+		project=project,
+		icon=icon,
+		is_read=is_read,
+		status=status,
+		redirect_link=redirect_link,
+		open_in_new_tab=open_in_new_tab
+	)
+	notification.save()
+	return notification
+
+def get_ip_info(ip_address):
+	is_ipv4 = bool(validators.ipv4(ip_address))
+	is_ipv6 = bool(validators.ipv6(ip_address))
+	ip_data = None
+	if is_ipv4:
+		ip_data = ipaddress.IPv4Address(ip_address)
+	elif is_ipv6:
+		ip_data = ipaddress.IPv6Address(ip_address)
+	else:
+		return None
+	return ip_data
+
+def get_ips_from_cidr_range(target):
+	try:
+		return [str(ip) for ip in ipaddress.IPv4Network(target, False)]
+	except Exception as e:
+		logger.error(f'{target} is not a valid CIDR range. Skipping.')
