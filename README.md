@@ -33,7 +33,7 @@
 <h4>reNgine 2.2.0 is released!</h4>
 <p>
   reNgine 2.2.0 comes with bounty hub where you can sync and import your hackerone programs, in app notifications, chaos as subdomain enumeration tool, ability to upload multiple nuclei and gf patterns, support for regex in out of scope subdomain config, additional pdf report template and many more. 
-  <b>Check out <a href="https://rengine.wiki/whatisnew/2.2.0">What's new in reNgine 2.2.0!</a></b>
+  <b>Check out <a href="https://rengine.wiki/whats-new/2_2_0/">What's new in reNgine 2.2.0!</a></b>
 </p>
 
 
