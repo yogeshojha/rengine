@@ -3090,13 +3090,6 @@ def send_scan_notif(
 		subscan_id (int, optional): SuScan id.
 		engine_id (int, optional): EngineType id.
 	"""
-	# send inmap notification in any case
-	generate_inapp_notification(scan, subscan, status, engine, fields)
-	# Skip send if notification settings are not configured
-	notif = Notification.objects.first()
-	if not (notif and notif.send_scan_status_notif):
-		return
-
 	# Get domain, engine, scan_history objects
 	engine = EngineType.objects.filter(pk=engine_id).first()
 	scan = ScanHistory.objects.filter(pk=scan_history_id).first()
@@ -3121,12 +3114,18 @@ def send_scan_notif(
 	}
 	logger.warning(f'Sending notification "{title}" [{severity}]')
 
-	# Send notification
-	send_notif(
-		msg,
-		scan_history_id,
-		subscan_id,
-		**opts)
+	# inapp notification has to be sent eitherways
+	generate_inapp_notification(scan, subscan, status, engine, fields)
+
+	notif = Notification.objects.first()
+
+	if notif and notif.send_scan_status_notif:
+		# Send notification
+		send_notif(
+			msg,
+			scan_history_id,
+			subscan_id,
+			**opts)
 	
 def generate_inapp_notification(scan, subscan, status, engine, fields):
 	scan_type = "Subscan" if subscan else "Scan"

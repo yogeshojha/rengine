@@ -162,6 +162,7 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 * Identification of related domains and related TLDs for targets
 * Find actionable insights such as Most Common Vulnerability, Most Common CVE ID, Most Vulnerable Target/Subdomain, etc.
 * You can now use local LLMs for Attack surface identification and vulnerability description (NEW: reNgine 2.1.0)
+* BountyHub, a central hub to manage your hackerone targets
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -266,11 +267,12 @@ reNgine has a vibrant community that often creates helpful content about install
 
 Always refer to the official documentation for the most up-to-date and accurate information. If you've created a video about reNgine and would like it featured here, please send a pull request updating this table.
 
-| Video Title | Language | Uploader | Date | Link |
+| Video Title | Language | Publisher | Date | Link |
 |-------------|----------|----------|------|------|
 | reNgine Installation on Kali Linux | English | Secure the Cyber World | 2024-02-29 | [Watch](https://www.youtube.com/watch?v=7OFfrU6VrWw) |
 | Resultados do ReNgine - Automação para Recon | Portuguese | Guia Anônima | 2023-04-18 | [Watch](https://www.youtube.com/watch?v=6aNvDy1FzIM) |
 | reNgine Introduction | Moroccan Arabic | Th3 Hacker News Bdarija | 2021-07-27 | [Watch](https://www.youtube.com/watch?v=9FuRrcmWgWU) |
+| Automated recon? ReNgine - Hacker Tools | English | Intigriti | 2021-07-21 | [Watch](https://www.youtube.com/watch?v=9FuRrcmWgWU) |
 
 We appreciate the community's contributions in creating these resources.
 
