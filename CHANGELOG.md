@@ -1,5 +1,62 @@
 # Changelog
 
+## v2.2.0
+
+## What's Changed
+
+### Summary
+- Introducing Bounty Hub: Central platform for managing and importing bug bounty programs
+- New Built-in notification system for important events and updates
+- Enhanced subdomain discovery using Chaos project dataset
+- Bug Bounty Mode as user preference to enable or disable features related to bug bounty
+- Path exclusion feature for scans
+- New visually appealing PDF report template
+- Regex support for out-of-scope subdomains
+- Stop All Scans killswitch to halt multiple running scans at once
+- Smart rescans that automatically import and apply previous scan configurations
+- Improved Start Scan UI for consistent configuration across multiple scans
+- Support for bulk uploads of nuclei and gf patterns
+- API key protection (masking in settings view)
+
+* feat: Allow uploading of multiple gf patterns #1318 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1319
+* feat: Introduce stop multiple scans #1270 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1321
+* feat: Mask API keys Fixes #1213 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1331
+* feat: Allow uploading multiple nuclei patterns #461 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1320
+* feat: Introduce github action for auto updating version and changelog on every release by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1348
+* chores: Removes external IP from reNgine ui by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1350
+* feat: Implement URL Path Exclusion Feature with Regex Support Fixes #1264 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1354
+* feat: Consistent start scan ui across schedule scan, multiple scans. Now supports import, out of scope subdomains, starting path, excluded path for all types of scan #1357 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1361
+* Update of template.html with conditional statement by @DamianHusted in https://github.com/yogeshojha/rengine/pull/1378
+* feat: feat ability to delete multiple scheduled scan #1360 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1382
+* feat: Enhanced Out of Scope Subdomain Checking, Support for regex in out of scope scan parameter #1358  by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1380
+* feat: Store and showcase scan related configuration such as imported subdomains, out of scope subdomains, starting point url and excluded paths fixes #1356 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1383
+* Update celery-entrypoint.sh by @SJ029626 in https://github.com/yogeshojha/rengine/pull/1390
+* feat:  Prefll the scan parameters during rescan with the scan configuration values that were being used in earlier scan #1381  by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1386
+* feat: Added additional templates for PDF reports #1387 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1391
+* Replace CVE-2024-41661 with CVE-2023-50094 by @shelbyc in https://github.com/yogeshojha/rengine/pull/1393
+* hotfix: Workflow autocomment issues by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1396
+* Fix comment workflow on fork PRs by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1400
+* Hotfix/workflow cmt1 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1401
+* fix author name by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1403
+* Update of the uninstall.sh script by @DamianHusted in https://github.com/yogeshojha/rengine/pull/1385
+* feat: Builtin notification system in reNgine #1392  by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1394
+* feat: Show what's new popup when update happens and new features are released #1395  by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1405
+* feat: Add Chaos for subdomain enumeration #173 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1406
+* Version 2.1.3 contains a patch for CVE-2024-43381 by @shelbyc in https://github.com/yogeshojha/rengine/pull/1412
+* feat: Introducing Bounty Hub, a central hub to import and manage your hackerone programs to reNgine by @null-ref-0000 in https://github.com/yogeshojha/rengine/pull/1410
+* feat: Add ability to delete multiple organizations by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1417
+* feat: Enable bug bounty mode as User Preference to separate bug bounty related features #1411 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1418
+* bug: remove watchmedo usage in production #1419 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1424
+* feat: Create organization when quick adding targets #492 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1425
+* reNgine 2.2.0 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1349
+
+## New Contributors
+* @DamianHusted made their first contribution in https://github.com/yogeshojha/rengine/pull/1378
+* @SJ029626 made their first contribution in https://github.com/yogeshojha/rengine/pull/1390
+* @shelbyc made their first contribution in https://github.com/yogeshojha/rengine/pull/1393
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.3...v2.2.0
+
 ## 2.1.3
 
 **Release Date: Aug 18, 2024**
