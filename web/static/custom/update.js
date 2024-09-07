@@ -179,7 +179,7 @@ function showAfterUpdatePopup() {
       cancelButtonText: "No, thanks",
     }).then((result) => {
       if (result.isConfirmed) {
-        window.open(`https://rengine.wiki/whatisnew/${currentVersion.replace(/\./g, "_")}`, "_blank");
+        window.open(`https://rengine.wiki/whats-new/${currentVersion.replace(/\./g, "_")}`, "_blank");
       }
       localStorage.setItem("lastShownUpdateVersion", currentVersion);
     });
