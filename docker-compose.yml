@@ -68,6 +68,7 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
     depends_on:
       - celery
+      - db
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github

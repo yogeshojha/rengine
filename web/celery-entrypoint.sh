@@ -1,7 +1,40 @@
 #!/bin/bash
 
-python3 manage.py makemigrations
+# apply existing migrations
 python3 manage.py migrate
+
+# make migrations for specific apps
+apps=(
+    "targetApp"
+    "scanEngine"
+    "startScan"
+    "dashboard"
+    "recon_note"
+)
+
+create_migrations() {
+    local app=$1
+    echo "Creating migrations for $app..."
+    python3 manage.py makemigrations $app
+    echo "Finished creating migrations for $app"
+    echo "----------------------------------------"
+}
+
+echo "Starting migration creation process..."
+
+for app in "${apps[@]}"
+do
+    create_migrations $app
+done
+
+echo "Migration creation process completed."
+
+# apply migrations again
+echo "Applying migrations..."
+python3 manage.py migrate
+echo "Migration process completed."
+
+
 python3 manage.py collectstatic --no-input --clear
 
 # Load default engines, keywords, and external tools
@@ -172,7 +205,7 @@ generate_worker_command() {
     local app=${4:-"reNgine.tasks"}
     local directory=${5:-"/usr/src/app/reNgine/"}
 
-    local base_command="celery -A $app worker --pool=gevent --autoscale=$concurrency,1 --loglevel=$loglevel -Q $queue -n $worker_name" --optimization=fair
+    local base_command="celery -A $app worker --pool=gevent --optimization=fair --autoscale=$concurrency,1 --loglevel=$loglevel -Q $queue -n $worker_name"
 
     if [ "$DEBUG" == "1" ]; then
         echo "watchmedo auto-restart --recursive --pattern=\"*.py\" --directory=\"$directory\" -- $base_command &"
