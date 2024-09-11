@@ -172,7 +172,7 @@ generate_worker_command() {
     local app=${4:-"reNgine.tasks"}
     local directory=${5:-"/usr/src/app/reNgine/"}
 
-    local base_command="celery -A $app worker --pool=gevent --autoscale=$concurrency,1 --loglevel=$loglevel -Q $queue -n $worker_name" --optimization=fair
+    local base_command="celery -A $app worker --pool=gevent --optimization=fair --autoscale=$concurrency,1 --loglevel=$loglevel -Q $queue -n $worker_name"
 
     if [ "$DEBUG" == "1" ]; then
         echo "watchmedo auto-restart --recursive --pattern=\"*.py\" --directory=\"$directory\" -- $base_command &"
