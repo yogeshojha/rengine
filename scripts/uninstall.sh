@@ -38,19 +38,19 @@ fi
 print_status "${INFO}Proceeding with uninstalling reNgine${RESET}"
 
 print_status "Stopping all containers related to reNgine..."
-docker stop $(docker ps -a -q --filter name=rengine-) 2>/dev/null
+docker stop $(docker ps -a -q --filter name=rengine) 2>/dev/null
 
 print_status "Removing all containers related to reNgine..."
-docker rm $(docker ps -a -q --filter name=rengine-) 2>/dev/null
+docker rm $(docker ps -a -q --filter name=rengine) 2>/dev/null
 
 print_status "Removing all volumes related to reNgine..."
-docker volume rm $(docker volume ls -q --filter name=rengine-) 2>/dev/null
+docker volume rm $(docker volume ls -q --filter name=rengine) 2>/dev/null
 
 print_status "Removing all networks related to reNgine..."
-docker network rm $(docker network ls -q --filter name=rengine-) 2>/dev/null
+docker network rm $(docker network ls -q --filter name=rengine) 2>/dev/null
 
 print_status "Removing all images related to reNgine..."
-docker rmi $(docker images -q --filter reference=rengine-) 2>/dev/null
+docker rmi $(docker images -q --filter reference=rengine) 2>/dev/null
 
 print_status "Performing final cleanup"
 docker system prune -f --volumes --filter "label=com.docker.compose.project=rengine"

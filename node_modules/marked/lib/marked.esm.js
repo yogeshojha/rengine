@@ -1,5 +1,5 @@
 /**
- * marked v14.1.1 - a markdown parser
+ * marked v14.1.2 - a markdown parser
  * Copyright (c) 2011-2024, Christopher Jeffrey. (MIT Licensed)
  * https://github.com/markedjs/marked
  */
@@ -441,6 +441,7 @@ class _Tokenizer {
                     const hrRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`);
                     const fencesBeginRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}(?:\`\`\`|~~~)`);
                     const headingBeginRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}#`);
+                    const htmlBeginRegex = new RegExp(`^ {0,${Math.min(3, indent - 1)}}<[a-z].*>`, 'i');
                     // Check if following lines should be included in List Item
                     while (src) {
                         const rawLine = src.split('\n', 1)[0];
@@ -460,6 +461,10 @@ class _Tokenizer {
                         }
                         // End list item if found start of new heading
                         if (headingBeginRegex.test(nextLine)) {
+                            break;
+                        }
+                        // End list item if found start of html block
+                        if (htmlBeginRegex.test(nextLine)) {
                             break;
                         }
                         // End list item if found start of new bullet
