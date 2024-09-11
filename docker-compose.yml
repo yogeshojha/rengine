@@ -56,7 +56,7 @@ services:
 
   celery-beat:
     build: ./web
-    # entrypoint: /usr/src/app/beat-entrypoint.sh
+    entrypoint: /usr/src/app/beat-entrypoint.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
       - CELERY_BROKER=redis://redis:6379/0
@@ -68,6 +68,7 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
     depends_on:
       - celery
+      - db
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
