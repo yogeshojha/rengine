@@ -1,0 +1,36 @@
+name: Run ShellCheck on sh files
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install ShellCheck
+      run: |
+        echo "Installing ShellCheck..."
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+
+    - name: Run ShellCheck on .sh files
+      run: |
+        echo "Searching for .sh files..."
+        sh_files=$(find . -type f -name "*.sh")
+        if [ -z "$sh_files" ]; then
+          echo "No shell script files found."
+          exit 0
+        else
+          for file in $sh_files; do
+            echo "Running ShellCheck on $file..."
+            shellcheck "$file"
+          done
+        fi
