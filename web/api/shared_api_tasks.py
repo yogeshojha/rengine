@@ -1,7 +1,7 @@
 # include all the celery tasks to be used in the API, do not put in tasks.py
 import requests
 
-from reNgine.common_func import create_inappnotification, get_hackerone_key_username
+from reNgine.common_func import create_inappnotification, get_hackerone_key_username, is_valid_asset_identifier
 from reNgine.definitions import PROJECT_LEVEL_NOTIFICATION, HACKERONE_ALLOWED_ASSET_TYPES
 from reNgine.celery import app
 from reNgine.database_utils import bulk_import_targets
@@ -62,12 +62,14 @@ def import_hackerone_programs_task(handles, project_slug, is_sync = False):
 					# in future release we will add this in target out_of_scope
 
 					# we need to filter the scope that are supported by reNgine now
-					if asset_type in HACKERONE_ALLOWED_ASSET_TYPES and eligible_for_submission:
+					if asset_type in HACKERONE_ALLOWED_ASSET_TYPES \
+					and eligible_for_submission \
+					and is_valid_asset_identifier(asset_identifier):
 						assets.append(asset_identifier)
 					
 					# in some cases asset_type is OTHER and may contain the asset
-					elif asset_type == 'OTHER' and ('.' in asset_identifier or asset_identifier.startswith('http')):
-						assets.append(asset_identifier)
+					# elif asset_type == 'OTHER' and ('.' in asset_identifier or asset_identifier.startswith('http')):
+					# 	assets.append(asset_identifier)
 
 				# cleanup assets
 				assets = list(set(assets))

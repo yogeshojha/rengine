@@ -41,6 +41,9 @@ def bulk_import_targets(
 
 	for target in targets:
 		name = target.get('name', '').strip()
+		# cleanup the name to remove any wildcards
+		# this cleanup should happen here before inserting into db
+		name = remove_wildcard(name)
 		description = target.get('description', '')
 		
 		if not name:

@@ -1646,3 +1646,43 @@ def get_ips_from_cidr_range(target):
 		return [str(ip) for ip in ipaddress.IPv4Network(target, False)]
 	except Exception as e:
 		logger.error(f'{target} is not a valid CIDR range. Skipping.')
+
+
+def is_valid_asset_identifier(identifier):
+	"""
+		This function will check if the asset is supported by reNgine
+		As of now supported assets are:
+		- Domain
+		- IP Address
+		- URL
+		- Wildcard Domain for example *.example.com, *.example.co.uk etc
+		Args:
+			identifier: str: Identifier to check
+		Returns:
+			bool: True if identifier is valid, False otherwise
+	"""
+	domain_regex = r'^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.[A-Za-z0-9-]{1,63})*\.[A-Za-z]{2,}$'
+	ip_regex = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'
+	url_regex = r'^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-zA-Z0-9]+([\-\.]{1}[a-zA-Z0-9]+)*\.[a-zA-Z]{2,5}(:[0-9]{1,5})?(\/.*)?$'
+	wildcard_regex = r'^\*\.(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.[A-Za-z0-9-]{1,63})*\.[A-Za-z]{2,}$'
+
+	if re.match(domain_regex, identifier) or \
+		re.match(ip_regex, identifier) or \
+		re.match(url_regex, identifier) or \
+		re.match(wildcard_regex, identifier):
+		return True
+	return False
+
+
+def remove_wildcard(domain):
+	"""
+		This function removes the wildcard from the domain
+		Wildcard as in *.example.com, *.example.co.uk etc
+		Args:
+			domain: str: Domain to remove wildcard
+		Returns:
+			str: Domain without wildcard
+	"""
+	if domain.startswith('*.'):
+		return domain[2:]
+	return domain

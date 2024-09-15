@@ -457,7 +457,7 @@ function populateAssetAccordion(data) {
     const hackerone_handle = data.attributes.handle;
     const program_name = data.attributes.name;
     const assetTypes = {
-        WILDCARD: [], DOMAIN: [], IP_ADDRESS: [], CIDR: [], URL: []
+        WILDCARD: [], DOMAIN: [], IP_ADDRESS: [], CIDR: [], URL: [], OTHER: []
     };
 
     data.relationships.structured_scopes.data.forEach(scope => {
