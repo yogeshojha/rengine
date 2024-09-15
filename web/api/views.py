@@ -25,7 +25,7 @@ from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.database_utils import *
-from reNgine.definitions import ABORTED_TASK
+from reNgine.definitions import ABORTED_TASK, HACKERONE_ALLOWED_ASSET_TYPES
 from reNgine.tasks import *
 from reNgine.llm import *
 from reNgine.utilities import is_safe_path
@@ -63,8 +63,6 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 	PROGRAM_CACHE_KEY = 'hackerone_program_{}'
 
 	API_BASE = 'https://api.hackerone.com/v1/hackers'
-
-	ALLOWED_ASSET_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "CIDR", "URL"]
 
 	def list(self, request):
 		try:
@@ -179,8 +177,15 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 			if program_details:
 				filtered_scopes = [
 					scope for scope in program_details.get('relationships', {}).get('structured_scopes', {}).get('data', [])
-					if scope.get('attributes', {}).get('asset_type') in self.ALLOWED_ASSET_TYPES
+					if scope.get('attributes', {}).get('asset_type') in HACKERONE_ALLOWED_ASSET_TYPES
 				]
+
+				# refine filtered_scopes with that are valid assets
+				filtered_scopes = [
+					scope for scope in filtered_scopes
+					if is_valid_asset_identifier(scope['attributes']['asset_identifier'])
+				]
+
 
 				program_details['relationships']['structured_scopes']['data'] = filtered_scopes
 
