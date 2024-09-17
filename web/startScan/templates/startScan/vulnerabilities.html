@@ -223,7 +223,9 @@ $(document).ready(function() {
 						</a>
 						<div class="dropdown-menu" style="">
 						<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">Fetch GPT Vulnerability Details</a>
-						<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+						{% if user_preferences.bug_bounty_mode %}
+							<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+						{% endif %}
 						<a class="text-danger dropdown-item btn-delete-vulnerability" href="#" id="${row['id']}">Delete Vulnerability</a>
 						</div>
 						</div>`;
@@ -234,6 +236,12 @@ $(document).ready(function() {
 				},
 				"targets": 16,
 			},
+			{
+				"render": function ( data, type, row ) {
+					return htmlEncode(data);
+				},
+				"targets": 17,
+			}
 		],
 		"initComplete": function(settings, json) {
 			api = this.api();

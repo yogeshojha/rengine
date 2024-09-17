@@ -31,7 +31,6 @@ Thank you for helping to keep reNgine and its users safe!
 **What do I get in return?**
 
 * Much thanks from Maintainer and the community
-* Monetary Rewards
 * CVE ID(s)
 
 ## Past Security Vulnerabilities
@@ -41,6 +40,7 @@ Thanks to these individuals for reporting Security Issues in reNgine.
 ### 2024
 
 * [HIGH] [Command Injection](https://github.com/yogeshojha/rengine/security/advisories/GHSA-fx7f-f735-vgh4) in Waf Detector, Reported by [n-thumann](https://github.com/n-thumann)
+* [MEDIUM] [Stored XSS](https://github.com/yogeshojha/rengine/security/advisories/GHSA-96q4-fj2m-jqf7) in in Vulnerability Page, Reported by [Touhid M Shaikh](https://github.com/touhidshaikh)
 
 ### 2022
 
@@ -72,6 +72,6 @@ Thanks to these individuals for reporting Security Issues in reNgine.
 
 * [LOW] [Stored XSS](https://huntr.dev/bounties/693a7d23-c5d4-448e-bbf6-50b3f0ad8544/) on Target Summary via Todo, Reported by [TheLabda](https://github.com/thelabda)
 
-* [LOW] [Stored XSS](https://huntr.dev/bounties/81c48a07-9cb8-4da8-babc-28a4076a5e92/) on Nuclei Template Summary via maliclous Nuclei Template, Reported by [Walleson Moura](https://github.com/phor3nsic)
+* [LOW] [Stored XSS](https://huntr.dev/bounties/81c48a07-9cb8-4da8-babc-28a4076a5e92/) on Nuclei Template Summary via malicious Nuclei Template, Reported by [Walleson Moura](https://github.com/phor3nsic)
 
 * [MEDIUM] [Path Traversal/LFI](https://huntr.dev/bounties/5df1a485-7a1e-411d-9664-0f4343e8512a/), reported by [Koen Molenaar](https://github.com/k0enm)

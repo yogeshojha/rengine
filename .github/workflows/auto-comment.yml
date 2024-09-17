@@ -1,37 +1,98 @@
-name: 👋 Auto Comment
-on: [issues, pull_request]
+name: 💬 Auto Comment
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened, closed]
+  pull_request_target:
+    types: [opened, closed]
+
+permissions:
+  issues: write
+  pull-requests: write
+
 jobs:
-  run:
+  auto_comment:
     runs-on: ubuntu-latest
     steps:
-      - uses: bubkoo/auto-comment@v1.1.2
+      - name: 🤖 Auto Comment on Issues and PRs
+        uses: actions/github-script@v7
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          issuesOpened: >
-            👋 Hi @{{ author }},
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const { owner, repo } = context.repo;
+            const author = context.payload.sender.login;
+            
+            if (context.eventName === 'issues' && context.payload.action === 'opened') {
+              const issueTitle = context.payload.issue.title.toLowerCase();
+              let commentBody;
+              
+              if (issueTitle.includes('feat')) {
+                commentBody = `Hey @${author}! 🚀 Thanks for this exciting feature idea!
 
-            Issues is only for reporting a bug/feature request. Please read documentation before raising an issue https://rengine.wiki
+            We love seeing fresh concepts that could take reNgine to the next level. 🌟
+            
+            To help us understand your vision better, could you:
+            
+            📝 Provide a detailed description of the feature
+            🎯 Explain the problem it solves or the value it adds
+            💡 Share any implementation ideas you might have
+            
+            Your input is invaluable in shaping the future of reNgine. Let's innovate together! 💪`;
+              } else {
+                commentBody = `Hey @${author}! 👋 Thanks for flagging this bug! 🐛🔍
 
-            For very limited support, questions, and discussions, please join reNgine Discord channel: https://discord.gg/azv6fzhNCE
+            You're our superhero bug hunter! 🦸‍♂️🦸‍♀️ Before we suit up to squash this bug, could you please:
+            
+            📚 Double-check our documentation: https://rengine.wiki
+            🕵️ Make sure it's not a known issue
+            📝 Provide all the juicy details about this sneaky bug
+            
+            Once again - thanks for your vigilance! 🛠️🚀`;
+              }
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner,
+                repo,
+                body: commentBody
+              });
+            } else if ((context.eventName === 'pull_request' || context.eventName === 'pull_request_target') && context.payload.action === 'opened') {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner,
+                repo,
+                body: `Woohoo @${author}! 🎉 You've just dropped some hot new code! 🔥
 
-            Please include all the requested and relevant information when opening a bug report. Improper reports will be closed without any response.
+            Hang tight while we review this! You rock! 🤘`
+              });
+            } else if ((context.eventName === 'pull_request' || context.eventName === 'pull_request_target') && context.payload.action === 'closed') {
+              const isPRMerged = context.payload.pull_request.merged;
+              let commentBody;
 
-          pullRequestOpened: >
-            👋 Hi @{{ author }},
+              if (isPRMerged) {
+                commentBody = `Holy smokes! 🤯 You've just made reNgine even more awesome!
 
-            Thank you for sending this pull request.
+            Your code is now part of the reNgine hall of fame. 🏆 
+            
+            Keep the cool ideas coming - maybe next time you'll break the internet! 💻💥
 
-            Please make sure you have followed our [contribution guidelines](https://github.com/yogeshojha/rengine/blob/master/.github/CONTRIBUTING.md).
+            Virtual high fives all around! 🙌`;
+              } else {
+                commentBody = `Hey, thanks for your contribution! 🙏
 
-            We will review this PR as soon as possible. Thank you for your patience.
+            We appreciate the time and effort you put into this PR. Sadly this is not the right fit for reNgine at the moment.
+            
+            While we couldn't merge it this time, we value your interest in improving reNgine.
+            
+            Feel free to reach out if you have any questions. Thanks again!`;
+              }
 
-          pullRequestClosed: >
-            🚀 Hi @{{ author }},
-
-            You are amazing! Thank you for your contributions. Your contributions are what makes reNgine awesome!
-
-            This pull request has now been closed.
-
-            We look forward to your more contributions and support.
-
-            Thanks
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner,
+                repo,
+                body: commentBody
+              });
+            }

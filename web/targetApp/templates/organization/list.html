@@ -28,6 +28,7 @@ Organizations
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             {% if user|can:'modify_targets' %}
+            <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleOrganizations()" id="delete_multiple_button">Delete Multiple Organizations</a>
             <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_organization' current_project.slug %}" data-toggle="tooltip" data-placement="top" title="Add Organization">Add New Organization</a>
             {% endif %}
           </div>
@@ -42,6 +43,11 @@ Organizations
       <table id="list_organization_table" class="table dt-responsive w-100">
         <thead>
           <tr>
+            <th class="checkbox-column text-center">
+              <div class="form-check mb-2 form-check-primary">
+                <input type="checkbox" class="form-check-input" id="select_all_checkbox" onchange="selectAllOrganizations(this)">
+              </div>
+            </th>
             <th class="">Organization</th>
             <th class="text-center">Description</th>
             <th class="text-center">Total Targets</th>
@@ -52,12 +58,17 @@ Organizations
         <tbody>
           {% for organization in organizations.all %}
           <tr>
+            <td class="checkbox-column text-center">
+              <div class="form-check mb-2 form-check-primary">
+                <input type="checkbox" class="form-check-input organization-checkbox" value="{{ organization.id }}" onchange="toggleMultipleOrganizationButton()">
+              </div>
+            </td>
             <td class="">{{ organization.name|capfirst }}</td>
             <td class="text-center">{% if organization.description %}{{organization.description}}{% endif %}</td>
             <td class="text-center"><span class="badge bg-primary badge-link" onclick="get_target_modal({{organization.id}})">{{organization.get_domains.count}}</span></td>
-            <td class="text-center"><span data-toggle="tooltip" data-placement="top" title="{{organization.insert_date}}">{{organization.insert_date|naturaltime}}</span></td></td>
+            <td class="text-center"><span data-toggle="tooltip" data-placement="top" title="{{organization.insert_date}}">{{organization.insert_date|naturaltime}}</span></td>
             <td class="text-center">
-              <div class-"btn-group float-end">
+              <div class="btn-group float-end">
                 {% if user|can:'initiate_scans_subscans' %}
                   <a href="/scan/{{current_project.slug}}/start/organization/{{organization.id}}" class="btn btn-soft-primary"><i class="fe-zap"></i>&nbsp;&nbsp;Initiate Scan</a>
                 {% endif %}
@@ -70,13 +81,13 @@ Organizations
                       <a class="dropdown-item" href="{% url 'schedule_organization_scan' current_project.slug organization.id %}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
                     {% endif %}
                     {% if user|can:'modify_targets' %}
-                      <a class="dropdown-item" href="/target/{{current_project.slug}}/update/organization/{{organization.id}}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
+                      <a class="dropdown-item" href="/target/{{current_project.slug}}/update/organization/{{organization.id}}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Organization</a>
                     {% endif %}
                     {% if user|can:'modify_targets' %}
-                    <a class="dropdown-item text-danger" href="#" onclick="delete_organization({{ organization.id }})"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
+                    <a class="dropdown-item text-danger" href="#" onclick="delete_organization({{ organization.id }})"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete Organization</a>
                     {% endif %}
                   </div>
-                <div>
+                </div>
               </div>
             </td>
           </tr>
@@ -87,7 +98,6 @@ Organizations
   </div>
 </div>
 {% endblock main_content %}
-
 
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
@@ -105,7 +115,7 @@ $(document).ready(function() {
     "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
     "<'table-responsive'tr>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-    "lengthMenu": [5, 10, 20, 30, 50, 100, 500, 1000],
+    "lengthMenu": [5, 10, 20, 30, 50, 100],
     "pageLength": 10,
     "initComplete": function(settings, json) {
       $('[data-toggle="tooltip"]').tooltip();
@@ -114,25 +124,77 @@ $(document).ready(function() {
   multiCheck(list_organization_table);
 });
 
-function get_target_modal(organization_id){
-  $('.modal-title').html(`<b>Loading targets...</b>`);
-  $('#modal_dialog').modal('show');
-  $('.modal-text').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
-  $.getJSON(`/api/queryTargetsInOrganization/?organization_id=${organization_id}&format=json`, function(data) {
-    organization_name = htmlEncode(data['organization'][0]['name']);
-    $('#modal-loader').empty();
-    $('.modal-title').html(`${data['domains'].length} targets in organization ${organization_name}`);
-    $('#modal-content').append(`<ul id="target-detail-modal-ul"></ul>`);
-    for (domain in data['domains']){
-      domain_obj = data['domains'][domain];
-      $("#target-detail-modal-ul").append(`<li>${domain_obj['name']}</li>`);
-    }
-  }).fail(function(){
-    $('#modal-loader').empty();
-    $("#modal-content").append(`<p class='text-danger'>Error loading Vulnerabilities Summary</p>`);
-  });
+function selectAllOrganizations(checkbox) {
+  $('.organization-checkbox').prop('checked', checkbox.checked);
+  toggleMultipleOrganizationButton();
 }
 
+function toggleMultipleOrganizationButton() {
+  var checkedCount = $('.organization-checkbox:checked').length;
+  if (checkedCount > 0) {
+    $("#delete_multiple_button").removeClass("disabled");
+  } else {
+    $("#delete_multiple_button").addClass("disabled");
+  }
+  
+  // Update the "select all" checkbox
+  var totalCount = $('.organization-checkbox').length;
+  $('#select_all_checkbox').prop('checked', checkedCount === totalCount);
+}
+
+function deleteMultipleOrganizations() {
+  var checkedCount = $('.organization-checkbox:checked').length;
+  if (!checkedCount) {
+    swal({
+      title: '',
+      text: "Oops! No organizations have been selected!",
+      type: 'error',
+      padding: '2em'
+    })
+  } else {
+    swal.queue([{
+      title: 'Are you sure you want to delete ' + checkedCount + ' Organizations?',
+      text: "This action is irreversible.",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        var selectedOrganizations = [];
+
+        $('.organization-checkbox:checked').each(function() {
+          selectedOrganizations.push($(this).val());
+        });
+
+        var data = {'type': 'organization', 'rows': selectedOrganizations}
+
+        return fetch('/api/action/rows/delete/', {
+          method: 'post',
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        }).then(res => res.json())
+        .then(function (response) {
+          if (response['status']) {
+            // reload page
+            location.reload();
+          }
+          else {
+            Snackbar.show({
+              text: 'Oops! Failed to delete organizations!',
+              pos: 'top-right',
+              duration: 1500,
+              actionTextColor: '#fff',
+              backgroundColor: '#e7515a',
+            });
+          }
+        });
+      }
+    }])
+  }
+}
 </script>
 {% endblock page_level_script %}

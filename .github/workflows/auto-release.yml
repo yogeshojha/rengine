@@ -1,0 +1,60 @@
+name: Update Version and Changelog and Readme
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-version-and-changelog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get latest release info
+        id: get_release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const release = await github.rest.repos.getLatestRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            core.setOutput('tag_name', release.data.tag_name);
+            core.setOutput('body', release.data.body);
+
+      - name: Update version file
+        run: echo ${{ steps.get_release.outputs.tag_name }} > web/.version
+
+      - name: Update CHANGELOG.md
+        run: |
+          echo "# Changelog" > CHANGELOG.md.new
+          echo "" >> CHANGELOG.md.new
+          echo "## ${{ steps.get_release.outputs.tag_name }}" >> CHANGELOG.md.new
+          echo "" >> CHANGELOG.md.new
+          echo "${{ steps.get_release.outputs.body }}" >> CHANGELOG.md.new
+          echo "" >> CHANGELOG.md.new
+          if [ -f CHANGELOG.md ]; then
+            sed '1,2d' CHANGELOG.md >> CHANGELOG.md.new
+          fi
+          mv CHANGELOG.md.new CHANGELOG.md
+
+      - name: Update README.md
+        run: |
+          sed -i 's|https://img.shields.io/badge/version-.*-informational|https://img.shields.io/badge/version-${{ steps.get_release.outputs.tag_name }}-informational|g' README.md
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add web/.version CHANGELOG.md README.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "reNgine release: ${{ steps.get_release.outputs.tag_name }} :rocket:"
+            git push origin HEAD:${{ github.event.repository.default_branch }}
+          fi
