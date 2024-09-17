@@ -1,22 +1,19 @@
 # Base image
 FROM ubuntu:22.04
 
-ARG GECKOVERSION=0.33.0
+# Arguments for versions
+ARG GECKOVERSION=0.35.0
 ARG GOVERSION=1.21.5
 
-RUN ARCH=$(dpkg --print-architecture) \ 
-    && if [ "${ARCH}" ! "arm64" ] || [ "${ARCH}" ! "amd64" ]; then \
-      echo "reNgine not supported, encountered unknown architecture: ${TARGETPLATFORM}" \
-      && exit 1; \
-    fi
+# Supported architectures
+ARG SUPPORTED_ARCH="amd64 arm64 armv6 armv7 armhf i386"
 
-# Labels and Credits
-LABEL \
-    name="reNgine" \
-    author="Yogesh Ojha <yogesh.ojha11@gmail.com>" \
-    description="reNgine is a automated pipeline of recon process, useful for information gathering during web application penetration testing."
+# Labels
+LABEL name="reNgine" \
+      author="Yogesh Ojha <yogesh.ojha11@gmail.com>" \
+      description="reNgine is an automated pipeline for recon processes, useful for information gathering during web application penetration testing."
 
-# Environment Variables
+# Environment variables
 ENV DEBIAN_FRONTEND="noninteractive" \
     DATABASE="postgres"
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -74,10 +71,10 @@ RUN set -e; curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s --
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN pip3 install maturin
 
-# Make directory for app
+# Set working directory
 WORKDIR /usr/src/app
 
-ENV GO111MODULE=on 
+# Install Go tools
 RUN printf "\
     github.com/jaeles-project/gospider@latest\n\
     github.com/tomnomnom/gf@latest\n\
@@ -97,9 +94,8 @@ RUN printf "\
     github.com/projectdiscovery/katana/cmd/katana@latest\n\
     github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest\n\
     github.com/sa7mon/s3scanner@latest\n" | \
-    xargs -L1 go install -ldflags="-s -w" -v && \
-    rm -rf /go/pkg/* && rm -rf /root/.cache/go-build
-
+    xargs -L1 go install -ldflags="-s -w" -v \
+    && rm -rf /go/pkg/* /root/.cache/go-build
 
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update-templates
@@ -109,15 +105,12 @@ RUN chaos -update
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
-RUN pip3 install --upgrade setuptools==72.1.0
-RUN pip3 install -r /tmp/requirements.txt --no-cache-dir
+RUN pip3 install --upgrade setuptools==72.1.0 \
+    && pip3 install -r /tmp/requirements.txt --no-cache-dir
 
-# install eyewitness
-RUN pip3 install --no-cache-dir fuzzywuzzy \
-    selenium==4.9.1 \
-    python-Levenshtein \
-    pyvirtualdisplay \
-    netaddr
+# Install eyewitness dependencies
+RUN pip3 install --no-cache-dir \
+    fuzzywuzzy selenium==4.9.1 python-Levenshtein pyvirtualdisplay netaddr
 
-# Copy source code
+# Copy application code
 COPY . /usr/src/app/
