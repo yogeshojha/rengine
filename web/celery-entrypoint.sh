@@ -258,7 +258,8 @@ workers=(
 
 for worker in "${workers[@]}"; do
     IFS=':' read -r queue concurrency worker_name <<< "$worker"
-    commands+="$(generate_worker_command "$queue" "$concurrency" "$worker_name")"$'\n'
+#    commands+="$(generate_worker_command "$queue" "$concurrency" "$worker_name")"$'\n'
+    commands+="$(generate_worker_command "$queue" "$MAX_CONCURRENCY" "$worker_name")"$'\n'
 done
 commands="${commands%&}"
 
