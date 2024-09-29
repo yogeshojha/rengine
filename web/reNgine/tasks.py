@@ -4,6 +4,8 @@ import os
 import pprint
 import subprocess
 import time
+import uuid
+
 import validators
 import xmltodict
 import yaml
@@ -1862,7 +1864,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		'hakrawler': 'hakrawler -subs -u',
 		'waybackurls': 'waybackurls',
 		'gospider': f'gospider -S {input_path} --js -d 2 --sitemap --robots -w -r',
-		'katana': f'katana -list {input_path} -silent -jc -kf all -d 3 -fs rdn',
+		'katana': f'katana -list {input_path} -silent -jc -kf all -d 3 -fs rdn -ef png,jpg,gif,jpeg,swf,woff,svg,pdf,json,css,js,webp,woff,woff2,eot,ttf,otf,mp4',
 	}
 	if proxy:
 		cmd_map['gau'] += f' --proxy "{proxy}"'
@@ -2864,14 +2866,39 @@ def http_crawl(
 	threads = cfg.get(THREADS, DEFAULT_THREADS)
 	follow_redirect = cfg.get(FOLLOW_REDIRECT, True)
 	self.output_path = None
-	input_path = f'{self.results_dir}/httpx_input.txt'
+	unique_id = str(uuid.uuid4())
+	temp_input_path = f'{self.results_dir}/temp_input_{unique_id}.txt'
+	input_path = f'{self.results_dir}/httpx_input_{unique_id}.txt'
 	history_file = f'{self.results_dir}/commands.txt'
-	if urls: # direct passing URLs to check
+	if urls:  # direct passing URLs to check
 		if self.starting_point_path:
 			urls = [u for u in urls if self.starting_point_path in u]
 
-		with open(input_path, 'w') as f:
+		with open(temp_input_path, 'w') as f:
 			f.write('\n'.join(urls))
+
+		# 打印去重前的 URL 数量
+		logger.info(f'URL Counts Before uro: {len(urls)}')
+
+		# 检查 URLs 是否为完整的链接
+		if all(re.match(r'https?://', url) for url in urls):
+			# 使用 uro 进行去重
+			dedup_cmd = f'uro -i {temp_input_path} -o {input_path}'
+			run_command(dedup_cmd, shell=True)
+
+			# # 读取去重后的 URL
+			# with open(input_path, 'r') as f:
+			# 	deduped_urls = f.read().splitlines()
+			#
+			# # 打印去重后的 URL 数量
+			# logger.info(f'URL Counts After uro: {len(deduped_urls)}')
+
+			# 清理临时文件
+			run_command(f'rm {temp_input_path}', shell=True)
+		else:
+			# 如果不是完整的 URL，直接使用原始 URLs
+			input_path = temp_input_path
+			logger.info('URLs is all subdomain, no need to execute uro.')
 	else:
 		urls = get_http_urls(
 			is_uncrawled=not recrawl,
