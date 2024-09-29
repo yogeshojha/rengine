@@ -1,4 +1,5 @@
 import csv
+import glob
 import json
 import os
 import pprint
@@ -2000,7 +2001,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		# Run gf on current pattern
 		logger.warning(f'Running gf on pattern "{gf_pattern}"')
 		gf_output_file = f'{self.results_dir}/gf_patterns_{gf_pattern}.txt'
-		cmd = f'cat {self.output_path} | gf {gf_pattern} | grep -Eo {host_regex} >> {gf_output_file}'
+		cmd = f'cat {self.output_path} | gf {gf_pattern} | grep -Eo {host_regex} | uro >> {gf_output_file}'
 		run_command(
 			cmd,
 			shell=True,
@@ -2494,10 +2495,42 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	for tpl in templates:
 		cmd += f' -t {tpl}'
 
+	# nuclei dast scan
+	# Create a merged input file path
+	dast_input_path = f'{self.results_dir}/dast_input_endpoints.txt'
+
+	# Get all .txt files starting with gf_patterns_ and merge the contents
+	pattern_files = glob.glob(f'{self.results_dir}/gf_patterns_*.txt')
+
+	# Merge the contents of the file
+	with open(dast_input_path, 'w') as dast_file:
+		for pattern_file in pattern_files:
+			with open(pattern_file, 'r') as f:
+				dast_file.write(f.read())
+				dast_file.write('\n')  # Add line breaks to distinguish different file contents
+
+	# Build DAST_CMD
+	dast_cmd = 'nuclei -j'
+	dast_cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
+	dast_cmd += f' -irr'
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		dast_cmd += formatted_headers
+	dast_cmd += f' -l {dast_input_path}'
+	dast_cmd += f' -c {str(concurrency)}' if concurrency > 0 else ''
+	dast_cmd += f' -proxy {proxy} ' if proxy else ''
+	dast_cmd += f' -retries {retries}' if retries > 0 else ''
+	dast_cmd += f' -rl {rate_limit}' if rate_limit > 0 else ''
+	# dast_cmd += f' -severity {severities_str}'
+	dast_cmd += f' -timeout {str(timeout)}' if timeout and timeout > 0 else ''
+	# dast_cmd += f' -tags {tags}' if tags else ''
+	dast_cmd += f' -silent'
+	dast_cmd += f' -dast'
 
 	grouped_tasks = []
 	custom_ctx = ctx
 	for severity in severities:
+		# custom nuclei scan
 		custom_ctx['track'] = True
 		_task = nuclei_individual_severity_module.si(
 			cmd,
@@ -2508,6 +2541,16 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 			description=f'Nuclei Scan with severity {severity}'
 		)
 		grouped_tasks.append(_task)
+		# dast nuclei scan
+		_dast_task = nuclei_individual_severity_module.si(
+			dast_cmd,
+			severity,
+			enable_http_crawl,
+			should_fetch_gpt_report,
+			ctx=custom_ctx,
+			description=f'Nuclei DAST Scan with severity {severity}'
+		)
+		grouped_tasks.append(_dast_task)
 
 	celery_group = group(grouped_tasks)
 	job = celery_group.apply_async()
