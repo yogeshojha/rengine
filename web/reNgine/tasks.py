@@ -607,10 +607,11 @@ def subdomain_discovery(
 
 	# Send notifications
 	subdomains_str = '\n'.join([f'• `{subdomain.name}`' for subdomain in subdomains])
-	self.notify(fields={
-		'Subdomain count': len(subdomains),
-		'Subdomains': subdomains_str,
-	})
+	if notif and notif.send_scan_status_notif:
+		self.notify(fields={
+			'Subdomain count': len(subdomains),
+			'Subdomains': subdomains_str,
+		})
 	if send_subdomain_changes and self.scan_id and self.domain_id:
 		added = get_new_added_subdomain(self.scan_id, self.domain_id)
 		removed = get_removed_subdomain(self.scan_id, self.domain_id)
@@ -1289,7 +1290,9 @@ def screenshot(self, ctx={}, description=None):
 
 	# Send finish notifs
 	screenshots_str = '• ' + '\n• '.join([f'`{path}`' for path in screenshot_paths])
-	self.notify(fields={'Screenshots': screenshots_str})
+
+	if notification and notification.send_scan_status_notif:
+		self.notify(fields={'Screenshots': screenshots_str})
 	if send_output_file:
 		for path in screenshot_paths:
 			title = get_output_file_name(
@@ -1446,7 +1449,9 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	for host, ports in ports_data.items():
 		ports_str = ', '.join([f'`{port}`' for port in ports])
 		fields_str += f'• `{host}`: {ports_str}\n'
-	self.notify(fields={'Ports discovered': fields_str})
+	notif = Notification.objects.first()
+	if notif and notif.send_scan_status_notif:
+		self.notify(fields={'Ports discovered': fields_str})
 
 	# Save output to file
 	with open(self.output_path, 'w') as f:
@@ -1928,7 +1933,9 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	# Store all the endpoints and run httpx
 	with open(self.output_path) as f:
 		discovered_urls = f.readlines()
-		self.notify(fields={'Discovered URLs': len(discovered_urls)})
+		notif = Notification.objects.first()
+		if notif and notif.send_scan_status_notif:
+			self.notify(fields={'Discovered URLs': len(discovered_urls)})
 
 	# Some tools can have an URL in the format <URL>] - <PATH> or <URL> - <PATH>, add them
 	# to the final URL list
@@ -2262,7 +2269,8 @@ def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, sh
 		json.dump(results, f, indent=4)
 
 	# Send finish notif
-	if send_status:
+	# if send_status:
+	if notif.send_vuln_notif:
 		vulns = Vulnerability.objects.filter(scan_history__id=self.scan_id)
 		info_count = vulns.filter(severity=0).count()
 		low_count = vulns.filter(severity=1).count()
@@ -3040,10 +3048,12 @@ def http_crawl(
 		endpoint.save()
 		endpoint_str = f'{http_url} [{http_status}] `{content_length}B` `{webserver}` `{rt}`'
 		logger.warning(endpoint_str)
-		if endpoint and endpoint.is_alive and endpoint.http_status != 403:
-			self.notify(
-				fields={'Alive endpoint': f'• {endpoint_str}'},
-				add_meta_info=False)
+
+		# too much msg, don`t use this notify
+		# if endpoint and endpoint.is_alive and endpoint.http_status != 403:
+		# 	self.notify(
+		# 		fields={'Alive endpoint': f'• {endpoint_str}'},
+		# 		add_meta_info=False)
 
 		# Add endpoint to results
 		line['_cmd'] = cmd
@@ -3062,9 +3072,10 @@ def http_crawl(
 				subdomain.save()
 			endpoint.save()
 		techs_str = ', '.join([f'`{tech}`' for tech in techs])
-		self.notify(
-			fields={'Technologies': techs_str},
-			add_meta_info=False)
+		#
+		# self.notify(
+		# 	fields={'Technologies': techs_str},
+		# 	add_meta_info=False)
 
 		# Add IP objects for 'a' records to DB
 		a_records = line.get('a', [])
@@ -3075,9 +3086,9 @@ def http_crawl(
 				subscan=self.subscan,
 				cdn=cdn)
 		ips_str = '• ' + '\n• '.join([f'`{ip}`' for ip in a_records])
-		self.notify(
-			fields={'IPs': ips_str},
-			add_meta_info=False)
+		# self.notify(
+		# 	fields={'IPs': ips_str},
+		# 	add_meta_info=False)
 
 		# Add IP object for host in DB
 		if host:
@@ -3086,9 +3097,9 @@ def http_crawl(
 				subdomain,
 				subscan=self.subscan,
 				cdn=cdn)
-			self.notify(
-				fields={'IPs': f'• `{ip.address}`'},
-				add_meta_info=False)
+			# self.notify(
+			# 	fields={'IPs': f'• `{ip.address}`'},
+			# 	add_meta_info=False)
 
 		# Save subdomain and endpoint
 		if is_ran_from_subdomain_scan:
@@ -3279,7 +3290,8 @@ def send_task_notif(
 
 	# Skip send if notification settings are not configured
 	notif = Notification.objects.first()
-	if not (notif and notif.send_scan_status_notif):
+	# if not (notif and notif.send_scan_status_notif):
+	if not notif:
 		return
 
 	# Build fields
