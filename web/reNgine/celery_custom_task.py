@@ -9,7 +9,7 @@ from reNgine.common_func import (fmt_traceback, get_output_file_name,
 								 get_task_cache_key, get_traceback_path)
 from reNgine.definitions import *
 from reNgine.settings import *
-from scanEngine.models import EngineType
+from scanEngine.models import EngineType, Notification
 from startScan.models import ScanActivity, ScanHistory, SubScan
 
 logger = get_task_logger(__name__)
@@ -199,7 +199,9 @@ class RengineTask(Task):
 			self.subscan.save()
 
 		# Send notification
-		self.notify()
+		notif = Notification.objects.first()
+		if notif and notif.send_scan_status_notif:
+			self.notify()
 
 	def update_scan_activity(self):
 		if not self.track:
@@ -215,7 +217,10 @@ class RengineTask(Task):
 		self.activity.traceback = self.traceback
 		self.activity.time = timezone.now()
 		self.activity.save()
-		self.notify()
+
+		notif = Notification.objects.first()
+		if notif and notif.send_scan_status_notif:
+			self.notify()
 
 	def notify(self, name=None, severity=None, fields={}, add_meta_info=True):
 		# Import here to avoid Celery circular import and be able to use `delay`
