@@ -1880,7 +1880,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	if threads > 0:
 		cmd_map['gau'] += f' --threads {threads}'
 		cmd_map['gospider'] += f' -t {threads}'
-		cmd_map['katana'] += f' -c {threads}'
+		cmd_map['katana'] += f' -c {threads} -p 2'
 	if custom_headers:
 		# gau, waybackurls does not support custom headers
 		formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
