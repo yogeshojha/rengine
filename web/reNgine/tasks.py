@@ -3745,26 +3745,26 @@ def parse_nuclei_result(line):
 		dict: Vulnerability data.
 	"""
 	return {
-		'name': line['info'].get('name', ''),
-		'type': line['type'],
-		'severity': NUCLEI_SEVERITY_MAP[line['info'].get('severity', 'unknown')],
-		'template': line['template'],
-		'template_url': line['template-url'],
-		'template_id': line['template-id'],
-		'description': line['info'].get('description', ''),
-		'matcher_name': line.get('matcher-name', ''),
-		'curl_command': line.get('curl-command'),
-		'request': line.get('request'),
-		'response': line.get('response'),
-		'extracted_results': line.get('extracted-results', []),
-		'cvss_metrics': line['info'].get('classification', {}).get('cvss-metrics', ''),
-		'cvss_score': line['info'].get('classification', {}).get('cvss-score'),
-		'cve_ids': line['info'].get('classification', {}).get('cve_id', []) or [],
-		'cwe_ids': line['info'].get('classification', {}).get('cwe_id', []) or [],
-		'references': line['info'].get('reference', []) or [],
-		'tags': line['info'].get('tags', []),
-		'source': NUCLEI,
-	}
+        'name': line['info'].get('name', ''),
+        'type': line['type'],
+        'severity': NUCLEI_SEVERITY_MAP.get(line['info'].get('severity', 'unknown'), 'unknown'),
+        'template': line.get('template', ''),
+        'template_url': line.get('template-url', ''),  # change to use .get()
+        'template_id': line.get('template-id', ''),
+        'description': line['info'].get('description', ''),
+        'matcher_name': line.get('matcher-name', ''),
+        'curl_command': line.get('curl-command'),
+        'request': line.get('request'),
+        'response': line.get('response'),
+        'extracted_results': line.get('extracted-results', []),
+        'cvss_metrics': line['info'].get('classification', {}).get('cvss-metrics', ''),
+        'cvss_score': line['info'].get('classification', {}).get('cvss-score'),
+        'cve_ids': line['info'].get('classification', {}).get('cve_id', []) or [],
+        'cwe_ids': line['info'].get('classification', {}).get('cwe_id', []) or [],
+        'references': line['info'].get('reference', []) or [],
+        'tags': line['info'].get('tags', []),
+        'source': NUCLEI,
+    }
 
 
 def parse_dalfox_result(line):
