@@ -58,6 +58,7 @@ services:
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     depends_on:
       - celery
+      - db
     environment:
       - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
@@ -94,9 +95,6 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
-      # THIS IS A MUST FOR CHECKING UPDATE, EVERYTIME A COMMIT IS MERGED INTO
-      # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
-      - RENGINE_CURRENT_VERSION='2.1.3'
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github

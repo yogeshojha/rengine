@@ -146,11 +146,51 @@ Scan Findings
 							<p class="text-danger">Scan failed due to ERROR: {{history.error_message}}</p>
 						{% endif %}
 						{% endif %}
-						<h6 class="font-13 text-muted text-uppercase">Scan Logs</h6>
-						<span><a href="javascript:get_logs_modal({{history.id}})"><i class="fe-file"></i> Logs</a></span>
-						<h6 class="font-13 text-muted text-uppercase">Scan Engine</h6>
+						<h6 class="font-13 text-muted text-uppercase"><i class="fe-settings"></i> Scan Configurations</h6>
+						<span>Starting Path: {% if history.cfg_starting_point_path %} {{history.cfg_starting_point_path}} {% else %}/ {% endif %}</span><i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Scan path where the scan began"></i><br>
+						<div class="accordion custom-accordion" id="custom-accordion-one">
+							<div>
+								<a class="custom-accordion-title text-reset d-block collapsed" data-bs-toggle="collapse" href="#collapseImported" aria-expanded="true" aria-controls="collapseImported">
+									{{history.cfg_imported_subdomains|length}} Imported Subdomains <i class="mdi mdi-chevron-down accordion-arrow"></i>
+								</a>
+								<div id="collapseImported" class="collapse" data-bs-parent="#custom-accordion-one" style="">
+									<ul>
+										{% for subdomain in history.cfg_imported_subdomains %}
+										<li><code>{{subdomain}}</code></li>
+										{% endfor %}
+									</ul>
+								</div>
+							</div>
+							<div>
+								<a class="custom-accordion-title text-reset d-block collapsed" data-bs-toggle="collapse" href="#collapseOutofScope" aria-expanded="true" aria-controls="collapseImported">
+									{{history.cfg_out_of_scope_subdomains|length}} out of scope Subdomains <i class="mdi mdi-chevron-down accordion-arrow"></i>
+								</a>
+								<div id="collapseOutofScope" class="collapse" data-bs-parent="#custom-accordion-one" style="">
+									<ul>
+										{% for subdomain in history.cfg_out_of_scope_subdomains %}
+										<li><code>{{subdomain}}</code></li>
+										{% endfor %}
+									</ul>
+								</div>
+							</div>
+							<div>
+								<a class="custom-accordion-title text-reset d-block collapsed" data-bs-toggle="collapse" href="#collapsePath" aria-expanded="true" aria-controls="collapseImported">
+									{{history.cfg_excluded_paths|length}} Excluded Paths <i class="mdi mdi-chevron-down accordion-arrow"></i>
+								</a>
+								<div id="collapsePath" class="collapse" data-bs-parent="#custom-accordion-one" style="">
+									<ul>
+										{% for path in history.cfg_excluded_paths %}
+										<li><code>{{path}}</code></li>
+										{% endfor %}
+									</ul>
+								</div>
+							</div>
+						</div>
+						<h6 class="font-13 text-muted text-uppercase mt-3"><i class="fe-file"></i> Scan Logs</h6>
+						<span><a href="javascript:get_logs_modal({{history.id}})"><i class="fe-terminal"></i> Logs</a></span>
+						<h6 class="font-13 text-muted text-uppercase mt-3"><i class="fe-cpu"></i> Scan Engine</h6>
 						<span class="badge badge-soft-primary">{{history.scan_type.engine_name}}</span>
-						<h6 class="font-13 text-muted text-uppercase mt-3">Scan Duration </h6>
+						<h6 class="font-13 text-muted text-uppercase mt-3"><i class="fe-clock"></i> Scan Duration </h6>
 						{% if history.scan_status == -1 %}
 						<p class="mt-1 mb-0 text-warning font-14"><small class="text-center text-muted">Scan not yet started.</small></p>
 						{% elif history.scan_status == 0 %}
@@ -166,9 +206,7 @@ Scan Findings
 						{% elif history.scan_status == 3 %}
 						<span class="mt-1 mb-0 text-danger font-14">Aborted in {{ history.start_scan_date|timesince:history.stop_scan_date }}</span>
 						{% endif %}
-
-
-						<h3 class="font-13 text-muted text-uppercase mb-2">Scan Progress</h3>
+						<h3 class="font-13 text-muted text-uppercase mt-3"><i class="fe-loader"></i> Scan Progress</h3>
 						<div class="progress mb-2 progress-md">
 							{% if history.scan_status == -1 %}
 							<div class="progress-bar bg-warning" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
@@ -200,7 +238,7 @@ Scan Findings
 						{% endfor %}
 						{% endif %}
 
-						<h6 class="font-13 text-muted text-uppercase mt-4 mb-2">Scan Timeline</h6>
+						<h6 class="font-13 text-muted text-uppercase mt-4 mb-2"><i class="fe-activity"></i> Timeline</h6>
 						<div data-simplebar style="max-height: 410px;" class="p-2">
 							<div class="track-order-list">
 								<ul class="list-unstyled">
@@ -220,7 +258,7 @@ Scan Findings
 												<p class="badge badge-soft-danger">Error: {{activity.error_message}}</p>
 											{% endif %}
 										{% endif %}
-										<span><a href="javascript:get_logs_modal(null, {{activity.id}})"><i class="fe-file"></i> Logs</a></span>
+										<span><a href="javascript:get_logs_modal(null, {{activity.id}})"><i class="fe-terminal"></i> Logs</a></span>
 									</li>
 									{% endfor %}
 								</ul>
@@ -1672,7 +1710,11 @@ $(document).ready(function() {
 							// if (cve_cwe_badge != "") {
 							// 	cve_cwe_badge
 							// }
-							hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+							{% if user_preferences.bug_bounty_mode %}
+								hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+							{% else %}
+								hackerone_report = "";
+							{% endif %}
 							return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + cve_cwe_badge + tags + hackerone_report;
 						},
 						"targets": 3,
@@ -1734,7 +1776,9 @@ $(document).ready(function() {
 								</a>
 								<div class="dropdown-menu" style="">
 								<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">Fetch GPT Vulnerability Details</a>
-								<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+								{% if user_preferences.bug_bounty_mode %}
+									<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+								{% endif %}
 								<a class="text-danger dropdown-item" href="javascript:delete_vulnerability(${row['id']});">Delete Vulnerability</a>
 								</div>
 								</div>`;

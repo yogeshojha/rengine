@@ -319,6 +319,13 @@ def onboarding(request):
     context = {}
     error = ''
 
+    # check is any projects exists, then redirect to project list else onboarding
+    project = Project.objects.first()
+
+    if project:
+        slug = project.slug
+        return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
+
     if request.method == "POST":
         project_name = request.POST.get('project_name')
         slug = slugify(project_name)
@@ -327,6 +334,10 @@ def onboarding(request):
         create_user_role = request.POST.get('create_user_role')
         key_openai = request.POST.get('key_openai')
         key_netlas = request.POST.get('key_netlas')
+        key_chaos = request.POST.get('key_chaos')
+        key_hackerone = request.POST.get('key_hackerone')
+        username_hackerone = request.POST.get('username_hackerone')
+        bug_bounty_mode = request.POST.get('bug_bounty_mode') == 'on'
 
         insert_date = timezone.now()
 
@@ -340,18 +351,29 @@ def onboarding(request):
             error = ' Could not create project, Error: ' + str(e)
 
 
+        # update currently logged in user's preferences for bug bounty mode
+        user_preferences, _ = UserPreferences.objects.get_or_create(user=request.user)
+        user_preferences.bug_bounty_mode = bug_bounty_mode
+        user_preferences.save()
+
+
         try:
             if create_username and create_password and create_user_role:
                 UserModel = get_user_model()
-                user = UserModel.objects.create_user(
+                new_user = UserModel.objects.create_user(
                     username=create_username,
                     password=create_password
                 )
-                assign_role(user, create_user_role)
+                assign_role(new_user, create_user_role)
+
+
+                # initially bug bounty mode is enabled for new user as selected for current user
+                new_user_preferences, _ = UserPreferences.objects.get_or_create(user=new_user)
+                new_user_preferences.bug_bounty_mode = bug_bounty_mode
+                new_user_preferences.save()
+                
         except Exception as e:
             error = ' Could not create User, Error: ' + str(e)
-
-
 
         if key_openai:
             openai_api_key = OpenAiAPIKey.objects.first()
@@ -369,15 +391,47 @@ def onboarding(request):
             else:
                 NetlasAPIKey.objects.create(key=key_netlas)
 
+        if key_chaos:
+            chaos_api_key = ChaosAPIKey.objects.first()
+            if chaos_api_key:
+                chaos_api_key.key = key_chaos
+                chaos_api_key.save()
+            else:
+                ChaosAPIKey.objects.create(key=key_chaos)
+
+        if key_hackerone and username_hackerone:
+            hackerone_api_key = HackerOneAPIKey.objects.first()
+            if hackerone_api_key:
+                hackerone_api_key.username = username_hackerone
+                hackerone_api_key.key = key_hackerone
+                hackerone_api_key.save()
+            else:
+                HackerOneAPIKey.objects.create(
+                    username=username_hackerone, 
+                    key=key_hackerone
+                )
+
     context['error'] = error
-    # check is any projects exists, then redirect to project list else onboarding
-    project = Project.objects.first()
+    
 
     context['openai_key'] = OpenAiAPIKey.objects.first()
     context['netlas_key'] = NetlasAPIKey.objects.first()
+    context['chaos_key'] = ChaosAPIKey.objects.first()
+    context['hackerone_key'] = HackerOneAPIKey.objects.first().key if HackerOneAPIKey.objects.first() else ''
+    context['hackerone_username'] = HackerOneAPIKey.objects.first().username if HackerOneAPIKey.objects.first() else ''
 
-    if project:
-        slug = project.slug
-        return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
+    context['user_preferences'], _ = UserPreferences.objects.get_or_create(
+        user=request.user
+    )
 
     return render(request, 'dashboard/onboarding.html', context)
+
+
+
+def list_bountyhub_programs(request, slug):
+    context = {}
+    # get parameter to device which platform is being requested
+    platform = request.GET.get('platform') or 'hackerone'
+    context['platform'] = platform.capitalize()
+    
+    return render(request, 'dashboard/bountyhub_programs.html', context)

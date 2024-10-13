@@ -29,27 +29,79 @@ API Vault
               <div class="mb-3">
                 <label for="key_openai" class="form-label">OpenAI</label>
                 <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using GPT.</p>
+                <div class="flex-grow-1 position-relative">
                 {% if openai_key %}
-                  <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}">
+                  <input class="form-control" type="password" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}">
                 {% else %}
                   <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key">
                 {% endif %}
-                <span class="text-muted float-end">This is optional but recommended.</span>
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                    <span class="password-eye"></span>
+                  </div>
+                </div>
+                <span class="text-muted float-end optional-text mt-2">This is optional but recommended. Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">https://platform.openai.com/api-keys</a></span>
               </div>
               <div class="mb-3">
                 <label for="key_netlas" class="form-label">Netlas</label>
                 <p class="text-muted">Netlas keys will be used to get whois information and other OSINT related data.</p>
+                <div class="flex-grow-1 position-relative">
                 {% if netlas_key %}
-                  <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}">
+                  <input class="form-control" type="password" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}">
                 {% else %}
                   <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key">
                 {% endif %}
-                <span class="text-muted float-end">This is optional</span>
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                    <span class="password-eye"></span>
+                  </div>
+                </div>
+                <span class="text-muted float-end optional-text mt-2">This is optional. Get your API key from <a href="https://netlas.io" target="_blank">https://netlas.io</a></span>
+              </div>
+              <div class="mb-3">
+                <label for="key_chaos" class="form-label">Chaos by Project Discovery</label>
+                <p class="text-muted">Chaos keys will be used for subdomain enumeration and recon data for Public Bug Bounty Programs.</p>
+                <div class="flex-grow-1 position-relative">
+                {% if chaos_key %}
+                  <input class="form-control" type="password" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key" value="{{chaos_key}}">
+                {% else %}
+                  <input class="form-control" type="text" id="key_chaos" name="key_chaos" placeholder="Enter Chaos Key">
+                {% endif %}
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                    <span class="password-eye"></span>
+                  </div>
+                </div>
+                <span class="text-muted float-end optional-text mt-2">This is optional but recommended. Get your API key from <a href="https://cloud.projectdiscovery.io" target="_blank">https://cloud.projectdiscovery.io</a></span>
+              </div>
+              {% if user_preferences.bug_bounty_mode %}
+                <div class="mb-3">
+                  <label for="key_hackerone" class="form-label">Hackerone</label>
+                  <div class="row">
+                  <p class="text-muted">Hackerone Keys will be used to import targets, bookmarked programs, and submit automated vulnerability report to Hackerone. This is a bug bounty specific feature.</p>
+                  <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+                    <label for="hackerone_username"  class="form-label">Hackerone Username (Not email)</label>
+                    {% if hackerone_username %} <input class="form-control" type="text" id="username_hackerone" name="username_hackerone" placeholder="Enter Hackerone Username" value="{{hackerone_username}}"> {% else %} <input class="form-control" type="text" id="username_hackerone" name="username_hackerone" placeholder="Enter Hackerone Username"> {% endif %}
+                  </div>
+                  <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+                    <label for="hackerone_key" class="form-label">Generate your <a href="https://hackerone.com/settings/api_token/edit" target="_blank">API Token from here <i class="fe-external-link"></i></a></label>
+                    <div class="flex-grow-1 position-relative">
+                    {% if hackerone_key %} <input class="form-control" type="password" id="key_hackerone" name="key_hackerone" placeholder="Enter Hackerone Key" value="{{hackerone_key}}"> {% else %} <input class="form-control" type="text" id="key_hackerone" name="key_hackerone" placeholder="Enter Hackerone Token"> {% endif %}
+                    <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                      <span class="password-eye"></span>
+                    </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <p class="text-muted float-end mt-2 mb-2">This is optional but recommended for bug hunters. Get your API key from <a href="https://api.hackerone.com/getting-started-hacker-api/#getting-started-hacker-api" class="text-primary" target="_blank">Hackerone Documentation</a></p>
+                  </div>
+                  <div class="col-12">
+                    <a href="#" onclick="test_hackerone()" class="text-info float-end">Test my hackerone keys <i class="fe-check-circle"></i></a>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
               </div>
               <div class="mb-0">
-                <button class="btn btn-info float-sm-end my-4" type="submit"> Update API Keys</button>
+                <button class="btn btn-primary float-sm-end my-4" type="submit"> Update API Keys</button>
               </div>
-            </div>
           </div>
         </form>
       </div>

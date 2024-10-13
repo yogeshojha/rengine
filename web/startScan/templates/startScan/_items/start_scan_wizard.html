@@ -1,0 +1,103 @@
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        {% if domain_list %}
+          <h4 class="header-title">Initiating multiple scan for {{ domain_list|length }} targets: </h4>
+        {% for domain in domain_list %}
+          <span class="badge badge-soft-primary m-1">{{domain}}</span>
+        {% endfor %}
+        <br>
+        <br>
+        {% endif %}
+        <form method="POST" id="start-scan-form">
+          {% csrf_token %}
+          <div id="select_engine">
+            <h4>Choose Scan Engine</h4>
+            <div class="">
+              <h4>Select Scan Engine</h4>
+              {% if custom_engines_count == 0 %}
+              <div class="alert bg-soft-primary border-0 mb-4" role="alert">
+                <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
+                <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">Create Custom Scan Engine</a>
+              </div>
+              {% endif %}
+              {% include "startScan/_items/scanengine_accordion.html" %}
+            </div>
+            <h4>Import/Ignore Subdomains</h4>
+            <div class="">
+              <div class="mb-3">
+                <h4 class="text-info">Import Subdomains(Optional)</h4>
+                <p>You can import subdomains for <strong>{{domain.name}}</strong> discovered through your private reconnaissance tools.</p>
+                <br>
+                <div class="alert bg-soft-primary border-0 mt-1 mb-1" role="alert">
+                  <span>Enter one subdomain per line. Subdomains not belonging to <strong>{{domain.name}}</strong> will be automatically skipped.</span>
+                </div>
+                <label for="importSubdomainFormControlTextarea" class="form-label mt-1">Subdomains List</label>
+                {% if subdomains_in %}
+                <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false">{% for subdomain in subdomains_in %}{{ subdomain }}{% if not forloop.last %}
+{% endif %}{% endfor %}</textarea>
+                {% else %}
+                <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false"></textarea>
+                {% endif %}
+              </div>
+              <div class="mb-3">
+                <h4 class="text-warning">Out of Scope Subdomains (Optional)</h4>
+                <p>Specify subdomains of <strong>{{domain.name}}</strong> to exclude from scanning. These subdomains will be omitted from all subsequent scans, including URL discovery and vulnerability assessments.</p>
+                <p>Enter one subdomain or pattern per line. Both plain text and regex patterns are supported. <span class="badge bg-soft-primary text-primary ms-2">New</span></p>
+                <div class="mt-2 mb-2">
+                  <li>For plain text: <code>admin.example.com</code></li>
+                  <li>For regex: <code>^.*outofscope.*\.com$</code>, <code>admin.*</code> etc</li>
+                </div>
+                <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">Out of Scope Subdomains List</label>
+                {% if subdomains_out %}
+                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false">{% for subdomain in subdomains_out %}{{ subdomain }}{% if not forloop.last %}
+{% endif %}{% endfor %}</textarea>
+                {% else %}
+                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false" placeholder="Enter subdomains or patterns, one per line"></textarea>
+                {% endif %}
+              </div>
+            </div>
+
+            <h4>URL Scope and Exclusions</h4>
+            <div class="mb-4">
+              <div class="mb-3">
+                <h4 class="text-info">Starting Point Path (Optional)</h4>
+                {% if starting_point_path %}
+                  <input type="email" class="form-control" id="startingPointPath" placeholder="e.g. /home" name="startingPointPath" value="{{starting_point_path}}">
+                {% else %}
+                  <input type="email" class="form-control" id="startingPointPath" placeholder="e.g. /home" name="startingPointPath">
+                {% endif %}
+                <small class="form-text text-muted">
+                  Defines where the scan should begin. Leave blank to scan from the root (/) and include all subdomains. 
+                  </br>
+                  If a path is provided (e.g., /home), the scan will focus only on that path and its subpaths, 
+                  skipping subdomain scanning. For example, entering '/home' for {{domain.name}} will scan 
+                  https://{{domain.name}}/home, but not other parts of {{domain.name}} or its subdomains.
+                </small>
+              </div>
+              <div class="mb-3">
+                <h4 class="text-warning">Excluded Paths (Optional)</h4>
+                <input type="text" id="excludedPaths" value="{{excluded_paths}}" name="excludedPaths">
+                <small class="form-text text-muted">
+                Enter paths or regex patterns to exclude from the scan. Type a path or pattern and press Enter to add it.
+                Supports both exact path matching and regex patterns. Examples:<br>
+                • <code>/admin</code> excludes paths starting with '/admin'<br>
+                • <code>/images/.*\.jpg</code> excludes all .jpg files in the images directory<br>
+                • <code>/static/(?:css|js)/</code> excludes all contents of /static/css/ and /static/js/<br>
+                <b>Common exclusions:</b><br>
+                • Static assets: <code>/images/.*</code>, <code>/css/.*</code><br>
+                <br>
+                <b>Note: Use regex patterns carefully. While exclusions can speed up scans, be cautious not to exclude critical areas that may contain vulnerabilities. Test your patterns to ensure they match as intended.</b>
+              </small>
+            </div>
+          </div>
+          {% if domain_ids %}
+          <input type="hidden" name="domain_ids" value="{{domain_ids}}">
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+

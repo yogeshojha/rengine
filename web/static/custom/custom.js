@@ -1,3 +1,26 @@
+function loadScript(src) {
+	// helper function to load a script asynchronously
+	return new Promise((resolve, reject) => {
+		const script = document.createElement('script');
+		script.src = src;
+		script.onload = resolve;
+		script.onerror = reject;
+		document.head.appendChild(script);
+	});
+}
+
+function loadCSS(href) {
+	// helper function to load a css asynchronously
+	return new Promise((resolve, reject) => {
+		const link = document.createElement('link');
+		link.rel = 'stylesheet';
+		link.href = href;
+		link.onload = resolve;
+		link.onerror = reject;
+		document.head.appendChild(link);
+	});
+}
+
 function getCurrentProjectSlug(){
 	return document.querySelector('input[name="current_project"]').value;
 }
@@ -830,10 +853,10 @@ function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_l
 	const stopAPI = "/api/action/stop/scan/";
 
 	if (scan_id) {
-		var data = {'scan_id': scan_id}
+		var data = {'scan_ids': [scan_id]}
 	}
 	else if (subscan_id) {
-		var data = {'subscan_id': subscan_id}
+		var data = {'subscan_ids': [subscan_id]}
 	}
 	swal.queue([{
 		title: 'Are you sure you want to stop this scan?',
@@ -857,17 +880,21 @@ function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_l
 			}).then(function(data) {
 				// TODO Look for better way
 				if (data.status) {
-					Snackbar.show({
-						text: 'Scan Successfully Aborted.',
-						pos: 'top-right',
-						duration: 1500
+					Swal.fire({
+						title: 'Success',
+						text: data['message'],
+						icon: 'success',
+						showConfirmButton: false,
+						timer: 1500
 					});
-					if (reload_scan_bar) {
-						getScanStatusSidebar();
-					}
-					if (reload_location) {
-						window.location.reload();
-					}
+					setTimeout(function() {
+						if (reload_scan_bar) {
+							getScanStatusSidebar();
+						}
+						if (reload_location) {
+							window.location.reload();
+						}
+					}, 1500);
 				} else {
 					Snackbar.show({
 						text: 'Oops! Could not abort the scan. ' + data.message,
@@ -1456,107 +1483,107 @@ function fetch_whois(domain_name, force_reload_whois=false) {
 }
 
 function get_target_whois(domain_name) {
-    const url = `/api/tools/whois/?format=json&target=${domain_name}`;
-    
-    Swal.fire({
-        title: `Fetching WHOIS details for ${domain_name}...`,
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        willOpen: () => {
-            Swal.showLoading();
-        }
-    });
+	const url = `/api/tools/whois/?format=json&target=${domain_name}`;
+	
+	Swal.fire({
+		title: `Fetching WHOIS details for ${domain_name}...`,
+		allowOutsideClick: false,
+		showConfirmButton: false,
+		willOpen: () => {
+			Swal.showLoading();
+		}
+	});
 
-    fetch(url, {
-        method: 'GET',
-        credentials: "same-origin",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            'Content-Type': 'application/json'
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log(data);
-        if (data.status) {
-            Swal.close();
-            display_whois_on_modal(data);
-        } else {
-            throw new Error(data.result || 'Failed to fetch WHOIS data');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        let errorMessage = error.message;
-        if (errorMessage.includes('Netlas limit exceeded')) {
-            errorMessage = 'Rate limit exceeded. Please try again later.';
-        } else if (errorMessage.includes('Invalid domain')) {
-            errorMessage = 'Invalid domain or no WHOIS data available.';
-        }
-        Swal.fire({
-            title: 'Error!',
-            text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
-            icon: 'error'
-        });
-    });
+	fetch(url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
+		},
+	})
+	.then(response => {
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		return response.json();
+	})
+	.then(data => {
+		console.log(data);
+		if (data.status) {
+			Swal.close();
+			display_whois_on_modal(data);
+		} else {
+			throw new Error(data.result || 'Failed to fetch WHOIS data');
+		}
+	})
+	.catch(error => {
+		console.error('Error:', error);
+		let errorMessage = error.message;
+		if (errorMessage.includes('Netlas limit exceeded')) {
+			errorMessage = 'Rate limit exceeded. Please try again later.';
+		} else if (errorMessage.includes('Invalid domain')) {
+			errorMessage = 'Invalid domain or no WHOIS data available.';
+		}
+		Swal.fire({
+			title: 'Error!',
+			text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
+			icon: 'error'
+		});
+	});
 }
 
 function get_domain_whois(domain_name, show_add_target_btn = false) {
-    const url = `/api/tools/whois/?format=json&target=${domain_name}`;
-    
-    Swal.fire({
-        title: `Fetching WHOIS details for ${domain_name}...`,
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        willOpen: () => {
-            Swal.showLoading();
-        }
-    });
+	const url = `/api/tools/whois/?format=json&target=${domain_name}`;
+	
+	Swal.fire({
+		title: `Fetching WHOIS details for ${domain_name}...`,
+		allowOutsideClick: false,
+		showConfirmButton: false,
+		willOpen: () => {
+			Swal.showLoading();
+		}
+	});
 
-    $('.modal').modal('hide');
+	$('.modal').modal('hide');
 
-    fetch(url, {
-        method: 'GET',
-        credentials: "same-origin",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            'Content-Type': 'application/json'
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log(data);
-        Swal.close();
-        if (data.status) {
-            display_whois_on_modal(data, show_add_target_btn);
-        } else {
-            throw new Error(data.result || 'Failed to fetch WHOIS data');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        let errorMessage = error.message;
-        if (errorMessage.includes('Netlas limit exceeded')) {
-            errorMessage = 'Rate limit exceeded. Please try again later.';
-        } else if (errorMessage.includes('Invalid domain')) {
-            errorMessage = 'Invalid domain or no WHOIS data available.';
-        }
-        Swal.fire({
-            title: 'Error!',
-            text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
-            icon: 'error'
-        });
-    });
+	fetch(url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
+		},
+	})
+	.then(response => {
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		return response.json();
+	})
+	.then(data => {
+		console.log(data);
+		Swal.close();
+		if (data.status) {
+			display_whois_on_modal(data, show_add_target_btn);
+		} else {
+			throw new Error(data.result || 'Failed to fetch WHOIS data');
+		}
+	})
+	.catch(error => {
+		console.error('Error:', error);
+		let errorMessage = error.message;
+		if (errorMessage.includes('Netlas limit exceeded')) {
+			errorMessage = 'Rate limit exceeded. Please try again later.';
+		} else if (errorMessage.includes('Invalid domain')) {
+			errorMessage = 'Invalid domain or no WHOIS data available.';
+		}
+		Swal.fire({
+			title: 'Error!',
+			text: `Failed to fetch WHOIS records for ${domain_name}: ${errorMessage}`,
+			icon: 'error'
+		});
+	});
 }
 
 
@@ -3324,4 +3351,181 @@ function handleHashInUrl(){
 			}, 100);
 		}
 	}
+}
+
+function show_scan_configuration(starting_path, out_of_scope_subdomains, excluded_paths, imported_subdomains) {
+	$('#modal_title').html('Scan Configuration');
+	$('#modal-content').empty();
+	var content = `
+	<div class="scan-config-modal">
+		<div class="starting-path mb-3">
+			<h5>Starting Path: <code>${starting_path || '/'}</code></h5>
+		</div>
+		<ul class="nav nav-tabs nav-bordered" role="tablist">
+			<li class="nav-item" role="presentation">
+				<a href="#outofscope" data-bs-toggle="tab" aria-expanded="true" class="nav-link active" role="tab">
+					Out of Scope Subdomains <span class="badge bg-secondary">${out_of_scope_subdomains.length}</span>
+				</a>
+			</li>
+			<li class="nav-item" role="presentation">
+				<a href="#imported" data-bs-toggle="tab" aria-expanded="false" class="nav-link" role="tab">
+					Imported Subdomains <span class="badge bg-secondary">${imported_subdomains.length}</span>
+				</a>
+			</li>
+			<li class="nav-item" role="presentation">
+				<a href="#excluded" data-bs-toggle="tab" aria-expanded="false" class="nav-link" role="tab">
+					Excluded Paths <span class="badge bg-secondary">${excluded_paths.length}</span>
+				</a>
+			</li>
+		</ul>
+		<div class="tab-content">
+			<div class="tab-pane fade show active" id="outofscope" role="tabpanel">
+				<ul class="config-list">
+					${out_of_scope_subdomains.map(domain => `<li><code>${domain}</code></li>`).join('')}
+				</ul>
+			</div>
+			<div class="tab-pane fade" id="imported" role="tabpanel">
+				<ul class="config-list">
+					${imported_subdomains.map(domain => `<li><code>${domain}</code></li>`).join('')}
+				</ul>
+			</div>
+			<div class="tab-pane fade" id="excluded" role="tabpanel">
+				<ul class="config-list">
+					${excluded_paths.map(path => `<li><code>${path}</code></li>`).join('')}
+				</ul>
+			</div>
+		</div>
+	</div>
+	`;
+	$('#modal-content').append(content);
+	$('#modal_dialog').modal('show');
+}
+
+
+async function test_hackerone() {
+	const username = $("#username_hackerone");
+	const apiKey = $("#key_hackerone");
+	const fields = [username, apiKey];
+
+	const isValid = fields.every(field => field.val().trim().length > 0); 
+	fields.forEach(field => {
+		field.toggleClass("is-invalid", field.val().trim().length === 0);
+	});
+
+	if (!isValid) return;
+
+	try {
+		const result = await Swal.fire({
+			title: 'HackerOne Configuration',
+			text: 'This will test if your HackerOne API keys are working.',
+			icon: 'info',
+			showCancelButton: true,
+			confirmButtonText: 'Test my HackerOne API Key',
+			showLoaderOnConfirm: true,
+			preConfirm: async () => {
+			try {
+				const response = await fetch('testHackerone/', {
+				method: 'POST',
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken"),
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					username: username.val().trim(),
+					api_key: apiKey.val().trim()
+				}),
+				});
+	
+				if (!response.ok) {
+				throw new Error('Network response was not ok');
+				}
+	
+				const data = await response.json();
+				return data;
+			} catch (error) {
+				Swal.showValidationMessage(`Request failed: ${error}`);
+			}
+			},
+			allowOutsideClick: () => !Swal.isLoading()
+		});
+
+		if (result.isConfirmed) {
+			const data = result.value;
+			const isWorking = data.status === 200;
+	
+			fields.forEach(field => {
+			field.toggleClass("is-valid", isWorking);
+			field.toggleClass("is-invalid", !isWorking);
+			});
+	
+			await Swal.fire({
+			title: isWorking ? 'Success' : 'Error',
+			text: isWorking
+				? 'Your HackerOne Credentials are working.'
+				: 'Your HackerOne Credentials are not working. Please check your username and/or API key.',
+			icon: isWorking ? 'success' : 'error'
+			});
+		}
+	} catch (error) {
+		console.error('Error:', error);
+		await Swal.fire({
+			title: 'Error',
+			text: 'An unexpected error occurred while testing the HackerOne API Key.',
+			icon: 'error'
+		});
+	}
+}
+
+function handleSyncBookmarkedProgramsSwal() {
+	Swal.fire({
+		title: 'Sync Bookmarked Programs',
+		html: `
+			<p>Are you sure you want to sync your bookmarked HackerOne programs?</p>
+			<p class="text-muted">This process will run in the background and may take some time.</p>
+		`,
+		icon: 'question',
+		showCancelButton: true,
+		confirmButtonText: 'Yes, start sync',
+		cancelButtonText: 'Cancel',
+		confirmButtonColor: '#3085d6',
+		cancelButtonColor: '#d33',
+	}).then((result) => {
+		if (result.isConfirmed) {
+			const currentProjectSlug = document.body.getAttribute('data-current-project');
+			fetch(`/api/hackerone-programs/sync_bookmarked?project_slug=${currentProjectSlug}`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': getCookie("csrftoken")
+				},
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(() => {
+				Swal.fire({
+					title: 'Sync Process Initiated',
+					html: `
+						<p>The sync process for your bookmarked HackerOne programs has begun.</p>
+						<p>You will receive notifications about the progress and completion of the sync process.</p>
+					`,
+					icon: 'info',
+					confirmButtonText: 'Got it',
+					confirmButtonColor: '#3085d6',
+				});
+			})
+			.catch((error) => {
+				Swal.fire({
+					title: 'Sync Process Initiation Failed',
+					text: `There was an error starting the sync process: ${error.message}`,
+					icon: 'error',
+					confirmButtonText: 'OK',
+					confirmButtonColor: '#3085d6',
+				});
+			});
+		}
+	});
 }

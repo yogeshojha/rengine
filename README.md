@@ -6,7 +6,7 @@
   <h3>reNgine: The Ultimate Web Reconnaissance & Vulnerability Scanner 🚀</h3>
 </p>
 
-<p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v2.1.3-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a></p>
+<p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v2.2.0-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a></p>
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=Xk_YH83IQgg" target="_blank"><img src="https://img.shields.io/badge/BlackHat--Arsenal--Asia-2023-blue.svg?logo=none" alt="" /></a>&nbsp;
@@ -30,9 +30,12 @@
 <a href="https://opensourcesecurityindex.io/" target="_blank" rel="noopener">
 <img style="width: 282px; height: 56px" src="https://opensourcesecurityindex.io/badge.svg" alt="Open Source Security Index - Fastest Growing Open Source Security Projects" width="282" height="56" /> </a>
 </p>
+<h4>reNgine 2.2.0 is released!</h4>
+<p>
+  reNgine 2.2.0 comes with bounty hub where you can sync and import your hackerone programs, in app notifications, chaos as subdomain enumeration tool, ability to upload multiple nuclei and gf patterns, support for regex in out of scope subdomain config, additional pdf report template and many more. 
+  <b>Check out <a href="https://rengine.wiki/whats-new/2_2_0/">What's new in reNgine 2.2.0!</a></b>
+</p>
 
-<h3>reNgine 2.1.0 is released!</h3>
-<p align="left">Unleash the power of LLM toolkit! Now you can use local LLM models to generate attack surface and vulnerability reports!, Checkout the release-notes!</p>
 
 <h4>What is reNgine?</h4>
 reNgine is your ultimate web application reconnaissance suite, designed to supercharge the recon process for security pros, pentesters, and bug bounty hunters. It is go-to web application reconnaissance suite that's designed to simplify and streamline the reconnaissance process for all the needs of security professionals, penetration testers, and bug bounty hunters. With its highly configurable engines, data correlation capabilities, continuous monitoring, database-backed reconnaissance data, and an intuitive user interface, reNgine redefines how you gather critical information about your target web applications.
@@ -58,10 +61,11 @@ Detailed documentation available at [https://rengine.wiki](https://rengine.wiki)
 * [About reNgine](#about-rengine)
 * [Workflow](#workflow)
 * [Features](#features)
-* [Scan Engine](#scan-engine)
 * [Quick Installation](#quick-installation)
-* [What's new in reNgine 2.0](#changelog)
+* [Installation Video](#installation-video-tutorial)
+* [Community-Curated Videos](#community-curated-videos)
 * [Screenshots](#screenshots)
+* [What's new in reNgine](https://github.com/yogeshojha/rengine/releases)
 * [Contributing](#contributing)
 * [reNgine Support](#rengine-support)
 * [Support and Sponsoring](#support-and-sponsoring)
@@ -158,126 +162,7 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 * Identification of related domains and related TLDs for targets
 * Find actionable insights such as Most Common Vulnerability, Most Common CVE ID, Most Vulnerable Target/Subdomain, etc.
 * You can now use local LLMs for Attack surface identification and vulnerability description (NEW: reNgine 2.1.0)
-
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
-
-## Scan Engine
-
-```yaml
-# Global vars for all tools
-#
-# custom_headers: ['Foo: bar', 'User-Agent: Anything']     # FFUF, Nuclei, Dalfox, CRL Fuzz, HTTP Crawl, Fetch URL, etc
-# enable_http_crawl: true           # All tools
-# threads: 30                       # All tools
-
-subdomain_discovery: {
-  'uses_tools': ['subfinder', 'ctfr', 'sublist3r', 'tlsx', 'oneforall', 'netlas'],  # amass-passive, amass-active, All
-  'enable_http_crawl': true,
-  'threads': 30,
-  'timeout': 5,
-  # 'use_subfinder_config': false,
-  # 'use_amass_config': false,
-  # 'amass_wordlist': 'deepmagic.com-prefixes-top50000'
-}
-http_crawl: {
-  # 'threads': 30,
-  # 'follow_redirect': true
-}
-port_scan: {
-  'enable_http_crawl': true,
-  'timeout': 5,
-  # 'exclude_ports': [],
-  # 'exclude_subdomains': [],
-  'ports': ['top-100'],
-  'rate_limit': 150,
-  'threads': 30,
-  'passive': false,
-  # 'use_naabu_config': false,
-  # 'enable_nmap': true,
-  # 'nmap_cmd': '',
-  # 'nmap_script': '',
-  # 'nmap_script_args': ''
-}
-osint: {
-  'discover': [
-      'emails',
-      'metainfo',
-      'employees'
-    ],
-  'dorks': [
-    'login_pages',
-    'admin_panels',
-    'dashboard_pages',
-    'stackoverflow',
-    'social_media',
-    'project_management',
-    'code_sharing',
-    'config_files',
-    'jenkins',
-    'wordpress_files',
-    'php_error',
-    'exposed_documents',
-    'db_files',
-    'git_exposed'
-  ],
-  # 'custom_dorks': [],
-  'intensity': 'normal',
-  'documents_limit': 50
-}
-dir_file_fuzz: {
-  'auto_calibration': true,
-  'enable_http_crawl': true,
-  'rate_limit': 150,
-  'extensions': ['html', 'php','git','yaml','conf','cnf','config','gz','env','log','db','mysql','bak','asp','aspx','txt','conf','sql','json','yml','pdf'],
-  'follow_redirect': false,
-  'max_time': 0,
-  'match_http_status': [200, 204],
-  'recursive_level': 2,
-  'stop_on_error': false,
-  'timeout': 5,
-  'threads': 30,
-  'wordlist_name': 'dicc'
-}
-fetch_url: {
-  'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'katana', 'gau'],
-  'remove_duplicate_endpoints': true,
-  'duplicate_fields': ['content_length', 'page_title'],
-  'enable_http_crawl': true,
-  'gf_patterns': ['debug_logic', 'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce', 'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],
-  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],
-  'threads': 30,
-  # 'exclude_subdomains': false
-}
-vulnerability_scan: {
-  'run_nuclei': true,
-  'run_dalfox': false,
-  'run_crlfuzz': false,
-  'run_s3scanner': false,
-  'enable_http_crawl': true,
-  'concurrency': 50,
-  'intensity': 'normal',
-  'rate_limit': 150,
-  'retries': 1,
-  'timeout': 5,
-  'fetch_gpt_report': true,
-  'nuclei': {
-    'use_nuclei_config': false,
-    'severities': ['unknown', 'info', 'low', 'medium', 'high', 'critical'],
-    # 'tags': [],                 # Nuclei tags (https://github.com/projectdiscovery/nuclei-templates)
-    # 'templates': [],            # Nuclei templates (https://github.com/projectdiscovery/nuclei-templates)
-    # 'custom_templates': []      # Nuclei custom templates uploaded in reNgine
-  }
-}
-waf_detection: {
-  'enable_http_crawl': true
-}
-screenshot: {
-  'enable_http_crawl': true,
-  'intensity': 'normal',
-  'timeout': 10,
-  'threads': 40
-}
-```
+* BountyHub, a central hub to manage your hackerone targets
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -354,6 +239,12 @@ screenshot: {
 
 For Mac, Windows, or other systems, refer to our detailed installation guide [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/install/detailed/)
 
+### Installation Video Tutorial
+
+If you encounter any issues during installation or prefer a visual guide, one of our community members has created an excellent installation video for Kali Linux installation. You can find it here: [https://www.youtube.com/watch?v=7OFfrU6VrWw](https://www.youtube.com/watch?v=7OFfrU6VrWw)
+
+Please note: This is community-curated content and is not owned by reNgine. The installation process may change, so please refer to the official documentation for the most up-to-date instructions.
+
 ## Updating
 
 1. To update reNgine, run:
@@ -368,11 +259,25 @@ For Mac, Windows, or other systems, refer to our detailed installation guide [ht
     sudo chmod +x update.sh
     ```
 
-## Changelog
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-For the latest updates and changes, please check our [changelog.](https://rengine.wiki/changelog/)
+## Community-Curated Videos
 
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)  
+reNgine has a vibrant community that often creates helpful content about installation, features, and usage. Below is a collection of community-curated videos that you might find useful. Please note that these videos are not official reNgine content, and the information they contain may become outdated as reNgine evolves.
+
+Always refer to the official documentation for the most up-to-date and accurate information. If you've created a video about reNgine and would like it featured here, please send a pull request updating this table.
+
+| Video Title | Language | Publisher | Date | Link |
+|-------------|----------|----------|------|------|
+| reNgine Installation on Kali Linux | English | Secure the Cyber World | 2024-02-29 | [Watch](https://www.youtube.com/watch?v=7OFfrU6VrWw) |
+| Resultados do ReNgine - Automação para Recon | Portuguese | Guia Anônima | 2023-04-18 | [Watch](https://www.youtube.com/watch?v=6aNvDy1FzIM) |
+| reNgine Introduction | Moroccan Arabic | Th3 Hacker News Bdarija | 2021-07-27 | [Watch](https://www.youtube.com/watch?v=9FuRrcmWgWU) |
+| Automated recon? ReNgine - Hacker Tools | English | Intigriti | 2021-07-21 | [Watch](https://www.youtube.com/watch?v=9FuRrcmWgWU) |
+
+We appreciate the community's contributions in creating these resources.
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
 
 ## Screenshots
 
@@ -518,13 +423,6 @@ Thank you for your support!
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## License
-
-Distributed under the GNU GPL v3 License. See [LICENSE](LICENSE) for more information.
-
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
-
-
 ## Reporting Security Vulnerabilities
 
 We appreciate your efforts to responsibly disclose your findings and will make every effort to acknowledge your contributions.
@@ -549,6 +447,12 @@ To report a security vulnerability, please follow these steps:
 We are committed to working with security researchers to verify and address any potential vulnerabilities reported to us. After fixing the issue, we will publicly acknowledge your responsible disclosure, unless you prefer to remain anonymous.
 
 Thank you for helping to keep reNgine and its users safe!
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+## License
+
+Distributed under the GNU GPL v3 License. See [LICENSE](LICENSE) for more information.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 

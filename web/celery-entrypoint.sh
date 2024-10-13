@@ -1,7 +1,40 @@
 #!/bin/bash
 
-python3 manage.py makemigrations
+# apply existing migrations
 python3 manage.py migrate
+
+# make migrations for specific apps
+apps=(
+    "targetApp"
+    "scanEngine"
+    "startScan"
+    "dashboard"
+    "recon_note"
+)
+
+create_migrations() {
+    local app=$1
+    echo "Creating migrations for $app..."
+    python3 manage.py makemigrations $app
+    echo "Finished creating migrations for $app"
+    echo "----------------------------------------"
+}
+
+echo "Starting migration creation process..."
+
+for app in "${apps[@]}"
+do
+    create_migrations $app
+done
+
+echo "Migration creation process completed."
+
+# apply migrations again
+echo "Applying migrations..."
+python3 manage.py migrate
+echo "Migration process completed."
+
+
 python3 manage.py collectstatic --no-input --clear
 
 # Load default engines, keywords, and external tools
@@ -151,8 +184,6 @@ then
   chmod +x /usr/src/github/goofuzz/GooFuzz
 fi
 
-exec "$@"
-
 # httpx seems to have issue, use alias instead!!!
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
 
@@ -167,28 +198,70 @@ if [ "$DEBUG" == "1" ]; then
     loglevel='debug'
 fi
 
-# watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO -Q scan_queue &
-echo "Starting Workers..."
-echo "Starting Main Scan Worker with Concurrency: $MAX_CONCURRENCY,$MIN_CONCURRENCY"
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --loglevel=$loglevel --autoscale=$MAX_CONCURRENCY,$MIN_CONCURRENCY -Q main_scan_queue &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=$loglevel -Q initiate_scan_queue -n initiate_scan_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=$loglevel -Q subscan_queue -n subscan_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=20 --loglevel=$loglevel -Q report_queue -n report_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q send_notif_queue -n send_notif_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q send_scan_notif_queue -n send_scan_notif_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q send_task_notif_queue -n send_task_notif_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=5 --loglevel=$loglevel -Q send_file_to_discord_queue -n send_file_to_discord_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=5 --loglevel=$loglevel -Q send_hackerone_report_queue -n send_hackerone_report_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q parse_nmap_results_queue -n parse_nmap_results_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=20 --loglevel=$loglevel -Q geo_localize_queue -n geo_localize_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q query_whois_queue -n query_whois_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=$loglevel -Q remove_duplicate_endpoints_queue -n remove_duplicate_endpoints_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=50 --loglevel=$loglevel -Q run_command_queue -n run_command_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q query_reverse_whois_queue -n query_reverse_whois_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q query_ip_history_queue -n query_ip_history_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=$loglevel -Q llm_queue -n llm_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q dorking_queue -n dorking_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q osint_discovery_queue -n osint_discovery_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q h8mail_queue -n h8mail_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=$loglevel -Q theHarvester_queue -n theHarvester_worker
-exec "$@"
+generate_worker_command() {
+    local queue=$1
+    local concurrency=$2
+    local worker_name=$3
+    local app=${4:-"reNgine.tasks"}
+    local directory=${5:-"/usr/src/app/reNgine/"}
+
+    local base_command="celery -A $app worker --pool=gevent --optimization=fair --autoscale=$concurrency,1 --loglevel=$loglevel -Q $queue -n $worker_name"
+
+    if [ "$DEBUG" == "1" ]; then
+        echo "watchmedo auto-restart --recursive --pattern=\"*.py\" --directory=\"$directory\" -- $base_command &"
+    else
+        echo "$base_command &"
+    fi
+}
+
+echo "Starting Celery Workers..."
+
+commands=""
+
+# Main scan worker
+if [ "$DEBUG" == "1" ]; then
+    commands+="watchmedo auto-restart --recursive --pattern=\"*.py\" --directory=\"/usr/src/app/reNgine/\" -- celery -A reNgine.tasks worker --loglevel=$loglevel --optimization=fair --autoscale=$MAX_CONCURRENCY,$MIN_CONCURRENCY -Q main_scan_queue &"$'\n'
+else
+    commands+="celery -A reNgine.tasks worker --loglevel=$loglevel --optimization=fair --autoscale=$MAX_CONCURRENCY,$MIN_CONCURRENCY -Q main_scan_queue &"$'\n'
+fi
+
+# API shared task worker
+if [ "$DEBUG" == "1" ]; then
+    commands+="watchmedo auto-restart --recursive --pattern=\"*.py\" --directory=\"/usr/src/app/api/\" -- celery -A api.shared_api_tasks worker --pool=gevent --optimization=fair --concurrency=30 --loglevel=$loglevel -Q api_queue -n api_worker &"$'\n'
+else
+    commands+="celery -A api.shared_api_tasks worker --pool=gevent --concurrency=30 --optimization=fair --loglevel=$loglevel -Q api_queue -n api_worker &"$'\n'
+fi
+
+# worker format: "queue_name:concurrency:worker_name"
+workers=(
+    "initiate_scan_queue:30:initiate_scan_worker"
+    "subscan_queue:30:subscan_worker"
+    "report_queue:20:report_worker"
+    "send_notif_queue:10:send_notif_worker"
+    "send_task_notif_queue:10:send_task_notif_worker"
+    "send_file_to_discord_queue:5:send_file_to_discord_worker"
+    "send_hackerone_report_queue:5:send_hackerone_report_worker"
+    "parse_nmap_results_queue:10:parse_nmap_results_worker"
+    "geo_localize_queue:20:geo_localize_worker"
+    "query_whois_queue:10:query_whois_worker"
+    "remove_duplicate_endpoints_queue:30:remove_duplicate_endpoints_worker"
+    "run_command_queue:50:run_command_worker"
+    "query_reverse_whois_queue:10:query_reverse_whois_worker"
+    "query_ip_history_queue:10:query_ip_history_worker"
+    "llm_queue:30:llm_worker"
+    "dorking_queue:10:dorking_worker"
+    "osint_discovery_queue:10:osint_discovery_worker"
+    "h8mail_queue:10:h8mail_worker"
+    "theHarvester_queue:10:theHarvester_worker"
+    "send_scan_notif_queue:10:send_scan_notif_worker"
+)
+
+for worker in "${workers[@]}"; do
+    IFS=':' read -r queue concurrency worker_name <<< "$worker"
+    commands+="$(generate_worker_command "$queue" "$concurrency" "$worker_name")"$'\n'
+done
+commands="${commands%&}"
+
+eval "$commands"
+
+wait
