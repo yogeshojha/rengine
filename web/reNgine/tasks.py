@@ -2109,9 +2109,6 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 
 	logger.info('Vulnerability scan completed...')
 
-	# return results
-	return None
-
 @app.task(name='nuclei_individual_severity_module', queue='main_scan_queue', base=RengineTask, bind=True)
 def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, should_fetch_gpt_report, ctx={}, description=None):
 	'''
@@ -2515,8 +2512,6 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 		time.sleep(5)
 
 	logger.info('Vulnerability scan with all severities completed...')
-
-	return None
 
 @app.task(name='dalfox_xss_scan', queue='main_scan_queue', base=RengineTask, bind=True)
 def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
