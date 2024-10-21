@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  rengine.conf: |
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name rengine recon;
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+        server_name rengine recon;
+
+        charset utf-8;
+        keepalive_timeout 70;
+
+        client_max_body_size 800M;
+
+        location / {
+            proxy_read_timeout 300;
+            proxy_connect_timeout 300;
+            proxy_redirect off;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_pass http://rengine:8000/;
+        }
+
+        location /staticfiles/ {
+            alias /usr/src/app/staticfiles/;
+        }
+
+        location /protected_media/ {
+            internal;
+            alias /usr/src/scan_results/;
+            autoindex off;
+        }
+
+        ssl_protocols TLSv1.2;
+        ssl_certificate /etc/nginx/certs/rengine.pem;
+        ssl_certificate_key /etc/nginx/certs/rengine_rsa.key;
+        ssl_trusted_certificate /etc/nginx/certs/rengine_chain.pem;
+
+        ssl_ciphers '!EDH:!EXP:!SHA:!DSS:EECDH+aRSA+AESGCM:EECDH+aRSA+SHA384:EECDH+aRSA+SHA256';
+        ssl_prefer_server_ciphers on;
+        ssl_ecdh_curve secp384r1:X25519:prime256v1;
+
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 5m;
+        ssl_session_tickets off;
+    }

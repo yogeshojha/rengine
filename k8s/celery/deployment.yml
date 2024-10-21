@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery
+  template:
+    metadata:
+      labels:
+        app: celery
+    spec:
+      containers:
+      - name: celery
+        image: ghcr.io/0xtejas/rengine/celery:latest
+        command: ["/bin/bash", "-c", "/usr/src/app/celery-entrypoint.sh"]
+        env:
+          - name: DEBUG
+            value: "0"
+          - name: CELERY_BROKER
+            value: redis://redis:6379/0
+          - name: CELERY_BACKEND
+            value: redis://redis:6379/0
+          - name: DOMAIN_NAME
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: DOMAIN_NAME
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_DB
+          - name: POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_PORT
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_PASSWORD
+          - name: POSTGRES_HOST
+            value: db
+        volumeMounts:
+          - mountPath: /usr/src/app
+            name: shared-data
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "600m"
+          limits:
+            memory: "2.5Gi"
+            cpu: "1.5"
+      volumes:
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: shared-data-pvc

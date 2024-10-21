@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        volumeMounts:
+        - name: nginx-config-volume
+          mountPath: /etc/nginx/conf.d/rengine.conf
+          subPath: rengine.conf
+        - name: certs
+          mountPath: /etc/nginx/certs
+        - name: static-files
+          mountPath: /usr/src/app/staticfiles
+        ports:
+        - containerPort: 8082
+        - containerPort: 443
+      volumes:
+        - name: nginx-config-volume
+          configMap:
+            name: nginx-config
+        - name: certs
+          secret:
+            secretName: nginx-certificates
+        - name: static-files
+          persistentVolumeClaim:
+            claimName: static-pvc

@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: web
+        image: ghcr.io/0xtejas/rengine/web:latest
+        command: ["gunicorn", "reNgine.wsgi:application", "--bind", "0.0.0.0:8000", "-w", "2", "--access-logfile", "-", "--error-logfile", "-"]
+        env:
+          - name: DEBUG
+            value: "0"
+          - name: CELERY_BROKER
+            value: redis://redis:6379/0
+          - name: CELERY_BACKEND
+            value: redis://redis:6379/0
+          - name: POSTGRES_HOST
+            value: db
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_DB
+          - name: POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_PORT
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_PASSWORD
+          - name: DJANGO_SUPERUSER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: web-secret
+                key: DJANGO_SUPERUSER_PASSWORD
+        volumeMounts:
+          - mountPath: /usr/src/app/staticfiles
+            name: static-volume
+          - mountPath: /usr/src/app
+            name: shared-data
+        ports:
+        - containerPort: 8000
+      volumes:
+        - name: static-volume
+          persistentVolumeClaim:
+            claimName: static-pvc
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: shared-data-pvc
+      initContainers:
+      - name: init-migrate
+        image: ghcr.io/0xtejas/rengine/web:latest
+        command: ["sh", "-c", "mkdir -p /usr/src/shared-app && cp -r /usr/src/app/* /usr/src/shared-app && python3 manage.py migrate && python3 manage.py collectstatic --noinput"]
+        env:
+          - name: POSTGRES_HOST
+            value: db
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_DB
+          - name: POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_PORT
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_PASSWORD
+        volumeMounts:
+          - mountPath: /usr/src/app/staticfiles
+            name: static-volume
+          - mountPath: /usr/src/shared-app
+            name: shared-data
