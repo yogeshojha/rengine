@@ -24,7 +24,7 @@ spec:
         - name: static-files
           mountPath: /usr/src/app/staticfiles
         ports:
-        - containerPort: 8082
+        - containerPort: 80
         - containerPort: 443
       volumes:
         - name: nginx-config-volume
