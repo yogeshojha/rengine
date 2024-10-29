@@ -45,11 +45,6 @@ spec:
               secretKeyRef:
                 name: db-secret
                 key: POSTGRES_PASSWORD
-          - name: DJANGO_SUPERUSER_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: web-secret
-                key: DJANGO_SUPERUSER_PASSWORD
         volumeMounts:
           - mountPath: /usr/src/app/staticfiles
             name: static-volume
@@ -57,6 +52,22 @@ spec:
             name: shared-data
         ports:
         - containerPort: 8000
+        readinessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - "pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT && redis-cli -h redis ping"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - "pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT && redis-cli -h redis ping"
+          initialDelaySeconds: 30
+          periodSeconds: 30
       volumes:
         - name: static-volume
           persistentVolumeClaim:
