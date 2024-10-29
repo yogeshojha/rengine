@@ -12,15 +12,23 @@ spec:
           - /bin/sh
           - -c
           - |
-            python3 manage.py shell -c '
+            python3 manage.py shell -c "
+            import os
             from django.contrib.auth import get_user_model
             User = get_user_model()
-            if not User.objects.filter(username="$DJANGO_SUPERUSER_USERNAME").exists():
-                User.objects.create_superuser(
-                    "$DJANGO_SUPERUSER_USERNAME",
-                    "$DJANGO_SUPERUSER_EMAIL",
-                    "$DJANGO_SUPERUSER_PASSWORD"
-                )'
+
+            # Retrieve superuser credentials from environment variables
+            username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
+            email = os.environ.get('DJANGO_SUPERUSER_EMAIL')
+            password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
+
+            # Check if a user with the specified username already exists
+            if User.objects.filter(username=username).exists():
+                print(f'Superuser \"{username}\" already exists.')
+            else:
+                User.objects.create_superuser(username=username, email=email, password=password)
+                print(f'Superuser \"{username}\" has been successfully created.')
+            "
         env:
           - name: POSTGRES_DB
             valueFrom:
