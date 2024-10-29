@@ -1,17 +1,6 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nfs-rwx-storage
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 5Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
   name: web-pvc
 spec:
   accessModes:
