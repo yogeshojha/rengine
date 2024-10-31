@@ -50,6 +50,9 @@ spec:
                 key: POSTGRES_PASSWORD
           - name: POSTGRES_HOST
             value: db
+        envFrom:
+          - configMapRef:
+              name: celery-config
         volumeMounts:
           - mountPath: /usr/src/app
             name: shared-data
@@ -58,7 +61,7 @@ spec:
             memory: "2Gi"
             cpu: "600m"
           limits:
-            memory: "2.5Gi"
+            memory: "4Gi"
             cpu: "1.5"
       volumes:
         - name: shared-data
