@@ -7,17 +7,23 @@ This guide provides step-by-step instructions for deploying the application on a
 - A running Kubernetes cluster
 - `kubectl` installed and configured to interact with your cluster
 
+## Configuration
+
+- To get a LetsEncrypt SSL certificate, you'll require to set up the Nginx Ingres Controller first. Then, configure the DNS record. Following that repace rengine.example.com to the domain name that you wish to receive SSL certificate for.
+
+- To use openssl or existing SSL certificate you can use `nginx-certificates` secret instead of `rengine-tls` secret and ignore creating cert-manager. 
+
 ## Step 1: Install the Ingress Controller
 
 1. **Add the NGINX Ingress Controller Helm repository:**
     ```sh
-    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo add nginx-stable https://helm.nginx.com/stable
     helm repo update
     ```
 
 2. **Install the NGINX Ingress Controller:**
     ```sh
-    helm install ingress-nginx ingress-nginx/ingress-nginx
+    helm install nginx-ingress nginx-stable/nginx-ingress --namespace ingress-nginx --create-namespace --set controller.service.type=LoadBalancer
     ```
 
 ## Step 2: Install Cert Manager
@@ -30,8 +36,11 @@ This guide provides step-by-step instructions for deploying the application on a
 
 2. **Install Cert Manager:**
     ```sh
-    kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.crds.yaml
-    helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace
+    helm install cert-manager jetstack/cert-manager \
+    --namespace cert-manager \
+    --create-namespace \
+    --version v1.11.0 \
+    --set installCRDs=true
     ```
 
 3. **Verify the installation:**
@@ -39,7 +48,9 @@ This guide provides step-by-step instructions for deploying the application on a
     kubectl get pods --namespace cert-manager
     ```
 
-## Step 3: Install OpenEBS NFS Provisioner
+## Step 3: Install OpenEBS NFS Provisioner (Optional)
+
+Note: Either you can install it manually or use the OpenEBS provisioner from the marketplace in the Cloud Provider. 
 
 1. **Add the OpenEBS Helm repository:**
     ```sh
@@ -57,6 +68,26 @@ This guide provides step-by-step instructions for deploying the application on a
     kubectl get pods --namespace openebs
     ```
 
+4. **Create the Storage Class nfsrwx**
+    ```sh
+    kubectl apply -f - <<EOF
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          annotations:
+            cas.openebs.io/config: |
+              - name: NSFServerType
+                value: "kernel"
+              - name: BackendStorageClass
+                value: "do-block-storage"
+            openebs.io/cas-type: nsfrwx
+          name: nfs-rwx-storage
+        provisioner: openebs.io/nfsrwx
+        reclaimPolicy: Delete
+        volumeBindingMode: Immediate
+        EOF
+    ```
+
 ## Step 4: Deploy the Application Manifests
 
 1. **Navigate to the `k8s` directory:**
@@ -66,12 +97,16 @@ This guide provides step-by-step instructions for deploying the application on a
 
 2. **Apply the manifests in the following order:**
     ```sh
+    kubectl apply -f sc.yml
+    kubectl apply -f pvc.yml
     kubectl apply -f ollama/
     kubectl apply -f postgres/
     kubectl apply -f redis/
     kubectl apply -f web/
     kubectl apply -f celery/
     kubectl apply -f celery-beat/
+    kubectl apply -f cert-manager/
+    kubectl apply -f nginx/
     ```
 
 ## Step 5: Verify the Deployment
