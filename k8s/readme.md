@@ -79,7 +79,7 @@ Note: Either you can install it manually or use the OpenEBS provisioner from the
               - name: NSFServerType
                 value: "kernel"
               - name: BackendStorageClass
-                value: "do-block-storage"
+                value: "do-block-storage" # This value changes as per the cloud provider
             openebs.io/cas-type: nsfrwx
           name: nfs-rwx-storage
         provisioner: openebs.io/nfsrwx
