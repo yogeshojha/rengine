@@ -979,8 +979,6 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
 
 
 class CreateScanHistorySerializer(serializers.ModelSerializer):
-    coupon_code = serializers.CharField(required=False, write_only=True)
-
 	class Meta:
 		model = ScanHistory
 		fields = '__all__'
