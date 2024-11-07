@@ -4,6 +4,8 @@ import logging
 import requests
 import validators
 import requests
+from typing import TYPE_CHECKING
+
 
 from ipaddress import IPv4Network
 from django.db.models import CharField, Count, F, Q, Value
@@ -11,13 +13,14 @@ from django.utils import timezone
 from packaging import version
 from django.template.defaultfilters import slugify
 from datetime import datetime
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT, HTTP_202_ACCEPTED
 from rest_framework.decorators import action
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
+from django.contrib import messages
 
 
 from dashboard.models import *
@@ -35,6 +38,9 @@ from startScan.models import EndPoint
 from targetApp.models import *
 from api.shared_api_tasks import import_hackerone_programs_task, sync_bookmarked_programs_task
 from .serializers import *
+
+if TYPE_CHECKING:
+    from rest_framework.request import Request
 
 
 logger = logging.getLogger(__name__)
@@ -55,7 +61,7 @@ class ToggleBugBountyModeView(APIView):
 
 class HackerOneProgramViewSet(viewsets.ViewSet):
 	"""
-		This class manages the HackerOne Program model, 
+		This class manages the HackerOne Program model,
 		provides basic fetching of programs and caching
 	"""
 	CACHE_KEY = 'hackerone_programs'
@@ -74,14 +80,14 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 			programs = self.get_cached_programs()
 
 			if sort_by == 'name':
-				programs = sorted(programs, key=lambda x: x['attributes']['name'].lower(), 
+				programs = sorted(programs, key=lambda x: x['attributes']['name'].lower(),
 						reverse=(sort_order.lower() == 'desc'))
 			elif sort_by == 'reports':
-				programs = sorted(programs, key=lambda x: x['attributes'].get('number_of_reports_for_user', 0), 
+				programs = sorted(programs, key=lambda x: x['attributes'].get('number_of_reports_for_user', 0),
 						reverse=(sort_order.lower() == 'desc'))
 			elif sort_by == 'age':
-				programs = sorted(programs, 
-					key=lambda x: datetime.strptime(x['attributes'].get('started_accepting_at', '1970-01-01T00:00:00.000Z'), '%Y-%m-%dT%H:%M:%S.%fZ'), 
+				programs = sorted(programs,
+					key=lambda x: datetime.strptime(x['attributes'].get('started_accepting_at', '1970-01-01T00:00:00.000Z'), '%Y-%m-%dT%H:%M:%S.%fZ'),
 					reverse=(sort_order.lower() == 'desc')
 				)
 
@@ -89,7 +95,7 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 			return Response(serializer.data)
 		except Exception as e:
 			return self.handle_exception(e)
-	
+
 	def get_api_credentials(self):
 		try:
 			api_key = HackerOneAPIKey.objects.first()
@@ -109,7 +115,7 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 			return Response(serializer.data)
 		except Exception as e:
 			return self.handle_exception(e)
-	
+
 	@action(detail=False, methods=['get'])
 	def bounty_programs(self, request):
 		try:
@@ -150,7 +156,7 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 
 			data = response.json()
 			all_programs.extend(data['data'])
-			
+
 			url = data['links'].get('next')
 
 		return all_programs
@@ -163,7 +169,7 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 			return Response({"status": "Cache refreshed successfully"})
 		except Exception as e:
 			return self.handle_exception(e)
-	
+
 	@action(detail=True, methods=['get'])
 	def program_details(self, request, pk=None):
 		try:
@@ -210,7 +216,7 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 			return response.json()
 		else:
 			return None
-		
+
 	@action(detail=False, methods=['post'])
 	def import_programs(self, request):
 		try:
@@ -236,7 +242,7 @@ class HackerOneProgramViewSet(viewsets.ViewSet):
 			return Response({"message": f"Import process for {len(handles)} program(s) has begun."}, status=status.HTTP_202_ACCEPTED)
 		except Exception as e:
 			return self.handle_exception(e)
-	
+
 	@action(detail=False, methods=['get'])
 	def sync_bookmarked(self, request):
 		try:
@@ -346,7 +352,7 @@ class OllamaManager(APIView):
 		try:
 			pull_model_api = f'{OLLAMA_INSTANCE}/api/pull'
 			_response = requests.post(
-				pull_model_api, 
+				pull_model_api,
 				json={
 					'name': model_name,
 					'stream': False
@@ -358,9 +364,9 @@ class OllamaManager(APIView):
 			else:
 				response['status'] = True
 		except Exception as e:
-			response['error'] = str(e)		
+			response['error'] = str(e)
 		return Response(response)
-	
+
 	def delete(self, request):
 		req = self.request
 		model_name = req.query_params.get('model')
@@ -370,7 +376,7 @@ class OllamaManager(APIView):
 		}
 		try:
 			_response = requests.delete(
-				delete_model_api, 
+				delete_model_api,
 				json={
 					'name': model_name
 				}
@@ -383,7 +389,7 @@ class OllamaManager(APIView):
 		except Exception as e:
 			response['error'] = str(e)
 		return Response(response)
-	
+
 	def put(self, request):
 		req = self.request
 		model_name = req.query_params.get('model')
@@ -571,7 +577,7 @@ class WafDetector(APIView):
 		if not (validators.url(url) or validators.domain(url)):
 			response['message'] = 'Invalid Domain/URL provided!'
 			return Response(response)
-		
+
 		wafw00f_command = f'wafw00f {url}'
 		_, output = run_command(wafw00f_command, remove_ansi_sequence=True)
 		regex = r"behind (.*?) WAF"
@@ -1151,7 +1157,7 @@ class StopScan(APIView):
 			except Exception as e:
 				logger.error(e)
 				response = {'status': False, 'message': str(e)}
-			
+
 		for subscan_id in subscan_ids:
 			try:
 				subscan = SubScan.objects.get(id=subscan_id)
@@ -1322,7 +1328,7 @@ class UpdateTool(APIView):
 			tool_name = tool_name.split('/')[-1]
 			update_command = 'cd /usr/src/github/' + tool_name + ' && git pull && cd -'
 
-		
+
 		try:
 			run_command(update_command, shell=True)
 			run_command.apply_async(args=[update_command], kwargs={'shell': True})
@@ -3153,3 +3159,38 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 					print(e)
 
 		return qs
+
+
+class ScanViewSet(
+	mixins.CreateModelMixin,
+    viewsets.GenericViewSet
+):
+	queryset = ScanHistory.objects.none()
+	serializer_class = CreateScanHistorySerializer
+
+	def create(self, request: "Request", *args, **kwargs):
+		request.data['start_scan_date'] = timezone.now()
+		scan_history: ScanHistory = super().create(request, *args, **kwargs)
+
+		# Start the celery task
+		kwargs = {
+			'scan_history_id': scan_history.id,
+			'domain_id': scan_history.domain.id,
+			'engine_id': scan_history.scan_type.id,
+			'scan_type': LIVE_SCAN,
+			'results_dir': '/usr/src/scan_results',
+			'imported_subdomains': scan_history.cfg_imported_subdomains,
+			'out_of_scope_subdomains': scan_history.cfg_out_of_scope_subdomains,
+			'starting_point_path': scan_history.cfg_starting_point_path,
+			'excluded_paths': scan_history.cfg_excluded_paths,
+			'initiated_by_id': scan_history.initiated_by
+		}
+		initiate_scan.apply_async(kwargs=kwargs)
+
+		# Send start notif
+		messages.add_message(
+			request,
+			messages.INFO,
+			f'Scan Started for {scan_history.domain.name}')
+
+		return scan_history

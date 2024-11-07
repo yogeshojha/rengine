@@ -21,6 +21,7 @@ router.register(r'listActivityLogs', ListActivityLogsViewSet)
 router.register(r'listScanLogs', ListScanLogsViewSet)
 router.register(r'notifications', InAppNotificationManagerViewSet, basename='notification')
 router.register(r'hackerone-programs', HackerOneProgramViewSet, basename='hackerone_program')
+router.register(r'scans', ScanViewSet)
 
 urlpatterns = [
     url('^', include(router.urls)),
@@ -242,8 +243,8 @@ urlpatterns = [
         CreateProjectApi.as_view(),
         name='create_project'),
     path(
-        'toggle-bug-bounty-mode/', 
-        ToggleBugBountyModeView.as_view(), 
+        'toggle-bug-bounty-mode/',
+        ToggleBugBountyModeView.as_view(),
         name='toggle_bug_bounty_mode'
     ),
 ]
