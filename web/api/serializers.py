@@ -45,13 +45,13 @@ class InAppNotificationSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = InAppNotification
 		fields = [
-			'id', 
-			'title', 
-			'description', 
-			'icon', 
-			'is_read', 
-			'created_at', 
-			'notification_type', 
+			'id',
+			'title',
+			'description',
+			'icon',
+			'is_read',
+			'created_at',
+			'notification_type',
 			'status',
 			'redirect_link',
 			'open_in_new_tab',
@@ -976,3 +976,11 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
 		model = Vulnerability
 		fields = '__all__'
 		depth = 2
+
+
+class CreateScanHistorySerializer(serializers.ModelSerializer):
+    coupon_code = serializers.CharField(required=False, write_only=True)
+
+	class Meta:
+		model = ScanHistory
+		fields = '__all__'
