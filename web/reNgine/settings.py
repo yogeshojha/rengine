@@ -235,111 +235,111 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 '''
 LOGGING settings
 '''
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': True,
-    'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': 'errors.log',
-        },
-        'null': {
-            'class': 'logging.NullHandler'
-        },
-        'default': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'default',
-        },
-        'brief': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'brief'
-        },
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'brief'
-        },
-        'task': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'task'
-        },
-        'db': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'formatter': 'brief',
-            'filename': 'db.log',
-            'maxBytes': 1024,
-            'backupCount': 3
-        },
-        'celery': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'formatter': 'simple',
-            'filename': 'celery.log',
-            'maxBytes': 1024 * 1024 * 100,  # 100 mb
-        },
-    },
-    'formatters': {
-        'default': {
-            'format': '%(message)s'
-        },
-        'brief': {
-            'format': '%(name)-10s | %(message)s'
-        },
-        'task': {
-            '()': lambda : RengineTaskFormatter('%(task_name)-34s | %(levelname)s | %(message)s')
-        },
-        'simple': {
-            'format': '%(levelname)s %(message)s',
-            'datefmt': '%y %b %d, %H:%M:%S',
-        }
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'ERROR' if DEBUG else 'CRITICAL',
-            'propagate': True,
-        },
-        '': {
-            'handlers': ['brief'],
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'propagate': False
-        },
-        'celery': {
-            'handlers': ['celery'],
-            'level': 'DEBUG' if DEBUG else 'ERROR',
-        },
-        'celery.app.trace': {
-            'handlers': ['null'],
-            'propagate': False,
-        },
-        'celery.task': {
-            'handlers': ['task'],
-            'propagate': False
-        },
-        'celery.worker': {
-            'handlers': ['null'],
-            'propagate': False,
-        },
-        'django.server': {
-            'handlers': ['console'],
-            'propagate': False
-        },
-        'django.db.backends': {
-            'handlers': ['db'],
-            'level': 'INFO',
-            'propagate': False
-        },
-        'reNgine.tasks': {
-            'handlers': ['task'],
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'propagate': False
-        },
-        'api.views': {
-            'handlers': ['console'],
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'propagate': False
-        }
-    },
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': True,
+#     'handlers': {
+#         'file': {
+#             'level': 'ERROR',
+#             'class': 'logging.FileHandler',
+#             'filename': 'errors.log',
+#         },
+#         'null': {
+#             'class': 'logging.NullHandler'
+#         },
+#         'default': {
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'default',
+#         },
+#         'brief': {
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'brief'
+#         },
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'brief'
+#         },
+#         'task': {
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'task'
+#         },
+#         'db': {
+#             'class': 'logging.handlers.RotatingFileHandler',
+#             'formatter': 'brief',
+#             'filename': 'db.log',
+#             'maxBytes': 1024,
+#             'backupCount': 3
+#         },
+#         'celery': {
+#             'class': 'logging.handlers.RotatingFileHandler',
+#             'formatter': 'simple',
+#             'filename': 'celery.log',
+#             'maxBytes': 1024 * 1024 * 100,  # 100 mb
+#         },
+#     },
+#     'formatters': {
+#         'default': {
+#             'format': '%(message)s'
+#         },
+#         'brief': {
+#             'format': '%(name)-10s | %(message)s'
+#         },
+#         'task': {
+#             '()': lambda : RengineTaskFormatter('%(task_name)-34s | %(levelname)s | %(message)s')
+#         },
+#         'simple': {
+#             'format': '%(levelname)s %(message)s',
+#             'datefmt': '%y %b %d, %H:%M:%S',
+#         }
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['file'],
+#             'level': 'ERROR' if DEBUG else 'CRITICAL',
+#             'propagate': True,
+#         },
+#         '': {
+#             'handlers': ['brief'],
+#             'level': 'DEBUG' if DEBUG else 'INFO',
+#             'propagate': False
+#         },
+#         'celery': {
+#             'handlers': ['celery'],
+#             'level': 'DEBUG' if DEBUG else 'ERROR',
+#         },
+#         'celery.app.trace': {
+#             'handlers': ['null'],
+#             'propagate': False,
+#         },
+#         'celery.task': {
+#             'handlers': ['task'],
+#             'propagate': False
+#         },
+#         'celery.worker': {
+#             'handlers': ['null'],
+#             'propagate': False,
+#         },
+#         'django.server': {
+#             'handlers': ['console'],
+#             'propagate': False
+#         },
+#         'django.db.backends': {
+#             'handlers': ['db'],
+#             'level': 'INFO',
+#             'propagate': False
+#         },
+#         'reNgine.tasks': {
+#             'handlers': ['task'],
+#             'level': 'DEBUG' if DEBUG else 'INFO',
+#             'propagate': False
+#         },
+#         'api.views': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG' if DEBUG else 'INFO',
+#             'propagate': False
+#         }
+#     },
+# }
 
 '''
 File upload settings
