@@ -3178,7 +3178,10 @@ class ScanViewSet(
 
 	def create(self, request: "Request", *args, **kwargs):
 		request.data['start_scan_date'] = timezone.now()
-		response = super().create(request, *args, **kwargs)
+
+		serializer = self.get_serializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		scan_history_instance = serializer.save()  # This is the created instance
 
 		scan_history_instance = self.get_object()  # Get the created instance
 
@@ -3205,4 +3208,5 @@ class ScanViewSet(
 			messages.INFO,
 			f'Scan Started for {scan_history.domain.name}')
 
-		return response
+		headers = self.get_success_headers(serializer.data)
+		return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
