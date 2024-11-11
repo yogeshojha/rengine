@@ -3183,8 +3183,6 @@ class ScanViewSet(
 		serializer.is_valid(raise_exception=True)
 		scan_history_instance = serializer.save()  # This is the created instance
 
-		scan_history_instance = self.get_object()  # Get the created instance
-
 		# TODO: update start_scan also on the domain
 
 		# Start the celery task
