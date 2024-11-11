@@ -35,7 +35,7 @@ services:
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
-      - static_volume:/usr/src/app/staticfiles/
+      - static_volume:/usr/src/app/static/
     environment:
       - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
@@ -105,7 +105,7 @@ services:
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
-      - static_volume:/usr/src/app/staticfiles/
+      - static_volume:/usr/src/app/static/
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -136,7 +136,7 @@ services:
         target: /etc/nginx/certs/rengine_rsa.key
     volumes:
       - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
-      - static_volume:/usr/src/app/staticfiles/
+      - static_volume:/usr/src/app/static/
       - scan_results:/usr/src/scan_results
     networks:
       - rengine_network
