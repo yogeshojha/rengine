@@ -3178,22 +3178,22 @@ class ScanViewSet(
 
 	def create(self, request: "Request", *args, **kwargs):
 		request.data['start_scan_date'] = timezone.now()
-		scan_history: ScanHistory = super().create(request, *args, **kwargs)
+		scan_history = super().create(request, *args, **kwargs)
 
 		# TODO: update start_scan also on the domain
 
 		# Start the celery task
 		kwargs = {
-			'scan_history_id': scan_history.id,
-			'domain_id': scan_history.domain.id,
-			'engine_id': scan_history.scan_type.id,
+			'scan_history_id': scan_history.data.id,
+			'domain_id': scan_history.data.domain.id,
+			'engine_id': scan_history.data.scan_type.id,
 			'scan_type': LIVE_SCAN,
 			'results_dir': '/usr/src/scan_results',
-			'imported_subdomains': scan_history.cfg_imported_subdomains,
-			'out_of_scope_subdomains': scan_history.cfg_out_of_scope_subdomains,
-			'starting_point_path': scan_history.cfg_starting_point_path,
-			'excluded_paths': scan_history.cfg_excluded_paths,
-			'initiated_by_id': scan_history.initiated_by
+			'imported_subdomains': scan_history.data.cfg_imported_subdomains,
+			'out_of_scope_subdomains': scan_history.data.cfg_out_of_scope_subdomains,
+			'starting_point_path': scan_history.data.cfg_starting_point_path,
+			'excluded_paths': scan_history.data.cfg_excluded_paths,
+			'initiated_by_id': scan_history.data.initiated_by
 		}
 		initiate_scan.apply_async(kwargs=kwargs)
 
