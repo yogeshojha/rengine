@@ -18,9 +18,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT, HTTP_202_ACCEPTED
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
 from django.contrib import messages
+from knox.auth import TokenAuthentication
 
 
 from dashboard.models import *
@@ -903,6 +906,9 @@ class AddReconNote(APIView):
 
 
 class ToggleSubdomainImportantStatus(APIView):
+	authentication_classes = (TokenAuthentication,)
+	permission_classes = (IsAuthenticated,)
+
 	def post(self, request):
 		req = self.request
 		data = req.data
@@ -952,13 +958,13 @@ class AddTarget(APIView):
 		if status:
 			return Response({
 				'status': True,
-				'message': 'Domain successfully added as target !',
+				'message': 'Domain successfully added as target.',
 				'domain_name': domain_name,
 				# 'domain_id': domain.id
 			})
 		return Response({
 			'status': False,
-			'message': 'Failed to add as target !'
+			'message': 'Failed to add as target.'
 		})
 
 
@@ -3166,11 +3172,15 @@ class ScanViewSet(
     viewsets.GenericViewSet
 ):
 	queryset = ScanHistory.objects.none()
+	authentication_classes = (TokenAuthentication,)
+	permission_classes = (IsAuthenticated,)
 	serializer_class = CreateScanHistorySerializer
 
 	def create(self, request: "Request", *args, **kwargs):
 		request.data['start_scan_date'] = timezone.now()
 		scan_history: ScanHistory = super().create(request, *args, **kwargs)
+
+		# TODO: update start_scan also on the domain
 
 		# Start the celery task
 		kwargs = {
