@@ -1,30 +1,32 @@
-from django.conf.urls import include, url
 from django.urls import path
-from rest_framework import routers
+from django.conf import settings
+from rest_framework.routers import DefaultRouter, SimpleRouter
 
 from .views import *
 
 app_name = 'api'
-router = routers.DefaultRouter()
+
+router = DefaultRouter() if settings.DEBUG else SimpleRouter()
+
 router.register(r'listDatatableSubdomain', SubdomainDatatableViewSet)
 router.register(r'listTargets', ListTargetsDatatableViewSet)
-router.register(r'listSubdomains', SubdomainsViewSet)
+router.register(r'listSubdomains', SubdomainsViewSet, basename='subdomains2')
 router.register(r'listEndpoints', EndPointViewSet)
 router.register(r'listDirectories', DirectoryViewSet)
 router.register(r'listVulnerability', VulnerabilityViewSet)
-router.register(r'listInterestingSubdomains', InterestingSubdomainViewSet)
-router.register(r'listInterestingEndpoints', InterestingEndpointViewSet)
-router.register(r'listSubdomainChanges', SubdomainChangesViewSet)
-router.register(r'listEndPointChanges', EndPointChangesViewSet)
-router.register(r'listIps', IpAddressViewSet)
+router.register(r'listInterestingSubdomains', InterestingSubdomainViewSet, basename='intresting-subdomains')
+router.register(r'listInterestingEndpoints', InterestingEndpointViewSet, basename='intresting-endpoints')
+router.register(r'listSubdomainChanges', SubdomainChangesViewSet, basename='subdomain-changes')
+router.register(r'listEndPointChanges', EndPointChangesViewSet, basename='endpoint-changes')
+router.register(r'listIps', IpAddressViewSet, 'list-ips')
 router.register(r'listActivityLogs', ListActivityLogsViewSet)
-router.register(r'listScanLogs', ListScanLogsViewSet)
+router.register(r'listScanLogs', ListScanLogsViewSet, 'list-scan-logs')
 router.register(r'notifications', InAppNotificationManagerViewSet, basename='notification')
 router.register(r'hackerone-programs', HackerOneProgramViewSet, basename='hackerone_program')
 router.register(r'scans', ScanViewSet)
 
-urlpatterns = [
-    url('^', include(router.urls)),
+urlpatterns = router.urls + [
+    # url('^', include(router.urls)),
     path(
         'add/target/',
         AddTarget.as_view(),
@@ -248,5 +250,3 @@ urlpatterns = [
         name='toggle_bug_bounty_mode'
     ),
 ]
-
-urlpatterns += router.urls

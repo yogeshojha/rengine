@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'rest_framework',
+    'knox',
     'rest_framework_datatables',
     'dashboard.apps.DashboardConfig',
     'targetApp.apps.TargetappConfig',
@@ -93,7 +94,7 @@ INSTALLED_APPS = [
     'django_ace',
     'django_celery_beat',
     'mathfilters',
-    'drf_yasg',
+    'drf_spectacular',
     'rolepermissions'
 ]
 MIDDLEWARE = [
@@ -102,7 +103,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'login_required.middleware.LoginRequiredMiddleware',
+    # 'login_required.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'reNgine.middleware.UserPreferencesMiddleware',
@@ -126,6 +127,7 @@ TEMPLATES = [
 }]
 ROOT_URLCONF = 'reNgine.urls'
 REST_FRAMEWORK = {
+    # 'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
@@ -138,8 +140,17 @@ REST_FRAMEWORK = {
         'rest_framework_datatables.pagination.DatatablesPageNumberPagination'
     ),
     'PAGE_SIZE': 500,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 WSGI_APPLICATION = 'reNgine.wsgi.application'
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'reNgine API',
+    'DESCRIPTION': 'reNgine: An Automated reconnaissance framework.',
+    'VERSION': '2.2.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # yogesh.ojha11@gmail.com
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -175,11 +186,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = '/usr/src/scan_results/'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 100000000
 FILE_UPLOAD_PERMISSIONS = 0o644
-STATIC_URL = '/staticfiles/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
+
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+# STATICFILES_DIRS = [
+#     # os.path.join(BASE_DIR, "static"),
+# ]
 
 LOGIN_REQUIRED_IGNORE_VIEW_NAMES = [
     'login',

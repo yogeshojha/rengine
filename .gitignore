@@ -54,6 +54,7 @@ docs/_build/
 
 **/.DS_Store
 staticfiles/
+static/
 
 secret
 /secrets
@@ -62,3 +63,4 @@ get-docker.sh
 
 # Environment variables
 .env
+venv

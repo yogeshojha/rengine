@@ -1,8 +1,11 @@
-from django.urls import include, path
+from django.conf import settings
+from django.urls import path
+from rest_framework.routers import DefaultRouter, SimpleRouter
 
 from . import views
+router = DefaultRouter() if settings.DEBUG else SimpleRouter()
 
-urlpatterns = [
+urlpatterns = router.urls + [
     path(
         '',
         views.index,
