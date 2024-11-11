@@ -30,7 +30,7 @@ Deprecated==1.2.14
 discord-webhook==1.3.0
 Django==5.1.3
 django-ace==1.0.11
-django-celery-beat==2.6.0
+django-celery-beat==2.7.0
 django-environ==0.11.2
 django-login-required-middleware==0.6.1
 django-mathfilters==1.0.0
