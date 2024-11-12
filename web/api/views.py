@@ -3199,6 +3199,9 @@ class ScanViewSet(
 			'excluded_paths': scan_history_instance.cfg_excluded_paths,
 			'initiated_by_id': scan_history_instance.initiated_by
 		}
+
+		print(kwargs)
+
 		initiate_scan.apply_async(kwargs=kwargs)
 
 		# Send start notif
