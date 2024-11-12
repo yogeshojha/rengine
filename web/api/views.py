@@ -945,7 +945,7 @@ class AddTarget(APIView):
 		if not validators.domain(domain_name):
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
 
-		status, created_targets = bulk_import_targets(
+		status, created_targets, organization = bulk_import_targets(
 			targets=[{
 				'name': domain_name,
 				'description': description,
@@ -960,7 +960,8 @@ class AddTarget(APIView):
 				'status': True,
 				'message': 'Domain successfully added as target.',
 				'domain_name': domain_name,
-				'domain_id': created_targets[0].id
+				'domain_id': created_targets[0].id,
+				"organization_id": organization.id
 			})
 		return Response({
 			'status': False,
