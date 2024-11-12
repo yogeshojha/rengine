@@ -3197,7 +3197,7 @@ class ScanViewSet(
 			'out_of_scope_subdomains': scan_history_instance.cfg_out_of_scope_subdomains,
 			'starting_point_path': scan_history_instance.cfg_starting_point_path,
 			'excluded_paths': scan_history_instance.cfg_excluded_paths,
-			'initiated_by_id': scan_history_instance.initiated_by
+			'initiated_by_id': scan_history_instance.initiated_by.id if scan_history_instance.initiated_by else None
 		}
 
 		print(kwargs)
