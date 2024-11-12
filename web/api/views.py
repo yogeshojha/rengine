@@ -497,7 +497,8 @@ class CreateProjectApi(APIView):
 			)
 			response = {
 				'status': True,
-				'project_name': project_name
+				'project_name': project_name,
+				'project_id': project.id
 			}
 			return Response(response)
 		except Exception as e:
