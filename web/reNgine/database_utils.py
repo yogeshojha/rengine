@@ -91,7 +91,7 @@ def bulk_import_targets(
 
 			logger.info(f"{'Created' if created else 'Updated'} organization {org_name} with {len(all_targets)} targets")
 
-	return new_targets_imported
+	return new_targets_imported, all_targets
 
 
 

@@ -945,7 +945,7 @@ class AddTarget(APIView):
 		if not validators.domain(domain_name):
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
 
-		status = bulk_import_targets(
+		status, created_targets = bulk_import_targets(
 			targets=[{
 				'name': domain_name,
 				'description': description,
@@ -955,12 +955,12 @@ class AddTarget(APIView):
 			project_slug=slug
 		)
 
-		if status:
+		if status and created_targets:
 			return Response({
 				'status': True,
 				'message': 'Domain successfully added as target.',
 				'domain_name': domain_name,
-				# 'domain_id': domain.id
+				'domain_id': created_targets[0].id
 			})
 		return Response({
 			'status': False,
@@ -3199,8 +3199,6 @@ class ScanViewSet(
 			'excluded_paths': scan_history_instance.cfg_excluded_paths,
 			'initiated_by_id': scan_history_instance.initiated_by.id if scan_history_instance.initiated_by else None
 		}
-
-		print(kwargs)
 
 		initiate_scan.apply_async(kwargs=kwargs)
 
