@@ -1944,6 +1944,9 @@ class ListSubdomains(APIView):
 			serializer = OnlySubdomainNameSerializer(subdomain_query, many=True)
 		else:
 			serializer = SubdomainSerializer(subdomain_query, many=True)
+
+		# TODO: add discovered_date filter
+
 		return Response({"subdomains": serializer.data})
 
 	def post(self, req):
@@ -3197,7 +3200,7 @@ class ScanViewSet(
 			'results_dir': '/usr/src/scan_results',
 			'imported_subdomains': scan_history_instance.cfg_imported_subdomains,
 			'out_of_scope_subdomains': scan_history_instance.cfg_out_of_scope_subdomains,
-			'starting_point_path': scan_history_instance.cfg_starting_point_path,
+			'starting_point_path': scan_history_instance.cfg_starting_point_path or "",
 			'excluded_paths': scan_history_instance.cfg_excluded_paths,
 			'initiated_by_id': scan_history_instance.initiated_by.id if scan_history_instance.initiated_by else None
 		}
