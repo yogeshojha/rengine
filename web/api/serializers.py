@@ -884,6 +884,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
 	waf = WafSerializer(many=True)
 	technologies = TechnologySerializer(many=True)
 	directories = DirectoryScanSerializer(many=True)
+	organization_id = serializers.SerializerMethodField()
 
 
 	class Meta:
@@ -930,6 +931,9 @@ class SubdomainSerializer(serializers.ModelSerializer):
 			return obj.vuln_count
 		except:
 			return None
+
+	def get_organization_id(self, obj: Subdomain):
+		return obj.target_domain.get_organization().first().id
 
 
 class EndpointSerializer(serializers.ModelSerializer):
