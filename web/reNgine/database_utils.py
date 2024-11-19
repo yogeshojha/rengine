@@ -35,7 +35,7 @@ def bulk_import_targets(
 			bool: True if new targets are imported, False otherwise
 	"""
 	new_targets_imported = False
-	project = Project.objects.get(slug=project_slug)
+	project = Project.objects.get(Q(slug=project_slug) | Q(id=project_slug))
 
 	all_targets = []
 
