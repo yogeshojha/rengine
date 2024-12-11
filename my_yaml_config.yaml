@@ -78,12 +78,30 @@ dir_file_fuzz: {
   'wordlist_name': 'dirsearch'
 }
 fetch_url: {
-  'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'katana', 'gau'],
+  'uses_tools': ['katana', 'gau'],
   'remove_duplicate_endpoints': true,
   'duplicate_fields': ['content_length', 'page_title'],
   'enable_http_crawl': true,
   'gf_patterns': ['interestingparams'],
-  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],
+#  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],
+  'ignore_file_extensions': [
+    'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp',  # 图像文件
+    'mp4', 'mpeg', 'mp3', 'avi', 'wmv', 'mov', 'flv', 'mkv', 'webm', 'ogg',  # 视频与音频文件
+    'css', 'scss', 'less',  # 样式表文件
+    'js', 'jsx', 'ts', 'tsx',  # 脚本文件
+    'ttf', 'woff', 'woff2', 'eot', 'otf',  # 字体文件
+    'svg', 'ico', 'eps', 'dxf',  # 矢量图与图标
+#    'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',  # 压缩文件
+    'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'rtf', 'txt',  # 文档文件
+    'log', 'bak', 'tmp',  # 日志与临时文件
+    'dll', 'exe', 'so', 'bin', 'dat',  # 可执行与二进制文件
+    'swf', 'fla',  # Flash 文件
+    'iso', 'img', 'dmg', 'vmdk',  # 磁盘映像文件
+#    'cfg', 'ini', 'yaml', 'yml', 'json', 'xml',  # 配置文件
+#    'db', 'sql', 'sqlite', 'db3',  # 数据库文件
+    'crt', 'pem', 'key',  # 证书文件
+    'psd', 'ai', 'xd', 'sketch', 'indd', 'fig',  # 设计文件
+  ],
   'threads': 20,
   # 'exclude_subdomains': false
 }
