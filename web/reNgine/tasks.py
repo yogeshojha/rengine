@@ -1767,10 +1767,15 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 			# Save endpoint data from FFUF output
 			endpoint.http_status = status
-			endpoint.content_length = length
-			endpoint.response_time = duration / 1000000000
+			# endpoint.content_length = length
+			endpoint.content_length = min(length, 2147483647)  # 限制最大值
+			# endpoint.response_time = duration / 1000000000
+			endpoint.response_time = min(duration / 1_000_000_000, 999999.99)  # 限制小数范围
 			endpoint.content_type = content_type
 			endpoint.content_length = length
+
+			# Log endpoint data length, duration, status
+			logger.info(f"Content Length: {length}, Response Time: {duration / 1000000000}, Status: {status}")
 			endpoint.save()
 
 			# Save directory file output from FFUF output
