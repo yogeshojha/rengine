@@ -1,4 +1,5 @@
 from urllib.parse import urlparse
+from uuid import uuid4
 from django.apps import apps
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
@@ -31,7 +32,8 @@ class hybrid_property:
 
 
 class ScanHistory(models.Model):
-	id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
+
 	start_scan_date = models.DateTimeField()
 	scan_status = models.IntegerField(choices=CELERY_TASK_STATUSES, default=-1)
 	results_dir = models.CharField(max_length=100, blank=True)
@@ -198,8 +200,8 @@ class ScanHistory(models.Model):
 
 
 class Subdomain(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
 	# TODO: Add endpoint property instead of replicating endpoint fields here
-	id = models.AutoField(primary_key=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 	name = models.CharField(max_length=1000)
@@ -330,7 +332,7 @@ class Subdomain(models.Model):
 
 
 class SubScan(models.Model):
-	id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
 	type = models.CharField(max_length=100, blank=True, null=True)
 	start_scan_date = models.DateTimeField()
 	status = models.IntegerField()
@@ -367,7 +369,7 @@ class SubScan(models.Model):
 		return taskmap.get(self.type, 'Unknown')
 
 class EndPoint(models.Model):
-	id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	target_domain = models.ForeignKey(
 		Domain, on_delete=models.CASCADE, null=True, blank=True)
@@ -444,7 +446,7 @@ class GPTVulnerabilityReport(models.Model):
 
 
 class Vulnerability(models.Model):
-	id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	source = models.CharField(max_length=200, null=True, blank=True)
 	subdomain = models.ForeignKey(
