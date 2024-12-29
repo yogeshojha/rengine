@@ -23,7 +23,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV GOROOT="/usr/local/go"
 ENV GOPATH=$HOME/go
-ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
+ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin:/usr/local/bin"
 
 # Install Python
 RUN apt update -y && \
@@ -106,6 +106,10 @@ RUN nuclei -update-templates
 
 # update chaos
 RUN chaos -update
+
+# Install Docker Compose v2.5.0
+RUN curl -L "https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+    && chmod +x /usr/local/bin/docker-compose
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
