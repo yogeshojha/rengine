@@ -12,7 +12,9 @@ class SearchHistory(models.Model):
 
 
 class Project(models.Model):
-	id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
+	# id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
+	id = models.AutoField(primary_key=True)
+
 	name = models.CharField(max_length=500)
 	slug = models.SlugField(unique=True)
 	insert_date = models.DateTimeField()
