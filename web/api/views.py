@@ -1906,6 +1906,9 @@ class ListPorts(APIView):
 
 
 class ListSubdomains(APIView):
+	authentication_classes = (TokenAuthentication,)
+	permission_classes = (IsAuthenticated,)
+
 	def get(self, request, format=None):
 		req = self.request
 		scan_id = req.query_params.get('scan_id')
