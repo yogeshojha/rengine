@@ -12,6 +12,8 @@ from django.db.models import CharField, Count, F, Q, Value
 from django.utils import timezone
 from packaging import version
 from django.template.defaultfilters import slugify
+from django.utils.dateparse import parse_datetime
+
 from datetime import datetime
 from rest_framework import viewsets, status, mixins
 from rest_framework.response import Response
@@ -1917,6 +1919,7 @@ class ListSubdomains(APIView):
 		ip_address = req.query_params.get('ip_address')
 		port = req.query_params.get('port')
 		tech = req.query_params.get('tech')
+		discovered_date_gt = req.query_params.get('discovered_date_gt')
 
 		subdomains = Subdomain.objects.filter(target_domain__project__slug=project) if project else Subdomain.objects.all()
 
@@ -1942,6 +1945,14 @@ class ListSubdomains(APIView):
 		if 'only_important' in req.query_params:
 			subdomain_query = subdomain_query.filter(is_important=True)
 
+		if discovered_date_gt:
+			try:
+				# Ensure discovered_date_gt is parsed correctly
+				parsed_date = parse_datetime(discovered_date_gt)
+				if parsed_date:
+					subdomain_query = subdomain_query.filter(discovered_date__gte=parsed_date)
+			except Exception:
+				pass
 
 		if 'no_lookup_interesting' in req.query_params:
 			serializer = OnlySubdomainNameSerializer(subdomain_query, many=True)
@@ -2897,6 +2908,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		subdomain_name = req.query_params.get('subdomain')
 		vulnerability_name = req.query_params.get('vulnerability_name')
 		slug = self.request.GET.get('project', None)
+		discovered_date_gt = req.query_params.get('discovered_date_gt')
 
 		if slug:
 			vulnerabilities = Vulnerability.objects.filter(scan_history__domain__project__slug=slug)
@@ -2933,6 +2945,16 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 			qs = qs.filter(severity=severity)
 		if subdomain_id:
 			qs = qs.filter(subdomain__id=subdomain_id)
+
+		# Filter by discovered_date_gt
+		if discovered_date_gt:
+			try:
+				parsed_date = parse_datetime(discovered_date_gt)
+				if parsed_date:
+					qs = qs.filter(discovered_date__gt=parsed_date)
+			except Exception:
+				pass
+
 		self.queryset = qs
 		return self.queryset
 
