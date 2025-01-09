@@ -1950,7 +1950,7 @@ class ListSubdomains(APIView):
 				# Ensure discovered_date_gt is parsed correctly
 				parsed_date = parse_datetime(discovered_date_gt)
 				if parsed_date:
-					subdomain_query = subdomain_query.filter(discovered_date__gte=parsed_date)
+					subdomain_query = subdomain_query.filter(discovered_date__gt=parsed_date)
 			except Exception:
 				pass
 
