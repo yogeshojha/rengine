@@ -107,8 +107,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # 'login_required.middleware.LoginRequiredMiddleware',
-    'reNgine.middleware.LoginRequiredMiddleware',
+    'reNgine.middleware.LoginRequiredMiddleware', # enhancement of login_required.middleware.LoginRequiredMiddleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'reNgine.middleware.UserPreferencesMiddleware',

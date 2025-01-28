@@ -57,8 +57,6 @@ class LoginRequiredMiddleware(AuthenticationMiddleware):
         if view_class and not getattr(view_class, "login_required", True):
             return None
 
-        print("hello helllo", resolver.view_name)
-
         if resolver.view_name in IGNORE_VIEW_NAMES:
             return None
 
