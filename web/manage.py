@@ -7,10 +7,10 @@ import sys
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reNgine.settings')
     # show rengine artwork
-    f = open('art/reNgine.txt', 'r')
-    file_contents = f.read()
-    print (file_contents)
-    f.close()
+    # f = open('art/reNgine.txt', 'r')
+    # file_contents = f.read()
+    # print (file_contents)
+    # f.close()
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

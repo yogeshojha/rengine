@@ -1,3 +1,4 @@
+from uuid import uuid4
 from django.apps import apps
 from django.db import models
 from dashboard.models import Project
@@ -130,7 +131,9 @@ class DomainInfo(models.Model):
 
 
 class Organization(models.Model):
+	# id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
 	id = models.AutoField(primary_key=True)
+
 	name = models.CharField(max_length=300, unique=True)
 	description = models.TextField(blank=True, null=True)
 	insert_date = models.DateTimeField()
@@ -145,7 +148,9 @@ class Organization(models.Model):
 
 
 class Domain(models.Model):
+	# id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
 	id = models.AutoField(primary_key=True)
+
 	name = models.CharField(max_length=300, unique=True)
 	h1_team_handle = models.CharField(max_length=100, blank=True, null=True)
 	ip_address_cidr = models.CharField(max_length=100, blank=True, null=True)

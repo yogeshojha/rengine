@@ -1,7 +1,7 @@
 import markdown
 
 from celery import group
-from weasyprint import HTML, CSS
+# from weasyprint import HTML, CSS
 from datetime import datetime
 from django.contrib import messages
 from django.db.models import Count, Case, When, IntegerField
@@ -505,7 +505,7 @@ def stop_scan(request, id):
         try:
             for task_id in scan.celery_ids:
                 app.control.revoke(task_id, terminate=True, signal='SIGKILL')
-            
+
             # after celery task is stopped, update the scan status
             scan.scan_status = ABORTED_TASK
             scan.save()
@@ -1135,12 +1135,12 @@ def create_report(request, id):
         template = get_template('report/default.html')
 
     html = template.render(data)
-    pdf = HTML(string=html).write_pdf()
+    # pdf = HTML(string=html).write_pdf()
     # pdf = HTML(string=html).write_pdf(stylesheets=[CSS(string='@page { size: A4; margin: 0; }')])
 
-    if 'download' in request.GET:
-        response = HttpResponse(pdf, content_type='application/octet-stream')
-    else:
-        response = HttpResponse(pdf, content_type='application/pdf')
-
-    return response
+    # if 'download' in request.GET:
+    #     response = HttpResponse(pdf, content_type='application/octet-stream')
+    # else:
+    #     response = HttpResponse(pdf, content_type='application/pdf')
+    return {}
+    # return response

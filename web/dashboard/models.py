@@ -1,3 +1,4 @@
+from uuid import uuid4
 from django.db import models
 from reNgine.definitions import *
 from django.contrib.auth.models import User
@@ -11,7 +12,9 @@ class SearchHistory(models.Model):
 
 
 class Project(models.Model):
+	# id = models.UUIDField(primary_key=True, default=uuid4, editable=False, unique=True)
 	id = models.AutoField(primary_key=True)
+
 	name = models.CharField(max_length=500)
 	slug = models.SlugField(unique=True)
 	insert_date = models.DateTimeField()
@@ -26,7 +29,7 @@ class OpenAiAPIKey(models.Model):
 
 	def __str__(self):
 		return self.key
-	
+
 
 class OllamaSettings(models.Model):
 	id = models.AutoField(primary_key=True)
@@ -43,7 +46,7 @@ class NetlasAPIKey(models.Model):
 
 	def __str__(self):
 		return self.key
-	
+
 
 class ChaosAPIKey(models.Model):
 	id = models.AutoField(primary_key=True)
@@ -51,7 +54,7 @@ class ChaosAPIKey(models.Model):
 
 	def __str__(self):
 		return self.key
-	
+
 
 class HackerOneAPIKey(models.Model):
 	id = models.AutoField(primary_key=True)
@@ -82,7 +85,7 @@ class InAppNotification(models.Model):
 			return f"System wide notif: {self.title}"
 		else:
 			return f"Project wide notif: {self.project.name}: {self.title}"
-		
+
 	@property
 	def is_system_wide(self):
 		# property to determine if the notification is system wide or project specific
@@ -92,6 +95,6 @@ class InAppNotification(models.Model):
 class UserPreferences(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
 	bug_bounty_mode = models.BooleanField(default=True)
-	
+
 	def __str__(self):
 		return f"{self.user.username}'s preferences"
