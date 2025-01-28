@@ -930,6 +930,9 @@ class ToggleSubdomainImportantStatus(APIView):
 
 
 class AddTarget(APIView):
+	authentication_classes = (TokenAuthentication,)
+	permission_classes = (IsAuthenticated,)
+
 	def post(self, request):
 		req = self.request
 		data = req.data
