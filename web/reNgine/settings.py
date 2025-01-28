@@ -17,6 +17,8 @@ mimetypes.add_type("text/css", ".css", True)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+LOGIN_REQUIRED_IGNORE_PATHS = ["/api/auth/login"]
+
 # Take environment variables from .env file
 environ.Env.read_env(os.path.join(BASE_DIR, os.pardir, '.env'))
 
@@ -105,7 +107,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'login_required.middleware.LoginRequiredMiddleware',
+    # 'login_required.middleware.LoginRequiredMiddleware',
+    'reNgine.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'reNgine.middleware.UserPreferencesMiddleware',
