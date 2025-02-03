@@ -47,6 +47,12 @@ class LoginRequiredMiddleware(AuthenticationMiddleware):
         view_class = getattr(view_func, "view_class", None)
 
         # Check if the view or view class uses TokenAuthentication
+        print('111', view_class)
+        print('222', issubclass(view_class, APIView))
+        print('333', issubclass(view_class, viewsets.GenericViewSet))
+        print('444', issubclass(view_class, viewsets.ViewSet))
+        print('555', getattr(view_class, "authentication_classes", []))
+
         if view_class and (
             issubclass(view_class, APIView)
             or issubclass(view_class, viewsets.GenericViewSet)
