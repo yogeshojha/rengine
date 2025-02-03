@@ -38,6 +38,7 @@ def bulk_import_targets(
 	project = Project.objects.get(Q(slug=project_slug) | Q(id=project_slug))
 
 	all_targets = []
+	org = None
 
 	for target in targets:
 		name = target.get('name', '').strip()
