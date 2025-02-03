@@ -272,7 +272,7 @@ Always refer to the official documentation for the most up-to-date and accurate 
 | reNgine Installation on Kali Linux | English | Secure the Cyber World | 2024-02-29 | [Watch](https://www.youtube.com/watch?v=7OFfrU6VrWw) |
 | Resultados do ReNgine - Automação para Recon | Portuguese | Guia Anônima | 2023-04-18 | [Watch](https://www.youtube.com/watch?v=6aNvDy1FzIM) |
 | reNgine Introduction | Moroccan Arabic | Th3 Hacker News Bdarija | 2021-07-27 | [Watch](https://www.youtube.com/watch?v=9FuRrcmWgWU) |
-| Automated recon? ReNgine - Hacker Tools | English | Intigriti | 2021-07-21 | [Watch](https://www.youtube.com/watch?v=9FuRrcmWgWU) |
+| Automated recon? ReNgine - Hacker Tools | English | Intigriti | 2021-08-24 | [Watch](https://www.youtube.com/watch?v=vP7tBopQSEc) |
 
 We appreciate the community's contributions in creating these resources.
 
