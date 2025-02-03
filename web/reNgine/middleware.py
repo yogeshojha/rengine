@@ -44,19 +44,29 @@ class LoginRequiredMiddleware(AuthenticationMiddleware):
             return redirect_to_login(path)
 
         view_func = resolver.func
-        view_class = getattr(view_func, "view_class", None)
 
-        # Check if the view or view class uses TokenAuthentication
-        print('111', view_class)
-        print('222', issubclass(view_class, APIView))
-        print('333', issubclass(view_class, viewsets.GenericViewSet))
-        print('444', issubclass(view_class, viewsets.ViewSet))
-        print('555', getattr(view_class, "authentication_classes", []))
+        # Extract view class correctly
+        view_class = None
+        if hasattr(view_func, "cls"):  # DRF ViewSets store their class here
+            view_class = view_func.cls
+        elif hasattr(view_func, "view_class"):  # Regular CBVs store it here
+            view_class = view_func.view_class
 
-        if view_class and (
-            issubclass(view_class, APIView)
-            or issubclass(view_class, viewsets.GenericViewSet)
-            or issubclass(view_class, viewsets.ViewSet)
+        # Debugging
+        print("111", view_class)
+        print("222", isinstance(view_class, type) and issubclass(view_class, APIView))
+        print("333", isinstance(view_class, type) and issubclass(view_class, viewsets.GenericViewSet))
+        print("444", isinstance(view_class, type) and issubclass(view_class, viewsets.ViewSet))
+        print("555", getattr(view_class, "authentication_classes", []) if view_class else None)
+
+        if (
+            view_class
+            and isinstance(view_class, type)
+            and (
+                issubclass(view_class, APIView)
+                or issubclass(view_class, viewsets.GenericViewSet)
+                or issubclass(view_class, viewsets.ViewSet)
+            )
         ):
             authentication_classes = getattr(view_class, "authentication_classes", [])
             if TokenAuthentication in authentication_classes:
