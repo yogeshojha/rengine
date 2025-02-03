@@ -1748,13 +1748,22 @@ $(document).ready(function() {
 					},
 					{
 						"render": function ( data, type, row ) {
-							if (data.includes('http')) {
-								return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+split_into_lines(htmlEncode(data), 150)+"</a>";
+							if (data) {
+								const encodedURLData = htmlEncode(data);
+								
+								if (data.toLowerCase().startsWith('http')) {
+									return `<a href="${encodedData}" 
+											target="_blank" 
+											rel="noopener noreferrer" 
+											class="text-danger">
+											${split_into_lines(encodedData, 150)}
+										</a>`;
+								}
 							}
-							return data;
+							return htmlEncode(data || '');
 						},
 						"targets": 11,
-					},
+					}
 					{
 						"render": function ( data, type, row ) {
 							if (data){
