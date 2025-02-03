@@ -4,6 +4,7 @@ from django.contrib.auth.middleware import AuthenticationMiddleware
 from django.contrib.auth.views import redirect_to_login
 from django.http import Http404
 from django.urls import resolve
+from rest_framework import viewsets
 from rest_framework.views import APIView
 from knox.auth import TokenAuthentication
 
@@ -46,7 +47,7 @@ class LoginRequiredMiddleware(AuthenticationMiddleware):
         view_class = getattr(view_func, "view_class", None)
 
         # Check if the view or view class uses TokenAuthentication
-        if view_class and issubclass(view_class, APIView):
+        if view_class and (issubclass(view_class, APIView) or issubclass(view_class, viewsets.ViewSet)):
             authentication_classes = getattr(view_class, "authentication_classes", [])
             if TokenAuthentication in authentication_classes:
                 return None  # Skip login check for TokenAuthentication views
