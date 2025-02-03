@@ -928,6 +928,11 @@ def get_nmap_cmd(
 	}
 	cmd = _build_cmd(cmd, options, flags)
 
+	is_nmap_valid = is_valid_nmap_command(cmd)
+	if not is_nmap_valid:
+		logger.error(f'Invalid nmap command or potentially dangerous: {cmd}')
+		return None
+
 	if not input_file:
 		cmd += f" {host}" if host else ""
 	else:
@@ -1646,3 +1651,43 @@ def get_ips_from_cidr_range(target):
 		return [str(ip) for ip in ipaddress.IPv4Network(target, False)]
 	except Exception as e:
 		logger.error(f'{target} is not a valid CIDR range. Skipping.')
+
+
+def is_valid_nmap_command(cmd):
+	"""
+		Check if the nmap command is valid or not
+		This is to check the nmap command before executing it so as to avoid
+		command injection attacks
+		Args:
+			cmd: str: nmap command
+		Returns:
+			bool: True if valid, False otherwise
+
+		Allowing user input in nmap command is by design
+		as user can provide custom nmap command to run
+		but we need to make sure that the command is safe
+		and doesn't contain any malicious commands
+		We do this by checking if the command starts with nmap
+		and doesn't contain any dangerous characters, in the most basic form
+	"""
+	# if this is not a valid command nmap command at all, dont even run it
+	if not cmd.strip().startswith('nmap'):
+		return False
+	
+	# check for dangerous chars
+	dangerous_chars = {';', '&', '|', '>', '<', '`', '$', '(', ')', '#', '\\'}
+	if any(char in cmd for char in dangerous_chars):
+		return False
+		
+	# but we also need to check for flags and options, for example - and -- are allowed
+	parts = cmd.split()
+	for part in parts[1:]: # ignoring nmap the first part of command
+		if part.startswith('-') or part.startswith('--'):
+			continue
+		
+		# check for valid characters, . - etc are allowed in valid nmap command
+		if all(c.isalnum() or c in '.,/-_' for c in part):
+			continue
+		return False
+		
+	return True
