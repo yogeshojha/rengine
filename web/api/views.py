@@ -930,6 +930,7 @@ class ToggleSubdomainImportantStatus(APIView):
 
 
 class AddTarget(APIView):
+	# TODO: CRITICAL: remove this or separate view
 	authentication_classes = (TokenAuthentication,)
 	permission_classes = (IsAuthenticated,)
 
@@ -967,7 +968,7 @@ class AddTarget(APIView):
 				'message': 'Domain successfully added as target.',
 				'domain_name': domain_name,
 				'domain_id': created_targets[0].id,
-				"organization_id": organization.id
+				"organization_id": organization.id if organization else None
 			})
 		return Response({
 			'status': False,
