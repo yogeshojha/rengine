@@ -1520,6 +1520,10 @@ def nmap(
 		host=host,
 		input_file=input_file,
 		output_file=output_file_xml)
+	
+	if not nmap_cmd:
+		logger.error('Could not build nmap command')
+		return
 
 	# Run cmd
 	run_command(
