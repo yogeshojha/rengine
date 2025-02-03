@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: celery-beat
+spec:
+  selector:
+    app: celery-beat
+  ports:
+    - protocol: TCP
+      port: 5672  # Default Celery port (adjust as necessary)
+      targetPort: 5672
+  type: ClusterIP  # Change to NodePort or LoadBalancer if needed
