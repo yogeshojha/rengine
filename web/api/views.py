@@ -2900,7 +2900,7 @@ class DirectoryViewSet(viewsets.ModelViewSet):
 
 class VulnerabilityViewSet(
 	mixins.ListModelMixin,
-	GenericViewSet
+	viewsets.GenericViewSet
 ):
 	queryset = Vulnerability.objects.none()
 	authentication_classes = (TokenAuthentication,) # TODO: remove this or separate view.
