@@ -2900,6 +2900,8 @@ class DirectoryViewSet(viewsets.ModelViewSet):
 
 class VulnerabilityViewSet(viewsets.ModelViewSet):
 	queryset = Vulnerability.objects.none()
+	authentication_classes = (TokenAuthentication,) # TODO: remove this or separate view.
+	permission_classes = (IsAuthenticated,) # TODO: remove this or separate view.
 	serializer_class = VulnerabilitySerializer
 
 	def get_queryset(self):
