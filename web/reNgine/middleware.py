@@ -39,6 +39,7 @@ class LoginRequiredMiddleware(AuthenticationMiddleware):
             return None
 
         try:
+            print('dwadawd', path)
             resolver = resolve(path)
         except Http404:
             print('i am hereeeee!!!')
