@@ -442,7 +442,7 @@ DEFAULT_EXCLUDED_PATHS = [
 # Roles and Permissions
 PERM_MODIFY_SYSTEM_CONFIGURATIONS = 'modify_system_configurations'
 PERM_MODIFY_SCAN_CONFIGURATIONS = 'modify_scan_configurations'
-PERM_MODIFY_TARGETS = 'modify_targets'
+PERM_MODIFY_TARGETS = 'modify_targets' # projects and targets
 PERM_MODIFY_SCAN_RESULTS = 'modify_scan_results'
 PERM_MODIFY_WORDLISTS = 'modify_wordlists'
 PERM_MODIFY_INTERESTING_LOOKUP = 'modify_interesting_lookup'
