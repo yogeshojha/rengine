@@ -165,11 +165,11 @@ $(document).ready(function(){
 				{
 					"render": function(data, type, row) {
 						var content = '';
-						content += `<b>${data}</b>&nbsp;&nbsp;<a href="#" onclick="get_target_whois('${data}')">(view whois)</a>`;
+						content += `<b>${htmlEncode(data)}</b>&nbsp;&nbsp;<a href="#" onclick="get_target_whois('${htmlEncode(data)}')">(view whois)</a>`;
 						if (row.organization) {
 							content += '<br>';
 							for (var org in row.organization) {
-								content += `<span class="badge badge-soft-primary me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Domain ${data} belongs to organization ${row.organization[org]}">${row.organization[org]}</span>`;
+								content += `<span class="badge badge-soft-primary me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Domain ${htmlEncode(data)} belongs to organization ${htmlEncode(row.organization[org])}">${htmlEncode(row.organization[org])}</span>`;
 							}
 						}
 
@@ -179,12 +179,18 @@ $(document).ready(function(){
 
 						// if bounty mode is enabled show target hackerone handle, when clicked must take to hackerone program
 						{% if user_preferences.bug_bounty_mode %}
-							content += `<br><a class="badge badge-soft-pink me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Hackerone Handle" href="https://hackerone.com/${row.h1_team_handle}" target="_blank">${row.h1_team_handle}</a>`;
+							content += `<br><a class="badge badge-soft-pink me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Hackerone Handle" href="https://hackerone.com/${htmlEncode(row.h1_team_handle)}" target="_blank">${htmlEncode(row.h1_team_handle)}</a>`;
 						{% endif %}
 
 						return content;
 					},
 					"targets": 2,
+				},
+				{
+					"render": function(data, type, row) {
+						return htmlEncode(data);
+					},
+					"targets": 3,
 				},
 				{
 					"render": function(data, type, row) {
@@ -233,7 +239,7 @@ $(document).ready(function(){
 						<a class="dropdown-item" href="/scan/{{slug}}/schedule/target/${row.id}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
 						<div class="dropdown-divider"></div>
 						<a class="dropdown-item" href="/target/{{slug}}/update/target/${row.id}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
-						<a class="dropdown-item text-danger" href="#" onclick="delete_target(${row.id}, '${row.name}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
+						<a class="dropdown-item text-danger" href="#" onclick="delete_target(${row.id}, '${htmlEncode(row.name)}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
 						</div>
 						</div>
 						</div>
