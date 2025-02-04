@@ -19,7 +19,6 @@ from rest_framework.decorators import action
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
 
-
 from dashboard.models import *
 from recon_note.models import *
 from reNgine.celery import app
@@ -34,7 +33,8 @@ from startScan.models import *
 from startScan.models import EndPoint
 from targetApp.models import *
 from api.shared_api_tasks import import_hackerone_programs_task, sync_bookmarked_programs_task
-from .serializers import *
+from api.permissions import *
+from api.serializers import *
 
 
 logger = logging.getLogger(__name__)
@@ -474,6 +474,9 @@ class LLMVulnerabilityReportGenerator(APIView):
 
 
 class CreateProjectApi(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_TARGETS
+
 	def get(self, request):
 		req = self.request
 		project_name = req.query_params.get('name')
