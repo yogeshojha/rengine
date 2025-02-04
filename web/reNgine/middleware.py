@@ -41,6 +41,7 @@ class LoginRequiredMiddleware(AuthenticationMiddleware):
         try:
             resolver = resolve(path)
         except Http404:
+            print('i am hereeeee!!!')
             return redirect_to_login(path)
 
         view_func = resolver.func
