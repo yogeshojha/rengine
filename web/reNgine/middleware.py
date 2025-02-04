@@ -52,6 +52,22 @@ class LoginRequiredMiddleware(AuthenticationMiddleware):
         elif hasattr(view_func, "view_class"):  # Regular CBVs store it here
             view_class = view_func.view_class
 
+        print("111", view_class)
+        print("222", isinstance(view_class, type))
+        print("333", issubclass(view_class, APIView))
+        print("444", issubclass(view_class, viewsets.GenericViewSet))
+        print("555", issubclass(view_class, viewsets.ViewSet))
+        print(
+            "777",
+            view_class
+            and isinstance(view_class, type)
+            and (
+                issubclass(view_class, APIView)
+                or issubclass(view_class, viewsets.GenericViewSet)
+                or issubclass(view_class, viewsets.ViewSet)
+            ),
+        )
+
         if (
             view_class
             and isinstance(view_class, type)
