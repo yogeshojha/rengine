@@ -1,9 +1,12 @@
 import csv
+import glob
 import json
 import os
 import pprint
 import subprocess
 import time
+import uuid
+
 import validators
 import xmltodict
 import yaml
@@ -604,10 +607,11 @@ def subdomain_discovery(
 
 	# Send notifications
 	subdomains_str = '\n'.join([f'• `{subdomain.name}`' for subdomain in subdomains])
-	self.notify(fields={
-		'Subdomain count': len(subdomains),
-		'Subdomains': subdomains_str,
-	})
+	if notif and notif.send_scan_status_notif:
+		self.notify(fields={
+			'Subdomain count': len(subdomains),
+			'Subdomains': subdomains_str,
+		})
 	if send_subdomain_changes and self.scan_id and self.domain_id:
 		added = get_new_added_subdomain(self.scan_id, self.domain_id)
 		removed = get_removed_subdomain(self.scan_id, self.domain_id)
@@ -1286,7 +1290,9 @@ def screenshot(self, ctx={}, description=None):
 
 	# Send finish notifs
 	screenshots_str = '• ' + '\n• '.join([f'`{path}`' for path in screenshot_paths])
-	self.notify(fields={'Screenshots': screenshots_str})
+
+	if notification and notification.send_scan_status_notif:
+		self.notify(fields={'Screenshots': screenshots_str})
 	if send_output_file:
 		for path in screenshot_paths:
 			title = get_output_file_name(
@@ -1443,7 +1449,9 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	for host, ports in ports_data.items():
 		ports_str = ', '.join([f'`{port}`' for port in ports])
 		fields_str += f'• `{host}`: {ports_str}\n'
-	self.notify(fields={'Ports discovered': fields_str})
+	notif = Notification.objects.first()
+	if notif and notif.send_scan_status_notif:
+		self.notify(fields={'Ports discovered': fields_str})
 
 	# Save output to file
 	with open(self.output_path, 'w') as f:
@@ -1683,7 +1691,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	cmd += f' -mc {mc}' if mc else ''
 	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
 	if formatted_headers:
-		cmd += formatted_headers
+		cmd += ' ' + formatted_headers
 
 	# Grab URLs to fuzz
 	urls = get_http_urls(
@@ -1763,10 +1771,15 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 			# Save endpoint data from FFUF output
 			endpoint.http_status = status
-			endpoint.content_length = length
-			endpoint.response_time = duration / 1000000000
+			# endpoint.content_length = length
+			endpoint.content_length = min(length, 2147483647)  # 限制最大值
+			# endpoint.response_time = duration / 1000000000
+			endpoint.response_time = min(duration / 1_000_000_000, 999999.99)  # 限制小数范围
 			endpoint.content_type = content_type
 			endpoint.content_length = length
+
+			# Log endpoint data length, duration, status
+			logger.info(f"Content Length: {length}, Response Time: {duration / 1000000000}, Status: {status}")
 			endpoint.save()
 
 			# Save directory file output from FFUF output
@@ -1866,7 +1879,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		'hakrawler': 'hakrawler -subs -u',
 		'waybackurls': 'waybackurls',
 		'gospider': f'gospider -S {input_path} --js -d 2 --sitemap --robots -w -r',
-		'katana': f'katana -list {input_path} -silent -jc -kf all -d 3 -fs rdn',
+		'katana': f'katana -list {input_path} -silent -jc -kf all -d 3 -fs rdn -ef png,jpg,gif,jpeg,swf,woff,svg,pdf,json,css,js,webp,woff,woff2,eot,ttf,otf,mp4',
 	}
 	if proxy:
 		cmd_map['gau'] += f' --proxy "{proxy}"'
@@ -1876,13 +1889,13 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	if threads > 0:
 		cmd_map['gau'] += f' --threads {threads}'
 		cmd_map['gospider'] += f' -t {threads}'
-		cmd_map['katana'] += f' -c {threads}'
+		cmd_map['katana'] += f' -c {threads} -p 2'
 	if custom_headers:
 		# gau, waybackurls does not support custom headers
 		formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
-		cmd_map['gospider'] += formatted_headers
+		cmd_map['gospider'] += ' ' + formatted_headers
 		cmd_map['hakrawler'] += ';;'.join(header for header in custom_headers)
-		cmd_map['katana'] += formatted_headers
+		cmd_map['katana'] += ' ' + formatted_headers
 	cat_input = f'cat {input_path}'
 	grep_output = f'grep -Eo {host_regex}'
 	cmd_map = {
@@ -1929,7 +1942,9 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	# Store all the endpoints and run httpx
 	with open(self.output_path) as f:
 		discovered_urls = f.readlines()
-		self.notify(fields={'Discovered URLs': len(discovered_urls)})
+		notif = Notification.objects.first()
+		if notif and notif.send_scan_status_notif:
+			self.notify(fields={'Discovered URLs': len(discovered_urls)})
 
 	# Some tools can have an URL in the format <URL>] - <PATH> or <URL> - <PATH>, add them
 	# to the final URL list
@@ -2002,7 +2017,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		# Run gf on current pattern
 		logger.warning(f'Running gf on pattern "{gf_pattern}"')
 		gf_output_file = f'{self.results_dir}/gf_patterns_{gf_pattern}.txt'
-		cmd = f'cat {self.output_path} | gf {gf_pattern} | grep -Eo {host_regex} >> {gf_output_file}'
+		cmd = f'cat {self.output_path} | gf {gf_pattern} | grep -Eo {host_regex} | uro >> {gf_output_file}'
 		run_command(
 			cmd,
 			shell=True,
@@ -2263,7 +2278,8 @@ def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, sh
 		json.dump(results, f, indent=4)
 
 	# Send finish notif
-	if send_status:
+	# if send_status:
+	if notif.send_vuln_notif:
 		vulns = Vulnerability.objects.filter(scan_history__id=self.scan_id)
 		info_count = vulns.filter(severity=0).count()
 		low_count = vulns.filter(severity=1).count()
@@ -2483,7 +2499,7 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' -irr'
 	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
 	if formatted_headers:
-		cmd += formatted_headers
+		cmd += ' ' + formatted_headers
 	cmd += f' -l {input_path}'
 	cmd += f' -c {str(concurrency)}' if concurrency > 0 else ''
 	cmd += f' -proxy {proxy} ' if proxy else ''
@@ -2496,10 +2512,42 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	for tpl in templates:
 		cmd += f' -t {tpl}'
 
+	# nuclei dast scan
+	# Create a merged input file path
+	dast_input_path = f'{self.results_dir}/dast_input_endpoints.txt'
+
+	# Get all .txt files starting with gf_patterns_ and merge the contents
+	pattern_files = glob.glob(f'{self.results_dir}/gf_patterns_*.txt')
+
+	# Merge the contents of the file
+	with open(dast_input_path, 'w') as dast_file:
+		for pattern_file in pattern_files:
+			with open(pattern_file, 'r') as f:
+				dast_file.write(f.read())
+				dast_file.write('\n')  # Add line breaks to distinguish different file contents
+
+	# Build DAST_CMD
+	dast_cmd = 'nuclei -j'
+	dast_cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
+	dast_cmd += f' -irr'
+	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	if formatted_headers:
+		dast_cmd += ' ' + formatted_headers
+	dast_cmd += f' -l {dast_input_path}'
+	dast_cmd += f' -c {str(concurrency)}' if concurrency > 0 else ''
+	dast_cmd += f' -proxy {proxy} ' if proxy else ''
+	dast_cmd += f' -retries {retries}' if retries > 0 else ''
+	dast_cmd += f' -rl {rate_limit}' if rate_limit > 0 else ''
+	# dast_cmd += f' -severity {severities_str}'
+	dast_cmd += f' -timeout {str(timeout)}' if timeout and timeout > 0 else ''
+	# dast_cmd += f' -tags {tags}' if tags else ''
+	dast_cmd += f' -silent'
+	dast_cmd += f' -dast'
 
 	grouped_tasks = []
 	custom_ctx = ctx
 	for severity in severities:
+		# custom nuclei scan
 		custom_ctx['track'] = True
 		_task = nuclei_individual_severity_module.si(
 			cmd,
@@ -2510,6 +2558,16 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 			description=f'Nuclei Scan with severity {severity}'
 		)
 		grouped_tasks.append(_task)
+		# dast nuclei scan
+		_dast_task = nuclei_individual_severity_module.si(
+			dast_cmd,
+			severity,
+			enable_http_crawl,
+			should_fetch_gpt_report,
+			ctx=custom_ctx,
+			description=f'Nuclei DAST Scan with severity {severity}'
+		)
+		grouped_tasks.append(_dast_task)
 
 	celery_group = group(grouped_tasks)
 	job = celery_group.apply_async()
@@ -2579,7 +2637,7 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' --timeout {timeout}' if timeout else ''
 	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
 	if formatted_headers:
-		cmd += formatted_headers
+		cmd += ' ' + formatted_headers
 	cmd += f' --user-agent {user_agent}' if user_agent else ''
 	cmd += f' --worker {threads}' if threads else ''
 	cmd += f' --format json'
@@ -2705,7 +2763,7 @@ def crlfuzz_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' -x {proxy}' if proxy else ''
 	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
 	if formatted_headers:
-		cmd += formatted_headers
+		cmd += ' ' + formatted_headers
 	cmd += f' -o {output_path}'
 
 	run_command(
@@ -2868,14 +2926,39 @@ def http_crawl(
 	threads = cfg.get(THREADS, DEFAULT_THREADS)
 	follow_redirect = cfg.get(FOLLOW_REDIRECT, True)
 	self.output_path = None
-	input_path = f'{self.results_dir}/httpx_input.txt'
+	unique_id = str(uuid.uuid4())
+	temp_input_path = f'{self.results_dir}/temp_input_{unique_id}.txt'
+	input_path = f'{self.results_dir}/httpx_input_{unique_id}.txt'
 	history_file = f'{self.results_dir}/commands.txt'
-	if urls: # direct passing URLs to check
+	if urls:  # direct passing URLs to check
 		if self.starting_point_path:
 			urls = [u for u in urls if self.starting_point_path in u]
 
-		with open(input_path, 'w') as f:
+		with open(temp_input_path, 'w') as f:
 			f.write('\n'.join(urls))
+
+		# 打印去重前的 URL 数量
+		logger.info(f'URL Counts Before uro: {len(urls)}')
+
+		# 检查 URLs 是否为完整的链接
+		if all(re.match(r'https?://', url) for url in urls):
+			# 使用 uro 进行去重
+			dedup_cmd = f'uro -i {temp_input_path} -o {input_path}'
+			run_command(dedup_cmd, shell=True)
+
+			# # 读取去重后的 URL
+			# with open(input_path, 'r') as f:
+			# 	deduped_urls = f.read().splitlines()
+			#
+			# # 打印去重后的 URL 数量
+			# logger.info(f'URL Counts After uro: {len(deduped_urls)}')
+
+			# 清理临时文件
+			run_command(f'rm {temp_input_path}', shell=True)
+		else:
+			# 如果不是完整的 URL，直接使用原始 URLs
+			input_path = temp_input_path
+			logger.info('URLs is all subdomain, no need to execute uro.')
 	else:
 		urls = get_http_urls(
 			is_uncrawled=not recrawl,
@@ -2906,7 +2989,7 @@ def http_crawl(
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
 	if formatted_headers:
-		cmd += formatted_headers
+		cmd += ' ' + formatted_headers
 	cmd += f' -json'
 	cmd += f' -u {urls[0]}' if len(urls) == 1 else f' -l {input_path}'
 	cmd += f' -x {method}' if method else ''
@@ -2974,10 +3057,12 @@ def http_crawl(
 		endpoint.save()
 		endpoint_str = f'{http_url} [{http_status}] `{content_length}B` `{webserver}` `{rt}`'
 		logger.warning(endpoint_str)
-		if endpoint and endpoint.is_alive and endpoint.http_status != 403:
-			self.notify(
-				fields={'Alive endpoint': f'• {endpoint_str}'},
-				add_meta_info=False)
+
+		# too much msg, don`t use this notify
+		# if endpoint and endpoint.is_alive and endpoint.http_status != 403:
+		# 	self.notify(
+		# 		fields={'Alive endpoint': f'• {endpoint_str}'},
+		# 		add_meta_info=False)
 
 		# Add endpoint to results
 		line['_cmd'] = cmd
@@ -2996,9 +3081,10 @@ def http_crawl(
 				subdomain.save()
 			endpoint.save()
 		techs_str = ', '.join([f'`{tech}`' for tech in techs])
-		self.notify(
-			fields={'Technologies': techs_str},
-			add_meta_info=False)
+		#
+		# self.notify(
+		# 	fields={'Technologies': techs_str},
+		# 	add_meta_info=False)
 
 		# Add IP objects for 'a' records to DB
 		a_records = line.get('a', [])
@@ -3009,9 +3095,9 @@ def http_crawl(
 				subscan=self.subscan,
 				cdn=cdn)
 		ips_str = '• ' + '\n• '.join([f'`{ip}`' for ip in a_records])
-		self.notify(
-			fields={'IPs': ips_str},
-			add_meta_info=False)
+		# self.notify(
+		# 	fields={'IPs': ips_str},
+		# 	add_meta_info=False)
 
 		# Add IP object for host in DB
 		if host:
@@ -3020,9 +3106,9 @@ def http_crawl(
 				subdomain,
 				subscan=self.subscan,
 				cdn=cdn)
-			self.notify(
-				fields={'IPs': f'• `{ip.address}`'},
-				add_meta_info=False)
+			# self.notify(
+			# 	fields={'IPs': f'• `{ip.address}`'},
+			# 	add_meta_info=False)
 
 		# Save subdomain and endpoint
 		if is_ran_from_subdomain_scan:
@@ -3213,7 +3299,8 @@ def send_task_notif(
 
 	# Skip send if notification settings are not configured
 	notif = Notification.objects.first()
-	if not (notif and notif.send_scan_status_notif):
+	# if not (notif and notif.send_scan_status_notif):
+	if not notif:
 		return
 
 	# Build fields
@@ -3667,26 +3754,26 @@ def parse_nuclei_result(line):
 		dict: Vulnerability data.
 	"""
 	return {
-		'name': line['info'].get('name', ''),
-		'type': line['type'],
-		'severity': NUCLEI_SEVERITY_MAP[line['info'].get('severity', 'unknown')],
-		'template': line['template'],
-		'template_url': line['template-url'],
-		'template_id': line['template-id'],
-		'description': line['info'].get('description', ''),
-		'matcher_name': line.get('matcher-name', ''),
-		'curl_command': line.get('curl-command'),
-		'request': line.get('request'),
-		'response': line.get('response'),
-		'extracted_results': line.get('extracted-results', []),
-		'cvss_metrics': line['info'].get('classification', {}).get('cvss-metrics', ''),
-		'cvss_score': line['info'].get('classification', {}).get('cvss-score'),
-		'cve_ids': line['info'].get('classification', {}).get('cve_id', []) or [],
-		'cwe_ids': line['info'].get('classification', {}).get('cwe_id', []) or [],
-		'references': line['info'].get('reference', []) or [],
-		'tags': line['info'].get('tags', []),
-		'source': NUCLEI,
-	}
+        'name': line['info'].get('name', ''),
+        'type': line['type'],
+        'severity': NUCLEI_SEVERITY_MAP.get(line['info'].get('severity', 'unknown'), 'unknown'),
+        'template': line.get('template', ''),
+        'template_url': line.get('template-url', ''),  # change to use .get()
+        'template_id': line.get('template-id', ''),
+        'description': line['info'].get('description', ''),
+        'matcher_name': line.get('matcher-name', ''),
+        'curl_command': line.get('curl-command'),
+        'request': line.get('request'),
+        'response': line.get('response'),
+        'extracted_results': line.get('extracted-results', []),
+        'cvss_metrics': line['info'].get('classification', {}).get('cvss-metrics', ''),
+        'cvss_score': line['info'].get('classification', {}).get('cvss-score'),
+        'cve_ids': line['info'].get('classification', {}).get('cve_id', []) or [],
+        'cwe_ids': line['info'].get('classification', {}).get('cwe_id', []) or [],
+        'references': line['info'].get('reference', []) or [],
+        'tags': line['info'].get('tags', []),
+        'source': NUCLEI,
+    }
 
 
 def parse_dalfox_result(line):
