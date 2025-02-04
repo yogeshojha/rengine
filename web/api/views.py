@@ -19,7 +19,6 @@ from rest_framework.decorators import action
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
 
-
 from dashboard.models import *
 from recon_note.models import *
 from reNgine.celery import app
@@ -34,7 +33,8 @@ from startScan.models import *
 from startScan.models import EndPoint
 from targetApp.models import *
 from api.shared_api_tasks import import_hackerone_programs_task, sync_bookmarked_programs_task
-from .serializers import *
+from api.permissions import *
+from api.serializers import *
 
 
 logger = logging.getLogger(__name__)
@@ -333,6 +333,9 @@ class InAppNotificationManagerViewSet(viewsets.ModelViewSet):
 
 
 class OllamaManager(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_SYSTEM_CONFIGURATIONS
+
 	def get(self, request):
 		"""
 		API to download Ollama Models
@@ -474,6 +477,9 @@ class LLMVulnerabilityReportGenerator(APIView):
 
 
 class CreateProjectApi(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_TARGETS
+
 	def get(self, request):
 		req = self.request
 		project_name = req.query_params.get('name')
@@ -915,6 +921,9 @@ class ToggleSubdomainImportantStatus(APIView):
 
 
 class AddTarget(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_TARGETS
+
 	def post(self, request):
 		req = self.request
 		data = req.data
@@ -1050,6 +1059,9 @@ class ListSubScans(APIView):
 
 
 class DeleteMultipleRows(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_TARGETS
+
 	def post(self, request):
 		req = self.request
 		data = req.data
@@ -1069,6 +1081,9 @@ class DeleteMultipleRows(APIView):
 
 
 class StopScan(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_INITATE_SCANS_SUBSCANS
+
 	def post(self, request):
 		req = self.request
 		data = req.data
@@ -1166,6 +1181,9 @@ class StopScan(APIView):
 
 
 class InitiateSubTask(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_INITATE_SCANS_SUBSCANS
+
 	def post(self, request):
 		req = self.request
 		data = req.data
@@ -1185,6 +1203,9 @@ class InitiateSubTask(APIView):
 
 
 class DeleteSubdomain(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_SCAN_RESULTS
+
 	def post(self, request):
 		req = self.request
 		for id in req.data['subdomain_ids']:
@@ -1193,6 +1214,9 @@ class DeleteSubdomain(APIView):
 
 
 class DeleteVulnerability(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_SCAN_RESULTS
+
 	def post(self, request):
 		req = self.request
 		for id in req.data['vulnerability_ids']:
@@ -1262,6 +1286,9 @@ class RengineUpdateCheck(APIView):
 
 
 class UninstallTool(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_SYSTEM_CONFIGURATIONS
+
 	def get(self, request):
 		req = self.request
 		tool_id = req.query_params.get('tool_id')
@@ -1300,6 +1327,9 @@ class UninstallTool(APIView):
 
 
 class UpdateTool(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_SYSTEM_CONFIGURATIONS
+
 	def get(self, request):
 		req = self.request
 		tool_id = req.query_params.get('tool_id')
@@ -1332,6 +1362,9 @@ class UpdateTool(APIView):
 			return Response({'status': False, 'message': str(e)})
 
 class GetExternalToolCurrentVersion(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_SYSTEM_CONFIGURATIONS
+
 	def get(self, request):
 		req = self.request
 		# toolname is also the command
@@ -1368,6 +1401,9 @@ class GetExternalToolCurrentVersion(APIView):
 
 
 class GithubToolCheckGetLatestRelease(APIView):
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_SYSTEM_CONFIGURATIONS
+	
 	def get(self, request):
 		req = self.request
 

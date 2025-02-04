@@ -295,6 +295,7 @@ def projects(request, slug):
     return render(request, 'dashboard/projects.html', context)
 
 
+@has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_project(request, id):
     obj = get_object_or_404(Project, id=id)
     if request.method == "POST":
