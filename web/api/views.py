@@ -1589,7 +1589,8 @@ class CMSDetector(APIView):
 					return Response(response)
 			return Response(response)
 		except Exception as e:
-			response = {'status': False, 'message': str(e)}
+			logger.exception("An error occurred while detecting CMS")
+ 			response = {'status': False, 'message': 'An internal error has occurred!'}
 			return Response(response)
 
 
