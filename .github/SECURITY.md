@@ -1,4 +1,11 @@
+
 # Security Policy
+
+> **[IMPORTANT NOTICE - February 9, 2025]**  
+> reNgine is currently undergoing a major refactoring to address all XSS-related vulnerabilities. While we are committed to security, we are temporarily suspending new XSS vulnerability reports until this refactoring is complete. We will continue to accept and investigate all other types of security vulnerabilities. Thank you for your understanding and continued support in making reNgine more secure.
+>
+> Please note that most reported XSS vulnerabilities in reNgine affect on-premise installations with limited exploitability. Nevertheless, we are committed to fixing these issues systematically through our ongoing refactoring effort.
+
 
 We appreciate your efforts to responsibly disclose your findings and will make every effort to acknowledge your contributions.
 
