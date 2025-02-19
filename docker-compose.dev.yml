@@ -26,6 +26,14 @@ services:
     restart: always
     entrypoint: /usr/src/app/celery-entrypoint.sh
     # command: watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO
+    deploy:
+      resources:
+        limits:
+          cpus: ${CELERY_CPU_LIMIT}
+          memory: ${CELERY_MEM_LIMIT}
+        reservations:
+          cpus: ${CELERY_CPU_RESERVE}
+          memory: ${CELERY_MEM_RESERVE} 
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
