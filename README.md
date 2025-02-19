@@ -61,6 +61,7 @@ Detailed documentation available at [https://rengine.wiki](https://rengine.wiki)
 * [About reNgine](#about-rengine)
 * [Workflow](#workflow)
 * [Features](#features)
+* [Enterprise Support](#enterprise-support)
 * [Quick Installation](#quick-installation)
 * [Installation Video](#installation-video-tutorial)
 * [Community-Curated Videos](#community-curated-videos)
@@ -163,6 +164,26 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 * Find actionable insights such as Most Common Vulnerability, Most Common CVE ID, Most Vulnerable Target/Subdomain, etc.
 * You can now use local LLMs for Attack surface identification and vulnerability description (NEW: reNgine 2.1.0)
 * BountyHub, a central hub to manage your hackerone targets
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+<p align="center">
+  <h3>Enterprise Support</h3>
+</p>
+
+<p align="center">
+  <a href="https://hailbytes.com/hardened-ubuntu-rengine/" target="_blank">
+    <img src="https://hailbytes.com/wp-content/uploads/2020/04/HailBytes-Logo-2023-350-%C3%97-100-px.png" alt="HailBytes - Enterprise reNgine Support" height="60"/>
+  </a>
+</p>
+
+<p align="center">
+  Official enterprise-grade support, deployment, and maintenance services for reNgine are available through <a href="https://hailbytes.com">HailBytes</a>.
+</p>
+
+<p align="center">
+You can also find the deep dive video on how to use and install reNgine from here <a href="https://www.youtube.com/watch?v=C6BFBxLmZIA">reNgine Deep Dive by HailBytes</a>
+</p>
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
