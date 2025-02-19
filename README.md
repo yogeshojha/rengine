@@ -181,6 +181,10 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
   Official enterprise-grade support, deployment, and maintenance services for reNgine are available through <a href="https://hailbytes.com">HailBytes</a>.
 </p>
 
+<p align="center">
+You can also find the deep dive video on how to use and install reNgine from here <a href="https://www.youtube.com/watch?v=C6BFBxLmZIA">reNgine Deep Dive by HailBytes</a>
+</p>
+
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ## Quick Installation
