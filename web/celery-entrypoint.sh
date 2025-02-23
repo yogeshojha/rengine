@@ -3,6 +3,8 @@
 # apply existing migrations
 python3 manage.py migrate
 
+## for debug
+#export DEBUG=1
 # make migrations for specific apps
 apps=(
     "targetApp"

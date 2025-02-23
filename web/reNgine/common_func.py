@@ -15,7 +15,7 @@ import xmltodict
 
 from time import sleep
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 from celery.utils.log import get_task_logger
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Q
@@ -577,7 +577,15 @@ def get_cms_details(url):
 # NOTIFICATION UTILS #
 #--------------------#
 
-def send_telegram_message(message):
+def send_telegram_message(
+		message,
+		title='',
+		severity=None,
+		url=None,
+		files=None,
+		fields={},
+		fields_append=[]
+):
 	"""Send Telegram message.
 
 	Args:
@@ -590,11 +598,21 @@ def send_telegram_message(message):
 		notif.telegram_bot_token and
 		notif.telegram_bot_chat_id)
 	if not do_send:
+		logger.info(f'debug:Not do_seng,notif.send_to_telegram:{notif.send_to_telegram},notif.telegram_bot_token:{notif.telegram_bot_token},notif.telegram_bot_chat_id:{notif.telegram_bot_chat_id}')
 		return
 	telegram_bot_token = notif.telegram_bot_token
 	telegram_bot_chat_id = notif.telegram_bot_chat_id
+
+	# Append fields from fields_append to the message
+	if fields_append:
+		for key in fields_append:
+			value = fields.get(key)
+			if value is not None:
+				message += f'\n*{key}:* {value}'
+	message = quote(message)
 	send_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage?chat_id={telegram_bot_chat_id}&parse_mode=Markdown&text={message}'
 	requests.get(send_url)
+
 
 
 def send_slack_message(message):
