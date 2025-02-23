@@ -262,6 +262,11 @@ for worker in "${workers[@]}"; do
 done
 commands="${commands%&}"
 
-eval "$commands"
+IFS=$'\n' read -rd '' -a command_array <<< "$commands"
+for cmd in "${command_array[@]}"; do
+    if [[ -n "$cmd" ]]; then
+        $cmd
+    fi
+done
 
 wait
