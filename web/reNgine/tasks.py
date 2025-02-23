@@ -3671,7 +3671,7 @@ def parse_nuclei_result(line):
 		'type': line['type'],
 		'severity': NUCLEI_SEVERITY_MAP[line['info'].get('severity', 'unknown')],
 		'template': line['template'],
-		'template_url': line['template-url'],
+		'template_url': line.get('template-url', []),
 		'template_id': line['template-id'],
 		'description': line['info'].get('description', ''),
 		'matcher_name': line.get('matcher-name', ''),
