@@ -1,0 +1,70 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-django-superuser
+spec:
+  template:
+    spec:
+      containers:
+      - name: create-superuser
+        image: ghcr.io/0xtejas/rengine/web:latest
+        command:
+          - /bin/sh
+          - -c
+          - |
+            python3 manage.py shell -c "
+            import os
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+
+            # Retrieve superuser credentials from environment variables
+            username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
+            email = os.environ.get('DJANGO_SUPERUSER_EMAIL')
+            password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
+
+            # Check if a user with the specified username already exists
+            if User.objects.filter(username=username).exists():
+                print(f'Superuser \"{username}\" already exists.')
+            else:
+                User.objects.create_superuser(username=username, email=email, password=password)
+                print(f'Superuser \"{username}\" has been successfully created.')
+            "
+        env:
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_DB
+          - name: POSTGRES_HOST
+            value: db  # Make sure this is the correct hostname for your database service
+          - name: POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_PORT
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_PASSWORD
+          - name: DJANGO_SUPERUSER_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: web-secret
+                key: DJANGO_SUPERUSER_USERNAME
+          - name: DJANGO_SUPERUSER_EMAIL
+            valueFrom:
+              secretKeyRef:
+                name: web-secret
+                key: DJANGO_SUPERUSER_EMAIL
+          - name: DJANGO_SUPERUSER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: web-secret
+                key: DJANGO_SUPERUSER_PASSWORD
+      restartPolicy: OnFailure
