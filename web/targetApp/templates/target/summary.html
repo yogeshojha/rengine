@@ -1512,18 +1512,18 @@ $(document).ready(function(){
 						const encodedURLData = htmlEncode(data);
 						
 						if (data.toLowerCase().startsWith('http')) {
-							return `<a href="${encodedData}" 
+							return `<a href="${encodedURLData}" 
 									target="_blank" 
 									rel="noopener noreferrer" 
 									class="text-danger">
-									${split_into_lines(encodedData, 150)}
+									${split_into_lines(encodedURLData, 150)}
 								</a>`;
 						}
 					}
 					return htmlEncode(data || '');
 				},
 				"targets": 11,
-			}
+			},
 			{
 				"render": function(data, type, row) {
 					if (data) {
