@@ -27,7 +27,7 @@ Dashboard
 			<div class="card-body">
 				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Number of Targets/Domains"></i>
 				<h4 class="mt-0 font-16">Total Targets</h4>
-				<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{domain_count|intcomma}}</span></h2>
+				<h2 class="text-primary my-3 text-center"><a href="{% url 'list_target' current_project.slug %}"><span data-plugin="counterup">{{domain_count|intcomma}}</span></a></h2>
 				<div id="targets_chart"></div>
 				<p class="text-success mb-0 mt-2"><span class="badge rounded-pill float-end">&nbsp;</span></p>
 				<br>
@@ -41,7 +41,7 @@ Dashboard
 			<div class="card-body">
 				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Number of Subdomains discovered by reNgine across all targets."></i>
 				<h4 class="mt-0 font-16">Total Subdomains</h4>
-				<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></h2>
+				<h2 class="text-primary my-3 text-center"><a href="{% url 'all_subdomains' current_project.slug %}"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></a></h2>
 				<div id="subdomains_chart"></div>
 				<br>
 				<p class="text-success mb-0 mt-2"><span class="badge badge-soft-success rounded-pill float-end">Alive Subdomains: {{alive_count|intcomma}}</span></p>
@@ -55,7 +55,7 @@ Dashboard
 			<div class="card-body">
 				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Endpoints/URLs discovered by reNgine across all targets & subdomains."></i>
 				<h4 class="mt-0 font-16">Total Endpoints</h4>
-				<h2 class="text-primary my-3 text-center">{{endpoint_count|intcomma}}</h2>
+				<h2 class="text-primary my-3 text-center"><a href="{% url 'all_endpoints' current_project.slug %}"><span data-plugin="counterup">{{endpoint_count|intcomma}}</span></a></h2>
 				<div id="endpoint_chart"></div>
 				<br>
 				<p class="text-success mb-0 mt-2"><span class="badge badge-soft-success rounded-pill float-end">Alive Endpoints: {{endpoint_alive_count|intcomma}}</span></p>
@@ -69,7 +69,7 @@ Dashboard
 			<div class="card-body">
 				<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container3" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered by reNgine across all targets, subdomains & endpoints."></i>
 				<h4 class="mt-0 font-16 text-danger">Total Vulnerabilities</h4>
-				<h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{total_vul_count|intcomma}}</span></h2>
+				<h2 class="my-3 text-center"><a class="link-danger" href="{% url 'all_vulns' current_project.slug %}"><span data-plugin="counterup">{{total_vul_count|intcomma}}</span></a></h2>
 				<div id="vuln_chart"></div>
 				<p class="text-danger mb-0 mt-2"><span class="badge badge-soft-danger rounded-pill float-end"><b>{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</b></span></p>
 				<br>
@@ -107,7 +107,7 @@ Dashboard
 										<strong>{{item.title}}</strong>
 										</br>
 										<span class="text-muted">
-											{% if item.status == 2 %} {% if item.title != 'Scan Completed' %} Completed {% endif %}{% elif item.status == 1 %} Initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} Aborted {% endif %} {% endif %}</b>for <span class="badge badge-soft-info">{{item.scan_of.domain.name}}</span>
+											{% if item.status == 2 %} {% if item.title != 'Scan Completed' %} Completed {% endif %}{% elif item.status == 1 %} Initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} Aborted {% endif %} {% endif %}</b>for <span class="badge badge-soft-info"><a href="/scan/{{current_project.slug}}/detail/{{item.scan_of.id}}">{{item.scan_of.domain.name}}</a></span>
 										</span>
 										<br>
 										<span>{{item.time|naturaltime}}</span>
