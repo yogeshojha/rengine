@@ -23,9 +23,29 @@ Scheduled Scans
 <div class="row">
   <div class="col-12">
     <div class="card">
+      <div class="p-2">
+        <div class="row">
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+          </div>
+          {% if user|can:'initiate_scans_subscans' %}
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+            <a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleScheduledScan()" id="delete_multiple_scheduled_button">Delete Multiple Scheduled Scans</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+    <form method="POST" id="scheduled_scan_history_form">
+      {% csrf_token %}
       <table id="scheduled_scan_table" class="table dt-responsive w-100">
         <thead>
           <tr>
+            <th class="checkbox-column text-center">Serial Number</th>
             <th>Description</th>
             <th>Frequency</th>
             <th>Last Run</th>
@@ -38,6 +58,7 @@ Scheduled Scans
         <tbody>
           {% for task in scheduled_tasks %}
           <tr>
+            <td class="text-center">{{ task.id }}</td>
             {% with task_name=task.name|split:":" %}
             <td>{{ task_name.0 }}</td>
             {% endwith %}
@@ -79,6 +100,7 @@ Scheduled Scans
           {% endfor %}
         </tbody>
       </table>
+      </form>
     </div>
   </div>
 </div>
@@ -88,20 +110,97 @@ Scheduled Scans
 // var e;
 $(document).ready(function() {
   var scheduled_scan_table = $('#scheduled_scan_table').DataTable({
+    headerCallback: function(e, a, t, n, s) {
+        e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
+      },
     "oLanguage": {
-      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-      "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-      "sSearchPlaceholder": "Search...",
-      "sLengthMenu": "Results :  _MENU_",
+        "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+        "sInfo": "Showing page _PAGE_ of _PAGES_",
+        "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+        "sSearchPlaceholder": "Search...",
+        "sLengthMenu": "Results :  _MENU_",
     },
+    "columnDefs":[
+        {
+          "targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+            return'<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>'
+          },
+
+        }
+      ],
     "lengthMenu": [5, 10, 20, 30, 50, 100],
-    "pageLength": 10,
+    "pageLength": 20,
+    "order": [[3, 'desc']],
     "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
-    "<'table-responsive'tr>" +
-    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+      "<'table-responsive'tr>" +
+      "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
   });
   multiCheck(scheduled_scan_table);
 });
+function mainCheckBoxSelected(checkbox) {
+  if (checkbox.checked) {
+    $("#delete_multiple_scheduled_button").removeClass("disabled");
+    $(".targets_checkbox").prop('checked', true);
+  } else {
+    $("#delete_multiple_scheduled_button").addClass("disabled");
+    $(".targets_checkbox").prop('checked', false);
+  }
+}
+
+function checkedCount() {
+  // this function will count the number of boxes checked
+  item = document.getElementsByClassName("targets_checkbox");
+  count = 0;
+  for (var i = 0; i < item.length; i++) {
+    if (item[i].checked) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function toggleMultipleTargetButton() {
+  if (checkedCount() > 0) {
+    $("#delete_multiple_scheduled_button").removeClass("disabled");
+  } else {
+    $("#delete_multiple_scheduled_button").addClass("disabled");
+  }
+}
+
+function deleteMultipleScheduledScan() {
+  if (!checkedCount()) {
+    swal({
+      title: '',
+      text: "Oops! You haven't selected any scheduled scan to delete.",
+      type: 'error',
+      padding: '2em'
+    })
+  } else {
+    // atleast one target is selected
+    swal.queue([{
+      title: 'Are you sure you want to delete ' + checkedCount() + ' Scheduled Scans?',
+      text: "This action is irreversible.\nThis will stop all the selected scheduled scans.",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        Swal.fire({
+          title: 'Deleting...',
+          text: 'Please wait while the scheduled scans are being deleted.',
+          icon: 'info',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false
+        });
+        deleteForm = document.getElementById("scheduled_scan_history_form");
+        deleteForm.action = "../delete/multiple/scheduled";
+        deleteForm.submit();
+      }
+    }])
+  }
+}
+
 </script>
 {% endblock page_level_script %}

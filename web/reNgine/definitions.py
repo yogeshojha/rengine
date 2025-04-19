@@ -11,7 +11,7 @@ logger = logging.getLogger('django')
 # TOOLS DEFINITIONS
 ###############################################################################
 
-EMAIL_REGEX = re.compile(r'[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+')
+EMAIL_REGEX = re.compile(r'[\w\.-]+@[\w\.-]+')
 
 ###############################################################################
 # YAML CONFIG DEFINITIONS
@@ -423,10 +423,26 @@ DEFAULT_DIR_FILE_FUZZ_EXTENSIONS =  [
     '.pdf',
 ]
 
+# Default Excluded Paths during Initate Scan
+# Mostly static files and directories
+DEFAULT_EXCLUDED_PATHS = [
+    # Static assets (using regex patterns)
+    '/static/.*',
+    '/assets/.*',
+    '/css/.*',
+    '/js/.*',
+    '/images/.*',
+    '/img/.*',
+    '/fonts/.*',
+
+    # File types (using regex patterns)
+    '.*\.ico',
+]
+
 # Roles and Permissions
 PERM_MODIFY_SYSTEM_CONFIGURATIONS = 'modify_system_configurations'
 PERM_MODIFY_SCAN_CONFIGURATIONS = 'modify_scan_configurations'
-PERM_MODIFY_TARGETS = 'modify_targets'
+PERM_MODIFY_TARGETS = 'modify_targets' # projects and targets
 PERM_MODIFY_SCAN_RESULTS = 'modify_scan_results'
 PERM_MODIFY_WORDLISTS = 'modify_wordlists'
 PERM_MODIFY_INTERESTING_LOOKUP = 'modify_interesting_lookup'
@@ -532,3 +548,21 @@ ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
 
 # OSINT GooFuzz Path
 GOFUZZ_EXEC_PATH = '/usr/src/github/goofuzz/GooFuzz'
+
+
+# In App Notification Definitions
+SYSTEM_LEVEL_NOTIFICATION = 'system'
+PROJECT_LEVEL_NOTIFICATION = 'project'
+NOTIFICATION_TYPES = (
+    ('system', SYSTEM_LEVEL_NOTIFICATION),
+    ('project', PROJECT_LEVEL_NOTIFICATION),
+)
+NOTIFICATION_STATUS_TYPES = (
+    ('success', 'Success'),
+    ('info', 'Informational'),
+    ('warning', 'Warning'),
+    ('error', 'Error'),
+)
+
+# Bountyhub Definitions
+HACKERONE_ALLOWED_ASSET_TYPES = ["WILDCARD", "DOMAIN", "IP_ADDRESS", "URL"]

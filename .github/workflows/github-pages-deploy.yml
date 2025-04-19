@@ -1,0 +1,58 @@
+name: Deploy README to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+
+      - name: Install marked (Markdown parser)
+        run: npm install marked
+
+      - name: Convert README to HTML
+        run: |
+          echo "<!DOCTYPE html>
+          <html lang='en'>
+          <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <title>reNgine Documentation</title>
+            <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.1.0/github-markdown.min.css'>
+            <style>
+              .markdown-body {
+                box-sizing: border-box;
+                min-width: 200px;
+                max-width: 980px;
+                margin: 0 auto;
+                padding: 45px;
+              }
+              @media (max-width: 767px) {
+                .markdown-body {
+                  padding: 15px;
+                }
+              }
+            </style>
+          </head>
+          <body class='markdown-body'>
+          $(node -e "const marked = require('marked'); const fs = require('fs'); console.log(marked.parse(fs.readFileSync('README.md', 'utf-8')))")
+          </body>
+          </html>" > index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages

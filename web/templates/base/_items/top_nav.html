@@ -68,6 +68,29 @@
               {% endif %}
             </div>
           </li>
+          {% if user_preferences.bug_bounty_mode %}
+            <li class="nav-item dropdown {{bountyhub_active}}">
+              <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-bountyhub" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fe-command me-1"></i> Bounty Hub
+                <div class="arrow-down"></div>
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="bountyHubDropdown">
+                <li class="dropdown-item dropdown">
+                  <a class="dropdown-toggle" href="#" id="hackerOneDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    HackerOne
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="hackerOneDropdown">
+                    <li><a class="dropdown-item" href="{% url 'list_bountyhub_programs' current_project.slug %}">
+                      <i class="fe-life-buoy me-1"></i> Programs Dashboard
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="handleSyncBookmarkedProgramsSwal()">
+                      <i class="fe-refresh-cw me-1"></i> Sync Bookmarked Programs
+                    </a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          {% endif %}
           <li class="nav-item dropdown {{settings_nav_active}}">
             <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-settings" role="button"
               data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -91,7 +114,9 @@
               <a href="{% url 'rengine_settings' current_project.slug %}" class="dropdown-item">reNgine Settings</a>
               {% endif %}
               {% if user|can:'modify_scan_configurations' %}
-              <a href="{% url 'hackerone_settings' current_project.slug %}" class="dropdown-item">Hackerone Settings</a>
+                {% if user_preferences.bug_bounty_mode %}
+                  <a href="{% url 'hackerone_settings' current_project.slug %}" class="dropdown-item">Hackerone Settings</a>
+                {% endif %}
               <a href="{% url 'notification_settings' current_project.slug %}" class="dropdown-item">Notification Settings</a>
               {% endif %}
             </div>

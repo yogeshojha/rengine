@@ -106,4 +106,12 @@ urlpatterns = [
         '<slug:slug>/delete/multiple',
         views.delete_scans,
         name='delete_multiple_scans'),
+    path(
+        '<slug:slug>/delete/multiple/scheduled',
+        views.delete_scheduled_scans,
+        name='delete_multiple_scheduled_scans'),
+    path(
+        '<slug:slug>/stop/multiple',
+        views.stop_scans,
+        name='stop_multiple_scans'),
 ]

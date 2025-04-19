@@ -1,6 +1,8 @@
 {% extends 'base/base.html' %}
 {% load humanize %}
 {% load static %}
+{% load permission_tags %}
+
 
 {% block title %}
 Projects
@@ -49,7 +51,11 @@ All Projects
                       {% if current_project.slug == project.slug %}
                       <span class="badge bg-info text-white">Current Project cannot be deleted.</span>
                       {% else %}
-                      <a href="#" onclick="delete_project({{project.id}}, '{{project.name}}')" class="btn btn-xs btn-danger"><i class="mdi mdi-trash-can-outline"></i></a>
+                        {% if request.user|can:'modify_targets' %}
+                          <a href="#" onclick="delete_project({{project.id}}, '{{project.name}}')" class="btn btn-xs btn-danger"><i class="mdi mdi-trash-can-outline"></i></a>
+                        {% else %}
+                          <button class="btn btn-xs btn-danger" disabled data-toggle="tooltip" title="Not enough permission"><i class="mdi mdi-trash-can-outline"></i></button>
+                        {% endif %}
                       {% endif %}
                     </td>
                   </tr>
@@ -69,7 +75,7 @@ All Projects
   function delete_project(id, project_name){
     const delAPI = "../../delete/project/" + id;
     swal.queue([{
-      title: 'Are you sure you want to delete '+project_name +'?',
+      title: 'Are you sure you want to delete '+ project_name +'?',
       text: "You won't be able to revert this, all targets and scan results also will be deleted!",
       type: 'warning',
       showCancelButton: true,
@@ -94,7 +100,7 @@ All Projects
         .catch(function() {
           swal.insertQueueStep({
             type: 'error',
-            title: 'Oops! Unable to delete the target!'
+            title: 'Oops! Unable to delete the project!'
           })
         })
       }

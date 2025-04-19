@@ -38,6 +38,7 @@ Update Target   {{ form.name.value }}
               {{ form.description }}
             </div>
           </div>
+          {% if user_preferences.bug_bounty_mode %}
           <div class="col-12">
             <label for="domainDescription" class="form-label">HackerOne Target Team Handle
               <br>
@@ -45,6 +46,7 @@ Update Target   {{ form.name.value }}
             </label>
             {{ form.h1_team_handle }}
           </div>
+          {% endif %}
           <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Update Target</button>
         </form>
       </div>

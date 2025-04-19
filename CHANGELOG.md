@@ -1,5 +1,108 @@
 # Changelog
 
+## v2.2.0
+
+## What's Changed
+
+### Summary
+- Introducing Bounty Hub: Central platform for managing and importing bug bounty programs
+- New Built-in notification system for important events and updates
+- Enhanced subdomain discovery using Chaos project dataset
+- Bug Bounty Mode as user preference to enable or disable features related to bug bounty
+- Path exclusion feature for scans
+- New visually appealing PDF report template
+- Regex support for out-of-scope subdomains
+- Stop All Scans killswitch to halt multiple running scans at once
+- Smart rescans that automatically import and apply previous scan configurations
+- Improved Start Scan UI for consistent configuration across multiple scans
+- Support for bulk uploads of nuclei and gf patterns
+- API key protection (masking in settings view)
+
+* feat: Allow uploading of multiple gf patterns #1318 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1319
+* feat: Introduce stop multiple scans #1270 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1321
+* feat: Mask API keys Fixes #1213 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1331
+* feat: Allow uploading multiple nuclei patterns #461 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1320
+* feat: Introduce github action for auto updating version and changelog on every release by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1348
+* chores: Removes external IP from reNgine ui by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1350
+* feat: Implement URL Path Exclusion Feature with Regex Support Fixes #1264 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1354
+* feat: Consistent start scan ui across schedule scan, multiple scans. Now supports import, out of scope subdomains, starting path, excluded path for all types of scan #1357 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1361
+* Update of template.html with conditional statement by @DamianHusted in https://github.com/yogeshojha/rengine/pull/1378
+* feat: feat ability to delete multiple scheduled scan #1360 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1382
+* feat: Enhanced Out of Scope Subdomain Checking, Support for regex in out of scope scan parameter #1358  by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1380
+* feat: Store and showcase scan related configuration such as imported subdomains, out of scope subdomains, starting point url and excluded paths fixes #1356 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1383
+* Update celery-entrypoint.sh by @SJ029626 in https://github.com/yogeshojha/rengine/pull/1390
+* feat:  Prefll the scan parameters during rescan with the scan configuration values that were being used in earlier scan #1381  by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1386
+* feat: Added additional templates for PDF reports #1387 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1391
+* Replace CVE-2024-41661 with CVE-2023-50094 by @shelbyc in https://github.com/yogeshojha/rengine/pull/1393
+* hotfix: Workflow autocomment issues by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1396
+* Fix comment workflow on fork PRs by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1400
+* Hotfix/workflow cmt1 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1401
+* fix author name by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1403
+* Update of the uninstall.sh script by @DamianHusted in https://github.com/yogeshojha/rengine/pull/1385
+* feat: Builtin notification system in reNgine #1392  by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1394
+* feat: Show what's new popup when update happens and new features are released #1395  by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1405
+* feat: Add Chaos for subdomain enumeration #173 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1406
+* Version 2.1.3 contains a patch for CVE-2024-43381 by @shelbyc in https://github.com/yogeshojha/rengine/pull/1412
+* feat: Introducing Bounty Hub, a central hub to import and manage your hackerone programs to reNgine by @null-ref-0000 in https://github.com/yogeshojha/rengine/pull/1410
+* feat: Add ability to delete multiple organizations by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1417
+* feat: Enable bug bounty mode as User Preference to separate bug bounty related features #1411 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1418
+* bug: remove watchmedo usage in production #1419 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1424
+* feat: Create organization when quick adding targets #492 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1425
+* reNgine 2.2.0 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1349
+
+## New Contributors
+* @DamianHusted made their first contribution in https://github.com/yogeshojha/rengine/pull/1378
+* @SJ029626 made their first contribution in https://github.com/yogeshojha/rengine/pull/1390
+* @shelbyc made their first contribution in https://github.com/yogeshojha/rengine/pull/1393
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.3...v2.2.0
+
+## 2.1.3
+
+**Release Date: Aug 18, 2024**
+
+## What's Changed
+
+### Security Update
+
+* (Security) CVE-2024-43381 Stored Cross-Site Scripting (XSS) via DNS Record Poisoning reported by @touhidshaikh Advisory https://github.com/yogeshojha/rengine/security/advisories/GHSA-96q4-fj2m-jqf7
+
+### Bug Fixes
+
+* remove redundant docker environment variables by @jxdv in https://github.com/yogeshojha/rengine/pull/1353
+* fix: reNgine installation issue due to orjson and langchain #1362 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1363
+* #1364 Fix whois lookup and improve performance by executing various modules of whois lookup to run concurrently by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1368
+* chores: Add error handling for the curl command by @gitworkflows in https://github.com/yogeshojha/rengine/pull/1367
+* Update Github Actions Workflows by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1369
+* chores: Fix docker build on master by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1373
+
+#### New Contributors
+* @gitworkflows made their first contribution in https://github.com/yogeshojha/rengine/pull/1367
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.2...v2.1.3
+
+## 2.1.2
+
+**Release Date: July 30, 2024**
+
+## What's Changed
+
+### Security update
+* (Security) CVE-2023-50094 Fix Authenticated command injection in WAF detection tool reported by @n-thumann Advisory https://github.com/yogeshojha/rengine/security/advisories/GHSA-fx7f-f735-vgh4
+
+### Bug Fixes
+
+* Fix issue while initiating periodic and clocked scan #1322 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1328
+* Fix 500 error on "Test Hackerone api Key" by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1332
+* UI Typos and bug Fixes #1333 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1334
+* Fix error during tool update Fixes #1152 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1335
+* Upgrade setuptools to 72.1.0 to resolve installation error by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1338
+* (chores) Fix github pages build by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1339
+* Fix subdomain import for subdomains with suffixes more than 4 chars Fixes #1128 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1340
+
+**Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.1...v2.1.2
+
+
 ## 2.1.1
 
 **Release Date: July 20, 2024**
@@ -22,7 +125,7 @@
 * Fix #1315 Fix for todo URLs not compatible with slugs by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1316
 * Fixes #1122 But in port service lookup that caused multiple entries of Port with same port number but different service name/description by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1317
 
-## New Contributors
+#### New Contributors
 * @emmanuel-ferdman made their first contribution in https://github.com/yogeshojha/rengine/pull/1286
 
 **Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.1.0...v2.1.1
@@ -44,7 +147,7 @@
 * Release/2.1.0 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1147
 * Dockerfile Build Multiple Platforms by @vncloudsco in https://github.com/yogeshojha/rengine/pull/1210
 
-## New Contributors
+#### New Contributors
 * @fopina made their first contribution in https://github.com/yogeshojha/rengine/pull/1230
 * @iuime made their first contribution in https://github.com/yogeshojha/rengine/pull/1137
 * @null-ref-0000 made their first contribution in https://github.com/yogeshojha/rengine/pull/1275
@@ -69,7 +172,7 @@
 * Fix/infoga removal by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1249
 * Fix #1241 by @yogeshojha in https://github.com/yogeshojha/rengine/pull/1251
 
-## New Contributors
+#### New Contributors
 * @Talanor made their first contribution in https://github.com/yogeshojha/rengine/pull/1245
 * @specters312 made their first contribution in https://github.com/yogeshojha/rengine/pull/1239
 * @TH3xACE made their first contribution in https://github.com/yogeshojha/rengine/pull/1224
@@ -99,7 +202,7 @@
 * Fix uninitialised variable cmd in custom_subdomain_tools by @cpandya2909 in https://github.com/yogeshojha/rengine/pull/1207
 * [FIX] security: OS Command Injection vulnerability (x2) #1219 by @0xtejas in https://github.com/yogeshojha/rengine/pull/1227
 
-## New Contributors :rocket: 
+### New Contributors :rocket: 
 * @yarysp made their first contribution in https://github.com/yogeshojha/rengine/pull/1199
 * @jostasik made their first contribution in https://github.com/yogeshojha/rengine/pull/1226
 * @cpandya2909 made their first contribution in https://github.com/yogeshojha/rengine/pull/1207
@@ -122,7 +225,7 @@
 * Change Redirect URL after login to prevent 500 error by @psyray in https://github.com/yogeshojha/rengine/pull/1124
 * fix-1030: Add missing slug on target summary link by @psyray in https://github.com/yogeshojha/rengine/pull/1123
 
-## New Contributors
+### New Contributors
 * @Deathpoolxrs made their first contribution in https://github.com/yogeshojha/rengine/pull/1149
 * @ErdemOzgen made their first contribution in https://github.com/yogeshojha/rengine/pull/1126
 
@@ -174,7 +277,7 @@
 * Fix report generation when `Ignore Informational Vulnerabilities` checked by @psyray in https://github.com/yogeshojha/rengine/pull/1100
 * fix(tool_arsenal): incorrect regex version numbers by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1086
 
-## New Contributors
+### New Contributors
 * @luizmlo made their first contribution in https://github.com/yogeshojha/rengine/pull/1029 :partying_face: 
 * @aqhmal made their first contribution in https://github.com/yogeshojha/rengine/pull/1021 :partying_face: 
 * @C0wnuts made their first contribution in https://github.com/yogeshojha/rengine/pull/973 :partying_face: 

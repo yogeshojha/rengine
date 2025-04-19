@@ -12,11 +12,11 @@ Hackerone Settings
 
 {% block breadcrumb_title %}
 <li class="breadcrumb-item"><a href="#">Settings</a></li>
-<li class="breadcrumb-item active">Hackerone Settings</li>
+<li class="breadcrumb-item active">Hackerone Automatic Vulnerability Report Settings</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-HackerOne Settings
+Hackerone Automatic Vulnerability Report Settings
 {% endblock page_title %}
 
 {% block main_content %}
@@ -24,8 +24,6 @@ HackerOne Settings
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h4 class="header-title">Hackerone Automatic Vulnerability Report Settings</h4>
-        <img src="https://www.hackerone.com/assets/images/logo.png" alt="" height="30px">
         <div class="alert alert-danger border-0 mb-3 mt-3" role="alert">
           Use this feature with caution! Please do not spam triagers!
           <br>We do not allow sending vulnerability report for low severity and informational vulnerabilities to avoid spamming triagers!
@@ -34,26 +32,13 @@ HackerOne Settings
         <p class="mt-3">
           reNgine Automatically Reports vulnerabilities to your bug bounty programs on Hackerone, if any vulnerabilities are identified.
           <br>
-          <span class="text-danger">A valid Hackerone API token and username is required.</span>
-          <br>
-          More details on how to generate your hackerone api token is provided by <a href="https://api.hackerone.com/getting-started-hacker-api/#getting-started-hacker-api" class="text-primary" target="_blank">Hackerone Documentation <i class="fe-external-link"></i></a>
+          <span class="text-danger">A valid Hackerone API token and username is required. You can set api keys from API Vault Section </span>
         </p>
-        <form method="post">
+        <form method="post" id="hackerone_form">
           {% csrf_token %}
-          <div class="row">
-            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-              <label for="hackerone_username"  class="form-label">Your Hackerone Username (Not email)</label>
-              {{form.username}}
-            </div>
-            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-              <label for="hackerone_api_token" class="form-label">Generate your <a href="https://hackerone.com/settings/api_token/edit" target="_blank">API Token from here <i class="fe-external-link"></i></a></label>
-              {{form.api_key}}
-            </div>
-          </div>
-          <a class="btn btn-primary float-end mt-3" href="javascript:test_hackerone()" role="button">
-            &nbsp;&nbsp;Test my hackerone api key
-          </a>
-          <h4 class="header-title text-danger mt-3">Report Vulnerability to hackerone when</h4>
+          <h4 class="header-title mt-3">Automated Vulnerability Report Submission</h4>
+          <div><span class="me-2">Enable Automated Vulnerability Report Submission to Hackerone</span>{{form.send_report}}</div>
+          <h4 class="header-title mt-3">Report Vulnerability to hackerone when</h4>
           <table>
             <tr>
               <td>Critical Severity is found. (Default)</td>
@@ -106,62 +91,40 @@ simplemde.options.previewRender = function(plainText) {
   return DOMPurify.sanitize(simplemde.markdown(plainText));
 };
 
-function test_hackerone() {
-  if ($("#username").val().length == 0 || $("#api_key").val().length == 0) {
-    if ($("#username").val().length == 0) {
-      $("#username").addClass("is-invalid");
+function handleFormInputs() {
+  const form = document.getElementById('hackerone_form');
+  const checkbox = document.getElementById('send_report');
+  const inputs = form.querySelectorAll('input:not(#send_report):not([type="submit"]):not([name="csrf_token"])');
+  
+  inputs.forEach(input => {
+    if (input.type === 'text' || input.type === 'textarea') {
+      input.readOnly = !checkbox.checked;
+    } else if (input.type !== 'hidden') {
+      input.disabled = !checkbox.checked;
     }
-    if ($("#api_key").val().length == 0) {
-      $("#api_key").addClass("is-invalid");
-    }
-  }
-  else{
-    const hackerone_api = 'testHackerone/';
-    var username = $("#username").val();
-    var api_key = $("#api_key").val();
-    swal.queue([{
-      title: 'Hackerone Configuration',
-      confirmButtonText: 'Test my hackerone API Key',
-      text:
-      'This will test if your hackerone API keys are working.',
-      showLoaderOnConfirm: true,
-      preConfirm: function() {
-        return fetch(hackerone_api, {
-          method: 'POST',
-          headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({'username': username, 'api_key': api_key}),
-        },
-      ).then(function (response) {
-        return response.json();
-      })
-      .then(function(data) {
-        if (data.status == 200) {
-          $("#username").addClass("is-valid");
-          $("#api_key").addClass("is-valid");
-          $("#username").removeClass("is-invalid");
-          $("#api_key").removeClass("is-invalid");
-          return swal.insertQueueStep("Your hackerone Credentials are working.")
-        }
-        else{
-          $("#username").addClass("is-invalid");
-          $("#api_key").addClass("is-invalid");
-          $("#username").removeClass("is-valid");
-          $("#api_key").removeClass("is-valid");
-          return swal.insertQueueStep("Oops! Your hackerone Credentials are not working, check your username and/or api_key.")
-        }
-      })
-      .catch(function() {
-        swal.insertQueueStep({
-          type: 'error',
-          title: 'Unable to get your public IP'
-        })
-      })
-    }
-  }]);
+  });
 }
-}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('hackerone_form');
+  const checkbox = document.getElementById('send_report');
+  
+  handleFormInputs(); // init state
+  checkbox.addEventListener('change', handleFormInputs);
+
+  form.addEventListener('submit', (event) => {
+    if (!checkbox.checked) {
+      // If checkbox is unchecked, temporarily enable all inputs for submission
+      const inputs = form.querySelectorAll('input:not(#send_report):not([type="submit"]):not([name="csrf_token"])');
+      inputs.forEach(input => {
+        input.disabled = false;
+        input.readOnly = false;
+      });
+      
+      setTimeout(() => handleFormInputs(), 0);
+    }
+  });
+});
+
 </script>
 {% endblock page_level_script %}

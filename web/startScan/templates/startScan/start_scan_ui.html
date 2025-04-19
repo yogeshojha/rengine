@@ -9,6 +9,7 @@ Start Scan
 {% block custom_js_css_link %}
 <link href="{% static 'plugins/jquery-step/jquery.steps.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/accordions/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/selectize/css/selectize.bootstrap3.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -22,120 +23,12 @@ Initiating scan for {{domain.name}}
 {% endblock page_title %}
 
 {% block main_content %}
-<div class="row">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-body">
-        <form method="POST" id="start-scan-form">
-          {% csrf_token %}
-          <div id="select_engine">
-            <h4>Choose Scan Engine</h4>
-            <div class="">
-              <h4>Select Scan Engine</h4>
-              {% if custom_engine_count == 0 %}
-              <div class="alert bg-soft-primary border-0 mb-4" role="alert">
-                <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
-                <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">Create Custom Scan Engine</a>
-              </div>
-              {% endif %}
-              {% include "startScan/_items/scanEngine_select.html" %}
-            </div>
-            <h4>Import/Ignore Subdomains</h4>
-            <div class="">
-              <div class="mb-3">
-                <h4 class="text-info">Import Subdomains(Optional)</h4>
-                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
-                <br>
-                <div class="alert bg-soft-primary border-0 mt-1 mb-1" role="alert">
-                  <span class="">Separate the subdomains using <b>new line</b>. If the subdomain does not belong to <b>{{domain.name}}</b> it will be skipped.</span>
-                </div>
-                <label for="importSubdomainFormControlTextarea" class="form-label mt-1">Subdomains List</label>
-                <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false"></textarea>
-              </div>
-              <div class="mb-3">
-                <h4 class="text-warning">Out of Scope Subdomains(Optional)</h4>
-                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
-                <br>
-                <div class="alert bg-soft-warning border-0 mt-1 mb-1" role="alert">
-                  <span class="">Separate the out of scope subdomains/keywords using new line.(No regex currently supported.)</span>
-                </div>
-                <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">Out of Scope Subdomains List</label>
-                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false"></textarea>
-              </div>
-            </div>
-
-            <h4>Filters</h4>
-            <div class="">
-              <div class="mb-3">
-                <h4 class="text-info">Filters (Optional)</h4>
-                <span class="">You can filter on a specific path for <b>{{domain.name}}</b>.</span>
-                <br>
-                <label for="filterPath" class="form-label mt-1">Path filter</label>
-                <textarea class="form-control" id="filterPath" name="filterPath" rows="6" spellcheck="false"></textarea>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
+  {% include "startScan/_items/start_scan_wizard.html" %}
 {% endblock main_content %}
 
 
 {% block page_level_script %}
 <script src="{% static 'plugins/jquery-step/jquery.steps.min.js' %}"></script>
-<script type="text/javascript">
-var buttonEnabled = true;
-var globalTimeout = 0;
-
-function initTimer() {
-  if (globalTimeout) clearTimeout(globalTimeout);
-  globalTimeout = setTimeout(updateButton, 400);
-}
-
-function disableNext(){
-  var nextButton = $(".actions ul li:nth-child(2) a");
-  nextButton.attr("href", "#");
-  buttonEnabled = $(".actions ul li:nth-child(2)").addClass("disabled").attr("aria-disabled", "true");
-}
-
-function enableNext(){
-  var nextButton = $(".actions ul li:nth-child(2) a");
-  nextButton.attr("href", "#next");
-  buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
-}
-
-function updateButton(){
-  $('a[role="menuitem"]').addClass('btn btn-primary waves-effect waves-light');
-  var text = $("input[type=radio][name=scan_mode]").val();
-  if(text === ''){
-    disableNext();
-    return false;
-  }else{
-    enableNext();
-    return true;
-  }
-}
-
-$(function(){
-  $("#select_engine").steps({
-    headerTag: "h4",
-    bodyTag: "div",
-    transitionEffect: "slide",
-    cssClass: 'pill wizard',
-    enableKeyNavigation: false,
-    onStepChanging: updateButton,
-    labels: {finish: "Start Scan"},
-    onInit :function (event, current) {
-      $(".actions ul li:nth-child(3) a").attr('onclick', `$(this).closest('form').submit()`);
-    }
-  });
-  $("input[type=radio][name=scan_mode]").change(initTimer).keyup(initTimer);
-  disableNext();
-  $('a[role="menuitem"]').addClass('text-white');
-});
-
-
-</script>
+<script src="{% static 'plugins/selectize/js/standalone/selectize.min.js' %}"></script>
+<script src="{% static 'startScan/js/start-scan-wizard-init.js' %}"></script>
 {% endblock page_level_script %}

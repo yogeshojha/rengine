@@ -30,27 +30,27 @@ read -p "$(echo -e ${WARNING}"Are you sure you want to proceed? (y/Y/yes/YES to 
 # change answer to lowecase for comparison
 ANSWER_LC=$(echo "$CONFIRM" | tr '[:upper:]' '[:lower:]')
 
-if [[ "$ANSWER_LC" != "y" && "$ANSWER_LC" != "yes" ]]; then
-    print_status "${YELLOW}Uninstall aborted by user.${RESET}"
+if [ -z "$CONFIRM" ] || { [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ] && [ "$CONFIRM" != "yes" ] && [ "$CONFIRM" != "Yes" ] && [ "$CONFIRM" != "YES" ]; }; then
+    print_status "${WARNING}Uninstall aborted by user.${RESET}"
     exit 0
 fi
 
 print_status "${INFO}Proceeding with uninstalling reNgine${RESET}"
 
 print_status "Stopping all containers related to reNgine..."
-docker stop $(docker ps -a -q --filter name=rengine-) 2>/dev/null
+docker stop $(docker ps -a -q --filter name=rengine) 2>/dev/null
 
 print_status "Removing all containers related to reNgine..."
-docker rm $(docker ps -a -q --filter name=rengine-) 2>/dev/null
+docker rm $(docker ps -a -q --filter name=rengine) 2>/dev/null
 
 print_status "Removing all volumes related to reNgine..."
-docker volume rm $(docker volume ls -q --filter name=rengine-) 2>/dev/null
+docker volume rm $(docker volume ls -q --filter name=rengine) 2>/dev/null
 
 print_status "Removing all networks related to reNgine..."
-docker network rm $(docker network ls -q --filter name=rengine-) 2>/dev/null
+docker network rm $(docker network ls -q --filter name=rengine) 2>/dev/null
 
 print_status "Removing all images related to reNgine..."
-docker rmi $(docker images -q --filter reference=rengine-) 2>/dev/null
+docker rmi $(docker images -q --filter reference=rengine) 2>/dev/null
 
 print_status "Performing final cleanup"
 docker system prune -f --volumes --filter "label=com.docker.compose.project=rengine"

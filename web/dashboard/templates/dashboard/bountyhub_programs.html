@@ -1,0 +1,92 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}
+{{platform}} Programs
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block page_title %}
+{{platform}} Programs
+{% endblock page_title %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="/{{current_project.slug}}/">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="#">Bounty Hub</a></li>
+<li class="breadcrumb-item active">{{platform}} Programs</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-12">
+        <div class="card">
+            <div class="card-body">
+                <form id="program-filter-form">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4 col-lg-3">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fe-search"></i></span>
+                                <input type="search" class="form-control" placeholder="Search programs" aria-label="Search programs" id="search-program-box">
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-lg-2">
+                            <select class="form-select" aria-label="Program type">
+                                <option selected>All programs</option>
+                                <option>Bounty Eligible</option>
+                                <option>VDP</option>
+                                <option>Private Programs</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-lg-2">
+                            <select class="form-select" id="sort-select" aria-label="Sort programs">
+                                <option selected disabled>Sort by</option>
+                                <option value="name-asc">Name (A to Z)</option>
+                                <option value="name-desc">Name (Z to A)</option>
+                                <option value="reports-desc">Most reports</option>
+                                <option value="reports-asc">Least reports</option>
+                                <option value="posted-desc">Most Recent</option>
+                                <option value="posted-asc">Least Recent</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-lg-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="show-bookmarked-programs">
+                                <label class="form-check-label" for="show-bookmarked-programs">
+                                    Bookmarked programs
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-lg-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="show-closed-programs">
+                                <label class="form-check-label" for="show-closed-programs">
+                                    Closed programs
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="program_cards">
+</div>
+<div class="floating-action-container">
+  <button id="importProgramsBtn" class="btn btn-primary import-programs-btn" disabled>
+    <i class="fe-download-cloud"></i> Import Programs
+  </button>
+  <a href="#" id="clearSelectionsLink" class="clear-selections-link" style="display: none;">
+    Clear all <i class="fe-x-circle"></i>
+  </a>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'custom/bountyhub.js' %}"></script>
+{% endblock page_level_script %}

@@ -48,6 +48,26 @@ class ScanHistory(models.Model):
 	dorks = models.ManyToManyField('Dork', related_name='dorks', blank=True)
 	initiated_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='initiated_scans', blank=True, null=True)
 	aborted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='aborted_scans')
+	# scan related configs, prefix config fields with cfg_
+	cfg_out_of_scope_subdomains = ArrayField(
+		models.CharField(max_length=200),
+		blank=True,
+		null=True,
+		default=list
+	)
+	cfg_starting_point_path = models.CharField(max_length=200, blank=True, null=True)
+	cfg_excluded_paths = ArrayField(
+		models.CharField(max_length=200),
+		blank=True,
+		null=True,
+		default=list
+	)
+	cfg_imported_subdomains = ArrayField(
+		models.CharField(max_length=200),
+		blank=True,
+		null=True,
+		default=list
+	)
 
 
 	def __str__(self):

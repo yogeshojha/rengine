@@ -329,3 +329,20 @@
     is_github_cloned: false
     github_clone_path: null
     subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 19
+  fields:
+    logo_url: null
+    name: chaos
+    description: Go client to communicate with Project Discovery's Chaos dataset API.
+    github_url: https://github.com/projectdiscovery/chaos-client
+    license_url: https://github.com/projectdiscovery/chaos-client/blob/main/LICENSE.md
+    version_lookup_command: chaos -version
+    update_command: chaos -up
+    install_command: go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest
+    version_match_regex: (?i:v)?(\d+(?:\.\d+){2,})
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null

@@ -7,11 +7,13 @@ Initiating Scan for Organization
 
 
 {% block custom_js_css_link %}
+<link href="{% static 'plugins/jquery-step/jquery.steps.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/accordions/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/selectize/css/selectize.bootstrap3.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug">Organization</a></li>
+<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug %}">Organization</a></li>
 <li class="breadcrumb-item active">Initiate Scan</li>
 <li class="breadcrumb-item active" aria-current="page">{{organization.name}}</li>
 {% endblock breadcrumb_title %}
@@ -21,36 +23,12 @@ Initiating scan for {{organization.name}}
 {% endblock page_title %}
 
 {% block main_content %}
-<div class="row">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="heading-title">{{ domain_list|length }} Domains associated with organization {{organization.name}}</h4>
-        {% for domain in domain_list %}
-        <span class="badge bg-dark m-1">{{domain.name}}</span>
-        {% endfor %}
-        <form method="POST">
-          {% csrf_token %}
-          <div class="form-row">
-            <div class="col-md-12 mb-4">
-              <h4>Select Scan Engine</h4>
-              {% if custom_engine_count == 0 %}
-              <div class="alert bg-soft-primary border-0 mb-4" role="alert">
-                <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
-                <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">Create Custom Scan Engine</a>
-              </div>
-              {% endif %}
-              {% include "startScan/_items/scanEngine_select.html" %}
-              <button class="btn btn-primary submit-fn mt-2 float-end" type="submit"><i class="fe-zap"></i> Start Scan</button>
-            </div>
-            <input type="hidden" name="list_of_domain_id" value="{{domain_ids}}">
-          </form>
-      </div>
-    </div>
-  </div>
-</div>
+  {% include "startScan/_items/start_scan_wizard.html" %}
 {% endblock main_content %}
 
 
 {% block page_level_script %}
+<script src="{% static 'plugins/jquery-step/jquery.steps.min.js' %}"></script>
+<script src="{% static 'plugins/selectize/js/standalone/selectize.min.js' %}"></script>
+<script src="{% static 'startScan/js/start-scan-wizard-init.js' %}"></script>
 {% endblock page_level_script %}

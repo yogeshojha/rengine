@@ -28,6 +28,7 @@ Organizations
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             {% if user|can:'modify_targets' %}
+            <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleOrganizations()" id="delete_multiple_button">Delete Multiple Organizations</a>
             <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_organization' current_project.slug %}" data-toggle="tooltip" data-placement="top" title="Add Organization">Add New Organization</a>
             {% endif %}
           </div>
@@ -42,6 +43,11 @@ Organizations
       <table id="list_organization_table" class="table dt-responsive w-100">
         <thead>
           <tr>
+            <th class="checkbox-column text-center">
+              <div class="form-check mb-2 form-check-primary">
+                <input type="checkbox" class="form-check-input" id="select_all_checkbox" onchange="selectAllOrganizations(this)">
+              </div>
+            </th>
             <th class="">Organization</th>
             <th class="text-center">Description</th>
             <th class="text-center">Total Targets</th>
@@ -52,39 +58,37 @@ Organizations
         <tbody>
           {% for organization in organizations.all %}
           <tr>
+            <td class="checkbox-column text-center">
+              <div class="form-check mb-2 form-check-primary">
+                <input type="checkbox" class="form-check-input organization-checkbox" value="{{ organization.id }}" onchange="toggleMultipleOrganizationButton()">
+              </div>
+            </td>
             <td class="">{{ organization.name|capfirst }}</td>
             <td class="text-center">{% if organization.description %}{{organization.description}}{% endif %}</td>
             <td class="text-center"><span class="badge bg-primary badge-link" onclick="get_target_modal({{organization.id}})">{{organization.get_domains.count}}</span></td>
-            <td class="text-center"><span data-toggle="tooltip" data-placement="top" title="{{organization.insert_date}}">{{organization.insert_date|naturaltime}}</span></td></td>
+            <td class="text-center"><span data-toggle="tooltip" data-placement="top" title="{{organization.insert_date}}">{{organization.insert_date|naturaltime}}</span></td>
             <td class="text-center">
-              {% if user|can:'initiate_scans_subscans' %}
-              <a href="/scan/{{current_project.slug}}/start/organization/{{organization.id}}" data-toggle="tooltip" data-placement="top" title="Quick Scan Entire Organization">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                </svg>
-              </a>
-              {% endif %}
-              {% if user|can:'initiate_scans_subscans' %}
-              <a href="{% url 'schedule_organization_scan' current_project.slug organization.id %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Schedule Scan">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-watch table-schedule"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg>
-              </a>
-              {% endif %}
-              {% if user|can:'modify_targets' %}
-              <a href="/target/{{current_project.slug}}/update/organization/{{organization.id}}" class="text-primary open-domain" data-toggle="tooltip" data-placement="top" title="Update Organization">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
-                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                </svg>
-              </a>
-              {% endif %}
-              {% if user|can:'modify_targets' %}
-              <a onclick="delete_organization({{ organization.id }})" class="text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete Organization">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="15" y1="9" x2="9" y2="15"></line>
-                  <line x1="9" y1="9" x2="15" y2="15"></line>
-                </svg>
-              </a>
-              {% endif %}
+              <div class="btn-group float-end">
+                {% if user|can:'initiate_scans_subscans' %}
+                  <a href="/scan/{{current_project.slug}}/start/organization/{{organization.id}}" class="btn btn-soft-primary"><i class="fe-zap"></i>&nbsp;&nbsp;Initiate Scan</a>
+                {% endif %}
+                <div class="btn-group dropstart" role="group">
+                  <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="mdi mdi-chevron-right"></i>
+                  </button>
+                  <div class="dropdown-menu" style="">
+                    {% if user|can:'initiate_scans_subscans' %}
+                      <a class="dropdown-item" href="{% url 'schedule_organization_scan' current_project.slug organization.id %}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
+                    {% endif %}
+                    {% if user|can:'modify_targets' %}
+                      <a class="dropdown-item" href="/target/{{current_project.slug}}/update/organization/{{organization.id}}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Organization</a>
+                    {% endif %}
+                    {% if user|can:'modify_targets' %}
+                    <a class="dropdown-item text-danger" href="#" onclick="delete_organization({{ organization.id }})"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete Organization</a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -94,7 +98,6 @@ Organizations
   </div>
 </div>
 {% endblock main_content %}
-
 
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
@@ -112,7 +115,7 @@ $(document).ready(function() {
     "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
     "<'table-responsive'tr>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-    "lengthMenu": [5, 10, 20, 30, 50, 100, 500, 1000],
+    "lengthMenu": [5, 10, 20, 30, 50, 100],
     "pageLength": 10,
     "initComplete": function(settings, json) {
       $('[data-toggle="tooltip"]').tooltip();
@@ -121,25 +124,77 @@ $(document).ready(function() {
   multiCheck(list_organization_table);
 });
 
-function get_target_modal(organization_id){
-  $('.modal-title').html(`<b>Loading targets...</b>`);
-  $('#modal_dialog').modal('show');
-  $('.modal-text').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
-  $.getJSON(`/api/queryTargetsInOrganization/?organization_id=${organization_id}&format=json`, function(data) {
-    organization_name = htmlEncode(data['organization'][0]['name']);
-    $('#modal-loader').empty();
-    $('.modal-title').html(`${data['domains'].length} targets in organization ${organization_name}`);
-    $('#modal-content').append(`<ul id="target-detail-modal-ul"></ul>`);
-    for (domain in data['domains']){
-      domain_obj = data['domains'][domain];
-      $("#target-detail-modal-ul").append(`<li>${domain_obj['name']}</li>`);
-    }
-  }).fail(function(){
-    $('#modal-loader').empty();
-    $("#modal-content").append(`<p class='text-danger'>Error loading Vulnerabilities Summary</p>`);
-  });
+function selectAllOrganizations(checkbox) {
+  $('.organization-checkbox').prop('checked', checkbox.checked);
+  toggleMultipleOrganizationButton();
 }
 
+function toggleMultipleOrganizationButton() {
+  var checkedCount = $('.organization-checkbox:checked').length;
+  if (checkedCount > 0) {
+    $("#delete_multiple_button").removeClass("disabled");
+  } else {
+    $("#delete_multiple_button").addClass("disabled");
+  }
+  
+  // Update the "select all" checkbox
+  var totalCount = $('.organization-checkbox').length;
+  $('#select_all_checkbox').prop('checked', checkedCount === totalCount);
+}
+
+function deleteMultipleOrganizations() {
+  var checkedCount = $('.organization-checkbox:checked').length;
+  if (!checkedCount) {
+    swal({
+      title: '',
+      text: "Oops! No organizations have been selected!",
+      type: 'error',
+      padding: '2em'
+    })
+  } else {
+    swal.queue([{
+      title: 'Are you sure you want to delete ' + checkedCount + ' Organizations?',
+      text: "This action is irreversible.",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        var selectedOrganizations = [];
+
+        $('.organization-checkbox:checked').each(function() {
+          selectedOrganizations.push($(this).val());
+        });
+
+        var data = {'type': 'organization', 'rows': selectedOrganizations}
+
+        return fetch('/api/action/rows/delete/', {
+          method: 'post',
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        }).then(res => res.json())
+        .then(function (response) {
+          if (response['status']) {
+            // reload page
+            location.reload();
+          }
+          else {
+            Snackbar.show({
+              text: 'Oops! Failed to delete organizations!',
+              pos: 'top-right',
+              duration: 1500,
+              actionTextColor: '#fff',
+              backgroundColor: '#e7515a',
+            });
+          }
+        });
+      }
+    }])
+  }
+}
 </script>
 {% endblock page_level_script %}

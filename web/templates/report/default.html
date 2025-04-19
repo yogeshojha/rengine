@@ -101,7 +101,6 @@
         font-family: 'Inter';
         font-weight: 300;
         font-size: 11pt;
-        font-weight: 300;
         line-height: 1.5;
       }
 
@@ -939,7 +938,10 @@
               <div>
                 <h4 class="content-heading" id="vuln_{{vulnerability.name.split|join:'_'}}">
                   <span>{{vulnerability.name}}
-                    <br>in {{vulnerabilities.grouper}}</span>
+                    {% if vulnerabilities.grouper %}
+                    <br>in {{vulnerabilities.grouper}}
+                    {% endif %}
+                  </span>
                   {% if vulnerability.severity == -1 %}
                     <span style="float: right;" class="badge bg-grey">Unknown</span>
                     <div class="grey-hr-line" ></div>

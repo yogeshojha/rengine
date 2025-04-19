@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Report</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500&display=swap"
+              rel="stylesheet" />
+        <style>
+      @page {
+          size: A4;
+          margin: 25mm 15mm;
+
+          @bottom-left {
+            {% if show_footer %}
+            content: "{{footer_text}}";
+            {% else %}
+            content: '';
+            {% endif %}
+            width: 100%;
+            border-top: 1px dashed #696969;
+            position: absolute;
+            bottom: 5mm;
+            left: 0;
+        }
+
+          @bottom-right {
+            content: counter(page);
+            font-family: 'Inter', sans-serif;
+            font-size: 10pt;
+            padding-right: 10mm;
+        }
+
+          @page :first {
+            padding: 0;
+            margin: 0;
+        }
+
+        @page end-of-report {
+            padding: 0;
+            margin: 0;
+        }
+
+      }
+
+       html {
+          color: #696969;
+          font-family: 'Inter';
+          font-weight: 300;
+          font-size: 11pt;
+          line-height: 1.5;
+      }
+
+      body {
+          margin: 0;
+          padding: 0;
+          font-family: 'Inter', sans-serif;
+      }
+
+      * {
+          font-family: inherit;
+      }
+      #cover {
+          position: relative;
+          overflow: hidden;
+          background-color: {{secondary_color}};
+          width: 210mm;
+          height: 297mm;
+      }
+
+      @page :first {
+        margin: 0 !important;
+      }
+
+      .background-element {
+          position: absolute;
+          background: linear-gradient(15deg, {{primary_color}}, {{secondary_color}});
+          opacity: 0.4;
+      }
+
+      .circle {
+          width: 300mm;
+          height: 300mm;
+          border-radius: 50%;
+          top: -100mm;
+          left: -100mm;
+      }
+
+      .rectangle {
+          width: 200mm;
+          height: 100mm;
+          transform: rotate(40deg);
+          bottom: -50mm;
+          right: -50mm;
+      }
+
+      .content {
+          position: absolute;
+          top: 20%;
+          left: 15%;
+          right: 15%;
+      }
+
+      h1 {
+          font-weight: 200;
+          font-size: 38pt;
+          color: {{primary_color}};
+          margin: 0 0 10mm 0;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          font-family: 'Inter';
+          position: relative;
+          display: block;
+      }
+
+      h2,
+      h3,
+      h4 {
+          font-family: 'Inter';
+          font-weight: 200;
+          color: black;
+          font-weight: 400;
+          line-height: normal;
+          position: relative;
+          display: block;
+          color: #696969;
+      }
+
+      h1::after, h2::after {
+          content: '';
+          display: block;
+          height: 1.2px;
+          width: 100%;
+          position: absolute;
+          bottom: -2mm;
+          left: 0;
+          background: linear-gradient(to right, {{primary_color}}, rgba(255, 255, 255, 0));
+      }
+
+      .no-fade-line::after {
+          content: none;
+      }
+
+      .subheading {
+          font-weight: 200;
+          font-size: 24pt;
+          color: {{primary_color}};
+          margin: 0 0 5mm 0;
+      }
+
+      .date {
+          font-weight: 300;
+          font-size: 14pt;
+          color: {{primary_color}};
+          margin: 0 0 20mm 0;
+      }
+
+      .cover-line {
+          width: 95%;
+          height: 1.5px;
+          background: linear-gradient(to right, {{primary_color}}, {{secondary_color}});
+          margin: 0 0 20mm 0;
+      }
+
+      .abstract-shape {
+          position: absolute;
+          border: 2px solid {{primary_color}};
+          opacity: 0.3;
+      }
+
+      .shape1 {
+          width: 40mm;
+          height: 40mm;
+          border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+          top: 10%;
+          right: 10%;
+      }
+
+      .shape2 {
+          width: 60mm;
+          height: 60mm;
+          border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+          bottom: 20%;
+          left: 5%;
+      }
+
+      .footer {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background-color: {{primary_color}};
+          color: {{secondary_color}};
+          padding: 10mm;
+          font-size: 10pt;
+          text-align: center;
+      }
+
+      .rengine-banner {
+          margin-top: 5mm;
+          font-size: 8pt;
+          opacity: 0.8;
+      }
+
+      {% comment %} table of content page {% endcomment %}
+      .toc-modern {
+          background-color: white;
+          font-family: 'Inter', sans-serif;
+      }
+
+      .toc-title {
+          font-size: 24pt;
+          font-weight: 400;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          color: {{primary_color}};
+      }
+
+      .toc-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10mm;
+      }
+
+      .toc-item {
+          display: flex;
+          align-items: center;
+          padding: 5mm 0;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      }
+
+      .toc-number {
+          font-size: 14pt;
+          font-weight: 700;
+          color: {{primary_color}};
+          margin-left: auto;
+          float: none;
+      }
+
+      .toc-number::after {
+          content: target-counter(attr(data-href), page);
+          margin-left: 5mm;
+      }
+
+      .toc-link {
+          color: #696969;
+          text-decoration: none;
+          font-size: 14pt;
+          font-weight: 400;
+      }
+
+      #executive-summary-page {
+          justify-content: space-between;
+          background-color: white;
+          font-family: 'Inter', sans-serif;
+      }
+
+      #quick-summary-page {
+          justify-content: space-between;
+          background-color: white;
+          font-family: 'Inter', sans-serif;
+      }
+
+      #summary-of-finding-page {
+          justify-content: space-between;
+          background-color: white;
+          font-family: 'Inter', sans-serif;
+      }
+
+      #vulnerability-breakdown-chart-page {
+          justify-content: space-between;
+          background-color: white;
+          font-family: 'Inter', sans-serif;
+      }
+
+      .page-title {
+          font-size: 24pt;
+          color: {{primary_color}};
+      }
+
+      @page end-of-report {
+          background: {{primary_color}};
+          margin: 0;
+
+          @top-left {
+          content: none
+          }
+
+          @top-center {
+          content: none
+          }
+
+          @top-right {
+          content: none
+          }
+      }
+
+      .content-wrapper {
+          text-align: center;
+          width: 100%;
+      }
+
+      #end-of-report {
+          align-items: center;
+          display: flex;
+          height: 297mm;
+          justify-content: center;
+          page: end-of-report;
+          background-color: {{secondary_color}};
+      }
+
+      #end-of-report h1 {
+          color: {{primary_color}};
+          font-size: 48pt;
+          font-weight: 200;
+          margin: 0 0 20mm 0;
+      }
+
+
+      {% comment %} this line fades from both sides {% endcomment %}
+      .fading-line-both {
+          width: 180mm;
+          height: 1px;
+          margin: 0 auto;
+          background: linear-gradient(to right,
+              transparent,
+              {{primary_color}} 20%,
+              {{primary_color}} 80%,
+              transparent
+          );
+      }
+
+      {% comment %} for the quick summary boxes {% endcomment %}
+      {% comment %} .section {
+          margin-bottom: 15mm;
+} {% endcomment %}
+      .grid {
+          display: flex;
+          justify-content: space-between;
+          width: 170mm;
+          margin-bottom: 8mm;
+      }
+      .box {
+          width: 50mm;
+          height: 20mm;
+          background-color: #f8f9fa;
+          border-radius: 2mm;
+          padding: 2mm;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 1mm 2mm rgba(0,0,0,0.1);
+      }
+      .box::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          border-style: solid;
+          border-width: 0 6mm 6mm 0;
+          border-color: transparent #3498db transparent transparent;
+      }
+      .box h4 {
+          font-size: 9pt;
+          margin: 0 0 1mm 0;
+          display: flex;
+          align-items: center;
+      }
+      .box .number {
+          font-size: 25pt;
+          font-weight: 200;
+          position: absolute;
+          bottom: 2mm;
+          right: 2mm;
+      }
+      .icon {
+          width: 3mm;
+          height: 3mm;
+          margin-right: 1mm;
+          display: inline-block;
+          vertical-align: middle;
+      }
+      .critical { border-left: 1mm solid #e74c3c; }
+      .high { border-left: 1mm solid #e67e22; }
+      .medium { border-left: 1mm solid #f39c12; }
+      .low { border-left: 1mm solid #27ae60; }
+      .info { border-left: 1mm solid #3498db; }
+      .unknown { border-left: 1mm solid #95a5a6; }
+      .critical .number, .critical::before { color: #e74c3c; border-right-color: #e74c3c; }
+      .high .number, .high::before { color: #e67e22; border-right-color: #e67e22; }
+      .medium .number, .medium::before { color: #f39c12; border-right-color: #f39c12; }
+      .low .number, .low::before { color: #27ae60; border-right-color: #27ae60; }
+      .info .number, .info::before { color: #3498db; border-right-color: #3498db; }
+      .unknown .number, .unknown::before { color: #95a5a6; border-right-color: #95a5a6; }
+      .primary { color: {{primary_color}}; }
+
+      {% comment %} table related {% endcomment %}
+      .vuln-summary-table-container {
+        width: 100%;
+        margin: auto auto;
+        background-color: #ffffff;
+        border-radius: 4mm;
+        overflow: hidden;
+      }
+      .vuln-summary-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0.5mm;
+        background-color: #ffffff;
+      }
+      .vuln-summary-table th, .vuln-summary-table td {
+        padding: 2.5mm 3mm;
+        text-align: center;
+        vertical-align: middle;
+      }
+      .vuln-summary-table th {
+        background-color: #4a5568;
+        color: white;
+        font-weight: bold;
+      }
+      .vuln-summary-table .vulnerability-td {
+        text-align: left !important;
+      }
+      .vulnerability-td a {
+        color: inherit;
+        text-decoration: none;
+        font-weight: inherit;
+      }
+      .number-td {
+        width: 5mm;
+        text-align: center;
+        color: rgba(0, 0, 0, 0.5);
+        font-weight: normal;
+      }
+      .vulnerability-td {
+        width: 100mm;
+        text-align: left;
+      }
+      .instances-td {
+        width: 10mm;
+        text-align: center;
+      }
+      .severity-td {
+        width: 10mm;
+        text-align: center;
+        font-weight: bold;
+      }
+      .unknown-td { background-color: #f7f7f7; color: #777777; }
+      .info-td { background-color: #e3f2fd; color: #1565c0; }
+      .low-td { background-color: #e8f5e9; color: #2e7d32; }
+      .medium-td { background-color: #fff3e0; color: #ef6c00; }
+      .high-td { background-color: #fbe9e7; color: #d84315; }
+      .critical-td { background-color: #ffebee; color: #c62828; }
+
+      .unknown-severity-badge { background-color: rgba(200, 200, 200, 0.2); }
+      .info-severity-badge { background-color: rgba(144, 202, 249, 0.2); }
+      .low-severity-badge { background-color: rgba(165, 214, 167, 0.2); }
+      .medium-severity-badge { background-color: rgba(255, 204, 128, 0.2); }
+      .high-severity-badge { background-color: rgba(239, 154, 154, 0.2); }
+      .critical-severity-badge { background-color: rgba(239, 154, 154, 0.2); }
+
+
+
+      .center-img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        width: 50%;
+      }
+      {% comment %} stripped table {% endcomment %}
+        .table-stripped tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+        .table-stripped tr:nth-child(even) {
+           background-color: #f2f2f2;
+        }
+
+      {% comment %} interesting-subdomain-table {% endcomment %}
+      .interesting-subdomain-table-container {
+        width: 100%;
+        margin: auto auto;
+        background-color: #ffffff;
+        border-radius: 4mm;
+        overflow: hidden;
+      }
+      .interesting-subdomain-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0.5mm;
+        background-color: #ffffff;
+      }
+      .interesting-subdomain-table th, .interesting-subdomain-table td {
+        padding: 2.5mm 3mm;
+        text-align: center;
+        vertical-align: middle;
+      }
+      .interesting-subdomain-table th {
+        background-color: #696969;
+        color: white;
+        font-weight: bold;
+      }
+      .interesting-subdomain-table .page-title-td {
+        text-align: left !important;
+      }
+      .interesting-subdomain-table .subdomain-name-td {
+        text-align: left !important;
+      }
+      .status-td {
+        width: 10mm;
+        text-align: center;
+        font-weight: bold;
+      }
+      .normal-td {
+        width: 10mm;
+        text-align: center;
+      }
+        /* recon finding card table */
+        .subdomain-card {
+            width: 100%;
+            margin-bottom: 3mm;
+            border: 1px solid #ddd;
+            border-radius: 4mm;
+            overflow: hidden;
+            box-shadow: 0 1mm 2mm rgba(0, 0, 0, 0.1);
+        }
+        .subdomain-card-header {
+            background-color: #f0f0f0;
+            padding: 2mm;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .subdomain-card-name {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 11pt;
+        }
+        .subdomain-card-http-status {
+            padding: 1mm 2mm;
+            border-radius: 1mm;
+            font-size: 13pt;
+        }
+        .subdomain-card-content {
+            padding: 3mm;
+        }
+        .subdomain-card-page-title {
+            font-style: italic !important;
+            color: #7f8c8d;
+            margin-bottom: 1mm;
+            font-size: 10pt;
+        }
+        {% comment %} vuln finding related css {% endcomment %}
+        .vuln-card {
+            background-color: #ffffff;
+            margin-bottom: 7mm;
+            border-radius: 4mm;
+            box-shadow: 0 2mm 4mm rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .vuln-card-header {
+            padding: 1mm 4mm;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-header h4 {
+            font-size: 14pt;
+            margin: 0;
+            font-weight: 500;
+        }
+        .vuln-severity {
+            font-size: 11pt;
+            font-weight: bold;
+            padding: 1mm 3mm;
+            border-radius: 2mm;
+        }
+        .vuln-badge {
+            display: inline-block;
+            padding: 1mm 3mm;
+            border-radius: 2mm;
+            font-size: 9pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-right: 3mm;
+            margin-bottom: 2mm;
+        }
+        .badge-source {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .badge-cvss {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .badge-cve {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .badge-cwe {
+            background-color: #9b59b6;
+            color: white;
+        }
+        .vuln-card-body {
+            padding: 5mm 2mm;
+        }
+        .vuln-section {
+            margin-bottom: 4mm;
+            padding-bottom: 4mm;
+            border-bottom: 1pt solid #e0e0e0;
+        }
+        .vuln-section:last-child {
+            border-bottom: none;
+        }
+        .section-title {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 11pt;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+        }
+        .vuln-cvss-details {
+            background-color: #f8f9fa;
+            padding: 4mm;
+            border-radius: 2mm;
+            font-family: monospace;
+            font-size: 9pt;
+        }
+        .vulnerable-url-li {
+            background-color: #fff3cd;
+            padding: 2mm 4mm;
+            margin-bottom: 2mm;
+            border-radius: 2mm;
+            font-family: monospace;
+            font-size: 9pt;
+        }
+        .references-li a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .no-style-a{
+            color: #3498db;
+            text-decoration: none;
+        }
+        </style>
+    </head>
+    <body>
+        {% comment %} cover page {% endcomment %}
+        <article id="cover">
+            <div class="background-element circle"></div>
+            <div class="background-element rectangle"></div>
+            <div class="abstract-shape shape1"></div>
+            <div class="abstract-shape shape2"></div>
+            <div class="content">
+                <h1 class="no-fade-line">{{ report_name }}</h1>
+                <div class="subheading">{{ scan_object.domain.name }}</div>
+                <div class="date">{% now "F j, Y" %}</div>
+                <div class="cover-line"></div>
+            </div>
+            <div class="footer">
+                {{ company_name }} | {{ company_address }} | {{ company_email }} |
+                {{ company_website }}
+                {% if show_rengine_banner %}
+                    <div class="rengine-banner">
+                        Generated by reNgine
+                        <br />
+                        https://github.com/yogeshojha/rengine
+                    </div>
+                {% endif %}
+            </div>
+        </article>
+        {% comment %} table of contents {% endcomment %}
+        <article class="toc-modern">
+            <div class="page-content-wrapper">
+                <h1 class="toc-title page-title">Table of Contents</h1>
+                <div class="toc-list">
+                    {% if show_executive_summary %}
+                        <div class="toc-item">
+                            <a href="#executive-summary" class="toc-link">Executive Summary</a>
+                            <span class="toc-number" data-href="#executive-summary"></span>
+                        </div>
+                    {% endif %}
+                    <div class="toc-item">
+                        <a href="#quick-summary" class="toc-link">Quick Summary</a>
+                        <span class="toc-number" data-href="#quick-summary"></span>
+                    </div>
+                    <div class="toc-item">
+                        <a href="#assessment-timeline" class="toc-link">Assessment Timeline</a>
+                        <span class="toc-number" data-href="#assessment-timeline"></span>
+                    </div>
+                    <div class="toc-item">
+                        <a href="#summary-of-finding-page" class="toc-link">Summary of Findings</a>
+                        <span class="toc-number" data-href="#summary-of-finding-page"></span>
+                    </div>
+                    {% if show_recon %}
+                        <div class="toc-item">
+                            <a href="#reconnaissance-findings" class="toc-link">Reconnaissance Findings</a>
+                            <span class="toc-number" data-href="#reconnaissance-findings"></span>
+                        </div>
+                    {% endif %}
+                    {% if show_vuln %}
+                        <div class="toc-item">
+                            <a href="#vulnerabilities-discovered" class="toc-link">Vulnerabilities Discovered</a>
+                            <span class="toc-number" data-href="#vulnerabilities-discovered"></span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+        {% if show_executive_summary %}
+            <article id="executive-summary-page" style="page-break-before: always">
+                <h2 id="executive-summary" class="page-title">Executive Summary</h2>
+                <br />
+                {{ executive_summary_description | safe }}
+            </article>
+        {% endif %}
+        <article id="quick-summary-page" style="page-break-before: always">
+            <h2 id="quick-summary" class="page-title">Quick Summary</h2>
+            <p>
+                This section contains quick summary of scan performed on
+                <span class="primary-color">{{ scan_object.domain.name }}</span>
+            </p>
+            <br />
+            {% if show_recon %}
+                <div class="section">
+                    <h3 class="primary">Reconnaissance</h3>
+                    <div class="grid">
+                        <div class="box info">
+                            <h3>Subdomains</h3>
+                            <div class="number">{{ scan_object.get_subdomain_count }}</div>
+                        </div>
+                        <div class="box info">
+                            <h3>Endpoints</h3>
+                            <div class="number">{{ scan_object.get_endpoint_count }}</div>
+                        </div>
+                        <div class="box critical">
+                            <h3>Vulnerabilities</h3>
+                            <div class="number">{{ all_vulnerabilities_count }}</div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if show_vuln %}
+                <div class="section">
+                    <h3 class="primary">Vulnerability Summary</h3>
+                    <div class="grid">
+                        <div class="box critical">
+                            <h3>Critical</h3>
+                            <div class="number">{{ scan_object.get_critical_vulnerability_count }}</div>
+                        </div>
+                        <div class="box high">
+                            <h3>High</h3>
+                            <div class="number">{{ scan_object.get_high_vulnerability_count }}</div>
+                        </div>
+                        <div class="box medium">
+                            <h3>Medium</h3>
+                            <div class="number">{{ scan_object.get_medium_vulnerability_count }}</div>
+                        </div>
+                    </div>
+                    <div class="grid">
+                        <div class="box low">
+                            <h3>Low</h3>
+                            <div class="number">{{ scan_object.get_low_vulnerability_count }}</div>
+                        </div>
+                        <div class="box info">
+                            <h3>Info</h3>
+                            <div class="number">
+                                {% if is_ignore_info_vuln %}
+                                    0
+                                {% else %}
+                                    {{ scan_object.get_info_vulnerability_count }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="box unknown">
+                            <h3>Unknown</h3>
+                            <div class="number">{{ scan_object.get_unknown_vulnerability_count }}</div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            <div class="section">
+                <br>
+                <br>
+                <h2 id="assessment-timeline" class="page-title">Assessment Timeline</h2>
+                <p>
+                    Scan started on: {{ scan_object.start_scan_date|date:"F j, Y h:i" }}
+                    <br>
+                    Total time taken:
+                    {% if scan_object.scan_status == 0 %}
+                        {{ scan_object.start_scan_date|timesince:scan_object.stop_scan_date }}
+                    {% elif scan_object.scan_status == 1 %}
+                        {{ scan_object.get_elapsed_time }}
+                    {% elif scan_object.scan_status == 2 %}
+                        {% if scan_object.get_completed_time_in_sec < 60 %}
+                            Completed in < 1 minutes
+                        {% else %}
+                            Completed in {{ scan_object.start_scan_date|timesince:scan_object.stop_scan_date }}
+                        {% endif %}
+                    {% elif scan_object.scan_status == 3 %}
+                        Aborted in
+                        {{ scan_object.start_scan_date|timesince:scan_object.stop_scan_date }}
+                    {% endif %}
+                    <br>
+                    Report Generated on: {% now "F j, Y" %}
+                </p>
+            </div>
+        </article>
+        <article id="summary-of-finding-page" style="page-break-before: always">
+            <h2 class="page-title">Summary of Findings</h2>
+            <div class="">
+                <p>This section provides a summary of the findings.</p>
+            </div>
+            <h3 class="primary">Subdomains Breakdown by HTTP Status</h3>
+            <img class="center-img"
+                 src="data:image/png;base64,{{ subdomain_http_status_chart }}" />
+            {% if show_vuln and unique_vulnerabilities %}
+                <h3 class="primary">Vulnerabilities Breakdown by Severity</h3>
+                <img class="center-img"
+                     src="data:image/png;base64,{{ vulns_severity_chart }}" />
+            {% endif %}
+            <h3 class="primary">Interesting Subdomains</h3>
+            {% if interesting_subdomains %}
+                <p>
+                    Listed below are the interesting subdomains identified on <span class="primary-color">{{ scan_object.domain.name }}</span>
+                </p>
+                <div class="interesting-subdomain-table-container">
+                    <table class="interesting-subdomain-table">
+                        <tr>
+                            <th class="number-td">#</th>
+                            <th class="interesting-subdomain-td">Subdomain</th>
+                            <th class="page-title-td">Page Title</th>
+                            <th class="status-td">HTTP Status</th>
+                        </tr>
+                        {% for subdomain in interesting_subdomains %}
+                            <tr class=" {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %} ">
+                                <td class="number-td">{{ forloop.counter }}</td>
+                                <td class="subdomain-name-td">{{ subdomain.name }}</td>
+                                <td class="page-title-td">
+                                    {% if subdomain.page_title %}{{ subdomain.page_title }}{% endif %}
+                                </td>
+                                <td class="status-td">
+                                    {% if subdomain.http_status %}{{ subdomain.http_status }}{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            {% else %}
+                <p>
+                    No interesting subdomains were identified on <span class="primary">{{ scan_object.domain.name }}</span>
+                </p>
+            {% endif %}
+        </article>
+        {% if show_vuln %}
+            <h3 class="primary">Summary of Vulnerabilities Identified</h3>
+            {% if all_vulnerabilities.count == 0 %}
+                <p>
+                    No vulnerabilities were identified on <span class="primary">{{ scan_object.domain.name }}</span>
+                </p>
+            {% else %}
+                <p>
+                    Listed below are the vulnerabilities identified on <span class="primary-color">{{ scan_object.domain.name }}</span>
+                </p>
+                <div class="vuln-summary-table-container">
+                    <table class="vuln-summary-table">
+                        <tr>
+                            <th class="number-td">#</th>
+                            <th class="vulnerability-td">Vulnerability Name</th>
+                            <th class="instances-td">Instances</th>
+                            <th class="severity-td">Severity</th>
+                        </tr>
+                        {% for vulnerability in unique_vulnerabilities %}
+                            <tr class="{% if vulnerability.severity == -1 %}unknown-td {% elif vulnerability.severity == 0 %}info-td {% elif vulnerability.severity == 1 %}low-td {% elif vulnerability.severity == 2 %}medium-td {% elif vulnerability.severity == 3 %}high-td {% elif vulnerability.severity == 4 %}critical-td {% else %}unknown-td{% endif %}">
+                                <td class="number-td">{{ forloop.counter }}</td>
+                                <td class="vulnerability-td">
+                                    <a href="#vuln_{{ vulnerability.name.split|join:'_' }}">{{ vulnerability.name }}</a>
+                                </td>
+                                <td class="instances-td">{{ vulnerability.count }}</td>
+                                <td class="severity-td">
+                                    {% if vulnerability.severity == -1 %}
+                                        Unknown
+                                    {% elif vulnerability.severity == 0 %}
+                                        Informational
+                                    {% elif vulnerability.severity == 1 %}
+                                        Low
+                                    {% elif vulnerability.severity == 2 %}
+                                        Medium
+                                    {% elif vulnerability.severity == 3 %}
+                                        High
+                                    {% elif vulnerability.severity == 4 %}
+                                        Critical
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            {% endif %}
+        {% endif %}
+        {% if show_recon %}
+            <article style="page-break-before: always">
+                <h2 class="page-title">Discovered Assets</h2>
+                <p>This section provides a list of assets discovered during the reconnaissance phase.</p>
+                <h3 class="primary">Subdomains</h3>
+                <p>During the reconnaissance phase, our subdomain enumeration process revealed:</p>
+                <ol>
+                    <li>
+                        <strong>Total Subdomains:</strong> {{ scan_object.get_subdomain_count }}
+                        <ul>
+                            <li>This extensive list provides a comprehensive view of the target's online footprint.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Active Subdomains:</strong> {{ subdomain_alive_count }}
+                        <ul>
+                            <li>These subdomains returned an HTTP status 200 (OK), indicating live web assets.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Interesting Subdomains:</strong> {{ interesting_subdomains.count }}
+                        <ul>
+                            <li>
+                                High-priority subdomains identified through keyword analysis (e.g., admin, api, test), suggesting a focused investigation.
+                            </li>
+                        </ul>
+                    </li>
+                </ol>
+                <h4>
+                    {{ scan_object.get_subdomain_count }} subdomains identified on <span class="primary">{{ scan_object.domain.name }}</span>
+                </h4>
+                <div class="interesting-subdomain-table-container">
+                    <table class="interesting-subdomain-table">
+                        <tr>
+                            <th class="number-td">#</th>
+                            <th class="interesting-subdomain-td">Subdomain</th>
+                            <th class="page-title-td">Page Title</th>
+                            <th class="status-td">HTTP Status</th>
+                            {% comment %} if show vuln is there we may also show total vulnerbaility count {% endcomment %}
+                            {% if show_vuln %}<th class="status-td">Vulnerabilities Count</th>{% endif %}
+                        </tr>
+                        {% for subdomain in subdomains %}
+                            <tr class=" {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %} ">
+                                <td class="number-td">{{ forloop.counter }}</td>
+                                <td class="subdomain-name-td"><a href="#subdomain_{{subdomain.name}}" class="no-style-a">{{ subdomain.name }}</a></td>
+                                <td class="page-title-td">
+                                    {% if subdomain.page_title %}{{ subdomain.page_title }}{% endif %}
+                                </td>
+                                <td class="status-td">
+                                    {% if subdomain.http_status %}{{ subdomain.http_status }}{% endif %}
+                                </td>
+                                {% if show_vuln %}
+                                    <td class="status-td">
+                                        {% if subdomain.get_total_vulnerability_count %}
+                                            {{ subdomain.get_total_vulnerability_count }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                {% if ip_addresses.count > 0 %}
+                    <h3 class="primary">IP Assets</h3>
+                    <p>In addition to subdomains, various IP assets associated with the target infrastructure were also identified:</p>
+                    <ol>
+                        <li>
+                            <strong>Total IP Addresses:</strong> {{ ip_addresses.count }}
+                            <ul>
+                                <li>
+                                    This represents the range of unique IP addresses associated with the discovered subdomains and other network assets.
+                                </li>
+                            </ul>
+                        </li>
+                    </ol>
+                    <div class="interesting-subdomain-table-container">
+                        <table class="interesting-subdomain-table table-stripped">
+                            <tr>
+                                <th class="number-td">#</th>
+                                <th class="interesting-subdomain-td">IP</th>
+                                <th class="page-title-td">Open Ports</th>
+                                <th class="normal-td">Geo Location</th>
+                                <th class="normal-td">Remarks</th>
+                            </tr>
+                            {% for ip in ip_addresses %}
+                                <tr>
+                                    <td class="number-td">{{ forloop.counter }}</td>
+                                    <td class="subdomain-name-td">{{ ip.address }}</td>
+                                    <td class="page-title-td">
+                                        {% for port in ip.ports.all %}
+                                            {{ port.number }}/{{ port.service_name }}
+                                            {% if not forloop.last %},{% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <td class="normal-td">
+                                        {% if ip.geo_iso %}{{ ip.geo_iso }}{% endif %}
+                                        <td class="normal-td">
+                                            {% if ip.is_cdn %}CDN{% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    {% endif %}
+                </article>
+            {% endif %}
+            {% if show_recon %}
+                <article style="page-break-before: always">
+                    <h2 class="page-title" id="reconnaissance-findings">Reconnaissance Findings</h2>
+                    <p>This section contains list of all the subdomains identified during the reconnaissance phase.</p>
+                    {% for subdomain in subdomains %}
+                        <div class="subdomain-card" id="subdomain_{{subdomain.name}}">
+                            <div class="subdomain-card-header">
+                                <span class="subdomain-card-name">{{ subdomain.name }}</span>
+                                {% if subdomain.http_status %}
+                                    <span class="subdomain-card-http-status {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %} low-td {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %} medium-td {% elif subdomain.http_status >= 400 and subdomain.http_status < 500 %} high-td {% else %} unknown-td {% endif %}">{{ subdomain.http_status }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="subdomain-card-content">
+                                {% if subdomain.page_title %}<div class="subdomain-card-page-title">{{ subdomain.page_title }}</div>{% endif %}
+                                {% if subdomain.ip_addresses.all %}
+                                    <div>
+                                        <h4>IP Addresses:</h4>
+                                        <ul>
+                                            {% for ip in subdomain.ip_addresses.all %}
+                                                <li>
+                                                    {{ ip.address }}
+                                                    {% if ip.ports.all %}
+                                                        <ul>
+                                                            {% for port in ip.ports.all %}<li>{{ port.number }}/{{ port.service_name }}</li>{% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                                {% if show_vuln %}
+                                    {% if subdomain.get_vulnerabilities_without_info %}
+                                        <div>
+                                            <h4>Vulnerabilities:</h4>
+                                            {% regroup subdomain.get_vulnerabilities_without_info by name as vuln_list %}
+                                            <ul>
+                                                {% for vulnerability in vuln_list %}
+                                                    <li>
+                                                        <a href="#vuln_{{ vulnerability.list.0.name.split|join:'_' }}"
+                                                           class="primary">{{ vulnerability.grouper }}</a>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </article>
+            {% endif %}
+            {% if show_vuln %}
+                <article id="vulnerabilities-discovered" style="page-break-before: always">
+                    <h2 class="page-title primary">Vulnerabilities Discovered</h2>
+                    <p>
+                    This section details the security vulnerabilities identified during our penetration testing engagement. Each finding is documented with its description, potential impact, and recommended remediation steps.
+                    <br>
+                    Vulnerabilities are categorized by severity (Critical, High, Medium, Low, Info) to prioritize remediation efforts. This assessment is based on the potential impact to confidentiality, integrity, and availability of the systems and data.
+                    <br>
+                    The information presented here is crucial for understanding your current security posture and should guide your remediation strategy to enhance overall security.</p>
+                    <br>
+                    {% regroup all_vulnerabilities by get_path as grouped_vulnerabilities %}
+                    {% for vulnerabilities in grouped_vulnerabilities %}
+                        {% for vulnerability in vulnerabilities.list %}
+                            <div class="vuln-card" id="vuln_{{ vulnerability.name.split|join:'_' }}">
+                                <div class="vuln-card-header {% if vulnerability.severity == 0 %}info-td{% elif vulnerability.severity == 1 %}low-td{% elif vulnerability.severity == 2 %}medium-td{% elif vulnerability.severity == 3 %}high-td{% elif vulnerability.severity == 4 %}critical-td{% endif %}">
+                                    <h4>
+                                        {{ vulnerability.name }}
+                                        {% if vulnerabilities.grouper %}
+                                            <br>
+                                            in {{ vulnerabilities.grouper }}
+                                        {% endif %}
+                                    </h4>
+                                    <div class="vuln-severity {% if vulnerability.severity == -1 %}unknown-severity-badge{% elif vulnerability.severity == 0 %}info-severity-badge{% elif vulnerability.severity == 1 %}low-severity-badge{% elif vulnerability.severity == 2 %}medium-severity-badge{% elif vulnerability.severity == 3 %}high-severity-badge{% elif vulnerability.severity == 4 %}critical-severity-badge{% endif %}">
+                                        {% if vulnerability.severity == -1 %}
+                                            Unknown
+                                        {% elif vulnerability.severity == 0 %}
+                                            INFO
+                                        {% elif vulnerability.severity == 1 %}
+                                            LOW
+                                        {% elif vulnerability.severity == 2 %}
+                                            MEDIUM
+                                        {% elif vulnerability.severity == 3 %}
+                                            HIGH
+                                        {% elif vulnerability.severity == 4 %}
+                                            CRITICAL
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="vuln-card-body">
+                                    <div class="vuln-section">
+                                        <span class="vuln-badge badge-source">{{vulnerability.source|upper}}</span>
+                                        {% if vulnerability.cvss_score %}
+                                            <span class="vuln-badge badge-cvss">CVSS: {{vulnerability.cvss_score|upper}}</span>
+                                        {% endif %}
+                                        {% if vulnerability.cve_ids.all %}
+                                        {% for cve in vulnerability.cve_ids.all %}<span class="vuln-badge badge-cvss">{{cve|upper}}</span>{% endfor %}
+                                        {% endif %}
+                                        {% if vulnerability.cwe_ids.all %}
+                                        {% for cwe in vulnerability.cwe_ids.all %}<span class="vuln-badge badge-cwe">{{cwe|upper}}</span>{% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    {% if vulnerability.cvss_metrics %}
+                                    <div class="vuln-section">
+                                        <p class="section-title">CVSS</p>
+                                        <div class="vuln-cvss-details">{{vulnerability.cvss_metrics}}</div>
+                                    </div>
+                                    {% endif %}
+                                    {% if vulnerability.description %}
+                                    <div class="vuln-section">
+                                        <p class="section-title">Description</p>
+                                        <p>
+                                            {{vulnerability.description|linebreaks}}
+                                        </p>
+                                    </div>
+                                    {% endif %}
+                                     {% if vulnerability.impact %}
+                                        <div class="vuln-section">
+                                            <p class="section-title">Impact</p>
+                                            <p>
+                                                {{vulnerability.impact|linebreaks}}
+                                            </p>
+                                        </div>
+                                    {% endif %}
+                                    {% if vulnerability.remediation %}
+                                    <div class="vuln-section">
+                                        <p class="section-title">Remediation</p>
+                                        <p>{{vulnerability.remediation|linebreaks}}</p>
+                                    </div>
+                                    {% endif %}
+                                    <div class="vuln-section">
+                                        <p class="section-title">Vulnerable URLs</p>
+                                        <div class="vulnerable-url-li">{{vulnerability.http_url}}</div>
+                                    </div>
+                                    {% if vulnerability.references.all %}
+                                    <div class="vuln-section references-li">
+                                        <p class="section-title">References</p>
+                                        <ul>
+                                            {% for ref in vulnerability.references.all %}
+                                            <li>
+                                                <a href="{{ref}}" target="_blank" rel="noopener noreferrer">{{ref}}</a>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </article>
+            {% endif %}
+            <article id="end-of-report">
+                <div class="content-wrapper">
+                    <h1 class="no-fade-line">END OF REPORT</h1>
+                    <div class="fading-line-both"></div>
+                </div>
+            </article>
+        </body>
+    </html>

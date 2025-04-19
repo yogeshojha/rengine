@@ -25,8 +25,8 @@ function getScanStatusSidebar(project, reload) {
     else{
       $('#upcoming_scans').html(`<div class="alert alert-info" role="alert">No upcoming Scans.</div>`);
     }
-
     if (scans['scanning'].length > 0){
+      // remove display none for current_scan_counter
       $('#current_scan_counter').html(scans['scanning'].length);
       $('#current_scan_count').html(`${scans['scanning'].length} Scans Currently Running`)
       for (var scan in scans['scanning']) {

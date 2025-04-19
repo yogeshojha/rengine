@@ -57,7 +57,7 @@
     {% endblock custom_js_css_link %}
   </head>
 
-  <body class="loading" data-layout-mode="horizontal">
+  <body class="loading" data-layout-mode="horizontal" data-rengine-version="{{ RENGINE_CURRENT_VERSION }}" data-current-project="{{ current_project.slug }}">
     <!-- Topbar begins -->
     {% include 'base/_items/top_bar.html' %}
     {# topbar ends #}
@@ -92,7 +92,7 @@
         {% include 'base/_items/offcanvas.html' %}
       </div>
       {% include 'base/_items/right_bar.html' %}
-      {% include 'base/_items/footer.html' %}
+      {% comment %} {% include 'base/_items/footer.html' %} {% endcomment %}
     </div>
     <script src="{% static 'assets/js/vendor.min.js' %}"></script>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
@@ -100,13 +100,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.8/purify.min.js"></script>
     <script src="{% static 'assets/js/app.min.js' %}"></script>
     <script src="{% static 'custom/custom.js' %}"></script>
+    <script src="{% static 'custom/update.js' %}"></script>
     <script src="{% static 'custom/toolbox.js' %}"></script>
     <script src="{% static 'custom/right_sidebar.js' %}"></script>
+    <script src="{% static 'custom/notification.js' %}"></script>
     <script src="{% static 'plugins/snackbar/snackbar.min.js' %}"></script>
     <script src="{% static 'plugins/sweetalert2/sweetalert2.all.min.js' %}"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/rowgroup/1.4.0/js/dataTables.rowGroup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/timeago.js/4.0.2/timeago.min.js"></script>
     <script type="text/javascript">
       $(document).ready(function(){
         // for tabs with urls, we need to append the hash in the url
@@ -123,13 +126,7 @@
         checkDailyUpdate();
 
         getScanStatusSidebar(project='{{current_project.slug}}', reload=false);
-        // hide badge if update does not exists
-        if (window.localStorage.getItem('update_available') && window.localStorage.getItem('update_available') === 'true') {
-          $('.rengine_update_available').show();
-        }
-        else{
-          $('.rengine_update_available').hide();
-        }
+
         // tippy for notification or scan acitivity
         tippy('.top-activity-counter', {
           content: 'Scan Activity',
@@ -164,92 +161,35 @@
         });
       }
 
-      function check_rengine_update(){
-        if (window.localStorage.getItem('update_available') && window.localStorage.getItem('update_available') === 'true') {
-          update_available();
-        }
-        else{
-          Swal.fire({
-            title: 'Checking reNgine latest version...',
-            allowOutsideClick: false
-          });
-          swal.showLoading();
-          fetch('/api/rengine/update/')
-          .then(response => response.json())
-          .then(function (response) {
-            console.log(response);
-            swal.close();
-            if (response['description'] == 'RateLimited') {
-              Swal.fire({
-                title: 'Oops!',
-                text: 'Github rate limit exceeded, please try again in an hour!',
-                icon: 'error'
-              });
-              window.localStorage.setItem('update_available', false);
-              $('.rengine_update_available').hide();
-            }
-            else if (response['update_available']){
-              window.localStorage.setItem('update_available', true);
-              $('.rengine_update_available').show();
-              update_available(response['latest_version'], response['changelog']);
-            }
-            else{
-              window.localStorage.setItem('update_available', false);
-              $('.rengine_update_available').hide();
-              Swal.fire({
-                title: 'Update not available',
-                text: 'You are running the latest version of reNgine!',
-                icon: 'info'
-              });
-            }
-          });
-        }
-      }
-
-      function update_available(latest_version_number, changelog){
-        Swal.fire({
-          title: 'Update Available!',
-          html: `<h5>reNgine's new update ${latest_version_number} is available, please follow the update instructions.</h5><pre>${changelog}</pre>`,
-          icon: 'info',
-          confirmButtonText: 'Update Instructions',
-          showCancelButton: true,
-          cancelButtonText: 'Dismiss',
-          width: '60%',
-        }).then((result) => {
-          if (result.isConfirmed) {
-            window.open("https://www.rengine.wiki/update","_blank")
-          }
-        });
-      }
-
-      // Source : https://stackoverflow.com/a/32428268
-      function checkDailyUpdate(){
-        if( !hasOneDayPassed() ) return false;
-        console.log('Checking Daily Update...')
-        fetch('/api/rengine/update/')
+      function toggleBugBountyMode() {
+        fetch('/api/toggle-bug-bounty-mode/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
         .then(response => response.json())
-        .then(function (response) {
-          if (response['update_available']){
-            window.localStorage.setItem('update_available', true);
-            $('.rengine_update_available').show();
-            update_available(response['latest_version'], response['changelog'])
-          }
-          else{
-            window.localStorage.setItem('update_available', false);
-            $('.rengine_update_available').hide();
-          }
+        .then(data => {
+            Snackbar.show({
+              {% if user_preferences.bug_bounty_mode %}
+                text: 'Bug Bounty Mode disabled successfully',
+              {% else %}
+                text: 'Bug Bounty Mode enabled successfully',
+              {% endif %}
+              pos: 'top-right',
+              actionTextColor: '#42A5F5',
+              duration: 1400
+            });
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+        })
+        .catch(error => {
+            console.error('Error:', error);
         });
-      }
+    }
 
-      // Source: https://stackoverflow.com/a/32428268
-      function hasOneDayPassed(){
-        var date = new Date().toLocaleDateString();
-        if(window.localStorage.getItem('last_update_checked') == date){
-          return false;
-        }
-        window.localStorage.setItem('last_update_checked', date);
-        return true;
-      }
     </script>
     {% if messages %}
       {% for message in messages %}

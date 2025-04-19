@@ -2,11 +2,15 @@
 {% load static %}
 
 {% block title %}
-Start Scan
+Start Scan for Multiple Targets
 {% endblock title %}
 
 
+
 {% block custom_js_css_link %}
+<link href="{% static 'plugins/jquery-step/jquery.steps.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/accordions/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/selectize/css/selectize.bootstrap3.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -15,41 +19,16 @@ Start Scan
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Initiate Scan for Multiple Targets
+  Initiate Scan for Multiple Targets
 {% endblock page_title %}
 
 {% block main_content %}
-<div class="row">
-  <div class="col-xl-12">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="header-title">Initiating multiple scan for {{ domain_list|length }} targets: </h4>
-        {% for domain in domain_list %}
-        <span class="badge badge-soft-primary m-1">{{domain}}</span>
-        {% endfor %}
-        <form method="POST">
-          {% csrf_token %}
-          <h4 class="header-title mt-4">Select the scan type</h4>
-          <div class="mt-4">
-            {% if custom_engine_count == 0 %}
-            <div class="alert bg-soft-primary border-0 mb-4" role="alert">
-              <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
-              <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">Create Custom Scan Engine</a>
-            </div>
-            {% endif %}
-            <input type="hidden" name="list_of_domain_id" value="{{domain_ids}}">
-            {% include "startScan/_items/scanEngine_select.html" %}
-          </div>
-          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-          </svg> Start Scan</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
+  {% include "startScan/_items/start_scan_wizard.html" %}
 {% endblock main_content %}
 
 
 {% block page_level_script %}
+<script src="{% static 'plugins/jquery-step/jquery.steps.min.js' %}"></script>
+<script src="{% static 'plugins/selectize/js/standalone/selectize.min.js' %}"></script>
+<script src="{% static 'startScan/js/start-scan-wizard-init.js' %}"></script>
 {% endblock page_level_script %}
