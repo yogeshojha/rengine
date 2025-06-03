@@ -469,6 +469,24 @@ DEFAULT_GPT_MODELS = [
         }
     },
     {
+        'name': 'gpt-4.1-nano',
+        'model': 'gpt-4.1-nano',
+        'modified_at': '',
+        'details': {
+            'family': 'GPT',
+            'parameter_size': 'Smart',
+        }
+    },
+    {
+        'name': 'gpt-4o-mini',
+        'model': 'gpt-4o-mini',
+        'modified_at': '',
+        'details': {
+            'family': 'GPT',
+            'parameter_size': 'Smart',
+        }
+    },       
+    {
         'name': 'gpt-3.5-turbo',
         'model': 'gpt-3.5-turbo',
         'modified_at': '',

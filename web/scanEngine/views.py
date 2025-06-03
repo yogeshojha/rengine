@@ -484,8 +484,8 @@ def llm_toolkit_section(request, slug):
     if selected_model:
         selected_model = {'selected_model': selected_model.selected_model}
     else:
-        # use gpt3.5-turbo as default
-        selected_model = {'selected_model': 'gpt-3.5-turbo'}
+        # use gpt-4.1-nano as default
+        selected_model = {'selected_model': 'gpt-4.1-nano'}
     for model in all_models:
         if model['name'] == selected_model['selected_model']:
             model['selected'] = True

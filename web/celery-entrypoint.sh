@@ -137,9 +137,9 @@ then
 fi
 
 # store scan_results
-if [ ! -d "/usr/src/scan_results" ]
+if [ ! -d "$RENGINE_RESULTS" ]
 then
-  mkdir /usr/src/scan_results
+  mkdir -p "$RENGINE_RESULTS"
 fi
 
 # test tools, required for configuration

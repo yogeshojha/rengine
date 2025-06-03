@@ -12,7 +12,7 @@ class LLMVulnerabilityReportGenerator:
 
 	def __init__(self, logger):
 		selected_model = OllamaSettings.objects.first()
-		self.model_name = selected_model.selected_model if selected_model else 'gpt-3.5-turbo'
+		self.model_name = selected_model.selected_model if selected_model else 'gpt-4.1-nano'
 		self.use_ollama = selected_model.use_ollama if selected_model else False
 		self.openai_api_key = None
 		self.logger = logger
@@ -89,7 +89,7 @@ class LLMAttackSuggestionGenerator:
 
 	def __init__(self, logger):
 		selected_model = OllamaSettings.objects.first()
-		self.model_name = selected_model.selected_model if selected_model else 'gpt-3.5-turbo'
+		self.model_name = selected_model.selected_model if selected_model else 'gpt-4.1-nano'
 		self.use_ollama = selected_model.use_ollama if selected_model else False
 		self.openai_api_key = None
 		self.logger = logger
