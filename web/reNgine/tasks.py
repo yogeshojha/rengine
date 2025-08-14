@@ -113,7 +113,7 @@ def initiate_scan(
 		scan.domain = domain
 		scan.start_scan_date = timezone.now()
 		scan.tasks = engine.tasks
-		scan.results_dir = f'{results_dir}/{domain.name}_{scan.id}'
+		scan.results_dir = get_scan_results_dir(results_dir, domain.id, scan.id)
 		add_gf_patterns = gf_patterns and 'fetch_url' in engine.tasks
 		# add configs to scan object, cfg_ prefix is used to avoid conflicts with other scan object fields
 		scan.cfg_starting_point_path = starting_point_path

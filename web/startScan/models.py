@@ -34,7 +34,7 @@ class ScanHistory(models.Model):
 	id = models.AutoField(primary_key=True)
 	start_scan_date = models.DateTimeField()
 	scan_status = models.IntegerField(choices=CELERY_TASK_STATUSES, default=-1)
-	results_dir = models.CharField(max_length=100, blank=True)
+	results_dir = models.CharField(max_length=500, blank=True)
 	domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
 	scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
 	celery_ids = ArrayField(models.CharField(max_length=100), blank=True, default=list)
