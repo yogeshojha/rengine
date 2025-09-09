@@ -2875,11 +2875,16 @@ function render_vuln_offcanvas(vuln){
 	var body = '';
 	title_content += `<i class="mdi mdi-bug-outline me-1 text-${default_color}"></i>`;
 	title_content += `<span class="badge badge-${default_badge_color} text-${default_color}">${vuln.severity}</span>`;
-	title_content += `<span class="text-${default_color} ms-1">${vuln.name}</span>`;
+	title_content += `<span class="text-${default_color} ms-1">${htmlEncode(vuln.name)}</span>`;
 
 	body += `<p><b>ID: </b>${vuln.id}</p>`;
 	body += `<p><b>Discovered on: </b>${vuln.discovered_date}</p>`;
-	body += `<p><b>URL: </b><a href="${vuln.http_url}" target="_blank">${vuln.http_url}</a></p>`;
+	body += `<p><b>URL: </b>
+		<a href="${htmlEncode(vuln.http_url)}" 
+			target="_blank" 
+			rel="noopener noreferrer">
+			${split_into_lines(htmlEncode(vuln.http_url), 150)}
+		</a></p>`;
 	body += `<p><b>Severity: </b>${vuln.severity}<br><b>Type: </b>${vuln.type.toUpperCase()}<br><b>Source: </b> ${vuln.source.toUpperCase()}</p>`;
 
 	if (vuln.description) {
@@ -3023,19 +3028,19 @@ function render_vuln_offcanvas(vuln){
 		<table>
 		<tr>
 		<td style="width:20%"><b>Template</b></td>
-		<td>${vuln.template}</td>
+		<td>${htmlEncode(vuln.template)}</td>
 		</tr>
 		<tr>
 		<td style="width:20%"><b>Template URL</b></td>
-		<td><a target="_blank" href="${vuln.template_url}">${vuln.template_url}</a></td>
+		<td><a target="_blank" href="${htmlEncode(vuln.template_url)}">${htmlEncode(vuln.template_url)}</a></td>
 		</tr>
 		<tr>
 		<td style="width:20%"><b>Template ID</b></td>
-		<td>${vuln.template_id}</td>
+		<td>${htmlEncode(vuln.template_id)}</td>
 		</tr>
 		<tr>
 		<td style="width:20%"><b>Matcher Name</b></td>
-		<td>${vuln.matcher_name}</td>
+		<td>${htmlEncode(vuln.matcher_name)}</td>
 		</tr>
 		</table>
 		</div>
@@ -3085,9 +3090,11 @@ function render_vuln_offcanvas(vuln){
 	var http_response = vuln.response ? vuln.response : '';
 
 	http_request = http_request.replace(new RegExp('\r?\n','g'), '<br />');
+	http_response = http_response.replace(new RegExp('&#13;&#10;','g'), '<br />');
+	
+	http_request = htmlEncode(http_request);
 	http_response = htmlEncode(http_response);
 
-	http_response = http_response.replace(new RegExp('&#13;&#10;','g'), '<br />');
 
 	body += `<div class="accordion custom-accordion mt-2">
 	<h5 class="m-0 position-relative">

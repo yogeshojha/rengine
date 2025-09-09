@@ -1,6 +1,7 @@
 from dashboard.models import *
 from django.contrib.humanize.templatetags.humanize import (naturalday, naturaltime)
 from django.db.models import F, JSONField, Value
+from django.forms.models import model_to_dict
 from recon_note.models import *
 from reNgine.common_func import *
 from rest_framework import serializers
@@ -212,6 +213,17 @@ class CommandSerializer(serializers.ModelSerializer):
 		depth = 1
 
 
+class MinimalUserSerializer(serializers.ModelSerializer):
+	"""
+		Serializer for User model
+		Purpose of this serializer is to return minimal information about user
+		Related to report by @RaDiTZz0
+	"""
+	class Meta:
+		model = User
+		fields = ['username']
+
+
 class ScanHistorySerializer(serializers.ModelSerializer):
 
 	subdomain_count = serializers.SerializerMethodField('get_subdomain_count')
@@ -222,6 +234,7 @@ class ScanHistorySerializer(serializers.ModelSerializer):
 	elapsed_time = serializers.SerializerMethodField('get_elapsed_time')
 	completed_ago = serializers.SerializerMethodField('get_completed_ago')
 	organizations = serializers.SerializerMethodField('get_organizations')
+	initiated_by = MinimalUserSerializer(read_only=True)
 
 	class Meta:
 		model = ScanHistory
@@ -243,7 +256,8 @@ class ScanHistorySerializer(serializers.ModelSerializer):
 			'stop_scan_date',
 			'error_message',
 			'domain',
-			'scan_type'
+			'scan_type',
+			'initiated_by'
 		]
 		depth = 1
 
@@ -952,6 +966,7 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
 
 	discovered_date = serializers.SerializerMethodField()
 	severity = serializers.SerializerMethodField()
+	scan_history = serializers.SerializerMethodField()
 
 	def get_discovered_date(self, Vulnerability):
 		return Vulnerability.discovered_date.strftime("%b %d, %Y %H:%M")
@@ -971,6 +986,16 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
 			return "Unknown"
 		else:
 			return "Unknown"
+		
+	def get_scan_history(self, vulnerability):
+		scan_history_dict = {}
+		scan_history = vulnerability.scan_history
+		if scan_history:
+			# convert model to dict then use MinimalSerializer to get only username
+			scan_history_dict = model_to_dict(scan_history)
+			scan_history_dict['initiated_by'] = MinimalUserSerializer(scan_history.initiated_by).data if scan_history.initiated_by else None
+			scan_history_dict['aborted_by'] = MinimalUserSerializer(scan_history.aborted_by).data if scan_history.aborted_by else None
+		return scan_history_dict
 
 	class Meta:
 		model = Vulnerability

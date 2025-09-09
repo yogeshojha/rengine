@@ -67,9 +67,9 @@ Admin Settings
                 </th>
                 <th>
                   {% if muser.get_full_name %}
-                  {{muser.get_full_name}}
+                  {{muser.get_full_name|escape}}
                   {% else %}
-                  {{muser.username}}
+                  {{muser.username|escape}}
                   {% endif %}
                 </th>
                 <th>
@@ -128,7 +128,7 @@ Admin Settings
 function delete_user(id, username) {
   const delAPI = "./update?mode=delete&user=" + id;
   swal.queue([{
-    title: 'Are you sure you want to delete user '+ username +'?',
+    title: 'Are you sure you want to delete user '+ htmlEncode(username) +'?',
     text: "You won't be able to revert this!",
     type: 'warning',
     showCancelButton: true,
@@ -313,7 +313,7 @@ function create_user_modal(){
               Swal.fire({
                 title: "Oops! Can't create user!",
                 icon: 'error',
-                text: 'Error: ' + data.error,
+                text: 'Error: ' + htmlEncode(data.error),
               })
             }
 

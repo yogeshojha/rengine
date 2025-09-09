@@ -35,7 +35,9 @@
             </a>
           {% endfor %}
           <div class="dropdown-divider"></div>
-          <a href="#" onclick="add_project_modal()" class="dropdown-item"><i class="mdi mdi-account-plus"></i> Create New Project</a>
+           {% if request.user|can:'modify_targets' %}
+            <a href="#" onclick="add_project_modal()" class="dropdown-item"><i class="mdi mdi-account-plus"></i> Create New Project</a>
+          {% endif %}
         </div>
       </li>
       {% if user|can:'modify_targets' or user|can:'modify_scan_configurations' or user|can:'modify_system_configurations' or user|can:'modify_wordlists' %}
