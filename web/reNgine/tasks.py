@@ -1356,7 +1356,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	cmd += f' -proxy "{proxy}"' if proxy else ''
 	cmd += f' -c {threads}' if threads else ''
 	cmd += f' -rate {rate_limit}' if rate_limit > 0 else ''
-	cmd += f' -timeout {timeout*1000}' if timeout > 0 else ''
+	cmd += f' -timeout {timeout}s' if timeout > 0 else ''
 	cmd += f' -passive' if passive else ''
 	cmd += f' -exclude-ports {exclude_ports_str}' if exclude_ports else ''
 	cmd += f' -silent'
