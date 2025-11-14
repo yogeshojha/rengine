@@ -4247,11 +4247,15 @@ def get_and_save_dork_results(lookup_target, results_dir, type, lookup_keywords=
 	"""
 	results = []
 	gofuzz_command = f'{GOFUZZ_EXEC_PATH} -t {lookup_target} -d {delay} -p {page_count}'
+	proxy = get_random_proxy()
 
 	if lookup_extensions:
 		gofuzz_command += f' -e {lookup_extensions}'
 	elif lookup_keywords:
 		gofuzz_command += f' -w {lookup_keywords}'
+
+	if proxy:
+		gofuzz_command += f' -r {proxy}'
 
 	output_file = f'{results_dir}/gofuzz.txt'
 	gofuzz_command += f' -o {output_file}'
