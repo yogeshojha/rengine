@@ -873,6 +873,22 @@ def get_output_file_name(scan_history_id, subscan_id, filename):
 	return title
 
 
+def get_scan_results_dir(results_base_dir, domain_id, scan_id):
+	"""Generate a clean results directory path using domain ID instead of domain name.
+	
+	This avoids issues with long domain names exceeding database field limits.
+	
+	Args:
+		results_base_dir (str): Base results directory path.
+		domain_id (int): Domain ID.
+		scan_id (int): Scan ID.
+		
+	Returns:
+		str: Clean results directory path.
+	"""
+	return f'{results_base_dir}/domain_{domain_id}_scan_{scan_id}'
+
+
 def get_traceback_path(task_name, results_dir, scan_history_id=None, subscan_id=None):
 	path = results_dir
 	if scan_history_id:
