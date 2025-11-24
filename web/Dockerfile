@@ -28,7 +28,7 @@ ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
 # Install Python
 RUN apt update -y && \
     apt install -y \
-    python3.10 \
+    python3.11 \
     python3-dev \
     python3-pip 
 

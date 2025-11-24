@@ -1,30 +1,41 @@
+x-default-healthcheck: &default-healthcheck
+  interval: 60s
+  timeout: 20s
+  retries: 5
+  start_period: 60s
+  start_interval: 5s
 services:
   db:
-    restart: always
-    image: "postgres:12.3-alpine"
+    restart: unless-stopped
+    image: "postgres:16-alpine"
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
-    ports:
-      - "127.0.0.1:5432:5432"
+    expose:
+      - 5432
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     networks:
       - rengine_network
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      <<: *default-healthcheck
   redis:
     restart: always
     image: "redis:alpine"
     hostname: redis
     networks:
       - rengine_network
-
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      <<: *default-healthcheck
   celery:
     build:
       context: ./web
-    restart: always
+    restart: unless-stopped
+    image: git.nvroot.com/nvroot/rengine-celery:latest
     entrypoint: /usr/src/app/celery-entrypoint.sh
     # command: celery -A reNgine worker --autoscale=${MAX_CONCURRENCY},${MIN_CONCURRENCY} -l INFO
     volumes:
@@ -36,6 +47,14 @@ services:
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
       - static_volume:/usr/src/app/staticfiles/
+    deploy:
+      resources:
+        limits:
+          memory: 2000M
+        reservations:
+          memory: 2000M
+    memswap_limit: 7G
+    mem_limit: 2000M
     environment:
       - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
@@ -53,11 +72,15 @@ services:
       - redis
     networks:
       - rengine_network
-
+    healthcheck:
+      test: ["CMD", "echo", "health"]
+      <<: *default-healthcheck
   celery-beat:
     build: ./web
     entrypoint: /usr/src/app/beat-entrypoint.sh
+    image: git.nvroot.com/nvroot/rengine-beat:latest
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    restart: unless-stopped
     environment:
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
@@ -79,13 +102,15 @@ services:
       - tool_config:/root/.config
     networks:
       - rengine_network
-
+    healthcheck:
+      test: ["CMD", "echo", "health"]
+      <<: *default-healthcheck
   web:
     build:
       context: ./web
     entrypoint: /usr/src/app/entrypoint.sh
-    restart: always
-    image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
+    restart: unless-stopped
+    image: git.nvroot.com/nvroot/rengine-web:latest
     environment:
       - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
@@ -106,8 +131,8 @@ services:
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
       - static_volume:/usr/src/app/staticfiles/
-    ports:
-      - "127.0.0.1:8000:8000"
+    expose:
+      - 8000
     depends_on:
       - db
       - celery
@@ -116,13 +141,15 @@ services:
       rengine_network:
         aliases:
           - rengine
-
+    healthcheck:
+      test: ["CMD", "echo", "health"]
+      <<: *default-healthcheck
   proxy:
-    restart: always
+    restart: unless-stopped
     image: nginx:alpine
-    ports:
-      - 8082:8082/tcp
-      - 443:443/tcp
+    expose:
+      - 8082
+      - 443
     depends_on:
       - web
       - db
@@ -140,16 +167,22 @@ services:
       - scan_results:/usr/src/scan_results
     networks:
       - rengine_network
+    healthcheck:
+      test: ["CMD", "echo", "health"]
+      <<: *default-healthcheck
   ollama:
     image: ollama/ollama
     container_name: ollama
+    restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
+    expose:
+      - 11434
     networks:
       - rengine_network
-
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      <<: *default-healthcheck
 networks:
   rengine_network:
 
