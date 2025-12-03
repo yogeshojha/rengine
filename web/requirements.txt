@@ -17,7 +17,7 @@ drf-yasg==1.21.3
 gunicorn==22.0.0
 gevent==24.2.1
 humanize==4.3.0
-langchain-community==0.2.7
+langchain-community==0.2.19
 Markdown==3.3.4
 metafinder==1.2
 netaddr==0.8.0
