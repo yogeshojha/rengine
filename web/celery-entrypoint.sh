@@ -102,7 +102,7 @@ if [ ! -d "/usr/src/github/EyeWitness" ]
 then
   echo "Cloning EyeWitness"
   git clone https://github.com/FortyNorthSecurity/EyeWitness /usr/src/github/EyeWitness
-  # pip install -r /usr/src/github/Eyewitness/requirements.txt
+  pip install -r /usr/src/github/EyeWitness/setup/requirements.txt
 fi
 
 # clone theHarvester

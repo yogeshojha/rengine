@@ -461,7 +461,7 @@ def subdomain_discovery(
 				cmd += f' -brute -w {wordlist_path}'
 
 			elif tool == 'sublist3r':
-				cmd = f'python3 /usr/src/github/Sublist3r/sublist3r.py -d {host} -t {threads} -o {self.results_dir}/subdomains_sublister.txt'
+				cmd = f'python3 /usr/src/github/Sublist3r/sublist3r.py -n -d {host} -t {threads} -o {self.results_dir}/subdomains_sublister.txt'
 
 			elif tool == 'subfinder':
 				cmd = f'subfinder -d {host} -o {self.results_dir}/subdomains_subfinder.txt'
@@ -474,14 +474,14 @@ def subdomain_discovery(
 
 			elif tool == 'oneforall':
 				cmd = f'python3 /usr/src/github/OneForAll/oneforall.py --target {host} run'
-				cmd_extract = f'cut -d\',\' -f6 /usr/src/github/OneForAll/results/{host}.csv | tail -n +2 > {self.results_dir}/subdomains_oneforall.txt'
+				cmd_extract = f"cut -d ',' -f6 /usr/src/github/OneForAll/results/{'.'.join(host.split('.')[:2])}.csv | tail -n +2 > {self.results_dir}/subdomains_oneforall.txt"
 				cmd_rm = f'rm -rf /usr/src/github/OneForAll/results/{host}.csv'
 				cmd += f' && {cmd_extract} && {cmd_rm}'
 
 			elif tool == 'ctfr':
 				results_file = self.results_dir + '/subdomains_ctfr.txt'
-				cmd = f'python3 /usr/src/github/ctfr/ctfr.py -d {host} -o {results_file}'
-				cmd_extract = f"cat {results_file} | sed 's/\*.//g' | tail -n +12 | uniq | sort > {results_file}"
+				cmd = f'python3 /usr/src/github/ctfr/ctfr.py -d {host} -o {results_file}.tmp'
+				cmd_extract = f"cat {results_file}.tmp | sed 's/\*.//g' | tail -n +12 | uniq | sort > {results_file}"
 				cmd += f' && {cmd_extract}'
 
 			elif tool == 'tlsx':
@@ -494,14 +494,16 @@ def subdomain_discovery(
 				results_file = self.results_dir + '/subdomains_netlas.txt'
 				cmd = f'netlas search -d domain -i domain domain:"*.{host}" -f json'
 				netlas_key = get_netlas_key()
-				cmd += f' -a {netlas_key}' if netlas_key else ''
+				if netlas_key:
+					if netlas_key.key and netlas_key.key != "None":
+						cmd += f' -a {netlas_key}' 
 				cmd_extract = f"grep -oE '([a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?\.)+{host}'"
 				cmd += f' | {cmd_extract} > {results_file}'
 
 			elif tool == 'chaos':
 				# we need to find api key if not ignore
 				chaos_key = get_chaos_key()
-				if not chaos_key:
+				if not chaos_key or chaos_key.key == "None":
 					logger.error('Chaos API key not found. Skipping.')
 					continue
 				results_file = self.results_dir + '/subdomains_chaos.txt'
@@ -2931,7 +2933,7 @@ def http_crawl(
 			continue
 
 		# Parse httpx output
-		host = line.get('host', '')
+		host_ip = line.get('host_ip', '')
 		content_length = line.get('content_length', 0)
 		http_status = line.get('status_code')
 		http_url, is_redirect = extract_httpx_url(line)
@@ -3014,9 +3016,9 @@ def http_crawl(
 			add_meta_info=False)
 
 		# Add IP object for host in DB
-		if host:
+		if host_ip:
 			ip, created = save_ip_address(
-				host,
+				host_ip,
 				subdomain,
 				subscan=self.subscan,
 				cdn=cdn)
@@ -3932,7 +3934,8 @@ def fetch_whois_data_using_netlas(target):
 	command = f'netlas host {target} -f json'
 	netlas_key = get_netlas_key()
 	if netlas_key:
-		command += f' -a {netlas_key}'
+		if netlas_key.key and netlas_key.key != "None":
+			command += f' -a {netlas_key}'
 
 	try:
 		_, result = run_command(command, remove_ansi_sequence=True)
