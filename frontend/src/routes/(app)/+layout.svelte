@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { auth } from '$stores/auth.svelte';
-	import { Navbar } from '$components/layout';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { AppSidebar, AppHeader } from '$lib/components/layout';
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 
 	let { children } = $props();
 
@@ -15,13 +16,20 @@
 
 {#if auth.isLoading}
 	<div class="min-h-screen flex items-center justify-center">
-		<p class="text-muted-foreground">Loading...</p>
+		<div class="flex flex-col items-center gap-2">
+			<div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent">
+			</div>
+			<p class="text-muted-foreground">Loading...</p>
+		</div>
 	</div>
 {:else if auth.isAuthenticated}
-	<div class="min-h-screen flex flex-col">
-		<Navbar />
-		<main class="flex-1 container py-6">
-			{@render children()}
-		</main>
-	</div>
+	<Sidebar.Provider>
+		<AppSidebar />
+		<Sidebar.Inset>
+			<AppHeader />
+			<main class="flex-1 p-4 pt-0">
+				{@render children()}
+			</main>
+		</Sidebar.Inset>
+	</Sidebar.Provider>
 {/if}
