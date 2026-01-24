@@ -1,4 +1,17 @@
 services:
+  db:
+      image: postgres:16-alpine
+      env_file:
+        - .env
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+      ports:
+        - "5432:5432"
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U rengine"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
   backend:
     build:
       context: ./backend
@@ -11,3 +24,6 @@ services:
       - .env
     environment:
       - WATCHFILES_FORCE_POLLING=true
+
+volumes:
+  postgres_data:

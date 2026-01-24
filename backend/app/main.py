@@ -2,13 +2,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.common.config import settings
+from app.common.utils import create_initial_admin
+from app.database import init_db
 # from app.api.v1 import router as v1_router
+
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # app starts up
-    pass
+    await init_db()
+    await create_initial_admin()
     yield
     # app shuts down, cleanup later if reuqired
 
