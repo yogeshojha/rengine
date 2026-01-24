@@ -16,11 +16,10 @@ from app.common.config import settings
 from app.database import get_session
 from app.models.users import User, UserCreate, UserRead
 from app.schemas.auth import LoginRequest, TokenResponse
+from app.api.deps import CurrentUser, CurrentSuperuser
 
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-
-
 
 def set_auth_cookies(
     response: Response,
@@ -51,42 +50,6 @@ def set_auth_cookies(
 def clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(key="access_token", path="/")
     response.delete_cookie(key="refresh_token", path="/")
-
-
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def register(
-    user_in: UserCreate,
-    session: Annotated[AsyncSession, Depends(get_session)],
-):
-    result = await session.execute(
-        select(User).where(User.email == user_in.email)
-    )
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists",
-        )
-    
-    result = await session.execute(
-        select(User).where(User.username == user_in.username)
-    )
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username already exists",
-        )
-    
-    user = User(
-        email=user_in.email,
-        username=user_in.username,
-        hashed_password=hash_password(user_in.password),
-    )
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
-    
-    return user
-
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
@@ -202,3 +165,50 @@ async def refresh_access_token(
 async def logout(response: Response):
     clear_auth_cookies(response)
     return {"message": "Successfully logged out"}
+
+
+# lets add protected routers here
+
+# get logged in user info
+@router.get("/me", response_model=UserRead)
+async def get_current_user_info(current_user: CurrentUser):
+    return current_user
+
+
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+async def register_user(
+    user_in: UserCreate,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: CurrentSuperuser,
+):
+    """
+    Register a new user. **Admin only**.
+    """
+    result = await session.execute(
+        select(User).where(User.email == user_in.email)
+    )
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists",
+        )
+    
+    result = await session.execute(
+        select(User).where(User.username == user_in.username)
+    )
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this username already exists",
+        )
+    
+    user = User(
+        email=user_in.email,
+        username=user_in.username,
+        hashed_password=hash_password(user_in.password),
+    )
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    
+    return user
