@@ -1,8 +1,8 @@
 from sqlmodel import select
-from app.database import async_db_session
-from app.models.users import User
+from app.core.database import async_db_session
+from app.models.user import User
 from app.core.security import hash_password
-from app.common.config import settings
+from app.config import settings
 
 async def create_initial_admin() -> None:
     """Create initial admin user if no users exist."""

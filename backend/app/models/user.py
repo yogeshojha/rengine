@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlmodel import SQLModel, Field
 from zxcvbn import zxcvbn
 
-from app.common.config import settings
+from app.config import settings
 
 
 # Password policy

@@ -1,8 +1,7 @@
 [project]
-name = "api"
+name = "rengine-backend"
 version = "3.0.0"
 description = "reNgine: Automated attack surface management platform"
-readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "argon2-cffi>=25.1.0",

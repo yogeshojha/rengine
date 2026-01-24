@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     APP_VERSION: str = "dev" # Overwritten by VERSION file
     API_V1_PREFIX: str = "/api/v1"
+
+    ###############################################################
+    # Logging Settings
+    ###############################################################
+    LOG_LEVEL: str = "INFO"
     
     ###############################################################
     # CORS Settings

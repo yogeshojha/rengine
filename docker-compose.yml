@@ -1,29 +1,34 @@
 services:
   db:
-      image: postgres:16-alpine
-      env_file:
-        - .env
-      volumes:
-        - postgres_data:/var/lib/postgresql/data
-      ports:
-        - "5432:5432"
-      healthcheck:
-        test: ["CMD-SHELL", "pg_isready -U rengine"]
-        interval: 5s
-        timeout: 5s
-        retries: 5
+    image: postgres:16-alpine
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rengine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: backend/Dockerfile.dev
     volumes:
       - ./backend/app:/app/app
+      - ./shared:/app/shared
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
       - WATCHFILES_FORCE_POLLING=true
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

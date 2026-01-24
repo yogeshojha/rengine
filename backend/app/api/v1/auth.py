@@ -12,9 +12,9 @@ from app.core.security import (
     create_refresh_token,
     decode_token,
 )
-from app.common.config import settings
-from app.database import get_session
-from app.models.users import User, UserCreate, UserRead
+from app.config import settings
+from app.core.database import get_session
+from app.models.user import User, UserCreate, UserRead
 from app.schemas.auth import LoginRequest, TokenResponse
 from app.api.deps import CurrentUser, CurrentSuperuser
 
