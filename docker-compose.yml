@@ -1,0 +1,13 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend/app:/app/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - WATCHFILES_FORCE_POLLING=true
