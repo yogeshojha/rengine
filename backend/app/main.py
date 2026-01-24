@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.common.config import settings
 from app.common.utils import create_initial_admin
 from app.database import init_db
-# from app.api.v1 import router as v1_router
+from app.api.v1 import router as v1_router
 
 
 
@@ -31,7 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
+app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health")
