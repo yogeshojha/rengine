@@ -1,9 +1,1 @@
-export { default as AppSidebar } from './app-sidebar.svelte';
-export { default as AppHeader } from './app-header.svelte';
-export { default as ProjectSwitcher } from './project-switcher.svelte';
-export { default as NavMain } from './nav-main.svelte';
-export { default as NavToolbox } from './nav-toolbox.svelte';
-export { default as NavQuickActions } from './nav-quick-actions.svelte';
-export { default as NavSearch } from './nav-search.svelte';
-export { default as NavUser } from './nav-user.svelte';
-export { default as NavDocs } from './nav-docs.svelte';
+export { default as NavBar } from './navbar.svelte';
