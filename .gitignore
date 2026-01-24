@@ -123,11 +123,6 @@ dmypy.json
 .pyre/
 
 # IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
 .DS_Store
 
 # FastAPI specific

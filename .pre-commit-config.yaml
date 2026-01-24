@@ -6,6 +6,10 @@ repos:
       - id: ruff
         args: [--fix]
         files: ^backend/
+      - id: ruff
+        name: ruff (check)
+        args: [--exit-non-zero-on-fix]
+        files: ^backend/
       - id: ruff-format
         files: ^backend/
 
