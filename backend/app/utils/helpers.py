@@ -2,7 +2,7 @@ from sqlmodel import select
 
 from app.config import settings
 from app.core.database import async_db_session
-from app.core.logger import logger
+from app.core.logging import logger
 from app.core.security import hash_password
 from app.models.user import User
 
