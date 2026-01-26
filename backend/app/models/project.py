@@ -5,7 +5,7 @@ from sqlmodel import Field, SQLModel
 
 
 class ProjectBase(SQLModel):
-    __tablename__ = "projects"
+    name: str = Field(max_length=200)
 
 
 class Project(ProjectBase, table=True):
@@ -20,8 +20,8 @@ class Project(ProjectBase, table=True):
     created_by: uuid.UUID = Field(foreign_key="users.id")
 
 
-class ProjectCreate(SQLModel):
-    name: str
+class ProjectCreate(ProjectBase):
+    pass
 
 
 class ProjectRead(ProjectBase):

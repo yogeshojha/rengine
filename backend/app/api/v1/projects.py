@@ -1,7 +1,7 @@
 import re
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,7 +41,7 @@ async def list_projects(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    result = await session.execute(select(Project).where(Project.is_active))
+    result = await session.execute(select(Project))
     return result.scalars().all()
 
 
@@ -56,9 +56,27 @@ async def create_project(
     project = Project(
         name=project_in.name,
         slug=slug,
-        created_by_id=current_user.id,
+        created_by=current_user.id,
     )
     session.add(project)
     await session.commit()
     await session.refresh(project)
     return project
+
+
+@router.delete("/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project(
+    slug: str,
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    result = await session.execute(select(Project).where(Project.slug == slug))
+    project = result.scalar_one_or_none()
+
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+
+    project.is_active = False
+    await session.commit()
