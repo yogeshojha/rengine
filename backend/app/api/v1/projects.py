@@ -1,26 +1,18 @@
-import re
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.models import Project, ProjectCreate, ProjectRead
+from app.utils.slug import generate_slug
 
 router = APIRouter(
     prefix="/projects",
     tags=["projects"],
 )
-
-
-def generate_slug(name: str) -> str:
-    slug = name.lower().strip()
-    slug = re.sub(r"[^a-z0-9\s-]", "", slug)
-    slug = re.sub(r"[\s_]+", "-", slug)
-    slug = re.sub(r"-+", "-", slug)
-    return slug.strip("-")
 
 
 async def generate_unique_slug(name: str, session: AsyncSession) -> str:
@@ -40,8 +32,14 @@ async def generate_unique_slug(name: str, session: AsyncSession) -> str:
 async def list_projects(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    include_inactive: bool = Query(False, description="Include soft-deleted projects"),
 ):
-    result = await session.execute(select(Project))
+    query = select(Project)
+
+    if not include_inactive:
+        query = query.where(Project.is_active)
+
+    result = await session.execute(query)
     return result.scalars().all()
 
 
