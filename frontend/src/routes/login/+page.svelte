@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { auth } from '$stores/auth.svelte';
-	import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent } from '$components/ui';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui';
 	import { Radar } from 'lucide-svelte';
 
 	let username = $state('');

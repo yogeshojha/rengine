@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { auth } from '$stores/auth.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 
 	$effect(() => {
 		if (!auth.isLoading) {

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { auth } from '$stores/auth.svelte';
-	import { Card, CardHeader, CardTitle, CardContent } from '$components/ui';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui';
 	import { Target, Radar, AlertTriangle, Globe } from 'lucide-svelte';
 
 	// Placeholder stats - will be replaced with actual data
