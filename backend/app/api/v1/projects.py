@@ -64,6 +64,23 @@ async def create_project(
     return project
 
 
+@router.get("/{slug}", response_model=ProjectRead)
+async def get_project(
+    slug: str,
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    result = await session.execute(select(Project).where(Project.slug == slug))
+    project = result.scalar_one_or_none()
+
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+
+    return project
+
+
 @router.delete("/{slug}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
     slug: str,
