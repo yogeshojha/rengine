@@ -15,6 +15,13 @@ repos:
         files: ^backend/
 
   # TODO: for svelte frontend - add prettier or eslint
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier-format
+        entry: npx prettier --write --ignore-unknown
+        language: system
+        files: ^frontend/.*\.(js|ts|svelte|json|css|scss|html)$
 
   # General
   - repo: https://github.com/pre-commit/pre-commit-hooks
