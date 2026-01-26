@@ -10,5 +10,8 @@
     ".venv": true,
     "venv": true,
     ".ruff_cache": true
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
   }
 }
