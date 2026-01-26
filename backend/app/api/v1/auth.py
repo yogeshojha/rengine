@@ -21,6 +21,7 @@ from app.api.deps import CurrentUser, CurrentSuperuser
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
+
 def set_auth_cookies(
     response: Response,
     access_token: str,
@@ -35,7 +36,7 @@ def set_auth_cookies(
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
     )
-    
+
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
@@ -51,6 +52,7 @@ def clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(key="access_token", path="/")
     response.delete_cookie(key="refresh_token", path="/")
 
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     login_data: LoginRequest,
@@ -61,25 +63,25 @@ async def login(
         select(User).where(User.username == login_data.username)
     )
     user = result.scalar_one_or_none()
-    
+
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
         )
-    
+
     access_token = create_access_token(str(user.id))
     refresh_token = create_refresh_token(str(user.id))
-    
+
     set_auth_cookies(response, access_token, refresh_token)
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -99,7 +101,7 @@ async def refresh_access_token(
             detail="Refresh token not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     payload = decode_token(refresh_token)
     if payload is None:
         raise HTTPException(
@@ -107,14 +109,14 @@ async def refresh_access_token(
             detail="Invalid or expired refresh token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if payload.get("type") != "refresh":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token type",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     user_id_str = payload.get("sub")
     if not user_id_str:
         raise HTTPException(
@@ -122,7 +124,7 @@ async def refresh_access_token(
             detail="Invalid token payload",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     try:
         user_id = UUID(user_id_str)
     except ValueError:
@@ -131,30 +133,28 @@ async def refresh_access_token(
             detail="Invalid user ID in token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    result = await session.execute(
-        select(User).where(User.id == user_id)
-    )
+
+    result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
         )
-    
+
     new_access_token = create_access_token(str(user.id))
     new_refresh_token = create_refresh_token(str(user.id))
-    
+
     set_auth_cookies(response, new_access_token, new_refresh_token)
-    
+
     return TokenResponse(
         access_token=new_access_token,
         refresh_token=new_refresh_token,
@@ -168,6 +168,7 @@ async def logout(response: Response):
 
 
 # lets add protected routers here
+
 
 # get logged in user info
 @router.get("/me", response_model=UserRead)
@@ -184,15 +185,13 @@ async def register_user(
     """
     Register a new user. **Admin only**.
     """
-    result = await session.execute(
-        select(User).where(User.email == user_in.email)
-    )
+    result = await session.execute(select(User).where(User.email == user_in.email))
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this email already exists",
         )
-    
+
     result = await session.execute(
         select(User).where(User.username == user_in.username)
     )
@@ -201,7 +200,7 @@ async def register_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this username already exists",
         )
-    
+
     user = User(
         email=user_in.email,
         username=user_in.username,
@@ -210,5 +209,5 @@ async def register_user(
     session.add(user)
     await session.commit()
     await session.refresh(user)
-    
+
     return user

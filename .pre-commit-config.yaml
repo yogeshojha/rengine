@@ -4,13 +4,14 @@ repos:
     rev: v0.14.14
     hooks:
       - id: ruff
-        args: [--fix]
-        files: ^backend/
-      - id: ruff
-        name: ruff (check)
-        args: [--exit-non-zero-on-fix]
+        name: ruff-fix
+        args: [--fix, --exit-zero]
         files: ^backend/
       - id: ruff-format
+        files: ^backend/
+      - id: ruff
+        name: ruff-check
+        args: [--exit-non-zero-on-fix]
         files: ^backend/
 
   # TODO: for svelte frontend - add prettier or eslint

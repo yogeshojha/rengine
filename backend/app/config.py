@@ -8,14 +8,14 @@ class Settings(BaseSettings):
     ###############################################################
     APP_NAME: str = "reNgine"
     DEBUG: bool = False
-    APP_VERSION: str = "dev" # Overwritten by VERSION file
+    APP_VERSION: str = "dev"  # Overwritten by VERSION file
     API_V1_PREFIX: str = "/api/v1"
 
     ###############################################################
     # Logging Settings
     ###############################################################
     LOG_LEVEL: str = "INFO"
-    
+
     ###############################################################
     # CORS Settings
     ###############################################################
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@rengine.local"
     ADMIN_USERNAME: str = "rengine"
     ADMIN_PASSWORD: str = "rengine@123"
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = True

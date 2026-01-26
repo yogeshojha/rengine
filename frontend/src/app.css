@@ -2,58 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-    :root {
-        --background: 0 0% 100%;
-        --foreground: 240 10% 3.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 240 10% 3.9%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 240 10% 3.9%;
-        --primary: 240 5.9% 10%;
-        --primary-foreground: 0 0% 98%;
-        --secondary: 240 4.8% 95.9%;
-        --secondary-foreground: 240 5.9% 10%;
-        --muted: 240 4.8% 95.9%;
-        --muted-foreground: 240 3.8% 46.1%;
-        --accent: 240 4.8% 95.9%;
-        --accent-foreground: 240 5.9% 10%;
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 240 5.9% 90%;
-        --input: 240 5.9% 90%;
-        --ring: 240 10% 3.9%;
-        --radius: 0.5rem;
-    }
-
-    .dark {
-        --background: 240 10% 3.9%;
-        --foreground: 0 0% 98%;
-        --card: 240 10% 3.9%;
-        --card-foreground: 0 0% 98%;
-        --popover: 240 10% 3.9%;
-        --popover-foreground: 0 0% 98%;
-        --primary: 0 0% 98%;
-        --primary-foreground: 240 5.9% 10%;
-        --secondary: 240 3.7% 15.9%;
-        --secondary-foreground: 0 0% 98%;
-        --muted: 240 3.7% 15.9%;
-        --muted-foreground: 240 5% 64.9%;
-        --accent: 240 3.7% 15.9%;
-        --accent-foreground: 0 0% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 240 3.7% 15.9%;
-        --input: 240 3.7% 15.9%;
-        --ring: 240 4.9% 83.9%;
-    }
-}
 
 @layer base {
-    * {
-        @apply border-border;
-    }
-    body {
-        @apply bg-background text-foreground;
-    }
+  :root {
+    --background: <%- colors.light["background"] %>;
+    --foreground: <%- colors.light["foreground"] %>;
+    --card: <%- colors.light["card"] %>;
+    --card-foreground: <%- colors.light["card-foreground"] %>;
+    --popover: <%- colors.light["popover"] %>;
+    --popover-foreground: <%- colors.light["popover-foreground"] %>;
+    --primary: <%- colors.light["primary"] %>;
+    --primary-foreground: <%- colors.light["primary-foreground"] %>;
+    --secondary: <%- colors.light["secondary"] %>;
+    --secondary-foreground: <%- colors.light["secondary-foreground"] %>;
+    --muted: <%- colors.light["muted"] %>;
+    --muted-foreground: <%- colors.light["muted-foreground"] %>;
+    --accent: <%- colors.light["accent"] %>;
+    --accent-foreground: <%- colors.light["accent-foreground"] %>;
+    --destructive: <%- colors.light["destructive"] %>;
+    --destructive-foreground: <%- colors.light["destructive-foreground"] %>;
+    --border: <%- colors.light["border"] %>;
+    --input: <%- colors.light["input"] %>;
+    --ring: <%- colors.light["ring"] %>;
+    --radius: 0.5rem;
+    --chart-1: <%- colors.light["chart-1"] %>;
+    --chart-2: <%- colors.light["chart-2"] %>;
+    --chart-3: <%- colors.light["chart-3"] %>;
+    --chart-4: <%- colors.light["chart-4"] %>;
+    --chart-5: <%- colors.light["chart-5"] %>;
+  }
+
+  .dark {
+    --background: <%- colors.dark["background"] %>;
+    --foreground: <%- colors.dark["foreground"] %>;
+    --card: <%- colors.dark["card"] %>;
+    --card-foreground: <%- colors.dark["card-foreground"] %>;
+    --popover: <%- colors.dark["popover"] %>;
+    --popover-foreground: <%- colors.dark["popover-foreground"] %>;
+    --primary: <%- colors.dark["primary"] %>;
+    --primary-foreground: <%- colors.dark["primary-foreground"] %>;
+    --secondary: <%- colors.dark["secondary"] %>;
+    --secondary-foreground: <%- colors.dark["secondary-foreground"] %>;
+    --muted: <%- colors.dark["muted"] %>;
+    --muted-foreground: <%- colors.dark["muted-foreground"] %>;
+    --accent: <%- colors.dark["accent"] %>;
+    --accent-foreground: <%- colors.dark["accent-foreground"] %>;
+    --destructive: <%- colors.dark["destructive"] %>;
+    --destructive-foreground: <%- colors.dark["destructive-foreground"] %>;
+    --border: <%- colors.dark["border"] %>;
+    --input: <%- colors.dark["input"] %>;
+    --ring: <%- colors.dark["ring"] %>;
+    --chart-1: <%- colors.dark["chart-1"] %>;
+    --chart-2: <%- colors.dark["chart-2"] %>;
+    --chart-3: <%- colors.dark["chart-3"] %>;
+    --chart-4: <%- colors.dark["chart-4"] %>;
+    --chart-5: <%- colors.dark["chart-5"] %>;
+  }
 }

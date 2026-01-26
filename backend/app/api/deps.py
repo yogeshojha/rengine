@@ -16,12 +16,14 @@ security = HTTPBearer(auto_error=False)
 
 async def get_token_from_request(
     request: Request,
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)] = None,
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(security)
+    ] = None,
 ) -> str:
-    # svelte and browser based 
+    # svelte and browser based
     if credentials:
         return credentials.credentials
-    
+
     token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(
@@ -29,7 +31,7 @@ async def get_token_from_request(
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     return token
 
 
@@ -48,7 +50,7 @@ async def get_current_user(
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Verify token type
     if payload.get("type") != "access":
         raise HTTPException(
@@ -56,7 +58,7 @@ async def get_current_user(
             detail="Invalid token type",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Get user ID
     user_id_str = payload.get("sub")
     if not user_id_str:
@@ -65,7 +67,7 @@ async def get_current_user(
             detail="Invalid token payload",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     try:
         user_id = UUID(user_id_str)
     except ValueError:
@@ -74,20 +76,18 @@ async def get_current_user(
             detail="Invalid user ID in token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Fetch user
-    result = await session.execute(
-        select(User).where(User.id == user_id)
-    )
+    result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     return user
 
 

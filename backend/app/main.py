@@ -10,9 +10,10 @@ from shared.logging import setup_logging, get_logger
 
 logger = setup_logging(
     name="rengine.backend",
-    level=settings.LOG_LEVEL if hasattr(settings, 'LOG_LEVEL') else "INFO",
+    level=settings.LOG_LEVEL if hasattr(settings, "LOG_LEVEL") else "INFO",
     colored=True,
 )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,6 +55,7 @@ async def root():
         "version": settings.APP_VERSION,
         "docs": "/docs",
     }
+
 
 @app.get("/health")
 async def health_check():

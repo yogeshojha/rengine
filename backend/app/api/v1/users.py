@@ -22,12 +22,12 @@ async def list_users(
     """
     List all users. **Admin only**.
     """
-    
+
     # Get paginated users
     query = select(User).offset(skip).limit(limit)
     result = await session.execute(query)
     users = result.scalars().all()
-    
+
     return users
 
 
@@ -35,13 +35,13 @@ async def list_users(
 async def get_user(
     user_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: CurrentSuperuser, # superuser only
+    current_user: CurrentSuperuser,  # superuser only
 ):
     """
     Get user by ID. **Admin only**.
     """
     from uuid import UUID
-    
+
     try:
         uuid_id = UUID(user_id)
     except ValueError:
@@ -49,18 +49,16 @@ async def get_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user ID format",
         )
-    
-    result = await session.execute(
-        select(User).where(User.id == uuid_id)
-    )
+
+    result = await session.execute(select(User).where(User.id == uuid_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    
+
     return user
 
 
@@ -74,7 +72,7 @@ async def delete_user(
     Delete user by ID. **Admin only**.
     """
     from uuid import UUID
-    
+
     try:
         uuid_id = UUID(user_id)
     except ValueError:
@@ -82,26 +80,24 @@ async def delete_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user ID format",
         )
-    
+
     # Prevent self-deletion
     if uuid_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete yourself",
         )
-    
-    result = await session.execute(
-        select(User).where(User.id == uuid_id)
-    )
+
+    result = await session.execute(select(User).where(User.id == uuid_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    
+
     await session.delete(user)
     await session.commit()
-    
+
     return {"message": f"User {user.username} deleted successfully"}
