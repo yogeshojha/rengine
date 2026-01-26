@@ -1,23 +1,22 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+from app.api.deps import CurrentSuperuser, CurrentUser
+from app.config import settings
+from app.core.database import get_session
 from app.core.security import (
-    verify_password,
-    hash_password,
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_password,
+    verify_password,
 )
-from app.config import settings
-from app.core.database import get_session
 from app.models.user import User, UserCreate, UserRead
 from app.schemas.auth import LoginRequest, TokenResponse
-from app.api.deps import CurrentUser, CurrentSuperuser
-
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -127,12 +126,12 @@ async def refresh_access_token(
 
     try:
         user_id = UUID(user_id_str)
-    except ValueError:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid user ID in token",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from e
 
     result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -180,7 +179,7 @@ async def get_current_user_info(current_user: CurrentUser):
 async def register_user(
     user_in: UserCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: CurrentSuperuser,
+    current_user: CurrentSuperuser,  # noqa: ARG001
 ):
     """
     Register a new user. **Admin only**.

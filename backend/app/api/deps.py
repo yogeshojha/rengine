@@ -1,15 +1,14 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.core.security import decode_token
 from app.core.database import get_session
+from app.core.security import decode_token
 from app.models.user import User
-
 
 security = HTTPBearer(auto_error=False)
 
@@ -70,12 +69,12 @@ async def get_current_user(
 
     try:
         user_id = UUID(user_id_str)
-    except ValueError:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid user ID in token",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from e
 
     # Fetch user
     result = await session.execute(select(User).where(User.id == user_id))

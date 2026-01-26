@@ -1,13 +1,13 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+from app.api.deps import CurrentSuperuser
 from app.core.database import get_session
 from app.models.user import User, UserRead
-from app.api.deps import CurrentSuperuser
-
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.get("/", response_model=list[UserRead])
 async def list_users(
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: CurrentSuperuser,  # Only superusers can list all users
+    current_user: CurrentSuperuser,  # noqa: ARG001
     skip: int = 0,
     limit: int = 100,
 ):
@@ -26,29 +26,26 @@ async def list_users(
     # Get paginated users
     query = select(User).offset(skip).limit(limit)
     result = await session.execute(query)
-    users = result.scalars().all()
-
-    return users
+    return result.scalars().all()
 
 
 @router.get("/{user_id}", response_model=UserRead)
 async def get_user(
     user_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: CurrentSuperuser,  # superuser only
+    current_user: CurrentSuperuser,  # noqa: ARG001
 ):
     """
     Get user by ID. **Admin only**.
     """
-    from uuid import UUID
 
     try:
         uuid_id = UUID(user_id)
-    except ValueError:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user ID format",
-        )
+        ) from e
 
     result = await session.execute(select(User).where(User.id == uuid_id))
     user = result.scalar_one_or_none()
@@ -71,15 +68,14 @@ async def delete_user(
     """
     Delete user by ID. **Admin only**.
     """
-    from uuid import UUID
 
     try:
         uuid_id = UUID(user_id)
-    except ValueError:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user ID format",
-        )
+        ) from e
 
     # Prevent self-deletion
     if uuid_id == current_user.id:

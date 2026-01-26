@@ -1,12 +1,11 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 
 from app.config import settings
-
 
 ph = PasswordHasher(
     time_cost=2,
@@ -54,7 +53,7 @@ def create_token(
     expires_delta: timedelta,
 ) -> str:
     """Create a JWT token with the given subject and expiration."""
-    expire = datetime.now(timezone.utc) + expires_delta
+    expire = datetime.now(UTC) + expires_delta
     to_encode = {
         "exp": expire,
         "sub": str(subject),
@@ -67,7 +66,7 @@ def create_access_token(subject: str | Any) -> str:
     """Create an access token for the given subject."""
     return create_token(
         subject=subject,
-        token_type="access",
+        token_type="access",  # noqa: S106
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
@@ -76,7 +75,7 @@ def create_refresh_token(subject: str | Any) -> str:
     """Create a refresh token for the given subject."""
     return create_token(
         subject=subject,
-        token_type="refresh",
+        token_type="refresh",  # noqa: S106
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
 
@@ -89,11 +88,10 @@ def decode_token(token: str) -> dict | None:
         Decoded payload dict if valid, None otherwise
     """
     try:
-        payload = jwt.decode(
+        return jwt.decode(
             token,
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
-        return payload
     except JWTError:
         return None

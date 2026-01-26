@@ -23,35 +23,35 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const author = context.payload.sender.login;
-            
+
             if (context.eventName === 'issues' && context.payload.action === 'opened') {
               const issueTitle = context.payload.issue.title.toLowerCase();
               let commentBody;
-              
+
               if (issueTitle.includes('feat')) {
                 commentBody = `Hey @${author}! 🚀 Thanks for this exciting feature idea!
 
             We love seeing fresh concepts that could take reNgine to the next level. 🌟
-            
+
             To help us understand your vision better, could you:
-            
+
             📝 Provide a detailed description of the feature
             🎯 Explain the problem it solves or the value it adds
             💡 Share any implementation ideas you might have
-            
+
             Your input is invaluable in shaping the future of reNgine. Let's innovate together! 💪`;
               } else {
                 commentBody = `Hey @${author}! 👋 Thanks for flagging this bug! 🐛🔍
 
             You're our superhero bug hunter! 🦸‍♂️🦸‍♀️ Before we suit up to squash this bug, could you please:
-            
+
             📚 Double-check our documentation: https://rengine.wiki
             🕵️ Make sure it's not a known issue
             📝 Provide all the juicy details about this sneaky bug
-            
+
             Once again - thanks for your vigilance! 🛠️🚀`;
               }
-              
+
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner,
@@ -74,8 +74,8 @@ jobs:
               if (isPRMerged) {
                 commentBody = `Holy smokes! 🤯 You've just made reNgine even more awesome!
 
-            Your code is now part of the reNgine hall of fame. 🏆 
-            
+            Your code is now part of the reNgine hall of fame. 🏆
+
             Keep the cool ideas coming - maybe next time you'll break the internet! 💻💥
 
             Virtual high fives all around! 🙌`;
@@ -83,9 +83,9 @@ jobs:
                 commentBody = `Hey, thanks for your contribution! 🙏
 
             We appreciate the time and effort you put into this PR. Sadly this is not the right fit for reNgine at the moment.
-            
+
             While we couldn't merge it this time, we value your interest in improving reNgine.
-            
+
             Feel free to reach out if you have any questions. Thanks again!`;
               }
 

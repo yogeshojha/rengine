@@ -1,5 +1,6 @@
 import uuid
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
 
 
 class ProjectBase(SQLModel):

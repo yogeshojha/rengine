@@ -3,12 +3,12 @@
     "**/__pycache__": true,
     "**/*.pyc": true,
     "**/*.pyo": true,
-    ".ruff_cache": true,
+    ".ruff_cache": true
   },
   "search.exclude": {
     "**/__pycache__": true,
     ".venv": true,
     "venv": true,
-    ".ruff_cache": true,
-  },
+    ".ruff_cache": true
+  }
 }

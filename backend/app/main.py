@@ -1,22 +1,17 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import settings
-from app.utils.helpers import create_initial_admin
-from app.core.database import init_db
+
 from app.api.router import router as api_router
-from shared.logging import setup_logging, get_logger
-
-
-logger = setup_logging(
-    name="rengine.backend",
-    level=settings.LOG_LEVEL if hasattr(settings, "LOG_LEVEL") else "INFO",
-    colored=True,
-)
+from app.config import settings
+from app.core.database import init_db
+from app.core.logging import logger
+from app.utils.helpers import create_initial_admin
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     # app starts up
     logger.info("Starting Backend...")
     try:

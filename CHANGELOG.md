@@ -202,7 +202,7 @@
 * Fix uninitialised variable cmd in custom_subdomain_tools by @cpandya2909 in https://github.com/yogeshojha/rengine/pull/1207
 * [FIX] security: OS Command Injection vulnerability (x2) #1219 by @0xtejas in https://github.com/yogeshojha/rengine/pull/1227
 
-### New Contributors :rocket: 
+### New Contributors :rocket:
 * @yarysp made their first contribution in https://github.com/yogeshojha/rengine/pull/1199
 * @jostasik made their first contribution in https://github.com/yogeshojha/rengine/pull/1226
 * @cpandya2909 made their first contribution in https://github.com/yogeshojha/rengine/pull/1207
@@ -278,19 +278,19 @@
 * fix(tool_arsenal): incorrect regex version numbers by @AnonymousWP in https://github.com/yogeshojha/rengine/pull/1086
 
 ### New Contributors
-* @luizmlo made their first contribution in https://github.com/yogeshojha/rengine/pull/1029 :partying_face: 
-* @aqhmal made their first contribution in https://github.com/yogeshojha/rengine/pull/1021 :partying_face: 
-* @C0wnuts made their first contribution in https://github.com/yogeshojha/rengine/pull/973 :partying_face: 
-* @ocervell made their first contribution in https://github.com/yogeshojha/rengine/pull/1058 :partying_face: 
-* @Vijayragha1 made their first contribution in https://github.com/yogeshojha/rengine/pull/1074 :partying_face: 
-* @jxdv made their first contribution in https://github.com/yogeshojha/rengine/pull/1081 :partying_face: 
-* @SeanOverton made their first contribution in https://github.com/yogeshojha/rengine/pull/1106 :partying_face: 
-* @SubGlitch1 made their first contribution in https://github.com/yogeshojha/rengine/pull/1107 :partying_face: 
-* @Linuxinet made their first contribution in https://github.com/yogeshojha/rengine/pull/1112 :partying_face: 
+* @luizmlo made their first contribution in https://github.com/yogeshojha/rengine/pull/1029 :partying_face:
+* @aqhmal made their first contribution in https://github.com/yogeshojha/rengine/pull/1021 :partying_face:
+* @C0wnuts made their first contribution in https://github.com/yogeshojha/rengine/pull/973 :partying_face:
+* @ocervell made their first contribution in https://github.com/yogeshojha/rengine/pull/1058 :partying_face:
+* @Vijayragha1 made their first contribution in https://github.com/yogeshojha/rengine/pull/1074 :partying_face:
+* @jxdv made their first contribution in https://github.com/yogeshojha/rengine/pull/1081 :partying_face:
+* @SeanOverton made their first contribution in https://github.com/yogeshojha/rengine/pull/1106 :partying_face:
+* @SubGlitch1 made their first contribution in https://github.com/yogeshojha/rengine/pull/1107 :partying_face:
+* @Linuxinet made their first contribution in https://github.com/yogeshojha/rengine/pull/1112 :partying_face:
 
 **Full Changelog**: https://github.com/yogeshojha/rengine/compare/v2.0.1...v2.0.2
 
-Once again excellent work on reNgine v2.0.2 by @AnonymousWP, @psyray, @ocervell and everybody else! :rocket: 
+Once again excellent work on reNgine v2.0.2 by @AnonymousWP, @psyray, @ocervell and everybody else! :rocket:
 
 ## 2.0.1
 
@@ -299,7 +299,7 @@ Once again excellent work on reNgine v2.0.2 by @AnonymousWP, @psyray, @ocervell 
 
 2.0.1 fixes a ton of issues in reNgine 2.0.
 
-Fixes: 
+Fixes:
 1. Prevent duplicating Nuclei vulns for subdomain #1012 @psyray
 2. Fixes for empty subdomain returned during nuclei scan #1011 @psyray
 3. Add all the missing slug in scanEngine view & other places #1005 @psyray
@@ -314,13 +314,13 @@ Fixes:
 11. Add stack trace into make logs if DEBUG True #994 @psyray
 12. Fix dirfuzz base64 name display #993 #992 @psyray
 13. Fix target subdomains list not loading #991 @psyray
-14. Change WORDLIST constant value #987, fixes #986@psyray 
+14. Change WORDLIST constant value #987, fixes #986@psyray
 15. fix(notification_settings): submitting results in error 502 #981 fixes #970 @psyray
 16. Fixes with documentation and installation/update/uninstall scripts @anonymousWP
 17. Fix file directory popup not showing in detailed scan #912 @psyray
 
 
-@AnonymousWP and @psyray have been phenomenal in fixing these bugs. Thanks to both of you! :heart: :rocket: 
+@AnonymousWP and @psyray have been phenomenal in fixing these bugs. Thanks to both of you! :heart: :rocket:
 
 
 ## 2.0.0

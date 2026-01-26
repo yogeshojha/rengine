@@ -1,8 +1,10 @@
 from sqlmodel import select
-from app.core.database import async_db_session
-from app.models.user import User
-from app.core.security import hash_password
+
 from app.config import settings
+from app.core.database import async_db_session
+from app.core.logger import logger
+from app.core.security import hash_password
+from app.models.user import User
 
 
 async def create_initial_admin() -> None:
@@ -20,4 +22,4 @@ async def create_initial_admin() -> None:
             )
             session.add(admin)
             await session.commit()
-            print(f"Initial admin created: {settings.ADMIN_USERNAME}")
+            logger.info(f"Initial admin created: {settings.ADMIN_USERNAME}")

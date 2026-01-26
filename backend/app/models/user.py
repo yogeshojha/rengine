@@ -1,15 +1,12 @@
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
 import uuid as uuid_pkg
+from datetime import UTC, datetime
 
-from pydantic import field_validator, ValidationInfo
-from sqlalchemy.dialects.postgresql import UUID
-from sqlmodel import SQLModel, Field
+from pydantic import ValidationInfo, field_validator
+from sqlmodel import Field, SQLModel
 from zxcvbn import zxcvbn
 
 from app.config import settings
-
 
 # Password policy
 MIN_PASSWORD_SCORE = 3
@@ -31,9 +28,9 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
-    updated_at: Optional[datetime] = Field(default=None)
+    updated_at: datetime | None = Field(default=None)
 
 
 class UserCreate(SQLModel):
@@ -49,9 +46,10 @@ class UserCreate(SQLModel):
             return password
 
         if len(password) < MIN_PASSWORD_LENGTH:
-            raise ValueError(
+            return_error = (
                 f"Password must be at least {MIN_PASSWORD_LENGTH} characters long"
             )
+            raise ValueError(return_error)
 
         result = zxcvbn(
             password,
@@ -59,13 +57,15 @@ class UserCreate(SQLModel):
         )
 
         if result["score"] < MIN_PASSWORD_SCORE:
-            raise ValueError(
+            return_error = (
                 "Password is too weak. Consider using a stronger password with a "
                 "mix of uppercase, lowercase, numbers, and special characters."
             )
+            raise ValueError(return_error)
 
-        if result["guesses_log10"] < 3:
-            raise ValueError("This password is too common or easily guessable.")
+        if result["guesses_log10"] < MIN_PASSWORD_SCORE:
+            return_error = "Password is too guessable. Choose a less common password."
+            raise ValueError(return_error)
 
         return password
 
@@ -73,4 +73,4 @@ class UserCreate(SQLModel):
 class UserRead(UserBase):
     id: uuid_pkg.UUID
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
