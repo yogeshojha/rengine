@@ -32,8 +32,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: frontend/Dockerfile.dev
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/static:/app/static

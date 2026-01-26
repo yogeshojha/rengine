@@ -2,10 +2,13 @@ FROM node:22-slim
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY VERSION ./VERSION
+
+COPY frontend/package*.json ./
+
 RUN npm install
 
-COPY . .
+COPY frontend/. .
 
 EXPOSE 5173
 
