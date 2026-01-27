@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
+	import AppSidebar from '$lib/components/layout/app-sidebar.svelte';
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 
 	let { children } = $props();
 
@@ -17,5 +19,10 @@
 		<p class="text-muted-foreground">Loading...</p>
 	</div>
 {:else if auth.isAuthenticated}
-	<h1>authenticated</h1>
+	<Sidebar.Provider>
+		<AppSidebar />
+		<Sidebar.Inset>
+			{@render children()}
+		</Sidebar.Inset>
+	</Sidebar.Provider>
 {/if}
