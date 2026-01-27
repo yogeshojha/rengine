@@ -23,14 +23,13 @@
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 
 	let commandOpen = $state(false);
 	let scansSheetOpen = $state(false);
 
-	// TODO: Dummy ongoing scans count (will come from API later)
 	const ongoingScansCount = $state(3);
 
-	// TODO: we will get this through api later
 	const notifications = $state([
 		{
 			id: 1,
@@ -95,36 +94,57 @@
 
 	const handleAddTarget = () => {
 		console.log('Add Target clicked');
-		// TODO: Open Add Target modal
 	};
 
 	const handleAddOrganization = () => {
 		console.log('Add Organization clicked');
-		// TODO: Open Add Organization modal
 	};
 
 	const handleNewScanEngine = () => {
 		console.log('New Scan Engine clicked');
-		// TODO: Navigate to scan engine creation
 	};
 
 	const handleNewScanContext = () => {
 		console.log('New Scan Context clicked');
-		// TODO: Navigate to scan context creation
 	};
 
 	const markAllAsRead = () => {
 		notifications.forEach((n) => (n.read = true));
 	};
+
+	interface BreadcrumbItem {
+		label: string;
+		href?: string;
+	}
+
+	let { breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItem[] } = $props();
 </script>
 
 <header
-	class="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4"
+	class="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4"
 >
 	<Sidebar.Trigger class="-ml-1" />
 	<Separator orientation="vertical" class="mr-2 h-4" />
 
-	<!-- TODO: Remove this placeholder once breadcrumbs or page title is added -->
+	<!-- Breadcrumbs -->
+	{#if breadcrumbs.length > 0}
+		<nav class="flex items-center gap-1.5 text-sm">
+			{#each breadcrumbs as crumb, i}
+				{#if i > 0}
+					<ChevronRightIcon class="size-3.5 text-muted-foreground/50" />
+				{/if}
+
+				{#if crumb.href && i < breadcrumbs.length - 1}
+					<a href={crumb.href} class="text-muted-foreground hover:text-foreground transition-colors">
+						{crumb.label}
+					</a>
+				{:else}
+					<span class="text-foreground font-medium">{crumb.label}</span>
+				{/if}
+			{/each}
+		</nav>
+	{/if}
+
 	<div class="flex-1"></div>
 
 	<Button
@@ -143,12 +163,7 @@
 	</Button>
 
 	<!-- Ongoing Scans Button -->
-	<Button
-		variant="ghost"
-		size="icon"
-		class="relative"
-		onclick={() => (scansSheetOpen = true)}
-	>
+	<Button variant="ghost" size="icon" class="relative" onclick={() => (scansSheetOpen = true)}>
 		<ActivityIcon class="h-4 w-4" />
 		{#if ongoingScansCount > 0}
 			<Badge
@@ -289,9 +304,8 @@
 			</Sheet.Description>
 		</Sheet.Header>
 		<div class="flex-1 py-6">
-			<!-- TODO: Add scan list content here -->
 			<div class="flex items-center justify-center h-64 text-muted-foreground">
-				<p>Ongoinh Scans...</p>
+				<p>Ongoing Scans...</p>
 			</div>
 		</div>
 	</Sheet.Content>
@@ -348,13 +362,11 @@
 </Dialog.Root>
 
 <style>
-	/* Firefox */
 	.thin-scrollbar {
 		scrollbar-width: thin;
 		scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
 	}
 
-	/* Chrome, Safari, Edge */
 	.thin-scrollbar::-webkit-scrollbar {
 		width: 6px;
 	}
