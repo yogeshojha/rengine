@@ -65,3 +65,15 @@
 		</Sidebar.Inset>
 	</Sidebar.Provider>
 {/if}
+
+
+<style>
+	:global([data-variant="inset"][data-state="collapsed"] [data-slot="sidebar-gap"]) {
+		width: var(--sidebar-width-icon) !important;
+	}
+	:global([data-variant="inset"][data-state="collapsed"] [data-slot="sidebar-container"]) {
+		width: var(--sidebar-width-icon) !important;
+		overflow: visible !important;
+		padding: 0 !important;
+	}
+</style>

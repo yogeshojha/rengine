@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { toast } from 'svelte-sonner';
 
 export interface User {
 	id: string;
@@ -54,6 +55,7 @@ function createAuthStore() {
 
 			if (response.ok) {
 				await checkAuth();
+				toast.success('Welcome back, ' + state.user?.username + '!');
 				return { success: true };
 			} else {
 				const data = await response.json();

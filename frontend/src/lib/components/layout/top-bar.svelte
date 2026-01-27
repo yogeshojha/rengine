@@ -120,11 +120,9 @@
 	let { breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItem[] } = $props();
 </script>
 
-<header
-	class="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4"
->
-	<Sidebar.Trigger class="-ml-1" />
-	<Separator orientation="vertical" class="mr-2 h-4" />
+<header class="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
+	<Sidebar.Trigger class="-ms-1" />
+	<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
 
 	<!-- Breadcrumbs -->
 	{#if breadcrumbs.length > 0}
@@ -135,7 +133,10 @@
 				{/if}
 
 				{#if crumb.href && i < breadcrumbs.length - 1}
-					<a href={crumb.href} class="text-muted-foreground hover:text-foreground transition-colors">
+					<a
+						href={crumb.href}
+						class="text-muted-foreground hover:text-foreground transition-colors"
+					>
 						{crumb.label}
 					</a>
 				{:else}
