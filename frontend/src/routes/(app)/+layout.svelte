@@ -3,6 +3,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import AppSidebar from '$lib/components/layout/app-sidebar.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { Spinner } from '$lib/components/ui/spinner/index.js';
 
 	let { children } = $props();
 
@@ -16,6 +17,7 @@
 
 {#if auth.isLoading}
 	<div class="min-h-screen flex items-center justify-center">
+		<Spinner />
 		<p class="text-muted-foreground">Loading...</p>
 	</div>
 {:else if auth.isAuthenticated}
