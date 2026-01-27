@@ -1,65 +1,107 @@
 <script lang="ts" module>
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import CrosshairIcon from '@lucide/svelte/icons/crosshair';
+	import RadarIcon from '@lucide/svelte/icons/radar';
 	import ZapIcon from '@lucide/svelte/icons/zap';
-	import ClockIcon from '@lucide/svelte/icons/clock';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 
 	const data = {
-		navMain: [
+		navGroups: [
 			{
-				title: 'Dashboard',
-				url: '/dashboard',
-				icon: LayoutDashboardIcon,
-				isActive: true
-			},
-			{
-				title: 'Targets',
-				url: '/targets',
-				icon: CrosshairIcon
-			},
-			{
-				title: 'Automation',
-				url: '/automation',
-				icon: ZapIcon,
+				label: null,
 				items: [
 					{
-						title: 'Scan Engines',
-						url: '/automation/engines'
-					},
-					{
-						title: 'Scan Contexts',
-						url: '/automation/contexts'
+						title: 'Dashboard',
+						url: '/dashboard',
+						icon: LayoutDashboardIcon
 					}
 				]
 			},
 			{
-				title: 'Scans',
-				url: '/scans',
-				icon: ClockIcon
+				label: 'Reconnaissance',
+				items: [
+					{
+						title: 'Targets',
+						url: '/targets',
+						icon: CrosshairIcon
+					},
+					{
+						title: 'Scans',
+						url: '/scans',
+						icon: RadarIcon
+					},
+					{
+						title: 'Automation',
+						url: '/automation',
+						icon: ZapIcon,
+						items: [
+							{
+								title: 'Scan Engines',
+								url: '/automation/engines'
+							},
+							{
+								title: 'Scan Contexts',
+								url: '/automation/contexts'
+							}
+						]
+					}
+				]
 			},
 			{
-				title: 'Vulnerabilities',
-				url: '/vulnerabilities',
-				icon: ShieldAlertIcon
+				label: 'Intelligence',
+				items: [
+					{
+						title: 'Vulnerabilities',
+						url: '/vulnerabilities',
+						icon: ShieldAlertIcon
+					},
+					{
+						title: 'Assets',
+						url: '/assets',
+						icon: DatabaseIcon,
+						items: [
+							{
+								title: 'Subdomains',
+								url: '/assets/subdomains'
+							},
+							{
+								title: 'Endpoints',
+								url: '/assets/endpoints'
+							},
+							{
+								title: 'IP Addresses',
+								url: '/assets/ips'
+							},
+							{
+								title: 'Technologies',
+								url: '/assets/technologies'
+							}
+						]
+					}
+				]
 			},
 			{
-				title: 'Assets',
-				url: '/assets',
-				icon: DatabaseIcon
+				label: 'Reporting',
+				items: [
+					{
+						title: 'Reports',
+						url: '/reports',
+						icon: FileTextIcon
+					}
+				]
 			},
 			{
-				title: 'Reports',
-				url: '/reports',
-				icon: FileTextIcon
-			},
-			{
-				title: 'Settings',
-				url: '/settings',
-				icon: Settings2Icon
+				label: null,
+				items: [
+					{
+						title: 'Settings',
+						url: '/settings',
+						icon: Settings2Icon
+					}
+				]
 			}
 		]
 	};
@@ -84,7 +126,7 @@
 		name: auth.user?.username ?? 'Unknown User',
 		email: auth.user?.email ?? 'admin@rengine.local',
 		is_superuser: auth.user?.is_superuser ?? false
-	})
+	});
 </script>
 
 <Sidebar.Root {collapsible} {...restProps}>
@@ -92,7 +134,7 @@
 		<ProjectSwitcher />
 	</Sidebar.Header>
 	<Sidebar.Content>
-		<NavMain items={data.navMain} />
+		<NavMain groups={data.navGroups} />
 	</Sidebar.Content>
 	<Sidebar.Footer>
 		<NavUser user={userData} />

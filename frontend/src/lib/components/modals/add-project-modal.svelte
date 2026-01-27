@@ -69,7 +69,7 @@
 				<Input
 					id="project-name"
 					bind:value={name}
-					placeholder="e.g., Acme Corp Pentest"
+					placeholder="e.g., Example Corp Pentest"
 					disabled={isSubmitting}
 					class={isOverLimit ? 'border-destructive focus-visible:ring-destructive' : ''}
 				/>

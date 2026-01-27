@@ -12,6 +12,7 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { VERSION } from '$lib/version.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { auth } from '$lib/stores/auth.svelte';
 
 	let { user }: { user: { name: string; email: string; is_superuser: boolean } } = $props();
 	const sidebar = useSidebar();
@@ -26,6 +27,10 @@
 			.join('')
 			.toUpperCase()
 			.slice(0, 2);
+	};
+
+	const handleLogout = async () => {
+		await auth.logout();
 	};
 </script>
 
@@ -89,7 +94,7 @@
 					</DropdownMenu.Item>
 				</DropdownMenu.Group>
 				<DropdownMenu.Separator />
-				<DropdownMenu.Item>
+				<DropdownMenu.Item onclick={handleLogout}>
 					<LogOutIcon class="size-4" />
 					Log out
 				</DropdownMenu.Item>
@@ -136,12 +141,8 @@
 			</div>
 		</div>
 		<Dialog.Footer class="flex justify-between">
-			<Button variant="outline">
-				Check for Updates
-			</Button>
-			<Button variant="ghost" onclick={() => aboutDialogOpen = false}>
-				Close
-			</Button>
+			<Button variant="outline">Check for Updates</Button>
+			<Button variant="ghost" onclick={() => (aboutDialogOpen = false)}>Close</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

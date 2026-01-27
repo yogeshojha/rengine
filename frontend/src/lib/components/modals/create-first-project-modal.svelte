@@ -83,7 +83,7 @@
 					<Input
 						id="project-name"
 						bind:value={name}
-						placeholder="e.g., Acme Corp - Q1 Assessment"
+						placeholder="e.g., Example Corp Pentest"
 						disabled={isSubmitting}
 						autofocus
 						class={isOverLimit ? 'border-destructive focus-visible:ring-destructive' : ''}
