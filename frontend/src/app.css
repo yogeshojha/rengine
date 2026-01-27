@@ -102,8 +102,27 @@
   outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
 }
 
-html,
-body {
-  background-color: var(--background);
-  color: var(--foreground);
+html, body {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  font-feature-settings: 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-mono, code, pre,
+[data-technical] {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.01em;
+  font-size: 0.9em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+
+.sidebar-item {
+  font-weight: 500;
+  font-size: 0.875rem;
 }
