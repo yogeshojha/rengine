@@ -59,7 +59,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Create New Project</Dialog.Title>
 			<Dialog.Description>
-				Projects help you organize targets and scans for different clients or assessments.
+				Projects provide isolated workspaces for organizing targets, scans, and findings by engagement.
 			</Dialog.Description>
 		</Dialog.Header>
 
