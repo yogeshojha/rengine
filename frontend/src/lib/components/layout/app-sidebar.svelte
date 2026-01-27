@@ -129,7 +129,7 @@
 	});
 </script>
 
-<Sidebar.Root {collapsible} {...restProps}>
+<Sidebar.Root {collapsible} variant="inset" {...restProps}>
 	<Sidebar.Header>
 		<ProjectSwitcher />
 	</Sidebar.Header>
@@ -139,5 +139,4 @@
 	<Sidebar.Footer>
 		<NavUser user={userData} />
 	</Sidebar.Footer>
-	<Sidebar.Rail />
 </Sidebar.Root>

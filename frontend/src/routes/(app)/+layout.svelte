@@ -10,27 +10,24 @@
 
 	let { children } = $props();
 
-	// Redirect to login if not authenticated
 	$effect(() => {
 		if (!auth.isLoading && !auth.isAuthenticated) {
 			goto('/login');
 		}
 	});
 
-	// authenticated
 	$effect(() => {
 		if (auth.isAuthenticated) {
 			projectsStore.fetchProjects();
 		}
 	});
 
-
 	let showRequiredProjectCreateModal = $derived(
 		auth.isAuthenticated &&
-		!auth.isLoading &&
-		!projectsStore.isLoading &&
-		projectsStore.hasFetched &&
-		projectsStore.projects.length === 0
+			!auth.isLoading &&
+			!projectsStore.isLoading &&
+			projectsStore.hasFetched &&
+			projectsStore.projects.length === 0
 	);
 </script>
 
@@ -45,10 +42,26 @@
 	<Sidebar.Provider>
 		<AppSidebar />
 		<Sidebar.Inset>
-			<TopBar />
-			<main class="flex-1 overflow-auto">
-				{@render children()}
-			</main>
+			<div class="flex h-screen flex-col bg-sidebar peer-data-[state=collapsed]:pl-0">
+				<div class="flex flex-1 flex-col rounded-lg bg-background shadow-sm overflow-hidden">
+					<TopBar />
+					<main class="flex-1 overflow-auto p-6">
+						{@render children()}
+					</main>
+				</div>
+			</div>
 		</Sidebar.Inset>
 	</Sidebar.Provider>
 {/if}
+
+
+<style>
+	:global([data-variant="inset"][data-state="collapsed"] [data-slot="sidebar-gap"]) {
+		width: var(--sidebar-width-icon) !important;
+	}
+	:global([data-variant="inset"][data-state="collapsed"] [data-slot="sidebar-container"]) {
+		width: var(--sidebar-width-icon) !important;
+		overflow: visible !important;
+		padding: 0 !important;
+	}
+</style>
