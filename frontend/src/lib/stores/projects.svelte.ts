@@ -13,6 +13,7 @@ function createProjectsStore() {
 		get activeProject() { return activeProject; },
 		get isLoading() { return isLoading; },
 		get error() { return error; },
+		get hasFetched() { return hasFetched; },
 
 		async fetchProjects() {
 			if (hasFetched || isLoading) return;

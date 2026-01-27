@@ -6,6 +6,7 @@
 	import TopBar from '$lib/components/layout/top-bar.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import CreateFirstProjectModal from '@/components/modals/create-first-project-modal.svelte';
 
 	let { children } = $props();
 
@@ -22,7 +23,18 @@
 			projectsStore.fetchProjects();
 		}
 	});
+
+
+	let showRequiredProjectCreateModal = $derived(
+		auth.isAuthenticated &&
+		!auth.isLoading &&
+		!projectsStore.isLoading &&
+		projectsStore.hasFetched &&
+		projectsStore.projects.length === 0
+	);
 </script>
+
+<CreateFirstProjectModal open={showRequiredProjectCreateModal} />
 
 {#if auth.isLoading}
 	<div class="min-h-screen flex items-center justify-center">
