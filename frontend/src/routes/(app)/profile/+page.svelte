@@ -27,7 +27,6 @@
 	let newUsername = $state('');
 	let isChangingUsername = $state(false);
 
-
 	// Password change handler
 	const handlePasswordChange = async () => {
 		if (!currentPassword || !newPassword || !confirmPassword) {
@@ -100,45 +99,38 @@
 
 <div class="container max-w-5xl mx-auto space-y-6">
 	<Card.Root class="overflow-hidden">
-		<div class="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-background"></div>
 		<Card.Content class="pt-0">
-			<div class="flex flex-col sm:flex-row items-start sm:items-end gap-6 -mt-16 sm:-mt-12">
-				<Avatar.Root class="size-24 sm:size-28 rounded-2xl border-4 border-background shadow-xl">
-					<Avatar.Fallback class="rounded-2xl bg-primary text-primary-foreground text-3xl font-bold">
-						{getInitials(auth.user?.username || 'U')}
-					</Avatar.Fallback>
-				</Avatar.Root>
+			<div class="mb-6">
+				<div class="flex items-center gap-4 mb-4">
+					<Avatar.Root class="size-14 rounded-md border">
+						<Avatar.Fallback
+							class="rounded-md bg-primary text-primary-foreground text-lg font-semibold"
+						>
+							{getInitials(auth.user?.username || 'U')}
+						</Avatar.Fallback>
+					</Avatar.Root>
 
-				<div class="flex-1 space-y-2 pb-2">
-					<div class="flex flex-wrap items-center gap-3">
-						<h1 class="text-3xl font-bold tracking-tight">{auth.user?.username}</h1>
-						{#if auth.user?.is_superuser}
-							<Badge variant="secondary" class="bg-blue-500 text-white dark:bg-blue-600">
-								<ShieldIcon class="w-3 h-3 mr-1" />
-								Administrator
-							</Badge>
-						{/if}
-						{#if auth.user?.is_active}
-							<Badge variant="secondary" class="bg-green-500 text-white dark:bg-green-600">
-								<CheckCircleIcon class="w-3 h-3 mr-1" />
-								Active
-							</Badge>
-						{/if}
-					</div>
-
-					<div class="flex flex-wrap gap-4 text-sm text-muted-foreground">
-						<div class="flex items-center gap-2">
-							<MailIcon class="w-4 h-4" />
-							<span>{auth.user?.email}</span>
+					<div class="flex-1">
+						<div class="flex items-baseline gap-2 mb-0.5">
+							<h1 class="text-xl font-semibold">{auth.user?.username}</h1>
+							{#if auth.user?.is_superuser}
+								<Badge variant="secondary" class="h-5 text-xs px-2">Administrator</Badge>
+							{/if}
 						</div>
-						{#if auth.user?.created_at}
-							<div class="flex items-center gap-2">
-								<CalendarIcon class="w-4 h-4" />
-								<span>Joined {formatDate(auth.user.created_at)}</span>
-							</div>
-						{/if}
+						<div class="flex items-center gap-3 text-sm text-muted-foreground">
+							<span class="flex items-center gap-1.5">
+								<MailIcon class="w-3.5 h-3.5" />
+								{auth.user?.email}
+							</span>
+							<span class="text-xs">•</span>
+							<span class="flex items-center gap-1.5">
+								<CheckCircleIcon class="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+								Active
+							</span>
+						</div>
 					</div>
 				</div>
+				<Separator />
 			</div>
 		</Card.Content>
 	</Card.Root>
@@ -177,9 +169,7 @@
 						placeholder="Enter new username"
 						disabled={isChangingUsername}
 					/>
-					<p class="text-xs text-muted-foreground">
-						Must be at least 3 characters long
-					</p>
+					<p class="text-xs text-muted-foreground">Must be at least 3 characters long</p>
 				</div>
 			</Card.Content>
 			<Card.Footer>
@@ -244,9 +234,7 @@
 						placeholder="Confirm new password"
 						disabled={isChangingPassword}
 					/>
-					<p class="text-xs text-muted-foreground">
-						Must be at least 8 characters long
-					</p>
+					<p class="text-xs text-muted-foreground">Must be at least 8 characters long</p>
 				</div>
 			</Card.Content>
 			<Card.Footer>
