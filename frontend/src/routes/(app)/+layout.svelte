@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { projectsStore } from '$lib/stores/projects.svelte';
 	import AppSidebar from '$lib/components/layout/app-sidebar.svelte';
 	import TopBar from '$lib/components/layout/top-bar.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -12,6 +13,13 @@
 	$effect(() => {
 		if (!auth.isLoading && !auth.isAuthenticated) {
 			goto('/login');
+		}
+	});
+
+	// authenticated
+	$effect(() => {
+		if (auth.isAuthenticated) {
+			projectsStore.fetchProjects();
 		}
 	});
 </script>
