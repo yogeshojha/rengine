@@ -3,6 +3,7 @@
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -21,10 +22,15 @@
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import InfoIcon from '@lucide/svelte/icons/info';
+	import ActivityIcon from '@lucide/svelte/icons/activity';
 
 	let commandOpen = $state(false);
+	let scansSheetOpen = $state(false);
 
-	// we will get this through api later
+	// TODO: Dummy ongoing scans count (will come from API later)
+	const ongoingScansCount = $state(3);
+
+	// TODO: we will get this through api later
 	const notifications = $state([
 		{
 			id: 1,
@@ -136,6 +142,25 @@
 		</kbd>
 	</Button>
 
+	<!-- Ongoing Scans Button -->
+	<Button
+		variant="ghost"
+		size="icon"
+		class="relative"
+		onclick={() => (scansSheetOpen = true)}
+	>
+		<ActivityIcon class="h-4 w-4" />
+		{#if ongoingScansCount > 0}
+			<Badge
+				class="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-blue-500 text-white"
+			>
+				{ongoingScansCount}
+			</Badge>
+		{/if}
+		<span class="sr-only">Ongoing Scans</span>
+	</Button>
+
+	<!-- Notifications Dropdown -->
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
@@ -255,6 +280,23 @@
 	</DropdownMenu.Root>
 </header>
 
+<Sheet.Root bind:open={scansSheetOpen}>
+	<Sheet.Content side="right" class="w-[400px] sm:w-[540px]">
+		<Sheet.Header>
+			<Sheet.Title>Ongoing Scans</Sheet.Title>
+			<Sheet.Description>
+				Ongoing scans are listed here. Click on a scan to view detail.
+			</Sheet.Description>
+		</Sheet.Header>
+		<div class="flex-1 py-6">
+			<!-- TODO: Add scan list content here -->
+			<div class="flex items-center justify-center h-64 text-muted-foreground">
+				<p>Ongoinh Scans...</p>
+			</div>
+		</div>
+	</Sheet.Content>
+</Sheet.Root>
+
 <Dialog.Root bind:open={commandOpen}>
 	<Dialog.Content class="overflow-hidden p-0 shadow-lg sm:max-w-[550px]">
 		<Command.Root class="[&_[data-cmd-input-wrapper]]:border-b">
@@ -305,25 +347,24 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<!-- thinbar scrollbar -->
 <style>
-    /* Firefox */
-    .thin-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
-    }
+	/* Firefox */
+	.thin-scrollbar {
+		scrollbar-width: thin;
+		scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+	}
 
-    /* Chrome, Safari, Edge */
-    .thin-scrollbar::-webkit-scrollbar {
-        width: 1px;
-    }
+	/* Chrome, Safari, Edge */
+	.thin-scrollbar::-webkit-scrollbar {
+		width: 6px;
+	}
 
-    .thin-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-    }
+	.thin-scrollbar::-webkit-scrollbar-track {
+		background: transparent;
+	}
 
-    .thin-scrollbar::-webkit-scrollbar-thumb {
-        background-color: hsl(var(--muted-foreground) / 0.3);
-        border-radius: 1px;
-    }
+	.thin-scrollbar::-webkit-scrollbar-thumb {
+		background-color: hsl(var(--muted-foreground) / 0.3);
+		border-radius: 3px;
+	}
 </style>
