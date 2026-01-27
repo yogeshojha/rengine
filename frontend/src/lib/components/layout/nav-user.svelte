@@ -13,21 +13,13 @@
 	import { VERSION } from '$lib/version.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { getInitials } from '$lib/utilities';
+	import { goto } from '$app/navigation';
 
 	let { user }: { user: { name: string; email: string; is_superuser: boolean } } = $props();
 	const sidebar = useSidebar();
 
 	let aboutDialogOpen = $state(false);
-
-	// Generate initials from name
-	const getInitials = (name: string) => {
-		return name
-			.split(' ')
-			.map((n) => n[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
-	};
 
 	const handleLogout = async () => {
 		await auth.logout();
@@ -84,7 +76,7 @@
 				</DropdownMenu.Label>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Group>
-					<DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => goto('/profile')}>
 						<UserIcon class="size-4" />
 						Profile
 					</DropdownMenu.Item>

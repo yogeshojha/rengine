@@ -1,14 +1,6 @@
 import { goto } from '$app/navigation';
 import { toast } from 'svelte-sonner';
-
-export interface User {
-	id: string;
-	email: string;
-	username: string;
-	is_active: boolean;
-	is_superuser: boolean;
-	created_at: string;
-}
+import { authApi, type User } from '$lib/api/auth';
 
 interface AuthState {
 	user: User | null;
@@ -26,16 +18,8 @@ function createAuthStore() {
 	async function checkAuth() {
 		state.isLoading = true;
 		try {
-			const response = await fetch('/api/v1/auth/me', {
-				credentials: 'include'
-			});
-			if (response.ok) {
-				state.user = await response.json();
-				state.isAuthenticated = true;
-			} else {
-				state.user = null;
-				state.isAuthenticated = false;
-			}
+			state.user = await authApi.me();
+			state.isAuthenticated = true;
 		} catch {
 			state.user = null;
 			state.isAuthenticated = false;
@@ -46,31 +30,22 @@ function createAuthStore() {
 
 	async function login(username: string, password: string): Promise<{ success: boolean; error?: string }> {
 		try {
-			const response = await fetch('/api/v1/auth/login', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({ username, password })
-			});
-
-			if (response.ok) {
-				await checkAuth();
-				toast.success('Welcome back, ' + state.user?.username + '!');
-				return { success: true };
-			} else {
-				const data = await response.json();
-				return { success: false, error: data.detail || 'Login failed' };
-			}
-		} catch {
-			return { success: false, error: 'Network error' };
+			await authApi.login({ username, password });
+			await checkAuth();
+			toast.success('Welcome back, ' + state.user?.username + '!');
+			return { success: true };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Login failed';
+			return { success: false, error: message };
 		}
 	}
 
 	async function logout() {
-		await fetch('/api/v1/auth/logout', {
-			method: 'POST',
-			credentials: 'include'
-		});
+		try {
+			await authApi.logout();
+		} catch {
+			// Continue with logout even if API call fails
+		}
 		state.user = null;
 		state.isAuthenticated = false;
 		goto('/login');

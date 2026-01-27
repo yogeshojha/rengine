@@ -20,7 +20,9 @@ export const routeLabels: Record<string, string> = {
 	reports: 'Reports',
 
 	// Settings
-	settings: 'Settings'
+	settings: 'Settings',
+
+	profile: 'Profile',
 };
 
 export function getRouteLabel(segment: string): string {
