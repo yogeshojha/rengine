@@ -17,7 +17,12 @@ from app.core.security import (
     verify_password,
 )
 from app.models.user import User, UserCreate, UserRead
-from app.schemas.auth import LoginRequest, PasswordChangeRequest, TokenResponse
+from app.schemas.auth import (
+    LoginRequest,
+    PasswordChangeRequest,
+    TokenResponse,
+    UsernameChangeRequest,
+)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -266,4 +271,57 @@ async def change_password(
     return {
         "message": "Password changed successfully",
         "user_id": str(target_user_id),
+    }
+
+
+@router.post("/change-username")
+async def change_username(
+    username_data: UsernameChangeRequest,
+    current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """
+    Change username.
+
+    Regular users can only change their own username.
+    Superusers can change any user's username.
+    """
+    target_user_id = username_data.user_id or current_user.id
+
+    result = await session.execute(select(User).where(User.id == target_user_id))
+    target_user = result.scalar_one_or_none()
+
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    if target_user_id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only change your own username",
+        )
+
+    result = await session.execute(
+        select(User).where(User.username == username_data.new_username)
+    )
+    existing_user = result.scalar_one_or_none()
+
+    if existing_user and existing_user.id != target_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already taken",
+        )
+
+    target_user.username = username_data.new_username
+    target_user.updated_at = datetime.now(UTC).replace(tzinfo=None)
+
+    session.add(target_user)
+    await session.commit()
+
+    return {
+        "message": "Username changed successfully",
+        "user_id": str(target_user_id),
+        "new_username": username_data.new_username,
     }

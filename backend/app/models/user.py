@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from pydantic import ValidationInfo, field_validator
 from sqlmodel import Field, SQLModel
 
-from app.utils.validation import validate_password_strength
+from app.utils.validation import validate_password_strength, validate_username
 
 # Password policy
 MIN_PASSWORD_SCORE = 3
@@ -36,6 +36,11 @@ class UserCreate(SQLModel):
     email: str
     username: str
     password: str
+
+    @field_validator("username")
+    @classmethod
+    def validate_username_field(cls, username: str) -> str:
+        return validate_username(username)
 
     @field_validator("password")
     @classmethod

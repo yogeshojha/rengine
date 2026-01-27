@@ -1,3 +1,5 @@
+import re
+
 from zxcvbn import zxcvbn
 
 from app.config import settings
@@ -5,6 +7,11 @@ from app.config import settings
 # Password policy
 MIN_PASSWORD_SCORE = 3
 MIN_PASSWORD_LENGTH = 10
+
+
+# Username policy
+MIN_USERNAME_LENGTH = 4
+MAX_USERNAME_LENGTH = 50
 
 
 def validate_password_strength(
@@ -48,3 +55,42 @@ def validate_password_strength(
         raise ValueError(return_error)
 
     return password
+
+
+def validate_username(username: str) -> str:
+    """
+    Validate username format and length.
+
+    Args:
+        username: The username to validate
+
+    Returns:
+        The validated username
+
+    Raises:
+        ValueError: If username doesn't meet requirements
+    """
+    if len(username) < MIN_USERNAME_LENGTH:
+        return_error = (
+            f"Username must be at least {MIN_USERNAME_LENGTH} characters long"
+        )
+        raise ValueError(return_error)
+
+    if len(username) > MAX_USERNAME_LENGTH:
+        return_error = f"Username must be at most {MAX_USERNAME_LENGTH} characters long"
+        raise ValueError(return_error)
+
+    # change the conditions if needed for organization specific but not recommended
+    # COndition: Must start with a letter
+    if not re.match(r"^[a-zA-Z]", username):
+        return_error = "Username must start with a letter"
+        raise ValueError(return_error)
+
+    # Condition: Can only contain letters, numbers, underscores, and dots
+    if not re.match(r"^[a-zA-Z][a-zA-Z0-9_.]*$", username):
+        return_error = (
+            "Username can only contain letters, numbers, underscores, and dots"
+        )
+        raise ValueError(return_error)
+
+    return username
