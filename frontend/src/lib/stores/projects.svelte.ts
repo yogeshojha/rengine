@@ -1,5 +1,6 @@
 import { projectsApi } from '$lib/api/projects';
 import type { Project } from '$lib/types/project';
+import { toast } from 'svelte-sonner';
 
 
 function getStoredActiveProjectSlug(): string | null {
@@ -62,9 +63,14 @@ function createProjectsStore() {
 		},
 
 		setActiveProject(project: Project) {
+			const previousProject = activeProject
 			activeProject = project;
 			if (typeof window === 'undefined') return;
 			localStorage.setItem('activeProjectSlug', project.slug);
+
+			if (previousProject && previousProject.slug !== project.slug) {
+				toast.success(`Switched to project "${project.name}"`);
+			}
 		},
 
 		async createProject(name: string): Promise<Project | null> {

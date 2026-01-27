@@ -3,6 +3,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { onMount } from 'svelte';
 	import { ModeWatcher } from 'mode-watcher';
+	import { Toaster } from "$lib/components/ui/sonner/index.js";
 
 	let { children } = $props();
 
@@ -12,4 +13,5 @@
 </script>
 
 <ModeWatcher />
+<Toaster position="top-center"/>
 {@render children()}
