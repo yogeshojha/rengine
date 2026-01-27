@@ -1,6 +1,12 @@
 import { projectsApi } from '$lib/api/projects';
 import type { Project } from '$lib/types/project';
 
+
+function getStoredActiveProjectSlug(): string | null {
+	if (typeof window === 'undefined') return null;
+	return localStorage.getItem('activeProjectSlug');
+}
+
 function createProjectsStore() {
 	let projects = $state<Project[]>([]);
 	let activeProject = $state<Project | null>(null);
@@ -15,6 +21,10 @@ function createProjectsStore() {
 		get error() { return error; },
 		get hasFetched() { return hasFetched; },
 
+		getCurrentProject(): Project | null {
+			return activeProject;
+		},
+
 		async fetchProjects() {
 			if (hasFetched || isLoading) return;
 
@@ -25,7 +35,17 @@ function createProjectsStore() {
 				projects = await projectsApi.list();
 				hasFetched = true;
 
-				if (!activeProject && projects.length > 0) {
+				const storedSlug = getStoredActiveProjectSlug();
+
+				if (storedSlug) {
+					const restoredProject = projects.find((p) => p.slug === storedSlug);
+					if (restoredProject) {
+						activeProject = restoredProject;
+					}
+					else {
+						activeProject = projects.length > 0 ? projects[0] : null;
+					}
+				} else if (projects.length > 0) {
 					activeProject = projects[0];
 				}
 			} catch (e) {
@@ -43,6 +63,7 @@ function createProjectsStore() {
 
 		setActiveProject(project: Project) {
 			activeProject = project;
+			if (typeof window === 'undefined') return;
 			localStorage.setItem('activeProjectSlug', project.slug);
 		},
 
@@ -66,6 +87,13 @@ function createProjectsStore() {
 
 				if (activeProject?.slug === slug) {
 					activeProject = projects[0] || null;
+
+					if (activeProject) {
+						localStorage.setItem('activeProjectSlug', activeProject.slug);
+					}
+					else {
+						localStorage.removeItem('activeProjectSlug');
+					}
 				}
 				return true;
 			} catch (e) {
@@ -79,6 +107,9 @@ function createProjectsStore() {
 			activeProject = null;
 			error = null;
 			hasFetched = false;
+			if (typeof window !== 'undefined') {
+				localStorage.removeItem('activeProjectSlug');
+			}
 		},
 	};
 }
