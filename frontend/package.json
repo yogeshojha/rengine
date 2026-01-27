@@ -44,6 +44,7 @@
 	"dependencies": {
 		"@tailwindcss/vite": "^4.1.18",
 		"lucide-svelte": "^0.563.0",
+		"mode-watcher": "^1.1.0",
 		"tailwindcss": "^4.1.18",
 		"vite": "^6.4.1"
 	}

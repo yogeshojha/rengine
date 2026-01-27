@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
 	import AppSidebar from '$lib/components/layout/app-sidebar.svelte';
+	import TopBar from '$lib/components/layout/top-bar.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 
@@ -24,7 +25,10 @@
 	<Sidebar.Provider>
 		<AppSidebar />
 		<Sidebar.Inset>
-			{@render children()}
+			<TopBar />
+			<main class="flex-1 overflow-auto">
+				{@render children()}
+			</main>
 		</Sidebar.Inset>
 	</Sidebar.Provider>
 {/if}
