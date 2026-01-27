@@ -9,23 +9,6 @@
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 
 	const data = {
-		projects: [
-			{
-				name: 'Acme Inc',
-				logo: LayoutDashboardIcon,
-				plan: 'Enterprise'
-			},
-			{
-				name: 'Acme Corp.',
-				logo: CrosshairIcon,
-				plan: 'Startup'
-			},
-			{
-				name: 'Evil Corp.',
-				logo: CrosshairIcon,
-				plan: 'Free'
-			}
-		],
 		navMain: [
 			{
 				title: 'Dashboard',
@@ -106,7 +89,7 @@
 
 <Sidebar.Root {collapsible} {...restProps}>
 	<Sidebar.Header>
-		<ProjectSwitcher projects={data.projects} />
+		<ProjectSwitcher />
 	</Sidebar.Header>
 	<Sidebar.Content>
 		<NavMain items={data.navMain} />
