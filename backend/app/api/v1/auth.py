@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -16,7 +17,7 @@ from app.core.security import (
     verify_password,
 )
 from app.models.user import User, UserCreate, UserRead
-from app.schemas.auth import LoginRequest, TokenResponse
+from app.schemas.auth import LoginRequest, PasswordChangeRequest, TokenResponse
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -210,3 +211,59 @@ async def register_user(
     await session.refresh(user)
 
     return user
+
+
+@router.post("/change-password")
+async def change_password(
+    password_data: PasswordChangeRequest,
+    current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """
+    Change user password.
+
+    note: regular users can only change their own password and must provide current_password.
+    Superusers can change any user's password without current_password.
+    """
+    target_user_id = password_data.user_id or current_user.id
+
+    result = await session.execute(select(User).where(User.id == target_user_id))
+    target_user = result.scalar_one_or_none()
+
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    if target_user_id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only change your own password",
+        )
+
+    if not current_user.is_superuser:
+        if not password_data.current_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is required",
+            )
+
+        if not verify_password(
+            password_data.current_password, target_user.hashed_password
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect",
+            )
+
+    target_user.hashed_password = hash_password(password_data.new_password)
+    target_user.updated_at = datetime.now(UTC).replace(tzinfo=None)
+
+    session.add(target_user)
+    await session.commit()
+
+    return {
+        "message": "Password changed successfully",
+        "user_id": str(target_user_id),
+    }

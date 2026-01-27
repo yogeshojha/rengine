@@ -4,9 +4,8 @@ from datetime import UTC, datetime
 
 from pydantic import ValidationInfo, field_validator
 from sqlmodel import Field, SQLModel
-from zxcvbn import zxcvbn
 
-from app.config import settings
+from app.utils.validation import validate_password_strength
 
 # Password policy
 MIN_PASSWORD_SCORE = 3
@@ -41,33 +40,8 @@ class UserCreate(SQLModel):
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, password: str, info: ValidationInfo) -> str:
-        # intentionally skipping password strength validation in DEBUG mode
-        if settings.DEBUG:
-            return password
-
-        if len(password) < MIN_PASSWORD_LENGTH:
-            return_error = (
-                f"Password must be at least {MIN_PASSWORD_LENGTH} characters long"
-            )
-            raise ValueError(return_error)
-
-        result = zxcvbn(
-            password,
-            user_inputs=[info.data.get("email", ""), info.data.get("username", "")],
-        )
-
-        if result["score"] < MIN_PASSWORD_SCORE:
-            return_error = (
-                "Password is too weak. Consider using a stronger password with a "
-                "mix of uppercase, lowercase, numbers, and special characters."
-            )
-            raise ValueError(return_error)
-
-        if result["guesses_log10"] < MIN_PASSWORD_SCORE:
-            return_error = "Password is too guessable. Choose a less common password."
-            raise ValueError(return_error)
-
-        return password
+        user_inputs = [info.data.get("email", ""), info.data.get("username", "")]
+        return validate_password_strength(password, user_inputs=user_inputs)
 
 
 class UserRead(UserBase):
