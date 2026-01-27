@@ -69,7 +69,7 @@ function createProjectsStore() {
 			localStorage.setItem('activeProjectSlug', project.slug);
 
 			if (previousProject && previousProject.slug !== project.slug) {
-				toast.success(`Switched to project "${project.name}"`);
+				toast.info(`Switched to project "${project.name}"`);
 			}
 		},
 

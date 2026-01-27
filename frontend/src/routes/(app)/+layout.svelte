@@ -52,12 +52,12 @@
 	</div>
 {:else if auth.isAuthenticated}
 	<Sidebar.Provider>
-		<AppSidebar />
+		<AppSidebar variant="inset" />
 		<Sidebar.Inset>
-			<div class="flex h-screen flex-col bg-sidebar peer-data-[state=collapsed]:pl-0">
+			<div class="flex flex-1 flex-col">
 				<div class="flex flex-1 flex-col rounded-lg bg-background shadow-sm overflow-hidden">
 					<TopBar {breadcrumbs} />
-					<main class="flex-1 overflow-auto p-6">
+					<main class="flex-1 overflow-auto p-6" style="scrollbar-gutter: stable;">
 						{@render children()}
 					</main>
 				</div>
@@ -65,14 +65,3 @@
 		</Sidebar.Inset>
 	</Sidebar.Provider>
 {/if}
-
-<style>
-	:global([data-variant="inset"][data-state="collapsed"] [data-slot="sidebar-gap"]) {
-		width: var(--sidebar-width-icon) !important;
-	}
-	:global([data-variant="inset"][data-state="collapsed"] [data-slot="sidebar-container"]) {
-		width: var(--sidebar-width-icon) !important;
-		overflow: visible !important;
-		padding: 0 !important;
-	}
-</style>
