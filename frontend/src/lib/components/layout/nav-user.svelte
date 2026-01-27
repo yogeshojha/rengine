@@ -1,21 +1,23 @@
 <script lang="ts">
-	import * as Avatar from "$lib/components/ui/avatar/index.js";
-	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import { useSidebar } from "$lib/components/ui/sidebar/index.js";
-	import UserIcon from "@lucide/svelte/icons/user";
-	import Info from "@lucide/svelte/icons/info";
-	import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
-	import LogOutIcon from "@lucide/svelte/icons/log-out";
+	import * as Avatar from '$lib/components/ui/avatar/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
+	import UserIcon from '@lucide/svelte/icons/user';
+	import Info from '@lucide/svelte/icons/info';
+	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import LogOutIcon from '@lucide/svelte/icons/log-out';
 
-	let { user }: { user: { name: string; email: string } } = $props();
+	let { user }: { user: { name: string; email: string; is_superuser: boolean } } = $props();
 	const sidebar = useSidebar();
 
 	// Generate initials from name
 	const getInitials = (name: string) => {
 		return name
 			.split(' ')
-			.map(n => n[0])
+			.map((n) => n[0])
 			.join('')
 			.toUpperCase()
 			.slice(0, 2);
@@ -47,7 +49,7 @@
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content
 				class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
-				side={sidebar.isMobile ? "bottom" : "right"}
+				side={sidebar.isMobile ? 'bottom' : 'right'}
 				align="end"
 				sideOffset={4}
 			>
@@ -61,6 +63,12 @@
 						<div class="grid flex-1 text-start text-sm leading-tight">
 							<span class="truncate font-medium">{user.name}</span>
 							<span class="truncate text-xs">{user.email}</span>
+							{#if user.is_superuser}
+								<Badge variant="secondary" class="bg-blue-500 text-white dark:bg-blue-600 mt-1">
+									<ShieldIcon class="w-3 h-3 mr-1" />
+									Admin
+								</Badge>
+							{/if}
 						</div>
 					</div>
 				</DropdownMenu.Label>
