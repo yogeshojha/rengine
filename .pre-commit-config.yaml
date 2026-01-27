@@ -19,9 +19,10 @@ repos:
     hooks:
       - id: prettier
         name: prettier-format
-        entry: npx prettier --write --ignore-unknown
+        entry: bash -c 'cd frontend && npx prettier --write --ignore-unknown'
         language: system
         files: ^frontend/.*\.(js|ts|svelte|json|css|scss|html)$
+        pass_filenames: true
 
   # General
   - repo: https://github.com/pre-commit/pre-commit-hooks
