@@ -43,9 +43,7 @@ async def generate_unique_slug(
 async def list_organizations(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_slug: str | None = Query(
-        None, description="Filter by project slug"
-    ),  # Changed
+    project_slug: str | None = Query(None, description="Filter by project slug"),
 ):
     query = select(Organization)
 

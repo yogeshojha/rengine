@@ -26,7 +26,6 @@ class Target(TargetBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     target_type: TargetType
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
-    is_active: bool = Field(default=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
@@ -54,8 +53,8 @@ class TargetUpdate(SQLModel):
 class TargetRead(TargetBase):
     id: uuid.UUID
     project_id: uuid.UUID
-    is_active: bool
     created_at: datetime
     updated_at: datetime
     created_by: uuid.UUID
     organization_ids: list[uuid.UUID] = Field(default_factory=list)
+    target_type: TargetType
