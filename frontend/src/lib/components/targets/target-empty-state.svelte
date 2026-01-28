@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { CrosshairIcon, Search, Plus } from 'lucide-svelte';
-	import { Button } from '$lib/components/ui/button';
+	import { CrosshairIcon, Funnel } from 'lucide-svelte';
+	import * as Empty from '$lib/components/ui/empty/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 
 	interface Props {
 		hasFilters: boolean;
@@ -11,41 +13,43 @@
 	let { hasFilters, onAddTarget, onClearFilters }: Props = $props();
 </script>
 
-<div class="flex flex-col items-center justify-center py-16 px-4">
-	<div
-		class="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-6"
-	>
-		{#if hasFilters}
-			<Search class="h-8 w-8 text-muted-foreground/50" />
-		{:else}
-			<CrosshairIcon class="h-8 w-8 text-muted-foreground/50" />
-		{/if}
-	</div>
-
-	{#if hasFilters}
-		<h3 class="text-lg font-semibold mb-2">No targets match your filters</h3>
-		<p class="text-sm text-muted-foreground text-center max-w-sm mb-6">
-			Try adjusting your search query or clearing some filters to see more results.
-		</p>
-		<div class="flex items-center gap-3">
-			{#if onClearFilters}
-				<Button variant="outline" onclick={onClearFilters}>
-					Clear filters
-				</Button>
+<Empty.Root>
+	<Empty.Header>
+		<Empty.Media variant="icon">
+			{#if hasFilters}
+				<Funnel />
+			{:else}
+				<CrosshairIcon />
 			{/if}
-			<Button onclick={onAddTarget}>
-				<Plus class="h-4 w-4 mr-2" />
-				Add target
-			</Button>
+		</Empty.Media>
+		<Empty.Title></Empty.Title>
+		<Empty.Description>
+			{#if hasFilters}
+				No targets match the current filters.
+			{:else}
+				<p>
+					Get started by adding your first target. Targets are the domains, IPs, and other assets
+					you want to monitor.
+				</p>
+				<p>Currently supported targets are domain, IP Addresses, IP Range, ASN and URL.</p>
+			{/if}
+		</Empty.Description>
+	</Empty.Header>
+	<Empty.Content>
+		<div class="flex gap-2">
+			{#if hasFilters}
+				<Button variant="outline" onclick={onClearFilters}>Clear Filters</Button>
+			{:else}
+				<Button onclick={onAddTarget}>Add new Target</Button>
+				<!-- TODO: Import functionality -->
+				<Button variant="outline">Import Target</Button>
+			{/if}
 		</div>
-	{:else}
-		<h3 class="text-lg font-semibold mb-2">No targets yet</h3>
-		<p class="text-sm text-muted-foreground text-center max-w-sm mb-6">
-			Get started by adding your first target. Targets are the domains, IPs, and other assets you want to monitor. Currently supported targets are domain, IP Addresses, IP Range, ASN and URL.
-		</p>
-		<Button onclick={onAddTarget}>
-			<Plus class="h-4 w-4 mr-2" />
-			Add your first target
-		</Button>
-	{/if}
-</div>
+	</Empty.Content>
+	<Button variant="link" class="text-muted-foreground" size="sm">
+		<!-- TODO: Update link -->
+		<a href="https://rengine.wiki">
+			Learn More <ArrowUpRightIcon class="inline" />
+		</a>
+	</Button>
+</Empty.Root>

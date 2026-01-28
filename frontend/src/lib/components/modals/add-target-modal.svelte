@@ -1,5 +1,14 @@
 <script lang="ts">
-	import { CircleCheck, CircleX, LoaderCircle, Globe, MapPin, Hash, Building2, Link2 } from 'lucide-svelte';
+	import {
+		CircleCheck,
+		CircleX,
+		LoaderCircle,
+		Globe,
+		MapPin,
+		Hash,
+		Building2,
+		Link2
+	} from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -25,7 +34,11 @@
 	let targetValue = $state('');
 	let displayName = $state('');
 	let isValidating = $state(false);
-	let validationResult = $state<{ valid: boolean; target_type: TargetType | null; error: string | null } | null>(null);
+	let validationResult = $state<{
+		valid: boolean;
+		target_type: TargetType | null;
+		error: string | null;
+	} | null>(null);
 	let isSubmitting = $state(false);
 
 	let selectedOrganizations = $state<Array<{ id: string; label: string }>>([]);
@@ -179,18 +192,14 @@
 		open = isOpen;
 	}
 
-	let canSubmit = $derived(
-		validationResult?.valid && !isSubmitting && !isValidating
-	);
+	let canSubmit = $derived(validationResult?.valid && !isSubmitting && !isValidating);
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
 	<Dialog.Content class="sm:max-w-[500px] gap-0 p-0">
 		<Dialog.Header class="p-6 pb-4">
 			<Dialog.Title>Add Target</Dialog.Title>
-			<Dialog.Description>
-				Add a target for monitoring
-			</Dialog.Description>
+			<Dialog.Description>Add a target for monitoring</Dialog.Description>
 		</Dialog.Header>
 
 		<Separator />
@@ -223,13 +232,12 @@
 				{#if validationResult}
 					<div class="flex items-center gap-2 text-sm">
 						{#if validationResult.valid && validationResult.target_type}
-							<Badge class={getTargetTypeColor(validationResult.target_type) + ' border gap-1'}>
+							<Badge variant="outline" class="gap-1.5 font-normal">
 								{#if TypeIcon}
 									<TypeIcon class="h-3 w-3" />
 								{/if}
 								{formatTargetType(validationResult.target_type)}
 							</Badge>
-							<span class="text-green-600 dark:text-green-400">Valid target detected</span>
 						{:else if validationResult.error}
 							<span class="text-destructive">{validationResult.error}</span>
 						{/if}
@@ -246,9 +254,7 @@
 					placeholder="Optional friendly name"
 					bind:value={displayName}
 				/>
-				<p class="text-xs text-muted-foreground">
-					Descriptive label to help identify this target
-				</p>
+				<p class="text-xs text-muted-foreground">Descriptive label to help identify this target</p>
 			</div>
 
 			<!-- Organizations -->
@@ -263,9 +269,7 @@
 					placeholder="Search or create organizations..."
 					emptyText="No organizations found."
 				/>
-				<p class="text-xs text-muted-foreground">
-					Group targets by organization
-				</p>
+				<p class="text-xs text-muted-foreground">Group targets by organization</p>
 			</div>
 
 			<!-- Tags -->
@@ -279,9 +283,7 @@
 					onCreate={handleCreateTag}
 					placeholder="Search or create tags..."
 				/>
-				<p class="text-xs text-muted-foreground">
-					Add tags to categorize and filter targets
-				</p>
+				<p class="text-xs text-muted-foreground">Add tags to categorize and filter targets</p>
 			</div>
 		</div>
 
