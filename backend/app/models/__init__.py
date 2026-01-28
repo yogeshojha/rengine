@@ -5,6 +5,7 @@ from app.models.organization import (
     OrganizationUpdate,
 )
 from app.models.project import Project, ProjectBase, ProjectCreate, ProjectRead
+from app.models.tags import Tag, TagBase, TagCreate, TagRead, TagUpdate
 from app.models.target import (
     Target,
     TargetCreate,
@@ -26,6 +27,11 @@ __all__ = [
     "ProjectCreate",
     "ProjectRead",
     "ProjectUpdate",
+    "Tag",
+    "TagBase",
+    "TagCreate",
+    "TagRead",
+    "TagUpdate",
     "Target",
     "TargetCreate",
     "TargetRead",

@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
-from app.models import (
-    Organization,
-    Project,
+from app.models.organization import Organization
+from app.models.project import Project
+from app.models.target import (
     Target,
     TargetCreate,
     TargetRead,

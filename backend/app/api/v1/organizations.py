@@ -6,13 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
-from app.models import (
+from app.models.organization import (
     Organization,
     OrganizationCreate,
     OrganizationRead,
     OrganizationUpdate,
-    Project,
 )
+from app.models.project import Project
 from app.utils.slug import generate_slug
 
 router = APIRouter(

@@ -1,11 +1,16 @@
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.enums.target import TargetType
 from app.models.organization import Organization
+from app.models.tags import TargetTag
+
+if TYPE_CHECKING:
+    from app.models.tags import Tag
 
 
 class TargetOrganization(SQLModel, table=True):
@@ -38,6 +43,11 @@ class Target(TargetBase, table=True):
     organizations: list["Organization"] = Relationship(
         link_model=TargetOrganization,
         sa_relationship_kwargs={"lazy": "selectin"},
+    )
+
+    tags: list["Tag"] = Relationship(
+        back_populates="targets",
+        link_model=TargetTag,
     )
 
 

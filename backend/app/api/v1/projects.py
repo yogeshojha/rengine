@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
-from app.models import Project, ProjectCreate, ProjectRead
+from app.models.project import Project, ProjectCreate, ProjectRead
 from app.utils.slug import generate_slug
 
 router = APIRouter(
