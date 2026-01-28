@@ -62,9 +62,11 @@ async def create_tag(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
 
+    normalized_name = tag_in.name.lower()
+
     existing_tag = await session.execute(
         select(Tag).where(
-            Tag.name == tag_in.name,
+            Tag.name == normalized_name,
             Tag.project_id == project.id,
         )
     )
@@ -74,10 +76,10 @@ async def create_tag(
             detail="Tag with this name already exists in this project",
         )
 
-    slug = generate_slug(tag_in.name)
+    slug = generate_slug(normalized_name)
 
     tag = Tag(
-        name=tag_in.name,
+        name=normalized_name,
         slug=slug,
         color=tag_in.color,
         project_id=project.id,

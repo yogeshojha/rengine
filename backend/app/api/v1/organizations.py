@@ -80,11 +80,13 @@ async def create_organization(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
 
+    normalized_name = organization_in.name.strip().lower()
+
     # if organization with same name already exists in this project
     # one organization per name per project, however it can exist across projects
     existing_org = await session.execute(
         select(Organization).where(
-            Organization.name == organization_in.name,
+            Organization.name == normalized_name,
             Organization.project_id == project.id,
         )
     )
@@ -94,10 +96,10 @@ async def create_organization(
             detail="Organization with this name already exists in this project",
         )
 
-    slug = generate_slug(organization_in.name)
+    slug = generate_slug(normalized_name)
 
     organization = Organization(
-        name=organization_in.name,
+        name=normalized_name,
         slug=slug,
         project_id=project.id,
         created_by=current_user.id,
