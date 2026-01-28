@@ -10,7 +10,18 @@ from app.models.organization import Organization
 from app.models.tags import TargetTag
 
 if TYPE_CHECKING:
-    from app.models.tags import Tag
+    from app.models.organization import Organization, OrganizationSummary
+    from app.models.tags import Tag, TagSummary
+
+
+class TargetValidationRequest(BaseModel):
+    target_value: str
+
+
+class TargetValidationResponse(BaseModel):
+    valid: bool
+    target_type: TargetType | None
+    error: str | None
 
 
 class TargetOrganization(SQLModel, table=True):
@@ -48,6 +59,7 @@ class Target(TargetBase, table=True):
     tags: list["Tag"] = Relationship(
         back_populates="targets",
         link_model=TargetTag,
+        sa_relationship_kwargs={"lazy": "selectin"},
     )
 
 
@@ -67,22 +79,8 @@ class TargetRead(TargetBase):
     id: uuid.UUID
     target_type: TargetType
     project_id: uuid.UUID
-    is_active: bool
     created_at: datetime
     updated_at: datetime
     created_by: uuid.UUID
-    organization_ids: list[uuid.UUID] = Field(default_factory=list)
-    tag_ids: list[uuid.UUID] = Field(default_factory=list)
-
-
-# BASE Models only for request and response schemas
-
-
-class TargetValidationRequest(BaseModel):
-    target_value: str
-
-
-class TargetValidationResponse(BaseModel):
-    valid: bool
-    target_type: TargetType | None
-    error: str | None
+    organizations: list[OrganizationSummary] = Field(default_factory=list)
+    tags: list[TagSummary] = Field(default_factory=list)

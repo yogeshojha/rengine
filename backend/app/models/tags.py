@@ -2,13 +2,20 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from pydantic import field_validator
+from pydantic import BaseModel, field_validator
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 from app.utils.validation import validate_hex_color
 
 if TYPE_CHECKING:
     from app.models.target import Target
+
+
+class TagSummary(BaseModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+    color: str
 
 
 class TargetTag(SQLModel, table=True):
@@ -44,8 +51,7 @@ class Tag(TagBase, table=True):
     created_by: uuid.UUID = Field(foreign_key="users.id")
 
     targets: list["Target"] = Relationship(
-        back_populates="tags",
-        link_model=TargetTag,
+        link_model=TargetTag, sa_relationship_kwargs={"lazy": "selectin"}
     )
 
 

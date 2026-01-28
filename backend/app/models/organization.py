@@ -1,7 +1,14 @@
 import uuid
 from datetime import UTC, datetime
 
+from pydantic import BaseModel
 from sqlmodel import Field, SQLModel, UniqueConstraint
+
+
+class OrganizationSummary(BaseModel):
+    id: uuid.UUID
+    name: str
+    slug: str
 
 
 class OrganizationBase(SQLModel):

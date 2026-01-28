@@ -7,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
-from app.models.organization import Organization
-from app.models.project import Project
-from app.models.target import (
+from app.models import (
+    Organization,
+    OrganizationSummary,
+    Project,
+    TagSummary,
     Target,
     TargetCreate,
     TargetRead,
@@ -18,6 +20,7 @@ from app.models.target import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
+from app.services import get_or_create_organization, get_or_create_tag
 from app.utils.validation import validate_target
 
 router = APIRouter(
@@ -95,8 +98,24 @@ async def list_targets(
 
     return [
         TargetRead(
-            **target.model_dump(),
-            organization_ids=[org.id for org in target.organizations],
+            **target.model_dump(exclude={"organizations", "tags"}),
+            organizations=[
+                OrganizationSummary(
+                    id=org.id,
+                    name=org.name,
+                    slug=org.slug,
+                )
+                for org in target.organizations
+            ],
+            tags=[
+                TagSummary(
+                    id=tag.id,
+                    name=tag.name,
+                    slug=tag.slug,
+                    color=tag.color,
+                )
+                for tag in target.tags
+            ],
         )
         for target in targets
     ]
@@ -131,6 +150,7 @@ async def create_target(
             Target.project_id == project.id,
         )
     )
+
     if existing_target.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -138,20 +158,16 @@ async def create_target(
         )
 
     organizations = []
-    if target_in.organization_slugs:
-        org_result = await session.execute(
-            select(Organization).where(
-                Organization.slug.in_(target_in.organization_slugs),
-                Organization.project_id == project.id,
-            )
+    for org_name in target_in.organization_names:
+        org = await get_or_create_organization(
+            org_name, project.id, current_user.id, session
         )
-        organizations = list(org_result.scalars().all())
+        organizations.append(org)
 
-        if len(organizations) != len(target_in.organization_slugs):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="One or more organizations not found in this project",
-            )
+    tags = []
+    for tag_name in target_in.tag_names:
+        tag = await get_or_create_tag(tag_name, project.id, current_user.id, session)
+        tags.append(tag)
 
     target = Target(
         target_value=target_in.target_value,
@@ -160,14 +176,31 @@ async def create_target(
         project_id=project.id,
         created_by=current_user.id,
         organizations=organizations,
+        tags=tags,
     )
     session.add(target)
     await session.commit()
     await session.refresh(target)
 
     return TargetRead(
-        **target.model_dump(),
-        organization_ids=[org.id for org in target.organizations],
+        **target.model_dump(exclude={"organizations", "tags"}),
+        organizations=[
+            OrganizationSummary(
+                id=org.id,
+                name=org.name,
+                slug=org.slug,
+            )
+            for org in target.organizations
+        ],
+        tags=[
+            TagSummary(
+                id=tag.id,
+                name=tag.name,
+                slug=tag.slug,
+                color=tag.color,
+            )
+            for tag in target.tags
+        ],
     )
 
 
@@ -187,8 +220,24 @@ async def get_target(
         )
 
     return TargetRead(
-        **target.model_dump(),
-        organization_ids=[org.id for org in target.organizations],
+        **target.model_dump(exclude={"organizations", "tags"}),
+        organizations=[
+            OrganizationSummary(
+                id=org.id,
+                name=org.name,
+                slug=org.slug,
+            )
+            for org in target.organizations
+        ],
+        tags=[
+            TagSummary(
+                id=tag.id,
+                name=tag.name,
+                slug=tag.slug,
+                color=tag.color,
+            )
+            for tag in target.tags
+        ],
     )
 
 
@@ -196,7 +245,7 @@ async def get_target(
 async def update_target(
     target_id: str,
     target_in: TargetUpdate,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     result = await session.execute(select(Target).where(Target.id == target_id))
@@ -211,30 +260,47 @@ async def update_target(
     if target_in.display_name is not None:
         target.display_name = target_in.display_name
 
-    if target_in.organization_slugs is not None:
-        org_result = await session.execute(
-            select(Organization).where(
-                Organization.slug.in_(target_in.organization_slugs),
-                Organization.project_id == target.project_id,
+    if target_in.organization_names is not None:
+        organizations = []
+        for org_name in target_in.organization_names:
+            org = await get_or_create_organization(
+                org_name, target.project_id, current_user.id, session
             )
-        )
-        organizations = list(org_result.scalars().all())
-
-        if len(organizations) != len(target_in.organization_slugs):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="One or more organizations not found in this project",
-            )
-
+            organizations.append(org)
         target.organizations = organizations
+
+    if target_in.tag_names is not None:
+        tags = []
+        for tag_name in target_in.tag_names:
+            tag = await get_or_create_tag(
+                tag_name, target.project_id, current_user.id, session
+            )
+            tags.append(tag)
+        target.tags = tags
 
     target.updated_at = datetime.now(UTC).replace(tzinfo=None)
     await session.commit()
     await session.refresh(target)
 
     return TargetRead(
-        **target.model_dump(),
-        organization_ids=[org.id for org in target.organizations],
+        **target.model_dump(exclude={"organizations", "tags"}),
+        organizations=[
+            OrganizationSummary(
+                id=org.id,
+                name=org.name,
+                slug=org.slug,
+            )
+            for org in target.organizations
+        ],
+        tags=[
+            TagSummary(
+                id=tag.id,
+                name=tag.name,
+                slug=tag.slug,
+                color=tag.color,
+            )
+            for tag in target.tags
+        ],
     )
 
 
@@ -253,5 +319,5 @@ async def delete_target(
             detail="Target not found",
         )
 
-    target.is_active = False
+    await session.delete(target)
     await session.commit()
