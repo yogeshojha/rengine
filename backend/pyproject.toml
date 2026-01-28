@@ -12,6 +12,7 @@ dependencies = [
     "python-jose>=3.5.0",
     "sqlmodel>=0.0.31",
     "uvicorn>=0.40.0",
+    "validators>=0.35.0",
     "zxcvbn>=4.5.0",
 ]
 

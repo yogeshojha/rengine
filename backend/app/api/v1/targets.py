@@ -15,6 +15,8 @@ from app.models import (
     TargetRead,
     TargetType,
     TargetUpdate,
+    TargetValidationRequest,
+    TargetValidationResponse,
 )
 from app.utils.validation import validate_target
 
@@ -22,6 +24,31 @@ router = APIRouter(
     prefix="/targets",
     tags=["targets"],
 )
+
+
+@router.post("/validate", response_model=TargetValidationResponse)
+async def validate_target_endpoint(
+    request: TargetValidationRequest,
+    _current_user: CurrentUser,
+):
+    """
+    This endpoint validates the format of a target value and determines its type.
+    It does not store the target; it only checks if the format is valid.
+    """
+    target_type = validate_target(request.target_value)
+
+    if target_type:
+        return TargetValidationResponse(
+            valid=True,
+            target_type=target_type,
+            error=None,
+        )
+
+    return TargetValidationResponse(
+        valid=False,
+        target_type=None,
+        error="Invalid target format. Accepted formats: domain/subdomain, IP, IP range (CIDR), ASN (AS followed by numbers), or URL",
+    )
 
 
 @router.get("", response_model=list[TargetRead])

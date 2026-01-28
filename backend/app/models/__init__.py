@@ -11,6 +11,8 @@ from app.models.target import (
     TargetRead,
     TargetType,
     TargetUpdate,
+    TargetValidationRequest,
+    TargetValidationResponse,
 )
 from app.models.user import User, UserBase, UserCreate, UserRead
 
@@ -29,6 +31,8 @@ __all__ = [
     "TargetRead",
     "TargetType",
     "TargetUpdate",
+    "TargetValidationRequest",
+    "TargetValidationResponse",
     "User",
     "UserBase",
     "UserCreate",

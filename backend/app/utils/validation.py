@@ -1,7 +1,7 @@
 import ipaddress
 import re
-from urllib.parse import urlparse
 
+import validators
 from zxcvbn import zxcvbn
 
 from app.config import settings
@@ -101,8 +101,7 @@ def validate_username(username: str) -> str:
 
 def validate_domain(value: str) -> bool:
     """Validate domain/subdomain format"""
-    domain_pattern = r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$"
-    return bool(re.match(domain_pattern, value))
+    return validators.domain(value) is True
 
 
 def validate_ip(value: str) -> bool:
@@ -131,11 +130,7 @@ def validate_asn(value: str) -> bool:
 
 def validate_url(value: str) -> bool:
     """Validate fully qualified URL"""
-    try:
-        result = urlparse(value)
-        return all([result.scheme, result.netloc])
-    except Exception:
-        return False
+    return validators.url(value) is True
 
 
 def validate_target(target_value: str) -> TargetType | None:

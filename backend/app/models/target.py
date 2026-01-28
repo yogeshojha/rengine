@@ -1,6 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
+from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.enums.target import TargetType
@@ -58,3 +59,16 @@ class TargetRead(TargetBase):
     created_by: uuid.UUID
     organization_ids: list[uuid.UUID] = Field(default_factory=list)
     target_type: TargetType
+
+
+# BASE Models only for request and response schemas
+
+
+class TargetValidationRequest(BaseModel):
+    target_value: str
+
+
+class TargetValidationResponse(BaseModel):
+    valid: bool
+    target_type: TargetType | None
+    error: str | None
