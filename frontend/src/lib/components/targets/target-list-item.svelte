@@ -4,7 +4,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import CopyButton from '$lib/components/ui/copy-button.svelte';
+	import CopyButton from '@/components/copy-button.svelte';
 	import { Building2, Ellipsis, Eye, Pencil, Trash2 } from 'lucide-svelte';
 
 	interface Props {

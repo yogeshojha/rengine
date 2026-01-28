@@ -1,286 +1,304 @@
 <script lang="ts">
-	import { targetsApi } from '$lib/api/targets';
-	import { targetsStore } from '$lib/stores/targets.svelte';
-	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { TargetType, formatTargetType, getTargetTypeColor } from '$lib/types/target';
+	import { CircleCheck, CircleX, LoaderCircle, Globe, MapPin, Hash, Building2, Link2 } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import * as Select from '$lib/components/ui/select';
-	import { Loader2, CheckCircle2, AlertCircle, X } from 'lucide-svelte';
+	import { Separator } from '$lib/components/ui/separator';
+	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
+	import TagMultiSelect from '$lib/components/tag-multi-select.svelte';
+	import { targetsStore } from '$lib/stores/targets.svelte';
+	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { targetsApi } from '$lib/api/targets';
+	import { organizationsApi } from '$lib/api/organizations';
+	import { tagsApi } from '$lib/api/tags';
+	import { TargetType, getTargetTypeColor, formatTargetType } from '$lib/types/target';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {
 		open: boolean;
 	}
 
-	let { open = $bindable(false) }: Props = $props();
+	let { open = $bindable() }: Props = $props();
 
 	let targetValue = $state('');
 	let displayName = $state('');
-	let organizationInput = $state('');
-	let tagInput = $state('');
-	let selectedOrganizations = $state<string[]>([]);
-	let selectedTags = $state<string[]>([]);
 	let isValidating = $state(false);
+	let validationResult = $state<{ valid: boolean; target_type: TargetType | null; error: string | null } | null>(null);
 	let isSubmitting = $state(false);
-	let validationResult = $state<{
-		valid: boolean;
-		type: TargetType | null;
-		error: string | null;
-	} | null>(null);
 
-	let debounceTimer: number | undefined;
+	let selectedOrganizations = $state<Array<{ id: string; label: string }>>([]);
+	let selectedTags = $state<Array<{ id: string; label: string; color: string }>>([]);
 
-	function resetForm() {
-		targetValue = '';
-		displayName = '';
-		organizationInput = '';
-		tagInput = '';
-		selectedOrganizations = [];
-		selectedTags = [];
-		validationResult = null;
-	}
+	let validateTimeout: ReturnType<typeof setTimeout>;
 
-	async function validateTarget(value: string) {
+	let organizationItems = $derived(
+		targetsStore.organizations.map((org) => ({
+			id: org.id,
+			label: org.name
+		}))
+	);
+
+	let tagItems = $derived(
+		targetsStore.tags.map((tag) => ({
+			id: tag.id,
+			label: tag.name,
+			color: tag.color
+		}))
+	);
+
+	const typeIcons = {
+		[TargetType.DOMAIN]: Globe,
+		[TargetType.IP]: MapPin,
+		[TargetType.IP_RANGE]: Hash,
+		[TargetType.ASN]: Building2,
+		[TargetType.URL]: Link2
+	};
+
+	let TypeIcon = $derived(
+		validationResult?.target_type ? typeIcons[validationResult.target_type] : null
+	);
+
+	function handleTargetInput(e: Event) {
+		const value = (e.target as HTMLInputElement).value;
+		targetValue = value;
+
+		clearTimeout(validateTimeout);
+
 		if (!value.trim()) {
 			validationResult = null;
 			return;
 		}
 
 		isValidating = true;
+		validateTimeout = setTimeout(async () => {
+			try {
+				const result = await targetsApi.validate({ target_value: value });
+				validationResult = result;
+			} catch {
+				validationResult = { valid: false, target_type: null, error: 'Validation failed' };
+			} finally {
+				isValidating = false;
+			}
+		}, 400);
+	}
+
+	// Organization handlers
+	function handleSelectOrganization(item: { id: string; label: string }) {
+		selectedOrganizations = [...selectedOrganizations, item];
+	}
+
+	function handleRemoveOrganization(item: { id: string; label: string }) {
+		selectedOrganizations = selectedOrganizations.filter((o) => o.id !== item.id);
+	}
+
+	async function handleCreateOrganization(name: string) {
+		const projectSlug = projectsStore.activeProject?.slug;
+		if (!projectSlug) return;
+
 		try {
-			const result = await targetsApi.validate({ target_value: value });
-			validationResult = result;
-		} catch (error) {
-			validationResult = {
-				valid: false,
-				type: null,
-				error: 'Failed to validate target'
-			};
-		} finally {
-			isValidating = false;
+			const newOrg = await organizationsApi.create({ name, project_slug: projectSlug });
+			// Add to selected
+			selectedOrganizations = [...selectedOrganizations, { id: newOrg.id, label: newOrg.name }];
+			// Refresh store to include new org
+			await targetsStore.refresh();
+			toast.success(`Organization "${name}" created`);
+		} catch (e) {
+			toast.error('Failed to create organization');
 		}
 	}
 
-	function handleTargetValueChange() {
-		if (debounceTimer) clearTimeout(debounceTimer);
-		debounceTimer = setTimeout(() => {
-			validateTarget(targetValue);
-		}, 500) as unknown as number;
+	// Tag handlers
+	function handleSelectTag(item: { id: string; label: string; color: string }) {
+		selectedTags = [...selectedTags, item];
 	}
 
-	function addOrganization() {
-		if (organizationInput.trim() && !selectedOrganizations.includes(organizationInput.trim())) {
-			selectedOrganizations = [...selectedOrganizations, organizationInput.trim()];
-			organizationInput = '';
+	function handleRemoveTag(item: { id: string; label: string; color: string }) {
+		selectedTags = selectedTags.filter((t) => t.id !== item.id);
+	}
+
+	async function handleCreateTag(name: string, color: string) {
+		const projectSlug = projectsStore.activeProject?.slug;
+		if (!projectSlug) return;
+
+		try {
+			const newTag = await tagsApi.create({ name, color, project_slug: projectSlug });
+			// Add to selected
+			selectedTags = [...selectedTags, { id: newTag.id, label: newTag.name, color: newTag.color }];
+			// Refresh store to include new tag
+			await targetsStore.refresh();
+			toast.success(`Tag "${name}" created`);
+		} catch (e) {
+			toast.error('Failed to create tag');
 		}
 	}
 
-	function removeOrganization(org: string) {
-		selectedOrganizations = selectedOrganizations.filter((o) => o !== org);
-	}
-
-	function addTag() {
-		if (tagInput.trim() && !selectedTags.includes(tagInput.trim())) {
-			selectedTags = [...selectedTags, tagInput.trim()];
-			tagInput = '';
-		}
-	}
-
-	function removeTag(tag: string) {
-		selectedTags = selectedTags.filter((t) => t !== tag);
-	}
-
+	// Submit handler
 	async function handleSubmit() {
-		const activeProject = projectsStore.activeProject;
-		if (!activeProject) {
-			toast.error('No active project selected');
-			return;
-		}
-
-		if (!validationResult?.valid) {
-			toast.error('Please enter a valid target');
-			return;
-		}
+		const projectSlug = projectsStore.activeProject?.slug;
+		if (!projectSlug || !validationResult?.valid) return;
 
 		isSubmitting = true;
 
-		const result = await targetsStore.createTarget({
-			target_value: targetValue,
-			display_name: displayName || undefined,
-			project_slug: activeProject.slug,
-			organization_names: selectedOrganizations,
-			tag_names: selectedTags
-		});
+		try {
+			const result = await targetsStore.createTarget({
+				target_value: targetValue.trim(),
+				display_name: displayName.trim() || undefined,
+				project_slug: projectSlug,
+				organization_names: selectedOrganizations.map((o) => o.label),
+				tag_names: selectedTags.map((t) => t.label)
+			});
 
-		isSubmitting = false;
-
-		if (result) {
-			toast.success('Target added successfully');
-			open = false;
-			resetForm();
-		} else {
-			toast.error(targetsStore.error || 'Failed to add target');
+			if (result) {
+				toast.success('Target added successfully');
+				resetForm();
+				open = false;
+			} else {
+				toast.error(targetsStore.error || 'Failed to add target');
+			}
+		} catch {
+			toast.error('Failed to add target');
+		} finally {
+			isSubmitting = false;
 		}
 	}
 
-	function handleOpenChange(newOpen: boolean) {
-		open = newOpen;
-		if (!newOpen) {
+	function resetForm() {
+		targetValue = '';
+		displayName = '';
+		validationResult = null;
+		selectedOrganizations = [];
+		selectedTags = [];
+	}
+
+	function handleOpenChange(isOpen: boolean) {
+		if (!isOpen) {
 			resetForm();
 		}
+		open = isOpen;
 	}
+
+	let canSubmit = $derived(
+		validationResult?.valid && !isSubmitting && !isValidating
+	);
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content class="sm:max-w-[600px]">
-		<Dialog.Header>
-			<Dialog.Title>Add New Target</Dialog.Title>
+	<Dialog.Content class="sm:max-w-[500px] gap-0 p-0">
+		<Dialog.Header class="p-6 pb-4">
+			<Dialog.Title>Add Target</Dialog.Title>
 			<Dialog.Description>
-				Add a new target to your attack surface. The target will be automatically validated.
+				Add a target for monitoring
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<div class="space-y-6 py-4">
-			<!-- Target Value Input -->
+		<Separator />
+
+		<div class="p-6 space-y-5">
+			<!-- Target Value -->
 			<div class="space-y-2">
-				<Label for="target-value">Target Value *</Label>
+				<Label for="target-value">Target Value <span class="text-destructive">*</span></Label>
 				<div class="relative">
 					<Input
 						id="target-value"
 						type="text"
-						placeholder="example.com, 192.168.1.1, AS15169, https://..."
-						bind:value={targetValue}
-						oninput={handleTargetValueChange}
-						class={validationResult?.valid === false ? 'border-destructive' : ''}
+						placeholder="e.g., example.com, 192.168.1.0/24, AS12345"
+						value={targetValue}
+						oninput={handleTargetInput}
+						class="pr-10"
 					/>
-					{#if isValidating}
-						<div class="absolute right-3 top-1/2 -translate-y-1/2">
-							<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-						</div>
-					{:else if validationResult?.valid}
-						<div class="absolute right-3 top-1/2 -translate-y-1/2">
-							<CheckCircle2 class="h-4 w-4 text-green-600" />
-						</div>
-					{:else if validationResult?.valid === false}
-						<div class="absolute right-3 top-1/2 -translate-y-1/2">
-							<AlertCircle class="h-4 w-4 text-destructive" />
-						</div>
-					{/if}
+					<div class="absolute right-3 top-1/2 -translate-y-1/2">
+						{#if isValidating}
+							<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" />
+						{:else if validationResult?.valid}
+							<CircleCheck class="h-4 w-4 text-green-500" />
+						{:else if validationResult && !validationResult.valid}
+							<CircleX class="h-4 w-4 text-destructive" />
+						{/if}
+					</div>
 				</div>
 
-				{#if validationResult?.valid && validationResult.type}
-					<div class="flex items-center gap-2 mt-2">
-						<span class="text-sm text-muted-foreground">Detected type:</span>
-						<Badge class={getTargetTypeColor(validationResult.type) + ' border'}>
-							{formatTargetType(validationResult.type)}
-						</Badge>
+				<!-- Validation Result -->
+				{#if validationResult}
+					<div class="flex items-center gap-2 text-sm">
+						{#if validationResult.valid && validationResult.target_type}
+							<Badge class={getTargetTypeColor(validationResult.target_type) + ' border gap-1'}>
+								{#if TypeIcon}
+									<TypeIcon class="h-3 w-3" />
+								{/if}
+								{formatTargetType(validationResult.target_type)}
+							</Badge>
+							<span class="text-green-600 dark:text-green-400">Valid target detected</span>
+						{:else if validationResult.error}
+							<span class="text-destructive">{validationResult.error}</span>
+						{/if}
 					</div>
-				{:else if validationResult?.error}
-					<p class="text-sm text-destructive mt-1">{validationResult.error}</p>
 				{/if}
 			</div>
 
-			<!-- Display Name Input -->
+			<!-- Display Name -->
 			<div class="space-y-2">
 				<Label for="display-name">Display Name (Optional)</Label>
 				<Input
 					id="display-name"
 					type="text"
-					placeholder="Friendly name for this target"
+					placeholder="Optional friendly name"
 					bind:value={displayName}
 				/>
+				<p class="text-xs text-muted-foreground">
+					Descriptive label to help identify this target
+				</p>
 			</div>
 
 			<!-- Organizations -->
 			<div class="space-y-2">
-				<Label for="organizations">Organizations (Optional)</Label>
-				<div class="flex gap-2">
-					<Input
-						id="organizations"
-						type="text"
-						placeholder="Enter organization name"
-						bind:value={organizationInput}
-						onkeydown={(e) => {
-							if (e.key === 'Enter') {
-								e.preventDefault();
-								addOrganization();
-							}
-						}}
-					/>
-					<Button type="button" variant="outline" onclick={addOrganization}>Add</Button>
-				</div>
-				{#if selectedOrganizations.length > 0}
-					<div class="flex flex-wrap gap-2 mt-2">
-						{#each selectedOrganizations as org}
-							<Badge variant="secondary" class="gap-1">
-								{org}
-								<button
-									type="button"
-									onclick={() => removeOrganization(org)}
-									class="ml-1 hover:bg-muted rounded-full p-0.5"
-								>
-									<X class="h-3 w-3" />
-								</button>
-							</Badge>
-						{/each}
-					</div>
-				{/if}
+				<Label>Organizations (Optional)</Label>
+				<MultiSelectCombobox
+					items={organizationItems}
+					selected={selectedOrganizations}
+					onSelect={handleSelectOrganization}
+					onRemove={handleRemoveOrganization}
+					onCreate={handleCreateOrganization}
+					placeholder="Search or create organizations..."
+					emptyText="No organizations found."
+				/>
+				<p class="text-xs text-muted-foreground">
+					Group targets by organization
+				</p>
 			</div>
 
 			<!-- Tags -->
 			<div class="space-y-2">
-				<Label for="tags">Tags (Optional)</Label>
-				<div class="flex gap-2">
-					<Input
-						id="tags"
-						type="text"
-						placeholder="Enter tag name"
-						bind:value={tagInput}
-						onkeydown={(e) => {
-							if (e.key === 'Enter') {
-								e.preventDefault();
-								addTag();
-							}
-						}}
-					/>
-					<Button type="button" variant="outline" onclick={addTag}>Add</Button>
-				</div>
-				{#if selectedTags.length > 0}
-					<div class="flex flex-wrap gap-2 mt-2">
-						{#each selectedTags as tag}
-							<Badge variant="outline" class="gap-1">
-								{tag}
-								<button
-									type="button"
-									onclick={() => removeTag(tag)}
-									class="ml-1 hover:bg-muted rounded-full p-0.5"
-								>
-									<X class="h-3 w-3" />
-								</button>
-							</Badge>
-						{/each}
-					</div>
-				{/if}
+				<Label>Tags (Optional)</Label>
+				<TagMultiSelect
+					items={tagItems}
+					selected={selectedTags}
+					onSelect={handleSelectTag}
+					onRemove={handleRemoveTag}
+					onCreate={handleCreateTag}
+					placeholder="Search or create tags..."
+				/>
+				<p class="text-xs text-muted-foreground">
+					Add tags to categorize and filter targets
+				</p>
 			</div>
 		</div>
 
-		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-			<Button
-				onclick={handleSubmit}
-				disabled={!validationResult?.valid || isSubmitting}
-			>
+		<Separator />
+
+		<div class="flex items-center justify-end gap-2 p-4 bg-muted/30">
+			<Button variant="outline" onclick={() => (open = false)} disabled={isSubmitting}>
+				Cancel
+			</Button>
+			<Button onclick={handleSubmit} disabled={!canSubmit}>
 				{#if isSubmitting}
-					<Loader2 class="h-4 w-4 mr-2 animate-spin" />
+					<LoaderCircle class="h-4 w-4 mr-2 animate-spin" />
 					Adding...
 				{:else}
 					Add Target
 				{/if}
 			</Button>
-		</Dialog.Footer>
+		</div>
 	</Dialog.Content>
 </Dialog.Root>

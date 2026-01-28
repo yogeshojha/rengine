@@ -6,7 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import CopyButton from '$lib/components/ui/copy-button.svelte';
+	import CopyButton from '@/components/copy-button.svelte';
 	import {
 		Building2,
 		Tag as TagIcon,

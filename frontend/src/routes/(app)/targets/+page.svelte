@@ -15,7 +15,7 @@
 	import TargetListSkeleton from '$lib/components/targets/target-list-skeleton.svelte';
 	import TargetEmptyState from '$lib/components/targets/target-empty-state.svelte';
 	import TargetDetailDialog from '$lib/components/targets/target-detail-dialog.svelte';
-	import DeleteConfirmationDialog from '$lib/components/ui/delete-confirmation-dialog.svelte';
+	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 
 	// Local state
