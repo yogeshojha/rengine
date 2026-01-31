@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi_pagination import add_pagination
 
 from app.api.router import router as api_router
 from app.config import settings
@@ -31,6 +32,10 @@ app = FastAPI(
     version=settings.APP_VERSION,
     lifespan=lifespan,
 )
+
+
+# fastapi pagination
+add_pagination(app)
 
 
 def custom_openapi():

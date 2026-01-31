@@ -271,6 +271,20 @@ wheels = [
 ]
 
 [[package]]
+name = "fastapi-pagination"
+version = "0.15.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/54/5b/6e3af96de9a5435dfebd372e84949c4875e6814e3d7f12cf011fc8a837b8/fastapi_pagination-0.15.8.tar.gz", hash = "sha256:f14d572741370b74194a9879c2ed7dc75a7a4e3819d5db22492871be76b28bc9", size = 574598, upload-time = "2026-01-27T21:49:59.651Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b6/b8/51033af73792d5dd9890a8815f7c5b5bf3adec1445a55196318cd087914f/fastapi_pagination-0.15.8-py3-none-any.whl", hash = "sha256:2334e435e65fbc5bc1f0960ce7c1449fc3ae1c2abd48f40e40e6e48992c5e27b", size = 59879, upload-time = "2026-01-27T21:49:57.331Z" },
+]
+
+[[package]]
 name = "greenlet"
 version = "3.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -464,6 +478,7 @@ dependencies = [
     { name = "argon2-cffi" },
     { name = "asyncpg" },
     { name = "fastapi" },
+    { name = "fastapi-pagination" },
     { name = "passlib", extra = ["bcrypt"] },
     { name = "pydantic-settings" },
     { name = "python-jose" },
@@ -483,6 +498,7 @@ requires-dist = [
     { name = "argon2-cffi", specifier = ">=25.1.0" },
     { name = "asyncpg", specifier = ">=0.31.0" },
     { name = "fastapi", specifier = ">=0.128.0" },
+    { name = "fastapi-pagination", specifier = ">=0.15.8" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-jose", specifier = ">=3.5.0" },

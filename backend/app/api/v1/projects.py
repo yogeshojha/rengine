@@ -1,6 +1,8 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,19 +30,18 @@ async def generate_unique_slug(name: str, session: AsyncSession) -> str:
         slug = f"{base_slug}-{counter}"
 
 
-@router.get("", response_model=list[ProjectRead])
+@router.get("", response_model=Page[ProjectRead])
 async def list_projects(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    include_inactive: bool = Query(False, description="Include soft-deleted projects"),
+    include_inactive: bool = Query(False, description="Include Deactivated projects"),
 ):
     query = select(Project)
 
     if not include_inactive:
         query = query.where(Project.is_active)
 
-    result = await session.execute(query)
-    return result.scalars().all()
+    return await paginate(session, query)
 
 
 @router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)

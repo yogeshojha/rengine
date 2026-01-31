@@ -7,6 +7,7 @@ dependencies = [
     "argon2-cffi>=25.1.0",
     "asyncpg>=0.31.0",
     "fastapi>=0.128.0",
+    "fastapi-pagination>=0.15.8",
     "passlib[bcrypt]>=1.7.4",
     "pydantic-settings>=2.12.0",
     "python-jose>=3.5.0",
