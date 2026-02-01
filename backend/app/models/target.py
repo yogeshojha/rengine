@@ -69,6 +69,36 @@ class TargetCreate(TargetBase):
     tag_names: list[str] = Field(default_factory=list)
 
 
+# bulk targets create/request/response models
+class TargetBulkCreate(BaseModel):
+    project_slug: str
+    targets: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="List of target values to import (max 1000)",
+    )
+    organization_names: list[str] = Field(default_factory=list)
+    tag_names: list[str] = Field(default_factory=list)
+
+
+class TargetImportResult(BaseModel):
+    # single target import result
+    target_value: str
+    success: bool
+    target_type: TargetType | None = None
+    target_id: uuid.UUID | None = None
+    error: str | None = None
+
+
+class TargetBulkCreateResponse(BaseModel):
+    total: int
+    imported: int
+    failed: int
+    skipped_duplicates: int
+    results: list[TargetImportResult]
+
+
 class TargetUpdate(SQLModel):
     display_name: str | None = Field(default=None, max_length=200)
     organization_names: list[str] | None = None

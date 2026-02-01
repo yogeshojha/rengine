@@ -15,7 +15,10 @@ from app.models import (
     Project,
     TagSummary,
     Target,
+    TargetBulkCreate,
+    TargetBulkCreateResponse,
     TargetCreate,
+    TargetImportResult,
     TargetRead,
     TargetType,
     TargetUpdate,
@@ -243,6 +246,143 @@ async def create_target(
             )
             for tag in target.tags
         ],
+    )
+
+
+@router.post(
+    "/bulk",
+    response_model=TargetBulkCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def bulk_create_targets(
+    bulk_in: TargetBulkCreate,
+    current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """
+    Bulk import multiple targets into a project.
+
+    All targets in the batch will receive the same tags and organizations. individual target tags/orgs are not supported.
+    Invalid targets are skipped and reported in the response.
+    Duplicate targets (within batch or already in project) are skipped.
+    """
+    project_result = await session.execute(
+        select(Project).where(Project.slug == bulk_in.project_slug)
+    )
+    project = project_result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
+    existing_targets_result = await session.execute(
+        select(Target.target_value).where(Target.project_id == project.id)
+    )
+    existing_target_values = set(existing_targets_result.scalars().all())
+    organizations = []
+    for org_name in bulk_in.organization_names:
+        org = await get_or_create_organization(
+            org_name, project.id, current_user.id, session
+        )
+        organizations.append(org)
+
+    tags = []
+    for tag_name in bulk_in.tag_names:
+        tag = await get_or_create_tag(tag_name, project.id, current_user.id, session)
+        tags.append(tag)
+
+    results: list[TargetImportResult] = []
+    imported_count = 0
+    failed_count = 0
+    skipped_duplicates = 0
+    seen_in_batch: set[str] = set()
+
+    for target_value in bulk_in.targets:
+        _target_value = target_value.strip()
+
+        # skip empty values
+        if not _target_value:
+            results.append(
+                TargetImportResult(
+                    target_value=_target_value,
+                    success=False,
+                    error="Empty target value",
+                )
+            )
+            failed_count += 1
+            continue
+
+        # check dups in current batch
+        if _target_value in seen_in_batch:
+            results.append(
+                TargetImportResult(
+                    target_value=_target_value,
+                    success=False,
+                    error="Duplicate within import batch",
+                )
+            )
+            skipped_duplicates += 1
+            continue
+
+        # check dups in existing project targets
+        if _target_value in existing_target_values:
+            results.append(
+                TargetImportResult(
+                    target_value=_target_value,
+                    success=False,
+                    error="Target already exists in project",
+                )
+            )
+            skipped_duplicates += 1
+            continue
+
+        # validate target format
+        target_type = validate_target(_target_value)
+        if not target_type:
+            results.append(
+                TargetImportResult(
+                    target_value=_target_value,
+                    success=False,
+                    error="Invalid target format",
+                )
+            )
+            failed_count += 1
+            continue
+
+        # create the target
+        target = Target(
+            target_value=_target_value,
+            target_type=target_type,
+            display_name=_target_value,
+            project_id=project.id,
+            created_by=current_user.id,
+            organizations=organizations,
+            tags=tags,
+        )
+        session.add(target)
+
+        # track for batch duplicate detection
+        seen_in_batch.add(_target_value)
+        existing_target_values.add(_target_value)
+
+        results.append(
+            TargetImportResult(
+                target_value=_target_value,
+                success=True,
+                target_type=target_type,
+                target_id=target.id,
+            )
+        )
+        imported_count += 1
+
+    await session.commit()
+
+    return TargetBulkCreateResponse(
+        total=len(bulk_in.targets),
+        imported=imported_count,
+        failed=failed_count,
+        skipped_duplicates=skipped_duplicates,
+        results=results,
     )
 
 

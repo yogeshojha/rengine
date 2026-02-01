@@ -9,7 +9,10 @@ from app.models.project import Project, ProjectBase, ProjectCreate, ProjectRead
 from app.models.tag import Tag, TagBase, TagCreate, TagRead, TagSummary, TagUpdate
 from app.models.target import (
     Target,
+    TargetBulkCreate,
+    TargetBulkCreateResponse,
     TargetCreate,
+    TargetImportResult,
     TargetRead,
     TargetType,
     TargetUpdate,
