@@ -6,7 +6,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import { Button } from '$lib/components/ui/button';
-	import { Plus, RefreshCw } from 'lucide-svelte';
+	import { Play, Plus, RefreshCw } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	import TargetTypeTabs from '$lib/components/targets/target-type-tabs.svelte';
@@ -19,19 +19,29 @@
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
+	import ScanHistoryModal from '$lib/components/targets/scan-history-modal.svelte';
+	import BulkActionBar from '$lib/components/targets/bulk-action-bar.svelte';
 
 	let showAddModal = $state(false);
 	let showDetailDialog = $state(false);
 	let showDeleteDialog = $state(false);
 	let selectedTarget = $state<Target | null>(null);
 	let targetToDelete = $state<Target | null>(null);
-	let isRefreshing = $state(false);
 	let isDeleting = $state(false);
+	let isRefreshing = $state(false);
+
+	let activeScanCounts = $state<Record<string, number>>({});
+
+	let selectedTargetIds = $state(new Set<string>());
+
+	let deleteMode = $state<'single' | 'bulk'>('single');
+
+	let showScanHistoryModal = $state(false);
+	let scanHistoryTarget = $state<Target | null>(null);
 
 	$effect(() => {
 		const activeProject = projectsStore.activeProject;
 		const hasFetched = projectsStore.hasFetched;
-
 		if (activeProject && hasFetched) {
 			untrack(() => {
 				targetsStore.fetchAll(activeProject.slug);
@@ -39,6 +49,106 @@
 		}
 	});
 
+	let selectAllChecked = $derived<boolean | 'indeterminate'>(
+		selectedTargetIds.size === 0
+			? false
+			: selectedTargetIds.size >= targetsStore.filteredTargets.length
+				? true
+				: 'indeterminate'
+	);
+
+	let deleteDialogTitle = $derived(
+		deleteMode === 'single'
+			? 'Delete Target'
+			: `Delete ${selectedTargetIds.size} Target${selectedTargetIds.size !== 1 ? 's' : ''}`
+	);
+
+	let deleteDialogDescription = $derived(
+		deleteMode === 'single'
+			? `Are you sure you want to delete '${targetToDelete?.target_value}'? This action cannot be undone and will remove all associated scan data.`
+			: `Are you sure you want to delete ${selectedTargetIds.size} selected target${selectedTargetIds.size !== 1 ? 's' : ''}? This action cannot be undone and will remove all associated data.`
+	);
+
+	let selectedTargetIsScanning = $derived(
+		selectedTarget ? (activeScanCounts[selectedTarget.id] || 0) > 0 : false
+	);
+
+	let organizationSummaries = $derived(
+		targetsStore.organizations.map((org) => ({
+			id: org.id,
+			name: org.name,
+			slug: org.slug
+		}))
+	);
+
+	let tagSummaries = $derived(
+		targetsStore.tags.map((tag) => ({
+			id: tag.id,
+			name: tag.name,
+			slug: tag.slug,
+			color: tag.color
+		}))
+	);
+
+	let showPagination = $derived(
+		targetsStore.pagination.pageSize !== -1 && targetsStore.pagination.totalPages > 1
+	);
+	function fireScan(target: Target) {
+		activeScanCounts[target.id] = (activeScanCounts[target.id] || 0) + 1;
+		// TODO: replace setTimeout with real API call
+		setTimeout(() => {
+			activeScanCounts[target.id] = Math.max(0, (activeScanCounts[target.id] || 0) - 1);
+		}, 3000);
+	}
+
+	function handleScan(target: Target) {
+		fireScan(target);
+		toast.success(`Scan initiated for ${target.target_value}`);
+	}
+
+	function handleScanAll() {
+		const targets = targetsStore.filteredTargets;
+		if (targets.length === 0) return;
+		targets.forEach(fireScan);
+		toast.success(
+			`Scans initiated for ${targets.length} target${targets.length !== 1 ? 's' : ''}`
+		);
+	}
+
+	function handleTargetSelect(targetId: string) {
+		const next = new Set(selectedTargetIds);
+		next.has(targetId) ? next.delete(targetId) : next.add(targetId);
+		selectedTargetIds = next;
+	}
+
+	function handleSelectAll() {
+		selectedTargetIds =
+			selectedTargetIds.size >= targetsStore.filteredTargets.length
+				? new Set()
+				: new Set(targetsStore.filteredTargets.map((t) => t.id));
+	}
+
+	function clearSelection() {
+		selectedTargetIds = new Set();
+	}
+
+	function handleBulkScan() {
+		const targets = targetsStore.filteredTargets.filter((t) => selectedTargetIds.has(t.id));
+		targets.forEach(fireScan);
+		toast.success(
+			`Scans initiated for ${targets.length} target${targets.length !== 1 ? 's' : ''}`
+		);
+	}
+
+	function handleBulkDelete() {
+		deleteMode = 'bulk';
+		showDeleteDialog = true;
+	}
+
+	function handleOpenScanHistory(target: Target) {
+		scanHistoryTarget = target;
+		showScanHistoryModal = true;
+	}
 	function handleViewTarget(target: Target) {
 		selectedTarget = target;
 		showDetailDialog = true;
@@ -50,23 +160,38 @@
 
 	function handleDeleteTarget(target: Target) {
 		targetToDelete = target;
+		deleteMode = 'single';
 		showDeleteDialog = true;
 	}
 
 	async function confirmDelete() {
-		if (!targetToDelete) return;
-
 		isDeleting = true;
-		const success = await targetsStore.deleteTarget(targetToDelete.id);
-		isDeleting = false;
 
-		if (success) {
-			toast.success('Target deleted successfully');
-			showDeleteDialog = false;
-			showDetailDialog = false;
-			targetToDelete = null;
+		if (deleteMode === 'single') {
+			if (!targetToDelete) return;
+			const success = await targetsStore.deleteTarget(targetToDelete.id);
+			isDeleting = false;
+
+			if (success) {
+				toast.success('Target deleted successfully');
+				showDeleteDialog = false;
+				showDetailDialog = false;
+				targetToDelete = null;
+			} else {
+				toast.error('Failed to delete target');
+			}
 		} else {
-			toast.error('Failed to delete target');
+			const ids = Array.from(selectedTargetIds);
+			const results = await Promise.all(ids.map((id) => targetsStore.deleteTarget(id)));
+			isDeleting = false;
+
+			const ok = results.filter(Boolean).length;
+			const fail = ids.length - ok;
+			if (ok) toast.success(`${ok} target${ok !== 1 ? 's' : ''} deleted`);
+			if (fail) toast.error(`Failed to delete ${fail} target${fail !== 1 ? 's' : ''}`);
+
+			showDeleteDialog = false;
+			selectedTargetIds = new Set();
 		}
 	}
 
@@ -79,6 +204,7 @@
 
 	async function handleTabChange(tab: string) {
 		await targetsStore.setActiveTab(tab);
+		selectedTargetIds = new Set();
 	}
 
 	function handleSearchChange(query: string) {
@@ -99,33 +225,13 @@
 
 	async function handlePageChange(page: number) {
 		await targetsStore.setPage(page);
+		selectedTargetIds = new Set();
 	}
 
 	async function handlePageSizeChange(size: number) {
 		await targetsStore.setPageSize(size);
+		selectedTargetIds = new Set();
 	}
-
-	let organizationSummaries = $derived(
-		targetsStore.organizations.map((org) => ({
-			id: org.id,
-			name: org.name,
-			slug: org.slug
-		}))
-	);
-
-	let tagSummaries = $derived(
-		targetsStore.tags.map((tag) => ({
-			id: tag.id,
-			name: tag.name,
-			slug: tag.slug,
-			color: tag.color
-		}))
-	);
-
-	let showPagination = $derived(
-		targetsStore.pagination.pageSize !== -1 &&
-		targetsStore.pagination.totalPages > 1
-	);
 </script>
 
 <div class="space-y-6">
@@ -146,6 +252,14 @@
 			>
 				<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
 			</Button>
+
+			{#if !targetsStore.isLoading && targetsStore.filteredTargets.length > 0}
+				<Button variant="outline" size="sm" class="gap-2 h-9" onclick={handleScanAll}>
+					<Play class="h-4 w-4" />
+					Scan All ({targetsStore.filteredTargets.length})
+				</Button>
+			{/if}
+
 			<Button onclick={() => (showAddModal = true)} class="gap-2">
 				<Plus class="h-4 w-4" />
 				Add Target
@@ -183,11 +297,17 @@
 				onClearFilters={handleClearFilters}
 			/>
 		{:else}
-			<TargetListHeader />
+			<TargetListHeader {selectAllChecked} onSelectAll={handleSelectAll} />
+
 			<div class="divide-y divide-border/50">
 				{#each targetsStore.filteredTargets as target (target.id)}
 					<TargetListItem
 						{target}
+						isSelected={selectedTargetIds.has(target.id)}
+						isScanning={(activeScanCounts[target.id] || 0) > 0}
+						onSelect={handleTargetSelect}
+						onScan={handleScan}
+						onOpenHistory={handleOpenScanHistory}
 						onView={handleViewTarget}
 						onEdit={handleEditTarget}
 						onDelete={handleDeleteTarget}
@@ -198,7 +318,8 @@
 			<div class="px-4 py-3 border-t bg-muted/20 flex items-center justify-between">
 				<div class="flex items-center gap-4">
 					<div class="text-xs text-muted-foreground">
-						Showing {targetsStore.filteredTargets.length} of {targetsStore.pagination.totalItems} targets
+						Showing {targetsStore.filteredTargets.length} of {targetsStore.pagination
+							.totalItems} targets
 					</div>
 					<PageSizeSelector
 						pageSize={targetsStore.pagination.pageSize}
@@ -219,7 +340,7 @@
 									<Pagination.Previous />
 								</Pagination.Item>
 								{#each pages as page (page.key)}
-									{#if page.type === "ellipsis"}
+									{#if page.type === 'ellipsis'}
 										<Pagination.Item>
 											<Pagination.Ellipsis />
 										</Pagination.Item>
@@ -248,16 +369,32 @@
 <TargetDetailDialog
 	bind:open={showDetailDialog}
 	target={selectedTarget}
+	isScanning={selectedTargetIsScanning}
 	onOpenChange={(open) => (showDetailDialog = open)}
+	onScan={handleScan}
+	onOpenHistory={handleOpenScanHistory}
 	onEdit={handleEditTarget}
 	onDelete={handleDeleteTarget}
 />
 
+<ScanHistoryModal
+	bind:open={showScanHistoryModal}
+	target={scanHistoryTarget}
+	onOpenChange={(open) => (showScanHistoryModal = open)}
+/>
+
 <DeleteConfirmationDialog
 	bind:open={showDeleteDialog}
-	title="Delete Target"
-	description="Are you sure you want to delete '{targetToDelete?.target_value}'? This action cannot be undone and will remove all associated scan data."
+	title={deleteDialogTitle}
+	description={deleteDialogDescription}
 	{isDeleting}
 	onOpenChange={(open) => (showDeleteDialog = open)}
 	onConfirm={confirmDelete}
+/>
+
+<BulkActionBar
+	selectedCount={selectedTargetIds.size}
+	onScan={handleBulkScan}
+	onDelete={handleBulkDelete}
+	onClear={clearSelection}
 />
