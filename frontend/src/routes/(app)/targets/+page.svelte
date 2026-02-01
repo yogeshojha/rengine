@@ -4,6 +4,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import type { Target } from '$lib/types/target';
 	import * as Card from '$lib/components/ui/card';
+	import * as Pagination from '$lib/components/ui/pagination';
 	import { Button } from '$lib/components/ui/button';
 	import { Plus, RefreshCw } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
@@ -17,8 +18,8 @@
 	import TargetDetailDialog from '$lib/components/targets/target-detail-dialog.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
+	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 
-	// Local state
 	let showAddModal = $state(false);
 	let showDetailDialog = $state(false);
 	let showDeleteDialog = $state(false);
@@ -27,7 +28,6 @@
 	let isRefreshing = $state(false);
 	let isDeleting = $state(false);
 
-	// this changes the targets when active project changes
 	$effect(() => {
 		const activeProject = projectsStore.activeProject;
 		const hasFetched = projectsStore.hasFetched;
@@ -45,7 +45,6 @@
 	}
 
 	function handleEditTarget(target: Target) {
-		// TODO: Implement edit modal
 		toast.info('todooo');
 	}
 
@@ -78,8 +77,8 @@
 		toast.success('Data refreshed');
 	}
 
-	function handleTabChange(tab: string) {
-		targetsStore.setActiveTab(tab);
+	async function handleTabChange(tab: string) {
+		await targetsStore.setActiveTab(tab);
 	}
 
 	function handleSearchChange(query: string) {
@@ -98,7 +97,14 @@
 		targetsStore.clearFilters();
 	}
 
-	// Convert organizations/tags for filter component
+	async function handlePageChange(page: number) {
+		await targetsStore.setPage(page);
+	}
+
+	async function handlePageSizeChange(size: number) {
+		await targetsStore.setPageSize(size);
+	}
+
 	let organizationSummaries = $derived(
 		targetsStore.organizations.map((org) => ({
 			id: org.id,
@@ -115,10 +121,14 @@
 			color: tag.color
 		}))
 	);
+
+	let showPagination = $derived(
+		targetsStore.pagination.pageSize !== -1 &&
+		targetsStore.pagination.totalPages > 1
+	);
 </script>
 
 <div class="space-y-6">
-	<!-- Header -->
 	<div class="flex items-start justify-between">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Targets</h1>
@@ -143,16 +153,13 @@
 		</div>
 	</div>
 
-	<!-- Type Tabs -->
 	<TargetTypeTabs
 		counts={targetsStore.counts}
 		activeTab={targetsStore.filters.activeTab}
 		onTabChange={handleTabChange}
 	/>
 
-	<!-- Main Content Card -->
 	<Card.Root class="overflow-hidden">
-		<!-- Filters -->
 		<div class="p-4 border-b">
 			<TargetFilters
 				searchQuery={targetsStore.filters.searchQuery}
@@ -167,7 +174,6 @@
 			/>
 		</div>
 
-		<!-- List -->
 		{#if targetsStore.isLoading}
 			<TargetListSkeleton count={8} />
 		{:else if targetsStore.filteredTargets.length === 0}
@@ -189,15 +195,53 @@
 				{/each}
 			</div>
 
-			<!-- Footer with count -->
-			<div class="px-4 py-3 border-t bg-muted/20 text-xs text-muted-foreground">
-				Showing {targetsStore.filteredTargets.length} of {targetsStore.targets.length} targets
+			<div class="px-4 py-3 border-t bg-muted/20 flex items-center justify-between">
+				<div class="flex items-center gap-4">
+					<div class="text-xs text-muted-foreground">
+						Showing {targetsStore.filteredTargets.length} of {targetsStore.pagination.totalItems} targets
+					</div>
+					<PageSizeSelector
+						pageSize={targetsStore.pagination.pageSize}
+						onPageSizeChange={handlePageSizeChange}
+					/>
+				</div>
+
+				{#if showPagination}
+					<Pagination.Root
+						count={targetsStore.pagination.totalItems}
+						perPage={targetsStore.pagination.pageSize}
+						page={targetsStore.pagination.currentPage}
+						onPageChange={(page) => handlePageChange(page)}
+					>
+						{#snippet children({ pages, currentPage })}
+							<Pagination.Content>
+								<Pagination.Item>
+									<Pagination.Previous />
+								</Pagination.Item>
+								{#each pages as page (page.key)}
+									{#if page.type === "ellipsis"}
+										<Pagination.Item>
+											<Pagination.Ellipsis />
+										</Pagination.Item>
+									{:else}
+										<Pagination.Item>
+											<Pagination.Link {page} isActive={currentPage === page.value}>
+												{page.value}
+											</Pagination.Link>
+										</Pagination.Item>
+									{/if}
+								{/each}
+								<Pagination.Item>
+									<Pagination.Next />
+								</Pagination.Item>
+							</Pagination.Content>
+						{/snippet}
+					</Pagination.Root>
+				{/if}
 			</div>
 		{/if}
 	</Card.Root>
 </div>
-
-<!-- modals and dialogs here -->
 
 <AddTargetModal bind:open={showAddModal} />
 

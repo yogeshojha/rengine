@@ -2,6 +2,7 @@ import { targetsApi } from '$lib/api/targets';
 import { organizationsApi, type Organization } from '$lib/api/organizations';
 import { tagsApi, type Tag } from '$lib/api/tags';
 import { TargetType, type Target } from '$lib/types/target';
+import type { TargetCounts } from '$lib/types/pagination';
 
 interface TargetFilters {
 	projectSlug?: string;
@@ -9,6 +10,13 @@ interface TargetFilters {
 	activeTab: string;
 	selectedOrganizations: string[];
 	selectedTags: string[];
+}
+
+interface PaginationState {
+	currentPage: number;
+	pageSize: number;
+	totalItems: number;
+	totalPages: number;
 }
 
 function createTargetsStore() {
@@ -27,24 +35,25 @@ function createTargetsStore() {
 		selectedTags: []
 	});
 
-	let counts = $derived.by(() => {
-		const all = targets.length;
-		const domain = targets.filter((t) => t.target_type === TargetType.DOMAIN).length;
-		const ip = targets.filter((t) => t.target_type === TargetType.IP).length;
-		const ip_range = targets.filter((t) => t.target_type === TargetType.IP_RANGE).length;
-		const asn = targets.filter((t) => t.target_type === TargetType.ASN).length;
-		const url = targets.filter((t) => t.target_type === TargetType.URL).length;
-		return { all, domain, ip, ip_range, asn, url };
+	let pagination = $state<PaginationState>({
+		currentPage: 1,
+		pageSize: 50,
+		totalItems: 0,
+		totalPages: 0
+	});
+
+	let counts = $state<TargetCounts>({
+		all: 0,
+		domain: 0,
+		ip: 0,
+		ip_range: 0,
+		asn: 0,
+		url: 0
 	});
 
 	let filteredTargets = $derived.by(() => {
 		let result = [...targets];
 
-		if (filters.activeTab !== 'all') {
-			result = result.filter((t) => t.target_type === filters.activeTab);
-		}
-
-		// Filter by search query
 		if (filters.searchQuery.trim()) {
 			const query = filters.searchQuery.toLowerCase();
 			result = result.filter(
@@ -56,14 +65,12 @@ function createTargetsStore() {
 			);
 		}
 
-		// Filter by selected organizations
 		if (filters.selectedOrganizations.length > 0) {
 			result = result.filter((t) =>
 				t.organizations.some((org) => filters.selectedOrganizations.includes(org.id))
 			);
 		}
 
-		// Filter by selected tags
 		if (filters.selectedTags.length > 0) {
 			result = result.filter((t) =>
 				t.tags.some((tag) => filters.selectedTags.includes(tag.id))
@@ -73,7 +80,6 @@ function createTargetsStore() {
 		return result;
 	});
 
-	// Computed: check if any filters are active
 	let hasActiveFilters = $derived(
 		filters.searchQuery.trim() !== '' ||
 		filters.selectedOrganizations.length > 0 ||
@@ -81,33 +87,35 @@ function createTargetsStore() {
 	);
 
 	return {
-		// Getters
 		get targets() { return targets; },
 		get filteredTargets() { return filteredTargets; },
 		get organizations() { return organizations; },
 		get tags() { return tags; },
 		get counts() { return counts; },
 		get filters() { return filters; },
+		get pagination() { return pagination; },
 		get isLoading() { return isLoading; },
 		get error() { return error; },
 		get hasFetched() { return hasFetched; },
 		get hasActiveFilters() { return hasActiveFilters; },
 
-		// Fetch all data for a project
-		async fetchAll(projectSlug: string) {
+		async fetchAll(projectSlug: string, page?: number, force: boolean = false) {
 			if (isLoading) return;
 
-			// Check if already fetched for this project aviud infinite loops
-			if (hasFetched && projectSlug === filters.projectSlug) {
+			if (!force && hasFetched && projectSlug === filters.projectSlug && page === undefined) {
 				return;
 			}
 
-			// Clear data if project changed
 			if (projectSlug !== filters.projectSlug) {
 				targets = [];
 				organizations = [];
 				tags = [];
 				hasFetched = false;
+				pagination.currentPage = 1;
+			}
+
+			if (page !== undefined) {
+				pagination.currentPage = page;
 			}
 
 			isLoading = true;
@@ -115,16 +123,40 @@ function createTargetsStore() {
 			filters.projectSlug = projectSlug;
 
 			try {
-				// Fetch all data in parallel
-				const [fetchedTargets, fetchedOrgs, fetchedTags] = await Promise.all([
-					targetsApi.list({ project_slug: projectSlug }),
-					organizationsApi.list({ project_slug: projectSlug }),
-					tagsApi.list({ project_slug: projectSlug })
-				]);
+				const targetType = filters.activeTab !== 'all' ? (filters.activeTab as TargetType) : undefined;
 
-				targets = fetchedTargets;
-				organizations = fetchedOrgs;
-				tags = fetchedTags;
+				const shouldFetchOrgsAndTags = !hasFetched || projectSlug !== filters.projectSlug;
+
+				const promises: Promise<any>[] = [
+					targetsApi.list({
+						project_slug: projectSlug,
+						target_type: targetType,
+						page: pagination.currentPage,
+						size: pagination.pageSize === -1 ? undefined : pagination.pageSize
+					})
+				];
+
+				if (shouldFetchOrgsAndTags) {
+					promises.push(
+						organizationsApi.list({ project_slug: projectSlug }),
+						tagsApi.list({ project_slug: projectSlug }),
+						targetsApi.getCounts(projectSlug)
+					);
+				}
+
+				const results = await Promise.all(promises);
+				const targetsResponse = results[0];
+
+				targets = targetsResponse.items;
+				pagination.totalItems = targetsResponse.total;
+				pagination.totalPages = targetsResponse.pages;
+
+				if (shouldFetchOrgsAndTags) {
+					organizations = results[1];
+					tags = results[2];
+					counts = results[3];
+				}
+
 				hasFetched = true;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to fetch data';
@@ -133,20 +165,33 @@ function createTargetsStore() {
 			}
 		},
 
-		// refresh btn
 		async refresh() {
 			if (!filters.projectSlug) return;
-			hasFetched = false;
-			await this.fetchAll(filters.projectSlug);
+			await Promise.all([
+				this.fetchAll(filters.projectSlug, pagination.currentPage, true),
+				this.refreshCounts()
+			]);
 		},
 
-		// Filter setters
+		async refreshCounts() {
+			if (!filters.projectSlug) return;
+			try {
+				counts = await targetsApi.getCounts(filters.projectSlug);
+			} catch (e) {
+				// counts are non-critical, fail silently
+			}
+		},
+
 		setSearchQuery(query: string) {
 			filters.searchQuery = query;
 		},
 
-		setActiveTab(tab: string) {
+		async setActiveTab(tab: string) {
 			filters.activeTab = tab;
+			pagination.currentPage = 1;
+			if (filters.projectSlug) {
+				await this.fetchAll(filters.projectSlug, 1, true);
+			}
 		},
 
 		toggleOrganization(orgId: string) {
@@ -173,6 +218,19 @@ function createTargetsStore() {
 			filters.selectedTags = [];
 		},
 
+		async setPage(page: number) {
+			if (!filters.projectSlug) return;
+			await this.fetchAll(filters.projectSlug, page, true);
+		},
+
+		async setPageSize(size: number) {
+			pagination.pageSize = size;
+			pagination.currentPage = 1;
+			if (filters.projectSlug) {
+				await this.fetchAll(filters.projectSlug, 1, true);
+			}
+		},
+
 		async createTarget(data: {
 			target_value: string;
 			display_name?: string;
@@ -183,7 +241,7 @@ function createTargetsStore() {
 			error = null;
 			try {
 				const newTarget = await targetsApi.create(data);
-				targets = [newTarget, ...targets];
+				await this.refresh();
 				return newTarget;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to create target';
@@ -213,7 +271,7 @@ function createTargetsStore() {
 		async deleteTarget(targetId: string): Promise<boolean> {
 			try {
 				await targetsApi.delete(targetId);
-				targets = targets.filter((t) => t.id !== targetId);
+				await this.refresh();
 				return true;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to delete target';
@@ -225,11 +283,25 @@ function createTargetsStore() {
 			targets = [];
 			organizations = [];
 			tags = [];
+			counts = {
+				all: 0,
+				domain: 0,
+				ip: 0,
+				ip_range: 0,
+				asn: 0,
+				url: 0
+			};
 			filters = {
 				searchQuery: '',
 				activeTab: 'all',
 				selectedOrganizations: [],
 				selectedTags: []
+			};
+			pagination = {
+				currentPage: 1,
+				pageSize: 50,
+				totalItems: 0,
+				totalPages: 0
 			};
 			error = null;
 			hasFetched = false;

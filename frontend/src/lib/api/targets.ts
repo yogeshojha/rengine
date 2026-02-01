@@ -7,15 +7,18 @@ import type {
 	TargetValidationResponse,
 	TargetType
 } from '$lib/types/target';
+import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 
 interface ListTargetsParams {
 	project_slug?: string;
 	organization_slug?: string;
 	target_type?: TargetType;
+	page?: number;
+	size?: number;
 }
 
 export const targetsApi = {
-	async list(params?: ListTargetsParams): Promise<Target[]> {
+	async list(params?: ListTargetsParams): Promise<PaginatedResponse<Target>> {
 		const searchParams = new URLSearchParams();
 
 		if (params?.project_slug) {
@@ -27,11 +30,21 @@ export const targetsApi = {
 		if (params?.target_type) {
 			searchParams.append('target_type', params.target_type);
 		}
+		if (params?.page) {
+			searchParams.append('page', params.page.toString());
+		}
+		if (params?.size) {
+			searchParams.append('size', params.size.toString());
+		}
 
 		const query = searchParams.toString();
 		const url = query ? `/targets?${query}` : '/targets';
 
-		return api.get<Target[]>(url);
+		return api.get<PaginatedResponse<Target>>(url);
+	},
+
+	async getCounts(projectSlug: string): Promise<TargetCounts> {
+		return api.get<TargetCounts>(`/targets/counts?project_slug=${projectSlug}`);
 	},
 
 	async get(targetId: string): Promise<Target> {
