@@ -2,7 +2,9 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -54,7 +56,46 @@ async def validate_target_endpoint(
     )
 
 
-@router.get("", response_model=list[TargetRead])
+@router.get("/counts", response_model=dict[str, int])
+async def get_target_counts(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    project_slug: Annotated[str, Query(description="Filter by project slug")],
+):
+    """
+    This endpoint serves as suimmary like count for dashboard and other ui elements.
+    """
+    # TODO: Check if project_id can be set null to find sumamry across all in case needed
+    project_result = await session.execute(
+        select(Project.id).where(Project.slug == project_slug)
+    )
+    project_id = project_result.scalar_one_or_none()
+    if not project_id:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    result = await session.execute(
+        select(Target.target_type, func.count(Target.id))
+        .where(Target.project_id == project_id)
+        .group_by(Target.target_type)
+    )
+
+    counts = {
+        "all": 0,
+        "domain": 0,
+        "ip": 0,
+        "ip_range": 0,
+        "asn": 0,
+        "url": 0,
+    }
+
+    for target_type, count in result.all():
+        counts[target_type.value] = count
+        counts["all"] += count
+
+    return counts
+
+
+@router.get("", response_model=Page[TargetRead])
 async def list_targets(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -93,10 +134,9 @@ async def list_targets(
     if target_type:
         query = query.where(Target.target_type == target_type)
 
-    result = await session.execute(query)
-    targets = result.scalars().all()
+    result = await paginate(session, query)
 
-    return [
+    result.items = [
         TargetRead(
             **target.model_dump(exclude={"organizations", "tags"}),
             organizations=[
@@ -117,8 +157,10 @@ async def list_targets(
                 for tag in target.tags
             ],
         )
-        for target in targets
+        for target in result.items
     ]
+
+    return result
 
 
 @router.post("", response_model=TargetRead, status_code=status.HTTP_201_CREATED)

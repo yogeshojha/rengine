@@ -6,7 +6,7 @@ from app.models.organization import (
     OrganizationUpdate,
 )
 from app.models.project import Project, ProjectBase, ProjectCreate, ProjectRead
-from app.models.tags import Tag, TagBase, TagCreate, TagRead, TagSummary, TagUpdate
+from app.models.tag import Tag, TagBase, TagCreate, TagRead, TagSummary, TagUpdate
 from app.models.target import (
     Target,
     TargetCreate,

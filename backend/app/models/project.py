@@ -1,6 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
+from pydantic import BaseModel
 from sqlmodel import Field, SQLModel
 
 
@@ -30,3 +31,8 @@ class ProjectRead(ProjectBase):
     is_active: bool
     created_at: datetime
     created_by: uuid.UUID
+
+
+class ProjectSummary(BaseModel):
+    project: ProjectRead
+    stats: dict[str, int]

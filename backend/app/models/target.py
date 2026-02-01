@@ -7,11 +7,11 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from app.enums.target import TargetType
 from app.models.organization import Organization
-from app.models.tags import TargetTag
+from app.models.tag import TargetTag
 
 if TYPE_CHECKING:
     from app.models.organization import Organization, OrganizationSummary
-    from app.models.tags import Tag, TagSummary
+    from app.models.tag import Tag, TagSummary
 
 
 class TargetValidationRequest(BaseModel):
