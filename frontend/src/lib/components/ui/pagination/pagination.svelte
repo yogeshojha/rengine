@@ -7,7 +7,7 @@
 		ref = $bindable(null),
 		class: className,
 		count = 0,
-		perPage = 10,
+		perPage = 20,
 		page = $bindable(1),
 		siblingCount = 1,
 		...restProps

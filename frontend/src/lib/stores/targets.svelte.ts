@@ -37,7 +37,7 @@ function createTargetsStore() {
 
 	let pagination = $state<PaginationState>({
 		currentPage: 1,
-		pageSize: 50,
+		pageSize: 20,
 		totalItems: 0,
 		totalPages: 0
 	});

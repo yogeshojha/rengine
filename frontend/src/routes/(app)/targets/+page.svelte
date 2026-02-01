@@ -255,7 +255,7 @@
 
 			{#if !targetsStore.isLoading && targetsStore.filteredTargets.length > 0}
 				<Button variant="outline" size="sm" class="gap-2 h-9" onclick={handleScanAll}>
-					<Play class="h-4 w-4" />
+					<Play class="h-4 w-4 text-blue-400" />
 					Scan All ({targetsStore.filteredTargets.length})
 				</Button>
 			{/if}
