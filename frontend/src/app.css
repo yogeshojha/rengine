@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@source "../src/**/*.{html,js,svelte,ts,svelte.ts}";
+
 @custom-variant dark (&:is(.dark *));
 
 
