@@ -1,4 +1,5 @@
 import asyncio
+import random
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -12,11 +13,10 @@ from app.api.deps import CurrentUser
 from app.config import settings
 from app.core.database import get_session
 from app.core.sse import connection_manager
-from app.enums.notification import NotificationSeverity, NotificationType
+from app.debug.notifications import DEBUG_NOTIFICATION_TEMPLATES
 from app.models.notification import (
     Notification,
     NotificationCreate,
-    NotificationMetadata,
     NotificationRead,
     NotificationStats,
 )
@@ -192,22 +192,23 @@ async def notification_system_health(
 # DEBUG Endpoints fot Testing Notifications
 
 if settings.DEBUG:
+    import random
 
-    @router.post("/debug/publish-scan-complete", response_model=NotificationRead)
-    async def debug_publish_scan_complete(
+    @router.post("/debug/publish-random", response_model=NotificationRead)
+    async def debug_publish_random_notification(
         _current_user: CurrentUser,
         session: Annotated[AsyncSession, Depends(get_session)],
     ):
+        """Publish a random notification for testing"""
+        template = random.choice(DEBUG_NOTIFICATION_TEMPLATES)  # noqa: S311
+
         notification = await NotificationManager.publish(
             session=session,
-            type=NotificationType.SCAN,
-            severity=NotificationSeverity.SUCCESS,
-            title="Debug: Scan Completed",
-            message="This is a test scan completion notification",
-            metadata=NotificationMetadata(
-                url="/scans/debug-123",
-                scan_id="debug-123",
-                action_label="View Results",
-            ),
+            type=template["type"],
+            severity=template["severity"],
+            title=template["title"],
+            message=template["message"],
+            metadata=template["metadata"],
         )
+
         return NotificationRead(**notification.model_dump())
