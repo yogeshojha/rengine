@@ -70,7 +70,7 @@ class NotificationManager:
     ) -> bool:
         result = await session.execute(
             update(Notification)
-            .where(Notification.id == notification_id, not Notification.is_read)
+            .where(Notification.id == notification_id)
             .values(is_read=True)
         )
 

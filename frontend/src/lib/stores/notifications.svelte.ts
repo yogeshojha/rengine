@@ -4,6 +4,7 @@ import type { Notification } from '$lib/types/notification';
 interface NotificationState {
     notifications: Notification[];
     unreadCount: number;
+    totalCount: number;
     isLoading: boolean;
     isConnected: boolean;
     hasLoaded: boolean;
@@ -13,6 +14,7 @@ interface NotificationState {
 const state = $state<NotificationState>({
     notifications: [],
     unreadCount: 0,
+    totalCount: 0,
     isLoading: false,
     isConnected: false,
     hasLoaded: false,
@@ -28,6 +30,10 @@ export const notificationStore = {
 
     get unreadCount() {
         return state.unreadCount;
+    },
+
+    get totalCount() {
+        return state.totalCount;
     },
 
     get isLoading() {
@@ -61,11 +67,30 @@ export const notificationStore = {
 
             const stats = await notificationsApi.stats();
             state.unreadCount = stats.unread;
+            state.totalCount = stats.total;
 
             state.hasLoaded = true;
         } catch (error) {
             state.error = error as Error;
             console.error('[Notifications] Failed to load notifications:', error);
+        } finally {
+            state.isLoading = false;
+        }
+    },
+
+    async loadAllNotifications() {
+        state.isLoading = true;
+        state.error = null;
+
+        try {
+            const stats = await notificationsApi.stats();
+            const response = await notificationsApi.list(1, stats.total);
+            state.notifications = response.items;
+            state.unreadCount = stats.unread;
+            state.totalCount = stats.total;
+        } catch (error) {
+            state.error = error as Error;
+            console.error('[Notifications] Failed to load all notifications:', error);
         } finally {
             state.isLoading = false;
         }
@@ -120,6 +145,8 @@ export const notificationStore = {
             if (wasUnread) {
                 state.unreadCount = Math.max(0, state.unreadCount - 1);
             }
+
+            state.totalCount = Math.max(0, state.totalCount - 1);
         } catch (error) {
             console.error('[Notifications] Failed to delete notification:', error);
             throw error;
@@ -131,6 +158,7 @@ export const notificationStore = {
             await notificationsApi.clearAll();
             state.notifications = [];
             state.unreadCount = 0;
+            state.totalCount = 0;
         } catch (error) {
             console.error('[Notifications] Failed to clear all:', error);
             throw error;
@@ -174,6 +202,8 @@ export const notificationStore = {
         if (!notification.is_read) {
             state.unreadCount++;
         }
+
+        state.totalCount++;
 
         if (fromSSE) {
             toastCallbacks.forEach(callback => callback(notification));

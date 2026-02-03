@@ -4,6 +4,7 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
+	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -25,12 +26,23 @@
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import TrashIcon from '@lucide/svelte/icons/trash';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import ScanIcon from '@lucide/svelte/icons/scan';
+	import ServerIcon from '@lucide/svelte/icons/server';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import BugIcon from '@lucide/svelte/icons/bug';
+	import TargetIcon from '@lucide/svelte/icons/target';
+	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
+	import PlugIcon from '@lucide/svelte/icons/plug';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
-	import type { NotificationSeverity } from '$lib/types/notification';
+	import type { NotificationType, NotificationSeverity } from '$lib/types/notification';
 
 	let commandOpen = $state(false);
 	let scansSheetOpen = $state(false);
+	let notificationsModalOpen = $state(false);
+	let notificationsDropdownOpen = $state(false);
+	let selectedFilter = $state<NotificationType | 'all'>('all');
 
 	const ongoingScansCount = $state(3);
 
@@ -47,8 +59,52 @@
 		}
 	};
 
+	const getTypeIcon = (type: NotificationType) => {
+		switch (type) {
+			case 'scan':
+				return ScanIcon;
+			case 'system':
+				return ServerIcon;
+			case 'security':
+				return ShieldIcon;
+			case 'vulnerability':
+				return BugIcon;
+			case 'target':
+				return TargetIcon;
+			case 'resource':
+				return HardDriveIcon;
+			case 'integration':
+				return PlugIcon;
+		}
+	};
+
+	const filteredNotifications = $derived(
+		selectedFilter === 'all'
+			? notificationStore.notifications
+			: notificationStore.notifications.filter((n) => n.type === selectedFilter)
+	);
+
+	const typeCounts = $derived.by(() => {
+		const counts: Record<NotificationType | 'all', number> = {
+			all: notificationStore.notifications.length,
+			scan: 0,
+			system: 0,
+			security: 0,
+			vulnerability: 0,
+			target: 0,
+			resource: 0,
+			integration: 0
+		};
+
+		notificationStore.notifications.forEach((n) => {
+			counts[n.type]++;
+		});
+
+		return counts;
+	});
+
 	const handleNotificationClick = (notificationId: number) => {
-		const notification = notificationStore.notifications.find(n => n.id === notificationId);
+		const notification = notificationStore.notifications.find((n) => n.id === notificationId);
 		if (!notification) return;
 
 		notificationStore.markAsRead(notificationId);
@@ -77,6 +133,14 @@
 			await notificationStore.markAllAsRead();
 		} catch (error) {
 			console.error('Failed to mark all as read:', error);
+		}
+	};
+
+	const handleClearAll = async () => {
+		try {
+			await notificationStore.clearAll();
+		} catch (error) {
+			console.error('Failed to clear all notifications:', error);
 		}
 	};
 
@@ -173,7 +237,7 @@
 	</Button>
 
 	<!-- Notifications Dropdown -->
-	<DropdownMenu.Root>
+	<DropdownMenu.Root bind:open={notificationsDropdownOpen}>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
 				<Button {...props} variant="ghost" size="icon" class="relative">
@@ -192,21 +256,11 @@
 		<DropdownMenu.Content align="end" class="w-80">
 			<div class="flex items-center justify-between px-3 py-2">
 				<DropdownMenu.Label class="p-0">Notifications</DropdownMenu.Label>
-				{#if notificationStore.unreadCount > 0}
-					<Button
-						variant="ghost"
-						size="sm"
-						class="h-auto p-0 text-xs"
-						onclick={handleMarkAllAsRead}
-					>
-						Mark all as read
-					</Button>
-				{/if}
 			</div>
 			<DropdownMenu.Separator />
-			<div class="h-80 overflow-y-auto thin-scrollbar">
+			<div class="max-h-80 overflow-y-auto thin-scrollbar">
 				{#if notificationStore.notifications.length === 0}
-					<div class="flex flex-col items-center justify-center h-full text-muted-foreground">
+					<div class="flex flex-col items-center justify-center h-64 text-muted-foreground">
 						<BellIcon class="h-8 w-8 mb-2 opacity-50" />
 						<p class="text-sm">No notifications</p>
 					</div>
@@ -257,9 +311,38 @@
 				{/if}
 			</div>
 			<DropdownMenu.Separator />
-			<DropdownMenu.Item class="justify-center text-center">
-				View all notifications
-			</DropdownMenu.Item>
+			<div class="flex items-center justify-end gap-2 px-3 py-2">
+				{#if notificationStore.unreadCount > 0}
+					<Button
+						variant="ghost"
+						size="sm"
+						class="h-auto p-0 text-xs"
+						onclick={handleMarkAllAsRead}
+					>
+						Mark all as read
+					</Button>
+				{/if}
+				{#if notificationStore.notifications.length > 0}
+					<Button
+						variant="ghost"
+						size="sm"
+						class="h-auto p-0 text-xs text-destructive hover:text-destructive"
+						onclick={handleClearAll}
+					>
+						Clear all
+					</Button>
+				{/if}
+				<button
+					class="text-xs text-primary hover:underline"
+					onclick={async () => {
+						notificationsDropdownOpen = false;
+						await notificationStore.loadAllNotifications();
+						notificationsModalOpen = true;
+					}}
+				>
+					View all
+				</button>
+			</div>
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
 
@@ -326,6 +409,168 @@
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
 </header>
+
+<!-- Notifications Modal -->
+<Dialog.Root bind:open={notificationsModalOpen}>
+	<Dialog.Content class="!max-w-none !w-[1400px] max-h-[85vh] flex flex-col">
+		<Dialog.Header>
+			<div class="flex items-start justify-between">
+				<div>
+					<Dialog.Title>All Notifications</Dialog.Title>
+					<Dialog.Description>
+						{notificationStore.totalCount} total notifications
+						{#if notificationStore.unreadCount > 0}
+							• {notificationStore.unreadCount} unread
+						{/if}
+					</Dialog.Description>
+				</div>
+				<div class="flex items-center gap-2">
+					{#if notificationStore.unreadCount > 0}
+						<Button variant="outline" size="sm" onclick={handleMarkAllAsRead}>
+							Mark all as read
+						</Button>
+					{/if}
+					{#if notificationStore.notifications.length > 0}
+						<Button variant="outline" size="sm" onclick={handleClearAll}>
+							<Trash2Icon class="h-4 w-4 mr-2" />
+							Clear all
+						</Button>
+					{/if}
+				</div>
+			</div>
+		</Dialog.Header>
+
+		<Tabs.Root
+			value={selectedFilter}
+			onValueChange={(v) => (selectedFilter = v as any)}
+			class="flex-1 flex flex-col overflow-hidden"
+		>
+			<Tabs.List class="grid grid-cols-8 w-full gap-1">
+				<Tabs.Trigger value="all" class="text-xs">
+					All
+					<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.all}</Badge>
+				</Tabs.Trigger>
+				<Tabs.Trigger value="scan" class="text-xs">
+					<ScanIcon class="h-3 w-3 mr-1" />
+					Scan
+					{#if typeCounts.scan > 0}
+						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.scan}</Badge>
+					{/if}
+				</Tabs.Trigger>
+				<Tabs.Trigger value="system" class="text-xs">
+					<ServerIcon class="h-3 w-3 mr-1" />
+					System
+					{#if typeCounts.system > 0}
+						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.system}</Badge>
+					{/if}
+				</Tabs.Trigger>
+				<Tabs.Trigger value="security" class="text-xs">
+					<ShieldIcon class="h-3 w-3 mr-1" />
+					Security
+					{#if typeCounts.security > 0}
+						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.security}</Badge>
+					{/if}
+				</Tabs.Trigger>
+				<Tabs.Trigger value="vulnerability" class="text-xs">
+					<BugIcon class="h-3 w-3 mr-1" />
+					Vuln
+					{#if typeCounts.vulnerability > 0}
+						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.vulnerability}</Badge>
+					{/if}
+				</Tabs.Trigger>
+				<Tabs.Trigger value="target" class="text-xs">
+					<TargetIcon class="h-3 w-3 mr-1" />
+					Target
+					{#if typeCounts.target > 0}
+						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.target}</Badge>
+					{/if}
+				</Tabs.Trigger>
+				<Tabs.Trigger value="resource" class="text-xs">
+					<HardDriveIcon class="h-3 w-3 mr-1" />
+					Resource
+					{#if typeCounts.resource > 0}
+						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.resource}</Badge>
+					{/if}
+				</Tabs.Trigger>
+				<Tabs.Trigger value="integration" class="text-xs">
+					<PlugIcon class="h-3 w-3 mr-1" />
+					Integration
+					{#if typeCounts.integration > 0}
+						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.integration}</Badge>
+					{/if}
+				</Tabs.Trigger>
+			</Tabs.List>
+
+			<div class="flex-1 overflow-y-auto thin-scrollbar mt-4">
+				{#if filteredNotifications.length === 0}
+					<div class="flex flex-col items-center justify-center h-64 text-muted-foreground">
+						<BellIcon class="h-12 w-12 mb-4 opacity-50" />
+						<p class="text-sm">
+							No {selectedFilter === 'all' ? '' : selectedFilter} notifications
+						</p>
+					</div>
+				{:else}
+					<div class="space-y-2">
+						{#each filteredNotifications as notification (notification.id)}
+							{@const iconData = getSeverityIcon(notification.severity)}
+							{@const TypeIcon = getTypeIcon(notification.type)}
+							<button
+								type="button"
+								class="flex items-start gap-3 p-4 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors group text-left w-full {!notification.is_read
+									? 'bg-muted/30 border-l-4 border-l-blue-500'
+									: ''}"
+								onclick={() => handleNotificationClick(notification.id)}
+							>
+								<div class="mt-0.5">
+									<iconData.icon class="h-5 w-5 {iconData.class}" />
+								</div>
+								<div class="flex-1 space-y-1 min-w-0">
+									<div class="flex items-start justify-between gap-2">
+										<p class="text-sm font-medium leading-none">{notification.title}</p>
+										<div class="flex items-center gap-1 shrink-0">
+											<TypeIcon class="h-3.5 w-3.5 text-muted-foreground" />
+											<Badge variant="outline" class="text-xs">
+												{notification.type}
+											</Badge>
+										</div>
+									</div>
+									<p class="text-sm text-muted-foreground">
+										{notification.message}
+									</p>
+									<div class="flex items-center gap-2 text-xs text-muted-foreground">
+										<span>{notificationStore.getRelativeTime(notification.created_at)}</span>
+										{#if notification.notification_metadata?.url}
+											<ExternalLinkIcon class="h-3 w-3" />
+										{/if}
+										{#if notification.notification_metadata?.action_label}
+											<Badge variant="secondary" class="text-xs">
+												{notification.notification_metadata.action_label}
+											</Badge>
+										{/if}
+									</div>
+								</div>
+								<div class="flex items-center gap-1">
+									{#if !notification.is_read}
+										<div class="h-2 w-2 rounded-full bg-blue-500"></div>
+									{/if}
+									<Button
+										variant="ghost"
+										size="icon"
+										class="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+										onclick={(e) => handleDeleteNotification(notification.id, e)}
+									>
+										<TrashIcon class="h-4 w-4" />
+										<span class="sr-only">Delete</span>
+									</Button>
+								</div>
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</Tabs.Root>
+	</Dialog.Content>
+</Dialog.Root>
 
 <Sheet.Root bind:open={scansSheetOpen}>
 	<Sheet.Content side="right" class="w-[400px] sm:w-[540px]">
