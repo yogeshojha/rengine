@@ -71,8 +71,9 @@ async def get_notification_stats(
     total = total_result.scalar_one()
 
     unread_result = await session.execute(
-        select(func.count(Notification.id)).where(not Notification.is_read)
+        select(func.count(Notification.id)).where(Notification.is_read.is_(False))
     )
+
     unread = unread_result.scalar_one()
 
     return NotificationStats(total=total, unread=unread)
@@ -94,7 +95,7 @@ async def list_unread_notifications(
 ):
     query = (
         select(Notification)
-        .where(not Notification.is_read)
+        .where(Notification.is_read.is_(False))
         .order_by(Notification.created_at.desc())
     )
     return await paginate(session, query)

@@ -2,8 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { notificationStore } from '$lib/stores/notifications.svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import AppSidebar from '$lib/components/layout/app-sidebar.svelte';
 	import TopBar from '$lib/components/layout/top-bar.svelte';
+	import NotificationToasts from '$lib/components/notifications/notification-toasts.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import CreateFirstProjectModal from '@/components/modals/create-first-project-modal.svelte';
@@ -22,6 +25,24 @@
 		if (auth.isAuthenticated) {
 			projectsStore.fetchProjects();
 		}
+	});
+
+	$effect(() => {
+		if (auth.isAuthenticated && !auth.isLoading) {
+			if (!notificationStore.hasLoaded && !notificationStore.isLoading) {
+				notificationStore.loadNotifications();
+			}
+
+			if (!notificationStore.isConnected && notificationStore.hasLoaded) {
+				notificationStore.connectSSE();
+				console.log('[Notifications] SSE connected');
+			}
+		}
+	});
+
+	onDestroy(() => {
+		notificationStore.disconnectSSE();
+		console.log('[Notifications] SSE disconnected');
 	});
 
 	let showRequiredProjectCreateModal = $derived(
@@ -43,6 +64,7 @@
 	});
 </script>
 
+<NotificationToasts />
 <CreateFirstProjectModal open={showRequiredProjectCreateModal} />
 
 {#if auth.isLoading}
@@ -65,7 +87,6 @@
 		</Sidebar.Inset>
 	</Sidebar.Provider>
 {/if}
-
 
 <style>
 	:global([data-variant="inset"][data-state="collapsed"] [data-slot="sidebar-gap"]) {

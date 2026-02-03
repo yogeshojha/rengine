@@ -3,15 +3,28 @@
     "**/__pycache__": true,
     "**/*.pyc": true,
     "**/*.pyo": true,
-    ".ruff_cache": true
+    ".ruff_cache": true,
+    "**/node_modules": true,
+    "**/.svelte-kit": true,
+    "**/build": true,
+    "**/.cache": true,
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/*.log": true
   },
+
   "search.exclude": {
     "**/__pycache__": true,
     ".venv": true,
     "venv": true,
-    ".ruff_cache": true
-  },
-  "[svelte]": {
-    "editor.defaultFormatter": "svelte.svelte-vscode"
+    ".ruff_cache": true,
+    "**/node_modules": true,
+    "**/.svelte-kit": true,
+    "**/build": true,
+    "pnpm-lock.yaml": true,
+    "package-lock.json": true,
+    "yarn.lock": true,
+    "**/dist": true,
+    "**/.turbo": true
   }
 }

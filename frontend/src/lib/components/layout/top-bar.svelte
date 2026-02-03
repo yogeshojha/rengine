@@ -24,52 +24,19 @@
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import TrashIcon from '@lucide/svelte/icons/trash';
+	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import { notificationStore } from '$lib/stores/notifications.svelte';
+	import type { NotificationSeverity } from '$lib/types/notification';
 
 	let commandOpen = $state(false);
 	let scansSheetOpen = $state(false);
 
 	const ongoingScansCount = $state(3);
 
-	const notifications = $state([
-		{
-			id: 1,
-			type: 'critical',
-			title: 'Critical Vulnerability Found',
-			message: 'SQL Injection detected on api.example.com',
-			time: '2 minutes ago',
-			read: false
-		},
-		{
-			id: 2,
-			type: 'warning',
-			title: 'Scan Completed with Warnings',
-			message: 'Target scan finished with 3 warnings',
-			time: '15 minutes ago',
-			read: false
-		},
-		{
-			id: 3,
-			type: 'success',
-			title: 'Scan Completed',
-			message: 'Full reconnaissance scan completed for acme.com',
-			time: '1 hour ago',
-			read: true
-		},
-		{
-			id: 4,
-			type: 'info',
-			title: 'New Asset Discovered',
-			message: '5 new subdomains found for example.org',
-			time: '3 hours ago',
-			read: true
-		}
-	]);
-
-	const unreadCount = $derived(notifications.filter((n) => !n.read).length);
-
-	const getNotificationIcon = (type: string) => {
-		switch (type) {
-			case 'critical':
+	const getSeverityIcon = (severity: NotificationSeverity) => {
+		switch (severity) {
+			case 'error':
 				return { icon: ShieldAlertIcon, class: 'text-red-500' };
 			case 'warning':
 				return { icon: AlertTriangleIcon, class: 'text-yellow-500' };
@@ -77,6 +44,39 @@
 				return { icon: CheckCircleIcon, class: 'text-green-500' };
 			default:
 				return { icon: InfoIcon, class: 'text-blue-500' };
+		}
+	};
+
+	const handleNotificationClick = (notificationId: number) => {
+		const notification = notificationStore.notifications.find(n => n.id === notificationId);
+		if (!notification) return;
+
+		notificationStore.markAsRead(notificationId);
+
+		const metadata = notification.notification_metadata;
+		if (metadata?.url) {
+			if (metadata.open_new_tab) {
+				window.open(metadata.url, '_blank');
+			} else {
+				window.location.href = metadata.url;
+			}
+		}
+	};
+
+	const handleDeleteNotification = async (id: number, event: Event) => {
+		event.stopPropagation();
+		try {
+			await notificationStore.deleteNotification(id);
+		} catch (error) {
+			console.error('Failed to delete notification:', error);
+		}
+	};
+
+	const handleMarkAllAsRead = async () => {
+		try {
+			await notificationStore.markAllAsRead();
+		} catch (error) {
+			console.error('Failed to mark all as read:', error);
 		}
 	};
 
@@ -106,10 +106,6 @@
 
 	const handleNewScanContext = () => {
 		console.log('New Scan Context clicked');
-	};
-
-	const markAllAsRead = () => {
-		notifications.forEach((n) => (n.read = true));
 	};
 
 	interface BreadcrumbItem {
@@ -182,11 +178,11 @@
 			{#snippet child({ props })}
 				<Button {...props} variant="ghost" size="icon" class="relative">
 					<BellIcon class="h-4 w-4" />
-					{#if unreadCount > 0}
+					{#if notificationStore.unreadCount > 0}
 						<Badge
 							class="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-red-500 text-white"
 						>
-							{unreadCount}
+							{notificationStore.unreadCount}
 						</Badge>
 					{/if}
 					<span class="sr-only">Notifications</span>
@@ -196,34 +192,69 @@
 		<DropdownMenu.Content align="end" class="w-80">
 			<div class="flex items-center justify-between px-3 py-2">
 				<DropdownMenu.Label class="p-0">Notifications</DropdownMenu.Label>
-				{#if unreadCount > 0}
-					<Button variant="ghost" size="sm" class="h-auto p-0 text-xs" onclick={markAllAsRead}>
+				{#if notificationStore.unreadCount > 0}
+					<Button
+						variant="ghost"
+						size="sm"
+						class="h-auto p-0 text-xs"
+						onclick={handleMarkAllAsRead}
+					>
 						Mark all as read
 					</Button>
 				{/if}
 			</div>
 			<DropdownMenu.Separator />
 			<div class="h-80 overflow-y-auto thin-scrollbar">
-				{#each notifications as notification (notification.id)}
-					{@const iconData = getNotificationIcon(notification.type)}
-					<DropdownMenu.Item
-						class="flex items-start gap-3 p-3 cursor-pointer my-1 {!notification.read
-							? 'bg-muted/50'
-							: ''}"
-					>
-						<div class="mt-0.5">
-							<iconData.icon class="h-4 w-4 {iconData.class}" />
+				{#if notificationStore.notifications.length === 0}
+					<div class="flex flex-col items-center justify-center h-full text-muted-foreground">
+						<BellIcon class="h-8 w-8 mb-2 opacity-50" />
+						<p class="text-sm">No notifications</p>
+					</div>
+				{:else}
+					{#each notificationStore.notifications as notification (notification.id)}
+						{@const iconData = getSeverityIcon(notification.severity)}
+						<div
+							class="flex items-start gap-3 p-3 cursor-pointer my-1 hover:bg-muted/50 rounded-md transition-colors group {!notification.is_read
+								? 'bg-muted/30'
+								: ''}"
+							onclick={() => handleNotificationClick(notification.id)}
+							role="button"
+							tabindex="0"
+						>
+							<div class="mt-0.5">
+								<iconData.icon class="h-4 w-4 {iconData.class}" />
+							</div>
+							<div class="flex-1 space-y-1 min-w-0">
+								<p class="text-sm font-medium leading-none truncate">{notification.title}</p>
+								<p class="text-xs text-muted-foreground line-clamp-2">
+									{notification.message}
+								</p>
+								<div class="flex items-center gap-2">
+									<p class="text-xs text-muted-foreground">
+										{notificationStore.getRelativeTime(notification.created_at)}
+									</p>
+									{#if notification.notification_metadata?.url}
+										<ExternalLinkIcon class="h-3 w-3 text-muted-foreground" />
+									{/if}
+								</div>
+							</div>
+							<div class="flex items-center gap-1">
+								{#if !notification.is_read}
+									<div class="h-2 w-2 rounded-full bg-blue-500"></div>
+								{/if}
+								<Button
+									variant="ghost"
+									size="icon"
+									class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+									onclick={(e) => handleDeleteNotification(notification.id, e)}
+								>
+									<TrashIcon class="h-3 w-3" />
+									<span class="sr-only">Delete</span>
+								</Button>
+							</div>
 						</div>
-						<div class="flex-1 space-y-1">
-							<p class="text-sm font-medium leading-none">{notification.title}</p>
-							<p class="text-xs text-muted-foreground">{notification.message}</p>
-							<p class="text-xs text-muted-foreground">{notification.time}</p>
-						</div>
-						{#if !notification.read}
-							<div class="h-2 w-2 rounded-full bg-blue-500"></div>
-						{/if}
-					</DropdownMenu.Item>
-				{/each}
+					{/each}
+				{/if}
 			</div>
 			<DropdownMenu.Separator />
 			<DropdownMenu.Item class="justify-center text-center">
