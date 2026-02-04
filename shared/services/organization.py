@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Organization
+from shared.models import Organization
 from app.utils.slug import generate_slug
 
 

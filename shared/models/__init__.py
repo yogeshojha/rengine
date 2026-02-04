@@ -1,13 +1,13 @@
-from app.models.organization import (
+from shared.models.organization import (
     Organization,
     OrganizationCreate,
     OrganizationRead,
     OrganizationSummary,
     OrganizationUpdate,
 )
-from app.models.project import Project, ProjectBase, ProjectCreate, ProjectRead
-from app.models.tag import Tag, TagBase, TagCreate, TagRead, TagSummary, TagUpdate
-from app.models.target import (
+from shared.models.project import Project, ProjectBase, ProjectCreate, ProjectRead
+from shared.models.tag import Tag, TagBase, TagCreate, TagRead, TagSummary, TagUpdate
+from shared.models.target import (
     Target,
     TargetBulkCreate,
     TargetBulkCreateResponse,
@@ -19,7 +19,7 @@ from app.models.target import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
-from app.models.user import User, UserBase, UserCreate, UserRead
+from shared.models.user import User, UserBase, UserCreate, UserRead
 
 TargetRead.model_rebuild()
 

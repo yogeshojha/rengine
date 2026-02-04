@@ -1,6 +1,5 @@
-from shared.logging import setup_logging
-
 from app.config import settings
+from shared.logging import setup_logging
 
 logger = setup_logging(
     name="rengine.backend",

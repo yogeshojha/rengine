@@ -14,13 +14,13 @@ from app.config import settings
 from app.core.database import get_session
 from app.core.sse import connection_manager
 from app.debug.notifications import DEBUG_NOTIFICATION_TEMPLATES
-from app.models.notification import (
+from shared.models.notification import (
     Notification,
     NotificationCreate,
     NotificationRead,
     NotificationStats,
 )
-from app.services.notification import NotificationManager
+from shared.services.notification import NotificationManager
 
 router = APIRouter(
     prefix="/notifications",

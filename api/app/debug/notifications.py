@@ -1,5 +1,5 @@
-from app.enums.notification import NotificationSeverity, NotificationType
-from app.models.notification import NotificationMetadata
+from shared.enums.notification import NotificationSeverity, NotificationType
+from shared.models.notification import NotificationMetadata
 
 DEBUG_NOTIFICATION_TEMPLATES = [
     # Scan notifications

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
-from app.models import (
+from shared.models import (
     Organization,
     OrganizationSummary,
     Project,

@@ -8,7 +8,7 @@ from sqlmodel import select
 
 from app.core.database import get_session
 from app.core.security import decode_token
-from app.models.user import User
+from shared.models.user import User
 
 security = HTTPBearer(auto_error=False)
 

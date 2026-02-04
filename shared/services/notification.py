@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.sse import connection_manager
 from app.enums.notification import NotificationSeverity, NotificationType
-from app.models.notification import Notification, NotificationMetadata
+from shared.models.notification import Notification, NotificationMetadata
 
 logger = logging.getLogger(__name__)
 

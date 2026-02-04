@@ -16,8 +16,8 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.models.user import User, UserCreate, UserRead
-from app.schemas.auth import (
+from shared.models.user import User, UserCreate, UserRead
+from shared.schemas.auth import (
     LoginRequest,
     PasswordChangeRequest,
     TokenResponse,

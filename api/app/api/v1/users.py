@@ -7,7 +7,7 @@ from sqlmodel import select
 
 from app.api.deps import CurrentSuperuser
 from app.core.database import get_session
-from app.models.user import User, UserRead
+from shared.models.user import User, UserRead
 
 router = APIRouter(prefix="/users", tags=["users"])
 

@@ -5,7 +5,7 @@ import validators
 from zxcvbn import zxcvbn
 
 from app.config import settings
-from app.enums.target import TargetType
+from shared.enums.target import TargetType
 
 # Password policy
 MIN_PASSWORD_SCORE = 3

@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
-from app.models.project import Project
-from app.models.tag import (
+from shared.models.project import Project
+from shared.models.tag import (
     PREDEFINED_TAGS,
     Tag,
     TagCreate,

@@ -8,7 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 from app.utils.validation import validate_hex_color
 
 if TYPE_CHECKING:
-    from app.models.target import Target
+    from shared.models.target import Target
 
 
 class TagSummary(BaseModel):

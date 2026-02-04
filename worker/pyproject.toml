@@ -7,6 +7,7 @@ dependencies = [
     "celery[redis]>=5.6.2",
     "flower>=2.0.1",
     "psycopg2-binary>=2.9.11",
+    "pydantic-settings>=2.12.0",
     "redis>=6.4.0",
 ]
 

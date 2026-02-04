@@ -4,7 +4,7 @@ from app.config import settings
 from app.core.database import async_db_session
 from app.core.logging import logger
 from app.core.security import hash_password
-from app.models.user import User
+from shared.models.user import User
 
 
 async def create_initial_admin() -> None:
