@@ -22,7 +22,7 @@ celery_app = Celery("rengine")
 # #############################################################
 
 celery_app.conf.update(
-    broker_url=settings.CELERY_BROKER_URL,
+    broker_url=settings.celery_broker_url,
     broker_connection_retry_on_startup=True,
     result_backend=None,
     task_serializer="json",

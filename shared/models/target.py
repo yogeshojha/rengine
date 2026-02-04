@@ -5,13 +5,12 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
-from app.enums.target import TargetType
-from shared.models.organization import Organization
-from shared.models.tag import TargetTag
+from shared.enums.target import TargetType
+from shared.models.organization import Organization, OrganizationSummary
+from shared.models.tag import TargetTag, TagSummary
 
 if TYPE_CHECKING:
-    from shared.models.organization import Organization, OrganizationSummary
-    from shared.models.tag import Tag, TagSummary
+    from shared.models.tag import Tag
 
 
 class TargetValidationRequest(BaseModel):

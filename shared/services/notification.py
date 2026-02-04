@@ -5,7 +5,7 @@ from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.sse import connection_manager
-from app.enums.notification import NotificationSeverity, NotificationType
+from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.models.notification import Notification, NotificationMetadata
 
 logger = logging.getLogger(__name__)

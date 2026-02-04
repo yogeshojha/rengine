@@ -97,7 +97,7 @@ services:
     command: >
       uv run celery -A app.celery flower
       --port=5555
-      --broker=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      --broker=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/${REDIS_DB:-0}
       --basic-auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
     depends_on:
       redis:

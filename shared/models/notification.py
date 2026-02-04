@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Column, SQLModel
 from sqlmodel import Field as SQLField
 
-from app.enums.notification import NotificationSeverity, NotificationType
+from shared.enums.notification import NotificationSeverity, NotificationType
 
 MAX_URL_LENGTH = 500
 
