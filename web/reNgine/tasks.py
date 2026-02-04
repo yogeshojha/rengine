@@ -3021,9 +3021,10 @@ def http_crawl(
 				subdomain,
 				subscan=self.subscan,
 				cdn=cdn)
-			self.notify(
-				fields={'IPs': f'• `{ip.address}`'},
-				add_meta_info=False)
+			if ip:
+				self.notify(
+					fields={'IPs': f'• `{ip.address}`'},
+					add_meta_info=False)
 
 		# Save subdomain and endpoint
 		if is_ran_from_subdomain_scan:
@@ -4506,11 +4507,12 @@ def save_endpoint(
 			urls=[http_url],
 			method='HEAD',
 			ctx=ctx)
-		if results:
+		if results and isinstance(results[0], dict):
 			endpoint_data = results[0]
-			endpoint_id = endpoint_data['endpoint_id']
-			created = endpoint_data['endpoint_created']
-			endpoint = EndPoint.objects.get(pk=endpoint_id)
+			endpoint_id = endpoint_data.get('endpoint_id') # Gunakan .get() agar lebih aman
+			created = endpoint_data.get('endpoint_created', False)
+			if endpoint_id:
+				endpoint = EndPoint.objects.get(pk=endpoint_id)
 	elif not scheme:
 		return None, False
 	else: # add dumb endpoint without probing it
