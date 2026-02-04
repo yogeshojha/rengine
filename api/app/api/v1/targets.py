@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.utils.validation import validate_target
 from shared.models import (
     Organization,
     OrganizationSummary,
@@ -25,8 +26,7 @@ from shared.models import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
-from app.services import get_or_create_organization, get_or_create_tag
-from app.utils.validation import validate_target
+from shared.services import get_or_create_organization, get_or_create_tag
 
 router = APIRouter(
     prefix="/targets",
