@@ -7,8 +7,6 @@ This module is expected to be used by various components of reNgine, including:
 
 import logging
 import sys
-from pathlib import Path
-from typing import Optional
 
 
 class ColoredFormatter(logging.Formatter):

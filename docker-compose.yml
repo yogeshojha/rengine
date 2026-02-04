@@ -13,12 +13,30 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+
+  api:
     build:
       context: .
-      dockerfile: backend/Dockerfile.dev
+      dockerfile: api/Dockerfile
+      target: development # will use prod in docker-compose.prod.yml
     volumes:
-      - ./backend/app:/app/app
+      - ./api/app:/app/app
       - ./shared:/app/shared
     ports:
       - "8000:8000"
@@ -28,6 +46,61 @@ services:
       - WATCHFILES_FORCE_POLLING=true
     depends_on:
       db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # default workers for handling regular tasks like imports, whois etc
+  worker-default:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+      target: development
+    volumes:
+      - ./worker/app:/app/app
+      - ./shared:/app/shared
+    env_file:
+      - .env
+    command: >
+      uv run celery -A app.celery worker
+      --loglevel=INFO
+      --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
+      --queues=critical,default
+      --hostname=worker-default@%h
+      --max-tasks-per-child=100
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery inspect ping -d celery@worker-default@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  flower:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+      target: development
+    volumes:
+      - ./worker/app:/app/app
+      - ./shared:/app/shared
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    environment:
+      - FLOWER_UNAUTHENTICATED_API=true
+    command: >
+      uv run celery -A app.celery flower
+      --port=5555
+      --broker=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      --basic-auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
+    depends_on:
+      redis:
         condition: service_healthy
 
   frontend:
@@ -42,7 +115,9 @@ services:
     environment:
       - NODE_ENV=development
     depends_on:
-      - backend
+      - api
 
 volumes:
   postgres_data:
+  redis_data:
+  celery_beat_data:
