@@ -119,6 +119,24 @@
 		}
 	};
 
+	const handleActionClick = (notificationId: number, event: Event) => {
+		event.stopPropagation();
+
+		const notification = notificationStore.notifications.find((n) => n.id === notificationId);
+		if (!notification) return;
+
+		notificationStore.markAsRead(notificationId);
+
+		const metadata = notification.notification_metadata;
+		if (metadata?.url) {
+			if (metadata.open_new_tab) {
+				window.open(metadata.url, '_blank');
+			} else {
+				window.location.href = metadata.url;
+			}
+		}
+	};
+
 	const handleDeleteNotification = async (id: number, event: Event) => {
 		event.stopPropagation();
 		try {
@@ -267,13 +285,12 @@
 				{:else}
 					{#each notificationStore.notifications as notification (notification.id)}
 						{@const iconData = getSeverityIcon(notification.severity)}
-						<div
-							class="flex items-start gap-3 p-3 cursor-pointer my-1 hover:bg-muted/50 rounded-md transition-colors group {!notification.is_read
+						<button
+							type="button"
+							class="flex items-start gap-3 p-3 cursor-pointer my-1 hover:bg-muted/50 rounded-md transition-colors group w-full text-left {!notification.is_read
 								? 'bg-muted/30'
 								: ''}"
 							onclick={() => handleNotificationClick(notification.id)}
-							role="button"
-							tabindex="0"
 						>
 							<div class="mt-0.5">
 								<iconData.icon class="h-4 w-4 {iconData.class}" />
@@ -291,6 +308,17 @@
 										<ExternalLinkIcon class="h-3 w-3 text-muted-foreground" />
 									{/if}
 								</div>
+								{#if notification.notification_metadata?.action_label}
+									<Button
+										variant="secondary"
+										size="sm"
+										class="h-6 text-xs mt-2"
+										onclick={(e) => handleActionClick(notification.id, e)}
+									>
+										{notification.notification_metadata.action_label}
+										<ExternalLinkIcon class="ml-1 h-3 w-3" />
+									</Button>
+								{/if}
 							</div>
 							<div class="flex items-center gap-1">
 								{#if !notification.is_read}
@@ -306,7 +334,7 @@
 									<span class="sr-only">Delete</span>
 								</Button>
 							</div>
-						</div>
+						</button>
 					{/each}
 				{/if}
 			</div>
@@ -524,7 +552,7 @@
 								<div class="mt-0.5">
 									<iconData.icon class="h-5 w-5 {iconData.class}" />
 								</div>
-								<div class="flex-1 space-y-1 min-w-0">
+								<div class="flex-1 space-y-2 min-w-0">
 									<div class="flex items-start justify-between gap-2">
 										<p class="text-sm font-medium leading-none">{notification.title}</p>
 										<div class="flex items-center gap-1 shrink-0">
@@ -537,17 +565,25 @@
 									<p class="text-sm text-muted-foreground">
 										{notification.message}
 									</p>
-									<div class="flex items-center gap-2 text-xs text-muted-foreground">
-										<span>{notificationStore.getRelativeTime(notification.created_at)}</span>
+									<div class="flex items-center gap-2">
+										<span class="text-xs text-muted-foreground"
+											>{notificationStore.getRelativeTime(notification.created_at)}</span
+										>
 										{#if notification.notification_metadata?.url}
-											<ExternalLinkIcon class="h-3 w-3" />
-										{/if}
-										{#if notification.notification_metadata?.action_label}
-											<Badge variant="secondary" class="text-xs">
-												{notification.notification_metadata.action_label}
-											</Badge>
+											<ExternalLinkIcon class="h-3 w-3 text-muted-foreground" />
 										{/if}
 									</div>
+									{#if notification.notification_metadata?.action_label}
+										<Button
+											variant="secondary"
+											size="sm"
+											class="h-7 text-xs"
+											onclick={(e) => handleActionClick(notification.id, e)}
+										>
+											{notification.notification_metadata.action_label}
+											<ExternalLinkIcon class="ml-1.5 h-3 w-3" />
+										</Button>
+									{/if}
 								</div>
 								<div class="flex items-center gap-1">
 									{#if !notification.is_read}

@@ -64,7 +64,7 @@ class Notification(NotificationBase, table=True):
 
 
 class NotificationCreate(NotificationBase):
-    metadata: NotificationMetadata | None = None
+    notification_metadata: NotificationMetadata | None = None
 
 
 class NotificationRead(NotificationBase):

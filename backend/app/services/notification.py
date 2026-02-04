@@ -35,7 +35,7 @@ class NotificationManager:
             severity=severity,
             title=title[:200],
             message=message,
-            metadata=metadata_dict,
+            notification_metadata=metadata_dict,
         )
 
         session.add(notification)
@@ -52,7 +52,7 @@ class NotificationManager:
                 "severity": notification.severity.value,
                 "title": notification.title,
                 "message": notification.message,
-                "metadata": notification.notification_metadata,
+                "notification_metadata": notification.notification_metadata,
                 "is_read": notification.is_read,
                 "created_at": notification.created_at.isoformat(),
             },
