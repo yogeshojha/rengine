@@ -465,20 +465,25 @@ def tool_arsenal_section(request, slug):
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def llm_toolkit_section(request, slug):
     context = {}
-    list_all_models_url = f'{OLLAMA_INSTANCE}/api/tags'
-    response = requests.get(list_all_models_url)
-    all_models = []
-    selected_model = None
     all_models = DEFAULT_GPT_MODELS.copy()
-    if response.status_code == 200:
-        models = response.json()
-        ollama_models = models.get('models')
-        date_format = "%Y-%m-%dT%H:%M:%S"
-        for model in ollama_models:
-           all_models.append({**model, 
-                'modified_at': datetime.strptime(model['modified_at'].split('.')[0], date_format),
-                'is_local': True,
-            })
+    selected_model = None
+
+    # Try to fetch Ollama models, but don't fail if Ollama is unavailable
+    try:
+        list_all_models_url = f'{OLLAMA_INSTANCE}/api/tags'
+        response = requests.get(list_all_models_url, timeout=5)
+        if response.status_code == 200:
+            models = response.json()
+            ollama_models = models.get('models', [])
+            date_format = "%Y-%m-%dT%H:%M:%S"
+            for model in ollama_models:
+                all_models.append({**model,
+                    'modified_at': datetime.strptime(model['modified_at'].split('.')[0], date_format),
+                    'is_local': True,
+                })
+    except requests.exceptions.RequestException:
+        # Ollama service is not available, continue with just GPT models
+        context['ollama_unavailable'] = True
     # find selected model name from db
     selected_model = OllamaSettings.objects.first()
     if selected_model:
