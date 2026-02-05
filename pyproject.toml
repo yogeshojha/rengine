@@ -45,6 +45,10 @@ ignore = [
     "PLR0913", # too many arguments in function
 ]
 
+[tool.ruff.lint.pylint]
+max-branches = 15
+
+
 [tool.ruff.lint.isort]
 known-first-party = ["app", "shared"]
 

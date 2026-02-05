@@ -77,12 +77,8 @@ async def celery_active_tasks() -> dict:
                 ]
                 for worker, tasks in active.items()
             },
-            "reserved": {
-                worker: len(tasks) for worker, tasks in reserved.items()
-            },
-            "scheduled": {
-                worker: len(tasks) for worker, tasks in scheduled.items()
-            },
+            "reserved": {worker: len(tasks) for worker, tasks in reserved.items()},
+            "scheduled": {worker: len(tasks) for worker, tasks in scheduled.items()},
         }
 
     except Exception as e:

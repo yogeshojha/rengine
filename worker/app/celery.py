@@ -90,9 +90,11 @@ celery_app.conf.task_routes = {
 # Auto-discover Tasks
 # #############################################################
 
-celery_app.autodiscover_tasks([
-    "app.tasks.debug",
-])
+celery_app.autodiscover_tasks(
+    [
+        "app.tasks.debug",
+    ]
+)
 
 # #############################################################
 # Beat Schedule (Periodic Tasks)

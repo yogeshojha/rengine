@@ -1,4 +1,3 @@
-
 from celery import shared_task
 
 from shared.logging import get_logger
@@ -12,8 +11,7 @@ logger = get_logger("rengine.worker.tasks.debug")
     queue="default",
 )
 def debug_task(self, message: str = "Hello from Worker!") -> dict:
-    """Simple debug task to verify Celery is working.
-    """
+    """Simple debug task to verify Celery is working."""
     logger.info("Debug task executed: %s", message)
     logger.info("Task ID: %s", self.request.id)
     logger.info("Worker: %s", self.request.hostname)

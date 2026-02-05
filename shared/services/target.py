@@ -29,6 +29,15 @@ from shared.services import get_or_create_organization, get_or_create_tag
 
 MAX_TARGETS_IMPORT = 500
 
+
+@dataclass
+class BulkTargetResult:
+    """Result of processing a single target in bulk operations."""
+
+    import_result: TargetImportResult
+    target: Target | None = None
+
+
 class TargetService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -80,7 +89,9 @@ class TargetService:
         if organization_slug:
             org = await self._get_organization_by_slug(organization_slug)
             if org:
-                query = query.join(Target.organizations).where(Organization.id == org.id)
+                query = query.join(Target.organizations).where(
+                    Organization.id == org.id
+                )
             else:
                 query = query.where(Target.id is None)
 
@@ -89,9 +100,7 @@ class TargetService:
 
         return query
 
-    async def create_target(
-        self, target_in: TargetCreate, user_id: str
-    ) -> TargetRead:
+    async def create_target(self, target_in: TargetCreate, user_id: str) -> TargetRead:
         target_type = validate_target(target_in.target_value)
         if not target_type:
             raise HTTPException(
@@ -266,9 +275,7 @@ class TargetService:
         )
         return result.scalar_one_or_none()
 
-    async def _check_duplicate_target(
-        self, target_value: str, project_id: str
-    ) -> None:
+    async def _check_duplicate_target(self, target_value: str, project_id: str) -> None:
         existing_target = await self.session.execute(
             select(Target).where(
                 Target.target_value == target_value,
@@ -312,13 +319,6 @@ class TargetService:
         existing_target_values: set[str],
         seen_in_batch: set[str],
     ) -> "BulkTargetResult":
-
-
-        @dataclass
-        class BulkTargetResult:
-            import_result: TargetImportResult
-            target: Target | None = None
-
         _target_value = target_value.strip()
 
         if not _target_value:
@@ -528,11 +528,6 @@ class TargetService:
     ) -> "BulkTargetResult":
         """Process a single target for structured import (CSV/JSON with per-target tags/orgs)"""
 
-        @dataclass
-        class BulkTargetResult:
-            import_result: TargetImportResult
-            target: Target | None = None
-
         target_value = item.target_value.strip()
 
         # Skip empty values
@@ -670,7 +665,9 @@ class TargetService:
                         orig_key = csv_reader.fieldnames[idx]
                         orgs_str = row.get(orig_key, "").strip()
                         if orgs_str:
-                            organizations = [o.strip() for o in orgs_str.split(",") if o.strip()]
+                            organizations = [
+                                o.strip() for o in orgs_str.split(",") if o.strip()
+                            ]
                         break
 
                 # Get display name supported with key display_name or name (optional)
