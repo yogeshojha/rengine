@@ -1,9 +1,13 @@
-from datetime import UTC, datetime
+import csv
+import io
 from dataclasses import dataclass
+from datetime import UTC, datetime
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.utils.validation import validate_target
 from shared.models import (
     Organization,
     OrganizationSummary,
@@ -14,13 +18,14 @@ from shared.models import (
     TargetBulkCreate,
     TargetBulkCreateResponse,
     TargetCreate,
+    TargetImportItem,
+    TargetImportRequest,
     TargetImportResult,
     TargetRead,
     TargetType,
     TargetUpdate,
 )
 from shared.services import get_or_create_organization, get_or_create_tag
-from app.utils.validation import validate_target
 
 
 class TargetService:
@@ -397,6 +402,241 @@ class TargetService:
                 for tag in target.tags
             ],
         )
+
+    async def import_targets_structured(
+        self, import_request: TargetImportRequest, user_id: str
+    ) -> TargetBulkCreateResponse:
+        """
+        Import targets from structured data (CSV/JSON) with per-target customization.
+
+        Each target can have its own tags and organizations, for both csv and json.
+        """
+        project = await self._get_project_by_slug(import_request.project_slug)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found",
+            )
+
+        existing_targets_result = await self.session.execute(
+            select(Target.target_value).where(Target.project_id == project.id)
+        )
+        existing_target_values = set(existing_targets_result.scalars().all())
+
+        results: list[TargetImportResult] = []
+        imported_count = 0
+        failed_count = 0
+        skipped_duplicates = 0
+        seen_in_batch: set[str] = set()
+        created_targets: list[Target] = []
+
+        for item in import_request.targets:
+            result = await self._process_import_item(
+                item=item,
+                project_id=project.id,
+                user_id=user_id,
+                existing_target_values=existing_target_values,
+                seen_in_batch=seen_in_batch,
+            )
+
+            results.append(result.import_result)
+
+            if result.import_result.success:
+                imported_count += 1
+                if result.target:
+                    created_targets.append(result.target)
+            elif "duplicate" in result.import_result.error.lower():
+                skipped_duplicates += 1
+            else:
+                failed_count += 1
+
+        await self.session.commit()
+
+        for target in created_targets:
+            await self._post_create_actions(target)
+
+        return TargetBulkCreateResponse(
+            total=len(import_request.targets),
+            imported=imported_count,
+            failed=failed_count,
+            skipped_duplicates=skipped_duplicates,
+            results=results,
+        )
+
+    async def _process_import_item(
+        self,
+        item: TargetImportItem,
+        project_id: str,
+        user_id: str,
+        existing_target_values: set[str],
+        seen_in_batch: set[str],
+    ) -> "BulkTargetResult":
+        """Process a single target for structured import (CSV/JSON with per-target tags/orgs)"""
+
+        @dataclass
+        class BulkTargetResult:
+            import_result: TargetImportResult
+            target: Target | None = None
+
+        target_value = item.target_value.strip()
+
+        # Skip empty values
+        if not target_value:
+            return BulkTargetResult(
+                import_result=TargetImportResult(
+                    target_value=target_value,
+                    success=False,
+                    error="Empty target value",
+                )
+            )
+
+        # Check duplicates in current batch
+        if target_value in seen_in_batch:
+            return BulkTargetResult(
+                import_result=TargetImportResult(
+                    target_value=target_value,
+                    success=False,
+                    error="Duplicate within import batch",
+                )
+            )
+
+        # Check duplicates in existing project targets
+        if target_value in existing_target_values:
+            return BulkTargetResult(
+                import_result=TargetImportResult(
+                    target_value=target_value,
+                    success=False,
+                    error="Target already exists in project",
+                )
+            )
+
+        # Validate target format
+        target_type = validate_target(target_value)
+        if not target_type:
+            return BulkTargetResult(
+                import_result=TargetImportResult(
+                    target_value=target_value,
+                    success=False,
+                    error="Invalid target format",
+                )
+            )
+
+        # Get or create organizations for this specific target
+        organizations = []
+        for org_name in item.organizations:
+            if org_name.strip():
+                org = await get_or_create_organization(
+                    org_name.strip(), project_id, user_id, self.session
+                )
+                organizations.append(org)
+
+        # Get or create tags for this specific target
+        tags = []
+        for tag_name in item.tags:
+            if tag_name.strip():
+                tag = await get_or_create_tag(
+                    tag_name.strip(), project_id, user_id, self.session
+                )
+                tags.append(tag)
+
+        # Create the target
+        target = Target(
+            target_value=target_value,
+            target_type=target_type,
+            display_name=item.display_name or target_value,
+            project_id=project_id,
+            created_by=user_id,
+            organizations=organizations,
+            tags=tags,
+        )
+        self.session.add(target)
+
+        seen_in_batch.add(target_value)
+        existing_target_values.add(target_value)
+
+        return BulkTargetResult(
+            import_result=TargetImportResult(
+                target_value=target_value,
+                success=True,
+                target_type=target_type,
+                target_id=target.id,
+            ),
+            target=target,
+        )
+
+    # csv imports parser
+    def _parse_csv_to_targets(self, csv_text: str) -> list[TargetImportItem]:
+        csv_reader = csv.DictReader(io.StringIO(csv_text))
+
+        # If no headers detected,read it as simple list
+        if csv_reader.fieldnames is None or not csv_reader.fieldnames:
+            csv_reader = csv.reader(io.StringIO(csv_text))
+            targets_data = [
+                TargetImportItem(target_value=row[0].strip())
+                for row in csv_reader
+                if row and row[0].strip()
+            ]
+        else:
+            fieldnames = [field.lower().strip() for field in csv_reader.fieldnames]
+
+            targets_data = []
+            for row in csv_reader:
+                if not any(row.values()):
+                    continue
+
+                # Get target value supported with key target_value, target, value, domain, or ip (required)
+                target_value = None
+                for key in ["target_value", "target", "value", "domain", "ip"]:
+                    if key in fieldnames:
+                        idx = fieldnames.index(key)
+                        orig_key = csv_reader.fieldnames[idx]
+                        target_value = row.get(orig_key, "").strip()
+                        break
+
+                if not target_value:
+                    continue
+
+                # Get tags supported with key tags or tag (optional)
+                tags = []
+                for key in ["tags", "tag"]:
+                    if key in fieldnames:
+                        idx = fieldnames.index(key)
+                        orig_key = csv_reader.fieldnames[idx]
+                        tags_str = row.get(orig_key, "").strip()
+                        if tags_str:
+                            tags = [t.strip() for t in tags_str.split(",") if t.strip()]
+                        break
+
+                # Get organizations supported with key organizations, organization, orgs, org (optional)
+                organizations = []
+                for key in ["organizations", "organization", "orgs", "org"]:
+                    if key in fieldnames:
+                        idx = fieldnames.index(key)
+                        orig_key = csv_reader.fieldnames[idx]
+                        orgs_str = row.get(orig_key, "").strip()
+                        if orgs_str:
+                            organizations = [o.strip() for o in orgs_str.split(",") if o.strip()]
+                        break
+
+                # Get display name supported with key display_name or name (optional)
+                display_name = None
+                for key in ["display_name", "name"]:
+                    if key in fieldnames:
+                        idx = fieldnames.index(key)
+                        orig_key = csv_reader.fieldnames[idx]
+                        display_name = row.get(orig_key, "").strip() or None
+                        break
+
+                targets_data.append(
+                    TargetImportItem(
+                        target_value=target_value,
+                        tags=tags,
+                        organizations=organizations,
+                        display_name=display_name,
+                    )
+                )
+
+        return targets_data
 
     async def _post_create_actions(self, target: Target) -> None:
         pass

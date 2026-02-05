@@ -7,7 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from shared.enums.target import TargetType
 from shared.models.organization import Organization, OrganizationSummary
-from shared.models.tag import TargetTag, TagSummary
+from shared.models.tag import TagSummary, TargetTag
 
 if TYPE_CHECKING:
     from shared.models.tag import Tag
@@ -113,3 +113,22 @@ class TargetRead(TargetBase):
     created_by: uuid.UUID
     organizations: list[OrganizationSummary] = Field(default_factory=list)
     tags: list[TagSummary] = Field(default_factory=list)
+
+
+
+# imports for both json and csv support
+class TargetImportItem(BaseModel):
+    target_value: str
+    tags: list[str] = Field(default_factory=list)
+    organizations: list[str] = Field(default_factory=list)
+    display_name: str | None = None
+
+
+class TargetImportRequest(BaseModel):
+    project_slug: str
+    targets: list[TargetImportItem] = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="List of targets to import (max 500)",
+    )

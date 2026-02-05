@@ -11,6 +11,7 @@ from shared.models import (
     TargetBulkCreate,
     TargetBulkCreateResponse,
     TargetCreate,
+    TargetImportRequest,
     TargetRead,
     TargetType,
     TargetUpdate,
@@ -110,6 +111,43 @@ async def bulk_create_targets(
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
     return await service.bulk_create_targets(bulk_in, current_user.id)
+
+
+@router.post(
+    "/import/json",
+    response_model=TargetBulkCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def import_targets_json(
+    import_request: TargetImportRequest,
+    current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """
+    Import targets from JSON with per-target customization.
+
+    Each target can have its own tags and organizations.
+    Maximum 500 targets per request, later todo in celery.
+
+    Example SUpported:
+    {
+      "project_slug": "my-project",
+      "targets": [
+        {
+          "target_value": "loremipsum.com",
+          "tags": ["production", "critical"],
+          "organizations": ["Hello World"],
+          "display_name": "Main Website"
+        },
+        {
+          "target_value": "192.168.1.1",
+          "tags": ["internal"],
+          "organizations": []
+        }
+      ]
+    }
+    """
+    return await service.import_targets_structured(import_request, current_user.id)
 
 
 @router.get("/{target_id}", response_model=TargetRead)
