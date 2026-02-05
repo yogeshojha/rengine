@@ -25,10 +25,8 @@ services:
     build:
       context: ./web
     restart: always
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
     entrypoint: /usr/src/app/celery-entrypoint.sh
+    # command: celery -A reNgine worker --autoscale=${MAX_CONCURRENCY},${MIN_CONCURRENCY} -l INFO
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -58,9 +56,6 @@ services:
 
   celery-beat:
     build: ./web
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
     entrypoint: /usr/src/app/beat-entrypoint.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
@@ -88,9 +83,6 @@ services:
   web:
     build:
       context: ./web
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
     entrypoint: /usr/src/app/entrypoint.sh
     restart: always
     image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
@@ -148,13 +140,9 @@ services:
       - scan_results:/usr/src/scan_results
     networks:
       - rengine_network
-
   ollama:
     image: ollama/ollama
     container_name: ollama
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
     volumes:
       - ollama_data:/root/.ollama
     ports:
