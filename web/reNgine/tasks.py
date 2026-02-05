@@ -2836,32 +2836,14 @@ def http_crawl(
 		should_remove_duplicate_endpoints=True,
 		duplicate_removal_fields=[]):
 	"""Use httpx to query HTTP URLs for important info like page titles, http
-	status, etc...
-
-	Args:
-		urls (list, optional): A set of URLs to check. Overrides default
-			behavior which queries all endpoints related to this scan.
-		method (str): HTTP method to use (GET, HEAD, POST, PUT, DELETE).
-		recrawl (bool, optional): If False, filter out URLs that have already
-			been crawled.
-		should_remove_duplicate_endpoints (bool): Whether to remove duplicate endpoints
-		duplicate_removal_fields (list): List of Endpoint model fields to check for duplicates
-
-	Returns:
-		list: httpx results.
-	"""
+	status, etc..."""
 	logger.info('Initiating HTTP Crawl')
 	if is_ran_from_subdomain_scan:
 		logger.info('Running From Subdomain Scan...')
 	cmd = '/go/bin/httpx'
 	cfg = self.yaml_configuration.get(HTTP_CRAWL) or {}
 	custom_headers = self.yaml_configuration.get(CUSTOM_HEADERS, [])
-	'''
-	# TODO: Remove custom_header in next major release
-		support for custom_header will be remove in next major release, 
-		as of now it will be supported for backward compatibility
-		only custom_headers will be supported
-	'''
+	
 	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
 	if custom_header:
 		custom_headers.append(custom_header)
@@ -2870,7 +2852,7 @@ def http_crawl(
 	self.output_path = None
 	input_path = f'{self.results_dir}/httpx_input.txt'
 	history_file = f'{self.results_dir}/commands.txt'
-	if urls: # direct passing URLs to check
+	if urls:
 		if self.starting_point_path:
 			urls = [u for u in urls if self.starting_point_path in u]
 
@@ -2882,25 +2864,18 @@ def http_crawl(
 			write_filepath=input_path,
 			ctx=ctx
 		)
-		# logger.debug(urls)
 
-	# exclude urls by pattern
 	if self.excluded_paths:
 		urls = exclude_urls_by_patterns(self.excluded_paths, urls)
 
-	# If no URLs found, skip it
 	if not urls:
 		return
 
-	# Re-adjust thread number if few URLs to avoid spinning up a monster to
-	# kill a fly.
 	if len(urls) < threads:
 		threads = len(urls)
 
-	# Get random proxy
 	proxy = get_random_proxy()
 
-	# Run command
 	cmd += f' -cl -ct -rt -location -td -websocket -cname -asn -cdn -probe -random-agent'
 	cmd += f' -t {threads}' if threads > 0 else ''
 	cmd += f' --http-proxy {proxy}' if proxy else ''
@@ -2924,13 +2899,9 @@ def http_crawl(
 		if not line or not isinstance(line, dict):
 			continue
 
-		logger.debug(line)
-
-		# No response from endpoint
 		if line.get('failed', False):
 			continue
 
-		# Parse httpx output
 		host = line.get('host', '')
 		content_length = line.get('content_length', 0)
 		http_status = line.get('status_code')
@@ -2948,14 +2919,12 @@ def http_crawl(
 			if rt[-2:] == 'ms':
 				response_time = response_time / 1000
 
-		# Create Subdomain object in DB
 		subdomain_name = get_subdomain_from_url(http_url)
 		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
 
 		if not subdomain:
 			continue
 
-		# Save default HTTP URL to endpoint object in DB
 		endpoint, created = save_endpoint(
 			http_url,
 			crawl=False,
@@ -2973,13 +2942,12 @@ def http_crawl(
 		endpoint.content_type = content_type
 		endpoint.save()
 		endpoint_str = f'{http_url} [{http_status}] `{content_length}B` `{webserver}` `{rt}`'
-		logger.warning(endpoint_str)
+		
 		if endpoint and endpoint.is_alive and endpoint.http_status != 403:
 			self.notify(
 				fields={'Alive endpoint': f'• {endpoint_str}'},
 				add_meta_info=False)
 
-		# Add endpoint to results
 		line['_cmd'] = cmd
 		line['final_url'] = http_url
 		line['endpoint_id'] = endpoint.id
@@ -2987,7 +2955,6 @@ def http_crawl(
 		line['is_redirect'] = is_redirect
 		results.append(line)
 
-		# Add technology objects to DB
 		for technology in techs:
 			tech, _ = Technology.objects.get_or_create(name=technology)
 			endpoint.techs.add(tech)
@@ -2995,12 +2962,13 @@ def http_crawl(
 				subdomain.technologies.add(tech)
 				subdomain.save()
 			endpoint.save()
-		techs_str = ', '.join([f'`{tech}`' for tech in techs])
-		self.notify(
-			fields={'Technologies': techs_str},
-			add_meta_info=False)
+		
+		if techs:
+			techs_str = ', '.join([f'`{tech}`' for tech in techs])
+			self.notify(
+				fields={'Technologies': techs_str},
+				add_meta_info=False)
 
-		# Add IP objects for 'a' records to DB
 		a_records = line.get('a', [])
 		for ip_address in a_records:
 			ip, created = save_ip_address(
@@ -3008,25 +2976,26 @@ def http_crawl(
 				subdomain,
 				subscan=self.subscan,
 				cdn=cdn)
-		ips_str = '• ' + '\n• '.join([f'`{ip}`' for ip in a_records])
-		self.notify(
-			fields={'IPs': ips_str},
-			add_meta_info=False)
+		
+		if a_records:
+			ips_str = '• ' + '\n• '.join([f'`{ip}`' for ip in a_records])
+			self.notify(
+				fields={'IPs': ips_str},
+				add_meta_info=False)
 
-		# Add IP object for host in DB
 		if host:
 			ip, created = save_ip_address(
 				host,
 				subdomain,
 				subscan=self.subscan,
 				cdn=cdn)
-			self.notify(
-				fields={'IPs': f'• `{ip.address}`'},
-				add_meta_info=False)
+			# FIX: Added null check for ip address
+			if ip:
+				self.notify(
+					fields={'IPs': f'• `{ip.address}`'},
+					add_meta_info=False)
 
-		# Save subdomain and endpoint
 		if is_ran_from_subdomain_scan:
-			# save subdomain stuffs
 			subdomain.http_url = http_url
 			subdomain.http_status = http_status
 			subdomain.page_title = page_title
@@ -3034,7 +3003,7 @@ def http_crawl(
 			subdomain.webserver = webserver
 			subdomain.response_time = response_time
 			subdomain.content_type = content_type
-			subdomain.cname = ','.join(cname)
+			subdomain.cname = ','.join(cname) if isinstance(cname, list) else cname
 			subdomain.is_cdn = cdn
 			if cdn:
 				subdomain.cdn_name = line.get('cdn_name')
@@ -3043,7 +3012,6 @@ def http_crawl(
 		endpoint_ids.append(endpoint.id)
 
 	if should_remove_duplicate_endpoints:
-		# Remove 'fake' alive endpoints that are just redirects to the same page
 		remove_duplicate_endpoints(
 			self.scan_id,
 			self.domain_id,
@@ -3051,7 +3019,6 @@ def http_crawl(
 			filter_ids=endpoint_ids
 		)
 
-	# Remove input file
 	run_command(
 		f'rm {input_path}',
 		shell=True,
@@ -4418,24 +4385,7 @@ def save_endpoint(
 		crawl=False,
 		is_default=False,
 		**endpoint_data):
-	"""Get or create EndPoint object. If crawl is True, also crawl the endpoint
-	HTTP URL with httpx.
-
-	Args:
-		http_url (str): Input HTTP URL.
-		is_default (bool): If the url is a default url for SubDomains.
-		scan_history (startScan.models.ScanHistory): ScanHistory object.
-		domain (startScan.models.Domain): Domain object.
-		subdomain (starScan.models.Subdomain): Subdomain object.
-		results_dir (str, optional): Results directory.
-		crawl (bool, optional): Run httpx on endpoint if True. Default: False.
-		force (bool, optional): Force crawl even if ENABLE_HTTP_CRAWL mode is on.
-		subscan (startScan.models.SubScan, optional): SubScan object.
-
-	Returns:
-		tuple: (startScan.models.EndPoint, created) where `created` is a boolean
-			indicating if the object is new or already existed.
-	"""
+	"""Get or create EndPoint object."""
 	# remove nulls
 	endpoint_data = replace_nulls(endpoint_data)
 
@@ -4447,17 +4397,27 @@ def save_endpoint(
 		if domain.name not in http_url:
 			logger.error(f"{http_url} is not a URL of domain {domain.name}. Skipping.")
 			return None, False
+	
 	if crawl:
 		ctx['track'] = False
+		# results will return the list from http_crawl
 		results = http_crawl(
 			urls=[http_url],
 			method='HEAD',
 			ctx=ctx)
-		if results:
-			endpoint_data = results[0]
-			endpoint_id = endpoint_data['endpoint_id']
-			created = endpoint_data['endpoint_created']
-			endpoint = EndPoint.objects.get(pk=endpoint_id)
+		
+		# FIX: Enhanced validation of crawl results to prevent "string indices must be integers"
+		if results and isinstance(results, list) and len(results) > 0 and isinstance(results[0], dict):
+			endpoint_result_data = results[0]
+			endpoint_id = endpoint_result_data.get('endpoint_id')
+			created = endpoint_result_data.get('endpoint_created', False)
+			if endpoint_id:
+				endpoint = EndPoint.objects.get(pk=endpoint_id)
+		else:
+			logger.error(f"Crawl failed for {http_url} or returned invalid format.")
+			# Return None to avoid processing invalid data
+			return None, False
+
 	elif not scheme:
 		return None, False
 	else: # add dumb endpoint without probing it
@@ -4467,7 +4427,6 @@ def save_endpoint(
 			return None, False
 		http_url = sanitize_url(http_url)
 
-		# Try to get the first matching record (prevent duplicate error)
 		endpoints = EndPoint.objects.filter(
 			scan_history=scan,
 			target_domain=domain,
@@ -4479,7 +4438,6 @@ def save_endpoint(
 			endpoint = endpoints.first()
 			created = False
 		else:
-			# No existing record, create a new one
 			endpoint = EndPoint.objects.create(
 				scan_history=scan,
 				target_domain=domain,
@@ -4488,7 +4446,7 @@ def save_endpoint(
 			)
 			created = True
 
-	if created:
+	if created and endpoint:
 		endpoint.is_default = is_default
 		endpoint.discovered_date = timezone.now()
 		endpoint.save()
