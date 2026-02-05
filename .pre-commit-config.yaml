@@ -6,15 +6,15 @@ repos:
       - id: ruff
         name: ruff-fix
         args: [--fix, --exit-zero]
-        files: ^backend/
+        files: ^(api|worker|shared)/
       - id: ruff-format
-        files: ^backend/
+        files: ^(api|worker|shared)/
       - id: ruff
         name: ruff-check
         args: [--exit-non-zero-on-fix]
-        files: ^backend/
+        files: ^(api|worker|shared)/
 
-  # TODO: for svelte frontend - add prettier or eslint
+  # Frontend Svelte - Prettier
   - repo: local
     hooks:
       - id: prettier
