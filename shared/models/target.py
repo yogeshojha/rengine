@@ -115,7 +115,6 @@ class TargetRead(TargetBase):
     tags: list[TagSummary] = Field(default_factory=list)
 
 
-
 # imports for both json and csv support
 class TargetImportItem(BaseModel):
     target_value: str

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -148,6 +148,37 @@ async def import_targets_json(
     }
     """
     return await service.import_targets_structured(import_request, current_user.id)
+
+
+@router.post(
+    "/import/csv",
+    response_model=TargetBulkCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def import_targets_csv(
+    project_slug: Annotated[
+        str, Query(description="Project slug to import targets into")
+    ],
+    file: Annotated[UploadFile, File(...)],
+    current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """
+    Import targets from a CSV file.
+
+    CSV Format Options:
+    1. Simple (single column): target_value
+    2. With tags: target_value, tags (comma-separated)
+    3. With organizations: target_value, organizations (comma-separated)
+    4. Full: target_value, tags, organizations, display_name
+
+    Headers are optional but recommended. If no headers, assumes first column is target_value.
+    Flexible header names: target/value/domain/ip, tags/tag, organizations/org, display_name/name
+
+    Each target can have its own tags and organizations (comma-separated in CSV cells).
+    Maximum 500 targets per CSV file.
+    """
+    return await service.import_targets_csv(project_slug, file, current_user.id)
 
 
 @router.get("/{target_id}", response_model=TargetRead)

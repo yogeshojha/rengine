@@ -3,7 +3,7 @@ import io
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +27,7 @@ from shared.models import (
 )
 from shared.services import get_or_create_organization, get_or_create_tag
 
+MAX_TARGETS_IMPORT = 500
 
 class TargetService:
     def __init__(self, session: AsyncSession):
@@ -402,6 +403,60 @@ class TargetService:
                 for tag in target.tags
             ],
         )
+
+    async def import_targets_csv(
+        self, project_slug: str, file: UploadFile, user_id: str
+    ) -> TargetBulkCreateResponse:
+        """
+        Import targets from a CSV file.
+
+        CSV Format Options:
+        1. Simple (single column): target_value
+        2. With tags: target_value, tags (comma-separated)
+        3. With organizations: target_value, organizations (comma-separated)
+        4. Full: target_value, tags, organizations, display_name
+
+        Headers are optional but recommended. If no headers, assumes first column is target_value.
+        """
+        # Validate file type
+        if not file.filename.endswith(".csv"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be a CSV file",
+            )
+
+        # Read and decode file
+        try:
+            content = await file.read()
+            csv_text = content.decode("utf-8")
+        except UnicodeDecodeError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be UTF-8 encoded",
+            ) from e
+
+        # Parse CSV into TargetImportItem objects
+        targets_data = self._parse_csv_to_targets(csv_text)
+
+        if not targets_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No valid targets found in CSV file",
+            )
+
+        if len(targets_data) > MAX_TARGETS_IMPORT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Too many targets in CSV file. Maximum is {MAX_TARGETS_IMPORT}, found {len(targets_data)}",
+            )
+
+        # Use the structured import logic
+        import_request = TargetImportRequest(
+            project_slug=project_slug,
+            targets=targets_data,
+        )
+
+        return await self.import_targets_structured(import_request, user_id)
 
     async def import_targets_structured(
         self, import_request: TargetImportRequest, user_id: str
