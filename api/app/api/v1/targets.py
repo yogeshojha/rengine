@@ -1,12 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from shared.definitions.constants import MAX_TARGET_IMPORT
 from shared.models import (
     TargetBulkCreate,
     TargetBulkCreateResponse,
@@ -38,6 +39,7 @@ async def validate_target_endpoint(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
+    # validate single target
     target_type = await service.validate_target_value(request.target_value)
 
     if target_type:
@@ -45,13 +47,64 @@ async def validate_target_endpoint(
             valid=True,
             target_type=target_type,
             error=None,
+            target_value=request.target_value,
         )
 
     return TargetValidationResponse(
         valid=False,
         target_type=None,
         error="Invalid target format. Accepted formats: domain/subdomain, IP, IP range (CIDR), ASN (AS followed by numbers), or URL",
+        target_value=request.target_value,
     )
+
+
+@router.post("/validate/bulk", response_model=list[TargetValidationResponse])
+async def validate_bulk_target(
+    request: list[TargetValidationRequest],
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """
+    Validate multiple target values in one request.
+    Maximum as defined in {MAX_TARGET_IMPORT} targets per request.
+    """
+    if len(request) > MAX_TARGET_IMPORT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Maximum {MAX_TARGET_IMPORT} targets allowed per request",
+        )
+
+    seen = set()
+    unique_requests = []
+    for req in request:
+        if req.target_value not in seen:
+            seen.add(req.target_value)
+            unique_requests.append(req)
+
+    results = []
+    for req in unique_requests:
+        target_type = await service.validate_target_value(req.target_value)
+
+        if target_type:
+            results.append(
+                TargetValidationResponse(
+                    valid=True,
+                    target_type=target_type,
+                    error=None,
+                    target_value=req.target_value,
+                )
+            )
+        else:
+            results.append(
+                TargetValidationResponse(
+                    valid=False,
+                    target_type=None,
+                    error="Invalid target format. Accepted formats: domain/subdomain, IP, IP range (CIDR), ASN (AS followed by numbers), or URL",
+                    target_value=req.target_value,
+                )
+            )
+
+    return results
 
 
 @router.get("/counts", response_model=dict[str, int])

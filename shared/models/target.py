@@ -21,6 +21,7 @@ class TargetValidationResponse(BaseModel):
     valid: bool
     target_type: TargetType | None
     error: str | None
+    target_value: str
 
 
 class TargetOrganization(SQLModel, table=True):
