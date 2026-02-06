@@ -55,6 +55,51 @@ export interface TargetValidationResponse {
 	valid: boolean;
 	target_type: TargetType | null;
 	error: string | null;
+	target_value: string;
+}
+
+export interface TargetBulkCreateRequest {
+	project_slug: string;
+	targets: string[];
+	organization_names?: string[];
+	tag_names?: string[];
+}
+
+export interface TargetImportItem {
+	target_value: string;
+	tags?: string[];
+	organizations?: string[];
+	display_name?: string | null;
+}
+
+export interface TargetImportRequest {
+	project_slug: string;
+	targets: TargetImportItem[];
+}
+
+export interface TargetImportResult {
+	target_value: string;
+	success: boolean;
+	target_type: TargetType | null;
+	target_id: string | null;
+	error: string | null;
+}
+
+export interface TargetBulkCreateResponse {
+	total: number;
+	imported: number;
+	failed: number;
+	skipped_duplicates: number;
+	results: TargetImportResult[];
+}
+
+export interface TargetPreviewItem {
+	target_value: string;
+	target_type?: TargetType | null;
+	tags?: string[];
+	organizations?: string[];
+	display_name?: string | null;
+	error?: string;
 }
 
 export function getTargetTypeColor(type: TargetType): string {

@@ -5,7 +5,10 @@ import type {
 	TargetUpdate,
 	TargetValidationRequest,
 	TargetValidationResponse,
-	TargetType
+	TargetType,
+	TargetBulkCreateRequest,
+	TargetBulkCreateResponse,
+	TargetImportRequest
 } from '$lib/types/target';
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 
@@ -65,5 +68,34 @@ export const targetsApi = {
 
 	async validate(data: TargetValidationRequest): Promise<TargetValidationResponse> {
 		return api.post<TargetValidationResponse>('/targets/validate', data);
+	},
+
+	async bulkCreate(data: TargetBulkCreateRequest): Promise<TargetBulkCreateResponse> {
+		return api.post<TargetBulkCreateResponse>('/targets/bulk', data);
+	},
+
+	async importJson(data: TargetImportRequest): Promise<TargetBulkCreateResponse> {
+		return api.post<TargetBulkCreateResponse>('/targets/import/json', data);
+	},
+
+	async importCsv(projectSlug: string, file: File): Promise<TargetBulkCreateResponse> {
+		const formData = new FormData();
+		formData.append('file', file);
+
+		const response = await fetch(
+			`/api/v1/targets/import/csv?project_slug=${projectSlug}`,
+			{
+				method: 'POST',
+				body: formData,
+				credentials: 'include'
+			}
+		);
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(errorData.detail || `API Error: ${response.status}`);
+		}
+
+		return response.json();
 	}
 };

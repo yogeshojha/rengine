@@ -6,7 +6,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import { Button } from '$lib/components/ui/button';
-	import { Play, Plus, RefreshCw } from 'lucide-svelte';
+	import { Upload, Play, Plus, RefreshCw } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	import TargetTypeTabs from '$lib/components/targets/target-type-tabs.svelte';
@@ -21,6 +21,7 @@
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 	import ScanHistoryModal from '$lib/components/targets/scan-history-modal.svelte';
 	import BulkActionBar from '$lib/components/targets/bulk-action-bar.svelte';
+	import ImportTargetsModal from '$lib/components/modals/import-targets-modal.svelte';
 
 	let showAddModal = $state(false);
 	let showDetailDialog = $state(false);
@@ -29,6 +30,7 @@
 	let targetToDelete = $state<Target | null>(null);
 	let isDeleting = $state(false);
 	let isRefreshing = $state(false);
+	let showImportModal = $state(false);
 
 	let activeScanCounts = $state<Record<string, number>>({});
 
@@ -110,9 +112,7 @@
 		const targets = targetsStore.filteredTargets;
 		if (targets.length === 0) return;
 		targets.forEach(fireScan);
-		toast.success(
-			`Scans initiated for ${targets.length} target${targets.length !== 1 ? 's' : ''}`
-		);
+		toast.success(`Scans initiated for ${targets.length} target${targets.length !== 1 ? 's' : ''}`);
 	}
 
 	function handleTargetSelect(targetId: string) {
@@ -135,9 +135,7 @@
 	function handleBulkScan() {
 		const targets = targetsStore.filteredTargets.filter((t) => selectedTargetIds.has(t.id));
 		targets.forEach(fireScan);
-		toast.success(
-			`Scans initiated for ${targets.length} target${targets.length !== 1 ? 's' : ''}`
-		);
+		toast.success(`Scans initiated for ${targets.length} target${targets.length !== 1 ? 's' : ''}`);
 	}
 
 	function handleBulkDelete() {
@@ -260,6 +258,11 @@
 				</Button>
 			{/if}
 
+			<Button variant="outline" onclick={() => (showImportModal = true)} class="gap-2">
+				<Upload class="h-4 w-4" />
+				Import
+			</Button>
+
 			<Button onclick={() => (showAddModal = true)} class="gap-2">
 				<Plus class="h-4 w-4" />
 				Add Target
@@ -318,8 +321,7 @@
 			<div class="px-4 py-3 border-t bg-muted/20 flex items-center justify-between">
 				<div class="flex items-center gap-4">
 					<div class="text-xs text-muted-foreground">
-						Showing {targetsStore.filteredTargets.length} of {targetsStore.pagination
-							.totalItems} targets
+						Showing {targetsStore.filteredTargets.length} of {targetsStore.pagination.totalItems} targets
 					</div>
 					<PageSizeSelector
 						pageSize={targetsStore.pagination.pageSize}
@@ -365,6 +367,7 @@
 </div>
 
 <AddTargetModal bind:open={showAddModal} />
+<ImportTargetsModal bind:open={showImportModal} />
 
 <TargetDetailDialog
 	bind:open={showDetailDialog}
