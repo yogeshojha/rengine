@@ -34,11 +34,17 @@ services:
     build:
       context: .
       dockerfile: api/Dockerfile
-      target: development # will use prod in docker-compose.prod.yml
+      target: development
     volumes:
       - ./api/app:/app/app
       - ./shared:/app/shared
       - ./tools:/app/tools
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - /app/shared/build
+      - /app/shared/rengine_shared.egg-info
+      - /app/tools/build
+      - /app/tools/rengine_tools.egg-info
     ports:
       - "8000:8000"
     env_file:
@@ -61,6 +67,10 @@ services:
       - ./worker/app:/app/app
       - ./shared:/app/shared
       - ./tools:/app/tools
+      - /app/shared/build
+      - /app/shared/rengine_shared.egg-info
+      - /app/tools/build
+      - /app/tools/rengine_tools.egg-info
     env_file:
       - .env
     command: >
@@ -91,6 +101,10 @@ services:
       - ./worker/app:/app/app
       - ./shared:/app/shared
       - ./tools:/app/tools
+      - /app/shared/build
+      - /app/shared/rengine_shared.egg-info
+      - /app/tools/build
+      - /app/tools/rengine_tools.egg-info
     ports:
       - "5555:5555"
     env_file:

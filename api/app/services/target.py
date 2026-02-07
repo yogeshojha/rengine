@@ -23,6 +23,7 @@ from shared.models import (
     TargetType,
     TargetUpdate,
 )
+from shared.models.whois import WhoisRecordSummary
 from shared.services import get_or_create_organization, get_or_create_tag
 from shared.services.celery_dispatch import dispatch_whois_lookups
 from shared.utils.datetime import utc_now
@@ -413,24 +414,34 @@ class TargetService:
         )
 
     def _to_target_read(self, target: Target) -> TargetRead:
+        whois = None
+        if target.whois_record:
+            whois = WhoisRecordSummary(
+                id=target.whois_record.id,
+                query_value=target.whois_record.query_value,
+                lookup_type=target.whois_record.lookup_type,
+                name=target.whois_record.name,
+                registrant_name=target.whois_record.registrant_name,
+                registrar_name=target.whois_record.registrar_name,
+                country=target.whois_record.country,
+                network_cidr=target.whois_record.network_cidr,
+                registration_date=target.whois_record.registration_date,
+                expiration_date=target.whois_record.expiration_date,
+                queried_at=target.whois_record.queried_at,
+            )
+
         return TargetRead(
-            **target.model_dump(exclude={"organizations", "tags", "whois_record_id"}),
+            **target.model_dump(
+                exclude={"organizations", "tags", "whois_record_id", "whois_record"}
+            ),
             whois_record_id=target.whois_record_id,
+            whois=whois,
             organizations=[
-                OrganizationSummary(
-                    id=org.id,
-                    name=org.name,
-                    slug=org.slug,
-                )
+                OrganizationSummary(id=org.id, name=org.name, slug=org.slug)
                 for org in target.organizations
             ],
             tags=[
-                TagSummary(
-                    id=tag.id,
-                    name=tag.name,
-                    slug=tag.slug,
-                    color=tag.color,
-                )
+                TagSummary(id=tag.id, name=tag.name, slug=tag.slug, color=tag.color)
                 for tag in target.tags
             ],
         )

@@ -16,5 +16,5 @@ docker-compose.override.yml
 *.temp
 .cache/
 *.egg
-*.egg-info/
-tools/build/
+**/build/
+**/*.egg-info/

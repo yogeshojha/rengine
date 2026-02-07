@@ -9,6 +9,7 @@ from shared.enums.target import TargetType
 from shared.enums.whois import WhoisStatus
 from shared.models.organization import Organization, OrganizationSummary
 from shared.models.tag import TagSummary, TargetTag
+from shared.models.whois import WhoisRecord, WhoisRecordSummary
 from shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
@@ -51,6 +52,9 @@ class Target(TargetBase, table=True):
 
     whois_status: WhoisStatus = Field(default=WhoisStatus.PENDING, index=True)
     whois_error: str | None = Field(default=None, max_length=1000)
+    whois_record: WhoisRecord | None = Relationship(
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
     whois_record_id: uuid.UUID | None = Field(
         default=None, foreign_key="whois_records.id", index=True
     )
@@ -119,6 +123,7 @@ class TargetRead(TargetBase):
     whois_status: WhoisStatus
     whois_error: str | None
     whois_record_id: uuid.UUID | None
+    whois: WhoisRecordSummary | None = None
     organizations: list[OrganizationSummary] = Field(default_factory=list)
     tags: list[TagSummary] = Field(default_factory=list)
 

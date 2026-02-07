@@ -136,10 +136,11 @@ async def search_targets_by_value(
         project_slug=project_slug,
     )
 
-    result = await paginate(session, query)
-    result.items = [service._to_target_read(target) for target in result.items]
-
-    return result
+    return await paginate(
+        session,
+        query,
+        transformer=lambda items: [service._to_target_read(t) for t in items],
+    )
 
 
 @router.get("", response_model=Page[TargetRead])
@@ -163,11 +164,11 @@ async def list_targets(
         target_type=target_type,
     )
 
-    result = await paginate(session, query)
-
-    result.items = [service._to_target_read(target) for target in result.items]
-
-    return result
+    return await paginate(
+        session,
+        query,
+        transformer=lambda items: [service._to_target_read(t) for t in items],
+    )
 
 
 @router.post("", response_model=TargetRead, status_code=status.HTTP_201_CREATED)
