@@ -38,12 +38,13 @@ services:
     volumes:
       - ./api/app:/app/app
       - ./shared:/app/shared
+      - ./tools:/app/tools
     ports:
       - "8000:8000"
     env_file:
       - .env
-    # environment:
-    #   - WATCHFILES_FORCE_POLLING=true
+    environment:
+      - WATCHFILES_FORCE_POLLING=true
     depends_on:
       db:
         condition: service_healthy

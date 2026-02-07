@@ -15,10 +15,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.enums.target import TargetType
+from shared.enums.whois import WhoisLookupType
 from shared.logging import get_logger
 from shared.models.whois import WhoisRecord
 from shared.utils.validation import validate_target
-from tools.whois.enums import WhoisLookupType
 from tools.whois.models import (
     WhoisASNResponse,
     WhoisDomainResponse,
@@ -127,7 +127,6 @@ class WhoisService:
 
     def lookup_domain(self, domain: str) -> WhoisResponse:
         domain = self._normalize_domain(domain)
-        self._validate_domain(domain)
         try:
             raw = self._provider.lookup_domain(domain)
             return parse_domain_response(raw, domain)
@@ -136,7 +135,6 @@ class WhoisService:
 
     def lookup_ip(self, ip: str) -> WhoisResponse:
         ip = ip.strip()
-        self._validate_ip(ip)
         try:
             raw = self._provider.lookup_ip(ip)
             return parse_ip_response(raw, ip)
@@ -144,7 +142,6 @@ class WhoisService:
             raise WhoisLookupError(str(e)) from e
 
     def lookup_asn(self, asn: int, original_query: str = "") -> WhoisResponse:
-        self._validate_asn(asn)
         query_str = original_query or str(asn)
         try:
             raw = self._provider.lookup_asn(asn)
