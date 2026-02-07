@@ -1,3 +1,8 @@
+from shared.models.notification import (
+    Notification,
+    NotificationCreate,
+    NotificationRead,
+)
 from shared.models.organization import (
     Organization,
     OrganizationCreate,
@@ -26,6 +31,9 @@ from shared.models.user import User, UserBase, UserCreate, UserRead
 TargetRead.model_rebuild()
 
 __all__ = [
+    "Notification",
+    "NotificationCreate",
+    "NotificationRead",
     "Organization",
     "OrganizationCreate",
     "OrganizationRead",
