@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, field_validator
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
-from app.utils.validation import validate_hex_color
 from shared.utils.datetime import utc_now
+from shared.utils.validation import validate_hex_color
 
 if TYPE_CHECKING:
     from shared.models.target import Target

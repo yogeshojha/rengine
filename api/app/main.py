@@ -9,7 +9,10 @@ from app.api.router import router as api_router
 from app.config import settings
 from app.core.database import init_db
 from app.core.logging import logger
+from app.core.redis_listener import RedisNotificationListener
 from app.utils.helpers import create_initial_admin
+
+redis_listener = RedisNotificationListener(settings.redis_url)
 
 
 @asynccontextmanager
@@ -19,12 +22,13 @@ async def lifespan(_app: FastAPI):
     try:
         await init_db()
         await create_initial_admin()
+        await redis_listener.start()
     except Exception as e:
         logger.exception("Failed to initialize the application: %s", e)
         raise e
     yield
     logger.info("Shutting down reNgine Backend...")
-    # app shuts down, cleanup later if reuqired
+    await redis_listener.stop()
 
 
 app = FastAPI(

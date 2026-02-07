@@ -13,9 +13,6 @@ MIN_PASSWORD_LENGTH = 10
 MIN_USERNAME_LENGTH = 4
 MAX_USERNAME_LENGTH = 50
 
-# Hex color pattern
-HEX_COLOR_LENGTH = 7  # e.g., #RRGGBB
-
 
 def validate_password_strength(
     password: str,
@@ -97,21 +94,3 @@ def validate_username(username: str) -> str:
         raise ValueError(return_error)
 
     return username
-
-
-def validate_hex_color(color: str) -> str:
-    """
-    Validate hex color format (#RRGGBB).
-    """
-    color = color.strip()
-    if not color.startswith("#"):
-        msg = "Color must start with #"
-        raise ValueError(msg)
-    if len(color) != HEX_COLOR_LENGTH:
-        msg = f"Color must be in format #RRGGBB ({HEX_COLOR_LENGTH} characters)"
-        raise ValueError(msg)
-    hex_pattern = r"^#[0-9A-Fa-f]{6}$"
-    if not re.match(hex_pattern, color):
-        msg = "Color must contain valid hexadecimal characters (0-9, A-F)"
-        raise ValueError(msg)
-    return color.upper()

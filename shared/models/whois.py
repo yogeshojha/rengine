@@ -24,12 +24,7 @@ class WhoisRecord(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
 
-    # nullabale because for toolbox we will not have target_id but will be added later when target is added
-    target_id: uuid.UUID | None = Field(
-        default=None, foreign_key="targets.id", index=True, unique=True
-    )
-
-    query_value: str = Field(max_length=500, index=True)
+    query_value: str = Field(max_length=500, index=True, unique=True)
     lookup_type: WhoisLookupType
     queried_at: datetime = Field(
         default_factory=utc_now,
@@ -39,7 +34,7 @@ class WhoisRecord(SQLModel, table=True):
     handle: str = Field(default="", max_length=200)
     name: str = Field(default="", max_length=500, index=True)
     whois_server: str = Field(default="", max_length=200)
-    rdap_type: str = Field(default="", max_length=100)
+    object_class: str = Field(default="", max_length=100)
     rir: str = Field(default="", max_length=50)
     description: str = Field(default="", sa_column=Column(Text))
 
@@ -75,7 +70,6 @@ class WhoisRecordRead(BaseModel):
     model_config = {"from_attributes": True}
 
     id: uuid.UUID
-    target_id: uuid.UUID | None
     query_value: str
     lookup_type: str
     queried_at: datetime
@@ -83,7 +77,7 @@ class WhoisRecordRead(BaseModel):
     handle: str
     name: str
     whois_server: str
-    object_class: str = Field(default="", max_length=100)
+    object_class: str = Field(default="")
     rir: str
     description: str
 
@@ -116,7 +110,6 @@ class WhoisRecordRead(BaseModel):
 
 class WhoisRecordSummary(BaseModel):
     id: uuid.UUID
-    target_id: uuid.UUID | None
     query_value: str
     lookup_type: str
     name: str

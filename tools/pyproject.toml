@@ -5,3 +5,10 @@ requires-python = ">=3.13"
 dependencies = [
     "whoisit>=4.0.3",
 ]
+
+[build-system]
+requires = ["setuptools>=81.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]

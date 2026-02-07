@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.services.target import TargetService
 from shared.definitions.constants import MAX_TARGET_IMPORT
 from shared.models import (
     TargetBulkCreate,
@@ -19,7 +20,6 @@ from shared.models import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
-from shared.services.target import TargetService
 
 router = APIRouter(
     prefix="/targets",

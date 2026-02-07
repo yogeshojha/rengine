@@ -6,11 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
-from app.utils.slug import generate_slug
 from shared.models.organization import Organization
 from shared.models.project import Project, ProjectCreate, ProjectRead, ProjectSummary
 from shared.models.tag import Tag
 from shared.models.target import Target
+from shared.utils.slug import generate_slug
 
 router = APIRouter(
     prefix="/projects",

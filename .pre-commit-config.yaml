@@ -6,7 +6,7 @@ repos:
       - id: ruff
         name: ruff-fix
         args: [--fix, --exit-zero]
-        files: ^(api|worker|shared)/
+        files: ^(api|worker|shared|tools)/
       - id: ruff-format
         files: ^(api|worker|shared|tools)/
       - id: ruff

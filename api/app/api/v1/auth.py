@@ -15,6 +15,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.utils.validation import validate_password_strength, validate_username
 from shared.models.user import User, UserCreate, UserRead
 from shared.schemas.auth import (
     LoginRequest,
@@ -172,10 +173,6 @@ async def logout(response: Response):
     return {"message": "Successfully logged out"}
 
 
-# lets add protected routers here
-
-
-# get logged in user info
 @router.get("/me", response_model=UserRead)
 async def get_current_user_info(current_user: CurrentUser):
     return current_user
@@ -187,9 +184,12 @@ async def register_user(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: CurrentSuperuser,  # noqa: ARG001
 ):
-    """
-    Register a new user. **Admin only**.
-    """
+    """Register a new user. **Admin only**."""
+    validate_username(user_in.username)
+    validate_password_strength(
+        user_in.password, user_inputs=[user_in.email, user_in.username]
+    )
+
     result = await session.execute(select(User).where(User.email == user_in.email))
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -230,6 +230,8 @@ async def change_password(
     note: regular users can only change their own password and must provide current_password.
     Superusers can change any user's password without current_password.
     """
+    validate_password_strength(password_data.new_password)
+
     target_user_id = password_data.user_id or current_user.id
 
     result = await session.execute(select(User).where(User.id == target_user_id))
@@ -286,6 +288,8 @@ async def change_username(
     Regular users can only change their own username.
     Superusers can change any user's username.
     """
+    validate_username(username_data.new_username)
+
     target_user_id = username_data.user_id or current_user.id
 
     result = await session.execute(select(User).where(User.id == target_user_id))

@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from shared.enums.target import TargetType
+from shared.enums.whois import WhoisStatus
 from shared.models.organization import Organization, OrganizationSummary
 from shared.models.tag import TagSummary, TargetTag
 from shared.utils.datetime import utc_now
@@ -47,6 +48,12 @@ class Target(TargetBase, table=True):
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     created_by: uuid.UUID = Field(foreign_key="users.id")
+
+    whois_status: WhoisStatus = Field(default=WhoisStatus.PENDING, index=True)
+    whois_error: str | None = Field(default=None, max_length=1000)
+    whois_record_id: uuid.UUID | None = Field(
+        default=None, foreign_key="whois_records.id", index=True
+    )
 
     organizations: list["Organization"] = Relationship(
         link_model=TargetOrganization,
@@ -109,6 +116,9 @@ class TargetRead(TargetBase):
     created_at: datetime
     updated_at: datetime
     created_by: uuid.UUID
+    whois_status: WhoisStatus
+    whois_error: str | None
+    whois_record_id: uuid.UUID | None
     organizations: list[OrganizationSummary] = Field(default_factory=list)
     tags: list[TagSummary] = Field(default_factory=list)
 

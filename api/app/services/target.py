@@ -24,6 +24,7 @@ from shared.models import (
     TargetUpdate,
 )
 from shared.services import get_or_create_organization, get_or_create_tag
+from shared.services.celery_dispatch import dispatch_whois_lookups
 from shared.utils.datetime import utc_now
 from shared.utils.validation import validate_target
 
@@ -165,7 +166,7 @@ class TargetService:
         await self.session.commit()
         await self.session.refresh(target)
 
-        await self._post_create_actions(target)
+        self._dispatch_whois_task([target])
 
         return self._to_target_read(target)
 
@@ -220,8 +221,7 @@ class TargetService:
 
         await self.session.commit()
 
-        for target in created_targets:
-            await self._post_create_actions(target)
+        self._dispatch_whois_task(created_targets)
 
         return TargetBulkCreateResponse(
             total=len(bulk_in.targets),
@@ -414,7 +414,8 @@ class TargetService:
 
     def _to_target_read(self, target: Target) -> TargetRead:
         return TargetRead(
-            **target.model_dump(exclude={"organizations", "tags"}),
+            **target.model_dump(exclude={"organizations", "tags", "whois_record_id"}),
+            whois_record_id=target.whois_record_id,
             organizations=[
                 OrganizationSummary(
                     id=org.id,
@@ -537,8 +538,7 @@ class TargetService:
 
         await self.session.commit()
 
-        for target in created_targets:
-            await self._post_create_actions(target)
+        self._dispatch_whois_task(created_targets)
 
         return TargetBulkCreateResponse(
             total=len(import_request.targets),
@@ -720,5 +720,7 @@ class TargetService:
 
         return targets_data
 
-    async def _post_create_actions(self, target: Target) -> None:
-        pass
+    def _dispatch_whois_task(self, targets: list[Target]) -> None:
+        if not targets:
+            return
+        dispatch_whois_lookups([str(t.id) for t in targets])

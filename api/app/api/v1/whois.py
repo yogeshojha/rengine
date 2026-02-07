@@ -11,13 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from shared.enums.whois import WhoisLookupType
+from shared.models.target import Target
 from shared.models.whois import (
     WhoisCorrelationResult,
     WhoisRecord,
     WhoisRecordRead,
     WhoisRecordSummary,
 )
-from shared.services.target import TargetService
 from tools.whois.service import (
     WhoisError,
     WhoisLookupError,
@@ -81,7 +81,7 @@ class WhoisStatsResponse(BaseModel):
     response_model=WhoisLookupResponse,
     status_code=status.HTTP_200_OK,
     summary="WHOIS Lookup",
-    description="Perform a WHOIS/RDAP lookup. Results are cached in DB by default. If targets exist with this value, WHOIS data is linked to all of them.",
+    description="Perform a WHOIS/RDAP lookup. Results are cached in DB by default.",
 )
 async def whois_lookup(
     request: WhoisLookupRequest,
@@ -103,24 +103,9 @@ async def whois_lookup(
 
         response = await service.lookup(
             query=request.query,
-            target_id=None,
             store_in_db=request.store_in_db,
             session=session if request.store_in_db else None,
         )
-
-        # If store_in_db, link to all matching targets
-        if request.store_in_db:
-            target_service = TargetService(session)
-            targets = await target_service.get_targets_by_value(response.query)
-            if targets:
-                whois_record = await session.execute(
-                    select(WhoisRecord).where(WhoisRecord.query_value == response.query)
-                )
-                record = whois_record.scalar_one_or_none()
-
-                if record and targets and not record.target_id:
-                    record.target_id = targets[0].id
-                    await session.commit()
 
         record_read = None
         if request.store_in_db:
@@ -179,10 +164,6 @@ async def list_whois_records(
         str | None,
         Query(description="Filter by country code (e.g. US, DE)"),
     ] = None,
-    has_target: Annotated[
-        bool | None,
-        Query(description="Filter by whether record is linked to a target"),
-    ] = None,
 ):
     query = select(WhoisRecord)
 
@@ -194,10 +175,6 @@ async def list_whois_records(
         query = query.where(WhoisRecord.registrar_name == registrar_name)
     if country:
         query = query.where(WhoisRecord.country == country.upper())
-    if has_target is True:
-        query = query.where(WhoisRecord.target_id.isnot(None))
-    elif has_target is False:
-        query = query.where(WhoisRecord.target_id.is_(None))
 
     query = query.order_by(WhoisRecord.queried_at.desc())
 
@@ -311,13 +288,11 @@ async def refresh_whois_record(
         service.cache_ttl_days = 0
         await service.lookup(
             query=record.query_value,
-            target_id=record.target_id,
             store_in_db=True,
             session=session,
         )
         service.cache_ttl_days = original_ttl
 
-        # reload updated record
         await session.refresh(record)
 
         return WhoisRefreshResponse(
@@ -343,8 +318,14 @@ async def get_whois_record_by_target(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
+    target_result = await session.execute(select(Target).where(Target.id == target_id))
+    target = target_result.scalar_one_or_none()
+
+    if not target or not target.whois_record_id:
+        return None
+
     result = await session.execute(
-        select(WhoisRecord).where(WhoisRecord.target_id == target_id)
+        select(WhoisRecord).where(WhoisRecord.id == target.whois_record_id)
     )
     record = result.scalar_one_or_none()
 
@@ -404,10 +385,25 @@ async def get_target_correlations(
             detail="Invalid target_id format",
         ) from e
 
-    correlations = await service.get_correlations_for_target(session, tid)
+    # get target to find its whois_record_id
+    target_result = await session.execute(select(Target).where(Target.id == tid))
+    target = target_result.scalar_one_or_none()
+
+    if not target or not target.whois_record_id:
+        return []
+
+    correlations = await service.get_correlations_for_target(
+        session, target.whois_record_id
+    )
 
     if not correlations:
         return []
+
+    # get the target's own whois record for correlation values
+    target_record_result = await session.execute(
+        select(WhoisRecord).where(WhoisRecord.id == target.whois_record_id)
+    )
+    target_record = target_record_result.scalar_one_or_none()
 
     results = []
     value_field_map = {
@@ -418,11 +414,6 @@ async def get_target_correlations(
         "nameserver": None,
     }
 
-    target_record_result = await session.execute(
-        select(WhoisRecord).where(WhoisRecord.target_id == tid)
-    )
-    target_record = target_record_result.scalar_one_or_none()
-
     for corr_type, records in correlations.items():
         if corr_type == "nameserver" and target_record and target_record.nameservers:
             corr_value = ", ".join(target_record.nameservers)
@@ -432,23 +423,7 @@ async def get_target_correlations(
         else:
             corr_value = corr_type
 
-        summaries = [
-            WhoisRecordSummary(
-                id=r.id,
-                target_id=r.target_id,
-                query_value=r.query_value,
-                lookup_type=r.lookup_type,
-                name=r.name,
-                registrant_name=r.registrant_name,
-                registrar_name=r.registrar_name,
-                country=r.country,
-                network_cidr=r.network_cidr,
-                registration_date=r.registration_date,
-                expiration_date=r.expiration_date,
-                queried_at=r.queried_at,
-            )
-            for r in records
-        ]
+        summaries = [_to_summary(r) for r in records]
 
         results.append(
             WhoisCorrelationResult(
@@ -620,7 +595,6 @@ async def correlate_by_nameserver(
 def _to_summary(record: WhoisRecord) -> WhoisRecordSummary:
     return WhoisRecordSummary(
         id=record.id,
-        target_id=record.target_id,
         query_value=record.query_value,
         lookup_type=record.lookup_type,
         name=record.name,

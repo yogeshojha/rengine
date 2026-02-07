@@ -9,5 +9,7 @@ dependencies = [
     "psycopg2-binary>=2.9.11",
     "pydantic-settings>=2.12.0",
     "redis>=6.4.0",
+    "sqlmodel>=0.0.32",
+    "rengine-shared @ file:///app/shared",
     "rengine-tools @ file:///app/tools",
 ]
