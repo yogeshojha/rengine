@@ -116,6 +116,32 @@ async def get_target_counts(
     return await service.get_target_counts(project_slug)
 
 
+@router.get("/search", response_model=Page[TargetRead])
+async def search_targets_by_value(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[TargetService, Depends(get_target_service)],
+    target_value: Annotated[str, Query(description="Target value to search for")],
+    project_slug: Annotated[
+        str | None, Query(description="Optional: Filter by specific project")
+    ] = None,
+):
+    """
+    Search for targets by their target_value across all projects.
+    Returns all instances of a target (which may exist in multiple projects).
+    Optionally uses filter by project_slug to narrow results.
+    """
+    query = await service.search_targets_by_value(
+        target_value=target_value,
+        project_slug=project_slug,
+    )
+
+    result = await paginate(session, query)
+    result.items = [service._to_target_read(target) for target in result.items]
+
+    return result
+
+
 @router.get("", response_model=Page[TargetRead])
 async def list_targets(
     _current_user: CurrentUser,

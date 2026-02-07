@@ -60,6 +60,7 @@ services:
     volumes:
       - ./worker/app:/app/app
       - ./shared:/app/shared
+      - ./tools:/app/tools
     env_file:
       - .env
     command: >
@@ -89,6 +90,7 @@ services:
     volumes:
       - ./worker/app:/app/app
       - ./shared:/app/shared
+      - ./tools:/app/tools
     ports:
       - "5555:5555"
     env_file:

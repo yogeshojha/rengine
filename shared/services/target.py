@@ -71,6 +71,26 @@ class TargetService:
 
         return counts
 
+    async def search_targets_by_value(
+        self,
+        target_value: str,
+        project_slug: str | None = None,
+    ) -> select:
+        """
+        Search for targets by their target_value.
+        Returns query that can be paginated.
+        """
+        query = select(Target).where(Target.target_value == target_value)
+
+        if project_slug:
+            project = await self._get_project_by_slug(project_slug)
+            if project:
+                query = query.where(Target.project_id == project.id)
+            else:
+                query = query.where(Target.id is None)
+
+        return query
+
     async def list_targets(
         self,
         project_slug: str | None = None,
