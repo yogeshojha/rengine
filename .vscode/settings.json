@@ -14,9 +14,10 @@
     "**/venv": true,
     "**/.venv": true,
     "**/.python-version": true,
-    "**/uv.lock": true
+    "**/uv.lock": true,
+    "**/*.egg-info": true,
+    "**/dist": true
   },
-
   "search.exclude": {
     "**/__pycache__": true,
     "**/.venv": true,
@@ -34,7 +35,8 @@
     "**/.git": true,
     "**/.DS_Store": true,
     "**/*.log": true,
-     "**/.python-version": true,
-     "**/uv.lock": true
+    "**/.python-version": true,
+    "**/uv.lock": true,
+    "**/*.egg-info": true
   }
 }
