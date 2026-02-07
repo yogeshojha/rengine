@@ -8,6 +8,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import CopyButton from '@/components/copy-button.svelte';
+	import WhoisInline from '$lib/components/targets/whois-inline.svelte';
 	import { Building2, Ellipsis, Eye, History, Pencil, Play, Trash2 } from 'lucide-svelte';
 
 	interface Props {
@@ -52,7 +53,8 @@
 		class="transition-opacity {isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
 	/>
 
-	<div class="w-[240px] min-w-0 space-y-0.5">
+	<!-- Target identity + WHOIS inline -->
+	<div class="w-[260px] min-w-0 space-y-0.5">
 		<div class="flex items-center gap-2">
 			<span class="font-mono text-sm font-medium truncate">{target.target_value}</span>
 			<CopyButton
@@ -60,9 +62,14 @@
 				class="opacity-0 group-hover:opacity-100 transition-opacity"
 			/>
 		</div>
-		{#if target.display_name}
+		{#if target.display_name && target.display_name !== target.target_value}
 			<p class="text-xs text-muted-foreground truncate">{target.display_name}</p>
 		{/if}
+		<WhoisInline
+			status={target.whois_status}
+			whois={target.whois}
+			error={target.whois_error}
+		/>
 	</div>
 
 	<div class="w-[120px]">

@@ -6,6 +6,28 @@ export enum TargetType {
 	URL = 'url'
 }
 
+export enum WhoisStatus {
+	PENDING = 'pending',
+	QUERYING = 'querying',
+	SUCCESS = 'success',
+	FAILED = 'failed',
+	NOT_APPLICABLE = 'not_applicable'
+}
+
+export interface WhoisSummaryData {
+	id: string;
+	query_value: string;
+	lookup_type: 'DOMAIN' | 'IP' | 'ASN';
+	name: string;
+	registrant_name: string;
+	registrar_name: string;
+	country: string;
+	network_cidr: string;
+	registration_date: string | null;
+	expiration_date: string | null;
+	queried_at: string;
+}
+
 export interface OrganizationSummary {
 	id: string;
 	name: string;
@@ -31,6 +53,10 @@ export interface Target extends TargetBase {
 	created_at: string;
 	updated_at: string;
 	created_by: string;
+	whois_status: WhoisStatus;
+	whois_error: string | null;
+	whois_record_id: string | null;
+	whois: WhoisSummaryData | null;
 	organizations: OrganizationSummary[];
 	tags: TagSummary[];
 }

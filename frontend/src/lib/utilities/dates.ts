@@ -1,12 +1,11 @@
 export const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+	const date = new Date(dateString);
+	return date.toLocaleDateString('en-US', {
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric'
+	});
 };
-
 
 export function formatDistanceToNow(date: string | Date): string {
 	const now = new Date();
@@ -49,4 +48,80 @@ export function formatDateTime(date: string | Date): string {
 		hour: '2-digit',
 		minute: '2-digit'
 	});
+}
+
+export function formatShortDate(date: string | Date): string {
+	return new Date(date).toLocaleDateString('en-US', {
+		year: 'numeric',
+		month: 'short',
+		day: 'numeric'
+	});
+}
+
+export function formatMonthYear(date: string | Date): string {
+	return new Date(date).toLocaleDateString('en-US', {
+		year: 'numeric',
+		month: 'short'
+	});
+}
+
+export type ExpirationUrgency = 'expired' | 'critical' | 'warning' | 'healthy' | 'none';
+
+export function getExpirationUrgency(expirationDate: string | null): ExpirationUrgency {
+	if (!expirationDate) return 'none';
+
+	const now = new Date();
+	const expiry = new Date(expirationDate);
+	const diffMs = expiry.getTime() - now.getTime();
+	const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+	if (diffDays < 0) return 'expired';
+	if (diffDays <= 30) return 'critical';
+	if (diffDays <= 180) return 'warning';
+	return 'healthy';
+}
+
+export function formatExpirationLabel(expirationDate: string | null): string {
+	if (!expirationDate) return '';
+
+	const now = new Date();
+	const expiry = new Date(expirationDate);
+	const diffMs = expiry.getTime() - now.getTime();
+	const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+	if (diffDays < 0) {
+		const absDays = Math.abs(diffDays);
+		if (absDays < 30) return `Expired ${absDays}d ago`;
+		const months = Math.floor(absDays / 30);
+		return `Expired ${months}mo ago`;
+	}
+	if (diffDays === 0) return 'Expires today';
+	if (diffDays <= 30) return `Expires in ${diffDays}d`;
+	if (diffDays <= 365) {
+		const months = Math.floor(diffDays / 30);
+		return `Expires in ${months}mo`;
+	}
+	const years = Math.floor(diffDays / 365);
+	const remainingMonths = Math.floor((diffDays % 365) / 30);
+	if (remainingMonths > 0) return `Expires in ${years}y ${remainingMonths}mo`;
+	return `Expires in ${years}y`;
+}
+
+export function getDomainAge(registrationDate: string | null): string {
+	if (!registrationDate) return '';
+
+	const now = new Date();
+	const reg = new Date(registrationDate);
+	const diffMs = now.getTime() - reg.getTime();
+	const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+	if (diffDays < 30) return `${diffDays} days old`;
+	if (diffDays < 365) {
+		const months = Math.floor(diffDays / 30);
+		return `${months} ${months === 1 ? 'month' : 'months'} old`;
+	}
+	const years = Math.floor(diffDays / 365);
+	const remainingMonths = Math.floor((diffDays % 365) / 30);
+	if (remainingMonths > 0) return `${years}y ${remainingMonths}mo old`;
+	return `${years} ${years === 1 ? 'year' : 'years'} old`;
 }
