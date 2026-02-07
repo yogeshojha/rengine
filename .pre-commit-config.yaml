@@ -8,11 +8,11 @@ repos:
         args: [--fix, --exit-zero]
         files: ^(api|worker|shared)/
       - id: ruff-format
-        files: ^(api|worker|shared)/
+        files: ^(api|worker|shared|tools)/
       - id: ruff
         name: ruff-check
         args: [--exit-non-zero-on-fix]
-        files: ^(api|worker|shared)/
+        files: ^(api|worker|shared|tools)/
 
   # Frontend Svelte - Prettier
   - repo: local
