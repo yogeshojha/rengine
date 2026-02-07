@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.utils.slug import generate_slug
 from shared.models.project import Project
 from shared.models.tag import (
     PREDEFINED_TAGS,
@@ -14,7 +15,6 @@ from shared.models.tag import (
     TagRead,
     TagUpdate,
 )
-from app.utils.slug import generate_slug
 
 router = APIRouter(
     prefix="/tags",

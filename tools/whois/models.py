@@ -40,7 +40,11 @@ class WhoisEntities(BaseModel):
     def get_registrant_name(self) -> str:
         for entity in self.registrant:
             name = entity.name.strip()
-            if name and name.upper() not in ("REDACTED", "DATA REDACTED", "REDACTED FOR PRIVACY"):
+            if name and name.upper() not in (
+                "REDACTED",
+                "DATA REDACTED",
+                "REDACTED FOR PRIVACY",
+            ):
                 return name
         return ""
 
@@ -108,8 +112,8 @@ class WhoisBaseResponse(BaseModel):
             "parsed_data": self.model_dump(mode="json"),
         }
 
-class WhoisDomainResponse(WhoisBaseResponse):
 
+class WhoisDomainResponse(WhoisBaseResponse):
     lookup_type: WhoisLookupType = WhoisLookupType.DOMAIN
 
     unicode_name: str = ""
@@ -162,8 +166,8 @@ class WhoisIPResponse(WhoisBaseResponse):
         )
         return fields
 
-class WhoisASNResponse(WhoisBaseResponse):
 
+class WhoisASNResponse(WhoisBaseResponse):
     lookup_type: WhoisLookupType = WhoisLookupType.ASN
 
     asn_range_start: int | None = None
@@ -185,5 +189,6 @@ class WhoisASNResponse(WhoisBaseResponse):
             }
         )
         return fields
+
 
 WhoisResponse = WhoisDomainResponse | WhoisIPResponse | WhoisASNResponse

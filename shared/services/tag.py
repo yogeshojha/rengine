@@ -3,8 +3,8 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.models import Tag
 from app.utils.slug import generate_slug
+from shared.models import Tag
 
 
 async def get_or_create_tag(

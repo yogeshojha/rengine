@@ -13,6 +13,7 @@ from shared.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class RDAPProviderError(Exception):
     """Raised when the RDAP provider encounters an error."""
 
@@ -35,8 +36,7 @@ class RDAPProvider:
             raise RDAPProviderError(msg) from e
 
     def ensure_bootstrapped(self) -> None:
-        """Ensured bootstrapped.
-        """
+        """Ensured bootstrapped."""
         if self.is_bootstrapped:
             return
 
@@ -105,19 +105,13 @@ class RDAPProvider:
             return whoisit.domain(domain, allow_insecure_ssl=True)
         except UnsupportedError as e:
             msg = f"TLD not supported for RDAP lookup: {domain}"
-            raise RDAPProviderError(
-                msg
-            ) from e
+            raise RDAPProviderError(msg) from e
         except QueryError as e:
             msg = f"RDAP query failed for domain {domain}: {e}"
-            raise RDAPProviderError(
-                msg
-            ) from e
+            raise RDAPProviderError(msg) from e
         except Exception as e:
             msg = f"Unexpected error looking up domain {domain}: {e}"
-            raise RDAPProviderError(
-                msg
-            ) from e
+            raise RDAPProviderError(msg) from e
 
     def lookup_ip(self, ip: str) -> dict[str, Any]:
         """Look up WHOIS data for an IP address or CIDR.
@@ -136,14 +130,10 @@ class RDAPProvider:
             return whoisit.ip(ip, allow_insecure_ssl=True)
         except QueryError as e:
             msg = f"RDAP query failed for IP {ip}: {e}"
-            raise RDAPProviderError(
-                msg
-            ) from e
+            raise RDAPProviderError(msg) from e
         except Exception as e:
             msg = f"Unexpected error looking up IP {ip}: {e}"
-            raise RDAPProviderError(
-                msg
-            ) from e
+            raise RDAPProviderError(msg) from e
 
     def lookup_asn(self, asn: int) -> dict[str, Any]:
         """Look up WHOIS data for an ASN.
@@ -162,11 +152,7 @@ class RDAPProvider:
             return whoisit.asn(asn, allow_insecure_ssl=True)
         except QueryError as e:
             msg = f"RDAP query failed for ASN {asn}: {e}"
-            raise RDAPProviderError(
-                msg
-            ) from e
+            raise RDAPProviderError(msg) from e
         except Exception as e:
             msg = f"Unexpected error looking up ASN {asn}: {e}"
-            raise RDAPProviderError(
-                msg
-            ) from e
+            raise RDAPProviderError(msg) from e

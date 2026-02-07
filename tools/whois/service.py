@@ -10,7 +10,6 @@ mostly for Same registrant? Same registrar? Same nameservers?
 import re
 import uuid
 from datetime import UTC, datetime, timedelta
-from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.whois import WhoisRecord
+from shared.utils.validation import validate_target
+from tools.whois.enums import WhoisLookupType
 from tools.whois.models import (
     WhoisASNResponse,
     WhoisDomainResponse,
@@ -30,8 +31,6 @@ from tools.whois.parser import (
     parse_ip_response,
 )
 from tools.whois.providers.whoisit import RDAPProvider, RDAPProviderError
-from tools.whois.enums import WhoisLookupType
-from shared.utils.validation import validate_target
 
 logger = get_logger("tools.whois.service")
 
@@ -218,9 +217,7 @@ class WhoisService:
         data = record.parsed_data
         if not data:
             msg = f"No parsed data stored for record {record.id}"
-            raise WhoisLookupError(
-                msg
-            )
+            raise WhoisLookupError(msg)
 
         match record.lookup_type:
             case WhoisLookupType.DOMAIN.value:
@@ -231,9 +228,7 @@ class WhoisService:
                 return WhoisASNResponse.model_validate(data)
             case _:
                 msg = f"Unknown lookup type: {record.lookup_type}"
-                raise WhoisLookupError(
-                    msg
-                )
+                raise WhoisLookupError(msg)
 
     async def find_by_registrant(
         self, session: AsyncSession, registrant_name: str
@@ -392,9 +387,7 @@ class WhoisService:
                 return self.lookup_domain(domain)
             case _:
                 msg = f"Unsupported target type for WHOIS: {target_type}"
-                raise WhoisValidationError(
-                    msg
-                )
+                raise WhoisValidationError(msg)
 
     def _normalize_query(self, query: str, target_type: TargetType) -> str:
         # important to normalise for proper caching key
@@ -414,9 +407,7 @@ class WhoisService:
         target_type = validate_target(query)
         if not target_type:
             msg = f"Cannot determine WHOIS lookup type for: {query}"
-            raise WhoisValidationError(
-                msg
-            )
+            raise WhoisValidationError(msg)
         return target_type
 
     # ----------------------------------------------------------------

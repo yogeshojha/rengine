@@ -73,9 +73,7 @@ def _parse_entities(raw: Any) -> WhoisEntities:
         if not isinstance(role_entities, list):
             parsed[role] = []
             continue
-        parsed[role] = [
-            _parse_entity(e) for e in role_entities if isinstance(e, dict)
-        ]
+        parsed[role] = [_parse_entity(e) for e in role_entities if isinstance(e, dict)]
 
     return WhoisEntities(**parsed)
 
@@ -164,7 +162,7 @@ def parse_asn_response(raw: dict[str, Any], query: str) -> WhoisASNResponse:
     asn_range = raw.get("asn_range")
     asn_range_start = None
     asn_range_end = None
-    if isinstance(asn_range, list) and len(asn_range) >= 2:
+    if isinstance(asn_range, list) and len(asn_range) >= 2:  # noqa: PLR2004
         asn_range_start = safe_int(asn_range[0])
         asn_range_end = safe_int(asn_range[1])
 
