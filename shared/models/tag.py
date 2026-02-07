@@ -48,7 +48,7 @@ class Tag(TagBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     slug: str = Field(max_length=100, index=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
-    created_at: datetime = Field(default_factory=lambda: utc_now)
+    created_at: datetime = Field(default_factory=utc_now)
     created_by: uuid.UUID = Field(foreign_key="users.id")
 
     targets: list["Target"] = Relationship(
