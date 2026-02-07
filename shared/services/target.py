@@ -1,7 +1,6 @@
 import csv
 import io
 from dataclasses import dataclass
-from datetime import UTC, datetime
 
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func, select
@@ -25,6 +24,7 @@ from shared.models import (
     TargetUpdate,
 )
 from shared.services import get_or_create_organization, get_or_create_tag
+from shared.utils.datetime import utc_now
 from shared.utils.validation import validate_target
 
 MAX_TARGETS_IMPORT = 500
@@ -90,6 +90,16 @@ class TargetService:
                 query = query.where(Target.id is None)
 
         return query
+
+    async def get_targets_by_value(self, target_value: str) -> list[Target]:
+        """
+        Get all targets matching a specific target_value across all projects.
+        Returns actual Target objects
+        """
+        result = await self.session.execute(
+            select(Target).where(Target.target_value == target_value)
+        )
+        return list(result.scalars().all())
 
     async def list_targets(
         self,
@@ -264,7 +274,7 @@ class TargetService:
             )
             target.tags = tags
 
-        target.updated_at = datetime.now(UTC).replace(tzinfo=None)
+        target.updated_at = utc_now()
         await self.session.commit()
         await self.session.refresh(target)
 

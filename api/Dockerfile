@@ -15,9 +15,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 FROM base AS development
 
-# Copy shared directory isnide the app
+# Copy shared directory inside the app
 COPY shared /app/shared
-copy tools /app/tools
+COPY tools /app/tools
 
 COPY api/pyproject.toml api/uv.lock* ./
 
@@ -26,7 +26,14 @@ RUN uv sync --no-install-project
 # Expose port
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/app", "--timeout-graceful-shutdown", "2"]
+CMD ["uv", "run", "uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--reload", \
+     "--reload-dir", "/app/app", \
+     "--reload-dir", "/app/shared", \
+     "--reload-dir", "/app/tools", \
+     "--timeout-graceful-shutdown", "2"]
 
 ##################################################################
 # TODO: Production

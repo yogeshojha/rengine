@@ -9,13 +9,14 @@ by the same entity" or "all domains on the same nameservers"
 """
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from pydantic import BaseModel
 from sqlalchemy import JSON
 from sqlmodel import Column, Field, SQLModel, Text
 
 from shared.enums.whois import WhoisLookupType
+from shared.utils.datetime import utc_now
 
 
 class WhoisRecord(SQLModel, table=True):
@@ -31,7 +32,7 @@ class WhoisRecord(SQLModel, table=True):
     query_value: str = Field(max_length=500, index=True)
     lookup_type: WhoisLookupType
     queried_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None),
+        default_factory=utc_now,
         description="When RDAP was last queried for this record",
     )
 
@@ -66,15 +67,13 @@ class WhoisRecord(SQLModel, table=True):
 
     parsed_data: dict | None = Field(default=None, sa_column=Column(JSON))
 
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
-    )
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
 
 
 class WhoisRecordRead(BaseModel):
+    model_config = {"from_attributes": True}
+
     id: uuid.UUID
     target_id: uuid.UUID | None
     query_value: str

@@ -2,6 +2,6 @@ from enum import Enum
 
 
 class WhoisLookupType(Enum):
-    DOMAIN = "domain"
-    IP = "ip"
-    ASN = "asn"
+    DOMAIN = "DOMAIN"
+    IP = "IP"
+    ASN = "ASN"

@@ -1,5 +1,4 @@
 import logging
-from datetime import UTC, datetime
 
 from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.sse import connection_manager
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.models.notification import Notification, NotificationMetadata
+from shared.utils.datetime import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ class NotificationManager:
         session: AsyncSession,
         commit: bool = True,
     ) -> int:
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = utc_now()
         result = await session.execute(
             delete(Notification).where(Notification.expires_at < now)
         )

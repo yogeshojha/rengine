@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import Text
@@ -7,6 +7,7 @@ from sqlmodel import Column, SQLModel
 from sqlmodel import Field as SQLField
 
 from shared.enums.notification import NotificationSeverity, NotificationType
+from shared.utils.datetime import utc_now
 
 MAX_URL_LENGTH = 500
 
@@ -52,13 +53,9 @@ class Notification(NotificationBase, table=True):
         default_factory=dict, sa_column=Column(JSONB if True else Text)
     )
     is_read: bool = SQLField(default=False, index=True)
-    created_at: datetime = SQLField(
-        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None), index=True
-    )
+    created_at: datetime = SQLField(default_factory=utc_now, index=True)
     expires_at: datetime = SQLField(
-        default_factory=lambda: (datetime.now(UTC) + timedelta(days=7)).replace(
-            tzinfo=None
-        ),
+        default_factory=lambda: (utc_now() + timedelta(days=7)).replace(tzinfo=None),
         index=True,
     )
 

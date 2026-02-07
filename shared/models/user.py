@@ -1,11 +1,12 @@
 import uuid
 import uuid as uuid_pkg
-from datetime import UTC, datetime
+from datetime import datetime
 
 from pydantic import ValidationInfo, field_validator
 from sqlmodel import Field, SQLModel
 
 from app.utils.validation import validate_password_strength, validate_username
+from shared.utils.datetime import utc_now
 
 # Password policy
 MIN_PASSWORD_SCORE = 3
@@ -26,9 +27,7 @@ class User(UserBase, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
-    )
+    created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime | None = Field(default=None)
 
 

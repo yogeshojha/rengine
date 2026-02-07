@@ -1,11 +1,12 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, field_validator
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 from app.utils.validation import validate_hex_color
+from shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
     from shared.models.target import Target
@@ -47,9 +48,7 @@ class Tag(TagBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     slug: str = Field(max_length=100, index=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
-    )
+    created_at: datetime = Field(default_factory=lambda: utc_now)
     created_by: uuid.UUID = Field(foreign_key="users.id")
 
     targets: list["Target"] = Relationship(

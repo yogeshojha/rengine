@@ -1,8 +1,10 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from pydantic import BaseModel
 from sqlmodel import Field, SQLModel
+
+from shared.utils.datetime import utc_now
 
 
 class ProjectBase(SQLModel):
@@ -15,9 +17,7 @@ class Project(ProjectBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     slug: str = Field(max_length=100, unique=True, index=True)
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
-    )
+    created_at: datetime = Field(default_factory=utc_now)
     created_by: uuid.UUID = Field(foreign_key="users.id")
 
 

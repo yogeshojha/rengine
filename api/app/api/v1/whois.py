@@ -17,6 +17,7 @@ from shared.models.whois import (
     WhoisRecordRead,
     WhoisRecordSummary,
 )
+from shared.services.target import TargetService
 from tools.whois.service import (
     WhoisError,
     WhoisLookupError,
@@ -45,10 +46,6 @@ class WhoisLookupRequest(BaseModel):
     store_in_db: bool = Field(
         default=True,
         description="Cache the result in DB for correlation (default: true)",
-    )
-    target_id: str | None = Field(
-        default=None,
-        description="Optional target UUID to link this record to",
     )
 
 
@@ -84,7 +81,7 @@ class WhoisStatsResponse(BaseModel):
     response_model=WhoisLookupResponse,
     status_code=status.HTTP_200_OK,
     summary="WHOIS Lookup",
-    description="Perform a WHOIS/RDAP lookup. Results are cached in DB by default.",
+    description="Perform a WHOIS/RDAP lookup. Results are cached in DB by default. If targets exist with this value, WHOIS data is linked to all of them.",
 )
 async def whois_lookup(
     request: WhoisLookupRequest,
@@ -94,17 +91,6 @@ async def whois_lookup(
 ):
     try:
         service.ensure_ready()
-
-        target_id = None
-        if request.target_id:
-            try:
-                target_id = _uuid.UUID(request.target_id)
-            except ValueError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid target_id format (must be UUID)",
-                ) from e
-
         cached = False
         if request.store_in_db:
             existing = await session.execute(
@@ -117,10 +103,24 @@ async def whois_lookup(
 
         response = await service.lookup(
             query=request.query,
-            target_id=target_id,
+            target_id=None,
             store_in_db=request.store_in_db,
             session=session if request.store_in_db else None,
         )
+
+        # If store_in_db, link to all matching targets
+        if request.store_in_db:
+            target_service = TargetService(session)
+            targets = await target_service.get_targets_by_value(response.query)
+            if targets:
+                whois_record = await session.execute(
+                    select(WhoisRecord).where(WhoisRecord.query_value == response.query)
+                )
+                record = whois_record.scalar_one_or_none()
+
+                if record and targets and not record.target_id:
+                    record.target_id = targets[0].id
+                    await session.commit()
 
         record_read = None
         if request.store_in_db:

@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
@@ -8,6 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from shared.enums.target import TargetType
 from shared.models.organization import Organization, OrganizationSummary
 from shared.models.tag import TagSummary, TargetTag
+from shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
     from shared.models.tag import Tag
@@ -43,12 +44,8 @@ class Target(TargetBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     target_type: TargetType
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
-    )
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
     created_by: uuid.UUID = Field(foreign_key="users.id")
 
     organizations: list["Organization"] = Relationship(

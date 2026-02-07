@@ -9,7 +9,7 @@ mostly for Same registrant? Same registrar? Same nameservers?
 
 import re
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +18,7 @@ from shared.enums.target import TargetType
 from shared.enums.whois import WhoisLookupType
 from shared.logging import get_logger
 from shared.models.whois import WhoisRecord
+from shared.utils.datetime import normalize_datetime, utc_now
 from shared.utils.validation import validate_target
 from tools.whois.models import (
     WhoisASNResponse,
@@ -111,7 +112,7 @@ class WhoisService:
             if cached:
                 if target_id and not cached.target_id:
                     cached.target_id = target_id
-                    cached.updated_at = datetime.now(UTC).replace(tzinfo=None)
+                    cached.updated_at = utc_now()
                     await session.commit()
 
                 if self._is_cache_fresh(cached):
@@ -160,7 +161,7 @@ class WhoisService:
     def _is_cache_fresh(self, record: WhoisRecord) -> bool:
         if not record.queried_at:
             return False
-        age = datetime.now(UTC).replace(tzinfo=None) - record.queried_at
+        age = utc_now() - record.queried_at
         return age < timedelta(days=self.cache_ttl_days)
 
     async def _store_record(
@@ -175,7 +176,11 @@ class WhoisService:
         existing = await self._get_cached_record(session, query_value)
 
         db_fields = response.to_db_fields()
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = utc_now()
+
+        for key, value in db_fields.items():
+            if isinstance(value, datetime):
+                db_fields[key] = normalize_datetime(value)
 
         if existing:
             for key, value in db_fields.items():
@@ -206,7 +211,7 @@ class WhoisService:
         record = await self._get_cached_record(session, query_value)
         if record and not record.target_id:
             record.target_id = target_id
-            record.updated_at = datetime.now(UTC).replace(tzinfo=None)
+            record.updated_at = utc_now()
             await session.commit()
         return record
 
@@ -217,11 +222,11 @@ class WhoisService:
             raise WhoisLookupError(msg)
 
         match record.lookup_type:
-            case WhoisLookupType.DOMAIN.value:
+            case WhoisLookupType.DOMAIN:
                 return WhoisDomainResponse.model_validate(data)
-            case WhoisLookupType.IP.value:
+            case WhoisLookupType.IP:
                 return WhoisIPResponse.model_validate(data)
-            case WhoisLookupType.ASN.value:
+            case WhoisLookupType.ASN:
                 return WhoisASNResponse.model_validate(data)
             case _:
                 msg = f"Unknown lookup type: {record.lookup_type}"

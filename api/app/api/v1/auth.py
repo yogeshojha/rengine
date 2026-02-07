@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -23,6 +22,7 @@ from shared.schemas.auth import (
     TokenResponse,
     UsernameChangeRequest,
 )
+from shared.utils.datetime import utc_now
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -263,7 +263,7 @@ async def change_password(
             )
 
     target_user.hashed_password = hash_password(password_data.new_password)
-    target_user.updated_at = datetime.now(UTC).replace(tzinfo=None)
+    target_user.updated_at = utc_now()
 
     session.add(target_user)
     await session.commit()
@@ -315,7 +315,7 @@ async def change_username(
         )
 
     target_user.username = username_data.new_username
-    target_user.updated_at = datetime.now(UTC).replace(tzinfo=None)
+    target_user.updated_at = utc_now()
 
     session.add(target_user)
     await session.commit()
