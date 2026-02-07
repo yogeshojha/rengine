@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY shared /app/shared
+COPY tools /app/tools
 
 COPY worker/pyproject.toml worker/uv.lock* ./
 

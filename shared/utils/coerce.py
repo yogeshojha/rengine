@@ -1,0 +1,45 @@
+# safe converters
+
+from datetime import datetime
+from typing import Any
+
+
+def safe_str(value: Any, default: str = "") -> str:
+    """Safely convert a value to a stripped string."""
+    if value is None:
+        return default
+    s = str(value).strip()
+    return s if s else default
+
+
+def safe_int(value: Any, default: int | None = None) -> int | None:
+    """Safely convert a value to int."""
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
+def safe_datetime(value: Any) -> datetime | None:
+    """Safely extract a datetime, returning None if not a datetime."""
+    if isinstance(value, datetime):
+        return value
+    return None
+
+
+def safe_list(value: Any) -> list:
+    """Safely convert to list."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+
+def safe_bool(value: Any, default: bool = False) -> bool:
+    """Safely convert to bool."""
+    if isinstance(value, bool):
+        return value
+    return default

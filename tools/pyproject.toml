@@ -1,0 +1,7 @@
+[project]
+name = "rengine-tools"
+version = "3.0.0"
+requires-python = ">=3.13"
+dependencies = [
+    "whoisit>=4.0.3",
+]

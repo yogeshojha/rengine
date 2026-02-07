@@ -17,6 +17,7 @@ FROM base AS development
 
 # Copy shared directory isnide the app
 COPY shared /app/shared
+copy tools /app/tools
 
 COPY api/pyproject.toml api/uv.lock* ./
 

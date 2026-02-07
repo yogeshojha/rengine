@@ -7,7 +7,6 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.utils.validation import validate_target
 from shared.models import (
     Organization,
     OrganizationSummary,
@@ -26,6 +25,7 @@ from shared.models import (
     TargetUpdate,
 )
 from shared.services import get_or_create_organization, get_or_create_tag
+from shared.utils.validation import validate_target
 
 MAX_TARGETS_IMPORT = 500
 
