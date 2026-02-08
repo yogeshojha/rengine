@@ -37,6 +37,9 @@
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 
+	let headerEl = $state<HTMLDivElement | null>(null);
+	let scrollHeight = $state(0);
+
 	const TYPE_META: Record<string, { label: string; icon: typeof Globe; color: string }> = {
 		registrant_name: {
 			label: 'Registrant',
@@ -95,6 +98,16 @@
 		}
 	}
 
+	function measureScrollHeight() {
+		if (!headerEl) return;
+		requestAnimationFrame(() => {
+			const dialogMaxH = Math.min(window.innerHeight * 0.8, window.innerHeight - 40);
+			const headerH = headerEl?.offsetHeight ?? 0;
+			const available = dialogMaxH - headerH;
+			scrollHeight = Math.min(Math.max(available, 200), 500);
+		});
+	}
+
 	$effect(() => {
 		if (open && correlationType && correlationValue) {
 			loadCorrelation();
@@ -102,6 +115,13 @@
 			results = [];
 			records = [];
 			error = null;
+			scrollHeight = 0;
+		}
+	});
+
+	$effect(() => {
+		if (open && headerEl) {
+			measureScrollHeight();
 		}
 	});
 
@@ -157,121 +177,125 @@
 </script>
 
 <Dialog.Root bind:open {onOpenChange}>
-	<Dialog.Content class="max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
-		<Dialog.Header class="px-6 pt-6 pb-4 shrink-0">
-			<div class="flex items-center gap-3">
-				<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
-					<meta.icon class="h-5 w-5 {meta.color}" />
-				</div>
-				<div class="min-w-0 flex-1">
-					<Dialog.Title class="text-base font-semibold">
-						Targets sharing {meta.label.toLowerCase()}
-					</Dialog.Title>
-					<Dialog.Description class="text-sm text-muted-foreground font-mono truncate">
-						{correlationValue}
-					</Dialog.Description>
-				</div>
-			</div>
-		</Dialog.Header>
-
-		<ScrollArea class="flex-1">
-			<div class="px-6 pb-6">
-				{#if isLoading}
-					<Empty.Root>
-						<Empty.Header>
-							<Empty.Media variant="icon">
-								<Loader class="animate-spin" />
-							</Empty.Media>
-							<Empty.Title>Searching targets…</Empty.Title>
-						</Empty.Header>
-					</Empty.Root>
-				{:else if error}
-					<Empty.Root>
-						<Empty.Header>
-							<Empty.Media variant="icon">
-								<TriangleAlert />
-							</Empty.Media>
-							<Empty.Title>Lookup failed</Empty.Title>
-							<Empty.Description>{error}</Empty.Description>
-						</Empty.Header>
-					</Empty.Root>
-				{:else if records.length === 0}
-					<Empty.Root>
-						<Empty.Header>
-							<Empty.Media variant="icon">
-								<SearchX />
-							</Empty.Media>
-							<Empty.Title>No targets found</Empty.Title>
-							<Empty.Description>
-								No other targets share this {meta.label.toLowerCase()}.
-							</Empty.Description>
-						</Empty.Header>
-					</Empty.Root>
-				{:else}
-					<div class="space-y-3">
-						<div class="text-sm text-muted-foreground">
-							<span class="font-medium text-foreground">{records.length}</span>
-							{records.length === 1 ? 'target' : 'targets'} found
-						</div>
-
-						<div class="space-y-2">
-							{#each records as record}
-								<div class="rounded-lg border border-border/60 p-3.5 hover:border-border transition-colors space-y-2">
-									<div class="flex items-center justify-between gap-3">
-										<div class="min-w-0 flex-1">
-											<div class="flex items-center gap-2">
-												<span class="text-sm font-mono font-medium truncate">
-													{record.query_value}
-												</span>
-												<Badge
-													class="text-[10px] font-normal border shrink-0 {getLookupTypeBadgeColor(record.lookup_type)}"
-												>
-													{record.lookup_type}
-												</Badge>
-											</div>
-											{#if record.name && record.name !== record.query_value}
-												<p class="text-xs text-muted-foreground truncate mt-0.5">{record.name}</p>
-											{/if}
-										</div>
-									</div>
-
-									<div class="flex items-center gap-3 text-xs text-muted-foreground">
-										{#if record.registrant_name}
-											<div class="flex items-center gap-1 truncate">
-												<UserRound class="h-3 w-3 shrink-0" />
-												<span class="truncate">{record.registrant_name}</span>
-											</div>
-										{/if}
-										{#if record.registrar_name}
-											<div class="flex items-center gap-1 truncate">
-												<Building class="h-3 w-3 shrink-0" />
-												<span class="truncate">{record.registrar_name}</span>
-											</div>
-										{/if}
-										{#if record.country}
-											<div class="flex items-center gap-1">
-												<Flag class="h-3 w-3 shrink-0" />
-												<span>{record.country}</span>
-											</div>
-										{/if}
-									</div>
-
-									{#if record.registration_date || record.expiration_date}
-										<div class="flex items-center gap-3 text-[11px] text-muted-foreground/70">
-											{#if record.registration_date}
-												<span>Registered {formatShortDate(record.registration_date)}</span>
-											{/if}
-											{#if record.expiration_date}
-												<span>Expires {formatShortDate(record.expiration_date)}</span>
-											{/if}
-										</div>
-									{/if}
-								</div>
-							{/each}
-						</div>
+	<Dialog.Content class="max-w-lg max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+		<div bind:this={headerEl} class="shrink-0">
+			<Dialog.Header class="px-6 pt-6 pb-4">
+				<div class="flex items-center gap-3">
+					<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
+						<meta.icon class="h-5 w-5 {meta.color}" />
 					</div>
-				{/if}
-			</div>
-		</ScrollArea>
+					<div class="min-w-0 flex-1">
+						<Dialog.Title class="text-base font-semibold">
+							Targets sharing {meta.label.toLowerCase()}
+						</Dialog.Title>
+						<Dialog.Description class="text-sm text-muted-foreground font-mono truncate">
+							{correlationValue}
+						</Dialog.Description>
+					</div>
+				</div>
+			</Dialog.Header>
+		</div>
+
+		{#if scrollHeight > 0}
+			<ScrollArea style="height: {scrollHeight}px">
+				<div class="px-6 pb-6">
+					{#if isLoading}
+						<Empty.Root>
+							<Empty.Header>
+								<Empty.Media variant="icon">
+									<Loader class="animate-spin" />
+								</Empty.Media>
+								<Empty.Title>Searching targets…</Empty.Title>
+							</Empty.Header>
+						</Empty.Root>
+					{:else if error}
+						<Empty.Root>
+							<Empty.Header>
+								<Empty.Media variant="icon">
+									<TriangleAlert />
+								</Empty.Media>
+								<Empty.Title>Lookup failed</Empty.Title>
+								<Empty.Description>{error}</Empty.Description>
+							</Empty.Header>
+						</Empty.Root>
+					{:else if records.length === 0}
+						<Empty.Root>
+							<Empty.Header>
+								<Empty.Media variant="icon">
+									<SearchX />
+								</Empty.Media>
+								<Empty.Title>No targets found</Empty.Title>
+								<Empty.Description>
+									No other targets share this {meta.label.toLowerCase()}.
+								</Empty.Description>
+							</Empty.Header>
+						</Empty.Root>
+					{:else}
+						<div class="space-y-3">
+							<div class="text-sm text-muted-foreground">
+								<span class="font-medium text-foreground">{records.length}</span>
+								{records.length === 1 ? 'target' : 'targets'} found
+							</div>
+
+							<div class="space-y-2">
+								{#each records as record}
+									<div class="rounded-lg border border-border/60 p-3.5 hover:border-border transition-colors space-y-2">
+										<div class="flex items-center justify-between gap-3">
+											<div class="min-w-0 flex-1">
+												<div class="flex items-center gap-2">
+													<span class="text-sm font-mono font-medium truncate">
+														{record.query_value}
+													</span>
+													<Badge
+														class="text-[10px] font-normal border shrink-0 {getLookupTypeBadgeColor(record.lookup_type)}"
+													>
+														{record.lookup_type}
+													</Badge>
+												</div>
+												{#if record.name && record.name !== record.query_value}
+													<p class="text-xs text-muted-foreground truncate mt-0.5">{record.name}</p>
+												{/if}
+											</div>
+										</div>
+
+										<div class="flex items-center gap-3 text-xs text-muted-foreground">
+											{#if record.registrant_name}
+												<div class="flex items-center gap-1 truncate">
+													<UserRound class="h-3 w-3 shrink-0" />
+													<span class="truncate">{record.registrant_name}</span>
+												</div>
+											{/if}
+											{#if record.registrar_name}
+												<div class="flex items-center gap-1 truncate">
+													<Building class="h-3 w-3 shrink-0" />
+													<span class="truncate">{record.registrar_name}</span>
+												</div>
+											{/if}
+											{#if record.country}
+												<div class="flex items-center gap-1">
+													<Flag class="h-3 w-3 shrink-0" />
+													<span>{record.country}</span>
+												</div>
+											{/if}
+										</div>
+
+										{#if record.registration_date || record.expiration_date}
+											<div class="flex items-center gap-3 text-[11px] text-muted-foreground/70">
+												{#if record.registration_date}
+													<span>Registered {formatShortDate(record.registration_date)}</span>
+												{/if}
+												{#if record.expiration_date}
+													<span>Expires {formatShortDate(record.expiration_date)}</span>
+												{/if}
+											</div>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				</div>
+			</ScrollArea>
+		{/if}
 	</Dialog.Content>
 </Dialog.Root>
