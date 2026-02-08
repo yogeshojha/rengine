@@ -1,15 +1,15 @@
 <script lang="ts">
 	import type { Target } from '$lib/types/target';
 	import { formatDistanceToNow } from '$lib/utilities/dates';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as HoverCard from '$lib/components/ui/hover-card';
 	import CopyButton from '@/components/copy-button.svelte';
 	import WhoisInline from '$lib/components/targets/whois-inline.svelte';
-	import { Building2, Ellipsis, Eye, History, Pencil, Play, Trash2 } from 'lucide-svelte';
+	import { Ellipsis, Eye, History, Pencil, Play, Trash2 } from 'lucide-svelte';
+	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
+	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
 
 	interface Props {
 		target: Target;
@@ -39,9 +39,6 @@
 
 	// TODO: dummy scan count, fetch later
 	const scanCount = 5;
-
-	let overflowOrgs = $derived(target.organizations.slice(2));
-	let overflowTags = $derived(target.tags.slice(3));
 </script>
 
 <div
@@ -85,7 +82,7 @@
 				{scanCount} scans
 
 				{#if !isScanning}
-				<!-- TODO: replace with real scanning status -->
+					<!-- TODO: replace with real scanning status -->
 					<span class="absolute -right-1 top-1/2 -translate-y-1/2 flex h-2 w-2">
 						<span
 							class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"
@@ -100,93 +97,13 @@
 	</div>
 
 	<!-- Organizations -->
-	<div class="hidden md:flex items-center gap-1.5 flex-1 min-w-[180px]">
-		{#if target.organizations.length > 0}
-			{#each target.organizations.slice(0, 2) as org}
-				<Badge variant="outline" class="text-xs font-normal gap-1 max-w-[100px]">
-					<Building2 class="h-3 w-3 shrink-0" />
-					<span class="truncate">{org.name}</span>
-				</Badge>
-			{/each}
-			{#if overflowOrgs.length > 0}
-				<HoverCard.Root openDelay={200}>
-					<HoverCard.Trigger>
-						<Badge
-							variant="outline"
-							class="text-xs font-normal cursor-default hover:bg-muted/50 transition-colors"
-						>
-							+{overflowOrgs.length}
-						</Badge>
-					</HoverCard.Trigger>
-					<HoverCard.Content class="w-64" align="start">
-						<div class="space-y-2.5">
-							<p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-								All Organizations ({target.organizations.length})
-							</p>
-							<div class="flex flex-wrap gap-1.5">
-								{#each target.organizations as org}
-									<Badge variant="outline" class="text-xs font-normal gap-1">
-										<Building2 class="h-3 w-3 shrink-0 text-muted-foreground" />
-										{org.name}
-									</Badge>
-								{/each}
-							</div>
-						</div>
-					</HoverCard.Content>
-				</HoverCard.Root>
-			{/if}
-		{:else}
-			<span class="text-xs text-muted-foreground">—</span>
-		{/if}
+	<div class="hidden md:flex items-center flex-1 min-w-[180px]">
+		<TargetOrgPopover targetId={target.id} currentOrgs={target.organizations} />
 	</div>
 
 	<!-- Tags -->
-	<div class="hidden lg:flex items-center gap-1.5 flex-1 min-w-[200px]">
-		{#if target.tags.length > 0}
-			{#each target.tags.slice(0, 3) as tag}
-				<Badge
-					class="text-xs font-normal border"
-					style="background-color: {tag.color}10; color: {tag.color}; border-color: {tag.color}30;"
-				>
-					{tag.name}
-				</Badge>
-			{/each}
-			{#if overflowTags.length > 0}
-				<HoverCard.Root openDelay={200}>
-					<HoverCard.Trigger>
-						<Badge
-							variant="outline"
-							class="text-xs font-normal cursor-default hover:bg-muted/50 transition-colors"
-						>
-							+{overflowTags.length}
-						</Badge>
-					</HoverCard.Trigger>
-					<HoverCard.Content class="w-64" align="start">
-						<div class="space-y-2.5">
-							<p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-								All Tags ({target.tags.length})
-							</p>
-							<div class="flex flex-wrap gap-1.5">
-								{#each target.tags as tag}
-									<Badge
-										class="text-xs font-normal border"
-										style="background-color: {tag.color}15; color: {tag.color}; border-color: {tag.color}30;"
-									>
-										<span
-											class="inline-block h-2 w-2 rounded-full mr-1.5 shrink-0"
-											style="background-color: {tag.color};"
-										></span>
-										{tag.name}
-									</Badge>
-								{/each}
-							</div>
-						</div>
-					</HoverCard.Content>
-				</HoverCard.Root>
-			{/if}
-		{:else}
-			<span class="text-xs text-muted-foreground">—</span>
-		{/if}
+	<div class="hidden lg:flex items-center flex-1 min-w-[200px]">
+		<TargetTagPopover targetId={target.id} currentTags={target.tags} />
 	</div>
 
 	<div class="hidden sm:block text-xs text-muted-foreground w-[80px] text-right">

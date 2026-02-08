@@ -268,6 +268,12 @@ function createTargetsStore() {
 			}
 		},
 
+		optimisticUpdateTarget(targetId: string, patch: Partial<Target>) {
+			targets = targets.map((t) =>
+				t.id === targetId ? { ...t, ...patch } : t
+			);
+		},
+
 		async deleteTarget(targetId: string): Promise<boolean> {
 			try {
 				await targetsApi.delete(targetId);
@@ -276,6 +282,24 @@ function createTargetsStore() {
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to delete target';
 				return false;
+			}
+		},
+
+		async fetchTags() {
+			if (!filters.projectSlug) return;
+			try {
+				tags = await tagsApi.list({ project_slug: filters.projectSlug });
+			} catch {
+				// non critical
+			}
+		},
+
+		async fetchOrganizations() {
+			if (!filters.projectSlug) return;
+			try {
+				organizations = await organizationsApi.list({ project_slug: filters.projectSlug });
+			} catch {
+				// non critical
 			}
 		},
 
