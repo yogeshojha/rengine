@@ -36,6 +36,8 @@ class WhoisEntities(BaseModel):
     billing: list[WhoisEntity] = Field(default_factory=list)
     registrar: list[WhoisEntity] = Field(default_factory=list)
     sponsor: list[WhoisEntity] = Field(default_factory=list)
+    noc: list[WhoisEntity] = Field(default_factory=list)
+    routing: list[WhoisEntity] = Field(default_factory=list)
 
     def get_registrant_name(self) -> str:
         for entity in self.registrant:

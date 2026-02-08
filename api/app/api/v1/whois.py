@@ -14,6 +14,7 @@ from shared.enums.whois import WhoisLookupType
 from shared.models.target import Target
 from shared.models.whois import (
     WhoisCorrelationResult,
+    WhoisNameserver,
     WhoisRecord,
     WhoisRecordRead,
     WhoisRecordSummary,
@@ -575,7 +576,9 @@ async def correlate_by_nameserver(
     ns: Annotated[str, Query(description="Nameserver hostname (e.g. ns1.google.com)")],
 ):
     results = await session.execute(
-        select(WhoisRecord).where(WhoisRecord.nameservers.op("@>")(f'["{ns}"]'))
+        select(WhoisRecord)
+        .join(WhoisNameserver, WhoisNameserver.whois_record_id == WhoisRecord.id)
+        .where(WhoisNameserver.nameserver == ns.strip().lower())
     )
     records = list(results.scalars().all())
 

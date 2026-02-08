@@ -10,14 +10,14 @@ mostly for Same registrant? Same registrar? Same nameservers?
 import uuid
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from shared.enums.target import TargetType
 from shared.enums.whois import WhoisLookupType
 from shared.logging import get_logger
-from shared.models.whois import WhoisRecord
+from shared.models.whois import WhoisNameserver, WhoisRecord
 from shared.utils.datetime import normalize_datetime, utc_now
 from shared.utils.validation import (
     extract_asn_number,
@@ -162,11 +162,17 @@ class WhoisService:
                 setattr(existing, key, value)
             existing.queried_at = now
             existing.updated_at = now
+            await session.flush()
+            await self._sync_nameservers(
+                session, existing.id, db_fields.get("nameservers")
+            )
             await session.commit()
             return existing
 
         record = WhoisRecord(**db_fields, queried_at=now)
         session.add(record)
+        await session.flush()
+        await self._sync_nameservers(session, record.id, db_fields.get("nameservers"))
         await session.commit()
         return record
 
@@ -195,11 +201,17 @@ class WhoisService:
                 setattr(existing, key, value)
             existing.queried_at = now
             existing.updated_at = now
+            session.flush()
+            self._sync_nameservers_sync(
+                session, existing.id, db_fields.get("nameservers")
+            )
             session.commit()
             return existing
 
         record = WhoisRecord(**db_fields, queried_at=now)
         session.add(record)
+        session.flush()
+        self._sync_nameservers_sync(session, record.id, db_fields.get("nameservers"))
         session.commit()
         session.refresh(record)
         return record
@@ -230,6 +242,36 @@ class WhoisService:
             return False
         age = utc_now() - record.queried_at
         return age < timedelta(days=self.cache_ttl_days)
+
+    async def _sync_nameservers(
+        self,
+        session: AsyncSession,
+        record_id: uuid.UUID,
+        nameservers: list[str] | None,
+    ) -> None:
+        """Replace nameserver rows for a WHOIS record."""
+        await session.execute(
+            delete(WhoisNameserver).where(WhoisNameserver.whois_record_id == record_id)
+        )
+        for ns in nameservers or []:
+            _ns = ns.strip().lower()
+            if _ns:
+                session.add(WhoisNameserver(whois_record_id=record_id, nameserver=_ns))
+
+    def _sync_nameservers_sync(
+        self,
+        session: Session,
+        record_id: uuid.UUID,
+        nameservers: list[str] | None,
+    ) -> None:
+        """Replace nameserver rows for a WHOIS record (sync)."""
+        session.execute(
+            delete(WhoisNameserver).where(WhoisNameserver.whois_record_id == record_id)
+        )
+        for ns in nameservers or []:
+            _ns = ns.strip().lower()
+            if _ns:
+                session.add(WhoisNameserver(whois_record_id=record_id, nameserver=_ns))
 
     def _reconstruct_response(self, record: WhoisRecord) -> WhoisResponse:
         data = record.parsed_data
@@ -302,9 +344,9 @@ class WhoisService:
         self, session: AsyncSession, nameserver: str
     ) -> list[WhoisRecord]:
         result = await session.execute(
-            select(WhoisRecord).where(
-                WhoisRecord.nameservers.op("@>")(f'["{nameserver}"]')
-            )
+            select(WhoisRecord)
+            .join(WhoisNameserver, WhoisNameserver.whois_record_id == WhoisRecord.id)
+            .where(WhoisNameserver.nameserver == nameserver.strip().lower())
         )
         return list(result.scalars().all())
 
@@ -346,14 +388,24 @@ class WhoisService:
                 correlations["country"] = others
 
         if record.nameservers:
-            ns_related: list[WhoisRecord] = []
-            seen_ids = {record.id}
-            for ns in record.nameservers:
-                matches = await self.find_by_nameserver(session, ns)
-                for m in matches:
-                    if m.id not in seen_ids:
-                        ns_related.append(m)
-                        seen_ids.add(m.id)
+            ns_result = await session.execute(
+                select(WhoisRecord)
+                .where(WhoisRecord.id != record.id)
+                .where(
+                    WhoisRecord.id.in_(
+                        select(WhoisNameserver.whois_record_id)
+                        .where(
+                            WhoisNameserver.nameserver.in_(
+                                select(WhoisNameserver.nameserver).where(
+                                    WhoisNameserver.whois_record_id == record.id
+                                )
+                            )
+                        )
+                        .where(WhoisNameserver.whois_record_id != record.id)
+                    )
+                )
+            )
+            ns_related = list(ns_result.scalars().all())
             if ns_related:
                 correlations["nameserver"] = ns_related
 

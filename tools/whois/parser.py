@@ -65,6 +65,8 @@ def _parse_entities(raw: Any) -> WhoisEntities:
         "billing",
         "registrar",
         "sponsor",
+        "noc",
+        "routing",
     }
 
     parsed: dict[str, list[WhoisEntity]] = {}
@@ -85,7 +87,7 @@ def _parse_base_fields(raw: dict[str, Any], query: str) -> dict[str, Any]:
         "parent_handle": safe_str(raw.get("parent_handle")),
         "name": safe_str(raw.get("name")),
         "whois_server": safe_str(raw.get("whois_server")),
-        "type": safe_str(raw.get("type")),
+        "object_class": safe_str(raw.get("type")),
         "terms_of_service_url": safe_str(raw.get("terms_of_service_url")),
         "copyright_notice": safe_str(raw.get("copyright_notice")),
         "description": [safe_str(d) for d in safe_list(raw.get("description"))],

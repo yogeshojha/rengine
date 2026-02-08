@@ -12,8 +12,9 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import JSON
-from sqlmodel import Column, Field, SQLModel, Text
+from sqlalchemy import Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlmodel import Field, SQLModel
 
 from shared.enums.whois import WhoisLookupType
 from shared.utils.datetime import utc_now
@@ -36,20 +37,20 @@ class WhoisRecord(SQLModel, table=True):
     whois_server: str = Field(default="", max_length=200)
     object_class: str = Field(default="", max_length=100)
     rir: str = Field(default="", max_length=50)
-    description: str = Field(default="", sa_column=Column(Text))
+    description: str = Field(default="", sa_type=Text)
 
     registration_date: datetime | None = None
     last_changed_date: datetime | None = None
     expiration_date: datetime | None = None
 
-    # mainly usedf for corelation
+    # mainly used for correlation
     registrant_name: str = Field(default="", max_length=500, index=True)
     registrant_email: str = Field(default="", max_length=500, index=True)
     registrar_name: str = Field(default="", max_length=500, index=True)
     abuse_email: str = Field(default="", max_length=500)
 
-    nameservers: list | None = Field(default=None, sa_column=Column(JSON))
-    domain_status: list | None = Field(default=None, sa_column=Column(JSON))
+    nameservers: list | None = Field(default=None, sa_type=JSONB)
+    domain_status: list | None = Field(default=None, sa_type=JSONB)
     dnssec: bool | None = None
 
     country: str = Field(default="", max_length=10, index=True)
@@ -60,10 +61,24 @@ class WhoisRecord(SQLModel, table=True):
     asn_range_start: int | None = None
     asn_range_end: int | None = None
 
-    parsed_data: dict | None = Field(default=None, sa_column=Column(JSON))
+    parsed_data: dict | None = Field(default=None, sa_type=JSONB)
 
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+class WhoisNameserver(SQLModel, table=True):
+    """Junction table for efficient nameserver correlation queries."""
+
+    __tablename__ = "whois_nameservers"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    whois_record_id: uuid.UUID = Field(
+        foreign_key="whois_records.id",
+        index=True,
+        ondelete="CASCADE",
+    )
+    nameserver: str = Field(max_length=500, index=True)
 
 
 class WhoisRecordRead(BaseModel):
