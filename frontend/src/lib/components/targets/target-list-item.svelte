@@ -21,6 +21,7 @@
 		onView: (target: Target) => void;
 		onEdit: (target: Target) => void;
 		onDelete: (target: Target) => void;
+		onWhoisClick: (target: Target) => void;
 	}
 
 	let {
@@ -32,7 +33,8 @@
 		onOpenHistory,
 		onView,
 		onEdit,
-		onDelete
+		onDelete,
+		onWhoisClick
 	}: Props = $props();
 
 	// TODO: dummy scan count, fetch later
@@ -69,6 +71,7 @@
 			status={target.whois_status}
 			whois={target.whois}
 			error={target.whois_error}
+			onClick={() => onWhoisClick(target)}
 		/>
 	</div>
 

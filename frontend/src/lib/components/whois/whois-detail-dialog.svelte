@@ -1,0 +1,246 @@
+<script lang="ts">
+	import { whoisApi } from '$lib/api/whois';
+	import type { WhoisRecordRead, WhoisCorrelationResult } from '$lib/types/whois';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as Empty from '$lib/components/ui/empty';
+	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import { toast } from 'svelte-sonner';
+	import WhoisOverviewTab from './whois-overview-tab.svelte';
+	import WhoisEntitiesTab from './whois-entities-tab.svelte';
+	import WhoisRelatedTab from './whois-related-tab.svelte';
+	import {
+		RefreshCw,
+		Globe,
+		Server,
+		Network,
+		Loader,
+		TriangleAlert
+	} from 'lucide-svelte';
+
+	interface Props {
+		open: boolean;
+		recordId?: string | null;
+		targetId?: string | null;
+		record?: WhoisRecordRead | null;
+		onOpenChange: (open: boolean) => void;
+	}
+
+	let {
+		open = $bindable(),
+		recordId = null,
+		targetId = null,
+		record: externalRecord = null,
+		onOpenChange
+	}: Props = $props();
+
+	let internalRecord = $state<WhoisRecordRead | null>(null);
+	let isLoadingRecord = $state(false);
+	let recordError = $state<string | null>(null);
+
+	let correlations = $state<WhoisCorrelationResult[]>([]);
+	let isLoadingCorrelations = $state(false);
+	let correlationsError = $state<string | null>(null);
+
+	let isRefreshing = $state(false);
+	let activeTab = $state('overview');
+
+	let displayRecord = $derived(externalRecord ?? internalRecord);
+
+	let hasEntities = $derived(
+		displayRecord?.parsed_data?.entities != null &&
+		Object.values(displayRecord.parsed_data.entities).some(
+			(arr) => arr && arr.length > 0
+		)
+	);
+
+	let relatedCount = $derived.by(() => {
+		const seen = new Set<string>();
+		for (const c of correlations) {
+			for (const r of c.records) {
+				if (r.id !== displayRecord?.id) seen.add(r.id);
+			}
+		}
+		return seen.size;
+	});
+
+	let LookupIcon = $derived.by(() => {
+		if (!displayRecord) return Globe;
+		switch (displayRecord.lookup_type) {
+			case 'DOMAIN': return Globe;
+			case 'IP': return Server;
+			case 'ASN': return Network;
+			default: return Globe;
+		}
+	});
+
+	$effect(() => {
+		if (open) {
+			activeTab = 'overview';
+			loadData();
+		} else {
+			internalRecord = null;
+			correlations = [];
+			recordError = null;
+			correlationsError = null;
+		}
+	});
+
+	async function loadData() {
+		if (!externalRecord && recordId) {
+			isLoadingRecord = true;
+			recordError = null;
+			try {
+				internalRecord = await whoisApi.getRecord(recordId);
+			} catch (e) {
+				recordError = e instanceof Error ? e.message : 'Failed to load WHOIS record';
+			} finally {
+				isLoadingRecord = false;
+			}
+		}
+
+		if (targetId) {
+			isLoadingCorrelations = true;
+			correlationsError = null;
+			try {
+				correlations = await whoisApi.getTargetCorrelations(targetId);
+			} catch (e) {
+				correlationsError = e instanceof Error ? e.message : 'Failed to load correlations';
+			} finally {
+				isLoadingCorrelations = false;
+			}
+		}
+	}
+
+	async function handleRefresh() {
+		const id = displayRecord?.id;
+		if (!id) return;
+
+		isRefreshing = true;
+		try {
+			const response = await whoisApi.refreshRecord(id);
+			internalRecord = response.record;
+			toast.success('WHOIS record refreshed');
+		} catch (e) {
+			toast.error('Failed to refresh WHOIS record');
+		} finally {
+			isRefreshing = false;
+		}
+	}
+</script>
+
+<Dialog.Root bind:open {onOpenChange}>
+	<Dialog.Content class="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+		<Dialog.Header class="px-6 pt-6 pb-4 shrink-0">
+			<div class="flex items-center gap-3">
+				<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
+					{#if isLoadingRecord}
+						<Loader class="h-5 w-5 text-primary animate-spin" />
+					{:else}
+						<LookupIcon class="h-5 w-5 text-primary" />
+					{/if}
+				</div>
+				<div class="min-w-0 flex-1">
+					<Dialog.Title class="text-lg font-semibold truncate">
+						{#if displayRecord}
+							{displayRecord.name || displayRecord.query_value}
+						{:else if isLoadingRecord}
+							Loading…
+						{:else}
+							WHOIS Record
+						{/if}
+					</Dialog.Title>
+					<Dialog.Description class="text-sm text-muted-foreground">
+						WHOIS / RDAP Record Details
+					</Dialog.Description>
+				</div>
+				{#if displayRecord}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<Button
+								variant="ghost"
+								size="icon"
+								class="h-8 w-8 shrink-0"
+								onclick={handleRefresh}
+								disabled={isRefreshing}
+							>
+								<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
+							</Button>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Refresh WHOIS data</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				{/if}
+			</div>
+		</Dialog.Header>
+
+		{#if isLoadingRecord && !displayRecord}
+			<Empty.Root>
+				<Empty.Header>
+					<Empty.Media variant="icon">
+						<Loader class="animate-spin" />
+					</Empty.Media>
+					<Empty.Title>Loading WHOIS record…</Empty.Title>
+				</Empty.Header>
+			</Empty.Root>
+		{:else if recordError}
+			<Empty.Root>
+				<Empty.Header>
+					<Empty.Media variant="icon">
+						<TriangleAlert />
+					</Empty.Media>
+					<Empty.Title>Failed to load record</Empty.Title>
+					<Empty.Description>{recordError}</Empty.Description>
+				</Empty.Header>
+			</Empty.Root>
+		{:else if displayRecord}
+			<Tabs.Root bind:value={activeTab} class="flex flex-col flex-1 min-h-0">
+				<div class="px-6 shrink-0">
+					<Tabs.List class="w-full">
+						<Tabs.Trigger value="overview" class="flex-1">Overview</Tabs.Trigger>
+						{#if hasEntities}
+							<Tabs.Trigger value="entities" class="flex-1">Entities</Tabs.Trigger>
+						{/if}
+						<Tabs.Trigger value="related" class="flex-1 gap-1.5">
+							Related
+							{#if !isLoadingCorrelations && relatedCount > 0}
+								<Badge variant="secondary" class="text-[10px] h-5 min-w-5 px-1.5 ml-1">
+									{relatedCount}
+								</Badge>
+							{:else if isLoadingCorrelations}
+								<Loader class="h-3 w-3 animate-spin text-muted-foreground ml-1" />
+							{/if}
+						</Tabs.Trigger>
+					</Tabs.List>
+				</div>
+
+				<ScrollArea class="flex-1">
+					<div class="px-6 py-5">
+					<Tabs.Content value="overview">
+						<WhoisOverviewTab record={displayRecord} />
+					</Tabs.Content>
+
+					{#if hasEntities}
+						<Tabs.Content value="entities">
+							<WhoisEntitiesTab record={displayRecord} />
+						</Tabs.Content>
+					{/if}
+
+					<Tabs.Content value="related">
+						<WhoisRelatedTab
+							{correlations}
+							isLoading={isLoadingCorrelations}
+							error={correlationsError}
+							currentRecordId={displayRecord.id}
+						/>
+					</Tabs.Content>
+					</div>
+				</ScrollArea>
+			</Tabs.Root>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>

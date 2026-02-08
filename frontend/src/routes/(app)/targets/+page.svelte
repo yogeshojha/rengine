@@ -22,6 +22,7 @@
 	import ScanHistoryModal from '$lib/components/targets/scan-history-modal.svelte';
 	import BulkActionBar from '$lib/components/targets/bulk-action-bar.svelte';
 	import ImportTargetsModal from '$lib/components/modals/import-targets-modal.svelte';
+	import WhoisDetailDialog from '$lib/components/whois/whois-detail-dialog.svelte';
 
 	let showAddModal = $state(false);
 	let showDetailDialog = $state(false);
@@ -31,6 +32,9 @@
 	let isDeleting = $state(false);
 	let isRefreshing = $state(false);
 	let showImportModal = $state(false);
+
+	let showWhoisDialog = $state(false);
+	let whoisTarget = $state<Target | null>(null);
 
 	let activeScanCounts = $state<Record<string, number>>({});
 
@@ -160,6 +164,11 @@
 		targetToDelete = target;
 		deleteMode = 'single';
 		showDeleteDialog = true;
+	}
+
+	function handleWhoisClick(target: Target) {
+		whoisTarget = target;
+		showWhoisDialog = true;
 	}
 
 	async function confirmDelete() {
@@ -314,6 +323,7 @@
 						onView={handleViewTarget}
 						onEdit={handleEditTarget}
 						onDelete={handleDeleteTarget}
+						onWhoisClick={handleWhoisClick}
 					/>
 				{/each}
 			</div>
@@ -400,4 +410,11 @@
 	onScan={handleBulkScan}
 	onDelete={handleBulkDelete}
 	onClear={clearSelection}
+/>
+
+<WhoisDetailDialog
+    bind:open={showWhoisDialog}
+    recordId={whoisTarget?.whois_record_id}
+    targetId={whoisTarget?.id}
+    onOpenChange={(open) => (showWhoisDialog = open)}
 />

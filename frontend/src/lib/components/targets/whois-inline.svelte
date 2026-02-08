@@ -14,8 +14,6 @@
 		Globe,
 		Server,
 		Network,
-		ShieldCheck,
-		ShieldAlert,
 		Clock,
 		CalendarDays,
 		CalendarClock,
@@ -30,9 +28,10 @@
 		status: WhoisStatus;
 		whois: WhoisSummaryData | null;
 		error?: string | null;
+		onClick?: () => void;
 	}
 
-	let { status, whois, error = null }: Props = $props();
+	let { status, whois, error = null, onClick }: Props = $props();
 
 	let urgency = $derived<ExpirationUrgency>(
 		whois?.expiration_date ? getExpirationUrgency(whois.expiration_date) : 'none'
@@ -113,6 +112,11 @@
 		if (str.length <= max) return str;
 		return str.slice(0, max - 1) + '…';
 	}
+
+	function handleClick(e: MouseEvent) {
+		e.stopPropagation();
+		onClick?.();
+	}
 </script>
 
 {#if status === WhoisStatus.PENDING || status === WhoisStatus.QUERYING}
@@ -130,7 +134,8 @@
 		<HoverCard.Trigger>
 			<button
 				type="button"
-				class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-default max-w-full"
+				class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer max-w-full"
+				onclick={handleClick}
 			>
 				<span class="truncate">{inlineSummary}</span>
 				{#if urgency !== 'none' && whois.lookup_type === 'DOMAIN'}
@@ -154,7 +159,6 @@
 
 			<!-- Body -->
 			<div class="px-4 py-3 space-y-3">
-				<!-- Registrant -->
 				{#if whois.registrant_name}
 					<div class="flex items-start gap-2.5">
 						<UserRound class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
@@ -165,7 +169,6 @@
 					</div>
 				{/if}
 
-				<!-- Registrar (domains) -->
 				{#if whois.registrar_name}
 					<div class="flex items-start gap-2.5">
 						<Building class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
@@ -176,7 +179,6 @@
 					</div>
 				{/if}
 
-				<!-- Network (IPs) -->
 				{#if whois.network_cidr}
 					<div class="flex items-start gap-2.5">
 						<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
@@ -187,7 +189,6 @@
 					</div>
 				{/if}
 
-				<!-- Country -->
 				{#if whois.country}
 					<div class="flex items-start gap-2.5">
 						<Flag class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
@@ -198,7 +199,6 @@
 					</div>
 				{/if}
 
-				<!-- Dates -->
 				{#if whois.registration_date || whois.expiration_date}
 					<div class="pt-1 border-t border-border/40">
 						<div class="grid grid-cols-2 gap-3 pt-2">
@@ -239,7 +239,7 @@
 						<Clock class="h-3 w-3" />
 						<span>Queried {formatShortDate(whois.queried_at)}</span>
 					</div>
-					<span class="text-[11px] text-muted-foreground/60">Click for full details</span>
+					<span class="text-[11px] text-primary/70">Click for full details</span>
 				</div>
 			</div>
 		</HoverCard.Content>
