@@ -15,6 +15,19 @@
 
 	let { children } = $props();
 
+	let sidebarOpen = $state(true);
+
+
+	onMount(() => {
+		const saved = document.cookie
+			.split('; ')
+			.find(c => c.startsWith('sidebar:state='))
+			?.split('=')[1];
+		if (saved !== undefined) {
+			sidebarOpen = saved === 'true';
+		}
+	});
+
 	$effect(() => {
 		if (!auth.isLoading && !auth.isAuthenticated) {
 			goto('/login');
@@ -73,7 +86,7 @@
 		<p class="text-muted-foreground">Loading...</p>
 	</div>
 {:else if auth.isAuthenticated}
-	<Sidebar.Provider>
+	<Sidebar.Provider open={sidebarOpen}>
 		<AppSidebar variant="inset" />
 		<Sidebar.Inset>
 			<div class="flex flex-1 flex-col">
