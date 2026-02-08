@@ -82,6 +82,27 @@
 		}
 	});
 
+	// Measure available height for the scroll area once dialog + tabs are rendered.
+	// We take the max content height across all tabs on first open so the dialog
+	// never resizes when switching tabs.
+	let headerEl = $state<HTMLDivElement | null>(null);
+	let tabListEl = $state<HTMLDivElement | null>(null);
+	let scrollHeight = $state(0);
+
+	function measureScrollHeight() {
+		if (!headerEl || !tabListEl) return;
+		requestAnimationFrame(() => {
+			const viewportH = window.innerHeight;
+			// Dialog max-height is 85vh, but also capped by the actual viewport minus some padding
+			const dialogMaxH = Math.min(viewportH * 0.85, viewportH - 40);
+			const headerH = headerEl?.offsetHeight ?? 0;
+			const tabListH = tabListEl?.offsetHeight ?? 0;
+			const available = dialogMaxH - headerH - tabListH;
+			// Cap at 500px so it doesn't become huge on large screens
+			scrollHeight = Math.min(Math.max(available, 200), 500);
+		});
+	}
+
 	$effect(() => {
 		if (open) {
 			activeTab = 'overview';
@@ -91,6 +112,13 @@
 			correlations = [];
 			recordError = null;
 			correlationsError = null;
+			scrollHeight = 0;
+		}
+	});
+
+	$effect(() => {
+		if (open && displayRecord && headerEl && tabListEl) {
+			measureScrollHeight();
 		}
 	});
 
@@ -144,50 +172,52 @@
 </script>
 
 <Dialog.Root bind:open {onOpenChange}>
-	<Dialog.Content class="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
-		<Dialog.Header class="px-6 pt-6 pb-4 shrink-0">
-			<div class="flex items-center gap-3">
-				<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
-					{#if isLoadingRecord}
-						<Loader class="h-5 w-5 text-primary animate-spin" />
-					{:else}
-						<LookupIcon class="h-5 w-5 text-primary" />
+	<Dialog.Content class="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+		<div bind:this={headerEl} class="shrink-0">
+			<Dialog.Header class="px-6 pt-6 pb-4">
+				<div class="flex items-center gap-3">
+					<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
+						{#if isLoadingRecord}
+							<Loader class="h-5 w-5 text-primary animate-spin" />
+						{:else}
+							<LookupIcon class="h-5 w-5 text-primary" />
+						{/if}
+					</div>
+					<div class="min-w-0 flex-1">
+						<Dialog.Title class="text-lg font-semibold truncate">
+							{#if displayRecord}
+								{displayRecord.name || displayRecord.query_value}
+							{:else if isLoadingRecord}
+								Loading…
+							{:else}
+								WHOIS Record
+							{/if}
+						</Dialog.Title>
+						<Dialog.Description class="text-sm text-muted-foreground">
+							WHOIS / RDAP Record Details
+						</Dialog.Description>
+					</div>
+					{#if displayRecord}
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="h-8 w-8 shrink-0"
+									onclick={handleRefresh}
+									disabled={isRefreshing}
+								>
+									<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
+								</Button>
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								<p>Refresh WHOIS data</p>
+							</Tooltip.Content>
+						</Tooltip.Root>
 					{/if}
 				</div>
-				<div class="min-w-0 flex-1">
-					<Dialog.Title class="text-lg font-semibold truncate">
-						{#if displayRecord}
-							{displayRecord.name || displayRecord.query_value}
-						{:else if isLoadingRecord}
-							Loading…
-						{:else}
-							WHOIS Record
-						{/if}
-					</Dialog.Title>
-					<Dialog.Description class="text-sm text-muted-foreground">
-						WHOIS / RDAP Record Details
-					</Dialog.Description>
-				</div>
-				{#if displayRecord}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<Button
-								variant="ghost"
-								size="icon"
-								class="h-8 w-8 shrink-0"
-								onclick={handleRefresh}
-								disabled={isRefreshing}
-							>
-								<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
-							</Button>
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Refresh WHOIS data</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				{/if}
-			</div>
-		</Dialog.Header>
+			</Dialog.Header>
+		</div>
 
 		{#if isLoadingRecord && !displayRecord}
 			<Empty.Root>
@@ -209,8 +239,8 @@
 				</Empty.Header>
 			</Empty.Root>
 		{:else if displayRecord}
-			<Tabs.Root bind:value={activeTab} class="flex flex-col flex-1 min-h-0">
-				<div class="px-6 shrink-0">
+			<Tabs.Root bind:value={activeTab}>
+				<div class="px-6 shrink-0" bind:this={tabListEl}>
 					<Tabs.List class="w-full">
 						<Tabs.Trigger value="overview" class="flex-1">Overview</Tabs.Trigger>
 						{#if hasEntities}
@@ -219,7 +249,7 @@
 						<Tabs.Trigger value="related" class="flex-1 gap-1.5">
 							Related
 							{#if !isLoadingCorrelations && relatedCount > 0}
-								<Badge variant="secondary" class="text-[10px] h-5 min-w-5 px-1.5 ml-1">
+								<Badge variant="outline" class="text-[10px] h-5 min-w-5 px-1.5 ml-1 bg-blue-50 text-blue-700 border-blue-200">
 									{relatedCount}
 								</Badge>
 							{:else if isLoadingCorrelations}
@@ -229,32 +259,42 @@
 					</Tabs.List>
 				</div>
 
-				<ScrollArea class="flex-1">
-					<div class="px-6 py-5">
+				{#if scrollHeight > 0}
 					<Tabs.Content value="overview">
-						<WhoisOverviewTab
-							record={displayRecord}
-							onCorrelationClick={handleCorrelationClick}
-						/>
+						<ScrollArea style="height: {scrollHeight}px">
+							<div class="px-6 py-5">
+								<WhoisOverviewTab
+									record={displayRecord}
+									onCorrelationClick={handleCorrelationClick}
+								/>
+							</div>
+						</ScrollArea>
 					</Tabs.Content>
 
 					{#if hasEntities}
 						<Tabs.Content value="entities">
-							<WhoisEntitiesTab record={displayRecord} />
+							<ScrollArea style="height: {scrollHeight}px">
+								<div class="px-6 py-5">
+									<WhoisEntitiesTab record={displayRecord} />
+								</div>
+							</ScrollArea>
 						</Tabs.Content>
 					{/if}
 
 					<Tabs.Content value="related">
-						<WhoisRelatedTab
-							{correlations}
-							isLoading={isLoadingCorrelations}
-							error={correlationsError}
-							currentRecordId={displayRecord.id}
-							onCorrelationClick={handleCorrelationClick}
-						/>
+						<ScrollArea style="height: {scrollHeight}px">
+							<div class="px-6 py-5">
+								<WhoisRelatedTab
+									{correlations}
+									isLoading={isLoadingCorrelations}
+									error={correlationsError}
+									currentRecordId={displayRecord.id}
+									onCorrelationClick={handleCorrelationClick}
+								/>
+							</div>
+						</ScrollArea>
 					</Tabs.Content>
-					</div>
-				</ScrollArea>
+				{/if}
 			</Tabs.Root>
 		{/if}
 	</Dialog.Content>
