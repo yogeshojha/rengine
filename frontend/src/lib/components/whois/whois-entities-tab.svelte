@@ -14,6 +14,8 @@
 		Phone,
 		MapPin,
 		Globe,
+		MonitorCog,
+		Cable
 	} from 'lucide-svelte';
 
 	interface Props {
@@ -29,7 +31,9 @@
 		abuse: Shield,
 		billing: CreditCard,
 		registrar: Handshake,
-		sponsor: Globe
+		sponsor: Globe,
+		noc: MonitorCog,
+    	routing: Cable
 	};
 
 	const ROLE_ORDER: WhoisEntityRole[] = [
@@ -39,7 +43,9 @@
 		'abuse',
 		'registrar',
 		'billing',
-		'sponsor'
+		'sponsor',
+		'noc',
+    	'routing'
 	];
 
 	let populatedRoles = $derived.by(() => {

@@ -46,6 +46,8 @@ export interface WhoisParsedData {
 		billing: WhoisEntity[];
 		registrar: WhoisEntity[];
 		sponsor: WhoisEntity[];
+		noc: WhoisEntity[];
+    	routing: WhoisEntity[];
 	};
 	unicode_name: string;
 	nameservers: string[];
@@ -122,17 +124,23 @@ export interface WhoisLookupResponse {
 	cached: boolean;
 }
 
-export type WhoisEntityRole = 'registrant' | 'administrative' | 'technical' | 'abuse' | 'billing' | 'registrar' | 'sponsor';
+export type WhoisEntityRole =
+    | 'registrant' | 'administrative' | 'technical'
+    | 'abuse' | 'billing' | 'registrar' | 'sponsor'
+    | 'noc' | 'routing';
 
 export const ENTITY_ROLE_LABELS: Record<WhoisEntityRole, string> = {
-	registrant: 'Registrant',
-	administrative: 'Administrative',
-	technical: 'Technical',
-	abuse: 'Abuse',
-	billing: 'Billing',
-	registrar: 'Registrar',
-	sponsor: 'Sponsor'
+    registrant: 'Registrant',
+    administrative: 'Administrative',
+    technical: 'Technical',
+    abuse: 'Abuse',
+    billing: 'Billing',
+    registrar: 'Registrar',
+    sponsor: 'Sponsor',
+    noc: 'NOC',
+    routing: 'Routing'
 };
+
 
 export const CORRELATION_TYPE_LABELS: Record<string, string> = {
 	registrant: 'Shared Registrant',
