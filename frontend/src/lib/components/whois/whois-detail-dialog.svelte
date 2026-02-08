@@ -12,6 +12,7 @@
 	import WhoisOverviewTab from './whois-overview-tab.svelte';
 	import WhoisEntitiesTab from './whois-entities-tab.svelte';
 	import WhoisRelatedTab from './whois-related-tab.svelte';
+	import CorrelationLookupDialog from './correlation-lookup-dialog.svelte';
 	import {
 		RefreshCw,
 		Globe,
@@ -47,6 +48,10 @@
 
 	let isRefreshing = $state(false);
 	let activeTab = $state('overview');
+
+	let showCorrelationLookup = $state(false);
+	let correlationLookupType = $state('');
+	let correlationLookupValue = $state('');
 
 	let displayRecord = $derived(externalRecord ?? internalRecord);
 
@@ -129,6 +134,12 @@
 		} finally {
 			isRefreshing = false;
 		}
+	}
+
+	function handleCorrelationClick(type: string, value: string) {
+		correlationLookupType = type;
+		correlationLookupValue = value;
+		showCorrelationLookup = true;
 	}
 </script>
 
@@ -221,7 +232,10 @@
 				<ScrollArea class="flex-1">
 					<div class="px-6 py-5">
 					<Tabs.Content value="overview">
-						<WhoisOverviewTab record={displayRecord} />
+						<WhoisOverviewTab
+							record={displayRecord}
+							onCorrelationClick={handleCorrelationClick}
+						/>
 					</Tabs.Content>
 
 					{#if hasEntities}
@@ -236,6 +250,7 @@
 							isLoading={isLoadingCorrelations}
 							error={correlationsError}
 							currentRecordId={displayRecord.id}
+							onCorrelationClick={handleCorrelationClick}
 						/>
 					</Tabs.Content>
 					</div>
@@ -244,3 +259,10 @@
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
+
+<CorrelationLookupDialog
+	bind:open={showCorrelationLookup}
+	correlationType={correlationLookupType}
+	correlationValue={correlationLookupValue}
+	onOpenChange={(o) => (showCorrelationLookup = o)}
+/>

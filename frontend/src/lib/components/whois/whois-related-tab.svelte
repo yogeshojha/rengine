@@ -1,17 +1,19 @@
 <script lang="ts">
 	import type { WhoisCorrelationResult, WhoisRecordSummary } from '$lib/types/whois';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Empty from '$lib/components/ui/empty';
-	import { Loader, SearchX, Link2, ShieldAlert, GitBranch } from 'lucide-svelte';
+	import { Loader, SearchX, Link2, ShieldAlert, GitBranch, ExternalLink } from 'lucide-svelte';
 
 	interface Props {
 		correlations: WhoisCorrelationResult[];
 		isLoading: boolean;
 		error: string | null;
 		currentRecordId?: string;
+		onCorrelationClick?: (type: string, value: string) => void;
 	}
 
-	let { correlations, isLoading, error, currentRecordId }: Props = $props();
+	let { correlations, isLoading, error, currentRecordId, onCorrelationClick }: Props = $props();
 
 	interface CorrelationReason {
 		type: string;
@@ -139,6 +141,23 @@
 		return `Matching ${labels.join(', ')}, and ${last}`;
 	}
 
+	function expandReasonValues(reason: CorrelationReason): { type: string; value: string }[] {
+		if (reason.type === 'nameserver' && reason.value.includes(',')) {
+			return reason.value
+				.split(',')
+				.map((v) => v.trim())
+				.filter(Boolean)
+				.map((v) => ({ type: reason.type, value: v }));
+		}
+		return [{ type: reason.type, value: reason.value }];
+	}
+
+	function handleBadgeClick(type: string, value: string) {
+		if (onCorrelationClick) {
+			onCorrelationClick(type, value);
+		}
+	}
+
 	let relatedTargets = $derived.by(() => {
 		const map = new Map<string, RelatedTarget>();
 
@@ -257,24 +276,36 @@
 					<!-- Match summary -->
 					<p class="text-xs text-muted-foreground">{buildMatchSummary(reasons)}</p>
 
-					<!-- Reason why it was related in the form of badge label | value label slighly dark-->
+					<!-- Reason badges — each value is its own badge, clickable for correlation lookup -->
 					<div class="flex flex-wrap gap-1.5">
 						{#each reasons as reason}
-							{#if getReasonColors(reason.type)}
-								{@const colors = getReasonColors(reason.type)}
-								<span
-									class="inline-flex items-center text-[11px] border rounded-md overflow-hidden {colors.border}"
-								>
-									<span class="px-2 py-1 font-medium {colors.bg} {colors.label}">
-										{REASON_LABELS[reason.type] ?? reason.type}
-									</span>
-									<span
-										class="px-2 py-1 font-mono border-l {colors.value} {colors.border} break-all"
-									>
-										{reason.value}
-									</span>
-								</span>
-							{/if}
+							{#each expandReasonValues(reason) as { type, value }}
+								{@const colors = getReasonColors(type)}
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<button
+											class="cursor-pointer"
+											onclick={() => handleBadgeClick(type, value)}
+										>
+											<span
+												class="inline-flex items-center text-[11px] border rounded-md overflow-hidden {colors.border} hover:ring-1 hover:ring-primary/30 transition-shadow"
+											>
+												<span class="px-2 py-1 font-medium {colors.bg} {colors.label}">
+													{REASON_LABELS[type] ?? type}
+												</span>
+												<span
+													class="px-2 py-1 font-mono border-l {colors.value} {colors.border} truncate max-w-[200px]"
+												>
+													{value}
+												</span>
+											</span>
+										</button>
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>Find all targets sharing this {(REASON_MATCH_LABELS[type] ?? type)}</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							{/each}
 						{/each}
 					</div>
 				</div>

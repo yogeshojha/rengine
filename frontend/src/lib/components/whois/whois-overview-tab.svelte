@@ -9,6 +9,7 @@
 		type ExpirationUrgency
 	} from '$lib/utilities/dates';
 	import * as Alert from '$lib/components/ui/alert';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
 	import CopyButton from '@/components/copy-button.svelte';
@@ -29,14 +30,16 @@
 		CalendarClock,
 		CalendarCheck,
 		TriangleAlert,
-		OctagonAlert
+		OctagonAlert,
+		ExternalLink
 	} from 'lucide-svelte';
 
 	interface Props {
 		record: WhoisRecordRead;
+		onCorrelationClick?: (type: string, value: string) => void;
 	}
 
-	let { record }: Props = $props();
+	let { record, onCorrelationClick }: Props = $props();
 
 	let lookupType = $derived(record.lookup_type as 'DOMAIN' | 'IP' | 'ASN');
 
@@ -83,6 +86,12 @@
 	let hasNameservers = $derived(record.nameservers && record.nameservers.length > 0);
 
 	let hasStatuses = $derived(record.domain_status && record.domain_status.length > 0);
+
+	function handleCorrelationClick(type: string, value: string) {
+		if (value && onCorrelationClick) {
+			onCorrelationClick(type, value);
+		}
+	}
 </script>
 
 <div class="space-y-5 py-1">
@@ -139,7 +148,20 @@
 					<UserRound class="h-3 w-3" />
 					Registrant
 				</div>
-				<p class="text-sm font-medium">{record.registrant_name}</p>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<button
+							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+							onclick={() => handleCorrelationClick('registrant_name', record.registrant_name)}
+						>
+							{record.registrant_name}
+							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+						</button>
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<p>Find targets with same registrant</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
 				{#if record.registrant_email}
 					<p class="text-xs text-muted-foreground">{record.registrant_email}</p>
 				{/if}
@@ -154,7 +176,20 @@
 					<Building class="h-3 w-3" />
 					Registrar
 				</div>
-				<p class="text-sm font-medium">{record.registrar_name}</p>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<button
+							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+							onclick={() => handleCorrelationClick('registrar_name', record.registrar_name)}
+						>
+							{record.registrar_name}
+							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+						</button>
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<p>Find targets with same registrar</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
 				{#if record.abuse_email}
 					<div class="flex items-center gap-1 mt-0.5">
 						<Mail class="h-3 w-3 text-muted-foreground" />
@@ -177,7 +212,20 @@
 					<Cable class="h-3 w-3" />
 					Network
 				</div>
-				<p class="text-sm font-medium font-mono">{record.network_cidr}</p>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<button
+							class="text-sm font-medium font-mono text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+							onclick={() => handleCorrelationClick('network_cidr', record.network_cidr)}
+						>
+							{record.network_cidr}
+							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+						</button>
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<p>Find targets in same network</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
 				{#if record.ip_version}
 					<p class="text-xs text-muted-foreground">IPv{record.ip_version}</p>
 				{/if}
@@ -192,7 +240,20 @@
 					<Flag class="h-3 w-3" />
 					Country
 				</div>
-				<p class="text-sm font-medium">{record.country}</p>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<button
+							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+							onclick={() => handleCorrelationClick('country', record.country)}
+						>
+							{record.country}
+							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+						</button>
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<p>Find targets in same country</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
 			</div>
 		{/if}
 
@@ -326,10 +387,25 @@
 			<p class="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Nameservers</p>
 			<div class="flex flex-wrap gap-1.5">
 				{#each record.nameservers as ns}
-					<Badge variant="outline" class="text-xs font-mono font-normal gap-1.5">
-						<Server class="h-3 w-3 text-muted-foreground" />
-						{ns}
-					</Badge>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<button
+								class="cursor-pointer"
+								onclick={() => handleCorrelationClick('nameserver', ns)}
+							>
+								<Badge
+									variant="outline"
+									class="text-xs font-mono font-normal gap-1.5 hover:bg-accent hover:border-primary/30 transition-colors"
+								>
+									<Server class="h-3 w-3 text-muted-foreground" />
+									{ns}
+								</Badge>
+							</button>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p>Find targets on this nameserver</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
 				{/each}
 			</div>
 		</div>

@@ -33,7 +33,7 @@
 		registrar: Handshake,
 		sponsor: Globe,
 		noc: MonitorCog,
-    	routing: Cable
+		routing: Cable
 	};
 
 	const ROLE_ORDER: WhoisEntityRole[] = [
@@ -45,7 +45,7 @@
 		'billing',
 		'sponsor',
 		'noc',
-    	'routing'
+		'routing'
 	];
 
 	let populatedRoles = $derived.by(() => {
