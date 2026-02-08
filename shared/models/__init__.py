@@ -1,3 +1,10 @@
+from shared.models.api_key import (
+    APIKey,
+    APIKeyCreate,
+    APIKeyRead,
+    APIKeyUpdate,
+    ProviderInfo,
+)
 from shared.models.notification import (
     Notification,
     NotificationCreate,
@@ -31,6 +38,10 @@ from shared.models.user import User, UserBase, UserCreate, UserRead
 TargetRead.model_rebuild()
 
 __all__ = [
+    "APIKey",
+    "APIKeyCreate",
+    "APIKeyRead",
+    "APIKeyUpdate",
     "Notification",
     "NotificationCreate",
     "NotificationRead",
@@ -44,6 +55,7 @@ __all__ = [
     "ProjectCreate",
     "ProjectRead",
     "ProjectUpdate",
+    "ProviderInfo",
     "Tag",
     "TagBase",
     "TagCreate",
