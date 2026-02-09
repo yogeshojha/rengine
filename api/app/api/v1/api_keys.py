@@ -13,9 +13,8 @@ from tools.viewdns.client import ViewDNSClient
 
 async def _test_viewdns(key_value: str) -> dict:
     client = ViewDNSClient(key_value)
-    raw = await client.ip_history("rengine.wiki")
-    record_count = len(raw.get("records", []))
-    return {"message": f"OK — {record_count} IP history records for rengine.wiki"}
+    _ = await client.ip_history("rengine.wiki")
+    return {"message": "API Key is valid."}
 
 
 API_KEY_TESTERS = {

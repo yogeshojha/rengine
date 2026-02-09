@@ -31,7 +31,7 @@ export const apiKeysApi = {
 		return api.get(`/api-keys/${keyId}/reveal`);
 	},
 
-	async test(keyId: string): Promise<{ provider: string; status: string; message: string }> {
+	async test(keyId: string): Promise<{ provider: string; success: boolean; message: string }> {
 		return api.post(`/api-keys/${keyId}/test`);
 	}
 };

@@ -73,6 +73,10 @@
 
 	let editPopoverOpen = $state(false);
 
+	let testDialogOpen = $state(false);
+	let testDialogKeyId = $state<string | null>(null);
+	let testDialogProvider = $state<APIProvider | null>(null);
+
 	async function fetchData() {
 		isLoading = true;
 		try {
@@ -190,10 +194,10 @@
 		testingKeyId = keyId;
 		try {
 			const result = await apiKeysApi.test(keyId);
-			if (result.status === 'not_implemented') {
-				toast.info(result.message);
+			if (result.success) {
+				toast.success(result.message);
 			} else {
-				toast.success('API key is valid');
+				toast.error(result.message);
 			}
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Test failed');
@@ -490,7 +494,11 @@
 												size="sm"
 												class="h-7 px-2 text-xs"
 												disabled={testingKeyId === key.id}
-												onclick={() => handleTest(key.id)}
+												onclick={() => {
+													testDialogKeyId = key.id;
+													testDialogProvider = provider.provider;
+													testDialogOpen = true;
+												}}
 											>
 												{#if testingKeyId === key.id}
 													<Spinner class="size-3 mr-1" />
@@ -626,6 +634,45 @@
 					Removing...
 				{:else}
 					Remove Key
+				{/if}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- test confirmation dialog -->
+
+<Dialog.Root bind:open={testDialogOpen}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>Test API Key</Dialog.Title>
+			<Dialog.Description>
+				This will make a live API call to verify the key works. It will consume 1 API call from your
+				ViewDNS quota.
+			</Dialog.Description>
+		</Dialog.Header>
+		<Dialog.Footer>
+			<Button
+				variant="outline"
+				onclick={() => (testDialogOpen = false)}
+				disabled={testingKeyId !== null}
+			>
+				Cancel
+			</Button>
+			<Button
+				onclick={async () => {
+					if (testDialogKeyId) {
+						testDialogOpen = false;
+						await handleTest(testDialogKeyId);
+					}
+				}}
+				disabled={testingKeyId !== null}
+			>
+				{#if testingKeyId !== null}
+					<Spinner class="mr-2" />
+					Testing...
+				{:else}
+					Test
 				{/if}
 			</Button>
 		</Dialog.Footer>
