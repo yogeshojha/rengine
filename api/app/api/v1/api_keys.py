@@ -61,6 +61,16 @@ async def delete_api_key(
     await service.delete_key(key_id)
 
 
+@router.get("/{key_id}/reveal")
+async def reveal_api_key(
+    key_id: str,
+    _current_user: CurrentSuperuser,
+    service: Annotated[APIKeyService, Depends(get_api_key_service)],
+):
+    api_key = await service._get_key_or_404(key_id)
+    return {"key_value": api_key.key_value}
+
+
 @router.post("/{key_id}/test")
 async def test_api_key(
     key_id: str,
@@ -73,5 +83,5 @@ async def test_api_key(
     return {
         "provider": api_key.provider,
         "status": "not_implemented",
-        "message": f"Test endpoint for {api_key.provider.value}",
+        "message": f"Test endpoint for {api_key.provider.value} not yet implemented",
     }
