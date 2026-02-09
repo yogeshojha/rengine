@@ -11,7 +11,7 @@ API_PROVIDER_META: dict[str, dict] = {
     APIProvider.VIEWDNS: {
         "name": "ViewDNS.info",
         "description": "Used for DNS intelligence, reverse lookups and DNS history",
-        "docs_url": "https://viewdns.info/api/",
+        "docs_url": "https://viewdns.info/api/?src=reNgine",
     }
 }
 
