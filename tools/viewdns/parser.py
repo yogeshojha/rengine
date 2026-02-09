@@ -70,8 +70,6 @@ def parse_reverse_ns(raw: dict[str, Any], nameserver: str) -> ReverseNSResponse:
     return ReverseNSResponse(
         nameserver=nameserver,
         domain_count=_safe_int(raw.get("domain_count")),
-        total_pages=_safe_int(raw.get("total_pages")) or 1,
-        current_page=_safe_int(raw.get("current_page")) or 1,
         domains=domains,
     )
 
@@ -89,7 +87,5 @@ def parse_reverse_whois(raw: dict[str, Any], query: str) -> ReverseWhoisResponse
     return ReverseWhoisResponse(
         query=query,
         result_count=_safe_int(raw.get("result_count")),
-        total_pages=_safe_int(raw.get("total_pages")) or 1,
-        current_page=_safe_int(raw.get("current_page")) or 1,
         matches=matches,
     )
