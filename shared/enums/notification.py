@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class NotificationType(str, Enum):
+class NotificationType(Enum):
     SCAN = "scan"  # scan specific notifications
     SYSTEM = "system"  # system-wide notifications like updates
     SECURITY = "security"  # security alerts like invalid logins
@@ -11,7 +11,7 @@ class NotificationType(str, Enum):
     INTEGRATION = "integration"  # like failed telegram/webhook notifications
 
 
-class NotificationSeverity(str, Enum):
+class NotificationSeverity(Enum):
     SUCCESS = "success"
     INFO = "info"
     WARNING = "warning"

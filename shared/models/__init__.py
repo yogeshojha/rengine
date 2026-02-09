@@ -34,6 +34,7 @@ from shared.models.target import (
     TargetValidationResponse,
 )
 from shared.models.user import User, UserBase, UserCreate, UserRead
+from shared.models.viewdns import ViewDNSCache
 
 TargetRead.model_rebuild()
 
@@ -78,4 +79,5 @@ __all__ = [
     "UserBase",
     "UserCreate",
     "UserRead",
+    "ViewDNSCache",
 ]

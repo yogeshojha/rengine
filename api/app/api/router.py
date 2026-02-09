@@ -10,6 +10,7 @@ from app.api.v1 import (
     tags,
     targets,
     users,
+    viewdns,
     whois,
 )
 
@@ -23,5 +24,6 @@ router.include_router(targets.router)
 router.include_router(tags.router)
 router.include_router(notifications.router)
 router.include_router(celery_health.router)
-router.include_router(whois.router)
 router.include_router(api_keys.router)
+router.include_router(whois.router)
+router.include_router(viewdns.router)

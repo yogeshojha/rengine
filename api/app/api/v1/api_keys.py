@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentSuperuser
 from app.core.database import get_session
 from shared.models.api_key import APIKeyCreate, APIKeyRead, APIKeyUpdate, ProviderInfo
-from shared.services.api_key import APIKeyService
+from shared.services.api_key.async_api_key import APIKeyService
 
 router = APIRouter(prefix="/api-keys", tags=["api-keys"])
 
