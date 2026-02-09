@@ -21,14 +21,17 @@ def get_viewdns_service(
     return ViewDNSService(session)
 
 
-@router.get("/ip-history/{domain}", response_model=ViewDNSCacheRead)
+@router.get("/ip-history/{domain}", response_model=ViewDNSCacheRead | None)
 async def ip_history(
     domain: str,
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
+    cached_only: bool = Query(
+        False, description="If true, return only cached data without making an API call"
+    ),
 ):
     try:
-        return await service.ip_history(domain)
+        return await service.ip_history(domain, cached_only=cached_only)
     except ViewDNSKeyNotConfiguredError as e:
         raise HTTPException(
             status_code=status.HTTP_424_FAILED_DEPENDENCY,
@@ -41,14 +44,17 @@ async def ip_history(
         ) from e
 
 
-@router.get("/reverse-ip/{host}", response_model=ViewDNSCacheRead)
+@router.get("/reverse-ip/{host}", response_model=ViewDNSCacheRead | None)
 async def reverse_ip(
     host: str,
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
+    cached_only: bool = Query(
+        False, description="If true, return only cached data without making an API call"
+    ),
 ):
     try:
-        return await service.reverse_ip(host)
+        return await service.reverse_ip(host, cached_only=cached_only)
     except ViewDNSKeyNotConfiguredError as e:
         raise HTTPException(
             status_code=status.HTTP_424_FAILED_DEPENDENCY,
@@ -61,14 +67,17 @@ async def reverse_ip(
         ) from e
 
 
-@router.get("/reverse-ns/{nameserver}", response_model=ViewDNSCacheRead)
+@router.get("/reverse-ns/{nameserver}", response_model=ViewDNSCacheRead | None)
 async def reverse_ns(
     nameserver: str,
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
+    cached_only: bool = Query(
+        False, description="If true, return only cached data without making an API call"
+    ),
 ):
     try:
-        return await service.reverse_ns(nameserver)
+        return await service.reverse_ns(nameserver, cached_only=cached_only)
     except ViewDNSKeyNotConfiguredError as e:
         raise HTTPException(
             status_code=status.HTTP_424_FAILED_DEPENDENCY,
@@ -81,16 +90,19 @@ async def reverse_ns(
         ) from e
 
 
-@router.get("/reverse-whois", response_model=ViewDNSCacheRead)
+@router.get("/reverse-whois", response_model=ViewDNSCacheRead | None)
 async def reverse_whois(
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
     q: str = Query(
         ..., min_length=1, description="Email, domain, name, or company to search"
     ),
+    cached_only: bool = Query(
+        False, description="If true, return only cached data without making an API call"
+    ),
 ):
     try:
-        return await service.reverse_whois(q)
+        return await service.reverse_whois(q, cached_only=cached_only)
     except ViewDNSKeyNotConfiguredError as e:
         raise HTTPException(
             status_code=status.HTTP_424_FAILED_DEPENDENCY,

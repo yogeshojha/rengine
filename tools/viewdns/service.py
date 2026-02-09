@@ -229,7 +229,9 @@ class ViewDNSService:
 
     # async for fasapi methods
 
-    async def ip_history(self, domain: str) -> ViewDNSCacheRead:
+    async def ip_history(
+        self, domain: str, cached_only: bool = False
+    ) -> ViewDNSCacheRead | None:
         domain = domain.strip().lower()
         lookup_type = ViewDNSLookupType.IP_HISTORY
 
@@ -245,6 +247,9 @@ class ViewDNSService:
                 cached=True,
                 queried_at=cached.queried_at,
             )
+
+        if cached_only:
+            return None
 
         client = await self._get_client()
         try:
@@ -266,12 +271,13 @@ class ViewDNSService:
             await self._handle_api_error(e)
             raise ViewDNSLookupError(str(e)) from e
 
-    async def reverse_ip(self, host: str) -> ViewDNSCacheRead:
+    async def reverse_ip(
+        self, host: str, cached_only: bool = False
+    ) -> ViewDNSCacheRead | None:
         host = host.strip().lower()
-        cache_key = f"{host}"
         lookup_type = ViewDNSLookupType.REVERSE_IP
 
-        cached = await self._get_cached(lookup_type, cache_key)
+        cached = await self._get_cached(lookup_type, host)
         if cached and self._is_fresh(cached):
             logger.debug("ViewDNS cache hit: reverse_ip for %s", host)
             response = self._reconstruct_response(lookup_type, cached.response_data)
@@ -284,15 +290,16 @@ class ViewDNSService:
                 queried_at=cached.queried_at,
             )
 
+        if cached_only:
+            return None
+
         client = await self._get_client()
         try:
             raw = await client.reverse_ip(host)
             response = parse_reverse_ip(raw, host)
             result_count = response.domain_count
             await self._post_success()
-            record = await self._store_cache(
-                lookup_type, cache_key, response, result_count
-            )
+            record = await self._store_cache(lookup_type, host, response, result_count)
             return self._to_read(
                 lookup_type,
                 host,
@@ -304,12 +311,13 @@ class ViewDNSService:
             await self._handle_api_error(e)
             raise ViewDNSLookupError(str(e)) from e
 
-    async def reverse_ns(self, nameserver: str) -> ViewDNSCacheRead:
+    async def reverse_ns(
+        self, nameserver: str, cached_only: bool = False
+    ) -> ViewDNSCacheRead | None:
         nameserver = nameserver.strip().lower()
-        cache_key = f"{nameserver}"
         lookup_type = ViewDNSLookupType.REVERSE_NS
 
-        cached = await self._get_cached(lookup_type, cache_key)
+        cached = await self._get_cached(lookup_type, nameserver)
         if cached and self._is_fresh(cached):
             logger.debug("ViewDNS cache hit: reverse_ns for %s", nameserver)
             response = self._reconstruct_response(lookup_type, cached.response_data)
@@ -322,6 +330,9 @@ class ViewDNSService:
                 queried_at=cached.queried_at,
             )
 
+        if cached_only:
+            return None
+
         client = await self._get_client()
         try:
             raw = await client.reverse_ns(nameserver)
@@ -329,7 +340,7 @@ class ViewDNSService:
             result_count = response.domain_count
             await self._post_success()
             record = await self._store_cache(
-                lookup_type, cache_key, response, result_count
+                lookup_type, nameserver, response, result_count
             )
             return self._to_read(
                 lookup_type,
@@ -342,12 +353,13 @@ class ViewDNSService:
             await self._handle_api_error(e)
             raise ViewDNSLookupError(str(e)) from e
 
-    async def reverse_whois(self, query: str) -> ViewDNSCacheRead:
+    async def reverse_whois(
+        self, query: str, cached_only: bool = False
+    ) -> ViewDNSCacheRead | None:
         query = query.strip()
-        cache_key = f"{query}"
         lookup_type = ViewDNSLookupType.REVERSE_WHOIS
 
-        cached = await self._get_cached(lookup_type, cache_key)
+        cached = await self._get_cached(lookup_type, query)
         if cached and self._is_fresh(cached):
             logger.debug("ViewDNS cache hit: reverse_whois for %s", query)
             response = self._reconstruct_response(lookup_type, cached.response_data)
@@ -360,15 +372,16 @@ class ViewDNSService:
                 queried_at=cached.queried_at,
             )
 
+        if cached_only:
+            return None
+
         client = await self._get_client()
         try:
             raw = await client.reverse_whois(query)
             response = parse_reverse_whois(raw, query)
             result_count = response.result_count
             await self._post_success()
-            record = await self._store_cache(
-                lookup_type, cache_key, response, result_count
-            )
+            record = await self._store_cache(lookup_type, query, response, result_count)
             return self._to_read(
                 lookup_type,
                 query,
@@ -382,7 +395,9 @@ class ViewDNSService:
 
     # sync methods for celery tasks
 
-    def ip_history_sync(self, session: Session, domain: str) -> ViewDNSCacheRead:
+    def ip_history_sync(
+        self, session: Session, domain: str, cached_only: bool = False
+    ) -> ViewDNSCacheRead | None:
         domain = domain.strip().lower()
         lookup_type = ViewDNSLookupType.IP_HISTORY
 
@@ -398,6 +413,9 @@ class ViewDNSService:
                 cached=True,
                 queried_at=cached.queried_at,
             )
+
+        if cached_only:
+            return None
 
         client = self._get_client_sync(session)
         try:
@@ -419,12 +437,13 @@ class ViewDNSService:
             self._handle_api_error_sync(session, e)
             raise ViewDNSLookupError(str(e)) from e
 
-    def reverse_ip_sync(self, session: Session, host: str) -> ViewDNSCacheRead:
+    def reverse_ip_sync(
+        self, session: Session, host: str, cached_only: bool = False
+    ) -> ViewDNSCacheRead | None:
         host = host.strip().lower()
-        cache_key = f"{host}"
         lookup_type = ViewDNSLookupType.REVERSE_IP
 
-        cached = self._get_cached_sync(session, lookup_type, cache_key)
+        cached = self._get_cached_sync(session, lookup_type, host)
         if cached and self._is_fresh(cached):
             logger.debug("ViewDNS cache hit: reverse_ip for %s", host)
             response = self._reconstruct_response(lookup_type, cached.response_data)
@@ -437,6 +456,9 @@ class ViewDNSService:
                 queried_at=cached.queried_at,
             )
 
+        if cached_only:
+            return None
+
         client = self._get_client_sync(session)
         try:
             raw = client.reverse_ip_sync(host)
@@ -444,7 +466,7 @@ class ViewDNSService:
             result_count = response.domain_count
             self._post_success_sync(session)
             record = self._store_cache_sync(
-                session, lookup_type, cache_key, response, result_count
+                session, lookup_type, host, response, result_count
             )
             return self._to_read(
                 lookup_type,
@@ -457,12 +479,13 @@ class ViewDNSService:
             self._handle_api_error_sync(session, e)
             raise ViewDNSLookupError(str(e)) from e
 
-    def reverse_ns_sync(self, session: Session, nameserver: str) -> ViewDNSCacheRead:
+    def reverse_ns_sync(
+        self, session: Session, nameserver: str, cached_only: bool = False
+    ) -> ViewDNSCacheRead | None:
         nameserver = nameserver.strip().lower()
-        cache_key = f"{nameserver}"
         lookup_type = ViewDNSLookupType.REVERSE_NS
 
-        cached = self._get_cached_sync(session, lookup_type, cache_key)
+        cached = self._get_cached_sync(session, lookup_type, nameserver)
         if cached and self._is_fresh(cached):
             logger.debug("ViewDNS cache hit: reverse_ns for %s", nameserver)
             response = self._reconstruct_response(lookup_type, cached.response_data)
@@ -475,6 +498,9 @@ class ViewDNSService:
                 queried_at=cached.queried_at,
             )
 
+        if cached_only:
+            return None
+
         client = self._get_client_sync(session)
         try:
             raw = client.reverse_ns_sync(nameserver)
@@ -482,7 +508,7 @@ class ViewDNSService:
             result_count = response.domain_count
             self._post_success_sync(session)
             record = self._store_cache_sync(
-                session, lookup_type, cache_key, response, result_count
+                session, lookup_type, nameserver, response, result_count
             )
             return self._to_read(
                 lookup_type,
@@ -495,12 +521,13 @@ class ViewDNSService:
             self._handle_api_error_sync(session, e)
             raise ViewDNSLookupError(str(e)) from e
 
-    def reverse_whois_sync(self, session: Session, query: str) -> ViewDNSCacheRead:
+    def reverse_whois_sync(
+        self, session: Session, query: str, cached_only: bool = False
+    ) -> ViewDNSCacheRead | None:
         query = query.strip()
-        cache_key = f"{query}"
         lookup_type = ViewDNSLookupType.REVERSE_WHOIS
 
-        cached = self._get_cached_sync(session, lookup_type, cache_key)
+        cached = self._get_cached_sync(session, lookup_type, query)
         if cached and self._is_fresh(cached):
             logger.debug("ViewDNS cache hit: reverse_whois for %s", query)
             response = self._reconstruct_response(lookup_type, cached.response_data)
@@ -513,6 +540,9 @@ class ViewDNSService:
                 queried_at=cached.queried_at,
             )
 
+        if cached_only:
+            return None
+
         client = self._get_client_sync(session)
         try:
             raw = client.reverse_whois_sync(query)
@@ -520,7 +550,7 @@ class ViewDNSService:
             result_count = response.result_count
             self._post_success_sync(session)
             record = self._store_cache_sync(
-                session, lookup_type, cache_key, response, result_count
+                session, lookup_type, query, response, result_count
             )
             return self._to_read(
                 lookup_type,
