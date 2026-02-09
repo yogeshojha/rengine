@@ -43,6 +43,7 @@ select = [
 ignore = [
     "E501",    # line too long (handled by formatter)
     "PLR0913", # too many arguments in function
+    "PT019",   # fixture without value (false positive on FastAPI deps)
 ]
 
 [tool.ruff.lint.pylint]
