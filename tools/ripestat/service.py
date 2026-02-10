@@ -59,12 +59,12 @@ class RIPEStatLookupError(RIPEStatError):
 
 
 def _normalize_asn(raw: str) -> int:
-    """'AS23752', 'as23752', '23752' → 23752"""
+    """'AS23752', 'as23752', '23752' -> 23752"""
     return int(raw.upper().replace("AS", "").strip())
 
 
 def _asn_resource(asn: int) -> str:
-    """Int ASN → API resource string."""
+    """Int ASN -> API resource string."""
     return f"AS{asn}"
 
 

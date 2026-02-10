@@ -81,8 +81,10 @@
 				status={target.bgp_status}
 				bgp={target.bgp}
 				targetType={target.target_type}
+				targetValue={target.target_value}
 				onClick={() => onBgpClick?.(target)}
 			/>
+
 			<DiscoveryBadge
 				targetValue={target.target_value}
 				targetType={target.target_type}

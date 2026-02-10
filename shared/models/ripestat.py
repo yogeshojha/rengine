@@ -93,7 +93,7 @@ class RIPEStatASOverview(SQLModel, table=True):
 
 
 class RIPEStatNetworkInfo(SQLModel, table=True):
-    """IP → containing prefix + announcing ASN.
+    """IP-> containing prefix + announcing ASN.
 
     Source: /data/network-info/data.json?resource=IP
     The bridge between IP targets and ASN targets.
@@ -132,7 +132,7 @@ class RIPEStatAbuseContact(SQLModel, table=True):
 
 
 class RIPEStatPrefixOverview(SQLModel, table=True):
-    """Prefix → announcing ASN with holder info.
+    """Prefix-> announcing ASN with holder info.
 
     Source: /data/prefix-overview/data.json?resource=prefix
     One row per prefix+ASN (a prefix can be multi-origin).
