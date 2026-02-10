@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { whoisApi } from '$lib/api/whois';
 	import type { WhoisRecordRead, WhoisCorrelationResult } from '$lib/types/whois';
+	import type { TargetType } from '$lib/types/target';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -13,13 +14,15 @@
 	import WhoisEntitiesTab from './whois-entities-tab.svelte';
 	import WhoisRelatedTab from './whois-related-tab.svelte';
 	import CorrelationLookupDialog from './correlation-lookup-dialog.svelte';
+	import DiscoveriesSummary from '$lib/components/viewdns-discoveries/discoveries-summary.svelte';
 	import {
 		RefreshCw,
 		Globe,
 		Server,
 		Network,
 		Loader,
-		TriangleAlert
+		TriangleAlert,
+		Sparkles
 	} from 'lucide-svelte';
 
 	interface Props {
@@ -27,7 +30,11 @@
 		recordId?: string | null;
 		targetId?: string | null;
 		record?: WhoisRecordRead | null;
+		targetValue?: string | null;
+		targetType?: TargetType | null;
+		initialTab?: string;
 		onOpenChange: (open: boolean) => void;
+		onOpenTargetSummary?: () => void;
 	}
 
 	let {
@@ -35,7 +42,11 @@
 		recordId = null,
 		targetId = null,
 		record: externalRecord = null,
-		onOpenChange
+		targetValue = null,
+		targetType = null,
+		initialTab = 'overview',
+		onOpenChange,
+		onOpenTargetSummary
 	}: Props = $props();
 
 	let internalRecord = $state<WhoisRecordRead | null>(null);
@@ -57,9 +68,9 @@
 
 	let hasEntities = $derived(
 		displayRecord?.parsed_data?.entities != null &&
-		Object.values(displayRecord.parsed_data.entities).some(
-			(arr) => arr && arr.length > 0
-		)
+			Object.values(displayRecord.parsed_data.entities).some(
+				(arr) => arr && arr.length > 0
+			)
 	);
 
 	let relatedCount = $derived.by(() => {
@@ -75,16 +86,22 @@
 	let LookupIcon = $derived.by(() => {
 		if (!displayRecord) return Globe;
 		switch (displayRecord.lookup_type) {
-			case 'DOMAIN': return Globe;
-			case 'IP': return Server;
-			case 'ASN': return Network;
-			default: return Globe;
+			case 'DOMAIN':
+				return Globe;
+			case 'IP':
+				return Server;
+			case 'ASN':
+				return Network;
+			default:
+				return Globe;
 		}
 	});
 
-	// Measure available height for the scroll area once dialog + tabs are rendered.
-	// We take the max content height across all tabs on first open so the dialog
-	// never resizes when switching tabs.
+	// Discoveries tab available for domain and IP targets
+	let showDiscoveriesTab = $derived(
+		targetValue != null && (targetType === 'domain' || targetType === 'ip')
+	);
+
 	let headerEl = $state<HTMLDivElement | null>(null);
 	let tabListEl = $state<HTMLDivElement | null>(null);
 	let scrollHeight = $state(0);
@@ -93,19 +110,17 @@
 		if (!headerEl || !tabListEl) return;
 		requestAnimationFrame(() => {
 			const viewportH = window.innerHeight;
-			// Dialog max-height is 85vh, but also capped by the actual viewport minus some padding
 			const dialogMaxH = Math.min(viewportH * 0.85, viewportH - 40);
 			const headerH = headerEl?.offsetHeight ?? 0;
 			const tabListH = tabListEl?.offsetHeight ?? 0;
 			const available = dialogMaxH - headerH - tabListH;
-			// Cap at 500px so it doesn't become huge on large screens
 			scrollHeight = Math.min(Math.max(available, 200), 500);
 		});
 	}
 
 	$effect(() => {
 		if (open) {
-			activeTab = 'overview';
+			activeTab = initialTab;
 			loadData();
 		} else {
 			internalRecord = null;
@@ -141,7 +156,8 @@
 			try {
 				correlations = await whoisApi.getTargetCorrelations(targetId);
 			} catch (e) {
-				correlationsError = e instanceof Error ? e.message : 'Failed to load correlations';
+				correlationsError =
+					e instanceof Error ? e.message : 'Failed to load correlations';
 			} finally {
 				isLoadingCorrelations = false;
 			}
@@ -176,7 +192,9 @@
 		<div bind:this={headerEl} class="shrink-0">
 			<Dialog.Header class="px-6 pt-6 pb-4">
 				<div class="flex items-center gap-3">
-					<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
+					<div
+						class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0"
+					>
 						{#if isLoadingRecord}
 							<Loader class="h-5 w-5 text-primary animate-spin" />
 						{:else}
@@ -207,7 +225,9 @@
 									onclick={handleRefresh}
 									disabled={isRefreshing}
 								>
-									<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
+									<RefreshCw
+										class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}"
+									/>
 								</Button>
 							</Tooltip.Trigger>
 							<Tooltip.Content>
@@ -249,13 +269,24 @@
 						<Tabs.Trigger value="related" class="flex-1 gap-1.5">
 							Related
 							{#if !isLoadingCorrelations && relatedCount > 0}
-								<Badge variant="outline" class="text-[10px] h-5 min-w-5 px-1.5 ml-1 bg-blue-50 text-blue-700 border-blue-200">
+								<Badge
+									variant="outline"
+									class="text-[10px] h-5 min-w-5 px-1.5 ml-1 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20"
+								>
 									{relatedCount}
 								</Badge>
 							{:else if isLoadingCorrelations}
-								<Loader class="h-3 w-3 animate-spin text-muted-foreground ml-1" />
+								<Loader
+									class="h-3 w-3 animate-spin text-muted-foreground ml-1"
+								/>
 							{/if}
 						</Tabs.Trigger>
+						{#if showDiscoveriesTab}
+							<Tabs.Trigger value="discoveries" class="flex-1 gap-1.5">
+								Discoveries
+								<Sparkles class="h-3 w-3 text-amber-500 ml-0.5" />
+							</Tabs.Trigger>
+						{/if}
 					</Tabs.List>
 				</div>
 
@@ -294,6 +325,21 @@
 							</div>
 						</ScrollArea>
 					</Tabs.Content>
+
+					{#if showDiscoveriesTab && targetValue && targetType}
+						<Tabs.Content value="discoveries">
+							<ScrollArea style="height: {scrollHeight}px">
+								<div class="px-6 py-5">
+									<DiscoveriesSummary
+										{targetValue}
+										{targetType}
+										whoisRecord={displayRecord}
+										{onOpenTargetSummary}
+									/>
+								</div>
+							</ScrollArea>
+						</Tabs.Content>
+					{/if}
 				{/if}
 			</Tabs.Root>
 		{/if}

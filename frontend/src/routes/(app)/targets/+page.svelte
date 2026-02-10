@@ -36,6 +36,8 @@
 	let showWhoisDialog = $state(false);
 	let whoisTarget = $state<Target | null>(null);
 
+	let whoisInitialTab = $state('overview');
+
 	let activeScanCounts = $state<Record<string, number>>({});
 
 	let selectedTargetIds = $state(new Set<string>());
@@ -168,6 +170,13 @@
 
 	function handleWhoisClick(target: Target) {
 		whoisTarget = target;
+		whoisInitialTab = 'overview';
+		showWhoisDialog = true;
+	}
+
+	function handleDiscoveriesClick(target: Target) {
+		whoisTarget = target;
+		whoisInitialTab = 'discoveries';
 		showWhoisDialog = true;
 	}
 
@@ -324,6 +333,7 @@
 						onEdit={handleEditTarget}
 						onDelete={handleDeleteTarget}
 						onWhoisClick={handleWhoisClick}
+						onDiscoveriesClick={handleDiscoveriesClick}
 					/>
 				{/each}
 			</div>
@@ -416,5 +426,12 @@
     bind:open={showWhoisDialog}
     recordId={whoisTarget?.whois_record_id}
     targetId={whoisTarget?.id}
+    targetValue={whoisTarget?.target_value}
+    targetType={whoisTarget?.target_type}
+    initialTab={whoisInitialTab}
     onOpenChange={(open) => (showWhoisDialog = open)}
+    onOpenTargetSummary={() => {
+        // TODO: navigate to /targets/:id?tab=discoveries
+        // goto(`/targets/${whoisTarget?.id}?tab=discoveries`)
+    }}
 />
