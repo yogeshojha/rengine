@@ -41,4 +41,4 @@ wafw00f==2.2.0
 xmltodict==0.13.0
 django-environ==0.11.2
 plotly==5.23.0
-kaleido
+kaleido==0.2.1
