@@ -5,6 +5,13 @@ from shared.models.api_key import (
     APIKeyUpdate,
     ProviderInfo,
 )
+from shared.models.dns import (
+    DnsLookup,
+    DnsLookupRead,
+    DnsLookupSummary,
+    DnsRecord,
+    DnsRecordRead,
+)
 from shared.models.notification import (
     Notification,
     NotificationCreate,
@@ -52,6 +59,11 @@ __all__ = [
     "APIKeyCreate",
     "APIKeyRead",
     "APIKeyUpdate",
+    "DnsLookup",
+    "DnsLookupRead",
+    "DnsLookupSummary",
+    "DnsRecord",
+    "DnsRecordRead",
     "Notification",
     "NotificationCreate",
     "NotificationRead",

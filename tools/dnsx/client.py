@@ -1,0 +1,156 @@
+"""dnsx CLI client - wraps CLIToolRunner with dnsx-specific arguments."""
+
+from __future__ import annotations
+
+from shared.logging import get_logger
+from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError, ToolResult
+
+logger = get_logger("tools.dnsx.client")
+
+DNSX_BINARY = "dnsx"
+DEFAULT_TIMEOUT = 120
+DEFAULT_RETRY = 3
+DEFAULT_THREADS = 10
+
+
+class DnsxError(Exception):
+    """Raised when dnsx execution fails."""
+
+
+class DnsxClient:
+    def __init__(
+        self,
+        timeout: int = DEFAULT_TIMEOUT,
+        retry: int = DEFAULT_RETRY,
+        threads: int = DEFAULT_THREADS,
+        resolvers: list[str] | None = None,
+    ) -> None:
+        self.timeout = timeout
+        self.retry = retry
+        self.threads = threads
+        self.resolvers = resolvers
+
+        try:
+            self._runner = CLIToolRunner(DNSX_BINARY, default_timeout=timeout)
+        except ToolNotFoundError as e:
+            raise DnsxError(str(e)) from e
+
+    def _build_base_args(self) -> list[str]:
+        args = [
+            "-retry",
+            str(self.retry),
+            "-t",
+            str(self.threads),
+        ]
+        if self.resolvers:
+            args.extend(["-r", ",".join(self.resolvers)])
+        return args
+
+    def recon(
+        self,
+        targets: str | list[str],
+        cdn: bool = True,
+    ) -> ToolResult:
+        """Run full DNS recon (-recon) on one or more targets.
+
+        Queries all record types: A, AAAA, CNAME, NS, TXT, SRV, PTR, MX, SOA, AXFR, CAA.
+
+        Args:
+            targets: Single domain or list of domains to query.
+            cdn: If True, also detect CDN.
+
+        Returns:
+            ToolResult with json_records containing full recon data.
+        """
+        args = self._build_base_args()
+        args.extend(["-recon", "-resp"])
+        if cdn:
+            args.append("-cdn")
+
+        return self._run(targets, args)
+
+    def query(
+        self,
+        targets: str | list[str],
+        record_types: list[str] | None = None,
+        resp_only: bool = False,
+        cdn: bool = False,
+    ) -> ToolResult:
+        """Run targeted DNS queries for specific record types.
+
+        Args:
+            targets: Single domain or list of domains.
+            record_types: List of record types to query (e.g. ["a", "aaaa", "ns"]).
+                If None, queries A record (dnsx default).
+            resp_only: If True, only output response values.
+            cdn: If True, also detect CDN.
+
+        Returns:
+            ToolResult with json_records for the queried types.
+        """
+        args = self._build_base_args()
+
+        if record_types:
+            for rt in record_types:
+                flag = f"-{rt.lower()}"
+                args.append(flag)
+
+        if resp_only:
+            args.append("-resp-only")
+        else:
+            args.append("-resp")
+
+        if cdn:
+            args.append("-cdn")
+
+        return self._run(targets, args)
+
+    def resolve(
+        self,
+        targets: str | list[str],
+    ) -> ToolResult:
+        """Simple DNS resolution check (filters alive hosts).
+
+        Args:
+            targets: Domains to check for active DNS resolution.
+
+        Returns:
+            ToolResult with output_lines containing resolved domains.
+        """
+        args = self._build_base_args()
+
+        return self._run(
+            targets,
+            args,
+            output_format=OutputFormat.PLAIN,
+        )
+
+    def _run(
+        self,
+        targets: str | list[str],
+        args: list[str],
+        output_format: OutputFormat = OutputFormat.JSONL,
+    ) -> ToolResult:
+        """Execute dnsx with the given arguments.
+
+        Args:
+            targets: Input domains.
+            args: Built CLI arguments.
+            output_format: Expected output format.
+
+        Returns:
+            ToolResult from the tool runner.
+        """
+        if isinstance(targets, str):
+            targets = [targets]
+
+        return self._runner.run(
+            args=args,
+            input_data=targets,
+            input_flag="-l",
+            output_format=output_format,
+            json_flag="-json",
+            timeout=self.timeout,
+            silent=True,
+            silent_flag="-silent",
+        )

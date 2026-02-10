@@ -45,3 +45,20 @@ def dispatch_ripestat_enrichment(target_ids: list[str]) -> None:
         kwargs={"target_ids": target_ids},
         queue="default",
     )
+
+
+def dispatch_dns_lookups(target_ids: list[str]) -> None:
+    """Dispatch DNS enrichment task for a list of targets.
+
+    Only domain targets will actually be processed; others are
+    skipped inside the Celery task.
+    """
+    if not target_ids:
+        return
+
+    logger.info(f"Dispatching DNS lookup for {len(target_ids)} target(s)")
+    get_celery_client().send_task(
+        "app.tasks.dns.perform_dns_lookups",
+        kwargs={"target_ids": target_ids},
+        queue="default",
+    )

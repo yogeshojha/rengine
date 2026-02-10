@@ -23,6 +23,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+RUN curl -fsSL https://go.dev/dl/go1.25.7.linux-amd64.tar.gz | tar -C /usr/local -xzf -
+ENV PATH="/usr/local/go/bin:/root/go/bin:${PATH}"
+
+
+RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+
+
 COPY shared /app/shared
 COPY tools /app/tools
 

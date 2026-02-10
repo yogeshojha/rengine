@@ -27,11 +27,13 @@ from shared.models.bgp_summary import BgpSummaryRead
 from shared.models.whois import WhoisRecordSummary
 from shared.services import get_or_create_organization, get_or_create_tag
 from shared.services.celery_dispatch import (
+    dispatch_dns_lookups,
     dispatch_ripestat_enrichment,
     dispatch_whois_lookups,
 )
 from shared.utils.datetime import utc_now
 from shared.utils.validation import validate_target
+from tools.dnsx.service import DnsxService
 
 MAX_TARGETS_IMPORT = 500
 
@@ -446,6 +448,10 @@ class TargetService:
                 queried_at=target.bgp_summary.queried_at,
             )
 
+        dns = None
+        if target.dns_lookup:
+            dns = DnsxService.to_lookup_summary(target.dns_lookup)
+
         return TargetRead(
             **target.model_dump(
                 exclude={
@@ -459,6 +465,7 @@ class TargetService:
             whois_record_id=target.whois_record_id,
             whois=whois,
             bgp=bgp,
+            dns=dns,
             organizations=[
                 OrganizationSummary(id=org.id, name=org.name, slug=org.slug)
                 for org in target.organizations
@@ -759,4 +766,5 @@ class TargetService:
             return
         target_ids = [str(t.id) for t in targets]
         dispatch_whois_lookups(target_ids)
+        dispatch_dns_lookups(target_ids)
         dispatch_ripestat_enrichment(target_ids)

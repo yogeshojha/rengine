@@ -43,3 +43,15 @@ def safe_bool(value: Any, default: bool = False) -> bool:
     if isinstance(value, bool):
         return value
     return default
+
+
+def safe_str_list(raw: list | None) -> list[str]:
+    """Coerce a list to list[str], filtering out None/empty values."""
+    if not raw:
+        return []
+    return [str(v).strip() for v in raw if v is not None and str(v).strip()]
+
+
+def strip_trailing_dot(value: str) -> str:
+    """Remove trailing dot from string"""
+    return value.rstrip(".")

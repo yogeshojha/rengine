@@ -1,8 +1,8 @@
-"""add ripestat table link
+"""add dnsx, cleanup old
 
-Revision ID: 1550e11820f5
+Revision ID: e1be90b7d53b
 Revises:
-Create Date: 2026-02-10 14:19:10.851263+00:00
+Create Date: 2026-02-10 16:33:55.515015+00:00
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '1550e11820f5'
+revision: str = 'e1be90b7d53b'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -35,6 +35,19 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_api_keys_id'), 'api_keys', ['id'], unique=False)
     op.create_index(op.f('ix_api_keys_provider'), 'api_keys', ['provider'], unique=False)
+    op.create_table('dns_lookups',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('host', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=False),
+    sa.Column('status_code', sqlmodel.sql.sqltypes.AutoString(length=20), nullable=False),
+    sa.Column('cdn', sa.Boolean(), nullable=False),
+    sa.Column('cdn_name', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False),
+    sa.Column('parsed_data', sa.JSON(), nullable=True),
+    sa.Column('queried_at', sa.DateTime(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_dns_lookups_id'), 'dns_lookups', ['id'], unique=False)
     op.create_table('notifications',
     sa.Column('type', sa.Enum('SCAN', 'SYSTEM', 'SECURITY', 'VULNERABILITY', 'TARGET', 'RESOURCE', 'INTEGRATION', name='notificationtype'), nullable=False),
     sa.Column('severity', sa.Enum('SUCCESS', 'INFO', 'WARNING', 'ERROR', name='notificationseverity'), nullable=False),
@@ -275,21 +288,54 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
-    sa.Column('whois_status', sa.Enum('PENDING', 'QUERYING', 'SUCCESS', 'FAILED', 'NOT_APPLICABLE', name='whoisstatus'), nullable=False),
+    sa.Column('whois_status', sa.Enum('PENDING', 'QUERYING', 'SUCCESS', 'FAILED', 'SKIPPED', 'NOT_APPLICABLE', name='taskstatus'), nullable=False),
     sa.Column('whois_error', sqlmodel.sql.sqltypes.AutoString(length=1000), nullable=True),
     sa.Column('whois_record_id', sa.Uuid(), nullable=True),
-    sa.Column('bgp_status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('bgp_status', sa.Enum('PENDING', 'QUERYING', 'SUCCESS', 'FAILED', 'SKIPPED', 'NOT_APPLICABLE', name='taskstatus'), nullable=False),
+    sa.Column('dns_status', sa.Enum('PENDING', 'QUERYING', 'SUCCESS', 'FAILED', 'SKIPPED', 'NOT_APPLICABLE', name='taskstatus'), nullable=False),
+    sa.Column('dns_error', sqlmodel.sql.sqltypes.AutoString(length=1000), nullable=True),
+    sa.Column('dns_lookup_id', sa.Uuid(), nullable=True),
     sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['dns_lookup_id'], ['dns_lookups.id'], ),
     sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
     sa.ForeignKeyConstraint(['whois_record_id'], ['whois_records.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sqlite_autoincrement=True
     )
     op.create_index(op.f('ix_targets_bgp_status'), 'targets', ['bgp_status'], unique=False)
+    op.create_index(op.f('ix_targets_dns_lookup_id'), 'targets', ['dns_lookup_id'], unique=False)
+    op.create_index(op.f('ix_targets_dns_status'), 'targets', ['dns_status'], unique=False)
     op.create_index(op.f('ix_targets_id'), 'targets', ['id'], unique=False)
     op.create_index(op.f('ix_targets_project_id'), 'targets', ['project_id'], unique=False)
     op.create_index(op.f('ix_targets_whois_record_id'), 'targets', ['whois_record_id'], unique=False)
     op.create_index(op.f('ix_targets_whois_status'), 'targets', ['whois_status'], unique=False)
+    op.create_table('dns_records',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('dns_lookup_id', sa.Uuid(), nullable=False),
+    sa.Column('target_id', sa.Uuid(), nullable=False),
+    sa.Column('record_type', sa.Enum('A', 'AAAA', 'CNAME', 'NS', 'MX', 'TXT', 'SOA', 'SRV', 'PTR', 'CAA', 'AXFR', 'CDN', name='dnsrecordtype'), nullable=False),
+    sa.Column('value', sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False),
+    sa.Column('priority', sa.Integer(), nullable=True),
+    sa.Column('weight', sa.Integer(), nullable=True),
+    sa.Column('port', sa.Integer(), nullable=True),
+    sa.Column('soa_email', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True),
+    sa.Column('soa_serial', sa.Integer(), nullable=True),
+    sa.Column('soa_refresh', sa.Integer(), nullable=True),
+    sa.Column('soa_retry', sa.Integer(), nullable=True),
+    sa.Column('soa_expire', sa.Integer(), nullable=True),
+    sa.Column('soa_minttl', sa.Integer(), nullable=True),
+    sa.Column('caa_tag', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=True),
+    sa.Column('caa_flag', sa.Integer(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['dns_lookup_id'], ['dns_lookups.id'], ),
+    sa.ForeignKeyConstraint(['target_id'], ['targets.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_dns_records_dns_lookup_id'), 'dns_records', ['dns_lookup_id'], unique=False)
+    op.create_index(op.f('ix_dns_records_id'), 'dns_records', ['id'], unique=False)
+    op.create_index(op.f('ix_dns_records_record_type'), 'dns_records', ['record_type'], unique=False)
+    op.create_index(op.f('ix_dns_records_target_id'), 'dns_records', ['target_id'], unique=False)
+    op.create_index(op.f('ix_dns_records_value'), 'dns_records', ['value'], unique=False)
     op.create_table('target_bgp_summaries',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('target_id', sa.Uuid(), nullable=False),
@@ -327,10 +373,18 @@ def downgrade() -> None:
     op.drop_table('target_organizations')
     op.drop_index(op.f('ix_target_bgp_summaries_target_id'), table_name='target_bgp_summaries')
     op.drop_table('target_bgp_summaries')
+    op.drop_index(op.f('ix_dns_records_value'), table_name='dns_records')
+    op.drop_index(op.f('ix_dns_records_target_id'), table_name='dns_records')
+    op.drop_index(op.f('ix_dns_records_record_type'), table_name='dns_records')
+    op.drop_index(op.f('ix_dns_records_id'), table_name='dns_records')
+    op.drop_index(op.f('ix_dns_records_dns_lookup_id'), table_name='dns_records')
+    op.drop_table('dns_records')
     op.drop_index(op.f('ix_targets_whois_status'), table_name='targets')
     op.drop_index(op.f('ix_targets_whois_record_id'), table_name='targets')
     op.drop_index(op.f('ix_targets_project_id'), table_name='targets')
     op.drop_index(op.f('ix_targets_id'), table_name='targets')
+    op.drop_index(op.f('ix_targets_dns_status'), table_name='targets')
+    op.drop_index(op.f('ix_targets_dns_lookup_id'), table_name='targets')
     op.drop_index(op.f('ix_targets_bgp_status'), table_name='targets')
     op.drop_table('targets')
     op.drop_index(op.f('ix_tags_slug'), table_name='tags')
@@ -392,6 +446,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_notifications_expires_at'), table_name='notifications')
     op.drop_index(op.f('ix_notifications_created_at'), table_name='notifications')
     op.drop_table('notifications')
+    op.drop_index(op.f('ix_dns_lookups_id'), table_name='dns_lookups')
+    op.drop_table('dns_lookups')
     op.drop_index(op.f('ix_api_keys_provider'), table_name='api_keys')
     op.drop_index(op.f('ix_api_keys_id'), table_name='api_keys')
     op.drop_table('api_keys')

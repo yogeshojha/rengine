@@ -8,6 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.models.bgp_summary import BgpSummaryRead, TargetBgpSummary
+from shared.models.dns import DnsLookup, DnsLookupSummary
 from shared.models.organization import Organization, OrganizationSummary
 from shared.models.tag import TagSummary, TargetTag
 from shared.models.whois import WhoisRecord, WhoisRecordSummary
@@ -63,6 +64,18 @@ class Target(TargetBase, table=True):
     bgp_status: TaskStatus = Field(default=TaskStatus.PENDING, index=True)
     bgp_summary: TargetBgpSummary | None = Relationship(
         sa_relationship_kwargs={"lazy": "selectin"},
+    )
+
+    dns_status: TaskStatus = Field(default=TaskStatus.PENDING, index=True)
+    dns_error: str | None = Field(default=None, max_length=1000)
+    dns_lookup: DnsLookup | None = Relationship(
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "foreign_keys": "Target.dns_lookup_id",
+        },
+    )
+    dns_lookup_id: uuid.UUID | None = Field(
+        default=None, foreign_key="dns_lookups.id", index=True
     )
 
     organizations: list["Organization"] = Relationship(
@@ -132,6 +145,10 @@ class TargetRead(TargetBase):
     whois: WhoisRecordSummary | None = None
     bgp_status: TaskStatus
     bgp: BgpSummaryRead | None = None
+    dns_status: TaskStatus = TaskStatus.PENDING
+    dns_error: str | None = None
+    dns_lookup_id: uuid.UUID | None = None
+    dns: DnsLookupSummary | None = None
     organizations: list[OrganizationSummary] = Field(default_factory=list)
     tags: list[TagSummary] = Field(default_factory=list)
 
