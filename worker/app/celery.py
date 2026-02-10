@@ -84,6 +84,7 @@ celery_app.conf.task_routes = {
     # "app.tasks.scan.*": {"queue": "scans"},
     "app.tasks.whois.*": {"queue": "default"},
     "app.tasks.debug.*": {"queue": "default"},
+    "app.tasks.ripestat.*": {"queue": "default"},
 }
 
 # #############################################################
@@ -94,6 +95,7 @@ celery_app.autodiscover_tasks(
     [
         "app.tasks.debug",
         "app.tasks.whois",
+        "app.tasks.ripestat",
     ]
 )
 

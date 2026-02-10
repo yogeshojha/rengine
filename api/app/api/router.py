@@ -7,6 +7,7 @@ from app.api.v1 import (
     notifications,
     organizations,
     projects,
+    ripestat,
     tags,
     targets,
     users,
@@ -27,3 +28,4 @@ router.include_router(celery_health.router)
 router.include_router(api_keys.router)
 router.include_router(whois.router)
 router.include_router(viewdns.router)
+router.include_router(ripestat.router)

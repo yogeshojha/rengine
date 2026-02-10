@@ -7,6 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from shared.enums.target import TargetType
 from shared.enums.whois import WhoisStatus
+from shared.models.bgp_summary import BgpSummaryRead, TargetBgpSummary
 from shared.models.organization import Organization, OrganizationSummary
 from shared.models.tag import TagSummary, TargetTag
 from shared.models.whois import WhoisRecord, WhoisRecordSummary
@@ -57,6 +58,11 @@ class Target(TargetBase, table=True):
     )
     whois_record_id: uuid.UUID | None = Field(
         default=None, foreign_key="whois_records.id", index=True
+    )
+
+    bgp_status: str = Field(default="pending", index=True)
+    bgp_summary: TargetBgpSummary | None = Relationship(
+        sa_relationship_kwargs={"lazy": "selectin"},
     )
 
     organizations: list["Organization"] = Relationship(
@@ -124,6 +130,8 @@ class TargetRead(TargetBase):
     whois_error: str | None
     whois_record_id: uuid.UUID | None
     whois: WhoisRecordSummary | None = None
+    bgp_status: str = "pending"
+    bgp: BgpSummaryRead | None = None
     organizations: list[OrganizationSummary] = Field(default_factory=list)
     tags: list[TagSummary] = Field(default_factory=list)
 

@@ -14,6 +14,15 @@ export enum WhoisStatus {
 	NOT_APPLICABLE = 'not_applicable'
 }
 
+export enum BgpStatus {
+	PENDING = 'pending',
+	ENRICHING = 'enriching',
+	SUCCESS = 'success',
+	FAILED = 'failed',
+	NOT_APPLICABLE = 'not_applicable'
+}
+
+
 export interface WhoisSummaryData {
 	id: string;
 	query_value: string;
@@ -27,6 +36,22 @@ export interface WhoisSummaryData {
 	expiration_date: string | null;
 	queried_at: string;
 }
+
+
+export interface BgpSummaryData {
+	// ASN targets
+	prefix_count: number | null;
+	peer_count: number | null;
+	announced: boolean | null;
+
+	// IP / IP_RANGE targets
+	asn: number | null;
+	prefix: string | null;
+	holder: string | null;
+
+	queried_at: string;
+}
+
 
 export interface OrganizationSummary {
 	id: string;
@@ -57,6 +82,8 @@ export interface Target extends TargetBase {
 	whois_error: string | null;
 	whois_record_id: string | null;
 	whois: WhoisSummaryData | null;
+	bgp_status: BgpStatus;
+	bgp: BgpSummaryData | null;
 	organizations: OrganizationSummary[];
 	tags: TagSummary[];
 }

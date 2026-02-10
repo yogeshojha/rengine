@@ -62,7 +62,7 @@ def viewdns_enrichment_complete(
         )
 
     return {
-        "type": NotificationType.SYSTEM,
+        "type": NotificationType.TARGET,
         "severity": severity,
         "title": title,
         "message": message,
@@ -71,8 +71,49 @@ def viewdns_enrichment_complete(
 
 def viewdns_enrichment_failed(error: str) -> dict:
     return {
-        "type": NotificationType.SYSTEM,
+        "type": NotificationType.TARGET,
         "severity": NotificationSeverity.ERROR,
         "title": "ViewDNS Enrichment Failed",
         "message": f"ViewDNS enrichment task failed: {error}",
+    }
+
+
+def ripestat_enrichment_complete(
+    success: int, failed: int, skipped: int, total: int
+) -> dict:
+    if failed == 0 and skipped == 0:
+        severity = NotificationSeverity.SUCCESS
+        title = "BGP Enrichment Complete"
+        message = (
+            f"Successfully enriched {success}/{total} targets with RIPEstat BGP data."
+        )
+    elif success > 0:
+        severity = NotificationSeverity.WARNING
+        title = "BGP Enrichment Partially Complete"
+        message = (
+            f"BGP enrichment finished: {success} succeeded, "
+            f"{failed} failed, {skipped} skipped out of {total} targets."
+        )
+    else:
+        severity = NotificationSeverity.ERROR
+        title = "BGP Enrichment Failed"
+        message = (
+            f"BGP enrichment could not complete: "
+            f"{failed} failed, {skipped} skipped out of {total} targets."
+        )
+
+    return {
+        "type": NotificationType.TARGET,
+        "severity": severity,
+        "title": title,
+        "message": message,
+    }
+
+
+def ripestat_enrichment_failed(error: str) -> dict:
+    return {
+        "type": NotificationType.TARGET,
+        "severity": NotificationSeverity.ERROR,
+        "title": "BGP Enrichment Failed",
+        "message": f"RIPEstat enrichment task failed: {error}",
     }

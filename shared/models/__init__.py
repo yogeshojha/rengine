@@ -18,6 +18,15 @@ from shared.models.organization import (
     OrganizationUpdate,
 )
 from shared.models.project import Project, ProjectBase, ProjectCreate, ProjectRead
+from shared.models.ripestat import (
+    RIPEStatAbuseContact,
+    RIPEStatAnnouncedPrefix,
+    RIPEStatASNNeighbour,
+    RIPEStatASOverview,
+    RIPEStatNetworkInfo,
+    RIPEStatPrefixOverview,
+    RIPEStatRelatedPrefix,
+)
 from shared.models.tag import Tag, TagBase, TagCreate, TagRead, TagSummary, TagUpdate
 from shared.models.target import (
     Target,
@@ -57,6 +66,13 @@ __all__ = [
     "ProjectRead",
     "ProjectUpdate",
     "ProviderInfo",
+    "RIPEStatASNNeighbour",
+    "RIPEStatASOverview",
+    "RIPEStatAbuseContact",
+    "RIPEStatAnnouncedPrefix",
+    "RIPEStatNetworkInfo",
+    "RIPEStatPrefixOverview",
+    "RIPEStatRelatedPrefix",
     "Tag",
     "TagBase",
     "TagCreate",

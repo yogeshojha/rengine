@@ -7,6 +7,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CopyButton from '@/components/copy-button.svelte';
 	import WhoisInline from '$lib/components/targets/whois-inline.svelte';
+	import BgpInline from '$lib/components/targets/bgp-inline.svelte';
 	import DiscoveryBadge from '$lib/components/viewdns-discoveries/discovery-badge.svelte';
 	import { Ellipsis, Eye, History, Pencil, Play, Trash2 } from 'lucide-svelte';
 	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
@@ -24,6 +25,7 @@
 		onDelete: (target: Target) => void;
 		onWhoisClick: (target: Target) => void;
 		onDiscoveriesClick?: (target: Target) => void;
+		onBgpClick?: (target: Target) => void;
 	}
 
 	let {
@@ -37,7 +39,8 @@
 		onEdit,
 		onDelete,
 		onWhoisClick,
-		onDiscoveriesClick
+		onDiscoveriesClick,
+		onBgpClick
 	}: Props = $props();
 
 	// TODO: dummy scan count, fetch later
@@ -55,7 +58,7 @@
 		class="transition-opacity {isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
 	/>
 
-	<!-- Target identity + WHOIS inline + Discovery badge -->
+	<!-- Target identity + WHOIS inline + BGP inline + Discovery badge -->
 	<div class="w-[260px] min-w-0 space-y-0.5">
 		<div class="flex items-center gap-2">
 			<span class="font-mono text-sm font-medium truncate">{target.target_value}</span>
@@ -73,6 +76,12 @@
 				whois={target.whois}
 				error={target.whois_error}
 				onClick={() => onWhoisClick(target)}
+			/>
+			<BgpInline
+				status={target.bgp_status}
+				bgp={target.bgp}
+				targetType={target.target_type}
+				onClick={() => onBgpClick?.(target)}
 			/>
 			<DiscoveryBadge
 				targetValue={target.target_value}

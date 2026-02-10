@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class TargetType(str, Enum):
+class TargetType(Enum):
     DOMAIN = "domain"
     IP = "ip"
     IP_RANGE = "ip_range"

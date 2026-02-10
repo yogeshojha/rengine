@@ -23,9 +23,13 @@ from shared.models import (
     TargetType,
     TargetUpdate,
 )
+from shared.models.bgp_summary import BgpSummaryRead
 from shared.models.whois import WhoisRecordSummary
 from shared.services import get_or_create_organization, get_or_create_tag
-from shared.services.celery_dispatch import dispatch_whois_lookups
+from shared.services.celery_dispatch import (
+    dispatch_ripestat_enrichment,
+    dispatch_whois_lookups,
+)
 from shared.utils.datetime import utc_now
 from shared.utils.validation import validate_target
 
@@ -130,7 +134,7 @@ class TargetService:
         if target_type:
             query = query.where(Target.target_type == target_type)
 
-        return query
+        return query.order_by(Target.created_at.desc())
 
     async def create_target(self, target_in: TargetCreate, user_id: str) -> TargetRead:
         target_type = validate_target(target_in.target_value)
@@ -430,12 +434,31 @@ class TargetService:
                 queried_at=target.whois_record.queried_at,
             )
 
+        bgp = None
+        if target.bgp_summary:
+            bgp = BgpSummaryRead(
+                prefix_count=target.bgp_summary.prefix_count,
+                peer_count=target.bgp_summary.peer_count,
+                announced=target.bgp_summary.announced,
+                asn=target.bgp_summary.asn,
+                prefix=target.bgp_summary.prefix,
+                holder=target.bgp_summary.holder,
+                queried_at=target.bgp_summary.queried_at,
+            )
+
         return TargetRead(
             **target.model_dump(
-                exclude={"organizations", "tags", "whois_record_id", "whois_record"}
+                exclude={
+                    "organizations",
+                    "tags",
+                    "whois_record_id",
+                    "whois_record",
+                    "bgp_summary",
+                }
             ),
             whois_record_id=target.whois_record_id,
             whois=whois,
+            bgp=bgp,
             organizations=[
                 OrganizationSummary(id=org.id, name=org.name, slug=org.slug)
                 for org in target.organizations
@@ -734,4 +757,6 @@ class TargetService:
     def _dispatch_whois_task(self, targets: list[Target]) -> None:
         if not targets:
             return
-        dispatch_whois_lookups([str(t.id) for t in targets])
+        target_ids = [str(t.id) for t in targets]
+        dispatch_whois_lookups(target_ids)
+        dispatch_ripestat_enrichment(target_ids)
