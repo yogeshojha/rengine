@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: celery-config
+data: 
+  MAX_CONCURRENCY: "10"
+  MIN_CONCURRENCY: "1"

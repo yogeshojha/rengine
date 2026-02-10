@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-beat
+  template:
+    metadata:
+      labels:
+        app: celery-beat
+    spec:
+      containers:
+      - name: celery-beat
+        image: ghcr.io/0xtejas/rengine/celery-beat:latest
+        command: ["celery", "-A", "reNgine", "beat", "-l", "INFO", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
+        env:
+          - name: CELERY_BROKER
+            value: redis://redis:6379/0
+          - name: CELERY_BACKEND
+            value: redis://redis:6379/0
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_DB
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: POSTGRES_PASSWORD
+          - name: POSTGRES_HOST
+            value: db  # Name of the PostgreSQL service
+          - name: POSTGRES_PORT
+            value: "5432"
+        volumeMounts:
+        - name: github-repos
+          mountPath: /usr/src/github
+        - name: wordlist
+          mountPath: /usr/src/wordlist
+        - name: scan-results
+          mountPath: /usr/src/scan_results
+        - name: gf-patterns
+          mountPath: /root/.gf
+        - name: nuclei-templates
+          mountPath: /root/nuclei-templates
+        - name: tool-config
+          mountPath: /root/.config
+        - name: shared-data
+          mountPath: /usr/src/app
+      volumes:
+        - name: github-repos
+          persistentVolumeClaim:
+            claimName: github-repos-pvc
+        - name: wordlist
+          persistentVolumeClaim:
+            claimName: wordlist-pvc
+        - name: scan-results
+          persistentVolumeClaim:
+            claimName: scan-results-pvc
+        - name: gf-patterns
+          persistentVolumeClaim:
+            claimName: gf-patterns-pvc
+        - name: nuclei-templates
+          persistentVolumeClaim:
+            claimName: nuclei-templates-pvc
+        - name: tool-config
+          persistentVolumeClaim:
+            claimName: tool-config-pvc
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: shared-data-pvc

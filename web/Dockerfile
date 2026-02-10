@@ -53,6 +53,12 @@ RUN apt install -y --no-install-recommends \
     python3-netaddr \
     software-properties-common
 
+# Install PostgreSQL client and Redis tools
+RUN apt-get update && \
+    apt-get install -y postgresql-client redis-tools && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN add-apt-repository ppa:mozillateam/ppa
 
 RUN ARCH=$(dpkg --print-architecture) \ 
