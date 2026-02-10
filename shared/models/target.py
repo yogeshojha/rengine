@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from shared.enums.target import TargetType
-from shared.enums.whois import WhoisStatus
+from shared.enums.task_status import TaskStatus
 from shared.models.bgp_summary import BgpSummaryRead, TargetBgpSummary
 from shared.models.organization import Organization, OrganizationSummary
 from shared.models.tag import TagSummary, TargetTag
@@ -51,7 +51,7 @@ class Target(TargetBase, table=True):
     updated_at: datetime = Field(default_factory=utc_now)
     created_by: uuid.UUID = Field(foreign_key="users.id")
 
-    whois_status: WhoisStatus = Field(default=WhoisStatus.PENDING, index=True)
+    whois_status: TaskStatus = Field(default=TaskStatus.PENDING, index=True)
     whois_error: str | None = Field(default=None, max_length=1000)
     whois_record: WhoisRecord | None = Relationship(
         sa_relationship_kwargs={"lazy": "selectin"},
@@ -60,7 +60,7 @@ class Target(TargetBase, table=True):
         default=None, foreign_key="whois_records.id", index=True
     )
 
-    bgp_status: str = Field(default="pending", index=True)
+    bgp_status: TaskStatus = Field(default=TaskStatus.PENDING, index=True)
     bgp_summary: TargetBgpSummary | None = Relationship(
         sa_relationship_kwargs={"lazy": "selectin"},
     )
@@ -126,11 +126,11 @@ class TargetRead(TargetBase):
     created_at: datetime
     updated_at: datetime
     created_by: uuid.UUID
-    whois_status: WhoisStatus
+    whois_status: TaskStatus
     whois_error: str | None
     whois_record_id: uuid.UUID | None
     whois: WhoisRecordSummary | None = None
-    bgp_status: str = "pending"
+    bgp_status: TaskStatus
     bgp: BgpSummaryRead | None = None
     organizations: list[OrganizationSummary] = Field(default_factory=list)
     tags: list[TagSummary] = Field(default_factory=list)

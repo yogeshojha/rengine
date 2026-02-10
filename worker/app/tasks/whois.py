@@ -7,7 +7,7 @@ from shared.definitions.notifications import (
     whois_enrichment_complete,
     whois_enrichment_failed,
 )
-from shared.enums.whois import WhoisStatus
+from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services.notification_sync import SyncNotificationPublisher
@@ -53,7 +53,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
             return {"success": 0, "failed": 0, "total": 0}
 
         for target in targets:
-            target.whois_status = WhoisStatus.QUERYING
+            target.whois_status = TaskStatus.QUERYING
         session.commit()
 
         query_groups: dict[str, list[Target]] = {}
@@ -74,7 +74,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
 
                 for target in group_targets:
                     target.whois_record_id = record.id
-                    target.whois_status = WhoisStatus.SUCCESS
+                    target.whois_status = TaskStatus.SUCCESS
                     target.whois_error = None
                     target.updated_at = utc_now()
                     success_count += 1
@@ -87,7 +87,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                     "WHOIS lookup failed for %s: %s", normalized_query, error_msg
                 )
                 for target in group_targets:
-                    target.whois_status = WhoisStatus.FAILED
+                    target.whois_status = TaskStatus.FAILED
                     target.whois_error = error_msg
                     target.updated_at = utc_now()
                     failed_count += 1
@@ -114,7 +114,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                 session.execute(
                     select(Target).where(
                         Target.id.in_(target_ids),
-                        Target.whois_status == WhoisStatus.QUERYING,
+                        Target.whois_status == TaskStatus.QUERYING,
                     )
                 )
                 .scalars()
@@ -122,7 +122,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
             )
 
             for target in remaining:
-                target.whois_status = WhoisStatus.FAILED
+                target.whois_status = TaskStatus.FAILED
                 target.whois_error = str(e)[:1000]
                 target.updated_at = utc_now()
             session.commit()

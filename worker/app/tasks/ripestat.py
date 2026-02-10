@@ -17,6 +17,7 @@ from shared.definitions.notifications import (
     ripestat_enrichment_failed,
 )
 from shared.enums.target import TargetType
+from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services.bgp_summary import write_bgp_summary_for_target
@@ -126,7 +127,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
 
 def _enrich_target(service: RIPEStatService, session, target: Target) -> int:
     """Run target-type-specific lookups. Returns number of lookups performed."""
-    target.bgp_status = "enriching"
+    target.bgp_status = TaskStatus.QUERYING
     session.commit()
 
     try:
@@ -138,20 +139,20 @@ def _enrich_target(service: RIPEStatService, session, target: Target) -> int:
             case TargetType.IP_RANGE:
                 count = _enrich_ip_range(service, session, target.target_value)
             case _:
-                target.bgp_status = "not_applicable"
+                target.bgp_status = TaskStatus.NOT_APPLICABLE
                 session.commit()
                 return 0
 
         if count > 0:
             write_bgp_summary_for_target(session, target)
-            target.bgp_status = "success"
+            target.bgp_status = TaskStatus.SUCCESS
         else:
-            target.bgp_status = "failed"
+            target.bgp_status = TaskStatus.FAILED
         session.commit()
         return count
 
     except Exception:
-        target.bgp_status = "failed"
+        target.bgp_status = TaskStatus.FAILED
         session.commit()
         raise
 

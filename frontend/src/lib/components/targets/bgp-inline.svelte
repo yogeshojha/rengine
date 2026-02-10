@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { TargetType, type BgpSummaryData } from '$lib/types/target';
+	import { TaskStatus } from '@/types/task-status';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import {
 		Loader,
@@ -87,17 +88,17 @@
 
 {#if !isApplicable}
 	<!-- DOMAIN/URL — no BGP data -->
-{:else if status === 'pending' || status === 'enriching'}
+{:else if status === TaskStatus.PENDING || status === TaskStatus.QUERYING}
 	<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
 		<Loader class="h-3 w-3 animate-spin" />
 		<span class="animate-pulse">BGP…</span>
 	</div>
-{:else if status === 'failed'}
+{:else if status === TaskStatus.FAILED}
 	<div class="flex items-center gap-1.5 text-xs text-red-500/70 dark:text-red-400/70">
 		<TriangleAlert class="h-3 w-3" />
 		<span>BGP failed</span>
 	</div>
-{:else if status === 'success' && bgp && inlineSummary}
+{:else if status === TaskStatus.SUCCESS && bgp && inlineSummary}
 	<HoverCard.Root openDelay={250} closeDelay={100}>
 		<HoverCard.Trigger>
 			<button

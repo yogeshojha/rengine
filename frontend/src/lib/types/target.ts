@@ -1,3 +1,5 @@
+import { TaskStatus } from './task-status';
+
 export enum TargetType {
 	DOMAIN = 'domain',
 	IP = 'ip',
@@ -5,23 +7,6 @@ export enum TargetType {
 	ASN = 'asn',
 	URL = 'url'
 }
-
-export enum WhoisStatus {
-	PENDING = 'pending',
-	QUERYING = 'querying',
-	SUCCESS = 'success',
-	FAILED = 'failed',
-	NOT_APPLICABLE = 'not_applicable'
-}
-
-export enum BgpStatus {
-	PENDING = 'pending',
-	ENRICHING = 'enriching',
-	SUCCESS = 'success',
-	FAILED = 'failed',
-	NOT_APPLICABLE = 'not_applicable'
-}
-
 
 export interface WhoisSummaryData {
 	id: string;
@@ -78,11 +63,11 @@ export interface Target extends TargetBase {
 	created_at: string;
 	updated_at: string;
 	created_by: string;
-	whois_status: WhoisStatus;
+	whois_status: TaskStatus;
 	whois_error: string | null;
 	whois_record_id: string | null;
 	whois: WhoisSummaryData | null;
-	bgp_status: BgpStatus;
+	bgp_status: TaskStatus;
 	bgp: BgpSummaryData | null;
 	organizations: OrganizationSummary[];
 	tags: TagSummary[];
