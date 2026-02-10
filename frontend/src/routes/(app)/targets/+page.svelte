@@ -23,6 +23,7 @@
 	import BulkActionBar from '$lib/components/targets/bulk-action-bar.svelte';
 	import ImportTargetsModal from '$lib/components/modals/import-targets-modal.svelte';
 	import WhoisDetailDialog from '$lib/components/whois/whois-detail-dialog.svelte';
+	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
 
 	let showAddModal = $state(false);
 	let showDetailDialog = $state(false);
@@ -35,8 +36,10 @@
 
 	let showWhoisDialog = $state(false);
 	let whoisTarget = $state<Target | null>(null);
-
 	let whoisInitialTab = $state('overview');
+
+	let showBgpDialog = $state(false);
+	let bgpDialogTarget = $state<Target | null>(null);
 
 	let activeScanCounts = $state<Record<string, number>>({});
 
@@ -178,6 +181,18 @@
 		whoisTarget = target;
 		whoisInitialTab = 'discoveries';
 		showWhoisDialog = true;
+	}
+
+	function handleBgpClick(target: Target) {
+		bgpDialogTarget = target;
+		showBgpDialog = true;
+	}
+
+	function handleAddAsTarget(value: string) {
+		showAddModal = true;
+		// TODO: pre-fill the add target modal with `value`
+		// This could be done via a store or by passing initialValue to AddTargetModal
+		toast.info(`Add "${value}" as a new target`);
 	}
 
 	async function confirmDelete() {
@@ -334,6 +349,7 @@
 						onDelete={handleDeleteTarget}
 						onWhoisClick={handleWhoisClick}
 						onDiscoveriesClick={handleDiscoveriesClick}
+						onBgpClick={handleBgpClick}
 					/>
 				{/each}
 			</div>
@@ -423,15 +439,25 @@
 />
 
 <WhoisDetailDialog
-    bind:open={showWhoisDialog}
-    recordId={whoisTarget?.whois_record_id}
-    targetId={whoisTarget?.id}
-    targetValue={whoisTarget?.target_value}
-    targetType={whoisTarget?.target_type}
-    initialTab={whoisInitialTab}
-    onOpenChange={(open) => (showWhoisDialog = open)}
-    onOpenTargetSummary={() => {
-        // TODO: navigate to /targets/:id?tab=discoveries
-        // goto(`/targets/${whoisTarget?.id}?tab=discoveries`)
-    }}
+	bind:open={showWhoisDialog}
+	recordId={whoisTarget?.whois_record_id}
+	targetId={whoisTarget?.id}
+	targetValue={whoisTarget?.target_value}
+	targetType={whoisTarget?.target_type}
+	initialTab={whoisInitialTab}
+	onOpenChange={(open) => (showWhoisDialog = open)}
+	onOpenTargetSummary={() => {
+		// TODO: navigate to /targets/:id?tab=discoveries
+		// goto(`/targets/${whoisTarget?.id}?tab=discoveries`)
+	}}
+/>
+
+<BgpDetailDialog
+	bind:open={showBgpDialog}
+	targetId={bgpDialogTarget?.id}
+	targetValue={bgpDialogTarget?.target_value}
+	targetType={bgpDialogTarget?.target_type}
+	bgpSummary={bgpDialogTarget?.bgp}
+	onOpenChange={(o) => (showBgpDialog = o)}
+	onAddAsTarget={handleAddAsTarget}
 />
