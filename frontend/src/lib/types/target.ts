@@ -23,6 +23,18 @@ export interface WhoisSummaryData {
 }
 
 
+export interface DnsSummaryData {
+	id: string;
+	host: string;
+	status_code: string;
+	cdn: boolean;
+	cdn_name: string;
+	queried_at: string;
+	record_counts: Record<string, number>;
+}
+
+
+
 export interface BgpSummaryData {
 	// ASN targets
 	prefix_count: number | null;
@@ -69,6 +81,10 @@ export interface Target extends TargetBase {
 	whois: WhoisSummaryData | null;
 	bgp_status: TaskStatus;
 	bgp: BgpSummaryData | null;
+	dns_status: TaskStatus;
+	dns_error: string | null;
+	dns_lookup_id: string | null;
+	dns: DnsSummaryData | null;
 	organizations: OrganizationSummary[];
 	tags: TagSummary[];
 }

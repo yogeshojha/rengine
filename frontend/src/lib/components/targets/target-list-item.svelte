@@ -8,6 +8,7 @@
 	import CopyButton from '@/components/copy-button.svelte';
 	import WhoisInline from '$lib/components/targets/whois-inline.svelte';
 	import BgpInline from '$lib/components/targets/bgp-inline.svelte';
+	import DnsInline from '$lib/components/targets/dns-inline.svelte';
 	import DiscoveryBadge from '$lib/components/viewdns-discoveries/discovery-badge.svelte';
 	import { Ellipsis, Eye, History, Pencil, Play, Trash2 } from 'lucide-svelte';
 	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
@@ -90,6 +91,13 @@
 				targetType={target.target_type}
 				whois={target.whois}
 				onClick={() => onDiscoveriesClick?.(target)}
+			/>
+			<DnsInline
+				status={target.dns_status}
+				dns={target.dns}
+				targetType={target.target_type}
+				targetValue={target.target_value}
+				onClick={() => onView(target)}
 			/>
 		</div>
 	</div>
