@@ -19,7 +19,7 @@ from shared.logging import get_logger
 logger = get_logger(__name__)
 
 BASE_URL = "https://stat.ripe.net/data"
-DEFAULT_SOURCE_APP = "rengine"
+DEFAULT_SOURCE_APP = ""
 
 
 class RIPEStatAPIError(Exception):

@@ -20,6 +20,13 @@ from shared.models import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
+from shared.schemas.target_detail import (
+    EnrichmentRefreshResponse,
+    TargetBgpDetailResponse,
+    TargetDetailRead,
+    TargetDnsDetailResponse,
+    TargetWhoisDetailResponse,
+)
 
 router = APIRouter(
     prefix="/targets",
@@ -39,7 +46,6 @@ async def validate_target_endpoint(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    # validate single target
     target_type = await service.validate_target_value(request.target_value)
 
     if target_type:
@@ -259,6 +265,87 @@ async def import_targets_csv(
     Maximum 500 targets per CSV file.
     """
     return await service.import_targets_csv(project_slug, file, current_user.id)
+
+
+@router.get("/{target_id}/detail", response_model=TargetDetailRead)
+async def get_target_detail(
+    target_id: str,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """Get complete target with all enrichment data expanded.
+
+    Returns the target with full WHOIS record, full DNS lookup
+    with all records, and full BGP data from RIPEStat tables.
+    """
+    return await service.get_target_detail(target_id)
+
+
+@router.get("/{target_id}/dns", response_model=TargetDnsDetailResponse)
+async def get_target_dns(
+    target_id: str,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """Get full DNS lookup data with all individual records."""
+    return await service.get_target_dns(target_id)
+
+
+@router.get("/{target_id}/whois", response_model=TargetWhoisDetailResponse)
+async def get_target_whois(
+    target_id: str,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """Get full WHOIS record for a target."""
+    return await service.get_target_whois(target_id)
+
+
+@router.get("/{target_id}/bgp", response_model=TargetBgpDetailResponse)
+async def get_target_bgp(
+    target_id: str,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """Get full BGP enrichment data from RIPEStat tables.
+
+    Response varies by target type:
+    - ASN: AS overview, announced prefixes, neighbours, abuse contacts
+    - IP: network info, AS overview, abuse contacts
+    - IP_RANGE: prefix overview, related prefixes, abuse contacts
+    - DOMAIN/URL: returns status only, no BGP data
+    """
+    return await service.get_target_bgp(target_id)
+
+
+@router.post("/{target_id}/dns/refresh", response_model=EnrichmentRefreshResponse)
+async def refresh_target_dns(
+    target_id: str,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """Re-trigger DNS lookup. Only for DOMAIN and URL targets (422 otherwise)."""
+    return await service.refresh_target_dns(target_id)
+
+
+@router.post("/{target_id}/whois/refresh", response_model=EnrichmentRefreshResponse)
+async def refresh_target_whois(
+    target_id: str,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """Re-trigger WHOIS lookup. Applies to all target types."""
+    return await service.refresh_target_whois(target_id)
+
+
+@router.post("/{target_id}/bgp/refresh", response_model=EnrichmentRefreshResponse)
+async def refresh_target_bgp(
+    target_id: str,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    """Re-trigger BGP enrichment. Only for IP, IP_RANGE, and ASN targets (422 otherwise)."""
+    return await service.refresh_target_bgp(target_id)
 
 
 @router.get("/{target_id}", response_model=TargetRead)
