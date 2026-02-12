@@ -3,6 +3,7 @@
 	import { formatDistanceToNow } from '$lib/utilities/dates';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { goto } from '$app/navigation';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CopyButton from '@/components/copy-button.svelte';
@@ -13,6 +14,7 @@
 	import { Ellipsis, Eye, History, Pencil, Play, Trash2 } from 'lucide-svelte';
 	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
 	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
+	import { stopProp } from '$lib/utilities';
 
 	interface Props {
 		target: Target;
@@ -49,9 +51,18 @@
 </script>
 
 <div
-	class="group flex items-center gap-3 px-4 py-3 border-b border-border/50 transition-colors {isSelected
+	class="group flex items-center gap-3 px-4 py-3 border-b border-border/50 transition-colors cursor-pointer {isSelected
 		? 'bg-primary/5 hover:bg-primary/10'
 		: 'hover:bg-muted/30'}"
+	onclick={() => goto(`/targets/${target.id}`)}
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			goto(`/targets/${target.id}`);
+		}
+	}}
+	role="button"
+	tabindex="0"
 >
 	<Checkbox
 		checked={isSelected}
@@ -127,20 +138,30 @@
 	</div>
 
 	<!-- Organizations -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div class="hidden md:flex items-center flex-1 min-w-[180px]">
-		<TargetOrgPopover targetId={target.id} currentOrgs={target.organizations} />
+		<div onclick={stopProp} class="inline-flex">
+			<TargetOrgPopover targetId={target.id} currentOrgs={target.organizations} />
+		</div>
 	</div>
 
 	<!-- Tags -->
-	<div class="hidden lg:flex items-center flex-1 min-w-[200px]">
-		<TargetTagPopover targetId={target.id} currentTags={target.tags} />
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="hidden lg:flex items-center flex-1 min-w-[200px]" onclick={stopProp}>
+		<div onclick={stopProp} class="inline-flex">
+			<TargetTagPopover targetId={target.id} currentTags={target.tags} />
+		</div>
 	</div>
 
 	<div class="hidden sm:block text-xs text-muted-foreground w-[80px] text-right">
 		{formatDistanceToNow(target.updated_at)}
 	</div>
 
-	<div class="flex items-center gap-1">
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="flex items-center gap-1" onclick={stopProp}>
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}

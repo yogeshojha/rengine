@@ -25,6 +25,15 @@ export const routeLabels: Record<string, string> = {
 	profile: 'Profile',
 };
 
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function getRouteLabel(segment: string): string {
-	return routeLabels[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+	if (routeLabels[segment]) return routeLabels[segment];
+	if (UUID_REGEX.test(segment)) return '';
+	return segment.charAt(0).toUpperCase() + segment.slice(1);
+}
+
+export function isUuidSegment(segment: string): boolean {
+	return UUID_REGEX.test(segment);
 }
