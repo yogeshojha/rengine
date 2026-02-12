@@ -39,13 +39,13 @@
 
 	interface Props {
 		targetValue: string;
+		targetId: string;
 		targetType: TargetType;
 		whoisRecord: WhoisRecordRead | null;
-		/** Called when user clicks "View all in Target Summary" */
 		onOpenTargetSummary?: () => void;
 	}
 
-	let { targetValue, targetType, whoisRecord }: Props = $props();
+	let { targetValue, targetId, targetType, whoisRecord }: Props = $props();
 
 	// --- Types ---
 
@@ -372,7 +372,7 @@
 	}
 
 	function handleOpenTargetSummary() {
-		goto(`/targets/${target.id}`);
+		goto(`/targets/${targetId}`);
 	}
 </script>
 

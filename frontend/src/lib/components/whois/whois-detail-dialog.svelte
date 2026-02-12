@@ -28,7 +28,7 @@
 	interface Props {
 		open: boolean;
 		recordId?: string | null;
-		targetId?: string | null;
+		targetId?: string;
 		record?: WhoisRecordRead | null;
 		targetValue?: string | null;
 		targetType?: TargetType | null;
@@ -40,7 +40,7 @@
 	let {
 		open = $bindable(),
 		recordId = null,
-		targetId = null,
+		targetId,
 		record: externalRecord = null,
 		targetValue = null,
 		targetType = null,
@@ -332,6 +332,7 @@
 								<div class="px-6 py-5">
 									<DiscoveriesSummary
 										{targetValue}
+										{targetId}
 										{targetType}
 										whoisRecord={displayRecord}
 										{onOpenTargetSummary}
