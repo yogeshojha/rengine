@@ -24,6 +24,7 @@
 	import ImportTargetsModal from '$lib/components/modals/import-targets-modal.svelte';
 	import WhoisDetailDialog from '$lib/components/whois/whois-detail-dialog.svelte';
 	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
+	import { goto } from '$app/navigation';
 
 	let showAddModal = $state(false);
 	let showDetailDialog = $state(false);
@@ -159,10 +160,6 @@
 	function handleViewTarget(target: Target) {
 		selectedTarget = target;
 		showDetailDialog = true;
-	}
-
-	function handleEditTarget(target: Target) {
-		toast.info('todooo');
 	}
 
 	function handleDeleteTarget(target: Target) {
@@ -345,7 +342,6 @@
 						onScan={handleScan}
 						onOpenHistory={handleOpenScanHistory}
 						onView={handleViewTarget}
-						onEdit={handleEditTarget}
 						onDelete={handleDeleteTarget}
 						onWhoisClick={handleWhoisClick}
 						onDiscoveriesClick={handleDiscoveriesClick}
@@ -412,7 +408,6 @@
 	onOpenChange={(open) => (showDetailDialog = open)}
 	onScan={handleScan}
 	onOpenHistory={handleOpenScanHistory}
-	onEdit={handleEditTarget}
 	onDelete={handleDeleteTarget}
 />
 
@@ -447,8 +442,7 @@
 	initialTab={whoisInitialTab}
 	onOpenChange={(open) => (showWhoisDialog = open)}
 	onOpenTargetSummary={() => {
-		// TODO: navigate to /targets/:id?tab=discoveries
-		// goto(`/targets/${whoisTarget?.id}?tab=discoveries`)
+		goto(`/targets/${whoisTarget?.id}`)
 	}}
 />
 

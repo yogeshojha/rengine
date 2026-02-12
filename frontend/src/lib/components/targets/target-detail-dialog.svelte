@@ -29,7 +29,6 @@
 		onOpenChange: (open: boolean) => void;
 		onScan?: (target: Target) => void;
 		onOpenHistory?: (target: Target) => void;
-		onEdit?: (target: Target) => void;
 		onDelete?: (target: Target) => void;
 	}
 
@@ -40,7 +39,6 @@
 		onOpenChange,
 		onScan,
 		onOpenHistory,
-		onEdit,
 		onDelete
 	}: Props = $props();
 
@@ -64,13 +62,6 @@
 	function handleOpenHistory() {
 		if (target && onOpenHistory) {
 			onOpenHistory(target);
-			onOpenChange(false);
-		}
-	}
-
-	function handleEdit() {
-		if (target && onEdit) {
-			onEdit(target);
 			onOpenChange(false);
 		}
 	}
@@ -101,8 +92,7 @@
 
 			<div class="p-6 space-y-6">
 				<Badge
-					class={getTargetTypeColor(target.target_type) +
-						' border shrink-0 max-w-[180px] truncate'}
+					class={getTargetTypeColor(target.target_type) + ' border shrink-0 max-w-[180px] truncate'}
 				>
 					<TargetIcon class="h-3 w-3 mr-1 shrink-0" />
 					<span class="truncate">{formatTargetType(target.target_type)}</span>
@@ -233,10 +223,6 @@
 				<Button variant="outline" size="sm" onclick={handleOpenHistory} class="gap-1.5">
 					<History class="h-3.5 w-3.5" />
 					History
-				</Button>
-				<Button variant="outline" size="sm" onclick={handleEdit} class="gap-1.5">
-					<Pencil class="h-3.5 w-3.5" />
-					Edit
 				</Button>
 				<Button variant="destructive" size="sm" onclick={handleDelete} class="gap-1.5">
 					<Trash2 class="h-3.5 w-3.5" />

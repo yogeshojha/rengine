@@ -35,6 +35,7 @@
 		Check,
 		ArrowRight
 	} from 'lucide-svelte';
+	import { goto } from '$app/navigation';
 
 	interface Props {
 		targetValue: string;
@@ -44,7 +45,7 @@
 		onOpenTargetSummary?: () => void;
 	}
 
-	let { targetValue, targetType, whoisRecord, onOpenTargetSummary }: Props = $props();
+	let { targetValue, targetType, whoisRecord }: Props = $props();
 
 	// --- Types ---
 
@@ -371,8 +372,7 @@
 	}
 
 	function handleOpenTargetSummary() {
-		// TODO: navigate to /targets/:id?tab=discoveries once Target Summary page is built
-		onOpenTargetSummary?.();
+		goto(`/targets/${target.id}`);
 	}
 </script>
 

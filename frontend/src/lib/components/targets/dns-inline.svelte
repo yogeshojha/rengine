@@ -3,6 +3,7 @@
 	import type { DnsSummaryData } from '$lib/types/target';
 	import { TaskStatus } from '@/types/task-status';
 	import * as HoverCard from '$lib/components/ui/hover-card';
+	import { goto } from '$app/navigation';
 	import {
 		Loader,
 		TriangleAlert,
@@ -23,10 +24,11 @@
 		dns: DnsSummaryData | null;
 		targetType: TargetType;
 		targetValue: string;
+		targetId: string;
 		onClick?: () => void;
 	}
 
-	let { status, dns, targetType, targetValue, onClick }: Props = $props();
+	let { status, dns, targetType, targetValue, targetId, onClick }: Props = $props();
 
 	let isApplicable = $derived(targetType === TargetType.DOMAIN);
 
@@ -244,10 +246,14 @@
 								<Clock class="h-3 w-3" />
 								<span>Queried {formatQueriedAt(dns.queried_at)}</span>
 							</div>
-							<span class="flex items-center gap-1 text-[11px] text-primary/70">
-								Full details
+							<button
+								type="button"
+								class="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
+								onclick={() => goto(`/targets/${targetId}`)}
+							>
+								See Details
 								<ExternalLink class="h-2.5 w-2.5" />
-							</span>
+							</button>
 						</div>
 					</div>
 				</HoverCard.Content>

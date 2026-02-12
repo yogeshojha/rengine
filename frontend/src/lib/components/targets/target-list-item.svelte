@@ -11,7 +11,7 @@
 	import BgpInline from '$lib/components/targets/bgp-inline.svelte';
 	import DnsInline from '$lib/components/targets/dns-inline.svelte';
 	import DiscoveryBadge from '$lib/components/viewdns-discoveries/discovery-badge.svelte';
-	import { Ellipsis, Eye, History, Pencil, Play, Trash2 } from 'lucide-svelte';
+	import { Ellipsis, Eye, History, Play, Trash2 } from 'lucide-svelte';
 	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
 	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
 	import { stopProp } from '$lib/utilities';
@@ -24,7 +24,6 @@
 		onScan: (target: Target) => void;
 		onOpenHistory: (target: Target) => void;
 		onView: (target: Target) => void;
-		onEdit: (target: Target) => void;
 		onDelete: (target: Target) => void;
 		onWhoisClick: (target: Target) => void;
 		onDiscoveriesClick?: (target: Target) => void;
@@ -39,7 +38,6 @@
 		onScan,
 		onOpenHistory,
 		onView,
-		onEdit,
 		onDelete,
 		onWhoisClick,
 		onDiscoveriesClick,
@@ -87,6 +85,7 @@
 				status={target.whois_status}
 				whois={target.whois}
 				error={target.whois_error}
+				targetId={target.id}
 				onClick={() => onWhoisClick(target)}
 			/>
 			<BgpInline
@@ -108,6 +107,7 @@
 				dns={target.dns}
 				targetType={target.target_type}
 				targetValue={target.target_value}
+				targetId={target.id}
 				onClick={() => onView(target)}
 			/>
 		</div>
@@ -191,10 +191,6 @@
 				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end" class="w-48">
-				<DropdownMenu.Item onclick={() => onScan(target)} class="gap-2">
-					<Play class="h-4 w-4 text-blue-500" />
-					Scan target
-				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={() => onOpenHistory(target)} class="gap-2">
 					<History class="h-4 w-4" />
 					Scan history
@@ -204,11 +200,7 @@
 
 				<DropdownMenu.Item onclick={() => onView(target)} class="gap-2">
 					<Eye class="h-4 w-4" />
-					View details
-				</DropdownMenu.Item>
-				<DropdownMenu.Item onclick={() => onEdit(target)} class="gap-2">
-					<Pencil class="h-4 w-4" />
-					Edit target
+					View Summary
 				</DropdownMenu.Item>
 
 				<DropdownMenu.Separator />

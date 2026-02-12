@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { WhoisSummaryData } from '$lib/types/target';
 	import { TaskStatus } from '$lib/types/task-status';
+	import { goto } from '$app/navigation';
 	import {
 		formatShortDate,
 		formatMonthYear,
@@ -21,17 +22,19 @@
 		UserRound,
 		TriangleAlert,
 		Loader,
-		Flag
+		Flag,
+		ExternalLink
 	} from 'lucide-svelte';
 
 	interface Props {
 		status: TaskStatus;
 		whois: WhoisSummaryData | null;
+		targetId: string;
 		error?: string | null;
 		onClick?: () => void;
 	}
 
-	let { status, whois, error = null, onClick }: Props = $props();
+	let { status, whois, targetId, error = null, onClick }: Props = $props();
 
 	let urgency = $derived<ExpirationUrgency>(
 		whois?.expiration_date ? getExpirationUrgency(whois.expiration_date) : 'none'
@@ -41,21 +44,15 @@
 		whois?.expiration_date ? formatExpirationLabel(whois.expiration_date) : ''
 	);
 
-	let domainAge = $derived(
-		whois?.registration_date ? getDomainAge(whois.registration_date) : ''
-	);
+	let domainAge = $derived(whois?.registration_date ? getDomainAge(whois.registration_date) : '');
 
 	let inlineSummary = $derived.by(() => {
 		if (!whois) return '';
 
 		switch (whois.lookup_type) {
 			case 'DOMAIN': {
-				const registrar = whois.registrar_name
-					? truncate(whois.registrar_name, 24)
-					: '';
-				const expiry = whois.expiration_date
-					? formatMonthYear(whois.expiration_date)
-					: '';
+				const registrar = whois.registrar_name ? truncate(whois.registrar_name, 24) : '';
+				const expiry = whois.expiration_date ? formatMonthYear(whois.expiration_date) : '';
 				return [registrar, expiry ? `Exp ${expiry}` : ''].filter(Boolean).join(' · ');
 			}
 			case 'IP': {
@@ -66,9 +63,7 @@
 			}
 			case 'ASN': {
 				const name = whois.name ? truncate(whois.name, 20) : '';
-				const registrant = whois.registrant_name
-					? truncate(whois.registrant_name, 24)
-					: '';
+				const registrant = whois.registrant_name ? truncate(whois.registrant_name, 24) : '';
 				return [name, registrant].filter(Boolean).join(' · ');
 			}
 			default:
@@ -101,10 +96,14 @@
 	let LookupIcon = $derived.by(() => {
 		if (!whois) return Globe;
 		switch (whois.lookup_type) {
-			case 'DOMAIN': return Globe;
-			case 'IP': return Server;
-			case 'ASN': return Network;
-			default: return Globe;
+			case 'DOMAIN':
+				return Globe;
+			case 'IP':
+				return Server;
+			case 'ASN':
+				return Network;
+			default:
+				return Globe;
 		}
 	});
 
@@ -163,7 +162,11 @@
 					<div class="flex items-start gap-2.5">
 						<UserRound class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1">Registrant</p>
+							<p
+								class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+							>
+								Registrant
+							</p>
 							<p class="text-sm truncate">{whois.registrant_name}</p>
 						</div>
 					</div>
@@ -173,7 +176,11 @@
 					<div class="flex items-start gap-2.5">
 						<Building class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1">Registrar</p>
+							<p
+								class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+							>
+								Registrar
+							</p>
 							<p class="text-sm truncate">{whois.registrar_name}</p>
 						</div>
 					</div>
@@ -183,7 +190,11 @@
 					<div class="flex items-start gap-2.5">
 						<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1">Network</p>
+							<p
+								class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+							>
+								Network
+							</p>
 							<p class="text-sm font-mono">{whois.network_cidr}</p>
 						</div>
 					</div>
@@ -193,7 +204,11 @@
 					<div class="flex items-start gap-2.5">
 						<Flag class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1">Country</p>
+							<p
+								class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+							>
+								Country
+							</p>
 							<p class="text-sm">{whois.country}</p>
 						</div>
 					</div>
@@ -206,7 +221,11 @@
 								<div class="flex items-start gap-2">
 									<CalendarDays class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 									<div>
-										<p class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1">Registered</p>
+										<p
+											class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+										>
+											Registered
+										</p>
 										<p class="text-xs font-medium">{formatShortDate(whois.registration_date)}</p>
 										{#if domainAge}
 											<p class="text-[11px] text-muted-foreground mt-0.5">{domainAge}</p>
@@ -219,10 +238,16 @@
 								<div class="flex items-start gap-2">
 									<CalendarClock class="h-3.5 w-3.5 mt-0.5 shrink-0 {urgencyClasses}" />
 									<div>
-										<p class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1">Expires</p>
+										<p
+											class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+										>
+											Expires
+										</p>
 										<p class="text-xs font-medium">{formatShortDate(whois.expiration_date)}</p>
 										{#if expirationLabel}
-											<p class="text-[11px] mt-0.5 font-medium {urgencyClasses}">{expirationLabel}</p>
+											<p class="text-[11px] mt-0.5 font-medium {urgencyClasses}">
+												{expirationLabel}
+											</p>
 										{/if}
 									</div>
 								</div>
@@ -239,7 +264,14 @@
 						<Clock class="h-3 w-3" />
 						<span>Queried {formatShortDate(whois.queried_at)}</span>
 					</div>
-					<span class="text-[11px] text-primary/70">Click for full details</span>
+					<button
+						type="button"
+						class="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
+						onclick={() => goto(`/targets/${targetId}`)}
+					>
+						See Details
+						<ExternalLink class="h-2.5 w-2.5" />
+					</button>
 				</div>
 			</div>
 		</HoverCard.Content>
