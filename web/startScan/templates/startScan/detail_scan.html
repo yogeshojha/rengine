@@ -352,13 +352,21 @@ Scan Findings
 								<h2 class="text-danger my-3 text-center">
 									<span data-plugin="counterup">{{ risk_score }}</span>
 								</h2>
-								<!-- <p class="text-muted mb-0 text-center font-13">
-									{% if risk_score > 0 %}
-										<span class="badge badge-soft-danger">Risiko Terdeteksi (Vulnerabilities > 0)</span>
-									{% else %}
-										<span class="badge badge-soft-success">Risiko Rendah (Tidak ada Vulnerability)</span>
-									{% endif %}
-								</p> -->
+								<div class="text-center mt-2">
+								{% if risk_score == 0 %}
+									<span class="badge bg-success p-2 font-14">No Risk</span>
+								{% elif risk_score >= 1 and risk_score <= 30 %}
+									<span class="badge bg-info p-2 font-14 text-white">Low Risk</span>
+								{% elif risk_score >= 31 and risk_score <= 50 %}
+									<span class="badge bg-primary p-2 font-14">Risk</span>
+								{% elif risk_score >= 51 and risk_score <= 70 %}
+									<span class="badge bg-warning p-2 font-14 text-dark">Medium Risk</span>
+								{% elif risk_score >= 71 and risk_score <= 90 %}
+									<span class="badge bg-danger p-2 font-14">High Risk</span>
+								{% elif risk_score >= 91 and risk_score <= 100 %}
+									<span class="badge p-2 font-14" style="background-color: #4a0000; color: white;">Very High Risk</span>
+								{% endif %}
+							</div>
 							</div>
 						</div>
 					</div>

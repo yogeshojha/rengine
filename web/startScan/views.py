@@ -189,6 +189,8 @@ def detail_scan(request, id, slug):
 
     risk_score += abuse_risk_contribution
 
+    risk_score = min(risk_score, 100)
+    
     # Build render context
     ctx = {
         'scan_history_id': id,
