@@ -165,8 +165,29 @@ def detail_scan(request, id, slug):
     exposed_count = emails.exclude(password__isnull=True).count()
 
     totalvulns_count = vulns.count()
+    port_exists = Port.objects.filter(ports__in=ip_addresses).exists()
+    directory_exists = DirectoryFile.objects.filter(directory_files__in=DirectoryScan.objects.filter(dir_subscan_ids__scan_history=scan)).exists()
+    osint_exists = emails.exists() or employees.exists()
+    waf_exists = Waf.objects.filter(waf__in=subdomains).exists()
+    #abuse IP Score
+    max_abuse_score = ip_addresses.aggregate(models.Max('abuse_confidence_score'))['abuse_confidence_score__max'] or 0
+    #Konversi skor 0-100 menjadi penambahan risk score 0-20
+    abuse_risk_contribution = int(max_abuse_score / 5)
+
     # Tambahkan logika Risk Score di sini
-    risk_score = 30 if totalvulns_count > 0 else 0
+    risk_score = 0
+    if totalvulns_count > 0:
+        risk_score += 30
+    if port_exists:
+        risk_score += 20
+    if directory_exists:
+        risk_score += 10
+    if osint_exists:
+        risk_score += 10  
+    if not waf_exists:
+        risk_score += 10  
+
+    risk_score += abuse_risk_contribution
 
     # Build render context
     ctx = {
