@@ -164,6 +164,10 @@ def detail_scan(request, id, slug):
     # Emails
     exposed_count = emails.exclude(password__isnull=True).count()
 
+    totalvulns_count = vulns.count()
+    # Tambahkan logika Risk Score di sini
+    risk_score = 30 if totalvulns_count > 0 else 0
+
     # Build render context
     ctx = {
         'scan_history_id': id,
@@ -195,6 +199,7 @@ def detail_scan(request, id, slug):
         'most_common_tags': common_tags,
         'most_common_vulnerability': common_vulns,
         'asset_countries': asset_countries,
+        'risk_score': risk_score,
     }
 
     # Find number of matched GF patterns

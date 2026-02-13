@@ -341,6 +341,28 @@ Scan Findings
 						</div>
 					</div>
 				</div>
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex align-items-start">
+							<div class="w-100">
+								<h5 class="mt-0 mb-0 font-15">
+									Risk Score for <span class="badge badge-soft-primary">{{history.domain.name}}</span>
+									<i class="fa fa-info-circle text-muted float-end" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Skor risiko berdasarkan temuan celah keamanan."></i>
+								</h5>
+								<h2 class="text-danger my-3 text-center">
+									<span data-plugin="counterup">{{ risk_score }}</span>
+								</h2>
+								<!-- <p class="text-muted mb-0 text-center font-13">
+									{% if risk_score > 0 %}
+										<span class="badge badge-soft-danger">Risiko Terdeteksi (Vulnerabilities > 0)</span>
+									{% else %}
+										<span class="badge badge-soft-success">Risiko Rendah (Tidak ada Vulnerability)</span>
+									{% endif %}
+								</p> -->
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 			<div class="col-xl-9 col-lg-8">
 				<div class="row">
