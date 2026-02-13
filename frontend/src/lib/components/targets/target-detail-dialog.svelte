@@ -14,13 +14,11 @@
 		Globe,
 		Hash,
 		History,
-		Link2,
-		MapPin,
-		Pencil,
 		Play,
 		Tag as TagIcon,
 		Trash2
 	} from 'lucide-svelte';
+	import { getTargetTypeIcon } from '$lib/config/icons';
 
 	interface Props {
 		open: boolean;
@@ -42,15 +40,7 @@
 		onDelete
 	}: Props = $props();
 
-	const targetIcons = {
-		[TargetType.DOMAIN]: Globe,
-		[TargetType.IP]: MapPin,
-		[TargetType.IP_RANGE]: Hash,
-		[TargetType.ASN]: Building2,
-		[TargetType.URL]: Link2
-	};
-
-	let TargetIcon = $derived(target ? targetIcons[target.target_type] || Globe : Globe);
+	let TargetIcon = $derived(getTargetTypeIcon(target?.target_type ?? TargetType.DOMAIN));
 
 	function handleScan() {
 		if (target && onScan) {

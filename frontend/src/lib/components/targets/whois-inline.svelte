@@ -12,8 +12,6 @@
 	} from '$lib/utilities/dates';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import {
-		Globe,
-		Server,
 		Network,
 		Clock,
 		CalendarDays,
@@ -25,6 +23,7 @@
 		Flag,
 		ExternalLink
 	} from 'lucide-svelte';
+	import { getLookupTypeIcon } from '$lib/config/icons';
 
 	interface Props {
 		status: TaskStatus;
@@ -93,19 +92,7 @@
 		return map[urgency];
 	});
 
-	let LookupIcon = $derived.by(() => {
-		if (!whois) return Globe;
-		switch (whois.lookup_type) {
-			case 'DOMAIN':
-				return Globe;
-			case 'IP':
-				return Server;
-			case 'ASN':
-				return Network;
-			default:
-				return Globe;
-		}
-	});
+	let LookupIcon = $derived(getLookupTypeIcon(whois?.lookup_type ?? 'DOMAIN'));
 
 	function truncate(str: string, max: number): string {
 		if (str.length <= max) return str;

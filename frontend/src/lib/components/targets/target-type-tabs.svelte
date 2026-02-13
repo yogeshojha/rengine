@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { TargetType } from '$lib/types/target';
+	import { TargetType, formatTargetType } from '$lib/types/target';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import { Globe, MapPin, Hash, Building2, Link2, Layers } from 'lucide-svelte';
+	import { Layers } from 'lucide-svelte';
+	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
 
 	interface Props {
 		counts: {
@@ -20,11 +21,11 @@
 
 	const tabs = [
 		{ value: 'all', label: 'All', icon: Layers },
-		{ value: TargetType.DOMAIN, label: 'Domains', icon: Globe },
-		{ value: TargetType.IP, label: 'IPs', icon: MapPin },
-		{ value: TargetType.IP_RANGE, label: 'IP Ranges', icon: Hash },
-		{ value: TargetType.ASN, label: 'ASNs', icon: Building2 },
-		{ value: TargetType.URL, label: 'URLs', icon: Link2 }
+		...Object.entries(TARGET_TYPE_ICONS_COMPACT).map(([value, icon]) => ({
+			value,
+			label: formatTargetType(value as TargetType) + 's',
+			icon
+		}))
 	];
 
 	function getCount(value: string): number {

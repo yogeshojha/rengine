@@ -22,7 +22,7 @@
 	import { targetsApi } from '$lib/api/targets';
 	import { organizationsApi } from '$lib/api/organizations';
 	import { tagsApi } from '$lib/api/tags';
-	import { TargetType, getTargetTypeColor, formatTargetType } from '$lib/types/target';
+	import { TargetType, formatTargetType } from '$lib/types/target';
 	import { toast } from 'svelte-sonner';
 
 	interface Props {

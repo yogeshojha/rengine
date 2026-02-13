@@ -8,7 +8,8 @@ import type {
 	TargetType,
 	TargetBulkCreateRequest,
 	TargetBulkCreateResponse,
-	TargetImportRequest
+	TargetImportRequest,
+	EnrichmentRefreshResponse
 } from '$lib/types/target';
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 
@@ -97,5 +98,17 @@ export const targetsApi = {
 		}
 
 		return response.json();
-	}
+	},
+
+	async refreshDns(targetId: string): Promise<EnrichmentRefreshResponse> {
+		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/dns/refresh`);
+	},
+
+	async refreshWhois(targetId: string): Promise<EnrichmentRefreshResponse> {
+		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/whois/refresh`);
+	},
+
+	async refreshBgp(targetId: string): Promise<EnrichmentRefreshResponse> {
+		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/bgp/refresh`);
+	},
 };

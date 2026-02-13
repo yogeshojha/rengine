@@ -156,6 +156,13 @@ export interface TargetPreviewItem {
 	error?: string;
 }
 
+export interface EnrichmentRefreshResponse {
+    target_id: string;
+    enrichment_type: string;
+    status: string;
+    message: string;
+}
+
 export function getTargetTypeColor(type: TargetType): string {
 	switch (type) {
 		case TargetType.DOMAIN:

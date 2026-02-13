@@ -2,8 +2,9 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import { Globe, MapPin, Hash, Building2, Link2, CircleAlert, Tag, Landmark } from 'lucide-svelte';
+	import { CircleAlert, Tag, Landmark } from 'lucide-svelte';
 	import { TargetType, formatTargetType } from '$lib/types/target';
+	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
 
 	interface PreviewItem {
 		target_value: string;
@@ -20,14 +21,6 @@
 	}
 
 	let { items, maxHeight = '400px' }: Props = $props();
-
-	const typeIcons = {
-		[TargetType.DOMAIN]: Globe,
-		[TargetType.IP]: MapPin,
-		[TargetType.IP_RANGE]: Hash,
-		[TargetType.ASN]: Building2,
-		[TargetType.URL]: Link2
-	};
 
 	let filterTab = $state<'all' | 'valid' | 'invalid'>('all');
 
@@ -78,7 +71,7 @@
 					<div class="space-y-1.5">
 						<div class="flex items-center gap-2">
 							{#if item.target_type}
-								{@const TypeIcon = typeIcons[item.target_type]}
+								{@const TypeIcon = TARGET_TYPE_ICONS_COMPACT[item.target_type]}
 								<TypeIcon class="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
 							{/if}
 							<code class="text-sm font-mono {item.error ? 'text-destructive' : ''}">
