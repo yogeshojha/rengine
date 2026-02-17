@@ -12,6 +12,7 @@
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import TargetHeader from '$lib/components/targets/target-detail/target-header.svelte';
 	import TargetHeaderSkeleton from '$lib/components/targets/target-detail/target-header-skeleton.svelte';
+	import OverviewStats from '$lib/components/targets/target-detail/overview/overview-stats.svelte';
 
 	const targetId = $derived(page.params.id);
 
@@ -123,8 +124,8 @@
 		/>
 
 		{#if activeTab === 'overview'}
-			<div class="text-sm text-muted-foreground text-center py-20 border border-dashed rounded-lg">
-				Overview content
+			<div class="space-y-6">
+				<OverviewStats {target} />
 			</div>
 		{:else if activeTab === 'enrichment'}
 			<div class="text-sm text-muted-foreground text-center py-20 border border-dashed rounded-lg">
