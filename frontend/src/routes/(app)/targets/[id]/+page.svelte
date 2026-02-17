@@ -13,6 +13,8 @@
 	import TargetHeader from '$lib/components/targets/target-detail/target-header.svelte';
 	import TargetHeaderSkeleton from '$lib/components/targets/target-detail/target-header-skeleton.svelte';
 	import OverviewStats from '$lib/components/targets/target-detail/overview/overview-stats.svelte';
+	import AttackSurfaceChart from '$lib/components/targets/target-detail/overview/attack-surface-chart.svelte';
+	import VulnerabilityRadar from '$lib/components/targets/target-detail/overview/vulnerability-radar.svelte';
 
 	const targetId = $derived(page.params.id);
 
@@ -124,8 +126,16 @@
 		/>
 
 		{#if activeTab === 'overview'}
-			<div class="space-y-6">
+			<div class="space-y-4">
 				<OverviewStats {target} />
+				<div class="grid grid-cols-5 gap-4">
+					<div class="col-span-3">
+						<AttackSurfaceChart {target} />
+					</div>
+					<div class="col-span-2">
+						<VulnerabilityRadar {target} hasVulnData={true} />
+					</div>
+				</div>
 			</div>
 		{:else if activeTab === 'enrichment'}
 			<div class="text-sm text-muted-foreground text-center py-20 border border-dashed rounded-lg">

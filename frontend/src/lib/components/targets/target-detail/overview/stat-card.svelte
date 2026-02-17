@@ -63,7 +63,7 @@
 <Card.Root class="overflow-hidden">
 	<div class="flex">
 		<div class="w-[3px] shrink-0 {accentColor}"></div>
-		<Card.Content class="flex-1 py-3 px-4 space-y-1">
+		<Card.Content class="flex-1 py-1 px-4 space-y-1">
 			<!-- Icon lavel and horizontal subtle line -->
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -85,7 +85,9 @@
 			<!-- stat value + growth  -->
 			<div class="flex items-baseline gap-2">
 				<span class="text-xl font-semibold tracking-tight tabular-nums">
-					{value.toLocaleString()}{#if unit}<span class="text-xs font-normal text-muted-foreground ml-0.5">{unit}</span>{/if}
+					{value.toLocaleString()}{#if unit}<span
+							class="text-xs font-normal text-muted-foreground ml-0.5">{unit}</span
+						>{/if}
 				</span>
 				{#if previousValue !== null}
 					<span class="text-[11px] text-muted-foreground">
