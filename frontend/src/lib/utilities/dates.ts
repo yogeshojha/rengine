@@ -40,6 +40,20 @@ export function formatDistanceToNow(date: string | Date): string {
 	return `${diffInYears} ${diffInYears === 1 ? 'year' : 'years'}`;
 }
 
+export function relativeTime(timestamp: string | null | undefined): string {
+	if (!timestamp) return 'never';
+	const diffMs = Date.now() - new Date(timestamp).getTime();
+	const minutes = Math.floor(diffMs / 60000);
+	if (minutes < 1) return 'just now';
+	if (minutes < 60) return `${minutes}m ago`;
+	const hours = Math.floor(minutes / 60);
+	if (hours < 24) return `${hours}h ago`;
+	const days = Math.floor(hours / 24);
+	if (days < 30) return `${days}d ago`;
+	const months = Math.floor(days / 30);
+	return `${months}mo ago`;
+}
+
 export function formatDateTime(date: string | Date): string {
 	return new Date(date).toLocaleString('en-US', {
 		year: 'numeric',
@@ -124,4 +138,79 @@ export function getDomainAge(registrationDate: string | null): string {
 	const remainingMonths = Math.floor((diffDays % 365) / 30);
 	if (remainingMonths > 0) return `${years}y ${remainingMonths}mo old`;
 	return `${years} ${years === 1 ? 'year' : 'years'} old`;
+}
+
+
+export type FreshnessLevel = 'fresh' | 'recent' | 'aging' | 'stale' | 'never';
+
+export interface FreshnessThresholds {
+	/** Hours before data is no longer "fresh" (default: 24) */
+	fresh: number;
+	/** Hours before "recent" → "aging" (default: 72) */
+	recent: number;
+	/** Hours before "aging" → "stale" (default: 168 = 7 days) */
+	aging: number;
+}
+
+const DEFAULT_THRESHOLDS: FreshnessThresholds = {
+	fresh: 24,
+	recent: 72,
+	aging: 168,
+};
+
+export function getFreshnessLevel(
+	timestamp: string | null | undefined,
+	thresholds: FreshnessThresholds = DEFAULT_THRESHOLDS
+): FreshnessLevel {
+	if (!timestamp) return 'never';
+	const hours = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60);
+	if (hours < thresholds.fresh) return 'fresh';
+	if (hours < thresholds.recent) return 'recent';
+	if (hours < thresholds.aging) return 'aging';
+	return 'stale';
+}
+
+export interface FreshnessColors {
+	dot: string;
+	text: string;
+	border: string;
+}
+
+const FRESHNESS_COLOR_MAP: Record<FreshnessLevel, FreshnessColors> = {
+	fresh: {
+		dot: 'bg-green-500',
+		text: 'text-green-600 dark:text-green-400',
+		border: 'border-green-500/20',
+	},
+	recent: {
+		dot: 'bg-emerald-500',
+		text: 'text-emerald-600 dark:text-emerald-400',
+		border: 'border-emerald-500/20',
+	},
+	aging: {
+		dot: 'bg-amber-500',
+		text: 'text-amber-600 dark:text-amber-400',
+		border: 'border-amber-500/20',
+	},
+	stale: {
+		dot: 'bg-red-500',
+		text: 'text-red-600 dark:text-red-400',
+		border: 'border-red-500/20',
+	},
+	never: {
+		dot: 'bg-zinc-400 dark:bg-zinc-600',
+		text: 'text-muted-foreground',
+		border: 'border-zinc-500/20',
+	},
+};
+
+export function getFreshnessColors(level: FreshnessLevel): FreshnessColors {
+	return FRESHNESS_COLOR_MAP[level];
+}
+
+export function getColorsForTimestamp(
+	timestamp: string | null | undefined,
+	thresholds?: FreshnessThresholds
+): FreshnessColors {
+	return getFreshnessColors(getFreshnessLevel(timestamp, thresholds));
 }

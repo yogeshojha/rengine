@@ -16,7 +16,8 @@
     "**/.python-version": true,
     "**/uv.lock": true,
     "**/*.egg-info": true,
-    "**/dist": true
+    "**/dist": true,
+    "**/ui/": true
   },
   "search.exclude": {
     "**/__pycache__": true,
