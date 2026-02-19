@@ -15,6 +15,10 @@
 	import OverviewStats from '$lib/components/targets/target-detail/overview/overview-stats.svelte';
 	import AttackSurfaceChart from '$lib/components/targets/target-detail/overview/attack-surface-chart.svelte';
 	import VulnerabilityRadar from '$lib/components/targets/target-detail/overview/vulnerability-radar.svelte';
+	import ActivityHeatmap from '$lib/components/targets/target-detail/overview/activity-heatmap.svelte';
+	import ActivityFeed from '$lib/components/targets/target-detail/overview/activity-feed.svelte';
+	import RecentScans from '$lib/components/targets/target-detail/overview/recent-scans.svelte';
+	import AssetGeography from '@/components/targets/target-detail/overview/asset-geography.svelte';
 
 	const targetId = $derived(page.params.id);
 
@@ -129,11 +133,30 @@
 			<div class="space-y-4">
 				<OverviewStats {target} />
 				<div class="grid grid-cols-5 gap-4">
-					<div class="col-span-3">
-						<AttackSurfaceChart {target} />
+					<div class="col-span-1 space-y-4">
+						<div class="h-[450px]">
+							<ActivityFeed {target} />
+						</div>
+						<div class="h-[450px]">
+							<RecentScans {target} />
+						</div>
 					</div>
-					<div class="col-span-2">
-						<VulnerabilityRadar {target} hasVulnData={true} />
+
+					<div class="col-span-4">
+						<div class="grid grid-cols-5 gap-4">
+							<div class="col-span-3">
+								<AttackSurfaceChart {target} />
+							</div>
+							<div class="col-span-2">
+								<VulnerabilityRadar {target} hasVulnData={true} />
+							</div>
+							<div class="col-span-3">
+								<ActivityHeatmap {target} />
+							</div>
+							<div class="col-span-2">
+								<AssetGeography {target} />
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
