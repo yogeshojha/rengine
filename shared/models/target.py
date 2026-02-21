@@ -32,8 +32,12 @@ class TargetValidationResponse(BaseModel):
 class TargetOrganization(SQLModel, table=True):
     __tablename__ = "target_organizations"
 
-    target_id: uuid.UUID = Field(foreign_key="targets.id", primary_key=True)
-    organization_id: uuid.UUID = Field(foreign_key="organizations.id", primary_key=True)
+    target_id: uuid.UUID = Field(
+        foreign_key="targets.id", primary_key=True, ondelete="CASCADE"
+    )
+    organization_id: uuid.UUID = Field(
+        foreign_key="organizations.id", primary_key=True, ondelete="CASCADE"
+    )
 
 
 class TargetBase(SQLModel):
@@ -58,7 +62,7 @@ class Target(TargetBase, table=True):
         sa_relationship_kwargs={"lazy": "selectin"},
     )
     whois_record_id: uuid.UUID | None = Field(
-        default=None, foreign_key="whois_records.id", index=True
+        default=None, foreign_key="whois_records.id", index=True, ondelete="SET NULL"
     )
 
     bgp_status: TaskStatus = Field(default=TaskStatus.PENDING, index=True)
@@ -75,7 +79,7 @@ class Target(TargetBase, table=True):
         },
     )
     dns_lookup_id: uuid.UUID | None = Field(
-        default=None, foreign_key="dns_lookups.id", index=True
+        default=None, foreign_key="dns_lookups.id", index=True, ondelete="SET NULL"
     )
 
     organizations: list["Organization"] = Relationship(

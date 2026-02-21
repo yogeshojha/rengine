@@ -38,8 +38,12 @@ class DnsRecord(SQLModel, table=True):
     __tablename__ = "dns_records"
 
     id: uuid.UUID = SQLField(default_factory=uuid.uuid4, primary_key=True, index=True)
-    dns_lookup_id: uuid.UUID = SQLField(foreign_key="dns_lookups.id", index=True)
-    target_id: uuid.UUID = SQLField(foreign_key="targets.id", index=True)
+    dns_lookup_id: uuid.UUID = SQLField(
+        foreign_key="dns_lookups.id", index=True, ondelete="CASCADE"
+    )
+    target_id: uuid.UUID = SQLField(
+        foreign_key="targets.id", index=True, ondelete="CASCADE"
+    )
 
     record_type: DnsRecordType = SQLField(index=True)
     value: str = SQLField(max_length=2000, index=True)

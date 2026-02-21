@@ -22,8 +22,12 @@ class TagSummary(BaseModel):
 class TargetTag(SQLModel, table=True):
     __tablename__ = "target_tags"
 
-    target_id: uuid.UUID = Field(foreign_key="targets.id", primary_key=True)
-    tag_id: uuid.UUID = Field(foreign_key="tags.id", primary_key=True)
+    target_id: uuid.UUID = Field(
+        foreign_key="targets.id", primary_key=True, ondelete="CASCADE"
+    )
+    tag_id: uuid.UUID = Field(
+        foreign_key="tags.id", primary_key=True, ondelete="CASCADE"
+    )
 
 
 class TagBase(SQLModel):
@@ -47,7 +51,9 @@ class Tag(TagBase, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     slug: str = Field(max_length=100, index=True)
-    project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
+    project_id: uuid.UUID = Field(
+        foreign_key="projects.id", index=True, ondelete="CASCADE"
+    )
     created_at: datetime = Field(default_factory=utc_now)
     created_by: uuid.UUID = Field(foreign_key="users.id")
 

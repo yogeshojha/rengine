@@ -7,6 +7,7 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.enums.activity import ActivityLevel
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.models import (
@@ -25,6 +26,7 @@ from shared.models import (
     TargetRead,
     TargetUpdate,
 )
+from shared.models.activity_log import ActivityEvent
 from shared.models.bgp_summary import BgpSummaryRead
 from shared.models.dns import DnsLookup, DnsLookupRead, DnsRecordRead
 from shared.models.ripestat import (
@@ -52,6 +54,7 @@ from shared.schemas.target_detail import (
     TargetWhoisDetailResponse,
 )
 from shared.services import get_or_create_organization, get_or_create_tag
+from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import (
     dispatch_dns_lookups,
     dispatch_ripestat_enrichment,
@@ -78,6 +81,7 @@ class BulkTargetResult:
 class TargetService:
     def __init__(self, session: AsyncSession):
         self.session = session
+        self._activity = ActivityLogService(session)
 
     async def validate_target_value(self, target_value: str) -> TargetType | None:
         return validate_target(target_value)
@@ -194,7 +198,16 @@ class TargetService:
         await self.session.commit()
         await self.session.refresh(target)
 
-        self._dispatch_whois_task([target])
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_CREATED,
+            title=f"Target added: {target.target_value}",
+            target_id=target.id,
+            project_id=target.project_id,
+            user_id=user_id,
+        )
+        await self.session.commit()
+
+        self._dispatch_post_target_creation([target])
 
         return self._to_target_read(target)
 
@@ -249,7 +262,19 @@ class TargetService:
 
         await self.session.commit()
 
-        self._dispatch_whois_task(created_targets)
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_BULK_IMPORTED,
+            title=f"Imported {imported_count} targets",
+            description=f"{failed_count} failed, {skipped_duplicates} duplicates skipped",
+            level=ActivityLevel.SUCCESS
+            if imported_count > 0
+            else ActivityLevel.WARNING,
+            project_id=project.id,
+            user_id=user_id,
+        )
+        await self.session.commit()
+
+        self._dispatch_post_target_creation(created_targets)
 
         return TargetBulkCreateResponse(
             total=len(bulk_in.targets),
@@ -287,11 +312,33 @@ class TargetService:
         await self.session.commit()
         await self.session.refresh(target)
 
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_UPDATED,
+            title=f"Target updated: {target.target_value}",
+            target_id=target.id,
+            project_id=target.project_id,
+            user_id=user_id,
+        )
+        await self.session.commit()
+
         return self._to_target_read(target)
 
-    async def delete_target(self, target_id: str) -> None:
+    async def delete_target(self, target_id: str, user_id: str) -> None:
         target = await self._get_target_or_404(target_id)
+
+        # fk would be orphan here
+        target_value = target.target_value
+        project_id = target.project_id
+
         await self.session.delete(target)
+        await self.session.commit()
+
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_DELETED,
+            title=f"Target deleted: {target_value}",
+            project_id=project_id,
+            user_id=user_id,
+        )
         await self.session.commit()
 
     async def import_targets_csv(
@@ -377,7 +424,22 @@ class TargetService:
 
         await self.session.commit()
 
-        self._dispatch_whois_task(created_targets)
+        total = imported_count + failed_count + skipped_duplicates
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_BULK_IMPORTED,
+            title=f"Imported {imported_count} targets from CSV",
+            description=f"{imported_count}/{total} imported successfully"
+            + (f", {failed_count} failed" if failed_count else "")
+            + (f", {skipped_duplicates} skipped" if skipped_duplicates else ""),
+            level=ActivityLevel.SUCCESS
+            if imported_count > 0
+            else ActivityLevel.WARNING,
+            project_id=project.id,
+            user_id=user_id,
+        )
+        await self.session.commit()
+
+        self._dispatch_post_target_creation(created_targets)
 
         return TargetBulkCreateResponse(
             total=len(import_request.targets),
@@ -481,6 +543,14 @@ class TargetService:
         target.updated_at = utc_now()
         await self.session.commit()
 
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
+            title=f"DNS re-enrichment queued for {target.target_value}",
+            target_id=target.id,
+            project_id=target.project_id,
+        )
+        await self.session.commit()
+
         dispatch_dns_lookups([str(target.id)])
 
         return EnrichmentRefreshResponse(
@@ -497,6 +567,14 @@ class TargetService:
         target.whois_status = TaskStatus.PENDING
         target.whois_error = None
         target.updated_at = utc_now()
+        await self.session.commit()
+
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
+            title=f"WHOIS re-enrichment queued for {target.target_value}",
+            target_id=target.id,
+            project_id=target.project_id,
+        )
         await self.session.commit()
 
         dispatch_whois_lookups([str(target.id)])
@@ -524,6 +602,14 @@ class TargetService:
         await self.session.commit()
 
         dispatch_ripestat_enrichment([str(target.id)])
+
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
+            title=f"BGP re-enrichment queued for {target.target_value}",
+            target_id=target.id,
+            project_id=target.project_id,
+        )
+        await self.session.commit()
 
         return EnrichmentRefreshResponse(
             target_id=target.id,
@@ -1100,7 +1186,7 @@ class TargetService:
 
         return targets_data
 
-    def _dispatch_whois_task(self, targets: list[Target]) -> None:
+    def _dispatch_post_target_creation(self, targets: list[Target]) -> None:
         if not targets:
             return
         target_ids = [str(t.id) for t in targets]

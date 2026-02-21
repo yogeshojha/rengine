@@ -11,7 +11,9 @@ class TargetBgpSummary(SQLModel, table=True):
     __tablename__ = "target_bgp_summaries"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    target_id: uuid.UUID = Field(foreign_key="targets.id", unique=True, index=True)
+    target_id: uuid.UUID = Field(
+        foreign_key="targets.id", unique=True, index=True, ondelete="CASCADE"
+    )
 
     # ASN targets
     prefix_count: int | None = Field(default=None)

@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    activity_logs,
     api_keys,
     auth,
     celery_health,
@@ -23,6 +24,7 @@ router.include_router(projects.router)
 router.include_router(organizations.router)
 router.include_router(targets.router)
 router.include_router(tags.router)
+router.include_router(activity_logs.router)
 router.include_router(notifications.router)
 router.include_router(api_keys.router)
 router.include_router(whois.router)

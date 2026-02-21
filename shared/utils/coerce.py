@@ -58,7 +58,7 @@ def strip_trailing_dot(value: str) -> str:
     return value.rstrip(".")
 
 
-def _to_uuid(value: uuid.UUID | str | None) -> uuid.UUID | None:
+def safe_uuid(value: uuid.UUID | str | None) -> uuid.UUID | None:
     """string IDs to UUID, pass through UUID and None."""
     if value is None:
         return None
