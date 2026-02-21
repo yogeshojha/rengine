@@ -67,7 +67,7 @@ class Target(TargetBase, table=True):
 
     bgp_status: TaskStatus = Field(default=TaskStatus.PENDING, index=True)
     bgp_summary: TargetBgpSummary | None = Relationship(
-        sa_relationship_kwargs={"lazy": "selectin"},
+        sa_relationship_kwargs={"lazy": "selectin", "passive_deletes": True},
     )
 
     dns_status: TaskStatus = Field(default=TaskStatus.PENDING, index=True)
