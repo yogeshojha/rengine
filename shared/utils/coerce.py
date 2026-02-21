@@ -1,5 +1,6 @@
 # safe converters
 
+import uuid
 from datetime import datetime
 from typing import Any
 
@@ -55,3 +56,12 @@ def safe_str_list(raw: list | None) -> list[str]:
 def strip_trailing_dot(value: str) -> str:
     """Remove trailing dot from string"""
     return value.rstrip(".")
+
+
+def _to_uuid(value: uuid.UUID | str | None) -> uuid.UUID | None:
+    """string IDs to UUID, pass through UUID and None."""
+    if value is None:
+        return None
+    if isinstance(value, uuid.UUID):
+        return value
+    return uuid.UUID(value)

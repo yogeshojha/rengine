@@ -1,3 +1,4 @@
+from shared.models.activity_log import ActivityLog, ActivityLogRead
 from shared.models.api_key import (
     APIKey,
     APIKeyCreate,
@@ -59,6 +60,8 @@ __all__ = [
     "APIKeyCreate",
     "APIKeyRead",
     "APIKeyUpdate",
+    "ActivityLog",
+    "ActivityLogRead",
     "DnsLookup",
     "DnsLookupRead",
     "DnsLookupSummary",
