@@ -1189,7 +1189,14 @@ class TargetService:
     def _dispatch_post_target_creation(self, targets: list[Target]) -> None:
         if not targets:
             return
-        target_ids = [str(t.id) for t in targets]
-        dispatch_whois_lookups(target_ids)
-        dispatch_dns_lookups(target_ids)
-        dispatch_ripestat_enrichment(target_ids)
+
+        all_ids = [str(t.id) for t in targets]
+        dispatch_whois_lookups(all_ids)
+
+        dns_ids = [str(t.id) for t in targets if t.target_type in DNS_ELIGIBLE_TYPES]
+        if dns_ids:
+            dispatch_dns_lookups(dns_ids)
+
+        bgp_ids = [str(t.id) for t in targets if t.target_type in BGP_ELIGIBLE_TYPES]
+        if bgp_ids:
+            dispatch_ripestat_enrichment(bgp_ids)
