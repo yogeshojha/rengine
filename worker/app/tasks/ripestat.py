@@ -16,10 +16,12 @@ from shared.definitions.notifications import (
     ripestat_enrichment_complete,
     ripestat_enrichment_failed,
 )
+from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
+from shared.services.activity_log import ActivityLogService
 from shared.services.bgp_summary import write_bgp_summary_for_target
 from shared.services.notification_sync import SyncNotificationPublisher
 from tools.ripestat.client import RIPEStatRateLimitError
@@ -49,6 +51,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
         return {"success": 0, "failed": 0, "skipped": 0}
 
     session = get_sync_session()
+    activity = ActivityLogService(session)
     notifier = SyncNotificationPublisher(settings.celery_broker_url)
 
     try:
@@ -68,7 +71,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
 
         for target in targets:
             try:
-                count = _enrich_target(service, session, target)
+                count = _enrich_target(service, session, target, activity)
                 if count > 0:
                     success += 1
                 else:
@@ -125,7 +128,9 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
         session.close()
 
 
-def _enrich_target(service: RIPEStatService, session, target: Target) -> int:
+def _enrich_target(
+    service: RIPEStatService, session, target: Target, activity: ActivityLogService
+) -> int:
     """Run target-type-specific lookups. Returns number of lookups performed."""
     target.bgp_status = TaskStatus.QUERYING
     session.commit()
@@ -146,8 +151,23 @@ def _enrich_target(service: RIPEStatService, session, target: Target) -> int:
         if count > 0:
             write_bgp_summary_for_target(session, target)
             target.bgp_status = TaskStatus.SUCCESS
+            activity.log(
+                event=ActivityEvent.TARGET_ENRICHMENT_BGP_COMPLETED,
+                title=f"BGP enrichment completed for {target.target_value}",
+                description=f"{count} lookups performed",
+                level=ActivityLevel.SUCCESS,
+                target_id=target.id,
+                project_id=target.project_id,
+            )
         else:
             target.bgp_status = TaskStatus.FAILED
+            activity.log(
+                event=ActivityEvent.TARGET_ENRICHMENT_BGP_FAILED,
+                title=f"BGP enrichment failed for {target.target_value}",
+                level=ActivityLevel.ERROR,
+                target_id=target.id,
+                project_id=target.project_id,
+            )
         session.commit()
         return count
 

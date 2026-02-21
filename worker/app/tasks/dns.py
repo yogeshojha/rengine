@@ -8,10 +8,12 @@ from celery import shared_task
 from sqlalchemy import select
 
 from app.database import get_sync_session
+from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
+from shared.services.activity_log import ActivityLogService
 from shared.utils.datetime import utc_now
 from tools.dnsx.service import DnsxService, DnsxServiceError
 
@@ -26,7 +28,7 @@ logger = get_logger("worker.tasks.dns")
     soft_time_limit=300,
     time_limit=360,
 )
-def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001
+def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, PLR0915
     """Perform DNS recon for domain targets.
 
     Runs dnsx -recon -json on each domain target and stores
@@ -50,6 +52,8 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001
     results = {"success": 0, "failed": 0, "skipped": 0}
 
     with get_sync_session() as session:
+        activity = ActivityLogService(session)
+
         for target_id in target_ids:
             target = session.execute(
                 select(Target).where(Target.id == target_id)
@@ -96,6 +100,17 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001
                 )
                 results["success"] += 1
 
+                # log
+                activity.log(
+                    event=ActivityEvent.TARGET_ENRICHMENT_DNS_COMPLETED,
+                    title=f"DNS completed for {target.target_value}",
+                    description=f"{record_count} records stored",
+                    level=ActivityLevel.SUCCESS,
+                    target_id=target.id,
+                    project_id=target.project_id,
+                )
+                session.commit()
+
             except DnsxServiceError as e:
                 logger.warning(f"DNS lookup failed for {target.target_value}: {e}")
                 target.dns_status = TaskStatus.FAILED
@@ -114,6 +129,15 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001
                 target.updated_at = utc_now()
                 session.commit()
                 results["failed"] += 1
+                activity.log(
+                    event=ActivityEvent.TARGET_ENRICHMENT_DNS_FAILED,
+                    title=f"DNS failed for {target.target_value}",
+                    description=str(e)[:1000],
+                    level=ActivityLevel.ERROR,
+                    target_id=target.id,
+                    project_id=target.project_id,
+                )
+                session.commit()
 
     logger.info(
         f"DNS lookup task completed: "

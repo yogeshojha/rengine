@@ -7,9 +7,11 @@ from shared.definitions.notifications import (
     whois_enrichment_complete,
     whois_enrichment_failed,
 )
+from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
+from shared.services.activity_log import ActivityLogService
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.utils.datetime import utc_now
 from shared.utils.validation import normalize_query
@@ -36,6 +38,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
 
     session = get_sync_session()
     notifier = SyncNotificationPublisher(settings.celery_broker_url)
+    activity = ActivityLogService(session)
 
     try:
         service = WhoisService()
@@ -78,6 +81,13 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                     target.whois_error = None
                     target.updated_at = utc_now()
                     success_count += 1
+                    activity.log(
+                        event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_COMPLETED,
+                        title=f"WHOIS completed for {target.target_value}",
+                        level=ActivityLevel.SUCCESS,
+                        target_id=target.id,
+                        project_id=target.project_id,
+                    )
 
                 session.commit()
 
@@ -91,6 +101,14 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                     target.whois_error = error_msg
                     target.updated_at = utc_now()
                     failed_count += 1
+                    activity.log(
+                        event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
+                        title=f"WHOIS failed for {target.target_value}",
+                        description=error_msg,
+                        level=ActivityLevel.ERROR,
+                        target_id=target.id,
+                        project_id=target.project_id,
+                    )
                 session.commit()
 
         total = success_count + failed_count
@@ -125,6 +143,14 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                 target.whois_status = TaskStatus.FAILED
                 target.whois_error = str(e)[:1000]
                 target.updated_at = utc_now()
+                activity.log(
+                    event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
+                    title=f"WHOIS failed for {target.target_value}",
+                    description=str(e)[:1000],
+                    level=ActivityLevel.ERROR,
+                    target_id=target.id,
+                    project_id=target.project_id,
+                )
             session.commit()
         except Exception:
             logger.exception("Failed to update target statuses after task failure")

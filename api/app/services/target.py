@@ -4,6 +4,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from fastapi import HTTPException, UploadFile, status
+from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +28,7 @@ from shared.models import (
     TargetUpdate,
 )
 from shared.models.activity_log import ActivityEvent
-from shared.models.bgp_summary import BgpSummaryRead
+from shared.models.bgp_summary import BgpSummaryRead, TargetBgpSummary
 from shared.models.dns import DnsLookup, DnsLookupRead, DnsRecordRead
 from shared.models.ripestat import (
     RIPEStatAbuseContact,
@@ -329,6 +330,10 @@ class TargetService:
         # fk would be orphan here
         target_value = target.target_value
         project_id = target.project_id
+
+        await self.session.execute(
+            sa_delete(TargetBgpSummary).where(TargetBgpSummary.target_id == target.id)
+        )
 
         await self.session.delete(target)
         await self.session.commit()

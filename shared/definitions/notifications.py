@@ -84,9 +84,7 @@ def ripestat_enrichment_complete(
     if failed == 0 and skipped == 0:
         severity = NotificationSeverity.SUCCESS
         title = "BGP Enrichment Complete"
-        message = (
-            f"Successfully enriched {success}/{total} targets with RIPEstat BGP data."
-        )
+        message = f"Successfully enriched {success} targets with BGP data."
     elif success > 0:
         severity = NotificationSeverity.WARNING
         title = "BGP Enrichment Partially Complete"
@@ -115,5 +113,5 @@ def ripestat_enrichment_failed(error: str) -> dict:
         "type": NotificationType.TARGET,
         "severity": NotificationSeverity.ERROR,
         "title": "BGP Enrichment Failed",
-        "message": f"RIPEstat enrichment task failed: {error}",
+        "message": f"BGP enrichment task failed: {error}",
     }
