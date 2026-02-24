@@ -4,6 +4,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
+	import { sseStore } from '$lib/stores/sse.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import AppSidebar from '$lib/components/layout/app-sidebar.svelte';
 	import TopBar from '$lib/components/layout/top-bar.svelte';
@@ -40,22 +41,44 @@
 		}
 	});
 
+	// Load notifications via REST (initial fetch)
 	$effect(() => {
 		if (auth.isAuthenticated && !auth.isLoading) {
 			if (!notificationStore.hasLoaded && !notificationStore.isLoading) {
 				notificationStore.loadNotifications();
 			}
+		}
+	});
 
-			if (!notificationStore.isConnected && notificationStore.hasLoaded) {
-				notificationStore.connectSSE();
-				console.log('[Notifications] SSE connected');
+	// SSE connection — one connection for everything (notifications, activities, scans)
+	$effect(() => {
+		if (auth.isAuthenticated && !auth.isLoading && notificationStore.hasLoaded) {
+			const projectId = projectsStore.currentProject?.id;
+			sseStore.init(projectId);
+			notificationStore.subscribeSSE();
+
+			return () => {
+				notificationStore.unsubscribeSSE();
+				sseStore.destroy();
+			};
+		}
+	});
+
+	// Handle project switches without tearing down the entire SSE connection
+	let prevProjectId: string | undefined;
+	$effect(() => {
+		const projectId = projectsStore.currentProject?.id;
+		if (sseStore.isConnected && projectId && projectId !== prevProjectId) {
+			if (prevProjectId) {
+				sseStore.switchProject(prevProjectId, projectId);
 			}
+			prevProjectId = projectId;
 		}
 	});
 
 	onDestroy(() => {
-		notificationStore.disconnectSSE();
-		console.log('[Notifications] SSE disconnected');
+		notificationStore.unsubscribeSSE();
+		sseStore.destroy();
 	});
 
 	let showRequiredProjectCreateModal = $derived(

@@ -9,33 +9,37 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { setMode, resetMode } from 'mode-watcher';
-	import SearchIcon from '@lucide/svelte/icons/search';
-	import PlusIcon from '@lucide/svelte/icons/plus';
-	import CrosshairIcon from '@lucide/svelte/icons/crosshair';
-	import BuildingIcon from '@lucide/svelte/icons/building';
-	import CogIcon from '@lucide/svelte/icons/cog';
-	import LayersIcon from '@lucide/svelte/icons/layers';
-	import BellIcon from '@lucide/svelte/icons/bell';
-	import SunIcon from '@lucide/svelte/icons/sun';
-	import MoonIcon from '@lucide/svelte/icons/moon';
-	import MonitorIcon from '@lucide/svelte/icons/monitor';
-	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
-	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
-	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
-	import InfoIcon from '@lucide/svelte/icons/info';
-	import ActivityIcon from '@lucide/svelte/icons/activity';
-	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import TrashIcon from '@lucide/svelte/icons/trash';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
-	import ScanIcon from '@lucide/svelte/icons/scan';
-	import ServerIcon from '@lucide/svelte/icons/server';
-	import ShieldIcon from '@lucide/svelte/icons/shield';
-	import BugIcon from '@lucide/svelte/icons/bug';
-	import TargetIcon from '@lucide/svelte/icons/target';
-	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
-	import PlugIcon from '@lucide/svelte/icons/plug';
+	import {
+		Search,
+		Plus,
+		Crosshair,
+		Building,
+		Cog,
+		Layers,
+		Bell,
+		Sun,
+		Moon,
+		Monitor,
+		ShieldAlert,
+		CircleCheck,
+		TriangleAlert,
+		Info,
+		Activity,
+		ChevronRight,
+		Trash,
+		Trash2,
+		ExternalLink,
+		Scan,
+		Server,
+		Shield,
+		Bug,
+		Target,
+		HardDrive,
+		Plug,
+		SearchIcon
+	} from 'lucide-svelte';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
+	import { relativeTime } from '$lib/utilities/dates.js';
 	import type { NotificationType, NotificationSeverity } from '$lib/types/notification';
 
 	let commandOpen = $state(false);
@@ -49,32 +53,32 @@
 	const getSeverityIcon = (severity: NotificationSeverity) => {
 		switch (severity) {
 			case 'error':
-				return { icon: ShieldAlertIcon, class: 'text-red-500' };
+				return { icon: ShieldAlert, class: 'text-red-500' };
 			case 'warning':
-				return { icon: AlertTriangleIcon, class: 'text-yellow-500' };
+				return { icon: TriangleAlert, class: 'text-yellow-500' };
 			case 'success':
-				return { icon: CheckCircleIcon, class: 'text-green-500' };
+				return { icon: CircleCheck, class: 'text-green-500' };
 			default:
-				return { icon: InfoIcon, class: 'text-blue-500' };
+				return { icon: Info, class: 'text-blue-500' };
 		}
 	};
 
 	const getTypeIcon = (type: NotificationType) => {
 		switch (type) {
 			case 'scan':
-				return ScanIcon;
+				return Scan;
 			case 'system':
-				return ServerIcon;
+				return Server;
 			case 'security':
-				return ShieldIcon;
+				return Shield;
 			case 'vulnerability':
-				return BugIcon;
+				return Bug;
 			case 'target':
-				return TargetIcon;
+				return Target;
 			case 'resource':
-				return HardDriveIcon;
+				return HardDrive;
 			case 'integration':
-				return PlugIcon;
+				return Plug;
 		}
 	};
 
@@ -207,7 +211,7 @@
 		<nav class="flex items-center gap-1.5 text-sm">
 			{#each breadcrumbs as crumb, i}
 				{#if i > 0}
-					<ChevronRightIcon class="size-3.5 text-muted-foreground/50" />
+					<ChevronRight class="size-3.5 text-muted-foreground/50" />
 				{/if}
 
 				{#if crumb.href && i < breadcrumbs.length - 1}
@@ -243,7 +247,7 @@
 
 	<!-- Ongoing Scans Button -->
 	<Button variant="ghost" size="icon" class="relative" onclick={() => (scansSheetOpen = true)}>
-		<ActivityIcon class="h-4 w-4" />
+		<Activity class="h-4 w-4" />
 		{#if ongoingScansCount > 0}
 			<Badge
 				class="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-blue-500 text-white"
@@ -259,7 +263,7 @@
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
 				<Button {...props} variant="ghost" size="icon" class="relative">
-					<BellIcon class="h-4 w-4" />
+					<Bell class="h-4 w-4" />
 					{#if notificationStore.unreadCount > 0}
 						<Badge
 							class="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-red-500 text-white"
@@ -279,7 +283,7 @@
 			<div class="max-h-80 overflow-y-auto thin-scrollbar">
 				{#if notificationStore.notifications.length === 0}
 					<div class="flex flex-col items-center justify-center h-64 text-muted-foreground">
-						<BellIcon class="h-8 w-8 mb-2 opacity-50" />
+						<Bell class="h-8 w-8 mb-2 opacity-50" />
 						<p class="text-sm">No notifications</p>
 					</div>
 				{:else}
@@ -302,10 +306,10 @@
 								</p>
 								<div class="flex items-center gap-2">
 									<p class="text-xs text-muted-foreground">
-										{notificationStore.getRelativeTime(notification.created_at)}
+										{relativeTime(notification.created_at)}
 									</p>
 									{#if notification.notification_metadata?.url}
-										<ExternalLinkIcon class="h-3 w-3 text-muted-foreground" />
+										<ExternalLink class="h-3 w-3 text-muted-foreground" />
 									{/if}
 								</div>
 								{#if notification.notification_metadata?.action_label}
@@ -316,7 +320,7 @@
 										onclick={(e) => handleActionClick(notification.id, e)}
 									>
 										{notification.notification_metadata.action_label}
-										<ExternalLinkIcon class="ml-1 h-3 w-3" />
+										<ExternalLink class="ml-1 h-3 w-3" />
 									</Button>
 								{/if}
 							</div>
@@ -330,7 +334,7 @@
 									class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
 									onclick={(e) => handleDeleteNotification(notification.id, e)}
 								>
-									<TrashIcon class="h-3 w-3" />
+									<Trash class="h-3 w-3" />
 									<span class="sr-only">Delete</span>
 								</Button>
 							</div>
@@ -378,7 +382,7 @@
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
 				<Button {...props} variant="ghost" size="icon">
-					<PlusIcon class="h-4 w-4" />
+					<Plus class="h-4 w-4" />
 					<span class="sr-only">Quick Actions</span>
 				</Button>
 			{/snippet}
@@ -387,21 +391,21 @@
 			<DropdownMenu.Label>Create New</DropdownMenu.Label>
 			<DropdownMenu.Separator />
 			<DropdownMenu.Item onclick={handleAddTarget}>
-				<CrosshairIcon class="mr-2 h-4 w-4" />
+				<Crosshair class="mr-2 h-4 w-4" />
 				Add Target
 			</DropdownMenu.Item>
 			<DropdownMenu.Item onclick={handleAddOrganization}>
-				<BuildingIcon class="mr-2 h-4 w-4" />
+				<Building class="mr-2 h-4 w-4" />
 				Add Organization
 			</DropdownMenu.Item>
 			<DropdownMenu.Separator />
 			<DropdownMenu.Label class="text-xs text-muted-foreground">Automation</DropdownMenu.Label>
 			<DropdownMenu.Item onclick={handleNewScanEngine}>
-				<CogIcon class="mr-2 h-4 w-4" />
+				<Cog class="mr-2 h-4 w-4" />
 				New Scan Engine
 			</DropdownMenu.Item>
 			<DropdownMenu.Item onclick={handleNewScanContext}>
-				<LayersIcon class="mr-2 h-4 w-4" />
+				<Layers class="mr-2 h-4 w-4" />
 				New Scan Context
 			</DropdownMenu.Item>
 		</DropdownMenu.Content>
@@ -411,10 +415,10 @@
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
 				<Button {...props} variant="ghost" size="icon">
-					<SunIcon
+					<Sun
 						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
 					/>
-					<MoonIcon
+					<Moon
 						class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"
 					/>
 					<span class="sr-only">Toggle theme</span>
@@ -423,15 +427,15 @@
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content align="end">
 			<DropdownMenu.Item onclick={() => setMode('light')}>
-				<SunIcon class="mr-2 h-4 w-4" />
+				<Sun class="mr-2 h-4 w-4" />
 				Light
 			</DropdownMenu.Item>
 			<DropdownMenu.Item onclick={() => setMode('dark')}>
-				<MoonIcon class="mr-2 h-4 w-4" />
+				<Moon class="mr-2 h-4 w-4" />
 				Dark
 			</DropdownMenu.Item>
 			<DropdownMenu.Item onclick={() => resetMode()}>
-				<MonitorIcon class="mr-2 h-4 w-4" />
+				<Monitor class="mr-2 h-4 w-4" />
 				System
 			</DropdownMenu.Item>
 		</DropdownMenu.Content>
@@ -460,7 +464,7 @@
 					{/if}
 					{#if notificationStore.notifications.length > 0}
 						<Button variant="outline" size="sm" onclick={handleClearAll}>
-							<Trash2Icon class="h-4 w-4 mr-2" />
+							<Trash2 class="h-4 w-4 mr-2" />
 							Clear all
 						</Button>
 					{/if}
@@ -479,49 +483,49 @@
 					<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.all}</Badge>
 				</Tabs.Trigger>
 				<Tabs.Trigger value="scan" class="text-xs">
-					<ScanIcon class="h-3 w-3 mr-1" />
+					<Scan class="h-3 w-3 mr-1" />
 					Scan
 					{#if typeCounts.scan > 0}
 						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.scan}</Badge>
 					{/if}
 				</Tabs.Trigger>
 				<Tabs.Trigger value="system" class="text-xs">
-					<ServerIcon class="h-3 w-3 mr-1" />
+					<Server class="h-3 w-3 mr-1" />
 					System
 					{#if typeCounts.system > 0}
 						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.system}</Badge>
 					{/if}
 				</Tabs.Trigger>
 				<Tabs.Trigger value="security" class="text-xs">
-					<ShieldIcon class="h-3 w-3 mr-1" />
+					<Shield class="h-3 w-3 mr-1" />
 					Security
 					{#if typeCounts.security > 0}
 						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.security}</Badge>
 					{/if}
 				</Tabs.Trigger>
 				<Tabs.Trigger value="vulnerability" class="text-xs">
-					<BugIcon class="h-3 w-3 mr-1" />
+					<Bug class="h-3 w-3 mr-1" />
 					Vuln
 					{#if typeCounts.vulnerability > 0}
 						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.vulnerability}</Badge>
 					{/if}
 				</Tabs.Trigger>
 				<Tabs.Trigger value="target" class="text-xs">
-					<TargetIcon class="h-3 w-3 mr-1" />
+					<Target class="h-3 w-3 mr-1" />
 					Target
 					{#if typeCounts.target > 0}
 						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.target}</Badge>
 					{/if}
 				</Tabs.Trigger>
 				<Tabs.Trigger value="resource" class="text-xs">
-					<HardDriveIcon class="h-3 w-3 mr-1" />
+					<HardDrive class="h-3 w-3 mr-1" />
 					Resource
 					{#if typeCounts.resource > 0}
 						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.resource}</Badge>
 					{/if}
 				</Tabs.Trigger>
 				<Tabs.Trigger value="integration" class="text-xs">
-					<PlugIcon class="h-3 w-3 mr-1" />
+					<Plug class="h-3 w-3 mr-1" />
 					Integration
 					{#if typeCounts.integration > 0}
 						<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.integration}</Badge>
@@ -532,7 +536,7 @@
 			<div class="flex-1 overflow-y-auto thin-scrollbar mt-4">
 				{#if filteredNotifications.length === 0}
 					<div class="flex flex-col items-center justify-center h-64 text-muted-foreground">
-						<BellIcon class="h-12 w-12 mb-4 opacity-50" />
+						<Bell class="h-12 w-12 mb-4 opacity-50" />
 						<p class="text-sm">
 							No {selectedFilter === 'all' ? '' : selectedFilter} notifications
 						</p>
@@ -567,10 +571,10 @@
 									</p>
 									<div class="flex items-center gap-2">
 										<span class="text-xs text-muted-foreground"
-											>{notificationStore.getRelativeTime(notification.created_at)}</span
+											>{relativeTime(notification.created_at)}</span
 										>
 										{#if notification.notification_metadata?.url}
-											<ExternalLinkIcon class="h-3 w-3 text-muted-foreground" />
+											<ExternalLink class="h-3 w-3 text-muted-foreground" />
 										{/if}
 									</div>
 									{#if notification.notification_metadata?.action_label}
@@ -581,7 +585,7 @@
 											onclick={(e) => handleActionClick(notification.id, e)}
 										>
 											{notification.notification_metadata.action_label}
-											<ExternalLinkIcon class="ml-1.5 h-3 w-3" />
+											<ExternalLink class="ml-1.5 h-3 w-3" />
 										</Button>
 									{/if}
 								</div>
@@ -595,7 +599,7 @@
 										class="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
 										onclick={(e) => handleDeleteNotification(notification.id, e)}
 									>
-										<TrashIcon class="h-4 w-4" />
+										<Trash class="h-4 w-4" />
 										<span class="sr-only">Delete</span>
 									</Button>
 								</div>
@@ -638,7 +642,7 @@
 							handleAddTarget();
 						}}
 					>
-						<CrosshairIcon class="mr-2 h-4 w-4" />
+						<Crosshair class="mr-2 h-4 w-4" />
 						<span>Add Target</span>
 					</Command.Item>
 					<Command.Item
@@ -647,7 +651,7 @@
 							handleAddOrganization();
 						}}
 					>
-						<BuildingIcon class="mr-2 h-4 w-4" />
+						<Building class="mr-2 h-4 w-4" />
 						<span>Add Organization</span>
 					</Command.Item>
 					<Command.Item
@@ -656,7 +660,7 @@
 							handleNewScanEngine();
 						}}
 					>
-						<CogIcon class="mr-2 h-4 w-4" />
+						<Cog class="mr-2 h-4 w-4" />
 						<span>New Scan Engine</span>
 					</Command.Item>
 					<Command.Item
@@ -665,7 +669,7 @@
 							handleNewScanContext();
 						}}
 					>
-						<LayersIcon class="mr-2 h-4 w-4" />
+						<Layers class="mr-2 h-4 w-4" />
 						<span>New Scan Context</span>
 					</Command.Item>
 				</Command.Group>

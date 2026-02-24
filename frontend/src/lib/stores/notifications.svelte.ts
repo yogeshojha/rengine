@@ -1,4 +1,6 @@
-import { notificationsApi, notificationSSE } from '$lib/api/notifications';
+import { notificationsApi } from '$lib/api/notifications';
+import { sseStore } from '$lib/stores/sse.svelte';
+import { SSEChannel, SSEEventType } from '$lib/types/sse';
 import type { Notification } from '$lib/types/notification';
 
 interface NotificationState {
@@ -6,7 +8,6 @@ interface NotificationState {
     unreadCount: number;
     totalCount: number;
     isLoading: boolean;
-    isConnected: boolean;
     hasLoaded: boolean;
     error: Error | null;
 }
@@ -16,12 +17,12 @@ const state = $state<NotificationState>({
     unreadCount: 0,
     totalCount: 0,
     isLoading: false,
-    isConnected: false,
     hasLoaded: false,
     error: null
 });
 
 let toastCallbacks: Set<(notification: Notification) => void> = new Set();
+let sseUnsub: (() => void) | null = null;
 
 export const notificationStore = {
     get notifications() {
@@ -38,10 +39,6 @@ export const notificationStore = {
 
     get isLoading() {
         return state.isLoading;
-    },
-
-    get isConnected() {
-        return state.isConnected;
     },
 
     get hasLoaded() {
@@ -165,35 +162,23 @@ export const notificationStore = {
         }
     },
 
-    connectSSE(token?: string) {
-        if (state.isConnected) {
-            return;
-        }
+    /**
+     * Subscribe to notifications
+     */
+    subscribeSSE() {
+        if (sseUnsub) return;
 
-        notificationSSE.on('notification', (data: Notification) => {
+        sseUnsub = sseStore.on<Notification>(SSEChannel.BROADCAST, SSEEventType.NOTIFICATION, (data) => {
             this.handleNewNotification(data, true);
         });
-
-        notificationSSE.on('scan_status', (data: any) => {
-            console.log('[SSE] Scan status:', data);
-        });
-
-        notificationSSE.on('scan_complete', (data: any) => {
-            console.log('[SSE] Scan complete:', data);
-        });
-
-        notificationSSE.on('error', (error: Error) => {
-            state.error = error;
-            state.isConnected = false;
-        });
-
-        notificationSSE.connect(token);
-        state.isConnected = true;
     },
 
-    disconnectSSE() {
-        notificationSSE.disconnect();
-        state.isConnected = false;
+    /**
+     * Unsubscribe from SSE notifications.
+     */
+    unsubscribeSSE() {
+        sseUnsub?.();
+        sseUnsub = null;
     },
 
     handleNewNotification(notification: Notification, fromSSE: boolean = true) {
@@ -209,16 +194,4 @@ export const notificationStore = {
             toastCallbacks.forEach(callback => callback(notification));
         }
     },
-
-    getRelativeTime(dateString: string): string {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-        if (diffInSeconds < 60) return 'just now';
-        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-        return date.toLocaleDateString();
-    }
 };

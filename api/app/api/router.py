@@ -5,6 +5,7 @@ from app.api.v1 import (
     api_keys,
     auth,
     celery_health,
+    events,
     notifications,
     organizations,
     projects,
@@ -20,6 +21,7 @@ router = APIRouter()
 
 router.include_router(auth.router)
 router.include_router(users.router)
+router.include_router(events.router)
 router.include_router(projects.router)
 router.include_router(organizations.router)
 router.include_router(targets.router)

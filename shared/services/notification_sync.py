@@ -1,19 +1,16 @@
-"""Sync notification publisher."""
-
-import json
 import logging
 from datetime import timedelta
 
-import redis
 from sqlalchemy.orm import Session
 
 from shared.enums.notification import NotificationSeverity, NotificationType
+from shared.enums.sse import SSEChannel, SSEEventType
 from shared.models.notification import Notification, NotificationMetadata
+from shared.services.event_publisher import SyncEventPublisher
 from shared.utils.datetime import utc_now
 
 logger = logging.getLogger(__name__)
 
-REDIS_NOTIFICATION_CHANNEL = "rengine:notifications"
 NOTIFICATION_EXPIRY_DAYS = 7
 
 
@@ -21,7 +18,7 @@ class SyncNotificationPublisher:
     """Publish notifications from Celery workers (sync context)."""
 
     def __init__(self, redis_url: str) -> None:
-        self._redis = redis.from_url(redis_url)
+        self._event_publisher = SyncEventPublisher(redis_url)
 
     def publish(
         self,
@@ -58,18 +55,10 @@ class SyncNotificationPublisher:
         session.commit()
         session.refresh(notification)
 
-        self._publish_to_redis(notification)
-
-        logger.info(
-            "Published notification: %s/%s - %s", type.value, severity.value, title
-        )
-
-        return notification
-
-    def _publish_to_redis(self, notification: Notification) -> None:
-        """Publish to Redis so the API's listener can broadcast via SSE."""
-        try:
-            payload = {
+        self._event_publisher.publish(
+            channel=SSEChannel.BROADCAST,
+            event_type=SSEEventType.NOTIFICATION,
+            data={
                 "id": notification.id,
                 "type": notification.type.value,
                 "severity": notification.severity.value,
@@ -78,10 +67,11 @@ class SyncNotificationPublisher:
                 "notification_metadata": notification.notification_metadata,
                 "is_read": notification.is_read,
                 "created_at": notification.created_at.isoformat(),
-            }
-            self._redis.publish(
-                REDIS_NOTIFICATION_CHANNEL,
-                json.dumps(payload, default=str),
-            )
-        except Exception:
-            logger.exception("Failed to publish notification to Redis")
+            },
+        )
+
+        logger.info(
+            "Published notification: %s/%s - %s", type.value, severity.value, title
+        )
+
+        return notification

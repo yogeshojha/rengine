@@ -8,10 +8,10 @@ from fastapi_pagination import add_pagination
 from app.api.router import router as api_router
 from app.config import settings
 from app.core.logging import logger
-from app.core.redis_listener import RedisNotificationListener
+from app.core.redis_sse_bridge import RedisSSEBridge
 from app.utils.helpers import create_initial_admin
 
-redis_listener = RedisNotificationListener(settings.redis_url)
+redis_sse_bridge = RedisSSEBridge(settings.redis_url)
 
 
 @asynccontextmanager
@@ -19,13 +19,13 @@ async def lifespan(_app: FastAPI):
     logger.info("Starting Backend...")
     try:
         await create_initial_admin()
-        await redis_listener.start()
+        await redis_sse_bridge.start()
     except Exception as e:
         logger.exception("Failed to initialize the application: %s", e)
         raise e
     yield
     logger.info("Shutting down reNgine Backend...")
-    await redis_listener.stop()
+    await redis_sse_bridge.stop()
 
 
 app = FastAPI(

@@ -1,9 +1,7 @@
-import asyncio
 import random
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import func, select
@@ -12,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.config import settings
 from app.core.database import get_session
-from app.core.sse import connection_manager
 from app.debug.notifications import DEBUG_NOTIFICATION_TEMPLATES
 from shared.models.notification import (
     Notification,
@@ -26,40 +23,6 @@ router = APIRouter(
     prefix="/notifications",
     tags=["notifications"],
 )
-
-
-@router.get("/stream")
-async def stream_events(
-    request: Request,
-    _current_user: CurrentUser,
-):
-    async def event_generator():
-        async with connection_manager.stream(request) as queue:
-            try:
-                while True:
-                    if await request.is_disconnected():
-                        break
-
-                    try:
-                        message = await asyncio.wait_for(queue.get(), timeout=30.0)
-                        yield message
-                    except TimeoutError:
-                        yield ": heartbeat\n\n"
-                    except Exception:
-                        break
-
-            except asyncio.CancelledError:
-                pass
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
 
 
 @router.get("/stats", response_model=NotificationStats)
@@ -177,16 +140,6 @@ async def clear_all_notifications(
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     await NotificationManager.clear_all(session=session)
-
-
-@router.get("/health", response_model=dict)
-async def notification_system_health(
-    _current_user: CurrentUser,
-):
-    return {
-        "status": "healthy",
-        "active_connections": connection_manager.get_active_connections_count(),
-    }
 
 
 # DEBUG Endpoints fot Testing Notifications
