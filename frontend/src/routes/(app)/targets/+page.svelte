@@ -2,6 +2,10 @@
 	import { untrack } from 'svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { sseStore } from '$lib/stores/sse.svelte';
+	import { SSEChannel, SSEEventType } from '$lib/types/sse';
+	import type { ActivityLog } from '$lib/types/activity';
+	import { targetsApi } from '$lib/api/targets';
 	import type { Target } from '$lib/types/target';
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
@@ -59,6 +63,29 @@
 				targetsStore.fetchAll(activeProject.slug);
 			});
 		}
+	});
+
+	$effect(() => {
+		const activeProject = projectsStore.activeProject;
+		if (!activeProject) return;
+
+		const unsub = sseStore.on<ActivityLog>(
+			SSEChannel.project(activeProject.id),
+			SSEEventType.ACTIVITY,
+			async (event) => {
+				if (!event.event_type?.includes('.completed')) return;
+				if (!event.target_id) return;
+
+				try {
+					const fresh = await targetsApi.get(event.target_id);
+					targetsStore.optimisticUpdateTarget(event.target_id, fresh);
+				} catch {
+					// Target may have been deleted, ignore
+				}
+			}
+		);
+
+		return unsub;
 	});
 
 	let selectAllChecked = $derived<boolean | 'indeterminate'>(
@@ -442,7 +469,7 @@
 	initialTab={whoisInitialTab}
 	onOpenChange={(open) => (showWhoisDialog = open)}
 	onOpenTargetSummary={() => {
-		goto(`/targets/${whoisTarget?.id}`)
+		goto(`/targets/${whoisTarget?.id}`);
 	}}
 />
 
