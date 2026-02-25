@@ -158,8 +158,7 @@
 	}
 </script>
 
-{#if !isApplicable}
-{:else if status === TaskStatus.PENDING || status === TaskStatus.QUERYING}
+{#if !isApplicable}{:else if status === TaskStatus.PENDING || status === TaskStatus.QUERYING}
 	<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
 		<Loader class="h-3 w-3 animate-spin" />
 		<span class="animate-pulse">DNS…</span>

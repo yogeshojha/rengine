@@ -16,7 +16,7 @@
 	import AttackSurfaceChart from '$lib/components/targets/target-detail/overview/attack-surface-chart.svelte';
 	import VulnerabilityRadar from '$lib/components/targets/target-detail/overview/vulnerability-radar.svelte';
 	import ActivityHeatmap from '$lib/components/targets/target-detail/overview/activity-heatmap.svelte';
-	import ActivityFeed from '$lib/components/targets/target-detail/overview/activity-feed.svelte';
+	import { ActivityFeed } from '$lib/components/widgets/';
 	import RecentScans from '$lib/components/targets/target-detail/overview/recent-scans.svelte';
 	import AssetGeography from '@/components/targets/target-detail/overview/asset-geography.svelte';
 
@@ -135,7 +135,7 @@
 				<div class="grid grid-cols-5 gap-4">
 					<div class="col-span-1 space-y-4">
 						<div class="h-[450px]">
-							<ActivityFeed {target} />
+							<ActivityFeed projectId={target.project_id} targetId={target.id} />
 						</div>
 						<div class="h-[450px]">
 							<RecentScans {target} />

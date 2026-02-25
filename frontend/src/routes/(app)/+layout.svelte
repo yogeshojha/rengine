@@ -53,7 +53,7 @@
 	// SSE connection — one connection for everything (notifications, activities, scans)
 	$effect(() => {
 		if (auth.isAuthenticated && !auth.isLoading && notificationStore.hasLoaded) {
-			const projectId = projectsStore.currentProject?.id;
+			const projectId = projectsStore.activeProject?.id;
 			sseStore.init(projectId);
 			notificationStore.subscribeSSE();
 
@@ -67,7 +67,7 @@
 	// Handle project switches without tearing down the entire SSE connection
 	let prevProjectId: string | undefined;
 	$effect(() => {
-		const projectId = projectsStore.currentProject?.id;
+		const projectId = projectsStore.activeProject?.id;
 		if (sseStore.isConnected && projectId && projectId !== prevProjectId) {
 			if (prevProjectId) {
 				sseStore.switchProject(prevProjectId, projectId);
