@@ -2,9 +2,11 @@ from sqlmodel import select
 
 from app.config import settings
 from app.core.database import async_db_session
-from app.core.logging import logger
 from app.core.security import hash_password
+from shared.logging import get_logger
 from shared.models.user import User
+
+logger = get_logger(__name__)
 
 
 async def create_initial_admin() -> None:

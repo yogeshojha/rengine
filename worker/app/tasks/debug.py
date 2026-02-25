@@ -2,7 +2,7 @@ from celery import shared_task
 
 from shared.logging import get_logger
 
-logger = get_logger("rengine.worker.tasks.debug")
+logger = get_logger(__name__)
 
 
 @shared_task(

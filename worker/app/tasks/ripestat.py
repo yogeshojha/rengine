@@ -8,6 +8,7 @@ Each target type gets different lookups:
 """
 
 from sqlalchemy import select
+from sqlmodel import col
 
 from app.celery import celery_app
 from app.config import settings
@@ -27,7 +28,7 @@ from shared.services.notification_sync import SyncNotificationPublisher
 from tools.ripestat.client import RIPEStatRateLimitError
 from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
 
-logger = get_logger("worker.tasks.ripestat")
+logger = get_logger(__name__)
 
 
 @celery_app.task(
@@ -56,7 +57,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
 
     try:
         targets = (
-            session.execute(select(Target).where(Target.id.in_(target_ids)))
+            session.execute(select(Target).where(col(Target.id).in_(target_ids)))
             .scalars()
             .all()
         )
@@ -153,7 +154,7 @@ def _enrich_target(
             target.bgp_status = TaskStatus.SUCCESS
             activity.log(
                 event=ActivityEvent.TARGET_ENRICHMENT_BGP_COMPLETED,
-                title=f"BGP enrichment completed for {target.target_value}",
+                title="BGP enrichment completed.",
                 description=f"{count} lookups performed",
                 level=ActivityLevel.SUCCESS,
                 target_id=target.id,
@@ -163,7 +164,7 @@ def _enrich_target(
             target.bgp_status = TaskStatus.FAILED
             activity.log(
                 event=ActivityEvent.TARGET_ENRICHMENT_BGP_FAILED,
-                title=f"BGP enrichment failed for {target.target_value}",
+                title="BGP enrichment failed.",
                 level=ActivityLevel.ERROR,
                 target_id=target.id,
                 project_id=target.project_id,

@@ -13,7 +13,7 @@ from app.config import settings
 from shared.logging import get_logger
 from shared.logging import setup_logging as setup_rengine_logging
 
-logger = get_logger("rengine.worker")
+logger = get_logger(__name__)
 
 celery_app = Celery("rengine")
 

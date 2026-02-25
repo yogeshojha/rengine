@@ -45,7 +45,7 @@ from tools.ripestat.parser import (
     parse_related_prefixes,
 )
 
-logger = get_logger("tools.ripestat.service")
+logger = get_logger(__name__)
 
 DEFAULT_CACHE_TTL_DAYS = 7
 

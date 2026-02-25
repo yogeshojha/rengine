@@ -13,8 +13,8 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from app.api.deps import CurrentUser
-from app.core.sse import sse_manager
 from shared.enums.sse import SSEChannel
+from shared.sse import sse_manager
 
 logger = logging.getLogger(__name__)
 

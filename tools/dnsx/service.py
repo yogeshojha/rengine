@@ -25,7 +25,7 @@ from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.models import DnsxReconResponse
 from tools.dnsx.parser import parse_dnsx_jsonl
 
-logger = get_logger("tools.dnsx.service")
+logger = get_logger(__name__)
 
 
 class DnsxServiceError(Exception):

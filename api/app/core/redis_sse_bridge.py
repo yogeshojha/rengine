@@ -11,9 +11,9 @@ import json
 
 import redis.asyncio as aioredis
 
-from app.core.sse import sse_manager
 from shared.logging import get_logger
 from shared.services.event_publisher import REDIS_SSE_CHANNEL
+from shared.sse import sse_manager
 
 logger = get_logger(__name__)
 

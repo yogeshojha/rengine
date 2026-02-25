@@ -38,7 +38,7 @@ from tools.whois.parser import (
 )
 from tools.whois.providers.whoisit import RDAPProvider, RDAPProviderError
 
-logger = get_logger("tools.whois.service")
+logger = get_logger(__name__)
 
 DEFAULT_CACHE_TTL_DAYS = 7
 

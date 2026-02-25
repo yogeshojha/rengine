@@ -17,7 +17,7 @@ from shared.utils.datetime import utc_now
 from shared.utils.validation import normalize_query
 from tools.whois.service import WhoisService
 
-logger = get_logger("worker.tasks.whois")
+logger = get_logger(__name__)
 
 
 @celery_app.task(
@@ -83,7 +83,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                     success_count += 1
                     activity.log(
                         event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_COMPLETED,
-                        title=f"WHOIS completed for {target.target_value}",
+                        title="WHOIS query completed.",
                         level=ActivityLevel.SUCCESS,
                         target_id=target.id,
                         project_id=target.project_id,
@@ -103,7 +103,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                     failed_count += 1
                     activity.log(
                         event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
-                        title=f"WHOIS failed for {target.target_value}",
+                        title="WHOIS query failed.",
                         description=error_msg,
                         level=ActivityLevel.ERROR,
                         target_id=target.id,

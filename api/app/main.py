@@ -7,10 +7,11 @@ from fastapi_pagination import add_pagination
 
 from app.api.router import router as api_router
 from app.config import settings
-from app.core.logging import logger
 from app.core.redis_sse_bridge import RedisSSEBridge
 from app.utils.helpers import create_initial_admin
+from shared.logging import get_logger
 
+logger = get_logger(__name__)
 redis_sse_bridge = RedisSSEBridge(settings.redis_url)
 
 

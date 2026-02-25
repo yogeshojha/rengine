@@ -5,7 +5,7 @@ from __future__ import annotations
 from shared.logging import get_logger
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError, ToolResult
 
-logger = get_logger("tools.dnsx.client")
+logger = get_logger(__name__)
 
 DNSX_BINARY = "dnsx"
 DEFAULT_TIMEOUT = 120

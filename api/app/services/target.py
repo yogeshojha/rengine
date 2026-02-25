@@ -7,6 +7,7 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 
 from shared.enums.activity import ActivityLevel
 from shared.enums.target import TargetType
@@ -162,7 +163,7 @@ class TargetService:
         if target_type:
             query = query.where(Target.target_type == target_type)
 
-        return query.order_by(Target.created_at.desc())
+        return query.order_by(col(Target.created_at).desc())
 
     async def create_target(self, target_in: TargetCreate, user_id: str) -> TargetRead:
         target_type = validate_target(target_in.target_value)
@@ -201,7 +202,7 @@ class TargetService:
 
         await self._activity.log_async(
             event=ActivityEvent.TARGET_CREATED,
-            title=f"Target added: {target.target_value}",
+            title="Target created.",
             target_id=target.id,
             project_id=target.project_id,
             user_id=user_id,

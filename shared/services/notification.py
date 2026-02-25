@@ -1,14 +1,14 @@
 from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.sse import sse_manager
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.enums.sse import SSEChannel, SSEEventType
 from shared.logging import get_logger
 from shared.models.notification import Notification, NotificationMetadata
+from shared.sse import sse_manager
 from shared.utils.datetime import utc_now
 
-logger = get_logger("rengine.notification")
+logger = get_logger(__name__)
 
 
 class NotificationManager:

@@ -34,7 +34,7 @@ from tools.viewdns.parser import (
     parse_reverse_whois,
 )
 
-logger = get_logger("tools.viewdns.service")
+logger = get_logger(__name__)
 
 DEFAULT_CACHE_TTL_DAYS = 7
 

@@ -11,7 +11,7 @@ from tools.dnsx.models import (
     DnsxSRVEntry,
 )
 
-logger = get_logger("tools.dnsx.parser")
+logger = get_logger(__name__)
 
 
 def parse_mx_entries(raw_list: list[str] | None) -> list[DnsxMXEntry]:

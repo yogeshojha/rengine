@@ -23,7 +23,7 @@ from tools.ripestat.models import (
     RelatedPrefixesResponse,
 )
 
-logger = get_logger("tools.ripestat.parser")
+logger = get_logger(__name__)
 
 
 def _parse_asn(resource: str) -> int:

@@ -17,7 +17,7 @@ from shared.services.activity_log import ActivityLogService
 from shared.utils.datetime import utc_now
 from tools.dnsx.service import DnsxService, DnsxServiceError
 
-logger = get_logger("worker.tasks.dns")
+logger = get_logger(__name__)
 
 
 @shared_task(
@@ -103,7 +103,7 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                 # log
                 activity.log(
                     event=ActivityEvent.TARGET_ENRICHMENT_DNS_COMPLETED,
-                    title=f"DNS completed for {target.target_value}",
+                    title="DNS Query completed.",
                     description=f"{record_count} records stored",
                     level=ActivityLevel.SUCCESS,
                     target_id=target.id,
@@ -131,7 +131,7 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                 results["failed"] += 1
                 activity.log(
                     event=ActivityEvent.TARGET_ENRICHMENT_DNS_FAILED,
-                    title=f"DNS failed for {target.target_value}",
+                    title="DNS Query failed.",
                     description=str(e)[:1000],
                     level=ActivityLevel.ERROR,
                     target_id=target.id,

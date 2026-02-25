@@ -27,7 +27,7 @@ from pathlib import Path
 from shared.logging import get_logger
 from tools.runner.models import OutputFormat, ToolResult
 
-logger = get_logger("tools.runner")
+logger = get_logger(__name__)
 
 
 class ToolNotFoundError(Exception):
