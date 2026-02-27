@@ -16,9 +16,9 @@
 	import AttackSurfaceChart from '$lib/components/targets/target-detail/overview/attack-surface-chart.svelte';
 	import VulnerabilityRadar from '$lib/components/targets/target-detail/overview/vulnerability-radar.svelte';
 	import ActivityHeatmap from '$lib/components/targets/target-detail/overview/activity-heatmap.svelte';
-	import { ActivityFeed } from '$lib/components/widgets/';
 	import RecentScans from '$lib/components/targets/target-detail/overview/recent-scans.svelte';
 	import AssetGeography from '@/components/targets/target-detail/overview/asset-geography.svelte';
+	import { activityScope } from '$lib/stores/activity-scope.svelte';
 
 	const targetId = $derived(page.params.id);
 
@@ -44,6 +44,8 @@
 
 	$effect(() => {
 		if (targetId) fetchTarget();
+		activityScope.targetId = targetId;
+		return () => activityScope.clear();
 	});
 
 	onDestroy(() => {
@@ -155,9 +157,6 @@
 
 				<!-- Row 3: Activity Feed + Recent Scans -->
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<div class="h-[450px]">
-						<ActivityFeed projectId={target.project_id} targetId={target.id} />
-					</div>
 					<div class="h-[450px]">
 						<RecentScans {target} />
 					</div>

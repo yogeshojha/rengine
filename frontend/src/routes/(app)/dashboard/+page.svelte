@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { ActivityFeed } from '$lib/components/widgets';
 </script>
 
 <div class="space-y-6">
@@ -15,9 +14,7 @@
 		<div class="grid grid-cols-4 gap-4">
 			<!-- Activity feed — right column -->
 			<div class="col-span-1">
-				<div class="h-[600px]">
-					<ActivityFeed projectId={projectsStore.activeProject.id} title="Recent Activity" />
-				</div>
+				<div class="h-[600px]"></div>
 			</div>
 
 			<!-- Placeholder slots for future widgets -->
