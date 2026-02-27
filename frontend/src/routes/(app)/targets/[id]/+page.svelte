@@ -132,31 +132,34 @@
 		{#if activeTab === 'overview'}
 			<div class="space-y-4">
 				<OverviewStats {target} />
-				<div class="grid grid-cols-5 gap-4">
-					<div class="col-span-1 space-y-4">
-						<div class="h-[450px]">
-							<ActivityFeed projectId={target.project_id} targetId={target.id} />
-						</div>
-						<div class="h-[450px]">
-							<RecentScans {target} />
-						</div>
-					</div>
 
-					<div class="col-span-4">
-						<div class="grid grid-cols-5 gap-4">
-							<div class="col-span-3">
-								<AttackSurfaceChart {target} />
-							</div>
-							<div class="col-span-2">
-								<VulnerabilityRadar {target} hasVulnData={true} />
-							</div>
-							<div class="col-span-3">
-								<ActivityHeatmap {target} />
-							</div>
-							<div class="col-span-2">
-								<AssetGeography {target} />
-							</div>
-						</div>
+				<!-- Row 1: Attack Surface + Vulnerability Radar -->
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+					<div class="lg:col-span-2">
+						<AttackSurfaceChart {target} />
+					</div>
+					<div class="lg:col-span-1">
+						<VulnerabilityRadar {target} hasVulnData={true} />
+					</div>
+				</div>
+
+				<!-- Row 2: Activity Heatmap + Geography -->
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+					<div class="lg:col-span-2">
+						<ActivityHeatmap {target} />
+					</div>
+					<div class="lg:col-span-1">
+						<AssetGeography {target} />
+					</div>
+				</div>
+
+				<!-- Row 3: Activity Feed + Recent Scans -->
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="h-[450px]">
+						<ActivityFeed projectId={target.project_id} targetId={target.id} />
+					</div>
+					<div class="h-[450px]">
+						<RecentScans {target} />
 					</div>
 				</div>
 			</div>

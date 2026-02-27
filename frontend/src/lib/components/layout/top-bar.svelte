@@ -48,8 +48,6 @@
 	let notificationsDropdownOpen = $state(false);
 	let selectedFilter = $state<NotificationType | 'all'>('all');
 
-	const ongoingScansCount = $state(3);
-
 	const getSeverityIcon = (severity: NotificationSeverity) => {
 		switch (severity) {
 			case 'error':
@@ -243,19 +241,6 @@
 		>
 			Ctrl+Shift+S
 		</kbd>
-	</Button>
-
-	<!-- Ongoing Scans Button -->
-	<Button variant="ghost" size="icon" class="relative" onclick={() => (scansSheetOpen = true)}>
-		<Activity class="h-4 w-4" />
-		{#if ongoingScansCount > 0}
-			<Badge
-				class="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-blue-500 text-white"
-			>
-				{ongoingScansCount}
-			</Badge>
-		{/if}
-		<span class="sr-only">Ongoing Scans</span>
 	</Button>
 
 	<!-- Notifications Dropdown -->
@@ -611,22 +596,6 @@
 		</Tabs.Root>
 	</Dialog.Content>
 </Dialog.Root>
-
-<Sheet.Root bind:open={scansSheetOpen}>
-	<Sheet.Content side="right" class="w-[400px] sm:w-[540px]">
-		<Sheet.Header>
-			<Sheet.Title>Ongoing Scans</Sheet.Title>
-			<Sheet.Description>
-				Ongoing scans are listed here. Click on a scan to view detail.
-			</Sheet.Description>
-		</Sheet.Header>
-		<div class="flex-1 py-6">
-			<div class="flex items-center justify-center h-64 text-muted-foreground">
-				<p>Ongoing Scans...</p>
-			</div>
-		</div>
-	</Sheet.Content>
-</Sheet.Root>
 
 <Dialog.Root bind:open={commandOpen}>
 	<Dialog.Content class="overflow-hidden p-0 shadow-lg sm:max-w-[550px]">
