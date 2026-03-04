@@ -13,7 +13,7 @@
 	} from '$lib/types/activity';
 	import { relativeTime } from '$lib/utilities/dates';
 	import ActivityTimeline from './activity-timeline.svelte';
-	import { ChevronUp, ChevronDown, X } from 'lucide-svelte';
+	import { ChevronUp, ChevronDown, X, GripHorizontal } from 'lucide-svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
@@ -39,6 +39,7 @@
 	let freshIds = $state<Set<string>>(new Set());
 
 	let sentinelEl = $state<HTMLDivElement | null>(null);
+	let panelEl = $state<HTMLDivElement | null>(null);
 
 	let scoped = $derived.by(() => {
 		if (scope === 'project' || !targetId) return items;
@@ -70,7 +71,53 @@
 
 	let scopeLabel = $derived(scanId ? 'Scan' : hasTarget ? 'Target' : 'Project');
 
-	const PANEL_H = 340;
+	const PANEL_MIN = 200;
+	const PANEL_MAX_RATIO = 0.6;
+	const PANEL_DEFAULT_RATIO = 0.35;
+
+	let panelHeight = $state(
+		Math.min(window.innerHeight * PANEL_DEFAULT_RATIO, window.innerHeight * PANEL_MAX_RATIO)
+	);
+	let isDragging = $state(false);
+	let dragStartY = $state(0);
+	let dragStartH = $state(0);
+
+	$effect(() => {
+		function onResize() {
+			const max = window.innerHeight * PANEL_MAX_RATIO;
+			if (panelHeight > max) panelHeight = max;
+			if (panelHeight < PANEL_MIN) panelHeight = PANEL_MIN;
+		}
+		window.addEventListener('resize', onResize);
+		return () => window.removeEventListener('resize', onResize);
+	});
+
+	function onDragStart(e: PointerEvent) {
+		e.preventDefault();
+		isDragging = true;
+		dragStartY = e.clientY;
+		dragStartH = panelHeight;
+		(e.target as HTMLElement).setPointerCapture(e.pointerId);
+	}
+
+	function onDragMove(e: PointerEvent) {
+		if (!isDragging) return;
+		const delta = dragStartY - e.clientY;
+		const max = window.innerHeight * PANEL_MAX_RATIO;
+		panelHeight = Math.max(PANEL_MIN, Math.min(max, dragStartH + delta));
+	}
+
+	function onDragEnd() {
+		isDragging = false;
+	}
+
+	function onWindowPointerDown(e: PointerEvent) {
+		if (!open || isDragging) return;
+		const target = e.target as HTMLElement;
+		if (panelEl && panelEl.contains(target)) return;
+		if (target.closest('.activity-bar-btn')) return;
+		open = false;
+	}
 
 	const FILTERS = ['all', 'scan', 'enrichment', 'alert', 'system'] as const;
 	const FILTER_LABELS: Record<string, string> = {
@@ -117,7 +164,6 @@
 		}
 	}
 
-	// infinite scroll via intersection observer
 	$effect(() => {
 		if (!sentinelEl) return;
 		const observer = new IntersectionObserver(
@@ -172,19 +218,35 @@
 	onkeydown={(e) => {
 		if (e.key === 'Escape' && open) open = false;
 	}}
+	onpointerdown={onWindowPointerDown}
 />
 
-<!-- overlay panel -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+	bind:this={panelEl}
 	class="activity-panel absolute inset-x-0 bottom-9 z-10 overflow-hidden rounded-t-lg"
-	style="height:{open ? PANEL_H : 0}px"
+	class:no-transition={isDragging}
+	style="height:{open ? panelHeight : 0}px"
 >
 	<div
 		class="flex flex-col border-t border-x border-border bg-background rounded-t-lg"
-		style="height:{PANEL_H}px"
+		style="height:{panelHeight}px"
 	>
-		<!-- header -->
-		<div class="flex shrink-0 items-center justify-between px-3 pt-2.5 pb-2">
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="drag-handle flex shrink-0 items-center justify-center h-3 cursor-ns-resize group/drag
+				hover:bg-accent/40 transition-colors"
+			onpointerdown={onDragStart}
+			onpointermove={onDragMove}
+			onpointerup={onDragEnd}
+			onpointercancel={onDragEnd}
+		>
+			<GripHorizontal
+				class="h-3 w-3 text-muted-foreground/40 group-hover/drag:text-muted-foreground transition-colors"
+			/>
+		</div>
+
+		<div class="flex shrink-0 items-center justify-between px-3 pt-0.5 pb-2">
 			<div class="flex items-center gap-3">
 				<span
 					class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground"
@@ -192,7 +254,7 @@
 					{#if sseStore.isConnected}
 						<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
 					{/if}
-					Live Activity
+					Recent Activities
 				</span>
 
 				{#if hasTarget}
@@ -214,7 +276,6 @@
 			</button>
 		</div>
 
-		<!-- filters -->
 		<div class="flex shrink-0 items-center gap-1 px-3 pb-2">
 			{#each FILTERS as f}
 				{@const n = counts[f] ?? 0}
@@ -235,7 +296,6 @@
 
 		<Separator />
 
-		<!-- timeline -->
 		<div class="relative flex-1 min-h-0">
 			<ScrollArea class="h-full">
 				<div class="px-3 pt-2 pb-4">
@@ -253,7 +313,6 @@
 						</div>
 					{/if}
 
-					<!-- sentinel for infinite scroll -->
 					{#if hasMore && !initialLoad}
 						<div bind:this={sentinelEl} class="h-1"></div>
 					{/if}
@@ -267,13 +326,11 @@
 	</div>
 </div>
 
-<!-- bar -->
 <button
 	onclick={() => (open = !open)}
-	class="flex h-9 w-full shrink-0 cursor-pointer items-center border-t border-border bg-background
+	class="activity-bar-btn flex h-9 w-full shrink-0 cursor-pointer items-center border-t border-border bg-background
 		transition-colors hover:bg-accent/30"
 >
-	<!-- status + scope -->
 	<div class="flex items-center gap-2 self-stretch shrink-0 border-r border-border px-3">
 		<span
 			class="h-1.5 w-1.5 rounded-full {sseStore.isConnected
@@ -285,7 +342,6 @@
 		<span class="text-[10px] font-medium tracking-wide text-muted-foreground">{scopeLabel}</span>
 	</div>
 
-	<!-- latest event -->
 	<div class="mx-2.5 flex-1 min-w-0 h-[18px] overflow-hidden">
 		{#if latest}
 			<div class="flex h-[18px] items-center gap-1.5 whitespace-nowrap">
@@ -308,7 +364,6 @@
 		{/if}
 	</div>
 
-	<!-- new badge + chevron -->
 	<div class="flex shrink-0 items-center gap-2.5 pr-3">
 		{#if newCount > 0}
 			<Badge
@@ -331,5 +386,13 @@
 	.activity-panel {
 		transition: height 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 		box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+	}
+
+	.activity-panel.no-transition {
+		transition: none;
+	}
+
+	.drag-handle {
+		touch-action: none;
 	}
 </style>
