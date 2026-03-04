@@ -11,6 +11,9 @@ import type {
 	TargetImportRequest,
 	EnrichmentRefreshResponse
 } from '$lib/types/target';
+
+import type { TargetDetailRead } from '@/types/target-detail';
+
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 
 interface ListTargetsParams {
@@ -110,5 +113,9 @@ export const targetsApi = {
 
 	async refreshBgp(targetId: string): Promise<EnrichmentRefreshResponse> {
 		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/bgp/refresh`);
+	},
+
+	async getDetail(targetId: string): Promise<TargetDetailRead> {
+		return api.get<TargetDetailRead>(`/targets/${targetId}/detail`);
 	},
 };

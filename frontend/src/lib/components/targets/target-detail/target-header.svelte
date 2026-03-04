@@ -105,7 +105,6 @@
 	// define all tabs here
 	const tabs = [
 		{ value: 'overview', label: 'Overview', icon: Activity },
-		{ value: 'enrichment', label: 'Enrichment', icon: Layers },
 		{ value: 'correlation', label: 'Correlation', icon: GitBranch },
 		{ value: 'history', label: 'History', icon: History }
 	] as const;

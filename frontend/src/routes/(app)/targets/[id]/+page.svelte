@@ -6,6 +6,8 @@
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import type { Target } from '$lib/types/target';
 	import { TargetType } from '$lib/types/target';
+	import { TaskStatus } from '$lib/types/task-status';
+	import type { TargetDetailRead } from '$lib/types/target-detail';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { toast } from 'svelte-sonner';
 	import { TriangleAlert, ChevronLeft } from 'lucide-svelte';
@@ -15,9 +17,11 @@
 	import OverviewStats from '$lib/components/targets/target-detail/overview/overview-stats.svelte';
 	import AttackSurfaceChart from '$lib/components/targets/target-detail/overview/attack-surface-chart.svelte';
 	import VulnerabilityRadar from '$lib/components/targets/target-detail/overview/vulnerability-radar.svelte';
-	import ActivityHeatmap from '$lib/components/targets/target-detail/overview/activity-heatmap.svelte';
 	import RecentScans from '$lib/components/targets/target-detail/overview/recent-scans.svelte';
-	import AssetGeography from '@/components/targets/target-detail/overview/asset-geography.svelte';
+	import EnrichmentWidget from '$lib/components/targets/target-detail/enrichment/enrichment-widget.svelte';
+	import WhoisSection from '$lib/components/targets/target-detail/enrichment/whois-section.svelte';
+	import DnsSection from '$lib/components/targets/target-detail/enrichment/dns-section.svelte';
+	import BgpSection from '$lib/components/targets/target-detail/enrichment/bgp-section.svelte';
 	import { activityScope } from '$lib/stores/activity-scope.svelte';
 
 	const targetId = $derived(page.params.id);
@@ -28,6 +32,26 @@
 	let activeTab = $state('overview');
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
+
+	// enrichment
+	let detail = $state<TargetDetailRead | null>(null);
+	let detailLoading = $state(true);
+	let refreshingDns = $state(false);
+	let refreshingWhois = $state(false);
+	let refreshingBgp = $state(false);
+
+	let showDns = $derived(
+		target?.target_type === TargetType.DOMAIN || target?.target_type === TargetType.URL
+	);
+	let showBgp = $derived(
+		target?.target_type === TargetType.IP ||
+			target?.target_type === TargetType.IP_RANGE ||
+			target?.target_type === TargetType.ASN
+	);
+
+	let whoisStatus = $derived(detail?.whois_status ?? target?.whois_status ?? TaskStatus.PENDING);
+	let dnsStatus = $derived(detail?.dns_status ?? target?.dns_status ?? TaskStatus.PENDING);
+	let bgpStatus = $derived(detail?.bgp_status ?? target?.bgp_status ?? TaskStatus.PENDING);
 
 	async function fetchTarget() {
 		isLoading = true;
@@ -42,8 +66,22 @@
 		}
 	}
 
+	async function fetchDetail() {
+		detailLoading = true;
+		try {
+			detail = await targetsApi.getDetail(targetId);
+		} catch {
+			// widgets handle their own error states
+		} finally {
+			detailLoading = false;
+		}
+	}
+
 	$effect(() => {
-		if (targetId) fetchTarget();
+		if (targetId) {
+			fetchTarget();
+			fetchDetail();
+		}
 		activityScope.targetId = targetId;
 		return () => activityScope.clear();
 	});
@@ -54,7 +92,6 @@
 
 	function handleScan() {
 		if (!target) return;
-		// TODO: open scan config modal
 		toast.success(`Scan initiated for ${target.target_value}`);
 	}
 
@@ -63,25 +100,61 @@
 		toast.success('Refreshing all enrichment data…');
 		try {
 			const promises: Promise<unknown>[] = [];
-			if ([TargetType.DOMAIN, TargetType.URL].includes(target.target_type)) {
-				promises.push(targetsApi.refreshDns(target.id));
-			}
+			if (showDns) promises.push(targetsApi.refreshDns(target.id));
 			promises.push(targetsApi.refreshWhois(target.id));
-			if ([TargetType.IP, TargetType.IP_RANGE, TargetType.ASN].includes(target.target_type)) {
-				promises.push(targetsApi.refreshBgp(target.id));
-			}
+			if (showBgp) promises.push(targetsApi.refreshBgp(target.id));
 			await Promise.allSettled(promises);
-			await fetchTarget();
-			toast.success('Enrichment refresh complete');
+			setTimeout(fetchDetail, 2000);
 		} catch {
 			toast.error('Some enrichments failed to refresh');
+		}
+	}
+
+	async function handleRefreshDns() {
+		if (!target) return;
+		refreshingDns = true;
+		try {
+			await targetsApi.refreshDns(target.id);
+			toast.success('DNS refresh initiated');
+			setTimeout(fetchDetail, 2000);
+		} catch {
+			toast.error('Failed to refresh DNS');
+		} finally {
+			refreshingDns = false;
+		}
+	}
+
+	async function handleRefreshWhois() {
+		if (!target) return;
+		refreshingWhois = true;
+		try {
+			await targetsApi.refreshWhois(target.id);
+			toast.success('WHOIS refresh initiated');
+			setTimeout(fetchDetail, 2000);
+		} catch {
+			toast.error('Failed to refresh WHOIS');
+		} finally {
+			refreshingWhois = false;
+		}
+	}
+
+	async function handleRefreshBgp() {
+		if (!target) return;
+		refreshingBgp = true;
+		try {
+			await targetsApi.refreshBgp(target.id);
+			toast.success('BGP refresh initiated');
+			setTimeout(fetchDetail, 2000);
+		} catch {
+			toast.error('Failed to refresh BGP');
+		} finally {
+			refreshingBgp = false;
 		}
 	}
 
 	function handleExportJson() {
 		if (!target) return;
 	}
-
 	function handleExportCsv() {
 		if (!target) return;
 	}
@@ -133,42 +206,70 @@
 
 		{#if activeTab === 'overview'}
 			<div class="space-y-4">
+				<!-- stats row (full width) -->
 				<OverviewStats {target} />
 
-				<!-- Row 1: Attack Surface + Vulnerability Radar -->
-				<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-					<div class="lg:col-span-2">
+				<!-- sidebar + main content -->
+				<div class="flex flex-col lg:flex-row gap-4 items-start">
+					<!-- LEFT: enrichment sidebar — each widget sizes to its own content -->
+					<div class="w-full lg:w-[280px] xl:w-[300px] lg:shrink-0 space-y-3">
+						<EnrichmentWidget
+							title="WHOIS"
+							status={whoisStatus}
+							error={detail?.whois_error}
+							queriedAt={detail?.whois?.queried_at}
+							onRefresh={handleRefreshWhois}
+							isRefreshing={refreshingWhois}
+							loading={detailLoading}
+						>
+							{#if detail?.whois}
+								<WhoisSection record={detail.whois} targetType={target.target_type} />
+							{/if}
+						</EnrichmentWidget>
+
+						{#if showDns}
+							<EnrichmentWidget
+								title="DNS"
+								status={dnsStatus}
+								error={detail?.dns_error}
+								queriedAt={detail?.dns?.queried_at}
+								onRefresh={handleRefreshDns}
+								isRefreshing={refreshingDns}
+								loading={detailLoading}
+							>
+								{#if detail?.dns}
+									<DnsSection lookup={detail.dns} />
+								{/if}
+							</EnrichmentWidget>
+						{/if}
+
+						{#if showBgp}
+							<EnrichmentWidget
+								title="BGP"
+								status={bgpStatus}
+								onRefresh={handleRefreshBgp}
+								isRefreshing={refreshingBgp}
+								loading={detailLoading}
+							>
+								{#if detail?.bgp}
+									<BgpSection bgp={detail.bgp} targetType={target.target_type} />
+								{/if}
+							</EnrichmentWidget>
+						{/if}
+					</div>
+
+					<div class="w-full lg:flex-1 min-w-0 space-y-4">
 						<AttackSurfaceChart {target} />
-					</div>
-					<div class="lg:col-span-1">
 						<VulnerabilityRadar {target} hasVulnData={true} />
+						<div class="h-[450px]">
+							<RecentScans {target} />
+						</div>
 					</div>
 				</div>
-
-				<!-- Row 2: Activity Heatmap + Geography -->
-				<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-					<div class="lg:col-span-2">
-						<ActivityHeatmap {target} />
-					</div>
-					<div class="lg:col-span-1">
-						<AssetGeography {target} />
-					</div>
-				</div>
-
-				<!-- Row 3: Activity Feed + Recent Scans -->
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<div class="h-[450px]">
-						<RecentScans {target} />
-					</div>
-				</div>
-			</div>
-		{:else if activeTab === 'enrichment'}
-			<div class="text-sm text-muted-foreground text-center py-20 border border-dashed rounded-lg">
-				Enrichment data
 			</div>
 		{:else if activeTab === 'correlation'}
 			<div class="text-sm text-muted-foreground text-center py-20 border border-dashed rounded-lg">
-				Corelation data
+				Correlation data
 			</div>
 		{:else if activeTab === 'history'}
 			<div class="text-sm text-muted-foreground text-center py-20 border border-dashed rounded-lg">
