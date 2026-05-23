@@ -47,7 +47,6 @@ class TargetBase(SQLModel):
 
 class Target(TargetBase, table=True):
     __tablename__ = "targets"
-    __table_args__ = ({"sqlite_autoincrement": True},)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     target_type: TargetType

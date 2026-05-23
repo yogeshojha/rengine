@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import BaseModel
@@ -77,7 +77,16 @@ async def delete_activity_logs(
         ActivityEvent | None, Query(description="Delete logs of a specific event type")
     ] = None,
 ):
-    """Delete activity log entries matching the given filters."""
+    """Delete activity log entries matching the given filters.
+
+    At least one filter is required to prevent accidental full wipes.
+    """
+    if not project_id and not target_id and not level and not event_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one filter (project_id, target_id, level, or event_type) is required",
+        )
+
     stmt = delete(ActivityLog)
 
     if target_id:

@@ -20,14 +20,14 @@
 					? {
 							label: metadata.action_label,
 							onClick: () => {
+								void notificationStore.markAsRead(notification.id);
 								if (metadata.url) {
 									if (metadata.open_new_tab) {
-										window.open(metadata.url, '_blank');
+										window.open(metadata.url, '_blank', 'noopener,noreferrer');
 									} else {
 										window.location.href = metadata.url;
 									}
 								}
-								notificationStore.markAsRead(notification.id);
 							}
 						}
 					: undefined,

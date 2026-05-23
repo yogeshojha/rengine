@@ -1,3 +1,5 @@
+import { SESSION_EXPIRED_EVENT } from './client';
+
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 
 export interface SSEMessage {
@@ -13,6 +15,14 @@ export interface SSEMessage {
 
 type MessageCallback = (message: SSEMessage) => void;
 type StateCallback = (state: ConnectionState) => void;
+
+/**
+ * After this many consecutive failures we attempt a silent token refresh
+ * before continuing the reconnect loop.  EventSource doesn't expose HTTP
+ * status codes so we can't distinguish 401 from a transient network error —
+ * a proactive refresh after a few failures handles both cases gracefully.
+ */
+const REFRESH_ATTEMPT_AFTER_FAILURES = 3;
 
 export class SSEClient {
     private eventSource: EventSource | null = null;
@@ -31,7 +41,7 @@ export class SSEClient {
     private readonly maxDelay = 30_000;    // 30s
 
     /**
-     * Opens an SSE connection subscribed to the given channels
+     * Opens an SSE connection subscribed to the given channels.
      *
      * If already connected, the connection is recycled only if the
      * channel set has changed.
@@ -44,7 +54,6 @@ export class SSEClient {
             return;
         }
 
-        // Merge new channels and reconnect
         this.channels = incoming;
         this.reconnectAttempts = 0;
         this.openConnection();
@@ -115,7 +124,6 @@ export class SSEClient {
      */
     onStateChange(callback: StateCallback): () => void {
         this.stateListeners.add(callback);
-        // Emit current state immediately
         callback(this._state);
 
         return () => {
@@ -164,7 +172,9 @@ export class SSEClient {
             this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting'
         );
 
-        const es = new EventSource(url);
+        // withCredentials ensures cookies (auth tokens) are sent for both
+        // same-origin and any future cross-origin deployments.
+        const es = new EventSource(url, { withCredentials: true });
 
         es.addEventListener('message', (event: MessageEvent) => {
             this.handleMessage(event);
@@ -232,7 +242,41 @@ export class SSEClient {
             return;
         }
 
-        // Exponential backoff with jitter to prevent thundering herd
+        // After a few consecutive failures attempt a silent token refresh.
+        // EventSource doesn't expose the HTTP status, so we can't tell a 401
+        // from a network blip — proactive refresh handles both.
+        if (this.reconnectAttempts === REFRESH_ATTEMPT_AFTER_FAILURES) {
+            this.refreshAndReconnect();
+            return;
+        }
+
+        this.scheduleReconnect();
+    }
+
+    private async refreshAndReconnect(): Promise<void> {
+        try {
+            const response = await fetch('/api/v1/auth/refresh', {
+                method: 'POST',
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                console.error('[SSE] Token refresh failed — session expired');
+                window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+                this.setState('disconnected');
+                return;
+            }
+
+            // Refresh succeeded — reset counter so the reconnect gets full retries
+            this.reconnectAttempts = 0;
+        } catch {
+            // Network error during refresh — try reconnecting anyway
+        }
+
+        this.scheduleReconnect();
+    }
+
+    private scheduleReconnect(): void {
         const exponential = this.baseDelay * Math.pow(2, this.reconnectAttempts);
         const capped = Math.min(exponential, this.maxDelay);
         const jitter = capped * 0.2 * Math.random();

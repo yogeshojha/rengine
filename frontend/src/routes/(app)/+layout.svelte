@@ -5,7 +5,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import AppSidebar from '$lib/components/layout/app-sidebar.svelte';
 	import TopBar from '$lib/components/layout/top-bar.svelte';
 	import NotificationToasts from '$lib/components/notifications/notification-toasts.svelte';
@@ -30,6 +30,11 @@
 		}
 	});
 
+	/**
+	 * Single redirect guard. Navigation to /login is the only place here —
+	 * logout() and clearSession() do NOT call goto so there is never a
+	 * duplicate navigation.
+	 */
 	$effect(() => {
 		if (!auth.isLoading && !auth.isAuthenticated) {
 			goto('/login');
@@ -51,9 +56,14 @@
 		}
 	});
 
-	// SSE connection — one connection for everything (notifications, activities, scans)
+	/**
+	 * SSE connection — initialise as soon as authenticated, independently of
+	 * whether notifications have finished loading.  Waiting on hasLoaded caused
+	 * a cascading failure: a notification API error would block all real-time
+	 * updates for the entire session.
+	 */
 	$effect(() => {
-		if (auth.isAuthenticated && !auth.isLoading && notificationStore.hasLoaded) {
+		if (auth.isAuthenticated && !auth.isLoading) {
 			const projectId = projectsStore.activeProject?.id;
 			sseStore.init(projectId);
 			notificationStore.subscribeSSE();
@@ -75,11 +85,6 @@
 			}
 			prevProjectId = projectId;
 		}
-	});
-
-	onDestroy(() => {
-		notificationStore.unsubscribeSSE();
-		sseStore.destroy();
 	});
 
 	let showRequiredProjectCreateModal = $derived(

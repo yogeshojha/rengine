@@ -41,12 +41,15 @@
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { relativeTime } from '$lib/utilities/dates.js';
 	import type { NotificationType, NotificationSeverity } from '$lib/types/notification';
+	import { toast } from 'svelte-sonner';
+	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 
 	let commandOpen = $state(false);
 	let scansSheetOpen = $state(false);
 	let notificationsModalOpen = $state(false);
 	let notificationsDropdownOpen = $state(false);
 	let selectedFilter = $state<NotificationType | 'all'>('all');
+	let addTargetOpen = $state(false);
 
 	const getSeverityIcon = (severity: NotificationSeverity) => {
 		switch (severity) {
@@ -114,7 +117,7 @@
 		const metadata = notification.notification_metadata;
 		if (metadata?.url) {
 			if (metadata.open_new_tab) {
-				window.open(metadata.url, '_blank');
+				window.open(metadata.url, '_blank', 'noopener,noreferrer');
 			} else {
 				window.location.href = metadata.url;
 			}
@@ -132,7 +135,7 @@
 		const metadata = notification.notification_metadata;
 		if (metadata?.url) {
 			if (metadata.open_new_tab) {
-				window.open(metadata.url, '_blank');
+				window.open(metadata.url, '_blank', 'noopener,noreferrer');
 			} else {
 				window.location.href = metadata.url;
 			}
@@ -177,19 +180,19 @@
 	});
 
 	const handleAddTarget = () => {
-		console.log('Add Target clicked');
+		addTargetOpen = true;
 	};
 
 	const handleAddOrganization = () => {
-		console.log('Add Organization clicked');
+		toast.info('Coming soon', { description: 'Add Organization will be available in a future update.' });
 	};
 
 	const handleNewScanEngine = () => {
-		console.log('New Scan Engine clicked');
+		toast.info('Coming soon', { description: 'Scan Engine configuration will be available in a future update.' });
 	};
 
 	const handleNewScanContext = () => {
-		console.log('New Scan Context clicked');
+		toast.info('Coming soon', { description: 'Scan Context configuration will be available in a future update.' });
 	};
 
 	interface BreadcrumbItem {
@@ -596,6 +599,8 @@
 		</Tabs.Root>
 	</Dialog.Content>
 </Dialog.Root>
+
+<AddTargetModal bind:open={addTargetOpen} />
 
 <Dialog.Root bind:open={commandOpen}>
 	<Dialog.Content class="overflow-hidden p-0 shadow-lg sm:max-w-[550px]">

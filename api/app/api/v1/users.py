@@ -12,7 +12,7 @@ from shared.models.user import User, UserRead
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/", response_model=list[UserRead])
+@router.get("", response_model=list[UserRead])
 async def list_users(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: CurrentSuperuser,  # noqa: ARG001

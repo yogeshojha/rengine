@@ -32,13 +32,11 @@
 		isLoading = true;
 
 		const result = await auth.login(username, password);
-		if (result.success) {
-			goto('/dashboard');
-		} else {
+		if (!result.success) {
 			error = result.error || 'Login failed';
+			isLoading = false;
 		}
-
-		isLoading = false;
+		// On success the $effect below handles redirect once isAuthenticated flips to true.
 	}
 </script>
 

@@ -55,8 +55,20 @@ def set_auth_cookies(
 
 
 def clear_auth_cookies(response: Response) -> None:
-    response.delete_cookie(key="access_token", path="/")
-    response.delete_cookie(key="refresh_token", path="/")
+    response.delete_cookie(
+        key="access_token",
+        path="/",
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="lax",
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="lax",
+    )
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -185,10 +197,16 @@ async def register_user(
     current_user: CurrentSuperuser,  # noqa: ARG001
 ):
     """Register a new user. **Admin only**."""
-    validate_username(user_in.username)
-    validate_password_strength(
-        user_in.password, user_inputs=[user_in.email, user_in.username]
-    )
+    try:
+        validate_username(user_in.username)
+        validate_password_strength(
+            user_in.password, user_inputs=[user_in.email, user_in.username]
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
 
     result = await session.execute(select(User).where(User.email == user_in.email))
     if result.scalar_one_or_none():
@@ -249,13 +267,14 @@ async def change_password(
             detail="You can only change your own password",
         )
 
-    if not current_user.is_superuser:
+    # Always verify current password when changing own password, even for superusers.
+    # Superusers may skip it only when resetting *another* user's password.
+    if target_user_id == current_user.id:
         if not password_data.current_password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Current password is required",
             )
-
         if not verify_password(
             password_data.current_password, target_user.hashed_password
         ):

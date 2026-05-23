@@ -75,7 +75,7 @@ services:
       - .env
     command: >
       uv run celery -A app.celery worker
-      --loglevel=INFO
+      --loglevel=DEBUG
       --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
       --queues=critical,default
       --hostname=worker-default@%h

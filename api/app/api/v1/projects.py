@@ -24,7 +24,9 @@ async def generate_unique_slug(name: str, session: AsyncSession) -> str:
     counter = 1
 
     while True:
-        result = await session.execute(select(Project).where(Project.slug == slug))
+        result = await session.execute(
+            select(Project).where(Project.slug == slug, Project.is_active)
+        )
         if not result.scalar_one_or_none():
             return slug
         counter += 1
@@ -52,7 +54,9 @@ async def get_project_summary(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    project_result = await session.execute(select(Project).where(Project.slug == slug))
+    project_result = await session.execute(
+        select(Project).where(Project.slug == slug, Project.is_active)
+    )
     project = project_result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -100,7 +104,9 @@ async def get_project(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    result = await session.execute(select(Project).where(Project.slug == slug))
+    result = await session.execute(
+        select(Project).where(Project.slug == slug, Project.is_active)
+    )
     project = result.scalar_one_or_none()
 
     if not project:
@@ -114,7 +120,7 @@ async def get_project(
 @router.delete("/{slug}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
     slug: str,
-    _current_user: CurrentUser,
+    _current_user: CurrentSuperuser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     result = await session.execute(select(Project).where(Project.slug == slug))

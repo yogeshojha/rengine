@@ -1,6 +1,7 @@
-import { goto } from '$app/navigation';
 import { toast } from 'svelte-sonner';
 import { authApi, type User } from '$lib/api/auth';
+import { projectsStore } from '$lib/stores/projects.svelte';
+import { notificationStore } from '$lib/stores/notifications.svelte';
 
 interface AuthState {
 	user: User | null;
@@ -44,29 +45,30 @@ function createAuthStore() {
 		try {
 			await authApi.logout();
 		} catch {
-			// Continue with logout even if API call fails
+			// Continue clearing local state even if the API call fails
 		}
+		clearSession();
+	}
+
+	/**
+	 * Tear down all session state without making an API call.
+	 * Used by both explicit logout and forced expiry (via session-expired event).
+	 * Navigation to /login is handled by the (app) layout's $effect guard.
+	 */
+	function clearSession() {
 		state.user = null;
 		state.isAuthenticated = false;
-		goto('/login');
+		projectsStore.clear();
+		notificationStore.reset();
 	}
 
 	async function register(email: string, username: string, password: string): Promise<{ success: boolean; error?: string }> {
 		try {
-			const response = await fetch('/api/v1/auth/register', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ email, username, password })
-			});
-
-			if (response.ok) {
-				return { success: true };
-			} else {
-				const data = await response.json();
-				return { success: false, error: data.detail || 'Registration failed' };
-			}
-		} catch {
-			return { success: false, error: 'Network error' };
+			await authApi.register({ email, username, password });
+			return { success: true };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Registration failed';
+			return { success: false, error: message };
 		}
 	}
 
@@ -77,6 +79,7 @@ function createAuthStore() {
 		checkAuth,
 		login,
 		logout,
+		clearSession,
 		register
 	};
 }

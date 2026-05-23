@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, Copy } from 'lucide-svelte';
+	import { Check, Copy, X } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 
@@ -11,11 +11,17 @@
 	let { value, class: className = '' }: Props = $props();
 
 	let copied = $state(false);
+	let failed = $state(false);
 
 	async function copy() {
-		await navigator.clipboard.writeText(value);
-		copied = true;
-		setTimeout(() => (copied = false), 2000);
+		try {
+			await navigator.clipboard.writeText(value);
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		} catch {
+			failed = true;
+			setTimeout(() => (failed = false), 2000);
+		}
 	}
 </script>
 
@@ -31,6 +37,8 @@
 			>
 				{#if copied}
 					<Check class="h-3.5 w-3.5 text-green-500" />
+				{:else if failed}
+					<X class="h-3.5 w-3.5 text-destructive" />
 				{:else}
 					<Copy class="h-3.5 w-3.5 text-muted-foreground" />
 				{/if}
@@ -39,6 +47,6 @@
 	</Tooltip.Trigger>
 
 	<Tooltip.Content>
-		<p>{copied ? 'Copied!' : 'Copy'}</p>
+		<p>{copied ? 'Copied!' : failed ? 'Failed to copy' : 'Copy'}</p>
 	</Tooltip.Content>
 </Tooltip.Root>

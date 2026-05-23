@@ -1,9 +1,10 @@
 {
+  // ─── Explorer ────────────────────────────────────────────────────────────────
   "files.exclude": {
     "**/__pycache__": true,
     "**/*.pyc": true,
     "**/*.pyo": true,
-    "**/*.ruff_cache": true,
+    "**/.ruff_cache": true,
     "**/node_modules": true,
     "**/.svelte-kit": true,
     "**/build": true,
@@ -17,19 +18,22 @@
     "**/uv.lock": true,
     "**/*.egg-info": true,
     "**/dist": true,
-    "**/ui/": true
+    "**/ui/": true,
+    // Alembic compiled artifacts (keep .py migration files visible)
+    "alembic/versions/__pycache__": true,
+    // Frontend artifacts
+    "**/.turbo": true,
+    "**/package-lock.json": true,
+    "**/.npmrc": true
   },
   "search.exclude": {
     "**/__pycache__": true,
     "**/.venv": true,
     "**/*venv": true,
-    "**/*.ruff_cache": true,
+    "**/.ruff_cache": true,
     "**/node_modules": true,
     "**/.svelte-kit": true,
     "**/build": true,
-    "pnpm-lock.yaml": true,
-    "package-lock.json": true,
-    "yarn.lock": true,
     "**/dist": true,
     "**/.turbo": true,
     "**/.cache": true,
@@ -38,6 +42,82 @@
     "**/*.log": true,
     "**/.python-version": true,
     "**/uv.lock": true,
-    "**/*.egg-info": true
-  }
+    "**/uv.lock": true,
+    "**/*.egg-info": true,
+    // Lock files (search hits here are never useful)
+    "pnpm-lock.yaml": true,
+    "package-lock.json": true,
+    "yarn.lock": true,
+    // Generated type definitions
+    "**/*.d.ts": false, // keep true only if you don't author .d.ts files
+    // Alembic compiled
+    "alembic/versions/__pycache__": true
+  },
+  // ─── Editor ──────────────────────────────────────────────────────────────────
+  "editor.stickyScroll.enabled": true,
+  "editor.stickyScroll.maxLineCount": 4,
+  "editor.formatOnSave": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.minimap.enabled": false, // reclaim horizontal space in deep trees
+  "editor.renderWhitespace": "trailing",
+  // ─── Files ───────────────────────────────────────────────────────────────────
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.watcherExclude": {
+    "**/__pycache__/**": true,
+    "**/.venv/**": true,
+    "**/node_modules/**": true,
+    "**/.svelte-kit/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/.ruff_cache/**": true
+  },
+  // Associate non-standard extensions used in this repo
+  "files.associations": {
+    "*.env.*": "dotenv",
+    "Dockerfile.*": "dockerfile",
+    "docker-compose*.yml": "dockercompose"
+  },
+  // ─── Python ──────────────────────────────────────────────────────────────────
+  "python.analysis.extraPaths": [
+    "./shared",
+    "./tools",
+    "./worker",
+    "./api"
+  ],
+  "python.analysis.typeCheckingMode": "basic",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  // ─── Svelte / Frontend ───────────────────────────────────────────────────────
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  // ─── Explorer UX ─────────────────────────────────────────────────────────────
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    // Group pyproject with its lock and egg-info
+    "pyproject.toml": "uv.lock, *.egg-info, setup.cfg, setup.py",
+    // Group docker-compose variants
+    "docker-compose.yml": "docker-compose.*.yml",
+    // Group svelte config files
+    "svelte.config.js": "vite.config.ts, tsconfig.json, components.json, eslint.config.js",
+    // Group package.json with lock
+    "package.json": "package-lock.json, .npmrc, .nvmrc"
+  },
+  "explorer.sortOrder": "foldersNestsFiles",
+  // ─── Workbench ───────────────────────────────────────────────────────────────
+  "workbench.editor.enablePreview": false, // stop files opening in preview/italic mode
+  "workbench.editor.wrapTabs": true
 }

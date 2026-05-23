@@ -46,16 +46,15 @@ class NotificationBase(SQLModel):
 
 class Notification(NotificationBase, table=True):
     __tablename__ = "notifications"
-    __table_args__ = ({"sqlite_autoincrement": True},)
 
     id: int = SQLField(default=None, primary_key=True, index=True)
     notification_metadata: dict = SQLField(
-        default_factory=dict, sa_column=Column(JSONB if True else Text)
+        default_factory=dict, sa_column=Column(JSONB)
     )
     is_read: bool = SQLField(default=False, index=True)
     created_at: datetime = SQLField(default_factory=utc_now, index=True)
     expires_at: datetime = SQLField(
-        default_factory=lambda: (utc_now() + timedelta(days=7)).replace(tzinfo=None),
+        default_factory=lambda: utc_now() + timedelta(days=7),
         index=True,
     )
 

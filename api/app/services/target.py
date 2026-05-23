@@ -2,6 +2,7 @@ import csv
 import io
 from collections import Counter
 from dataclasses import dataclass
+from uuid import UUID
 
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import delete as sa_delete
@@ -119,14 +120,13 @@ class TargetService:
         target_value: str,
         project_slug: str | None = None,
     ) -> select:
-        query = select(Target).where(Target.target_value == target_value)
+        query = select(Target).where(Target.target_value.ilike(f"%{target_value}%"))
 
         if project_slug:
             project = await self._get_project_by_slug(project_slug)
-            if project:
-                query = query.where(Target.project_id == project.id)
-            else:
-                query = query.where(Target.id is None)
+            if not project:
+                return query.where(col(Target.id).is_(None))
+            query = query.where(Target.project_id == project.id)
 
         return query
 
@@ -146,19 +146,15 @@ class TargetService:
 
         if project_slug:
             project = await self._get_project_by_slug(project_slug)
-            if project:
-                query = query.where(Target.project_id == project.id)
-            else:
-                query = query.where(Target.id is None)
+            if not project:
+                return query.where(col(Target.id).is_(None))
+            query = query.where(Target.project_id == project.id)
 
         if organization_slug:
             org = await self._get_organization_by_slug(organization_slug)
-            if org:
-                query = query.join(Target.organizations).where(
-                    Organization.id == org.id
-                )
-            else:
-                query = query.where(Target.id is None)
+            if not org:
+                return query.where(col(Target.id).is_(None))
+            query = query.join(Target.organizations).where(Organization.id == org.id)
 
         if target_type:
             query = query.where(Target.target_type == target_type)
@@ -625,6 +621,13 @@ class TargetService:
         )
 
     async def _get_target_or_404(self, target_id: str) -> Target:
+        try:
+            UUID(target_id)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid target ID format",
+            ) from e
         result = await self.session.execute(
             select(Target).where(Target.id == target_id)
         )

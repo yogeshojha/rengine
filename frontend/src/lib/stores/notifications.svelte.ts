@@ -181,6 +181,17 @@ export const notificationStore = {
         sseUnsub = null;
     },
 
+    reset() {
+        sseUnsub?.();
+        sseUnsub = null;
+        state.notifications = [];
+        state.unreadCount = 0;
+        state.totalCount = 0;
+        state.isLoading = false;
+        state.hasLoaded = false;
+        state.error = null;
+    },
+
     handleNewNotification(notification: Notification, fromSSE: boolean = true) {
         state.notifications = [notification, ...state.notifications];
 

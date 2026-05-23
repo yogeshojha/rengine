@@ -1,4 +1,3 @@
-import random
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -76,7 +75,7 @@ async def create_notification(
         severity=notification_in.severity,
         title=notification_in.title,
         message=notification_in.message,
-        metadata=notification_in.metadata,
+        metadata=notification_in.notification_metadata,
     )
 
     return NotificationRead(**notification.model_dump())

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, onMount } from 'svelte';
 	import { activityApi } from '$lib/api/activity';
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -75,9 +75,11 @@
 	const PANEL_MAX_RATIO = 0.6;
 	const PANEL_DEFAULT_RATIO = 0.35;
 
-	let panelHeight = $state(
-		Math.min(window.innerHeight * PANEL_DEFAULT_RATIO, window.innerHeight * PANEL_MAX_RATIO)
-	);
+	let panelHeight = $state(0);
+
+	onMount(() => {
+		panelHeight = Math.round(window.innerHeight * PANEL_DEFAULT_RATIO);
+	});
 	let isDragging = $state(false);
 	let dragStartY = $state(0);
 	let dragStartH = $state(0);
@@ -203,6 +205,7 @@
 	});
 
 	$effect(() => {
+		if (!open) return;
 		const iv = setInterval(() => tick++, 30_000);
 		return () => clearInterval(iv);
 	});
@@ -268,6 +271,7 @@
 			</div>
 
 			<button
+				type="button"
 				onclick={() => (open = false)}
 				class="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground
 					transition-colors hover:bg-accent hover:text-foreground"
@@ -281,6 +285,7 @@
 				{@const n = counts[f] ?? 0}
 				{#if f === 'all' || n > 0}
 					<button
+						type="button"
 						class="rounded-full px-2.5 py-[3px] text-[10px] font-medium transition-colors
 							{filter === f
 							? 'bg-accent text-foreground ring-1 ring-border'
@@ -327,6 +332,7 @@
 </div>
 
 <button
+	type="button"
 	onclick={() => (open = !open)}
 	class="activity-bar-btn flex h-9 w-full shrink-0 cursor-pointer items-center border-t border-border bg-background
 		transition-colors hover:bg-accent/30"

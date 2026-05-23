@@ -86,7 +86,9 @@ class NotificationManager:
         commit: bool = True,
     ) -> int:
         result = await session.execute(
-            update(Notification).where(not Notification.is_read).values(is_read=True)
+            update(Notification)
+            .where(Notification.is_read.is_(False))
+            .values(is_read=True)
         )
 
         if commit:

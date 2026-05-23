@@ -178,8 +178,10 @@
 	}
 
 	function resetForm() {
+		clearTimeout(validateTimeout);
 		targetValue = '';
 		displayName = '';
+		isValidating = false;
 		validationResult = null;
 		selectedOrganizations = [];
 		selectedTags = [];

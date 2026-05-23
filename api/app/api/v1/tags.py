@@ -22,6 +22,23 @@ router = APIRouter(
 )
 
 
+async def generate_unique_slug(
+    name: str, project_id: str, session: AsyncSession
+) -> str:
+    base_slug = generate_slug(name)
+    slug = base_slug
+    counter = 1
+
+    while True:
+        result = await session.execute(
+            select(Tag).where(Tag.slug == slug, Tag.project_id == project_id)
+        )
+        if not result.scalar_one_or_none():
+            return slug
+        counter += 1
+        slug = f"{base_slug}-{counter}"
+
+
 @router.get("", response_model=list[TagRead])
 async def list_tags(
     _current_user: CurrentUser,
@@ -93,7 +110,9 @@ async def create_tag(
 
 @router.post("/init-predefined", status_code=status.HTTP_201_CREATED)
 async def init_predefined_tags(
-    project_slug: str,
+    project_slug: Annotated[
+        str, Query(description="Slug of the project to initialize tags for")
+    ],
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
@@ -199,8 +218,9 @@ async def update_tag(
     update_data = tag_in.model_dump(exclude_unset=True)
 
     if "name" in update_data:
-        new_slug = generate_slug(update_data["name"])
-        tag.slug = new_slug
+        tag.slug = await generate_unique_slug(
+            update_data["name"], str(project_id), session
+        )
 
     for field, value in update_data.items():
         setattr(tag, field, value)
