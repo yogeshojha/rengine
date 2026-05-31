@@ -13,13 +13,38 @@
 	let copied = $state(false);
 	let failed = $state(false);
 
+	async function writeClipboard(text: string): Promise<boolean> {
+		if (navigator.clipboard && window.isSecureContext) {
+			try {
+				await navigator.clipboard.writeText(text);
+				return true;
+			} catch {
+				// fall through to legacy path
+			}
+		}
+		// Fallback for non-secure contexts (e.g. http://<lan-ip>:5173)
+		try {
+			const ta = document.createElement('textarea');
+			ta.value = text;
+			ta.style.position = 'fixed';
+			ta.style.opacity = '0';
+			document.body.appendChild(ta);
+			ta.focus();
+			ta.select();
+			const ok = document.execCommand('copy');
+			ta.remove();
+			return ok;
+		} catch {
+			return false;
+		}
+	}
+
 	async function copy(e?: MouseEvent) {
 		e?.stopPropagation();
-		try {
-			await navigator.clipboard.writeText(value);
+		if (await writeClipboard(value)) {
 			copied = true;
 			setTimeout(() => (copied = false), 2000);
-		} catch {
+		} else {
 			failed = true;
 			setTimeout(() => (failed = false), 2000);
 		}
