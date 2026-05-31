@@ -3,6 +3,7 @@ import { organizationsApi, type Organization } from '$lib/api/organizations';
 import { tagsApi, type Tag } from '$lib/api/tags';
 import { TargetType, type Target } from '$lib/types/target';
 import type { TargetCounts } from '$lib/types/pagination';
+import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
 
 interface TargetFilters {
 	projectSlug?: string;
@@ -10,6 +11,9 @@ interface TargetFilters {
 	activeTab: string;
 	selectedOrganizations: string[];
 	selectedTags: string[];
+	signalFilter: SignalFilter | null;
+	sortKey: SortKey;
+	sortDir: SortDir;
 }
 
 interface PaginationState {
@@ -32,7 +36,10 @@ function createTargetsStore() {
 		searchQuery: '',
 		activeTab: 'all',
 		selectedOrganizations: [],
-		selectedTags: []
+		selectedTags: [],
+		signalFilter: null,
+		sortKey: 'updated',
+		sortDir: 'desc'
 	});
 
 	let pagination = $state<PaginationState>({
@@ -51,37 +58,22 @@ function createTargetsStore() {
 		url: 0
 	});
 
-	let filteredTargets = $derived.by(() => {
-		let result = [...targets];
-
-		if (filters.searchQuery.trim()) {
-			const query = filters.searchQuery.toLowerCase();
-			result = result.filter(
-				(t) =>
-					t.target_value.toLowerCase().includes(query) ||
-					t.display_name?.toLowerCase().includes(query) ||
-					t.organizations.some((org) => org.name.toLowerCase().includes(query)) ||
-					t.tags.some((tag) => tag.name.toLowerCase().includes(query))
-			);
-		}
-
-		if (filters.selectedOrganizations.length > 0) {
-			result = result.filter((t) =>
-				t.organizations.some((org) => filters.selectedOrganizations.includes(org.id))
-			);
-		}
-
-		if (filters.selectedTags.length > 0) {
-			result = result.filter((t) => t.tags.some((tag) => filters.selectedTags.includes(tag.id)));
-		}
-
-		return result;
+	// KPI counts from /targets/stats; filtering/sort/signal are server-side
+	let signalSummary = $state<TargetSummary>({
+		total: 0,
+		expiring: 0,
+		attention: 0,
+		awaiting: 0,
+		enriched: 0
 	});
+
+	let searchDebounce: ReturnType<typeof setTimeout> | undefined;
 
 	let hasActiveFilters = $derived(
 		filters.searchQuery.trim() !== '' ||
 			filters.selectedOrganizations.length > 0 ||
-			filters.selectedTags.length > 0
+			filters.selectedTags.length > 0 ||
+			filters.signalFilter !== null
 	);
 
 	return {
@@ -89,7 +81,11 @@ function createTargetsStore() {
 			return targets;
 		},
 		get filteredTargets() {
-			return filteredTargets;
+			// already server-filtered/sorted
+			return targets;
+		},
+		get signalSummary() {
+			return signalSummary;
 		},
 		get organizations() {
 			return organizations;
@@ -120,13 +116,14 @@ function createTargetsStore() {
 		},
 
 		async fetchAll(projectSlug: string, page?: number, force: boolean = false) {
-			if (isLoading) return;
+			if (isLoading && !force) return;
 
 			if (!force && hasFetched && projectSlug === filters.projectSlug && page === undefined) {
 				return;
 			}
 
-			if (projectSlug !== filters.projectSlug) {
+			const projectChanged = projectSlug !== filters.projectSlug;
+			if (projectChanged) {
 				targets = [];
 				organizations = [];
 				tags = [];
@@ -146,15 +143,29 @@ function createTargetsStore() {
 				const targetType =
 					filters.activeTab !== 'all' ? (filters.activeTab as TargetType) : undefined;
 
-				const shouldFetchOrgsAndTags = !hasFetched || projectSlug !== filters.projectSlug;
+				// shared by list + stats (no signal/sort)
+				const baseFilters = {
+					project_slug: projectSlug,
+					search: filters.searchQuery || undefined,
+					organization_ids: filters.selectedOrganizations.length
+						? filters.selectedOrganizations
+						: undefined,
+					tag_ids: filters.selectedTags.length ? filters.selectedTags : undefined,
+					target_type: targetType
+				};
+
+				const shouldFetchOrgsAndTags = !hasFetched || projectChanged;
 
 				const promises: Promise<any>[] = [
 					targetsApi.list({
-						project_slug: projectSlug,
-						target_type: targetType,
+						...baseFilters,
+						signal: filters.signalFilter,
+						sort_by: filters.sortKey,
+						sort_dir: filters.sortDir,
 						page: pagination.currentPage,
 						size: pagination.pageSize === -1 ? undefined : pagination.pageSize
-					})
+					}),
+					targetsApi.getStats(baseFilters)
 				];
 
 				if (shouldFetchOrgsAndTags) {
@@ -171,11 +182,12 @@ function createTargetsStore() {
 				targets = targetsResponse.items;
 				pagination.totalItems = targetsResponse.total;
 				pagination.totalPages = targetsResponse.pages;
+				signalSummary = results[1];
 
 				if (shouldFetchOrgsAndTags) {
-					organizations = results[1];
-					tags = results[2];
-					counts = results[3];
+					organizations = results[2];
+					tags = results[3];
+					counts = results[4];
 				}
 
 				hasFetched = true;
@@ -184,6 +196,13 @@ function createTargetsStore() {
 			} finally {
 				isLoading = false;
 			}
+		},
+
+		// re-fetch after a filter/sort change, back to page 1
+		async reload() {
+			if (!filters.projectSlug) return;
+			pagination.currentPage = 1;
+			await this.fetchAll(filters.projectSlug, 1, true);
 		},
 
 		async refresh() {
@@ -205,14 +224,16 @@ function createTargetsStore() {
 
 		setSearchQuery(query: string) {
 			filters.searchQuery = query;
+			// debounce server round-trip
+			if (searchDebounce) clearTimeout(searchDebounce);
+			searchDebounce = setTimeout(() => {
+				this.reload();
+			}, 300);
 		},
 
 		async setActiveTab(tab: string) {
 			filters.activeTab = tab;
-			pagination.currentPage = 1;
-			if (filters.projectSlug) {
-				await this.fetchAll(filters.projectSlug, 1, true);
-			}
+			await this.reload();
 		},
 
 		toggleOrganization(orgId: string) {
@@ -222,6 +243,7 @@ function createTargetsStore() {
 			} else {
 				filters.selectedOrganizations = filters.selectedOrganizations.filter((id) => id !== orgId);
 			}
+			this.reload();
 		},
 
 		toggleTag(tagId: string) {
@@ -231,12 +253,40 @@ function createTargetsStore() {
 			} else {
 				filters.selectedTags = filters.selectedTags.filter((id) => id !== tagId);
 			}
+			this.reload();
+		},
+
+		toggleSignalFilter(signal: SignalFilter) {
+			filters.signalFilter = filters.signalFilter === signal ? null : signal;
+			this.reload();
+		},
+
+		setSignalFilter(signal: SignalFilter | null) {
+			filters.signalFilter = signal;
+			this.reload();
+		},
+
+		setSort(key: SortKey, dir?: SortDir) {
+			if (dir) {
+				filters.sortKey = key;
+				filters.sortDir = dir;
+			} else if (filters.sortKey === key) {
+				// Same key → toggle direction.
+				filters.sortDir = filters.sortDir === 'asc' ? 'desc' : 'asc';
+			} else {
+				filters.sortKey = key;
+				// Names sort A→Z, everything else most-relevant-first.
+				filters.sortDir = key === 'name' || key === 'expiry' ? 'asc' : 'desc';
+			}
+			this.reload();
 		},
 
 		clearFilters() {
 			filters.searchQuery = '';
 			filters.selectedOrganizations = [];
 			filters.selectedTags = [];
+			filters.signalFilter = null;
+			this.reload();
 		},
 
 		async setPage(page: number) {
@@ -338,7 +388,10 @@ function createTargetsStore() {
 				searchQuery: '',
 				activeTab: 'all',
 				selectedOrganizations: [],
-				selectedTags: []
+				selectedTags: [],
+				signalFilter: null,
+				sortKey: 'updated',
+				sortDir: 'desc'
 			};
 			pagination = {
 				currentPage: 1,

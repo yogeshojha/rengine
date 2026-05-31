@@ -15,6 +15,8 @@
 
 	import TargetTypeTabs from '$lib/components/targets/target-type-tabs.svelte';
 	import TargetFilters from '$lib/components/targets/target-filters.svelte';
+	import TargetsKpiStrip from '$lib/components/targets/targets-kpi-strip.svelte';
+	import TargetViewControls from '$lib/components/targets/target-view-controls.svelte';
 	import TargetListItem from '$lib/components/targets/target-list-item.svelte';
 	import TargetListHeader from '$lib/components/targets/target-list-header.svelte';
 	import TargetListSkeleton from '$lib/components/targets/target-list-skeleton.svelte';
@@ -28,6 +30,8 @@
 	import ImportTargetsModal from '$lib/components/modals/import-targets-modal.svelte';
 	import WhoisDetailDialog from '$lib/components/whois/whois-detail-dialog.svelte';
 	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
+	import { downloadTargets, type ExportFormat } from '$lib/utilities/target-export';
+	import type { SignalFilter, SortKey } from '$lib/utilities/target-signals';
 	import { goto } from '$app/navigation';
 
 	let showAddModal = $state(false);
@@ -214,8 +218,7 @@
 
 	function handleAddAsTarget(value: string) {
 		showAddModal = true;
-		// TODO: pre-fill the add target modal with `value`
-		// This could be done via a store or by passing initialValue to AddTargetModal
+		// TODO: pre-fill add target modal with `value`
 		toast.info(`Add "${value}" as a new target`);
 	}
 
@@ -278,6 +281,26 @@
 		targetsStore.clearFilters();
 	}
 
+	function handleSignalSelect(signal: SignalFilter | null) {
+		targetsStore.setSignalFilter(signal);
+	}
+
+	function handleSort(key: SortKey) {
+		targetsStore.setSort(key);
+	}
+
+	function handleExport(format: ExportFormat) {
+		const rows = targetsStore.filteredTargets;
+		if (rows.length === 0) {
+			toast.error('Nothing to export in the current view');
+			return;
+		}
+		downloadTargets(rows, format);
+		toast.success(
+			`Exported ${rows.length} target${rows.length !== 1 ? 's' : ''} as ${format.toUpperCase()}`
+		);
+	}
+
 	async function handlePageChange(page: number) {
 		await targetsStore.setPage(page);
 		selectedTargetIds = new Set();
@@ -333,18 +356,35 @@
 		onTabChange={handleTabChange}
 	/>
 
+	{#if targetsStore.signalSummary.total > 0}
+		<TargetsKpiStrip
+			summary={targetsStore.signalSummary}
+			activeSignal={targetsStore.filters.signalFilter}
+			onSelect={handleSignalSelect}
+		/>
+	{/if}
+
 	<Card.Root class="overflow-hidden">
-		<div class="p-4 border-b">
-			<TargetFilters
-				searchQuery={targetsStore.filters.searchQuery}
-				onSearchChange={handleSearchChange}
-				organizations={organizationSummaries}
-				selectedOrganizations={targetsStore.filters.selectedOrganizations}
-				onOrganizationToggle={handleOrganizationToggle}
-				tags={tagSummaries}
-				selectedTags={targetsStore.filters.selectedTags}
-				onTagToggle={handleTagToggle}
-				onClearFilters={handleClearFilters}
+		<div class="p-4 border-b flex items-center gap-3 flex-wrap">
+			<div class="flex-1 min-w-0">
+				<TargetFilters
+					searchQuery={targetsStore.filters.searchQuery}
+					onSearchChange={handleSearchChange}
+					organizations={organizationSummaries}
+					selectedOrganizations={targetsStore.filters.selectedOrganizations}
+					onOrganizationToggle={handleOrganizationToggle}
+					tags={tagSummaries}
+					selectedTags={targetsStore.filters.selectedTags}
+					onTagToggle={handleTagToggle}
+					onClearFilters={handleClearFilters}
+				/>
+			</div>
+			<TargetViewControls
+				sortKey={targetsStore.filters.sortKey}
+				sortDir={targetsStore.filters.sortDir}
+				onSort={handleSort}
+				onExport={handleExport}
+				exportDisabled={targetsStore.filteredTargets.length === 0}
 			/>
 		</div>
 
@@ -357,7 +397,13 @@
 				onClearFilters={handleClearFilters}
 			/>
 		{:else}
-			<TargetListHeader {selectAllChecked} onSelectAll={handleSelectAll} />
+			<TargetListHeader
+				{selectAllChecked}
+				onSelectAll={handleSelectAll}
+				sortKey={targetsStore.filters.sortKey}
+				sortDir={targetsStore.filters.sortDir}
+				onSort={handleSort}
+			/>
 
 			<div class="divide-y divide-border/50">
 				{#each targetsStore.filteredTargets as target (target.id)}

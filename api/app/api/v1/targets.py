@@ -1,13 +1,16 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.target import TargetService
+from app.services.target_filters import SignalName, SortDir, SortKey
 from shared.definitions.constants import MAX_TARGET_IMPORT
 from shared.models import (
     TargetBulkCreate,
@@ -122,6 +125,40 @@ async def get_target_counts(
     return await service.get_target_counts(project_slug)
 
 
+class TargetStatsResponse(BaseModel):
+    total: int
+    expiring: int
+    attention: int
+    awaiting: int
+    enriched: int
+
+
+@router.get("/stats", response_model=TargetStatsResponse)
+async def get_target_stats(
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+    project_slug: Annotated[str, Query(description="Filter by project slug")],
+    search: Annotated[str | None, Query(description="Search target value/name")] = None,
+    organization_ids: Annotated[
+        list[UUID] | None, Query(description="Filter by organization IDs")
+    ] = None,
+    tag_ids: Annotated[
+        list[UUID] | None, Query(description="Filter by tag IDs")
+    ] = None,
+    target_type: Annotated[
+        TargetType | None, Query(description="Filter by target type")
+    ] = None,
+):
+    """Per-signal KPI counts over the same filtered base set as the list."""
+    return await service.get_target_stats(
+        project_slug=project_slug,
+        search=search,
+        organization_ids=organization_ids,
+        tag_ids=tag_ids,
+        target_type=target_type,
+    )
+
+
 @router.get("/search", response_model=Page[TargetRead])
 async def search_targets_by_value(
     _current_user: CurrentUser,
@@ -157,17 +194,34 @@ async def list_targets(
     project_slug: Annotated[
         str | None, Query(description="Filter by project slug")
     ] = None,
-    organization_slug: Annotated[
-        str | None, Query(description="Filter by organization slug")
+    search: Annotated[
+        str | None, Query(description="Search by target value or display name")
+    ] = None,
+    organization_ids: Annotated[
+        list[UUID] | None, Query(description="Filter by organization IDs")
+    ] = None,
+    tag_ids: Annotated[
+        list[UUID] | None, Query(description="Filter by tag IDs")
     ] = None,
     target_type: Annotated[
         TargetType | None, Query(description="Filter by target type")
     ] = None,
+    signal: Annotated[
+        SignalName | None,
+        Query(description="Filter by signal: expiring, attention, awaiting, enriched"),
+    ] = None,
+    sort_by: Annotated[SortKey, Query(description="Sort field")] = "updated",
+    sort_dir: Annotated[SortDir, Query(description="Sort direction")] = "desc",
 ):
     query = await service.list_targets(
         project_slug=project_slug,
-        organization_slug=organization_slug,
+        search=search,
+        organization_ids=organization_ids,
+        tag_ids=tag_ids,
         target_type=target_type,
+        signal=signal,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
 
     return await paginate(

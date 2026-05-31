@@ -15,39 +15,52 @@ import type {
 import type { TargetDetailRead } from '@/types/target-detail';
 
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
+import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
 
 interface ListTargetsParams {
 	project_slug?: string;
-	organization_slug?: string;
+	search?: string;
+	organization_ids?: string[];
+	tag_ids?: string[];
 	target_type?: TargetType;
+	signal?: SignalFilter | null;
+	sort_by?: SortKey;
+	sort_dir?: SortDir;
 	page?: number;
 	size?: number;
 }
 
+type TargetStatsParams = Pick<
+	ListTargetsParams,
+	'project_slug' | 'search' | 'organization_ids' | 'tag_ids' | 'target_type'
+>;
+
+function buildTargetQuery(params: ListTargetsParams | TargetStatsParams): URLSearchParams {
+	const sp = new URLSearchParams();
+	if (params.project_slug) sp.append('project_slug', params.project_slug);
+	if ('search' in params && params.search?.trim()) sp.append('search', params.search.trim());
+	for (const id of params.organization_ids ?? []) sp.append('organization_ids', id);
+	for (const id of params.tag_ids ?? []) sp.append('tag_ids', id);
+	if (params.target_type) sp.append('target_type', params.target_type);
+	return sp;
+}
+
 export const targetsApi = {
 	async list(params?: ListTargetsParams): Promise<PaginatedResponse<Target>> {
-		const searchParams = new URLSearchParams();
+		const sp = buildTargetQuery(params ?? {});
+		if (params?.signal) sp.append('signal', params.signal);
+		if (params?.sort_by) sp.append('sort_by', params.sort_by);
+		if (params?.sort_dir) sp.append('sort_dir', params.sort_dir);
+		if (params?.page) sp.append('page', params.page.toString());
+		if (params?.size) sp.append('size', params.size.toString());
 
-		if (params?.project_slug) {
-			searchParams.append('project_slug', params.project_slug);
-		}
-		if (params?.organization_slug) {
-			searchParams.append('organization_slug', params.organization_slug);
-		}
-		if (params?.target_type) {
-			searchParams.append('target_type', params.target_type);
-		}
-		if (params?.page) {
-			searchParams.append('page', params.page.toString());
-		}
-		if (params?.size) {
-			searchParams.append('size', params.size.toString());
-		}
+		const query = sp.toString();
+		return api.get<PaginatedResponse<Target>>(query ? `/targets?${query}` : '/targets');
+	},
 
-		const query = searchParams.toString();
-		const url = query ? `/targets?${query}` : '/targets';
-
-		return api.get<PaginatedResponse<Target>>(url);
+	async getStats(params: TargetStatsParams): Promise<TargetSummary> {
+		const query = buildTargetQuery(params).toString();
+		return api.get<TargetSummary>(`/targets/stats?${query}`);
 	},
 
 	async getCounts(projectSlug: string): Promise<TargetCounts> {

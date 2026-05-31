@@ -5,11 +5,20 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from fastapi import HTTPException, UploadFile, status
+from sqlalchemy import Select, func, select
 from sqlalchemy import delete as sa_delete
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.services.target_filters import (
+    SignalName,
+    SortDir,
+    SortKey,
+    apply_filters,
+    apply_sort,
+    signal_count_columns,
+    with_whois_join,
+)
 from shared.enums.activity import ActivityLevel
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
@@ -138,11 +147,18 @@ class TargetService:
 
     async def list_targets(
         self,
+        *,
         project_slug: str | None = None,
-        organization_slug: str | None = None,
+        search: str | None = None,
+        organization_ids: list[UUID] | None = None,
+        tag_ids: list[UUID] | None = None,
         target_type: TargetType | None = None,
-    ) -> select:
-        query = select(Target)
+        signal: SignalName | None = None,
+        sort_by: SortKey = "updated",
+        sort_dir: SortDir = "desc",
+    ) -> Select:
+        """Build the filtered + sorted targets query (paginated by the route)."""
+        query = with_whois_join(select(Target))
 
         if project_slug:
             project = await self._get_project_by_slug(project_slug)
@@ -150,16 +166,59 @@ class TargetService:
                 return query.where(col(Target.id).is_(None))
             query = query.where(Target.project_id == project.id)
 
-        if organization_slug:
-            org = await self._get_organization_by_slug(organization_slug)
-            if not org:
-                return query.where(col(Target.id).is_(None))
-            query = query.join(Target.organizations).where(Organization.id == org.id)
+        query = apply_filters(
+            query,
+            search=search,
+            organization_ids=organization_ids,
+            tag_ids=tag_ids,
+            target_type=target_type,
+            signal=signal,
+        )
 
-        if target_type:
-            query = query.where(Target.target_type == target_type)
+        return apply_sort(query, sort_by, sort_dir)
 
-        return query.order_by(col(Target.created_at).desc())
+    async def get_target_stats(
+        self,
+        *,
+        project_slug: str,
+        search: str | None = None,
+        organization_ids: list[UUID] | None = None,
+        tag_ids: list[UUID] | None = None,
+        target_type: TargetType | None = None,
+    ) -> dict[str, int]:
+        """Per-signal KPI counts over the same base set as the list (no signal)."""
+        empty = {
+            "total": 0,
+            "expiring": 0,
+            "attention": 0,
+            "awaiting": 0,
+            "enriched": 0,
+        }
+
+        project = await self._get_project_by_slug(project_slug)
+        if not project:
+            return empty
+
+        query = with_whois_join(
+            select(*signal_count_columns()).select_from(Target)
+        ).where(Target.project_id == project.id)
+        query = apply_filters(
+            query,
+            search=search,
+            organization_ids=organization_ids,
+            tag_ids=tag_ids,
+            target_type=target_type,
+            signal=None,
+        )
+
+        row = (await self.session.execute(query)).one()
+        return {
+            "total": row.total,
+            "expiring": row.expiring,
+            "attention": row.attention,
+            "awaiting": row.awaiting,
+            "enriched": row.enriched,
+        }
 
     async def create_target(self, target_in: TargetCreate, user_id: str) -> TargetRead:
         target_type = validate_target(target_in.target_value)

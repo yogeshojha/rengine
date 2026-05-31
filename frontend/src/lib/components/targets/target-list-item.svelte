@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Target } from '$lib/types/target';
-	import { formatDistanceToNow } from '$lib/utilities/dates';
+	import { formatDistanceToNow, formatExpirationLabel } from '$lib/utilities/dates';
+	import { getExpirySignal } from '$lib/utilities/target-signals';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { goto } from '$app/navigation';
@@ -11,7 +12,7 @@
 	import BgpInline from '$lib/components/targets/bgp-inline.svelte';
 	import DnsInline from '$lib/components/targets/dns-inline.svelte';
 	import DiscoveryBadge from '$lib/components/viewdns-discoveries/discovery-badge.svelte';
-	import { Ellipsis, Eye, History, Play, Trash2 } from 'lucide-svelte';
+	import { CalendarClock, Ellipsis, Eye, History, Play, Trash2 } from 'lucide-svelte';
 	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
 	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
 	import { stopProp } from '$lib/utilities';
@@ -46,6 +47,15 @@
 
 	// TODO: dummy scan count, fetch later
 	const scanCount = 5;
+
+	// expiry badge only when expired or within 30 days
+	let expiry = $derived(getExpirySignal(target));
+	let showExpiry = $derived(expiry.urgency === 'expired' || expiry.urgency === 'critical');
+	let expiryClasses = $derived(
+		expiry.urgency === 'expired'
+			? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400'
+			: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+	);
 </script>
 
 <div
@@ -79,6 +89,21 @@
 		</div>
 		{#if target.display_name && target.display_name !== target.target_value}
 			<p class="text-xs text-muted-foreground truncate">{target.display_name}</p>
+		{/if}
+		{#if showExpiry}
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<span
+						class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border {expiryClasses}"
+					>
+						<CalendarClock class="h-3 w-3" />
+						{formatExpirationLabel(expiry.date)}
+					</span>
+				</Tooltip.Trigger>
+				<Tooltip.Content>
+					<p>Registration {expiry.urgency === 'expired' ? 'expired' : 'expiring soon'}</p>
+				</Tooltip.Content>
+			</Tooltip.Root>
 		{/if}
 		<div class="items-center gap-2">
 			<WhoisInline
