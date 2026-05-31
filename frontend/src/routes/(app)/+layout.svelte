@@ -14,7 +14,7 @@
 	import CreateFirstProjectModal from '@/components/modals/create-first-project-modal.svelte';
 	import { getRouteLabel } from '$lib/config/routes';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
-	import ActivityDrawer from '$lib/components/activity/activity-drawer.svelte';
+	import ActivityPanel from '$lib/components/activity/activity-panel.svelte';
 
 	let { children } = $props();
 
@@ -131,10 +131,12 @@
 					class="relative flex flex-1 flex-col rounded-lg bg-background shadow-sm overflow-hidden"
 				>
 					<TopBar {breadcrumbs} />
-					<main class="flex-1 min-h-0 overflow-auto p-6" style="scrollbar-gutter: stable;">
-						{@render children()}
-					</main>
-					<ActivityDrawer />
+					<div class="relative flex flex-1 min-h-0 overflow-hidden">
+						<main class="flex-1 min-h-0 overflow-auto p-6" style="scrollbar-gutter: stable;">
+							{@render children()}
+						</main>
+						<ActivityPanel />
+					</div>
 				</div>
 			</div>
 		</Sidebar.Inset>

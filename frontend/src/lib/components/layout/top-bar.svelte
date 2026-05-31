@@ -43,6 +43,7 @@
 	import type { NotificationType, NotificationSeverity } from '$lib/types/notification';
 	import { toast } from 'svelte-sonner';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
+	import ActivityGlance from '$lib/components/activity/activity-glance.svelte';
 
 	let commandOpen = $state(false);
 	let scansSheetOpen = $state(false);
@@ -234,6 +235,10 @@
 			{/each}
 		</nav>
 	{/if}
+
+	<div class="ml-3 hidden md:block">
+		<ActivityGlance />
+	</div>
 
 	<div class="flex-1"></div>
 
