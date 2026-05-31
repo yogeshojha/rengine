@@ -8,6 +8,7 @@ mostly for Same registrant? Same registrar? Same nameservers?
 """
 
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from sqlalchemy import delete, select
@@ -19,6 +20,8 @@ from shared.enums.whois import WhoisLookupType
 from shared.logging import get_logger
 from shared.models.whois import WhoisNameserver, WhoisRecord
 from shared.utils.datetime import normalize_datetime, utc_now
+from shared.utils.infra import is_shared_nameserver
+from shared.utils.privacy import is_redacted_name
 from shared.utils.validation import (
     extract_asn_number,
     normalize_domain,
@@ -41,6 +44,19 @@ from tools.whois.providers.whoisit import RDAPProvider, RDAPProviderError
 logger = get_logger(__name__)
 
 DEFAULT_CACHE_TTL_DAYS = 7
+
+# Upper bound on records returned per correlation group. Some keys (popular
+# registrars, large networks) can match thousands of rows; an unbounded query
+# would load them all into memory and serialize them in a single response.
+MAX_CORRELATION_RECORDS = 500
+
+
+@dataclass(slots=True)
+class WhoisLookupResult:
+    """Result of an async WHOIS lookup, including cache provenance."""
+
+    response: "WhoisResponse"
+    cache_hit: bool
 
 
 class WhoisError(Exception):
@@ -111,8 +127,12 @@ class WhoisService:
         target_type=None,
         store_in_db: bool = True,
         session: AsyncSession | None = None,
-    ) -> WhoisResponse:
-        """Async WHOIS lookup with optional DB caching."""
+    ) -> WhoisLookupResult:
+        """Async WHOIS lookup with optional DB caching.
+
+        Returns a :class:`WhoisLookupResult` so callers can tell whether the
+        response was served from a fresh cache entry or freshly queried.
+        """
 
         if not query or not query.strip():
             msg = "Query cannot be empty"
@@ -129,14 +149,17 @@ class WhoisService:
             cached = await self._get_cached_record(session, normalized)
             if cached and self._is_cache_fresh(cached):
                 logger.debug(f"WHOIS cache hit for {normalized}")
-                return self._reconstruct_response(cached)
+                return WhoisLookupResult(
+                    response=self._reconstruct_response(cached),
+                    cache_hit=True,
+                )
 
         response = self.do_lookup(normalized, target_type)
 
         if store_in_db and session:
             await self._store_record(session, response, normalized)
 
-        return response
+        return WhoisLookupResult(response=response, cache_hit=False)
 
     async def _get_cached_record(
         self, session: AsyncSession, query_value: str
@@ -301,59 +324,89 @@ class WhoisService:
     # Correlation queries
 
     async def find_by_registrant(
-        self, session: AsyncSession, registrant_name: str
+        self,
+        session: AsyncSession,
+        registrant_name: str,
+        limit: int = MAX_CORRELATION_RECORDS,
     ) -> list[WhoisRecord]:
+        if is_redacted_name(registrant_name):
+            return []
         result = await session.execute(
             select(WhoisRecord)
             .where(WhoisRecord.registrant_name == registrant_name)
             .where(WhoisRecord.registrant_name != "")
+            .limit(limit)
         )
         return list(result.scalars().all())
 
     async def find_by_registrar(
-        self, session: AsyncSession, registrar_name: str
+        self,
+        session: AsyncSession,
+        registrar_name: str,
+        limit: int = MAX_CORRELATION_RECORDS,
     ) -> list[WhoisRecord]:
         result = await session.execute(
             select(WhoisRecord)
             .where(WhoisRecord.registrar_name == registrar_name)
             .where(WhoisRecord.registrar_name != "")
+            .limit(limit)
         )
         return list(result.scalars().all())
 
     async def find_by_network(
-        self, session: AsyncSession, network_cidr: str
+        self,
+        session: AsyncSession,
+        network_cidr: str,
+        limit: int = MAX_CORRELATION_RECORDS,
     ) -> list[WhoisRecord]:
         result = await session.execute(
             select(WhoisRecord)
             .where(WhoisRecord.network_cidr == network_cidr)
             .where(WhoisRecord.network_cidr != "")
+            .limit(limit)
         )
         return list(result.scalars().all())
 
     async def find_by_country(
-        self, session: AsyncSession, country: str
+        self,
+        session: AsyncSession,
+        country: str,
+        limit: int = MAX_CORRELATION_RECORDS,
     ) -> list[WhoisRecord]:
         result = await session.execute(
             select(WhoisRecord)
             .where(WhoisRecord.country == country.upper())
             .where(WhoisRecord.country != "")
+            .limit(limit)
         )
         return list(result.scalars().all())
 
     async def find_by_nameserver(
-        self, session: AsyncSession, nameserver: str
+        self,
+        session: AsyncSession,
+        nameserver: str,
+        limit: int = MAX_CORRELATION_RECORDS,
     ) -> list[WhoisRecord]:
         result = await session.execute(
             select(WhoisRecord)
             .join(WhoisNameserver, WhoisNameserver.whois_record_id == WhoisRecord.id)
             .where(WhoisNameserver.nameserver == nameserver.strip().lower())
+            .distinct()
+            .limit(limit)
         )
         return list(result.scalars().all())
 
     async def get_correlations_for_target(
         self, session: AsyncSession, whois_record_id: uuid.UUID
     ) -> dict[str, list[WhoisRecord]]:
-        """Get all correlation groups for a specific WHOIS record."""
+        """Get all meaningful correlation groups for a specific WHOIS record.
+
+        Only high-signal keys are returned. Country is intentionally excluded:
+        grouping by a two-letter country code links essentially every target in
+        a region and produces no actionable relationship. Registrant identities
+        that are privacy placeholders and shared/managed nameservers are also
+        skipped so they cannot create false clusters.
+        """
         result = await session.execute(
             select(WhoisRecord).where(WhoisRecord.id == whois_record_id)
         )
@@ -363,7 +416,9 @@ class WhoisService:
 
         correlations: dict[str, list[WhoisRecord]] = {}
 
-        if record.registrant_name:
+        # Registrant identity is the strongest signal, but only when it is a
+        # real name rather than a redacted privacy-proxy placeholder.
+        if record.registrant_name and not is_redacted_name(record.registrant_name):
             related = await self.find_by_registrant(session, record.registrant_name)
             others = [r for r in related if r.id != record.id]
             if others:
@@ -381,35 +436,37 @@ class WhoisService:
             if others:
                 correlations["network_cidr"] = others
 
-        if record.country:
-            related = await self.find_by_country(session, record.country)
-            others = [r for r in related if r.id != record.id]
-            if others:
-                correlations["country"] = others
-
-        if record.nameservers:
-            ns_result = await session.execute(
-                select(WhoisRecord)
-                .where(WhoisRecord.id != record.id)
-                .where(
-                    WhoisRecord.id.in_(
-                        select(WhoisNameserver.whois_record_id)
-                        .where(
-                            WhoisNameserver.nameserver.in_(
-                                select(WhoisNameserver.nameserver).where(
-                                    WhoisNameserver.whois_record_id == record.id
-                                )
-                            )
-                        )
-                        .where(WhoisNameserver.whois_record_id != record.id)
-                    )
-                )
-            )
-            ns_related = list(ns_result.scalars().all())
-            if ns_related:
-                correlations["nameserver"] = ns_related
+        ns_related = await self._find_nameserver_correlations(session, record)
+        if ns_related:
+            correlations["nameserver"] = ns_related
 
         return correlations
+
+    async def _find_nameserver_correlations(
+        self, session: AsyncSession, record: WhoisRecord
+    ) -> list[WhoisRecord]:
+        """Find other records sharing a *private* nameserver with ``record``.
+
+        Shared/managed nameservers (Cloudflare, Route 53, ...) are excluded so
+        unrelated targets are not linked merely by their DNS provider.
+        """
+        correlatable = [
+            ns.strip().lower()
+            for ns in (record.nameservers or [])
+            if ns and not is_shared_nameserver(ns)
+        ]
+        if not correlatable:
+            return []
+
+        result = await session.execute(
+            select(WhoisRecord)
+            .join(WhoisNameserver, WhoisNameserver.whois_record_id == WhoisRecord.id)
+            .where(WhoisNameserver.nameserver.in_(correlatable))
+            .where(WhoisRecord.id != record.id)
+            .distinct()
+            .limit(MAX_CORRELATION_RECORDS)
+        )
+        return list(result.scalars().all())
 
     def ensure_ready(self) -> None:
         try:

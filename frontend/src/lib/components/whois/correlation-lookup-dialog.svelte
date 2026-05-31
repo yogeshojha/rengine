@@ -75,11 +75,6 @@
 			label: 'Network',
 			icon: Cable,
 			color: 'text-emerald-500'
-		},
-		country: {
-			label: 'Country',
-			icon: Flag,
-			color: 'text-amber-500'
 		}
 	};
 
@@ -148,9 +143,6 @@
 				case 'network':
 				case 'network_cidr':
 					data = await whoisApi.correlateByNetwork(correlationValue);
-					break;
-				case 'country':
-					data = await whoisApi.correlateByCountry(correlationValue);
 					break;
 				default:
 					data = [];

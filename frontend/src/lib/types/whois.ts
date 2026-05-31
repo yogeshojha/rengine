@@ -146,8 +146,7 @@ export const CORRELATION_TYPE_LABELS: Record<string, string> = {
 	registrant: 'Shared Registrant',
 	registrar: 'Shared Registrar',
 	nameserver: 'Shared Nameserver',
-	network: 'Same Network',
-	country: 'Same Country'
+	network: 'Same Network'
 };
 
 export function getStatusBadgeColor(status: string): string {
@@ -166,7 +165,6 @@ export function getCorrelationIcon(type: string): string {
 		case 'registrar': return 'Building';
 		case 'nameserver': return 'Server';
 		case 'network': return 'Network';
-		case 'country': return 'Flag';
 		default: return 'Link';
 	}
 }

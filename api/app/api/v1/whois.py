@@ -14,7 +14,6 @@ from shared.enums.whois import WhoisLookupType
 from shared.models.target import Target
 from shared.models.whois import (
     WhoisCorrelationResult,
-    WhoisNameserver,
     WhoisRecord,
     WhoisRecordRead,
     WhoisRecordSummary,
@@ -92,35 +91,27 @@ async def whois_lookup(
 ):
     try:
         service.ensure_ready()
-        cached = False
-        if request.store_in_db:
-            existing = await session.execute(
-                select(WhoisRecord).where(
-                    WhoisRecord.query_value == request.query.strip()
-                )
-            )
-            if existing.scalar_one_or_none():
-                cached = True
 
-        response = await service.lookup(
+        result = await service.lookup(
             query=request.query,
             store_in_db=request.store_in_db,
             session=session if request.store_in_db else None,
         )
+        response = result.response
 
         record_read = None
         if request.store_in_db:
-            result = await session.execute(
+            db_result = await session.execute(
                 select(WhoisRecord).where(WhoisRecord.query_value == response.query)
             )
-            db_record = result.scalar_one_or_none()
+            db_record = db_result.scalar_one_or_none()
             if db_record:
                 record_read = WhoisRecordRead.model_validate(db_record)
 
         return WhoisLookupResponse(
             record=record_read,
             data=response.model_dump(mode="json"),
-            cached=cached,
+            cached=result.cache_hit,
         )
 
     except WhoisValidationError as e:
@@ -438,6 +429,24 @@ async def get_target_correlations(
     return results
 
 
+def _correlation_results(
+    correlation_type: str,
+    correlation_value: str,
+    records: list[WhoisRecord],
+) -> list[WhoisCorrelationResult]:
+    """Wrap finder output in the list-of-groups response shape."""
+    if not records:
+        return []
+    return [
+        WhoisCorrelationResult(
+            correlation_type=correlation_type,
+            correlation_value=correlation_value,
+            records=[_to_summary(r) for r in records],
+            count=len(records),
+        )
+    ]
+
+
 @router.get(
     "/correlations/registrant",
     response_model=list[WhoisCorrelationResult],
@@ -447,26 +456,11 @@ async def get_target_correlations(
 async def correlate_by_registrant(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[WhoisService, Depends(get_whois_service)],
     name: Annotated[str, Query(description="Registrant name to search for")],
 ):
-    results = await session.execute(
-        select(WhoisRecord)
-        .where(WhoisRecord.registrant_name == name)
-        .where(WhoisRecord.registrant_name != "")
-    )
-    records = list(results.scalars().all())
-
-    if not records:
-        return []
-
-    return [
-        WhoisCorrelationResult(
-            correlation_type="registrant_name",
-            correlation_value=name,
-            records=[_to_summary(r) for r in records],
-            count=len(records),
-        )
-    ]
+    records = await service.find_by_registrant(session, name)
+    return _correlation_results("registrant_name", name, records)
 
 
 @router.get(
@@ -478,26 +472,11 @@ async def correlate_by_registrant(
 async def correlate_by_registrar(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[WhoisService, Depends(get_whois_service)],
     name: Annotated[str, Query(description="Registrar name to search for")],
 ):
-    results = await session.execute(
-        select(WhoisRecord)
-        .where(WhoisRecord.registrar_name == name)
-        .where(WhoisRecord.registrar_name != "")
-    )
-    records = list(results.scalars().all())
-
-    if not records:
-        return []
-
-    return [
-        WhoisCorrelationResult(
-            correlation_type="registrar_name",
-            correlation_value=name,
-            records=[_to_summary(r) for r in records],
-            count=len(records),
-        )
-    ]
+    records = await service.find_by_registrar(session, name)
+    return _correlation_results("registrar_name", name, records)
 
 
 @router.get(
@@ -509,28 +488,13 @@ async def correlate_by_registrar(
 async def correlate_by_network(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[WhoisService, Depends(get_whois_service)],
     cidr: Annotated[
         str, Query(description="Network CIDR to search for (e.g. 8.8.8.0/24)")
     ],
 ):
-    results = await session.execute(
-        select(WhoisRecord)
-        .where(WhoisRecord.network_cidr == cidr)
-        .where(WhoisRecord.network_cidr != "")
-    )
-    records = list(results.scalars().all())
-
-    if not records:
-        return []
-
-    return [
-        WhoisCorrelationResult(
-            correlation_type="network_cidr",
-            correlation_value=cidr,
-            records=[_to_summary(r) for r in records],
-            count=len(records),
-        )
-    ]
+    records = await service.find_by_network(session, cidr)
+    return _correlation_results("network_cidr", cidr, records)
 
 
 @router.get(
@@ -542,26 +506,11 @@ async def correlate_by_network(
 async def correlate_by_country(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[WhoisService, Depends(get_whois_service)],
     code: Annotated[str, Query(description="Country code (e.g. US, DE, JP)")],
 ):
-    results = await session.execute(
-        select(WhoisRecord)
-        .where(WhoisRecord.country == code.upper())
-        .where(WhoisRecord.country != "")
-    )
-    records = list(results.scalars().all())
-
-    if not records:
-        return []
-
-    return [
-        WhoisCorrelationResult(
-            correlation_type="country",
-            correlation_value=code.upper(),
-            records=[_to_summary(r) for r in records],
-            count=len(records),
-        )
-    ]
+    records = await service.find_by_country(session, code)
+    return _correlation_results("country", code.upper(), records)
 
 
 @router.get(
@@ -573,26 +522,11 @@ async def correlate_by_country(
 async def correlate_by_nameserver(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[WhoisService, Depends(get_whois_service)],
     ns: Annotated[str, Query(description="Nameserver hostname (e.g. ns1.google.com)")],
 ):
-    results = await session.execute(
-        select(WhoisRecord)
-        .join(WhoisNameserver, WhoisNameserver.whois_record_id == WhoisRecord.id)
-        .where(WhoisNameserver.nameserver == ns.strip().lower())
-    )
-    records = list(results.scalars().all())
-
-    if not records:
-        return []
-
-    return [
-        WhoisCorrelationResult(
-            correlation_type="nameserver",
-            correlation_value=ns,
-            records=[_to_summary(r) for r in records],
-            count=len(records),
-        )
-    ]
+    records = await service.find_by_nameserver(session, ns)
+    return _correlation_results("nameserver", ns, records)
 
 
 def _to_summary(record: WhoisRecord) -> WhoisRecordSummary:

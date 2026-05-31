@@ -240,20 +240,7 @@
 					<Flag class="h-3 w-3" />
 					Country
 				</div>
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						<button
-							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-							onclick={() => handleCorrelationClick('country', record.country)}
-						>
-							{record.country}
-							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-						</button>
-					</Tooltip.Trigger>
-					<Tooltip.Content>
-						<p>Find targets in same country</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
+				<p class="text-sm font-medium">{record.country}</p>
 			</div>
 		{/if}
 

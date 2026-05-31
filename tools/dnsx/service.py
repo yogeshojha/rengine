@@ -21,11 +21,17 @@ from shared.logging import get_logger
 from shared.models.dns import DnsLookup, DnsLookupSummary, DnsRecord
 from shared.models.target import Target
 from shared.utils.datetime import utc_now
+from shared.utils.infra import is_shared_nameserver
 from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.models import DnsxReconResponse
 from tools.dnsx.parser import parse_dnsx_jsonl
 
 logger = get_logger(__name__)
+
+# Upper bound on rows returned by a single correlation query. Shared records
+# (e.g. a popular nameserver or CDN IP) can match a very large number of
+# targets; an unbounded query would load them all into memory.
+MAX_CORRELATION_TARGETS = 500
 
 
 class DnsxServiceError(Exception):
@@ -278,6 +284,7 @@ class DnsxService:
         session: Session,
         record_type: DnsRecordType,
         value: str,
+        limit: int = MAX_CORRELATION_TARGETS,
     ) -> list[DnsRecord]:
         """Find all DNS records matching a type and value.
 
@@ -289,6 +296,7 @@ class DnsxService:
             select(DnsRecord)
             .where(DnsRecord.record_type == record_type)
             .where(DnsRecord.value == value)
+            .limit(limit)
         )
         return list(result.scalars().all())
 
@@ -296,13 +304,23 @@ class DnsxService:
         self,
         session: Session,
         nameserver: str,
+        include_shared: bool = False,
+        limit: int = MAX_CORRELATION_TARGETS,
     ) -> list[uuid.UUID]:
-        """Find all target IDs that share a given nameserver."""
+        """Find all target IDs that share a given nameserver.
+
+        Shared/managed nameservers (Cloudflare, Route 53, ...) link large
+        numbers of unrelated targets, so by default a request for one returns
+        no correlations. Pass ``include_shared=True`` to override.
+        """
+        if not include_shared and is_shared_nameserver(nameserver):
+            return []
         result = session.execute(
             select(DnsRecord.target_id)
             .where(DnsRecord.record_type == DnsRecordType.NS)
             .where(DnsRecord.value == nameserver)
             .distinct()
+            .limit(limit)
         )
         return list(result.scalars().all())
 
@@ -310,6 +328,7 @@ class DnsxService:
         self,
         session: Session,
         mx_host: str,
+        limit: int = MAX_CORRELATION_TARGETS,
     ) -> list[uuid.UUID]:
         """Find all target IDs that share a given MX host."""
         result = session.execute(
@@ -317,6 +336,7 @@ class DnsxService:
             .where(DnsRecord.record_type == DnsRecordType.MX)
             .where(DnsRecord.value == mx_host)
             .distinct()
+            .limit(limit)
         )
         return list(result.scalars().all())
 
@@ -324,20 +344,32 @@ class DnsxService:
         self,
         session: Session,
         ip: str,
+        exclude_cdn: bool = True,
+        limit: int = MAX_CORRELATION_TARGETS,
     ) -> list[uuid.UUID]:
-        """Find all target IDs that resolve to the same IP."""
-        result = session.execute(
+        """Find all target IDs that resolve to the same IP.
+
+        CDN-fronted IPs (Cloudflare, Akamai, ...) are shared by many unrelated
+        targets, so records from a lookup flagged as CDN are excluded by
+        default. Pass ``exclude_cdn=False`` to include them.
+        """
+        query = (
             select(DnsRecord.target_id)
             .where(DnsRecord.record_type.in_([DnsRecordType.A, DnsRecordType.AAAA]))
             .where(DnsRecord.value == ip)
-            .distinct()
         )
+        if exclude_cdn:
+            query = query.join(
+                DnsLookup, DnsLookup.id == DnsRecord.dns_lookup_id
+            ).where(DnsLookup.cdn.is_(False))
+        result = session.execute(query.distinct().limit(limit))
         return list(result.scalars().all())
 
     def get_record_value_counts(
         self,
         session: Session,
         record_type: DnsRecordType,
+        limit: int = MAX_CORRELATION_TARGETS,
     ) -> list[tuple[str, int]]:
         """Get value counts for a record type, ordered by frequency.
 
@@ -348,6 +380,7 @@ class DnsxService:
             .where(DnsRecord.record_type == record_type)
             .group_by(DnsRecord.value)
             .order_by(func.count(DnsRecord.target_id).desc())
+            .limit(limit)
         )
         return list(result.all())
 

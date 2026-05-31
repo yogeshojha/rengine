@@ -76,12 +76,6 @@ export const whoisApi = {
 		);
 	},
 
-	async correlateByCountry(code: string): Promise<WhoisCorrelationResult[]> {
-		return api.get<WhoisCorrelationResult[]>(
-			`/tools/whois/correlations/country?code=${encodeURIComponent(code)}`
-		);
-	},
-
 	async correlateByNameserver(ns: string): Promise<WhoisCorrelationResult[]> {
 		return api.get<WhoisCorrelationResult[]>(
 			`/tools/whois/correlations/nameserver?ns=${encodeURIComponent(ns)}`

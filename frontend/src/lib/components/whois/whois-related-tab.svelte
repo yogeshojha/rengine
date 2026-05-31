@@ -32,9 +32,7 @@
 		registrar_name: 'Registrar',
 		nameserver: 'Nameserver',
 		network: 'Network Block',
-		network_cidr: 'Network Block',
-		country: 'Country',
-		country_code: 'Country'
+		network_cidr: 'Network Block'
 	};
 
 	const REASON_MATCH_LABELS: Record<string, string> = {
@@ -44,9 +42,7 @@
 		registrar_name: 'registrar',
 		nameserver: 'nameserver',
 		network: 'network block',
-		network_cidr: 'network block',
-		country: 'country',
-		country_code: 'country'
+		network_cidr: 'network block'
 	};
 
 	const REASON_COLORS: Record<
@@ -94,18 +90,6 @@
 			label: 'text-emerald-600 dark:text-emerald-400',
 			value: 'bg-emerald-500/5 text-emerald-700 dark:text-emerald-300',
 			border: 'border-emerald-500/20'
-		},
-		country: {
-			bg: 'bg-amber-500/10',
-			label: 'text-amber-600 dark:text-amber-400',
-			value: 'bg-amber-500/5 text-amber-700 dark:text-amber-300',
-			border: 'border-amber-500/20'
-		},
-		country_code: {
-			bg: 'bg-amber-500/10',
-			label: 'text-amber-600 dark:text-amber-400',
-			value: 'bg-amber-500/5 text-amber-700 dark:text-amber-300',
-			border: 'border-amber-500/20'
 		}
 	};
 

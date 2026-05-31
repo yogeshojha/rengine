@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from shared.enums.whois import WhoisLookupType
+from shared.utils.privacy import clean_email, clean_name
 
 
 class WhoisAddress(BaseModel):
@@ -40,20 +41,23 @@ class WhoisEntities(BaseModel):
     routing: list[WhoisEntity] = Field(default_factory=list)
 
     def get_registrant_name(self) -> str:
+        """First real registrant name, skipping privacy-proxy placeholders.
+
+        Redacted values (``REDACTED FOR PRIVACY``, ``Withheld for Privacy``,
+        ``Domains By Proxy``, ...) are dropped so they never become correlation
+        keys. See :mod:`shared.utils.privacy`.
+        """
         for entity in self.registrant:
-            name = entity.name.strip()
-            if name and name.upper() not in (
-                "REDACTED",
-                "DATA REDACTED",
-                "REDACTED FOR PRIVACY",
-            ):
+            name = clean_name(entity.name)
+            if name:
                 return name
         return ""
 
     def get_registrant_email(self) -> str:
+        """First real registrant e-mail, skipping privacy-service addresses."""
         for entity in self.registrant:
-            email = entity.email.strip()
-            if email and "redacted" not in email.lower():
+            email = clean_email(entity.email)
+            if email:
                 return email
         return ""
 
