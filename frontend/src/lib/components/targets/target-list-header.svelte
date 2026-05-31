@@ -14,6 +14,16 @@
 	let { selectAllChecked, onSelectAll, sortKey, sortDir, onSort }: Props = $props();
 </script>
 
+{#snippet arrow(key: SortKey)}
+	{#if sortKey === key}
+		{#if sortDir === 'asc'}
+			<ArrowUp class="h-3 w-3" />
+		{:else}
+			<ArrowDown class="h-3 w-3" />
+		{/if}
+	{/if}
+{/snippet}
+
 <div
 	class="flex items-center gap-3 px-4 py-2 border-b border-border bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider"
 >
@@ -24,34 +34,43 @@
 
 	<button
 		type="button"
-		class="w-[240px] flex items-center gap-1 uppercase tracking-wider hover:text-foreground transition-colors"
+		class="flex w-[210px] items-center gap-1 uppercase tracking-wider hover:text-foreground"
 		onclick={() => onSort('name')}
 	>
 		Target
-		{#if sortKey === 'name'}
-			{#if sortDir === 'asc'}
-				<ArrowUp class="h-3 w-3" />
-			{:else}
-				<ArrowDown class="h-3 w-3" />
-			{/if}
-		{/if}
+		{@render arrow('name')}
 	</button>
-	<div class="w-[120px]">Scans</div>
-	<div class="hidden md:block flex-1 min-w-[180px]">Organizations</div>
-	<div class="hidden lg:block flex-1 min-w-[200px]">Tags</div>
+
 	<button
 		type="button"
-		class="hidden sm:flex w-[80px] items-center justify-end gap-1 uppercase tracking-wider hover:text-foreground transition-colors"
+		class="hidden w-[84px] items-center gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
+		onclick={() => onSort('type')}
+	>
+		Type
+		{@render arrow('type')}
+	</button>
+
+	<button
+		type="button"
+		class="hidden min-w-[160px] flex-1 items-center gap-1 uppercase tracking-wider hover:text-foreground lg:flex"
+		onclick={() => onSort('expiry')}
+	>
+		Registrar / Exp
+		{@render arrow('expiry')}
+	</button>
+
+	<div class="hidden w-[150px] xl:block">DNS / BGP</div>
+	<div class="hidden w-[110px] xl:block">Related</div>
+	<div class="hidden flex-1 md:block min-w-[130px]">Organizations</div>
+	<div class="hidden flex-1 lg:block min-w-[130px]">Tags</div>
+
+	<button
+		type="button"
+		class="hidden w-[84px] items-center justify-end gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
 		onclick={() => onSort('updated')}
 	>
 		Updated
-		{#if sortKey === 'updated'}
-			{#if sortDir === 'asc'}
-				<ArrowUp class="h-3 w-3" />
-			{:else}
-				<ArrowDown class="h-3 w-3" />
-			{/if}
-		{/if}
+		{@render arrow('updated')}
 	</button>
 
 	<div class="flex gap-1">

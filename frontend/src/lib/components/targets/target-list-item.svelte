@@ -1,11 +1,6 @@
 <script lang="ts">
-	import { TargetType, type Target } from '$lib/types/target';
-	import {
-		formatDistanceToNow,
-		formatExpirationLabel,
-		getColorsForTimestamp
-	} from '$lib/utilities/dates';
-	import { getExpirySignal } from '$lib/utilities/target-signals';
+	import { TargetType, getTargetTypeColor, formatTargetType, type Target } from '$lib/types/target';
+	import { formatDistanceToNow, getColorsForTimestamp } from '$lib/utilities/dates';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Input } from '$lib/components/ui/input';
@@ -18,16 +13,7 @@
 	import DnsInline from '$lib/components/targets/dns-inline.svelte';
 	import DiscoveryBadge from '$lib/components/viewdns-discoveries/discovery-badge.svelte';
 	import TargetInfraBadge from '$lib/components/targets/target-infra-badge.svelte';
-	import {
-		CalendarClock,
-		Ellipsis,
-		Eye,
-		History,
-		Pencil,
-		Play,
-		RefreshCw,
-		Trash2
-	} from 'lucide-svelte';
+	import { Ellipsis, Eye, History, Loader, Pencil, Play, RefreshCw, Trash2 } from 'lucide-svelte';
 	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
 	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
 	import { stopProp } from '$lib/utilities';
@@ -68,9 +54,6 @@
 		onInfraClick
 	}: Props = $props();
 
-	// TODO: dummy scan count, fetch later
-	const scanCount = 5;
-
 	let editing = $state(false);
 	let editValue = $state('');
 
@@ -85,15 +68,6 @@
 
 	let freshness = $derived(getColorsForTimestamp(target.updated_at));
 
-	// expiry badge only when expired or within 30 days
-	let expiry = $derived(getExpirySignal(target));
-	let showExpiry = $derived(expiry.urgency === 'expired' || expiry.urgency === 'critical');
-	let expiryClasses = $derived(
-		expiry.urgency === 'expired'
-			? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400'
-			: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-	);
-
 	function startRename() {
 		editValue = target.display_name || target.target_value;
 		editing = true;
@@ -107,7 +81,7 @@
 </script>
 
 <div
-	class="group flex items-center gap-3 px-4 py-3 border-b border-border/50 transition-colors cursor-pointer {isSelected
+	class="group flex items-center gap-3 px-4 py-2.5 border-b border-border/50 transition-colors cursor-pointer {isSelected
 		? 'bg-primary/5 hover:bg-primary/10'
 		: 'hover:bg-muted/30'}"
 	onclick={() => goto(`/targets/${target.id}`)}
@@ -126,8 +100,8 @@
 		class="transition-opacity {isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
 	/>
 
-	<!-- Target identity + WHOIS inline + BGP inline + Discovery badge -->
-	<div class="w-[260px] min-w-0 space-y-0.5">
+	<!-- TARGET -->
+	<div class="w-[210px] min-w-0">
 		<div class="flex items-center gap-2">
 			<span class="font-mono text-sm font-medium truncate">{target.target_value}</span>
 			<CopyButton
@@ -148,94 +122,81 @@
 						else if (e.key === 'Escape') editing = false;
 					}}
 					autofocus
-					class="h-6 text-xs"
+					class="mt-0.5 h-6 text-xs"
 					placeholder="Display name"
 				/>
 			</div>
 		{:else if target.display_name && target.display_name !== target.target_value}
 			<p class="text-xs text-muted-foreground truncate">{target.display_name}</p>
 		{/if}
-		{#if showExpiry}
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<span
-						class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border {expiryClasses}"
-					>
-						<CalendarClock class="h-3 w-3" />
-						{formatExpirationLabel(expiry.date)}
-					</span>
-				</Tooltip.Trigger>
-				<Tooltip.Content>
-					<p>Registration {expiry.urgency === 'expired' ? 'expired' : 'expiring soon'}</p>
-				</Tooltip.Content>
-			</Tooltip.Root>
-		{/if}
-		<div class="items-center gap-2">
-			<WhoisInline
-				status={target.whois_status}
-				whois={target.whois}
-				error={target.whois_error}
-				targetId={target.id}
-				onClick={() => onWhoisClick(target)}
-			/>
-			<BgpInline
-				status={target.bgp_status}
-				bgp={target.bgp}
-				targetType={target.target_type}
-				targetValue={target.target_value}
-				onClick={() => onBgpClick?.(target)}
-			/>
-
-			<DiscoveryBadge
-				targetValue={target.target_value}
-				targetType={target.target_type}
-				whois={target.whois}
-				onClick={() => onDiscoveriesClick?.(target)}
-			/>
-			<DnsInline
-				status={target.dns_status}
-				dns={target.dns}
-				targetType={target.target_type}
-				targetValue={target.target_value}
-				targetId={target.id}
-				onClick={() => onView(target)}
-			/>
-			<TargetInfraBadge
-				targetId={target.id}
-				whoisRecordId={target.whois_record_id}
-				onClick={() => onInfraClick?.(target)}
-			/>
-		</div>
 	</div>
 
-	<div class="w-[120px]">
-		{#if scanCount > 0}
-			<button
-				onclick={() => onOpenHistory(target)}
-				class="relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/15 transition-colors"
-			>
-				<History class="h-3 w-3" />
-				{scanCount} scans
+	<!-- TYPE -->
+	<div class="hidden w-[84px] sm:block">
+		<span
+			class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium {getTargetTypeColor(
+				target.target_type
+			)}"
+		>
+			{formatTargetType(target.target_type)}
+		</span>
+	</div>
 
-				{#if !isScanning}
-					<!-- TODO: replace with real scanning status -->
-					<span class="absolute -right-1 top-1/2 -translate-y-1/2 flex h-2 w-2">
-						<span
-							class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"
-						></span>
-						<span class="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
-					</span>
-				{/if}
-			</button>
-		{:else}
-			<span class="text-xs text-muted-foreground">—</span>
-		{/if}
+	<!-- WHOIS / registrar + expiry -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="hidden min-w-[160px] flex-1 items-center lg:flex" onclick={stopProp}>
+		<WhoisInline
+			status={target.whois_status}
+			whois={target.whois}
+			error={target.whois_error}
+			targetId={target.id}
+			onClick={() => onWhoisClick(target)}
+		/>
+	</div>
+
+	<!-- RECORDS (DNS for domains, BGP for IP/ASN) -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="hidden w-[150px] items-center xl:flex" onclick={stopProp}>
+		<DnsInline
+			status={target.dns_status}
+			dns={target.dns}
+			targetType={target.target_type}
+			targetValue={target.target_value}
+			targetId={target.id}
+			onClick={() => onView(target)}
+		/>
+		<BgpInline
+			status={target.bgp_status}
+			bgp={target.bgp}
+			targetType={target.target_type}
+			targetValue={target.target_value}
+			onClick={() => onBgpClick?.(target)}
+		/>
+	</div>
+
+	<!-- RELATED (shared infra + discoveries) -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="hidden w-[110px] items-center gap-2 xl:flex" onclick={stopProp}>
+		<TargetInfraBadge
+			targetId={target.id}
+			whoisRecordId={target.whois_record_id}
+			onClick={() => onInfraClick?.(target)}
+		/>
+		<DiscoveryBadge
+			targetValue={target.target_value}
+			targetType={target.target_type}
+			whois={target.whois}
+			onClick={() => onDiscoveriesClick?.(target)}
+		/>
 	</div>
 
 	<!-- Organizations -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div class="hidden md:flex items-center flex-1 min-w-[180px]">
+	<div class="hidden flex-1 items-center md:flex min-w-[130px]">
 		<div onclick={stopProp} class="inline-flex">
 			<TargetOrgPopover targetId={target.id} currentOrgs={target.organizations} />
 		</div>
@@ -244,14 +205,15 @@
 	<!-- Tags -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div class="hidden lg:flex items-center flex-1 min-w-[200px]" onclick={stopProp}>
+	<div class="hidden flex-1 items-center lg:flex min-w-[130px]" onclick={stopProp}>
 		<div onclick={stopProp} class="inline-flex">
 			<TargetTagPopover targetId={target.id} currentTags={target.tags} />
 		</div>
 	</div>
 
+	<!-- UPDATED -->
 	<div
-		class="hidden sm:flex items-center justify-end gap-1.5 text-xs text-muted-foreground w-[80px] text-right"
+		class="hidden w-[84px] items-center justify-end gap-1.5 text-right text-xs text-muted-foreground sm:flex"
 	>
 		<span class="h-1.5 w-1.5 rounded-full shrink-0 {freshness.dot}"></span>
 		{formatDistanceToNow(target.updated_at)}
@@ -270,7 +232,11 @@
 						class="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
 						onclick={() => onScan(target)}
 					>
-						<Play class="h-4 w-4 text-blue-400" />
+						{#if isScanning}
+							<Loader class="h-4 w-4 animate-spin text-blue-400" />
+						{:else}
+							<Play class="h-4 w-4 text-blue-400" />
+						{/if}
 					</Button>
 				{/snippet}
 			</Tooltip.Trigger>
