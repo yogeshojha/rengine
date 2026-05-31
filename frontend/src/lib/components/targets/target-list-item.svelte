@@ -38,7 +38,6 @@
 		target: Target;
 		isScanning: boolean;
 		isSelected: boolean;
-		density?: 'comfortable' | 'compact';
 		onSelect: (targetId: string) => void;
 		onScan: (target: Target) => void;
 		onOpenHistory: (target: Target) => void;
@@ -56,7 +55,6 @@
 		target,
 		isScanning,
 		isSelected,
-		density = 'comfortable',
 		onSelect,
 		onScan,
 		onOpenHistory,
@@ -75,9 +73,6 @@
 
 	let editing = $state(false);
 	let editValue = $state('');
-
-	let compact = $derived(density === 'compact');
-	let rowPad = $derived(compact ? 'py-1.5' : 'py-3');
 
 	let canDns = $derived(
 		target.target_type === TargetType.DOMAIN || target.target_type === TargetType.URL
@@ -112,7 +107,7 @@
 </script>
 
 <div
-	class="group flex items-center gap-3 px-4 {rowPad} border-b border-border/50 transition-colors cursor-pointer {isSelected
+	class="group flex items-center gap-3 px-4 py-3 border-b border-border/50 transition-colors cursor-pointer {isSelected
 		? 'bg-primary/5 hover:bg-primary/10'
 		: 'hover:bg-muted/30'}"
 	onclick={() => goto(`/targets/${target.id}`)}
@@ -132,7 +127,7 @@
 	/>
 
 	<!-- Target identity + WHOIS inline + BGP inline + Discovery badge -->
-	<div class="w-[260px] min-w-0 {compact ? 'space-y-0' : 'space-y-0.5'}">
+	<div class="w-[260px] min-w-0 space-y-0.5">
 		<div class="flex items-center gap-2">
 			<span class="font-mono text-sm font-medium truncate">{target.target_value}</span>
 			<CopyButton
@@ -157,7 +152,7 @@
 					placeholder="Display name"
 				/>
 			</div>
-		{:else if !compact && target.display_name && target.display_name !== target.target_value}
+		{:else if target.display_name && target.display_name !== target.target_value}
 			<p class="text-xs text-muted-foreground truncate">{target.display_name}</p>
 		{/if}
 		{#if showExpiry}

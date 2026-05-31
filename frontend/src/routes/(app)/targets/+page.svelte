@@ -65,15 +65,6 @@
 		targetsStore.reload();
 	}
 
-	let density = $state<'comfortable' | 'compact'>(
-		browser && localStorage.getItem('targets:density') === 'compact' ? 'compact' : 'comfortable'
-	);
-
-	function toggleDensity() {
-		density = density === 'compact' ? 'comfortable' : 'compact';
-		if (browser) localStorage.setItem('targets:density', density);
-	}
-
 	let showAddModal = $state(false);
 	let showDetailDialog = $state(false);
 	let showDeleteDialog = $state(false);
@@ -552,9 +543,7 @@
 			<TargetViewControls
 				sortKey={targetsStore.filters.sortKey}
 				sortDir={targetsStore.filters.sortDir}
-				{density}
 				onSort={handleSort}
-				onToggleDensity={toggleDensity}
 				onExport={handleExport}
 				exportDisabled={targetsStore.filteredTargets.length === 0}
 			/>
@@ -605,7 +594,6 @@
 				{#each targetsStore.filteredTargets as target (target.id)}
 					<TargetListItem
 						{target}
-						{density}
 						isSelected={selectedTargetIds.has(target.id)}
 						isScanning={(activeScanCounts[target.id] || 0) > 0}
 						onSelect={handleTargetSelect}
