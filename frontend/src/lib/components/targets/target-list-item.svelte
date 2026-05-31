@@ -76,7 +76,8 @@
 	let editing = $state(false);
 	let editValue = $state('');
 
-	let rowPad = $derived(density === 'compact' ? 'py-1.5' : 'py-3');
+	let compact = $derived(density === 'compact');
+	let rowPad = $derived(compact ? 'py-1.5' : 'py-3');
 
 	let canDns = $derived(
 		target.target_type === TargetType.DOMAIN || target.target_type === TargetType.URL
@@ -131,7 +132,7 @@
 	/>
 
 	<!-- Target identity + WHOIS inline + BGP inline + Discovery badge -->
-	<div class="w-[260px] min-w-0 space-y-0.5">
+	<div class="w-[260px] min-w-0 {compact ? 'space-y-0' : 'space-y-0.5'}">
 		<div class="flex items-center gap-2">
 			<span class="font-mono text-sm font-medium truncate">{target.target_value}</span>
 			<CopyButton
@@ -156,7 +157,7 @@
 					placeholder="Display name"
 				/>
 			</div>
-		{:else if target.display_name && target.display_name !== target.target_value}
+		{:else if !compact && target.display_name && target.display_name !== target.target_value}
 			<p class="text-xs text-muted-foreground truncate">{target.display_name}</p>
 		{/if}
 		{#if showExpiry}
