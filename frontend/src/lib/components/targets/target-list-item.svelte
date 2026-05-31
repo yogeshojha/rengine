@@ -1,9 +1,14 @@
 <script lang="ts">
-	import type { Target } from '$lib/types/target';
-	import { formatDistanceToNow, formatExpirationLabel } from '$lib/utilities/dates';
+	import { TargetType, type Target } from '$lib/types/target';
+	import {
+		formatDistanceToNow,
+		formatExpirationLabel,
+		getColorsForTimestamp
+	} from '$lib/utilities/dates';
 	import { getExpirySignal } from '$lib/utilities/target-signals';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { Input } from '$lib/components/ui/input';
 	import { goto } from '$app/navigation';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -12,41 +17,77 @@
 	import BgpInline from '$lib/components/targets/bgp-inline.svelte';
 	import DnsInline from '$lib/components/targets/dns-inline.svelte';
 	import DiscoveryBadge from '$lib/components/viewdns-discoveries/discovery-badge.svelte';
-	import { CalendarClock, Ellipsis, Eye, History, Play, Trash2 } from 'lucide-svelte';
+	import TargetInfraBadge from '$lib/components/targets/target-infra-badge.svelte';
+	import {
+		CalendarClock,
+		Ellipsis,
+		Eye,
+		History,
+		Pencil,
+		Play,
+		RefreshCw,
+		Trash2
+	} from 'lucide-svelte';
 	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
 	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
 	import { stopProp } from '$lib/utilities';
+
+	type EnrichmentKind = 'whois' | 'dns' | 'bgp';
 
 	interface Props {
 		target: Target;
 		isScanning: boolean;
 		isSelected: boolean;
+		density?: 'comfortable' | 'compact';
 		onSelect: (targetId: string) => void;
 		onScan: (target: Target) => void;
 		onOpenHistory: (target: Target) => void;
 		onView: (target: Target) => void;
 		onDelete: (target: Target) => void;
+		onRename: (target: Target, name: string) => void;
+		onReEnrich: (target: Target, kind: EnrichmentKind) => void;
 		onWhoisClick: (target: Target) => void;
 		onDiscoveriesClick?: (target: Target) => void;
 		onBgpClick?: (target: Target) => void;
+		onInfraClick?: (target: Target) => void;
 	}
 
 	let {
 		target,
 		isScanning,
 		isSelected,
+		density = 'comfortable',
 		onSelect,
 		onScan,
 		onOpenHistory,
 		onView,
 		onDelete,
+		onRename,
+		onReEnrich,
 		onWhoisClick,
 		onDiscoveriesClick,
-		onBgpClick
+		onBgpClick,
+		onInfraClick
 	}: Props = $props();
 
 	// TODO: dummy scan count, fetch later
 	const scanCount = 5;
+
+	let editing = $state(false);
+	let editValue = $state('');
+
+	let rowPad = $derived(density === 'compact' ? 'py-1.5' : 'py-3');
+
+	let canDns = $derived(
+		target.target_type === TargetType.DOMAIN || target.target_type === TargetType.URL
+	);
+	let canBgp = $derived(
+		target.target_type === TargetType.IP ||
+			target.target_type === TargetType.IP_RANGE ||
+			target.target_type === TargetType.ASN
+	);
+
+	let freshness = $derived(getColorsForTimestamp(target.updated_at));
 
 	// expiry badge only when expired or within 30 days
 	let expiry = $derived(getExpirySignal(target));
@@ -56,10 +97,21 @@
 			? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400'
 			: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
 	);
+
+	function startRename() {
+		editValue = target.display_name || target.target_value;
+		editing = true;
+	}
+
+	function commitRename() {
+		const next = editValue.trim();
+		if (next && next !== target.display_name) onRename(target, next);
+		editing = false;
+	}
 </script>
 
 <div
-	class="group flex items-center gap-3 px-4 py-3 border-b border-border/50 transition-colors cursor-pointer {isSelected
+	class="group flex items-center gap-3 px-4 {rowPad} border-b border-border/50 transition-colors cursor-pointer {isSelected
 		? 'bg-primary/5 hover:bg-primary/10'
 		: 'hover:bg-muted/30'}"
 	onclick={() => goto(`/targets/${target.id}`)}
@@ -87,7 +139,24 @@
 				class="opacity-0 group-hover:opacity-100 transition-opacity"
 			/>
 		</div>
-		{#if target.display_name && target.display_name !== target.target_value}
+		{#if editing}
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div onclick={stopProp}>
+				<Input
+					value={editValue}
+					oninput={(e) => (editValue = e.currentTarget.value)}
+					onblur={commitRename}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') commitRename();
+						else if (e.key === 'Escape') editing = false;
+					}}
+					autofocus
+					class="h-6 text-xs"
+					placeholder="Display name"
+				/>
+			</div>
+		{:else if target.display_name && target.display_name !== target.target_value}
 			<p class="text-xs text-muted-foreground truncate">{target.display_name}</p>
 		{/if}
 		{#if showExpiry}
@@ -135,6 +204,11 @@
 				targetId={target.id}
 				onClick={() => onView(target)}
 			/>
+			<TargetInfraBadge
+				targetId={target.id}
+				whoisRecordId={target.whois_record_id}
+				onClick={() => onInfraClick?.(target)}
+			/>
 		</div>
 	</div>
 
@@ -180,7 +254,10 @@
 		</div>
 	</div>
 
-	<div class="hidden sm:block text-xs text-muted-foreground w-[80px] text-right">
+	<div
+		class="hidden sm:flex items-center justify-end gap-1.5 text-xs text-muted-foreground w-[80px] text-right"
+	>
+		<span class="h-1.5 w-1.5 rounded-full shrink-0 {freshness.dot}"></span>
 		{formatDistanceToNow(target.updated_at)}
 	</div>
 
@@ -221,12 +298,34 @@
 					Scan history
 				</DropdownMenu.Item>
 
-				<DropdownMenu.Separator />
-
 				<DropdownMenu.Item onclick={() => onView(target)} class="gap-2">
 					<Eye class="h-4 w-4" />
 					View Summary
 				</DropdownMenu.Item>
+
+				<DropdownMenu.Item onclick={startRename} class="gap-2">
+					<Pencil class="h-4 w-4" />
+					Rename
+				</DropdownMenu.Item>
+
+				<DropdownMenu.Separator />
+
+				<DropdownMenu.Item onclick={() => onReEnrich(target, 'whois')} class="gap-2">
+					<RefreshCw class="h-4 w-4" />
+					Re-run WHOIS
+				</DropdownMenu.Item>
+				{#if canDns}
+					<DropdownMenu.Item onclick={() => onReEnrich(target, 'dns')} class="gap-2">
+						<RefreshCw class="h-4 w-4" />
+						Re-run DNS
+					</DropdownMenu.Item>
+				{/if}
+				{#if canBgp}
+					<DropdownMenu.Item onclick={() => onReEnrich(target, 'bgp')} class="gap-2">
+						<RefreshCw class="h-4 w-4" />
+						Re-run BGP
+					</DropdownMenu.Item>
+				{/if}
 
 				<DropdownMenu.Separator />
 

@@ -32,7 +32,20 @@
 	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
 	import { downloadTargets, type ExportFormat } from '$lib/utilities/target-export';
 	import type { SignalFilter, SortKey } from '$lib/utilities/target-signals';
+	import { TaskStatus } from '$lib/types/task-status';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+
+	type EnrichmentKind = 'whois' | 'dns' | 'bgp';
+
+	let density = $state<'comfortable' | 'compact'>(
+		browser && localStorage.getItem('targets:density') === 'compact' ? 'compact' : 'comfortable'
+	);
+
+	function toggleDensity() {
+		density = density === 'compact' ? 'comfortable' : 'compact';
+		if (browser) localStorage.setItem('targets:density', density);
+	}
 
 	let showAddModal = $state(false);
 	let showDetailDialog = $state(false);
@@ -211,6 +224,37 @@
 		showWhoisDialog = true;
 	}
 
+	function handleInfraClick(target: Target) {
+		whoisTarget = target;
+		whoisInitialTab = 'related';
+		showWhoisDialog = true;
+	}
+
+	async function handleRename(target: Target, name: string) {
+		const updated = await targetsStore.updateTarget(target.id, { display_name: name });
+		if (updated) toast.success(`Renamed to "${name}"`);
+		else toast.error('Rename failed');
+	}
+
+	async function handleReEnrich(target: Target, kind: EnrichmentKind) {
+		try {
+			if (kind === 'whois') await targetsApi.refreshWhois(target.id);
+			else if (kind === 'dns') await targetsApi.refreshDns(target.id);
+			else await targetsApi.refreshBgp(target.id);
+
+			const patch: Partial<Target> =
+				kind === 'whois'
+					? { whois_status: TaskStatus.PENDING }
+					: kind === 'dns'
+						? { dns_status: TaskStatus.PENDING }
+						: { bgp_status: TaskStatus.PENDING };
+			targetsStore.optimisticUpdateTarget(target.id, patch);
+			toast.success(`Re-running ${kind.toUpperCase()} for ${target.target_value}`);
+		} catch {
+			toast.error(`Failed to queue ${kind.toUpperCase()} enrichment`);
+		}
+	}
+
 	function handleBgpClick(target: Target) {
 		bgpDialogTarget = target;
 		showBgpDialog = true;
@@ -382,7 +426,9 @@
 			<TargetViewControls
 				sortKey={targetsStore.filters.sortKey}
 				sortDir={targetsStore.filters.sortDir}
+				{density}
 				onSort={handleSort}
+				onToggleDensity={toggleDensity}
 				onExport={handleExport}
 				exportDisabled={targetsStore.filteredTargets.length === 0}
 			/>
@@ -409,6 +455,7 @@
 				{#each targetsStore.filteredTargets as target (target.id)}
 					<TargetListItem
 						{target}
+						{density}
 						isSelected={selectedTargetIds.has(target.id)}
 						isScanning={(activeScanCounts[target.id] || 0) > 0}
 						onSelect={handleTargetSelect}
@@ -416,9 +463,12 @@
 						onOpenHistory={handleOpenScanHistory}
 						onView={handleViewTarget}
 						onDelete={handleDeleteTarget}
+						onRename={handleRename}
+						onReEnrich={handleReEnrich}
 						onWhoisClick={handleWhoisClick}
 						onDiscoveriesClick={handleDiscoveriesClick}
 						onBgpClick={handleBgpClick}
+						onInfraClick={handleInfraClick}
 					/>
 				{/each}
 			</div>

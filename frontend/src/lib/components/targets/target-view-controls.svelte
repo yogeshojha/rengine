@@ -1,19 +1,30 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { ArrowDown, ArrowUp, ArrowUpDown, Check, Download } from 'lucide-svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { ArrowDown, ArrowUp, ArrowUpDown, Check, Download, Rows2, Rows3 } from 'lucide-svelte';
 	import type { SortDir, SortKey } from '$lib/utilities/target-signals';
 	import type { ExportFormat } from '$lib/utilities/target-export';
 
 	interface Props {
 		sortKey: SortKey;
 		sortDir: SortDir;
+		density: 'comfortable' | 'compact';
 		onSort: (key: SortKey) => void;
+		onToggleDensity: () => void;
 		onExport: (format: ExportFormat) => void;
 		exportDisabled?: boolean;
 	}
 
-	let { sortKey, sortDir, onSort, onExport, exportDisabled = false }: Props = $props();
+	let {
+		sortKey,
+		sortDir,
+		density,
+		onSort,
+		onToggleDensity,
+		onExport,
+		exportDisabled = false
+	}: Props = $props();
 
 	const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 		{ key: 'updated', label: 'Last updated' },
@@ -27,6 +38,23 @@
 </script>
 
 <div class="flex items-center gap-2">
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props })}
+				<Button {...props} variant="outline" size="icon" class="h-9 w-9" onclick={onToggleDensity}>
+					{#if density === 'compact'}
+						<Rows2 class="h-4 w-4" />
+					{:else}
+						<Rows3 class="h-4 w-4" />
+					{/if}
+				</Button>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content>
+			<p>{density === 'compact' ? 'Comfortable rows' : 'Compact rows'}</p>
+		</Tooltip.Content>
+	</Tooltip.Root>
+
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
