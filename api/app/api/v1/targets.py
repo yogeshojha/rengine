@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -157,6 +157,77 @@ async def get_target_stats(
         tag_ids=tag_ids,
         target_type=target_type,
     )
+
+
+@router.get("/ids", response_model=list[UUID])
+async def list_matching_target_ids(
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+    project_slug: Annotated[str, Query(description="Filter by project slug")],
+    search: Annotated[str | None, Query()] = None,
+    organization_ids: Annotated[list[UUID] | None, Query()] = None,
+    tag_ids: Annotated[list[UUID] | None, Query()] = None,
+    target_type: Annotated[TargetType | None, Query()] = None,
+    signal: Annotated[SignalName | None, Query()] = None,
+):
+    """All target IDs matching the filters (for select-all-matching)."""
+    return await service.get_matching_target_ids(
+        project_slug=project_slug,
+        search=search,
+        organization_ids=organization_ids,
+        tag_ids=tag_ids,
+        target_type=target_type,
+        signal=signal,
+    )
+
+
+class BulkEnrichRequest(BaseModel):
+    target_ids: list[UUID]
+    kind: Literal["whois", "dns", "bgp"]
+
+
+class BulkTagRequest(BaseModel):
+    target_ids: list[UUID]
+    tag_names: list[str]
+
+
+class BulkOrgRequest(BaseModel):
+    target_ids: list[UUID]
+    organization_names: list[str]
+
+
+@router.post("/enrich/bulk", response_model=dict[str, int])
+async def bulk_enrich_targets(
+    request: BulkEnrichRequest,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    queued = await service.bulk_enrich(request.target_ids, request.kind)
+    return {"queued": queued}
+
+
+@router.post("/tags/bulk", response_model=dict[str, int])
+async def bulk_add_tags(
+    request: BulkTagRequest,
+    current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    updated = await service.bulk_add_tags(
+        request.target_ids, request.tag_names, current_user.id
+    )
+    return {"updated": updated}
+
+
+@router.post("/organizations/bulk", response_model=dict[str, int])
+async def bulk_add_organizations(
+    request: BulkOrgRequest,
+    current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    updated = await service.bulk_add_organizations(
+        request.target_ids, request.organization_names, current_user.id
+    )
+    return {"updated": updated}
 
 
 @router.get("/search", response_model=Page[TargetRead])

@@ -220,6 +220,133 @@ class TargetService:
             "enriched": row.enriched,
         }
 
+    async def get_matching_target_ids(
+        self,
+        *,
+        project_slug: str,
+        search: str | None = None,
+        organization_ids: list[UUID] | None = None,
+        tag_ids: list[UUID] | None = None,
+        target_type: TargetType | None = None,
+        signal: SignalName | None = None,
+        limit: int = 10000,
+    ) -> list[UUID]:
+        """All target IDs matching the current filters (for select-all)."""
+        project = await self._get_project_by_slug(project_slug)
+        if not project:
+            return []
+        query = with_whois_join(select(Target.id)).where(
+            Target.project_id == project.id
+        )
+        query = apply_filters(
+            query,
+            search=search,
+            organization_ids=organization_ids,
+            tag_ids=tag_ids,
+            target_type=target_type,
+            signal=signal,
+        )
+        result = await self.session.execute(query.limit(limit))
+        return list(result.scalars().all())
+
+    async def bulk_enrich(self, target_ids: list[UUID], kind: str) -> int:
+        """Queue re-enrichment for eligible targets; returns the queued count."""
+        result = await self.session.execute(
+            select(Target).where(Target.id.in_(target_ids))
+        )
+        targets = list(result.scalars().all())
+        eligible: list[Target] = []
+
+        for target in targets:
+            if kind == "whois":
+                target.whois_status = TaskStatus.PENDING
+                target.whois_error = None
+                eligible.append(target)
+            elif kind == "dns" and target.target_type in DNS_ELIGIBLE_TYPES:
+                target.dns_status = TaskStatus.PENDING
+                target.dns_error = None
+                eligible.append(target)
+            elif kind == "bgp" and target.target_type in BGP_ELIGIBLE_TYPES:
+                target.bgp_status = TaskStatus.PENDING
+                eligible.append(target)
+            else:
+                continue
+            target.updated_at = utc_now()
+
+        await self.session.commit()
+
+        ids = [str(t.id) for t in eligible]
+        if ids:
+            if kind == "whois":
+                dispatch_whois_lookups(ids)
+            elif kind == "dns":
+                dispatch_dns_lookups(ids)
+            else:
+                dispatch_ripestat_enrichment(ids)
+        return len(ids)
+
+    async def bulk_add_tags(
+        self, target_ids: list[UUID], tag_names: list[str], user_id: str
+    ) -> int:
+        """Add tags to each target (merge, not replace); returns affected count."""
+        result = await self.session.execute(
+            select(Target).where(Target.id.in_(target_ids))
+        )
+        targets = list(result.scalars().all())
+        cache: dict[tuple, Tag] = {}
+
+        for target in targets:
+            existing = {tag.id for tag in target.tags}
+            for name in tag_names:
+                clean = name.strip()
+                if not clean:
+                    continue
+                key = (target.project_id, clean.lower())
+                tag = cache.get(key)
+                if tag is None:
+                    tag = await get_or_create_tag(
+                        clean, target.project_id, user_id, self.session
+                    )
+                    cache[key] = tag
+                if tag.id not in existing:
+                    target.tags.append(tag)
+                    existing.add(tag.id)
+            target.updated_at = utc_now()
+
+        await self.session.commit()
+        return len(targets)
+
+    async def bulk_add_organizations(
+        self, target_ids: list[UUID], org_names: list[str], user_id: str
+    ) -> int:
+        """Add organizations to each target (merge); returns affected count."""
+        result = await self.session.execute(
+            select(Target).where(Target.id.in_(target_ids))
+        )
+        targets = list(result.scalars().all())
+        cache: dict[tuple, Organization] = {}
+
+        for target in targets:
+            existing = {org.id for org in target.organizations}
+            for name in org_names:
+                clean = name.strip()
+                if not clean:
+                    continue
+                key = (target.project_id, clean.lower())
+                org = cache.get(key)
+                if org is None:
+                    org = await get_or_create_organization(
+                        clean, target.project_id, user_id, self.session
+                    )
+                    cache[key] = org
+                if org.id not in existing:
+                    target.organizations.append(org)
+                    existing.add(org.id)
+            target.updated_at = utc_now()
+
+        await self.session.commit()
+        return len(targets)
+
     async def create_target(self, target_in: TargetCreate, user_id: str) -> TargetRead:
         target_type = validate_target(target_in.target_value)
         if not target_type:

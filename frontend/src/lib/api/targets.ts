@@ -63,6 +63,39 @@ export const targetsApi = {
 		return api.get<TargetSummary>(`/targets/stats?${query}`);
 	},
 
+	async getMatchingIds(params: ListTargetsParams): Promise<string[]> {
+		const sp = buildTargetQuery(params);
+		if (params.signal) sp.append('signal', params.signal);
+		return api.get<string[]>(`/targets/ids?${sp.toString()}`);
+	},
+
+	async bulkEnrich(
+		targetIds: string[],
+		kind: 'whois' | 'dns' | 'bgp'
+	): Promise<{ queued: number }> {
+		return api.post<{ queued: number }>('/targets/enrich/bulk', {
+			target_ids: targetIds,
+			kind
+		});
+	},
+
+	async bulkAddTags(targetIds: string[], tagNames: string[]): Promise<{ updated: number }> {
+		return api.post<{ updated: number }>('/targets/tags/bulk', {
+			target_ids: targetIds,
+			tag_names: tagNames
+		});
+	},
+
+	async bulkAddOrganizations(
+		targetIds: string[],
+		organizationNames: string[]
+	): Promise<{ updated: number }> {
+		return api.post<{ updated: number }>('/targets/organizations/bulk', {
+			target_ids: targetIds,
+			organization_names: organizationNames
+		});
+	},
+
 	async getCounts(projectSlug: string): Promise<TargetCounts> {
 		return api.get<TargetCounts>(`/targets/counts?project_slug=${projectSlug}`);
 	},

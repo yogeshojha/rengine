@@ -197,6 +197,45 @@
 		showDeleteDialog = true;
 	}
 
+	async function handleBulkEnrich(kind: EnrichmentKind) {
+		const ids = Array.from(selectedTargetIds);
+		if (ids.length === 0) return;
+		try {
+			const n = await targetsStore.bulkEnrich(ids, kind);
+			toast.success(`Queued ${kind.toUpperCase()} for ${n} target${n !== 1 ? 's' : ''}`);
+		} catch {
+			toast.error(`Failed to queue ${kind.toUpperCase()} enrichment`);
+		}
+	}
+
+	async function handleBulkAddTag(name: string) {
+		const ids = Array.from(selectedTargetIds);
+		if (ids.length === 0) return;
+		try {
+			const n = await targetsStore.bulkAddTags(ids, [name]);
+			toast.success(`Tagged ${n} target${n !== 1 ? 's' : ''} with "${name}"`);
+		} catch {
+			toast.error('Failed to add tag');
+		}
+	}
+
+	async function handleBulkAddOrg(name: string) {
+		const ids = Array.from(selectedTargetIds);
+		if (ids.length === 0) return;
+		try {
+			const n = await targetsStore.bulkAddOrganizations(ids, [name]);
+			toast.success(`Added ${n} target${n !== 1 ? 's' : ''} to "${name}"`);
+		} catch {
+			toast.error('Failed to add organization');
+		}
+	}
+
+	async function handleSelectAllMatching() {
+		const ids = await targetsStore.getMatchingIds();
+		selectedTargetIds = new Set(ids);
+		toast.success(`Selected all ${ids.length} matching target${ids.length !== 1 ? 's' : ''}`);
+	}
+
 	function handleOpenScanHistory(target: Target) {
 		scanHistoryTarget = target;
 		showScanHistoryModal = true;
@@ -478,6 +517,14 @@
 					<div class="text-xs text-muted-foreground">
 						Showing {targetsStore.filteredTargets.length} of {targetsStore.pagination.totalItems} targets
 					</div>
+					{#if selectedTargetIds.size >= targetsStore.filteredTargets.length && selectedTargetIds.size < targetsStore.pagination.totalItems}
+						<button
+							class="text-xs font-medium text-primary hover:underline"
+							onclick={handleSelectAllMatching}
+						>
+							Select all {targetsStore.pagination.totalItems} matching
+						</button>
+					{/if}
 					<PageSizeSelector
 						pageSize={targetsStore.pagination.pageSize}
 						onPageSizeChange={handlePageSizeChange}
@@ -551,9 +598,14 @@
 
 <BulkActionBar
 	selectedCount={selectedTargetIds.size}
+	tags={tagSummaries}
+	organizations={organizationSummaries}
 	onScan={handleBulkScan}
 	onDelete={handleBulkDelete}
 	onClear={clearSelection}
+	onEnrich={handleBulkEnrich}
+	onAddTag={handleBulkAddTag}
+	onAddOrg={handleBulkAddOrg}
 />
 
 <WhoisDetailDialog

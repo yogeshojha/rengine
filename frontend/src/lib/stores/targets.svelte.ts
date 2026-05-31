@@ -2,6 +2,7 @@ import { targetsApi } from '$lib/api/targets';
 import { organizationsApi, type Organization } from '$lib/api/organizations';
 import { tagsApi, type Tag } from '$lib/api/tags';
 import { TargetType, type Target } from '$lib/types/target';
+import { TaskStatus } from '$lib/types/task-status';
 import type { TargetCounts } from '$lib/types/pagination';
 import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
 
@@ -341,6 +342,46 @@ function createTargetsStore() {
 
 		optimisticUpdateTarget(targetId: string, patch: Partial<Target>) {
 			targets = targets.map((t) => (t.id === targetId ? { ...t, ...patch } : t));
+		},
+
+		async getMatchingIds(): Promise<string[]> {
+			if (!filters.projectSlug) return [];
+			const targetType =
+				filters.activeTab !== 'all' ? (filters.activeTab as TargetType) : undefined;
+			return targetsApi.getMatchingIds({
+				project_slug: filters.projectSlug,
+				search: filters.searchQuery || undefined,
+				organization_ids: filters.selectedOrganizations.length
+					? filters.selectedOrganizations
+					: undefined,
+				tag_ids: filters.selectedTags.length ? filters.selectedTags : undefined,
+				target_type: targetType,
+				signal: filters.signalFilter
+			});
+		},
+
+		async bulkEnrich(ids: string[], kind: 'whois' | 'dns' | 'bgp'): Promise<number> {
+			const res = await targetsApi.bulkEnrich(ids, kind);
+			const set = new Set(ids);
+			targets = targets.map((t) => {
+				if (!set.has(t.id)) return t;
+				if (kind === 'whois') return { ...t, whois_status: TaskStatus.PENDING };
+				if (kind === 'dns') return { ...t, dns_status: TaskStatus.PENDING };
+				return { ...t, bgp_status: TaskStatus.PENDING };
+			});
+			return res.queued;
+		},
+
+		async bulkAddTags(ids: string[], tagNames: string[]): Promise<number> {
+			const res = await targetsApi.bulkAddTags(ids, tagNames);
+			await this.refresh();
+			return res.updated;
+		},
+
+		async bulkAddOrganizations(ids: string[], orgNames: string[]): Promise<number> {
+			const res = await targetsApi.bulkAddOrganizations(ids, orgNames);
+			await this.refresh();
+			return res.updated;
 		},
 
 		async deleteTarget(targetId: string): Promise<boolean> {

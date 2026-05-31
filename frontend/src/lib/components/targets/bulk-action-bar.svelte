@@ -1,14 +1,33 @@
 <script lang="ts">
-	import { Play, Trash2, X } from 'lucide-svelte';
+	import { Building2, Play, RefreshCw, Tag, Trash2, X } from 'lucide-svelte';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 
 	interface Props {
 		selectedCount: number;
+		tags: { id: string; name: string; color: string }[];
+		organizations: { id: string; name: string }[];
 		onScan: () => void;
 		onDelete: () => void;
 		onClear: () => void;
+		onEnrich: (kind: 'whois' | 'dns' | 'bgp') => void;
+		onAddTag: (name: string) => void;
+		onAddOrg: (name: string) => void;
 	}
 
-	let { selectedCount, onScan, onDelete, onClear }: Props = $props();
+	let {
+		selectedCount,
+		tags,
+		organizations,
+		onScan,
+		onDelete,
+		onClear,
+		onEnrich,
+		onAddTag,
+		onAddOrg
+	}: Props = $props();
+
+	const btn =
+		'flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors text-sm text-gray-100 font-medium';
 </script>
 
 <div
@@ -29,13 +48,60 @@
 
 		<div class="w-px h-4 bg-white/10 self-center mx-0.5"></div>
 
-		<button
-			class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
-			onclick={onScan}
-		>
+		<button class={btn} onclick={onScan}>
 			<Play class="h-3.5 w-3.5 text-blue-400" />
-			<span class="text-sm text-gray-100 font-medium">Scan</span>
+			Scan
 		</button>
+
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger class={btn}>
+				<RefreshCw class="h-3.5 w-3.5 text-emerald-400" />
+				Enrich
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="center" class="w-40">
+				<DropdownMenu.Item onclick={() => onEnrich('whois')}>Re-run WHOIS</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => onEnrich('dns')}>Re-run DNS</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => onEnrich('bgp')}>Re-run BGP</DropdownMenu.Item>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger class={btn}>
+				<Tag class="h-3.5 w-3.5 text-violet-400" />
+				Tag
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="center" class="max-h-72 w-48 overflow-y-auto">
+				{#if tags.length === 0}
+					<DropdownMenu.Item disabled>No tags</DropdownMenu.Item>
+				{:else}
+					{#each tags as tag (tag.id)}
+						<DropdownMenu.Item onclick={() => onAddTag(tag.name)} class="gap-2">
+							<span class="h-2.5 w-2.5 rounded-full shrink-0" style="background-color: {tag.color}"
+							></span>
+							<span class="truncate">{tag.name}</span>
+						</DropdownMenu.Item>
+					{/each}
+				{/if}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger class={btn}>
+				<Building2 class="h-3.5 w-3.5 text-sky-400" />
+				Org
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="center" class="max-h-72 w-48 overflow-y-auto">
+				{#if organizations.length === 0}
+					<DropdownMenu.Item disabled>No organizations</DropdownMenu.Item>
+				{:else}
+					{#each organizations as org (org.id)}
+						<DropdownMenu.Item onclick={() => onAddOrg(org.name)} class="truncate">
+							{org.name}
+						</DropdownMenu.Item>
+					{/each}
+				{/if}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
 
 		<button
 			class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
@@ -44,6 +110,7 @@
 			<Trash2 class="h-3.5 w-3.5 text-red-400" />
 			<span class="text-sm text-red-400 font-medium">Delete</span>
 		</button>
+
 		<div class="w-px h-4 bg-white/10 self-center mx-0.5"></div>
 		<button
 			class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-white/10 transition-colors"
