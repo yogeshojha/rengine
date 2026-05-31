@@ -141,8 +141,7 @@ def parse_ip_response(raw: dict[str, Any], query: str) -> WhoisIPResponse:
     base = _parse_base_fields(raw, query)
     return WhoisIPResponse(
         **base,
-        # Country codes are stored upper-cased so correlation queries (which
-        # upper-case their input) match regardless of RDAP server casing.
+        # upper-cased for case-insensitive correlation
         country=safe_str(raw.get("country")).strip().upper(),
         ip_version=safe_int(raw.get("ip_version")),
         assignment_type=safe_str(raw.get("assignment_type")),

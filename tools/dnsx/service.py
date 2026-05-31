@@ -28,9 +28,7 @@ from tools.dnsx.parser import parse_dnsx_jsonl
 
 logger = get_logger(__name__)
 
-# Upper bound on rows returned by a single correlation query. Shared records
-# (e.g. a popular nameserver or CDN IP) can match a very large number of
-# targets; an unbounded query would load them all into memory.
+# cap rows per correlation query
 MAX_CORRELATION_TARGETS = 500
 
 
@@ -307,12 +305,7 @@ class DnsxService:
         include_shared: bool = False,
         limit: int = MAX_CORRELATION_TARGETS,
     ) -> list[uuid.UUID]:
-        """Find all target IDs that share a given nameserver.
-
-        Shared/managed nameservers (Cloudflare, Route 53, ...) link large
-        numbers of unrelated targets, so by default a request for one returns
-        no correlations. Pass ``include_shared=True`` to override.
-        """
+        """Target IDs sharing a nameserver (shared NS skipped unless include_shared)."""
         if not include_shared and is_shared_nameserver(nameserver):
             return []
         result = session.execute(
@@ -347,12 +340,7 @@ class DnsxService:
         exclude_cdn: bool = True,
         limit: int = MAX_CORRELATION_TARGETS,
     ) -> list[uuid.UUID]:
-        """Find all target IDs that resolve to the same IP.
-
-        CDN-fronted IPs (Cloudflare, Akamai, ...) are shared by many unrelated
-        targets, so records from a lookup flagged as CDN are excluded by
-        default. Pass ``exclude_cdn=False`` to include them.
-        """
+        """Target IDs resolving to an IP (CDN-fronted excluded unless exclude_cdn=False)."""
         query = (
             select(DnsRecord.target_id)
             .where(DnsRecord.record_type.in_([DnsRecordType.A, DnsRecordType.AAAA]))

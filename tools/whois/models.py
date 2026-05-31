@@ -41,12 +41,7 @@ class WhoisEntities(BaseModel):
     routing: list[WhoisEntity] = Field(default_factory=list)
 
     def get_registrant_name(self) -> str:
-        """First real registrant name, skipping privacy-proxy placeholders.
-
-        Redacted values (``REDACTED FOR PRIVACY``, ``Withheld for Privacy``,
-        ``Domains By Proxy``, ...) are dropped so they never become correlation
-        keys. See :mod:`shared.utils.privacy`.
-        """
+        """First real registrant name, skipping redacted placeholders."""
         for entity in self.registrant:
             name = clean_name(entity.name)
             if name:

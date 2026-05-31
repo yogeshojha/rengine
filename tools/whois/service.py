@@ -45,9 +45,7 @@ logger = get_logger(__name__)
 
 DEFAULT_CACHE_TTL_DAYS = 7
 
-# Upper bound on records returned per correlation group. Some keys (popular
-# registrars, large networks) can match thousands of rows; an unbounded query
-# would load them all into memory and serialize them in a single response.
+# cap rows per correlation group
 MAX_CORRELATION_RECORDS = 500
 
 
@@ -128,12 +126,7 @@ class WhoisService:
         store_in_db: bool = True,
         session: AsyncSession | None = None,
     ) -> WhoisLookupResult:
-        """Async WHOIS lookup with optional DB caching.
-
-        Returns a :class:`WhoisLookupResult` so callers can tell whether the
-        response was served from a fresh cache entry or freshly queried.
-        """
-
+        """Async WHOIS lookup with optional DB caching."""
         if not query or not query.strip():
             msg = "Query cannot be empty"
             raise WhoisValidationError(msg)
@@ -399,14 +392,7 @@ class WhoisService:
     async def get_correlations_for_target(
         self, session: AsyncSession, whois_record_id: uuid.UUID
     ) -> dict[str, list[WhoisRecord]]:
-        """Get all meaningful correlation groups for a specific WHOIS record.
-
-        Only high-signal keys are returned. Country is intentionally excluded:
-        grouping by a two-letter country code links essentially every target in
-        a region and produces no actionable relationship. Registrant identities
-        that are privacy placeholders and shared/managed nameservers are also
-        skipped so they cannot create false clusters.
-        """
+        """Correlation groups for a record (excludes country and redacted/shared keys)."""
         result = await session.execute(
             select(WhoisRecord).where(WhoisRecord.id == whois_record_id)
         )
@@ -416,8 +402,7 @@ class WhoisService:
 
         correlations: dict[str, list[WhoisRecord]] = {}
 
-        # Registrant identity is the strongest signal, but only when it is a
-        # real name rather than a redacted privacy-proxy placeholder.
+        # skip redacted registrant placeholders
         if record.registrant_name and not is_redacted_name(record.registrant_name):
             related = await self.find_by_registrant(session, record.registrant_name)
             others = [r for r in related if r.id != record.id]
@@ -445,11 +430,7 @@ class WhoisService:
     async def _find_nameserver_correlations(
         self, session: AsyncSession, record: WhoisRecord
     ) -> list[WhoisRecord]:
-        """Find other records sharing a *private* nameserver with ``record``.
-
-        Shared/managed nameservers (Cloudflare, Route 53, ...) are excluded so
-        unrelated targets are not linked merely by their DNS provider.
-        """
+        """Other records sharing a non-shared nameserver with record."""
         correlatable = [
             ns.strip().lower()
             for ns in (record.nameservers or [])
