@@ -1,10 +1,5 @@
 import { api } from './client';
-import type {
-	APIKeyRead,
-	APIKeyCreate,
-	APIKeyUpdate,
-	ProviderInfo
-} from '$lib/types/api-key';
+import type { APIKeyRead, APIKeyCreate, APIKeyUpdate, ProviderInfo } from '$lib/types/api-key';
 
 export const apiKeysApi = {
 	async listProviders(): Promise<ProviderInfo[]> {

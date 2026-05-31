@@ -80,13 +80,9 @@
 		new Set(targetsStore.targets.map((t) => t.target_value.toLowerCase()))
 	);
 
-	let totalDiscovered = $derived(
-		sourceResults.reduce((sum, s) => sum + s.domains.length, 0)
-	);
+	let totalDiscovered = $derived(sourceResults.reduce((sum, s) => sum + s.domains.length, 0));
 
-	let totalNew = $derived(
-		sourceResults.reduce((sum, s) => sum + s.newDomains.length, 0)
-	);
+	let totalNew = $derived(sourceResults.reduce((sum, s) => sum + s.newDomains.length, 0));
 
 	// Deduplicated new domains across all sources for preview
 	let previewDomains = $derived.by(() => {
@@ -190,13 +186,10 @@
 					try {
 						const cache = await lookup.fetch(lookup.queryValue, true);
 						const domains = cache ? extractDomains(cache, lookup.source) : [];
-						const filtered = domains.filter(
-							(d) => d.toLowerCase() !== targetValue.toLowerCase()
-						);
+						const filtered = domains.filter((d) => d.toLowerCase() !== targetValue.toLowerCase());
 						const newDomains = filtered.filter(
 							(d) =>
-								!existingTargetValues.has(d.toLowerCase()) &&
-								!addedDomains.has(d.toLowerCase())
+								!existingTargetValues.has(d.toLowerCase()) && !addedDomains.has(d.toLowerCase())
 						);
 
 						return {
@@ -263,13 +256,9 @@
 			const result = await sr.fetch(enrichQuery, false);
 			if (result) {
 				const domains = extractDomains(result, sr.source);
-				const filtered = domains.filter(
-					(d) => d.toLowerCase() !== targetValue.toLowerCase()
-				);
+				const filtered = domains.filter((d) => d.toLowerCase() !== targetValue.toLowerCase());
 				const newDomains = filtered.filter(
-					(d) =>
-						!existingTargetValues.has(d.toLowerCase()) &&
-						!addedDomains.has(d.toLowerCase())
+					(d) => !existingTargetValues.has(d.toLowerCase()) && !addedDomains.has(d.toLowerCase())
 				);
 
 				sourceResults = sourceResults.map((s) =>
@@ -405,8 +394,8 @@
 			<Empty.Title>Discoveries not available</Empty.Title>
 			<Empty.Description>
 				{#if targetType === TargetType.DOMAIN && !whoisRecord}
-					WHOIS data is needed to find related domains. Discoveries will appear
-					once WHOIS resolves with registrant and nameserver data.
+					WHOIS data is needed to find related domains. Discoveries will appear once WHOIS resolves
+					with registrant and nameserver data.
 				{:else}
 					Discoveries are available for domain and IP targets.
 				{/if}
@@ -510,7 +499,9 @@
 							</div>
 							<div class="shrink-0">
 								{#if isAdded}
-									<span class="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+									<span
+										class="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400"
+									>
 										<Check class="h-3 w-3" />
 										Added
 									</span>
@@ -548,11 +539,7 @@
 
 		<!-- Bulk add action -->
 		{#if totalNew > 0}
-			<Button
-				variant="outline"
-				class="w-full gap-2 text-sm"
-				onclick={handleAddAllNew}
-			>
+			<Button variant="outline" class="w-full gap-2 text-sm" onclick={handleAddAllNew}>
 				<Plus class="h-4 w-4" />
 				Add all {totalNew.toLocaleString()} new domains as targets
 			</Button>
@@ -565,14 +552,17 @@
 			onclick={handleOpenTargetSummary}
 		>
 			<div class="flex items-start gap-2.5">
-				<ArrowRight class="h-4 w-4 text-muted-foreground mt-0.5 shrink-0 group-hover:text-primary transition-colors" />
+				<ArrowRight
+					class="h-4 w-4 text-muted-foreground mt-0.5 shrink-0 group-hover:text-primary transition-colors"
+				/>
 				<div>
 					<p class="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
 						View all in Target Summary
 					</p>
 					<p class="text-[11px] text-muted-foreground mt-0.5">
-						Search, filter, and bulk-add from {totalDiscovered > 0 ? totalDiscovered.toLocaleString() + '+' : 'all'} discovered
-						domains with full pagination.
+						Search, filter, and bulk-add from {totalDiscovered > 0
+							? totalDiscovered.toLocaleString() + '+'
+							: 'all'} discovered domains with full pagination.
 					</p>
 				</div>
 			</div>

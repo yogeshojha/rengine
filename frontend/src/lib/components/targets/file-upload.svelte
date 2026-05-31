@@ -172,71 +172,67 @@
 			{/if}
 		</Tabs.Content>
 	</Tabs.Root>
-{:else}
-	{#if !file}
-		<div
-			role="button"
-			tabindex="0"
-			class={cn(
-				'relative border-2 border-dashed rounded-lg p-8 transition-colors cursor-pointer min-h-[300px] flex items-center justify-center',
-				'hover:border-primary/50 hover:bg-accent/50',
-				isDragging && 'border-primary bg-accent',
-				disabled && 'opacity-50 cursor-not-allowed'
-			)}
-			ondragover={handleDragOver}
-			ondragleave={handleDragLeave}
-			ondrop={handleDrop}
-			onclick={handleClick}
-			onkeydown={handleKeydown}
-		>
-			<input
-				bind:this={fileInputRef}
-				type="file"
-				{accept}
-				onchange={handleFileInput}
-				{disabled}
-				class="hidden"
-			/>
+{:else if !file}
+	<div
+		role="button"
+		tabindex="0"
+		class={cn(
+			'relative border-2 border-dashed rounded-lg p-8 transition-colors cursor-pointer min-h-[300px] flex items-center justify-center',
+			'hover:border-primary/50 hover:bg-accent/50',
+			isDragging && 'border-primary bg-accent',
+			disabled && 'opacity-50 cursor-not-allowed'
+		)}
+		ondragover={handleDragOver}
+		ondragleave={handleDragLeave}
+		ondrop={handleDrop}
+		onclick={handleClick}
+		onkeydown={handleKeydown}
+	>
+		<input
+			bind:this={fileInputRef}
+			type="file"
+			{accept}
+			onchange={handleFileInput}
+			{disabled}
+			class="hidden"
+		/>
 
-			<div class="flex flex-col items-center gap-3 text-center">
-				<div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-					<Upload class="h-6 w-6 text-primary" />
-				</div>
-
-				<div class="space-y-1">
-					<p class="text-sm font-medium">
-						Drop your file here, or <span class="text-primary">browse</span>
-					</p>
-					<p class="text-xs text-muted-foreground">
-						Supports {accept.replace(/\./g, '').replace(/,/g, ', ').toUpperCase()} files
-					</p>
-				</div>
-			</div>
-		</div>
-	{:else}
-		<div class="flex items-center gap-3 p-4 rounded-lg border bg-accent/30">
-			<div
-				class="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0"
-			>
-				<FileText class="h-5 w-5 text-primary" />
+		<div class="flex flex-col items-center gap-3 text-center">
+			<div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+				<Upload class="h-6 w-6 text-primary" />
 			</div>
 
-			<div class="flex-1 min-w-0">
-				<p class="text-sm font-medium truncate">{file.name}</p>
+			<div class="space-y-1">
+				<p class="text-sm font-medium">
+					Drop your file here, or <span class="text-primary">browse</span>
+				</p>
 				<p class="text-xs text-muted-foreground">
-					{(file.size / 1024).toFixed(2)} KB
+					Supports {accept.replace(/\./g, '').replace(/,/g, ', ').toUpperCase()} files
 				</p>
 			</div>
-
-			<Button
-				variant="ghost"
-				size="icon"
-				class="h-8 w-8 flex-shrink-0"
-				onclick={handleRemoveFile}
-				{disabled}
-			>
-				<X class="h-4 w-4" />
-			</Button>
 		</div>
-	{/if}
+	</div>
+{:else}
+	<div class="flex items-center gap-3 p-4 rounded-lg border bg-accent/30">
+		<div class="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+			<FileText class="h-5 w-5 text-primary" />
+		</div>
+
+		<div class="flex-1 min-w-0">
+			<p class="text-sm font-medium truncate">{file.name}</p>
+			<p class="text-xs text-muted-foreground">
+				{(file.size / 1024).toFixed(2)} KB
+			</p>
+		</div>
+
+		<Button
+			variant="ghost"
+			size="icon"
+			class="h-8 w-8 flex-shrink-0"
+			onclick={handleRemoveFile}
+			{disabled}
+		>
+			<X class="h-4 w-4" />
+		</Button>
+	</div>
 {/if}

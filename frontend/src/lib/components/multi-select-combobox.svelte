@@ -85,9 +85,7 @@
 						: ''}
 				>
 					{#if showColors && item.color}
-						<span
-							class="h-2 w-2 rounded-full shrink-0"
-							style="background-color: {item.color}"
+						<span class="h-2 w-2 rounded-full shrink-0" style="background-color: {item.color}"
 						></span>
 					{/if}
 					{item.label}
@@ -120,11 +118,7 @@
 		</Popover.Trigger>
 		<Popover.Content class="w-[--radix-popover-trigger-width] p-0" align="start">
 			<Command.Root shouldFilter={false}>
-				<Command.Input
-					placeholder={placeholder}
-					bind:value={searchValue}
-					onkeydown={handleKeydown}
-				/>
+				<Command.Input {placeholder} bind:value={searchValue} onkeydown={handleKeydown} />
 				<Command.List>
 					<Command.Empty>
 						{#if !showCreateOption}

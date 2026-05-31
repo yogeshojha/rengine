@@ -68,9 +68,7 @@
 
 	let hasEntities = $derived(
 		displayRecord?.parsed_data?.entities != null &&
-			Object.values(displayRecord.parsed_data.entities).some(
-				(arr) => arr && arr.length > 0
-			)
+			Object.values(displayRecord.parsed_data.entities).some((arr) => arr && arr.length > 0)
 	);
 
 	let relatedCount = $derived.by(() => {
@@ -156,8 +154,7 @@
 			try {
 				correlations = await whoisApi.getTargetCorrelations(targetId);
 			} catch (e) {
-				correlationsError =
-					e instanceof Error ? e.message : 'Failed to load correlations';
+				correlationsError = e instanceof Error ? e.message : 'Failed to load correlations';
 			} finally {
 				isLoadingCorrelations = false;
 			}
@@ -192,9 +189,7 @@
 		<div bind:this={headerEl} class="shrink-0">
 			<Dialog.Header class="px-6 pt-6 pb-4">
 				<div class="flex items-center gap-3">
-					<div
-						class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0"
-					>
+					<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
 						{#if isLoadingRecord}
 							<Loader class="h-5 w-5 text-primary animate-spin" />
 						{:else}
@@ -225,9 +220,7 @@
 									onclick={handleRefresh}
 									disabled={isRefreshing}
 								>
-									<RefreshCw
-										class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}"
-									/>
+									<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
 								</Button>
 							</Tooltip.Trigger>
 							<Tooltip.Content>
@@ -276,9 +269,7 @@
 									{relatedCount}
 								</Badge>
 							{:else if isLoadingCorrelations}
-								<Loader
-									class="h-3 w-3 animate-spin text-muted-foreground ml-1"
-								/>
+								<Loader class="h-3 w-3 animate-spin text-muted-foreground ml-1" />
 							{/if}
 						</Tabs.Trigger>
 						{#if showDiscoveriesTab}

@@ -24,7 +24,7 @@
 		Network,
 		Globe,
 		ArrowUpRight,
-		CirclePlus,
+		CirclePlus
 	} from 'lucide-svelte';
 
 	interface Props {

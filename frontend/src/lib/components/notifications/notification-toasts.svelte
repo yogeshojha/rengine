@@ -7,12 +7,13 @@
 		const unsubscribe = notificationStore.subscribeToToasts((notification) => {
 			const metadata = notification.notification_metadata;
 
-			const toastFunction = {
-				success: toast.success,
-				error: toast.error,
-				warning: toast.warning,
-				info: toast.info
-			}[notification.severity] || toast;
+			const toastFunction =
+				{
+					success: toast.success,
+					error: toast.error,
+					warning: toast.warning,
+					info: toast.info
+				}[notification.severity] || toast;
 
 			toastFunction(notification.title, {
 				description: notification.message,

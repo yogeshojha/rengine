@@ -11,8 +11,7 @@
 	import NetworkIcon from '@lucide/svelte/icons/network';
 	import ScanIcon from '@lucide/svelte/icons/scan';
 
-
-    let {project, class: className = 'size-4'}: { project: Project; class?: string } = $props();
+	let { project, class: className = 'size-4' }: { project: Project; class?: string } = $props();
 
 	const icons = [
 		FolderIcon, // Default icon

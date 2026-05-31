@@ -33,7 +33,9 @@
 {#each groups as group, groupIndex (group.label ?? groupIndex)}
 	<Sidebar.Group>
 		{#if group.label}
-			<Sidebar.GroupLabel class="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium px-2">
+			<Sidebar.GroupLabel
+				class="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium px-2"
+			>
 				{group.label}
 			</Sidebar.GroupLabel>
 		{/if}
@@ -45,7 +47,11 @@
 							<Sidebar.MenuItem {...props}>
 								<Collapsible.Trigger>
 									{#snippet child({ props })}
-										<Sidebar.MenuButton {...props} tooltipContent={item.title} isActive={isActive(item.url) || hasActiveChild(item.items)}>
+										<Sidebar.MenuButton
+											{...props}
+											tooltipContent={item.title}
+											isActive={isActive(item.url) || hasActiveChild(item.items)}
+										>
 											{#if item.icon}
 												<item.icon class="size-4" />
 											{/if}

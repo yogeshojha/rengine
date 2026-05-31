@@ -44,7 +44,7 @@
 		'#6366f1', // indigo
 		'#a855f7', // purple
 		'#ec4899', // pink
-		'#64748b'  // slate
+		'#64748b' // slate
 	];
 
 	let filteredItems = $derived(
@@ -93,10 +93,7 @@
 					class="gap-1.5 pr-1 font-normal border"
 					style="background-color: {item.color}15; color: {item.color}; border-color: {item.color}30;"
 				>
-					<span
-						class="h-2 w-2 rounded-full shrink-0"
-						style="background-color: {item.color}"
-					></span>
+					<span class="h-2 w-2 rounded-full shrink-0" style="background-color: {item.color}"></span>
 					{item.label}
 					<button
 						type="button"
@@ -136,7 +133,10 @@
 						{#each presetColors as color}
 							<button
 								type="button"
-								class="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 {selectedColor === color ? 'border-foreground scale-110' : 'border-transparent'}"
+								class="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 {selectedColor ===
+								color
+									? 'border-foreground scale-110'
+									: 'border-transparent'}"
 								style="background-color: {color}"
 								onclick={() => (selectedColor = color)}
 							>
@@ -147,13 +147,9 @@
 						{/each}
 					</div>
 					<div class="flex items-center gap-2 pt-1">
-						<Button variant="ghost" size="sm" onclick={handleCancelCreate}>
-							Cancel
-						</Button>
+						<Button variant="ghost" size="sm" onclick={handleCancelCreate}>Cancel</Button>
 						<Button size="sm" onclick={handleConfirmCreate} class="gap-1.5">
-							<span
-								class="h-2.5 w-2.5 rounded-full"
-								style="background-color: {selectedColor}"
+							<span class="h-2.5 w-2.5 rounded-full" style="background-color: {selectedColor}"
 							></span>
 							Create tag
 						</Button>
@@ -162,10 +158,7 @@
 			{:else}
 				<!-- Search View -->
 				<Command.Root shouldFilter={false}>
-					<Command.Input
-						placeholder={placeholder}
-						bind:value={searchValue}
-					/>
+					<Command.Input {placeholder} bind:value={searchValue} />
 					<Command.List>
 						<Command.Empty>
 							{#if !showCreateOption}

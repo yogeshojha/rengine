@@ -136,10 +136,7 @@
 					<Command.Empty>No tags found.</Command.Empty>
 					<Command.Group>
 						{#each tags as tag}
-							<Command.Item
-								onSelect={() => onTagToggle(tag.id)}
-								class="flex items-center gap-2"
-							>
+							<Command.Item onSelect={() => onTagToggle(tag.id)} class="flex items-center gap-2">
 								<Checkbox checked={selectedTags.includes(tag.id)} />
 								<span
 									class="h-2.5 w-2.5 rounded-full shrink-0"
@@ -157,7 +154,12 @@
 	<!-- Clear Filters -->
 	{#if hasActiveFilters}
 		<Separator orientation="vertical" class="h-6" />
-		<Button variant="ghost" size="sm" class="h-9 gap-2 text-muted-foreground" onclick={onClearFilters}>
+		<Button
+			variant="ghost"
+			size="sm"
+			class="h-9 gap-2 text-muted-foreground"
+			onclick={onClearFilters}
+		>
 			<X class="h-4 w-4" />
 			Clear filters
 			{#if activeFilterCount > 0}

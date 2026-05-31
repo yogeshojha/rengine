@@ -72,9 +72,7 @@ function createTargetsStore() {
 		}
 
 		if (filters.selectedTags.length > 0) {
-			result = result.filter((t) =>
-				t.tags.some((tag) => filters.selectedTags.includes(tag.id))
-			);
+			result = result.filter((t) => t.tags.some((tag) => filters.selectedTags.includes(tag.id)));
 		}
 
 		return result;
@@ -82,22 +80,44 @@ function createTargetsStore() {
 
 	let hasActiveFilters = $derived(
 		filters.searchQuery.trim() !== '' ||
-		filters.selectedOrganizations.length > 0 ||
-		filters.selectedTags.length > 0
+			filters.selectedOrganizations.length > 0 ||
+			filters.selectedTags.length > 0
 	);
 
 	return {
-		get targets() { return targets; },
-		get filteredTargets() { return filteredTargets; },
-		get organizations() { return organizations; },
-		get tags() { return tags; },
-		get counts() { return counts; },
-		get filters() { return filters; },
-		get pagination() { return pagination; },
-		get isLoading() { return isLoading; },
-		get error() { return error; },
-		get hasFetched() { return hasFetched; },
-		get hasActiveFilters() { return hasActiveFilters; },
+		get targets() {
+			return targets;
+		},
+		get filteredTargets() {
+			return filteredTargets;
+		},
+		get organizations() {
+			return organizations;
+		},
+		get tags() {
+			return tags;
+		},
+		get counts() {
+			return counts;
+		},
+		get filters() {
+			return filters;
+		},
+		get pagination() {
+			return pagination;
+		},
+		get isLoading() {
+			return isLoading;
+		},
+		get error() {
+			return error;
+		},
+		get hasFetched() {
+			return hasFetched;
+		},
+		get hasActiveFilters() {
+			return hasActiveFilters;
+		},
 
 		async fetchAll(projectSlug: string, page?: number, force: boolean = false) {
 			if (isLoading) return;
@@ -123,7 +143,8 @@ function createTargetsStore() {
 			filters.projectSlug = projectSlug;
 
 			try {
-				const targetType = filters.activeTab !== 'all' ? (filters.activeTab as TargetType) : undefined;
+				const targetType =
+					filters.activeTab !== 'all' ? (filters.activeTab as TargetType) : undefined;
 
 				const shouldFetchOrgsAndTags = !hasFetched || projectSlug !== filters.projectSlug;
 
@@ -269,9 +290,7 @@ function createTargetsStore() {
 		},
 
 		optimisticUpdateTarget(targetId: string, patch: Partial<Target>) {
-			targets = targets.map((t) =>
-				t.id === targetId ? { ...t, ...patch } : t
-			);
+			targets = targets.map((t) => (t.id === targetId ? { ...t, ...patch } : t));
 		},
 
 		async deleteTarget(targetId: string): Promise<boolean> {

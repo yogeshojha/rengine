@@ -59,7 +59,8 @@
 		<Dialog.Header>
 			<Dialog.Title>Create New Project</Dialog.Title>
 			<Dialog.Description>
-				Projects provide isolated workspaces for organizing targets, scans, and findings by engagement.
+				Projects provide isolated workspaces for organizing targets, scans, and findings by
+				engagement.
 			</Dialog.Description>
 		</Dialog.Header>
 

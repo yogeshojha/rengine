@@ -29,7 +29,10 @@ function createAuthStore() {
 		}
 	}
 
-	async function login(username: string, password: string): Promise<{ success: boolean; error?: string }> {
+	async function login(
+		username: string,
+		password: string
+	): Promise<{ success: boolean; error?: string }> {
 		try {
 			await authApi.login({ username, password });
 			await checkAuth();
@@ -62,7 +65,11 @@ function createAuthStore() {
 		notificationStore.reset();
 	}
 
-	async function register(email: string, username: string, password: string): Promise<{ success: boolean; error?: string }> {
+	async function register(
+		email: string,
+		username: string,
+		password: string
+	): Promise<{ success: boolean; error?: string }> {
 		try {
 			await authApi.register({ email, username, password });
 			return { success: true };
@@ -73,9 +80,15 @@ function createAuthStore() {
 	}
 
 	return {
-		get user() { return state.user; },
-		get isAuthenticated() { return state.isAuthenticated; },
-		get isLoading() { return state.isLoading; },
+		get user() {
+			return state.user;
+		},
+		get isAuthenticated() {
+			return state.isAuthenticated;
+		},
+		get isLoading() {
+			return state.isLoading;
+		},
 		checkAuth,
 		login,
 		logout,

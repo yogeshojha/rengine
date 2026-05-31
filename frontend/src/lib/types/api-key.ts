@@ -1,5 +1,5 @@
 export enum APIProvider {
-	VIEWDNS = 'viewdns',
+	VIEWDNS = 'viewdns'
 }
 
 export interface ProviderMeta {

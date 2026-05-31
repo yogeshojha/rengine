@@ -86,14 +86,11 @@ export const targetsApi = {
 		const formData = new FormData();
 		formData.append('file', file);
 
-		const response = await fetch(
-			`/api/v1/targets/import/csv?project_slug=${projectSlug}`,
-			{
-				method: 'POST',
-				body: formData,
-				credentials: 'include'
-			}
-		);
+		const response = await fetch(`/api/v1/targets/import/csv?project_slug=${projectSlug}`, {
+			method: 'POST',
+			body: formData,
+			credentials: 'include'
+		});
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
@@ -117,5 +114,5 @@ export const targetsApi = {
 
 	async getDetail(targetId: string): Promise<TargetDetailRead> {
 		return api.get<TargetDetailRead>(`/targets/${targetId}/detail`);
-	},
+	}
 };

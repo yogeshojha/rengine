@@ -69,5 +69,5 @@ export const authApi = {
 	},
 	changeUsername: (data: ChangeUsernameRequest): Promise<ChangeUsernameResponse> => {
 		return api.post<ChangeUsernameResponse>('/auth/change-username', data);
-	},
+	}
 };

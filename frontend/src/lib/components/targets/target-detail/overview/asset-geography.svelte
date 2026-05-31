@@ -51,14 +51,78 @@
 
 	function getLocations(type: TargetType): GeoLocation[] {
 		const all: GeoLocation[] = [
-			{ lat: 37.77, lng: -122.42, city: 'San Francisco', country: 'US', assetCount: 42, asn: 'AS13335', ip: '104.16.x.x' },
-			{ lat: 39.04, lng: -77.49, city: 'Ashburn', country: 'US', assetCount: 78, asn: 'AS14618', ip: '52.x.x.x' },
-			{ lat: 51.51, lng: -0.13, city: 'London', country: 'UK', assetCount: 23, asn: 'AS16509', ip: '18.x.x.x' },
-			{ lat: 50.11, lng: 8.68, city: 'Frankfurt', country: 'DE', assetCount: 18, asn: 'AS16509', ip: '3.x.x.x' },
-			{ lat: 1.35, lng: 103.82, city: 'Singapore', country: 'SG', assetCount: 12, asn: 'AS16509', ip: '13.x.x.x' },
-			{ lat: 35.68, lng: 139.69, city: 'Tokyo', country: 'JP', assetCount: 8, asn: 'AS16509', ip: '35.x.x.x' },
-			{ lat: -33.87, lng: 151.21, city: 'Sydney', country: 'AU', assetCount: 5, asn: 'AS16509', ip: '54.x.x.x' },
-			{ lat: 19.08, lng: 72.88, city: 'Mumbai', country: 'IN', assetCount: 14, asn: 'AS16509', ip: '15.x.x.x' }
+			{
+				lat: 37.77,
+				lng: -122.42,
+				city: 'San Francisco',
+				country: 'US',
+				assetCount: 42,
+				asn: 'AS13335',
+				ip: '104.16.x.x'
+			},
+			{
+				lat: 39.04,
+				lng: -77.49,
+				city: 'Ashburn',
+				country: 'US',
+				assetCount: 78,
+				asn: 'AS14618',
+				ip: '52.x.x.x'
+			},
+			{
+				lat: 51.51,
+				lng: -0.13,
+				city: 'London',
+				country: 'UK',
+				assetCount: 23,
+				asn: 'AS16509',
+				ip: '18.x.x.x'
+			},
+			{
+				lat: 50.11,
+				lng: 8.68,
+				city: 'Frankfurt',
+				country: 'DE',
+				assetCount: 18,
+				asn: 'AS16509',
+				ip: '3.x.x.x'
+			},
+			{
+				lat: 1.35,
+				lng: 103.82,
+				city: 'Singapore',
+				country: 'SG',
+				assetCount: 12,
+				asn: 'AS16509',
+				ip: '13.x.x.x'
+			},
+			{
+				lat: 35.68,
+				lng: 139.69,
+				city: 'Tokyo',
+				country: 'JP',
+				assetCount: 8,
+				asn: 'AS16509',
+				ip: '35.x.x.x'
+			},
+			{
+				lat: -33.87,
+				lng: 151.21,
+				city: 'Sydney',
+				country: 'AU',
+				assetCount: 5,
+				asn: 'AS16509',
+				ip: '54.x.x.x'
+			},
+			{
+				lat: 19.08,
+				lng: 72.88,
+				city: 'Mumbai',
+				country: 'IN',
+				assetCount: 14,
+				asn: 'AS16509',
+				ip: '15.x.x.x'
+			}
 		];
 
 		if (type === TargetType.IP) return all.slice(0, 3);
@@ -124,7 +188,13 @@
 						class="fill-none stroke-sky-400/30"
 						stroke-width="1"
 					>
-						<animate attributeName="r" from={loc.r} to={loc.r * 4} dur="3s" repeatCount="indefinite" />
+						<animate
+							attributeName="r"
+							from={loc.r}
+							to={loc.r * 4}
+							dur="3s"
+							repeatCount="indefinite"
+						/>
 						<animate attributeName="opacity" from="0.5" to="0" dur="3s" repeatCount="indefinite" />
 					</circle>
 
@@ -136,8 +206,22 @@
 						class="fill-none stroke-sky-400/20"
 						stroke-width="0.8"
 					>
-						<animate attributeName="r" from={loc.r} to={loc.r * 4} dur="3s" begin="1s" repeatCount="indefinite" />
-						<animate attributeName="opacity" from="0.4" to="0" dur="3s" begin="1s" repeatCount="indefinite" />
+						<animate
+							attributeName="r"
+							from={loc.r}
+							to={loc.r * 4}
+							dur="3s"
+							begin="1s"
+							repeatCount="indefinite"
+						/>
+						<animate
+							attributeName="opacity"
+							from="0.4"
+							to="0"
+							dur="3s"
+							begin="1s"
+							repeatCount="indefinite"
+						/>
 					</circle>
 				{/each}
 

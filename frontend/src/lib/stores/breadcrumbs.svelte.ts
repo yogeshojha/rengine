@@ -34,5 +34,5 @@ export const breadcrumbStore = {
 
 	clear() {
 		overrides = new Map();
-	},
+	}
 };

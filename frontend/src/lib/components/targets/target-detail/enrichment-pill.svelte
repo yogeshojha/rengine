@@ -1,11 +1,7 @@
 <script lang="ts">
 	import { TaskStatus } from '$lib/types/task-status';
 	import { getTaskStatusConfig } from '$lib/config/task-status';
-	import {
-		getFreshnessLevel,
-		getFreshnessColors,
-		relativeTime,
-	} from '$lib/utilities/dates';
+	import { getFreshnessLevel, getFreshnessColors, relativeTime } from '$lib/utilities/dates';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
 	interface Props {
@@ -25,7 +21,7 @@
 				textClass: statusConfig.textClass,
 				borderClass: statusConfig.borderClass,
 				timeText: statusConfig.label,
-				tooltip: `${label}: ${statusConfig.label}`,
+				tooltip: `${label}: ${statusConfig.label}`
 			};
 		}
 
@@ -38,7 +34,7 @@
 			textClass: colors.text,
 			borderClass: colors.border,
 			timeText: time,
-			tooltip: `${label}: Refreshed ${time}${freshness === 'stale' ? ' — consider refreshing' : ''}`,
+			tooltip: `${label}: Refreshed ${time}${freshness === 'stale' ? ' — consider refreshing' : ''}`
 		};
 	});
 

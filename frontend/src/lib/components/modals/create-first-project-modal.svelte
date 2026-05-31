@@ -65,16 +65,15 @@
 					</DialogPrimitive.Title>
 				</div>
 				<DialogPrimitive.Description class="text-muted-foreground text-sm">
-					Projects provide isolated workspaces for organizing targets, scans, and findings by engagement.
+					Projects provide isolated workspaces for organizing targets, scans, and findings by
+					engagement.
 				</DialogPrimitive.Description>
 			</div>
 
 			<Alert.Root>
 				<AlertCircleIcon class="size-4" />
 				<Alert.Title>Project Required</Alert.Title>
-				<Alert.Description>
-					You need at least one project to start using reNgine.
-				</Alert.Description>
+				<Alert.Description>You need at least one project to start using reNgine.</Alert.Description>
 			</Alert.Root>
 
 			<form onsubmit={handleSubmit} class="space-y-4">
@@ -94,7 +93,9 @@
 						{:else if isOverLimit}
 							<span class="text-destructive">Name is too long</span>
 						{:else}
-							<span class="text-muted-foreground">Choose a descriptive name for your engagement</span>
+							<span class="text-muted-foreground"
+								>Choose a descriptive name for your engagement</span
+							>
 						{/if}
 						<span class={nameLength > MAX_LENGTH ? 'text-destructive' : 'text-muted-foreground'}>
 							{nameLength}/{MAX_LENGTH}

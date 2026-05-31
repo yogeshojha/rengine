@@ -184,15 +184,21 @@
 	};
 
 	const handleAddOrganization = () => {
-		toast.info('Coming soon', { description: 'Add Organization will be available in a future update.' });
+		toast.info('Coming soon', {
+			description: 'Add Organization will be available in a future update.'
+		});
 	};
 
 	const handleNewScanEngine = () => {
-		toast.info('Coming soon', { description: 'Scan Engine configuration will be available in a future update.' });
+		toast.info('Coming soon', {
+			description: 'Scan Engine configuration will be available in a future update.'
+		});
 	};
 
 	const handleNewScanContext = () => {
-		toast.info('Coming soon', { description: 'Scan Context configuration will be available in a future update.' });
+		toast.info('Coming soon', {
+			description: 'Scan Context configuration will be available in a future update.'
+		});
 	};
 
 	interface BreadcrumbItem {

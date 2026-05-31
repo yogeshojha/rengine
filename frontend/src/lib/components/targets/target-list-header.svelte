@@ -12,7 +12,10 @@
 <div
 	class="flex items-center gap-3 px-4 py-2 border-b border-border bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider"
 >
-	<Checkbox checked={selectAllChecked === 'indeterminate' ? undefined : selectAllChecked} onCheckedChange={onSelectAll} />
+	<Checkbox
+		checked={selectAllChecked === 'indeterminate' ? undefined : selectAllChecked}
+		onCheckedChange={onSelectAll}
+	/>
 
 	<div class="w-[240px]">Target</div>
 	<div class="w-[120px]">Scans</div>

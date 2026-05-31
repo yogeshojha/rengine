@@ -6,7 +6,6 @@ export interface PaginatedResponse<T> {
 	pages: number;
 }
 
-
 export interface TargetCounts {
 	all: number;
 	domain: number;

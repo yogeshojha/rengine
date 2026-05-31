@@ -54,8 +54,7 @@
 					</Empty.Media>
 					<Empty.Title>No scans yet</Empty.Title>
 					<Empty.Description>
-						{target.target_value} hasn't been scanned. Run a scan to start
-						discovering its attack surface.
+						{target.target_value} hasn't been scanned. Run a scan to start discovering its attack surface.
 					</Empty.Description>
 				</Empty.Header>
 			</Empty.Root>

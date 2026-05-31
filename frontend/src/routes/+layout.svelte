@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { ModeWatcher } from 'mode-watcher';
-	import { Toaster } from "$lib/components/ui/sonner/index.js";
+	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { SESSION_EXPIRED_EVENT } from '$lib/api/client';
 
 	let { children } = $props();
@@ -29,5 +29,5 @@
 </script>
 
 <ModeWatcher />
-<Toaster position="top-center" richColors/>
+<Toaster position="top-center" richColors />
 {@render children()}

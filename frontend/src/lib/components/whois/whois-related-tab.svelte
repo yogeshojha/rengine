@@ -267,10 +267,7 @@
 								{@const colors = getReasonColors(type)}
 								<Tooltip.Root>
 									<Tooltip.Trigger>
-										<button
-											class="cursor-pointer"
-											onclick={() => handleBadgeClick(type, value)}
-										>
+										<button class="cursor-pointer" onclick={() => handleBadgeClick(type, value)}>
 											<span
 												class="inline-flex items-center text-[11px] border rounded-md overflow-hidden {colors.border} hover:ring-1 hover:ring-primary/30 transition-shadow"
 											>
@@ -286,7 +283,7 @@
 										</button>
 									</Tooltip.Trigger>
 									<Tooltip.Content>
-										<p>Find all targets sharing this {(REASON_MATCH_LABELS[type] ?? type)}</p>
+										<p>Find all targets sharing this {REASON_MATCH_LABELS[type] ?? type}</p>
 									</Tooltip.Content>
 								</Tooltip.Root>
 							{/each}

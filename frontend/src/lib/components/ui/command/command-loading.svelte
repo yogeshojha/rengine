@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Command as CommandPrimitive } from "bits-ui";
+	import { Command as CommandPrimitive } from 'bits-ui';
 
 	let { ref = $bindable(null), ...restProps }: CommandPrimitive.LoadingProps = $props();
 </script>

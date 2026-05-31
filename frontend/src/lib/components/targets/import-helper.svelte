@@ -20,7 +20,7 @@
 		{:else if type === 'json'}
 			Each target supports <code>target_value</code>, <code>tags</code>,
 			<code>organizations</code>, and <code>display_name</code>.
-            <a
+			<a
 				href="https://rengine.wiki/import/json"
 				target="_blank"
 				rel="noopener noreferrer"

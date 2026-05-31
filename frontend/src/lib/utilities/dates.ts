@@ -140,7 +140,6 @@ export function getDomainAge(registrationDate: string | null): string {
 	return `${years} ${years === 1 ? 'year' : 'years'} old`;
 }
 
-
 export type FreshnessLevel = 'fresh' | 'recent' | 'aging' | 'stale' | 'never';
 
 export interface FreshnessThresholds {
@@ -155,7 +154,7 @@ export interface FreshnessThresholds {
 const DEFAULT_THRESHOLDS: FreshnessThresholds = {
 	fresh: 24,
 	recent: 72,
-	aging: 168,
+	aging: 168
 };
 
 export function getFreshnessLevel(
@@ -180,28 +179,28 @@ const FRESHNESS_COLOR_MAP: Record<FreshnessLevel, FreshnessColors> = {
 	fresh: {
 		dot: 'bg-green-500',
 		text: 'text-green-600 dark:text-green-400',
-		border: 'border-green-500/20',
+		border: 'border-green-500/20'
 	},
 	recent: {
 		dot: 'bg-emerald-500',
 		text: 'text-emerald-600 dark:text-emerald-400',
-		border: 'border-emerald-500/20',
+		border: 'border-emerald-500/20'
 	},
 	aging: {
 		dot: 'bg-amber-500',
 		text: 'text-amber-600 dark:text-amber-400',
-		border: 'border-amber-500/20',
+		border: 'border-amber-500/20'
 	},
 	stale: {
 		dot: 'bg-red-500',
 		text: 'text-red-600 dark:text-red-400',
-		border: 'border-red-500/20',
+		border: 'border-red-500/20'
 	},
 	never: {
 		dot: 'bg-zinc-400 dark:bg-zinc-600',
 		text: 'text-muted-foreground',
-		border: 'border-zinc-500/20',
-	},
+		border: 'border-zinc-500/20'
+	}
 };
 
 export function getFreshnessColors(level: FreshnessLevel): FreshnessColors {

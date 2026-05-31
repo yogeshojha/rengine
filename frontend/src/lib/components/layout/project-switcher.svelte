@@ -8,7 +8,7 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import AddProjectModal from '$lib/components/modals/add-project-modal.svelte';
-    import ProjectIcon from '../project-icons.svelte';
+	import ProjectIcon from '../project-icons.svelte';
 
 	const sidebar = useSidebar();
 
@@ -80,15 +80,10 @@
 					side={sidebar.isMobile ? 'bottom' : 'right'}
 					sideOffset={4}
 				>
-					<DropdownMenu.Label class="text-muted-foreground text-xs">
-						Projects
-					</DropdownMenu.Label>
+					<DropdownMenu.Label class="text-muted-foreground text-xs">Projects</DropdownMenu.Label>
 
 					{#each projects as project (project.id)}
-						<DropdownMenu.Item
-							onSelect={() => handleProjectSelect(project)}
-							class="gap-2 p-2"
-						>
+						<DropdownMenu.Item onSelect={() => handleProjectSelect(project)} class="gap-2 p-2">
 							<div class="flex size-6 items-center justify-center rounded-md border">
 								<ProjectIcon {project} class="size-4" />
 							</div>
@@ -102,9 +97,7 @@
 					<DropdownMenu.Separator />
 
 					<DropdownMenu.Item class="gap-2 p-2" onSelect={() => (showAddModal = true)}>
-						<div
-							class="flex size-6 items-center justify-center rounded-md border bg-transparent"
-						>
+						<div class="flex size-6 items-center justify-center rounded-md border bg-transparent">
 							<PlusIcon class="size-4" />
 						</div>
 						<span class="text-muted-foreground font-medium">Add project</span>

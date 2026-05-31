@@ -22,7 +22,6 @@ export interface WhoisSummaryData {
 	queried_at: string;
 }
 
-
 export interface DnsSummaryData {
 	id: string;
 	host: string;
@@ -32,8 +31,6 @@ export interface DnsSummaryData {
 	queried_at: string;
 	record_counts: Record<string, number>;
 }
-
-
 
 export interface BgpSummaryData {
 	// ASN targets
@@ -48,7 +45,6 @@ export interface BgpSummaryData {
 
 	queried_at: string;
 }
-
 
 export interface OrganizationSummary {
 	id: string;
@@ -157,10 +153,10 @@ export interface TargetPreviewItem {
 }
 
 export interface EnrichmentRefreshResponse {
-    target_id: string;
-    enrichment_type: string;
-    status: string;
-    message: string;
+	target_id: string;
+	enrichment_type: string;
+	status: string;
+	message: string;
 }
 
 export function getTargetTypeColor(type: TargetType): string {

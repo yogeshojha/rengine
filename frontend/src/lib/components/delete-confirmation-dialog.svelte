@@ -44,12 +44,7 @@ this will be used in all delete actions -->
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel disabled={isDeleting}>Cancel</AlertDialog.Cancel>
-			<Button
-				variant="destructive"
-				onclick={onConfirm}
-				disabled={isDeleting}
-				class="gap-2"
-			>
+			<Button variant="destructive" onclick={onConfirm} disabled={isDeleting} class="gap-2">
 				{#if isDeleting}
 					<LoaderCircle class="h-4 w-4 animate-spin" />
 					Deleting...

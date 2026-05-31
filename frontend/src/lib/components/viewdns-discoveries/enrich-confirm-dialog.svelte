@@ -22,9 +22,7 @@
 		onConfirm
 	}: Props = $props();
 
-	let sourceLabel = $derived(
-		source ? DISCOVERY_SOURCE_LABELS[source] : 'ViewDNS'
-	);
+	let sourceLabel = $derived(source ? DISCOVERY_SOURCE_LABELS[source] : 'ViewDNS');
 </script>
 
 <AlertDialog.Root bind:open {onOpenChange}>

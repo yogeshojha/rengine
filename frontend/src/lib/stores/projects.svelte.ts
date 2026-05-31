@@ -2,7 +2,6 @@ import { projectsApi } from '$lib/api/projects';
 import type { Project } from '$lib/types/project';
 import { toast } from 'svelte-sonner';
 
-
 function getStoredActiveProjectSlug(): string | null {
 	if (typeof window === 'undefined') return null;
 	return localStorage.getItem('activeProjectSlug');
@@ -16,11 +15,21 @@ function createProjectsStore() {
 	let hasFetched = $state(false);
 
 	return {
-		get projects() { return projects; },
-		get activeProject() { return activeProject; },
-		get isLoading() { return isLoading; },
-		get error() { return error; },
-		get hasFetched() { return hasFetched; },
+		get projects() {
+			return projects;
+		},
+		get activeProject() {
+			return activeProject;
+		},
+		get isLoading() {
+			return isLoading;
+		},
+		get error() {
+			return error;
+		},
+		get hasFetched() {
+			return hasFetched;
+		},
 
 		getCurrentProject(): Project | null {
 			return activeProject;
@@ -42,8 +51,7 @@ function createProjectsStore() {
 					const restoredProject = projects.find((p) => p.slug === storedSlug);
 					if (restoredProject) {
 						activeProject = restoredProject;
-					}
-					else {
+					} else {
 						activeProject = projects.length > 0 ? projects[0] : null;
 					}
 				} else if (projects.length > 0) {
@@ -63,7 +71,7 @@ function createProjectsStore() {
 		},
 
 		setActiveProject(project: Project) {
-			const previousProject = activeProject
+			const previousProject = activeProject;
 			activeProject = project;
 			if (typeof window === 'undefined') return;
 			localStorage.setItem('activeProjectSlug', project.slug);
@@ -96,8 +104,7 @@ function createProjectsStore() {
 
 					if (activeProject) {
 						localStorage.setItem('activeProjectSlug', activeProject.slug);
-					}
-					else {
+					} else {
 						localStorage.removeItem('activeProjectSlug');
 					}
 				}
@@ -116,7 +123,7 @@ function createProjectsStore() {
 			if (typeof window !== 'undefined') {
 				localStorage.removeItem('activeProjectSlug');
 			}
-		},
+		}
 	};
 }
 

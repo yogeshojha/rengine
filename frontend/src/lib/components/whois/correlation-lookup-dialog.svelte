@@ -25,12 +25,7 @@
 		onOpenChange: (open: boolean) => void;
 	}
 
-	let {
-		open = $bindable(),
-		correlationType,
-		correlationValue,
-		onOpenChange
-	}: Props = $props();
+	let { open = $bindable(), correlationType, correlationValue, onOpenChange }: Props = $props();
 
 	let results = $state<WhoisCorrelationResult[]>([]);
 	let records = $state<WhoisRecordSummary[]>([]);
@@ -78,7 +73,13 @@
 		}
 	};
 
-	let meta = $derived(TYPE_META[correlationType] ?? { label: correlationType, icon: Globe, color: 'text-muted-foreground' });
+	let meta = $derived(
+		TYPE_META[correlationType] ?? {
+			label: correlationType,
+			icon: Globe,
+			color: 'text-muted-foreground'
+		}
+	);
 
 	function getLookupTypeBadgeColor(type: string): string {
 		switch (type) {
@@ -231,7 +232,9 @@
 
 							<div class="space-y-2">
 								{#each records as record}
-									<div class="rounded-lg border border-border/60 p-3.5 hover:border-border transition-colors space-y-2">
+									<div
+										class="rounded-lg border border-border/60 p-3.5 hover:border-border transition-colors space-y-2"
+									>
 										<div class="flex items-center justify-between gap-3">
 											<div class="min-w-0 flex-1">
 												<div class="flex items-center gap-2">
@@ -239,7 +242,9 @@
 														{record.query_value}
 													</span>
 													<Badge
-														class="text-[10px] font-normal border shrink-0 {getLookupTypeBadgeColor(record.lookup_type)}"
+														class="text-[10px] font-normal border shrink-0 {getLookupTypeBadgeColor(
+															record.lookup_type
+														)}"
 													>
 														{record.lookup_type}
 													</Badge>
