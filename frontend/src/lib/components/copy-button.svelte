@@ -13,7 +13,8 @@
 	let copied = $state(false);
 	let failed = $state(false);
 
-	async function copy() {
+	async function copy(e?: MouseEvent) {
+		e?.stopPropagation();
 		try {
 			await navigator.clipboard.writeText(value);
 			copied = true;
@@ -33,7 +34,7 @@
 				variant="ghost"
 				size="icon"
 				class="h-7 w-7 shrink-0 {className}"
-				onclick={copy}
+				onclick={(e) => copy(e)}
 			>
 				{#if copied}
 					<Check class="h-3.5 w-3.5 text-green-500" />

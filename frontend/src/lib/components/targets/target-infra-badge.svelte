@@ -83,7 +83,7 @@
 		<Tooltip.Trigger>
 			<button
 				type="button"
-				class="inline-flex items-center gap-1 text-[11px] text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-700 dark:hover:text-fuchsia-300 transition-colors cursor-pointer"
+				class="inline-flex items-center gap-1 text-[11px] text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors cursor-pointer"
 				onclick={handleClick}
 			>
 				<Share2 class="h-3 w-3" />
