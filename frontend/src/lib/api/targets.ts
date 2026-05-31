@@ -12,7 +12,7 @@ import type {
 	EnrichmentRefreshResponse
 } from '$lib/types/target';
 
-import type { TargetDetailRead } from '@/types/target-detail';
+import type { TargetDetailRead, TargetBgpDetailResponse } from '@/types/target-detail';
 
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
@@ -160,5 +160,9 @@ export const targetsApi = {
 
 	async getDetail(targetId: string): Promise<TargetDetailRead> {
 		return api.get<TargetDetailRead>(`/targets/${targetId}/detail`);
+	},
+
+	async getBgp(targetId: string): Promise<TargetBgpDetailResponse> {
+		return api.get<TargetBgpDetailResponse>(`/targets/${targetId}/bgp`);
 	}
 };

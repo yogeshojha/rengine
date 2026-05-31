@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ripestatApi } from '$lib/api/ripestat';
+	import { targetsApi } from '$lib/api/targets';
 	import type {
 		ASOverviewRead,
 		ASNNeighbourRead,
@@ -110,7 +110,7 @@
 	}
 
 	$effect(() => {
-		if (open && targetValue && targetType) {
+		if (open && targetId && targetType) {
 			activeTab = 'overview';
 			loadData();
 		} else if (!open) {
@@ -139,112 +139,36 @@
 	}
 
 	async function loadData() {
-		if (!targetValue || !targetType) return;
+		if (!targetId) return;
 
-		if (targetType === 'asn') {
-			await loadAsnData(targetValue);
-		} else if (targetType === 'ip') {
-			await loadIpData(targetValue);
-		} else if (targetType === 'ip_range') {
-			await loadIpRangeData(targetValue);
-		}
-	}
-
-	async function loadAsnData(asn: string) {
-		// Load overview + abuse in parallel (for overview tab)
 		isLoadingOverview = true;
-		overviewError = null;
-		try {
-			const [overviewResult, abuseResult] = await Promise.allSettled([
-				ripestatApi.getASOverview(asn, true),
-				ripestatApi.getAbuseContact(asn, true)
-			]);
-			if (overviewResult.status === 'fulfilled' && overviewResult.value) {
-				overview = overviewResult.value.data as ASOverviewRead;
-			}
-			if (abuseResult.status === 'fulfilled' && abuseResult.value) {
-				abuseContact = abuseResult.value.data as AbuseContactRead;
-			}
-		} catch (e) {
-			overviewError = e instanceof Error ? e.message : 'Failed to load ASN overview';
-		} finally {
-			isLoadingOverview = false;
-		}
-
 		isLoadingPrefixes = true;
 		isLoadingPeers = true;
+		overviewError = null;
 		prefixesError = null;
 		peersError = null;
 
-		const [prefixResult, neighbourResult] = await Promise.allSettled([
-			ripestatApi.getAnnouncedPrefixes(asn, true),
-			ripestatApi.getASNNeighbours(asn, true)
-		]);
-
-		if (prefixResult.status === 'fulfilled' && prefixResult.value) {
-			prefixes = (prefixResult.value.data as AnnouncedPrefixRead[]) ?? [];
-		} else if (prefixResult.status === 'rejected') {
-			prefixesError =
-				prefixResult.reason instanceof Error
-					? prefixResult.reason.message
-					: 'Failed to load prefixes';
-		}
-		isLoadingPrefixes = false;
-
-		if (neighbourResult.status === 'fulfilled' && neighbourResult.value) {
-			neighbours = (neighbourResult.value.data as ASNNeighbourRead[]) ?? [];
-		} else if (neighbourResult.status === 'rejected') {
-			peersError =
-				neighbourResult.reason instanceof Error
-					? neighbourResult.reason.message
-					: 'Failed to load peers';
-		}
-		isLoadingPeers = false;
-	}
-
-	async function loadIpData(ip: string) {
-		isLoadingOverview = true;
-		overviewError = null;
 		try {
-			const [networkResult, abuseResult] = await Promise.allSettled([
-				ripestatApi.getNetworkInfo(ip, true),
-				ripestatApi.getAbuseContact(ip, true)
-			]);
-			if (networkResult.status === 'fulfilled' && networkResult.value) {
-				networkInfo = (networkResult.value.data as NetworkInfoRead[]) ?? [];
-			}
-			if (abuseResult.status === 'fulfilled' && abuseResult.value) {
-				abuseContact = abuseResult.value.data as AbuseContactRead;
-			}
+			const d = await targetsApi.getBgp(targetId);
+			overview = (d.as_overview as ASOverviewRead | null) ?? null;
+			prefixes = (d.announced_prefixes as AnnouncedPrefixRead[]) ?? [];
+			neighbours = (d.neighbours as ASNNeighbourRead[]) ?? [];
+			networkInfo = (d.network_info as NetworkInfoRead[]) ?? null;
+			abuseContact = d.abuse_contacts?.length
+				? {
+						resource: d.abuse_contacts[0].resource,
+						abuse_emails: d.abuse_contacts.map((a) => a.abuse_email).filter(Boolean),
+						rir: d.abuse_contacts[0].rir
+					}
+				: null;
+			prefixOverview = (d.prefix_overview as PrefixOverviewRead[]) ?? null;
+			relatedPrefixes = (d.related_prefixes as RelatedPrefixRead[]) ?? null;
 		} catch (e) {
-			overviewError = e instanceof Error ? e.message : 'Failed to load network info';
+			overviewError = e instanceof Error ? e.message : 'Failed to load BGP data';
 		} finally {
 			isLoadingOverview = false;
-		}
-	}
-
-	async function loadIpRangeData(prefix: string) {
-		isLoadingOverview = true;
-		overviewError = null;
-		try {
-			const [poResult, rpResult, abuseResult] = await Promise.allSettled([
-				ripestatApi.getPrefixOverview(prefix, true),
-				ripestatApi.getRelatedPrefixes(prefix, true),
-				ripestatApi.getAbuseContact(prefix, true)
-			]);
-			if (poResult.status === 'fulfilled' && poResult.value) {
-				prefixOverview = (poResult.value.data as PrefixOverviewRead[]) ?? [];
-			}
-			if (rpResult.status === 'fulfilled' && rpResult.value) {
-				relatedPrefixes = (rpResult.value.data as RelatedPrefixRead[]) ?? [];
-			}
-			if (abuseResult.status === 'fulfilled' && abuseResult.value) {
-				abuseContact = abuseResult.value.data as AbuseContactRead;
-			}
-		} catch (e) {
-			overviewError = e instanceof Error ? e.message : 'Failed to load prefix info';
-		} finally {
-			isLoadingOverview = false;
+			isLoadingPrefixes = false;
+			isLoadingPeers = false;
 		}
 	}
 </script>
