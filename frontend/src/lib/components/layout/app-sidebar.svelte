@@ -30,7 +30,7 @@
 					},
 					{
 						title: 'Scans',
-						url: '/scans',
+						url: '/automation/scans',
 						icon: RadarIcon
 					},
 					{

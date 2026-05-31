@@ -35,6 +35,28 @@ from shared.models.ripestat import (
     RIPEStatPrefixOverview,
     RIPEStatRelatedPrefix,
 )
+from shared.models.scan import (
+    Scan,
+    ScanCreate,
+    ScanRead,
+)
+from shared.models.scan_context import (
+    AuthConfig,
+    AuthHeader,
+    ScanContext,
+    ScanContextCreate,
+    ScanContextRead,
+    ScanContextUpdate,
+)
+from shared.models.scan_engine import (
+    DepthConfig,
+    DiscoveryConfig,
+    ExpansionConfig,
+    ScanEngine,
+    ScanEngineCreate,
+    ScanEngineRead,
+    ScanEngineUpdate,
+)
 from shared.models.tag import Tag, TagBase, TagCreate, TagRead, TagSummary, TagUpdate
 from shared.models.target import (
     Target,
@@ -62,11 +84,16 @@ __all__ = [
     "APIKeyUpdate",
     "ActivityLog",
     "ActivityLogRead",
+    "AuthConfig",
+    "AuthHeader",
+    "DepthConfig",
+    "DiscoveryConfig",
     "DnsLookup",
     "DnsLookupRead",
     "DnsLookupSummary",
     "DnsRecord",
     "DnsRecordRead",
+    "ExpansionConfig",
     "Notification",
     "NotificationCreate",
     "NotificationRead",
@@ -88,6 +115,17 @@ __all__ = [
     "RIPEStatNetworkInfo",
     "RIPEStatPrefixOverview",
     "RIPEStatRelatedPrefix",
+    "Scan",
+    "ScanContext",
+    "ScanContextCreate",
+    "ScanContextRead",
+    "ScanContextUpdate",
+    "ScanCreate",
+    "ScanEngine",
+    "ScanEngineCreate",
+    "ScanEngineRead",
+    "ScanEngineUpdate",
+    "ScanRead",
     "Tag",
     "TagBase",
     "TagCreate",

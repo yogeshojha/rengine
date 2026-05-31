@@ -18,6 +18,7 @@ dependencies = [
     "sqlmodel>=0.0.31",
     "uvicorn>=0.40.0",
     "validators>=0.35.0",
+    "pyyaml>=6.0",
     "zxcvbn>=4.5.0",
     "rengine-shared @ file:///app/shared",
     "rengine-tools @ file:///app/tools",
