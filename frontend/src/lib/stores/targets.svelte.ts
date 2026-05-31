@@ -199,6 +199,43 @@ function createTargetsStore() {
 			}
 		},
 
+		// set filter/sort/page state from a parsed URL, without fetching
+		applyQueryState(state: {
+			search?: string;
+			activeTab?: string;
+			selectedOrganizations?: string[];
+			selectedTags?: string[];
+			signalFilter?: SignalFilter | null;
+			sortKey?: SortKey;
+			sortDir?: SortDir;
+			page?: number;
+			pageSize?: number;
+		}) {
+			if (state.search !== undefined) filters.searchQuery = state.search;
+			if (state.activeTab !== undefined) filters.activeTab = state.activeTab;
+			if (state.selectedOrganizations) filters.selectedOrganizations = state.selectedOrganizations;
+			if (state.selectedTags) filters.selectedTags = state.selectedTags;
+			if (state.signalFilter !== undefined) filters.signalFilter = state.signalFilter;
+			if (state.sortKey) filters.sortKey = state.sortKey;
+			if (state.sortDir) filters.sortDir = state.sortDir;
+			if (state.page) pagination.currentPage = state.page;
+			if (state.pageSize) pagination.pageSize = state.pageSize;
+		},
+
+		toQueryString(): string {
+			const sp = new URLSearchParams();
+			if (filters.searchQuery.trim()) sp.set('q', filters.searchQuery.trim());
+			if (filters.activeTab !== 'all') sp.set('type', filters.activeTab);
+			if (filters.signalFilter) sp.set('signal', filters.signalFilter);
+			if (filters.sortKey !== 'updated') sp.set('sort', filters.sortKey);
+			if (filters.sortDir !== 'desc') sp.set('dir', filters.sortDir);
+			for (const id of filters.selectedOrganizations) sp.append('org', id);
+			for (const id of filters.selectedTags) sp.append('tag', id);
+			if (pagination.currentPage > 1) sp.set('page', String(pagination.currentPage));
+			if (pagination.pageSize !== 20) sp.set('size', String(pagination.pageSize));
+			return sp.toString();
+		},
+
 		// re-fetch after a filter/sort change, back to page 1
 		async reload() {
 			if (!filters.projectSlug) return;

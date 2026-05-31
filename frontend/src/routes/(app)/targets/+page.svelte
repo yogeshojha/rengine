@@ -10,7 +10,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import { Button } from '$lib/components/ui/button';
-	import { Upload, Play, Plus, RefreshCw } from 'lucide-svelte';
+	import { Upload, Play, Plus, RefreshCw, X } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	import TargetTypeTabs from '$lib/components/targets/target-type-tabs.svelte';
@@ -31,12 +31,39 @@
 	import WhoisDetailDialog from '$lib/components/whois/whois-detail-dialog.svelte';
 	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
 	import { downloadTargets, type ExportFormat } from '$lib/utilities/target-export';
-	import type { SignalFilter, SortKey } from '$lib/utilities/target-signals';
+	import type { SignalFilter, SortDir, SortKey } from '$lib/utilities/target-signals';
 	import { TaskStatus } from '$lib/types/task-status';
 	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
+	import { page } from '$app/stores';
+	import TargetViewsMenu from '$lib/components/targets/target-views-menu.svelte';
 
 	type EnrichmentKind = 'whois' | 'dns' | 'bgp';
+
+	let urlReady = $state(false);
+
+	function parseQuery(params: URLSearchParams) {
+		const n = (v: string | null) => {
+			const parsed = parseInt(v ?? '', 10);
+			return Number.isFinite(parsed) ? parsed : undefined;
+		};
+		return {
+			search: params.get('q') ?? undefined,
+			activeTab: params.get('type') ?? undefined,
+			signalFilter: (params.get('signal') as SignalFilter) || null,
+			sortKey: (params.get('sort') as SortKey) || undefined,
+			sortDir: (params.get('dir') as SortDir) || undefined,
+			selectedOrganizations: params.getAll('org'),
+			selectedTags: params.getAll('tag'),
+			page: n(params.get('page')),
+			pageSize: n(params.get('size'))
+		};
+	}
+
+	function handleApplyView(query: string) {
+		targetsStore.applyQueryState(parseQuery(new URLSearchParams(query)));
+		targetsStore.reload();
+	}
 
 	let density = $state<'comfortable' | 'compact'>(
 		browser && localStorage.getItem('targets:density') === 'compact' ? 'compact' : 'comfortable'
@@ -77,8 +104,23 @@
 		const hasFetched = projectsStore.hasFetched;
 		if (activeProject && hasFetched) {
 			untrack(() => {
+				if (!urlReady) {
+					targetsStore.applyQueryState(parseQuery($page.url.searchParams));
+					urlReady = true;
+				}
 				targetsStore.fetchAll(activeProject.slug);
 			});
+		}
+	});
+
+	// mirror filter/sort/page state into the URL (refresh-safe + shareable)
+	$effect(() => {
+		const qs = targetsStore.toQueryString();
+		if (!urlReady || !browser) return;
+		try {
+			replaceState(qs ? `?${qs}` : location.pathname, {});
+		} catch {
+			// ignore
 		}
 	});
 
@@ -149,6 +191,50 @@
 	let showPagination = $derived(
 		targetsStore.pagination.pageSize !== -1 && targetsStore.pagination.totalPages > 1
 	);
+
+	const SIGNAL_LABELS: Record<SignalFilter, string> = {
+		expiring: 'Expiring',
+		attention: 'Needs attention',
+		awaiting: 'Enriching',
+		enriched: 'Enriched'
+	};
+
+	let activeChips = $derived.by(() => {
+		const chips: { key: string; label: string; color?: string; remove: () => void }[] = [];
+		const f = targetsStore.filters;
+		if (f.searchQuery.trim()) {
+			chips.push({
+				key: 'q',
+				label: `"${f.searchQuery.trim()}"`,
+				remove: () => targetsStore.setSearchQuery('')
+			});
+		}
+		for (const id of f.selectedOrganizations) {
+			const org = organizationSummaries.find((o) => o.id === id);
+			chips.push({
+				key: `org-${id}`,
+				label: org?.name ?? 'Org',
+				remove: () => targetsStore.toggleOrganization(id)
+			});
+		}
+		for (const id of f.selectedTags) {
+			const tag = tagSummaries.find((t) => t.id === id);
+			chips.push({
+				key: `tag-${id}`,
+				label: tag?.name ?? 'Tag',
+				color: tag?.color,
+				remove: () => targetsStore.toggleTag(id)
+			});
+		}
+		if (f.signalFilter) {
+			chips.push({
+				key: 'signal',
+				label: SIGNAL_LABELS[f.signalFilter],
+				remove: () => targetsStore.setSignalFilter(null)
+			});
+		}
+		return chips;
+	});
 	function fireScan(target: Target) {
 		activeScanCounts[target.id] = (activeScanCounts[target.id] || 0) + 1;
 		// TODO: replace setTimeout with real API call
@@ -462,6 +548,7 @@
 					onClearFilters={handleClearFilters}
 				/>
 			</div>
+			<TargetViewsMenu currentQuery={targetsStore.toQueryString()} onApply={handleApplyView} />
 			<TargetViewControls
 				sortKey={targetsStore.filters.sortKey}
 				sortDir={targetsStore.filters.sortDir}
@@ -472,6 +559,30 @@
 				exportDisabled={targetsStore.filteredTargets.length === 0}
 			/>
 		</div>
+
+		{#if activeChips.length > 0}
+			<div class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b bg-muted/10">
+				{#each activeChips as chip (chip.key)}
+					<span
+						class="inline-flex items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs"
+					>
+						{#if chip.color}
+							<span class="h-2 w-2 rounded-full" style="background-color: {chip.color}"></span>
+						{/if}
+						{chip.label}
+						<button class="text-muted-foreground hover:text-foreground" onclick={chip.remove}>
+							<X class="h-3 w-3" />
+						</button>
+					</span>
+				{/each}
+				<button
+					class="ml-1 text-xs text-muted-foreground hover:text-foreground"
+					onclick={handleClearFilters}
+				>
+					Clear all
+				</button>
+			</div>
+		{/if}
 
 		{#if targetsStore.isLoading}
 			<TargetListSkeleton count={8} />
