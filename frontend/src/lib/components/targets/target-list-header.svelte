@@ -34,7 +34,7 @@
 
 	<button
 		type="button"
-		class="flex w-[210px] items-center gap-1 uppercase tracking-wider hover:text-foreground"
+		class="flex min-w-0 flex-1 items-center gap-1 uppercase tracking-wider hover:text-foreground"
 		onclick={() => onSort('name')}
 	>
 		Target
@@ -43,37 +43,26 @@
 
 	<button
 		type="button"
-		class="hidden w-[84px] items-center gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
+		class="hidden w-[84px] shrink-0 items-center gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
 		onclick={() => onSort('type')}
 	>
 		Type
 		{@render arrow('type')}
 	</button>
 
-	<button
-		type="button"
-		class="hidden min-w-[160px] flex-1 items-center gap-1 uppercase tracking-wider hover:text-foreground lg:flex"
-		onclick={() => onSort('expiry')}
-	>
-		Registrar / Exp
-		{@render arrow('expiry')}
-	</button>
-
-	<div class="hidden w-[150px] xl:block">DNS / BGP</div>
-	<div class="hidden w-[110px] xl:block">Related</div>
-	<div class="hidden flex-1 md:block min-w-[130px]">Organizations</div>
-	<div class="hidden flex-1 lg:block min-w-[130px]">Tags</div>
+	<div class="hidden w-[170px] shrink-0 md:block">Organizations</div>
+	<div class="hidden w-[170px] shrink-0 lg:block">Tags</div>
 
 	<button
 		type="button"
-		class="hidden w-[84px] items-center justify-end gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
+		class="hidden w-[92px] shrink-0 items-center justify-end gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
 		onclick={() => onSort('updated')}
 	>
 		Updated
 		{@render arrow('updated')}
 	</button>
 
-	<div class="flex gap-1">
+	<div class="flex shrink-0 gap-1">
 		<div class="w-8"></div>
 		<div class="w-8"></div>
 	</div>

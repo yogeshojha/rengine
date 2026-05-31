@@ -100,19 +100,23 @@
 		class="transition-opacity {isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
 	/>
 
-	<!-- TARGET -->
-	<div class="w-[210px] min-w-0">
-		<div class="flex items-center gap-2">
+	<!-- IDENTITY: name + intel sub-line -->
+	<div class="min-w-0 flex-1">
+		<div class="flex min-w-0 items-center gap-2">
 			<span class="font-mono text-sm font-medium truncate">{target.target_value}</span>
+			{#if !editing && target.display_name && target.display_name !== target.target_value}
+				<span class="truncate text-xs text-muted-foreground">{target.display_name}</span>
+			{/if}
 			<CopyButton
 				value={target.target_value}
-				class="opacity-0 group-hover:opacity-100 transition-opacity"
+				class="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
 			/>
 		</div>
+
 		{#if editing}
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div onclick={stopProp}>
+			<div onclick={stopProp} class="mt-0.5 max-w-[280px]">
 				<Input
 					value={editValue}
 					oninput={(e) => (editValue = e.currentTarget.value)}
@@ -122,17 +126,51 @@
 						else if (e.key === 'Escape') editing = false;
 					}}
 					autofocus
-					class="mt-0.5 h-6 text-xs"
+					class="h-6 text-xs"
 					placeholder="Display name"
 				/>
 			</div>
-		{:else if target.display_name && target.display_name !== target.target_value}
-			<p class="text-xs text-muted-foreground truncate">{target.display_name}</p>
+		{:else}
+			<div class="mt-0.5 flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap">
+				<WhoisInline
+					status={target.whois_status}
+					whois={target.whois}
+					error={target.whois_error}
+					targetId={target.id}
+					onClick={() => onWhoisClick(target)}
+				/>
+				<DnsInline
+					status={target.dns_status}
+					dns={target.dns}
+					targetType={target.target_type}
+					targetValue={target.target_value}
+					targetId={target.id}
+					onClick={() => onView(target)}
+				/>
+				<BgpInline
+					status={target.bgp_status}
+					bgp={target.bgp}
+					targetType={target.target_type}
+					targetValue={target.target_value}
+					onClick={() => onBgpClick?.(target)}
+				/>
+				<TargetInfraBadge
+					targetId={target.id}
+					whoisRecordId={target.whois_record_id}
+					onClick={() => onInfraClick?.(target)}
+				/>
+				<DiscoveryBadge
+					targetValue={target.target_value}
+					targetType={target.target_type}
+					whois={target.whois}
+					onClick={() => onDiscoveriesClick?.(target)}
+				/>
+			</div>
 		{/if}
 	</div>
 
 	<!-- TYPE -->
-	<div class="hidden w-[84px] sm:block">
+	<div class="hidden w-[84px] shrink-0 sm:block">
 		<span
 			class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium {getTargetTypeColor(
 				target.target_type
@@ -142,62 +180,11 @@
 		</span>
 	</div>
 
-	<!-- WHOIS / registrar + expiry -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div class="hidden min-w-[160px] flex-1 items-center lg:flex" onclick={stopProp}>
-		<WhoisInline
-			status={target.whois_status}
-			whois={target.whois}
-			error={target.whois_error}
-			targetId={target.id}
-			onClick={() => onWhoisClick(target)}
-		/>
-	</div>
-
-	<!-- RECORDS (DNS for domains, BGP for IP/ASN) -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div class="hidden w-[150px] items-center xl:flex" onclick={stopProp}>
-		<DnsInline
-			status={target.dns_status}
-			dns={target.dns}
-			targetType={target.target_type}
-			targetValue={target.target_value}
-			targetId={target.id}
-			onClick={() => onView(target)}
-		/>
-		<BgpInline
-			status={target.bgp_status}
-			bgp={target.bgp}
-			targetType={target.target_type}
-			targetValue={target.target_value}
-			onClick={() => onBgpClick?.(target)}
-		/>
-	</div>
-
-	<!-- RELATED (shared infra + discoveries) -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div class="hidden w-[110px] items-center gap-2 xl:flex" onclick={stopProp}>
-		<TargetInfraBadge
-			targetId={target.id}
-			whoisRecordId={target.whois_record_id}
-			onClick={() => onInfraClick?.(target)}
-		/>
-		<DiscoveryBadge
-			targetValue={target.target_value}
-			targetType={target.target_type}
-			whois={target.whois}
-			onClick={() => onDiscoveriesClick?.(target)}
-		/>
-	</div>
-
 	<!-- Organizations -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div class="hidden flex-1 items-center md:flex min-w-[130px]">
-		<div onclick={stopProp} class="inline-flex">
+	<div class="hidden w-[170px] shrink-0 items-center md:flex">
+		<div onclick={stopProp} class="inline-flex min-w-0">
 			<TargetOrgPopover targetId={target.id} currentOrgs={target.organizations} />
 		</div>
 	</div>
@@ -205,15 +192,15 @@
 	<!-- Tags -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div class="hidden flex-1 items-center lg:flex min-w-[130px]" onclick={stopProp}>
-		<div onclick={stopProp} class="inline-flex">
+	<div class="hidden w-[170px] shrink-0 items-center lg:flex" onclick={stopProp}>
+		<div onclick={stopProp} class="inline-flex min-w-0">
 			<TargetTagPopover targetId={target.id} currentTags={target.tags} />
 		</div>
 	</div>
 
 	<!-- UPDATED -->
 	<div
-		class="hidden w-[84px] items-center justify-end gap-1.5 text-right text-xs text-muted-foreground sm:flex"
+		class="hidden w-[92px] shrink-0 items-center justify-end gap-1.5 text-right text-xs text-muted-foreground sm:flex"
 	>
 		<span class="h-1.5 w-1.5 rounded-full shrink-0 {freshness.dot}"></span>
 		{formatDistanceToNow(target.updated_at)}
@@ -221,7 +208,7 @@
 
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="flex items-center gap-1" onclick={stopProp}>
+	<div class="flex shrink-0 items-center gap-1" onclick={stopProp}>
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
