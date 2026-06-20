@@ -6,6 +6,7 @@
 	import { AlertTriangle, Loader2 } from 'lucide-svelte';
 
 	import { Button } from '$lib/components/ui/button';
+	import * as Empty from '$lib/components/ui/empty';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scanEnginesApi } from '$lib/api/scan-engines';
@@ -373,16 +374,18 @@
 		</div>
 
 	{:else if loadError}
-		<div class="state-center state-error">
-			<div class="error-icon">
-				<AlertTriangle size={22} class="text-destructive" />
-			</div>
-			<div>
-				<p class="error-title">Failed to load engine</p>
-				<p class="error-msg">{loadError}</p>
-			</div>
-			<Button onclick={() => goto('/automation/engines')}>Back to Engines</Button>
-		</div>
+		<Empty.Root class="flex-1">
+			<Empty.Header>
+				<Empty.Media class="size-[52px] rounded-xl bg-destructive/10">
+					<AlertTriangle size={22} class="text-destructive" />
+				</Empty.Media>
+				<Empty.Title>Failed to load engine</Empty.Title>
+				<Empty.Description>{loadError}</Empty.Description>
+			</Empty.Header>
+			<Empty.Content>
+				<Button onclick={() => goto('/automation/engines')}>Back to Engines</Button>
+			</Empty.Content>
+		</Empty.Root>
 
 	{:else if editedEngine}
 		<EngineTopbar
@@ -464,33 +467,6 @@
 		gap: 14px;
 		text-align: center;
 		padding: 40px;
-	}
-
-	.error-icon {
-		width: 52px;
-		height: 52px;
-		border-radius: 12px;
-		background: oklch(0.95 0.05 25);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	:global(.dark) .error-icon {
-		background: oklch(0.22 0.05 25);
-	}
-
-	.error-title {
-		font-size: 15px;
-		font-weight: 700;
-		color: var(--foreground);
-		margin: 0 0 5px;
-	}
-
-	.error-msg {
-		font-size: 13px;
-		color: var(--muted-foreground);
-		margin: 0;
 	}
 
 	/* Unsaved-changes bar — subtle monochrome notice strip */

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { TargetType, getTargetTypeColor, formatTargetType, type Target } from '$lib/types/target';
 	import { formatDistanceToNow, getColorsForTimestamp } from '$lib/utilities/dates';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Input } from '$lib/components/ui/input';
@@ -171,13 +172,12 @@
 
 	<!-- TYPE -->
 	<div class="hidden w-[84px] shrink-0 sm:block">
-		<span
-			class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium {getTargetTypeColor(
-				target.target_type
-			)}"
+		<Badge
+			variant="outline"
+			class="rounded px-1.5 py-0.5 text-[10px] {getTargetTypeColor(target.target_type)}"
 		>
 			{formatTargetType(target.target_type)}
-		</span>
+		</Badge>
 	</div>
 
 	<!-- Organizations -->

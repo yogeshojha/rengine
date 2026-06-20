@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { Activity, SearchX, ShieldX } from 'lucide-svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import * as Empty from '$lib/components/ui/empty/index.js';
 	import ActivityTimelineItem from './activity-timeline-item.svelte';
 	import type { ActivityDayGroup } from '$lib/types/activity';
 	import { activityFeed, FILTER_LABELS } from '$lib/stores/activity-feed.svelte';
@@ -46,22 +48,26 @@
 		<div class="absolute left-[10px] top-0 bottom-4 w-px bg-border/40"></div>
 		{#each { length: 4 } as _, i}
 			<div class="relative flex gap-2.5 pb-3">
-				<span class="z-[1] mt-px h-5 w-5 shrink-0 rounded-full bg-muted animate-pulse"></span>
+				<Skeleton class="z-[1] mt-px h-5 w-5 shrink-0 rounded-full" />
 				<div class="flex-1 space-y-1 py-0.5">
-					<div class="h-3 rounded bg-muted/60 animate-pulse" style="width:{80 - i * 12}%"></div>
-					<div class="h-2.5 w-16 rounded bg-muted/40 animate-pulse"></div>
+					<Skeleton class="h-3 rounded" style="width:{80 - i * 12}%" />
+					<Skeleton class="h-2.5 w-16 rounded" />
 				</div>
 			</div>
 		{/each}
 	</div>
 {:else if isEmpty}
-	<div class="flex flex-col items-center justify-center py-12 text-center">
-		<div class="mb-2 rounded-full bg-muted/30 p-3">
-			<empty.icon class="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-		</div>
-		<p class="text-xs font-medium text-muted-foreground">{empty.title}</p>
-		<p class="mt-0.5 text-[10px] text-muted-foreground/70">{empty.sub}</p>
-	</div>
+	<Empty.Root class="gap-0 border-none p-0 py-12">
+		<Empty.Header class="gap-0">
+			<Empty.Media class="mb-2 rounded-full bg-muted/30 p-3">
+				<empty.icon class="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+			</Empty.Media>
+			<Empty.Title class="text-xs font-medium text-muted-foreground">{empty.title}</Empty.Title>
+			<Empty.Description class="mt-0.5 text-[10px] text-muted-foreground/70"
+				>{empty.sub}</Empty.Description
+			>
+		</Empty.Header>
+	</Empty.Root>
 {:else}
 	{#each dayGroups as group, gi (group.date)}
 		<div

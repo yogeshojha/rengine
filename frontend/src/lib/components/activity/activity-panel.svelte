@@ -14,6 +14,8 @@
 	import ActivityTimeline from './activity-timeline.svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import { Input } from '$lib/components/ui/input';
+	import { Button } from '$lib/components/ui/button';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { ArrowUp, Search, ShieldAlert, X } from 'lucide-svelte';
 
@@ -137,25 +139,26 @@
 			{/if}
 		</div>
 
-		<button
-			type="button"
+		<Button
+			variant="ghost"
+			size="icon-sm"
 			onclick={() => activityFeed.setOpen(false)}
 			title="Close"
-			class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+			class="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
 		>
 			<X class="h-3.5 w-3.5" />
-		</button>
+		</Button>
 	</div>
 
 	<!-- Search -->
 	<div class="px-3 pb-2">
 		<div class="relative">
 			<Search class="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-			<input
+			<Input
 				value={activityFeed.search}
 				oninput={(e) => activityFeed.setSearch(e.currentTarget.value)}
 				placeholder="Search activity…"
-				class="h-7 w-full rounded-md border border-border bg-muted/30 pl-7 pr-7 text-[11px] outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/40 focus:bg-background"
+				class="h-7 border-border bg-muted/30 pl-7 pr-7 text-[11px] transition-colors focus:border-primary/40 focus:bg-background"
 			/>
 			{#if activityFeed.search}
 				<button

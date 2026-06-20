@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { Building2, Play, RefreshCw, Tag, Trash2, X } from 'lucide-svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { Button } from '$lib/components/ui/button';
+	import { Separator } from '$lib/components/ui/separator';
 
 	interface Props {
 		selectedCount: number;
@@ -25,9 +27,6 @@
 		onAddTag,
 		onAddOrg
 	}: Props = $props();
-
-	const btn =
-		'flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors text-sm text-gray-100 font-medium';
 </script>
 
 <div
@@ -37,26 +36,30 @@
 		: 'translate-y-3 opacity-0 pointer-events-none'}"
 >
 	<div
-		class="flex items-center gap-0.5 bg-gray-900/80 backdrop-blur-xl backdrop-saturate-180 border border-white/10 rounded-2xl shadow-xl shadow-black/30 p-1.5"
+		class="flex items-center gap-0.5 bg-popover text-popover-foreground backdrop-blur-xl backdrop-saturate-180 border border-border rounded-2xl shadow-xl shadow-black/30 p-1.5"
 	>
 		<div class="flex items-center px-2.5 py-1.5">
-			<span class="text-xs font-medium text-gray-400 tabular-nums">
+			<span class="text-xs font-medium text-muted-foreground tabular-nums">
 				{selectedCount}
 				{selectedCount === 1 ? 'target' : 'targets'} selected
 			</span>
 		</div>
 
-		<div class="w-px h-4 bg-white/10 self-center mx-0.5"></div>
+		<Separator orientation="vertical" class="h-4 self-center mx-0.5" />
 
-		<button class={btn} onclick={onScan}>
+		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={onScan}>
 			<Play class="h-3.5 w-3.5 text-blue-400" />
 			Scan
-		</button>
+		</Button>
 
 		<DropdownMenu.Root>
-			<DropdownMenu.Trigger class={btn}>
-				<RefreshCw class="h-3.5 w-3.5 text-emerald-400" />
-				Enrich
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
+						<RefreshCw class="h-3.5 w-3.5 text-emerald-400" />
+						Enrich
+					</Button>
+				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="center" class="w-40">
 				<DropdownMenu.Item onclick={() => onEnrich('whois')}>Re-run WHOIS</DropdownMenu.Item>
@@ -66,9 +69,13 @@
 		</DropdownMenu.Root>
 
 		<DropdownMenu.Root>
-			<DropdownMenu.Trigger class={btn}>
-				<Tag class="h-3.5 w-3.5 text-violet-400" />
-				Tag
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
+						<Tag class="h-3.5 w-3.5 text-violet-400" />
+						Tag
+					</Button>
+				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="center" class="max-h-72 w-48 overflow-y-auto">
 				{#if tags.length === 0}
@@ -86,9 +93,13 @@
 		</DropdownMenu.Root>
 
 		<DropdownMenu.Root>
-			<DropdownMenu.Trigger class={btn}>
-				<Building2 class="h-3.5 w-3.5 text-sky-400" />
-				Org
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
+						<Building2 class="h-3.5 w-3.5 text-sky-400" />
+						Org
+					</Button>
+				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="center" class="max-h-72 w-48 overflow-y-auto">
 				{#if organizations.length === 0}
@@ -103,20 +114,19 @@
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 
-		<button
-			class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+		<Button
+			variant="ghost"
+			size="sm"
+			class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
 			onclick={onDelete}
 		>
-			<Trash2 class="h-3.5 w-3.5 text-red-400" />
-			<span class="text-sm text-red-400 font-medium">Delete</span>
-		</button>
+			<Trash2 class="h-3.5 w-3.5" />
+			Delete
+		</Button>
 
-		<div class="w-px h-4 bg-white/10 self-center mx-0.5"></div>
-		<button
-			class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-white/10 transition-colors"
-			onclick={onClear}
-		>
-			<X class="h-3.5 w-3.5 text-gray-500" />
-		</button>
+		<Separator orientation="vertical" class="h-4 self-center mx-0.5" />
+		<Button variant="ghost" size="icon-sm" class="text-muted-foreground" onclick={onClear}>
+			<X class="h-3.5 w-3.5" />
+		</Button>
 	</div>
 </div>

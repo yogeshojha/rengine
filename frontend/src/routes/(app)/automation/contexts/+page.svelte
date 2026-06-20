@@ -7,6 +7,8 @@
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import * as Empty from '$lib/components/ui/empty';
 	import ContextListCard from '$lib/components/contexts/context-list-card.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import type { ScanContextRead } from '$lib/types/scan-context';
@@ -130,27 +132,29 @@
 		<!-- Loading skeleton -->
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
-				<div class="h-[150px] animate-pulse rounded-[10px] border border-border bg-muted/40"></div>
+				<Skeleton class="h-[150px] rounded-[10px]" />
 			{/each}
 		</div>
 	{:else if scanContextsStore.contexts.length === 0}
 		<!-- Empty state -->
-		<div
-			class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-20 text-center"
-		>
-			<div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
-				<KeyRound size={28} class="text-muted-foreground" />
-			</div>
-			<h2 class="mb-2 text-lg font-bold text-foreground">No scan contexts yet</h2>
-			<p class="mb-6 max-w-md text-sm leading-relaxed text-muted-foreground">
-				Contexts hold authentication, rate limits, and scope rules you can reuse across scans.
-				Scans can also run with Context: None.
-			</p>
-			<Button onclick={handleNewContext} class="gap-2">
-				<Plus size={15} />
-				Create Your First Context
-			</Button>
-		</div>
+		<Empty.Root class="border bg-muted/20 py-20">
+			<Empty.Header>
+				<Empty.Media class="size-16 rounded-2xl bg-muted">
+					<KeyRound size={28} class="text-muted-foreground" />
+				</Empty.Media>
+				<Empty.Title class="text-lg font-bold">No scan contexts yet</Empty.Title>
+				<Empty.Description class="max-w-md">
+					Contexts hold authentication, rate limits, and scope rules you can reuse across scans.
+					Scans can also run with Context: None.
+				</Empty.Description>
+			</Empty.Header>
+			<Empty.Content>
+				<Button onclick={handleNewContext} class="gap-2">
+					<Plus size={15} />
+					Create Your First Context
+				</Button>
+			</Empty.Content>
+		</Empty.Root>
 	{:else}
 		<!-- Context grid -->
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

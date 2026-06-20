@@ -6,6 +6,7 @@
 	import { EditorState } from '@codemirror/state';
 	import { lintGutter, linter, type Diagnostic } from '@codemirror/lint';
 	import { AlertCircle } from 'lucide-svelte';
+	import * as Alert from '$lib/components/ui/alert';
 
 	interface YamlError {
 		line: number;
@@ -169,62 +170,28 @@
 
 	<!-- Error list -->
 	{#if errors.length > 0}
-		<div
-			style="
-				margin: 0 12px 12px;
-				border-radius: 8px;
-				border: 1px solid #fca5a5;
-				background: #fef2f2;
-				overflow: hidden;
-			"
-		>
-			<div
-				style="
-					padding: 8px 12px;
-					background: #fee2e2;
-					border-bottom: 1px solid #fca5a5;
-					display: flex;
-					align-items: center;
-					gap: 6px;
-				"
-			>
-				<AlertCircle size={14} color="#dc2626" />
-				<span style="font-size: 12px; font-weight: 600; color: #991b1b;">
+		<Alert.Root variant="destructive" class="mx-3 mb-3 block w-auto overflow-hidden p-0">
+			<div class="flex items-center gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-2">
+				<AlertCircle class="size-3.5 text-destructive" />
+				<span class="text-xs font-semibold text-destructive">
 					{errors.length} error{errors.length !== 1 ? 's' : ''}
 				</span>
 			</div>
-			<div style="max-height: 140px; overflow-y: auto;">
+			<div class="max-h-[140px] overflow-y-auto">
 				{#each errors as err}
 					<div
-						style="
-							display: flex;
-							align-items: flex-start;
-							gap: 10px;
-							padding: 6px 12px;
-							border-bottom: 1px solid #fee2e2;
-							font-size: 12px;
-						"
+						class="flex items-start gap-2.5 border-b border-destructive/20 px-3 py-1.5 text-xs"
 					>
 						<span
-							style="
-								flex-shrink: 0;
-								font-family: monospace;
-								font-weight: 600;
-								color: #dc2626;
-								background: #fee2e2;
-								border: 1px solid #fca5a5;
-								border-radius: 4px;
-								padding: 1px 6px;
-								white-space: nowrap;
-							"
+							class="shrink-0 whitespace-nowrap rounded border border-destructive/40 bg-destructive/10 px-1.5 py-px font-mono font-semibold text-destructive"
 						>
 							L{err.line}
 						</span>
-						<span style="color: #7f1d1d; line-height: 1.5; flex: 1;">{err.message}</span>
+						<span class="flex-1 leading-normal text-destructive/90">{err.message}</span>
 					</div>
 				{/each}
 			</div>
-		</div>
+		</Alert.Root>
 	{/if}
 </div>
 

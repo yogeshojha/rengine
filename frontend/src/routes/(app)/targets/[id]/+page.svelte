@@ -9,8 +9,9 @@
 	import { TaskStatus } from '$lib/types/task-status';
 	import type { TargetDetailRead } from '$lib/types/target-detail';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Empty from '$lib/components/ui/empty';
 	import { toast } from 'svelte-sonner';
-	import { TriangleAlert, ChevronLeft } from 'lucide-svelte';
+	import { TriangleAlert, ChevronLeft, Network, History } from 'lucide-svelte';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import TargetHeader from '$lib/components/targets/target-detail/target-header.svelte';
 	import TargetHeaderSkeleton from '$lib/components/targets/target-detail/target-header-skeleton.svelte';
@@ -178,19 +179,24 @@
 {#if isLoading}
 	<TargetHeaderSkeleton />
 {:else if error}
-	<div class="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-		<div class="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
-			<TriangleAlert class="h-8 w-8 text-destructive" />
-		</div>
-		<div class="text-center space-y-2">
-			<h2 class="text-lg font-semibold">Target not found</h2>
-			<p class="text-sm text-muted-foreground max-w-md">{error}</p>
-		</div>
-		<Button variant="outline" onclick={() => goto('/targets')}>
-			<ChevronLeft class="h-4 w-4 mr-2" />
-			Back to Targets
-		</Button>
-	</div>
+	<Empty.Root class="min-h-[50vh] border-none">
+		<Empty.Header>
+			<Empty.Media
+				variant="icon"
+				class="h-16 w-16 rounded-full bg-destructive/10 text-destructive [&_svg:not([class*='size-'])]:size-8"
+			>
+				<TriangleAlert />
+			</Empty.Media>
+			<Empty.Title>Target not found</Empty.Title>
+			<Empty.Description class="max-w-md">{error}</Empty.Description>
+		</Empty.Header>
+		<Empty.Content>
+			<Button variant="outline" onclick={() => goto('/targets')}>
+				<ChevronLeft class="h-4 w-4 mr-2" />
+				Back to Targets
+			</Button>
+		</Empty.Content>
+	</Empty.Root>
 {:else if target}
 	<div class="space-y-6">
 		<TargetHeader
@@ -268,13 +274,23 @@
 				</div>
 			</div>
 		{:else if activeTab === 'correlation'}
-			<div class="text-sm text-muted-foreground text-center py-20 border border-dashed rounded-lg">
-				Correlation data
-			</div>
+			<Empty.Root class="py-20">
+				<Empty.Header>
+					<Empty.Media variant="icon">
+						<Network />
+					</Empty.Media>
+					<Empty.Title>Correlation data</Empty.Title>
+				</Empty.Header>
+			</Empty.Root>
 		{:else if activeTab === 'history'}
-			<div class="text-sm text-muted-foreground text-center py-20 border border-dashed rounded-lg">
-				Empty
-			</div>
+			<Empty.Root class="py-20">
+				<Empty.Header>
+					<Empty.Media variant="icon">
+						<History />
+					</Empty.Media>
+					<Empty.Title>Empty</Empty.Title>
+				</Empty.Header>
+			</Empty.Root>
 		{/if}
 	</div>
 

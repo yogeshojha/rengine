@@ -10,6 +10,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Upload, Play, Plus, RefreshCw, X } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -552,9 +553,7 @@
 		{#if activeChips.length > 0}
 			<div class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b bg-muted/10">
 				{#each activeChips as chip (chip.key)}
-					<span
-						class="inline-flex items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs"
-					>
+					<Badge variant="outline" class="gap-1 bg-background font-normal">
 						{#if chip.color}
 							<span class="h-2 w-2 rounded-full" style="background-color: {chip.color}"></span>
 						{/if}
@@ -562,7 +561,7 @@
 						<button class="text-muted-foreground hover:text-foreground" onclick={chip.remove}>
 							<X class="h-3 w-3" />
 						</button>
-					</span>
+					</Badge>
 				{/each}
 				<button
 					class="ml-1 text-xs text-muted-foreground hover:text-foreground"

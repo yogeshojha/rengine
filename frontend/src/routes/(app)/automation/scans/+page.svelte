@@ -7,6 +7,8 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import * as Empty from '$lib/components/ui/empty';
 	import * as Table from '$lib/components/ui/table';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import { formatDistanceToNow } from '$lib/utilities/dates';
@@ -111,27 +113,29 @@
 		<!-- Loading skeleton -->
 		<div class="space-y-2">
 			{#each Array(4) as _, i (i)}
-				<div class="h-14 animate-pulse rounded-lg border border-border bg-muted/40"></div>
+				<Skeleton class="h-14 rounded-lg" />
 			{/each}
 		</div>
 	{:else if scansStore.scans.length === 0}
 		<!-- Empty state -->
-		<div
-			class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-20 text-center"
-		>
-			<div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
-				<Radar size={28} class="text-muted-foreground" />
-			</div>
-			<h2 class="mb-2 text-lg font-bold text-foreground">No scans yet</h2>
-			<p class="mb-6 max-w-md text-sm leading-relaxed text-muted-foreground">
-				Launching records the resolved scan config and queues it. Scan execution dispatch is not
-				wired up yet — scans stay in "Queued" until a scanner is connected.
-			</p>
-			<Button onclick={handleNewScan} class="gap-2">
-				<Plus size={15} />
-				Launch Your First Scan
-			</Button>
-		</div>
+		<Empty.Root class="border bg-muted/20 py-20">
+			<Empty.Header>
+				<Empty.Media class="size-16 rounded-2xl bg-muted">
+					<Radar size={28} class="text-muted-foreground" />
+				</Empty.Media>
+				<Empty.Title class="text-lg font-bold">No scans yet</Empty.Title>
+				<Empty.Description class="max-w-md">
+					Launching records the resolved scan config and queues it. Scan execution dispatch is not
+					wired up yet — scans stay in "Queued" until a scanner is connected.
+				</Empty.Description>
+			</Empty.Header>
+			<Empty.Content>
+				<Button onclick={handleNewScan} class="gap-2">
+					<Plus size={15} />
+					Launch Your First Scan
+				</Button>
+			</Empty.Content>
+		</Empty.Root>
 	{:else}
 		<div class="rounded-lg border border-border">
 			<Table.Root>

@@ -92,9 +92,10 @@
 						<span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 							Target Value
 						</span>
-						<button
+						<Button
+							variant="ghost"
 							onclick={handleOpenHistory}
-							class="relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/15 transition-colors"
+							class="relative inline-flex h-auto items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/15 hover:text-sky-600 dark:hover:text-sky-400"
 						>
 							<History class="h-3 w-3" />
 							5 scans
@@ -107,7 +108,7 @@
 									<span class="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
 								</span>
 							{/if}
-						</button>
+						</Button>
 					</div>
 					<div class="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
 						<code class="flex-1 text-sm font-mono break-all">{target.target_value}</code>

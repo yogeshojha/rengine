@@ -3,6 +3,7 @@
 	import { TargetType } from '$lib/types/target';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import * as Collapsible from '$lib/components/ui/collapsible';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import { Search, X, Copy, Check, ChevronRight, Mail, Info } from 'lucide-svelte';
 	import { tick } from 'svelte';
@@ -475,17 +476,16 @@
 	<div class="border-t border-border/10 px-3 py-2 space-y-1">
 		<!-- network info -->
 		{#if bgp.network_info.length > 0}
-			<div>
-				<button
+			<Collapsible.Root bind:open={showNetwork}>
+				<Collapsible.Trigger
 					class="flex items-center gap-1.5 w-full text-[10px] text-muted-foreground/40 hover:text-foreground/60 transition-colors py-1"
-					onclick={() => (showNetwork = !showNetwork)}
 				>
 					<ChevronRight
 						class="h-2.5 w-2.5 transition-transform duration-150 {showNetwork ? 'rotate-90' : ''}"
 					/>
 					<span>Network Info ({bgp.network_info.length})</span>
-				</button>
-				{#if showNetwork}
+				</Collapsible.Trigger>
+				<Collapsible.Content>
 					<div class="mt-1 rounded-md border border-border/20 overflow-hidden">
 						{#each bgp.network_info as ni, i (ni.ip)}
 							<div
@@ -502,23 +502,22 @@
 							</div>
 						{/each}
 					</div>
-				{/if}
-			</div>
+				</Collapsible.Content>
+			</Collapsible.Root>
 		{/if}
 
 		<!-- announced prefixes -->
 		{#if bgp.announced_prefixes.length > 0}
-			<div>
-				<button
+			<Collapsible.Root bind:open={showPrefixes}>
+				<Collapsible.Trigger
 					class="flex items-center gap-1.5 w-full text-[10px] text-muted-foreground/40 hover:text-foreground/60 transition-colors py-1"
-					onclick={() => (showPrefixes = !showPrefixes)}
 				>
 					<ChevronRight
 						class="h-2.5 w-2.5 transition-transform duration-150 {showPrefixes ? 'rotate-90' : ''}"
 					/>
 					<span>Announced Prefixes ({bgp.announced_prefixes.length})</span>
-				</button>
-				{#if showPrefixes}
+				</Collapsible.Trigger>
+				<Collapsible.Content>
 					<div class="mt-1">
 						<div class="flex justify-end mb-1">
 							<button
@@ -552,16 +551,15 @@
 							</div>
 						</ScrollArea>
 					</div>
-				{/if}
-			</div>
+				</Collapsible.Content>
+			</Collapsible.Root>
 		{/if}
 
 		<!-- prefix overview -->
 		{#if bgp.prefix_overview.length > 0}
-			<div>
-				<button
+			<Collapsible.Root bind:open={showPrefixOverview}>
+				<Collapsible.Trigger
 					class="flex items-center gap-1.5 w-full text-[10px] text-muted-foreground/40 hover:text-foreground/60 transition-colors py-1"
-					onclick={() => (showPrefixOverview = !showPrefixOverview)}
 				>
 					<ChevronRight
 						class="h-2.5 w-2.5 transition-transform duration-150 {showPrefixOverview
@@ -569,8 +567,8 @@
 							: ''}"
 					/>
 					<span>Prefix Overview ({bgp.prefix_overview.length})</span>
-				</button>
-				{#if showPrefixOverview}
+				</Collapsible.Trigger>
+				<Collapsible.Content>
 					<div class="mt-1 rounded-md border border-border/20 overflow-hidden">
 						{#each bgp.prefix_overview as po, i}
 							<div
@@ -587,23 +585,22 @@
 							</div>
 						{/each}
 					</div>
-				{/if}
-			</div>
+				</Collapsible.Content>
+			</Collapsible.Root>
 		{/if}
 
 		<!-- related prefixes -->
 		{#if bgp.related_prefixes.length > 0}
-			<div>
-				<button
+			<Collapsible.Root bind:open={showRelated}>
+				<Collapsible.Trigger
 					class="flex items-center gap-1.5 w-full text-[10px] text-muted-foreground/40 hover:text-foreground/60 transition-colors py-1"
-					onclick={() => (showRelated = !showRelated)}
 				>
 					<ChevronRight
 						class="h-2.5 w-2.5 transition-transform duration-150 {showRelated ? 'rotate-90' : ''}"
 					/>
 					<span>Related Prefixes ({bgp.related_prefixes.length})</span>
-				</button>
-				{#if showRelated}
+				</Collapsible.Trigger>
+				<Collapsible.Content>
 					<div class="mt-1 rounded-md border border-border/20 overflow-hidden">
 						{#each bgp.related_prefixes as rp, i}
 							<div
@@ -618,23 +615,22 @@
 							</div>
 						{/each}
 					</div>
-				{/if}
-			</div>
+				</Collapsible.Content>
+			</Collapsible.Root>
 		{/if}
 
 		<!-- abuse contacts -->
 		{#if bgp.abuse_contacts.length > 0}
-			<div>
-				<button
+			<Collapsible.Root bind:open={showAbuse}>
+				<Collapsible.Trigger
 					class="flex items-center gap-1.5 w-full text-[10px] text-muted-foreground/40 hover:text-foreground/60 transition-colors py-1"
-					onclick={() => (showAbuse = !showAbuse)}
 				>
 					<ChevronRight
 						class="h-2.5 w-2.5 transition-transform duration-150 {showAbuse ? 'rotate-90' : ''}"
 					/>
 					<span>Abuse Contacts ({bgp.abuse_contacts.length})</span>
-				</button>
-				{#if showAbuse}
+				</Collapsible.Trigger>
+				<Collapsible.Content>
 					<div class="mt-1 space-y-1">
 						{#each bgp.abuse_contacts as ac}
 							<div class="flex items-center gap-1.5 text-[10px] group/ac">
@@ -648,8 +644,8 @@
 							</div>
 						{/each}
 					</div>
-				{/if}
-			</div>
+				</Collapsible.Content>
+			</Collapsible.Root>
 		{/if}
 	</div>
 </div>

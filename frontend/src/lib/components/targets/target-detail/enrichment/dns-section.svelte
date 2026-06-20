@@ -2,6 +2,7 @@
 	import type { DnsLookupRead, DnsRecordRead } from '$lib/types/target-detail';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { CircleCheck, Globe } from 'lucide-svelte';
 
 	interface Props {
@@ -11,58 +12,26 @@
 	let { lookup }: Props = $props();
 
 	const TYPE_ORDER = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA', 'PTR'];
-	const TYPE_COLOR: Record<string, { active: string; inactive: string }> = {
-		A: {
-			active: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-			inactive: 'text-blue-400/40 border-transparent hover:border-blue-500/15 hover:bg-blue-500/5'
-		},
-		AAAA: {
-			active: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
-			inactive:
-				'text-indigo-400/40 border-transparent hover:border-indigo-500/15 hover:bg-indigo-500/5'
-		},
-		CNAME: {
-			active: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
-			inactive: 'text-cyan-400/40 border-transparent hover:border-cyan-500/15 hover:bg-cyan-500/5'
-		},
-		MX: {
-			active: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-			inactive:
-				'text-amber-400/40 border-transparent hover:border-amber-500/15 hover:bg-amber-500/5'
-		},
-		NS: {
-			active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-			inactive:
-				'text-emerald-400/40 border-transparent hover:border-emerald-500/15 hover:bg-emerald-500/5'
-		},
-		TXT: {
-			active: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
-			inactive:
-				'text-violet-400/40 border-transparent hover:border-violet-500/15 hover:bg-violet-500/5'
-		},
-		SOA: {
-			active: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-			inactive: 'text-rose-400/40 border-transparent hover:border-rose-500/15 hover:bg-rose-500/5'
-		},
-		SRV: {
-			active: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
-			inactive:
-				'text-orange-400/40 border-transparent hover:border-orange-500/15 hover:bg-orange-500/5'
-		},
-		CAA: {
-			active: 'bg-teal-500/15 text-teal-400 border-teal-500/30',
-			inactive: 'text-teal-400/40 border-transparent hover:border-teal-500/15 hover:bg-teal-500/5'
-		},
-		PTR: {
-			active: 'bg-pink-500/15 text-pink-400 border-pink-500/30',
-			inactive: 'text-pink-400/40 border-transparent hover:border-pink-500/15 hover:bg-pink-500/5'
-		}
+	// per-type semantic color hosted on Tabs.Trigger: inactive is the default state, active via data-[state=active]:.
+	// The dark: duplicates are required to outrank Tabs.Trigger's own dark:data-[state=active]:* base classes
+	// (bg-input/30, text-foreground, border-input) and dark:text-muted-foreground — these colors are identical
+	// in both themes, but the dark: variant must be present literally to win the cascade in dark mode.
+	const TYPE_COLOR: Record<string, string> = {
+		A: 'text-blue-400/40 dark:text-blue-400/40 border-transparent hover:border-blue-500/15 hover:bg-blue-500/5 data-[state=active]:bg-blue-500/15 dark:data-[state=active]:bg-blue-500/15 data-[state=active]:text-blue-400 dark:data-[state=active]:text-blue-400 data-[state=active]:border-blue-500/30 dark:data-[state=active]:border-blue-500/30',
+		AAAA: 'text-indigo-400/40 dark:text-indigo-400/40 border-transparent hover:border-indigo-500/15 hover:bg-indigo-500/5 data-[state=active]:bg-indigo-500/15 dark:data-[state=active]:bg-indigo-500/15 data-[state=active]:text-indigo-400 dark:data-[state=active]:text-indigo-400 data-[state=active]:border-indigo-500/30 dark:data-[state=active]:border-indigo-500/30',
+		CNAME:
+			'text-cyan-400/40 dark:text-cyan-400/40 border-transparent hover:border-cyan-500/15 hover:bg-cyan-500/5 data-[state=active]:bg-cyan-500/15 dark:data-[state=active]:bg-cyan-500/15 data-[state=active]:text-cyan-400 dark:data-[state=active]:text-cyan-400 data-[state=active]:border-cyan-500/30 dark:data-[state=active]:border-cyan-500/30',
+		MX: 'text-amber-400/40 dark:text-amber-400/40 border-transparent hover:border-amber-500/15 hover:bg-amber-500/5 data-[state=active]:bg-amber-500/15 dark:data-[state=active]:bg-amber-500/15 data-[state=active]:text-amber-400 dark:data-[state=active]:text-amber-400 data-[state=active]:border-amber-500/30 dark:data-[state=active]:border-amber-500/30',
+		NS: 'text-emerald-400/40 dark:text-emerald-400/40 border-transparent hover:border-emerald-500/15 hover:bg-emerald-500/5 data-[state=active]:bg-emerald-500/15 dark:data-[state=active]:bg-emerald-500/15 data-[state=active]:text-emerald-400 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 dark:data-[state=active]:border-emerald-500/30',
+		TXT: 'text-violet-400/40 dark:text-violet-400/40 border-transparent hover:border-violet-500/15 hover:bg-violet-500/5 data-[state=active]:bg-violet-500/15 dark:data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-400 dark:data-[state=active]:text-violet-400 data-[state=active]:border-violet-500/30 dark:data-[state=active]:border-violet-500/30',
+		SOA: 'text-rose-400/40 dark:text-rose-400/40 border-transparent hover:border-rose-500/15 hover:bg-rose-500/5 data-[state=active]:bg-rose-500/15 dark:data-[state=active]:bg-rose-500/15 data-[state=active]:text-rose-400 dark:data-[state=active]:text-rose-400 data-[state=active]:border-rose-500/30 dark:data-[state=active]:border-rose-500/30',
+		SRV: 'text-orange-400/40 dark:text-orange-400/40 border-transparent hover:border-orange-500/15 hover:bg-orange-500/5 data-[state=active]:bg-orange-500/15 dark:data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400 dark:data-[state=active]:text-orange-400 data-[state=active]:border-orange-500/30 dark:data-[state=active]:border-orange-500/30',
+		CAA: 'text-teal-400/40 dark:text-teal-400/40 border-transparent hover:border-teal-500/15 hover:bg-teal-500/5 data-[state=active]:bg-teal-500/15 dark:data-[state=active]:bg-teal-500/15 data-[state=active]:text-teal-400 dark:data-[state=active]:text-teal-400 data-[state=active]:border-teal-500/30 dark:data-[state=active]:border-teal-500/30',
+		PTR: 'text-pink-400/40 dark:text-pink-400/40 border-transparent hover:border-pink-500/15 hover:bg-pink-500/5 data-[state=active]:bg-pink-500/15 dark:data-[state=active]:bg-pink-500/15 data-[state=active]:text-pink-400 dark:data-[state=active]:text-pink-400 data-[state=active]:border-pink-500/30 dark:data-[state=active]:border-pink-500/30'
 	};
 
-	const FALLBACK = {
-		active: 'bg-muted text-foreground border-border',
-		inactive: 'text-muted-foreground border-transparent hover:bg-muted/50'
-	};
+	const FALLBACK =
+		'text-muted-foreground border-transparent hover:bg-muted/50 data-[state=active]:bg-muted dark:data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:border-border dark:data-[state=active]:border-border';
 
 	let grouped = $derived.by(() => {
 		const map = new Map<string, DnsRecordRead[]>();
@@ -147,19 +116,20 @@
 	</div>
 
 	<!-- type tabs -->
-	<div class="flex flex-wrap gap-1">
-		{#each grouped as g (g.type)}
-			{@const c = TYPE_COLOR[g.type] ?? FALLBACK}
-			{@const isActive = activeType === g.type}
-			<button
-				class="text-[9px] font-mono font-semibold tabular-nums rounded border px-1.5 py-0.5 transition-all duration-150
-					{isActive ? c.active : c.inactive}"
-				onclick={() => (activeType = g.type)}
-			>
-				{g.type}<span class="opacity-40 ml-0.5">{g.records.length}</span>
-			</button>
-		{/each}
-	</div>
+	<Tabs.Root bind:value={activeType}>
+		<Tabs.List class="flex flex-wrap gap-1 h-auto w-full justify-start bg-transparent p-0 rounded-none">
+			{#each grouped as g (g.type)}
+				<Tabs.Trigger
+					value={g.type}
+					class="flex-none h-auto rounded border px-1.5 py-0.5 text-[9px] font-mono font-semibold tabular-nums transition-all duration-150 data-[state=active]:shadow-none {TYPE_COLOR[
+						g.type
+					] ?? FALLBACK}"
+				>
+					{g.type}<span class="opacity-40 ml-0.5">{g.records.length}</span>
+				</Tabs.Trigger>
+			{/each}
+		</Tabs.List>
+	</Tabs.Root>
 
 	<!-- unified table — scrollable -->
 	{#if sortedRecords.length > 0}

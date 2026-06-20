@@ -112,10 +112,10 @@
 		{:else if isFailed && error}
 			<div class="p-4">
 				<div
-					class="flex items-start gap-2 rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2.5"
+					class="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2.5"
 				>
-					<XCircle class="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
-					<p class="text-[11px] text-red-400 leading-relaxed">{error}</p>
+					<XCircle class="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+					<p class="text-[11px] text-destructive/90 leading-relaxed">{error}</p>
 				</div>
 			</div>
 		{:else if isPending}

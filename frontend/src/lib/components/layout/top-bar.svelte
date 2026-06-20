@@ -265,7 +265,7 @@
 					<Bell class="h-4 w-4" />
 					{#if notificationStore.unreadCount > 0}
 						<Badge
-							class="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-red-500 text-white"
+							class="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-destructive text-destructive-foreground"
 						>
 							{notificationStore.unreadCount}
 						</Badge>

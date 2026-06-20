@@ -85,10 +85,12 @@
 		--xy-node-boxshadow-hover-default: none;
 	}
 
-	/* ── Explicit layering: phase zones (back) → wires → NODES on top ──
+	/* ── Explicit layering: phase zones (back) → wires → NODES → edge labels ──
 	   The phase headers/dividers sit behind the wires; the wires sit behind the
-	   node cards so a wire never draws across a node face. Verified correct —
-	   do NOT regress. */
+	   node cards so a wire never draws across a node face. The artifact labels sit
+	   ABOVE the nodes: xyflow renders the edge-labels container before the node
+	   layer in the DOM, so without this the chips stack under adjacent cards and
+	   get clipped (e.g. "subdomains" → "bdomains"). Verified correct — do NOT regress. */
 	:global(.svelte-flow__viewport-back) {
 		z-index: 0;
 	}
@@ -98,6 +100,10 @@
 	}
 	:global(.svelte-flow__nodes) {
 		z-index: 3;
+	}
+	/* Labels float above the node cards so they're never clipped by a neighbour. */
+	:global(.svelte-flow__edge-labels) {
+		z-index: 4;
 	}
 
 	/* Neutral-themed wires + arrowheads (artifact-edge sets currentColor;

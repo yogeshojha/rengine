@@ -20,7 +20,6 @@
 		Check,
 		ArrowRight
 	} from 'lucide-svelte';
-	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { PHASE_COLORS } from '$lib/types/engine';
@@ -94,7 +93,7 @@
 
 	<span class="accent-rail" aria-hidden="true"></span>
 
-	<!-- Row 1: icon chip + title + [hover toolbar] + switch (switch is always far-right) -->
+	<!-- Row 1: icon chip + title + hover toolbar (Configure / Remove) -->
 	<div class="cap-head">
 		<div class="icon-chip">
 			{#if d.icon === 'Globe'}
@@ -153,7 +152,7 @@
 					variant="ghost"
 					size="icon"
 					class="tool-btn"
-					title="Remove"
+					title="Remove step"
 					onclick={(e) => {
 						stop(e);
 						d.onDelete(d.capId);
@@ -162,15 +161,6 @@
 					<X size={13} />
 				</Button>
 			{/if}
-		</div>
-
-		<div class="cap-switch" onclick={stop}>
-			<Switch
-				checked={d.enabled}
-				disabled={d.required}
-				onCheckedChange={(v) => d.onToggle(d.capId, v)}
-				aria-label={d.required ? 'Required (always runs)' : d.enabled ? 'Disable' : 'Enable'}
-			/>
 		</div>
 	</div>
 
@@ -305,19 +295,12 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-	.cap-switch {
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-	}
-
 	/* hover toolbar — overlays the right end of the title on hover. Absolute so it
 	   never steals title width at rest; card-bg + left fade = no layout shift. */
 	.cap-tools {
 		position: absolute;
 		top: 9px;
-		/* switch col (~38px) + its gap (8px) + small inset */
-		right: 52px;
+		right: 10px;
 		display: flex;
 		align-items: center;
 		gap: 2px;

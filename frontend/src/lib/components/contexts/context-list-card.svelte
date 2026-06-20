@@ -67,7 +67,7 @@
 		{#if chips.length > 0}
 			<div class="chip-row">
 				{#each chips as chip (chip)}
-					<span class="chip">{chip}</span>
+					<Badge variant="secondary" class="rounded-[5px] border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{chip}</Badge>
 				{/each}
 			</div>
 		{:else}
@@ -179,16 +179,6 @@
 		gap: 5px;
 		margin-bottom: 12px;
 		flex-wrap: wrap;
-	}
-
-	.chip {
-		padding: 2px 8px;
-		border-radius: 5px;
-		background: var(--muted);
-		border: 1px solid var(--border);
-		font-size: 10px;
-		font-weight: 500;
-		color: var(--muted-foreground);
 	}
 
 	.passthrough {

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Separator } from '$lib/components/ui/separator';
+	import { Badge } from '$lib/components/ui/badge';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { ArrowLeft, Save, Copy, Trash2, Download, LayoutGrid, Code2, Loader2, Pencil, Play, Plus } from 'lucide-svelte';
 	import type { ScanEngine, Intensity } from '$lib/types/engine';
@@ -74,7 +76,7 @@
 			<ArrowLeft size={15} />
 		</Button>
 
-		<div class="divider"></div>
+		<Separator orientation="vertical" class="data-[orientation=vertical]:h-[18px]" />
 
 		{#if isEditingName}
 			<Input
@@ -96,13 +98,16 @@
 		{/if}
 
 		{#if toolCount !== undefined}
-			<div class="summary-chip">
-				<span class="summary-count">{toolCount} tools</span>
+			<Badge
+				variant="secondary"
+				class="gap-1 rounded-[5px] border border-border bg-muted font-normal text-[11px]"
+			>
+				<span class="font-semibold text-foreground">{toolCount} tools</span>
 				{#if estDuration}
-					<span class="summary-sep">·</span>
-					<span class="summary-dur">~{estDuration}</span>
+					<span class="opacity-50">·</span>
+					<span>~{estDuration}</span>
 				{/if}
-			</div>
+			</Badge>
 		{/if}
 	</div>
 
@@ -138,7 +143,7 @@
 			</Tabs.List>
 		</Tabs.Root>
 
-		<div class="divider"></div>
+		<Separator orientation="vertical" class="data-[orientation=vertical]:h-[18px]" />
 
 		<Button variant="outline" size="sm" onclick={() => onAddStep?.()} class="gap-1.5 h-7 text-xs">
 			<Plus size={14} />
@@ -155,7 +160,7 @@
 			{previewMode ? 'Exit Preview' : 'Preview Run'}
 		</Button>
 
-		<div class="divider"></div>
+		<Separator orientation="vertical" class="data-[orientation=vertical]:h-[18px]" />
 
 		<Button variant="outline" size="sm" onclick={() => onExportYaml?.()} class="gap-1.5 h-7 text-xs">
 			<Download size={13} />
@@ -221,13 +226,6 @@
 		min-width: 0;
 	}
 
-	.divider {
-		width: 1px;
-		height: 18px;
-		background: var(--border);
-		flex-shrink: 0;
-	}
-
 	.name-row {
 		display: flex;
 		align-items: center;
@@ -242,30 +240,6 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-	}
-
-	/* Summary chip */
-	.summary-chip {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		padding: 2px 8px;
-		border-radius: 5px;
-		background: var(--muted);
-		border: 1px solid var(--border);
-		font-size: 11px;
-		color: var(--muted-foreground);
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
-
-	.summary-count {
-		font-weight: 600;
-		color: var(--foreground);
-	}
-
-	.summary-sep {
-		opacity: 0.5;
 	}
 
 	/* Save dirty-dot */

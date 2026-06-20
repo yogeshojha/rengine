@@ -6,6 +6,7 @@
 	import { AlertTriangle, Loader2, ChevronLeft, Copy, Trash2, Save, ChevronDown } from 'lucide-svelte';
 
 	import { Button } from '$lib/components/ui/button';
+	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
@@ -335,26 +336,28 @@
 	let summary = $derived(draft ? buildContextSummary(draft) : '');
 </script>
 
-<div class="form-shell">
+<div class="mx-auto w-full max-w-5xl space-y-6">
 	{#if isLoading && !loaded && !isNew}
 		<div class="state-center">
 			<Loader2 size={20} class="animate-spin text-muted-foreground" />
 			<span class="text-sm text-muted-foreground">Loading context…</span>
 		</div>
 	{:else if loadError}
-		<div class="state-center">
-			<div class="error-icon">
-				<AlertTriangle size={22} class="text-destructive" />
-			</div>
-			<div>
-				<p class="error-title">Failed to load context</p>
-				<p class="error-msg">{loadError}</p>
-			</div>
-			<Button onclick={() => goto('/automation/contexts')}>Back to Contexts</Button>
-		</div>
+		<Empty.Root class="min-h-[50vh]">
+			<Empty.Header>
+				<Empty.Media class="size-[52px] rounded-xl bg-destructive/10">
+					<AlertTriangle size={22} class="text-destructive" />
+				</Empty.Media>
+				<Empty.Title>Failed to load context</Empty.Title>
+				<Empty.Description>{loadError}</Empty.Description>
+			</Empty.Header>
+			<Empty.Content>
+				<Button onclick={() => goto('/automation/contexts')}>Back to Contexts</Button>
+			</Empty.Content>
+		</Empty.Root>
 	{:else if draft}
-		<!-- Slim topbar -->
-		<div class="topbar">
+		<!-- Header -->
+		<div class="flex items-center gap-2">
 			<Button variant="ghost" size="icon" class="h-8 w-8 shrink-0" onclick={handleBack}>
 				<ChevronLeft class="h-4 w-4" />
 			</Button>
@@ -393,9 +396,9 @@
 			</Button>
 		</div>
 
-		<!-- Body: centered form column + sticky summary -->
-		<div class="body">
-			<div class="form-col">
+		<!-- Body -->
+		<div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
+			<div class="space-y-4">
 				{#snippet section(key: keyof typeof open, title: string, subtitle: string, content: import('svelte').Snippet)}
 					<Card.Root>
 						<Collapsible.Root bind:open={open[key]}>
@@ -467,8 +470,8 @@
 			</div>
 
 			<!-- Sticky summary -->
-			<div class="summary-col">
-				<Card.Root class="sticky top-4">
+			<div class="hidden lg:block">
+				<Card.Root class="lg:sticky lg:top-6">
 					<Card.Header class="py-4">
 						<Card.Title class="text-sm">Summary</Card.Title>
 						<Card.Description class="text-xs">{summary}</Card.Description>
@@ -500,61 +503,15 @@
 {/if}
 
 <style>
-	.form-shell {
-		display: flex;
-		flex-direction: column;
-		min-height: 100%;
-		margin: -24px;
-	}
-
 	.state-center {
-		flex: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		gap: 14px;
 		text-align: center;
-		padding: 60px 40px;
-	}
-
-	.error-icon {
-		width: 52px;
-		height: 52px;
-		border-radius: 12px;
-		background: oklch(0.95 0.05 25);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	:global(.dark) .error-icon {
-		background: oklch(0.22 0.05 25);
-	}
-
-	.error-title {
-		font-size: 15px;
-		font-weight: 700;
-		color: var(--foreground);
-		margin: 0 0 5px;
-	}
-
-	.error-msg {
-		font-size: 13px;
-		color: var(--muted-foreground);
-		margin: 0;
-	}
-
-	.topbar {
-		position: sticky;
-		top: 0;
-		z-index: 10;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 16px;
-		border-bottom: 1px solid var(--border);
-		background: var(--background);
+		min-height: 50vh;
+		padding: 40px;
 	}
 
 	.dirty-dot {
@@ -563,32 +520,5 @@
 		border-radius: 50%;
 		background: currentColor;
 		margin-left: 2px;
-	}
-
-	.body {
-		flex: 1;
-		display: flex;
-		gap: 24px;
-		padding: 24px;
-		justify-content: center;
-	}
-
-	.form-col {
-		flex: 1;
-		max-width: 48rem;
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-	}
-
-	.summary-col {
-		width: 260px;
-		flex-shrink: 0;
-	}
-
-	@media (max-width: 1024px) {
-		.summary-col {
-			display: none;
-		}
 	}
 </style>

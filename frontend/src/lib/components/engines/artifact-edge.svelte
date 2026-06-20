@@ -6,6 +6,7 @@
 		artifact: ArtifactType;
 		label: string;
 		crossPhase: boolean;
+		alwaysLabel: boolean;
 		showLabel: boolean;
 		animated: boolean;
 	}
@@ -49,9 +50,16 @@
 			.join(' ')
 	);
 
-	// cross-phase chips stay visible; intra-phase chips reveal on edge hover.
+	// Only inter-phase connectors carry always-on labels; every data edge reveals
+	// its label on hover, so the gutters never stack two labels at once.
 	let chipClass = $derived(
-		['artifact-chip', d.crossPhase ? 'always' : 'on-hover', hovered ? 'edge-hovered' : '']
+		[
+			'artifact-chip',
+			'nodrag',
+			'nopan',
+			d.alwaysLabel ? 'always' : 'on-hover',
+			hovered ? 'edge-hovered' : ''
+		]
 			.filter(Boolean)
 			.join(' ')
 	);
@@ -69,7 +77,11 @@
 	onmouseleave={() => (hovered = false)}
 />
 
-<EdgeLabel x={labelX} y={labelY}>
+<!-- `transparent` strips xyflow's default opaque wrapper background; without it a
+     hidden (opacity-0) sibling label still paints an empty white box, and visible
+     chips get a faint white ring from the wrapper's padding. The chip supplies its
+     own card background. -->
+<EdgeLabel x={labelX} y={labelY} transparent>
 	<div class={chipClass} style="--artifact-color: {artifactColor};">{d.label}</div>
 </EdgeLabel>
 
@@ -131,12 +143,22 @@
 		line-height: 1.4;
 		color: var(--muted-foreground);
 		white-space: nowrap;
+		/* Float the chip just above the wire so it never sits on the arrowhead. */
+		transform: translateY(-9px);
 		/* Never block panning / node interaction. */
 		pointer-events: none;
 		transition:
 			opacity 0.16s ease,
 			color 0.16s ease,
 			border-color 0.16s ease;
+	}
+
+	/* Always-on (inter-phase) chips read clearly at rest: foreground text, a touch
+	   of weight, and a soft shadow so they lift off whatever is behind them. */
+	.artifact-chip.always {
+		color: var(--foreground);
+		font-weight: 500;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
 	}
 
 	/* Intra-phase chips are calm by default, revealed when the edge is hovered. */

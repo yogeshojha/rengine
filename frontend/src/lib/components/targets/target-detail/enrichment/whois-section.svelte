@@ -3,6 +3,7 @@
 	import { ENTITY_ROLE_LABELS, getStatusBadgeColor } from '$lib/types/whois';
 	import { TargetType } from '$lib/types/target';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import * as Collapsible from '$lib/components/ui/collapsible';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import {
 		Shield,
@@ -147,9 +148,10 @@
 			</p>
 			<div class="flex flex-wrap gap-1">
 				{#each record.nameservers as ns}
-					<span
-						class="text-[9px] font-mono text-foreground/60 rounded border border-border/30 bg-muted/10 px-1.5 py-0.5"
-						>{ns}</span
+					<Badge
+						variant="outline"
+						class="text-[9px] font-mono text-foreground/60 rounded border-border/30 bg-muted/10 px-1.5 py-0.5"
+						>{ns}</Badge
 					>
 				{/each}
 			</div>
@@ -187,18 +189,17 @@
 
 	<!-- entities — collapsible -->
 	{#if entities.length > 0}
-		<div>
-			<button
+		<Collapsible.Root bind:open={entitiesOpen}>
+			<Collapsible.Trigger
 				class="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 transition-colors hover:text-foreground/60"
-				onclick={() => (entitiesOpen = !entitiesOpen)}
 			>
 				<ChevronRight
 					class="h-2.5 w-2.5 transition-transform duration-150 {entitiesOpen ? 'rotate-90' : ''}"
 				/>
 				<span>Entities ({entities.reduce((a, e) => a + e.items.length, 0)})</span>
-			</button>
+			</Collapsible.Trigger>
 
-			{#if entitiesOpen}
+			<Collapsible.Content>
 				<div class="mt-1.5 space-y-1">
 					{#each entities as ent (ent.role)}
 						{#each ent.items as entity}
@@ -227,7 +228,7 @@
 						{/each}
 					{/each}
 				</div>
-			{/if}
-		</div>
+			</Collapsible.Content>
+		</Collapsible.Root>
 	{/if}
 </div>

@@ -2,6 +2,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Card from '$lib/components/ui/card';
 	import { Separator } from '$lib/components/ui/separator';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import * as Empty from '$lib/components/ui/empty/index.js';
 	import {
 		AlertTriangle,
 		CircleCheck,
@@ -46,19 +48,21 @@
 {#if loading}
 	<div class="space-y-3">
 		{#each Array(3) as _, i (i)}
-			<div class="h-28 animate-pulse rounded-lg border border-border bg-muted/40"></div>
+			<Skeleton class="h-28 rounded-lg border border-border" />
 		{/each}
 	</div>
 {:else if !preview}
-	<div
-		class="flex h-full min-h-[200px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center"
-	>
-		<Gauge class="mb-3 h-8 w-8 text-muted-foreground" />
-		<p class="text-sm font-medium text-foreground">No preview yet</p>
-		<p class="mt-1 text-xs text-muted-foreground">
-			Select an engine and target to preview the resolved scan plan.
-		</p>
-	</div>
+	<Empty.Root class="h-full min-h-[200px] gap-0 border border-border bg-muted/20 p-8">
+		<Empty.Header class="gap-0">
+			<Empty.Media class="mb-3">
+				<Gauge class="h-8 w-8 text-muted-foreground" />
+			</Empty.Media>
+			<Empty.Title class="text-sm font-medium text-foreground">No preview yet</Empty.Title>
+			<Empty.Description class="mt-1 text-xs text-muted-foreground">
+				Select an engine and target to preview the resolved scan plan.
+			</Empty.Description>
+		</Empty.Header>
+	</Empty.Root>
 {:else}
 	<div class="space-y-4">
 		<!-- Header -->
@@ -123,25 +127,28 @@
 								{#if t.status === 'will_run' && (t.rate != null || t.threads != null || t.timeout != null)}
 									<div class="flex flex-wrap items-center gap-1.5">
 										{#if t.rate != null}
-											<span
-												class="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+											<Badge
+												variant="secondary"
+												class="gap-1 rounded px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground"
 											>
 												<Gauge class="h-3 w-3" />{t.rate}/s
-											</span>
+											</Badge>
 										{/if}
 										{#if t.threads != null}
-											<span
-												class="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+											<Badge
+												variant="secondary"
+												class="gap-1 rounded px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground"
 											>
 												<Cpu class="h-3 w-3" />{t.threads} threads
-											</span>
+											</Badge>
 										{/if}
 										{#if t.timeout != null}
-											<span
-												class="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+											<Badge
+												variant="secondary"
+												class="gap-1 rounded px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground"
 											>
 												<Timer class="h-3 w-3" />{t.timeout}s
-											</span>
+											</Badge>
 										{/if}
 									</div>
 								{:else if t.reason}
@@ -173,7 +180,7 @@
 							{#if s.custom_header_names.length > 0}
 								<div class="flex flex-wrap gap-1">
 									{#each s.custom_header_names as name (name)}
-										<span class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono">{name}</span>
+										<Badge variant="secondary" class="rounded px-1.5 py-0.5 text-[10px] font-mono font-normal">{name}</Badge>
 									{/each}
 								</div>
 							{:else}
@@ -209,7 +216,7 @@
 							<div class="text-foreground">
 								<div class="flex flex-wrap gap-1">
 									{#each s.included_subdomains as sub (sub)}
-										<span class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono">{sub}</span>
+										<Badge variant="secondary" class="rounded px-1.5 py-0.5 text-[10px] font-mono font-normal">{sub}</Badge>
 									{/each}
 								</div>
 							</div>

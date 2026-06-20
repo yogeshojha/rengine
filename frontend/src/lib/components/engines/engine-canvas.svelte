@@ -2,7 +2,6 @@
 	import CapabilityNode from './capability-node.svelte';
 	import SeedNode from './seed-node.svelte';
 	import ReconNode from './recon-node.svelte';
-	import GutterAnchor from './gutter-anchor.svelte';
 	import ArtifactEdge from './artifact-edge.svelte';
 
 	// Created ONCE at module scope — recreating per render triggers the
@@ -11,8 +10,7 @@
 	const nodeTypes: any = {
 		capabilityNode: CapabilityNode,
 		seedCard: SeedNode,
-		reconData: ReconNode,
-		gutterAnchor: GutterAnchor
+		reconData: ReconNode
 	};
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const edgeTypes: any = {
@@ -68,17 +66,20 @@
 	}: Props = $props();
 
 	// ── Layout math (x = execution order) ───────────────────────────────────────
-	const COL_GAP = 340;
+	const COL_GAP = 360;
 	const NODE_W = 264;
 	const NODE_H = 92;
 	const ROW_GAP = 180;
 	const CENTER_Y = 400;
-	const PAD = 40;
+	// horizontal inset of each band from its leftmost/rightmost node card
+	const PAD = 18;
 	// minimum tall-band height + extra vertical breathing around the node span
 	const BAND_MIN_HEIGHT = 430;
 	const BAND_SPAN_PAD = 170;
-	// gutter taken out of each band so adjacent bands read as separate columns
-	const BAND_GUTTER = 28;
+	// gutter taken out of each band; with COL_GAP 360 this leaves ~84px between
+	// adjacent phase bands (vs ~96px between nodes within a phase) — enough room for
+	// the cross-phase artifact label to sit in the gutter without touching either band.
+	const BAND_GUTTER = 24;
 
 	function columnX(col: number): number {
 		return col * COL_GAP;
@@ -173,86 +174,120 @@
 	}
 
 	// ── Edge dependency graph ─────────────────────────────────────────────────────
+	// EVERY edge is a REAL node→node edge (source/target are real node ids), so the
+	// wire auto-tracks node drags. There are NO anchor nodes. EXIT/ENTRY resolution
+	// over the ACTIVE set guarantees each edge spans only ADJACENT occupied columns:
+	// any disabled (empty) column between source and target is skipped, so no wire
+	// ever pierces a node body (the no-pierce invariant).
 	interface EdgeSpec {
 		source: string; // capId or 'seed'
-		target: string; // capId
+		target: string; // capId or 'recon'
 		artifact: ArtifactType;
 	}
 
 	const SEED_TARGETS = ['dns-whois', 'related-domains', 'org-asn'];
-	// Discovery "spine" feeding the expansion chain (dns-whois is required/on).
-	const DISCOVERY_SPINE = ['dns-whois', 'related-domains', 'org-asn'];
-	// col5 expansion fan-out fed by http-probe (parallel siblings, no wires between).
-	const EXPANSION_LEAVES = ['screenshot', 'url-discovery', 'dir-fuzz', 'param-vhost'];
+	// Discovery EXIT preference (feeds the expansion entry). dns-whois is required/on.
+	const DISCOVERY_EXIT_PREF = ['dns-whois', 'related-domains', 'org-asn'];
+	// Expansion ENTRY preference (the node the discovery exit hands hosts to).
+	const EXPANSION_ENTRY_PREF = ['subdomain-enum', 'cloud-recon'];
+	// http-probe live-hosts fan: parallel col5 leaves (no wires between siblings).
+	const LIVE_HOST_FAN = ['screenshot', 'url-discovery', 'dir-fuzz', 'param-vhost'];
+	// Expansion EXIT preference (rightmost active expansion node feeds depth).
+	const EXPANSION_EXIT_PREF = [
+		'url-discovery',
+		'dir-fuzz',
+		'param-vhost',
+		'screenshot',
+		'http-probe',
+		'port-scan',
+		'subdomain-enum'
+	];
+	// Depth FINDING nodes (each lands on recon / reporting).
+	const DEPTH_FINDINGS = ['vuln-scan', 'takeover-dns', 'js-secrets', 'tls-ssl'];
 
 	function capPhase(capId: string): Phase | null {
 		return CAPABILITIES.find((c) => c.id === capId)?.phase ?? null;
 	}
-	function capProduces(capId: string): ArtifactType {
-		return CAPABILITIES.find((c) => c.id === capId)?.produces ?? 'seed';
+
+	// First active id from a preference list (resolves an exit/entry from ACTIVE set).
+	function firstActive(pref: string[], on: (id: string) => boolean): string | null {
+		return pref.find(on) ?? null;
 	}
 
-	// Build INTRA-PHASE edges following the dependency chain over ACTIVE nodes.
-	// Each edge hops from the nearest active upstream to the next active downstream
-	// so any disabled (empty) column in between is simply skipped — the wire only
-	// crosses EMPTY columns and therefore never passes through a node body.
+	// Build the FULL real node→node edge list over the ACTIVE capabilities. Exit/entry
+	// resolution skips disabled columns so every edge is Δcol ≥ 1 with no active node
+	// strictly between source and target.
 	function computeEdgeSpecs(activeIdList: string[]): EdgeSpec[] {
 		const specs: EdgeSpec[] = [];
 		const on = (id: string) => activeIdList.includes(id);
+		const activeOf = (phase: Phase) => activeIdList.filter((id) => capPhase(id) === phase);
 
-		// — DISCOVERY (col1): seed → each active discovery node (parallel) —
+		// — seed → each active discovery cap —
 		for (const t of SEED_TARGETS) {
 			if (on(t)) specs.push({ source: 'seed', target: t, artifact: 'seed' });
 		}
 
-		// First active discovery node = the spine head feeding expansion.
-		const spineHead = DISCOVERY_SPINE.find((id) => on(id)) ?? null;
-
-		// — EXPANSION chain (left → right mini-DAG over active nodes) —
-		// spine → subdomain-enum (col1 → col2)
-		if (on('subdomain-enum') && spineHead) {
-			specs.push({
-				source: spineHead,
-				target: 'subdomain-enum',
-				artifact: capProduces(spineHead)
-			});
-		}
-		// cloud-recon: col2 parallel sibling fed by subdomain-enum if active else the
-		// discovery spine. No downstream consumer.
-		if (on('cloud-recon')) {
-			const src = on('subdomain-enum') ? 'subdomain-enum' : spineHead;
-			if (src) specs.push({ source: src, target: 'cloud-recon', artifact: capProduces(src) });
+		// — DISCOVERY → EXPANSION: discoveryExit → expansionEntry (artifact "hosts") —
+		const discoveryExit = firstActive(DISCOVERY_EXIT_PREF, on) ?? activeOf('discovery')[0] ?? null;
+		const expansionEntry =
+			firstActive(EXPANSION_ENTRY_PREF, on) ??
+			activeIdList.find((id) => capPhase(id) === 'expansion') ??
+			null;
+		if (discoveryExit && expansionEntry) {
+			specs.push({ source: discoveryExit, target: expansionEntry, artifact: 'hosts' });
 		}
 
-		// subdomain-enum → port-scan (col2 → col3)
+		// — EXPANSION internal mini-DAG —
+		// subdomain-enum → port-scan
 		if (on('subdomain-enum') && on('port-scan')) {
 			specs.push({ source: 'subdomain-enum', target: 'port-scan', artifact: 'subdomains' });
 		}
-
-		// live-host producer (port-scan if active, else subdomain-enum) → http-probe.
-		// If port-scan is off its col3 is empty, so subdomain-enum (col2) → http-probe
-		// (col4) only crosses the empty col3.
+		// (port-scan if active else subdomain-enum) → http-probe
 		if (on('http-probe')) {
 			const liveSrc = on('port-scan') ? 'port-scan' : on('subdomain-enum') ? 'subdomain-enum' : null;
 			if (liveSrc) {
 				specs.push({
 					source: liveSrc,
 					target: 'http-probe',
-					artifact: capProduces(liveSrc)
+					artifact: on('port-scan') ? 'ports' : 'subdomains'
 				});
 			}
 		}
-
-		// http-probe → EACH active col5 sibling (parallel fan-out, Δcol = 1).
+		// subdomain-enum → cloud-recon
+		if (on('subdomain-enum') && on('cloud-recon')) {
+			specs.push({ source: 'subdomain-enum', target: 'cloud-recon', artifact: 'subdomains' });
+		}
+		// http-probe → each active live-hosts fan leaf (Δcol = 1)
 		if (on('http-probe')) {
-			for (const t of EXPANSION_LEAVES) {
+			for (const t of LIVE_HOST_FAN) {
 				if (on(t)) specs.push({ source: 'http-probe', target: t, artifact: 'live-hosts' });
 			}
 		}
 
-		// — DEPTH: parallel terminal siblings. NO node-to-node wires within depth and
-		// NO individual long wires to recon. Aggregation is conveyed by the box arrow
-		// (Depth band → Recon Data) added separately as an inter-phase connector. —
+		// — EXPANSION → DEPTH: expansionExit → each active depth finding ("attack surface") —
+		const expansionExit = firstActive(EXPANSION_EXIT_PREF, on);
+		const activeDepthFindings = DEPTH_FINDINGS.filter(on);
+		if (expansionExit) {
+			for (const t of activeDepthFindings) {
+				specs.push({ source: expansionExit, target: t, artifact: 'live-hosts' });
+			}
+		}
+
+		// — DEPTH internal: each active depth finding → reporting (artifact "findings") —
+		if (on('reporting')) {
+			for (const s of activeDepthFindings) {
+				specs.push({ source: s, target: 'reporting', artifact: 'findings' });
+			}
+		}
+
+		// — DEPTH → RECON (recon is the TARGET, so its incoming edge tracks the drag) —
+		if (on('reporting')) {
+			specs.push({ source: 'reporting', target: 'recon', artifact: 'report' });
+		} else {
+			for (const s of activeDepthFindings) {
+				specs.push({ source: s, target: 'recon', artifact: 'findings' });
+			}
+		}
 
 		return specs;
 	}
@@ -260,94 +295,32 @@
 	// ── Hover focus (lane-focus dimming) ────────────────────────────────────────
 	let hoveredCapId = $state<string | null>(null);
 
+	// Map a spec endpoint (capId | 'seed' | 'recon') to its real node id.
+	function endpointNodeId(end: string): string {
+		return end === 'seed' || end === 'recon' ? end : nodeId(end);
+	}
+
 	// Set of node ids to KEEP lit for the current hover (null = no hover, all lit).
+	// Recomputed from the REAL node→node edges, so neighbours (including recon and
+	// the inter-phase exits/entries) follow whatever the new edge graph wired up.
 	function computeFocusIds(specs: EdgeSpec[], hovered: string | null): string[] | null {
 		if (!hovered) return null;
 		const self = nodeId(hovered);
-		const keep: string[] = [self, 'seed'];
+		const keep: string[] = [self];
 		for (const spec of specs) {
-			const s = spec.source === 'seed' ? 'seed' : nodeId(spec.source);
-			const t = nodeId(spec.target);
+			const s = endpointNodeId(spec.source);
+			const t = endpointNodeId(spec.target);
 			if (s === self && !keep.includes(t)) keep.push(t);
 			if (t === self && !keep.includes(s)) keep.push(s);
 		}
-		// A hovered depth node keeps the terminal recon node lit (depth aggregates → recon).
-		if (capPhase(hovered) === 'depth' && !keep.includes('recon')) keep.push('recon');
 		return keep;
-	}
-
-	// ── Inter-phase connectors (box arrows in the empty gutters between bands) ───
-	// Implemented as INVISIBLE anchor nodes at each band's right-center / the next
-	// band's left-center, joined by a heavier artifact edge with a label chip. The
-	// anchors live in the 40px gutters where there are NO nodes, so the connector
-	// can never pierce a node body.
-	interface ConnectorSpec {
-		id: string;
-		fromX: number;
-		toX: number;
-		label: string;
-		artifact: ArtifactType;
-	}
-
-	// Returns the x-geometry of a phase band (mirrors the `bands` derived below).
-	function bandGeometry(phase: Phase): { left: number; right: number } {
-		const range = PHASE_COLUMN_RANGE[phase];
-		const rawX = columnX(range.min) - PAD;
-		const rawWidth = (range.max - range.min) * COL_GAP + NODE_W + 2 * PAD;
-		const left = rawX + BAND_GUTTER / 2;
-		const right = left + (rawWidth - BAND_GUTTER);
-		return { left, right };
-	}
-
-	function computeConnectors(activeIdList: string[], reconX: number): ConnectorSpec[] {
-		const out: ConnectorSpec[] = [];
-		const hasPhase = (phase: Phase) =>
-			activeIdList.some((id) => capPhase(id) === phase);
-
-		const disc = bandGeometry('discovery');
-		const exp = bandGeometry('expansion');
-		const dep = bandGeometry('depth');
-
-		// Discovery band → Expansion band
-		if (hasPhase('discovery') && hasPhase('expansion')) {
-			out.push({
-				id: 'conn-disc-exp',
-				fromX: disc.right,
-				toX: exp.left,
-				label: 'in-scope assets',
-				artifact: 'hosts'
-			});
-		}
-		// Expansion band → Depth band
-		if (hasPhase('expansion') && hasPhase('depth')) {
-			out.push({
-				id: 'conn-exp-dep',
-				fromX: exp.right,
-				toX: dep.left,
-				label: 'attack surface',
-				artifact: 'live-hosts'
-			});
-		}
-		// Depth band → Recon Data
-		if (hasPhase('depth')) {
-			out.push({
-				id: 'conn-dep-recon',
-				fromX: dep.right,
-				toX: reconX,
-				label: 'findings',
-				artifact: 'findings'
-			});
-		}
-		return out;
 	}
 
 	// ── Node / edge builders (pure; positions injected by caller) ────────────────
 	function buildNodes(
 		active: Capability[],
 		posFor: (id: string) => { x: number; y: number },
-		focusIds: string[] | null,
-		connectors: ConnectorSpec[],
-		bandCenterY: number
+		focusIds: string[] | null
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	): any[] {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -398,50 +371,35 @@
 				: 'transition: opacity .16s ease;'
 		});
 
-		// Invisible inter-phase gutter anchors (one source-end + one target-end per
-		// connector). Positioned on the band edges at the shared band vertical center.
-		for (const c of connectors) {
-			result.push({
-				id: `${c.id}-from`,
-				type: 'gutterAnchor',
-				position: { x: c.fromX, y: bandCenterY },
-				data: {},
-				draggable: false,
-				connectable: false,
-				selectable: false
-			});
-			result.push({
-				id: `${c.id}-to`,
-				type: 'gutterAnchor',
-				position: { x: c.toX, y: bandCenterY },
-				data: {},
-				draggable: false,
-				connectable: false,
-				selectable: false
-			});
-		}
-
 		return result;
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function buildEdges(
 		specs: EdgeSpec[],
-		connectors: ConnectorSpec[],
 		focusIds: string[] | null
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	): any[] {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const out: any[] = [];
 
-		// — INTRA-PHASE edges (node-to-node, within a band) —
+		// Dedupe always-on labels: only the FIRST edge of each `${sourceId}|${artifact}`
+		// key shows its label always (the data lineage once); the rest reveal on hover.
+		// e.g. http-probe's "live hosts" fan and the expansion→depth "live hosts" fan
+		// each label exactly once instead of stacking.
+		const labelledKeys = new Set<string>();
+
 		for (const spec of specs) {
-			const sourceId = spec.source === 'seed' ? 'seed' : nodeId(spec.source);
-			const targetId = nodeId(spec.target);
+			const sourceId = endpointNodeId(spec.source);
+			const targetId = endpointNodeId(spec.target);
 
 			const sPhase = spec.source === 'seed' ? 'discovery' : capPhase(spec.source);
-			const tPhase = capPhase(spec.target);
+			const tPhase = spec.target === 'recon' ? 'depth' : capPhase(spec.target);
 			const crossPhase = sPhase !== tPhase;
+
+			const key = `${sourceId}|${spec.artifact}`;
+			const firstOfKey = !labelledKeys.has(key);
+			if (firstOfKey) labelledKeys.add(key);
 
 			let opacityMul = 1;
 			if (focusIds) {
@@ -457,33 +415,9 @@
 					artifact: spec.artifact,
 					label: ARTIFACT_LABEL[spec.artifact],
 					crossPhase,
-					showLabel: crossPhase || previewMode,
-					animated: previewMode
-				},
-				style: `opacity: ${opacityMul}; transition: opacity .16s ease;`,
-				markerEnd: { type: MarkerType.ArrowClosed }
-			});
-		}
-
-		// — INTER-PHASE connectors (heavier box arrows in the gutters) —
-		for (const c of connectors) {
-			let opacityMul = 1;
-			if (focusIds) {
-				// Light a connector only when the recon terminal is in focus (depth hover)
-				// — otherwise keep the prominent connectors calm during lane focus.
-				const isReconConn = c.id === 'conn-dep-recon';
-				opacityMul = isReconConn && focusIds.includes('recon') ? 1 : 0.18;
-			}
-			out.push({
-				id: `edge-${c.id}`,
-				source: `${c.id}-from`,
-				target: `${c.id}-to`,
-				type: 'artifact',
-				data: {
-					artifact: c.artifact,
-					label: c.label,
-					// crossPhase = heavier stroke + always-visible label chip.
-					crossPhase: true,
+					// Labels are ALWAYS visible but deduped: first edge per source|artifact
+					// shows always, siblings reveal on hover. Preview forces all labels on.
+					alwaysLabel: previewMode || firstOfKey,
 					showLabel: true,
 					animated: previewMode
 				},
@@ -522,38 +456,21 @@
 		const specs = computeEdgeSpecs(activeIdList);
 		const focusIds = computeFocusIds(specs, hoveredCapId);
 
-		const { pos: layout, maxCol } = computeLayout(active);
+		const { pos: layout } = computeLayout(active);
 		const forceLayout = tidyNonce !== lastTidyNonce;
 		lastTidyNonce = tidyNonce;
 
-		// Preserve existing positions (cap/seed/recon only) unless tidy-up reset.
+		// Preserve existing positions (cap/seed/recon) unless tidy-up reset.
 		const prev: Record<string, { x: number; y: number }> = {};
 		if (!forceLayout) {
 			for (const n of untrack(() => nodes)) {
-				if (n.type !== 'gutterAnchor') prev[n.id] = n.position;
+				prev[n.id] = n.position;
 			}
 		}
 		const posFor = (id: string) => prev[id] ?? layout[id] ?? { x: 0, y: CENTER_Y };
 
-		// Shared band vertical center from the cap/seed/recon span (anchors excluded,
-		// so they can never feed back into this geometry). Mirrors bandBox below.
-		let minY = CENTER_Y;
-		let maxY = CENTER_Y + NODE_H;
-		for (const cap of active) {
-			const p = posFor(nodeId(cap.id));
-			if (p.y < minY) minY = p.y;
-			if (p.y + NODE_H > maxY) maxY = p.y + NODE_H;
-		}
-		const seedP = posFor('seed');
-		if (seedP.y < minY) minY = seedP.y;
-		if (seedP.y + NODE_H > maxY) maxY = seedP.y + NODE_H;
-		const bandCenterY = (minY + maxY) / 2;
-
-		const reconX = layout['recon']?.x ?? columnX(maxCol + 1);
-		const connectors = computeConnectors(activeIdList, posFor('recon').x ?? reconX);
-
-		nodes = buildNodes(active, posFor, focusIds, connectors, bandCenterY);
-		edges = buildEdges(specs, connectors, focusIds);
+		nodes = buildNodes(active, posFor, focusIds);
+		edges = buildEdges(specs, focusIds);
 	});
 
 	// ── Phase bands (tall neutral swim columns, rendered in flow coords) ─────────
@@ -574,14 +491,15 @@
 
 	let active = $derived(getActiveCapabilities(engine));
 
-	// Vertical extent of all NON-ANCHOR nodes → a single shared band height,
-	// centered on the node span. Anchors are excluded (they sit ON the band edges,
-	// so including them would create a geometry feedback loop).
+	// Vertical extent of the CAPABILITY nodes only → a single shared band height,
+	// centered on their span. Seed and recon are excluded, so dragging them
+	// (especially the terminal recon node, which sits OUTSIDE the bands) never
+	// resizes the phase containers.
 	let bandBox = $derived.by<{ top: number; height: number }>(() => {
 		let minY = CENTER_Y;
 		let maxY = CENTER_Y + NODE_H;
 		for (const n of nodes) {
-			if (n.type === 'gutterAnchor') continue;
+			if (n.type !== 'capabilityNode') continue;
 			if (n.position.y < minY) minY = n.position.y;
 			if (n.position.y + NODE_H > maxY) maxY = n.position.y + NODE_H;
 		}
