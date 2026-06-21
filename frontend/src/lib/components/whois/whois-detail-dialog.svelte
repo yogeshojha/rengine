@@ -15,15 +15,9 @@
 	import WhoisRelatedTab from './whois-related-tab.svelte';
 	import CorrelationLookupDialog from './correlation-lookup-dialog.svelte';
 	import DiscoveriesSummary from '$lib/components/viewdns-discoveries/discoveries-summary.svelte';
-	import {
-		RefreshCw,
-		Globe,
-		Server,
-		Network,
-		Loader,
-		TriangleAlert,
-		Sparkles
-	} from 'lucide-svelte';
+	import { RefreshCw, Loader, TriangleAlert, Sparkles } from 'lucide-svelte';
+	import { getLookupTypeIcon } from '$lib/config/icons';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		open: boolean;
@@ -64,7 +58,7 @@
 	let correlationLookupType = $state('');
 	let correlationLookupValue = $state('');
 
-	let displayRecord = $derived(externalRecord ?? internalRecord);
+	let displayRecord = $derived(internalRecord ?? externalRecord);
 
 	let hasEntities = $derived(
 		displayRecord?.parsed_data?.entities != null &&
@@ -72,7 +66,7 @@
 	);
 
 	let relatedCount = $derived.by(() => {
-		const seen = new Set<string>();
+		const seen = new SvelteSet<string>();
 		for (const c of correlations) {
 			for (const r of c.records) {
 				if (r.id !== displayRecord?.id) seen.add(r.id);
@@ -81,21 +75,8 @@
 		return seen.size;
 	});
 
-	let LookupIcon = $derived.by(() => {
-		if (!displayRecord) return Globe;
-		switch (displayRecord.lookup_type) {
-			case 'DOMAIN':
-				return Globe;
-			case 'IP':
-				return Server;
-			case 'ASN':
-				return Network;
-			default:
-				return Globe;
-		}
-	});
+	let LookupIcon = $derived(getLookupTypeIcon(displayRecord?.lookup_type ?? ''));
 
-	// Discoveries tab available for domain and IP targets
 	let showDiscoveriesTab = $derived(
 		targetValue != null && (targetType === 'domain' || targetType === 'ip')
 	);
@@ -135,6 +116,19 @@
 		}
 	});
 
+	async function loadCorrelations() {
+		if (!targetId) return;
+		isLoadingCorrelations = true;
+		correlationsError = null;
+		try {
+			correlations = await whoisApi.getTargetCorrelations(targetId);
+		} catch (e) {
+			correlationsError = e instanceof Error ? e.message : 'Failed to load correlations';
+		} finally {
+			isLoadingCorrelations = false;
+		}
+	}
+
 	async function loadData() {
 		if (!externalRecord && recordId) {
 			isLoadingRecord = true;
@@ -148,17 +142,7 @@
 			}
 		}
 
-		if (targetId) {
-			isLoadingCorrelations = true;
-			correlationsError = null;
-			try {
-				correlations = await whoisApi.getTargetCorrelations(targetId);
-			} catch (e) {
-				correlationsError = e instanceof Error ? e.message : 'Failed to load correlations';
-			} finally {
-				isLoadingCorrelations = false;
-			}
-		}
+		await loadCorrelations();
 	}
 
 	async function handleRefresh() {
@@ -169,9 +153,10 @@
 		try {
 			const response = await whoisApi.refreshRecord(id);
 			internalRecord = response.record;
+			await loadCorrelations();
 			toast.success('WHOIS record refreshed');
 		} catch (e) {
-			toast.error('Failed to refresh WHOIS record');
+			toast.error(e instanceof Error ? e.message : 'Failed to refresh WHOIS record');
 		} finally {
 			isRefreshing = false;
 		}
@@ -185,7 +170,7 @@
 </script>
 
 <Dialog.Root bind:open {onOpenChange}>
-	<Dialog.Content class="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+	<Dialog.Content class="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
 		<div bind:this={headerEl} class="shrink-0">
 			<Dialog.Header class="px-6 pt-6 pb-4">
 				<div class="flex items-center gap-3">
@@ -213,15 +198,18 @@
 					{#if displayRecord}
 						<Tooltip.Root>
 							<Tooltip.Trigger>
-								<Button
-									variant="ghost"
-									size="icon"
-									class="h-8 w-8 shrink-0"
-									onclick={handleRefresh}
-									disabled={isRefreshing}
-								>
-									<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
-								</Button>
+								{#snippet child({ props })}
+									<Button
+										{...props}
+										variant="ghost"
+										size="icon"
+										class="h-8 w-8 shrink-0"
+										onclick={handleRefresh}
+										disabled={isRefreshing}
+									>
+										<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
+									</Button>
+								{/snippet}
 							</Tooltip.Trigger>
 							<Tooltip.Content>
 								<p>Refresh WHOIS data</p>
@@ -262,10 +250,7 @@
 						<Tabs.Trigger value="related" class="flex-1 gap-1.5">
 							Related
 							{#if !isLoadingCorrelations && relatedCount > 0}
-								<Badge
-									variant="outline"
-									class="text-[10px] h-5 min-w-5 px-1.5 ml-1 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20"
-								>
+								<Badge variant="secondary" class="text-[10px] h-5 min-w-5 px-1.5 ml-1">
 									{relatedCount}
 								</Badge>
 							{:else if isLoadingCorrelations}
@@ -275,7 +260,7 @@
 						{#if showDiscoveriesTab}
 							<Tabs.Trigger value="discoveries" class="flex-1 gap-1.5">
 								Discoveries
-								<Sparkles class="h-3 w-3 text-amber-500 ml-0.5" />
+								<Sparkles class="h-3 w-3 text-muted-foreground ml-0.5" />
 							</Tabs.Trigger>
 						{/if}
 					</Tabs.List>

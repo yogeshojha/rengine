@@ -6,7 +6,7 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentSuperuser, CurrentUser
 from app.config import settings
 from app.core.database import get_session
 from app.debug.notifications import DEBUG_NOTIFICATION_TEMPLATES
@@ -66,7 +66,7 @@ async def list_unread_notifications(
 @router.post("", response_model=NotificationRead, status_code=status.HTTP_201_CREATED)
 async def create_notification(
     notification_in: NotificationCreate,
-    _current_user: CurrentUser,
+    _current_user: CurrentSuperuser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     notification = await NotificationManager.publish(
@@ -95,7 +95,7 @@ async def mark_notification_as_read(
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found or already read",
+            detail="Notification not found",
         )
 
     return {"success": True, "message": "Notification marked as read"}
@@ -141,8 +141,6 @@ async def clear_all_notifications(
     await NotificationManager.clear_all(session=session)
 
 
-# DEBUG Endpoints fot Testing Notifications
-
 if settings.DEBUG:
     import random
 
@@ -151,7 +149,6 @@ if settings.DEBUG:
         _current_user: CurrentUser,
         session: Annotated[AsyncSession, Depends(get_session)],
     ):
-        """Publish a random notification for testing"""
         template = random.choice(DEBUG_NOTIFICATION_TEMPLATES)  # noqa: S311
 
         notification = await NotificationManager.publish(

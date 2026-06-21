@@ -97,7 +97,6 @@
 </script>
 
 <div class="space-y-6">
-	<!-- Page header -->
 	<div class="flex items-start justify-between">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Scan Contexts</h1>
@@ -129,14 +128,12 @@
 	{/if}
 
 	{#if scanContextsStore.isLoading}
-		<!-- Loading skeleton -->
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
 				<Skeleton class="h-[150px] rounded-[10px]" />
 			{/each}
 		</div>
 	{:else if scanContextsStore.contexts.length === 0}
-		<!-- Empty state -->
 		<Empty.Root class="border bg-muted/20 py-20">
 			<Empty.Header>
 				<Empty.Media class="size-16 rounded-2xl bg-muted">
@@ -156,7 +153,6 @@
 			</Empty.Content>
 		</Empty.Root>
 	{:else}
-		<!-- Context grid -->
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each scanContextsStore.contexts as context (context.id)}
 				<ContextListCard
@@ -179,7 +175,7 @@
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
 		title="Delete Context"
-		description="Are you sure you want to delete '{contextToDelete.name}'? This action cannot be undone."
+		description="Are you sure you want to delete '{contextToDelete.name || 'this context'}'? This action cannot be undone."
 		{isDeleting}
 		onOpenChange={(open) => {
 			showDeleteDialog = open;

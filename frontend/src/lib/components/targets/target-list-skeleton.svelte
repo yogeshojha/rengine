@@ -5,12 +5,11 @@
 		count?: number;
 	}
 
-	// number of Skeleton to show
 	let { count = 5 }: Props = $props();
 </script>
 
 <div class="divide-y divide-border/50">
-	{#each Array(count) as _, i}
+	{#each Array(count) as _, i (i)}
 		<div class="flex items-center gap-3 px-4 py-3">
 			<Skeleton class="h-4 w-4 rounded" />
 			<div class="w-[240px] space-y-1.5">

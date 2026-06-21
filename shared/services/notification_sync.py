@@ -15,8 +15,6 @@ NOTIFICATION_EXPIRY_DAYS = 7
 
 
 class SyncNotificationPublisher:
-    """Publish notifications from Celery workers (sync context)."""
-
     def __init__(self, redis_url: str) -> None:
         self._event_publisher = SyncEventPublisher(redis_url)
 
@@ -73,5 +71,12 @@ class SyncNotificationPublisher:
         logger.info(
             "Published notification: %s/%s - %s", type.value, severity.value, title
         )
+
+        try:
+            from shared.services.notifier import dispatch_sync  # noqa: PLC0415
+
+            dispatch_sync(session, type, severity, title, message)
+        except Exception as exc:
+            logger.warning("External notification dispatch failed: %s", exc)
 
         return notification

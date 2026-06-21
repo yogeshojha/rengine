@@ -46,7 +46,7 @@
 {#if isLoading}
 	<div class="relative pl-[10px]">
 		<div class="absolute left-[10px] top-0 bottom-4 w-px bg-border/40"></div>
-		{#each { length: 4 } as _, i}
+		{#each { length: 4 } as _, i (i)}
 			<div class="relative flex gap-2.5 pb-3">
 				<Skeleton class="z-[1] mt-px h-5 w-5 shrink-0 rounded-full" />
 				<div class="flex-1 space-y-1 py-0.5">

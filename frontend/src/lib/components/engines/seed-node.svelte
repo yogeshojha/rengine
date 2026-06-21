@@ -1,9 +1,7 @@
 <script lang="ts">
-	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
+	import { Handle, Position } from '@xyflow/svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { SEED_TYPES } from '$lib/types/engine';
-
-	let { data }: NodeProps = $props();
 </script>
 
 <div class="seed-node">
@@ -15,7 +13,7 @@
 	<p class="seed-sub">Works with any target</p>
 
 	<div class="seed-chips">
-		{#each SEED_TYPES as t}
+		{#each SEED_TYPES as t (t)}
 			<Badge variant="secondary" class="text-[10px] uppercase tracking-wide">{t}</Badge>
 		{/each}
 	</div>

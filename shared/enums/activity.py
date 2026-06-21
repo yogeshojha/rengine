@@ -2,8 +2,6 @@ from enum import Enum
 
 
 class ActivityLevel(Enum):
-    """Severity level of an activity log entry."""
-
     INFO = "info"
     SUCCESS = "success"
     WARNING = "warning"
@@ -11,12 +9,6 @@ class ActivityLevel(Enum):
 
 
 class ActivityEvent(Enum):
-    """Structured event types for activity logging.
-
-    Naming convention: {entity}.{action} or {entity}.{sub}.{action}
-    Will be used for filtering and categorization of activity logs.
-    """
-
     # target events
     TARGET_CREATED = "target.created"
     TARGET_UPDATED = "target.updated"

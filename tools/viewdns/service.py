@@ -78,6 +78,9 @@ class ViewDNSService:
                 return ReverseNSResponse.model_validate(data)
             case ViewDNSLookupType.REVERSE_WHOIS:
                 return ReverseWhoisResponse.model_validate(data)
+            case _:
+                msg = f"Unknown lookup type: {lookup_type}"
+                raise ViewDNSLookupError(msg)
 
     def _to_read(
         self,
@@ -111,11 +114,14 @@ class ViewDNSService:
         await self._api_key_service.increment_usage(APIProvider.VIEWDNS)
 
     async def _handle_api_error(self, e: ViewDNSAPIError) -> None:
-        if isinstance(e, (ViewDNSRateLimitError, ViewDNSAuthError)):
-            label = (
-                "rate limit" if isinstance(e, ViewDNSRateLimitError) else "auth error"
-            )
-            logger.warning("ViewDNS %s, disabling key: %s", label, e)
+        # Rate limits are transient; never disable the shared instance-global key
+        # for them (one user's burst would deny ViewDNS to everyone). Only a
+        # genuine auth failure (invalid/revoked key) warrants disabling.
+        if isinstance(e, ViewDNSRateLimitError):
+            logger.warning("ViewDNS rate limit: %s", e)
+            return
+        if isinstance(e, ViewDNSAuthError):
+            logger.warning("ViewDNS auth error, disabling key: %s", e)
             await self._api_key_service.disable_key(APIProvider.VIEWDNS)
 
     async def _get_cached(
@@ -176,11 +182,13 @@ class ViewDNSService:
         api_key_service.increment_usage(APIProvider.VIEWDNS)
 
     def _handle_api_error_sync(self, session: Session, e: ViewDNSAPIError) -> None:
-        if isinstance(e, (ViewDNSRateLimitError, ViewDNSAuthError)):
-            label = (
-                "rate limit" if isinstance(e, ViewDNSRateLimitError) else "auth error"
-            )
-            logger.warning("ViewDNS %s, disabling key: %s", label, e)
+        # Rate limits are transient; never disable the shared instance-global key
+        # for them. Only a genuine auth failure warrants disabling.
+        if isinstance(e, ViewDNSRateLimitError):
+            logger.warning("ViewDNS rate limit: %s", e)
+            return
+        if isinstance(e, ViewDNSAuthError):
+            logger.warning("ViewDNS auth error, disabling key: %s", e)
             api_key_service = SyncAPIKeyService(session)
             api_key_service.disable_key(APIProvider.VIEWDNS)
 

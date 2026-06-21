@@ -4,6 +4,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Empty from '$lib/components/ui/empty/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import {
 		AlertTriangle,
 		CircleCheck,
@@ -29,11 +30,9 @@
 	};
 
 	function statusBadgeClass(status: PreviewToolStatus): string {
-		// Monochrome-leaning: will_run foreground, disabled muted, needs-key a
-		// restrained amber accent. No bright colors.
 		if (status === 'will_run') return 'border-foreground/30 text-foreground';
 		if (status === 'skipped_needs_key')
-			return 'border-amber-500/40 text-amber-600 dark:text-amber-400';
+			return 'border-amber-500/40 text-amber-600 dark:text-amber-500';
 		return 'border-border text-muted-foreground';
 	}
 
@@ -43,6 +42,13 @@
 	}
 
 	let s = $derived(preview?.summary ?? null);
+
+	let willRunCount = $derived(
+		preview?.phases.reduce(
+			(n, phase) => n + phase.tools.filter((t) => t.status === 'will_run').length,
+			0
+		) ?? 0
+	);
 </script>
 
 {#if loading}
@@ -65,7 +71,6 @@
 	</Empty.Root>
 {:else}
 	<div class="space-y-4">
-		<!-- Header -->
 		<div class="flex flex-wrap items-center gap-2 text-sm">
 			<span class="font-mono text-foreground">{preview.target_value}</span>
 			<Badge variant="outline" class="font-normal">{preview.target_type}</Badge>
@@ -78,10 +83,18 @@
 			{/if}
 		</div>
 
-		<!-- Warnings -->
+		{#if willRunCount === 0}
+			<div
+				class="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-500"
+			>
+				<AlertTriangle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+				<span>No tools will run with this configuration — launching now scans nothing.</span>
+			</div>
+		{/if}
+
 		{#if preview.warnings.length > 0}
 			<div
-				class="space-y-1 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
+				class="space-y-1 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-500"
 			>
 				{#each preview.warnings as warning (warning)}
 					<div class="flex items-start gap-2">
@@ -92,7 +105,6 @@
 			</div>
 		{/if}
 
-		<!-- Phases -->
 		{#each preview.phases as phase (phase.phase)}
 			<Card.Root class="gap-0 py-0">
 				<Card.Header class="px-4 py-3">
@@ -161,7 +173,6 @@
 			</Card.Root>
 		{/each}
 
-		<!-- Summary -->
 		{#if s}
 			<Card.Root class="gap-0 py-0">
 				<Card.Header class="px-4 py-3">
@@ -172,7 +183,11 @@
 					<div class="grid grid-cols-2 gap-x-4 gap-y-2">
 						<div class="text-muted-foreground">Auth</div>
 						<div class="text-foreground">
-							{s.auth_summary === 'None' ? 'None' : `${s.auth_summary} ✓`}
+							{#if s.auth_summary === 'None'}
+								None
+							{:else}
+								{s.auth_summary} <span class="text-muted-foreground">· configured</span>
+							{/if}
 						</div>
 
 						<div class="text-muted-foreground">Custom headers</div>
@@ -180,7 +195,22 @@
 							{#if s.custom_header_names.length > 0}
 								<div class="flex flex-wrap gap-1">
 									{#each s.custom_header_names as name (name)}
-										<Badge variant="secondary" class="rounded px-1.5 py-0.5 text-[10px] font-mono font-normal">{name}</Badge>
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												{#snippet child({ props })}
+													<Badge
+														{...props}
+														variant="secondary"
+														class="cursor-default rounded px-1.5 py-0.5 font-mono text-[10px] font-normal"
+													>
+														{name}
+													</Badge>
+												{/snippet}
+											</Tooltip.Trigger>
+											<Tooltip.Content>
+												<p>Value hidden · configured</p>
+											</Tooltip.Content>
+										</Tooltip.Root>
 									{/each}
 								</div>
 							{:else}

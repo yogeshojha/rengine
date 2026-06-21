@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -73,10 +73,6 @@ async def validate_bulk_target(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """
-    Validate multiple target values in one request.
-    Maximum as defined in {MAX_TARGET_IMPORT} targets per request.
-    """
     if len(request) > MAX_TARGET_IMPORT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -149,7 +145,6 @@ async def get_target_stats(
         TargetType | None, Query(description="Filter by target type")
     ] = None,
 ):
-    """Per-signal KPI counts over the same filtered base set as the list."""
     return await service.get_target_stats(
         project_slug=project_slug,
         search=search,
@@ -170,7 +165,6 @@ async def list_matching_target_ids(
     target_type: Annotated[TargetType | None, Query()] = None,
     signal: Annotated[SignalName | None, Query()] = None,
 ):
-    """All target IDs matching the filters (for select-all-matching)."""
     return await service.get_matching_target_ids(
         project_slug=project_slug,
         search=search,
@@ -181,19 +175,23 @@ async def list_matching_target_ids(
     )
 
 
+MAX_BULK_TARGET_IDS = 10000
+MAX_BULK_NAMES = 100
+
+
 class BulkEnrichRequest(BaseModel):
-    target_ids: list[UUID]
+    target_ids: list[UUID] = Field(..., min_length=1, max_length=MAX_BULK_TARGET_IDS)
     kind: Literal["whois", "dns", "bgp"]
 
 
 class BulkTagRequest(BaseModel):
-    target_ids: list[UUID]
-    tag_names: list[str]
+    target_ids: list[UUID] = Field(..., min_length=1, max_length=MAX_BULK_TARGET_IDS)
+    tag_names: list[str] = Field(..., min_length=1, max_length=MAX_BULK_NAMES)
 
 
 class BulkOrgRequest(BaseModel):
-    target_ids: list[UUID]
-    organization_names: list[str]
+    target_ids: list[UUID] = Field(..., min_length=1, max_length=MAX_BULK_TARGET_IDS)
+    organization_names: list[str] = Field(..., min_length=1, max_length=MAX_BULK_NAMES)
 
 
 @router.post("/enrich/bulk", response_model=dict[str, int])
@@ -240,11 +238,6 @@ async def search_targets_by_value(
         str | None, Query(description="Optional: Filter by specific project")
     ] = None,
 ):
-    """
-    Search for targets by their target_value across all projects.
-    Returns all instances of a target (which may exist in multiple projects).
-    Optionally uses filter by project_slug to narrow results.
-    """
     query = await service.search_targets_by_value(
         target_value=target_value,
         project_slug=project_slug,
@@ -334,30 +327,6 @@ async def import_targets_json(
     current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """
-    Import targets from JSON with per-target customization.
-
-    Each target can have its own tags and organizations.
-    Maximum 500 targets per request, later todo in celery.
-
-    Example SUpported:
-    {
-      "project_slug": "my-project",
-      "targets": [
-        {
-          "target_value": "loremipsum.com",
-          "tags": ["production", "critical"],
-          "organizations": ["Hello World"],
-          "display_name": "Main Website"
-        },
-        {
-          "target_value": "192.168.1.1",
-          "tags": ["internal"],
-          "organizations": []
-        }
-      ]
-    }
-    """
     return await service.import_targets_structured(import_request, current_user.id)
 
 
@@ -374,21 +343,6 @@ async def import_targets_csv(
     current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """
-    Import targets from a CSV file.
-
-    CSV Format Options:
-    1. Simple (single column): target_value
-    2. With tags: target_value, tags (comma-separated)
-    3. With organizations: target_value, organizations (comma-separated)
-    4. Full: target_value, tags, organizations, display_name
-
-    Headers are optional but recommended. If no headers, assumes first column is target_value.
-    Flexible header names: target/value/domain/ip, tags/tag, organizations/org, display_name/name
-
-    Each target can have its own tags and organizations (comma-separated in CSV cells).
-    Maximum 500 targets per CSV file.
-    """
     return await service.import_targets_csv(project_slug, file, current_user.id)
 
 
@@ -398,11 +352,6 @@ async def get_target_detail(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """Get complete target with all enrichment data expanded.
-
-    Returns the target with full WHOIS record, full DNS lookup
-    with all records, and full BGP data from RIPEStat tables.
-    """
     return await service.get_target_detail(target_id)
 
 
@@ -412,7 +361,6 @@ async def get_target_dns(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """Get full DNS lookup data with all individual records."""
     return await service.get_target_dns(target_id)
 
 
@@ -422,7 +370,6 @@ async def get_target_whois(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """Get full WHOIS record for a target."""
     return await service.get_target_whois(target_id)
 
 
@@ -432,14 +379,6 @@ async def get_target_bgp(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """Get full BGP enrichment data from RIPEStat tables.
-
-    Response varies by target type:
-    - ASN: AS overview, announced prefixes, neighbours, abuse contacts
-    - IP: network info, AS overview, abuse contacts
-    - IP_RANGE: prefix overview, related prefixes, abuse contacts
-    - DOMAIN/URL: returns status only, no BGP data
-    """
     return await service.get_target_bgp(target_id)
 
 
@@ -449,7 +388,6 @@ async def refresh_target_dns(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """Re-trigger DNS lookup. Only for DOMAIN and URL targets (422 otherwise)."""
     return await service.refresh_target_dns(target_id)
 
 
@@ -459,7 +397,6 @@ async def refresh_target_whois(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """Re-trigger WHOIS lookup. Applies to all target types."""
     return await service.refresh_target_whois(target_id)
 
 
@@ -469,7 +406,6 @@ async def refresh_target_bgp(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    """Re-trigger BGP enrichment. Only for IP, IP_RANGE, and ASN targets (422 otherwise)."""
     return await service.refresh_target_bgp(target_id)
 
 

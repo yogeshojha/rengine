@@ -77,27 +77,3 @@ export const DISCOVERY_SOURCE_DESCRIPTIONS: Record<DiscoverySourceType, string> 
 	reverse_ip: 'Domains hosted on the same IP',
 	reverse_ns: 'Domains sharing the same nameserver'
 };
-
-export const DISCOVERY_SOURCE_COLORS: Record<
-	DiscoverySourceType,
-	{ bg: string; text: string; border: string; badge: string }
-> = {
-	reverse_whois: {
-		bg: 'bg-violet-500/10',
-		text: 'text-violet-600 dark:text-violet-400',
-		border: 'border-violet-500/20',
-		badge: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20'
-	},
-	reverse_ip: {
-		bg: 'bg-emerald-500/10',
-		text: 'text-emerald-600 dark:text-emerald-400',
-		border: 'border-emerald-500/20',
-		badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-	},
-	reverse_ns: {
-		bg: 'bg-cyan-500/10',
-		text: 'text-cyan-600 dark:text-cyan-400',
-		border: 'border-cyan-500/20',
-		badge: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20'
-	}
-};

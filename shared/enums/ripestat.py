@@ -12,12 +12,6 @@ class RIPEStatLookupType(StrEnum):
 
 
 class ASNRelationship(StrEnum):
-    """BGP neighbour relationship type.
-
-    RIPEstat returns "left" (upstream), "right" (downstream), "uncertain".
-    We normalize to human-readable values.
-    """
-
     UPSTREAM = "upstream"
     DOWNSTREAM = "downstream"
     UNCERTAIN = "uncertain"

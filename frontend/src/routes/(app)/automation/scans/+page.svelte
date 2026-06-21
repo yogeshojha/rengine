@@ -75,7 +75,6 @@
 </script>
 
 <div class="space-y-6">
-	<!-- Page header -->
 	<div class="flex items-start justify-between">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Scans</h1>
@@ -110,14 +109,12 @@
 	{/if}
 
 	{#if scansStore.isLoading}
-		<!-- Loading skeleton -->
 		<div class="space-y-2">
 			{#each Array(4) as _, i (i)}
 				<Skeleton class="h-14 rounded-lg" />
 			{/each}
 		</div>
 	{:else if scansStore.scans.length === 0}
-		<!-- Empty state -->
 		<Empty.Root class="border bg-muted/20 py-20">
 			<Empty.Header>
 				<Empty.Media class="size-16 rounded-2xl bg-muted">

@@ -1,5 +1,3 @@
-"""Detection of shared / managed DNS infrastructure (poor correlation keys)."""
-
 _SHARED_NS_TOKENS = frozenset(
     {
         "cloudflare",

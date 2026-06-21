@@ -1,5 +1,3 @@
-"""Notification templates - single source of truth for all notification messages."""
-
 from shared.enums.notification import NotificationSeverity, NotificationType
 
 
@@ -30,7 +28,6 @@ def whois_enrichment_complete(
 
 
 def whois_enrichment_failed(error: str) -> dict:
-    """Entire WHOIS task failed (not individual target failures)."""
     return {
         "type": NotificationType.TARGET,
         "severity": NotificationSeverity.ERROR,

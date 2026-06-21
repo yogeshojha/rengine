@@ -87,8 +87,8 @@
 	</Empty.Root>
 {:else}
 	<div class="space-y-4 py-1">
-		{#each populatedRoles as role}
-			{#each getEntities(role) as entity}
+		{#each populatedRoles as role (role)}
+			{#each getEntities(role) as entity, i (`${role}-${entity.handle || entity.email || entity.name}-${i}`)}
 				{#if entity.name || entity.email || entity.tel || entity.handle || formatAddress(entity)}
 					{@const RoleIcon = ROLE_ICONS[role]}
 					<div class="rounded-lg border border-border/60 bg-card">

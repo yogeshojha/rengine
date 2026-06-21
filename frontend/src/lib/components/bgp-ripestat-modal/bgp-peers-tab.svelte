@@ -47,20 +47,20 @@
 		upstream: {
 			label: 'Upstream',
 			icon: ArrowUpRight,
-			badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-			bar: 'bg-blue-500/60'
+			badge: 'text-muted-foreground border-border/60',
+			bar: 'bg-foreground'
 		},
 		downstream: {
 			label: 'Downstream',
 			icon: ArrowDownRight,
-			badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-			bar: 'bg-emerald-500/60'
+			badge: 'text-muted-foreground border-border/60',
+			bar: 'bg-muted-foreground'
 		},
 		uncertain: {
 			label: 'Peer',
 			icon: Info,
-			badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-			bar: 'bg-amber-500/60'
+			badge: 'text-muted-foreground border-border/60',
+			bar: 'bg-muted-foreground/50'
 		}
 	};
 
@@ -69,7 +69,7 @@
 			RELATIONSHIP_META[rel] ?? {
 				label: rel,
 				icon: Info,
-				badge: 'bg-muted text-muted-foreground border-border',
+				badge: 'text-muted-foreground border-border/60',
 				bar: 'bg-muted-foreground/40'
 			}
 		);
@@ -113,7 +113,6 @@
 	</Empty.Root>
 {:else}
 	<div class="space-y-4 py-1">
-		<!-- Stats summary -->
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
 				<Waypoints class="h-4 w-4" />
@@ -124,13 +123,12 @@
 			</div>
 		</div>
 
-		<!-- Relationship distribution -->
 		<div class="flex items-center gap-3 flex-wrap">
 			{#if upstreamCount > 0}
 				<div class="flex items-center gap-1.5 text-xs">
-					<ArrowUpRight class="h-3 w-3 text-blue-500" />
+					<ArrowUpRight class="h-3 w-3 text-muted-foreground" />
 					<span class="text-muted-foreground">
-						<span class="font-medium text-blue-600 dark:text-blue-400">
+						<span class="font-medium text-foreground">
 							{upstreamCount.toLocaleString()}
 						</span>
 						upstream
@@ -139,9 +137,9 @@
 			{/if}
 			{#if downstreamCount > 0}
 				<div class="flex items-center gap-1.5 text-xs">
-					<ArrowDownRight class="h-3 w-3 text-emerald-500" />
+					<ArrowDownRight class="h-3 w-3 text-muted-foreground" />
 					<span class="text-muted-foreground">
-						<span class="font-medium text-emerald-600 dark:text-emerald-400">
+						<span class="font-medium text-foreground">
 							{downstreamCount.toLocaleString()}
 						</span>
 						downstream
@@ -150,9 +148,9 @@
 			{/if}
 			{#if uncertainCount > 0}
 				<div class="flex items-center gap-1.5 text-xs">
-					<Info class="h-3 w-3 text-amber-500" />
+					<Info class="h-3 w-3 text-muted-foreground" />
 					<span class="text-muted-foreground">
-						<span class="font-medium text-amber-600 dark:text-amber-400">
+						<span class="font-medium text-foreground">
 							{uncertainCount.toLocaleString()}
 						</span>
 						uncertain
@@ -161,31 +159,29 @@
 			{/if}
 		</div>
 
-		<!-- Distribution bar -->
 		{#if neighbours.length > 0}
 			<div class="h-2 rounded-full overflow-hidden flex bg-muted">
 				{#if upstreamCount > 0}
 					<div
-						class="bg-blue-500/70 transition-all"
+						class="bg-foreground transition-all"
 						style="width: {(upstreamCount / neighbours.length) * 100}%"
 					></div>
 				{/if}
 				{#if downstreamCount > 0}
 					<div
-						class="bg-emerald-500/70 transition-all"
+						class="bg-muted-foreground transition-all"
 						style="width: {(downstreamCount / neighbours.length) * 100}%"
 					></div>
 				{/if}
 				{#if uncertainCount > 0}
 					<div
-						class="bg-amber-500/70 transition-all"
+						class="bg-muted-foreground/50 transition-all"
 						style="width: {(uncertainCount / neighbours.length) * 100}%"
 					></div>
 				{/if}
 			</div>
 		{/if}
 
-		<!-- Peer list header -->
 		<div
 			class="flex items-center justify-between px-3 text-[11px] text-muted-foreground uppercase tracking-wider"
 		>
@@ -193,41 +189,44 @@
 			<Zap class="h-3 w-3" />
 		</div>
 
-		<!-- Peer list -->
 		<div class="space-y-1">
-			{#each displayNeighbours as neighbour}
+			{#each displayNeighbours as neighbour (neighbour.neighbour_asn)}
 				{@const meta = getMeta(neighbour.relationship)}
 				{@const RelIcon = meta.icon}
 				{@const powerPct = maxPower > 0 ? (neighbour.power / maxPower) * 100 : 0}
 				<div
 					class="flex items-center gap-3 px-3 py-2 rounded-lg border border-border/50 hover:border-border/80 transition-colors group/row relative overflow-hidden"
 				>
-					<!-- Power bar background -->
 					<div
 						class="absolute inset-y-0 left-0 {meta.bar} opacity-[0.07] transition-all"
 						style="width: {powerPct}%"
 					></div>
 
-					<!-- Content (above bar) -->
 					<div class="flex items-center gap-3 min-w-0 flex-1 relative z-10">
 						<Tooltip.Root>
 							<Tooltip.Trigger>
-								<button
-									class="font-mono text-sm font-medium hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group/asn"
-									onclick={() => handleAddAsTarget(neighbour.neighbour_asn)}
-								>
-									AS{neighbour.neighbour_asn}
-									<CirclePlus
-										class="h-3 w-3 opacity-0 group-hover/asn:opacity-60 transition-opacity"
-									/>
-								</button>
+								{#snippet child({ props })}
+									<button
+										{...props}
+										class="font-mono text-sm font-medium hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group/asn"
+										onclick={() => handleAddAsTarget(neighbour.neighbour_asn)}
+									>
+										AS{neighbour.neighbour_asn}
+										<CirclePlus
+											class="h-3 w-3 opacity-0 group-hover/asn:opacity-60 transition-opacity"
+										/>
+									</button>
+								{/snippet}
 							</Tooltip.Trigger>
 							<Tooltip.Content>
 								<p>Add AS{neighbour.neighbour_asn} as target</p>
 							</Tooltip.Content>
 						</Tooltip.Root>
 
-						<Badge class="text-[10px] font-normal border gap-1 shrink-0 {meta.badge}">
+						<Badge
+							variant="outline"
+							class="text-[10px] font-normal gap-1 shrink-0 {meta.badge}"
+						>
 							<RelIcon class="h-3 w-3" />
 							{meta.label}
 						</Badge>

@@ -17,13 +17,10 @@
 		nodeTypes: any;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		edgeTypes: any;
-		// fit key — re-fits whenever this changes (active node count)
 		fitKey: number;
-		// fit nonce — re-fits when bumped (tidy up)
 		fitNonce?: number;
 		onNodePointerEnter?: (e: { node: { id: string } }) => void;
 		onNodePointerLeave?: () => void;
-		// in-flow overlay (e.g. ViewportPortal phase zones)
 		children?: Snippet;
 	}
 
@@ -39,8 +36,6 @@
 		children
 	}: Props = $props();
 
-	// Safe here: this component renders inside <SvelteFlowProvider>, so the
-	// store context exists when useSvelteFlow() runs.
 	const { fitView } = useSvelteFlow();
 	$effect(() => {
 		void fitKey;
@@ -71,9 +66,6 @@
 </SvelteFlow>
 
 <style>
-	/* ── Theme via official --xy-* CSS vars ──
-	   These map SvelteFlow's internal defaults onto the monochrome design system
-	   so we avoid ad-hoc :global overrides where a var does the job. */
 	:global(.svelte-flow) {
 		--xy-edge-stroke-default: var(--muted-foreground);
 		--xy-handle-background-color-default: var(--muted-foreground);
@@ -85,12 +77,6 @@
 		--xy-node-boxshadow-hover-default: none;
 	}
 
-	/* ── Explicit layering: phase zones (back) → wires → NODES → edge labels ──
-	   The phase headers/dividers sit behind the wires; the wires sit behind the
-	   node cards so a wire never draws across a node face. The artifact labels sit
-	   ABOVE the nodes: xyflow renders the edge-labels container before the node
-	   layer in the DOM, so without this the chips stack under adjacent cards and
-	   get clipped (e.g. "subdomains" → "bdomains"). Verified correct — do NOT regress. */
 	:global(.svelte-flow__viewport-back) {
 		z-index: 0;
 	}
@@ -101,13 +87,10 @@
 	:global(.svelte-flow__nodes) {
 		z-index: 3;
 	}
-	/* Labels float above the node cards so they're never clipped by a neighbour. */
 	:global(.svelte-flow__edge-labels) {
 		z-index: 4;
 	}
 
-	/* Neutral-themed wires + arrowheads (artifact-edge sets currentColor;
-	   this is a defensive default in case an edge renders without the class). */
 	:global(.svelte-flow__edge .svelte-flow__edge-path) {
 		stroke: var(--muted-foreground);
 	}

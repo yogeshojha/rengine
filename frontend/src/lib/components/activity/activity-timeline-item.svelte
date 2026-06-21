@@ -24,12 +24,12 @@
 	});
 
 	const nodeTint: Record<ActivityLevel, string> = {
-		success: 'bg-emerald-500/12 text-emerald-500 ring-1 ring-emerald-500/25',
+		success: 'bg-muted text-foreground ring-1 ring-border',
 		info: 'bg-muted text-muted-foreground ring-1 ring-border',
-		warning: 'bg-amber-500/12 text-amber-500 ring-1 ring-amber-500/25',
-		error: 'bg-red-500/12 text-red-500 ring-1 ring-red-500/25'
+		warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-500 ring-1 ring-amber-500/30',
+		error: 'bg-destructive/10 text-destructive ring-1 ring-destructive/40'
 	};
-	const RUNNING_TINT = 'bg-sky-500/12 text-sky-500 ring-1 ring-sky-500/30';
+	const RUNNING_TINT = 'bg-chart-1/10 text-chart-1 ring-1 ring-chart-1/30';
 
 	function navigate(targetId: string | null) {
 		if (!targetId) return;
@@ -60,7 +60,7 @@
 		<span class="font-mono text-[10px] tabular-nums text-muted-foreground">{timeAgo}</span>
 		{#if isNew}
 			<span
-				class="new-badge inline-flex h-4 items-center rounded px-1 text-[8px] font-semibold uppercase tracking-wide text-cyan-500"
+				class="new-badge inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold uppercase tracking-wide text-chart-1"
 			>
 				new
 			</span>
@@ -121,7 +121,7 @@
 							</div>
 							{#if item.target_id}
 								<ArrowUpRight
-									class="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/sub:opacity-100"
+									class="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground opacity-40 transition-opacity sm:opacity-0 sm:group-hover/sub:opacity-100"
 								/>
 							{/if}
 						</button>
@@ -129,8 +129,6 @@
 				</div>
 			{/if}
 		{:else}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<svelte:element
 				this={primary.target_id ? 'button' : 'div'}
 				role={primary.target_id ? 'button' : undefined}
@@ -145,13 +143,13 @@
 							>{primary.title}</span
 						>
 						{#if running}
-							<span class="shrink-0 text-[9px] font-medium uppercase tracking-wide text-sky-500"
+							<span class="shrink-0 text-[10px] font-medium uppercase tracking-wide text-chart-1"
 								>running</span
 							>
 						{/if}
 						{#if primary.target_id}
 							<ArrowUpRight
-								class="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/single:opacity-100"
+								class="h-3 w-3 shrink-0 text-muted-foreground opacity-40 transition-opacity sm:opacity-0 sm:group-hover/single:opacity-100"
 							/>
 						{/if}
 					</div>

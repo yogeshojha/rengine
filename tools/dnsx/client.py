@@ -51,17 +51,7 @@ class DnsxClient:
         targets: str | list[str],
         cdn: bool = True,
     ) -> ToolResult:
-        """Run full DNS recon (-recon) on one or more targets.
-
-        Queries all record types: A, AAAA, CNAME, NS, TXT, SRV, PTR, MX, SOA, AXFR, CAA.
-
-        Args:
-            targets: Single domain or list of domains to query.
-            cdn: If True, also detect CDN.
-
-        Returns:
-            ToolResult with json_records containing full recon data.
-        """
+        """Run full DNS recon (-recon) querying all record types on one or more targets."""
         args = self._build_base_args()
         args.extend(["-recon", "-resp"])
         if cdn:
@@ -76,18 +66,7 @@ class DnsxClient:
         resp_only: bool = False,
         cdn: bool = False,
     ) -> ToolResult:
-        """Run targeted DNS queries for specific record types.
-
-        Args:
-            targets: Single domain or list of domains.
-            record_types: List of record types to query (e.g. ["a", "aaaa", "ns"]).
-                If None, queries A record (dnsx default).
-            resp_only: If True, only output response values.
-            cdn: If True, also detect CDN.
-
-        Returns:
-            ToolResult with json_records for the queried types.
-        """
+        """Run targeted DNS queries for specific record types (defaults to A)."""
         args = self._build_base_args()
 
         if record_types:
@@ -109,14 +88,7 @@ class DnsxClient:
         self,
         targets: str | list[str],
     ) -> ToolResult:
-        """Simple DNS resolution check (filters alive hosts).
-
-        Args:
-            targets: Domains to check for active DNS resolution.
-
-        Returns:
-            ToolResult with output_lines containing resolved domains.
-        """
+        """Simple DNS resolution check (filters alive hosts)."""
         args = self._build_base_args()
 
         return self._run(
@@ -131,16 +103,7 @@ class DnsxClient:
         args: list[str],
         output_format: OutputFormat = OutputFormat.JSONL,
     ) -> ToolResult:
-        """Execute dnsx with the given arguments.
-
-        Args:
-            targets: Input domains.
-            args: Built CLI arguments.
-            output_format: Expected output format.
-
-        Returns:
-            ToolResult from the tool runner.
-        """
+        """Execute dnsx with the given arguments."""
         if isinstance(targets, str):
             targets = [targets]
 

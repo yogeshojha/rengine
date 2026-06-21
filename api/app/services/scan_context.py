@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.models.proxy import Proxy
 from shared.models.scan_context import (
     AUTH_TYPES,
     HTTP_PROTOCOLS,
@@ -27,8 +28,6 @@ from shared.services.scan_resolve import (
 )
 from shared.utils.datetime import utc_now
 
-# Secret fields kept per auth_type; off-type secrets are stripped on write so
-# stale plaintext credentials never linger at rest after a type switch.
 _AUTH_KEEP = {
     "none": set(),
     "bearer": {"bearer_token"},
@@ -62,6 +61,7 @@ def _to_read(ctx: ScanContext) -> ScanContextRead:
         included_subdomains=ctx.included_subdomains or [],
         follow_redirects_override=ctx.follow_redirects_override,
         http_protocol=ctx.http_protocol,
+        proxy_id=ctx.proxy_id,
         compare_baseline_scan_id=ctx.compare_baseline_scan_id,
         scan_only_new_assets=ctx.scan_only_new_assets,
         created_at=ctx.created_at,
@@ -82,8 +82,6 @@ _MAX_RATE = 10000
 
 
 def _validate_list_caps(name: str, items: list) -> None:
-    """Cap list length and per-element string length to stop a single writer from
-    persisting a multi-MB blob that is re-serialized on every scan read/preview."""
     if items is None:
         return
     if len(items) > _MAX_LIST_ITEMS:
@@ -152,8 +150,6 @@ def _validate_ips(ips: list) -> None:
 
 
 def _validate_subdomains(name: str, subs: list) -> None:
-    """Cap list size and reject control chars (CRLF/NUL) on subdomain lists, which
-    otherwise flow unvalidated into execution_config destined for the worker."""
     _validate_list_caps(name, subs)
     for s in subs or []:
         if not isinstance(s, str):
@@ -202,9 +198,6 @@ def _check_baseline_deferred(compare_baseline_scan_id, scan_only_new_assets) -> 
 
 
 def _apply_auth_update(ctx: ScanContext, data: ScanContextUpdate) -> None:
-    """Merge incoming auth over stored, dropping None keys (None/omitted keeps the
-    stored secret; "" clears it), then prune off-type secrets so stale plaintext
-    credentials never linger after a type switch. Mutates ctx in place."""
     new_auth_type = ctx.auth_type
     if data.auth_type is not None:
         _validate_auth_type(data.auth_type)
@@ -220,8 +213,8 @@ def _apply_auth_update(ctx: ScanContext, data: ScanContextUpdate) -> None:
             if key == "auth_type":
                 continue
             if value is None:
-                continue  # keep stored
-            merged[key] = value  # "" clears, value sets
+                continue
+            merged[key] = value
     merged["auth_type"] = new_auth_type
     _validate_auth_type(new_auth_type)
     _validate_auth_fields(merged)
@@ -230,9 +223,6 @@ def _apply_auth_update(ctx: ScanContext, data: ScanContextUpdate) -> None:
 
 
 def _apply_extra_headers_update(ctx: ScanContext, data: ScanContextUpdate) -> None:
-    """Replace stored extra_headers with the incoming set, but never let a masked
-    value overwrite a stored secret: when an incoming value equals MASK for a
-    sensitive-named header, keep the stored value (case-insensitive). Mutates ctx."""
     if data.extra_headers is None:
         return
     _validate_list_caps("extra_headers", data.extra_headers)
@@ -251,6 +241,13 @@ def _apply_extra_headers_update(ctx: ScanContext, data: ScanContextUpdate) -> No
 class ScanContextService:
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def _validate_proxy_id(self, proxy_id: UUID | None) -> None:
+        if proxy_id is None:
+            return
+        if await self.session.get(Proxy, proxy_id) is None:
+            msg = "Selected proxy does not exist."
+            raise _bad(msg)
 
     async def create(
         self,
@@ -281,8 +278,8 @@ class ScanContextService:
         _validate_list_caps("extra_headers", data.extra_headers)
         _validate_auth_fields(auth.model_dump())
         _validate_extra_headers([h.model_dump() for h in data.extra_headers])
+        await self._validate_proxy_id(data.proxy_id)
 
-        # Strip off-type secrets so only the active type's fields persist.
         auth_dict = _prune_auth(auth.model_dump(), auth_type)
 
         ctx = ScanContext(
@@ -303,6 +300,7 @@ class ScanContextService:
             included_subdomains=list(data.included_subdomains),
             follow_redirects_override=data.follow_redirects_override,
             http_protocol=data.http_protocol,
+            proxy_id=data.proxy_id,
             compare_baseline_scan_id=data.compare_baseline_scan_id,
             scan_only_new_assets=data.scan_only_new_assets,
         )
@@ -332,7 +330,6 @@ class ScanContextService:
     ) -> ScanContextRead:
         ctx = await self._get_or_404(id, project_id)
 
-        # Deferred baseline guard: only reject explicit non-default values.
         if data.compare_baseline_scan_id is not None or data.scan_only_new_assets:
             _check_baseline_deferred(
                 data.compare_baseline_scan_id, data.scan_only_new_assets
@@ -374,6 +371,9 @@ class ScanContextService:
             ctx.included_subdomains = list(data.included_subdomains)
         if data.follow_redirects_override is not None:
             ctx.follow_redirects_override = data.follow_redirects_override
+        if data.proxy_id is not None:
+            await self._validate_proxy_id(data.proxy_id)
+            ctx.proxy_id = data.proxy_id
 
         _apply_auth_update(ctx, data)
         _apply_extra_headers_update(ctx, data)
@@ -412,6 +412,7 @@ class ScanContextService:
             included_subdomains=list(original.included_subdomains or []),
             follow_redirects_override=original.follow_redirects_override,
             http_protocol=original.http_protocol,
+            proxy_id=original.proxy_id,
             compare_baseline_scan_id=original.compare_baseline_scan_id,
             scan_only_new_assets=original.scan_only_new_assets,
         )

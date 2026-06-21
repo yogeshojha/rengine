@@ -1,15 +1,26 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, onMount } from 'svelte';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { goto, replaceState, beforeNavigate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { AlertTriangle, Loader2 } from 'lucide-svelte';
+	import { AlertTriangle, Loader2, X } from 'lucide-svelte';
+	// @ts-expect-error no declaration file for js-yaml
+	import jsyamlRaw from 'js-yaml';
+	const jsyaml = jsyamlRaw as {
+		dump: (obj: unknown, opts?: { indent?: number; lineWidth?: number; noRefs?: boolean }) => string;
+		load: (str: string) => unknown;
+	};
 
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
+	import * as Sheet from '$lib/components/ui/sheet';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
+	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scanEnginesApi } from '$lib/api/scan-engines';
+	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
 	import EngineCanvas from '$lib/components/engines/engine-canvas.svelte';
 	import EngineTopbar from '$lib/components/engines/engine-topbar.svelte';
@@ -24,40 +35,42 @@
 	} from '$lib/types/engine';
 	import { CAPABILITIES, getActiveCapabilities, configPhaseFor } from '$lib/types/capabilities';
 
-	// ── Route param ────────────────────────────────────────────────────────────
 	let engineId = $derived(page.params.id);
 	let isNew = $derived(engineId === 'new');
 
-	// ── Page state ─────────────────────────────────────────────────────────────
 	let engine = $state<ScanEngine | null>(null);
 	let editedEngine = $state<ScanEngine | null>(null);
 	let isLoading = $state(false);
 	let loadError = $state<string | null>(null);
 	let isSaving = $state(false);
-	let viewMode = $state<'canvas' | 'yaml'>('canvas');
-	let selectedCapabilityId = $state<string | null>(null);
+	let viewMode = $state<'canvas' | 'yaml'>(
+		page.url.searchParams.get('view') === 'yaml' ? 'yaml' : 'canvas'
+	);
+	let selectedCapabilityId = $state<string | null>(page.url.searchParams.get('cap'));
 	let previewMode = $state(false);
 	let yamlContent = $state('');
-	// nonce bumped by topbar "+ Add Step" to open the canvas all-phases palette
+	let yamlErrors = $state<{ line: number; message: string }[]>([]);
+	let saveError = $state<string | null>(null);
 	let addStepNonce = $state(0);
+	let showDeleteDialog = $state(false);
+	let isDeleting = $state(false);
+	let showLeaveDialog = $state(false);
+	let pendingNav: (() => void) | null = $state(null);
+	let allowNavigation = $state(false);
+	const isMobile = new IsMobile(1024);
 
-	// ── Derived ────────────────────────────────────────────────────────────────
 	let hasUnsavedChanges = $derived.by(() => {
 		if (isNew) return editedEngine !== null;
 		if (!engine || !editedEngine) return false;
 		return JSON.stringify(engine) !== JSON.stringify(editedEngine);
 	});
 
-	// Derive phase and config from selectedCapabilityId for ConfigPanel
 	let selectedCapability = $derived(
 		selectedCapabilityId ? CAPABILITIES.find((c) => c.id === selectedCapabilityId) ?? null : null
 	);
 
-	// Node phase — drives the panel header accent only.
 	let configPanelPhase = $derived(selectedCapability?.phase ?? null);
 
-	// Phase-config object that actually holds the selected capability's fields.
-	// Differs from node phase for takeover-dns (expansion) and url-discovery/dir-fuzz/param-vhost (depth).
 	let configPanelConfigPhase = $derived(
 		selectedCapability ? configPhaseFor(selectedCapability.id, selectedCapability.phase) : null
 	);
@@ -67,7 +80,6 @@
 		return editedEngine[configPanelConfigPhase];
 	});
 
-	// Topbar summary: tool count + rough duration estimate across active capabilities
 	let toolCount = $derived.by(() => {
 		if (!editedEngine) return 0;
 		const tools: string[] = [];
@@ -85,7 +97,6 @@
 		return `${mins}m`;
 	});
 
-	// ── Config panel change handler ───────────────────────────────────────────
 	function handleConfigChange(updates: Record<string, unknown>) {
 		if (!editedEngine || !configPanelConfigPhase) return;
 		editedEngine = {
@@ -95,7 +106,6 @@
 		} as any;
 	}
 
-	// ── Load / init engine ────────────────────────────────────────────────────
 	$effect(() => {
 		const project = projectsStore.activeProject;
 		const id = engineId;
@@ -110,13 +120,27 @@
 		});
 	});
 
+	$effect(() => {
+		const view = viewMode;
+		const cap = selectedCapabilityId;
+		untrack(() => {
+			const params = new SvelteURLSearchParams(page.url.search);
+			if (view === 'yaml') params.set('view', 'yaml');
+			else params.delete('view');
+			if (cap) params.set('cap', cap);
+			else params.delete('cap');
+			const qs = params.toString();
+			const next = qs ? `?${qs}` : page.url.pathname;
+			if (next !== page.url.pathname + page.url.search) replaceState(next, {});
+		});
+	});
+
 	function initNewEngine(projectId: string) {
-		// Build a local draft — no API call until Save is clicked
 		const draft: ScanEngine = {
 			id: '',
 			project_id: projectId,
+			name: '',
 			created_by: '',
-			name: 'New Scan Engine',
 			description: null,
 			intensity: 'normal',
 			global_threads: 30,
@@ -130,27 +154,22 @@
 			last_used_at: null
 		};
 		editedEngine = draft;
-		// engine stays null — used to detect "unsaved" state
 	}
 
 	async function loadEngine(id: string, projectId: string) {
 		isLoading = true;
 		loadError = null;
 		try {
-			// Try cache first
 			const cached = scanEnginesStore.engines.find((e) => e.id === id);
 			if (cached) {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				engine = cached as any as ScanEngine;
-				// JSON round-trip to strip Svelte reactive proxy before deep-copy
 				editedEngine = JSON.parse(JSON.stringify(engine));
 			}
 
-			// Always fetch fresh from API
 			const fresh = await scanEnginesApi.get(id, projectId);
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			engine = fresh as any as ScanEngine;
-			// Only update editedEngine from API if no unsaved local changes
 			if (!hasUnsavedChanges) {
 				editedEngine = JSON.parse(JSON.stringify(engine));
 			}
@@ -161,7 +180,6 @@
 		}
 	}
 
-	// ── YAML generation ───────────────────────────────────────────────────────
 	function engineToYaml(eng: ScanEngine): string {
 		const obj = {
 			name: eng.name,
@@ -170,51 +188,55 @@
 			expansion: eng.expansion,
 			depth: eng.depth
 		};
-		// Simple YAML-like serialization (no js-yaml dependency)
-		return JSON.stringify(obj, null, 2)
-			.replace(/"([a-zA-Z_][a-zA-Z0-9_]*)"\s*:/g, '$1:')
-			.replace(/"/g, "'");
+		return jsyaml.dump(obj, { indent: 2, lineWidth: -1, noRefs: true });
 	}
 
 	function yamlToEngine(yaml: string): ScanEngine | null {
+		if (!editedEngine) return null;
 		try {
-			// Reverse our simple serialization: restore quotes around values
-			const jsonStr = yaml
-				.replace(/([a-zA-Z_][a-zA-Z0-9_]*):/g, '"$1":')
-				.replace(/'/g, '"');
-			const parsed = JSON.parse(jsonStr);
-			if (!editedEngine) return null;
+			const parsed = jsyaml.load(yaml) as Record<string, unknown> | null;
+			yamlErrors = [];
+			if (!parsed || typeof parsed !== 'object') {
+				yamlErrors = [{ line: 1, message: 'YAML must be a mapping of engine fields.' }];
+				return null;
+			}
 			return {
 				...editedEngine,
-				name: parsed.name ?? editedEngine.name,
-				intensity: parsed.intensity ?? editedEngine.intensity,
-				discovery: parsed.discovery ?? editedEngine.discovery,
-				expansion: parsed.expansion ?? editedEngine.expansion,
-				depth: parsed.depth ?? editedEngine.depth
+				name: (parsed.name as string) ?? editedEngine.name,
+				intensity: (parsed.intensity as Intensity) ?? editedEngine.intensity,
+				discovery: (parsed.discovery as ScanEngine['discovery']) ?? editedEngine.discovery,
+				expansion: (parsed.expansion as ScanEngine['expansion']) ?? editedEngine.expansion,
+				depth: (parsed.depth as ScanEngine['depth']) ?? editedEngine.depth
 			};
-		} catch {
+		} catch (e) {
+			const mark = (e as { mark?: { line?: number } })?.mark;
+			const line = mark?.line != null ? mark.line + 1 : 1;
+			const message = e instanceof Error ? e.message : 'Invalid YAML';
+			yamlErrors = [{ line, message }];
 			return null;
 		}
 	}
 
-	// ── View mode switch ──────────────────────────────────────────────────────
 	function handleViewModeChange(mode: 'canvas' | 'yaml') {
 		if (mode === 'yaml' && editedEngine) {
 			yamlContent = engineToYaml(editedEngine);
+			yamlErrors = [];
 		} else if (mode === 'canvas' && viewMode === 'yaml') {
 			const parsed = yamlToEngine(yamlContent);
-			if (parsed) editedEngine = parsed;
+			if (!parsed) {
+				toast.error('YAML has errors — fix them before switching to Canvas');
+				return;
+			}
+			editedEngine = parsed;
 		}
 		viewMode = mode;
 	}
 
-	// ── Canvas engine change — receives full updated ScanEngine ──────────────
 	function handleEngineChange(updated: ScanEngine) {
 		if (!editedEngine) return;
 		editedEngine = updated;
 	}
 
-	// ── Name / intensity edits ────────────────────────────────────────────────
 	function handleNameChange(name: string) {
 		if (!editedEngine) return;
 		editedEngine = { ...editedEngine, name };
@@ -225,7 +247,6 @@
 		editedEngine = { ...editedEngine, intensity };
 	}
 
-	// ── Save ──────────────────────────────────────────────────────────────────
 	async function handleSave() {
 		if (!editedEngine || isSaving) return;
 		const project = projectsStore.activeProject;
@@ -233,11 +254,16 @@
 			toast.error('No active project');
 			return;
 		}
+		if (!editedEngine.name.trim()) {
+			saveError = 'Give the engine a name before saving.';
+			toast.error(saveError);
+			return;
+		}
 
 		isSaving = true;
+		saveError = null;
 		try {
 			if (isNew) {
-				// First save for a new engine — POST to create
 				const created = await scanEnginesStore.createEngine(project.id, {
 					name: editedEngine.name,
 					intensity: editedEngine.intensity,
@@ -254,16 +280,20 @@
 				});
 				if (created) {
 					toast.success('Engine created');
-					// Replace the /new URL with the real ID (no history entry)
+					allowNavigation = true;
 					goto(`/automation/engines/${created.id}`, { replaceState: true });
 				} else {
-					toast.error(scanEnginesStore.error ?? 'Failed to create engine');
+					saveError = scanEnginesStore.error ?? 'Failed to create engine';
+					toast.error(saveError);
 				}
 			} else {
-				// Existing engine — PATCH
 				const updated = await scanEnginesStore.updateEngine(engineId!, project.id, {
 					name: editedEngine.name,
 					intensity: editedEngine.intensity,
+					description: editedEngine.description,
+					global_threads: editedEngine.global_threads,
+					global_http_crawl: editedEngine.global_http_crawl,
+					global_headers: editedEngine.global_headers,
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					discovery: editedEngine.discovery as any,
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -277,7 +307,8 @@
 					engine = updated as any as ScanEngine;
 					toast.success('Engine saved');
 				} else {
-					toast.error(scanEnginesStore.error ?? 'Failed to save engine');
+					saveError = scanEnginesStore.error ?? 'Failed to save engine';
+					toast.error(saveError);
 				}
 			}
 		} finally {
@@ -285,7 +316,6 @@
 		}
 	}
 
-	// ── Export YAML ───────────────────────────────────────────────────────────
 	async function handleExportYaml() {
 		const project = projectsStore.activeProject;
 		if (!project || !engineId) return;
@@ -308,7 +338,6 @@
 		}
 	}
 
-	// ── Duplicate ─────────────────────────────────────────────────────────────
 	async function handleDuplicate() {
 		const project = projectsStore.activeProject;
 		if (!project || !engineId) return;
@@ -316,6 +345,7 @@
 			const dup = await scanEnginesStore.duplicateEngine(engineId, project.id);
 			if (dup?.id) {
 				toast.success(`Duplicated as "${dup.name}"`);
+				allowNavigation = true;
 				goto(`/automation/engines/${dup.id}`);
 			} else {
 				toast.error('Duplicate failed');
@@ -325,47 +355,80 @@
 		}
 	}
 
-	// ── Delete ────────────────────────────────────────────────────────────────
-	async function handleDelete() {
+	function handleDelete() {
 		if (!engineId) return;
-		const confirmed = window.confirm(
-			`Delete "${editedEngine?.name ?? 'this engine'}"? This cannot be undone.`
-		);
-		if (!confirmed) return;
+		showDeleteDialog = true;
+	}
 
+	async function confirmDelete() {
+		if (!engineId) return;
+		isDeleting = true;
 		try {
 			const ok = await scanEnginesStore.deleteEngine(engineId);
 			if (ok) {
 				toast.success('Engine deleted');
+				showDeleteDialog = false;
+				allowNavigation = true;
 				goto('/automation/engines');
 			} else {
 				toast.error('Delete failed');
 			}
 		} catch {
 			toast.error('Delete failed');
+		} finally {
+			isDeleting = false;
 		}
 	}
 
-	// ── YAML editor change ────────────────────────────────────────────────────
 	function handleYamlChange(yaml: string) {
 		yamlContent = yaml;
+		try {
+			jsyaml.load(yaml);
+			yamlErrors = [];
+		} catch (e) {
+			const mark = (e as { mark?: { line?: number } })?.mark;
+			const line = mark?.line != null ? mark.line + 1 : 1;
+			yamlErrors = [{ line, message: e instanceof Error ? e.message : 'Invalid YAML' }];
+		}
 	}
 
-	// ── Back navigation ───────────────────────────────────────────────────────
 	function handleBack() {
-		if (hasUnsavedChanges) {
-			const leave = window.confirm('You have unsaved changes. Leave anyway?');
-			if (!leave) return;
-		}
 		goto('/automation/engines');
 	}
+
+	function confirmLeave() {
+		showLeaveDialog = false;
+		const resume = pendingNav;
+		pendingNav = null;
+		allowNavigation = true;
+		resume?.();
+	}
+
+	beforeNavigate((nav) => {
+		if (allowNavigation) {
+			allowNavigation = false;
+			return;
+		}
+		if (!hasUnsavedChanges || pendingNav) return;
+		nav.cancel();
+		pendingNav = () => {
+			allowNavigation = true;
+			if (nav.to) goto(nav.to.url);
+		};
+		showLeaveDialog = true;
+	});
+
+	onMount(() => {
+		const onBeforeUnload = (e: BeforeUnloadEvent) => {
+			if (!hasUnsavedChanges) return;
+			e.preventDefault();
+			e.returnValue = '';
+		};
+		window.addEventListener('beforeunload', onBeforeUnload);
+		return () => window.removeEventListener('beforeunload', onBeforeUnload);
+	});
 </script>
 
-<!--
-	Full-screen editor layout.
-	The parent layout wraps this in the sidebar/topbar shell.
-	We use flex-col + overflow-hidden to fill available space.
--->
 <div class="editor-shell">
 	{#if isLoading && !engine}
 		<div class="state-center">
@@ -408,7 +471,31 @@
 			onBack={handleBack}
 		/>
 
-		<!-- Unsaved / new indicator -->
+		{#if saveError}
+			<div class="save-error-bar" role="alert">
+				<AlertTriangle size={13} class="shrink-0" />
+				<span class="flex-1 truncate">Save failed — {saveError}</span>
+				<Button
+					variant="outline"
+					size="sm"
+					class="h-6 px-2 text-xs"
+					disabled={isSaving}
+					onclick={handleSave}
+				>
+					Retry
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					class="h-6 w-6"
+					aria-label="Dismiss"
+					onclick={() => (saveError = null)}
+				>
+					<X size={13} />
+				</Button>
+			</div>
+		{/if}
+
 		{#if hasUnsavedChanges}
 			<div class="unsaved-bar">
 				<span class="unsaved-dot"></span>
@@ -420,7 +507,6 @@
 			</div>
 		{/if}
 
-		<!-- Main content: canvas or YAML -->
 		<div class="editor-content">
 			{#if viewMode === 'canvas'}
 				<EngineCanvas
@@ -431,21 +517,68 @@
 					onCapabilitySelected={(id) => (selectedCapabilityId = id)}
 					onEngineChange={handleEngineChange}
 				/>
-				<ConfigPanel
-					capabilityId={selectedCapabilityId}
-					phase={configPanelPhase}
-					config={configPanelConfig}
-					onChange={handleConfigChange}
-					onClose={() => (selectedCapabilityId = null)}
-				/>
+				<div class="config-col">
+					<ConfigPanel
+						capabilityId={selectedCapabilityId}
+						phase={configPanelPhase}
+						config={configPanelConfig}
+						onChange={handleConfigChange}
+						onClose={() => (selectedCapabilityId = null)}
+					/>
+				</div>
+				<Sheet.Root
+					open={isMobile.current && selectedCapabilityId !== null}
+					onOpenChange={(o) => {
+						if (!o) selectedCapabilityId = null;
+					}}
+				>
+					<Sheet.Content
+						side="right"
+						class="config-sheet w-[calc(100%-2rem)] gap-0 p-0 sm:max-w-md lg:hidden"
+					>
+						<ConfigPanel
+							capabilityId={selectedCapabilityId}
+							phase={configPanelPhase}
+							config={configPanelConfig}
+							onChange={handleConfigChange}
+							onClose={() => (selectedCapabilityId = null)}
+						/>
+					</Sheet.Content>
+				</Sheet.Root>
 			{:else}
 				<div class="yaml-wrap">
-					<YamlEditor {yamlContent} onChange={handleYamlChange} />
+					<YamlEditor {yamlContent} onChange={handleYamlChange} errors={yamlErrors} />
 				</div>
 			{/if}
 		</div>
 	{/if}
 </div>
+
+<!-- Delete confirmation -->
+<DeleteConfirmationDialog
+	bind:open={showDeleteDialog}
+	title="Delete Engine"
+	description="Are you sure you want to delete '{editedEngine?.name ?? 'this engine'}'? This action cannot be undone."
+	{isDeleting}
+	onOpenChange={(open) => (showDeleteDialog = open)}
+	onConfirm={confirmDelete}
+/>
+
+<!-- Unsaved-changes guard -->
+<AlertDialog.Root bind:open={showLeaveDialog}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Unsaved changes</AlertDialog.Title>
+			<AlertDialog.Description>
+				You have unsaved changes that will be lost. Leave anyway?
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel onclick={() => (pendingNav = null)}>Stay</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={confirmLeave}>Leave</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
 
 <style>
 	.editor-shell {
@@ -457,7 +590,6 @@
 		margin: -24px;
 	}
 
-	/* Centered state screens (loading / error) */
 	.state-center {
 		flex: 1;
 		display: flex;
@@ -469,7 +601,19 @@
 		padding: 40px;
 	}
 
-	/* Unsaved-changes bar — subtle monochrome notice strip */
+	.save-error-bar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 5px 12px;
+		background: color-mix(in oklch, var(--destructive) 8%, var(--card));
+		border-bottom: 1px solid color-mix(in oklch, var(--destructive) 30%, var(--border));
+		color: var(--destructive);
+		font-size: 12px;
+		font-weight: 500;
+		flex-shrink: 0;
+	}
+
 	.unsaved-bar {
 		height: 26px;
 		display: flex;
@@ -492,7 +636,6 @@
 		flex-shrink: 0;
 	}
 
-	/* Editor layout */
 	.editor-content {
 		flex: 1;
 		min-height: 0;
@@ -505,5 +648,19 @@
 		min-width: 0;
 		overflow: hidden;
 		height: 100%;
+	}
+
+	.config-col {
+		display: none;
+	}
+	@media (min-width: 1024px) {
+		.config-col {
+			display: contents;
+		}
+	}
+
+	:global(.config-sheet .config-panel) {
+		width: 100%;
+		border-left: none;
 	}
 </style>

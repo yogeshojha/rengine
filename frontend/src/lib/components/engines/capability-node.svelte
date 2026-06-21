@@ -24,8 +24,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { PHASE_COLORS } from '$lib/types/engine';
 	import type { Phase } from '$lib/types/capabilities';
-
-	type Severity = 'critical' | 'high' | 'medium' | 'low';
+	import type { Severity } from '$lib/types/severity';
 
 	interface CapNodeData extends Record<string, unknown> {
 		capId: string;
@@ -48,7 +47,6 @@
 	let d = $derived(data as unknown as CapNodeData);
 	let accent = $derived(PHASE_COLORS[d.phase].accent);
 
-	// one-line plain-English descriptions keyed by capId, with a graceful fallback
 	const DESCRIPTIONS: Record<string, string> = {
 		'dns-whois': 'Resolve hosts, DNS records & WHOIS',
 		'related-domains': 'Find related domains for the org',
@@ -67,7 +65,6 @@
 	};
 	let description = $derived(DESCRIPTIONS[d.capId] ?? `Produce ${d.producesNoun}`);
 
-	// vuln-scan only: restrained neutral severity dots (max 4)
 	let sevDots = $derived(
 		d.capId === 'vuln-scan' && d.severityDots?.length ? d.severityDots.slice(0, 4) : []
 	);
@@ -75,25 +72,32 @@
 	function handleBody() {
 		d.onConfigure(d.capId);
 	}
+	function handleKey(e: KeyboardEvent) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			d.onConfigure(d.capId);
+		}
+	}
 	function stop(e: Event) {
 		e.stopPropagation();
 	}
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="cap-node"
 	class:is-disabled={!d.enabled}
 	class:is-selected={selected}
 	style="--accent: {accent};"
+	role="button"
+	tabindex="0"
+	aria-label="Configure {d.label}"
 	onclick={handleBody}
+	onkeydown={handleKey}
 >
 	<Handle type="target" position={Position.Left} class="cap-handle" />
 
 	<span class="accent-rail" aria-hidden="true"></span>
 
-	<!-- Row 1: icon chip + title + hover toolbar (Configure / Remove) -->
 	<div class="cap-head">
 		<div class="icon-chip">
 			{#if d.icon === 'Globe'}
@@ -132,8 +136,8 @@
 
 		<div class="cap-title">{d.label}</div>
 
-		<!-- hover toolbar overlays the right end of the title (card-bg + fade) only on
-		     hover — no layout shift, title spans full width at rest -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="cap-tools" onclick={stop}>
 			<Button
 				variant="ghost"
@@ -164,29 +168,33 @@
 		</div>
 	</div>
 
-	<!-- Row 2: one-line description (single line, ellipsis) -->
 	<div class="cap-desc">{description}</div>
 
-	<!-- Row 3: footer — produces hint + optional severity dots + API key badge -->
 	<div class="cap-foot">
 		<span class="produces"><ArrowRight size={11} />{d.producesNoun}</span>
 		<div class="foot-right">
 			{#if sevDots.length}
 				<span class="sev-row" title="Severity coverage">
-					{#each sevDots as _sev, i}
+					{#each sevDots as sev, i (`${sev}-${i}`)}
 						<span class="sev-dot" class:strong={i < 2}></span>
 					{/each}
 				</span>
 			{/if}
 			{#if d.needsKey}
-				<Badge variant="outline" class="key-badge">
-					<KeyRound size={10} />API key
-				</Badge>
+				<a
+					href="/settings?tab=api-keys"
+					class="key-link"
+					title="This source needs an API key — configure it in Settings"
+					onclick={stop}
+				>
+					<Badge variant="outline" class="key-badge">
+						<KeyRound size={10} />API key
+					</Badge>
+				</a>
 			{/if}
 		</div>
 	</div>
 
-	<!-- preview footer (restrained) -->
 	{#if d.previewState === 'run'}
 		<div class="preview preview-run">
 			<Check size={11} class="run-check" />will run
@@ -220,6 +228,11 @@
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 		transform: translateY(-1px);
 	}
+	.cap-node:focus-visible {
+		outline: none;
+		border-color: var(--ring);
+		box-shadow: 0 0 0 2px var(--ring);
+	}
 	.is-disabled {
 		opacity: 0.6;
 	}
@@ -240,7 +253,6 @@
 		filter: brightness(1.12);
 	}
 
-	/* phase accent rail — the only strong use of phase color */
 	.accent-rail {
 		position: absolute;
 		top: 0;
@@ -253,7 +265,6 @@
 			filter 0.14s ease;
 	}
 
-	/* row 1 */
 	.cap-head {
 		position: relative;
 		display: flex;
@@ -295,8 +306,6 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-	/* hover toolbar — overlays the right end of the title on hover. Absolute so it
-	   never steals title width at rest; card-bg + left fade = no layout shift. */
 	.cap-tools {
 		position: absolute;
 		top: 9px;
@@ -314,7 +323,6 @@
 			opacity 0.12s ease,
 			transform 0.12s ease;
 	}
-	/* soft fade between the running title and the toolbar backdrop */
 	.cap-tools::before {
 		content: '';
 		position: absolute;
@@ -325,7 +333,9 @@
 		background: linear-gradient(to right, transparent, var(--card));
 		pointer-events: none;
 	}
-	.cap-node:hover .cap-tools {
+	.cap-node:hover .cap-tools,
+	.cap-node.is-selected .cap-tools,
+	.cap-node:focus-within .cap-tools {
 		opacity: 1;
 		transform: translateX(0);
 		pointer-events: auto;
@@ -339,7 +349,6 @@
 		color: var(--foreground);
 	}
 
-	/* row 2 */
 	.cap-desc {
 		padding: 6px 12px 0 12px;
 		font-size: 12px;
@@ -350,7 +359,6 @@
 		text-overflow: ellipsis;
 	}
 
-	/* row 3 footer */
 	.cap-foot {
 		display: flex;
 		align-items: center;
@@ -395,6 +403,15 @@
 		opacity: 1;
 		background: var(--foreground);
 	}
+	.key-link {
+		display: inline-flex;
+		text-decoration: none;
+		border-radius: 0.5rem;
+	}
+	.key-link:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 2px var(--ring);
+	}
 	.cap-node :global(.key-badge) {
 		gap: 3px;
 		padding: 1px 6px;
@@ -402,9 +419,16 @@
 		font-weight: 500;
 		color: var(--muted-foreground);
 		border-color: var(--border);
+		cursor: pointer;
+		transition:
+			color 0.12s ease,
+			border-color 0.12s ease;
+	}
+	.key-link:hover :global(.key-badge) {
+		color: var(--foreground);
+		border-color: color-mix(in oklch, var(--ring) 55%, transparent);
 	}
 
-	/* preview footer */
 	.preview {
 		display: flex;
 		align-items: center;
@@ -418,13 +442,12 @@
 		color: var(--foreground);
 	}
 	.preview-run :global(.run-check) {
-		color: #10b981;
+		color: var(--foreground);
 	}
 	.preview-skip {
 		color: var(--muted-foreground);
 	}
 
-	/* handles */
 	.cap-node :global(.cap-handle) {
 		width: 9px;
 		height: 9px;

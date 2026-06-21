@@ -6,12 +6,13 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService
 from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKey
 from shared.models.scan import Scan, ScanCreate, ScanRead
-from shared.models.scan_context import ScanContext
+from shared.models.scan_context import VALID_RATE_TOOLS, ScanContext
 from shared.models.scan_engine import ScanEngine
 from shared.models.scan_preview import (
     PreviewPhase,
@@ -26,13 +27,12 @@ from shared.services.scan_resolve import (
     ResolvedScanConfig,
     _auth_summary,
     _check_baseline_deferred,
+    _mask_auth,
     merge_engine_context,
 )
 
 logger = logging.getLogger(__name__)
 
-# Capability -> required API key provider. Only viewdns exists in APIProvider
-# today, so every key-gated source below currently resolves to skipped_needs_key.
 # TODO(api-keys): expand APIProvider to cover these providers.
 CAPABILITY_API_KEYS = {
     "subdomain_securitytrails": "securitytrails",
@@ -43,13 +43,10 @@ CAPABILITY_API_KEYS = {
     "port_scan_passive_shodan": "shodan",
 }
 
-# Optional positions in a _PHASE_TOOLS spec tuple:
-# (capability, label, [rate_tool], [threads_key], [timeout_key]).
 _SPEC_RATE_TOOL = 2
 _SPEC_THREADS_KEY = 3
 _SPEC_TIMEOUT_KEY = 4
 
-# (phase, capability flag, human label) — drives the preview phase listing.
 _PHASE_TOOLS = {
     "discovery": (
         "Discovery",
@@ -123,19 +120,11 @@ _PHASE_TOOLS = {
     ),
 }
 
-# tool -> per_tool_rate_limits key
-_RATE_KEY = {"naabu": "naabu", "ffuf": "ffuf", "nuclei": "nuclei"}
-
-# 60 seconds per minute and 60 minutes per hour (same magnitude, reused below).
 _SECONDS_PER_MINUTE = 60
 _MINUTES_PER_HOUR = 60
 
 
 def _mask_config_headers(config: dict) -> dict:
-    """Deep-copy execution_config and mask EVERY header value (no header value is
-    ever returned in plaintext on Read — preview exposes names only). Also redacts
-    known secret-bearing phase fields (e.g. depth.report_webhook_url, which can
-    carry a Slack/Discord token). Never mutates the stored config."""
     out = copy.deepcopy(config)
     headers = out.get("headers") or {}
     out["headers"] = {
@@ -205,8 +194,6 @@ class ScanService:
         return target
 
     async def _resolve_and_validate(self, data: ScanCreate, project_id: UUID):
-        """Fetch engine/context/target scoped to project (IDOR guard -> 404 on any
-        cross-project miss), run the deferred guard, and merge into a config."""
         engine = await self._get_engine(data.engine_id, project_id)
         context = None
         if data.context_id is not None:
@@ -218,13 +205,22 @@ class ScanService:
                 context.compare_baseline_scan_id, context.scan_only_new_assets
             )
 
+        proxy_url = None
+        if context is not None and context.proxy_id is not None:
+            proxy_url = await ProxyService(self.session).resolve_proxy_url(
+                context.proxy_id
+            )
+
         resolved = merge_engine_context(
-            engine, context, target.target_value, target.target_type.value
+            engine,
+            context,
+            target.target_value,
+            target.target_type.value,
+            proxy_url=proxy_url,
         )
         return engine, context, target, resolved
 
     async def _configured_providers(self) -> set[str]:
-        """Provider strings that are configured AND enabled in the api_keys table."""
         result = await self.session.execute(
             select(APIKey).where(APIKey.is_enabled == True)  # noqa: E712
         )
@@ -314,21 +310,28 @@ class ScanService:
         will_run = sum(
             1 for p in phases for t in p.tools if t.status == PreviewToolStatus.WILL_RUN
         )
-        est_seconds = will_run * 60
+        est_seconds = will_run * _SECONDS_PER_MINUTE
         rates = resolved.per_tool_rate_limits
-        rate_summary = (
-            f"naabu {rates.get('naabu')}/s, ffuf {rates.get('ffuf')}/s, "
-            f"nuclei {rates.get('nuclei')}/s"
+        rate_summary = ", ".join(
+            f"{tool} {rates.get(tool)}/s" for tool in VALID_RATE_TOOLS
         )
         if resolved.global_rate_limit_ceiling is not None:
             rate_summary += f" (ceiling {resolved.global_rate_limit_ceiling}/s)"
 
         auth = context.auth if context is not None else {"auth_type": "none"}
         extra_headers = context.extra_headers if context is not None else []
-        # NAMES ONLY for custom headers (provenance from extra_headers).
         custom_header_names = [
             h.get("name") for h in (extra_headers or []) if h.get("name")
         ]
+
+        proxy_name = None
+        if context is not None and context.proxy_id is not None:
+            try:
+                proxy_name = (
+                    await ProxyService(self.session).get(context.proxy_id)
+                ).name
+            except HTTPException:
+                proxy_name = None
 
         summary = PreviewSummary(
             auth_summary=_auth_summary(auth, extra_headers),
@@ -345,6 +348,7 @@ class ScanService:
             excluded_paths=resolved.excluded_paths,
             excluded_ips=resolved.excluded_ips,
             included_subdomains=resolved.included_subdomains,
+            proxy_name=proxy_name,
             estimated_duration_seconds=est_seconds,
             estimated_duration_human=_human_duration(est_seconds),
         )
@@ -370,10 +374,10 @@ class ScanService:
         )
 
         execution_config = resolved.model_dump()
-        # Persist auth-header provenance so masking-on-read stays faithful after
-        # the PrivateAttr is gone (popped before re-hydrating ResolvedScanConfig).
         execution_config["_auth_header_names"] = list(resolved._auth_header_names)
-        # Never log the config; only header names.
+        execution_config["_auth"] = (
+            _mask_auth(context.auth) if context is not None else {"auth_type": "none"}
+        )
         logger.info(
             "Creating scan for target=%s engine=%s header_names=%s",
             target.id,
@@ -409,12 +413,7 @@ class ScanService:
         return self._to_read(scan)
 
     def _dispatch_scan(self, scan: Scan) -> None:  # noqa: ARG002 — stub; `scan` is the contract the launch-flow TODO will consume
-        """STUB: hand the scan off to the worker pipeline.
-
-        TODO(launch-flow): enqueue a Celery task to run the resolved
-        execution_config. No-op for now; the scan stays in 'pending'. The
-        config is NEVER logged here (would leak secret headers)."""
-        # No scanner wired yet.
+        # TODO(launch-flow): enqueue a Celery task to run the resolved execution_config.
         return
 
     async def list(
@@ -422,13 +421,15 @@ class ScanService:
         project_id: UUID,
         target_id: UUID | None = None,
         status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[ScanRead]:
         query = select(Scan).where(Scan.project_id == project_id)
         if target_id is not None:
             query = query.where(Scan.target_id == target_id)
         if status is not None:
             query = query.where(Scan.status == status)
-        query = query.order_by(Scan.created_at.desc())
+        query = query.order_by(Scan.created_at.desc()).limit(limit).offset(offset)
         result = await self.session.execute(query)
         scans = result.scalars().all()
         return [self._to_read(s) for s in scans]
@@ -446,11 +447,10 @@ class ScanService:
 
     def _to_read(self, scan: Scan) -> ScanRead:
         cfg = copy.deepcopy(scan.execution_config or {})
-        # Drop provenance key so it never reaches ResolvedScanConfig(**masked).
         cfg.pop("_auth_header_names", None)
+        auth = cfg.pop("_auth", None) or {"auth_type": "none"}
         masked = _mask_config_headers(cfg)
         resolved = ResolvedScanConfig(**masked)
-        auth = {"auth_type": "none"}
         return ScanRead(
             id=scan.id,
             project_id=scan.project_id,

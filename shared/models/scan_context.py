@@ -12,16 +12,6 @@ AUTH_TYPES = ("none", "header", "bearer", "basic", "cookie", "api_key")
 HTTP_PROTOCOLS = ("both", "http_only", "https_only")
 VALID_RATE_TOOLS = ("naabu", "ffuf", "nuclei")
 MULTIPLIERS = (0.5, 1.0, 2.0)
-MASK = "••••••••"
-
-# Secrets masked on Read (never returned in plaintext).
-SECRET_FIELDS = {
-    "bearer_token",
-    "basic_password",
-    "header_value",
-    "cookie_value",
-    "api_key_value",
-}
 
 
 class AuthConfig(BaseModel):
@@ -74,6 +64,7 @@ class ScanContext(SQLModel, table=True):
     )
     follow_redirects_override: bool | None = Field(default=None)
     http_protocol: str = Field(default="both")
+    proxy_id: uuid.UUID | None = Field(default=None, index=True)
     compare_baseline_scan_id: uuid.UUID | None = Field(default=None)
     scan_only_new_assets: bool = Field(default=False)
     created_at: datetime = Field(default_factory=utc_now)
@@ -98,6 +89,7 @@ class ScanContextCreate(BaseModel):
     included_subdomains: list[str] = Field(default_factory=list)
     follow_redirects_override: bool | None = None
     http_protocol: str = "both"
+    proxy_id: uuid.UUID | None = None
     compare_baseline_scan_id: uuid.UUID | None = None
     scan_only_new_assets: bool = False
 
@@ -118,6 +110,7 @@ class ScanContextUpdate(BaseModel):
     included_subdomains: list[str] | None = None
     follow_redirects_override: bool | None = None
     http_protocol: str | None = None
+    proxy_id: uuid.UUID | None = None
     compare_baseline_scan_id: uuid.UUID | None = None
     scan_only_new_assets: bool | None = None
 
@@ -142,6 +135,7 @@ class ScanContextRead(BaseModel):
     included_subdomains: list[str]
     follow_redirects_override: bool | None
     http_protocol: str
+    proxy_id: uuid.UUID | None
     compare_baseline_scan_id: uuid.UUID | None
     scan_only_new_assets: bool
     created_at: datetime

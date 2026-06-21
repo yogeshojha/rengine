@@ -146,39 +146,3 @@ export const ENTITY_ROLE_LABELS: Record<WhoisEntityRole, string> = {
 	noc: 'NOC',
 	routing: 'Routing'
 };
-
-export const CORRELATION_TYPE_LABELS: Record<string, string> = {
-	registrant: 'Shared Registrant',
-	registrar: 'Shared Registrar',
-	nameserver: 'Shared Nameserver',
-	network: 'Same Network'
-};
-
-export function getStatusBadgeColor(status: string): string {
-	const s = status.toLowerCase();
-	if (s.includes('delete')) return 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
-	if (s.includes('transfer'))
-		return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-	if (s.includes('update'))
-		return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-	if (s.includes('renew'))
-		return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
-	if (s.includes('hold'))
-		return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20';
-	return 'bg-muted text-muted-foreground border-border';
-}
-
-export function getCorrelationIcon(type: string): string {
-	switch (type) {
-		case 'registrant':
-			return 'UserRound';
-		case 'registrar':
-			return 'Building';
-		case 'nameserver':
-			return 'Server';
-		case 'network':
-			return 'Network';
-		default:
-			return 'Link';
-	}
-}

@@ -1,5 +1,3 @@
-"""Server-side filtering, signal predicates and sorting for the targets list."""
-
 from datetime import timedelta
 from typing import Literal
 from uuid import UUID
@@ -132,7 +130,6 @@ def _sort_column(sort_by: SortKey):
 def apply_sort(query: Select, sort_by: SortKey, sort_dir: SortDir) -> Select:
     column = _sort_column(sort_by)
     ordering = column.desc() if sort_dir == "desc" else column.asc()
-    # id tiebreaker keeps pagination deterministic
     return query.order_by(ordering.nulls_last(), Target.id)
 
 

@@ -15,6 +15,7 @@ class OrganizationSummary(BaseModel):
 
 class OrganizationBase(SQLModel):
     name: str = Field(max_length=100)
+    description: str | None = Field(default=None, max_length=500)
 
 
 class Organization(OrganizationBase, table=True):

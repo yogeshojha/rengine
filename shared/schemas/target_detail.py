@@ -60,8 +60,6 @@ class AbuseContactDetail(BaseModel):
 
 
 class TargetBgpDetailResponse(BaseModel):
-    """Full BGP enrichment data for a target."""
-
     target_id: uuid.UUID
     target_type: TargetType
     status: TaskStatus

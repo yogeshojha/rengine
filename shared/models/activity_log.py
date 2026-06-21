@@ -9,14 +9,6 @@ from shared.utils.datetime import utc_now
 
 
 class ActivityLog(SQLModel, table=True):
-    """Activity log for audit trails and live feed widgets.
-
-    Scope is inferred from FK presence:
-      - target_id set -> target-level event
-      - project_id set (no target) -> project-level event
-      - neither set -> system-level event
-    """
-
     __tablename__ = "activity_logs"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -36,8 +28,6 @@ class ActivityLog(SQLModel, table=True):
 
 
 class ActivityLogRead(BaseModel):
-    """Read schema for API responses and SSE payloads."""
-
     id: uuid.UUID
     timestamp: datetime
     level: ActivityLevel

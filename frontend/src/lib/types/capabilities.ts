@@ -9,10 +9,6 @@ export const PHASE_COLUMN_RANGE: Record<Phase, { min: number; max: number }> = {
 	depth: { min: 6, max: 7 }
 };
 
-// Which phase-config object actually holds a capability's editable fields.
-// Most match cap.phase; exceptions: takeover-dns fields live in expansion config
-// (subdomain_takeover/dns_zone_transfer), and url-discovery/dir-fuzz/param-vhost
-// fields live in depth config. The editor must read/write the mapped config, not node.phase.
 export const CAPABILITY_CONFIG_PHASE: Record<string, Phase> = {
 	'dns-whois': 'discovery',
 	'related-domains': 'discovery',
@@ -620,7 +616,6 @@ export const CAPABILITIES: Capability[] = [
 	}
 ];
 
-// Helper: get capabilities currently active in an engine (ordered by CAPABILITIES order)
 export function getActiveCapabilities(engine: ScanEngine): Capability[] {
 	return CAPABILITIES.filter((c) => c.isActive(engine));
 }
@@ -629,10 +624,9 @@ export function getActiveCapabilities(engine: ScanEngine): Capability[] {
 export interface ReconOutput {
 	key: string;
 	label: string;
-	icon: string; // lucide name
+	icon: string;
 }
 
-// Result categories this engine produces, derived from active capabilities.
 export function getReconOutputs(engine: ScanEngine): ReconOutput[] {
 	const out: ReconOutput[] = [];
 	const push = (cond: boolean, key: string, label: string, icon: string) => {
@@ -690,7 +684,6 @@ export function getReconOutputs(engine: ScanEngine): ReconOutput[] {
 	return out;
 }
 
-// Helper: apply "add capability" to engine config
 export function applyEnableCapability(engine: ScanEngine, capId: string): ScanEngine {
 	const cap = CAPABILITIES.find((c) => c.id === capId);
 	if (!cap) return engine;
@@ -702,7 +695,6 @@ export function applyEnableCapability(engine: ScanEngine, capId: string): ScanEn
 	};
 }
 
-// Helper: apply "remove capability" to engine config
 export function applyDisableCapability(engine: ScanEngine, capId: string): ScanEngine {
 	const cap = CAPABILITIES.find((c) => c.id === capId);
 	if (!cap) return engine;

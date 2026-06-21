@@ -1,7 +1,4 @@
-"""Models for CLI tool execution results.
-
-These models are tool-agnostic and used by all CLI-based tools
-"""
+"""Tool-agnostic models for CLI tool execution results."""
 
 from enum import Enum
 
@@ -16,19 +13,7 @@ class OutputFormat(Enum):
 
 
 class ToolResult(BaseModel):
-    """Result of a CLI tool execution.
-
-    Attributes:
-        success: Whether the tool ran without errors.
-        stdout: Raw stdout captured (may be empty if output file was used).
-        stderr: Raw stderr captured.
-        exit_code: Process exit code.
-        output_lines: Parsed non-empty lines from tool output (plain mode).
-        json_records: Parsed JSON objects from tool output (JSONL mode).
-        duration_seconds: Wall-clock time the tool ran.
-        command: Full command string (for debugging/logging).
-        error: Human-readable error message if success is False.
-    """
+    """Result of a CLI tool execution."""
 
     success: bool
     stdout: str = ""
@@ -42,7 +27,6 @@ class ToolResult(BaseModel):
 
     @property
     def record_count(self) -> int:
-        """Number of parsed records (JSON or plain lines)."""
         return len(self.json_records) if self.json_records else len(self.output_lines)
 
     @property

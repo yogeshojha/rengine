@@ -1,9 +1,9 @@
 from functools import lru_cache
 
-from shared.config import BaseSettings_
+from shared.config import BaseAppSettings
 
 
-class Settings(BaseSettings_):
+class Settings(BaseAppSettings):
     ###############################################################
     # Task Time Limits (seconds)
     ###############################################################

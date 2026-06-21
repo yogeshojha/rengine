@@ -1,17 +1,8 @@
-"""Centralized HTTP client factory for reNgine.
-
-All the http requests in reNgine should use these clients to ensure consistent configuration and behavior, this is because
-some prefer to use proxy hence we need to ensure that all requests go through the same proxy if configured.
-
-This module provides two main functions:
-- Proxy support (HTTP and SOCKS5 via RENGINE_PROXY_URL env var) for now but will change to db based
-- Configurable timeout and user-agent this is dummy for now will use user configured. TODO: dummy user agents
-- Automatic retries on transient failures
-"""
-
 import os
 
 import httpx
+
+# TODO: dummy user agents
 
 DEFAULT_TIMEOUT = 30
 DEFAULT_USER_AGENT = (
@@ -48,7 +39,6 @@ def _base_kwargs() -> dict:
 
 
 def get_async_client(**overrides) -> httpx.AsyncClient:
-    """HTTP client for use in FastAPI routes and async services."""
     kwargs = _base_kwargs()
     kwargs["transport"] = httpx.AsyncHTTPTransport(retries=MAX_RETRIES)
     kwargs.update(overrides)
@@ -56,7 +46,6 @@ def get_async_client(**overrides) -> httpx.AsyncClient:
 
 
 def get_sync_client(**overrides) -> httpx.Client:
-    """HTTP client for use in Celery workers and sync services."""
     kwargs = _base_kwargs()
     kwargs["transport"] = httpx.HTTPTransport(retries=MAX_RETRIES)
     kwargs.update(overrides)

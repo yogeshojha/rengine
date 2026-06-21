@@ -1,30 +1,33 @@
 <script lang="ts">
 	import type { TargetBgpDetailResponse } from '$lib/types/target-detail';
-	import { TargetType } from '$lib/types/target';
 	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible';
+	import * as ScrollArea from '$lib/components/ui/scroll-area/index.js';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import { Search, X, Copy, Check, ChevronRight, Mail, Info } from 'lucide-svelte';
 	import { tick } from 'svelte';
 
 	interface Props {
 		bgp: TargetBgpDetailResponse;
-		targetType: TargetType;
 	}
 
-	let { bgp, targetType }: Props = $props();
+	let { bgp }: Props = $props();
 
-	// neighbour groups
-	let upstream = $derived(bgp.neighbours.filter((n) => n.relationship === 'upstream'));
-	let downstream = $derived(bgp.neighbours.filter((n) => n.relationship === 'downstream'));
+	const byPower = (a: { power: number }, b: { power: number }) => (b.power ?? 0) - (a.power ?? 0);
+	let upstream = $derived(bgp.neighbours.filter((n) => n.relationship === 'upstream').sort(byPower));
+	let downstream = $derived(
+		bgp.neighbours.filter((n) => n.relationship === 'downstream').sort(byPower)
+	);
 	let uncertain = $derived(
-		bgp.neighbours.filter((n) => n.relationship !== 'upstream' && n.relationship !== 'downstream')
+		bgp.neighbours
+			.filter((n) => n.relationship !== 'upstream' && n.relationship !== 'downstream')
+			.sort(byPower)
 	);
 
 	let totalNeighbours = $derived(bgp.neighbours.length);
 
-	// proportion percentages
 	let upPct = $derived(
 		totalNeighbours > 0 ? Math.round((upstream.length / totalNeighbours) * 100) : 0
 	);
@@ -33,7 +36,6 @@
 	);
 	let latPct = $derived(totalNeighbours > 0 ? 100 - upPct - downPct : 0);
 
-	// network position insight
 	let positionLabel = $derived.by(() => {
 		if (totalNeighbours === 0) return null;
 		const downRatio = downstream.length / totalNeighbours;
@@ -41,29 +43,21 @@
 		if (downRatio > 0.6)
 			return {
 				label: 'Transit provider',
-				desc: 'high downstream ratio indicates significant customer base',
-				color: 'emerald' as const
+				desc: 'high downstream ratio indicates significant customer base'
 			};
 		if (upRatio > 0.6)
 			return {
 				label: 'Leaf network',
-				desc: 'primarily consumes transit, limited downstream presence',
-				color: 'blue' as const
+				desc: 'primarily consumes transit, limited downstream presence'
 			};
 		return {
 			label: 'Mid-tier network',
-			desc: 'balanced upstream/downstream indicating regional connectivity',
-			color: 'amber' as const
+			desc: 'balanced upstream/downstream indicating regional connectivity'
 		};
 	});
 
-	const INSIGHT_COLORS = {
-		emerald: 'bg-emerald-500/8 border-emerald-500/20 text-emerald-400',
-		blue: 'bg-blue-500/8 border-blue-500/20 text-blue-400',
-		amber: 'bg-amber-500/8 border-amber-500/20 text-amber-400'
-	};
+	const INSIGHT_PANEL = 'bg-muted/40 border-border/50 text-foreground/70';
 
-	// search
 	let query = $state('');
 	let topologyEl = $state<HTMLDivElement | null>(null);
 
@@ -98,7 +92,6 @@
 		return query.trim().length > 0;
 	}
 
-	// auto-scroll to first match
 	$effect(() => {
 		if (query.trim()) {
 			tick().then(() => {
@@ -111,26 +104,48 @@
 		}
 	});
 
-	// copy groups
+	async function writeClipboard(text: string): Promise<boolean> {
+		if (navigator.clipboard && window.isSecureContext) {
+			try {
+				await navigator.clipboard.writeText(text);
+				return true;
+			} catch {
+				// fall through
+			}
+		}
+		try {
+			const ta = document.createElement('textarea');
+			ta.value = text;
+			ta.style.position = 'fixed';
+			ta.style.opacity = '0';
+			document.body.appendChild(ta);
+			ta.focus();
+			ta.select();
+			const ok = document.execCommand('copy');
+			ta.remove();
+			return ok;
+		} catch {
+			return false;
+		}
+	}
+
 	let copiedGroup = $state<string | null>(null);
-	function copyAll(group: 'up' | 'down' | 'lat') {
+	async function copyAll(group: 'up' | 'down' | 'lat') {
 		const list = group === 'up' ? upstream : group === 'down' ? downstream : uncertain;
 		const text = list.map((n) => `AS${n.neighbour_asn}`).join('\n');
-		navigator.clipboard.writeText(text);
+		if (!(await writeClipboard(text))) return;
 		copiedGroup = group;
 		setTimeout(() => (copiedGroup = null), 1500);
 	}
 
-	// copy prefixes
 	let copiedPrefixes = $state(false);
-	function copyPrefixes() {
+	async function copyPrefixes() {
 		const text = bgp.announced_prefixes.map((p) => p.prefix).join('\n');
-		navigator.clipboard.writeText(text);
+		if (!(await writeClipboard(text))) return;
 		copiedPrefixes = true;
 		setTimeout(() => (copiedPrefixes = false), 1500);
 	}
 
-	// collapsible sections
 	let showNetwork = $state(false);
 	let showPrefixes = $state(false);
 	let showPrefixOverview = $state(false);
@@ -152,38 +167,59 @@
 </script>
 
 {#snippet copyAllBtn(group: 'up' | 'down' | 'lat')}
-	<button
-		class="flex items-center gap-1 text-[8px] text-muted-foreground/40 border border-border/40 rounded px-1.5 py-0.5
-			hover:text-foreground/60 hover:border-border/60 hover:bg-accent/5 transition-all"
+	<Button
+		variant="outline"
+		size="sm"
+		class="h-5 gap-1 px-1.5 text-[10px] text-muted-foreground/60"
 		onclick={() => copyAll(group)}
 	>
 		{#if copiedGroup === group}
-			<Check class="h-2.5 w-2.5 text-emerald-400" />
-			<span class="text-emerald-400">copied</span>
+			<Check class="h-2.5 w-2.5" />
+			<span>copied</span>
 		{:else}
 			<Copy class="h-2.5 w-2.5" />
 			<span>copy all</span>
 		{/if}
-	</button>
+	</Button>
 {/snippet}
 
-{#snippet chipGroup(items: typeof upstream, cls: string, hlCls: string)}
-	<ScrollArea class="h-[88px]">
-		<div class="flex flex-wrap gap-1 pr-1">
-			{#each items as n (n.neighbour_asn)}
-				{@const matched = isMatch(n.neighbour_asn)}
-				{@const dimmed = hasQuery() && !matched}
-				<span
-					data-match={matched ? 'true' : undefined}
-					class="text-[9px] font-mono font-medium tabular-nums rounded border px-1.5 py-0.5 transition-all duration-150
-						{cls}
-						{dimmed ? 'opacity-[0.15]' : ''}
-						{matched ? hlCls : ''}
-						{!hasQuery() ? 'hover:-translate-y-px' : ''}">AS{n.neighbour_asn}</span
-				>
-			{/each}
+{#snippet chipList(items: typeof upstream)}
+	<div class="flex flex-wrap gap-1 content-start p-1.5">
+		{#each items as n (n.neighbour_asn)}
+			{@const matched = isMatch(n.neighbour_asn)}
+			{@const dimmed = hasQuery() && !matched}
+			<span
+				data-match={matched ? 'true' : undefined}
+				class="text-[10px] font-mono font-medium tabular-nums rounded-md border px-1.5 py-0.5 transition-colors duration-150
+					{matched
+					? 'bg-chart-1/15 text-foreground border-chart-1/40'
+					: 'bg-muted/60 text-foreground/70 border-border/40 hover:bg-muted hover:border-border/70'}
+					{dimmed ? 'opacity-20' : ''}">AS{n.neighbour_asn}</span
+			>
+		{/each}
+	</div>
+{/snippet}
+
+{#snippet chipGroup(items: typeof upstream)}
+	{#if items.length > 18}
+		<ScrollArea.Root class="h-[176px] rounded-md border border-border/15" scrollbarYClasses="w-1.5">
+			{@render chipList(items)}
+		</ScrollArea.Root>
+	{:else}
+		<div class="rounded-md border border-border/15">{@render chipList(items)}</div>
+	{/if}
+{/snippet}
+
+{#snippet peerColumn(title: string, items: typeof upstream, group: 'up' | 'down' | 'lat')}
+	<div class="min-w-0">
+		<div class="flex items-center justify-between mb-1.5">
+			<span class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70"
+				>{title} · {items.length}</span
+			>
+			{@render copyAllBtn(group)}
 		</div>
-	</ScrollArea>
+		{@render chipGroup(items)}
+	</div>
 {/snippet}
 
 <div class="bgp-topology" bind:this={topologyEl}>
@@ -192,36 +228,27 @@
 		<div class="px-3 pt-3 pb-2 space-y-1.5">
 			<div class="h-1 rounded-full bg-border/40 flex gap-px overflow-hidden">
 				{#if upstream.length > 0}
-					<div
-						class="h-full rounded-full bg-blue-400 transition-all duration-500"
-						style="width: {upPct}%"
-					></div>
+					<div class="h-full rounded-full bg-foreground/55" style="width: {upPct}%"></div>
 				{/if}
 				{#if downstream.length > 0}
-					<div
-						class="h-full rounded-full bg-emerald-400 transition-all duration-500"
-						style="width: {downPct}%"
-					></div>
+					<div class="h-full rounded-full bg-foreground/30" style="width: {downPct}%"></div>
 				{/if}
 				{#if uncertain.length > 0}
-					<div
-						class="h-full rounded-full bg-amber-400/60 transition-all duration-500"
-						style="width: {latPct}%"
-					></div>
+					<div class="h-full rounded-full bg-foreground/15" style="width: {latPct}%"></div>
 				{/if}
 			</div>
-			<div class="flex justify-between text-[9px] font-mono text-muted-foreground/50">
+			<div class="flex justify-between text-[10px] font-mono text-muted-foreground/60">
 				<span class="flex items-center gap-1">
-					<span class="h-[5px] w-[5px] rounded-full bg-blue-400"></span>
-					<span class="font-semibold text-foreground/60">{upstream.length}</span> up
+					<span class="h-[5px] w-[5px] rounded-full bg-foreground/55"></span>
+					<span class="font-semibold text-foreground/70">{upstream.length}</span> up
 				</span>
 				<span class="flex items-center gap-1">
-					<span class="h-[5px] w-[5px] rounded-full bg-emerald-400"></span>
-					<span class="font-semibold text-foreground/60">{downstream.length}</span> down
+					<span class="h-[5px] w-[5px] rounded-full bg-foreground/30"></span>
+					<span class="font-semibold text-foreground/70">{downstream.length}</span> down
 				</span>
 				<span class="flex items-center gap-1">
-					<span class="h-[5px] w-[5px] rounded-full bg-amber-400/60"></span>
-					<span class="font-semibold text-foreground/60">{uncertain.length}</span> lateral
+					<span class="h-[5px] w-[5px] rounded-full bg-foreground/15"></span>
+					<span class="font-semibold text-foreground/70">{uncertain.length}</span> lateral
 				</span>
 			</div>
 		</div>
@@ -231,28 +258,31 @@
 	{#if totalNeighbours > 10}
 		<div class="px-3 pb-2">
 			<div class="relative flex items-center">
-				<Search class="absolute left-2 h-3 w-3 text-muted-foreground/40 pointer-events-none" />
-				<input
-					type="text"
+				<Search
+					class="absolute left-2.5 h-3 w-3 text-muted-foreground/50 pointer-events-none z-10"
+				/>
+				<Input
 					bind:value={query}
-					class="w-full bg-accent/5 border border-border/40 rounded-md py-1 pl-7 pr-7 text-[10px] font-mono
-						text-foreground placeholder:text-muted-foreground/30 outline-none
-						focus:border-border/60 transition-colors"
+					class="h-7 pl-7 pr-7 text-[10px] font-mono"
 					placeholder="Find ASN…"
+					aria-label="Find ASN"
 					autocomplete="off"
 					spellcheck="false"
 				/>
 				{#if query}
-					<button
-						class="absolute right-1.5 text-muted-foreground/40 hover:text-foreground/60 transition-colors"
+					<Button
+						variant="ghost"
+						size="icon"
+						class="absolute right-1 z-10 h-5 w-5 text-muted-foreground/50 hover:text-foreground"
+						aria-label="Clear search"
 						onclick={() => (query = '')}
 					>
 						<X class="h-3 w-3" />
-					</button>
+					</Button>
 				{/if}
 			</div>
 			{#if matchCounts}
-				<p class="text-[9px] font-mono text-muted-foreground/40 mt-1">
+				<p class="text-[10px] font-mono text-muted-foreground/60 mt-1">
 					<span class="font-semibold text-foreground/60">{matchCounts.total}</span> found
 					{#if matchCounts.up > 0}<span> · {matchCounts.up} upstream</span>{/if}
 					{#if matchCounts.down > 0}<span> · {matchCounts.down} downstream</span>{/if}
@@ -262,209 +292,35 @@
 		</div>
 	{/if}
 
-	<!-- topology flow -->
-	<div class="px-3 pb-3 space-y-1">
-		<!-- UPSTREAM -->
-		{#if upstream.length > 0}
-			<div>
-				<div class="flex items-center justify-between mb-1.5">
-					<div
-						class="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-blue-400"
-					>
-						<span>Upstream · {upstream.length}</span>
-						<span class="flex-1 h-px bg-border/30 min-w-3"></span>
-					</div>
-					{@render copyAllBtn('up')}
-				</div>
-				{@render chipGroup(
-					upstream,
-					'bg-blue-500/8 text-blue-400 border-blue-500/15 hover:bg-blue-500/15 hover:border-blue-500/25',
-					'bg-blue-500/20 border-blue-500/40 shadow-[0_0_8px_rgba(96,165,250,0.2)]'
-				)}
-			</div>
-		{/if}
-
-		<!-- flow lines in -->
-		{#if upstream.length > 0}
-			<div class="flex justify-center py-0.5">
-				<svg width="140" height="18" viewBox="0 0 140 18" class="block">
-					<line
-						x1="20"
-						y1="0"
-						x2="70"
-						y2="16"
-						class="flow-in"
-						stroke="rgba(96,165,250,0.2)"
-						stroke-width="1"
-					/>
-					<line
-						x1="50"
-						y1="0"
-						x2="70"
-						y2="16"
-						class="flow-in"
-						stroke="rgba(96,165,250,0.3)"
-						stroke-width="1"
-					/>
-					<line
-						x1="70"
-						y1="0"
-						x2="70"
-						y2="16"
-						class="flow-in"
-						stroke="rgba(96,165,250,0.35)"
-						stroke-width="1"
-					/>
-					<line
-						x1="90"
-						y1="0"
-						x2="70"
-						y2="16"
-						class="flow-in"
-						stroke="rgba(96,165,250,0.3)"
-						stroke-width="1"
-					/>
-					<line
-						x1="120"
-						y1="0"
-						x2="70"
-						y2="16"
-						class="flow-in"
-						stroke="rgba(96,165,250,0.2)"
-						stroke-width="1"
-					/>
-				</svg>
-			</div>
-		{/if}
-
-		<!-- TARGET NODE -->
+	<div class="px-3 pb-3">
 		{#if bgp.as_overview}
-			<div class="flex justify-center py-2">
-				<div
-					class="relative flex items-center gap-2.5 px-4 py-2 rounded-lg
-					bg-gradient-to-br from-white/[0.04] to-white/[0.01]
-					border border-white/[0.08]"
-				>
-					<div
-						class="absolute -inset-[5px] rounded-xl border border-white/[0.03] pointer-events-none"
-					></div>
-					<div class="relative h-2 w-2 rounded-full bg-foreground shrink-0">
-						<div
-							class="absolute -inset-[3px] rounded-full border border-white/10 target-pulse"
-						></div>
-					</div>
-					<div>
-						<p class="text-[13px] font-semibold font-mono tracking-tight">
-							AS{bgp.as_overview.asn}
-						</p>
-						<p class="text-[9px] text-muted-foreground/50">{bgp.as_overview.holder || '—'}</p>
-					</div>
-				</div>
+			<div class="flex items-center gap-2 mb-2.5">
+				<span class="h-1.5 w-1.5 rounded-full bg-foreground/70 shrink-0"></span>
+				<span class="text-[12px] font-semibold font-mono tracking-tight">AS{bgp.as_overview.asn}</span>
+				{#if bgp.as_overview.holder}
+					<span class="text-[10px] text-muted-foreground/50 truncate">{bgp.as_overview.holder}</span>
+				{/if}
 			</div>
 		{/if}
 
-		<!-- flow lines out -->
-		{#if downstream.length > 0}
-			<div class="flex justify-center py-0.5">
-				<svg width="140" height="18" viewBox="0 0 140 18" class="block">
-					<line
-						x1="70"
-						y1="2"
-						x2="10"
-						y2="18"
-						class="flow-out"
-						stroke="rgba(52,211,153,0.15)"
-						stroke-width="1"
-					/>
-					<line
-						x1="70"
-						y1="2"
-						x2="40"
-						y2="18"
-						class="flow-out"
-						stroke="rgba(52,211,153,0.2)"
-						stroke-width="1"
-					/>
-					<line
-						x1="70"
-						y1="2"
-						x2="70"
-						y2="18"
-						class="flow-out"
-						stroke="rgba(52,211,153,0.3)"
-						stroke-width="1"
-					/>
-					<line
-						x1="70"
-						y1="2"
-						x2="100"
-						y2="18"
-						class="flow-out"
-						stroke="rgba(52,211,153,0.2)"
-						stroke-width="1"
-					/>
-					<line
-						x1="70"
-						y1="2"
-						x2="130"
-						y2="18"
-						class="flow-out"
-						stroke="rgba(52,211,153,0.15)"
-						stroke-width="1"
-					/>
-				</svg>
+		{#if totalNeighbours > 0}
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+				{#if upstream.length > 0}
+					{@render peerColumn('Upstream', upstream, 'up')}
+				{/if}
+				{#if downstream.length > 0}
+					{@render peerColumn('Downstream', downstream, 'down')}
+				{/if}
+				{#if uncertain.length > 0}
+					{@render peerColumn('Uncertain', uncertain, 'lat')}
+				{/if}
 			</div>
 		{/if}
 
-		<!-- DOWNSTREAM -->
-		{#if downstream.length > 0}
-			<div>
-				<div class="flex items-center justify-between mb-1.5">
-					<div
-						class="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-emerald-400"
-					>
-						<span>Downstream · {downstream.length}</span>
-						<span class="flex-1 h-px bg-border/30 min-w-3"></span>
-					</div>
-					{@render copyAllBtn('down')}
-				</div>
-				{@render chipGroup(
-					downstream,
-					'bg-emerald-500/8 text-emerald-400 border-emerald-500/15 hover:bg-emerald-500/15 hover:border-emerald-500/25',
-					'bg-emerald-500/20 border-emerald-500/40 shadow-[0_0_8px_rgba(52,211,153,0.2)]'
-				)}
-			</div>
-		{/if}
-
-		<!-- UNCERTAIN -->
-		{#if uncertain.length > 0}
-			<div class="mt-2">
-				<div class="flex items-center justify-between mb-1.5">
-					<div
-						class="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-amber-400"
-					>
-						<span>Uncertain · {uncertain.length}</span>
-						<span class="flex-1 h-px bg-border/30 min-w-3"></span>
-					</div>
-					{@render copyAllBtn('lat')}
-				</div>
-				{@render chipGroup(
-					uncertain,
-					'bg-amber-500/8 text-amber-400 border-amber-500/12 hover:bg-amber-500/12 hover:border-amber-500/20',
-					'bg-amber-500/15 border-amber-500/35 shadow-[0_0_8px_rgba(251,191,36,0.2)]'
-				)}
-			</div>
-		{/if}
-
-		<!-- position insight — colored -->
 		{#if positionLabel}
-			<div
-				class="mt-3 flex items-start gap-2 px-2.5 py-2 rounded-md border {INSIGHT_COLORS[
-					positionLabel.color
-				]}"
-			>
-				<Info class="h-3.5 w-3.5 shrink-0 mt-px opacity-70" />
-				<p class="text-[10px] leading-relaxed">
+			<div class="mt-3 flex items-start gap-2 px-2.5 py-2 rounded-md border {INSIGHT_PANEL}">
+				<Info class="h-3.5 w-3.5 shrink-0 mt-px text-muted-foreground/50" />
+				<p class="text-[11px] leading-relaxed">
 					<span class="font-semibold">{positionLabel.label}</span>
 					<span class="opacity-60"> — {positionLabel.desc}</span>
 				</p>
@@ -520,36 +376,49 @@
 				<Collapsible.Content>
 					<div class="mt-1">
 						<div class="flex justify-end mb-1">
-							<button
-								class="flex items-center gap-1 text-[8px] text-muted-foreground/40 border border-border/40 rounded px-1.5 py-0.5
-									hover:text-foreground/60 hover:border-border/60 hover:bg-accent/5 transition-all"
+							<Button
+								variant="outline"
+								size="sm"
+								class="h-5 gap-1 px-1.5 text-[10px] text-muted-foreground/60"
 								onclick={copyPrefixes}
 							>
 								{#if copiedPrefixes}
-									<Check class="h-2.5 w-2.5 text-emerald-400" />
-									<span class="text-emerald-400">copied</span>
+									<Check class="h-2.5 w-2.5" />
+									<span>copied</span>
 								{:else}
 									<Copy class="h-2.5 w-2.5" />
 									<span>copy all</span>
 								{/if}
-							</button>
+							</Button>
 						</div>
-						<ScrollArea class="h-[160px] rounded-md border border-border/20">
-							<div>
-								{#each bgp.announced_prefixes as pfx, i (pfx.prefix)}
-									<div
-										class="flex items-center gap-2 px-2.5 py-1.5 text-[10px]
-										{i > 0 ? 'border-t border-border/10' : ''} hover:bg-accent/5 transition-colors"
+						{#snippet prefixRows()}
+							{#each bgp.announced_prefixes as pfx, i (pfx.prefix)}
+								<div
+									class="flex items-center gap-2 px-2.5 py-1.5 text-[11px]
+									{i > 0 ? 'border-t border-border/15' : ''} hover:bg-muted/40 transition-colors"
+								>
+									<code
+										class="font-mono text-foreground/80 flex-1"
+										title="first seen {fmtDate(pfx.first_seen)} · last seen {fmtDate(pfx.last_seen)}"
+										>{pfx.prefix}</code
 									>
-										<code class="font-mono text-foreground/70 flex-1">{pfx.prefix}</code>
-										<span class="text-[9px] text-muted-foreground/25">v{pfx.ip_version}</span>
-										<span class="font-mono tabular-nums text-[9px] text-muted-foreground/25"
-											>{fmtDate(pfx.first_seen)}</span
-										>
-									</div>
-								{/each}
-							</div>
-						</ScrollArea>
+									<span class="text-[10px] text-muted-foreground/50">v{pfx.ip_version}</span>
+									<span class="font-mono tabular-nums text-[10px] text-muted-foreground/50"
+										>{fmtDate(pfx.first_seen)}</span
+									>
+								</div>
+							{/each}
+						{/snippet}
+						{#if bgp.announced_prefixes.length > 8}
+							<ScrollArea.Root
+								class="h-[200px] rounded-md border border-border/15"
+								scrollbarYClasses="w-1.5"
+							>
+								{@render prefixRows()}
+							</ScrollArea.Root>
+						{:else}
+							<div class="rounded-md border border-border/15">{@render prefixRows()}</div>
+						{/if}
 					</div>
 				</Collapsible.Content>
 			</Collapsible.Root>
@@ -569,21 +438,42 @@
 					<span>Prefix Overview ({bgp.prefix_overview.length})</span>
 				</Collapsible.Trigger>
 				<Collapsible.Content>
-					<div class="mt-1 rounded-md border border-border/20 overflow-hidden">
-						{#each bgp.prefix_overview as po, i}
-							<div
-								class="flex items-center gap-2 px-2.5 py-1.5 text-[10px]
-								{i > 0 ? 'border-t border-border/10' : ''} hover:bg-accent/5 transition-colors"
+					<div class="mt-1">
+						{#snippet prefixOverviewRows()}
+							{#each bgp.prefix_overview as po, i (po.prefix)}
+								<div
+									class="flex items-center gap-2 px-2.5 py-1.5 text-[10px]
+									{i > 0 ? 'border-t border-border/10' : ''} hover:bg-accent/5 transition-colors"
+								>
+									<code class="font-mono text-foreground/70 shrink-0">{po.prefix}</code>
+									{#if po.holder}
+										<span class="text-muted-foreground/60 text-[10px] truncate flex-1">{po.holder}</span>
+									{:else}
+										<span class="flex-1"></span>
+									{/if}
+									<span class="text-muted-foreground/60 text-[10px] shrink-0">AS{po.asn}</span>
+									<span
+										title={po.is_announced ? 'Announced' : 'Not announced'}
+										aria-label={po.is_announced ? 'Announced' : 'Not announced'}
+										class="h-1.5 w-1.5 rounded-full shrink-0 {po.is_announced
+											? 'bg-foreground/40'
+											: 'bg-destructive/60'}"
+									></span>
+								</div>
+							{/each}
+						{/snippet}
+						{#if bgp.prefix_overview.length > 8}
+							<ScrollArea.Root
+								class="h-[200px] rounded-md border border-border/20"
+								scrollbarYClasses="w-1.5"
 							>
-								<code class="font-mono text-foreground/70 flex-1">{po.prefix}</code>
-								<span class="text-muted-foreground/35 text-[9px]">AS{po.asn}</span>
-								<span
-									class="h-1.5 w-1.5 rounded-full {po.is_announced
-										? 'bg-emerald-500'
-										: 'bg-red-500'}"
-								></span>
+								{@render prefixOverviewRows()}
+							</ScrollArea.Root>
+						{:else}
+							<div class="rounded-md border border-border/20 overflow-hidden">
+								{@render prefixOverviewRows()}
 							</div>
-						{/each}
+						{/if}
 					</div>
 				</Collapsible.Content>
 			</Collapsible.Root>
@@ -601,19 +491,37 @@
 					<span>Related Prefixes ({bgp.related_prefixes.length})</span>
 				</Collapsible.Trigger>
 				<Collapsible.Content>
-					<div class="mt-1 rounded-md border border-border/20 overflow-hidden">
-						{#each bgp.related_prefixes as rp, i}
-							<div
-								class="flex items-center gap-2 px-2.5 py-1.5 text-[10px]
-								{i > 0 ? 'border-t border-border/10' : ''} hover:bg-accent/5 transition-colors"
+					<div class="mt-1">
+						{#snippet relatedPrefixRows()}
+							{#each bgp.related_prefixes as rp, i (rp.related_prefix)}
+								<div
+									class="flex items-center gap-2 px-2.5 py-1.5 text-[10px]
+									{i > 0 ? 'border-t border-border/10' : ''} hover:bg-accent/5 transition-colors"
+								>
+									<code class="font-mono text-[11px] text-foreground/80 flex-1">{rp.related_prefix}</code>
+									<Badge
+										variant="outline"
+										class="text-[10px] h-4 px-1 text-muted-foreground border-border/60"
+										>{rp.relationship}</Badge
+									>
+									{#if rp.origin_asn}<span class="font-mono text-muted-foreground/60 text-[10px]"
+											>AS{rp.origin_asn}</span
+										>{/if}
+								</div>
+							{/each}
+						{/snippet}
+						{#if bgp.related_prefixes.length > 8}
+							<ScrollArea.Root
+								class="h-[200px] rounded-md border border-border/20"
+								scrollbarYClasses="w-1.5"
 							>
-								<code class="font-mono text-foreground/70 flex-1">{rp.related_prefix}</code>
-								<Badge variant="outline" class="text-[7px] h-3.5 px-1">{rp.relationship}</Badge>
-								{#if rp.origin_asn}<span class="font-mono text-muted-foreground/35 text-[9px]"
-										>AS{rp.origin_asn}</span
-									>{/if}
+								{@render relatedPrefixRows()}
+							</ScrollArea.Root>
+						{:else}
+							<div class="rounded-md border border-border/20 overflow-hidden">
+								{@render relatedPrefixRows()}
 							</div>
-						{/each}
+						{/if}
 					</div>
 				</Collapsible.Content>
 			</Collapsible.Root>
@@ -632,11 +540,16 @@
 				</Collapsible.Trigger>
 				<Collapsible.Content>
 					<div class="mt-1 space-y-1">
-						{#each bgp.abuse_contacts as ac}
-							<div class="flex items-center gap-1.5 text-[10px] group/ac">
-								<Mail class="h-3 w-3 text-muted-foreground/25" />
-								<span class="font-mono text-foreground/60">{ac.abuse_email}</span>
-								{#if ac.rir}<Badge variant="outline" class="text-[7px] h-3.5 px-1">{ac.rir}</Badge
+						{#each bgp.abuse_contacts as ac (ac.abuse_email + ac.resource)}
+							<div class="flex items-center gap-1.5 text-[11px] group/ac">
+								<Mail class="h-3 w-3 text-muted-foreground/40" />
+								<span class="font-mono text-foreground/80">{ac.abuse_email}</span>
+								{#if ac.resource}<span class="font-mono text-[10px] text-muted-foreground/50"
+										>{ac.resource}</span
+									>{/if}
+								{#if ac.rir}<Badge
+										variant="outline"
+										class="text-[10px] h-4 px-1 text-muted-foreground border-border/60">{ac.rir}</Badge
 									>{/if}
 								<div class="opacity-0 group-hover/ac:opacity-100 transition-opacity ml-auto">
 									<CopyButton value={ac.abuse_email} />
@@ -649,36 +562,3 @@
 		{/if}
 	</div>
 </div>
-
-<style>
-	/* animated flow lines */
-	.flow-in,
-	.flow-out {
-		stroke-dasharray: 4, 3;
-		animation: dash-flow 1.5s linear infinite;
-	}
-	.flow-in {
-		animation-direction: reverse;
-	}
-
-	@keyframes dash-flow {
-		to {
-			stroke-dashoffset: -7;
-		}
-	}
-
-	/* target pulse */
-	.target-pulse {
-		animation: pulse-ring 2.5s ease-out infinite;
-	}
-	@keyframes pulse-ring {
-		0% {
-			transform: scale(1);
-			opacity: 0.4;
-		}
-		100% {
-			transform: scale(2.5);
-			opacity: 0;
-		}
-	}
-</style>

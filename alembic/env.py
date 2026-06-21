@@ -10,14 +10,14 @@ from sqlmodel import SQLModel
 
 import shared.models  # noqa: F401
 from alembic import context
-from shared.config import BaseSettings_
+from shared.config import BaseAppSettings
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-settings = BaseSettings_()
+settings = BaseAppSettings()
 config.set_main_option("sqlalchemy.url", settings.database_url_async)
 
 target_metadata = SQLModel.metadata

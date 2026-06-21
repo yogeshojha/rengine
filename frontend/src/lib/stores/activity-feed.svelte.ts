@@ -15,8 +15,8 @@ import {
 	Server,
 	Waypoints
 } from 'lucide-svelte';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
-/** Per-type icon for the timeline node (scan-not-read). */
 export function getActivityIcon(eventType: string): typeof Globe {
 	const s = eventType.toLowerCase();
 	if (/whois/.test(s)) return Globe;
@@ -52,10 +52,10 @@ export const FILTER_LABELS: Record<ActivityFilter, string> = {
 };
 
 export const LEVEL_DOT: Record<ActivityLevel, string> = {
-	success: 'bg-emerald-500',
+	success: 'bg-foreground',
 	info: 'bg-muted-foreground/50',
-	warning: 'bg-amber-500',
-	error: 'bg-red-500'
+	warning: 'bg-amber-600 dark:bg-amber-500',
+	error: 'bg-destructive'
 };
 
 export function categorize(t: string): ActivityFilter {
@@ -103,9 +103,8 @@ function createActivityFeed() {
 	const latest = $derived(items[0] ?? null);
 	const isLive = $derived(freshIds.size > 0);
 
-	// In-flight detection: a "started" event with no later terminal event for the same target.
 	const runningIds = $derived.by(() => {
-		const latestTerminal = new Map<string, number>();
+		const latestTerminal = new SvelteMap<string, number>();
 		for (const a of items) {
 			if (isTerminal(a.event_type)) {
 				const key = a.target_id ?? a.id;
@@ -113,7 +112,7 @@ function createActivityFeed() {
 				if (t > (latestTerminal.get(key) ?? 0)) latestTerminal.set(key, t);
 			}
 		}
-		const running = new Set<string>();
+		const running = new SvelteSet<string>();
 		for (const a of items) {
 			if (!isStarted(a.event_type)) continue;
 			const key = a.target_id ?? a.id;
@@ -123,7 +122,7 @@ function createActivityFeed() {
 		return running;
 	});
 	const runningCount = $derived.by(() => {
-		const targets = new Set<string>();
+		const targets = new SvelteSet<string>();
 		for (const a of items) {
 			if (runningIds.has(a.id)) targets.add(a.target_id ?? a.id);
 		}

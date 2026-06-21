@@ -6,15 +6,20 @@ from app.api.v1 import (
     auth,
     celery_health,
     events,
+    instance_settings,
+    notification_channels,
     notifications,
+    onboarding,
     organizations,
     projects,
+    proxies,
     ripestat,
     scan_contexts,
     scan_engines,
     scans,
     tags,
     targets,
+    totp,
     users,
     viewdns,
     whois,
@@ -39,3 +44,8 @@ router.include_router(scan_engines.router)
 router.include_router(scan_contexts.router)
 router.include_router(scans.router)
 router.include_router(celery_health.router)
+router.include_router(instance_settings.router)
+router.include_router(proxies.router)
+router.include_router(notification_channels.router)
+router.include_router(onboarding.router)
+router.include_router(totp.router)

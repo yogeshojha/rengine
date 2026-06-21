@@ -8,6 +8,7 @@ from app.core.database import get_session
 from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKeyCreate, APIKeyRead, APIKeyUpdate, ProviderInfo
 from shared.services.api_key.async_api_key import APIKeyService
+from shared.utils.crypto import try_decrypt
 from tools.viewdns.client import ViewDNSClient
 
 
@@ -82,7 +83,7 @@ async def reveal_api_key(
     service: Annotated[APIKeyService, Depends(get_api_key_service)],
 ):
     api_key = await service._get_key_or_404(key_id)
-    return {"key_value": api_key.key_value}
+    return {"key_value": try_decrypt(api_key.key_value) or api_key.key_value}
 
 
 @router.post("/{key_id}/test")
@@ -102,7 +103,7 @@ async def test_api_key(
         }
 
     try:
-        result = await tester(api_key.key_value)
+        result = await tester(try_decrypt(api_key.key_value) or api_key.key_value)
         return {"provider": api_key.provider, "success": True, **result}
     except Exception as e:
         return {"provider": api_key.provider, "success": False, "message": str(e)}

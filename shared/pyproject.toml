@@ -5,6 +5,8 @@ description = "reNgine shared code"
 requires-python = ">=3.13"
 dependencies = [
     "validators>=0.35.0",
+    "cryptography>=42",
+    "apprise>=1.9.0",
 ]
 
 

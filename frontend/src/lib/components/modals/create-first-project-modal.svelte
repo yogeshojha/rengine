@@ -8,9 +8,11 @@
 	import LoaderIcon from '@lucide/svelte/icons/loader';
 	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
 	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
+	import { tick } from 'svelte';
 
 	let { open }: { open: boolean } = $props();
 
+	let nameInput = $state<HTMLInputElement | null>(null);
 	let name = $state('');
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
@@ -19,6 +21,12 @@
 	let nameLength = $derived(name.length);
 	let isValid = $derived(name.trim().length > 0 && name.length <= MAX_LENGTH);
 	let isOverLimit = $derived(name.length > MAX_LENGTH);
+
+	$effect(() => {
+		if (open) {
+			tick().then(() => nameInput?.focus());
+		}
+	});
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -75,10 +83,10 @@
 				<Label for="project-name">Project Name</Label>
 				<Input
 					id="project-name"
+					bind:ref={nameInput}
 					bind:value={name}
 					placeholder="e.g., Example Corp Pentest"
 					disabled={isSubmitting}
-					autofocus
 					class={isOverLimit ? 'border-destructive focus-visible:ring-destructive' : ''}
 				/>
 				<div class="flex justify-between text-xs">

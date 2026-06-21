@@ -13,10 +13,23 @@ from shared.models.dns import (
     DnsRecord,
     DnsRecordRead,
 )
+from shared.models.instance_settings import (
+    InstanceSettings,
+    InstanceSettingsRead,
+    InstanceSettingsUpdate,
+)
 from shared.models.notification import (
     Notification,
     NotificationCreate,
     NotificationRead,
+)
+from shared.models.notification_channel import (
+    NotificationChannel,
+    NotificationChannelCreate,
+    NotificationChannelRead,
+    NotificationChannelTestResult,
+    NotificationChannelUpdate,
+    NotificationPreference,
 )
 from shared.models.organization import (
     Organization,
@@ -26,6 +39,15 @@ from shared.models.organization import (
     OrganizationUpdate,
 )
 from shared.models.project import Project, ProjectBase, ProjectCreate, ProjectRead
+from shared.models.proxy import (
+    Proxy,
+    ProxyCreate,
+    ProxyEndpoint,
+    ProxyEndpointRead,
+    ProxyRead,
+    ProxyTestResult,
+    ProxyUpdate,
+)
 from shared.models.ripestat import (
     RIPEStatAbuseContact,
     RIPEStatAnnouncedPrefix,
@@ -94,8 +116,17 @@ __all__ = [
     "DnsRecord",
     "DnsRecordRead",
     "ExpansionConfig",
+    "InstanceSettings",
+    "InstanceSettingsRead",
+    "InstanceSettingsUpdate",
     "Notification",
+    "NotificationChannel",
+    "NotificationChannelCreate",
+    "NotificationChannelRead",
+    "NotificationChannelTestResult",
+    "NotificationChannelUpdate",
     "NotificationCreate",
+    "NotificationPreference",
     "NotificationRead",
     "Organization",
     "OrganizationCreate",
@@ -106,8 +137,14 @@ __all__ = [
     "ProjectBase",
     "ProjectCreate",
     "ProjectRead",
-    "ProjectUpdate",
     "ProviderInfo",
+    "Proxy",
+    "ProxyCreate",
+    "ProxyEndpoint",
+    "ProxyEndpointRead",
+    "ProxyRead",
+    "ProxyTestResult",
+    "ProxyUpdate",
     "RIPEStatASNNeighbour",
     "RIPEStatASOverview",
     "RIPEStatAbuseContact",

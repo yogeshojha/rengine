@@ -16,11 +16,7 @@
 		{ value: '-1', label: 'All' }
 	];
 
-	let selectedValue = $state<string>('10');
-
-	$effect(() => {
-		selectedValue = pageSize === -1 ? '-1' : pageSize.toString();
-	});
+	let selectedValue = $derived(pageSize === -1 ? '-1' : pageSize.toString());
 
 	const triggerContent = $derived(
 		pageSizeOptions.find((opt) => opt.value === selectedValue)?.label ?? '10 per page'
@@ -38,7 +34,7 @@
 		{triggerContent}
 	</Select.Trigger>
 	<Select.Content>
-		{#each pageSizeOptions as option}
+		{#each pageSizeOptions as option (option.value)}
 			<Select.Item value={option.value} label={option.label}>
 				{option.label}
 			</Select.Item>

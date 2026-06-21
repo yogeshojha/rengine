@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { DnsLookupRead, DnsRecordRead } from '$lib/types/target-detail';
 	import CopyButton from '$lib/components/copy-button.svelte';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import * as ScrollArea from '$lib/components/ui/scroll-area/index.js';
+	import * as HoverCard from '$lib/components/ui/hover-card/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { CircleCheck, Globe } from 'lucide-svelte';
 
 	interface Props {
@@ -12,102 +14,112 @@
 	let { lookup }: Props = $props();
 
 	const TYPE_ORDER = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA', 'PTR'];
-	// per-type semantic color hosted on Tabs.Trigger: inactive is the default state, active via data-[state=active]:.
-	// The dark: duplicates are required to outrank Tabs.Trigger's own dark:data-[state=active]:* base classes
-	// (bg-input/30, text-foreground, border-input) and dark:text-muted-foreground — these colors are identical
-	// in both themes, but the dark: variant must be present literally to win the cascade in dark mode.
-	const TYPE_COLOR: Record<string, string> = {
-		A: 'text-blue-400/40 dark:text-blue-400/40 border-transparent hover:border-blue-500/15 hover:bg-blue-500/5 data-[state=active]:bg-blue-500/15 dark:data-[state=active]:bg-blue-500/15 data-[state=active]:text-blue-400 dark:data-[state=active]:text-blue-400 data-[state=active]:border-blue-500/30 dark:data-[state=active]:border-blue-500/30',
-		AAAA: 'text-indigo-400/40 dark:text-indigo-400/40 border-transparent hover:border-indigo-500/15 hover:bg-indigo-500/5 data-[state=active]:bg-indigo-500/15 dark:data-[state=active]:bg-indigo-500/15 data-[state=active]:text-indigo-400 dark:data-[state=active]:text-indigo-400 data-[state=active]:border-indigo-500/30 dark:data-[state=active]:border-indigo-500/30',
-		CNAME:
-			'text-cyan-400/40 dark:text-cyan-400/40 border-transparent hover:border-cyan-500/15 hover:bg-cyan-500/5 data-[state=active]:bg-cyan-500/15 dark:data-[state=active]:bg-cyan-500/15 data-[state=active]:text-cyan-400 dark:data-[state=active]:text-cyan-400 data-[state=active]:border-cyan-500/30 dark:data-[state=active]:border-cyan-500/30',
-		MX: 'text-amber-400/40 dark:text-amber-400/40 border-transparent hover:border-amber-500/15 hover:bg-amber-500/5 data-[state=active]:bg-amber-500/15 dark:data-[state=active]:bg-amber-500/15 data-[state=active]:text-amber-400 dark:data-[state=active]:text-amber-400 data-[state=active]:border-amber-500/30 dark:data-[state=active]:border-amber-500/30',
-		NS: 'text-emerald-400/40 dark:text-emerald-400/40 border-transparent hover:border-emerald-500/15 hover:bg-emerald-500/5 data-[state=active]:bg-emerald-500/15 dark:data-[state=active]:bg-emerald-500/15 data-[state=active]:text-emerald-400 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 dark:data-[state=active]:border-emerald-500/30',
-		TXT: 'text-violet-400/40 dark:text-violet-400/40 border-transparent hover:border-violet-500/15 hover:bg-violet-500/5 data-[state=active]:bg-violet-500/15 dark:data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-400 dark:data-[state=active]:text-violet-400 data-[state=active]:border-violet-500/30 dark:data-[state=active]:border-violet-500/30',
-		SOA: 'text-rose-400/40 dark:text-rose-400/40 border-transparent hover:border-rose-500/15 hover:bg-rose-500/5 data-[state=active]:bg-rose-500/15 dark:data-[state=active]:bg-rose-500/15 data-[state=active]:text-rose-400 dark:data-[state=active]:text-rose-400 data-[state=active]:border-rose-500/30 dark:data-[state=active]:border-rose-500/30',
-		SRV: 'text-orange-400/40 dark:text-orange-400/40 border-transparent hover:border-orange-500/15 hover:bg-orange-500/5 data-[state=active]:bg-orange-500/15 dark:data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-400 dark:data-[state=active]:text-orange-400 data-[state=active]:border-orange-500/30 dark:data-[state=active]:border-orange-500/30',
-		CAA: 'text-teal-400/40 dark:text-teal-400/40 border-transparent hover:border-teal-500/15 hover:bg-teal-500/5 data-[state=active]:bg-teal-500/15 dark:data-[state=active]:bg-teal-500/15 data-[state=active]:text-teal-400 dark:data-[state=active]:text-teal-400 data-[state=active]:border-teal-500/30 dark:data-[state=active]:border-teal-500/30',
-		PTR: 'text-pink-400/40 dark:text-pink-400/40 border-transparent hover:border-pink-500/15 hover:bg-pink-500/5 data-[state=active]:bg-pink-500/15 dark:data-[state=active]:bg-pink-500/15 data-[state=active]:text-pink-400 dark:data-[state=active]:text-pink-400 data-[state=active]:border-pink-500/30 dark:data-[state=active]:border-pink-500/30'
-	};
 
-	const FALLBACK =
-		'text-muted-foreground border-transparent hover:bg-muted/50 data-[state=active]:bg-muted dark:data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:border-border dark:data-[state=active]:border-border';
-
-	let grouped = $derived.by(() => {
-		const map = new Map<string, DnsRecordRead[]>();
-		for (const rec of lookup.records) {
-			const list = map.get(rec.record_type) ?? [];
-			list.push(rec);
-			map.set(rec.record_type, list);
-		}
-		return TYPE_ORDER.filter((t) => map.has(t)).map((t) => ({ type: t, records: map.get(t)! }));
+	let rows = $derived.by(() => {
+		const o = (t: string) => {
+			const i = TYPE_ORDER.indexOf(t);
+			return i === -1 ? 99 : i;
+		};
+		return [...lookup.records].sort(
+			(a, b) => o(a.record_type) - o(b.record_type) || (a.priority ?? 99) - (b.priority ?? 99)
+		);
 	});
 
-	let activeType = $state('');
-	$effect(() => {
-		if (grouped.length > 0 && !grouped.some((g) => g.type === activeType)) {
-			activeType = grouped[0].type;
-		}
-	});
-
-	let activeRecords = $derived(grouped.find((g) => g.type === activeType)?.records ?? []);
-
-	// MX: sort by priority
-	let sortedRecords = $derived(
-		activeType === 'MX'
-			? [...activeRecords].sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99))
-			: activeRecords
-	);
-
-	// TXT provider detection
-	const TXT_PROVIDERS: Array<{ test: (v: string) => boolean; label: string; color: string }> = [
-		{
-			test: (v) => v.startsWith('v=spf1'),
-			label: 'SPF',
-			color: 'text-emerald-400 bg-emerald-500/10'
-		},
-		{ test: (v) => v.startsWith('v=DMARC'), label: 'DMARC', color: 'text-blue-400 bg-blue-500/10' },
-		{
-			test: (v) => v.startsWith('v=DKIM') || v.includes('DKIM'),
-			label: 'DKIM',
-			color: 'text-cyan-400 bg-cyan-500/10'
-		},
-		{
-			test: (v) => v.startsWith('google-site-verification='),
-			label: 'Google',
-			color: 'text-red-400 bg-red-500/10'
-		},
-		{ test: (v) => v.startsWith('MS='), label: 'MS365', color: 'text-orange-400 bg-orange-500/10' },
-		{
-			test: (v) => v.startsWith('apple-domain-verification='),
-			label: 'Apple',
-			color: 'text-zinc-400 bg-zinc-500/10'
-		},
-		{
-			test: (v) => v.includes('facebook') || v.includes('fb'),
-			label: 'Meta',
-			color: 'text-blue-400 bg-blue-500/10'
-		},
-		{
-			test: (v) => v.includes('docusign'),
-			label: 'DocuSign',
-			color: 'text-yellow-400 bg-yellow-500/10'
-		},
-		{ test: (v) => v.includes('adobe'), label: 'Adobe', color: 'text-red-400 bg-red-500/10' }
+	const TXT_PROVIDERS: Array<{ test: (v: string) => boolean; label: string }> = [
+		{ test: (v) => v.startsWith('v=spf1'), label: 'SPF' },
+		{ test: (v) => v.startsWith('v=DMARC'), label: 'DMARC' },
+		{ test: (v) => v.startsWith('v=DKIM') || v.includes('DKIM'), label: 'DKIM' },
+		{ test: (v) => v.startsWith('google-site-verification='), label: 'Google' },
+		{ test: (v) => v.startsWith('MS='), label: 'MS365' },
+		{ test: (v) => v.startsWith('apple-domain-verification='), label: 'Apple' },
+		{ test: (v) => v.includes('facebook') || v.includes('fb'), label: 'Meta' },
+		{ test: (v) => v.includes('docusign'), label: 'DocuSign' },
+		{ test: (v) => v.includes('adobe'), label: 'Adobe' }
 	];
+	function detectProvider(val: string): string | null {
+		return TXT_PROVIDERS.find((p) => p.test(val))?.label ?? null;
+	}
 
-	function detectProvider(val: string): { label: string; color: string } | null {
-		return TXT_PROVIDERS.find((p) => p.test(val)) ?? null;
+	function hasMeta(rec: DnsRecordRead): boolean {
+		return (
+			(rec.record_type === 'SOA' && !!(rec.soa_email || rec.soa_serial)) || rec.record_type === 'SRV'
+		);
 	}
 </script>
 
+{#snippet table()}
+	<Table.Root>
+		<Table.Body>
+			{#each rows as rec (rec.id)}
+				<Table.Row class="group/rec border-border/15 hover:bg-muted/40">
+					<Table.Cell class="py-1 w-12 align-top">
+						<Badge
+							variant="outline"
+							class="font-mono text-[9px] px-1 py-0 text-muted-foreground border-border/60"
+							>{rec.record_type}</Badge
+						>
+					</Table.Cell>
+					<Table.Cell class="py-1 align-top max-w-0">
+						<div class="flex items-start gap-1.5 min-w-0">
+							{#if rec.record_type === 'MX' && rec.priority != null}
+								<span class="shrink-0 mt-px text-[11px] font-mono tabular-nums text-muted-foreground/50"
+									>{rec.priority}</span
+								>
+							{/if}
+							{#if rec.record_type === 'TXT'}
+								{@const p = detectProvider(rec.value)}
+								{#if p}
+									<Badge variant="secondary" class="shrink-0 mt-px text-[9px] px-1 py-0 font-medium"
+										>{p}</Badge
+									>
+								{/if}
+							{/if}
+							{#if hasMeta(rec)}
+								<HoverCard.Root>
+									<HoverCard.Trigger class="min-w-0 flex-1 text-left">
+										<code class="block truncate text-[11px] font-mono text-foreground/80"
+											>{rec.value}</code
+										>
+									</HoverCard.Trigger>
+									<HoverCard.Content class="w-auto space-y-0.5 text-[10px] font-mono">
+										{#if rec.soa_email}<div>
+												<span class="text-muted-foreground/60">email </span>{rec.soa_email}
+											</div>{/if}
+										{#if rec.soa_serial}<div>
+												<span class="text-muted-foreground/60">serial </span>{rec.soa_serial}
+											</div>{/if}
+										{#if rec.record_type === 'SRV'}<div class="text-muted-foreground/60">
+												pri {rec.priority} · wt {rec.weight} · :{rec.port}
+											</div>{/if}
+									</HoverCard.Content>
+								</HoverCard.Root>
+							{:else}
+								<code
+									class="block min-w-0 flex-1 truncate text-[11px] font-mono text-foreground/80"
+									title={rec.value}>{rec.value}</code
+								>
+							{/if}
+							<div
+								class="opacity-100 sm:opacity-0 sm:group-hover/rec:opacity-100 transition-opacity shrink-0"
+							>
+								<CopyButton value={rec.value} />
+							</div>
+						</div>
+					</Table.Cell>
+				</Table.Row>
+			{/each}
+		</Table.Body>
+	</Table.Root>
+{/snippet}
+
 <div class="p-3 space-y-2.5">
-	<!-- status line -->
-	<div class="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
-		<CircleCheck class="h-3 w-3 text-emerald-500/50" />
-		<span class="font-mono">{lookup.status_code}</span>
+	<div
+		class="flex items-center gap-1.5 px-1 text-[10px] font-mono tabular-nums text-muted-foreground/60"
+	>
+		<CircleCheck class="h-3 w-3 text-muted-foreground/40" />
+		<span>{lookup.status_code}</span>
 		<span>·</span>
-		<span class="tabular-nums">{lookup.records.length} records</span>
+		<span>{lookup.records.length} records</span>
 		{#if lookup.cdn}
 			<span>·</span>
 			<Globe class="h-3 w-3 text-muted-foreground/40" />
@@ -115,109 +127,13 @@
 		{/if}
 	</div>
 
-	<!-- type tabs -->
-	<Tabs.Root bind:value={activeType}>
-		<Tabs.List class="flex flex-wrap gap-1 h-auto w-full justify-start bg-transparent p-0 rounded-none">
-			{#each grouped as g (g.type)}
-				<Tabs.Trigger
-					value={g.type}
-					class="flex-none h-auto rounded border px-1.5 py-0.5 text-[9px] font-mono font-semibold tabular-nums transition-all duration-150 data-[state=active]:shadow-none {TYPE_COLOR[
-						g.type
-					] ?? FALLBACK}"
-				>
-					{g.type}<span class="opacity-40 ml-0.5">{g.records.length}</span>
-				</Tabs.Trigger>
-			{/each}
-		</Tabs.List>
-	</Tabs.Root>
-
-	<!-- unified table — scrollable -->
-	{#if sortedRecords.length > 0}
-		<ScrollArea class="h-[320px] rounded-md border border-border/20">
-			{#each sortedRecords as rec, i (rec.id)}
-				<div
-					class="px-2.5 py-1.5 group/rec
-					{i > 0 ? 'border-t border-border/10' : ''}
-					hover:bg-accent/5 transition-colors"
-				>
-					<!-- row content varies slightly by type, but same container -->
-					<div class="flex items-start gap-2">
-						<!-- MX: priority prefix -->
-						{#if activeType === 'MX' && rec.priority != null}
-							<span
-								class="text-[10px] font-mono tabular-nums text-amber-400/40 w-5 text-right shrink-0 pt-px"
-							>
-								{rec.priority}
-							</span>
-						{/if}
-
-						<!-- CAA: tag prefix -->
-						{#if activeType === 'CAA' && rec.caa_tag}
-							<span
-								class="text-[9px] font-mono font-semibold rounded bg-teal-500/10 text-teal-400/60 px-1 shrink-0 mt-px"
-							>
-								{rec.caa_tag}
-							</span>
-						{/if}
-
-						<!-- SRV: port suffix area handled below -->
-
-						<!-- value -->
-						<div class="min-w-0 flex-1">
-							{#if activeType === 'TXT'}
-								{@const provider = detectProvider(rec.value)}
-								{#if provider}
-									<span
-										class="inline-block text-[8px] font-semibold uppercase tracking-wider rounded px-1 py-px mb-1 {provider.color}"
-									>
-										{provider.label}
-									</span>
-								{/if}
-							{/if}
-
-							<code
-								class="block text-[10px] font-mono leading-relaxed text-foreground/65 break-all"
-							>
-								{rec.value}
-							</code>
-
-							<!-- SOA: metadata below value -->
-							{#if activeType === 'SOA' && (rec.soa_email || rec.soa_serial)}
-								<div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 pt-1 border-t border-border/10">
-									{#if rec.soa_email}
-										<div class="flex items-center gap-1 text-[9px]">
-											<span class="text-muted-foreground/30">email</span>
-											<span class="font-mono text-foreground/45">{rec.soa_email}</span>
-										</div>
-									{/if}
-									{#if rec.soa_serial}
-										<div class="flex items-center gap-1 text-[9px]">
-											<span class="text-muted-foreground/30">serial</span>
-											<span class="font-mono text-foreground/45">{rec.soa_serial}</span>
-										</div>
-									{/if}
-								</div>
-							{/if}
-
-							<!-- SRV: metadata below value -->
-							{#if activeType === 'SRV'}
-								<div
-									class="flex items-center gap-2 mt-0.5 text-[9px] font-mono text-muted-foreground/25"
-								>
-									{#if rec.priority != null}<span>pri {rec.priority}</span>{/if}
-									{#if rec.weight != null}<span>wt {rec.weight}</span>{/if}
-									{#if rec.port != null}<span class="text-orange-400/40">:{rec.port}</span>{/if}
-								</div>
-							{/if}
-						</div>
-
-						<!-- copy -->
-						<div class="opacity-0 group-hover/rec:opacity-100 transition-opacity shrink-0 pt-px">
-							<CopyButton value={rec.value} />
-						</div>
-					</div>
-				</div>
-			{/each}
-		</ScrollArea>
+	{#if rows.length > 8}
+		<ScrollArea.Root class="h-[260px] rounded-md border border-border/15" scrollbarYClasses="w-1.5">
+			{@render table()}
+		</ScrollArea.Root>
+	{:else if rows.length > 0}
+		<div class="rounded-md border border-border/15">
+			{@render table()}
+		</div>
 	{/if}
 </div>

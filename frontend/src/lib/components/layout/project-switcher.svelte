@@ -9,6 +9,8 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import AddProjectModal from '$lib/components/modals/add-project-modal.svelte';
 	import ProjectIcon from '../project-icons.svelte';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 
 	const sidebar = useSidebar();
 
@@ -18,12 +20,22 @@
 
 	let showAddModal = $state(false);
 
+	const DETAIL_LIST_REDIRECTS: { match: RegExp; list: string }[] = [
+		{ match: /^\/targets\/[^/]+/, list: '/targets' },
+		{ match: /^\/automation\/engines\/[^/]+/, list: '/automation/engines' },
+		{ match: /^\/automation\/contexts\/[^/]+/, list: '/automation/contexts' }
+	];
+
 	function handleProjectSelect(project: (typeof projects)[0]) {
+		if (project.id === activeProject?.id) return;
 		projectsStore.setActiveProject(project);
+
+		const path = page.url.pathname;
+		const redirect = DETAIL_LIST_REDIRECTS.find((r) => r.match.test(path));
+		if (redirect) goto(redirect.list);
 	}
 </script>
 
-<!-- Add Project Modal -->
 <AddProjectModal bind:open={showAddModal} />
 
 <Sidebar.Menu>

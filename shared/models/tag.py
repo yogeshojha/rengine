@@ -88,7 +88,6 @@ class TagRead(TagBase):
     created_by: uuid.UUID
 
 
-# These tags will always exist in every project
 PREDEFINED_TAGS = [
     {"name": "production", "color": "#DC2626"},
     {"name": "staging", "color": "#F59E0B"},

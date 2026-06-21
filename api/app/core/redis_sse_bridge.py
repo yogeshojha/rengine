@@ -1,10 +1,3 @@
-"""Redis to SSE bridge.
-
-Listens to a single Redis pub/sub channel for structured events
-published by Celery workers and forwards them to SSE clients via
-the channel-based SSEManager.
-"""
-
 import asyncio
 import contextlib
 import json

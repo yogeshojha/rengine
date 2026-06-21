@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { WhoisRecordRead } from '$lib/types/whois';
-	import { getStatusBadgeColor } from '$lib/types/whois';
+	import type { WhoisRecordRead, WhoisLookupType } from '$lib/types/whois';
+	import { getLookupTypeIcon } from '$lib/config/icons';
 	import {
 		formatShortDate,
 		getExpirationUrgency,
@@ -14,7 +14,6 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import CopyButton from '@/components/copy-button.svelte';
 	import {
-		Globe,
 		Server,
 		Network,
 		ShieldCheck,
@@ -41,20 +40,9 @@
 
 	let { record, onCorrelationClick }: Props = $props();
 
-	let lookupType = $derived(record.lookup_type as 'DOMAIN' | 'IP' | 'ASN');
+	let lookupType = $derived(record.lookup_type as WhoisLookupType);
 
-	let LookupIcon = $derived.by(() => {
-		switch (lookupType) {
-			case 'DOMAIN':
-				return Globe;
-			case 'IP':
-				return Server;
-			case 'ASN':
-				return Network;
-			default:
-				return Globe;
-		}
-	});
+	let LookupIcon = $derived(getLookupTypeIcon(lookupType));
 
 	let urgency = $derived<ExpirationUrgency>(
 		record.expiration_date ? getExpirationUrgency(record.expiration_date) : 'none'
@@ -95,7 +83,6 @@
 </script>
 
 <div class="space-y-5 py-1">
-	<!-- Expiration alert show only when about to expire  -->
 	{#if showAlert}
 		<Alert.Root
 			variant={urgency === 'expired' || urgency === 'critical' ? 'destructive' : 'default'}
@@ -139,7 +126,7 @@
 
 	<Separator />
 
-	<div class="grid grid-cols-2 gap-4">
+	<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 		{#if record.registrant_name}
 			<div class="space-y-1">
 				<div
@@ -150,13 +137,16 @@
 				</div>
 				<Tooltip.Root>
 					<Tooltip.Trigger>
-						<button
-							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-							onclick={() => handleCorrelationClick('registrant_name', record.registrant_name)}
-						>
-							{record.registrant_name}
-							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-						</button>
+						{#snippet child({ props })}
+							<button
+								{...props}
+								class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+								onclick={() => handleCorrelationClick('registrant_name', record.registrant_name)}
+							>
+								{record.registrant_name}
+								<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+							</button>
+						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content>
 						<p>Find targets with same registrant</p>
@@ -178,13 +168,16 @@
 				</div>
 				<Tooltip.Root>
 					<Tooltip.Trigger>
-						<button
-							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-							onclick={() => handleCorrelationClick('registrar_name', record.registrar_name)}
-						>
-							{record.registrar_name}
-							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-						</button>
+						{#snippet child({ props })}
+							<button
+								{...props}
+								class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+								onclick={() => handleCorrelationClick('registrar_name', record.registrar_name)}
+							>
+								{record.registrar_name}
+								<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+							</button>
+						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content>
 						<p>Find targets with same registrar</p>
@@ -214,13 +207,16 @@
 				</div>
 				<Tooltip.Root>
 					<Tooltip.Trigger>
-						<button
-							class="text-sm font-medium font-mono text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-							onclick={() => handleCorrelationClick('network_cidr', record.network_cidr)}
-						>
-							{record.network_cidr}
-							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-						</button>
+						{#snippet child({ props })}
+							<button
+								{...props}
+								class="text-sm font-medium font-mono text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+								onclick={() => handleCorrelationClick('network_cidr', record.network_cidr)}
+							>
+								{record.network_cidr}
+								<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+							</button>
+						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content>
 						<p>Find targets in same network</p>
@@ -276,9 +272,9 @@
 				<div
 					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider {urgency ===
 						'expired' || urgency === 'critical'
-						? 'text-red-500 dark:text-red-400'
+						? 'text-destructive'
 						: urgency === 'warning'
-							? 'text-amber-500 dark:text-amber-400'
+							? 'text-amber-600 dark:text-amber-500'
 							: ''}"
 				>
 					<CalendarClock class="h-3 w-3" />
@@ -288,10 +284,10 @@
 				{#if expirationLabel}
 					<p
 						class="text-xs font-medium {urgency === 'expired' || urgency === 'critical'
-							? 'text-red-500 dark:text-red-400'
+							? 'text-destructive'
 							: urgency === 'warning'
-								? 'text-amber-500 dark:text-amber-400'
-								: 'text-emerald-600 dark:text-emerald-400'}"
+								? 'text-amber-600 dark:text-amber-500'
+								: 'text-muted-foreground'}"
 					>
 						{expirationLabel}
 					</p>
@@ -341,10 +337,8 @@
 		<Separator />
 		<div class="flex items-center gap-2">
 			{#if record.dnssec}
-				<ShieldCheck class="h-4 w-4 text-emerald-500" />
-				<span class="text-sm font-medium text-emerald-600 dark:text-emerald-400"
-					>DNSSEC Enabled</span
-				>
+				<ShieldCheck class="h-4 w-4 text-foreground" />
+				<span class="text-sm font-medium text-foreground">DNSSEC Enabled</span>
 			{:else}
 				<ShieldX class="h-4 w-4 text-muted-foreground" />
 				<span class="text-sm text-muted-foreground">DNSSEC Not Enabled</span>
@@ -358,8 +352,8 @@
 		<div>
 			<p class="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Domain Status</p>
 			<div class="flex flex-wrap gap-1.5">
-				{#each record.domain_status as status}
-					<Badge class="text-xs font-normal border {getStatusBadgeColor(status)}">
+				{#each record.domain_status as status (status)}
+					<Badge variant="outline" class="text-xs font-normal text-muted-foreground border-border/60">
 						{status}
 					</Badge>
 				{/each}
@@ -373,21 +367,24 @@
 		<div>
 			<p class="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Nameservers</p>
 			<div class="flex flex-wrap gap-1.5">
-				{#each record.nameservers as ns}
+				{#each record.nameservers as ns (ns)}
 					<Tooltip.Root>
 						<Tooltip.Trigger>
-							<button
-								class="cursor-pointer"
-								onclick={() => handleCorrelationClick('nameserver', ns)}
-							>
-								<Badge
-									variant="outline"
-									class="text-xs font-mono font-normal gap-1.5 hover:bg-accent hover:border-primary/30 transition-colors"
+							{#snippet child({ props })}
+								<button
+									{...props}
+									class="cursor-pointer"
+									onclick={() => handleCorrelationClick('nameserver', ns)}
 								>
-									<Server class="h-3 w-3 text-muted-foreground" />
-									{ns}
-								</Badge>
-							</button>
+									<Badge
+										variant="outline"
+										class="text-xs font-mono font-normal gap-1.5 hover:bg-accent hover:border-primary/30 transition-colors"
+									>
+										<Server class="h-3 w-3 text-muted-foreground" />
+										{ns}
+									</Badge>
+								</button>
+							{/snippet}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<p>Find targets on this nameserver</p>

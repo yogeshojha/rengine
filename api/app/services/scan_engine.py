@@ -19,12 +19,29 @@ from shared.utils.datetime import utc_now
 
 _MAX_HEADERS = 1000
 _MAX_HEADER_LEN = 4096
+_MAX_YAML_LEN = 512 * 1024
+
+_INTENSITIES = {"passive", "normal", "aggressive"}
+_MAX_ENGINE_THREADS = 1000
+
+
+def _validate_intensity(intensity: str | None) -> None:
+    if intensity is not None and intensity not in _INTENSITIES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"intensity must be one of {sorted(_INTENSITIES)}.",
+        )
+
+
+def _validate_global_threads(threads: int | None) -> None:
+    if threads is not None and not (1 <= threads <= _MAX_ENGINE_THREADS):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"global_threads must be between 1 and {_MAX_ENGINE_THREADS}.",
+        )
 
 
 def _validate_global_headers(headers: list) -> None:
-    """Reject CRLF/control chars and malformed 'Name: Value' lines at WRITE time,
-    so dangerous header lines never sit at rest (mirrors context extra_headers).
-    Also caps list size / line length against stored-amplification."""
     if headers and len(headers) > _MAX_HEADERS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -52,9 +69,6 @@ def _validate_global_headers(headers: list) -> None:
 
 
 def _mask_global_headers(headers: list) -> list[str]:
-    """Mask the VALUE of any sensitive-named global header on Read/Export, so static
-    credentials placed in engine headers are not returned in plaintext (mirrors the
-    ScanContext extra_headers masking)."""
     out: list[str] = []
     for line in headers or []:
         if isinstance(line, str) and ":" in line:
@@ -67,8 +81,6 @@ def _mask_global_headers(headers: list) -> list[str]:
 
 
 def _unmask_global_headers(incoming: list, stored: list) -> list[str]:
-    """When an incoming sensitive header arrives with the masked value, keep the
-    stored plaintext for that name (case-insensitive) instead of persisting MASK."""
     stored_map: dict[str, str] = {}
     for line in stored or []:
         if isinstance(line, str) and ":" in line:
@@ -85,10 +97,24 @@ def _unmask_global_headers(incoming: list, stored: list) -> list[str]:
     return out
 
 
+def _mask_depth(depth: dict) -> dict:
+    out = dict(depth or {})
+    if out.get("report_webhook_url"):
+        out["report_webhook_url"] = MASK
+    return out
+
+
+def _unmask_depth(incoming: dict, stored: dict) -> dict:
+    out = dict(incoming or {})
+    if MASK in (out.get("report_webhook_url") or ""):
+        out["report_webhook_url"] = (stored or {}).get("report_webhook_url")
+    return out
+
+
 def _to_read(engine: ScanEngine) -> ScanEngineRead:
     discovery = DiscoveryConfig(**(engine.discovery or {}))
     expansion = ExpansionConfig(**(engine.expansion or {}))
-    depth = DepthConfig(**(engine.depth or {}))
+    depth = DepthConfig(**_mask_depth(engine.depth or {}))
     return ScanEngineRead(
         id=engine.id,
         project_id=engine.project_id,
@@ -119,6 +145,8 @@ class ScanEngineService:
         data: ScanEngineCreate,
     ) -> ScanEngineRead:
         _validate_global_headers(data.global_headers)
+        _validate_intensity(data.intensity)
+        _validate_global_threads(data.global_threads)
         discovery = (data.discovery or DiscoveryConfig()).model_dump()
         expansion = (data.expansion or ExpansionConfig()).model_dump()
         depth = (data.depth or DepthConfig()).model_dump()
@@ -167,15 +195,15 @@ class ScanEngineService:
         if data.description is not None:
             engine.description = data.description
         if data.intensity is not None:
+            _validate_intensity(data.intensity)
             engine.intensity = data.intensity
         if data.global_threads is not None:
+            _validate_global_threads(data.global_threads)
             engine.global_threads = data.global_threads
         if data.global_http_crawl is not None:
             engine.global_http_crawl = data.global_http_crawl
         if data.global_headers is not None:
             _validate_global_headers(data.global_headers)
-            # Never persist a masked value back: if an incoming sensitive header's
-            # value is the mask, restore the stored plaintext for that header name.
             engine.global_headers = _unmask_global_headers(
                 data.global_headers, engine.global_headers or []
             )
@@ -184,7 +212,7 @@ class ScanEngineService:
         if data.expansion is not None:
             engine.expansion = data.expansion.model_dump()
         if data.depth is not None:
-            engine.depth = data.depth.model_dump()
+            engine.depth = _unmask_depth(data.depth.model_dump(), engine.depth or {})
 
         engine.updated_at = utc_now()
         await self.session.commit()
@@ -232,13 +260,18 @@ class ScanEngineService:
             "global_headers": _mask_global_headers(engine.global_headers or []),
             "discovery": engine.discovery or {},
             "expansion": engine.expansion or {},
-            "depth": engine.depth or {},
+            "depth": _mask_depth(engine.depth or {}),
         }
         return yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
 
     async def import_yaml(
         self, project_id: UUID, created_by: UUID, yaml_str: str
     ) -> ScanEngineRead:
+        if yaml_str and len(yaml_str) > _MAX_YAML_LEN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"YAML payload may not exceed {_MAX_YAML_LEN} bytes.",
+            )
         try:
             data = yaml.safe_load(yaml_str)
         except yaml.YAMLError as e:
@@ -263,6 +296,10 @@ class ScanEngineService:
             discovery_raw = data.get("discovery") or {}
             expansion_raw = data.get("expansion") or {}
             depth_raw = data.get("depth") or {}
+            if isinstance(depth_raw, dict) and MASK in (
+                depth_raw.get("report_webhook_url") or ""
+            ):
+                depth_raw = {**depth_raw, "report_webhook_url": None}
 
             discovery = DiscoveryConfig(**discovery_raw)
             expansion = ExpansionConfig(**expansion_raw)

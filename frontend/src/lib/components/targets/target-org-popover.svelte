@@ -16,10 +16,9 @@
 		targetId: string;
 		currentOrgs: OrganizationSummary[];
 		maxVisible?: number;
-		onUpdated?: () => void;
 	}
 
-	let { targetId, currentOrgs, maxVisible = 2, onUpdated }: Props = $props();
+	let { targetId, currentOrgs, maxVisible = 2 }: Props = $props();
 
 	let open = $state(false);
 	let searchValue = $state('');
@@ -104,7 +103,7 @@
 
 <div class="flex items-center gap-1.5 min-w-0">
 	{#if visibleOrgs.length > 0}
-		{#each visibleOrgs as org}
+		{#each visibleOrgs as org (org.id)}
 			<Badge variant="outline" class="text-xs font-normal gap-1 max-w-[100px] shrink-0">
 				<Building2 class="h-3 w-3 shrink-0" />
 				<span class="truncate">{org.name}</span>
@@ -120,7 +119,7 @@
 				</HoverCard.Trigger>
 				<HoverCard.Content class="w-auto max-w-[280px] p-3" align="start">
 					<div class="flex flex-wrap gap-1.5">
-						{#each overflowOrgs as org}
+						{#each overflowOrgs as org (org.id)}
 							<Badge variant="outline" class="text-xs font-normal gap-1">
 								<Building2 class="h-3 w-3 shrink-0" />
 								{org.name}
@@ -132,7 +131,6 @@
 		{/if}
 	{/if}
 
-	<!-- Add Org Button -->
 	<Popover.Root {open} onOpenChange={handleOpenChange}>
 		<Popover.Trigger>
 			{#snippet child({ props })}
@@ -174,7 +172,7 @@
 						{/if}
 					</Command.Empty>
 					<Command.Group>
-						{#each filteredOrgs as org}
+						{#each filteredOrgs as org (org.id)}
 							{@const isApplied = appliedIds.has(org.id)}
 							<Command.Item
 								value={org.id}

@@ -1,10 +1,10 @@
 import uuid
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class PreviewToolStatus(str, Enum):
+class PreviewToolStatus(StrEnum):
     WILL_RUN = "will_run"
     SKIPPED_DISABLED = "skipped_disabled"
     SKIPPED_NEEDS_KEY = "skipped_needs_key"
@@ -41,6 +41,7 @@ class PreviewSummary(BaseModel):
     excluded_paths: list[str] = Field(default_factory=list)
     excluded_ips: list[str] = Field(default_factory=list)
     included_subdomains: list[str] = Field(default_factory=list)
+    proxy_name: str | None = None
     estimated_duration_seconds: int = 0
     estimated_duration_human: str = ""
 

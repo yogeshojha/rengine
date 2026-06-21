@@ -73,10 +73,9 @@
 </script>
 
 <div class="space-y-2">
-	<!-- Selected Items as Chips -->
 	{#if selected.length > 0}
 		<div class="flex flex-wrap gap-1.5">
-			{#each selected as item}
+			{#each selected as item (item.id)}
 				<Badge
 					variant="secondary"
 					class="gap-1 pr-1 font-normal"
@@ -101,7 +100,6 @@
 		</div>
 	{/if}
 
-	<!-- Combobox -->
 	<Popover.Root bind:open>
 		<Popover.Trigger class="w-full">
 			{#snippet child({ props })}
@@ -126,7 +124,7 @@
 						{/if}
 					</Command.Empty>
 					<Command.Group>
-						{#each filteredItems as item}
+						{#each filteredItems as item (item.id)}
 							<Command.Item
 								value={item.id}
 								onSelect={() => handleSelect(item)}

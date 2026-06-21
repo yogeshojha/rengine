@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.core.ratelimit import record_failure, too_many_attempts
+from shared.models.user import User
 from tools.viewdns.models import ViewDNSCacheRead
 from tools.viewdns.service import (
     ViewDNSKeyNotConfiguredError,
@@ -13,6 +15,15 @@ from tools.viewdns.service import (
 )
 
 router = APIRouter(prefix="/tools/viewdns", tags=["viewdns"])
+
+_LOOKUP_LIMIT = 30
+_LOOKUP_WINDOW_SECONDS = 60
+
+
+async def _throttle_lookup(user: User, lookup: str) -> None:
+    key = f"viewdns:lookup:{lookup}:{user.id}"
+    await too_many_attempts(key, limit=_LOOKUP_LIMIT)
+    await record_failure(key, window_seconds=_LOOKUP_WINDOW_SECONDS)
 
 
 def get_viewdns_service(
@@ -30,6 +41,8 @@ async def ip_history(
         False, description="If true, return only cached data without making an API call"
     ),
 ):
+    if not cached_only:
+        await _throttle_lookup(_current_user, "ip_history")
     try:
         return await service.ip_history(domain, cached_only=cached_only)
     except ViewDNSKeyNotConfiguredError as e:
@@ -53,6 +66,8 @@ async def reverse_ip(
         False, description="If true, return only cached data without making an API call"
     ),
 ):
+    if not cached_only:
+        await _throttle_lookup(_current_user, "reverse_ip")
     try:
         return await service.reverse_ip(host, cached_only=cached_only)
     except ViewDNSKeyNotConfiguredError as e:
@@ -76,6 +91,8 @@ async def reverse_ns(
         False, description="If true, return only cached data without making an API call"
     ),
 ):
+    if not cached_only:
+        await _throttle_lookup(_current_user, "reverse_ns")
     try:
         return await service.reverse_ns(nameserver, cached_only=cached_only)
     except ViewDNSKeyNotConfiguredError as e:
@@ -101,6 +118,8 @@ async def reverse_whois(
         False, description="If true, return only cached data without making an API call"
     ),
 ):
+    if not cached_only:
+        await _throttle_lookup(_current_user, "reverse_whois")
     try:
         return await service.reverse_whois(q, cached_only=cached_only)
     except ViewDNSKeyNotConfiguredError as e:

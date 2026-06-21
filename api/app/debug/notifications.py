@@ -2,7 +2,6 @@ from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.models.notification import NotificationMetadata
 
 DEBUG_NOTIFICATION_TEMPLATES = [
-    # Scan notifications
     {
         "type": NotificationType.SCAN,
         "severity": NotificationSeverity.SUCCESS,
@@ -34,7 +33,6 @@ DEBUG_NOTIFICATION_TEMPLATES = [
             scan_id="debug-789",
         ),
     },
-    # System notifications
     {
         "type": NotificationType.SYSTEM,
         "severity": NotificationSeverity.INFO,
@@ -53,7 +51,6 @@ DEBUG_NOTIFICATION_TEMPLATES = [
         "message": "System maintenance scheduled for tonight at 2 AM",
         "metadata": NotificationMetadata(),
     },
-    # Vulnerability notifications
     {
         "type": NotificationType.VULNERABILITY,
         "severity": NotificationSeverity.ERROR,
@@ -73,7 +70,6 @@ DEBUG_NOTIFICATION_TEMPLATES = [
             url="/vulnerabilities/debug-002",
         ),
     },
-    # Target notifications
     {
         "type": NotificationType.TARGET,
         "severity": NotificationSeverity.WARNING,
@@ -84,7 +80,6 @@ DEBUG_NOTIFICATION_TEMPLATES = [
             target_id="debug-target-2",
         ),
     },
-    # Resource notifications
     {
         "type": NotificationType.RESOURCE,
         "severity": NotificationSeverity.WARNING,
@@ -104,7 +99,6 @@ DEBUG_NOTIFICATION_TEMPLATES = [
             url="/settings/resources",
         ),
     },
-    # Integration notifications
     {
         "type": NotificationType.INTEGRATION,
         "severity": NotificationSeverity.ERROR,

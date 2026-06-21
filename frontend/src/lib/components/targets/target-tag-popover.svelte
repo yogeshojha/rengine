@@ -17,10 +17,9 @@
 		targetId: string;
 		currentTags: TagSummary[];
 		maxVisible?: number;
-		onUpdated?: () => void;
 	}
 
-	let { targetId, currentTags, maxVisible = 3, onUpdated }: Props = $props();
+	let { targetId, currentTags, maxVisible = 3 }: Props = $props();
 
 	let open = $state(false);
 	let searchValue = $state('');
@@ -94,7 +93,6 @@
 		isUpdating = true;
 
 		try {
-			// Create tag
 			const newTag = await tagsApi.create({
 				name: tagName,
 				color: selectedColor,
@@ -142,7 +140,7 @@
 
 <div class="flex items-center gap-1.5 min-w-0">
 	{#if visibleTags.length > 0}
-		{#each visibleTags as tag}
+		{#each visibleTags as tag (tag.id)}
 			<Badge
 				class="text-xs font-normal border shrink-0"
 				style="background-color: {tag.color}10; color: {tag.color}; border-color: {tag.color}30;"
@@ -160,7 +158,7 @@
 				</HoverCard.Trigger>
 				<HoverCard.Content class="w-auto max-w-[280px] p-3" align="start">
 					<div class="flex flex-wrap gap-1.5">
-						{#each overflowTags as tag}
+						{#each overflowTags as tag (tag.id)}
 							<Badge
 								class="text-xs font-normal border"
 								style="background-color: {tag.color}10; color: {tag.color}; border-color: {tag.color}30;"
@@ -174,7 +172,6 @@
 		{/if}
 	{/if}
 
-	<!-- Add Tag Button -->
 	<Popover.Root {open} onOpenChange={handleOpenChange}>
 		<Popover.Trigger>
 			{#snippet child({ props })}
@@ -205,13 +202,12 @@
 		</Popover.Trigger>
 		<Popover.Content class="w-[240px] p-0" align="start">
 			{#if showColorPicker}
-				<!-- Color Picker for new tag -->
 				<div class="p-3 space-y-3">
 					<p class="text-sm font-medium truncate">
 						Pick a color for "<span class="text-primary">{searchValue}</span>"
 					</p>
 					<div class="flex flex-wrap gap-2">
-						{#each presetColors as color}
+						{#each presetColors as color (color)}
 							<button
 								type="button"
 								class="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 {selectedColor ===
@@ -239,7 +235,6 @@
 					</div>
 				</div>
 			{:else}
-				<!-- Search + Toggle View -->
 				<Command.Root shouldFilter={false}>
 					<Command.Input placeholder="Search or create tags..." bind:value={searchValue} />
 					<Command.List>
@@ -252,7 +247,7 @@
 							{/if}
 						</Command.Empty>
 						<Command.Group>
-							{#each filteredTags as tag}
+							{#each filteredTags as tag (tag.id)}
 								{@const isApplied = appliedIds.has(tag.id)}
 								<Command.Item
 									value={tag.id}

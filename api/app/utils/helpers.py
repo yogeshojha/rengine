@@ -10,7 +10,6 @@ logger = get_logger(__name__)
 
 
 async def create_initial_admin() -> None:
-    """Create initial admin user if no users exist."""
     async with async_db_session() as session:
         result = await session.execute(select(User).limit(1))
         existing_user = result.scalar_one_or_none()

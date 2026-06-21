@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { AnnouncedPrefixRead } from '$lib/types/ripestat';
-	import { formatShortDate } from '$lib/utilities/dates';
+	import { formatShortDate, MS_PER_DAY } from '$lib/utilities/dates';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Badge } from '$lib/components/ui/badge';
@@ -26,7 +26,7 @@
 		if (!lastSeen) return true;
 		const d = new Date(lastSeen);
 		const now = new Date();
-		const diffDays = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
+		const diffDays = (now.getTime() - d.getTime()) / MS_PER_DAY;
 		return diffDays < 30;
 	}
 
@@ -66,7 +66,6 @@
 	</Empty.Root>
 {:else}
 	<div class="space-y-4 py-1">
-		<!-- Stats bar -->
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
 				<Network class="h-4 w-4" />
@@ -79,7 +78,7 @@
 				{#if ipv4Count > 0}
 					<Badge
 						variant="outline"
-						class="text-[10px] font-normal gap-1 bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20"
+						class="text-[10px] font-normal gap-1 text-muted-foreground border-border/60"
 					>
 						IPv4
 						<span class="font-medium">{ipv4Count.toLocaleString()}</span>
@@ -88,7 +87,7 @@
 				{#if ipv6Count > 0}
 					<Badge
 						variant="outline"
-						class="text-[10px] font-normal gap-1 bg-purple-500/5 text-purple-600 dark:text-purple-400 border-purple-500/20"
+						class="text-[10px] font-normal gap-1 text-muted-foreground border-border/60"
 					>
 						IPv6
 						<span class="font-medium">{ipv6Count.toLocaleString()}</span>
@@ -97,9 +96,8 @@
 			</div>
 		</div>
 
-		<!-- Prefix list -->
 		<div class="space-y-1">
-			{#each displayPrefixes as prefix}
+			{#each displayPrefixes as prefix (prefix.prefix)}
 				{@const active = isActive(prefix.last_seen)}
 				<div
 					class="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-border/50 hover:border-border/80 transition-colors group/row"
@@ -108,14 +106,12 @@
 						<span class="font-mono text-sm font-medium truncate">{prefix.prefix}</span>
 						<Badge
 							variant="outline"
-							class="text-[10px] font-normal shrink-0 {prefix.ip_version === 4
-								? 'bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20'
-								: 'bg-purple-500/5 text-purple-600 dark:text-purple-400 border-purple-500/20'}"
+							class="text-[10px] font-normal shrink-0 text-muted-foreground border-border/60"
 						>
 							v{prefix.ip_version}
 						</Badge>
 						{#if active}
-							<span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+							<span class="inline-block h-1.5 w-1.5 rounded-full bg-chart-1 shrink-0"></span>
 						{/if}
 					</div>
 
@@ -128,12 +124,15 @@
 
 						<Tooltip.Root>
 							<Tooltip.Trigger>
-								<button
-									class="h-6 w-6 flex items-center justify-center rounded-md opacity-0 group-hover/row:opacity-100 hover:bg-accent transition-all cursor-pointer"
-									onclick={() => handleAddAsTarget(prefix.prefix)}
-								>
-									<CirclePlus class="h-3.5 w-3.5 text-muted-foreground" />
-								</button>
+								{#snippet child({ props })}
+									<button
+										{...props}
+										class="h-9 w-9 sm:h-6 sm:w-6 flex items-center justify-center rounded-md opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100 hover:bg-accent transition-all cursor-pointer"
+										onclick={() => handleAddAsTarget(prefix.prefix)}
+									>
+										<CirclePlus class="h-3.5 w-3.5 text-muted-foreground" />
+									</button>
+								{/snippet}
 							</Tooltip.Trigger>
 							<Tooltip.Content>
 								<p>Add {prefix.prefix} as target</p>

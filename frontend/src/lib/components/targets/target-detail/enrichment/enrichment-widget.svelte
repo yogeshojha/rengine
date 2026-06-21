@@ -4,6 +4,8 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { XCircle, RefreshCw, FileText, Globe, Router } from 'lucide-svelte';
 
 	interface Props {
@@ -30,16 +32,6 @@
 		children
 	}: Props = $props();
 
-	const STATUS_DOT: Record<string, string> = {
-		success: 'bg-emerald-500',
-		failed: 'bg-red-500',
-		pending: 'bg-amber-500 animate-pulse',
-		querying: 'bg-blue-500 animate-pulse',
-		skipped: 'bg-muted-foreground/30',
-		not_applicable: 'bg-muted-foreground/30'
-	};
-
-	let dotCls = $derived(status ? (STATUS_DOT[status] ?? STATUS_DOT.pending) : '');
 	let isFailed = $derived(status === TaskStatus.FAILED);
 	let isPending = $derived(status === TaskStatus.PENDING || status === TaskStatus.QUERYING);
 	let isLoaded = $derived(status === TaskStatus.SUCCESS);
@@ -49,15 +41,14 @@
 		DNS: Globe,
 		BGP: Router
 	};
-	let titleIcon = $derived(TITLE_ICON[title] ?? FileText);
+	const TitleIcon = $derived(TITLE_ICON[title] ?? FileText);
 </script>
 
 <div class="rounded-lg border border-border bg-card flex flex-col overflow-hidden {className}">
-	<!-- widget header — matches overview widget chrome -->
 	<div class="flex items-center justify-between px-4 py-2.5 border-b border-border/50 shrink-0">
 		<div class="flex items-center gap-2">
-			<svelte:component this={titleIcon} class="h-3.5 w-3.5 text-muted-foreground/40" />
-			<h3 class="text-xs font-semibold tracking-tight text-foreground/90">{title}</h3>
+			<TitleIcon class="h-3.5 w-3.5 text-muted-foreground/40" />
+			<h3 class="text-xs font-semibold tracking-tight text-foreground">{title}</h3>
 		</div>
 		<div class="flex items-center gap-2">
 			{#if queriedAt && isLoaded}
@@ -66,28 +57,36 @@
 				</span>
 			{/if}
 			{#if onRefresh}
-				<button
-					class="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/40
-						transition-colors hover:text-foreground hover:bg-accent/50
-						disabled:opacity-30 disabled:pointer-events-none"
-					disabled={isRefreshing || isPending}
-					onclick={(e) => {
-						e.stopPropagation();
-						onRefresh?.();
-					}}
-				>
-					{#if isRefreshing || isPending}
-						<Spinner class="h-3 w-3" />
-					{:else}
-						<RefreshCw class="h-3 w-3" />
-					{/if}
-				</button>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon"
+								class="h-6 w-6 text-muted-foreground/40 hover:text-foreground"
+								disabled={isRefreshing || isPending}
+								aria-label={isRefreshing ? `Refreshing ${title}` : `Refresh ${title}`}
+								onclick={(e) => {
+									e.stopPropagation();
+									onRefresh?.();
+								}}
+							>
+								{#if isRefreshing || isPending}
+									<Spinner class="h-3 w-3" />
+								{:else}
+									<RefreshCw class="h-3 w-3" />
+								{/if}
+							</Button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Refresh {title}</Tooltip.Content>
+				</Tooltip.Root>
 			{/if}
 		</div>
 	</div>
 
-	<!-- widget body -->
-	<div class="flex-1 min-h-0 overflow-y-auto">
+	<div class="min-h-0">
 		{#if loading}
 			<div class="p-4 space-y-3">
 				<div class="flex items-center justify-between">
@@ -109,13 +108,15 @@
 				<Skeleton class="h-3 w-full mt-2" />
 				<Skeleton class="h-3 w-3/4" />
 			</div>
-		{:else if isFailed && error}
+		{:else if isFailed}
 			<div class="p-4">
 				<div
 					class="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2.5"
 				>
 					<XCircle class="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-					<p class="text-[11px] text-destructive/90 leading-relaxed">{error}</p>
+					<p class="text-[11px] text-destructive/90 leading-relaxed">
+						{error || `${title} enrichment failed — try refreshing.`}
+					</p>
 				</div>
 			</div>
 		{:else if isPending}

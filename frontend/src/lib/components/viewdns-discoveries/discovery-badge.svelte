@@ -6,6 +6,7 @@
 	import { DISCOVERY_SOURCE_LABELS } from '$lib/types/viewdns';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Sparkles } from 'lucide-svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	interface Props {
 		targetValue: string;
@@ -16,7 +17,7 @@
 
 	let { targetValue, targetType, whois, onClick }: Props = $props();
 
-	const cache = new Map<
+	const cache = new SvelteMap<
 		string,
 		{ total: number; breakdown: { source: DiscoverySourceType; count: number; query: string }[] }
 	>();
@@ -111,35 +112,30 @@
 		e.stopPropagation();
 		onClick?.();
 	}
-
-	let tooltipText = $derived.by(() => {
-		if (breakdown.length === 0) return '';
-		const lines = breakdown.map(
-			(b) => `${DISCOVERY_SOURCE_LABELS[b.source]}: ${b.count.toLocaleString()} domains`
-		);
-		return lines.join('\n');
-	});
 </script>
 
 {#if loaded && total > 0}
 	<Tooltip.Root>
 		<Tooltip.Trigger>
-			<button
-				type="button"
-				class="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer"
-				onclick={handleClick}
-			>
-				<Sparkles class="h-3 w-3" />
-				<span class="font-medium">{total.toLocaleString()}</span>
-				<span class="hidden sm:inline">
-					{total === 1 ? 'discovery' : 'discoveries'}
-				</span>
-			</button>
+			{#snippet child({ props })}
+				<button
+					{...props}
+					type="button"
+					class="inline-flex items-center gap-1 text-[11px] text-chart-1 hover:text-chart-1/80 transition-colors cursor-pointer"
+					onclick={handleClick}
+				>
+					<Sparkles class="h-3 w-3" />
+					<span class="font-medium">{total.toLocaleString()}</span>
+					<span class="hidden sm:inline">
+						{total === 1 ? 'discovery' : 'discoveries'}
+					</span>
+				</button>
+			{/snippet}
 		</Tooltip.Trigger>
 		<Tooltip.Content side="bottom" align="start">
 			<div class="space-y-1">
 				<p class="font-medium">{total.toLocaleString()} discovered domains</p>
-				{#each breakdown as b}
+				{#each breakdown as b (b.source)}
 					<p class="text-xs text-muted-foreground">
 						{DISCOVERY_SOURCE_LABELS[b.source]}: {b.count.toLocaleString()} via {b.query}
 					</p>

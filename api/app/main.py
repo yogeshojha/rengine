@@ -8,6 +8,7 @@ from fastapi_pagination import add_pagination
 from app.api.router import router as api_router
 from app.config import settings
 from app.core.redis_sse_bridge import RedisSSEBridge
+from app.core.throttle import GlobalRateLimitMiddleware
 from app.utils.helpers import create_initial_admin
 from shared.logging import get_logger
 
@@ -65,6 +66,11 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+if "*" in settings.CORS_ORIGINS:
+    msg = "CORS_ORIGINS must be an explicit allowlist (no '*') when credentials are enabled"
+    raise ValueError(msg)
+
+app.add_middleware(GlobalRateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,

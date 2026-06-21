@@ -41,7 +41,6 @@
 		onAddAsTarget
 	}: Props = $props();
 
-	// Data state
 	let overview = $state<ASOverviewRead | null>(null);
 	let prefixes = $state<AnnouncedPrefixRead[]>([]);
 	let neighbours = $state<ASNNeighbourRead[]>([]);
@@ -66,8 +65,6 @@
 	let scrollHeight = $state(0);
 
 	let isAsn = $derived(targetType === 'asn');
-	let isIp = $derived(targetType === 'ip');
-	let isIpRange = $derived(targetType === 'ip_range');
 
 	let DialogIcon = $derived(isAsn ? RadioTower : Radio);
 
@@ -174,7 +171,7 @@
 </script>
 
 <Dialog.Root bind:open {onOpenChange}>
-	<Dialog.Content class="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+	<Dialog.Content class="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
 		<div bind:this={headerEl} class="shrink-0">
 			<Dialog.Header class="px-6 pt-6 pb-4">
 				<div class="flex items-center gap-3">
@@ -216,10 +213,7 @@
 							<Tabs.Trigger value="prefixes" class="flex-1 gap-1.5">
 								Prefixes
 								{#if !isLoadingPrefixes && prefixCount > 0}
-									<Badge
-										variant="outline"
-										class="text-[10px] h-5 min-w-5 px-1.5 ml-1 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20"
-									>
+									<Badge variant="secondary" class="text-[10px] h-5 min-w-5 px-1.5 ml-1">
 										{prefixCount.toLocaleString()}
 									</Badge>
 								{:else if isLoadingPrefixes}
@@ -231,10 +225,7 @@
 							<Tabs.Trigger value="peers" class="flex-1 gap-1.5">
 								Peers
 								{#if !isLoadingPeers && peerCount > 0}
-									<Badge
-										variant="outline"
-										class="text-[10px] h-5 min-w-5 px-1.5 ml-1 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
-									>
+									<Badge variant="secondary" class="text-[10px] h-5 min-w-5 px-1.5 ml-1">
 										{peerCount.toLocaleString()}
 									</Badge>
 								{:else if isLoadingPeers}
@@ -258,7 +249,6 @@
 									{prefixOverview}
 									{relatedPrefixes}
 									{bgpSummary}
-									isLoading={isLoadingOverview}
 									{onAddAsTarget}
 								/>
 							</div>

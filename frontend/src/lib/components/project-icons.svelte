@@ -14,7 +14,7 @@
 	let { project, class: className = 'size-4' }: { project: Project; class?: string } = $props();
 
 	const icons = [
-		FolderIcon, // Default icon
+		FolderIcon,
 		TargetIcon,
 		ShieldIcon,
 		GlobeIcon,

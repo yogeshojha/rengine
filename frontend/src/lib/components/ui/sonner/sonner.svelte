@@ -23,7 +23,7 @@
 		<CircleCheckIcon class="size-4" />
 	{/snippet}
 	{#snippet errorIcon()}
-		<OctagonXIcon class="size-4" />
+		<OctagonXIcon class="size-4 text-destructive" />
 	{/snippet}
 	{#snippet infoIcon()}
 		<InfoIcon class="size-4" />
@@ -32,3 +32,12 @@
 		<TriangleAlertIcon class="size-4" />
 	{/snippet}
 </Sonner>
+
+<style>
+	:global([data-sonner-toast][data-type='error']) {
+		border-color: color-mix(in oklab, var(--destructive) 45%, var(--border));
+	}
+	:global([data-sonner-toast][data-type='error'] [data-title]) {
+		color: var(--destructive);
+	}
+</style>

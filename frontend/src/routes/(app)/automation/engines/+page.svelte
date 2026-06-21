@@ -2,12 +2,14 @@
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { Plus, RefreshCw, Network, Zap } from 'lucide-svelte';
+	import { Plus, RefreshCw, Network, Zap, AlertCircle } from 'lucide-svelte';
 
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import * as Alert from '$lib/components/ui/alert';
 	import * as Empty from '$lib/components/ui/empty';
 	import EngineListCard from '$lib/components/engines/engine-list-card.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
@@ -36,8 +38,6 @@
 			toast.error('No active project selected');
 			return;
 		}
-		// Navigate to the "new" editor — no API call yet. The engine is only
-		// persisted when the user explicitly clicks Save Engine.
 		goto(`/automation/engines/new?project=${project.id}`);
 	}
 
@@ -87,15 +87,18 @@
 		isRefreshing = true;
 		try {
 			await scanEnginesStore.fetchEngines(project.id);
+			if (scanEnginesStore.error) {
+				toast.error(scanEnginesStore.error);
+			} else {
+				toast.success('Engines refreshed');
+			}
 		} finally {
 			isRefreshing = false;
-			toast.success('Refreshed');
 		}
 	}
 </script>
 
 <div class="space-y-6">
-	<!-- Page header -->
 	<div class="flex items-start justify-between">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Scan Engines</h1>
@@ -120,18 +123,27 @@
 		</div>
 	</div>
 
-	<!-- Error banner -->
 	{#if scanEnginesStore.error && !scanEnginesStore.isLoading}
-		<div
-			class="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-		>
-			{scanEnginesStore.error}
-		</div>
+		<Alert.Root variant="destructive">
+			<AlertCircle />
+			<Alert.Title>Couldn't load scan engines</Alert.Title>
+			<Alert.Description class="flex flex-wrap items-center justify-between gap-3">
+				<span>{scanEnginesStore.error}</span>
+				<Button
+					variant="outline"
+					size="sm"
+					class="gap-1.5"
+					onclick={handleRefresh}
+					disabled={isRefreshing}
+				>
+					<RefreshCw class="h-3.5 w-3.5 {isRefreshing ? 'animate-spin' : ''}" />
+					Retry
+				</Button>
+			</Alert.Description>
+		</Alert.Root>
 	{/if}
 
-	<!-- Content area -->
 	{#if scanEnginesStore.isLoading}
-		<!-- Loading skeleton -->
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
 				<div class="h-[188px] overflow-hidden rounded-[14px] border border-border">
@@ -157,14 +169,10 @@
 		</div>
 
 	{:else if scanEnginesStore.engines.length === 0}
-		<!-- Empty state -->
 		<Empty.Root class="border bg-muted/20 py-20">
 			<Empty.Header>
-				<Empty.Media
-					class="size-16 rounded-2xl"
-					style="background: linear-gradient(135deg, #ede9ff 0%, #e0f7f1 100%);"
-				>
-					<Network size={28} color="#7F77DD" />
+				<Empty.Media class="size-16 rounded-2xl bg-muted">
+					<Network size={28} class="text-muted-foreground" />
 				</Empty.Media>
 				<Empty.Title class="text-lg font-bold">No scan engines yet</Empty.Title>
 				<Empty.Description class="max-w-md">
@@ -178,19 +186,15 @@
 						<Plus size={15} />
 						Create Your First Engine
 					</Button>
-					<div
-						class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
-						style="background: #fff7ed; border: 1px solid #fed7aa; color: #c2410c;"
-					>
+					<Badge variant="secondary" class="gap-1.5 text-muted-foreground">
 						<Zap size={12} />
 						3 recon phases: Discovery &rarr; Expansion &rarr; Depth
-					</div>
+					</Badge>
 				</div>
 			</Empty.Content>
 		</Empty.Root>
 
 	{:else}
-		<!-- Engine grid -->
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each scanEnginesStore.engines as engine (engine.id)}
 				{@const cardEngine = engine as unknown as import('$lib/types/engine').ScanEngine}

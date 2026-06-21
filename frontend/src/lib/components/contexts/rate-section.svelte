@@ -25,33 +25,76 @@
 		label: m === 1.0 ? '1× (default)' : `${m}×`
 	}));
 
+	const RATE_MIN = 1;
+	const RATE_MAX = 10000;
+	const RATE_ERR = `Enter a value between ${RATE_MIN} and ${RATE_MAX}`;
+
+	function parseRate(raw: string): number | null {
+		const t = raw.trim();
+		if (t === '') return null;
+		const n = Number(t);
+		if (!Number.isInteger(n) || n < RATE_MIN || n > RATE_MAX) return null;
+		return n;
+	}
+
+	let globalRaw = $state('');
+	let globalError = $state(false);
+	let globalCommitted: number | null = null;
+	$effect(() => {
+		const v = context.global_rate_limit_override;
+		if (v !== globalCommitted) {
+			globalCommitted = v ?? null;
+			globalRaw = v == null ? '' : String(v);
+			globalError = false;
+		}
+	});
+
 	function setGlobalRate(raw: string) {
+		globalRaw = raw;
 		if (raw.trim() === '') {
+			globalError = false;
+			globalCommitted = null;
 			onChange({ global_rate_limit_override: null });
 			return;
 		}
-		const n = Math.trunc(Number(raw));
-		onChange({ global_rate_limit_override: Number.isFinite(n) && n > 0 ? n : null });
+		const n = parseRate(raw);
+		if (n === null) {
+			globalError = true;
+			return;
+		}
+		globalError = false;
+		globalCommitted = n;
+		onChange({ global_rate_limit_override: n });
 	}
 
 	function setMultiplier(key: 'thread_multiplier' | 'timeout_multiplier', v: string | undefined) {
 		onChange({ [key]: v ? Number(v) : 1.0 } as Partial<CtxLike>);
 	}
 
-	// ── Per-tool overrides ──────────────────────────────────────────────────────
-	let toolRows = $derived(
-		Object.entries(context.per_tool_rate_overrides).map(([tool, rate]) => ({
-			tool,
-			rate: String(rate)
-		}))
-	);
-
-	function commitTools(rows: { tool: string; rate: string }[]) {
-		const dict: Record<string, number> = {};
-		for (const r of rows) {
-			const n = Number(r.rate);
-			if (r.tool && Number.isFinite(n) && n > 0) dict[r.tool] = n;
+	let toolRows = $state<{ tool: string; rate: string }[]>([]);
+	let toolsCommitted = '';
+	$effect(() => {
+		const incoming = JSON.stringify(context.per_tool_rate_overrides);
+		if (incoming !== toolsCommitted) {
+			toolsCommitted = incoming;
+			toolRows = Object.entries(context.per_tool_rate_overrides).map(([tool, rate]) => ({
+				tool,
+				rate: String(rate)
+			}));
 		}
+	});
+
+	function rowError(rate: string): boolean {
+		return rate.trim() !== '' && parseRate(rate) === null;
+	}
+
+	function commitTools() {
+		const dict: Record<string, number> = {};
+		for (const r of toolRows) {
+			const n = parseRate(r.rate);
+			if (r.tool && n !== null) dict[r.tool] = n;
+		}
+		toolsCommitted = JSON.stringify(dict);
 		onChange({ per_tool_rate_overrides: dict });
 	}
 
@@ -59,23 +102,22 @@
 		const used = new Set(toolRows.map((r) => r.tool));
 		const free = VALID_RATE_TOOLS.find((t) => !used.has(t));
 		if (!free) return;
-		commitTools([...toolRows, { tool: free, rate: '100' }]);
+		toolRows = [...toolRows, { tool: free, rate: '100' }];
+		commitTools();
 	}
 
 	function updateToolRow(i: number, key: 'tool' | 'rate', v: string) {
-		const rows = toolRows.map((r) => ({ ...r }));
-		rows[i][key] = v;
-		commitTools(rows);
+		toolRows = toolRows.map((r, idx) => (idx === i ? { ...r, [key]: v } : r));
+		commitTools();
 	}
 
 	function removeToolRow(i: number) {
-		commitTools(toolRows.filter((_, idx) => idx !== i));
+		toolRows = toolRows.filter((_, idx) => idx !== i);
+		commitTools();
 	}
 
 	let canAddTool = $derived(toolRows.length < VALID_RATE_TOOLS.length);
 
-	// Tools available to a given row: those not used by *other* rows (a row keeps
-	// its own tool selectable). Prevents two rows collapsing onto the same tool.
 	function toolsFor(i: number): readonly string[] {
 		const usedElsewhere = new Set(toolRows.filter((_, idx) => idx !== i).map((r) => r.tool));
 		return VALID_RATE_TOOLS.filter((t) => !usedElsewhere.has(t));
@@ -83,60 +125,70 @@
 </script>
 
 <div class="space-y-5">
-	<!-- Global rate -->
 	<div class="space-y-1.5">
 		<Label class="text-xs">Global rate limit override</Label>
 		<Input
 			type="number"
-			min="1"
-			max="10000"
-			value={context.global_rate_limit_override ?? ''}
+			min={RATE_MIN}
+			max={RATE_MAX}
+			value={globalRaw}
 			placeholder="engine default · hard ceiling"
-			class="h-9 max-w-xs"
+			class="h-9 max-w-xs {globalError ? 'border-destructive focus-visible:ring-destructive' : ''}"
+			aria-invalid={globalError}
 			oninput={(e) => setGlobalRate(e.currentTarget.value)}
 		/>
-		<p class="text-xs text-muted-foreground">
-			Requests/sec ceiling applied across the scan. Leave blank to use the engine's value.
-		</p>
+		{#if globalError}
+			<p class="text-xs text-destructive">{RATE_ERR}</p>
+		{:else}
+			<p class="text-xs text-muted-foreground">
+				Requests/sec ceiling applied across the scan. Leave blank to use the engine's value.
+			</p>
+		{/if}
 	</div>
 
-	<!-- Per-tool overrides -->
 	<div class="space-y-2">
 		<Label class="text-xs">Per-tool rate overrides</Label>
 		{#each toolRows as row, i (i)}
-			<div class="flex items-center gap-2">
-				<Select.Root
-					type="single"
-					value={row.tool}
-					onValueChange={(v) => updateToolRow(i, 'tool', v ?? '')}
-				>
-					<Select.Trigger class="h-9 w-40 text-sm">
-						{row.tool || 'Select tool'}
-					</Select.Trigger>
-					<Select.Content>
-						{#each toolsFor(i) as tool (tool)}
-							<Select.Item value={tool} label={tool}>{tool}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-				<Input
-					type="number"
-					min="1"
-					max="10000"
-					value={row.rate}
-					placeholder="rate"
-					class="h-9 w-32"
-					oninput={(e) => updateToolRow(i, 'rate', e.currentTarget.value)}
-				/>
-				<Button
-					variant="ghost"
-					size="icon"
-					class="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-					onclick={() => removeToolRow(i)}
-					aria-label="Remove override"
-				>
-					<X class="h-4 w-4" />
-				</Button>
+			{@const invalid = rowError(row.rate)}
+			<div>
+				<div class="flex items-center gap-2">
+					<Select.Root
+						type="single"
+						value={row.tool}
+						onValueChange={(v) => updateToolRow(i, 'tool', v ?? '')}
+					>
+						<Select.Trigger class="h-9 w-40 text-sm">
+							{row.tool || 'Select tool'}
+						</Select.Trigger>
+						<Select.Content>
+							{#each toolsFor(i) as tool (tool)}
+								<Select.Item value={tool} label={tool}>{tool}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+					<Input
+						type="number"
+						min={RATE_MIN}
+						max={RATE_MAX}
+						value={row.rate}
+						placeholder="rate"
+						class="h-9 w-32 {invalid ? 'border-destructive focus-visible:ring-destructive' : ''}"
+						aria-invalid={invalid}
+						oninput={(e) => updateToolRow(i, 'rate', e.currentTarget.value)}
+					/>
+					<Button
+						variant="ghost"
+						size="icon"
+						class="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+						onclick={() => removeToolRow(i)}
+						aria-label="Remove override"
+					>
+						<X class="h-4 w-4" />
+					</Button>
+				</div>
+				{#if invalid}
+					<p class="mt-1 text-xs text-destructive">{RATE_ERR}</p>
+				{/if}
 			</div>
 		{/each}
 		{#if canAddTool}
@@ -147,7 +199,6 @@
 		{/if}
 	</div>
 
-	<!-- Multipliers -->
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-xs">Thread multiplier</Label>

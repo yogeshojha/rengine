@@ -1,9 +1,5 @@
-/**
- * Activity feed types and clustering logic.
- *
- * Used by the ActivityFeed widget across target detail,
- * dashboard, and scan pages.
- */
+import { MS_PER_DAY } from '$lib/utilities/dates';
+import type { MessageLevel } from '$lib/types/message-level';
 
 export interface ActivityLog {
 	id: string;
@@ -17,7 +13,7 @@ export interface ActivityLog {
 	user_id: string | null;
 }
 
-export type ActivityLevel = 'info' | 'success' | 'warning' | 'error';
+export type ActivityLevel = MessageLevel;
 
 export interface ActivityCluster {
 	id: string;
@@ -73,20 +69,17 @@ function getClusterKey(event: ActivityLog): string {
 	if (parsed.group) {
 		return `${parsed.entity}.${parsed.group}:${scope}`;
 	}
-	// Events without a sub-group (target.created) don't cluster
 	return `${event.id}`;
 }
 
-const CLUSTER_WINDOW_MS = 60_000; // 60 seconds
+const CLUSTER_WINDOW_MS = 60_000;
 
-/** Group category label from event_type. */
 export function getCategoryLabel(eventType: string): string {
 	const parsed = parseEventType(eventType);
 	if (parsed.group) return parsed.group.toUpperCase();
 	return parsed.entity.toUpperCase();
 }
 
-/** Resolve the dominant level for a cluster (error > warning > success > info). */
 function dominantLevel(items: ActivityLog[]): ActivityLevel {
 	const priority: Record<ActivityLevel, number> = {
 		error: 3,
@@ -103,7 +96,6 @@ function dominantLevel(items: ActivityLog[]): ActivityLevel {
 	return max;
 }
 
-/** Build a human label for a cluster. */
 function pluralize(word: string, count: number): string {
 	if (count === 1) return word;
 
@@ -130,10 +122,6 @@ function clusterLabel(items: ActivityLog[], _group: string): string {
 	return `${items.length} ${noun} completed`;
 }
 
-/**
- * Cluster a flat list of chronologically-sorted events.
- * Events with the same cluster key within 60s get merged.
- */
 export function clusterEvents(events: ActivityLog[]): ActivityCluster[] {
 	if (events.length === 0) return [];
 
@@ -185,7 +173,7 @@ export function groupByDay(clusters: ActivityCluster[]): ActivityDayGroup[] {
 	}
 
 	const today = new Date().toISOString().split('T')[0];
-	const yesterday = new Date(Date.now() - 86_400_000).toISOString().split('T')[0];
+	const yesterday = new Date(Date.now() - MS_PER_DAY).toISOString().split('T')[0];
 
 	return Array.from(groups.entries()).map(([date, dayClusters]) => ({
 		label:

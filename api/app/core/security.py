@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -6,6 +7,10 @@ from argon2.exceptions import VerificationError, VerifyMismatchError
 from jose import JWTError, jwt
 
 from app.config import settings
+
+TOKEN_TYPE_ACCESS = "access"  # noqa: S105
+TOKEN_TYPE_REFRESH = "refresh"  # noqa: S105
+TOKEN_TYPE_MFA = "mfa"  # noqa: S105
 
 ph = PasswordHasher(
     time_cost=2,
@@ -17,29 +22,10 @@ ph = PasswordHasher(
 
 
 def hash_password(password: str) -> str:
-    """
-    Hash a password using Argon2id.
-
-    Args:
-        password: Plain text password to hash
-
-    Returns:
-        Argon2 hash as a string
-    """
     return ph.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Verify a password against its hash.
-
-    Args:
-        plain_password: Plain text password to verify
-        hashed_password: Argon2 hash to verify against
-
-    Returns:
-        True if password matches, False otherwise
-    """
     try:
         ph.verify(hashed_password, plain_password)
         return True
@@ -52,41 +38,33 @@ def create_token(
     token_type: str,
     expires_delta: timedelta,
 ) -> str:
-    """Create a JWT token with the given subject and expiration."""
     expire = datetime.now(UTC) + expires_delta
     to_encode = {
         "exp": expire,
         "sub": str(subject),
         "type": token_type,
+        "jti": uuid.uuid4().hex,
     }
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def create_access_token(subject: str | Any) -> str:
-    """Create an access token for the given subject."""
     return create_token(
         subject=subject,
-        token_type="access",  # noqa: S106
+        token_type=TOKEN_TYPE_ACCESS,
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
 
 def create_refresh_token(subject: str | Any) -> str:
-    """Create a refresh token for the given subject."""
     return create_token(
         subject=subject,
-        token_type="refresh",  # noqa: S106
+        token_type=TOKEN_TYPE_REFRESH,
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
 
 
 def decode_token(token: str) -> dict | None:
-    """
-    Decode and validate a JWT token.
-
-    Returns:
-        Decoded payload dict if valid, None otherwise
-    """
     try:
         return jwt.decode(
             token,

@@ -51,8 +51,16 @@ async def list_scans(
     project_id: Annotated[UUID, Query(description="Project ID")],
     target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
     status: Annotated[str | None, Query(description="Filter by status")] = None,
+    limit: Annotated[int, Query(ge=1, le=500, description="Max rows")] = 100,
+    offset: Annotated[int, Query(ge=0, description="Rows to skip")] = 0,
 ):
-    return await service.list(project_id=project_id, target_id=target_id, status=status)
+    return await service.list(
+        project_id=project_id,
+        target_id=target_id,
+        status=status,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/{id}", response_model=ScanRead)

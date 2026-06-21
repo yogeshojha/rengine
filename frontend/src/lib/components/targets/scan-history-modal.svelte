@@ -5,8 +5,6 @@
 	import { Clock, History } from 'lucide-svelte';
 	import CopyButton from '@/components/copy-button.svelte';
 	import * as Empty from '$lib/components/ui/empty/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 
 	interface Props {
 		open: boolean;
@@ -29,11 +27,7 @@
 						<History class="h-4 w-4 text-muted-foreground" />
 					</div>
 					<div class="min-w-0 flex-1">
-						<div class="flex items-center justify-between">
-							<Dialog.Title class="text-lg font-semibold">Scan History</Dialog.Title>
-							<!-- DUMMY COunts for now -->
-							<span class="text-xs text-muted-foreground">5 scans</span>
-						</div>
+						<Dialog.Title class="text-lg font-semibold">Scan History</Dialog.Title>
 						<div class="flex items-center gap-1.5 mt-0.5">
 							<code class="text-xs font-mono text-muted-foreground truncate"
 								>{target.target_value}</code

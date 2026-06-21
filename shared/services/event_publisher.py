@@ -1,5 +1,3 @@
-"""Sync event publisher for pushing events from Celery workers to SSE via Redis."""
-
 import json
 import logging
 from typing import Any
@@ -21,16 +19,6 @@ class SyncEventPublisher:
         event_type: str,
         data: dict[str, Any],
     ) -> bool:
-        """Publish an event to the Redis SSE bridge.
-
-        Args:
-            channel: SSE channel to deliver to (e.g. "broadcast", "project:{id}")
-            event_type: Event type within the channel (e.g. "notification", "activity")
-            data: Event payload
-
-        Returns:
-            True if published successfully, False otherwise.
-        """
         try:
             payload = {
                 "channel": channel,

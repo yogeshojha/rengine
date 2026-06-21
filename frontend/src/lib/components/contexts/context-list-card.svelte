@@ -33,9 +33,18 @@
 	let overrideCount = $derived(countOverrides(context));
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="card" onclick={() => onEdit?.()}>
+<div
+	class="card"
+	role="button"
+	tabindex={0}
+	onclick={() => onEdit?.()}
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			onEdit?.();
+		}
+	}}
+>
 	<div class="rail"></div>
 	<div class="card-body">
 		<div class="card-header">
@@ -43,17 +52,25 @@
 				<h3 class="ctx-name">{context.name}</h3>
 				<Badge variant="outline" class="auth-badge">{authBadgeLabel(context)}</Badge>
 			</div>
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="actions" onclick={(e) => e.stopPropagation()}>
-				<Button variant="ghost" size="icon-sm" onclick={() => onDuplicate?.()}>
+			<div class="actions">
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					onclick={(e) => {
+						e.stopPropagation();
+						onDuplicate?.();
+					}}
+				>
 					<Copy size={13} />
 				</Button>
 				<Button
 					variant="ghost"
 					size="icon-sm"
 					class="text-destructive hover:text-destructive"
-					onclick={() => onDelete?.()}
+					onclick={(e) => {
+						e.stopPropagation();
+						onDelete?.();
+					}}
 				>
 					<Trash2 size={13} />
 				</Button>

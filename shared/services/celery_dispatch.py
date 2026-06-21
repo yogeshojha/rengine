@@ -1,8 +1,6 @@
-"""Celery task dispatcher for sending tasks."""
-
 from celery import Celery
 
-from shared.config import BaseSettings_
+from shared.config import BaseAppSettings
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -13,7 +11,7 @@ _celery_client: Celery | None = None
 def get_celery_client() -> Celery:
     global _celery_client  # noqa: PLW0603
     if _celery_client is None:
-        _settings = BaseSettings_()
+        _settings = BaseAppSettings()
         _celery_client = Celery(broker=_settings.celery_broker_url)
         _celery_client.conf.update(
             task_serializer="json",
@@ -23,7 +21,6 @@ def get_celery_client() -> Celery:
 
 
 def dispatch_whois_lookups(target_ids: list[str]) -> None:
-    """Dispatch WHOIS enrichment task for a batch of targets."""
     if not target_ids:
         return
     logger.info("Dispatching WHOIS lookups for %d targets", len(target_ids))
@@ -35,7 +32,6 @@ def dispatch_whois_lookups(target_ids: list[str]) -> None:
 
 
 def dispatch_ripestat_enrichment(target_ids: list[str]) -> None:
-    """Queue RIPEstat BGP enrichment for a batch of targets."""
     if not target_ids:
         return
 
@@ -48,11 +44,6 @@ def dispatch_ripestat_enrichment(target_ids: list[str]) -> None:
 
 
 def dispatch_dns_lookups(target_ids: list[str]) -> None:
-    """Dispatch DNS enrichment task for a list of targets.
-
-    Only domain targets will actually be processed; others are
-    skipped inside the Celery task.
-    """
     if not target_ids:
         return
 

@@ -1,7 +1,5 @@
 import { TargetType } from '$lib/types/target';
 
-// can be used for ease of external links for targets
-
 export interface ExternalLink {
 	label: string;
 	url: string;

@@ -8,12 +8,11 @@
 	let latest = $derived(activityFeed.latest);
 	let statusDot = $derived(
 		sseStore.isConnected
-			? 'bg-emerald-500'
+			? 'bg-foreground'
 			: sseStore.isReconnecting
 				? 'bg-amber-500'
 				: 'bg-muted-foreground/40'
 	);
-	// recompute relative time whenever the feed ticks
 	let timeLabel = $derived.by(() => {
 		void activityFeed.tick;
 		return latest ? relativeTime(latest.timestamp) : '';
@@ -32,18 +31,18 @@
 	<span class="relative flex h-2 w-2 shrink-0">
 		{#if activityFeed.isLive}
 			<span
-				class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
+				class="absolute inline-flex h-full w-full animate-ping rounded-full bg-chart-1 opacity-75"
 			></span>
 		{/if}
 		<span class="relative inline-flex h-2 w-2 rounded-full {statusDot}"></span>
 	</span>
 
 	{#if activityFeed.runningCount > 0}
-		<span class="hidden items-center gap-1.5 text-sky-600 dark:text-sky-400 sm:flex">
+		<span class="hidden items-center gap-1.5 text-chart-1 sm:flex">
 			<Loader class="h-3 w-3 animate-spin" />
 			<span class="font-medium">{activityFeed.runningCount} running</span>
 		</span>
-		<Loader class="h-3.5 w-3.5 animate-spin text-sky-500 sm:hidden" />
+		<Loader class="h-3.5 w-3.5 animate-spin text-chart-1 sm:hidden" />
 	{:else if latest}
 		<span class="hidden min-w-0 items-center gap-2 sm:flex">
 			{#key latest.id}
@@ -66,7 +65,7 @@
 	{#if activityFeed.newCount > 0}
 		<span
 			in:fly={{ y: -4, duration: 180 }}
-			class="ml-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 px-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+			class="ml-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-chart-1/15 px-1 text-[10px] font-semibold text-chart-1"
 		>
 			{activityFeed.newCount}
 		</span>

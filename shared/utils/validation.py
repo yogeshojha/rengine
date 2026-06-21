@@ -6,15 +6,25 @@ import validators
 from shared.enums.target import TargetType
 
 HEX_COLOR_LENGTH = 7  # e.g., #RRGGBB
+MAX_NAME_LEN = 120
+
+
+def clean_name(v: str, *, max_len: int = MAX_NAME_LEN) -> str:
+    v = (v or "").strip()
+    if not v:
+        msg = "Name must not be empty."
+        raise ValueError(msg)
+    if len(v) > max_len:
+        msg = f"Name must be {max_len} characters or fewer."
+        raise ValueError(msg)
+    return v
 
 
 def validate_domain(value: str) -> bool:
-    """Validate domain/subdomain format"""
     return validators.domain(value) is True
 
 
 def validate_ip(value: str) -> bool:
-    """Validate single IP address"""
     try:
         ipaddress.ip_address(value)
         return True
@@ -23,7 +33,6 @@ def validate_ip(value: str) -> bool:
 
 
 def validate_ip_range(value: str) -> bool:
-    """Validate IP range in CIDR notation"""
     try:
         ipaddress.ip_network(value, strict=False)
         return "/" in value
@@ -32,24 +41,15 @@ def validate_ip_range(value: str) -> bool:
 
 
 def validate_asn(value: str) -> bool:
-    """Validate ASN format (AS followed by numbers)"""
     asn_pattern = r"^AS\d+$"
     return bool(re.match(asn_pattern, value.upper()))
 
 
 def validate_url(value: str) -> bool:
-    """Validate fully qualified URL"""
     return validators.url(value) is True
 
 
 def validate_target(target_value: str) -> TargetType | None:
-    """
-    Validate and auto-detect target type from value.
-    This is our main validator for targets, each target MUST pass this validation before being accepted.
-    Also needs to be ported to frontend for immediate feedback to users by either copying the logic or creating an API endpoint for validation.
-
-    Returns: TargetType if valid, None if invalid
-    """
     _validators = [
         (TargetType.IP_RANGE, validate_ip_range),
         (TargetType.IP, validate_ip),
@@ -66,7 +66,6 @@ def validate_target(target_value: str) -> TargetType | None:
 
 
 def normalize_query(query: str, target_type: TargetType) -> str:
-    """Normalize query value for WHOIS cache key dedup."""
     match target_type:
         case TargetType.DOMAIN:
             return normalize_domain(query)
@@ -79,7 +78,6 @@ def normalize_query(query: str, target_type: TargetType) -> str:
 
 
 def normalize_domain(domain: str) -> str:
-    """Normalize a domain name for consistent lookups."""
     domain = domain.strip().lower()
     domain = re.sub(r"^https?://", "", domain)
     domain = domain.split("/")[0].split("?")[0].split("#")[0].split(":")[0]
@@ -87,20 +85,15 @@ def normalize_domain(domain: str) -> str:
 
 
 def extract_asn_number(query: str) -> int:
-    """Extract the numeric ASN from a query like 'AS13335' or '13335'."""
     cleaned = re.sub(r"^[Aa][Ss]", "", query.strip())
     return int(cleaned)
 
 
 def extract_domain_from_url(url: str) -> str:
-    """Extract the domain from a URL."""
     return normalize_domain(url)
 
 
 def validate_hex_color(color: str) -> str:
-    """
-    Validate hex color format (#RRGGBB).
-    """
     color = color.strip()
     if not color.startswith("#"):
         msg = "Color must start with #"

@@ -15,10 +15,7 @@ logger = get_logger(__name__)
 
 
 def parse_mx_entries(raw_list: list[str] | None) -> list[DnsxMXEntry]:
-    """Parse MX records from dnsx string format.
-
-    dnsx returns MX as: ["10 mail.example.com.", "20 mail2.example.com."]
-    """
+    """Parse MX records from dnsx string format."""
     entries = []
     for raw in safe_str_list(raw_list):
         parts = raw.split(None, 1)
@@ -35,11 +32,7 @@ def parse_mx_entries(raw_list: list[str] | None) -> list[DnsxMXEntry]:
 
 
 def parse_srv_entries(raw_list: list[str] | None) -> list[DnsxSRVEntry]:
-    """Parse SRV records from dnsx string format.
-
-    dnsx returns SRV as: ["0 5 5269 xmpp-server.l.google.com."]
-    Format: priority weight port target
-    """
+    """Parse SRV records from dnsx string format (priority weight port target)."""
     entries = []
     for raw in safe_str_list(raw_list):
         parts = raw.split(None, 3)
@@ -61,12 +54,7 @@ def parse_srv_entries(raw_list: list[str] | None) -> list[DnsxSRVEntry]:
 
 
 def parse_soa_entries(raw_list: list | None) -> list[DnsxSOAEntry]:
-    """Parse SOA records from dnsx output.
-
-    dnsx may return SOA as:
-    - List of dicts: [{"name":"...", "ns":"...", ...}]
-    - List of strings: ["ns.icann.org. noc.dns.icann.org. 2024010101 7200 3600 1209600 3600"]
-    """
+    """Parse SOA records from dnsx output (dicts or whitespace-delimited strings)."""
     if not raw_list:
         return []
 
@@ -86,7 +74,6 @@ def parse_soa_entries(raw_list: list | None) -> list[DnsxSOAEntry]:
                 )
             )
         elif isinstance(item, str) and item.strip():
-            # String format: "ns mailbox serial refresh retry expire minttl"
             parts = item.split()
             if len(parts) >= 7:  # noqa: PLR2004
                 entries.append(
@@ -106,12 +93,7 @@ def parse_soa_entries(raw_list: list | None) -> list[DnsxSOAEntry]:
 
 
 def parse_caa_entries(raw_list: list | None) -> list[DnsxCAAEntry]:
-    """Parse CAA records from dnsx output.
-
-    dnsx may return CAA as:
-    - List of dicts: [{"flag": 0, "tag": "issue", "value": "letsencrypt.org"}]
-    - List of strings: ["0 issue letsencrypt.org"]
-    """
+    """Parse CAA records from dnsx output (dicts or whitespace-delimited strings)."""
     if not raw_list:
         return []
 
@@ -151,14 +133,7 @@ def _safe_int(value) -> int:
 
 
 def parse_dnsx_record(raw: dict) -> DnsxReconResponse:
-    """Parse a single raw dnsx JSON dict into a fully typed DnsxReconResponse.
-
-    Args:
-        raw: Single JSON object from dnsx JSONL output.
-
-    Returns:
-        DnsxReconResponse with all record types parsed and structured.
-    """
+    """Parse a single raw dnsx JSON dict into a typed DnsxReconResponse."""
     host = str(raw.get("host", "")).strip()
     if not host:
         msg = "dnsx record missing 'host' field"
@@ -190,15 +165,7 @@ def parse_dnsx_record(raw: dict) -> DnsxReconResponse:
 
 
 def parse_dnsx_jsonl(json_records: list[dict]) -> list[DnsxReconResponse]:
-    """Parse multiple dnsx JSON records from tool runner output.
-
-    Args:
-        json_records: List of raw JSON dicts from ToolResult.json_records.
-
-    Returns:
-        List of parsed DnsxReconResponse objects.
-        Invalid records are logged and skipped.
-    """
+    """Parse multiple dnsx JSON records; invalid records are logged and skipped."""
     results = []
     for i, raw in enumerate(json_records):
         try:

@@ -44,21 +44,3 @@ export interface RelatedPrefixRead {
 	relationship: string; // 'overlap' | 'more_specific' | 'less_specific'
 	origin_asn: number | null;
 }
-
-export type RIPEStatLookupType =
-	| 'announced_prefixes'
-	| 'asn_neighbours'
-	| 'as_overview'
-	| 'network_info'
-	| 'abuse_contact'
-	| 'prefix_overview'
-	| 'related_prefixes';
-
-export interface RIPEStatResult<T = unknown> {
-	lookup_type: RIPEStatLookupType;
-	query_value: string;
-	result_count: number;
-	cached: boolean;
-	queried_at: string | null;
-	data: T;
-}

@@ -17,9 +17,9 @@
 	let { engine, onEdit, onDuplicate, onDelete }: Props = $props();
 
 	const intensityClass: Record<Intensity, string> = {
-		passive: 'badge-passive',
-		normal: 'badge-normal',
-		aggressive: 'badge-aggressive'
+		passive: 'text-muted-foreground border-border/60',
+		normal: 'text-foreground border-border',
+		aggressive: 'text-amber-600 dark:text-amber-500 border-amber-500/30'
 	};
 	const intensityLabel: Record<Intensity, string> = {
 		passive: 'Passive',
@@ -27,7 +27,7 @@
 		aggressive: 'Aggressive'
 	};
 
-	let badgeClass = $derived(intensityClass[engine.intensity] ?? 'badge-normal');
+	let badgeClass = $derived(intensityClass[engine.intensity] ?? intensityClass.normal);
 
 	const PHASE_TOTAL: Record<Phase, number> = {
 		discovery: CAPABILITIES.filter((c) => c.phase === 'discovery').length,
@@ -49,7 +49,6 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="card" onclick={() => onEdit?.()}>
-	<!-- Phase color bar -->
 	<div class="color-bar">
 		<div style="flex:1; background:{PHASE_COLORS.discovery.accent};"></div>
 		<div style="flex:1; background:{PHASE_COLORS.expansion.accent};"></div>
@@ -57,13 +56,11 @@
 	</div>
 
 	<div class="card-body">
-		<!-- Header -->
 		<div class="card-header">
 			<div class="name-block">
 				<h3 class="engine-name">{engine.name}</h3>
 				<Badge variant="outline" class="intensity-badge {badgeClass}">{intensityLabel[engine.intensity]}</Badge>
 			</div>
-			<!-- Actions -->
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div class="actions" onclick={(e) => e.stopPropagation()}>
@@ -80,13 +77,12 @@
 			<p class="description">{engine.description}</p>
 		{/if}
 
-		<!-- Phase pills -->
 		<div class="phase-row">
 			{#each [
 				{ label: 'Discovery', count: counts.discovery, total: PHASE_TOTAL.discovery, color: PHASE_COLORS.discovery },
 				{ label: 'Expansion', count: counts.expansion, total: PHASE_TOTAL.expansion, color: PHASE_COLORS.expansion },
 				{ label: 'Depth',     count: counts.depth,     total: PHASE_TOTAL.depth,     color: PHASE_COLORS.depth }
-			] as phase, i}
+			] as phase, i (phase.label)}
 				{#if i > 0}<ChevronRight size={11} class="phase-arrow" />{/if}
 				<div class="phase-pill">
 					<span class="phase-dot" style="background:{phase.color.accent};"></span>
@@ -96,7 +92,6 @@
 			{/each}
 		</div>
 
-		<!-- Footer -->
 		<div class="card-footer">
 			<div class="footer-left">
 				<Network size={12} class="footer-icon" />
@@ -171,39 +166,6 @@
 		font-size: 10px;
 		font-weight: 600;
 		letter-spacing: 0.04em;
-	}
-
-	:global(.intensity-badge.badge-passive) {
-		background: oklch(0.94 0.05 265);
-		color: oklch(0.4 0.18 265);
-		border-color: oklch(0.82 0.1 265);
-	}
-	:global(.dark .intensity-badge.badge-passive) {
-		background: oklch(0.22 0.06 265);
-		color: oklch(0.75 0.15 265);
-		border-color: oklch(0.35 0.1 265);
-	}
-
-	:global(.intensity-badge.badge-normal) {
-		background: oklch(0.94 0.05 155);
-		color: oklch(0.38 0.14 155);
-		border-color: oklch(0.8 0.1 155);
-	}
-	:global(.dark .intensity-badge.badge-normal) {
-		background: oklch(0.22 0.05 155);
-		color: oklch(0.72 0.12 155);
-		border-color: oklch(0.35 0.08 155);
-	}
-
-	:global(.intensity-badge.badge-aggressive) {
-		background: oklch(0.95 0.05 50);
-		color: oklch(0.45 0.16 40);
-		border-color: oklch(0.82 0.1 50);
-	}
-	:global(.dark .intensity-badge.badge-aggressive) {
-		background: oklch(0.22 0.05 40);
-		color: oklch(0.78 0.12 50);
-		border-color: oklch(0.38 0.1 40);
 	}
 
 	.actions {

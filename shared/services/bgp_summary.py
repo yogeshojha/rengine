@@ -1,5 +1,3 @@
-"""Write BGP summary to target_bgp_summaries after enrichment."""
-
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlmodel import select
@@ -22,21 +20,18 @@ def write_bgp_summary_for_target(session: Session, target: Target) -> None:
     if target.target_type.value == "asn":
         asn_number = int(target.target_value.upper().replace("AS", "").strip())
 
-        # count announced prefixes
         prefix_count = session.execute(
             select(func.count(RIPEStatAnnouncedPrefix.id)).where(
                 RIPEStatAnnouncedPrefix.asn == asn_number
             )
         ).scalar_one()
 
-        # count peers
         peer_count = session.execute(
             select(func.count(RIPEStatASNNeighbour.id)).where(
                 RIPEStatASNNeighbour.asn == asn_number
             )
         ).scalar_one()
 
-        # announcement status
         overview = session.execute(
             select(RIPEStatASOverview).where(RIPEStatASOverview.asn == asn_number)
         ).scalar_one_or_none()
@@ -58,7 +53,6 @@ def write_bgp_summary_for_target(session: Session, target: Target) -> None:
         ).scalar_one_or_none()
 
         if info:
-            # look up holder name from as_overviews
             overview = session.execute(
                 select(RIPEStatASOverview).where(RIPEStatASOverview.asn == info.asn)
             ).scalar_one_or_none()
@@ -96,8 +90,6 @@ def write_bgp_summary_for_target(session: Session, target: Target) -> None:
             )
         else:
             _upsert_summary(session, target_id=target.id, queried_at=now)
-
-    # domain/url — no BGP data, status set to not_applicable by task
 
 
 def _upsert_summary(session: Session, target_id, **fields) -> None:

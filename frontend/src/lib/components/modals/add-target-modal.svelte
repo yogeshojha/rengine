@@ -7,13 +7,15 @@
 		MapPin,
 		Hash,
 		Building2,
-		Link2
+		Link2,
+		X
 	} from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Separator } from '$lib/components/ui/separator';
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
 	import TagMultiSelect from '$lib/components/tag-multi-select.svelte';
@@ -24,13 +26,17 @@
 	import { tagsApi } from '$lib/api/tags';
 	import { TargetType, formatTargetType } from '$lib/types/target';
 	import { toast } from 'svelte-sonner';
+	import { tick } from 'svelte';
 
 	interface Props {
 		open: boolean;
+		initialValue?: string;
 	}
 
-	let { open = $bindable() }: Props = $props();
+	let { open = $bindable(), initialValue = '' }: Props = $props();
 
+	let targetInput = $state<HTMLInputElement | null>(null);
+	let showDiscardConfirm = $state(false);
 	let targetValue = $state('');
 	let displayName = $state('');
 	let isValidating = $state(false);
@@ -73,10 +79,7 @@
 		validationResult?.target_type ? typeIcons[validationResult.target_type] : null
 	);
 
-	function handleTargetInput(e: Event) {
-		const value = (e.target as HTMLInputElement).value;
-		targetValue = value;
-
+	function validateValue(value: string) {
 		clearTimeout(validateTimeout);
 
 		if (!value.trim()) {
@@ -97,7 +100,12 @@
 		}, 400);
 	}
 
-	// Organization handlers
+	function handleTargetInput(e: Event) {
+		const value = (e.target as HTMLInputElement).value;
+		targetValue = value;
+		validateValue(value);
+	}
+
 	function handleSelectOrganization(item: { id: string; label: string }) {
 		selectedOrganizations = [...selectedOrganizations, item];
 	}
@@ -112,17 +120,14 @@
 
 		try {
 			const newOrg = await organizationsApi.create({ name, project_slug: projectSlug });
-			// Add to selected
 			selectedOrganizations = [...selectedOrganizations, { id: newOrg.id, label: newOrg.name }];
-			// Refresh store to include new org
 			await targetsStore.refresh();
 			toast.success(`Organization "${name}" created`);
-		} catch (e) {
+		} catch {
 			toast.error('Failed to create organization');
 		}
 	}
 
-	// Tag handlers
 	function handleSelectTag(item: { id: string; label: string; color: string }) {
 		selectedTags = [...selectedTags, item];
 	}
@@ -137,20 +142,19 @@
 
 		try {
 			const newTag = await tagsApi.create({ name, color, project_slug: projectSlug });
-			// Add to selected
 			selectedTags = [...selectedTags, { id: newTag.id, label: newTag.name, color: newTag.color }];
-			// Refresh store to include new tag
 			await targetsStore.refresh();
 			toast.success(`Tag "${name}" created`);
-		} catch (e) {
+		} catch {
 			toast.error('Failed to create tag');
 		}
 	}
 
-	// Submit handler
-	async function handleSubmit() {
+	async function handleSubmit(e?: Event) {
+		e?.preventDefault();
+
 		const projectSlug = projectsStore.activeProject?.slug;
-		if (!projectSlug || !validationResult?.valid) return;
+		if (!projectSlug || !canSubmit) return;
 
 		isSubmitting = true;
 
@@ -187,18 +191,70 @@
 		selectedTags = [];
 	}
 
+	let isDirty = $derived(
+		targetValue.trim().length > 0 ||
+			displayName.trim().length > 0 ||
+			selectedOrganizations.length > 0 ||
+			selectedTags.length > 0
+	);
+
 	function handleOpenChange(isOpen: boolean) {
-		if (!isOpen) {
-			resetForm();
+		if (isOpen) {
+			open = true;
+			return;
 		}
-		open = isOpen;
+		if (isDirty) return;
+		resetForm();
+		open = false;
 	}
+
+	function requestClose() {
+		if (isDirty) {
+			showDiscardConfirm = true;
+			return;
+		}
+		resetForm();
+		open = false;
+	}
+
+	function confirmDiscard() {
+		showDiscardConfirm = false;
+		resetForm();
+		open = false;
+	}
+
+	let prefilled = false;
+	$effect(() => {
+		if (open) {
+			if (initialValue && !prefilled) {
+				prefilled = true;
+				targetValue = initialValue;
+				validateValue(initialValue);
+			}
+			tick().then(() => targetInput?.focus());
+		} else {
+			prefilled = false;
+		}
+	});
 
 	let canSubmit = $derived(validationResult?.valid && !isSubmitting && !isValidating);
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content class="sm:max-w-[500px] gap-0 p-0">
+	<Dialog.Content
+		showCloseButton={false}
+		interactOutsideBehavior={isDirty ? 'ignore' : 'close'}
+		escapeKeydownBehavior={isDirty ? 'ignore' : 'close'}
+		class="sm:max-w-[500px] gap-0 p-0"
+	>
+		<button
+			type="button"
+			onclick={requestClose}
+			class="ring-offset-background focus:ring-ring absolute end-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+			aria-label="Close"
+		>
+			<X class="size-4" />
+		</button>
 		<Dialog.Header class="p-6 pb-4">
 			<Dialog.Title>Add Target</Dialog.Title>
 			<Dialog.Description>Add a target for monitoring</Dialog.Description>
@@ -206,103 +262,118 @@
 
 		<Separator />
 
-		<div class="p-6 space-y-5">
-			<!-- Target Value -->
-			<div class="space-y-2">
-				<Label for="target-value">Target Value <span class="text-destructive">*</span></Label>
-				<div class="relative">
-					<Input
-						id="target-value"
-						type="text"
-						placeholder="e.g., example.com, 192.168.1.0/24, AS12345"
-						value={targetValue}
-						oninput={handleTargetInput}
-						class="pr-10"
-					/>
-					<div class="absolute right-3 top-1/2 -translate-y-1/2">
-						{#if isValidating}
-							<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" />
-						{:else if validationResult?.valid}
-							<CircleCheck class="h-4 w-4 text-green-500" />
-						{:else if validationResult && !validationResult.valid}
-							<CircleX class="h-4 w-4 text-destructive" />
-						{/if}
+		<form onsubmit={handleSubmit}>
+			<div class="p-6 space-y-5">
+				<div class="space-y-2">
+					<Label for="target-value">Target Value <span class="text-destructive">*</span></Label>
+					<div class="relative">
+						<Input
+							id="target-value"
+							type="text"
+							bind:ref={targetInput}
+							placeholder="e.g., example.com, 192.168.1.0/24, AS12345"
+							value={targetValue}
+							oninput={handleTargetInput}
+							class="pr-10"
+						/>
+						<div class="absolute right-3 top-1/2 -translate-y-1/2">
+							{#if isValidating}
+								<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" />
+							{:else if validationResult?.valid}
+								<CircleCheck class="h-4 w-4 text-foreground" />
+							{:else if validationResult && !validationResult.valid}
+								<CircleX class="h-4 w-4 text-destructive" />
+							{/if}
+						</div>
 					</div>
+
+					{#if validationResult}
+						<div class="flex items-center gap-2 text-sm">
+							{#if validationResult.valid && validationResult.target_type}
+								<Badge variant="outline" class="gap-1.5 font-normal">
+									{#if TypeIcon}
+										<TypeIcon class="h-3 w-3" />
+									{/if}
+									{formatTargetType(validationResult.target_type)}
+								</Badge>
+							{:else if validationResult.error}
+								<span class="text-destructive">{validationResult.error}</span>
+							{/if}
+						</div>
+					{/if}
 				</div>
 
-				<!-- Validation Result -->
-				{#if validationResult}
-					<div class="flex items-center gap-2 text-sm">
-						{#if validationResult.valid && validationResult.target_type}
-							<Badge variant="outline" class="gap-1.5 font-normal">
-								{#if TypeIcon}
-									<TypeIcon class="h-3 w-3" />
-								{/if}
-								{formatTargetType(validationResult.target_type)}
-							</Badge>
-						{:else if validationResult.error}
-							<span class="text-destructive">{validationResult.error}</span>
-						{/if}
-					</div>
-				{/if}
+				<div class="space-y-2">
+					<Label for="display-name">Display Name (Optional)</Label>
+					<Input
+						id="display-name"
+						type="text"
+						placeholder="Optional friendly name"
+						bind:value={displayName}
+					/>
+					<p class="text-xs text-muted-foreground">
+						Descriptive label to help identify this target
+					</p>
+				</div>
+
+				<div class="space-y-2">
+					<Label>Organizations (Optional)</Label>
+					<MultiSelectCombobox
+						items={organizationItems}
+						selected={selectedOrganizations}
+						onSelect={handleSelectOrganization}
+						onRemove={handleRemoveOrganization}
+						onCreate={handleCreateOrganization}
+						placeholder="Search or create organizations..."
+						emptyText="No organizations found."
+					/>
+					<p class="text-xs text-muted-foreground">Group targets by organization</p>
+				</div>
+
+				<div class="space-y-2">
+					<Label>Tags (Optional)</Label>
+					<TagMultiSelect
+						items={tagItems}
+						selected={selectedTags}
+						onSelect={handleSelectTag}
+						onRemove={handleRemoveTag}
+						onCreate={handleCreateTag}
+						placeholder="Search or create tags..."
+					/>
+					<p class="text-xs text-muted-foreground">Add tags to categorize and filter targets</p>
+				</div>
 			</div>
 
-			<!-- Display Name -->
-			<div class="space-y-2">
-				<Label for="display-name">Display Name (Optional)</Label>
-				<Input
-					id="display-name"
-					type="text"
-					placeholder="Optional friendly name"
-					bind:value={displayName}
-				/>
-				<p class="text-xs text-muted-foreground">Descriptive label to help identify this target</p>
+			<Separator />
+
+			<div class="flex items-center justify-end gap-2 p-4 bg-muted/30">
+				<Button type="button" variant="outline" onclick={requestClose} disabled={isSubmitting}>
+					Cancel
+				</Button>
+				<Button type="submit" disabled={!canSubmit}>
+					{#if isSubmitting}
+						<LoaderCircle class="h-4 w-4 mr-2 animate-spin" />
+						Adding...
+					{:else}
+						Add Target
+					{/if}
+				</Button>
 			</div>
-
-			<!-- Organizations -->
-			<div class="space-y-2">
-				<Label>Organizations (Optional)</Label>
-				<MultiSelectCombobox
-					items={organizationItems}
-					selected={selectedOrganizations}
-					onSelect={handleSelectOrganization}
-					onRemove={handleRemoveOrganization}
-					onCreate={handleCreateOrganization}
-					placeholder="Search or create organizations..."
-					emptyText="No organizations found."
-				/>
-				<p class="text-xs text-muted-foreground">Group targets by organization</p>
-			</div>
-
-			<!-- Tags -->
-			<div class="space-y-2">
-				<Label>Tags (Optional)</Label>
-				<TagMultiSelect
-					items={tagItems}
-					selected={selectedTags}
-					onSelect={handleSelectTag}
-					onRemove={handleRemoveTag}
-					onCreate={handleCreateTag}
-					placeholder="Search or create tags..."
-				/>
-				<p class="text-xs text-muted-foreground">Add tags to categorize and filter targets</p>
-			</div>
-		</div>
-
-		<Separator />
-
-		<div class="flex items-center justify-end gap-2 p-4 bg-muted/30">
-			<Button variant="outline" onclick={() => (open = false)} disabled={isSubmitting}>
-				Cancel
-			</Button>
-			<Button onclick={handleSubmit} disabled={!canSubmit}>
-				{#if isSubmitting}
-					<LoaderCircle class="h-4 w-4 mr-2 animate-spin" />
-					Adding...
-				{:else}
-					Add Target
-				{/if}
-			</Button>
-		</div>
+		</form>
 	</Dialog.Content>
 </Dialog.Root>
+
+<AlertDialog.Root bind:open={showDiscardConfirm}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Discard your changes?</AlertDialog.Title>
+			<AlertDialog.Description>
+				You have unsaved input for this target. Closing now will discard it.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Keep editing</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={confirmDiscard}>Discard</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

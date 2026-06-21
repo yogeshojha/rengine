@@ -1,15 +1,6 @@
-/**
- * Breadcrumb override store.
- *
- * Pages with dynamic route segments (e.g. [id]) call this to replace
- * the raw UUID in breadcrumbs with a human-readable label.
- *
- * Usage:
- *   breadcrumbStore.set($page.params.id, target.target_value);
- *   onDestroy(() => breadcrumbStore.remove($page.params.id));
- */
+import { SvelteMap } from 'svelte/reactivity';
 
-let overrides = $state<Map<string, string>>(new Map());
+const overrides = new SvelteMap<string, string>();
 
 export const breadcrumbStore = {
 	get overrides() {
@@ -17,15 +8,11 @@ export const breadcrumbStore = {
 	},
 
 	set(segment: string, label: string) {
-		const next = new Map(overrides);
-		next.set(segment, label);
-		overrides = next;
+		overrides.set(segment, label);
 	},
 
 	remove(segment: string) {
-		const next = new Map(overrides);
-		next.delete(segment);
-		overrides = next;
+		overrides.delete(segment);
 	},
 
 	getLabel(segment: string): string | undefined {
@@ -33,6 +20,6 @@ export const breadcrumbStore = {
 	},
 
 	clear() {
-		overrides = new Map();
+		overrides.clear();
 	}
 };

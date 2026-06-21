@@ -1,13 +1,3 @@
-"""WHOIS record database model.
-
-Stores cached WHOIS/RDAP data for targets
-for efficient correlation queries
-
-this may be used in cases like "find all targets registered
-by the same entity" or "all domains on the same nameservers"
-
-"""
-
 import uuid
 from datetime import datetime
 
@@ -43,7 +33,6 @@ class WhoisRecord(SQLModel, table=True):
     last_changed_date: datetime | None = None
     expiration_date: datetime | None = None
 
-    # mainly used for correlation
     registrant_name: str = Field(default="", max_length=500, index=True)
     registrant_email: str = Field(default="", max_length=500, index=True)
     registrar_name: str = Field(default="", max_length=500, index=True)
@@ -68,8 +57,6 @@ class WhoisRecord(SQLModel, table=True):
 
 
 class WhoisNameserver(SQLModel, table=True):
-    """Junction table for efficient nameserver correlation queries."""
-
     __tablename__ = "whois_nameservers"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

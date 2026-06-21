@@ -43,6 +43,8 @@ class NotificationManager:
         if commit:
             await session.commit()
             await session.refresh(notification)
+        else:
+            await session.flush()
 
         await sse_manager.publish(
             channel=SSEChannel.BROADCAST,
@@ -60,6 +62,13 @@ class NotificationManager:
         )
 
         logger.info(f"Published notification: {type.value}/{severity.value} - {title}")
+
+        try:
+            from shared.services.notifier import dispatch_async  # noqa: PLC0415
+
+            await dispatch_async(session, type, severity, title, message)
+        except Exception as exc:
+            logger.warning(f"External notification dispatch failed: {exc}")
 
         return notification
 

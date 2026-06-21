@@ -1,8 +1,4 @@
-"""RIPEstat response parsers.
-
-Each parser takes raw JSON (the "data" dict from RIPEstat API) and returns
-a typed Pydantic model. If RIPEstat changes their response format, UPDATE THIS FILE!
-"""
+"""RIPEstat response parsers — update here if RIPEstat changes response format."""
 
 from datetime import datetime
 from typing import Any
@@ -49,21 +45,7 @@ def _parse_datetime(value: str | None) -> datetime | None:
 def parse_announced_prefixes(
     data: dict[str, Any], asn: int
 ) -> AnnouncedPrefixesResponse:
-    """Parse /data/announced-prefixes response.
-
-    Expected ripestat api response as of writing this:
-        {
-            "prefixes": [
-                {
-                    "prefix": "45.116.20.0/22",
-                    "timelines": [
-                        {"starttime": "2026-01-27T00:00:00", "endtime": "2026-02-10T00:00:00"}
-                    ]
-                }
-            ],
-            "resource": "23752"
-        }
-    """
+    """Parse /data/announced-prefixes response."""
     prefixes = []
     for entry in data.get("prefixes", []):
         prefix_str = entry.get("prefix", "")
@@ -95,16 +77,7 @@ def parse_announced_prefixes(
 
 
 def parse_asn_neighbours(data: dict[str, Any], asn: int) -> ASNNeighboursResponse:
-    """Parse /data/asn-neighbours response.
-
-    Expected ripestat api response as of writing this:
-        {
-            "neighbours": [
-                {"asn": 4637, "type": "left", "power": 128}
-            ],
-            "neighbour_counts": {"left": 5, "right": 2, "uncertain": 1}
-        }
-    """
+    """Parse /data/asn-neighbours response."""
     neighbours = []
     for entry in data.get("neighbours", []):
         neighbour_asn = entry.get("asn")
@@ -125,17 +98,7 @@ def parse_asn_neighbours(data: dict[str, Any], asn: int) -> ASNNeighboursRespons
 
 
 def parse_as_overview(data: dict[str, Any], asn: int) -> ASOverviewResponse:
-    """Parse /data/as-overview response.
-
-    Expected ripestat api response as of writing this:
-        {
-            "resource": "23752",
-            "holder": "Nepal Telecommunications Corporation",
-            "block": {"resource": "23552-24575", "name": "..."},
-            "announced": true,
-            "type": "RIR"
-        }
-    """
+    """Parse /data/as-overview response."""
     block = data.get("block") or {}
 
     return ASOverviewResponse(
@@ -149,14 +112,7 @@ def parse_as_overview(data: dict[str, Any], asn: int) -> ASOverviewResponse:
 
 
 def parse_network_info(data: dict[str, Any], ip: str) -> NetworkInfoResponse:
-    """Parse /data/network-info response.
-
-    Expected ripestat api response as of writing this:
-        {
-            "asns": ["23752"],
-            "prefix": "49.244.0.0/18"
-        }
-    """
+    """Parse /data/network-info response."""
     raw_asns = data.get("asns", [])
     asns = []
     for a in raw_asns:
@@ -173,14 +129,7 @@ def parse_network_info(data: dict[str, Any], ip: str) -> NetworkInfoResponse:
 
 
 def parse_abuse_contact(data: dict[str, Any], resource: str) -> AbuseContactResponse:
-    """Parse /data/abuse-contact-finder response.
-
-    Expected ripestat api response as of writing this:
-        {
-            "abuse_contacts": ["abuse@ntc.net.np"],
-            "authoritative_rir": "apnic"
-        }
-    """
+    """Parse /data/abuse-contact-finder response."""
     return AbuseContactResponse(
         resource=resource,
         abuse_emails=data.get("abuse_contacts", []),
@@ -189,16 +138,7 @@ def parse_abuse_contact(data: dict[str, Any], resource: str) -> AbuseContactResp
 
 
 def parse_prefix_overview(data: dict[str, Any], prefix: str) -> PrefixOverviewResponse:
-    """Parse /data/prefix-overview response.
-
-    Expected ripestat api response as of writing this:
-        {
-            "asns": [{"asn": 23752, "holder": "Nepal Telecom"}],
-            "resource": "49.244.0.0/18",
-            "announced": true,
-            "is_less_specific": false
-        }
-    """
+    """Parse /data/prefix-overview response."""
     asns = []
     for entry in data.get("asns", []):
         asn_val = entry.get("asn")
@@ -221,19 +161,7 @@ def parse_prefix_overview(data: dict[str, Any], prefix: str) -> PrefixOverviewRe
 def parse_related_prefixes(
     data: dict[str, Any], prefix: str
 ) -> RelatedPrefixesResponse:
-    """Parse /data/related-prefixes response.
-
-    Expected ripestat api response as of writing this:
-        {
-            "prefixes": [
-                {
-                    "prefix": "49.244.0.0/19",
-                    "origin_asn": 23752,
-                    "relationship": "More Specific"
-                }
-            ]
-        }
-    """
+    """Parse /data/related-prefixes response."""
     related = []
     for entry in data.get("prefixes", []):
         rel_prefix = entry.get("prefix", "")

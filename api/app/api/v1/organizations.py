@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -82,8 +83,6 @@ async def create_organization(
 
     normalized_name = organization_in.name.strip().lower()
 
-    # if organization with same name already exists in this project
-    # one organization per name per project, however it can exist across projects
     existing_org = await session.execute(
         select(Organization).where(
             Organization.name == normalized_name,
@@ -96,16 +95,24 @@ async def create_organization(
             detail="Organization with this name already exists in this project",
         )
 
-    slug = generate_slug(normalized_name)
+    slug = await generate_unique_slug(normalized_name, project.id, session)
 
     organization = Organization(
         name=normalized_name,
         slug=slug,
+        description=organization_in.description,
         project_id=project.id,
         created_by=current_user.id,
     )
     session.add(organization)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as e:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Organization with this name already exists in this project",
+        ) from e
     await session.refresh(organization)
     return organization
 
@@ -177,13 +184,38 @@ async def update_organization(
     update_data = organization_in.model_dump(exclude_unset=True)
 
     if "name" in update_data:
-        new_slug = await generate_unique_slug(update_data["name"], project_id, session)
-        organization.slug = new_slug
+        normalized_name = update_data["name"].strip().lower()
+        update_data["name"] = normalized_name
+
+        duplicate = await session.execute(
+            select(Organization).where(
+                Organization.name == normalized_name,
+                Organization.project_id == project_id,
+                Organization.id != organization.id,
+            )
+        )
+        if duplicate.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Organization with this name already exists in this project",
+            )
+
+        organization.slug = await generate_unique_slug(
+            normalized_name, project_id, session
+        )
 
     for field, value in update_data.items():
-        setattr(organization, field, value)
+        if field in Organization.model_fields:
+            setattr(organization, field, value)
 
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as e:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Organization with this name already exists in this project",
+        ) from e
     await session.refresh(organization)
     return organization
 

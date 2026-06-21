@@ -116,7 +116,6 @@ async def init_predefined_tags(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Initialize predefined tags for a project"""
     project_result = await session.execute(
         select(Project).where(Project.slug == project_slug)
     )

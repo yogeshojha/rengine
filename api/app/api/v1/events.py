@@ -1,10 +1,3 @@
-"""
-Unified SSE stream endpoint.
-
-Clients connect with:
-    GET /events/stream?channels=broadcast,project:{project_id}
-"""
-
 import asyncio
 import logging
 import re
@@ -20,20 +13,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/events", tags=["events"])
 
-# Valid channel patterns - derived from SSEChannel enum
 CHANNEL_PATTERN = re.compile(
     rf"^({SSEChannel.PROJECT}:[a-f0-9\-]+|{SSEChannel.BROADCAST})$"
 )
 
 
 def validate_channels(requested: list[str]) -> list[str]:
-    """Validate channel subscriptions.
-
-    Rules:
-      - project:{id}  -> project-scoped events (activities, scans)
-      - broadcast      -> system-wide notifications and announcements
-      - anything else  -> silently rejected
-    """
     validated: list[str] = []
 
     for channel in requested:
@@ -55,13 +40,6 @@ async def event_stream(
         examples=["broadcast,project:proj-uuid"],
     ),
 ):
-    """Server-Sent Events stream with channel-based filtering.
-    The client specifies which channels to subscribe to via query parameter.
-
-    Channel types:
-      - ``project:{project_id}`` — project events (activities, scans, etc.)
-      - ``broadcast`` — system-wide notifications and announcements
-    """
     requested = [ch.strip() for ch in channels.split(",") if ch.strip()]
 
     if not requested:
@@ -89,7 +67,6 @@ async def event_stream(
                         message = await asyncio.wait_for(queue.get(), timeout=30.0)
                         yield message
                     except TimeoutError:
-                        # SSE keepalive — browsers close idle connections
                         yield ": heartbeat\n\n"
 
             except asyncio.CancelledError:
@@ -110,7 +87,6 @@ async def event_stream(
 async def sse_health(
     _current_user: CurrentUser,
 ):
-    """Diagnostic endpoint for SSE connection state."""
     return {
         "status": "healthy",
         "active_connections": sse_manager.get_active_connections(),

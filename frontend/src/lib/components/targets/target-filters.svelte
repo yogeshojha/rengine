@@ -43,9 +43,8 @@
 	let activeFilterCount = $derived(selectedOrganizations.length + selectedTags.length);
 </script>
 
-<div class="flex items-center gap-3">
-	<!-- Search Input -->
-	<div class="relative flex-1 max-w-sm">
+<div class="flex flex-wrap items-center gap-3 gap-y-2">
+	<div class="relative flex-1 min-w-0 sm:max-w-sm">
 		<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 		<Input
 			type="text"
@@ -66,7 +65,6 @@
 		{/if}
 	</div>
 
-	<!-- Organization Filter -->
 	<Popover.Root bind:open={orgPopoverOpen}>
 		<Popover.Trigger>
 			{#snippet child({ props })}
@@ -94,7 +92,7 @@
 				<Command.List>
 					<Command.Empty>No organizations found.</Command.Empty>
 					<Command.Group>
-						{#each organizations as org}
+						{#each organizations as org (org.id)}
 							<Command.Item
 								onSelect={() => onOrganizationToggle(org.id)}
 								class="flex items-center gap-2"
@@ -109,7 +107,6 @@
 		</Popover.Content>
 	</Popover.Root>
 
-	<!-- Tag Filter -->
 	<Popover.Root bind:open={tagPopoverOpen}>
 		<Popover.Trigger>
 			{#snippet child({ props })}
@@ -135,7 +132,7 @@
 				<Command.List>
 					<Command.Empty>No tags found.</Command.Empty>
 					<Command.Group>
-						{#each tags as tag}
+						{#each tags as tag (tag.id)}
 							<Command.Item onSelect={() => onTagToggle(tag.id)} class="flex items-center gap-2">
 								<Checkbox checked={selectedTags.includes(tag.id)} />
 								<span
@@ -151,7 +148,6 @@
 		</Popover.Content>
 	</Popover.Root>
 
-	<!-- Clear Filters -->
 	{#if hasActiveFilters}
 		<Separator orientation="vertical" class="h-6" />
 		<Button

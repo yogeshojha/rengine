@@ -18,9 +18,6 @@ class Scan(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     target_id: uuid.UUID = Field(foreign_key="targets.id", index=True)
-    # engine_id/context_id are immutable historical records: they intentionally
-    # have NO FK so the scan survives deletion of the originating engine/context.
-    # engine_name/context_name are the durable snapshots that keep history intact.
     engine_id: uuid.UUID = Field(index=True)
     engine_name: str = Field(max_length=200)
     context_id: uuid.UUID | None = Field(default=None)

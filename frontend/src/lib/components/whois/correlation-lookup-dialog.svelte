@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { whoisApi } from '$lib/api/whois';
+	import { goto } from '$app/navigation';
+	import { SvelteSet } from 'svelte/reactivity';
 	import type { WhoisCorrelationResult, WhoisRecordSummary } from '$lib/types/whois';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Empty from '$lib/components/ui/empty';
@@ -27,7 +29,11 @@
 
 	let { open = $bindable(), correlationType, correlationValue, onOpenChange }: Props = $props();
 
-	let results = $state<WhoisCorrelationResult[]>([]);
+	function openTarget(value: string) {
+		onOpenChange(false);
+		goto('/targets?q=' + encodeURIComponent(value));
+	}
+
 	let records = $state<WhoisRecordSummary[]>([]);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
@@ -35,64 +41,22 @@
 	let headerEl = $state<HTMLDivElement | null>(null);
 	let scrollHeight = $state(0);
 
-	const TYPE_META: Record<string, { label: string; icon: typeof Globe; color: string }> = {
-		registrant_name: {
-			label: 'Registrant',
-			icon: UserRound,
-			color: 'text-violet-500'
-		},
-		registrant: {
-			label: 'Registrant',
-			icon: UserRound,
-			color: 'text-violet-500'
-		},
-		registrar_name: {
-			label: 'Registrar',
-			icon: Building,
-			color: 'text-blue-500'
-		},
-		registrar: {
-			label: 'Registrar',
-			icon: Building,
-			color: 'text-blue-500'
-		},
-		nameserver: {
-			label: 'Nameserver',
-			icon: Server,
-			color: 'text-cyan-500'
-		},
-		network_cidr: {
-			label: 'Network',
-			icon: Cable,
-			color: 'text-emerald-500'
-		},
-		network: {
-			label: 'Network',
-			icon: Cable,
-			color: 'text-emerald-500'
-		}
+	const TYPE_META: Record<string, { label: string; icon: typeof Globe }> = {
+		registrant_name: { label: 'Registrant', icon: UserRound },
+		registrant: { label: 'Registrant', icon: UserRound },
+		registrar_name: { label: 'Registrar', icon: Building },
+		registrar: { label: 'Registrar', icon: Building },
+		nameserver: { label: 'Nameserver', icon: Server },
+		network_cidr: { label: 'Network', icon: Cable },
+		network: { label: 'Network', icon: Cable }
 	};
 
 	let meta = $derived(
 		TYPE_META[correlationType] ?? {
 			label: correlationType,
-			icon: Globe,
-			color: 'text-muted-foreground'
+			icon: Globe
 		}
 	);
-
-	function getLookupTypeBadgeColor(type: string): string {
-		switch (type) {
-			case 'DOMAIN':
-				return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-			case 'IP':
-				return 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20';
-			case 'ASN':
-				return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20';
-			default:
-				return 'bg-muted text-muted-foreground border-border';
-		}
-	}
 
 	function measureScrollHeight() {
 		if (!headerEl) return;
@@ -108,7 +72,6 @@
 		if (open && correlationType && correlationValue) {
 			loadCorrelation();
 		} else if (!open) {
-			results = [];
 			records = [];
 			error = null;
 			scrollHeight = 0;
@@ -149,8 +112,7 @@
 					data = [];
 			}
 
-			results = data;
-			const seen = new Set<string>();
+			const seen = new SvelteSet<string>();
 			const all: WhoisRecordSummary[] = [];
 			for (const group of data) {
 				for (const r of group.records) {
@@ -170,12 +132,14 @@
 </script>
 
 <Dialog.Root bind:open {onOpenChange}>
-	<Dialog.Content class="max-w-lg max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+	<Dialog.Content
+		class="w-[calc(100%-2rem)] max-w-lg max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden"
+	>
 		<div bind:this={headerEl} class="shrink-0">
 			<Dialog.Header class="px-6 pt-6 pb-4">
 				<div class="flex items-center gap-3">
 					<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
-						<meta.icon class="h-5 w-5 {meta.color}" />
+						<meta.icon class="h-5 w-5 text-foreground" />
 					</div>
 					<div class="min-w-0 flex-1">
 						<Dialog.Title class="text-base font-semibold">
@@ -231,9 +195,18 @@
 							</div>
 
 							<div class="space-y-2">
-								{#each records as record}
+								{#each records as record (record.id)}
 									<div
-										class="rounded-lg border border-border/60 p-3.5 hover:border-border transition-colors space-y-2"
+										role="button"
+										tabindex="0"
+										onclick={() => openTarget(record.query_value)}
+										onkeydown={(e) => {
+											if (e.key === 'Enter' || e.key === ' ') {
+												e.preventDefault();
+												openTarget(record.query_value);
+											}
+										}}
+										class="cursor-pointer rounded-lg border border-border/60 p-3.5 hover:border-border hover:bg-accent/50 transition-colors space-y-2"
 									>
 										<div class="flex items-center justify-between gap-3">
 											<div class="min-w-0 flex-1">
@@ -242,9 +215,8 @@
 														{record.query_value}
 													</span>
 													<Badge
-														class="text-[10px] font-normal border shrink-0 {getLookupTypeBadgeColor(
-															record.lookup_type
-														)}"
+														variant="outline"
+														class="text-[10px] font-normal shrink-0 text-muted-foreground border-border/60"
 													>
 														{record.lookup_type}
 													</Badge>

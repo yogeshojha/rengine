@@ -3,5 +3,6 @@ export enum TaskStatus {
 	QUERYING = 'querying',
 	SUCCESS = 'success',
 	FAILED = 'failed',
-	SKIPPED = 'skipped'
+	SKIPPED = 'skipped',
+	NOT_APPLICABLE = 'not_applicable'
 }

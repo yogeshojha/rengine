@@ -3,11 +3,13 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { page } from '$app/stores';
+	import type { Component } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	type NavItem = {
 		title: string;
 		url: string;
-		icon?: any;
+		icon?: Component;
 		items?: {
 			title: string;
 			url: string;
@@ -28,6 +30,19 @@
 	const hasActiveChild = (items?: { url: string }[]) => {
 		return items?.some((item) => isActive(item.url)) ?? false;
 	};
+
+	const openItems = new SvelteSet<string>();
+	$effect(() => {
+		for (const group of groups) {
+			for (const item of group.items) {
+				if (hasActiveChild(item.items)) openItems.add(item.title);
+			}
+		}
+	});
+	const toggleOpen = (title: string, open: boolean) => {
+		if (open) openItems.add(title);
+		else openItems.delete(title);
+	};
 </script>
 
 {#each groups as group, groupIndex (group.label ?? groupIndex)}
@@ -42,24 +57,34 @@
 		<Sidebar.Menu>
 			{#each group.items as item (item.title)}
 				{#if item.items && item.items.length > 0}
-					<Collapsible.Root open={hasActiveChild(item.items)} class="group/collapsible">
+					<Collapsible.Root
+						open={openItems.has(item.title)}
+						onOpenChange={(open) => toggleOpen(item.title, open)}
+						class="group/collapsible"
+					>
 						{#snippet child({ props })}
 							<Sidebar.MenuItem {...props}>
-								<Collapsible.Trigger>
+								<Sidebar.MenuButton tooltipContent={item.title} isActive={isActive(item.url)}>
 									{#snippet child({ props })}
-										<Sidebar.MenuButton
-											{...props}
-											tooltipContent={item.title}
-											isActive={isActive(item.url) || hasActiveChild(item.items)}
-										>
+										<a href={item.url} {...props}>
 											{#if item.icon}
 												<item.icon class="size-4" />
 											{/if}
 											<span>{item.title}</span>
-											<ChevronRightIcon
-												class="ms-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
-											/>
-										</Sidebar.MenuButton>
+										</a>
+									{/snippet}
+								</Sidebar.MenuButton>
+								<Collapsible.Trigger>
+									{#snippet child({ props })}
+										<Sidebar.MenuAction
+											{...props}
+											class="transition-transform data-[state=open]:rotate-90"
+											aria-label={openItems.has(item.title)
+												? `Collapse ${item.title}`
+												: `Expand ${item.title}`}
+										>
+											<ChevronRightIcon class="size-4" />
+										</Sidebar.MenuAction>
 									{/snippet}
 								</Collapsible.Trigger>
 								<Collapsible.Content>

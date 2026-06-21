@@ -1,14 +1,4 @@
-"""DNS lookup service - main interface for DNS enrichment.
-
-1. Standalone lookup (no DB) - for pipeline use or ad-hoc queries
-2. Persistent lookup (stores in DB, links to target) - post-target-creation enrichment
-3. Correlation queries - "which targets share the same NS/MX/A record?"
-
-The stored records enable cross-target intelligence queries:
-    - Same nameservers? Same MX? Same IP?
-    - CDN detection across targets
-    - SOA correlation for related domains
-"""
+"""DNS lookup service - standalone/persistent lookup plus cross-target correlation queries."""
 
 import uuid
 from collections import Counter
@@ -41,19 +31,7 @@ class DnsxLookupError(DnsxServiceError):
 
 
 class DnsxService:
-    """DNS lookup service with optional DB persistence.
-
-    Used by:
-    - Celery tasks (sync, with DB) for post-target enrichment
-    - Pipeline stages (sync, with DB) for scan-time DNS resolution
-    - Ad-hoc lookups (sync, no DB) for one-off queries for toolbox feature
-
-    Args:
-        timeout: Max seconds for dnsx execution.
-        retry: Number of DNS retry attempts.
-        threads: Concurrent thread count for dnsx.
-        resolvers: Optional list of custom DNS resolvers.
-    """
+    """DNS lookup service with optional DB persistence."""
 
     def __init__(
         self,
@@ -84,20 +62,7 @@ class DnsxService:
         return self._client
 
     def do_recon(self, domain: str) -> DnsxReconResponse:
-        """Run full DNS recon on a single domain.
-
-        Returns parsed DnsxReconResponse with all record types.
-        No DB interaction - pure lookup.
-
-        Args:
-            domain: Domain to query (e.g. "example.com").
-
-        Returns:
-            DnsxReconResponse with all DNS records.
-
-        Raises:
-            DnsxLookupError: If dnsx fails or returns no results.
-        """
+        """Run full DNS recon on a single domain (no DB)."""
         result = self.client.recon(domain)
 
         if not result.success and not result.has_output:
@@ -112,17 +77,7 @@ class DnsxService:
         return parsed[0]
 
     def do_recon_batch(self, domains: list[str]) -> list[DnsxReconResponse]:
-        """Run full DNS recon on multiple domains in one dnsx invocation.
-
-        More efficient than calling do_recon per domain since dnsx
-        handles concurrency internally.
-
-        Args:
-            domains: List of domains to query.
-
-        Returns:
-            List of DnsxReconResponse (may be fewer than input if some fail).
-        """
+        """Run full DNS recon on multiple domains in one dnsx invocation."""
         if not domains:
             return []
 
@@ -139,15 +94,7 @@ class DnsxService:
         domain: str,
         record_types: list[str],
     ) -> DnsxReconResponse:
-        """Run targeted DNS query for specific record types.
-
-        Args:
-            domain: Domain to query.
-            record_types: List of record types (e.g. ["a", "ns", "mx"]).
-
-        Returns:
-            DnsxReconResponse (only queried types will be populated).
-        """
+        """Run targeted DNS query for specific record types."""
         result = self.client.query(domain, record_types=record_types)
 
         if not result.success and not result.has_output:
@@ -162,16 +109,7 @@ class DnsxService:
         return parsed[0]
 
     def do_resolve(self, domains: list[str]) -> list[str]:
-        """Check which domains resolve (have active DNS).
-
-        Useful as a pipeline pre-filter before deeper scanning.
-
-        Args:
-            domains: List of domains to check.
-
-        Returns:
-            List of domains that successfully resolved.
-        """
+        """Check which domains resolve (have active DNS)."""
         result = self.client.resolve(domains)
         return result.output_lines
 
@@ -181,21 +119,7 @@ class DnsxService:
         target_id: uuid.UUID,
         domain: str,
     ) -> DnsLookup:
-        """Run DNS recon and store results linked to a target.
-
-        This is the primary method called by the Celery task.
-
-        Args:
-            session: SQLAlchemy sync session.
-            target_id: Target UUID to link results to.
-            domain: Domain to look up.
-
-        Returns:
-            DnsLookup record with linked DnsRecord rows.
-
-        Raises:
-            DnsxLookupError: If lookup fails.
-        """
+        """Run DNS recon and store results linked to a target."""
         response = self.do_recon(domain)
         return self.store_results(session, target_id, response)
 
@@ -205,18 +129,7 @@ class DnsxService:
         target_id: uuid.UUID,
         response: DnsxReconResponse,
     ) -> DnsLookup:
-        """Store DNS recon results in the database.
-
-        Replaces any existing DnsLookup for this target.
-
-        Args:
-            session: SQLAlchemy sync session.
-            target_id: Target UUID.
-            response: Parsed DNS recon response.
-
-        Returns:
-            Created/updated DnsLookup record.
-        """
+        """Store DNS recon results, replacing any existing DnsLookup for this target."""
         now = utc_now()
 
         target = session.get(Target, target_id)
@@ -227,7 +140,6 @@ class DnsxService:
                 session.flush()
             target.dns_lookup_id = None
 
-        # Create parent lookup record
         lookup = DnsLookup(
             host=response.host,
             status_code=response.status_code,
@@ -241,7 +153,6 @@ class DnsxService:
         session.add(lookup)
         session.flush()
 
-        # Create individual record rows
         db_record_dicts = response.to_db_records()
         for rec_dict in db_record_dicts:
             dns_record = DnsRecord(
@@ -284,12 +195,7 @@ class DnsxService:
         value: str,
         limit: int = MAX_CORRELATION_TARGETS,
     ) -> list[DnsRecord]:
-        """Find all DNS records matching a type and value.
-
-        Example: find_targets_by_record(session, DnsRecordType.NS, "ns1.example.com")
-
-        Returns DnsRecord rows which include target_id for joining.
-        """
+        """Find all DNS records matching a type and value (rows include target_id for joining)."""
         result = session.execute(
             select(DnsRecord)
             .where(DnsRecord.record_type == record_type)
@@ -359,10 +265,7 @@ class DnsxService:
         record_type: DnsRecordType,
         limit: int = MAX_CORRELATION_TARGETS,
     ) -> list[tuple[str, int]]:
-        """Get value counts for a record type, ordered by frequency.
-
-        Useful for "top 10 nameservers across all targets" type queries.
-        """
+        """Get value counts for a record type, ordered by frequency."""
         result = session.execute(
             select(DnsRecord.value, func.count(DnsRecord.target_id).label("count"))
             .where(DnsRecord.record_type == record_type)

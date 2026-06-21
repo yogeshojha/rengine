@@ -8,9 +8,11 @@
 		hasFilters: boolean;
 		onAddTarget: () => void;
 		onClearFilters?: () => void;
+		onImport?: () => void;
+		filterSummary?: string;
 	}
 
-	let { hasFilters, onAddTarget, onClearFilters }: Props = $props();
+	let { hasFilters, onAddTarget, onClearFilters, onImport, filterSummary }: Props = $props();
 </script>
 
 <Empty.Root>
@@ -22,10 +24,13 @@
 				<CrosshairIcon />
 			{/if}
 		</Empty.Media>
-		<Empty.Title></Empty.Title>
+		<Empty.Title>{hasFilters ? 'No matching targets' : 'No targets yet'}</Empty.Title>
 		<Empty.Description>
 			{#if hasFilters}
 				No targets match the current filters.
+				{#if filterSummary}
+					<p class="mt-1 text-xs">Filtered by: {filterSummary}</p>
+				{/if}
 			{:else}
 				<p>
 					Get started by adding your first target. Targets are the domains, IPs, and other assets
@@ -41,15 +46,20 @@
 				<Button variant="outline" onclick={onClearFilters}>Clear Filters</Button>
 			{:else}
 				<Button onclick={onAddTarget}>Add new Target</Button>
-				<!-- TODO: Import functionality -->
-				<Button variant="outline">Import Target</Button>
+				{#if onImport}
+					<Button variant="outline" onclick={onImport}>Import Target</Button>
+				{/if}
 			{/if}
 		</div>
 	</Empty.Content>
-	<Button variant="link" class="text-muted-foreground" size="sm">
-		<!-- TODO: Update link -->
-		<a href="https://rengine.wiki">
-			Learn More <ArrowUpRightIcon class="inline" />
-		</a>
+	<Button
+		href="https://rengine.wiki"
+		target="_blank"
+		rel="noreferrer"
+		variant="link"
+		class="text-muted-foreground"
+		size="sm"
+	>
+		Learn More <ArrowUpRightIcon class="inline" />
 	</Button>
 </Empty.Root>

@@ -33,18 +33,23 @@
 	let searchValue = $state('');
 	let showColorPicker = $state(false);
 	let selectedColor = $state('#6366f1');
+	let colorPickerEl = $state<HTMLDivElement | null>(null);
+
+	$effect(() => {
+		if (showColorPicker) colorPickerEl?.focus();
+	});
 
 	const presetColors = [
-		'#ef4444', // red
-		'#f97316', // orange
-		'#eab308', // yellow
-		'#22c55e', // green
-		'#14b8a6', // teal
-		'#3b82f6', // blue
-		'#6366f1', // indigo
-		'#a855f7', // purple
-		'#ec4899', // pink
-		'#64748b' // slate
+		'#ef4444',
+		'#f97316',
+		'#eab308',
+		'#22c55e',
+		'#14b8a6',
+		'#3b82f6',
+		'#6366f1',
+		'#a855f7',
+		'#ec4899',
+		'#64748b'
 	];
 
 	let filteredItems = $derived(
@@ -81,13 +86,26 @@
 	function handleCancelCreate() {
 		showColorPicker = false;
 	}
+
+	function handleSearchKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter' && showCreateOption) {
+			e.preventDefault();
+			handleStartCreate();
+		}
+	}
+
+	function handleColorKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			handleConfirmCreate();
+		}
+	}
 </script>
 
 <div class="space-y-2">
-	<!-- Selected Tags as Chips -->
 	{#if selected.length > 0}
 		<div class="flex flex-wrap gap-1.5">
-			{#each selected as item}
+			{#each selected as item (item.id)}
 				<Badge
 					variant="secondary"
 					class="gap-1.5 pr-1 font-normal border"
@@ -107,7 +125,6 @@
 		</div>
 	{/if}
 
-	<!-- Combobox -->
 	<Popover.Root bind:open>
 		<Popover.Trigger class="w-full">
 			{#snippet child({ props })}
@@ -124,13 +141,20 @@
 		</Popover.Trigger>
 		<Popover.Content class="w-[--radix-popover-trigger-width] p-0" align="start">
 			{#if showColorPicker}
-				<!-- Color Picker View -->
-				<div class="p-3 space-y-3">
+				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+				<div
+					bind:this={colorPickerEl}
+					class="p-3 space-y-3"
+					role="group"
+					aria-label="Pick a color for {searchValue}"
+					tabindex="-1"
+					onkeydown={handleColorKeydown}
+				>
 					<div class="flex items-center justify-between">
 						<span class="text-sm font-medium">Pick a color for "{searchValue}"</span>
 					</div>
 					<div class="flex flex-wrap gap-2">
-						{#each presetColors as color}
+						{#each presetColors as color (color)}
 							<button
 								type="button"
 								class="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 {selectedColor ===
@@ -156,9 +180,8 @@
 					</div>
 				</div>
 			{:else}
-				<!-- Search View -->
 				<Command.Root shouldFilter={false}>
-					<Command.Input {placeholder} bind:value={searchValue} />
+					<Command.Input {placeholder} bind:value={searchValue} onkeydown={handleSearchKeydown} />
 					<Command.List>
 						<Command.Empty>
 							{#if !showCreateOption}
@@ -166,7 +189,7 @@
 							{/if}
 						</Command.Empty>
 						<Command.Group>
-							{#each filteredItems as item}
+							{#each filteredItems as item (item.id)}
 								<Command.Item
 									value={item.id}
 									onSelect={() => handleSelect(item)}

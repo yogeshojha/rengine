@@ -2,6 +2,8 @@ import uuid
 import uuid as uuid_pkg
 from datetime import datetime
 
+from sqlalchemy import Column
+from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 from shared.utils.datetime import utc_now
@@ -19,12 +21,15 @@ class UserBase(SQLModel):
 
 
 class User(UserBase, table=True):
-    """User database model."""
-
     __tablename__ = "users"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    totp_secret_encrypted: str | None = Field(default=None)
+    totp_enabled: bool = Field(default=False)
+    totp_backup_codes: list | None = Field(
+        default=None, sa_column=Column(JSON, nullable=True)
+    )
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime | None = Field(default=None)
 
@@ -37,5 +42,11 @@ class UserCreate(SQLModel):
 
 class UserRead(UserBase):
     id: uuid_pkg.UUID
+    totp_enabled: bool = False
     created_at: datetime
     updated_at: datetime | None = None
+
+
+class UserSummary(SQLModel):
+    id: uuid_pkg.UUID
+    username: str

@@ -16,10 +16,22 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"  # noqa: S105
 
 
+class LoginResponse(BaseModel):
+    mfa_required: bool = False
+    mfa_token: str | None = None
+    access_token: str | None = None
+    refresh_token: str | None = None
+    token_type: str = "bearer"  # noqa: S105
+
+
+class TwoFactorLoginRequest(BaseModel):
+    mfa_token: str
+    code: str
+
+
 class PasswordChangeRequest(BaseModel):
-    # If None, change password for the current user; super user can change password for any user
     user_id: UUID | None = None
-    current_password: str | None = None  # required for non super user
+    current_password: str | None = None
     new_password: str
 
     @field_validator("new_password")
@@ -29,7 +41,6 @@ class PasswordChangeRequest(BaseModel):
 
 
 class UsernameChangeRequest(BaseModel):
-    # If None, change own username; superuser can specify user_id
     user_id: UUID | None = None
     new_username: str = Field(max_length=50)
 

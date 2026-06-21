@@ -2,7 +2,7 @@
 	import { ExternalLink } from 'lucide-svelte';
 
 	type ImportType = 'text' | 'json' | 'csv';
-	export let type: ImportType;
+	let { type }: { type: ImportType } = $props();
 </script>
 
 <p class="text-xs text-muted-foreground">

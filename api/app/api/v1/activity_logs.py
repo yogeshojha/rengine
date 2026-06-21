@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.models.activity_log import ActivityLog, ActivityLogRead
@@ -35,13 +35,6 @@ async def list_activity_logs(
         ActivityEvent | None, Query(description="Filter by event type")
     ] = None,
 ):
-    """List activity log entries with optional filters.
-
-    Scope is determined by filters:
-      - target_id -> target-level activity
-      - project_id (no target_id) -> project-level activity
-      - no filters -> all activity (system-wide)
-    """
     query = select(ActivityLog)
 
     if target_id:
@@ -62,7 +55,7 @@ async def list_activity_logs(
 
 @router.delete("", response_model=ActivityDeleteResponse)
 async def delete_activity_logs(
-    _current_user: CurrentUser,
+    _current_user: CurrentSuperuser,
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: Annotated[
         str | None, Query(description="Delete logs for a specific project")
@@ -77,10 +70,6 @@ async def delete_activity_logs(
         ActivityEvent | None, Query(description="Delete logs of a specific event type")
     ] = None,
 ):
-    """Delete activity log entries matching the given filters.
-
-    At least one filter is required to prevent accidental full wipes.
-    """
     if not project_id and not target_id and not level and not event_type:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -100,7 +89,6 @@ async def delete_activity_logs(
     if event_type:
         stmt = stmt.where(ActivityLog.event_type == event_type)
 
-    # count before delete
     count_query = select(func.count()).select_from(ActivityLog)
     if target_id:
         count_query = count_query.where(ActivityLog.target_id == target_id)

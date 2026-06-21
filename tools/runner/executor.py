@@ -1,19 +1,4 @@
-"""Generic CLI tool executor for various recon tools.
-
-Handles subprocess lifecycle, temp file management, input/output piping,
-JSONL parsing, timeouts, and cleanup. Designed to be wrapped by
-tool-specific clients (dnsx, nuclei, etc.).
-
-TODO: keep improving this as more tools are integrated, but it should cover most common patterns.
-Usage:
-    runner = CLIToolRunner("dnsx")
-    result = runner.run(
-        args=["-a", "-aaaa", "-resp"],
-        input_data=["example.com", "google.com"],
-        output_format=OutputFormat.JSONL,
-        json_flag="-json",
-    )
-"""
+"""Generic CLI tool executor wrapped by tool-specific clients (dnsx, nuclei, etc.)."""
 
 import contextlib
 import json
@@ -39,21 +24,7 @@ class ToolExecutionError(Exception):
 
 
 class CLIToolRunner:
-    """Generic CLI tool executor.
-
-    Manages the full lifecycle of running a CLI tool:
-    1. Validates binary exists in PATH
-    2. Writes input data to temp file if provided
-    3. Builds command with args, input/output flags
-    4. Runs subprocess with timeout
-    5. Reads output from file or stdout
-    6. Parses output (JSONL or plain text)
-    7. Cleans up all temp files
-
-    Args:
-        binary: Name of the CLI tool binary (e.g. "dnsx", "subfinder", "katana, etc").
-        default_timeout: Default timeout in seconds for tool execution.
-    """
+    """Generic CLI tool executor managing the full run lifecycle (validate, run, parse, cleanup)."""
 
     def __init__(self, binary: str, default_timeout: int = 300) -> None:
         self.binary = binary
@@ -88,33 +59,7 @@ class CLIToolRunner:
         silent: bool = True,
         silent_flag: str = "-silent",
     ) -> ToolResult:
-        """Execute the CLI tool and return parsed results.
-
-        Args:
-            args: CLI arguments to pass to the tool.
-            input_data: Input to feed the tool. Can be:
-                - A string (single value, written to temp file or piped to stdin)
-                - A list of strings (one per line, written to temp file or piped)
-                - None (no input)
-            input_flag: CLI flag for input file (e.g. "-l", "-list", "-target").
-            use_stdin: If True, pipe input via stdin instead of temp file.
-                When False (default), writes to temp file and passes via input_flag.
-            use_output_file: If True, captures output via temp file using output_flag.
-                When False, captures stdout directly.
-            output_flag: CLI flag for output file (e.g. "-o", "-output").
-            output_format: Expected output format (JSONL or PLAIN).
-            json_flag: CLI flag to enable JSON output (e.g. "-json", "-j").
-            timeout: Max seconds to wait. Defaults to self.default_timeout.
-            env: Additional environment variables for the subprocess.
-            silent: If True, adds silent_flag to suppress banner/noise.
-            silent_flag: CLI flag for silent mode (e.g. "-silent", "-s").
-
-        Returns:
-            ToolResult with parsed output and execution metadata.
-
-        Raises:
-            ToolExecutionError: On unexpected failures (not tool errors).
-        """
+        """Execute the CLI tool and return parsed results."""
         timeout = timeout or self.default_timeout
         args = list(args) if args else []
 

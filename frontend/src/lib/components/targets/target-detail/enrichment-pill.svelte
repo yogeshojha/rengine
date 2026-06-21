@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { TaskStatus } from '$lib/types/task-status';
-	import { getTaskStatusConfig } from '$lib/config/task-status';
-	import { getFreshnessLevel, getFreshnessColors, relativeTime } from '$lib/utilities/dates';
+	import { getFreshnessLevel, relativeTime } from '$lib/utilities/dates';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import { TriangleAlert } from 'lucide-svelte';
 
 	interface Props {
 		label: string;
@@ -12,53 +13,42 @@
 
 	let { label, status, queriedAt = null }: Props = $props();
 
-	const pillState = $derived.by(() => {
-		const statusConfig = getTaskStatusConfig(status);
+	const isStale = $derived(status === TaskStatus.SUCCESS && getFreshnessLevel(queriedAt) === 'stale');
 
-		if (status !== TaskStatus.SUCCESS) {
-			return {
-				dotClass: statusConfig.dotClass,
-				textClass: statusConfig.textClass,
-				borderClass: statusConfig.borderClass,
-				timeText: statusConfig.label,
-				tooltip: `${label}: ${statusConfig.label}`
-			};
+	const state = $derived.by(() => {
+		switch (status) {
+			case TaskStatus.FAILED:
+				return { dot: 'bg-destructive/70', time: 'Failed', tip: 'Enrichment failed' };
+			case TaskStatus.QUERYING:
+				return { dot: 'bg-chart-1/60 animate-pulse', time: 'Running', tip: 'Enrichment in progress' };
+			case TaskStatus.PENDING:
+				return { dot: 'bg-amber-500/50 animate-pulse', time: 'Queued', tip: 'Enrichment queued' };
+			case TaskStatus.SKIPPED:
+				return { dot: 'bg-muted-foreground/20', time: 'Skipped', tip: 'Not applicable' };
+			default: {
+				const t = queriedAt ? relativeTime(queriedAt) : '';
+				return {
+					dot: isStale ? 'bg-amber-500/60' : 'bg-muted-foreground/30',
+					time: t,
+					tip: t ? `Refreshed ${t}${isStale ? ' — consider refreshing' : ''}` : 'Completed'
+				};
+			}
 		}
-
-		const freshness = getFreshnessLevel(queriedAt);
-		const colors = getFreshnessColors(freshness);
-		const time = relativeTime(queriedAt);
-
-		return {
-			dotClass: colors.dot,
-			textClass: colors.text,
-			borderClass: colors.border,
-			timeText: time,
-			tooltip: `${label}: Refreshed ${time}${freshness === 'stale' ? ' — consider refreshing' : ''}`
-		};
 	});
-
-	const isStale = $derived(
-		status === TaskStatus.SUCCESS && getFreshnessLevel(queriedAt) === 'stale'
-	);
 </script>
 
 <Tooltip.Root>
 	<Tooltip.Trigger>
-		<div
-			class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition-colors {pillState.borderClass}"
-		>
-			<div class="h-1.5 w-1.5 rounded-full shrink-0 {pillState.dotClass}"></div>
-			<span class="text-[11px] font-medium {pillState.textClass}">
-				{label}
-			</span>
-			<span class="text-[11px] text-muted-foreground">· {pillState.timeText}</span>
-			{#if isStale}
-				<span class="text-[10px] text-amber-600 dark:text-amber-400 font-medium">⚠</span>
-			{/if}
-		</div>
+		{#snippet child({ props })}
+			<Badge {...props} variant="outline" class="gap-1.5 border-border/60 font-normal">
+				<span class="h-1.5 w-1.5 shrink-0 rounded-full {state.dot}"></span>
+				<span class="text-[11px] font-medium text-foreground/80">{label}</span>
+				{#if state.time}<span class="text-[11px] text-muted-foreground">· {state.time}</span>{/if}
+				{#if isStale}<TriangleAlert class="h-3 w-3 text-amber-600 dark:text-amber-500" />{/if}
+			</Badge>
+		{/snippet}
 	</Tooltip.Trigger>
 	<Tooltip.Content>
-		<p class="text-xs">{pillState.tooltip}</p>
+		<p class="text-xs">{label}: {state.tip}</p>
 	</Tooltip.Content>
 </Tooltip.Root>

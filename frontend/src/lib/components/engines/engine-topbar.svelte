@@ -4,8 +4,16 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import { ArrowLeft, Save, Copy, Trash2, Download, LayoutGrid, Code2, Loader2, Pencil, Play, Plus } from 'lucide-svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { ArrowLeft, Save, Copy, Trash2, Download, LayoutGrid, Code2, Loader2, Pencil, FlaskConical, Plus, MoreHorizontal } from 'lucide-svelte';
 	import type { ScanEngine, Intensity } from '$lib/types/engine';
+
+	const intensityHelp: Record<Intensity, string> = {
+		passive: 'No active probing — lowest footprint, stealthiest, fewest findings.',
+		normal: 'Balanced active scanning — standard rate limits and tool coverage.',
+		aggressive: 'Maximum coverage — higher rate, noisier, most thorough but detectable.'
+	};
 
 	interface Props {
 		engine: ScanEngine | null;
@@ -112,17 +120,33 @@
 	</div>
 
 	<!-- Center: intensity -->
-	<Tabs.Root
-		value={engine?.intensity}
-		onValueChange={(v) => onIntensityChange?.(v as Intensity)}
-		class="flex-row"
-	>
-		<Tabs.List class="h-8">
-			<Tabs.Trigger value="passive" class="text-xs px-3">Passive</Tabs.Trigger>
-			<Tabs.Trigger value="normal" class="text-xs px-3">Normal</Tabs.Trigger>
-			<Tabs.Trigger value="aggressive" class="text-xs px-3">Aggressive</Tabs.Trigger>
-		</Tabs.List>
-	</Tabs.Root>
+	<Tooltip.Provider delayDuration={150}>
+		<div class="intensity-group">
+			<span class="intensity-label">Intensity</span>
+			<Tabs.Root
+				value={engine?.intensity}
+				onValueChange={(v) => onIntensityChange?.(v as Intensity)}
+				class="flex-row"
+			>
+				<Tabs.List class="h-8">
+					{#each ['passive', 'normal', 'aggressive'] as const as level (level)}
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								{#snippet child({ props })}
+									<Tabs.Trigger {...props} value={level} class="text-xs px-3 capitalize">
+										{level}
+									</Tabs.Trigger>
+								{/snippet}
+							</Tooltip.Trigger>
+							<Tooltip.Content class="max-w-[220px] text-xs">
+								{intensityHelp[level]}
+							</Tooltip.Content>
+						</Tooltip.Root>
+					{/each}
+				</Tabs.List>
+			</Tabs.Root>
+		</div>
+	</Tooltip.Provider>
 
 	<!-- Right: view toggle + actions -->
 	<div class="topbar-right">
@@ -156,18 +180,28 @@
 			onclick={() => onTogglePreview?.()}
 			class="gap-1.5 h-7 text-xs"
 		>
-			<Play size={14} />
-			{previewMode ? 'Exit Preview' : 'Preview Run'}
+			<FlaskConical size={14} />
+			{previewMode ? 'Exit dry run' : 'Dry run'}
 		</Button>
 
-		<Separator orientation="vertical" class="data-[orientation=vertical]:h-[18px]" />
+		<Separator orientation="vertical" class="hidden sm:block data-[orientation=vertical]:h-[18px]" />
 
-		<Button variant="outline" size="sm" onclick={() => onExportYaml?.()} class="gap-1.5 h-7 text-xs">
+		<Button
+			variant="outline"
+			size="sm"
+			onclick={() => onExportYaml?.()}
+			class="hidden sm:inline-flex gap-1.5 h-7 text-xs"
+		>
 			<Download size={13} />
 			Export
 		</Button>
 
-		<Button variant="outline" size="sm" onclick={() => onDuplicate?.()} class="gap-1.5 h-7 text-xs">
+		<Button
+			variant="outline"
+			size="sm"
+			onclick={() => onDuplicate?.()}
+			class="hidden sm:inline-flex gap-1.5 h-7 text-xs"
+		>
 			<Copy size={13} />
 			Duplicate
 		</Button>
@@ -197,21 +231,55 @@
 				variant="ghost"
 				size="icon-sm"
 				onclick={() => onDelete?.()}
-				class="text-muted-foreground hover:text-destructive h-7 w-7"
+				class="hidden sm:inline-flex text-muted-foreground hover:text-destructive h-7 w-7"
 			>
 				<Trash2 size={14} />
 			</Button>
 		{/if}
+
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button
+						{...props}
+						variant="ghost"
+						size="icon-sm"
+						class="sm:hidden h-7 w-7 text-muted-foreground"
+						aria-label="More actions"
+					>
+						<MoreHorizontal size={15} />
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end" class="w-40">
+				<DropdownMenu.Item onclick={() => onExportYaml?.()} class="gap-2">
+					<Download size={14} />
+					Export
+				</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => onDuplicate?.()} class="gap-2">
+					<Copy size={14} />
+					Duplicate
+				</DropdownMenu.Item>
+				{#if engine?.id}
+					<DropdownMenu.Separator />
+					<DropdownMenu.Item onclick={() => onDelete?.()} class="gap-2 text-destructive">
+						<Trash2 size={14} />
+						Delete
+					</DropdownMenu.Item>
+				{/if}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
 	</div>
 </div>
 
 <style>
 	.topbar {
-		height: 52px;
+		min-height: 52px;
 		display: flex;
 		align-items: center;
+		flex-wrap: wrap;
 		gap: 10px;
-		padding: 0 14px;
+		padding: 8px 14px;
 		border-bottom: 1px solid var(--border);
 		background: var(--card);
 		flex-shrink: 0;
@@ -242,7 +310,21 @@
 		white-space: nowrap;
 	}
 
-	/* Save dirty-dot */
+	.intensity-group {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.intensity-label {
+		font-size: 11px;
+		font-weight: 500;
+		color: var(--muted-foreground);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		white-space: nowrap;
+	}
+
 	.save-wrap {
 		position: relative;
 		display: flex;
@@ -261,11 +343,11 @@
 		pointer-events: none;
 	}
 
-	/* Right section */
 	.topbar-right {
 		display: flex;
 		align-items: center;
+		flex-wrap: wrap;
 		gap: 6px;
-		flex-shrink: 0;
+		margin-left: auto;
 	}
 </style>

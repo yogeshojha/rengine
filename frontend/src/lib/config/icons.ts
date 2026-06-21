@@ -1,6 +1,3 @@
-/**
- * icon mappings for target types and lookup types.
- */
 import { TargetType } from '$lib/types/target';
 import { Globe, MapPin, Network, Hash, Building2, Link2, Server } from 'lucide-svelte';
 

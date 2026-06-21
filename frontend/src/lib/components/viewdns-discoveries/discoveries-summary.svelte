@@ -10,12 +10,9 @@
 		ReverseIPResponse,
 		ReverseNSResponse
 	} from '$lib/types/viewdns';
-	import {
-		DISCOVERY_SOURCE_LABELS,
-		DISCOVERY_SOURCE_DESCRIPTIONS,
-		DISCOVERY_SOURCE_COLORS
-	} from '$lib/types/viewdns';
+	import { DISCOVERY_SOURCE_LABELS, DISCOVERY_SOURCE_DESCRIPTIONS } from '$lib/types/viewdns';
 	import { TargetType } from '$lib/types/target';
+	import { relativeTime } from '$lib/utilities/dates';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Badge } from '$lib/components/ui/badge';
@@ -36,6 +33,7 @@
 		ArrowRight
 	} from 'lucide-svelte';
 	import { goto } from '$app/navigation';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		targetValue: string;
@@ -45,9 +43,7 @@
 		onOpenTargetSummary?: () => void;
 	}
 
-	let { targetValue, targetId, targetType, whoisRecord }: Props = $props();
-
-	// --- Types ---
+	let { targetValue, targetId, targetType, whoisRecord, onOpenTargetSummary }: Props = $props();
 
 	interface SourceResult {
 		source: DiscoverySourceType;
@@ -57,8 +53,6 @@
 		newDomains: string[];
 		fetch: (q: string, cachedOnly: boolean) => Promise<ViewDNSCacheRead | null>;
 	}
-
-	// --- State ---
 
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
@@ -74,8 +68,6 @@
 
 	const PREVIEW_LIMIT = 15;
 
-	// --- Derived ---
-
 	let existingTargetValues = $derived(
 		new Set(targetsStore.targets.map((t) => t.target_value.toLowerCase()))
 	);
@@ -84,9 +76,8 @@
 
 	let totalNew = $derived(sourceResults.reduce((sum, s) => sum + s.newDomains.length, 0));
 
-	// Deduplicated new domains across all sources for preview
 	let previewDomains = $derived.by(() => {
-		const seen = new Set<string>();
+		const seen = new SvelteSet<string>();
 		const result: { domain: string; sources: DiscoverySourceType[] }[] = [];
 
 		for (const sr of sourceResults) {
@@ -114,8 +105,6 @@
 		reverse_ip: Server,
 		reverse_ns: Globe
 	};
-
-	// --- Plan lookups ---
 
 	function planLookups(): {
 		source: DiscoverySourceType;
@@ -160,8 +149,6 @@
 
 		return lookups;
 	}
-
-	// --- Load cached data ---
 
 	$effect(() => {
 		void targetValue;
@@ -235,8 +222,6 @@
 		}
 	}
 
-	// --- Enrichment ---
-
 	function handleEnrich(source: DiscoverySourceType, queryValue: string) {
 		enrichSource = source;
 		enrichQuery = queryValue;
@@ -279,11 +264,12 @@
 		}
 	}
 
-	// --- Add as target ---
-
 	async function handleAddTarget(domain: string) {
 		const projectSlug = projectsStore.activeProject?.slug;
-		if (!projectSlug) return;
+		if (!projectSlug) {
+			toast.error('Select a project first');
+			return;
+		}
 
 		addingDomains = new Set([...addingDomains, domain]);
 
@@ -299,7 +285,7 @@
 		} catch {
 			toast.error(`Failed to add ${domain}`);
 		} finally {
-			const next = new Set(addingDomains);
+			const next = new SvelteSet(addingDomains);
 			next.delete(domain);
 			addingDomains = next;
 		}
@@ -307,9 +293,12 @@
 
 	async function handleAddAllNew() {
 		const projectSlug = projectsStore.activeProject?.slug;
-		if (!projectSlug) return;
+		if (!projectSlug) {
+			toast.error('Select a project first');
+			return;
+		}
 
-		const allNew = new Set<string>();
+		const allNew = new SvelteSet<string>();
 		for (const sr of sourceResults) {
 			for (const d of sr.newDomains) {
 				if (!addedDomains.has(d.toLowerCase())) {
@@ -320,6 +309,7 @@
 
 		if (allNew.size === 0) return;
 
+		const total = allNew.size;
 		let added = 0;
 		for (const domain of allNew) {
 			addingDomains = new Set([...addingDomains, domain]);
@@ -333,35 +323,26 @@
 					added++;
 				}
 			} catch {
-				// continue with others
 			} finally {
-				const next = new Set(addingDomains);
+				const next = new SvelteSet(addingDomains);
 				next.delete(domain);
 				addingDomains = next;
 			}
 		}
 
-		if (added > 0) {
+		const failed = total - added;
+		if (added === total) {
 			toast.success(`Added ${added} target${added !== 1 ? 's' : ''}`);
-		}
-	}
-
-	function formatTimeAgo(dateStr: string | null): string {
-		if (!dateStr) return '';
-		try {
-			const diffMs = Date.now() - new Date(dateStr).getTime();
-			const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-			if (diffDays === 0) return 'today';
-			if (diffDays === 1) return '1 day ago';
-			if (diffDays < 30) return `${diffDays}d ago`;
-			return `${Math.floor(diffDays / 30)}mo ago`;
-		} catch {
-			return '';
+		} else if (added > 0) {
+			toast.warning(`Added ${added} of ${total}; ${failed} failed`);
+		} else {
+			toast.error('Could not add domains — they may already exist or your ViewDNS quota is exhausted');
 		}
 	}
 
 	function handleOpenTargetSummary() {
-		goto(`/targets/${targetId}`);
+		if (onOpenTargetSummary) onOpenTargetSummary();
+		else goto(`/targets/${targetId}`);
 	}
 </script>
 
@@ -404,10 +385,9 @@
 	</Empty.Root>
 {:else}
 	<div class="space-y-5 py-1">
-		<!-- Summary -->
 		{#if totalDiscovered > 0}
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
-				<Sparkles class="h-4 w-4 text-amber-500" />
+				<Sparkles class="h-4 w-4 text-muted-foreground" />
 				<span>
 					<span class="font-semibold text-foreground">{totalDiscovered.toLocaleString()}</span>
 					discovered {totalDiscovered === 1 ? 'domain' : 'domains'}
@@ -421,16 +401,14 @@
 			</div>
 		{/if}
 
-		<!-- Source cards -->
 		<div class="space-y-2">
 			{#each sourceResults as sr (sr.source + ':' + sr.queryValue)}
-				{@const colors = DISCOVERY_SOURCE_COLORS[sr.source]}
 				{@const Icon = SOURCE_ICONS[sr.source]}
 				<div class="rounded-lg border border-border/60 p-3">
 					<div class="flex items-center justify-between gap-3">
 						<div class="flex items-center gap-2.5 min-w-0">
-							<div class="flex items-center justify-center h-8 w-8 rounded-md shrink-0 {colors.bg}">
-								<Icon class="h-4 w-4 {colors.text}" />
+							<div class="flex items-center justify-center h-8 w-8 rounded-md shrink-0 bg-muted/60">
+								<Icon class="h-4 w-4 text-muted-foreground" />
 							</div>
 							<div class="min-w-0">
 								<div class="flex items-center gap-2">
@@ -442,7 +420,10 @@
 											{sr.domains.length.toLocaleString()} domains
 										</Badge>
 										{#if sr.newDomains.length > 0}
-											<Badge class="text-[10px] h-5 px-1.5 font-normal border {colors.badge}">
+											<Badge
+												variant="outline"
+												class="text-[10px] h-5 px-1.5 font-normal text-chart-1 border-chart-1/30"
+											>
 												{sr.newDomains.length.toLocaleString()} new
 											</Badge>
 										{/if}
@@ -452,7 +433,7 @@
 									{#if sr.cache}
 										via <span class="font-mono">{sr.queryValue}</span>
 										{#if sr.cache.queried_at}
-											· fetched {formatTimeAgo(sr.cache.queried_at)}
+											· fetched {relativeTime(sr.cache.queried_at)}
 										{/if}
 									{:else}
 										{DISCOVERY_SOURCE_DESCRIPTIONS[sr.source]}
@@ -477,7 +458,6 @@
 			{/each}
 		</div>
 
-		<!-- Preview: top new domains -->
 		{#if previewDomains.length > 0}
 			<div class="space-y-2">
 				<p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -490,18 +470,26 @@
 						<div class="flex items-center justify-between gap-3 px-3 py-2 group">
 							<div class="flex items-center gap-2 min-w-0">
 								<span class="text-sm font-mono truncate">{domain}</span>
-								{#each sources as source}
-									{@const c = DISCOVERY_SOURCE_COLORS[source]}
-									<Badge class="text-[10px] font-normal border shrink-0 h-4 px-1 {c.badge}">
-										{source === 'reverse_whois' ? 'W' : source === 'reverse_ip' ? 'IP' : 'NS'}
-									</Badge>
+								{#each sources as source (source)}
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											{#snippet child({ props })}
+												<Badge
+													{...props}
+													variant="outline"
+													class="text-[10px] font-normal shrink-0 h-4 px-1 text-muted-foreground border-border/60 cursor-default"
+												>
+													{source === 'reverse_whois' ? 'W' : source === 'reverse_ip' ? 'IP' : 'NS'}
+												</Badge>
+											{/snippet}
+										</Tooltip.Trigger>
+										<Tooltip.Content>Found via {DISCOVERY_SOURCE_LABELS[source]}</Tooltip.Content>
+									</Tooltip.Root>
 								{/each}
 							</div>
 							<div class="shrink-0">
 								{#if isAdded}
-									<span
-										class="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400"
-									>
+									<span class="flex items-center gap-1 text-[11px] text-muted-foreground">
 										<Check class="h-3 w-3" />
 										Added
 									</span>
@@ -515,7 +503,7 @@
 													{...props}
 													variant="ghost"
 													size="icon"
-													class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+													class="h-6 w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
 													onclick={() => handleAddTarget(domain)}
 												>
 													<Plus class="h-3 w-3" />
@@ -537,7 +525,6 @@
 			</div>
 		{/if}
 
-		<!-- Bulk add action -->
 		{#if totalNew > 0}
 			<Button variant="outline" class="w-full gap-2 text-sm" onclick={handleAddAllNew}>
 				<Plus class="h-4 w-4" />
@@ -545,7 +532,6 @@
 			</Button>
 		{/if}
 
-		<!-- Footer: navigate to target summary page -->
 		<button
 			type="button"
 			class="w-full rounded-lg border border-dashed border-border/50 bg-muted/20 px-4 py-3 text-left hover:bg-muted/40 hover:border-border transition-colors group cursor-pointer"

@@ -1,12 +1,10 @@
 const SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
-class ApiClient {
-	private baseUrl = '/api/v1';
+export const API_PREFIX = '/api/v1';
 
-	/**
-	 * Shared refresh promise — all concurrent 401s wait on the same refresh attempt
-	 * rather than each firing their own, preventing token thrashing.
-	 */
+class ApiClient {
+	private baseUrl = API_PREFIX;
+
 	private refreshPromise: Promise<boolean> | null = null;
 
 	private async request<T>(
@@ -43,17 +41,10 @@ class ApiClient {
 		return response.json();
 	}
 
-	/**
-	 * Auth endpoints (login, refresh, logout) must never trigger a refresh loop.
-	 */
 	private isAuthEndpoint(endpoint: string): boolean {
 		return endpoint.startsWith('/auth/');
 	}
 
-	/**
-	 * Attempt a single token refresh. Concurrent callers share the same promise
-	 * so only one HTTP request is made regardless of how many requests got 401.
-	 */
 	private async tryRefresh(): Promise<boolean> {
 		if (this.refreshPromise) {
 			return this.refreshPromise;

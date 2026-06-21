@@ -1,5 +1,3 @@
-"""Detection of privacy-protected / redacted WHOIS values."""
-
 import re
 
 _WHITESPACE_RE = re.compile(r"\s+")

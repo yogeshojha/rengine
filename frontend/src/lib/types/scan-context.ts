@@ -5,19 +5,14 @@ export const MULTIPLIERS = [0.5, 1.0, 2.0] as const;
 
 export type AuthType = (typeof AUTH_TYPES)[number];
 export type HttpProtocol = (typeof HTTP_PROTOCOLS)[number];
-export type RateTool = (typeof VALID_RATE_TOOLS)[number];
-export type Multiplier = (typeof MULTIPLIERS)[number];
 
-export const MASK = '••••••••';
+export { MASK } from '$lib/constants';
 
 export interface AuthHeader {
 	name: string;
 	value: string;
 }
 
-// Secrets (bearer_token, basic_password, header_value, cookie_value, api_key_value)
-// arrive masked as MASK from the backend Read; secret inputs load empty and only
-// send a value when the user types a new one.
 export interface AuthConfig {
 	auth_type: string;
 	bearer_token: string | null;
@@ -50,6 +45,7 @@ export interface ScanContextRead {
 	included_subdomains: string[];
 	follow_redirects_override: boolean | null;
 	http_protocol: HttpProtocol;
+	proxy_id: string | null;
 	compare_baseline_scan_id: string | null;
 	scan_only_new_assets: boolean;
 	created_at: string;
@@ -105,6 +101,7 @@ export function DEFAULT_SCAN_CONTEXT(): ScanContextCreate {
 		included_subdomains: [],
 		follow_redirects_override: null,
 		http_protocol: 'both',
+		proxy_id: null,
 		compare_baseline_scan_id: null,
 		scan_only_new_assets: false
 	};

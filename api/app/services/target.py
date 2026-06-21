@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import Select, func, select
 from sqlalchemy import delete as sa_delete
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -84,8 +85,6 @@ DNS_ELIGIBLE_TYPES = {TargetType.DOMAIN, TargetType.URL}
 
 @dataclass
 class BulkTargetResult:
-    """Result of processing a single target in bulk operations."""
-
     import_result: TargetImportResult
     target: Target | None = None
 
@@ -157,7 +156,6 @@ class TargetService:
         sort_by: SortKey = "updated",
         sort_dir: SortDir = "desc",
     ) -> Select:
-        """Build the filtered + sorted targets query (paginated by the route)."""
         query = with_whois_join(select(Target))
 
         if project_slug:
@@ -186,7 +184,6 @@ class TargetService:
         tag_ids: list[UUID] | None = None,
         target_type: TargetType | None = None,
     ) -> dict[str, int]:
-        """Per-signal KPI counts over the same base set as the list (no signal)."""
         empty = {
             "total": 0,
             "expiring": 0,
@@ -231,7 +228,6 @@ class TargetService:
         signal: SignalName | None = None,
         limit: int = 10000,
     ) -> list[UUID]:
-        """All target IDs matching the current filters (for select-all)."""
         project = await self._get_project_by_slug(project_slug)
         if not project:
             return []
@@ -250,7 +246,6 @@ class TargetService:
         return list(result.scalars().all())
 
     async def bulk_enrich(self, target_ids: list[UUID], kind: str) -> int:
-        """Queue re-enrichment for eligible targets; returns the queued count."""
         result = await self.session.execute(
             select(Target).where(Target.id.in_(target_ids))
         )
@@ -288,7 +283,6 @@ class TargetService:
     async def bulk_add_tags(
         self, target_ids: list[UUID], tag_names: list[str], user_id: str
     ) -> int:
-        """Add tags to each target (merge, not replace); returns affected count."""
         result = await self.session.execute(
             select(Target).where(Target.id.in_(target_ids))
         )
@@ -319,7 +313,6 @@ class TargetService:
     async def bulk_add_organizations(
         self, target_ids: list[UUID], org_names: list[str], user_id: str
     ) -> int:
-        """Add organizations to each target (merge); returns affected count."""
         result = await self.session.execute(
             select(Target).where(Target.id.in_(target_ids))
         )
@@ -379,7 +372,14 @@ class TargetService:
             tags=tags,
         )
         self.session.add(target)
-        await self.session.commit()
+        try:
+            await self.session.commit()
+        except IntegrityError as e:
+            await self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Target already exists in this project",
+            ) from e
         await self.session.refresh(target)
 
         await self._activity.log_async(
@@ -510,7 +510,6 @@ class TargetService:
     async def delete_target(self, target_id: str, user_id: str) -> None:
         target = await self._get_target_or_404(target_id)
 
-        # fk would be orphan here
         target_value = target.target_value
         project_id = target.project_id
 
@@ -532,7 +531,7 @@ class TargetService:
     async def import_targets_csv(
         self, project_slug: str, file: UploadFile, user_id: str
     ) -> TargetBulkCreateResponse:
-        if not file.filename.endswith(".csv"):
+        if not file.filename or not file.filename.lower().endswith(".csv"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="File must be a CSV file",
@@ -638,7 +637,6 @@ class TargetService:
         )
 
     async def get_target_detail(self, target_id: str) -> TargetDetailRead:
-        """Full target with all enrichment data expanded."""
         target = await self._get_target_or_404(target_id)
 
         whois = None
@@ -679,7 +677,6 @@ class TargetService:
         )
 
     async def get_target_dns(self, target_id: str) -> TargetDnsDetailResponse:
-        """Full DNS lookup with all individual records."""
         target = await self._get_target_or_404(target_id)
 
         lookup = None
@@ -695,7 +692,6 @@ class TargetService:
         )
 
     async def get_target_whois(self, target_id: str) -> TargetWhoisDetailResponse:
-        """Full WHOIS record."""
         target = await self._get_target_or_404(target_id)
 
         record = None
@@ -711,12 +707,10 @@ class TargetService:
         )
 
     async def get_target_bgp(self, target_id: str) -> TargetBgpDetailResponse:
-        """Full BGP enrichment data from RIPEStat tables."""
         target = await self._get_target_or_404(target_id)
         return await self._build_bgp_detail(target)
 
     async def refresh_target_dns(self, target_id: str) -> EnrichmentRefreshResponse:
-        """Re-trigger DNS lookup. Only for DOMAIN and URL targets."""
         target = await self._get_target_or_404(target_id)
 
         if target.target_type not in DNS_ELIGIBLE_TYPES:
@@ -749,7 +743,6 @@ class TargetService:
         )
 
     async def refresh_target_whois(self, target_id: str) -> EnrichmentRefreshResponse:
-        """Re-trigger WHOIS lookup. Applies to all target types."""
         target = await self._get_target_or_404(target_id)
 
         target.whois_status = TaskStatus.PENDING
@@ -775,7 +768,6 @@ class TargetService:
         )
 
     async def refresh_target_bgp(self, target_id: str) -> EnrichmentRefreshResponse:
-        """Re-trigger BGP enrichment. Only for IP, IP_RANGE, and ASN targets."""
         target = await self._get_target_or_404(target_id)
 
         if target.target_type not in BGP_ELIGIBLE_TYPES:
@@ -1087,7 +1079,6 @@ class TargetService:
         )
 
     def _to_dns_lookup_read(self, lookup: DnsLookup) -> DnsLookupRead:
-        """Convert DnsLookup DB model to full read schema with all records."""
         record_counts: dict[str, int] = {}
         records: list[DnsRecordRead] = []
 
@@ -1122,7 +1113,6 @@ class TargetService:
         )
 
     async def _build_bgp_detail(self, target: Target) -> TargetBgpDetailResponse:
-        """Build full BGP detail by querying RIPEStat tables based on target type."""
         summary = None
         if target.bgp_summary:
             summary = BgpSummaryRead(

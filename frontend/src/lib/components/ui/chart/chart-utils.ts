@@ -19,7 +19,6 @@ export type TooltipPayload = ExtractSnippetParams<
 	ComponentProps<typeof Tooltip.Root>['children']
 >['payload'][number];
 
-// Helper to extract item config from a payload.
 export function getPayloadConfigFromPayload(
 	config: ChartConfig,
 	payload: TooltipPayload,

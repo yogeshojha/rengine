@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, API_PREFIX } from './client';
 import type {
 	Target,
 	TargetCreate,
@@ -104,6 +104,13 @@ export const targetsApi = {
 		return api.get<Target>(`/targets/${targetId}`);
 	},
 
+	async searchByValue(targetValue: string, projectSlug?: string): Promise<Target[]> {
+		const sp = new URLSearchParams({ target_value: targetValue });
+		if (projectSlug) sp.append('project_slug', projectSlug);
+		const res = await api.get<PaginatedResponse<Target>>(`/targets/search?${sp}`);
+		return res.items;
+	},
+
 	async create(data: TargetCreate): Promise<Target> {
 		return api.post<Target>('/targets', data);
 	},
@@ -132,7 +139,7 @@ export const targetsApi = {
 		const formData = new FormData();
 		formData.append('file', file);
 
-		const response = await fetch(`/api/v1/targets/import/csv?project_slug=${projectSlug}`, {
+		const response = await fetch(`${API_PREFIX}/targets/import/csv?project_slug=${projectSlug}`, {
 			method: 'POST',
 			body: formData,
 			credentials: 'include'

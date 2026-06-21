@@ -33,32 +33,32 @@
 			label: 'Expiring',
 			value: summary.expiring,
 			icon: CalendarClock,
-			accent: 'text-amber-500',
-			activeRing: 'ring-amber-500/40 border-amber-500/40 bg-amber-500/5'
+			accent: 'text-amber-600 dark:text-amber-500',
+			activeRing: 'ring-amber-500/40 border-amber-500/40 bg-amber-500/10'
 		},
 		{
 			signal: 'attention',
 			label: 'Needs attention',
 			value: summary.attention,
 			icon: TriangleAlert,
-			accent: 'text-red-500',
-			activeRing: 'ring-red-500/40 border-red-500/40 bg-red-500/5'
+			accent: 'text-destructive',
+			activeRing: 'ring-destructive/40 border-destructive/40 bg-destructive/10'
 		},
 		{
 			signal: 'awaiting',
 			label: 'Enriching',
 			value: summary.awaiting,
 			icon: Loader,
-			accent: 'text-sky-500',
-			activeRing: 'ring-sky-500/40 border-sky-500/40 bg-sky-500/5'
+			accent: 'text-chart-1',
+			activeRing: 'ring-chart-1/40 border-chart-1/40 bg-chart-1/10'
 		},
 		{
 			signal: 'enriched',
 			label: 'Enriched',
 			value: summary.enriched,
 			icon: ShieldCheck,
-			accent: 'text-emerald-500',
-			activeRing: 'ring-emerald-500/40 border-emerald-500/40 bg-emerald-500/5'
+			accent: 'text-foreground',
+			activeRing: 'ring-primary/40 border-primary/40 bg-primary/5'
 		}
 	]);
 

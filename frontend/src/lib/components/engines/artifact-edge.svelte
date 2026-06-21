@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { BaseEdge, EdgeLabel, getSmoothStepPath, type EdgeProps } from '@xyflow/svelte';
-	import { ARTIFACT_COLOR, type ArtifactType } from '$lib/types/engine';
+	import { type ArtifactType } from '$lib/types/engine';
 
 	interface ArtifactEdgeData extends Record<string, unknown> {
 		artifact: ArtifactType;
@@ -24,9 +24,6 @@
 
 	let d = $derived(data as unknown as ArtifactEdgeData);
 
-	// EdgeLabel renders into a separate container from .svelte-flow__edge, so a
-	// :hover CSS selector on the edge can't reach the chip. Track hover locally
-	// via the wide interaction path and drive the chip reveal from state.
 	let hovered = $state(false);
 
 	let path = $derived(
@@ -50,8 +47,6 @@
 			.join(' ')
 	);
 
-	// Only inter-phase connectors carry always-on labels; every data edge reveals
-	// its label on hover, so the gutters never stack two labels at once.
 	let chipClass = $derived(
 		[
 			'artifact-chip',
@@ -63,9 +58,6 @@
 			.filter(Boolean)
 			.join(' ')
 	);
-
-	// Artifact hue drives a subtle chip border/text accent on hover.
-	let artifactColor = $derived(ARTIFACT_COLOR[d.artifact] ?? 'var(--border)');
 </script>
 
 <BaseEdge
@@ -77,17 +69,11 @@
 	onmouseleave={() => (hovered = false)}
 />
 
-<!-- `transparent` strips xyflow's default opaque wrapper background; without it a
-     hidden (opacity-0) sibling label still paints an empty white box, and visible
-     chips get a faint white ring from the wrapper's padding. The chip supplies its
-     own card background. -->
 <EdgeLabel x={labelX} y={labelY} transparent>
-	<div class={chipClass} style="--artifact-color: {artifactColor};">{d.label}</div>
+	<div class={chipClass}>{d.label}</div>
 </EdgeLabel>
 
 <style>
-	/* Neutral, theme-aware wires. `color` is set on the element so currentColor
-	   drives both the stroke and the arrowhead marker. */
 	:global(.svelte-flow__edge .artifact-edge-path) {
 		stroke: currentColor;
 		stroke-width: 1.6px;
@@ -108,7 +94,6 @@
 		animation: artifact-dashdraw 0.5s linear infinite;
 	}
 
-	/* On hover the whole wire brightens to foreground for full legibility. */
 	:global(.svelte-flow__edge:hover .artifact-edge-path) {
 		color: var(--foreground);
 		opacity: 1;
@@ -119,7 +104,6 @@
 		stroke-width: 2.5px;
 	}
 
-	/* Arrowhead inherits the (now brighter) neutral edge color. */
 	:global(.svelte-flow__edge marker path),
 	:global(.svelte-flow__edge marker polyline) {
 		fill: currentColor;
@@ -143,9 +127,7 @@
 		line-height: 1.4;
 		color: var(--muted-foreground);
 		white-space: nowrap;
-		/* Float the chip just above the wire so it never sits on the arrowhead. */
 		transform: translateY(-9px);
-		/* Never block panning / node interaction. */
 		pointer-events: none;
 		transition:
 			opacity 0.16s ease,
@@ -153,25 +135,19 @@
 			border-color 0.16s ease;
 	}
 
-	/* Always-on (inter-phase) chips read clearly at rest: foreground text, a touch
-	   of weight, and a soft shadow so they lift off whatever is behind them. */
 	.artifact-chip.always {
 		color: var(--foreground);
 		font-weight: 500;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
 	}
 
-	/* Intra-phase chips are calm by default, revealed when the edge is hovered. */
 	.artifact-chip.on-hover {
 		opacity: 0;
 	}
 
-	/* Hover reveals intra-phase chips and enriches every chip with the artifact hue.
-	   The chip renders in a separate container from .svelte-flow__edge, so the
-	   reveal is driven by the .edge-hovered class toggled from edge hover state. */
 	.artifact-chip.edge-hovered {
 		opacity: 1;
 		color: var(--foreground);
-		border-color: var(--artifact-color);
+		border-color: var(--ring);
 	}
 </style>

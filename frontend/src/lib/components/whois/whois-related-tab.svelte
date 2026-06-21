@@ -3,7 +3,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Empty from '$lib/components/ui/empty';
-	import { Loader, SearchX, Link2, ShieldAlert, GitBranch, ExternalLink } from 'lucide-svelte';
+	import { Loader, SearchX, Link2, ShieldAlert, GitBranch } from 'lucide-svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	interface Props {
 		correlations: WhoisCorrelationResult[];
@@ -45,78 +46,6 @@
 		network_cidr: 'network block'
 	};
 
-	const REASON_COLORS: Record<
-		string,
-		{ bg: string; label: string; value: string; border: string }
-	> = {
-		registrant: {
-			bg: 'bg-violet-500/10',
-			label: 'text-violet-600 dark:text-violet-400',
-			value: 'bg-violet-500/5 text-violet-700 dark:text-violet-300',
-			border: 'border-violet-500/20'
-		},
-		registrant_name: {
-			bg: 'bg-violet-500/10',
-			label: 'text-violet-600 dark:text-violet-400',
-			value: 'bg-violet-500/5 text-violet-700 dark:text-violet-300',
-			border: 'border-violet-500/20'
-		},
-		registrar: {
-			bg: 'bg-blue-500/10',
-			label: 'text-blue-600 dark:text-blue-400',
-			value: 'bg-blue-500/5 text-blue-700 dark:text-blue-300',
-			border: 'border-blue-500/20'
-		},
-		registrar_name: {
-			bg: 'bg-blue-500/10',
-			label: 'text-blue-600 dark:text-blue-400',
-			value: 'bg-blue-500/5 text-blue-700 dark:text-blue-300',
-			border: 'border-blue-500/20'
-		},
-		nameserver: {
-			bg: 'bg-cyan-500/10',
-			label: 'text-cyan-600 dark:text-cyan-400',
-			value: 'bg-cyan-500/5 text-cyan-700 dark:text-cyan-300',
-			border: 'border-cyan-500/20'
-		},
-		network: {
-			bg: 'bg-emerald-500/10',
-			label: 'text-emerald-600 dark:text-emerald-400',
-			value: 'bg-emerald-500/5 text-emerald-700 dark:text-emerald-300',
-			border: 'border-emerald-500/20'
-		},
-		network_cidr: {
-			bg: 'bg-emerald-500/10',
-			label: 'text-emerald-600 dark:text-emerald-400',
-			value: 'bg-emerald-500/5 text-emerald-700 dark:text-emerald-300',
-			border: 'border-emerald-500/20'
-		}
-	};
-
-	const DEFAULT_REASON_COLORS = {
-		bg: 'bg-muted',
-		label: 'text-muted-foreground',
-		value: 'bg-muted/50 text-foreground/70',
-		border: 'border-border'
-	};
-
-	function getReasonColors(type: string) {
-		return REASON_COLORS[type] ?? DEFAULT_REASON_COLORS;
-	}
-
-	function getLookupTypeBadgeColor(type: string): string {
-		switch (type) {
-			case 'DOMAIN':
-				return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-			case 'IP':
-				return 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20';
-			case 'ASN':
-				return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20';
-			default:
-				return 'bg-muted text-muted-foreground border-border';
-		}
-	}
-
 	function buildMatchSummary(reasons: CorrelationReason[]): string {
 		const labels = reasons.map((r) => REASON_MATCH_LABELS[r.type] ?? r.type);
 		if (labels.length === 1) return `Matching ${labels[0]}`;
@@ -143,7 +72,7 @@
 	}
 
 	let relatedTargets = $derived.by(() => {
-		const map = new Map<string, RelatedTarget>();
+		const map = new SvelteMap<string, RelatedTarget>();
 
 		for (const group of correlations) {
 			for (const record of group.records) {
@@ -221,13 +150,11 @@
 			{/if}
 		</div>
 
-		<!-- Target cards -->
 		<div class="space-y-2">
-			{#each relatedTargets as { record, reasons }}
+			{#each relatedTargets as { record, reasons } (record.id)}
 				<div
 					class="rounded-lg border border-border/60 p-4 space-y-3 hover:border-border transition-colors"
 				>
-					<!-- Target identity -->
 					<div class="flex items-start justify-between gap-3">
 						<div class="min-w-0 flex-1">
 							<div class="flex items-center gap-2">
@@ -235,9 +162,8 @@
 									{record.query_value}
 								</span>
 								<Badge
-									class="text-[10px] font-normal border shrink-0 {getLookupTypeBadgeColor(
-										record.lookup_type
-									)}"
+									variant="outline"
+									class="text-[10px] font-normal shrink-0 text-muted-foreground border-border/60"
 								>
 									{record.lookup_type}
 								</Badge>
@@ -249,7 +175,7 @@
 						{#if reasons.length >= 3}
 							<Badge
 								variant="outline"
-								class="text-[10px] shrink-0 gap-1 border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/5"
+								class="text-[10px] shrink-0 gap-1 border-amber-500/30 text-amber-600 dark:text-amber-500 bg-amber-500/10"
 							>
 								<ShieldAlert class="h-3 w-3" />
 								Strong
@@ -257,30 +183,33 @@
 						{/if}
 					</div>
 
-					<!-- Match summary -->
 					<p class="text-xs text-muted-foreground">{buildMatchSummary(reasons)}</p>
 
-					<!-- Reason badges — each value is its own badge, clickable for correlation lookup -->
 					<div class="flex flex-wrap gap-1.5">
-						{#each reasons as reason}
-							{#each expandReasonValues(reason) as { type, value }}
-								{@const colors = getReasonColors(type)}
+						{#each reasons as reason (reason.type + reason.value)}
+							{#each expandReasonValues(reason) as { type, value } (type + value)}
 								<Tooltip.Root>
 									<Tooltip.Trigger>
-										<button class="cursor-pointer" onclick={() => handleBadgeClick(type, value)}>
-											<span
-												class="inline-flex items-center text-[11px] border rounded-md overflow-hidden {colors.border} hover:ring-1 hover:ring-primary/30 transition-shadow"
+										{#snippet child({ props })}
+											<button
+												{...props}
+												onclick={() => handleBadgeClick(type, value)}
+												class="cursor-pointer"
 											>
-												<span class="px-2 py-1 font-medium {colors.bg} {colors.label}">
-													{REASON_LABELS[type] ?? type}
-												</span>
 												<span
-													class="px-2 py-1 font-mono border-l {colors.value} {colors.border} truncate max-w-[200px]"
+													class="inline-flex items-center text-[11px] border border-border/60 rounded-md overflow-hidden hover:ring-1 hover:ring-chart-1/30 transition-shadow"
 												>
-													{value}
+													<span class="px-2 py-1 font-medium bg-muted/60 text-foreground/70">
+														{REASON_LABELS[type] ?? type}
+													</span>
+													<span
+														class="px-2 py-1 font-mono border-l border-border/60 text-foreground truncate max-w-[200px]"
+													>
+														{value}
+													</span>
 												</span>
-											</span>
-										</button>
+											</button>
+										{/snippet}
 									</Tooltip.Trigger>
 									<Tooltip.Content>
 										<p>Find all targets sharing this {REASON_MATCH_LABELS[type] ?? type}</p>

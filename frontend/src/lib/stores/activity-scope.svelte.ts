@@ -1,12 +1,3 @@
-/**
- * Pages set their context so the activity drawer knows what to show:
- *
- *   $effect(() => {
- *       activityScope.targetId = targetId;
- *       return () => activityScope.clear();
- *   });
- */
-
 const scope = $state({
 	targetId: undefined as string | undefined,
 	scanId: undefined as string | undefined

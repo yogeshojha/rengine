@@ -1,11 +1,7 @@
 <script lang="ts" module>
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import CrosshairIcon from '@lucide/svelte/icons/crosshair';
-	import RadarIcon from '@lucide/svelte/icons/radar';
 	import ZapIcon from '@lucide/svelte/icons/zap';
-	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
-	import DatabaseIcon from '@lucide/svelte/icons/database';
-	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 
 	const data = {
@@ -29,15 +25,14 @@
 						icon: CrosshairIcon
 					},
 					{
-						title: 'Scans',
-						url: '/automation/scans',
-						icon: RadarIcon
-					},
-					{
 						title: 'Automation',
 						url: '/automation',
 						icon: ZapIcon,
 						items: [
+							{
+								title: 'Scans',
+								url: '/automation/scans'
+							},
 							{
 								title: 'Scan Engines',
 								url: '/automation/engines'
@@ -47,49 +42,6 @@
 								url: '/automation/contexts'
 							}
 						]
-					}
-				]
-			},
-			{
-				label: 'Intelligence',
-				items: [
-					{
-						title: 'Vulnerabilities',
-						url: '/vulnerabilities',
-						icon: ShieldAlertIcon
-					},
-					{
-						title: 'Assets',
-						url: '/assets',
-						icon: DatabaseIcon,
-						items: [
-							{
-								title: 'Subdomains',
-								url: '/assets/subdomains'
-							},
-							{
-								title: 'Endpoints',
-								url: '/assets/endpoints'
-							},
-							{
-								title: 'IP Addresses',
-								url: '/assets/ips'
-							},
-							{
-								title: 'Technologies',
-								url: '/assets/technologies'
-							}
-						]
-					}
-				]
-			},
-			{
-				label: 'Reporting',
-				items: [
-					{
-						title: 'Reports',
-						url: '/reports',
-						icon: FileTextIcon
 					}
 				]
 			},

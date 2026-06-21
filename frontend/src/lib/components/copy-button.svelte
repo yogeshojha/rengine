@@ -19,10 +19,9 @@
 				await navigator.clipboard.writeText(text);
 				return true;
 			} catch {
-				// fall through to legacy path
+				/* empty */
 			}
 		}
-		// Fallback for non-secure contexts (e.g. http://<lan-ip>:5173)
 		try {
 			const ta = document.createElement('textarea');
 			ta.value = text;
@@ -62,7 +61,7 @@
 				onclick={(e) => copy(e)}
 			>
 				{#if copied}
-					<Check class="h-3.5 w-3.5 text-green-500" />
+					<Check class="h-3.5 w-3.5 text-foreground" />
 				{:else if failed}
 					<X class="h-3.5 w-3.5 text-destructive" />
 				{:else}

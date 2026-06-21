@@ -1,10 +1,3 @@
-"""Logging configuration module for reNgine.
-This module is expected to be used by various components of reNgine, including:
-- Backend (FastAPI)
-- Worker (Celery)
-- Engines (Scan engines)
-"""
-
 import logging
 import sys
 from typing import ClassVar
@@ -33,18 +26,6 @@ def setup_logging(
     level: str = "INFO",
     colored: bool = True,
 ) -> logging.Logger:
-    """
-    Set up logging configuration.
-
-    Args:
-        name: Logger name (e.g., "rengine.backend", "rengine.worker")
-        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        colored: Whether to use colored output for console
-
-    Returns:
-        Configured logger instance
-
-    """
     logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, level.upper()))
 

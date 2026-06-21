@@ -1,27 +1,17 @@
-import { SESSION_EXPIRED_EVENT } from './client';
+import { SESSION_EXPIRED_EVENT, API_PREFIX } from './client';
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 
 export interface SSEMessage {
-	/** Channel this event was published to */
 	channel: string;
-	/** Event type within the channel (e.g. 'activity', 'notification', 'scan_progress') */
 	type: string;
-	/** Event payload — shape depends on type */
 	data: Record<string, unknown>;
-	/** ISO timestamp from the server */
 	ts: string;
 }
 
 type MessageCallback = (message: SSEMessage) => void;
 type StateCallback = (state: ConnectionState) => void;
 
-/**
- * After this many consecutive failures we attempt a silent token refresh
- * before continuing the reconnect loop.  EventSource doesn't expose HTTP
- * status codes so we can't distinguish 401 from a transient network error —
- * a proactive refresh after a few failures handles both cases gracefully.
- */
 const REFRESH_ATTEMPT_AFTER_FAILURES = 3;
 
 export class SSEClient {
@@ -40,12 +30,6 @@ export class SSEClient {
 	private readonly baseDelay = 1000; // 1s
 	private readonly maxDelay = 30_000; // 30s
 
-	/**
-	 * Opens an SSE connection subscribed to the given channels.
-	 *
-	 * If already connected, the connection is recycled only if the
-	 * channel set has changed.
-	 */
 	connect(channels: string[]): void {
 		const incoming = new Set(channels);
 		const changed = !this.setsEqual(this.channels, incoming);
@@ -59,10 +43,6 @@ export class SSEClient {
 		this.openConnection();
 	}
 
-	/**
-	 * Add channels to an existing connection.
-	 * Triggers a reconnect with the updated channel set.
-	 */
 	addChannels(channels: string[]): void {
 		let changed = false;
 		for (const ch of channels) {
@@ -76,10 +56,6 @@ export class SSEClient {
 		}
 	}
 
-	/**
-	 * Remove channels from the connection.
-	 * Triggers a reconnect with the reduced channel set.
-	 */
 	removeChannels(channels: string[]): void {
 		let changed = false;
 		for (const ch of channels) {
@@ -97,10 +73,6 @@ export class SSEClient {
 		}
 	}
 
-	/**
-	 * Subscribe to events on a specific channel.
-	 * Returns an unsubscribe function for cleanup.
-	 */
 	subscribe(channel: string, callback: MessageCallback): () => void {
 		if (!this.subscriptions.has(channel)) {
 			this.subscriptions.set(channel, new Set());
@@ -118,10 +90,6 @@ export class SSEClient {
 		};
 	}
 
-	/**
-	 * Subscribe to connection state changes.
-	 * Returns an unsubscribe function.
-	 */
 	onStateChange(callback: StateCallback): () => void {
 		this.stateListeners.add(callback);
 		callback(this._state);
@@ -131,7 +99,6 @@ export class SSEClient {
 		};
 	}
 
-	/** Cleanly close the connection and stop reconnecting. */
 	disconnect(): void {
 		this.clearReconnectTimer();
 		this.closeEventSource();
@@ -139,17 +106,14 @@ export class SSEClient {
 		this.setState('disconnected');
 	}
 
-	/** Current connection state. */
 	get state(): ConnectionState {
 		return this._state;
 	}
 
-	/** Whether the connection is open and receiving. */
 	get isConnected(): boolean {
 		return this._state === 'connected';
 	}
 
-	/** Channels currently subscribed to on the server. */
 	get activeChannels(): ReadonlySet<string> {
 		return this.channels;
 	}
@@ -164,12 +128,10 @@ export class SSEClient {
 		}
 
 		const channelParam = encodeURIComponent(Array.from(this.channels).join(','));
-		const url = `/api/v1/events/stream?channels=${channelParam}`;
+		const url = `${API_PREFIX}/events/stream?channels=${channelParam}`;
 
 		this.setState(this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting');
 
-		// withCredentials ensures cookies (auth tokens) are sent for both
-		// same-origin and any future cross-origin deployments.
 		const es = new EventSource(url, { withCredentials: true });
 
 		es.addEventListener('message', (event: MessageEvent) => {
@@ -198,7 +160,6 @@ export class SSEClient {
 			return;
 		}
 
-		// Route to channel subscribers
 		const subs = this.subscriptions.get(message.channel);
 		if (subs) {
 			for (const cb of subs) {
@@ -210,7 +171,6 @@ export class SSEClient {
 			}
 		}
 
-		// Also route broadcast events to all subscribers
 		if (message.channel === 'broadcast') {
 			for (const [channel, channelSubs] of this.subscriptions) {
 				if (channel === 'broadcast') continue;
@@ -234,9 +194,6 @@ export class SSEClient {
 			return;
 		}
 
-		// After a few consecutive failures attempt a silent token refresh.
-		// EventSource doesn't expose the HTTP status, so we can't tell a 401
-		// from a network blip — proactive refresh handles both.
 		if (this.reconnectAttempts === REFRESH_ATTEMPT_AFTER_FAILURES) {
 			this.refreshAndReconnect();
 			return;
@@ -247,7 +204,7 @@ export class SSEClient {
 
 	private async refreshAndReconnect(): Promise<void> {
 		try {
-			const response = await fetch('/api/v1/auth/refresh', {
+			const response = await fetch(`${API_PREFIX}/auth/refresh`, {
 				method: 'POST',
 				credentials: 'include'
 			});
@@ -259,10 +216,9 @@ export class SSEClient {
 				return;
 			}
 
-			// Refresh succeeded — reset counter so the reconnect gets full retries
 			this.reconnectAttempts = 0;
 		} catch {
-			// Network error during refresh — try reconnecting anyway
+			/* empty */
 		}
 
 		this.scheduleReconnect();

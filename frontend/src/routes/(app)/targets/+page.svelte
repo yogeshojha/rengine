@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
@@ -9,9 +10,12 @@
 	import type { Target } from '$lib/types/target';
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
+	import * as Empty from '$lib/components/ui/empty';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Upload, Play, Plus, RefreshCw, X } from 'lucide-svelte';
+	import { Upload, Play, Plus, RefreshCw, X, TriangleAlert } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	import TargetTypeTabs from '$lib/components/targets/target-type-tabs.svelte';
@@ -29,6 +33,7 @@
 	import ScanHistoryModal from '$lib/components/targets/scan-history-modal.svelte';
 	import BulkActionBar from '$lib/components/targets/bulk-action-bar.svelte';
 	import ImportTargetsModal from '$lib/components/modals/import-targets-modal.svelte';
+	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import WhoisDetailDialog from '$lib/components/whois/whois-detail-dialog.svelte';
 	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
 	import { downloadTargets, type ExportFormat } from '$lib/utilities/target-export';
@@ -67,6 +72,10 @@
 	}
 
 	let showAddModal = $state(false);
+	let prefillValue = $state('');
+	$effect(() => {
+		if (!showAddModal) prefillValue = '';
+	});
 	let showDetailDialog = $state(false);
 	let showDeleteDialog = $state(false);
 	let selectedTarget = $state<Target | null>(null);
@@ -82,14 +91,23 @@
 	let showBgpDialog = $state(false);
 	let bgpDialogTarget = $state<Target | null>(null);
 
-	let activeScanCounts = $state<Record<string, number>>({});
+	const selectedTargetIds = new SvelteSet<string>();
 
-	let selectedTargetIds = $state(new Set<string>());
+	function setSelection(ids: Iterable<string> = []) {
+		selectedTargetIds.clear();
+		for (const id of ids) selectedTargetIds.add(id);
+	}
 
 	let deleteMode = $state<'single' | 'bulk'>('single');
 
 	let showScanHistoryModal = $state(false);
 	let scanHistoryTarget = $state<Target | null>(null);
+
+	let showLaunchModal = $state(false);
+	let launchTargetId = $state<string | undefined>(undefined);
+
+	let showEnrichConfirm = $state(false);
+	let enrichConfirmKind = $state<EnrichmentKind>('whois');
 
 	$effect(() => {
 		const activeProject = projectsStore.activeProject;
@@ -105,7 +123,6 @@
 		}
 	});
 
-	// mirror filter/sort/page state into the URL (refresh-safe + shareable)
 	$effect(() => {
 		const qs = targetsStore.toQueryString();
 		if (!urlReady || !browser) return;
@@ -124,14 +141,16 @@
 			SSEChannel.project(activeProject.id),
 			SSEEventType.ACTIVITY,
 			async (event) => {
-				if (!event.event_type?.includes('.completed')) return;
 				if (!event.target_id) return;
+				const type = event.event_type ?? '';
+
+				if (!type.includes('.completed')) return;
 
 				try {
 					const fresh = await targetsApi.get(event.target_id);
 					targetsStore.optimisticUpdateTarget(event.target_id, fresh);
 				} catch {
-					// Target may have been deleted, ignore
+					// ignore
 				}
 			}
 		);
@@ -153,14 +172,29 @@
 			: `Delete ${selectedTargetIds.size} Target${selectedTargetIds.size !== 1 ? 's' : ''}`
 	);
 
+	let selectedTargetValues = $derived(
+		targetsStore.filteredTargets
+			.filter((t) => selectedTargetIds.has(t.id))
+			.map((t) => t.target_value)
+	);
+
+	const BULK_PREVIEW_LIMIT = 8;
+
+	let deletePreviewValues = $derived(selectedTargetValues.slice(0, BULK_PREVIEW_LIMIT));
+	let deletePreviewRemainder = $derived(
+		Math.max(0, selectedTargetIds.size - deletePreviewValues.length)
+	);
+
+	let bulkDeletePreview = $derived(
+		deletePreviewValues.length
+			? ` Including: ${deletePreviewValues.join(', ')}${deletePreviewRemainder > 0 ? `, and ${deletePreviewRemainder} more` : ''}.`
+			: ''
+	);
+
 	let deleteDialogDescription = $derived(
 		deleteMode === 'single'
 			? `Are you sure you want to delete '${targetToDelete?.target_value}'? This action cannot be undone and will remove all associated scan data.`
-			: `Are you sure you want to delete ${selectedTargetIds.size} selected target${selectedTargetIds.size !== 1 ? 's' : ''}? This action cannot be undone and will remove all associated data.`
-	);
-
-	let selectedTargetIsScanning = $derived(
-		selectedTarget ? (activeScanCounts[selectedTarget.id] || 0) > 0 : false
+			: `This permanently deletes ${selectedTargetIds.size} target${selectedTargetIds.size !== 1 ? 's' : ''} and all associated scan data. This cannot be undone.${bulkDeletePreview}`
 	);
 
 	let organizationSummaries = $derived(
@@ -227,47 +261,39 @@
 		}
 		return chips;
 	});
-	function fireScan(target: Target) {
-		activeScanCounts[target.id] = (activeScanCounts[target.id] || 0) + 1;
-		// TODO: replace setTimeout with real API call
-		setTimeout(() => {
-			activeScanCounts[target.id] = Math.max(0, (activeScanCounts[target.id] || 0) - 1);
-		}, 3000);
+	function openLaunch(targetId?: string) {
+		launchTargetId = targetId;
+		showLaunchModal = true;
 	}
 
 	function handleScan(target: Target) {
-		fireScan(target);
-		toast.success(`Scan initiated for ${target.target_value}`);
+		openLaunch(target.id);
 	}
 
 	function handleScanAll() {
-		const targets = targetsStore.filteredTargets;
-		if (targets.length === 0) return;
-		targets.forEach(fireScan);
-		toast.success(`Scans initiated for ${targets.length} target${targets.length !== 1 ? 's' : ''}`);
+		openLaunch();
 	}
 
 	function handleTargetSelect(targetId: string) {
-		const next = new Set(selectedTargetIds);
-		next.has(targetId) ? next.delete(targetId) : next.add(targetId);
-		selectedTargetIds = next;
+		if (selectedTargetIds.has(targetId)) selectedTargetIds.delete(targetId);
+		else selectedTargetIds.add(targetId);
 	}
 
 	function handleSelectAll() {
-		selectedTargetIds =
+		setSelection(
 			selectedTargetIds.size >= targetsStore.filteredTargets.length
-				? new Set()
-				: new Set(targetsStore.filteredTargets.map((t) => t.id));
+				? []
+				: targetsStore.filteredTargets.map((t) => t.id)
+		);
 	}
 
 	function clearSelection() {
-		selectedTargetIds = new Set();
+		setSelection();
 	}
 
 	function handleBulkScan() {
-		const targets = targetsStore.filteredTargets.filter((t) => selectedTargetIds.has(t.id));
-		targets.forEach(fireScan);
-		toast.success(`Scans initiated for ${targets.length} target${targets.length !== 1 ? 's' : ''}`);
+		const ids = Array.from(selectedTargetIds);
+		openLaunch(ids.length === 1 ? ids[0] : undefined);
 	}
 
 	function handleBulkDelete() {
@@ -275,7 +301,9 @@
 		showDeleteDialog = true;
 	}
 
-	async function handleBulkEnrich(kind: EnrichmentKind) {
+	const BULK_ENRICH_CONFIRM_THRESHOLD = 25;
+
+	async function runBulkEnrich(kind: EnrichmentKind) {
 		const ids = Array.from(selectedTargetIds);
 		if (ids.length === 0) return;
 		try {
@@ -284,6 +312,16 @@
 		} catch {
 			toast.error(`Failed to queue ${kind.toUpperCase()} enrichment`);
 		}
+	}
+
+	function handleBulkEnrich(kind: EnrichmentKind) {
+		if (selectedTargetIds.size === 0) return;
+		if (selectedTargetIds.size >= BULK_ENRICH_CONFIRM_THRESHOLD) {
+			enrichConfirmKind = kind;
+			showEnrichConfirm = true;
+			return;
+		}
+		runBulkEnrich(kind);
 	}
 
 	async function handleBulkAddTag(name: string) {
@@ -310,7 +348,7 @@
 
 	async function handleSelectAllMatching() {
 		const ids = await targetsStore.getMatchingIds();
-		selectedTargetIds = new Set(ids);
+		setSelection(ids);
 		toast.success(`Selected all ${ids.length} matching target${ids.length !== 1 ? 's' : ''}`);
 	}
 
@@ -378,9 +416,8 @@
 	}
 
 	function handleAddAsTarget(value: string) {
+		prefillValue = value;
 		showAddModal = true;
-		// TODO: pre-fill add target modal with `value`
-		toast.info(`Add "${value}" as a new target`);
 	}
 
 	async function confirmDelete() {
@@ -410,7 +447,7 @@
 			if (fail) toast.error(`Failed to delete ${fail} target${fail !== 1 ? 's' : ''}`);
 
 			showDeleteDialog = false;
-			selectedTargetIds = new Set();
+			setSelection();
 		}
 	}
 
@@ -418,12 +455,13 @@
 		isRefreshing = true;
 		await targetsStore.refresh();
 		isRefreshing = false;
-		toast.success('Data refreshed');
+		if (targetsStore.error) toast.error(`Refresh failed — ${targetsStore.error}`);
+		else toast.success('Data refreshed');
 	}
 
 	async function handleTabChange(tab: string) {
 		await targetsStore.setActiveTab(tab);
-		selectedTargetIds = new Set();
+		setSelection();
 	}
 
 	function handleSearchChange(query: string) {
@@ -464,12 +502,12 @@
 
 	async function handlePageChange(page: number) {
 		await targetsStore.setPage(page);
-		selectedTargetIds = new Set();
+		setSelection();
 	}
 
 	async function handlePageSizeChange(size: number) {
 		await targetsStore.setPageSize(size);
-		selectedTargetIds = new Set();
+		setSelection();
 	}
 </script>
 
@@ -494,7 +532,7 @@
 
 			{#if !targetsStore.isLoading && targetsStore.filteredTargets.length > 0}
 				<Button variant="outline" size="sm" class="gap-2 h-9" onclick={handleScanAll}>
-					<Play class="h-4 w-4 text-blue-400" />
+					<Play class="h-4 w-4" />
 					Scan All ({targetsStore.filteredTargets.length})
 				</Button>
 			{/if}
@@ -558,14 +596,25 @@
 							<span class="h-2 w-2 rounded-full" style="background-color: {chip.color}"></span>
 						{/if}
 						{chip.label}
-						<button class="text-muted-foreground hover:text-foreground" onclick={chip.remove}>
-							<X class="h-3 w-3" />
-						</button>
+						<Tooltip.Provider delayDuration={300}>
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									onclick={chip.remove}
+									aria-label={`Remove filter ${chip.label}`}
+								>
+									<X class="h-3 w-3" />
+									<span class="sr-only">Remove filter {chip.label}</span>
+								</Tooltip.Trigger>
+								<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					</Badge>
 				{/each}
 				<button
-					class="ml-1 text-xs text-muted-foreground hover:text-foreground"
+					class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					onclick={handleClearFilters}
+					aria-label="Clear all filters"
 				>
 					Clear all
 				</button>
@@ -574,6 +623,22 @@
 
 		{#if targetsStore.isLoading}
 			<TargetListSkeleton count={8} />
+		{:else if targetsStore.error && targetsStore.filteredTargets.length === 0}
+			<Empty.Root class="py-16">
+				<Empty.Header>
+					<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
+						<TriangleAlert class="size-6 text-destructive" />
+					</Empty.Media>
+					<Empty.Title>Couldn't load targets</Empty.Title>
+					<Empty.Description class="max-w-md">{targetsStore.error}</Empty.Description>
+				</Empty.Header>
+				<Empty.Content>
+					<Button variant="outline" class="gap-2" onclick={() => targetsStore.reload()}>
+						<RefreshCw class="h-4 w-4" />
+						Retry
+					</Button>
+				</Empty.Content>
+			</Empty.Root>
 		{:else if targetsStore.filteredTargets.length === 0}
 			<TargetEmptyState
 				hasFilters={targetsStore.hasActiveFilters}
@@ -594,7 +659,7 @@
 					<TargetListItem
 						{target}
 						isSelected={selectedTargetIds.has(target.id)}
-						isScanning={(activeScanCounts[target.id] || 0) > 0}
+						isScanning={false}
 						onSelect={handleTargetSelect}
 						onScan={handleScan}
 						onOpenHistory={handleOpenScanHistory}
@@ -666,13 +731,21 @@
 	</Card.Root>
 </div>
 
-<AddTargetModal bind:open={showAddModal} />
+<AddTargetModal bind:open={showAddModal} initialValue={prefillValue} />
 <ImportTargetsModal bind:open={showImportModal} />
+
+<LaunchModal
+	bind:open={showLaunchModal}
+	targetId={launchTargetId}
+	onClose={() => {
+		showLaunchModal = false;
+		launchTargetId = undefined;
+	}}
+/>
 
 <TargetDetailDialog
 	bind:open={showDetailDialog}
 	target={selectedTarget}
-	isScanning={selectedTargetIsScanning}
 	onOpenChange={(open) => (showDetailDialog = open)}
 	onScan={handleScan}
 	onOpenHistory={handleOpenScanHistory}
@@ -728,3 +801,23 @@
 	onOpenChange={(o) => (showBgpDialog = o)}
 	onAddAsTarget={handleAddAsTarget}
 />
+
+<AlertDialog.Root bind:open={showEnrichConfirm}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>
+				Re-run {enrichConfirmKind.toUpperCase()} for {selectedTargetIds.size} targets?
+			</AlertDialog.Title>
+			<AlertDialog.Description>
+				This queues {enrichConfirmKind.toUpperCase()} enrichment across {selectedTargetIds.size} selected
+				targets and may take a while. Lookups are rate-limited.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={() => runBulkEnrich(enrichConfirmKind)}>
+				Queue {enrichConfirmKind.toUpperCase()}
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

@@ -48,13 +48,13 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger value="valid" class="text-xs h-7 px-3">
 					<div class="flex items-center gap-1.5">
-						<div class="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+						<div class="h-1.5 w-1.5 rounded-full bg-muted-foreground"></div>
 						Valid ({validCount})
 					</div>
 				</Tabs.Trigger>
 				<Tabs.Trigger value="invalid" class="text-xs h-7 px-3">
 					<div class="flex items-center gap-1.5">
-						<div class="h-1.5 w-1.5 rounded-full bg-red-500"></div>
+						<div class="h-1.5 w-1.5 rounded-full bg-destructive"></div>
 						Invalid ({invalidCount})
 					</div>
 				</Tabs.Trigger>
@@ -62,7 +62,7 @@
 		</Tabs.Root>
 	</div>
 
-	<ScrollArea class="h-[400px] rounded-md border">
+	<ScrollArea class="rounded-md border" style="height:{maxHeight}">
 		<div class="divide-y">
 			{#each filteredItems as item, i (i)}
 				<div
@@ -102,7 +102,7 @@
 								{#if item.tags && item.tags.length > 0}
 									<div class="flex items-center gap-1.5">
 										<Tag class="h-3 w-3 text-muted-foreground" />
-										{#each item.tags as tag}
+										{#each item.tags as tag (tag)}
 											<Badge variant="secondary" class="text-[10px] px-1.5 py-0 h-4 font-normal">
 												{tag}
 											</Badge>

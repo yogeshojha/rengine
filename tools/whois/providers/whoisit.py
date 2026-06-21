@@ -1,8 +1,4 @@
-"""RDAP provider using the whoisit library.
-
-README: https://github.com/meeb/whoisit/blob/main/README.md
-
-"""
+"""RDAP provider using the whoisit library."""
 
 from typing import Any
 
@@ -36,7 +32,7 @@ class RDAPProvider:
             raise RDAPProviderError(msg) from e
 
     def ensure_bootstrapped(self) -> None:
-        """Ensured bootstrapped."""
+        """Bootstrap if not already, restoring from cache when possible."""
         if self.is_bootstrapped:
             return
 
@@ -52,11 +48,7 @@ class RDAPProvider:
         self.bootstrap()
 
     def refresh_if_stale(self, max_age_days: int = 3) -> None:
-        """Refresh bootstrap data if it's older than max_age_days.
-
-        Args:
-            max_age_days: Maximum age of bootstrap data in days.
-        """
+        """Refresh bootstrap data if it's older than max_age_days."""
         if not self.is_bootstrapped:
             self.bootstrap()
             return
@@ -89,17 +81,7 @@ class RDAPProvider:
             raise RDAPProviderError(msg) from e
 
     def lookup_domain(self, domain: str) -> dict[str, Any]:
-        """Look up WHOIS data for a domain.
-
-        Args:
-            domain: Domain name (e.g. "example.com"), a valid domain name
-
-        Returns:
-            Raw parsed dict from whoisit.
-
-        Raises:
-            RDAPProviderError: On lookup failure.
-        """
+        """Look up WHOIS data for a domain."""
         self.ensure_bootstrapped()
         try:
             return whoisit.domain(domain, allow_insecure_ssl=True)
@@ -114,17 +96,7 @@ class RDAPProvider:
             raise RDAPProviderError(msg) from e
 
     def lookup_ip(self, ip: str) -> dict[str, Any]:
-        """Look up WHOIS data for an IP address or CIDR.
-
-        Args:
-            ip: IP address or CIDR (e.g. "1.1.1.1", "1.1.1.0/24", "2001:db8::/32").
-
-        Returns:
-            Raw parsed dict from whoisit.
-
-        Raises:
-            RDAPProviderError: On lookup failure.
-        """
+        """Look up WHOIS data for an IP address or CIDR."""
         self.ensure_bootstrapped()
         try:
             return whoisit.ip(ip, allow_insecure_ssl=True)
@@ -136,17 +108,7 @@ class RDAPProvider:
             raise RDAPProviderError(msg) from e
 
     def lookup_asn(self, asn: int) -> dict[str, Any]:
-        """Look up WHOIS data for an ASN.
-
-        Args:
-            asn: Autonomous System Number (e.g. 13335).
-
-        Returns:
-            Raw parsed dict from whoisit.
-
-        Raises:
-            RDAPProviderError: On lookup failure.
-        """
+        """Look up WHOIS data for an ASN."""
         self.ensure_bootstrapped()
         try:
             return whoisit.asn(asn, allow_insecure_ssl=True)

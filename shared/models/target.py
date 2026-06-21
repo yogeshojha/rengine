@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
@@ -47,6 +47,9 @@ class TargetBase(SQLModel):
 
 class Target(TargetBase, table=True):
     __tablename__ = "targets"
+    __table_args__ = (
+        UniqueConstraint("target_value", "project_id", name="uq_target_value_project"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     target_type: TargetType

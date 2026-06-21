@@ -1,3 +1,4 @@
+import { SvelteSet } from 'svelte/reactivity';
 import { notificationsApi } from '$lib/api/notifications';
 import { sseStore } from '$lib/stores/sse.svelte';
 import { SSEChannel, SSEEventType } from '$lib/types/sse';
@@ -21,7 +22,7 @@ const state = $state<NotificationState>({
 	error: null
 });
 
-let toastCallbacks: Set<(notification: Notification) => void> = new Set();
+const toastCallbacks: SvelteSet<(notification: Notification) => void> = new SvelteSet();
 let sseUnsub: (() => void) | null = null;
 
 export const notificationStore = {
@@ -162,9 +163,6 @@ export const notificationStore = {
 		}
 	},
 
-	/**
-	 * Subscribe to notifications
-	 */
 	subscribeSSE() {
 		if (sseUnsub) return;
 
@@ -177,9 +175,6 @@ export const notificationStore = {
 		);
 	},
 
-	/**
-	 * Unsubscribe from SSE notifications.
-	 */
 	unsubscribeSSE() {
 		sseUnsub?.();
 		sseUnsub = null;

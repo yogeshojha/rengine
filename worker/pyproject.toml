@@ -4,7 +4,9 @@ version = "3.0.0"
 description = "reNgine Worker: Celery background tasks for reconnaissance"
 requires-python = ">=3.13"
 dependencies = [
+    "apprise>=1.9.0",
     "celery[redis]>=5.6.2",
+    "cryptography>=42",
     "flower>=2.0.1",
     "psycopg2-binary>=2.9.11",
     "pydantic-settings>=2.12.0",

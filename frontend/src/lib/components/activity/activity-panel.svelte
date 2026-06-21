@@ -14,6 +14,7 @@
 	import ActivityTimeline from './activity-timeline.svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
@@ -74,6 +75,14 @@
 		return () => observer.disconnect();
 	});
 
+	$effect(() => {
+		const el = scrollEl;
+		if (!el) return;
+		const onScroll = () => (scrollTop = el.scrollTop);
+		el.addEventListener('scroll', onScroll, { passive: true });
+		return () => el.removeEventListener('scroll', onScroll);
+	});
+
 	function onWindowPointerDown(e: PointerEvent) {
 		if (!activityFeed.open) return;
 		const t = e.target as HTMLElement;
@@ -101,7 +110,6 @@
 		: 'translate-x-full'}"
 	style="width: {PANEL_W}px"
 >
-	<!-- Header -->
 	<div class="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5">
 		<div class="flex min-w-0 items-center gap-2.5">
 			<span
@@ -109,9 +117,9 @@
 			>
 				<span
 					class="h-1.5 w-1.5 rounded-full {sseStore.isConnected
-						? 'bg-emerald-500'
+						? 'bg-chart-1'
 						: sseStore.isReconnecting
-							? 'bg-amber-500'
+							? 'bg-amber-600 dark:bg-amber-500'
 							: 'bg-muted-foreground/40'}"
 				></span>
 				Activity
@@ -119,7 +127,7 @@
 
 			{#if activityFeed.runningCount > 0}
 				<span
-					class="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-600 dark:text-sky-400"
+					class="inline-flex items-center gap-1 rounded-full bg-chart-1/10 px-1.5 py-0.5 text-[10px] font-medium text-chart-1"
 				>
 					<Spinner class="h-2.5 w-2.5" />
 					{activityFeed.runningCount} running
@@ -150,7 +158,6 @@
 		</Button>
 	</div>
 
-	<!-- Search -->
 	<div class="px-3 pb-2">
 		<div class="relative">
 			<Search class="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
@@ -172,7 +179,6 @@
 		</div>
 	</div>
 
-	<!-- Filters -->
 	<div class="flex shrink-0 flex-wrap items-center gap-1 px-3 pb-2">
 		{#each FILTERS as f (f)}
 			{@const n = activityFeed.counts[f] ?? 0}
@@ -197,7 +203,7 @@
 				title="Errors only"
 				onclick={() => activityFeed.toggleErrorsOnly()}
 				class="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[10px] font-medium transition-colors {activityFeed.errorsOnly
-					? 'bg-red-500/10 text-red-600 ring-1 ring-red-500/25 dark:text-red-400'
+					? 'bg-destructive/10 text-destructive ring-1 ring-destructive/40'
 					: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}"
 			>
 				<ShieldAlert class="h-3 w-3" />
@@ -208,7 +214,6 @@
 
 	<Separator />
 
-	<!-- Timeline -->
 	<div class="relative min-h-0 flex-1">
 		{#if showJump}
 			<button
@@ -221,11 +226,8 @@
 			</button>
 		{/if}
 
-		<div
-			bind:this={scrollEl}
-			onscroll={() => (scrollTop = scrollEl?.scrollTop ?? 0)}
-			class="activity-scroll h-full overflow-y-auto px-3 pb-4 pt-2"
-		>
+		<ScrollArea class="h-full" bind:viewportRef={scrollEl}>
+			<div class="px-3 pb-4 pt-2">
 			<ActivityTimeline
 				dayGroups={activityFeed.days}
 				newEventIds={activityFeed.freshIds}
@@ -244,24 +246,11 @@
 			{#if activityFeed.hasMore && !activityFeed.initialLoad}
 				<div bind:this={sentinelEl} class="h-1"></div>
 			{/if}
-		</div>
+			</div>
+		</ScrollArea>
 
 		<div
 			class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent"
 		></div>
 	</div>
 </aside>
-
-<style>
-	.activity-scroll {
-		scrollbar-width: thin;
-		scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
-	}
-	.activity-scroll::-webkit-scrollbar {
-		width: 6px;
-	}
-	.activity-scroll::-webkit-scrollbar-thumb {
-		background-color: hsl(var(--muted-foreground) / 0.25);
-		border-radius: 3px;
-	}
-</style>

@@ -22,7 +22,6 @@
 		{ value: 'http_only', label: 'HTTP only' }
 	];
 
-	// tri-state follow_redirects_override encoded as a string for the Select.
 	const REDIRECT_OPTS = [
 		{ value: 'null', label: 'Engine default' },
 		{ value: 'true', label: 'Always follow' },

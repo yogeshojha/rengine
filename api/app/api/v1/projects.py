@@ -24,9 +24,7 @@ async def generate_unique_slug(name: str, session: AsyncSession) -> str:
     counter = 1
 
     while True:
-        result = await session.execute(
-            select(Project).where(Project.slug == slug, Project.is_active)
-        )
+        result = await session.execute(select(Project).where(Project.slug == slug))
         if not result.scalar_one_or_none():
             return slug
         counter += 1
@@ -90,6 +88,8 @@ async def create_project(
     project = Project(
         name=project_in.name,
         slug=slug,
+        description=project_in.description,
+        label=project_in.label,
         created_by=current_user.id,
     )
     session.add(project)

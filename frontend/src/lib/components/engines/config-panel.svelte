@@ -81,7 +81,6 @@
 		return get<number[]>(path, []).includes(val);
 	}
 
-	// open-by-default sections; key -> open state
 	let openSections = $state<Record<string, boolean>>({});
 
 	function sectionOpen(key: string): boolean {
@@ -91,7 +90,6 @@
 
 {#if capabilityId}
 	<div class="config-panel">
-		<!-- Panel header -->
 		<div class="panel-header">
 			<div class="header-content">
 				<div class="header-text">
@@ -107,10 +105,8 @@
 			</div>
 		</div>
 
-		<!-- Panel body -->
 		<ScrollArea class="panel-body">
 			<div class="body-inner">
-				<!-- ══════════════ DISCOVERY ══════════════ -->
 				{#if capabilityId === 'dns-whois'}
 					{#snippet dnsBody()}
 						{@render numberRow('Timeout (s)', 'dns_timeout', 10)}
@@ -202,7 +198,6 @@
 					{/snippet}
 					{@render section('cidr', 'CIDR Filtering', cidrBody)}
 
-				<!-- ══════════════ EXPANSION ══════════════ -->
 				{:else if capabilityId === 'subdomain-enum'}
 					{#snippet passiveBody()}
 						{@render toggleRow('Enable passive enumeration', 'subdomain_passive', false)}
@@ -364,7 +359,6 @@
 					{/snippet}
 					{@render section('screenshot', 'Screenshot', screenshotBody)}
 
-				<!-- ══════════════ DEPTH ══════════════ -->
 				{:else if capabilityId === 'url-discovery'}
 					{#snippet urlToolsBody()}
 						{@render checkGroup('url_discovery_tools', [
@@ -529,14 +523,11 @@
 			</div>
 		</ScrollArea>
 
-		<!-- Panel footer -->
 		<div class="panel-footer">
 			<Button variant="outline" class="w-full" onclick={() => onClose?.()}>Close</Button>
 		</div>
 	</div>
 {/if}
-
-<!-- ── Reusable snippets ── -->
 
 {#snippet section(key: string, title: string, body: Snippet)}
 	<Collapsible.Root bind:open={() => sectionOpen(key), (v) => (openSections[key] = v)}>
@@ -576,7 +567,7 @@
 
 {#snippet radioGroup(path: string, fallback: string, options: { value: string; label: string }[])}
 	<RadioGroup.Root value={get(path, fallback)} onValueChange={(v) => set(path, v)} class="gap-2">
-		{#each options as opt}
+		{#each options as opt (opt.value)}
 			<div class="radio-row">
 				<RadioGroup.Item value={opt.value} id="{path}-{opt.value}" />
 				<Label for="{path}-{opt.value}" class="field-label">{opt.label}</Label>
@@ -587,7 +578,7 @@
 
 {#snippet boolRadioGroup(path: string, fallback: boolean, options: { value: boolean; label: string }[])}
 	<RadioGroup.Root value={String(get(path, fallback))} onValueChange={(v) => set(path, v === 'true')} class="gap-2">
-		{#each options as opt}
+		{#each options as opt (String(opt.value))}
 			<div class="radio-row">
 				<RadioGroup.Item value={String(opt.value)} id="{path}-{String(opt.value)}" />
 				<Label for="{path}-{String(opt.value)}" class="field-label">{opt.label}</Label>
@@ -598,7 +589,7 @@
 
 {#snippet checkGroup(path: string, options: { value: string; label: string }[])}
 	<div class="check-group">
-		{#each options as opt}
+		{#each options as opt (opt.value)}
 			<div class="check-row">
 				<Checkbox id="{path}-{opt.value}" checked={hasInArray(path, opt.value)} onCheckedChange={() => toggleArray(path, opt.value)} />
 				<Label for="{path}-{opt.value}" class="check-label">{opt.label}</Label>
@@ -609,7 +600,7 @@
 
 {#snippet checkChips(path: string, values: string[], upper = false)}
 	<div class="chip-wrap">
-		{#each values as v}
+		{#each values as v (v)}
 			<div class="chip-row">
 				<Checkbox id="{path}-{v}" checked={hasInArray(path, v)} onCheckedChange={() => toggleArray(path, v)} />
 				<Label for="{path}-{v}" class="chip-label">{upper ? v.toUpperCase() : v}</Label>
@@ -620,7 +611,7 @@
 
 {#snippet checkChipsInt(path: string, values: number[])}
 	<div class="chip-wrap">
-		{#each values as v}
+		{#each values as v (v)}
 			<div class="chip-row">
 				<Checkbox id="{path}-{v}" checked={hasInIntArray(path, v)} onCheckedChange={() => toggleIntArray(path, v)} />
 				<Label for="{path}-{v}" class="chip-label">{v}</Label>
@@ -637,7 +628,7 @@
 				{options.find((o) => o.value === get(path, fallback))?.label ?? 'Select…'}
 			</Select.Trigger>
 			<Select.Content>
-				{#each options as opt}
+				{#each options as opt (opt.value)}
 					<Select.Item value={opt.value} label={opt.label}>{opt.label}</Select.Item>
 				{/each}
 			</Select.Content>
@@ -646,7 +637,6 @@
 {/snippet}
 
 <style>
-	/* ── Panel shell ── */
 	:global(.config-panel) {
 		width: 384px;
 		height: 100%;
@@ -749,7 +739,6 @@
 		gap: 8px;
 	}
 
-	/* ── Section (Collapsible) ── */
 	:global(.section-trigger) {
 		display: flex;
 		align-items: center;
@@ -785,7 +774,6 @@
 		transform: rotate(-90deg);
 	}
 
-	/* ── Field rows ── */
 	:global(.toggle-row) {
 		display: flex;
 		align-items: center;

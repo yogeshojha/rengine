@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { Label } from '$lib/components/ui/label';
-	import { Switch } from '$lib/components/ui/switch';
 	import { Separator } from '$lib/components/ui/separator';
-	import * as Select from '$lib/components/ui/select';
 	import StringListField from './string-list-field.svelte';
 	import type { ScanContextRead, ScanContextCreate } from '$lib/types/scan-context';
 
@@ -19,7 +17,6 @@
 		return v.startsWith('/') ? null : 'Path must start with /';
 	}
 
-	// IP or CIDR — mirror backend ipaddress.ip_network(strict=False) tolerance.
 	function validateIp(v: string): string | null {
 		const cidr = v.split('/');
 		if (cidr.length > 2) return 'Enter a valid IP or CIDR';
@@ -82,28 +79,7 @@
 
 	<Separator />
 
-	<!-- DEFERRED baseline comparison — rendered disabled -->
-	<div class="space-y-3 opacity-70">
-		<div class="flex items-center justify-between gap-4">
-			<div>
-				<Label class="text-xs">Scan only new assets</Label>
-				<p class="mt-0.5 text-xs text-muted-foreground">
-					Limit the scan to assets not seen in the baseline.
-				</p>
-			</div>
-			<Switch checked={context.scan_only_new_assets} disabled />
-		</div>
-
-		<div class="space-y-1.5">
-			<Label class="text-xs">Compare against baseline scan</Label>
-			<Select.Root type="single" disabled>
-				<Select.Trigger class="h-9 w-full text-sm">No baseline available</Select.Trigger>
-				<Select.Content />
-			</Select.Root>
-		</div>
-
-		<p class="text-xs text-muted-foreground">
-			Available once this target has a completed baseline scan.
-		</p>
-	</div>
+	<p class="text-xs text-muted-foreground">
+		Baseline comparison and new-asset-only scanning are applied per scan at launch, not here.
+	</p>
 </div>

@@ -1,16 +1,19 @@
 <script lang="ts">
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import * as Empty from '$lib/components/ui/empty/index.js';
+	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import { setMode, resetMode } from 'mode-watcher';
 	import {
-		Search,
 		Plus,
 		Crosshair,
 		Building,
@@ -24,7 +27,6 @@
 		CircleCheck,
 		TriangleAlert,
 		Info,
-		Activity,
 		ChevronRight,
 		Trash,
 		Trash2,
@@ -38,6 +40,9 @@
 		Plug,
 		SearchIcon
 	} from 'lucide-svelte';
+	import { goto } from '$app/navigation';
+	import { targetsApi } from '$lib/api/targets';
+	import type { Target as TargetEntity } from '$lib/types/target';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { relativeTime } from '$lib/utilities/dates.js';
 	import type { NotificationType, NotificationSeverity } from '$lib/types/notification';
@@ -46,22 +51,56 @@
 	import ActivityGlance from '$lib/components/activity/activity-glance.svelte';
 
 	let commandOpen = $state(false);
-	let scansSheetOpen = $state(false);
+	let searchQuery = $state('');
+	let searchResults = $state<TargetEntity[]>([]);
+	let searching = $state(false);
+	$effect(() => {
+		const q = searchQuery.trim();
+		if (q.length < 2) {
+			searchResults = [];
+			searching = false;
+			return;
+		}
+		searching = true;
+		const t = setTimeout(async () => {
+			try {
+				searchResults = await targetsApi.searchByValue(q);
+			} catch {
+				searchResults = [];
+			} finally {
+				searching = false;
+			}
+		}, 250);
+		return () => clearTimeout(t);
+	});
+	$effect(() => {
+		if (!commandOpen) {
+			searchQuery = '';
+			searchResults = [];
+		}
+	});
 	let notificationsModalOpen = $state(false);
 	let notificationsDropdownOpen = $state(false);
 	let selectedFilter = $state<NotificationType | 'all'>('all');
 	let addTargetOpen = $state(false);
+	let clearAllOpen = $state(false);
+	let clearing = $state(false);
+	let viewAllLoading = $state(false);
+
+	const isMac =
+		typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+	const searchShortcut = isMac ? '⌘K' : 'Ctrl+K';
 
 	const getSeverityIcon = (severity: NotificationSeverity) => {
 		switch (severity) {
 			case 'error':
-				return { icon: ShieldAlert, class: 'text-red-500' };
+				return { icon: ShieldAlert, class: 'text-destructive' };
 			case 'warning':
-				return { icon: TriangleAlert, class: 'text-yellow-500' };
+				return { icon: TriangleAlert, class: 'text-amber-600 dark:text-amber-500' };
 			case 'success':
-				return { icon: CircleCheck, class: 'text-green-500' };
+				return { icon: CircleCheck, class: 'text-foreground' };
 			default:
-				return { icon: Info, class: 'text-blue-500' };
+				return { icon: Info, class: 'text-chart-1' };
 		}
 	};
 
@@ -109,6 +148,19 @@
 		return counts;
 	});
 
+	const navigateToUrl = (url: string, openNewTab?: boolean) => {
+		if (openNewTab) {
+			window.open(url, '_blank', 'noopener,noreferrer');
+			return;
+		}
+		const isInternal = url.startsWith('/') || url.startsWith(window.location.origin);
+		if (isInternal) {
+			goto(url);
+		} else {
+			window.open(url, '_blank', 'noopener,noreferrer');
+		}
+	};
+
 	const handleNotificationClick = (notificationId: number) => {
 		const notification = notificationStore.notifications.find((n) => n.id === notificationId);
 		if (!notification) return;
@@ -117,11 +169,9 @@
 
 		const metadata = notification.notification_metadata;
 		if (metadata?.url) {
-			if (metadata.open_new_tab) {
-				window.open(metadata.url, '_blank', 'noopener,noreferrer');
-			} else {
-				window.location.href = metadata.url;
-			}
+			notificationsDropdownOpen = false;
+			notificationsModalOpen = false;
+			navigateToUrl(metadata.url, metadata.open_new_tab);
 		}
 	};
 
@@ -135,11 +185,9 @@
 
 		const metadata = notification.notification_metadata;
 		if (metadata?.url) {
-			if (metadata.open_new_tab) {
-				window.open(metadata.url, '_blank', 'noopener,noreferrer');
-			} else {
-				window.location.href = metadata.url;
-			}
+			notificationsDropdownOpen = false;
+			notificationsModalOpen = false;
+			navigateToUrl(metadata.url, metadata.open_new_tab);
 		}
 	};
 
@@ -147,30 +195,47 @@
 		event.stopPropagation();
 		try {
 			await notificationStore.deleteNotification(id);
-		} catch (error) {
-			console.error('Failed to delete notification:', error);
+		} catch {
+			toast.error("Couldn't delete notification — try again");
 		}
 	};
 
 	const handleMarkAllAsRead = async () => {
 		try {
 			await notificationStore.markAllAsRead();
-		} catch (error) {
-			console.error('Failed to mark all as read:', error);
+		} catch {
+			toast.error("Couldn't mark notifications as read — try again");
 		}
 	};
 
-	const handleClearAll = async () => {
+	const confirmClearAll = async () => {
+		clearing = true;
 		try {
 			await notificationStore.clearAll();
-		} catch (error) {
-			console.error('Failed to clear all notifications:', error);
+			clearAllOpen = false;
+		} catch {
+			toast.error("Couldn't clear notifications — try again");
+		} finally {
+			clearing = false;
 		}
 	};
+
+	const handleViewAll = async () => {
+		notificationsDropdownOpen = false;
+		viewAllLoading = true;
+		try {
+			await notificationStore.loadAllNotifications();
+			notificationsModalOpen = true;
+		} finally {
+			viewAllLoading = false;
+		}
+	};
+
+	const retryLoad = () => notificationStore.loadNotifications();
 
 	$effect(() => {
 		const handleKeydown = (e: KeyboardEvent) => {
-			if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
 				e.preventDefault();
 				commandOpen = !commandOpen;
 			}
@@ -184,22 +249,12 @@
 		addTargetOpen = true;
 	};
 
-	const handleAddOrganization = () => {
-		toast.info('Coming soon', {
-			description: 'Add Organization will be available in a future update.'
-		});
-	};
-
 	const handleNewScanEngine = () => {
-		toast.info('Coming soon', {
-			description: 'Scan Engine configuration will be available in a future update.'
-		});
+		goto('/automation/engines');
 	};
 
 	const handleNewScanContext = () => {
-		toast.info('Coming soon', {
-			description: 'Scan Context configuration will be available in a future update.'
-		});
+		goto('/automation/contexts');
 	};
 
 	interface BreadcrumbItem {
@@ -214,10 +269,9 @@
 	<Sidebar.Trigger class="-ms-1" />
 	<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
 
-	<!-- Breadcrumbs -->
 	{#if breadcrumbs.length > 0}
 		<nav class="flex items-center gap-1.5 text-sm">
-			{#each breadcrumbs as crumb, i}
+			{#each breadcrumbs as crumb, i (crumb.href ?? crumb.label)}
 				{#if i > 0}
 					<ChevronRight class="size-3.5 text-muted-foreground/50" />
 				{/if}
@@ -248,20 +302,18 @@
 		onclick={() => (commandOpen = true)}
 	>
 		<SearchIcon class="mr-2 h-4 w-4" />
-		<span class="hidden lg:inline-flex">Search...</span>
-		<span class="inline-flex lg:hidden">Search...</span>
+		<span>Search...</span>
 		<kbd
 			class="pointer-events-none absolute right-1.5 top-1.5 hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex"
 		>
-			Ctrl+Shift+S
+			{searchShortcut}
 		</kbd>
 	</Button>
 
-	<!-- Notifications Dropdown -->
 	<DropdownMenu.Root bind:open={notificationsDropdownOpen}>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="ghost" size="icon" class="relative">
+				<Button {...props} variant="ghost" size="icon" class="relative" title="Notifications">
 					<Bell class="h-4 w-4" />
 					{#if notificationStore.unreadCount > 0}
 						<Badge
@@ -279,8 +331,27 @@
 				<DropdownMenu.Label class="p-0">Notifications</DropdownMenu.Label>
 			</div>
 			<DropdownMenu.Separator />
-			<div class="max-h-80 overflow-y-auto thin-scrollbar">
-				{#if notificationStore.notifications.length === 0}
+			<ScrollArea class="h-80">
+				{#if notificationStore.isLoading && !notificationStore.hasLoaded}
+					<div class="space-y-1 p-1">
+						{#each Array(4) as _, i (i)}
+							<div class="flex items-start gap-3 p-3">
+								<Skeleton class="h-4 w-4 rounded-full" />
+								<div class="flex-1 space-y-2">
+									<Skeleton class="h-3 w-3/4" />
+									<Skeleton class="h-3 w-full" />
+									<Skeleton class="h-3 w-1/3" />
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else if notificationStore.error}
+					<div class="flex flex-col items-center justify-center h-64 px-4 text-center text-muted-foreground">
+						<TriangleAlert class="h-8 w-8 mb-2 text-destructive" />
+						<p class="text-sm">Couldn't load notifications</p>
+						<Button variant="outline" size="sm" class="mt-3" onclick={retryLoad}>Retry</Button>
+					</div>
+				{:else if notificationStore.notifications.length === 0}
 					<div class="flex flex-col items-center justify-center h-64 text-muted-foreground">
 						<Bell class="h-8 w-8 mb-2 opacity-50" />
 						<p class="text-sm">No notifications</p>
@@ -325,22 +396,22 @@
 							</div>
 							<div class="flex items-center gap-1">
 								{#if !notification.is_read}
-									<div class="h-2 w-2 rounded-full bg-blue-500"></div>
+									<div class="h-2 w-2 rounded-full bg-chart-1"></div>
 								{/if}
 								<Button
 									variant="ghost"
 									size="icon"
-									class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+									class="h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
 									onclick={(e) => handleDeleteNotification(notification.id, e)}
 								>
 									<Trash class="h-3 w-3" />
-									<span class="sr-only">Delete</span>
+									<span class="sr-only">Delete notification</span>
 								</Button>
 							</div>
 						</button>
 					{/each}
 				{/if}
-			</div>
+			</ScrollArea>
 			<DropdownMenu.Separator />
 			<div class="flex items-center justify-end gap-2 px-3 py-2">
 				{#if notificationStore.unreadCount > 0}
@@ -358,21 +429,23 @@
 						variant="ghost"
 						size="sm"
 						class="h-auto p-0 text-xs text-destructive hover:text-destructive"
-						onclick={handleClearAll}
+						onclick={() => (clearAllOpen = true)}
 					>
 						Clear all
 					</Button>
 				{/if}
-				<button
-					class="text-xs text-primary hover:underline"
-					onclick={async () => {
-						notificationsDropdownOpen = false;
-						await notificationStore.loadAllNotifications();
-						notificationsModalOpen = true;
-					}}
+				<Button
+					variant="link"
+					size="sm"
+					class="h-auto p-0 text-xs"
+					disabled={viewAllLoading}
+					onclick={handleViewAll}
 				>
+					{#if viewAllLoading}
+						<Spinner class="mr-1 h-3 w-3" />
+					{/if}
 					View all
-				</button>
+				</Button>
 			</div>
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
@@ -380,7 +453,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="ghost" size="icon">
+				<Button {...props} variant="ghost" size="icon" title="Quick actions">
 					<Plus class="h-4 w-4" />
 					<span class="sr-only">Quick Actions</span>
 				</Button>
@@ -393,9 +466,12 @@
 				<Crosshair class="mr-2 h-4 w-4" />
 				Add Target
 			</DropdownMenu.Item>
-			<DropdownMenu.Item onclick={handleAddOrganization}>
-				<Building class="mr-2 h-4 w-4" />
-				Add Organization
+			<DropdownMenu.Item disabled class="justify-between">
+				<span class="flex items-center">
+					<Building class="mr-2 h-4 w-4" />
+					Add Organization
+				</span>
+				<Badge variant="secondary" class="text-[10px]">Soon</Badge>
 			</DropdownMenu.Item>
 			<DropdownMenu.Separator />
 			<DropdownMenu.Label class="text-xs text-muted-foreground">Automation</DropdownMenu.Label>
@@ -413,7 +489,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="ghost" size="icon">
+				<Button {...props} variant="ghost" size="icon" title="Toggle theme">
 					<Sun
 						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
 					/>
@@ -441,9 +517,8 @@
 	</DropdownMenu.Root>
 </header>
 
-<!-- Notifications Modal -->
 <Dialog.Root bind:open={notificationsModalOpen}>
-	<Dialog.Content class="!max-w-none !w-[1400px] max-h-[85vh] flex flex-col">
+	<Dialog.Content class="w-[calc(100%-2rem)] max-w-5xl max-h-[85vh] flex flex-col">
 		<Dialog.Header>
 			<div class="flex items-start justify-between">
 				<div>
@@ -462,7 +537,12 @@
 						</Button>
 					{/if}
 					{#if notificationStore.notifications.length > 0}
-						<Button variant="outline" size="sm" onclick={handleClearAll}>
+						<Button
+							variant="outline"
+							size="sm"
+							class="text-destructive hover:text-destructive"
+							onclick={() => (clearAllOpen = true)}
+						>
 							<Trash2 class="h-4 w-4 mr-2" />
 							Clear all
 						</Button>
@@ -473,10 +553,10 @@
 
 		<Tabs.Root
 			value={selectedFilter}
-			onValueChange={(v) => (selectedFilter = v as any)}
-			class="flex-1 flex flex-col overflow-hidden"
+			onValueChange={(v) => (selectedFilter = v as NotificationType | 'all')}
+			class="flex-1 min-h-0 flex flex-col overflow-hidden"
 		>
-			<Tabs.List class="grid grid-cols-8 w-full gap-1">
+			<Tabs.List class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 w-full h-auto gap-1">
 				<Tabs.Trigger value="all" class="text-xs">
 					All
 					<Badge variant="secondary" class="ml-1 text-[10px]">{typeCounts.all}</Badge>
@@ -532,12 +612,42 @@
 				</Tabs.Trigger>
 			</Tabs.List>
 
-			<div class="flex-1 overflow-y-auto thin-scrollbar mt-4">
-				{#if filteredNotifications.length === 0}
+			<ScrollArea class="mt-4 flex-1 min-h-0">
+				{#if notificationStore.isLoading}
+					<div class="space-y-2">
+						{#each Array(5) as _, i (i)}
+							<div class="flex items-start gap-3 p-4 rounded-lg border">
+								<Skeleton class="h-5 w-5 rounded-full" />
+								<div class="flex-1 space-y-2">
+									<Skeleton class="h-4 w-1/2" />
+									<Skeleton class="h-4 w-full" />
+									<Skeleton class="h-3 w-1/4" />
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else if notificationStore.error}
+					<Empty.Root class="h-64">
+						<Empty.Header>
+							<Empty.Media variant="icon">
+								<TriangleAlert class="text-destructive" />
+							</Empty.Media>
+							<Empty.Title>Couldn't load notifications</Empty.Title>
+							<Empty.Description>Something went wrong fetching your notifications.</Empty.Description>
+						</Empty.Header>
+						<Empty.Content>
+							<Button variant="outline" size="sm" onclick={() => notificationStore.loadAllNotifications()}
+								>Retry</Button
+							>
+						</Empty.Content>
+					</Empty.Root>
+				{:else if filteredNotifications.length === 0}
 					<div class="flex flex-col items-center justify-center h-64 text-muted-foreground">
 						<Bell class="h-12 w-12 mb-4 opacity-50" />
 						<p class="text-sm">
-							No {selectedFilter === 'all' ? '' : selectedFilter} notifications
+							{selectedFilter === 'all'
+								? 'No notifications'
+								: `No ${selectedFilter} notifications`}
 						</p>
 					</div>
 				{:else}
@@ -548,7 +658,7 @@
 							<button
 								type="button"
 								class="flex items-start gap-3 p-4 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors group text-left w-full {!notification.is_read
-									? 'bg-muted/30 border-l-4 border-l-blue-500'
+									? 'bg-muted/30 border-l-4 border-l-chart-1'
 									: ''}"
 								onclick={() => handleNotificationClick(notification.id)}
 							>
@@ -590,23 +700,23 @@
 								</div>
 								<div class="flex items-center gap-1">
 									{#if !notification.is_read}
-										<div class="h-2 w-2 rounded-full bg-blue-500"></div>
+										<div class="h-2 w-2 rounded-full bg-chart-1"></div>
 									{/if}
 									<Button
 										variant="ghost"
 										size="icon"
-										class="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+										class="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
 										onclick={(e) => handleDeleteNotification(notification.id, e)}
 									>
 										<Trash class="h-4 w-4" />
-										<span class="sr-only">Delete</span>
+										<span class="sr-only">Delete notification</span>
 									</Button>
 								</div>
 							</button>
 						{/each}
 					</div>
 				{/if}
-			</div>
+			</ScrollArea>
 		</Tabs.Root>
 	</Dialog.Content>
 </Dialog.Root>
@@ -615,70 +725,83 @@
 
 <Dialog.Root bind:open={commandOpen}>
 	<Dialog.Content class="overflow-hidden p-0 shadow-lg sm:max-w-[550px]">
-		<Command.Root class="[&_[data-cmd-input-wrapper]]:border-b">
-			<Command.Input placeholder="Search targets, vulnerabilities, assets..." />
+		<Command.Root shouldFilter={false} class="[&_[data-cmd-input-wrapper]]:border-b">
+			<Command.Input bind:value={searchQuery} placeholder="Search targets or run an action..." />
 			<Command.List>
-				<Command.Empty>No results found.</Command.Empty>
-
-				<Command.Group heading="Quick Actions">
-					<Command.Item
-						onSelect={() => {
-							commandOpen = false;
-							handleAddTarget();
-						}}
-					>
-						<Crosshair class="mr-2 h-4 w-4" />
-						<span>Add Target</span>
-					</Command.Item>
-					<Command.Item
-						onSelect={() => {
-							commandOpen = false;
-							handleAddOrganization();
-						}}
-					>
-						<Building class="mr-2 h-4 w-4" />
-						<span>Add Organization</span>
-					</Command.Item>
-					<Command.Item
-						onSelect={() => {
-							commandOpen = false;
-							handleNewScanEngine();
-						}}
-					>
-						<Cog class="mr-2 h-4 w-4" />
-						<span>New Scan Engine</span>
-					</Command.Item>
-					<Command.Item
-						onSelect={() => {
-							commandOpen = false;
-							handleNewScanContext();
-						}}
-					>
-						<Layers class="mr-2 h-4 w-4" />
-						<span>New Scan Context</span>
-					</Command.Item>
-				</Command.Group>
+				{#if searchQuery.trim().length >= 2}
+					{#if searching}
+						<div
+							class="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground"
+						>
+							<Spinner class="size-4" /> Searching…
+						</div>
+					{:else if searchResults.length === 0}
+						<div class="py-6 text-center text-sm text-muted-foreground">No targets found.</div>
+					{:else}
+						<Command.Group heading="Targets">
+							{#each searchResults as t (t.id)}
+								<Command.Item
+									value={t.id}
+									onSelect={() => {
+										commandOpen = false;
+										goto('/targets/' + t.id);
+									}}
+								>
+									<Crosshair class="mr-2 h-4 w-4 shrink-0" />
+									<span class="truncate">{t.target_value}</span>
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					{/if}
+				{:else}
+					<Command.Group heading="Quick Actions">
+						<Command.Item
+							onSelect={() => {
+								commandOpen = false;
+								handleAddTarget();
+							}}
+						>
+							<Crosshair class="mr-2 h-4 w-4" />
+							<span>Add Target</span>
+						</Command.Item>
+						<Command.Item disabled class="justify-between">
+							<span class="flex items-center">
+								<Building class="mr-2 h-4 w-4" />
+								Add Organization
+							</span>
+							<Badge variant="secondary" class="text-[10px]">Soon</Badge>
+						</Command.Item>
+						<Command.Item
+							onSelect={() => {
+								commandOpen = false;
+								handleNewScanEngine();
+							}}
+						>
+							<Cog class="mr-2 h-4 w-4" />
+							<span>New Scan Engine</span>
+						</Command.Item>
+						<Command.Item
+							onSelect={() => {
+								commandOpen = false;
+								handleNewScanContext();
+							}}
+						>
+							<Layers class="mr-2 h-4 w-4" />
+							<span>New Scan Context</span>
+						</Command.Item>
+					</Command.Group>
+				{/if}
 			</Command.List>
 		</Command.Root>
 	</Dialog.Content>
 </Dialog.Root>
 
-<style>
-	.thin-scrollbar {
-		scrollbar-width: thin;
-		scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
-	}
-
-	.thin-scrollbar::-webkit-scrollbar {
-		width: 6px;
-	}
-
-	.thin-scrollbar::-webkit-scrollbar-track {
-		background: transparent;
-	}
-
-	.thin-scrollbar::-webkit-scrollbar-thumb {
-		background-color: hsl(var(--muted-foreground) / 0.3);
-		border-radius: 3px;
-	}
-</style>
+<DeleteConfirmationDialog
+	bind:open={clearAllOpen}
+	title="Clear all notifications?"
+	description={`This permanently deletes all ${notificationStore.totalCount} notifications, including any you haven't triaged. This can't be undone.`}
+	confirmLabel="Clear all"
+	isDeleting={clearing}
+	onOpenChange={(o) => (clearAllOpen = o)}
+	onConfirm={confirmClearAll}
+/>

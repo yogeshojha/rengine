@@ -1,7 +1,16 @@
 <script lang="ts">
 	import { notificationStore } from '$lib/stores/notifications.svelte';
+	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
+
+	function isSameOrigin(url: string): boolean {
+		try {
+			return new URL(url, window.location.origin).origin === window.location.origin;
+		} catch {
+			return false;
+		}
+	}
 
 	onMount(() => {
 		const unsubscribe = notificationStore.subscribeToToasts((notification) => {
@@ -23,10 +32,10 @@
 							onClick: () => {
 								void notificationStore.markAsRead(notification.id);
 								if (metadata.url) {
-									if (metadata.open_new_tab) {
+									if (metadata.open_new_tab || !isSameOrigin(metadata.url)) {
 										window.open(metadata.url, '_blank', 'noopener,noreferrer');
 									} else {
-										window.location.href = metadata.url;
+										void goto(metadata.url);
 									}
 								}
 							}

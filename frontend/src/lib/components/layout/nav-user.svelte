@@ -66,7 +66,7 @@
 							<span class="truncate font-medium">{user.name}</span>
 							<span class="truncate text-xs">{user.email}</span>
 							{#if user.is_superuser}
-								<Badge variant="secondary" class="bg-blue-500 text-white dark:bg-blue-600 mt-1">
+								<Badge variant="secondary" class="bg-chart-1/15 text-chart-1 mt-1">
 									<ShieldIcon class="w-3 h-3 mr-1" />
 									Admin
 								</Badge>
@@ -95,7 +95,6 @@
 	</Sidebar.MenuItem>
 </Sidebar.Menu>
 
-<!-- About Dialog -->
 <Dialog.Root bind:open={aboutDialogOpen}>
 	<Dialog.Content>
 		<Dialog.Header>
@@ -112,7 +111,7 @@
 				<a
 					href="https://github.com/yogeshojha/rengine"
 					target="_blank"
-					class="text-sm text-blue-500 hover:underline"
+					class="text-sm text-chart-1 hover:underline"
 				>
 					github.com/yogeshojha/rengine
 				</a>
@@ -122,7 +121,7 @@
 				<a
 					href="https://rengine.wiki"
 					target="_blank"
-					class="text-sm text-blue-500 hover:underline"
+					class="text-sm text-chart-1 hover:underline"
 				>
 					rengine.wiki
 				</a>
@@ -132,8 +131,7 @@
 				<p class="text-sm text-muted-foreground">GNU General Public License v3.0</p>
 			</div>
 		</div>
-		<Dialog.Footer class="flex justify-between">
-			<Button variant="outline">Check for Updates</Button>
+		<Dialog.Footer>
 			<Button variant="ghost" onclick={() => (aboutDialogOpen = false)}>Close</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

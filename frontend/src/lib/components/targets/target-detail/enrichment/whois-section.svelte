@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { WhoisRecordRead, WhoisEntityRole } from '$lib/types/whois';
-	import { ENTITY_ROLE_LABELS, getStatusBadgeColor } from '$lib/types/whois';
+	import { ENTITY_ROLE_LABELS } from '$lib/types/whois';
 	import { TargetType } from '$lib/types/target';
+	import { MS_PER_DAY } from '$lib/utilities/dates';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import CopyButton from '$lib/components/copy-button.svelte';
@@ -9,7 +10,6 @@
 		Shield,
 		ShieldOff,
 		ChevronRight,
-		Clock,
 		AlertTriangle,
 		CalendarClock
 	} from 'lucide-svelte';
@@ -40,7 +40,13 @@
 			.map((r) => ({ role: r, label: ENTITY_ROLE_LABELS[r], items: parsed!.entities[r] }));
 	});
 
-	let entitiesOpen = $state(false);
+	let detailOpen = $state(false);
+
+	let registryCount = $derived(
+		(isDomain ? (record.nameservers?.length ?? 0) + (record.domain_status?.length ?? 0) : 0) +
+			entities.reduce((a, e) => a + e.items.length, 0)
+	);
+	let hasRegistryDetail = $derived(registryCount > 0 || (isDomain && record.dnssec != null));
 
 	function fmtDate(d: string | null): string {
 		if (!d) return '—';
@@ -58,7 +64,7 @@
 	function daysUntil(d: string | null): number | null {
 		if (!d) return null;
 		try {
-			return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
+			return Math.ceil((new Date(d).getTime() - Date.now()) / MS_PER_DAY);
 		} catch {
 			return null;
 		}
@@ -66,12 +72,11 @@
 
 	let expiryDays = $derived(daysUntil(record.expiration_date));
 
-	// expiry styling
 	let expiryColor = $derived.by(() => {
 		if (expiryDays == null) return '';
-		if (expiryDays < 0) return 'text-red-400';
-		if (expiryDays < 30) return 'text-amber-400';
-		return 'text-muted-foreground/60';
+		if (expiryDays < 0) return 'text-destructive';
+		if (expiryDays < 30) return 'text-amber-600 dark:text-amber-500';
+		return 'text-muted-foreground';
 	});
 </script>
 
@@ -81,26 +86,23 @@
 	opts?: { mono?: boolean; copy?: boolean }
 )}
 	{#if value && value.trim() && value !== '—'}
-		<div class="flex items-start justify-between gap-3 py-[3px] group/kv">
-			<span class="text-[10px] text-muted-foreground/50 shrink-0">{label}</span>
-			<div class="flex items-center gap-1 min-w-0 justify-end">
-				<span
-					class="text-[11px] text-right text-foreground/75 break-all {opts?.mono
-						? 'font-mono text-[10px]'
-						: ''}">{value}</span
-				>
-				{#if opts?.copy}
-					<div class="opacity-0 group-hover/kv:opacity-100 transition-opacity shrink-0">
-						<CopyButton {value} />
-					</div>
-				{/if}
-			</div>
-		</div>
+		<dt class="text-[11px] leading-relaxed text-muted-foreground/55">{label}</dt>
+		<dd class="flex min-w-0 items-baseline gap-1 group/kv">
+			<span
+				class="text-[11px] leading-relaxed text-foreground/80 break-all {opts?.mono
+					? 'font-mono text-[10px]'
+					: ''}">{value}</span
+			>
+			{#if opts?.copy}
+				<div class="self-center opacity-0 group-hover/kv:opacity-100 transition-opacity shrink-0">
+					<CopyButton {value} />
+				</div>
+			{/if}
+		</dd>
 	{/if}
 {/snippet}
 
 <div class="p-3 space-y-3">
-	<!-- expiry as inline indicator, not a banner -->
 	{#if isDomain && expiryDays != null}
 		<div class="flex items-center gap-1.5 text-[10px] {expiryColor}">
 			{#if expiryDays < 0}
@@ -117,8 +119,10 @@
 		</div>
 	{/if}
 
-	<!-- key-value pairs -->
-	<div class="space-y-px">
+	<dl class="grid grid-cols-[minmax(84px,max-content)_1fr] gap-x-4 gap-y-1">
+		{#if isIp || isAsn}
+			{@render kv('Name', record.name)}
+		{/if}
 		{@render kv('Registrar', record.registrar_name)}
 		{@render kv('Registrant', record.registrant_name)}
 		{@render kv('Registered', fmtDate(record.registration_date))}
@@ -134,99 +138,107 @@
 		{#if isIp || isAsn}
 			{@render kv('Network CIDR', record.network_cidr, { mono: true, copy: true })}
 			{@render kv('Assignment', record.assignment_type)}
+			{@render kv('Description', record.description)}
 		{/if}
 		{#if isAsn && record.asn_range_start != null}
 			{@render kv('ASN Range', `${record.asn_range_start} – ${record.asn_range_end}`)}
 		{/if}
-	</div>
+	</dl>
 
-	<!-- nameservers as chips -->
-	{#if isDomain && record.nameservers?.length}
-		<div class="space-y-1">
-			<p class="text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground/35">
-				Nameservers
-			</p>
-			<div class="flex flex-wrap gap-1">
-				{#each record.nameservers as ns}
-					<Badge
-						variant="outline"
-						class="text-[9px] font-mono text-foreground/60 rounded border-border/30 bg-muted/10 px-1.5 py-0.5"
-						>{ns}</Badge
-					>
-				{/each}
-			</div>
-		</div>
-	{/if}
-
-	<!-- domain status pills -->
-	{#if isDomain && record.domain_status?.length}
-		<div class="space-y-1">
-			<p class="text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground/35">
-				Status
-			</p>
-			<div class="flex flex-wrap gap-1">
-				{#each record.domain_status as s}
-					<Badge variant="outline" class="text-[8px] h-[16px] px-1 {getStatusBadgeColor(s)}"
-						>{s}</Badge
-					>
-				{/each}
-			</div>
-		</div>
-	{/if}
-
-	<!-- DNSSEC — icon only, no badge -->
-	{#if isDomain}
-		<div class="flex items-center gap-1.5 text-[10px]">
-			{#if record.dnssec}
-				<Shield class="h-3 w-3 text-emerald-400/70" />
-				<span class="text-emerald-400/70">DNSSEC</span>
-			{:else}
-				<ShieldOff class="h-3 w-3 text-muted-foreground/20" />
-				<span class="text-muted-foreground/30">No DNSSEC</span>
-			{/if}
-		</div>
-	{/if}
-
-	<!-- entities — collapsible -->
-	{#if entities.length > 0}
-		<Collapsible.Root bind:open={entitiesOpen}>
+	{#if hasRegistryDetail}
+		<Collapsible.Root bind:open={detailOpen}>
 			<Collapsible.Trigger
-				class="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 transition-colors hover:text-foreground/60"
+				class="flex items-center gap-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<ChevronRight
-					class="h-2.5 w-2.5 transition-transform duration-150 {entitiesOpen ? 'rotate-90' : ''}"
+					class="h-3 w-3 transition-transform duration-150 {detailOpen ? 'rotate-90' : ''}"
 				/>
-				<span>Entities ({entities.reduce((a, e) => a + e.items.length, 0)})</span>
+				<span>Registry detail</span>
 			</Collapsible.Trigger>
 
 			<Collapsible.Content>
-				<div class="mt-1.5 space-y-1">
-					{#each entities as ent (ent.role)}
-						{#each ent.items as entity}
-							<div class="rounded border border-border/20 bg-muted/5 px-2.5 py-1.5 space-y-0.5">
-								<span class="text-[7px] font-bold uppercase tracking-wider text-muted-foreground/30"
-									>{ent.label}</span
-								>
-								{#if entity.name}<p class="text-[10px] font-medium text-foreground/75">
-										{entity.name}
-									</p>{/if}
-								{#if entity.email}<p class="text-[9px] font-mono text-muted-foreground/50">
-										{entity.email}
-									</p>{/if}
-								{#if entity.address}
-									{@const parts = [
-										entity.address.street_address,
-										entity.address.locality,
-										entity.address.region,
-										entity.address.postal_code
-									].filter(Boolean)}
-									{#if parts.length}
-										<p class="text-[9px] text-muted-foreground/35">{parts.join(', ')}</p>
-									{/if}
-								{/if}
+				<div class="mt-2 space-y-3">
+					{#if isDomain}
+						<div class="flex items-center gap-1.5 text-[11px]">
+							{#if record.dnssec}
+								<Shield class="h-3 w-3 text-muted-foreground/60" />
+								<span class="text-muted-foreground">DNSSEC enabled</span>
+							{:else}
+								<ShieldOff class="h-3 w-3 text-muted-foreground/40" />
+								<span class="text-muted-foreground/60">No DNSSEC</span>
+							{/if}
+						</div>
+					{/if}
+
+					{#if isDomain && record.nameservers?.length}
+						<div class="space-y-1">
+							<p class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+								Nameservers
+							</p>
+							<div class="flex flex-wrap gap-1">
+								{#each record.nameservers as ns (ns)}
+									<Badge
+										variant="outline"
+										class="text-[10px] font-mono text-muted-foreground rounded-md border-border/60 px-1.5 py-0.5"
+										>{ns}</Badge
+									>
+								{/each}
 							</div>
-						{/each}
-					{/each}
+						</div>
+					{/if}
+
+					{#if isDomain && record.domain_status?.length}
+						<div class="space-y-1">
+							<p class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+								Status locks
+							</p>
+							<div class="flex flex-wrap gap-1">
+								{#each record.domain_status as s (s)}
+									<Badge
+										variant="outline"
+										class="text-[10px] h-[18px] px-1.5 text-muted-foreground border-border/60">{s}</Badge
+									>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					{#if entities.length > 0}
+						<div class="space-y-1">
+							<p class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+								Entities ({entities.reduce((a, e) => a + e.items.length, 0)})
+							</p>
+							<div class="space-y-1">
+								{#each entities as ent (ent.role)}
+									{#each ent.items as entity (entity.handle || entity.email || entity.name)}
+										<div class="rounded-md border border-border/15 bg-muted/20 px-2.5 py-1.5 space-y-0.5">
+											<span
+												class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50"
+												>{ent.label}</span
+											>
+											{#if entity.name}<p class="text-[11px] font-medium text-foreground/80">
+													{entity.name}
+												</p>{/if}
+											{#if entity.email}<p class="text-[10px] font-mono text-muted-foreground/60">
+													{entity.email}
+												</p>{/if}
+											{#if entity.address}
+												{@const parts = [
+													entity.address.street_address,
+													entity.address.locality,
+													entity.address.region,
+													entity.address.postal_code
+												].filter(Boolean)}
+												{#if parts.length}
+													<p class="text-[10px] text-muted-foreground/60">{parts.join(', ')}</p>
+												{/if}
+											{/if}
+										</div>
+									{/each}
+								{/each}
+							</div>
+						</div>
+					{/if}
 				</div>
 			</Collapsible.Content>
 		</Collapsible.Root>

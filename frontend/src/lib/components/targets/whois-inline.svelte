@@ -33,7 +33,7 @@
 		onClick?: () => void;
 	}
 
-	let { status, whois, targetId, error = null, onClick }: Props = $props();
+	let { status, whois, targetId, error: _error = null, onClick }: Props = $props();
 
 	let urgency = $derived<ExpirationUrgency>(
 		whois?.expiration_date ? getExpirationUrgency(whois.expiration_date) : 'none'
@@ -72,10 +72,10 @@
 
 	let urgencyClasses = $derived.by(() => {
 		const map: Record<ExpirationUrgency, string> = {
-			expired: 'text-red-500 dark:text-red-400',
-			critical: 'text-red-500 dark:text-red-400',
-			warning: 'text-amber-500 dark:text-amber-400',
-			healthy: 'text-emerald-600 dark:text-emerald-400',
+			expired: 'text-destructive',
+			critical: 'text-destructive',
+			warning: 'text-amber-600 dark:text-amber-500',
+			healthy: 'text-muted-foreground',
 			none: 'text-muted-foreground'
 		};
 		return map[urgency];
@@ -83,10 +83,10 @@
 
 	let urgencyDotClasses = $derived.by(() => {
 		const map: Record<ExpirationUrgency, string> = {
-			expired: 'bg-red-500',
-			critical: 'bg-red-500',
+			expired: 'bg-destructive',
+			critical: 'bg-destructive',
 			warning: 'bg-amber-500',
-			healthy: 'bg-emerald-500',
+			healthy: 'bg-muted-foreground',
 			none: 'bg-muted-foreground'
 		};
 		return map[urgency];
@@ -111,26 +111,28 @@
 		<span class="animate-pulse">Fetching WHOIS…</span>
 	</div>
 {:else if status === TaskStatus.FAILED}
-	<div class="flex items-center gap-1.5 text-xs text-red-500/70 dark:text-red-400/70">
+	<div class="flex items-center gap-1.5 text-xs text-destructive/70">
 		<TriangleAlert class="h-3 w-3" />
 		<span>WHOIS failed</span>
 	</div>
 {:else if status === TaskStatus.SUCCESS && whois}
 	<HoverCard.Root openDelay={250} closeDelay={100}>
 		<HoverCard.Trigger>
-			<button
-				type="button"
-				class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer max-w-full"
-				onclick={handleClick}
-			>
-				<span class="truncate">{inlineSummary}</span>
-				{#if urgency !== 'none' && whois.lookup_type === 'DOMAIN'}
-					<span class="inline-block h-1.5 w-1.5 rounded-full shrink-0 {urgencyDotClasses}"></span>
-				{/if}
-			</button>
+			{#snippet child({ props })}
+				<button
+					{...props}
+					type="button"
+					class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer max-w-full"
+					onclick={handleClick}
+				>
+					<span class="truncate">{inlineSummary}</span>
+					{#if urgency !== 'none' && whois.lookup_type === 'DOMAIN'}
+						<span class="inline-block h-1.5 w-1.5 rounded-full shrink-0 {urgencyDotClasses}"></span>
+					{/if}
+				</button>
+			{/snippet}
 		</HoverCard.Trigger>
 		<HoverCard.Content class="w-80 p-0" align="start" side="bottom">
-			<!-- Header -->
 			<div class="px-4 pt-3.5 pb-3 border-b border-border/50">
 				<div class="flex items-center gap-2">
 					<div class="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10">
@@ -143,7 +145,6 @@
 				</div>
 			</div>
 
-			<!-- Body -->
 			<div class="px-4 py-3 space-y-3">
 				{#if whois.registrant_name}
 					<div class="flex items-start gap-2.5">
@@ -244,7 +245,6 @@
 				{/if}
 			</div>
 
-			<!-- Footer -->
 			<div class="px-4 py-2.5 border-t border-border/50 bg-muted/30">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">

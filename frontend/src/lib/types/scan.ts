@@ -9,7 +9,6 @@ export const SCAN_STATUSES = [
 ] as const;
 export type ScanStatus = (typeof SCAN_STATUSES)[number];
 
-// execution_config arrives with header VALUES already masked by the backend.
 export interface ResolvedScanConfig {
 	target_value: string;
 	target_type: string;
@@ -60,8 +59,6 @@ export interface ScanCreate {
 	context_id?: string | null;
 	target_id: string;
 }
-
-// --- Preview (secret-safe: never carries a header value) ---
 
 export const PREVIEW_TOOL_STATUSES = [
 	'will_run',

@@ -2,6 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { onboardingStore } from '$lib/stores/onboarding.svelte';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
@@ -10,6 +12,7 @@
 	import TopBar from '$lib/components/layout/top-bar.svelte';
 	import NotificationToasts from '$lib/components/notifications/notification-toasts.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import CreateFirstProjectModal from '@/components/modals/create-first-project-modal.svelte';
 	import { getRouteLabel } from '$lib/config/routes';
@@ -30,11 +33,6 @@
 		}
 	});
 
-	/**
-	 * Single redirect guard. Navigation to /login is the only place here —
-	 * logout() and clearSession() do NOT call goto so there is never a
-	 * duplicate navigation.
-	 */
 	$effect(() => {
 		if (!auth.isLoading && !auth.isAuthenticated) {
 			goto('/login');
@@ -47,7 +45,30 @@
 		}
 	});
 
-	// Load notifications via REST (initial fetch)
+	$effect(() => {
+		if (auth.isAuthenticated && !auth.isLoading && !capabilitiesStore.hasFetched) {
+			capabilitiesStore.fetch();
+		}
+	});
+
+	$effect(() => {
+		if (auth.isAuthenticated && !auth.isLoading) {
+			if (!onboardingStore.hasFetched) {
+				onboardingStore.fetchStatus();
+				return;
+			}
+			const status = onboardingStore.status;
+			if (
+				status &&
+				!status.completed &&
+				status.can_setup &&
+				page.url.pathname !== '/onboarding'
+			) {
+				goto('/onboarding');
+			}
+		}
+	});
+
 	$effect(() => {
 		if (auth.isAuthenticated && !auth.isLoading) {
 			if (!notificationStore.hasLoaded && !notificationStore.isLoading) {
@@ -56,12 +77,6 @@
 		}
 	});
 
-	/**
-	 * SSE connection — initialise as soon as authenticated, independently of
-	 * whether notifications have finished loading.  Waiting on hasLoaded caused
-	 * a cascading failure: a notification API error would block all real-time
-	 * updates for the entire session.
-	 */
 	$effect(() => {
 		if (auth.isAuthenticated && !auth.isLoading) {
 			const projectId = projectsStore.activeProject?.id;
@@ -75,7 +90,6 @@
 		}
 	});
 
-	// Handle project switches without tearing down the entire SSE connection
 	let prevProjectId: string | undefined;
 	$effect(() => {
 		const projectId = projectsStore.activeProject?.id;
@@ -90,10 +104,20 @@
 	let showRequiredProjectCreateModal = $derived(
 		auth.isAuthenticated &&
 			!auth.isLoading &&
+			onboardingStore.status?.completed === true &&
 			!projectsStore.isLoading &&
 			projectsStore.hasFetched &&
 			projectsStore.projects.length === 0
 	);
+
+	const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+	const NEW_ENTITY_LABEL: Record<string, string> = {
+		contexts: 'New Context',
+		engines: 'New Scan Engine',
+		targets: 'New Target',
+		scans: 'New Scan'
+	};
 
 	let breadcrumbs = $derived.by(() => {
 		const path = page.url.pathname;
@@ -101,14 +125,22 @@
 
 		return segments
 			.map((segment, index) => {
+				const href = '/' + segments.slice(0, index + 1).join('/');
 				const override = breadcrumbStore.getLabel(segment);
-				const label = override || getRouteLabel(segment);
-				if (!label) return null;
+				if (override) return { label: override, href };
 
-				return {
-					label,
-					href: '/' + segments.slice(0, index + 1).join('/')
-				};
+				if (segment === 'new') {
+					const parent = segments[index - 1];
+					return { label: NEW_ENTITY_LABEL[parent] ?? 'New', href };
+				}
+
+				if (UUID_RE.test(segment)) {
+					return { label: segment.slice(0, 8), href };
+				}
+
+				const label = getRouteLabel(segment);
+				if (!label) return null;
+				return { label, href };
 			})
 			.filter(Boolean) as { label: string; href: string }[];
 	});
@@ -118,7 +150,7 @@
 <CreateFirstProjectModal open={showRequiredProjectCreateModal} />
 
 {#if auth.isLoading}
-	<div class="min-h-screen flex items-center justify-center">
+	<div class="min-h-screen flex flex-col items-center justify-center gap-3">
 		<Spinner />
 		<p class="text-muted-foreground">Loading...</p>
 	</div>
@@ -132,9 +164,11 @@
 				>
 					<TopBar {breadcrumbs} />
 					<div class="relative flex flex-1 min-h-0 overflow-hidden">
-						<main class="flex-1 min-h-0 overflow-auto p-6" style="scrollbar-gutter: stable;">
-							{@render children()}
-						</main>
+						<ScrollArea class="flex-1 min-h-0">
+							<main class="p-6">
+								{@render children()}
+							</main>
+						</ScrollArea>
 						<ActivityPanel />
 					</div>
 				</div>

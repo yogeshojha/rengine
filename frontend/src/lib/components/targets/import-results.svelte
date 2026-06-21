@@ -29,21 +29,21 @@
 				value: 'imported',
 				label: 'Imported',
 				count: successResults.length,
-				color: 'bg-green-500'
+				color: 'bg-foreground'
 			});
 		if (failedResults.length > 0)
 			tabs.push({
 				value: 'failed',
 				label: 'Failed',
 				count: failedResults.length,
-				color: 'bg-red-500'
+				color: 'bg-destructive'
 			});
 		if (duplicateResults.length > 0)
 			tabs.push({
 				value: 'duplicates',
 				label: 'Duplicates',
 				count: duplicateResults.length,
-				color: 'bg-orange-500'
+				color: 'bg-amber-500'
 			});
 		return tabs;
 	});
@@ -79,25 +79,25 @@
 </script>
 
 <div class="space-y-4">
-	<div class="grid grid-cols-4 gap-3 text-center">
+	<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
 		<div class="rounded-lg border bg-card p-3 space-y-1">
 			<div class="text-2xl font-semibold tabular-nums">{total}</div>
 			<div class="text-xs text-muted-foreground">Total</div>
 		</div>
 		<div class="rounded-lg border bg-card p-3 space-y-1">
-			<div class="text-2xl font-semibold tabular-nums text-green-600 dark:text-green-400">
+			<div class="text-2xl font-semibold tabular-nums text-foreground">
 				{imported}
 			</div>
 			<div class="text-xs text-muted-foreground">Imported</div>
 		</div>
 		<div class="rounded-lg border bg-card p-3 space-y-1">
-			<div class="text-2xl font-semibold tabular-nums text-orange-600 dark:text-orange-400">
+			<div class="text-2xl font-semibold tabular-nums text-amber-600 dark:text-amber-500">
 				{skipped_duplicates}
 			</div>
 			<div class="text-xs text-muted-foreground">Duplicates</div>
 		</div>
 		<div class="rounded-lg border bg-card p-3 space-y-1">
-			<div class="text-2xl font-semibold tabular-nums text-red-600 dark:text-red-400">
+			<div class="text-2xl font-semibold tabular-nums text-destructive">
 				{failed}
 			</div>
 			<div class="text-xs text-muted-foreground">Failed</div>
@@ -114,7 +114,7 @@
 				class="w-full"
 			>
 				<Tabs.List class="h-8 w-auto inline-flex">
-					{#each availableTabs as tab}
+					{#each availableTabs as tab (tab.value)}
 						<Tabs.Trigger value={tab.value} class="text-xs h-7 px-3">
 							<div class="flex items-center gap-1.5">
 								<div class="h-1.5 w-1.5 rounded-full {tab.color}"></div>
@@ -133,15 +133,11 @@
 						>
 							<div class="flex items-center gap-2 min-w-0 flex-1">
 								{#if activeTab === 'imported'}
-									<BadgeCheck
-										class="h-3.5 w-3.5 text-green-600 dark:text-green-400 flex-shrink-0"
-									/>
+									<BadgeCheck class="h-3.5 w-3.5 text-foreground flex-shrink-0" />
 								{:else if activeTab === 'failed'}
 									<BadgeX class="h-3.5 w-3.5 text-destructive flex-shrink-0" />
 								{:else}
-									<BadgeMinus
-										class="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 flex-shrink-0"
-									/>
+									<BadgeMinus class="h-3.5 w-3.5 text-amber-600 dark:text-amber-500 flex-shrink-0" />
 								{/if}
 								<code class="text-xs font-mono truncate">{result.target_value}</code>
 							</div>

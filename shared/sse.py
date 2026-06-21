@@ -1,19 +1,3 @@
-"""
-Channel-based Server-Sent Events manager.
-
-Topic-scoped pub/sub design.
-Clients subscribe to specific channels on connect and only receive
-events published to those channels.
-
-Channel and event type constants are defined in shared.enums.sse:
-    SSEChannel.BROADCAST  - system-wide like notifications
-    SSEChannel.project(id) - project-scoped events
-
-Wire format (SSE):
-    event: message
-    data: {"channel": "project:abc", "type": "activity", "data": {...}, "ts": "..."}
-"""
-
 import asyncio
 import json
 import logging
@@ -47,7 +31,6 @@ class SSEManager:
         self._initialized = True
 
     async def subscribe(self, queue: asyncio.Queue, channels: list[str]) -> None:
-        """Register a queue to receive events on the given channels."""
         async with self._lock:
             queue_id = id(queue)
             self._queue_channels[queue_id] = set(channels)
@@ -64,7 +47,6 @@ class SSEManager:
         )
 
     async def unsubscribe(self, queue: asyncio.Queue) -> None:
-        """Remove a queue from all its channels and drain pending messages."""
         async with self._lock:
             queue_id = id(queue)
             channels = self._queue_channels.pop(queue_id, set())
@@ -74,7 +56,6 @@ class SSEManager:
                     if not self._subscriptions[channel]:
                         del self._subscriptions[channel]
 
-        # Draining so the queue doesn't hold references
         with suppress(asyncio.QueueEmpty):
             while not queue.empty():
                 queue.get_nowait()
@@ -91,10 +72,6 @@ class SSEManager:
         event_type: str,
         data: dict[str, Any],
     ) -> int:
-        """Publish an event to a single channel.
-
-        Returns the number of clients that received the message.
-        """
         subscribers = self._subscriptions.get(channel, set()).copy()
         if not subscribers:
             return 0
@@ -108,11 +85,6 @@ class SSEManager:
         event_type: str,
         data: dict[str, Any],
     ) -> int:
-        """Publish to multiple channels, deduplicating subscribers.
-
-        Useful when an event is relevant to multiple scopes, e.g. a target
-        activity that should reach both project-level and broadcast listeners.
-        """
         seen: set[asyncio.Queue] = set()
         for channel in channels:
             seen |= self._subscriptions.get(channel, set())
@@ -125,7 +97,6 @@ class SSEManager:
 
     @asynccontextmanager
     async def stream(self, channels: list[str]) -> AsyncIterator[asyncio.Queue]:
-        """Context manager that yields a subscribed queue."""
         if len(self._queue_channels) >= self._max_connections:
             msg = "Maximum SSE connections reached"
             raise ConnectionError(msg)
@@ -138,7 +109,6 @@ class SSEManager:
             await self.unsubscribe(queue)
 
     async def _deliver(self, message: str, subscribers: set[asyncio.Queue]) -> int:
-        """Push a formatted message to subscriber queues."""
         dead: set[asyncio.Queue] = set()
         delivered = 0
 
@@ -156,7 +126,6 @@ class SSEManager:
         return delivered
 
     async def _cleanup(self, dead: set[asyncio.Queue]) -> None:
-        """Remove dead queues from all subscription maps."""
         async with self._lock:
             for queue in dead:
                 queue_id = id(queue)
@@ -169,12 +138,6 @@ class SSEManager:
 
     @staticmethod
     def _format_message(channel: str, event_type: str, data: dict[str, Any]) -> str:
-        """Build an SSE wire-format message.
-
-        Wire format:
-            event: message
-            data: {"channel": "...", "type": "...", "data": {...}, "ts": "..."}
-        """
         payload = {
             "channel": channel,
             "type": event_type,
@@ -185,13 +148,10 @@ class SSEManager:
         return f"event: message\ndata: {json_data}\n\n"
 
     def get_active_connections(self) -> int:
-        """Number of connected SSE clients."""
         return len(self._queue_channels)
 
     def get_channel_stats(self) -> dict[str, int]:
-        """Subscriber count per channel."""
         return {ch: len(subs) for ch, subs in self._subscriptions.items()}
 
 
-# Module-level singleton
 sse_manager = SSEManager()

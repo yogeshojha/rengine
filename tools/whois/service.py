@@ -7,11 +7,13 @@ The stored records enable correlation queries across all targets:
 mostly for Same registrant? Same registrar? Same nameservers?
 """
 
+import asyncio
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -147,7 +149,8 @@ class WhoisService:
                     cache_hit=True,
                 )
 
-        response = self.do_lookup(normalized, target_type)
+        # whoisit/requests is synchronous blocking I/O - offload off the loop
+        response = await asyncio.to_thread(self.do_lookup, normalized, target_type)
 
         if store_in_db and session:
             await self._store_record(session, response, normalized)
@@ -187,10 +190,29 @@ class WhoisService:
 
         record = WhoisRecord(**db_fields, queried_at=now)
         session.add(record)
-        await session.flush()
-        await self._sync_nameservers(session, record.id, db_fields.get("nameservers"))
-        await session.commit()
-        return record
+        try:
+            await session.flush()
+            await self._sync_nameservers(
+                session, record.id, db_fields.get("nameservers")
+            )
+            await session.commit()
+            return record
+        except IntegrityError:
+            # concurrent insert for the same query_value won the race; update it
+            await session.rollback()
+            existing = await self._get_cached_record(session, query_value)
+            if existing is None:
+                raise
+            for key, value in db_fields.items():
+                setattr(existing, key, value)
+            existing.queried_at = now
+            existing.updated_at = now
+            await session.flush()
+            await self._sync_nameservers(
+                session, existing.id, db_fields.get("nameservers")
+            )
+            await session.commit()
+            return existing
 
     # Sync DB operations (Celery worker context)
 

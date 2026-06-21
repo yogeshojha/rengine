@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { FileText, Code, List, CircleCheck, Eye, Upload, ExternalLink } from 'lucide-svelte';
+	import { FileText, Code, List, CircleCheck, Eye, Upload } from 'lucide-svelte';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Button } from '$lib/components/ui/button';
+	import { Progress } from '$lib/components/ui/progress';
 	import { Label } from '$lib/components/ui/label';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { Separator } from '$lib/components/ui/separator';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import FileUpload from '$lib/components/targets/file-upload.svelte';
 	import ImportPreview from '$lib/components/targets/import-preview.svelte';
 	import ImportResults from '$lib/components/targets/import-results.svelte';
@@ -14,6 +16,11 @@
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { toast } from 'svelte-sonner';
 	import ImportHelpText from '$lib/components/targets/import-helper.svelte';
+	import type {
+		TargetImportItem,
+		TargetPreviewItem,
+		TargetBulkCreateResponse
+	} from '$lib/types/target';
 
 	interface Props {
 		open: boolean;
@@ -27,7 +34,6 @@
 	let mode = $state<ImportMode>('input');
 	let activeTab = $state<ImportMethod>('manual');
 
-	// Input states
 	let manualText = $state('');
 	let manualFile = $state<File | null>(null);
 	let manualMode = $state<'text' | 'file'>('text');
@@ -38,15 +44,18 @@
 
 	let csvFile = $state<File | null>(null);
 
-	// Preview state
-	let previewItems = $state<any[]>([]);
+	let previewItems = $state<TargetPreviewItem[]>([]);
 
-	// Results state
-	let importResults = $state<any>(null);
+	let importResults = $state<TargetBulkCreateResponse | null>(null);
 
-	// Loading states
 	let isProcessing = $state(false);
 	let isImporting = $state(false);
+
+	let validateDone = $state(0);
+	let validateTotal = $state(0);
+	let validatePct = $derived(validateTotal > 0 ? (validateDone / validateTotal) * 100 : 0);
+
+	let busy = $derived(isProcessing || isImporting);
 
 	function resetForm() {
 		manualText = '';
@@ -65,6 +74,8 @@
 		importResults = null;
 		isProcessing = false;
 		isImporting = false;
+		validateDone = 0;
+		validateTotal = 0;
 	}
 
 	function handleOpenChange(isOpen: boolean) {
@@ -74,7 +85,6 @@
 		open = isOpen;
 	}
 
-	// Parse manual input
 	function parseManualInput(text: string) {
 		return text
 			.split('\n')
@@ -83,36 +93,29 @@
 			.map((target_value) => ({ target_value }));
 	}
 
-	// Parse JSON input
-	function parseJsonInput(text: string) {
+	function parseJsonInput(text: string): TargetImportItem[] {
 		try {
 			const parsed = JSON.parse(text);
 
-			// Handle array format
 			if (Array.isArray(parsed)) {
-				return parsed.map((item) => {
-					if (typeof item === 'string') {
-						return { target_value: item };
-					}
-					return item;
-				});
+				return parsed.map((item) =>
+					typeof item === 'string' ? { target_value: item } : (item as TargetImportItem)
+				);
 			}
 
-			// Handle object with targets array
 			if (parsed.targets && Array.isArray(parsed.targets)) {
-				return parsed.targets;
+				return parsed.targets as TargetImportItem[];
 			}
 
 			throw new Error('Invalid JSON format');
-		} catch (e) {
+		} catch {
 			throw new Error(
 				'Invalid JSON format. Expected array of targets or object with "targets" array.'
 			);
 		}
 	}
 
-	// Parse CSV file
-	async function parseCsvFile(file: File): Promise<any[]> {
+	async function parseCsvFile(file: File): Promise<TargetImportItem[]> {
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
 
@@ -126,7 +129,6 @@
 						return;
 					}
 
-					// Check if first line is header
 					const firstLine = lines[0].toLowerCase();
 					const hasHeaders =
 						firstLine.includes('target') ||
@@ -136,15 +138,13 @@
 
 					const dataLines = hasHeaders ? lines.slice(1) : lines;
 
-					// Parse CSV
 					const items = dataLines.map((line) => {
 						const parts = line.split(',').map((p) => p.trim().replace(/^["']|["']$/g, ''));
 
-						const item: any = {
+						const item: TargetImportItem = {
 							target_value: parts[0]
 						};
 
-						// Handle additional columns
 						if (parts[1]) {
 							const tags = parts[1]
 								.split(',')
@@ -169,7 +169,7 @@
 					});
 
 					resolve(items.filter((item) => item.target_value));
-				} catch (e) {
+				} catch {
 					reject(new Error('Failed to parse CSV file'));
 				}
 			};
@@ -179,7 +179,6 @@
 		});
 	}
 
-	// Read text file
 	async function readTextFile(file: File): Promise<string> {
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
@@ -189,9 +188,8 @@
 		});
 	}
 
-	// Process input and get items
-	async function getInputItems(): Promise<any[]> {
-		let items: any[] = [];
+	async function getInputItems(): Promise<TargetImportItem[]> {
+		let items: TargetImportItem[] = [];
 
 		if (activeTab === 'manual') {
 			const source = manualMode === 'text' ? manualText : manualFile;
@@ -240,9 +238,23 @@
 		return items;
 	}
 
-	// Handle preview
+	async function validateItem(item: TargetImportItem): Promise<TargetPreviewItem> {
+		try {
+			const result = await targetsApi.validate({ target_value: item.target_value });
+			return {
+				...item,
+				target_type: result.valid ? result.target_type : null,
+				error: result.valid ? undefined : result.error || 'Invalid target'
+			};
+		} catch {
+			return { ...item, error: 'Validation failed' };
+		}
+	}
+
 	async function handlePreview() {
 		isProcessing = true;
+		validateDone = 0;
+		validateTotal = 0;
 
 		try {
 			const items = await getInputItems();
@@ -251,27 +263,16 @@
 				return;
 			}
 
-			// Validate each target
-			const validated = await Promise.all(
-				items.map(async (item) => {
-					try {
-						const result = await targetsApi.validate({
-							target_value: item.target_value
-						});
+			validateTotal = items.length;
+			const CHUNK = 10;
+			const validated: TargetPreviewItem[] = [];
 
-						return {
-							...item,
-							target_type: result.valid ? result.target_type : null,
-							error: result.valid ? undefined : result.error || 'Invalid target'
-						};
-					} catch {
-						return {
-							...item,
-							error: 'Validation failed'
-						};
-					}
-				})
-			);
+			for (let i = 0; i < items.length; i += CHUNK) {
+				const chunk = items.slice(i, i + CHUNK);
+				const results = await Promise.all(chunk.map(validateItem));
+				validated.push(...results);
+				validateDone = validated.length;
+			}
 
 			previewItems = validated;
 			mode = 'preview';
@@ -279,10 +280,11 @@
 			toast.error(e instanceof Error ? e.message : 'Failed to process input');
 		} finally {
 			isProcessing = false;
+			validateDone = 0;
+			validateTotal = 0;
 		}
 	}
 
-	// Handle direct import (skip preview)
 	async function handleDirectImport() {
 		isImporting = true;
 
@@ -300,7 +302,6 @@
 		}
 	}
 
-	// Handle import from preview
 	async function handleImportFromPreview() {
 		isImporting = true;
 
@@ -313,8 +314,7 @@
 		}
 	}
 
-	// Execute import
-	async function executeImport(items: any[]) {
+	async function executeImport(items: TargetImportItem[]) {
 		const projectSlug = projectsStore.activeProject?.slug;
 		if (!projectSlug) return;
 
@@ -322,10 +322,8 @@
 			let response;
 
 			if (activeTab === 'csv' && csvFile) {
-				// Use CSV file upload endpoint
 				response = await targetsApi.importCsv(projectSlug, csvFile);
 			} else {
-				// Use JSON import endpoint for manual and JSON
 				const targets = items.map((item) => ({
 					target_value: item.target_value,
 					tags: item.tags,
@@ -342,7 +340,6 @@
 			importResults = response;
 			mode = 'results';
 
-			// Refresh targets store
 			await targetsStore.refresh();
 
 			if (response.imported > 0) {
@@ -378,7 +375,15 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content class="sm:max-w-[700px] gap-0 p-0 max-h-[85vh] flex flex-col">
+	<Dialog.Content
+		class="sm:max-w-[700px] gap-0 p-0 max-h-[85vh] flex flex-col overflow-hidden"
+		onInteractOutside={(e) => {
+			if (busy) e.preventDefault();
+		}}
+		onEscapeKeydown={(e) => {
+			if (busy) e.preventDefault();
+		}}
+	>
 		<Dialog.Header class="p-6 pb-4">
 			<Dialog.Title>Import Targets</Dialog.Title>
 			<Dialog.Description>
@@ -394,7 +399,7 @@
 
 		<Separator />
 
-		<div class="flex-1 overflow-y-auto">
+		<ScrollArea class="flex-1">
 			{#if mode === 'input'}
 				<Tabs.Root bind:value={activeTab} class="w-full">
 					<div class="px-6 pt-4">
@@ -415,7 +420,6 @@
 					</div>
 
 					<div class="p-6 pt-4">
-						<!-- Manual Input -->
 						<Tabs.Content value="manual" class="mt-0 space-y-4">
 							<div class="space-y-2">
 								<Label>Target Values</Label>
@@ -427,13 +431,15 @@
 									onFileSelect={(file) => (manualFile = file)}
 									onFileRemove={() => (manualFile = null)}
 									onTextChange={(text) => (manualText = text)}
-									placeholder={`example.com\n192.168.1.0/24\nAS64512\nhttps://app.example.com`}
+									placeholder="example.com
+192.168.1.0/24
+AS64512
+https://app.example.com"
 								/>
 								<ImportHelpText type="text" />
 							</div>
 						</Tabs.Content>
 
-						<!-- JSON Input -->
 						<Tabs.Content value="json" class="mt-0 space-y-4">
 							<div class="space-y-2">
 								<Label>JSON Data</Label>
@@ -451,7 +457,6 @@
 							</div>
 						</Tabs.Content>
 
-						<!-- CSV Upload -->
 						<Tabs.Content value="csv" class="mt-0 space-y-4">
 							<div class="space-y-2">
 								<Label>CSV File</Label>
@@ -483,13 +488,16 @@
 					/>
 				</div>
 			{/if}
-		</div>
+		</ScrollArea>
 
 		<Separator />
 
+		{#if isProcessing && validateTotal > 0}
+			<Progress value={validatePct} class="h-1 rounded-none" />
+		{/if}
 		<div class="flex items-center justify-between gap-2 p-4 bg-muted/30">
 			{#if mode === 'input'}
-				<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
+				<Button variant="outline" disabled={busy} onclick={() => (open = false)}>Cancel</Button>
 				<div class="flex gap-2">
 					<Button
 						variant="outline"

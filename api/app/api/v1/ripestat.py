@@ -31,7 +31,6 @@ async def announced_prefixes(
     service: Annotated[RIPEStatService, Depends(get_ripestat_service)],
     cached_only: bool = Query(False),
 ):
-    """Get all prefixes announced by an ASN with BGP visibility timelines."""
     try:
         return await service.announced_prefixes(asn, cached_only=cached_only)
     except RIPEStatLookupError as e:
@@ -45,7 +44,6 @@ async def asn_neighbours(
     service: Annotated[RIPEStatService, Depends(get_ripestat_service)],
     cached_only: bool = Query(False),
 ):
-    """Get upstream, downstream, and peer ASNs."""
     try:
         return await service.asn_neighbours(asn, cached_only=cached_only)
     except RIPEStatLookupError as e:
@@ -59,7 +57,6 @@ async def as_overview(
     service: Annotated[RIPEStatService, Depends(get_ripestat_service)],
     cached_only: bool = Query(False),
 ):
-    """Get ASN holder name, RIR, and announcement status."""
     try:
         return await service.as_overview(asn, cached_only=cached_only)
     except RIPEStatLookupError as e:
@@ -73,7 +70,6 @@ async def network_info(
     service: Annotated[RIPEStatService, Depends(get_ripestat_service)],
     cached_only: bool = Query(False),
 ):
-    """Resolve an IP to its containing prefix and announcing ASN."""
     try:
         return await service.network_info(ip, cached_only=cached_only)
     except RIPEStatLookupError as e:
@@ -87,7 +83,6 @@ async def abuse_contact(
     resource: str = Query(..., min_length=1, description="ASN, IP, or prefix"),
     cached_only: bool = Query(False),
 ):
-    """Get abuse contact emails for any resource."""
     try:
         return await service.abuse_contact(resource, cached_only=cached_only)
     except RIPEStatLookupError as e:
@@ -103,7 +98,6 @@ async def prefix_overview(
     ),
     cached_only: bool = Query(False),
 ):
-    """Get which ASNs announce a given prefix."""
     try:
         return await service.prefix_overview(prefix, cached_only=cached_only)
     except RIPEStatLookupError as e:
@@ -117,7 +111,6 @@ async def related_prefixes(
     prefix: str = Query(..., min_length=1, description="CIDR prefix"),
     cached_only: bool = Query(False),
 ):
-    """Get overlapping and hierarchically related prefixes."""
     try:
         return await service.related_prefixes(prefix, cached_only=cached_only)
     except RIPEStatLookupError as e:

@@ -1,21 +1,16 @@
-"""Resolve scan-context auth + engine config into concrete scan parameters.
-
-resolve_headers builds the concrete header dict from stored (UNMASKED) auth.
-merge_engine_context merges a ScanEngine config with an optional ScanContext into
-a launchable ResolvedScanConfig. Masking helpers live here as the single source
-of truth (scan_context imports them).
-"""
+from __future__ import annotations
 
 import base64
 import re
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, PrivateAttr
+
+if TYPE_CHECKING:
+    from fastapi import HTTPException
 
 MASK = "••••••••"
 
-# Secrets masked on Read (never returned in plaintext).
 SECRET_FIELDS = {
     "bearer_token",
     "basic_password",
@@ -24,13 +19,10 @@ SECRET_FIELDS = {
     "api_key_value",
 }
 
-# Header values masked when the header name looks sensitive.
 _SENSITIVE_HEADER = re.compile(
     r"^(authorization|cookie|x-api-key)$|token|secret", re.IGNORECASE
 )
 
-# CR / LF / NUL and other control chars are illegal in header names/values —
-# they enable response splitting / request smuggling.
 _CTRL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
 
 _MAX_RATE = 10000
@@ -39,6 +31,8 @@ _MAX_TIMEOUT = 3600
 
 
 def _bad(detail: str) -> HTTPException:
+    from fastapi import HTTPException, status  # noqa: PLC0415
+
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
 
@@ -67,7 +61,7 @@ def _mask_headers(headers: list) -> list:
     return out
 
 
-def _auth_summary(auth: dict, extra_headers: list) -> str:  # noqa: PLR0911 — one return per auth_type; flattening would obscure the mapping
+def _auth_summary(auth: dict, extra_headers: list) -> str:  # noqa: PLR0911
     auth = auth or {}
     auth_type = auth.get("auth_type", "none")
     if auth_type == "bearer":
@@ -88,13 +82,6 @@ def _auth_summary(auth: dict, extra_headers: list) -> str:  # noqa: PLR0911 — 
 
 
 def resolve_headers(ctx_or_auth, extra_headers: list | None = None) -> dict[str, str]:
-    """Build the concrete HTTP header dict from stored (UNMASKED) auth config.
-
-    Accepts either an AuthConfig-like object (with attributes) or a plain dict.
-    Basic auth base64 is computed server-side. extra_headers are unioned last
-    and win on case-insensitive key collisions.
-    """
-
     def _get(key: str):
         if isinstance(ctx_or_auth, dict):
             return ctx_or_auth.get(key)
@@ -127,7 +114,6 @@ def resolve_headers(ctx_or_auth, extra_headers: list | None = None) -> dict[str,
         if name:
             headers[name] = value or ""
 
-    # Union extra_headers last; they win on case-insensitive key collision.
     lower_map = {k.lower(): k for k in headers}
     for h in extra_headers or []:
         if isinstance(h, dict):
@@ -152,8 +138,6 @@ def _clamp(value, lo, hi):
 
 
 class _NeutralContext:
-    """Empty context used when no ScanContext is supplied (single code path)."""
-
     auth: ClassVar[dict] = {"auth_type": "none"}
     extra_headers: ClassVar[list] = []
     global_rate_limit_override = None
@@ -171,12 +155,6 @@ class _NeutralContext:
 
 
 class ResolvedScanConfig(BaseModel):
-    """Concrete, launchable scan config produced by merging an engine + a context.
-
-    Holds REAL secrets in `headers`, but __repr__/__str__ redact them and never
-    print values. `_auth_header_names` records provenance for masking on Read.
-    """
-
     target_value: str
     target_type: str
     headers: dict[str, str] = Field(default_factory=dict)
@@ -196,16 +174,19 @@ class ResolvedScanConfig(BaseModel):
     http_protocol: str = "both"
     global_http_crawl: bool = True
     intensity: str = "normal"
+    proxy_url: str | None = None
 
     _auth_header_names: list[str] = PrivateAttr(default_factory=list)
 
     def __repr__(self) -> str:
+        proxy = "<set>" if self.proxy_url else "None"
         return (
             f"ResolvedScanConfig(target_value={self.target_value!r}, "
             f"target_type={self.target_type!r}, "
             f"headers=<{len(self.headers)} redacted>, "
             f"global_threads={self.global_threads}, "
-            f"http_protocol={self.http_protocol!r}, intensity={self.intensity!r})"
+            f"http_protocol={self.http_protocol!r}, intensity={self.intensity!r}, "
+            f"proxy={proxy})"
         )
 
     __str__ = __repr__
@@ -213,6 +194,8 @@ class ResolvedScanConfig(BaseModel):
 
 def _check_baseline_deferred(compare_baseline_scan_id, scan_only_new_assets) -> None:
     if compare_baseline_scan_id is not None or scan_only_new_assets:
+        from fastapi import HTTPException, status  # noqa: PLC0415
+
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Baseline comparison is not available yet.",
@@ -226,9 +209,6 @@ def _ctx_get(ctx, key, default=None):
 
 
 def _build_headers(engine, ctx) -> tuple[dict[str, str], list[str]]:
-    """Lay down engine.global_headers (list of 'Name: Value' strings), then union
-    context auth + extra headers (context wins case-insensitively). Returns the
-    header dict and the list of context-derived header names (provenance)."""
     headers: dict[str, str] = {}
     for line in engine.global_headers or []:
         if not isinstance(line, str) or ":" not in line:
@@ -253,7 +233,6 @@ def _build_headers(engine, ctx) -> tuple[dict[str, str], list[str]]:
         headers[name] = value
         lower_map[name.lower()] = name
 
-    # Re-run control-char check on FINAL merged keys + values.
     for k, v in headers.items():
         _reject_ctrl("Header name", k)
         _reject_ctrl("Header value", v)
@@ -262,9 +241,6 @@ def _build_headers(engine, ctx) -> tuple[dict[str, str], list[str]]:
 
 
 def _resolve_rate(engine_base: int, tool: str, ctx) -> int:
-    """Per-tool override REPLACES the base; else engine base. The global override
-    is a CEILING applied AFTER the per-tool replace so a per-tool value can never
-    exceed the operator-set ceiling. Final clamped to <= _MAX_RATE."""
     per_tool = _ctx_get(ctx, "per_tool_rate_overrides") or {}
     global_override = _ctx_get(ctx, "global_rate_limit_override")
     val = per_tool.get(tool, engine_base)
@@ -274,15 +250,9 @@ def _resolve_rate(engine_base: int, tool: str, ctx) -> int:
 
 
 def merge_engine_context(
-    engine, context, target_value: str, target_type: str
+    engine, context, target_value: str, target_type: str, proxy_url: str | None = None
 ) -> ResolvedScanConfig:
-    """Merge a ScanEngine config with an optional ScanContext into a launchable
-    ResolvedScanConfig. context=None synthesizes a NEUTRAL context (single code
-    path). Implements all Section 7 resolution rules, clamps, CRLF re-validation,
-    provenance, deferred guard, and the engine-only enable-flag assert."""
-    # Imported lazily to break a package-init circular import: shared.models.__init__
-    # -> shared.models.scan -> shared.services.scan_resolve, so a top-level import of
-    # shared.models.scan_engine here would re-enter shared.models mid-init.
+    from shared.models.scan_context import VALID_RATE_TOOLS  # noqa: PLC0415
     from shared.models.scan_engine import (  # noqa: PLC0415
         DepthConfig,
         DiscoveryConfig,
@@ -305,11 +275,17 @@ def merge_engine_context(
 
     headers, auth_header_names = _build_headers(engine, ctx)
 
-    # Per-tool rate limits (naabu=port scan, ffuf=dir fuzz, nuclei=nuclei).
     per_tool_rate_limits = {
-        "naabu": _resolve_rate(expansion.port_scan_rate_limit, "naabu", ctx),
-        "ffuf": _resolve_rate(depth.dir_fuzz_rate_limit, "ffuf", ctx),
-        "nuclei": _resolve_rate(depth.nuclei_rate_limit, "nuclei", ctx),
+        tool: _resolve_rate(base, tool, ctx)
+        for tool, base in zip(
+            VALID_RATE_TOOLS,
+            (
+                expansion.port_scan_rate_limit,
+                depth.dir_fuzz_rate_limit,
+                depth.nuclei_rate_limit,
+            ),
+            strict=True,
+        )
     }
 
     global_rate_limit_ceiling = _ctx_get(ctx, "global_rate_limit_override")
@@ -340,7 +316,6 @@ def merge_engine_context(
         "nuclei_timeout": _tmo(depth.nuclei_timeout),
     }
 
-    # phases: copy engine dicts VERBATIM, then OVERWRITE only rate/thread/timeout.
     discovery_phase = discovery.model_dump()
     expansion_phase = expansion.model_dump()
     depth_phase = depth.model_dump()
@@ -369,8 +344,6 @@ def merge_engine_context(
         "depth": depth_phase,
     }
 
-    # Defensive: context can NEVER flip an enable flag / tool list. Assert every
-    # bool field in the resolved phase equals the engine value.
     for phase_name, original in (
         ("discovery", discovery.model_dump()),
         ("expansion", expansion.model_dump()),
@@ -414,4 +387,5 @@ def merge_engine_context(
         intensity=engine.intensity,
     )
     config._auth_header_names = auth_header_names
+    config.proxy_url = proxy_url
     return config

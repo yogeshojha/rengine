@@ -1,3 +1,5 @@
+import type { MessageLevel } from '$lib/types/message-level';
+
 export type NotificationType =
 	| 'scan'
 	| 'system'
@@ -7,7 +9,7 @@ export type NotificationType =
 	| 'resource'
 	| 'integration';
 
-export type NotificationSeverity = 'success' | 'info' | 'warning' | 'error';
+export type NotificationSeverity = MessageLevel;
 
 export interface NotificationMetadata {
 	url?: string;
@@ -32,12 +34,4 @@ export interface Notification {
 export interface NotificationStats {
 	total: number;
 	unread: number;
-}
-
-export interface NotificationCreate {
-	type: NotificationType;
-	severity: NotificationSeverity;
-	title: string;
-	message: string;
-	metadata?: NotificationMetadata;
 }

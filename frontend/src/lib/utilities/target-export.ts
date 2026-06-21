@@ -1,5 +1,3 @@
-// Export the current (filtered + sorted) target view to CSV or JSON
-
 import type { Target } from '$lib/types/target';
 
 export type ExportFormat = 'csv' | 'json';

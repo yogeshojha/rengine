@@ -1,6 +1,3 @@
-<!-- reusable delete confirmation dialog component. It uses an alert dialog to prompt users for confirmation before deleting an item.
-this will be used in all delete actions -->
-
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';

@@ -1,4 +1,5 @@
 import { TaskStatus } from './task-status';
+import type { WhoisLookupType } from './whois';
 
 export enum TargetType {
 	DOMAIN = 'domain',
@@ -11,7 +12,7 @@ export enum TargetType {
 export interface WhoisSummaryData {
 	id: string;
 	query_value: string;
-	lookup_type: 'DOMAIN' | 'IP' | 'ASN';
+	lookup_type: WhoisLookupType;
 	name: string;
 	registrant_name: string;
 	registrar_name: string;
@@ -159,21 +160,8 @@ export interface EnrichmentRefreshResponse {
 	message: string;
 }
 
-export function getTargetTypeColor(type: TargetType): string {
-	switch (type) {
-		case TargetType.DOMAIN:
-			return 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20';
-		case TargetType.IP:
-			return 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20';
-		case TargetType.IP_RANGE:
-			return 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20';
-		case TargetType.ASN:
-			return 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20';
-		case TargetType.URL:
-			return 'bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/20';
-		default:
-			return 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20';
-	}
+export function getTargetTypeColor(_type: TargetType): string {
+	return 'bg-muted/60 text-foreground/70 border-border/60';
 }
 
 export function formatTargetType(type: TargetType): string {

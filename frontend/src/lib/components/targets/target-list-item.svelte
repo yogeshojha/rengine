@@ -57,6 +57,11 @@
 
 	let editing = $state(false);
 	let editValue = $state('');
+	let renameInput = $state<HTMLInputElement | null>(null);
+
+	$effect(() => {
+		if (editing) renameInput?.focus();
+	});
 
 	let canDns = $derived(
 		target.target_type === TargetType.DOMAIN || target.target_type === TargetType.URL
@@ -98,10 +103,11 @@
 	<Checkbox
 		checked={isSelected}
 		onCheckedChange={() => onSelect(target.id)}
-		class="transition-opacity {isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
+		class="transition-opacity {isSelected
+			? 'opacity-100'
+			: 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}"
 	/>
 
-	<!-- IDENTITY: name + intel sub-line -->
 	<div class="min-w-0 flex-1">
 		<div class="flex min-w-0 items-center gap-2">
 			<span class="font-mono text-sm font-medium truncate">{target.target_value}</span>
@@ -110,7 +116,7 @@
 			{/if}
 			<CopyButton
 				value={target.target_value}
-				class="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+				class="shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
 			/>
 		</div>
 
@@ -119,6 +125,7 @@
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div onclick={stopProp} class="mt-0.5 max-w-[280px]">
 				<Input
+					bind:ref={renameInput}
 					value={editValue}
 					oninput={(e) => (editValue = e.currentTarget.value)}
 					onblur={commitRename}
@@ -126,7 +133,6 @@
 						if (e.key === 'Enter') commitRename();
 						else if (e.key === 'Escape') editing = false;
 					}}
-					autofocus
 					class="h-6 text-xs"
 					placeholder="Display name"
 				/>
@@ -216,13 +222,13 @@
 						{...props}
 						variant="ghost"
 						size="icon"
-						class="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+						class="h-8 w-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
 						onclick={() => onScan(target)}
 					>
 						{#if isScanning}
-							<Loader class="h-4 w-4 animate-spin text-blue-400" />
+							<Loader class="h-4 w-4 animate-spin text-chart-1" />
 						{:else}
-							<Play class="h-4 w-4 text-blue-400" />
+							<Play class="h-4 w-4" />
 						{/if}
 					</Button>
 				{/snippet}

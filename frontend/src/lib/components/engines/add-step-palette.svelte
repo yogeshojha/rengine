@@ -21,6 +21,7 @@
 	import { PHASE_COLORS, ARTIFACT_LABEL, type ScanEngine, type ArtifactType } from '$lib/types/engine';
 	import * as Command from '$lib/components/ui/command';
 	import { Badge } from '$lib/components/ui/badge';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	let {
 		open = $bindable(false),
@@ -62,23 +63,19 @@
 		depth: 'Depth'
 	};
 
-	// when phase is null show all phases; otherwise restrict to the one phase
 	let activePhases = $derived<Phase[]>(phase ? [phase] : PHASE_ORDER);
 
-	// Artifacts currently produced by active caps (seed is always available).
 	let producedArtifacts = $derived.by(() => {
-		const set = new Set<ArtifactType>(['seed']);
+		const set = new SvelteSet<ArtifactType>(['seed']);
 		for (const c of getActiveCapabilities(engine)) set.add(c.produces);
 		return set;
 	});
 
-	// First consumed artifact that no active cap produces — drives the "requires X" hint.
 	function missingInput(cap: Capability): ArtifactType | null {
 		for (const a of cap.consumes) if (!producedArtifacts.has(a)) return a;
 		return null;
 	}
 
-	// addable caps per phase, in execution order (column asc)
 	function addableFor(ph: Phase): Capability[] {
 		return CAPABILITIES.filter((c) => c.phase === ph && !c.isActive(engine)).sort(
 			(a, b) => a.column - b.column
@@ -109,41 +106,39 @@
 		{#each groups as group (group.phase)}
 			{@const pc = PHASE_COLORS[group.phase]}
 			<Command.Group>
-				{#snippet children()}
-					<div class="grp-heading" data-command-group-heading>
-						<span class="grp-dot" style="background: {pc.accent};"></span>
-						{PHASE_TITLE[group.phase]}
-					</div>
-					{#each group.caps as cap (cap.id)}
-						{@const Icon = ICONS[cap.icon] ?? FileText}
-						{@const needsKey = (cap.needsKeyTools?.length ?? 0) > 0}
-						{@const missing = missingInput(cap)}
-						<Command.Item
-							value={cap.label + ' ' + cap.tools.join(' ')}
-							onSelect={() => commit(cap.id)}
-						>
-							<span class="row-icon" class:row-dim={missing}>
-								<Icon size={15} />
-							</span>
-							<span class="row-body" class:row-dim={missing}>
-								<span class="row-top">
-									<span class="row-label">{cap.label}</span>
-									{#if needsKey}
-										<KeyRound class="key-glyph" size={11} aria-label="Needs API key" />
-									{/if}
-								</span>
-								{#if missing}
-									<span class="row-desc">requires {ARTIFACT_LABEL[missing]}</span>
-								{:else}
-									<span class="row-desc">{cap.description}</span>
+				<div class="grp-heading" data-command-group-heading>
+					<span class="grp-dot" style="background: {pc.accent};"></span>
+					{PHASE_TITLE[group.phase]}
+				</div>
+				{#each group.caps as cap (cap.id)}
+					{@const Icon = ICONS[cap.icon] ?? FileText}
+					{@const needsKey = (cap.needsKeyTools?.length ?? 0) > 0}
+					{@const missing = missingInput(cap)}
+					<Command.Item
+						value={cap.label + ' ' + cap.tools.join(' ')}
+						onSelect={() => commit(cap.id)}
+					>
+						<span class="row-icon" class:row-dim={missing}>
+							<Icon size={15} />
+						</span>
+						<span class="row-body" class:row-dim={missing}>
+							<span class="row-top">
+								<span class="row-label">{cap.label}</span>
+								{#if needsKey}
+									<KeyRound class="key-glyph" size={11} aria-label="Needs API key" />
 								{/if}
 							</span>
-							<span class="row-right">
-								<Badge variant="secondary">{cap.producesNoun}</Badge>
-							</span>
-						</Command.Item>
-					{/each}
-				{/snippet}
+							{#if missing}
+								<span class="row-desc">requires {ARTIFACT_LABEL[missing]}</span>
+							{:else}
+								<span class="row-desc">{cap.description}</span>
+							{/if}
+						</span>
+						<span class="row-right">
+							<Badge variant="secondary">{cap.producesNoun}</Badge>
+						</span>
+					</Command.Item>
+				{/each}
 			</Command.Group>
 		{/each}
 	</Command.List>

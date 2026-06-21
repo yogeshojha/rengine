@@ -3,8 +3,9 @@ import { organizationsApi, type Organization } from '$lib/api/organizations';
 import { tagsApi, type Tag } from '$lib/api/tags';
 import { TargetType, type Target } from '$lib/types/target';
 import { TaskStatus } from '$lib/types/task-status';
-import type { TargetCounts } from '$lib/types/pagination';
+import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
+import { SvelteURLSearchParams } from 'svelte/reactivity';
 
 interface TargetFilters {
 	projectSlug?: string;
@@ -59,7 +60,6 @@ function createTargetsStore() {
 		url: 0
 	});
 
-	// KPI counts from /targets/stats; filtering/sort/signal are server-side
 	let signalSummary = $state<TargetSummary>({
 		total: 0,
 		expiring: 0,
@@ -70,19 +70,21 @@ function createTargetsStore() {
 
 	let searchDebounce: ReturnType<typeof setTimeout> | undefined;
 
-	let hasActiveFilters = $derived(
+	const hasActiveFilters = $derived(
 		filters.searchQuery.trim() !== '' ||
 			filters.selectedOrganizations.length > 0 ||
 			filters.selectedTags.length > 0 ||
 			filters.signalFilter !== null
 	);
 
+	const isInitialLoad = $derived(isLoading && targets.length === 0);
+	const isRefetching = $derived(isLoading && targets.length > 0);
+
 	return {
 		get targets() {
 			return targets;
 		},
 		get filteredTargets() {
-			// already server-filtered/sorted
 			return targets;
 		},
 		get signalSummary() {
@@ -105,6 +107,12 @@ function createTargetsStore() {
 		},
 		get isLoading() {
 			return isLoading;
+		},
+		get isInitialLoad() {
+			return isInitialLoad;
+		},
+		get isRefetching() {
+			return isRefetching;
 		},
 		get error() {
 			return error;
@@ -144,7 +152,6 @@ function createTargetsStore() {
 				const targetType =
 					filters.activeTab !== 'all' ? (filters.activeTab as TargetType) : undefined;
 
-				// shared by list + stats (no signal/sort)
 				const baseFilters = {
 					project_slug: projectSlug,
 					search: filters.searchQuery || undefined,
@@ -157,7 +164,7 @@ function createTargetsStore() {
 
 				const shouldFetchOrgsAndTags = !hasFetched || projectChanged;
 
-				const promises: Promise<any>[] = [
+				const promises: Promise<unknown>[] = [
 					targetsApi.list({
 						...baseFilters,
 						signal: filters.signalFilter,
@@ -178,17 +185,17 @@ function createTargetsStore() {
 				}
 
 				const results = await Promise.all(promises);
-				const targetsResponse = results[0];
+				const targetsResponse = results[0] as PaginatedResponse<Target>;
 
 				targets = targetsResponse.items;
 				pagination.totalItems = targetsResponse.total;
 				pagination.totalPages = targetsResponse.pages;
-				signalSummary = results[1];
+				signalSummary = results[1] as TargetSummary;
 
 				if (shouldFetchOrgsAndTags) {
-					organizations = results[2];
-					tags = results[3];
-					counts = results[4];
+					organizations = results[2] as Organization[];
+					tags = results[3] as Tag[];
+					counts = results[4] as TargetCounts;
 				}
 
 				hasFetched = true;
@@ -199,7 +206,6 @@ function createTargetsStore() {
 			}
 		},
 
-		// set filter/sort/page state from a parsed URL, without fetching
 		applyQueryState(state: {
 			search?: string;
 			activeTab?: string;
@@ -223,7 +229,7 @@ function createTargetsStore() {
 		},
 
 		toQueryString(): string {
-			const sp = new URLSearchParams();
+			const sp = new SvelteURLSearchParams();
 			if (filters.searchQuery.trim()) sp.set('q', filters.searchQuery.trim());
 			if (filters.activeTab !== 'all') sp.set('type', filters.activeTab);
 			if (filters.signalFilter) sp.set('signal', filters.signalFilter);
@@ -236,7 +242,6 @@ function createTargetsStore() {
 			return sp.toString();
 		},
 
-		// re-fetch after a filter/sort change, back to page 1
 		async reload() {
 			if (!filters.projectSlug) return;
 			pagination.currentPage = 1;
@@ -255,14 +260,12 @@ function createTargetsStore() {
 			if (!filters.projectSlug) return;
 			try {
 				counts = await targetsApi.getCounts(filters.projectSlug);
-			} catch (e) {
-				// counts are non-critical, fail silently
+			} catch {
 			}
 		},
 
 		setSearchQuery(query: string) {
 			filters.searchQuery = query;
-			// debounce server round-trip
 			if (searchDebounce) clearTimeout(searchDebounce);
 			searchDebounce = setTimeout(() => {
 				this.reload();
@@ -309,11 +312,9 @@ function createTargetsStore() {
 				filters.sortKey = key;
 				filters.sortDir = dir;
 			} else if (filters.sortKey === key) {
-				// Same key → toggle direction.
 				filters.sortDir = filters.sortDir === 'asc' ? 'desc' : 'asc';
 			} else {
 				filters.sortKey = key;
-				// Names sort A→Z, everything else most-relevant-first.
 				filters.sortDir = key === 'name' || key === 'expiry' ? 'asc' : 'desc';
 			}
 			this.reload();

@@ -5,8 +5,11 @@
 	import { oneDark } from '@codemirror/theme-one-dark';
 	import { EditorState } from '@codemirror/state';
 	import { lintGutter, linter, type Diagnostic } from '@codemirror/lint';
+	import { syntaxTree } from '@codemirror/language';
 	import { AlertCircle } from 'lucide-svelte';
+	import { mode } from 'mode-watcher';
 	import * as Alert from '$lib/components/ui/alert';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 
 	interface YamlError {
 		line: number;
@@ -17,38 +20,48 @@
 		yamlContent: string;
 		onChange?: (yaml: string) => void;
 		errors?: YamlError[];
+		onValidityChange?: (valid: boolean) => void;
 	}
 
-	let { yamlContent, onChange, errors = [] }: Props = $props();
+	let { yamlContent, onChange, errors = [], onValidityChange }: Props = $props();
 
 	let editorContainer: HTMLDivElement;
 	let editorView: EditorView | null = null;
-	let isDark = $state(false);
+	let isDark = $derived(mode.current === 'dark');
+	let yamlErrors = $state<YamlError[]>([]);
+	let allErrors = $derived([...yamlErrors, ...errors]);
 
-	// Detect dark mode
 	$effect(() => {
-		const mq = window.matchMedia('(prefers-color-scheme: dark)');
-		isDark = mq.matches;
-		const handler = (e: MediaQueryListEvent) => {
-			isDark = e.matches;
-			rebuildEditor();
-		};
-		mq.addEventListener('change', handler);
-		return () => mq.removeEventListener('change', handler);
+		void isDark;
+		if (editorView) rebuildEditor();
 	});
 
-	// External errors → CodeMirror diagnostics
 	function buildLinter() {
-		return linter(() => {
-			return errors.map((err): Diagnostic => {
-				const line = editorView?.state.doc.line(Math.max(1, err.line));
-				return {
-					from: line?.from ?? 0,
-					to: line?.to ?? 0,
-					severity: 'error',
-					message: err.message
-				};
-			});
+		return linter((view): Diagnostic[] => {
+			const diagnostics: Diagnostic[] = [];
+			const found: YamlError[] = [];
+
+			syntaxTree(view.state)
+				.cursor()
+				.iterate((node) => {
+					if (!node.type.isError) return;
+					const from = node.from;
+					const to =
+						node.to > node.from ? node.to : Math.min(node.from + 1, view.state.doc.length);
+					const lineNo = view.state.doc.lineAt(from).number;
+					const message = 'Invalid YAML syntax';
+					diagnostics.push({ from, to, severity: 'error', message });
+					found.push({ line: lineNo, message });
+				});
+
+			for (const err of errors) {
+				const line = view.state.doc.line(Math.max(1, err.line));
+				diagnostics.push({ from: line.from, to: line.to, severity: 'error', message: err.message });
+			}
+
+			yamlErrors = found;
+			onValidityChange?.(found.length === 0);
+			return diagnostics;
 		});
 	}
 
@@ -119,7 +132,6 @@
 		});
 	});
 
-	// Sync external yamlContent changes into the editor (without losing cursor)
 	$effect(() => {
 		if (!editorView) return;
 		const current = editorView.state.doc.toString();
@@ -130,12 +142,10 @@
 		}
 	});
 
-	// Re-run lint when errors change
 	$effect(() => {
 		if (!editorView) return;
-		// Touch errors to trigger reactivity, then rebuild linter
-		const _ = errors.length;
-		editorView.dispatch({}); // force lint re-run
+		void errors.length;
+		editorView.dispatch({});
 	});
 
 	onDestroy(() => {
@@ -148,7 +158,7 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		background: {isDark ? '#1a202c' : '#ffffff'};
+		background: var(--card);
 	"
 >
 	<!-- Editor area -->
@@ -157,7 +167,7 @@
 			flex: 1;
 			overflow: hidden;
 			border-radius: 8px;
-			border: 1px solid {isDark ? '#2d3748' : '#e2e8f0'};
+			border: 1px solid var(--border);
 			margin: 12px;
 			box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 		"
@@ -169,16 +179,16 @@
 	</div>
 
 	<!-- Error list -->
-	{#if errors.length > 0}
+	{#if allErrors.length > 0}
 		<Alert.Root variant="destructive" class="mx-3 mb-3 block w-auto overflow-hidden p-0">
 			<div class="flex items-center gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-2">
 				<AlertCircle class="size-3.5 text-destructive" />
 				<span class="text-xs font-semibold text-destructive">
-					{errors.length} error{errors.length !== 1 ? 's' : ''}
+					{allErrors.length} error{allErrors.length !== 1 ? 's' : ''}
 				</span>
 			</div>
-			<div class="max-h-[140px] overflow-y-auto">
-				{#each errors as err}
+			<ScrollArea class="h-[140px]">
+				{#each allErrors as err, i (i)}
 					<div
 						class="flex items-start gap-2.5 border-b border-destructive/20 px-3 py-1.5 text-xs"
 					>
@@ -190,7 +200,7 @@
 						<span class="flex-1 leading-normal text-destructive/90">{err.message}</span>
 					</div>
 				{/each}
-			</div>
+			</ScrollArea>
 		</Alert.Root>
 	{/if}
 </div>
@@ -206,7 +216,7 @@
 		font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace !important;
 	}
 	:global(.cm-diagnostic-error) {
-		text-decoration: wavy underline #dc2626;
+		text-decoration: wavy underline var(--destructive);
 		text-decoration-skip-ink: none;
 	}
 </style>

@@ -30,19 +30,14 @@
 		api_key: 'API key'
 	};
 
-	// Secret fields. On load these arrive as MASK (a secret is set) and MUST load
-	// EMPTY so we never echo the mask back. We track them locally and only emit a
-	// value when the user actually types.
-	const SECRET_FIELDS = [
-		'bearer_token',
-		'basic_password',
-		'header_value',
-		'cookie_value',
-		'api_key_value'
-	] as const;
-	type SecretField = (typeof SECRET_FIELDS)[number];
+	type SecretField =
+		| 'bearer_token'
+		| 'basic_password'
+		| 'header_value'
+		| 'cookie_value'
+		| 'api_key_value';
 
-	// Was a secret already set on the server? (loaded value === MASK)
+	// svelte-ignore state_referenced_locally
 	const wasSet: Record<SecretField, boolean> = {
 		bearer_token: auth.bearer_token === MASK,
 		basic_password: auth.basic_password === MASK,
@@ -51,7 +46,7 @@
 		api_key_value: auth.api_key_value === MASK
 	};
 
-	// Local editable copy with secrets blanked out (never holds MASK).
+	// svelte-ignore state_referenced_locally
 	let local = $state<AuthConfig>({
 		...auth,
 		bearer_token: wasSet.bearer_token ? null : auth.bearer_token,
@@ -69,13 +64,11 @@
 		api_key_value: false
 	});
 
-	// Masked extra-header values (sensitive names) arrive as MASK. Blank them so we
-	// never render/echo the mask. We remember which header names were masked (by
-	// lowercased name); on emit, a still-blank row whose name was masked is sent
-	// back as MASK so the backend keeps the stored secret (it never overwrites).
+	// svelte-ignore state_referenced_locally
 	const maskedNames = new Set(
 		extraHeaders.filter((h) => h.value === MASK).map((h) => h.name.toLowerCase())
 	);
+	// svelte-ignore state_referenced_locally
 	let headers = $state<AuthHeader[]>(
 		extraHeaders.map((h) => ({ name: h.name, value: h.value === MASK ? '' : h.value }))
 	);
@@ -101,8 +94,6 @@
 		emit();
 	}
 
-	// Secret input handlers: typing sets the value; an empty string CLEARS the
-	// stored secret (we still emit "" so the backend clears it).
 	function onSecretInput(field: SecretField, value: string) {
 		local = { ...local, [field]: value };
 		emit();
@@ -115,11 +106,9 @@
 	}
 
 	function secretHint(field: SecretField): boolean {
-		// Show the "value set" hint only while still untouched (null) and was set.
 		return wasSet[field] && local[field] == null;
 	}
 
-	// ── Extra headers ──────────────────────────────────────────────────────────
 	let headerRows = $derived(
 		headers.length === 0 ? [{ name: '', value: '' }] : [...headers, { name: '', value: '' }]
 	);
@@ -139,7 +128,6 @@
 		commitHeaders(headerRows.filter((_, idx) => idx !== i));
 	}
 
-	// ── Masked preview line ──────────────────────────────────────────────────────
 	let previewLine = $derived.by(() => {
 		switch (local.auth_type) {
 			case 'bearer':
@@ -201,7 +189,6 @@
 {/snippet}
 
 <div class="space-y-5">
-	<!-- Auth type radio grid -->
 	<RadioGroup.Root value={local.auth_type} onValueChange={setType} class="grid grid-cols-2 gap-2 sm:grid-cols-3">
 		{#each AUTH_TYPES as t (t)}
 			<Label
@@ -214,7 +201,6 @@
 		{/each}
 	</RadioGroup.Root>
 
-	<!-- Conditional inputs -->
 	{#if local.auth_type === 'none'}
 		<p class="text-sm text-muted-foreground">
 			No authentication headers are injected. Requests are sent unauthenticated.
@@ -261,7 +247,6 @@
 		{@render secretInput('api_key_value', 'Key value', SECRET_PLACEHOLDER)}
 	{/if}
 
-	<!-- Masked preview -->
 	{#if previewLine}
 		<div class="rounded-md border border-dashed border-border bg-muted/40 px-3 py-2">
 			<p class="text-[10px] uppercase tracking-wide text-muted-foreground">Injected header</p>
@@ -271,7 +256,6 @@
 
 	<Separator />
 
-	<!-- Extra headers -->
 	<div class="space-y-2">
 		<div>
 			<Label class="text-xs">Extra headers</Label>

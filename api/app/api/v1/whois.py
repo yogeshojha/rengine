@@ -377,7 +377,6 @@ async def get_target_correlations(
             detail="Invalid target_id format",
         ) from e
 
-    # get target to find its whois_record_id
     target_result = await session.execute(select(Target).where(Target.id == tid))
     target = target_result.scalar_one_or_none()
 
@@ -391,7 +390,6 @@ async def get_target_correlations(
     if not correlations:
         return []
 
-    # get the target's own whois record for correlation values
     target_record_result = await session.execute(
         select(WhoisRecord).where(WhoisRecord.id == target.whois_record_id)
     )
@@ -434,7 +432,6 @@ def _correlation_results(
     correlation_value: str,
     records: list[WhoisRecord],
 ) -> list[WhoisCorrelationResult]:
-    """Wrap finder output in the list-of-groups response shape."""
     if not records:
         return []
     return [

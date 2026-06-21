@@ -20,15 +20,23 @@ export interface TokenResponse {
 	refresh_token: string;
 }
 
+export interface LoginResponse {
+	mfa_required: boolean;
+	mfa_token: string | null;
+	access_token: string | null;
+	refresh_token: string | null;
+	token_type: string;
+}
+
 export interface ChangePasswordRequest {
 	current_password: string;
 	new_password: string;
-	user_id?: string; // Optional, for admin changing other user's password
+	user_id?: string;
 }
 
 export interface ChangeUsernameRequest {
 	new_username: string;
-	user_id?: string; // Optional, for admin changing other user's username
+	user_id?: string;
 }
 
 export interface ChangePasswordResponse {
@@ -52,8 +60,11 @@ export const authApi = {
 	me: (): Promise<User> => {
 		return api.get<User>('/auth/me');
 	},
-	login: (credentials: LoginRequest): Promise<TokenResponse> => {
-		return api.post<TokenResponse>('/auth/login', credentials);
+	login: (credentials: LoginRequest): Promise<LoginResponse> => {
+		return api.post<LoginResponse>('/auth/login', credentials);
+	},
+	twoFactorLogin: (mfa_token: string, code: string): Promise<LoginResponse> => {
+		return api.post<LoginResponse>('/auth/2fa/login', { mfa_token, code });
 	},
 	refresh: (): Promise<TokenResponse> => {
 		return api.post<TokenResponse>('/auth/refresh');

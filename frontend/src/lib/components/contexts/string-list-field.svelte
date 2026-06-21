@@ -12,11 +12,8 @@
 
 	let { items, onChange, placeholder = '', validate }: Props = $props();
 
-	// Always render a trailing empty row so the user can type a new value.
 	let rows = $derived(items.length === 0 ? [''] : [...items, '']);
 
-	// Trim and drop empties only at the save/onChange boundary, never mid-edit, so
-	// no sentinel value is needed and trailing whitespace can't reach the backend.
 	function commit(next: string[]) {
 		onChange(next.map((v) => v.trim()).filter((v) => v !== ''));
 	}
@@ -33,7 +30,6 @@
 	}
 
 	function onKeydown(e: KeyboardEvent, i: number) {
-		// The trailing empty row already lets the user add the next value.
 		if (e.key === 'Enter' && i === rows.length - 1 && rows[i].trim() !== '') {
 			e.preventDefault();
 		}

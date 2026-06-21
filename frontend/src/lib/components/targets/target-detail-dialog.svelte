@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Target } from '$lib/types/target';
-	import { getTargetTypeColor, formatTargetType, TargetType } from '$lib/types/target';
+	import { formatTargetType, TargetType } from '$lib/types/target';
 	import { formatDate, formatDistanceToNow } from '$lib/utilities/dates';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -11,7 +11,6 @@
 		Building2,
 		Calendar,
 		Clock,
-		Globe,
 		Hash,
 		History,
 		Play,
@@ -23,7 +22,6 @@
 	interface Props {
 		open: boolean;
 		target: Target | null;
-		isScanning: boolean;
 		onOpenChange: (open: boolean) => void;
 		onScan?: (target: Target) => void;
 		onOpenHistory?: (target: Target) => void;
@@ -33,7 +31,6 @@
 	let {
 		open = $bindable(),
 		target,
-		isScanning,
 		onOpenChange,
 		onScan,
 		onOpenHistory,
@@ -45,7 +42,6 @@
 	function handleScan() {
 		if (target && onScan) {
 			onScan(target);
-			// TODO maybe we have to close the dialog here?
 		}
 	}
 
@@ -81,10 +77,8 @@
 			<Separator />
 
 			<div class="p-6 space-y-6">
-				<Badge
-					class={getTargetTypeColor(target.target_type) + ' border shrink-0 max-w-[180px] truncate'}
-				>
-					<TargetIcon class="h-3 w-3 mr-1 shrink-0" />
+				<Badge variant="outline" class="gap-1 text-muted-foreground border-border/60 shrink-0 max-w-[180px]">
+					<TargetIcon class="h-3 w-3 shrink-0" />
 					<span class="truncate">{formatTargetType(target.target_type)}</span>
 				</Badge>
 				<div class="space-y-2">
@@ -92,22 +86,9 @@
 						<span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 							Target Value
 						</span>
-						<Button
-							variant="ghost"
-							onclick={handleOpenHistory}
-							class="relative inline-flex h-auto items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/15 hover:text-sky-600 dark:hover:text-sky-400"
-						>
+						<Button variant="outline" size="sm" onclick={handleOpenHistory} class="h-7 gap-1.5 text-xs">
 							<History class="h-3 w-3" />
-							5 scans
-
-							{#if !isScanning}
-								<span class="absolute -right-1 top-1/2 -translate-y-1/2 flex h-2 w-2">
-									<span
-										class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"
-									></span>
-									<span class="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
-								</span>
-							{/if}
+							History
 						</Button>
 					</div>
 					<div class="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
@@ -134,7 +115,7 @@
 					</div>
 					{#if target.organizations.length > 0}
 						<div class="flex flex-wrap gap-2">
-							{#each target.organizations as org}
+							{#each target.organizations as org (org.id ?? org.name)}
 								<Badge variant="outline" class="font-normal">
 									{org.name}
 								</Badge>
@@ -154,10 +135,11 @@
 					</div>
 					{#if target.tags.length > 0}
 						<div class="flex flex-wrap gap-2">
-							{#each target.tags as tag}
+							{#each target.tags as tag (tag.id ?? tag.name)}
 								<Badge
-									class="font-normal border"
-									style="background-color: {tag.color}10; color: {tag.color}; border-color: {tag.color}30;"
+									variant="outline"
+									class="font-normal"
+									style="color: {tag.color}; border-color: {tag.color}40;"
 								>
 									{tag.name}
 								</Badge>
@@ -168,7 +150,7 @@
 					{/if}
 				</div>
 
-				<div class="grid grid-cols-2 gap-4 pt-2">
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
 					<div class="space-y-1">
 						<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
 							<Calendar class="h-3 w-3" />
@@ -208,7 +190,7 @@
 
 			<div class="flex items-center justify-end gap-2 p-4 bg-muted/30">
 				<Button onclick={handleScan} class="gap-2">
-					<Play class="h-4 w-4 text-blue-500" />
+					<Play class="h-4 w-4" />
 					Scan Target
 				</Button>
 				<Button variant="outline" size="sm" onclick={handleOpenHistory} class="gap-1.5">
