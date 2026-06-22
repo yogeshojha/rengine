@@ -2,17 +2,10 @@
 	import type { Target } from '$lib/types/target';
 	import { TaskStatus } from '$lib/types/task-status';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
-	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { usersApi } from '$lib/api/users';
 	import CopyButton from '$lib/components/copy-button.svelte';
 
 	let { target }: { target: Target } = $props();
-
-	const projectName = $derived(
-		projectsStore.projects.find((p) => p.id === target.project_id)?.name ??
-			projectsStore.activeProject?.name ??
-			null
-	);
 
 	let creator = $state<string | null>(null);
 	$effect(() => {
@@ -39,15 +32,14 @@
 	});
 </script>
 
-<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1 text-[11px] text-muted-foreground/55">
-	{#if projectName}
-		<span>Project <span class="text-foreground/65">{projectName}</span></span>
-		<span class="text-muted-foreground/25">·</span>
-	{/if}
-	<span
-		>Added <span class="text-foreground/65">{formatShortDate(target.created_at)}</span>{#if creator}
-			by <span class="text-foreground/65">{creator}</span>{/if}</span
-	>
+<div
+	class="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1 text-[11px] text-muted-foreground/55"
+>
+	<span>
+		Added <span class="text-foreground/65">{formatShortDate(target.created_at)}</span
+		>{#if creator}&nbsp;by
+			<span class="text-foreground/65">{creator}</span>{/if}
+	</span>
 	{#if target.updated_at !== target.created_at}
 		<span class="text-muted-foreground/25">·</span>
 		<span>Updated <span class="text-foreground/65">{relativeTime(target.updated_at)}</span></span>

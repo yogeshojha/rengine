@@ -1,11 +1,13 @@
 import copy
 import logging
 from datetime import timedelta
+from typing import Literal
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import Select, case, exists, func, nullslast, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
@@ -16,8 +18,11 @@ from shared.models.api_key import APIKey
 from shared.models.scan import (
     SCAN_STATUSES,
     Scan,
+    ScanChanges,
     ScanCreate,
     ScanDailyCount,
+    ScanExportRow,
+    ScanFacet,
     ScanRead,
     ScanStats,
     ScanStatusCounts,
@@ -31,6 +36,7 @@ from shared.models.scan_preview import (
     PreviewToolStatus,
     ScanPreview,
 )
+from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.services.scan_resolve import (
     MASK,
@@ -133,6 +139,27 @@ _PHASE_TOOLS = {
 
 _SECONDS_PER_MINUTE = 60
 _MINUTES_PER_HOUR = 60
+
+ScanSortKey = Literal["started", "duration", "status", "subdomains", "vulnerabilities"]
+ScanSortDir = Literal["asc", "desc"]
+
+_WINDOW_DELTAS = {
+    "6h": timedelta(hours=6),
+    "12h": timedelta(hours=12),
+    "24h": timedelta(days=1),
+    "7d": timedelta(days=7),
+    "30d": timedelta(days=30),
+}
+
+MAX_SCAN_EXPORT = 50000
+
+_STATUS_RANK = case(
+    (Scan.status == ScanStatus.RUNNING.value, 0),
+    (Scan.status == ScanStatus.PENDING.value, 1),
+    (Scan.status == ScanStatus.COMPLETED.value, 2),
+    (Scan.status == ScanStatus.FAILED.value, 3),
+    else_=4,
+)
 
 
 def _mask_config_headers(config: dict) -> dict:
@@ -439,23 +466,374 @@ class ScanService:
 
         dispatch_scan_run(str(scan.id))
 
-    async def list(
+    def _sort_expr(self, sort_by: ScanSortKey):
+        if sort_by == "duration":
+            return func.extract(
+                "epoch", func.coalesce(Scan.completed_at, utc_now()) - Scan.started_at
+            )
+        if sort_by == "status":
+            return _STATUS_RANK
+        if sort_by == "subdomains":
+            return Scan.subdomains_found
+        if sort_by == "vulnerabilities":
+            return Scan.vulnerabilities_found
+        return func.coalesce(Scan.started_at, Scan.created_at)
+
+    def _filter_conditions(
+        self,
+        m,
+        statuses: list[str] | None,
+        engines: list[str] | None,
+        contexts: list[str] | None,
+        time_range: str | None,
+    ) -> list:
+        conds: list = []
+        if statuses:
+            conds.append(m.status.in_(statuses))
+        if engines:
+            conds.append(m.engine_name.in_(engines))
+        if contexts:
+            conds.append(m.context_name.in_(contexts))
+        if time_range and time_range in _WINDOW_DELTAS:
+            cutoff = utc_now() - _WINDOW_DELTAS[time_range]
+            conds.append(func.coalesce(m.started_at, m.created_at) >= cutoff)
+        return conds
+
+    def build_list_query(
         self,
         project_id: UUID,
         target_id: UUID | None = None,
-        status: str | None = None,
-        limit: int = 100,
-        offset: int = 0,
-    ) -> list[ScanRead]:
-        query = select(Scan).where(Scan.project_id == project_id)
+        statuses: list[str] | None = None,
+        engines: list[str] | None = None,
+        contexts: list[str] | None = None,
+        search: str | None = None,
+        time_range: str | None = None,
+        sort_by: ScanSortKey = "started",
+        sort_dir: ScanSortDir = "desc",
+    ) -> Select:
+        query = select(Scan).where(
+            Scan.project_id == project_id,
+            *self._filter_conditions(Scan, statuses, engines, contexts, time_range),
+        )
         if target_id is not None:
             query = query.where(Scan.target_id == target_id)
-        if status is not None:
-            query = query.where(Scan.status == status)
-        query = query.order_by(Scan.created_at.desc()).limit(limit).offset(offset)
+        if search and search.strip():
+            term = f"%{search.strip().lower()}%"
+            query = query.join(Target, Scan.target_id == Target.id).where(
+                or_(
+                    func.lower(Target.target_value).like(term),
+                    func.lower(Scan.engine_name).like(term),
+                    func.lower(func.coalesce(Scan.context_name, "")).like(term),
+                )
+            )
+
+        expr = self._sort_expr(sort_by)
+        ordering = expr.asc() if sort_dir == "asc" else expr.desc()
+        # Only `duration` can be NULL (un-started scans); nulls-last on the others
+        # would break the ix_scans_*_started index match (default DESC is nulls-first).
+        if sort_by == "duration":
+            ordering = nullslast(ordering)
+        return query.order_by(ordering, Scan.created_at.desc())
+
+    def build_target_groups_query(
+        self,
+        project_id: UUID,
+        statuses: list[str] | None = None,
+        engines: list[str] | None = None,
+        contexts: list[str] | None = None,
+        search: str | None = None,
+        time_range: str | None = None,
+    ) -> Select:
+        last_t = func.coalesce(Scan.started_at, Scan.created_at)
+        inner = aliased(Scan)
+        last_status = (
+            select(inner.status)
+            .where(
+                inner.target_id == Scan.target_id,
+                inner.project_id == project_id,
+                *self._filter_conditions(
+                    inner, statuses, engines, contexts, time_range
+                ),
+            )
+            .order_by(func.coalesce(inner.started_at, inner.created_at).desc())
+            .limit(1)
+            .correlate(Scan)
+            .scalar_subquery()
+        )
+        live = case(
+            (
+                Scan.status.in_([ScanStatus.RUNNING.value, ScanStatus.PENDING.value]),
+                1,
+            ),
+            else_=0,
+        )
+        query = (
+            select(
+                Scan.target_id.label("target_id"),
+                Target.target_value.label("target_value"),
+                Target.target_type.label("target_type"),
+                func.count().label("scan_count"),
+                func.max(last_t).label("last_scan_at"),
+                func.sum(live).label("running"),
+                last_status.label("last_status"),
+            )
+            .join(Target, Scan.target_id == Target.id)
+            .where(
+                Scan.project_id == project_id,
+                *self._filter_conditions(Scan, statuses, engines, contexts, time_range),
+            )
+            .group_by(Scan.target_id, Target.target_value, Target.target_type)
+        )
+        if search and search.strip():
+            term = f"%{search.strip().lower()}%"
+            query = query.where(
+                or_(
+                    func.lower(Target.target_value).like(term),
+                    func.lower(Scan.engine_name).like(term),
+                    func.lower(func.coalesce(Scan.context_name, "")).like(term),
+                )
+            )
+        return query.order_by(func.max(last_t).desc())
+
+    def to_read(self, scan: Scan) -> ScanRead:
+        return self._to_read(scan)
+
+    async def export_rows(
+        self,
+        project_id: UUID,
+        target_id: UUID | None = None,
+        statuses: list[str] | None = None,
+        engines: list[str] | None = None,
+        contexts: list[str] | None = None,
+        search: str | None = None,
+        time_range: str | None = None,
+        sort_by: ScanSortKey = "started",
+        sort_dir: ScanSortDir = "desc",
+    ) -> list[ScanExportRow]:
+        query = self.build_list_query(
+            project_id=project_id,
+            target_id=target_id,
+            statuses=statuses,
+            engines=engines,
+            contexts=contexts,
+            search=search,
+            time_range=time_range,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+        ).limit(MAX_SCAN_EXPORT)
         result = await self.session.execute(query)
-        scans = result.scalars().all()
-        return [self._to_read(s) for s in scans]
+        return [
+            ScanExportRow(
+                target=(scan.execution_config or {}).get("target_value", ""),
+                status=scan.status,
+                engine=scan.engine_name,
+                context=scan.context_name,
+                subdomains=scan.subdomains_found,
+                ips=scan.ips_found,
+                open_ports=scan.open_ports_found,
+                vulnerabilities=scan.vulnerabilities_found,
+                endpoints=scan.endpoints_found,
+                duration_seconds=_scan_duration(scan),
+                started_at=scan.started_at,
+                completed_at=scan.completed_at,
+                created_at=scan.created_at,
+            )
+            for scan in result.scalars().all()
+        ]
+
+    async def new_subdomain_counts(
+        self, scan_ids: list[UUID], target_ids: list[UUID]
+    ) -> dict[UUID, int]:
+        """Per scan, how many subdomain names it was the FIRST to discover for its target."""
+        if not scan_ids or not target_ids:
+            return {}
+        rn = (
+            func.row_number()
+            .over(
+                partition_by=[Subdomain.target_id, Subdomain.name],
+                order_by=[Subdomain.discovered_at.asc(), Subdomain.scan_id.asc()],
+            )
+            .label("rn")
+        )
+        firsts = (
+            select(Subdomain.scan_id.label("scan_id"), rn)
+            .where(Subdomain.target_id.in_(target_ids))
+            .subquery()
+        )
+        rows = (
+            await self.session.execute(
+                select(firsts.c.scan_id, func.count())
+                .where(firsts.c.rn == 1, firsts.c.scan_id.in_(scan_ids))
+                .group_by(firsts.c.scan_id)
+            )
+        ).all()
+        return dict(rows)
+
+    async def prev_completed_counts(
+        self, scan_ids: list[UUID], target_ids: list[UUID]
+    ) -> dict[UUID, int]:
+        """Per scan, the previous COMPLETED scan's subdomains_found for the same target."""
+        if not scan_ids or not target_ids:
+            return {}
+        ordering = func.coalesce(Scan.started_at, Scan.created_at)
+        prev = (
+            func.lag(Scan.subdomains_found)
+            .over(partition_by=Scan.target_id, order_by=ordering.asc())
+            .label("prev")
+        )
+        completed = (
+            select(Scan.id.label("id"), prev)
+            .where(
+                Scan.target_id.in_(target_ids),
+                Scan.status == ScanStatus.COMPLETED.value,
+            )
+            .subquery()
+        )
+        rows = (
+            await self.session.execute(
+                select(completed.c.id, completed.c.prev).where(
+                    completed.c.id.in_(scan_ids)
+                )
+            )
+        ).all()
+        return {sid: p for sid, p in rows if p is not None}
+
+    async def first_scan_ids(self, target_ids: list[UUID]) -> set[UUID]:
+        """The earliest scan id for each target (baseline run — no prior to diff against)."""
+        if not target_ids:
+            return set()
+        ordering = func.coalesce(Scan.started_at, Scan.created_at)
+        rn = (
+            func.row_number()
+            .over(
+                partition_by=Scan.target_id,
+                order_by=[ordering.asc(), Scan.created_at.asc()],
+            )
+            .label("rn")
+        )
+        sub = (
+            select(Scan.id.label("id"), rn)
+            .where(Scan.target_id.in_(target_ids))
+            .subquery()
+        )
+        rows = (await self.session.execute(select(sub.c.id).where(sub.c.rn == 1))).all()
+        return {r[0] for r in rows}
+
+    async def gone_subdomain_counts(
+        self, scan_ids: list[UUID], target_ids: list[UUID]
+    ) -> dict[UUID, int]:
+        """Per scan, subdomain names present in the previous completed run but absent now."""
+        if not scan_ids or not target_ids:
+            return {}
+        ordering = func.coalesce(Scan.started_at, Scan.created_at)
+        prev_id = (
+            func.lag(Scan.id)
+            .over(partition_by=Scan.target_id, order_by=ordering.asc())
+            .label("prev_id")
+        )
+        completed = (
+            select(Scan.id.label("id"), prev_id)
+            .where(
+                Scan.target_id.in_(target_ids),
+                Scan.status == ScanStatus.COMPLETED.value,
+            )
+            .subquery()
+        )
+        pairs = (
+            select(completed.c.id, completed.c.prev_id)
+            .where(completed.c.id.in_(scan_ids), completed.c.prev_id.is_not(None))
+            .subquery()
+        )
+        sp = aliased(Subdomain)
+        sc = aliased(Subdomain)
+        query = (
+            select(pairs.c.id, func.count())
+            .select_from(pairs)
+            .join(sp, sp.scan_id == pairs.c.prev_id)
+            .where(
+                ~exists(select(1).where(sc.scan_id == pairs.c.id, sc.name == sp.name))
+            )
+            .group_by(pairs.c.id)
+        )
+        rows = (await self.session.execute(query)).all()
+        return dict(rows)
+
+    async def target_trends(
+        self, target_ids: list[UUID], limit: int = 12
+    ) -> dict[UUID, list[int]]:
+        """Per target, subdomains_found across its completed runs (oldest→newest, last `limit`)."""
+        if not target_ids:
+            return {}
+        ordering = func.coalesce(Scan.started_at, Scan.created_at)
+        rows = (
+            await self.session.execute(
+                select(Scan.target_id, Scan.subdomains_found)
+                .where(
+                    Scan.target_id.in_(target_ids),
+                    Scan.status == ScanStatus.COMPLETED.value,
+                )
+                .order_by(Scan.target_id, ordering.asc())
+            )
+        ).all()
+        out: dict[UUID, list[int]] = {}
+        for tid, n in rows:
+            out.setdefault(tid, []).append(n)
+        return {tid: vals[-limit:] for tid, vals in out.items()}
+
+    async def changes(
+        self, project_id: UUID, window: str, target_id: UUID | None = None
+    ) -> ScanChanges:
+        cutoff = utc_now() - _WINDOW_DELTAS.get(window, timedelta(days=7))
+
+        sub_conds = [Subdomain.project_id == project_id]
+        if target_id is not None:
+            sub_conds.append(Subdomain.target_id == target_id)
+        firsts = (
+            select(
+                Subdomain.target_id.label("target_id"),
+                func.min(Subdomain.discovered_at).label("first_seen"),
+            )
+            .where(*sub_conds)
+            .group_by(Subdomain.target_id, Subdomain.name)
+            .subquery()
+        )
+        new_subdomains = (
+            await self.session.execute(
+                select(func.count()).where(firsts.c.first_seen >= cutoff)
+            )
+        ).scalar_one()
+        targets_changed = (
+            await self.session.execute(
+                select(func.count(func.distinct(firsts.c.target_id))).where(
+                    firsts.c.first_seen >= cutoff
+                )
+            )
+        ).scalar_one()
+
+        scan_conds = [Scan.project_id == project_id, Scan.created_at >= cutoff]
+        if target_id is not None:
+            scan_conds.append(Scan.target_id == target_id)
+        scans_run = (
+            await self.session.execute(select(func.count()).where(*scan_conds))
+        ).scalar_one()
+        failed_runs = (
+            await self.session.execute(
+                select(func.count()).where(
+                    *scan_conds,
+                    Scan.status.in_(
+                        [ScanStatus.FAILED.value, ScanStatus.CANCELLED.value]
+                    ),
+                )
+            )
+        ).scalar_one()
+
+        return ScanChanges(
+            window=window,
+            new_subdomains=new_subdomains,
+            targets_changed=targets_changed,
+            scans_run=scans_run,
+            failed_runs=failed_runs,
+        )
 
     async def stats(self, project_id: UUID, target_id: UUID | None = None) -> ScanStats:
         conds = [Scan.project_id == project_id]
@@ -501,21 +879,53 @@ class ScanService:
         )
 
         start = (utc_now() - timedelta(days=29)).date()
-        daily_rows = (
+        status_day_rows = (
             await self.session.execute(
-                select(func.date(Scan.created_at), func.count())
+                select(func.date(Scan.created_at), Scan.status, func.count())
                 .where(*conds, func.date(Scan.created_at) >= start)
-                .group_by(func.date(Scan.created_at))
+                .group_by(func.date(Scan.created_at), Scan.status)
             )
         ).all()
-        by_day = {str(d): n for d, n in daily_rows}
-        daily = [
-            ScanDailyCount(
-                date=(d := (start + timedelta(days=i)).isoformat()),
-                count=by_day.get(d, 0),
+
+        by_day_status: dict[str, dict[str, int]] = {}
+        for d, st, n in status_day_rows:
+            by_day_status.setdefault(str(d), {})[st] = n
+
+        daily = []
+        for i in range(30):
+            d = (start + timedelta(days=i)).isoformat()
+            s = by_day_status.get(d, {})
+            daily.append(
+                ScanDailyCount(
+                    date=d,
+                    count=sum(s.values()),
+                    completed=s.get(ScanStatus.COMPLETED.value, 0),
+                    failed=s.get(ScanStatus.FAILED.value, 0),
+                    cancelled=s.get(ScanStatus.CANCELLED.value, 0),
+                    running=s.get(ScanStatus.RUNNING.value, 0),
+                    pending=s.get(ScanStatus.PENDING.value, 0),
+                )
             )
-            for i in range(30)
-        ]
+
+        engine_rows = (
+            await self.session.execute(
+                select(Scan.engine_name, func.count())
+                .where(*conds)
+                .group_by(Scan.engine_name)
+                .order_by(func.count().desc())
+            )
+        ).all()
+        engines = [ScanFacet(name=name, count=n) for name, n in engine_rows if name]
+
+        context_rows = (
+            await self.session.execute(
+                select(Scan.context_name, func.count())
+                .where(*conds, Scan.context_name.is_not(None))
+                .group_by(Scan.context_name)
+                .order_by(func.count().desc())
+            )
+        ).all()
+        contexts = [ScanFacet(name=name, count=n) for name, n in context_rows if name]
 
         return ScanStats(
             total=total,
@@ -527,6 +937,8 @@ class ScanService:
             ),
             success_rate=round(success_rate, 3) if success_rate is not None else None,
             daily=daily,
+            engines=engines,
+            contexts=contexts,
         )
 
     async def get(self, id: UUID, project_id: UUID) -> ScanRead:

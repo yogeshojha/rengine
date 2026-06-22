@@ -1,12 +1,6 @@
 import type { HttpProtocol } from './scan-context';
 
-export const SCAN_STATUSES = [
-	'pending',
-	'running',
-	'completed',
-	'failed',
-	'cancelled'
-] as const;
+export const SCAN_STATUSES = ['pending', 'running', 'completed', 'failed', 'cancelled'] as const;
 export type ScanStatus = (typeof SCAN_STATUSES)[number];
 
 export const SCAN_SORT_KEYS = [
@@ -17,6 +11,16 @@ export const SCAN_SORT_KEYS = [
 	'vulnerabilities'
 ] as const;
 export type ScanSortKey = (typeof SCAN_SORT_KEYS)[number];
+
+export type ScanSortDir = 'asc' | 'desc';
+
+export const SCAN_TIME_RANGES = [
+	{ key: 'all', label: 'All time' },
+	{ key: '24h', label: 'Last 24 hours' },
+	{ key: '7d', label: 'Last 7 days' },
+	{ key: '30d', label: 'Last 30 days' }
+] as const;
+export type ScanTimeRange = (typeof SCAN_TIME_RANGES)[number]['key'];
 
 export interface ResolvedScanConfig {
 	target_value: string;
@@ -62,6 +66,10 @@ export interface ScanRead {
 	started_at: string | null;
 	completed_at: string | null;
 	duration_seconds: number | null;
+	new_subdomains: number | null;
+	gone_subdomains: number | null;
+	prev_subdomains_found: number | null;
+	is_first_scan: boolean | null;
 }
 
 export interface ScanCreate {
@@ -70,11 +78,7 @@ export interface ScanCreate {
 	target_id: string;
 }
 
-export const PREVIEW_TOOL_STATUSES = [
-	'will_run',
-	'skipped_disabled',
-	'skipped_needs_key'
-] as const;
+export const PREVIEW_TOOL_STATUSES = ['will_run', 'skipped_disabled', 'skipped_needs_key'] as const;
 export type PreviewToolStatus = (typeof PREVIEW_TOOL_STATUSES)[number];
 
 export interface PreviewTool {
@@ -124,6 +128,60 @@ export interface ScanStatusCounts {
 export interface ScanDailyCount {
 	date: string;
 	count: number;
+	completed: number;
+	failed: number;
+	cancelled: number;
+	running: number;
+	pending: number;
+}
+
+export const SCAN_CHANGE_WINDOWS = [
+	{ key: '6h', label: '6h' },
+	{ key: '12h', label: '12h' },
+	{ key: '24h', label: '24h' },
+	{ key: '7d', label: '7d' },
+	{ key: '30d', label: '30d' }
+] as const;
+export type ScanChangeWindow = (typeof SCAN_CHANGE_WINDOWS)[number]['key'];
+
+export interface ScanChanges {
+	window: ScanChangeWindow;
+	new_subdomains: number;
+	targets_changed: number;
+	scans_run: number;
+	failed_runs: number;
+}
+
+export interface ScanTargetGroup {
+	target_id: string;
+	target_value: string;
+	target_type: string;
+	scan_count: number;
+	last_scan_at: string;
+	last_status: ScanStatus;
+	running: number;
+	trend: number[];
+}
+
+export interface ScanFacet {
+	name: string;
+	count: number;
+}
+
+export interface ScanExportRow {
+	target: string;
+	status: string;
+	engine: string;
+	context: string | null;
+	subdomains: number;
+	ips: number;
+	open_ports: number;
+	vulnerabilities: number;
+	endpoints: number;
+	duration_seconds: number | null;
+	started_at: string | null;
+	completed_at: string | null;
+	created_at: string;
 }
 
 export interface ScanStats {
@@ -134,6 +192,8 @@ export interface ScanStats {
 	avg_duration_seconds: number | null;
 	success_rate: number | null;
 	daily: ScanDailyCount[];
+	engines: ScanFacet[];
+	contexts: ScanFacet[];
 }
 
 export interface ScanPreview {

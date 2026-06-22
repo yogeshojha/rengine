@@ -54,9 +54,7 @@
 	let previewDebounce: ReturnType<typeof setTimeout>;
 	let previewSeq = 0;
 
-	let lockedTarget = $derived(
-		targetId ? (targets.find((t) => t.id === targetId) ?? null) : null
-	);
+	let lockedTarget = $derived(targetId ? (targets.find((t) => t.id === targetId) ?? null) : null);
 	let lockedTargetValue = $derived(lockedTarget?.target_value ?? '');
 
 	let enginesReady = $derived(
@@ -65,7 +63,9 @@
 	let contextsReady = $derived(
 		(scanContextsStore.hasFetched || !!scanContextsStore.error) && !scanContextsStore.isLoading
 	);
-	let noEngines = $derived(enginesReady && !scanEnginesStore.error && scanEnginesStore.engines.length === 0);
+	let noEngines = $derived(
+		enginesReady && !scanEnginesStore.error && scanEnginesStore.engines.length === 0
+	);
 	let noTargets = $derived(!targetsLoading && !targetsError && targets.length === 0);
 
 	let engineLabel = $derived(
@@ -400,19 +400,33 @@
 						{:else if !enginesReady}
 							<Skeleton class="h-9 w-full rounded-md" />
 						{:else if scanEnginesStore.error}
-							<div class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+							<div
+								class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+							>
 								<AlertTriangle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
 								<div class="space-y-1">
 									<p>{scanEnginesStore.error}</p>
-									<Button variant="outline" size="sm" class="h-7 gap-1 text-xs" onclick={retryEngines}>
+									<Button
+										variant="outline"
+										size="sm"
+										class="h-7 gap-1 text-xs"
+										onclick={retryEngines}
+									>
 										<RefreshCw class="h-3 w-3" /> Retry
 									</Button>
 								</div>
 							</div>
 						{:else if noEngines}
 							<div class="space-y-2 rounded-md border border-border bg-muted/20 px-3 py-3 text-xs">
-								<p class="text-muted-foreground">No scan engines yet. Create one to define what a scan runs.</p>
-								<Button variant="outline" size="sm" class="h-7 gap-1 text-xs" onclick={gotoCreateEngine}>
+								<p class="text-muted-foreground">
+									No scan engines yet. Create one to define what a scan runs.
+								</p>
+								<Button
+									variant="outline"
+									size="sm"
+									class="h-7 gap-1 text-xs"
+									onclick={gotoCreateEngine}
+								>
 									<Plus class="h-3 w-3" /> Create a scan engine
 								</Button>
 							</div>
@@ -482,24 +496,34 @@
 						{:else if !contextsReady}
 							<Skeleton class="h-9 w-full rounded-md" />
 						{:else if scanContextsStore.error}
-							<div class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+							<div
+								class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+							>
 								<AlertTriangle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
 								<div class="space-y-1">
 									<p>{scanContextsStore.error}</p>
-									<Button variant="outline" size="sm" class="h-7 gap-1 text-xs" onclick={retryContexts}>
+									<Button
+										variant="outline"
+										size="sm"
+										class="h-7 gap-1 text-xs"
+										onclick={retryContexts}
+									>
 										<RefreshCw class="h-3 w-3" /> Retry
 									</Button>
 								</div>
 							</div>
 						{:else}
 							<Select.Root type="single" bind:value={contextId}>
-								<Select.Trigger id="scan-context-select" class="w-full">{contextLabel}</Select.Trigger>
+								<Select.Trigger id="scan-context-select" class="w-full"
+									>{contextLabel}</Select.Trigger
+								>
 								<Select.Content>
 									<Select.Item value={NONE_CONTEXT} label="None — engine defaults">
 										None — engine defaults
 									</Select.Item>
 									{#each scanContextsStore.contexts as context (context.id)}
-										<Select.Item value={context.id} label={context.name}>{context.name}</Select.Item>
+										<Select.Item value={context.id} label={context.name}>{context.name}</Select.Item
+										>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -515,7 +539,9 @@
 									id="scan-target-select"
 									class="flex h-9 w-full items-center gap-2 rounded-md border border-border bg-muted/30 px-3 text-sm"
 								>
-									<Badge variant="secondary" class="font-mono font-normal">{lockedTarget.target_value}</Badge>
+									<Badge variant="secondary" class="font-mono font-normal"
+										>{lockedTarget.target_value}</Badge
+									>
 									<span class="text-xs text-muted-foreground">{lockedTarget.target_type}</span>
 								</div>
 							{:else}
@@ -524,11 +550,18 @@
 						{:else if targetsLoading}
 							<Skeleton class="h-9 w-full rounded-md" />
 						{:else if targetsError}
-							<div class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+							<div
+								class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+							>
 								<AlertTriangle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
 								<div class="space-y-1">
 									<p>{targetsError}</p>
-									<Button variant="outline" size="sm" class="h-7 gap-1 text-xs" onclick={retryTargets}>
+									<Button
+										variant="outline"
+										size="sm"
+										class="h-7 gap-1 text-xs"
+										onclick={retryTargets}
+									>
 										<RefreshCw class="h-3 w-3" /> Retry
 									</Button>
 								</div>
@@ -550,7 +583,8 @@
 							</div>
 						{:else}
 							<Select.Root type="single" bind:value={selectedTargetId}>
-								<Select.Trigger id="scan-target-select" class="w-full">{targetLabel}</Select.Trigger>
+								<Select.Trigger id="scan-target-select" class="w-full">{targetLabel}</Select.Trigger
+								>
 								<Select.Content>
 									{#each targets as target (target.id)}
 										<Select.Item value={target.id} label={target.target_value}>
@@ -568,7 +602,9 @@
 			<ScrollArea class="h-full min-h-0 border-t bg-muted/20 md:border-t-0 md:border-l">
 				<div class="p-6">
 					{#if previewError}
-						<div class="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-8 text-center">
+						<div
+							class="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-8 text-center"
+						>
 							<AlertTriangle class="h-8 w-8 text-destructive" />
 							<div class="space-y-1">
 								<p class="text-sm font-medium text-foreground">Couldn't build the preview</p>
@@ -583,7 +619,9 @@
 							<div class="pointer-events-none opacity-40 transition-opacity">
 								<ExecutionPreview {preview} loading={false} />
 							</div>
-							<div class="absolute inset-x-0 top-0 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+							<div
+								class="absolute inset-x-0 top-0 flex items-center justify-center gap-2 text-xs text-muted-foreground"
+							>
 								<LoaderCircle class="h-3.5 w-3.5 animate-spin" />
 								Updating preview…
 							</div>

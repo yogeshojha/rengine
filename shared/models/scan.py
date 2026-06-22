@@ -67,6 +67,10 @@ class ScanRead(BaseModel):
     started_at: datetime | None
     completed_at: datetime | None
     duration_seconds: float | None = None
+    new_subdomains: int | None = None
+    gone_subdomains: int | None = None
+    prev_subdomains_found: int | None = None
+    is_first_scan: bool | None = None
 
 
 class ScanStatusCounts(BaseModel):
@@ -80,6 +84,51 @@ class ScanStatusCounts(BaseModel):
 class ScanDailyCount(BaseModel):
     date: str
     count: int
+    completed: int = 0
+    failed: int = 0
+    cancelled: int = 0
+    running: int = 0
+    pending: int = 0
+
+
+class ScanFacet(BaseModel):
+    name: str
+    count: int
+
+
+class ScanChanges(BaseModel):
+    window: str
+    new_subdomains: int
+    targets_changed: int
+    scans_run: int
+    failed_runs: int
+
+
+class ScanTargetGroup(BaseModel):
+    target_id: uuid.UUID
+    target_value: str
+    target_type: str
+    scan_count: int
+    last_scan_at: datetime
+    last_status: str
+    running: int
+    trend: list[int] = []
+
+
+class ScanExportRow(BaseModel):
+    target: str
+    status: str
+    engine: str
+    context: str | None
+    subdomains: int
+    ips: int
+    open_ports: int
+    vulnerabilities: int
+    endpoints: int
+    duration_seconds: float | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    created_at: datetime
 
 
 class ScanStats(BaseModel):
@@ -90,3 +139,5 @@ class ScanStats(BaseModel):
     avg_duration_seconds: float | None
     success_rate: float | None
     daily: list[ScanDailyCount]
+    engines: list[ScanFacet] = []
+    contexts: list[ScanFacet] = []

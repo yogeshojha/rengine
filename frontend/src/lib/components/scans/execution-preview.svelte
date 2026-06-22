@@ -250,7 +250,10 @@
 							<div class="text-foreground">
 								<div class="flex flex-wrap gap-1">
 									{#each s.included_subdomains as sub (sub)}
-										<Badge variant="secondary" class="rounded px-1.5 py-0.5 text-[10px] font-mono font-normal">{sub}</Badge>
+										<Badge
+											variant="secondary"
+											class="rounded px-1.5 py-0.5 text-[10px] font-mono font-normal">{sub}</Badge
+										>
 									{/each}
 								</div>
 							</div>
