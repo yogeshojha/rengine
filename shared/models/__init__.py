@@ -1,3 +1,4 @@
+import shared.models._tztypes  # patch datetime->timestamptz first
 from shared.models.activity_log import ActivityLog, ActivityLogRead
 from shared.models.api_key import (
     APIKey,
@@ -78,6 +79,12 @@ from shared.models.scan_engine import (
     ScanEngineCreate,
     ScanEngineRead,
     ScanEngineUpdate,
+)
+from shared.models.subdomain import (
+    Subdomain,
+    SubdomainRead,
+    SubdomainSummary,
+    TargetSubdomainRead,
 )
 from shared.models.tag import Tag, TagBase, TagCreate, TagRead, TagSummary, TagUpdate
 from shared.models.target import (
@@ -163,6 +170,9 @@ __all__ = [
     "ScanEngineRead",
     "ScanEngineUpdate",
     "ScanRead",
+    "Subdomain",
+    "SubdomainRead",
+    "SubdomainSummary",
     "Tag",
     "TagBase",
     "TagCreate",
@@ -177,6 +187,7 @@ __all__ = [
     "TargetImportRequest",
     "TargetImportResult",
     "TargetRead",
+    "TargetSubdomainRead",
     "TargetType",
     "TargetUpdate",
     "TargetValidationRequest",

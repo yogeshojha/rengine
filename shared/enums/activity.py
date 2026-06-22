@@ -24,6 +24,12 @@ class ActivityEvent(Enum):
     TARGET_ENRICHMENT_BGP_COMPLETED = "target.enrichment.bgp.completed"
     TARGET_ENRICHMENT_BGP_FAILED = "target.enrichment.bgp.failed"
 
+    # scan events
+    SCAN_STARTED = "scan.started"
+    SCAN_PROGRESS = "scan.progress"
+    SCAN_COMPLETED = "scan.completed"
+    SCAN_FAILED = "scan.failed"
+
     # project events
     PROJECT_CREATED = "project.created"
     PROJECT_UPDATED = "project.updated"

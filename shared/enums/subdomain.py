@@ -1,0 +1,24 @@
+from enum import Enum
+
+
+class SubdomainSource(Enum):
+    SUBFINDER = "subfinder"
+    CTFR = "ctfr"
+    SUBLIST3R = "sublist3r"
+    ASSETFINDER = "assetfinder"
+    AMASS = "amass"
+    TLSX = "tlsx"
+    ONEFORALL = "oneforall"
+    NETLAS = "netlas"
+    SUDOMY = "sudomy"
+    SECURITYTRAILS = "securitytrails"
+    CHAOS = "chaos"
+    CENSYS = "censys"
+    VIRUSTOTAL = "virustotal"
+    BINARYEDGE = "binaryedge"
+    BRUTEFORCE = "bruteforce"
+    PERMUTATION = "permutation"
+    ZONE_TRANSFER = "zone_transfer"
+    SCRAPING = "scraping"
+    TLS_CERT = "tls_cert"
+    OTHER = "other"

@@ -81,7 +81,7 @@ celery_app.conf.task_default_routing_key = "default"
 # #############################################################
 
 celery_app.conf.task_routes = {
-    # "app.tasks.scan.*": {"queue": "scans"},
+    "app.tasks.scan.*": {"queue": "scans"},
     "app.tasks.whois.*": {"queue": "default"},
     "app.tasks.debug.*": {"queue": "default"},
     "app.tasks.ripestat.*": {"queue": "default"},
@@ -98,6 +98,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.whois",
         "app.tasks.ripestat",
         "app.tasks.dns",
+        "app.tasks.scan",
     ]
 )
 

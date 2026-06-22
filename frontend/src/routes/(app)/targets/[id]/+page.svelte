@@ -22,6 +22,7 @@
 		ShieldAlert,
 		EthernetPort,
 		Cpu,
+		History,
 		RefreshCw
 	} from 'lucide-svelte';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
@@ -38,6 +39,8 @@
 	import TargetInfra from '$lib/components/targets/target-detail/summary/target-infra.svelte';
 	import TargetMeta from '$lib/components/targets/target-detail/summary/target-meta.svelte';
 	import ScanTabEmpty from '$lib/components/targets/target-detail/summary/scan-tab-empty.svelte';
+	import ScanHistory from '$lib/components/targets/target-detail/scan-history.svelte';
+	import TargetSubdomains from '$lib/components/targets/target-detail/target-subdomains.svelte';
 	import { buildTargetSummary } from '$lib/components/targets/target-detail/summary/derive';
 	import { activityScope } from '$lib/stores/activity-scope.svelte';
 
@@ -119,6 +122,13 @@
 			icon: Cpu,
 			title: 'No technologies detected yet',
 			description: 'Run a scan to fingerprint the technology stack of this target.'
+		});
+		tabs.push({
+			value: 'scan-history',
+			label: 'Scan History',
+			icon: History,
+			title: 'No scans yet',
+			description: 'Launch a scan to start building scan history for this target.'
 		});
 		return tabs;
 	});
@@ -376,7 +386,7 @@
 		{/snippet}
 
 		<Tabs.Root value={activeTab} onValueChange={(v) => { if (v) activeTab = v; }}>
-			<Tabs.List class="h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
+			<Tabs.List class="h-auto w-full flex-wrap justify-start gap-1">
 				<Tabs.Trigger value="overview" class="gap-1.5">
 					<LayoutDashboard class="h-3.5 w-3.5" />
 					Overview
@@ -476,12 +486,18 @@
 
 			{#each scanTabs as t (t.value)}
 				<Tabs.Content value={t.value} class="mt-4">
-					<ScanTabEmpty
-						icon={t.icon}
-						title={t.title}
-						description={t.description}
-						onScan={handleScan}
-					/>
+					{#if t.value === 'scan-history'}
+						<ScanHistory targetId={target.id} onLaunch={handleScan} />
+					{:else if t.value === 'subdomains'}
+						<TargetSubdomains targetId={target.id} onScan={handleScan} />
+					{:else}
+						<ScanTabEmpty
+							icon={t.icon}
+							title={t.title}
+							description={t.description}
+							onScan={handleScan}
+						/>
+					{/if}
 				</Tabs.Content>
 			{/each}
 		</Tabs.Root>

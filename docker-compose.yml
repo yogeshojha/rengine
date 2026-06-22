@@ -67,6 +67,7 @@ services:
       - ./worker/app:/app/app
       - ./shared:/app/shared
       - ./tools:/app/tools
+      - ./engines:/app/engines
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -77,7 +78,7 @@ services:
       uv run celery -A app.celery worker
       --loglevel=DEBUG
       --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
-      --queues=critical,default
+      --queues=critical,default,scans
       --hostname=worker-default@%h
       --max-tasks-per-child=100
     depends_on:
@@ -101,6 +102,7 @@ services:
       - ./worker/app:/app/app
       - ./shared:/app/shared
       - ./tools:/app/tools
+      - ./engines:/app/engines
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build

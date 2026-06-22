@@ -198,7 +198,7 @@ export const DEFAULT_DISCOVERY_CONFIG: DiscoveryConfig = {
 
 export const DEFAULT_EXPANSION_CONFIG: ExpansionConfig = {
   subdomain_passive: true,
-  subdomain_passive_tools: ['subfinder', 'amass'],
+  subdomain_passive_tools: ['subfinder', 'ctfr', 'assetfinder', 'amass'],
   subdomain_securitytrails: false,
   subdomain_censys: false,
   subdomain_virustotal: false,

@@ -204,7 +204,8 @@
 						{@render checkGroup('subdomain_passive_tools', [
 							{ value: 'subfinder', label: 'Subfinder' },
 							{ value: 'amass', label: 'Amass (passive)' },
-							{ value: 'crtsh', label: 'crt.sh' }
+							{ value: 'ctfr', label: 'crt.sh (CTFR)' },
+							{ value: 'assetfinder', label: 'Assetfinder' }
 						])}
 						<p class="hint">API-key sources</p>
 						{@render toggleKey('SecurityTrails', 'subdomain_securitytrails', false, 'SecurityTrails')}

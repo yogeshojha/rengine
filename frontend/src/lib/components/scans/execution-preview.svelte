@@ -14,7 +14,7 @@
 		Cpu,
 		Timer
 	} from 'lucide-svelte';
-	import type { PreviewTool, PreviewToolStatus, ScanPreview } from '$lib/types/scan';
+	import type { PreviewToolStatus, ScanPreview } from '$lib/types/scan';
 
 	interface Props {
 		preview: ScanPreview | null;
@@ -113,8 +113,7 @@
 				<Separator />
 				<Card.Content class="p-0">
 					<ul class="divide-y divide-border">
-						{#each phase.tools as tool (tool.capability)}
-							{@const t = tool as PreviewTool}
+						{#each phase.tools as t (t.capability)}
 							<li class="flex flex-col gap-1 px-4 py-2.5">
 								<div class="flex items-center justify-between gap-2">
 									<span
@@ -232,6 +231,11 @@
 
 						<div class="text-muted-foreground">Follow redirects</div>
 						<div class="text-foreground">{summaryBool(s.follow_redirects)}</div>
+
+						{#if s.proxy_name}
+							<div class="text-muted-foreground">Proxy</div>
+							<div class="text-foreground">{s.proxy_name}</div>
+						{/if}
 
 						{#if s.excluded_subdomains_count + s.excluded_paths_count + s.excluded_ips_count > 0}
 							<div class="text-muted-foreground">Exclusions</div>

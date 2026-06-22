@@ -1,6 +1,7 @@
 <script lang="ts" module>
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import CrosshairIcon from '@lucide/svelte/icons/crosshair';
+	import RadarIcon from '@lucide/svelte/icons/radar';
 	import ZapIcon from '@lucide/svelte/icons/zap';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 
@@ -25,14 +26,15 @@
 						icon: CrosshairIcon
 					},
 					{
+						title: 'Scans',
+						url: '/scans',
+						icon: RadarIcon
+					},
+					{
 						title: 'Automation',
 						url: '/automation',
 						icon: ZapIcon,
 						items: [
-							{
-								title: 'Scans',
-								url: '/automation/scans'
-							},
 							{
 								title: 'Scan Engines',
 								url: '/automation/engines'

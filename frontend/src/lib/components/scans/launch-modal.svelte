@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Label } from '$lib/components/ui/label';
+	import { Input } from '$lib/components/ui/input';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Select from '$lib/components/ui/select';
@@ -20,6 +21,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansApi } from '$lib/api/scans';
 	import { targetsApi } from '$lib/api/targets';
+	import { DEFAULT_SCAN_CONTEXT } from '$lib/types/scan-context';
 	import type { Target } from '$lib/types/target';
 	import type { ScanPreview } from '$lib/types/scan';
 
@@ -205,7 +207,7 @@
 		void engineId;
 		void contextId;
 		void selectedTargetId;
-		void projectsStore.activeProject;
+		void projectsStore.activeProject?.id;
 		runPreview();
 	});
 
@@ -229,7 +231,7 @@
 				rememberPreferences();
 				toast.success('Scan queued — execution starts when a scanner is connected.');
 				handleOpenChange(false);
-				goto('/automation/scans');
+				goto('/scans');
 			} else {
 				toast.error(scansStore.error ?? 'Failed to launch scan');
 			}
@@ -241,6 +243,64 @@
 	function gotoCreateEngine() {
 		handleOpenChange(false);
 		goto('/automation/engines/new');
+	}
+
+	let creatingEngine = $state(false);
+	let newEngineName = $state('');
+	let savingEngine = $state(false);
+	let creatingContext = $state(false);
+	let newContextName = $state('');
+	let savingContext = $state(false);
+
+	async function createEngineInline() {
+		const project = projectsStore.activeProject;
+		const name = newEngineName.trim();
+		if (!project || !name || savingEngine) return;
+		savingEngine = true;
+		try {
+			const created = await scanEnginesStore.createEngine(project.id, { name });
+			if (created) {
+				engineId = created.id;
+				creatingEngine = false;
+				newEngineName = '';
+				toast.success(`Engine "${created.name}" created with defaults.`);
+			} else {
+				toast.error(scanEnginesStore.error ?? 'Failed to create engine');
+			}
+		} finally {
+			savingEngine = false;
+		}
+	}
+
+	async function createContextInline() {
+		const project = projectsStore.activeProject;
+		const name = newContextName.trim();
+		if (!project || !name || savingContext) return;
+		savingContext = true;
+		try {
+			const created = await scanContextsStore.createContext(project.id, {
+				...DEFAULT_SCAN_CONTEXT(),
+				name
+			});
+			if (created) {
+				contextId = created.id;
+				creatingContext = false;
+				newContextName = '';
+				toast.success(`Context "${created.name}" created.`);
+			} else {
+				toast.error(scanContextsStore.error ?? 'Failed to create context');
+			}
+		} finally {
+			savingContext = false;
+		}
+	}
+
+	function onCreateKeydown(e: KeyboardEvent, fn: () => void) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			e.stopPropagation();
+			fn();
+		}
 	}
 
 	function reset() {
@@ -290,8 +350,54 @@
 				<div class="space-y-4 p-6">
 					<!-- Engine -->
 					<div class="space-y-2">
-						<Label for="scan-engine-select">Engine <span class="text-destructive">*</span></Label>
-						{#if !enginesReady}
+						<div class="flex items-center justify-between">
+							<Label for="scan-engine-select">Engine <span class="text-destructive">*</span></Label>
+							{#if enginesReady && !scanEnginesStore.error && !creatingEngine}
+								<Button
+									variant="ghost"
+									size="sm"
+									class="h-6 gap-1 px-2 text-xs text-muted-foreground"
+									onclick={() => (creatingEngine = true)}
+								>
+									<Plus class="h-3 w-3" /> New engine
+								</Button>
+							{/if}
+						</div>
+						{#if creatingEngine}
+							<div class="space-y-2 rounded-md border border-border bg-muted/20 p-2">
+								<Input
+									bind:value={newEngineName}
+									placeholder="Engine name"
+									class="h-8 text-sm"
+									onkeydown={(e) => onCreateKeydown(e, createEngineInline)}
+								/>
+								<div class="flex items-center gap-2">
+									<Button
+										size="sm"
+										class="h-7 gap-1 text-xs"
+										onclick={createEngineInline}
+										disabled={!newEngineName.trim() || savingEngine}
+									>
+										{#if savingEngine}<LoaderCircle class="h-3 w-3 animate-spin" />{/if}
+										Create
+									</Button>
+									<Button
+										variant="ghost"
+										size="sm"
+										class="h-7 text-xs"
+										onclick={() => {
+											creatingEngine = false;
+											newEngineName = '';
+										}}
+									>
+										Cancel
+									</Button>
+								</div>
+								<p class="text-[11px] text-muted-foreground">
+									Creates an engine with default settings — fine-tune it later in the builder.
+								</p>
+							</div>
+						{:else if !enginesReady}
 							<Skeleton class="h-9 w-full rounded-md" />
 						{:else if scanEnginesStore.error}
 							<div class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
@@ -326,8 +432,54 @@
 
 					<!-- Context -->
 					<div class="space-y-2">
-						<Label for="scan-context-select">Context</Label>
-						{#if !contextsReady}
+						<div class="flex items-center justify-between">
+							<Label for="scan-context-select">Context</Label>
+							{#if contextsReady && !scanContextsStore.error && !creatingContext}
+								<Button
+									variant="ghost"
+									size="sm"
+									class="h-6 gap-1 px-2 text-xs text-muted-foreground"
+									onclick={() => (creatingContext = true)}
+								>
+									<Plus class="h-3 w-3" /> New context
+								</Button>
+							{/if}
+						</div>
+						{#if creatingContext}
+							<div class="space-y-2 rounded-md border border-border bg-muted/20 p-2">
+								<Input
+									bind:value={newContextName}
+									placeholder="Context name"
+									class="h-8 text-sm"
+									onkeydown={(e) => onCreateKeydown(e, createContextInline)}
+								/>
+								<div class="flex items-center gap-2">
+									<Button
+										size="sm"
+										class="h-7 gap-1 text-xs"
+										onclick={createContextInline}
+										disabled={!newContextName.trim() || savingContext}
+									>
+										{#if savingContext}<LoaderCircle class="h-3 w-3 animate-spin" />{/if}
+										Create
+									</Button>
+									<Button
+										variant="ghost"
+										size="sm"
+										class="h-7 text-xs"
+										onclick={() => {
+											creatingContext = false;
+											newContextName = '';
+										}}
+									>
+										Cancel
+									</Button>
+								</div>
+								<p class="text-[11px] text-muted-foreground">
+									Creates an empty context — add auth, scope and rate limits later.
+								</p>
+							</div>
+						{:else if !contextsReady}
 							<Skeleton class="h-9 w-full rounded-md" />
 						{:else if scanContextsStore.error}
 							<div class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">

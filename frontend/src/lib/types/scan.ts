@@ -9,6 +9,15 @@ export const SCAN_STATUSES = [
 ] as const;
 export type ScanStatus = (typeof SCAN_STATUSES)[number];
 
+export const SCAN_SORT_KEYS = [
+	'started',
+	'duration',
+	'status',
+	'subdomains',
+	'vulnerabilities'
+] as const;
+export type ScanSortKey = (typeof SCAN_SORT_KEYS)[number];
+
 export interface ResolvedScanConfig {
 	target_value: string;
 	target_type: string;
@@ -52,6 +61,7 @@ export interface ScanRead {
 	created_at: string;
 	started_at: string | null;
 	completed_at: string | null;
+	duration_seconds: number | null;
 }
 
 export interface ScanCreate {
@@ -91,6 +101,7 @@ export interface PreviewSummary {
 	timeout_multiplier: number;
 	http_protocol: HttpProtocol;
 	follow_redirects: boolean | null;
+	proxy_name: string | null;
 	excluded_subdomains_count: number;
 	excluded_paths_count: number;
 	excluded_ips_count: number;
@@ -100,6 +111,29 @@ export interface PreviewSummary {
 	included_subdomains: string[];
 	estimated_duration_seconds: number;
 	estimated_duration_human: string;
+}
+
+export interface ScanStatusCounts {
+	pending: number;
+	running: number;
+	completed: number;
+	failed: number;
+	cancelled: number;
+}
+
+export interface ScanDailyCount {
+	date: string;
+	count: number;
+}
+
+export interface ScanStats {
+	total: number;
+	running: number;
+	by_status: ScanStatusCounts;
+	last_scan_at: string | null;
+	avg_duration_seconds: number | null;
+	success_rate: number | null;
+	daily: ScanDailyCount[];
 }
 
 export interface ScanPreview {

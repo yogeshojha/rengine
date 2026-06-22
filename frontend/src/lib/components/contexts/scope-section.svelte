@@ -13,6 +13,15 @@
 
 	let { context, onChange }: Props = $props();
 
+	const PATTERN_METACHARS = /[*?^$()[\]{}+|\\]/;
+
+	function validatePattern(v: string): string | null {
+		if (v.includes('.') && !PATTERN_METACHARS.test(v)) {
+			return 'Use a keyword, wildcard (*admin*) or regex — not a domain name';
+		}
+		return null;
+	}
+
 	function validatePath(v: string): string | null {
 		return v.startsWith('/') ? null : 'Path must start with /';
 	}
@@ -39,19 +48,31 @@
 
 <div class="space-y-5">
 	<div class="space-y-1.5">
-		<Label class="text-xs">Excluded subdomains</Label>
+		<Label class="text-xs">Excluded subdomain patterns</Label>
+		<p class="text-xs text-muted-foreground">
+			Keyword, wildcard (<code class="text-[11px]">*admin*</code>) or regex — matched against every
+			discovered subdomain. No domain names, so the context stays reusable. Matches are still stored
+			but flagged <span class="text-amber-600 dark:text-amber-500">excluded</span> and skipped from resolution,
+			ports, screenshots and later stages.
+		</p>
 		<StringListField
 			items={context.excluded_subdomains}
-			placeholder="staging.example.com"
+			placeholder="admin"
+			validate={validatePattern}
 			onChange={(items) => onChange({ excluded_subdomains: items })}
 		/>
 	</div>
 
 	<div class="space-y-1.5">
 		<Label class="text-xs">Excluded paths</Label>
+		<p class="text-xs text-muted-foreground">
+			Path prefix or regex excluded from crawling and fuzzing. Examples:
+			<code class="text-[11px]">/admin</code>, <code class="text-[11px]">/static/(?:css|js)/</code>,
+			<code class="text-[11px]">/images/.*\.jpg</code>
+		</p>
 		<StringListField
 			items={context.excluded_paths}
-			placeholder="/admin/*"
+			placeholder="/admin"
 			validate={validatePath}
 			onChange={(items) => onChange({ excluded_paths: items })}
 		/>

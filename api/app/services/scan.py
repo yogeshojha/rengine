@@ -1,17 +1,27 @@
 import copy
 import logging
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService
 from shared.enums.api_key import APIProvider
+from shared.enums.scan import ScanStatus
 from shared.models.api_key import APIKey
-from shared.models.scan import Scan, ScanCreate, ScanRead
+from shared.models.scan import (
+    SCAN_STATUSES,
+    Scan,
+    ScanCreate,
+    ScanDailyCount,
+    ScanRead,
+    ScanStats,
+    ScanStatusCounts,
+)
 from shared.models.scan_context import VALID_RATE_TOOLS, ScanContext
 from shared.models.scan_engine import ScanEngine
 from shared.models.scan_preview import (
@@ -30,6 +40,7 @@ from shared.services.scan_resolve import (
     _mask_auth,
     merge_engine_context,
 )
+from shared.utils.datetime import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +146,17 @@ def _mask_config_headers(config: dict) -> dict:
     if isinstance(depth, dict) and depth.get("report_webhook_url"):
         depth["report_webhook_url"] = MASK
     return out
+
+
+def _scan_duration(scan: Scan) -> float | None:
+    if scan.started_at is None:
+        return None
+    end = scan.completed_at or (
+        utc_now() if scan.status == ScanStatus.RUNNING.value else None
+    )
+    if end is None:
+        return None
+    return round((end - scan.started_at).total_seconds(), 1)
 
 
 def _human_duration(seconds: int) -> str:
@@ -393,7 +415,7 @@ class ScanService:
             context_id=context.id if context is not None else None,
             context_name=context.name if context is not None else None,
             execution_config=execution_config,
-            status="pending",
+            status=ScanStatus.PENDING.value,
             subdomains_found=0,
             ips_found=0,
             open_ports_found=0,
@@ -412,9 +434,10 @@ class ScanService:
         self._dispatch_scan(scan)
         return self._to_read(scan)
 
-    def _dispatch_scan(self, scan: Scan) -> None:  # noqa: ARG002 — stub; `scan` is the contract the launch-flow TODO will consume
-        # TODO(launch-flow): enqueue a Celery task to run the resolved execution_config.
-        return
+    def _dispatch_scan(self, scan: Scan) -> None:
+        from shared.services.celery_dispatch import dispatch_scan_run  # noqa: PLC0415
+
+        dispatch_scan_run(str(scan.id))
 
     async def list(
         self,
@@ -434,7 +457,83 @@ class ScanService:
         scans = result.scalars().all()
         return [self._to_read(s) for s in scans]
 
+    async def stats(self, project_id: UUID, target_id: UUID | None = None) -> ScanStats:
+        conds = [Scan.project_id == project_id]
+        if target_id is not None:
+            conds.append(Scan.target_id == target_id)
+
+        status_rows = (
+            await self.session.execute(
+                select(Scan.status, func.count()).where(*conds).group_by(Scan.status)
+            )
+        ).all()
+        counts = dict.fromkeys(SCAN_STATUSES, 0)
+        total = 0
+        for st, n in status_rows:
+            if st in counts:
+                counts[st] = n
+            total += n
+
+        last_scan_at = (
+            await self.session.execute(select(func.max(Scan.created_at)).where(*conds))
+        ).scalar_one_or_none()
+
+        avg_duration = (
+            await self.session.execute(
+                select(
+                    func.avg(func.extract("epoch", Scan.completed_at - Scan.started_at))
+                ).where(
+                    *conds,
+                    Scan.status == ScanStatus.COMPLETED.value,
+                    Scan.started_at.is_not(None),
+                    Scan.completed_at.is_not(None),
+                )
+            )
+        ).scalar_one_or_none()
+
+        finished = (
+            counts[ScanStatus.COMPLETED.value]
+            + counts[ScanStatus.FAILED.value]
+            + counts[ScanStatus.CANCELLED.value]
+        )
+        success_rate = (
+            counts[ScanStatus.COMPLETED.value] / finished if finished else None
+        )
+
+        start = (utc_now() - timedelta(days=29)).date()
+        daily_rows = (
+            await self.session.execute(
+                select(func.date(Scan.created_at), func.count())
+                .where(*conds, func.date(Scan.created_at) >= start)
+                .group_by(func.date(Scan.created_at))
+            )
+        ).all()
+        by_day = {str(d): n for d, n in daily_rows}
+        daily = [
+            ScanDailyCount(
+                date=(d := (start + timedelta(days=i)).isoformat()),
+                count=by_day.get(d, 0),
+            )
+            for i in range(30)
+        ]
+
+        return ScanStats(
+            total=total,
+            running=counts[ScanStatus.RUNNING.value],
+            by_status=ScanStatusCounts(**counts),
+            last_scan_at=last_scan_at,
+            avg_duration_seconds=(
+                round(avg_duration, 1) if avg_duration is not None else None
+            ),
+            success_rate=round(success_rate, 3) if success_rate is not None else None,
+            daily=daily,
+        )
+
     async def get(self, id: UUID, project_id: UUID) -> ScanRead:
+        scan = await self._get_scan(id, project_id)
+        return self._to_read(scan)
+
+    async def _get_scan(self, id: UUID, project_id: UUID) -> Scan:
         result = await self.session.execute(
             select(Scan).where(Scan.id == id, Scan.project_id == project_id)
         )
@@ -443,7 +542,22 @@ class ScanService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found"
             )
+        return scan
+
+    async def cancel(self, id: UUID, project_id: UUID) -> ScanRead:
+        scan = await self._get_scan(id, project_id)
+        if scan.status in (ScanStatus.PENDING.value, ScanStatus.RUNNING.value):
+            scan.status = ScanStatus.CANCELLED.value
+            scan.completed_at = utc_now()
+            scan.error = "Cancelled by user."
+            await self.session.commit()
+            await self.session.refresh(scan)
         return self._to_read(scan)
+
+    async def delete(self, id: UUID, project_id: UUID) -> None:
+        scan = await self._get_scan(id, project_id)
+        await self.session.delete(scan)
+        await self.session.commit()
 
     def _to_read(self, scan: Scan) -> ScanRead:
         cfg = copy.deepcopy(scan.execution_config or {})
@@ -472,4 +586,5 @@ class ScanService:
             created_at=scan.created_at,
             started_at=scan.started_at,
             completed_at=scan.completed_at,
+            duration_seconds=_scan_duration(scan),
         )

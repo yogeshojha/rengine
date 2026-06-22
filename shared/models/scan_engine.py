@@ -46,9 +46,8 @@ class ExpansionConfig(BaseModel):
         default_factory=lambda: [
             "subfinder",
             "ctfr",
-            "sublist3r",
-            "oneforall",
-            "netlas",
+            "assetfinder",
+            "amass",
         ]
     )
     subdomain_securitytrails: bool = True

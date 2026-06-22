@@ -26,6 +26,7 @@ from shared.services.scan_resolve import (
     _mask_headers,
     _reject_ctrl,
 )
+from shared.services.scope_filter import looks_like_domain
 from shared.utils.datetime import utc_now
 
 _AUTH_KEEP = {
@@ -158,6 +159,22 @@ def _validate_subdomains(name: str, subs: list) -> None:
         _reject_ctrl(name, s)
 
 
+def _validate_exclusion_patterns(name: str, patterns: list) -> None:
+    _validate_list_caps(name, patterns)
+    for p in patterns or []:
+        if not isinstance(p, str):
+            msg = f"{name} entries must be strings."
+            raise _bad(msg)
+        _reject_ctrl(name, p)
+        if looks_like_domain(p):
+            msg = (
+                f"'{p}' looks like a domain name. Use a keyword (admin), "
+                "wildcard (*admin*) or regex — exclusion patterns match any "
+                "subdomain so the context stays reusable across scans."
+            )
+            raise _bad(msg)
+
+
 def _validate_auth_fields(auth: dict) -> None:
     for field in (
         "bearer_token",
@@ -273,7 +290,7 @@ class ScanContextService:
         _validate_per_tool(data.per_tool_rate_overrides)
         _validate_paths(data.excluded_paths)
         _validate_ips(data.excluded_ips)
-        _validate_subdomains("excluded_subdomains", data.excluded_subdomains)
+        _validate_exclusion_patterns("excluded_subdomains", data.excluded_subdomains)
         _validate_subdomains("included_subdomains", data.included_subdomains)
         _validate_list_caps("extra_headers", data.extra_headers)
         _validate_auth_fields(auth.model_dump())
@@ -364,7 +381,9 @@ class ScanContextService:
             _validate_ips(data.excluded_ips)
             ctx.excluded_ips = list(data.excluded_ips)
         if data.excluded_subdomains is not None:
-            _validate_subdomains("excluded_subdomains", data.excluded_subdomains)
+            _validate_exclusion_patterns(
+                "excluded_subdomains", data.excluded_subdomains
+            )
             ctx.excluded_subdomains = list(data.excluded_subdomains)
         if data.included_subdomains is not None:
             _validate_subdomains("included_subdomains", data.included_subdomains)

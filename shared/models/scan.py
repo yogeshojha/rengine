@@ -6,10 +6,11 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.enums.scan import ScanStatus
 from shared.services.scan_resolve import ResolvedScanConfig
 from shared.utils.datetime import utc_now
 
-SCAN_STATUSES = ("pending", "running", "completed", "failed", "cancelled")
+SCAN_STATUSES = tuple(s.value for s in ScanStatus)
 
 
 class Scan(SQLModel, table=True):
@@ -23,7 +24,7 @@ class Scan(SQLModel, table=True):
     context_id: uuid.UUID | None = Field(default=None)
     context_name: str | None = Field(default=None, max_length=200)
     execution_config: dict = Field(sa_column=Column(JSON, nullable=False))
-    status: str = Field(default="pending", index=True)
+    status: str = Field(default=ScanStatus.PENDING.value, index=True)
     subdomains_found: int = Field(default=0)
     ips_found: int = Field(default=0)
     open_ports_found: int = Field(default=0)
@@ -65,3 +66,27 @@ class ScanRead(BaseModel):
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
+    duration_seconds: float | None = None
+
+
+class ScanStatusCounts(BaseModel):
+    pending: int = 0
+    running: int = 0
+    completed: int = 0
+    failed: int = 0
+    cancelled: int = 0
+
+
+class ScanDailyCount(BaseModel):
+    date: str
+    count: int
+
+
+class ScanStats(BaseModel):
+    total: int
+    running: int
+    by_status: ScanStatusCounts
+    last_scan_at: datetime | None
+    avg_duration_seconds: float | None
+    success_rate: float | None
+    daily: list[ScanDailyCount]

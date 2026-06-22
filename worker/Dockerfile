@@ -27,11 +27,16 @@ RUN curl -fsSL https://go.dev/dl/go1.25.7.linux-amd64.tar.gz | tar -C /usr/local
 ENV PATH="/usr/local/go/bin:/root/go/bin:${PATH}"
 
 
-RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest \
+    && go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest \
+    && go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest \
+    && go install -v github.com/tomnomnom/assetfinder@latest \
+    && go install -v github.com/owasp-amass/amass/v4/...@master
 
 
 COPY shared /app/shared
 COPY tools /app/tools
+COPY engines /app/engines
 
 COPY worker/pyproject.toml worker/uv.lock* ./
 
@@ -42,4 +47,6 @@ CMD ["uv", "run", "celery", "-A", "app.celery", "worker", "--loglevel=INFO"]
 
 ###################################################################
 # TODO: Production
+# NOTE: engines/ resolves via PYTHONPATH=/app (not a packaged dep) —
+# the prod stage MUST `COPY engines /app/engines` and keep PYTHONPATH=/app.
 ###################################################################

@@ -25,3 +25,9 @@ __pycache__/
 *.egg
 **/build/
 **/*.egg-info/
+
+# Claude Code / agent tooling
+CLAUDE.md
+.claude/
+.agents/
+skills-lock.json
