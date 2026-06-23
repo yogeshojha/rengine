@@ -2,6 +2,8 @@ import {
 	Clock,
 	LoaderCircle,
 	CircleCheck,
+	CircleX,
+	CircleMinus,
 	TriangleAlert,
 	Ban,
 	Network,
@@ -10,7 +12,7 @@ import {
 	Bug,
 	Link2
 } from 'lucide-svelte';
-import type { ScanRead, ScanStatus, ScanSortKey } from '$lib/types/scan';
+import type { ScanActivityStatus, ScanRead, ScanStatus, ScanSortKey } from '$lib/types/scan';
 
 type IconComponent = typeof Network;
 
@@ -49,7 +51,46 @@ export function isLiveStatus(s: ScanStatus): boolean {
 	return s === 'running' || s === 'pending';
 }
 
-// Shared cadence for scan list/detail live polling.
+export function activityStatusIcon(s: ScanActivityStatus): IconComponent {
+	switch (s) {
+		case 'running':
+			return LoaderCircle;
+		case 'pending':
+			return Clock;
+		case 'success':
+			return CircleCheck;
+		case 'failed':
+			return CircleX;
+		case 'aborted':
+			return Ban;
+		default:
+			return CircleMinus;
+	}
+}
+
+export function activityStatusClass(s: ScanActivityStatus): string {
+	switch (s) {
+		case 'failed':
+			return 'text-destructive';
+		case 'aborted':
+		case 'skipped':
+			return 'text-amber-600 dark:text-amber-500';
+		case 'running':
+			return 'text-foreground';
+		default:
+			return 'text-muted-foreground';
+	}
+}
+
+export const ACTIVITY_STATUS_LABEL: Record<ScanActivityStatus, string> = {
+	pending: 'Queued',
+	running: 'Running',
+	success: 'Success',
+	failed: 'Failed',
+	skipped: 'Skipped',
+	aborted: 'Aborted'
+};
+
 export const SCAN_POLL_MS = 4000;
 
 export const SCAN_STATUS_RANK: Record<ScanStatus, number> = {
@@ -71,6 +112,12 @@ export function formatSeconds(total: number): string {
 	const m = Math.floor(t / 60);
 	const s = t % 60;
 	return s ? `${m}m ${s}s` : `${m}m`;
+}
+
+export function durationText(seconds: number | null, fractional = false): string {
+	if (seconds == null) return '';
+	if (seconds < 60) return fractional ? `${seconds.toFixed(1)}s` : `${Math.round(seconds)}s`;
+	return formatSeconds(seconds);
 }
 
 export function durationLabel(scan: ScanRead, now: number = Date.now()): string {

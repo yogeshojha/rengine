@@ -1,6 +1,7 @@
 from celery import Celery
 
 from shared.config import BaseAppSettings
+from shared.definitions.constants import SCANS_QUEUE
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -60,5 +61,18 @@ def dispatch_scan_run(scan_id: str) -> None:
     get_celery_client().send_task(
         "app.tasks.scan.run_scan",
         kwargs={"scan_id": scan_id},
-        queue="scans",
+        queue=SCANS_QUEUE,
     )
+
+
+def revoke_scan_tasks(task_ids: list[str]) -> None:
+    """SIGKILL-revoke a scan's celery tasks so an in-flight scan stops promptly."""
+    if not task_ids:
+        return
+    logger.info("Revoking %d scan task(s)", len(task_ids))
+    try:
+        get_celery_client().control.revoke(
+            list(task_ids), terminate=True, signal="SIGKILL"
+        )
+    except Exception:
+        logger.warning("scan task revoke failed", exc_info=True)

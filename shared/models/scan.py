@@ -25,6 +25,9 @@ class Scan(SQLModel, table=True):
     context_name: str | None = Field(default=None, max_length=200)
     execution_config: dict = Field(sa_column=Column(JSON, nullable=False))
     status: str = Field(default=ScanStatus.PENDING.value, index=True)
+    celery_task_ids: list = Field(
+        default_factory=list, sa_column=Column(JSON, nullable=False)
+    )
     subdomains_found: int = Field(default=0)
     ips_found: int = Field(default=0)
     open_ports_found: int = Field(default=0)
@@ -99,6 +102,7 @@ class ScanFacet(BaseModel):
 class ScanChanges(BaseModel):
     window: str
     new_subdomains: int
+    retired_subdomains: int = 0
     targets_changed: int
     scans_run: int
     failed_runs: int

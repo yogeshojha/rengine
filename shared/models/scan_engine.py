@@ -207,6 +207,9 @@ class ScanEngine(SQLModel, table=True):
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )
     depth: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    tool_options: dict = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False)
+    )
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     last_used_at: datetime | None = Field(default=None)
@@ -222,6 +225,7 @@ class ScanEngineCreate(BaseModel):
     discovery: DiscoveryConfig | None = None
     expansion: ExpansionConfig | None = None
     depth: DepthConfig | None = None
+    tool_options: dict[str, str] = Field(default_factory=dict)
 
 
 class ScanEngineUpdate(BaseModel):
@@ -234,6 +238,7 @@ class ScanEngineUpdate(BaseModel):
     discovery: DiscoveryConfig | None = None
     expansion: ExpansionConfig | None = None
     depth: DepthConfig | None = None
+    tool_options: dict[str, str] | None = None
 
 
 class ScanEngineRead(BaseModel):
@@ -249,6 +254,7 @@ class ScanEngineRead(BaseModel):
     discovery: DiscoveryConfig
     expansion: ExpansionConfig
     depth: DepthConfig
+    tool_options: dict[str, str] = Field(default_factory=dict)
     created_at: datetime
     updated_at: datetime
     last_used_at: datetime | None

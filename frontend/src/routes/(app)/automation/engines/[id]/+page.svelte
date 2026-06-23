@@ -8,7 +8,10 @@
 	// @ts-expect-error no declaration file for js-yaml
 	import jsyamlRaw from 'js-yaml';
 	const jsyaml = jsyamlRaw as {
-		dump: (obj: unknown, opts?: { indent?: number; lineWidth?: number; noRefs?: boolean }) => string;
+		dump: (
+			obj: unknown,
+			opts?: { indent?: number; lineWidth?: number; noRefs?: boolean }
+		) => string;
 		load: (str: string) => unknown;
 	};
 
@@ -26,6 +29,7 @@
 	import EngineTopbar from '$lib/components/engines/engine-topbar.svelte';
 	import YamlEditor from '$lib/components/engines/yaml-editor.svelte';
 	import ConfigPanel from '$lib/components/engines/config-panel.svelte';
+	import ToolOptionsPanel from '$lib/components/engines/tool-options-panel.svelte';
 
 	import type { ScanEngine, Intensity } from '$lib/types/engine';
 	import {
@@ -52,6 +56,7 @@
 	let yamlErrors = $state<{ line: number; message: string }[]>([]);
 	let saveError = $state<string | null>(null);
 	let addStepNonce = $state(0);
+	let showToolOptions = $state(false);
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
 	let showLeaveDialog = $state(false);
@@ -66,7 +71,7 @@
 	});
 
 	let selectedCapability = $derived(
-		selectedCapabilityId ? CAPABILITIES.find((c) => c.id === selectedCapabilityId) ?? null : null
+		selectedCapabilityId ? (CAPABILITIES.find((c) => c.id === selectedCapabilityId) ?? null) : null
 	);
 
 	let configPanelPhase = $derived(selectedCapability?.phase ?? null);
@@ -102,7 +107,7 @@
 		editedEngine = {
 			...editedEngine,
 			[configPanelConfigPhase]: { ...editedEngine[configPanelConfigPhase], ...updates }
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} as any;
 	}
 
@@ -149,6 +154,7 @@
 			discovery: { ...DEFAULT_DISCOVERY_CONFIG },
 			expansion: { ...DEFAULT_EXPANSION_CONFIG },
 			depth: { ...DEFAULT_DEPTH_CONFIG },
+			tool_options: {},
 			created_at: '',
 			updated_at: '',
 			last_used_at: null
@@ -186,7 +192,8 @@
 			intensity: eng.intensity,
 			discovery: eng.discovery,
 			expansion: eng.expansion,
-			depth: eng.depth
+			depth: eng.depth,
+			tool_options: eng.tool_options
 		};
 		return jsyaml.dump(obj, { indent: 2, lineWidth: -1, noRefs: true });
 	}
@@ -206,7 +213,9 @@
 				intensity: (parsed.intensity as Intensity) ?? editedEngine.intensity,
 				discovery: (parsed.discovery as ScanEngine['discovery']) ?? editedEngine.discovery,
 				expansion: (parsed.expansion as ScanEngine['expansion']) ?? editedEngine.expansion,
-				depth: (parsed.depth as ScanEngine['depth']) ?? editedEngine.depth
+				depth: (parsed.depth as ScanEngine['depth']) ?? editedEngine.depth,
+				tool_options:
+					(parsed.tool_options as ScanEngine['tool_options']) ?? editedEngine.tool_options
 			};
 		} catch (e) {
 			const mark = (e as { mark?: { line?: number } })?.mark;
@@ -247,6 +256,11 @@
 		editedEngine = { ...editedEngine, intensity };
 	}
 
+	function handleToolOptionsChange(toolOptions: Record<string, string>) {
+		if (!editedEngine) return;
+		editedEngine = { ...editedEngine, tool_options: toolOptions };
+	}
+
 	async function handleSave() {
 		if (!editedEngine || isSaving) return;
 		const project = projectsStore.activeProject;
@@ -276,7 +290,8 @@
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					expansion: editedEngine.expansion as any,
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					depth: editedEngine.depth as any
+					depth: editedEngine.depth as any,
+					tool_options: editedEngine.tool_options
 				});
 				if (created) {
 					toast.success('Engine created');
@@ -299,7 +314,8 @@
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					expansion: editedEngine.expansion as any,
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					depth: editedEngine.depth as any
+					depth: editedEngine.depth as any,
+					tool_options: editedEngine.tool_options
 				});
 
 				if (updated) {
@@ -435,7 +451,6 @@
 			<Loader2 size={20} class="animate-spin text-muted-foreground" />
 			<span class="text-sm text-muted-foreground">Loading engine…</span>
 		</div>
-
 	{:else if loadError}
 		<Empty.Root class="flex-1">
 			<Empty.Header>
@@ -449,7 +464,6 @@
 				<Button onclick={() => goto('/automation/engines')}>Back to Engines</Button>
 			</Empty.Content>
 		</Empty.Root>
-
 	{:else if editedEngine}
 		<EngineTopbar
 			engine={editedEngine}
@@ -468,6 +482,7 @@
 			onIntensityChange={handleIntensityChange}
 			onTogglePreview={() => (previewMode = !previewMode)}
 			onAddStep={() => (addStepNonce += 1)}
+			onToolOptions={() => (showToolOptions = true)}
 			onBack={handleBack}
 		/>
 
@@ -551,6 +566,13 @@
 				</div>
 			{/if}
 		</div>
+
+		<ToolOptionsPanel
+			open={showToolOptions}
+			toolOptions={editedEngine.tool_options ?? {}}
+			onOpenChange={(o) => (showToolOptions = o)}
+			onChange={handleToolOptionsChange}
+		/>
 	{/if}
 </div>
 
@@ -558,7 +580,8 @@
 <DeleteConfirmationDialog
 	bind:open={showDeleteDialog}
 	title="Delete Engine"
-	description="Are you sure you want to delete '{editedEngine?.name ?? 'this engine'}'? This action cannot be undone."
+	description="Are you sure you want to delete '{editedEngine?.name ??
+		'this engine'}'? This action cannot be undone."
 	{isDeleting}
 	onOpenChange={(open) => (showDeleteDialog = open)}
 	onConfirm={confirmDelete}

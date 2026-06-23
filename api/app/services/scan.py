@@ -1,19 +1,21 @@
 import copy
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import Select, case, exists, func, nullslast, or_, select
+from sqlalchemy import Select, case, exists, func, nullslast, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService
+from shared.config import BaseAppSettings
+from shared.definitions.notifications import scan_cancelled
 from shared.enums.api_key import APIProvider
-from shared.enums.scan import ScanStatus
+from shared.enums.scan import SCAN_LIVE_STATUSES, ScanActivityStatus, ScanStatus
 from shared.models.api_key import APIKey
 from shared.models.scan import (
     SCAN_STATUSES,
@@ -27,6 +29,12 @@ from shared.models.scan import (
     ScanStats,
     ScanStatusCounts,
 )
+from shared.models.scan_activity import ScanActivity, ScanActivityRead
+from shared.models.scan_command import (
+    ScanCommand,
+    ScanCommandDetail,
+    ScanCommandRead,
+)
 from shared.models.scan_context import VALID_RATE_TOOLS, ScanContext
 from shared.models.scan_engine import ScanEngine
 from shared.models.scan_preview import (
@@ -38,13 +46,18 @@ from shared.models.scan_preview import (
 )
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
+from shared.services.celery_dispatch import revoke_scan_tasks
+from shared.services.notification import NotificationManager
+from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.scan_resolve import (
     MASK,
     ResolvedScanConfig,
     _auth_summary,
     _check_baseline_deferred,
     _mask_auth,
+    mask_proxy_url,
     merge_engine_context,
+    redact_command,
 )
 from shared.utils.datetime import utc_now
 
@@ -168,11 +181,23 @@ def _mask_config_headers(config: dict) -> dict:
     out["headers"] = {
         name: (MASK if value else value) for name, value in headers.items()
     }
+    if out.get("proxy_url"):
+        out["proxy_url"] = mask_proxy_url(out["proxy_url"])
+    if isinstance(out.get("tool_options"), dict):
+        out["tool_options"] = {
+            t: redact_command(v) for t, v in out["tool_options"].items()
+        }
 
     depth = (out.get("phases") or {}).get("depth")
     if isinstance(depth, dict) and depth.get("report_webhook_url"):
         depth["report_webhook_url"] = MASK
     return out
+
+
+def _command_read(cmd: ScanCommand) -> ScanCommandRead:
+    read = ScanCommandRead.model_validate(cmd, from_attributes=True)
+    read.command = redact_command(read.command)
+    return read
 
 
 def _scan_duration(scan: Scan) -> float | None:
@@ -780,6 +805,46 @@ class ScanService:
             out.setdefault(tid, []).append(n)
         return {tid: vals[-limit:] for tid, vals in out.items()}
 
+    async def retired_subdomain_total(
+        self, project_id: UUID, cutoff: datetime, target_id: UUID | None = None
+    ) -> int:
+        """Subdomains dropped by each target's latest completed scan that ran in the window."""
+        ordering = func.coalesce(Scan.started_at, Scan.created_at)
+        rn = (
+            func.row_number()
+            .over(partition_by=Scan.target_id, order_by=ordering.desc())
+            .label("rn")
+        )
+        conds = [
+            Scan.project_id == project_id,
+            Scan.status == ScanStatus.COMPLETED.value,
+        ]
+        if target_id is not None:
+            conds.append(Scan.target_id == target_id)
+        latest = (
+            select(
+                Scan.id.label("id"),
+                Scan.target_id.label("tid"),
+                ordering.label("t"),
+                rn,
+            )
+            .where(*conds)
+            .subquery()
+        )
+        rows = (
+            await self.session.execute(
+                select(latest.c.id, latest.c.tid).where(
+                    latest.c.rn == 1, latest.c.t >= cutoff
+                )
+            )
+        ).all()
+        if not rows:
+            return 0
+        scan_ids = [r[0] for r in rows]
+        target_ids = list({r[1] for r in rows})
+        gone = await self.gone_subdomain_counts(scan_ids, target_ids)
+        return sum(gone.values())
+
     async def changes(
         self, project_id: UUID, window: str, target_id: UUID | None = None
     ) -> ScanChanges:
@@ -827,9 +892,12 @@ class ScanService:
             )
         ).scalar_one()
 
+        retired = await self.retired_subdomain_total(project_id, cutoff, target_id)
+
         return ScanChanges(
             window=window,
             new_subdomains=new_subdomains,
+            retired_subdomains=retired,
             targets_changed=targets_changed,
             scans_run=scans_run,
             failed_runs=failed_runs,
@@ -958,16 +1026,129 @@ class ScanService:
 
     async def cancel(self, id: UUID, project_id: UUID) -> ScanRead:
         scan = await self._get_scan(id, project_id)
-        if scan.status in (ScanStatus.PENDING.value, ScanStatus.RUNNING.value):
+        if scan.status in SCAN_LIVE_STATUSES:
             scan.status = ScanStatus.CANCELLED.value
             scan.completed_at = utc_now()
             scan.error = "Cancelled by user."
             await self.session.commit()
+
+            revoke_scan_tasks(scan.celery_task_ids or [])
+            now = utc_now()
+            for model in (ScanActivity, ScanCommand):
+                await self.session.execute(
+                    update(model)
+                    .where(
+                        model.scan_id == scan.id,
+                        model.status == ScanActivityStatus.RUNNING.value,
+                    )
+                    .values(status=ScanActivityStatus.ABORTED.value, completed_at=now)
+                )
+            await self.session.commit()
+            await self._announce_cancelled(scan)
             await self.session.refresh(scan)
         return self._to_read(scan)
 
+    async def _announce_cancelled(self, scan: Scan) -> None:
+        target_value = (scan.execution_config or {}).get("target_value", "")
+        payload = scan_cancelled(str(scan.id), target_value, scan.engine_name)
+        try:
+            await NotificationManager.publish(
+                session=self.session,
+                type=payload["type"],
+                severity=payload["severity"],
+                title=payload["title"],
+                message=payload["message"],
+                metadata=payload.get("metadata"),
+            )
+        except Exception:
+            logger.warning("cancel notification dispatch failed", exc_info=True)
+        try:
+            ScanEventPublisher(
+                BaseAppSettings().redis_url,
+                scan_id=str(scan.id),
+                project_id=str(scan.project_id),
+            ).scan_cancelled(status=ScanStatus.CANCELLED.value)
+        except Exception:
+            logger.debug("cancel event emit failed", exc_info=True)
+
+    async def list_activities(
+        self, scan_id: UUID, project_id: UUID
+    ) -> list[ScanActivityRead]:
+        await self._get_scan(scan_id, project_id)
+        rows = (
+            (
+                await self.session.execute(
+                    select(ScanActivity)
+                    .where(ScanActivity.scan_id == scan_id)
+                    .order_by(ScanActivity.created_at.asc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        counts = dict(
+            (
+                await self.session.execute(
+                    select(ScanCommand.activity_id, func.count())
+                    .where(ScanCommand.scan_id == scan_id)
+                    .group_by(ScanCommand.activity_id)
+                )
+            ).all()
+        )
+        out: list[ScanActivityRead] = []
+        for a in rows:
+            read = ScanActivityRead.model_validate(a, from_attributes=True)
+            read.command_count = counts.get(a.id, 0)
+            read.duration_seconds = (
+                round((a.completed_at - a.started_at).total_seconds(), 1)
+                if a.started_at and a.completed_at
+                else None
+            )
+            out.append(read)
+        return out
+
+    async def list_commands(
+        self,
+        scan_id: UUID,
+        project_id: UUID,
+        activity_id: UUID | None = None,
+    ) -> list[ScanCommandRead]:
+        await self._get_scan(scan_id, project_id)
+        query = select(ScanCommand).where(ScanCommand.scan_id == scan_id)
+        if activity_id is not None:
+            query = query.where(ScanCommand.activity_id == activity_id)
+        rows = (
+            (await self.session.execute(query.order_by(ScanCommand.started_at.asc())))
+            .scalars()
+            .all()
+        )
+        return [_command_read(c) for c in rows]
+
+    async def get_command(
+        self, scan_id: UUID, command_id: UUID, project_id: UUID
+    ) -> ScanCommandDetail:
+        await self._get_scan(scan_id, project_id)
+        cmd = (
+            await self.session.execute(
+                select(ScanCommand).where(
+                    ScanCommand.id == command_id, ScanCommand.scan_id == scan_id
+                )
+            )
+        ).scalar_one_or_none()
+        if cmd is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Command not found"
+            )
+        detail = ScanCommandDetail.model_validate(cmd, from_attributes=True)
+        detail.command = redact_command(detail.command)
+        if detail.output:
+            detail.output = redact_command(detail.output)
+        return detail
+
     async def delete(self, id: UUID, project_id: UUID) -> None:
         scan = await self._get_scan(id, project_id)
+        if scan.status in SCAN_LIVE_STATUSES:
+            revoke_scan_tasks(scan.celery_task_ids or [])
         await self.session.delete(scan)
         await self.session.commit()
 

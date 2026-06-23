@@ -1,3 +1,4 @@
+import shlex
 from uuid import UUID
 
 import yaml
@@ -5,6 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.definitions.tools import MAX_TOOL_OPTION_LEN, TOOL_NAMES
 from shared.models.scan_engine import (
     DepthConfig,
     DiscoveryConfig,
@@ -14,8 +16,30 @@ from shared.models.scan_engine import (
     ScanEngineRead,
     ScanEngineUpdate,
 )
-from shared.services.scan_resolve import _SENSITIVE_HEADER, MASK, _reject_ctrl
+from shared.services.scan_resolve import (
+    _SENSITIVE_HEADER,
+    MASK,
+    _reject_ctrl,
+    redact_command,
+)
 from shared.utils.datetime import utc_now
+
+
+def _mask_tool_options(options: dict | None) -> dict[str, str]:
+    return {t: redact_command(v) for t, v in (options or {}).items()}
+
+
+def _unmask_tool_options(submitted: dict | None, stored: dict | None) -> dict[str, str]:
+    """Re-submitted masked values restore the stored secret (merge-on-MASK)."""
+    stored = stored or {}
+    out: dict[str, str] = {}
+    for tool, value in (submitted or {}).items():
+        if value and MASK in value and tool in stored:
+            out[tool] = stored[tool]
+        else:
+            out[tool] = value
+    return out
+
 
 _MAX_HEADERS = 1000
 _MAX_HEADER_LEN = 4096
@@ -23,6 +47,32 @@ _MAX_YAML_LEN = 512 * 1024
 
 _INTENSITIES = {"passive", "normal", "aggressive"}
 _MAX_ENGINE_THREADS = 1000
+
+
+def _validate_tool_options(options: dict | None) -> dict[str, str]:
+    """Keep only known tools; reject over-long or unparseable arg strings."""
+    clean: dict[str, str] = {}
+    for tool, raw in (options or {}).items():
+        if tool not in TOOL_NAMES:
+            continue
+        value = (raw or "").strip()
+        if not value:
+            continue
+        if len(value) > MAX_TOOL_OPTION_LEN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{tool} options may not exceed {MAX_TOOL_OPTION_LEN} characters.",
+            )
+        _reject_ctrl(f"{tool} options", value)
+        try:
+            shlex.split(value)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{tool} options are not valid shell arguments: {exc}",
+            ) from exc
+        clean[tool] = value
+    return clean
 
 
 def _validate_intensity(intensity: str | None) -> None:
@@ -128,6 +178,7 @@ def _to_read(engine: ScanEngine) -> ScanEngineRead:
         discovery=discovery,
         expansion=expansion,
         depth=depth,
+        tool_options=_mask_tool_options(engine.tool_options),
         created_at=engine.created_at,
         updated_at=engine.updated_at,
         last_used_at=engine.last_used_at,
@@ -163,6 +214,7 @@ class ScanEngineService:
             discovery=discovery,
             expansion=expansion,
             depth=depth,
+            tool_options=_validate_tool_options(data.tool_options),
         )
         self.session.add(engine)
         await self.session.commit()
@@ -213,6 +265,10 @@ class ScanEngineService:
             engine.expansion = data.expansion.model_dump()
         if data.depth is not None:
             engine.depth = _unmask_depth(data.depth.model_dump(), engine.depth or {})
+        if data.tool_options is not None:
+            engine.tool_options = _validate_tool_options(
+                _unmask_tool_options(data.tool_options, engine.tool_options)
+            )
 
         engine.updated_at = utc_now()
         await self.session.commit()
@@ -243,6 +299,7 @@ class ScanEngineService:
             discovery=dict(original.discovery or {}),
             expansion=dict(original.expansion or {}),
             depth=dict(original.depth or {}),
+            tool_options=dict(original.tool_options or {}),
         )
         self.session.add(engine)
         await self.session.commit()
@@ -261,6 +318,7 @@ class ScanEngineService:
             "discovery": engine.discovery or {},
             "expansion": engine.expansion or {},
             "depth": _mask_depth(engine.depth or {}),
+            "tool_options": _mask_tool_options(engine.tool_options),
         }
         return yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
 
@@ -304,23 +362,25 @@ class ScanEngineService:
             discovery = DiscoveryConfig(**discovery_raw)
             expansion = ExpansionConfig(**expansion_raw)
             depth = DepthConfig(**depth_raw)
+            create_data = ScanEngineCreate(
+                name=str(data["name"]),
+                description=data.get("description"),
+                intensity=data.get("intensity", "normal"),
+                global_threads=int(data.get("global_threads", 30)),
+                global_http_crawl=bool(data.get("global_http_crawl", True)),
+                global_headers=list(data.get("global_headers") or []),
+                discovery=discovery,
+                expansion=expansion,
+                depth=depth,
+                tool_options=dict(data.get("tool_options") or {}),
+            )
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid scan engine config structure: {e}",
             ) from e
-
-        create_data = ScanEngineCreate(
-            name=str(data["name"]),
-            description=data.get("description"),
-            intensity=data.get("intensity", "normal"),
-            global_threads=int(data.get("global_threads", 30)),
-            global_http_crawl=bool(data.get("global_http_crawl", True)),
-            global_headers=list(data.get("global_headers") or []),
-            discovery=discovery,
-            expansion=expansion,
-            depth=depth,
-        )
 
         return await self.create(project_id, created_by, create_data)
 

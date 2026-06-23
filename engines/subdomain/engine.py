@@ -5,13 +5,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from sqlalchemy import delete
 
-from engines.base import Engine, EngineResult
+from engines.base import Engine, EngineAbortedError, EngineResult
 from engines.subdomain.config import SubdomainConfig
 from engines.subdomain.parser import merge_and_filter
 from engines.subdomain.providers import (
     PASSIVE_PROVIDERS,
     ProviderContext,
     ProviderResult,
+    SubdomainProvider,
 )
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
@@ -44,6 +45,7 @@ class SubdomainEngine(Engine):
         return SubdomainConfig.from_resolved(self.ctx.resolved).enabled
 
     def run(self) -> EngineResult:
+        self._check_abort()
         cfg = SubdomainConfig.from_resolved(self.ctx.resolved)
         domain = self.ctx.target_value.strip().lower().rstrip(".")
         activity = ActivityLogService(self.session)
@@ -55,10 +57,13 @@ class SubdomainEngine(Engine):
             threads=cfg.threads,
             proxy_url=cfg.proxy_url,
             api_keys=api_keys,
+            recorder=self.ctx.recorder,
+            tool_options=cfg.tool_options,
         )
 
         provider_classes = self._select_providers(cfg)
         results = self._run_providers(provider_classes, pctx, activity)
+        self._check_abort()
 
         merged = merge_and_filter(results, domain, cfg)
         excluded = {n for n in merged if matches_any(n, cfg.excluded_subdomains)}
@@ -87,36 +92,35 @@ class SubdomainEngine(Engine):
                 "ips": len(ips_seen),
                 "excluded": len(excluded),
             },
-            errors=[
-                f"{r.source.value}: {r.error}" for r in results if r.error
-            ],
         )
+
+    def _check_abort(self) -> None:
+        if self.ctx.is_aborted is not None and self.ctx.is_aborted():
+            raise EngineAbortedError
 
     def _prefetch_keys(self) -> dict[str, str | None]:
         svc = SyncAPIKeyService(self.session)
         return {p.value: svc.get_key_for_provider(p) for p in _PREFETCH_KEYS}
 
-    def _select_providers(self, cfg: SubdomainConfig) -> list[type]:
-        names: list[str] = []
-        seen: set[str] = set()
-        for tool in cfg.passive_tools:
-            if tool not in seen:
-                seen.add(tool)
-                names.append(tool)
-        if cfg.tls_discovery and "tlsx" not in seen:
+    def _select_providers(
+        self, cfg: SubdomainConfig
+    ) -> list[type[SubdomainProvider]]:
+        names = list(dict.fromkeys(cfg.passive_tools))
+        if cfg.tls_discovery and "tlsx" not in names:
             names.append("tlsx")
-        selected: list[type] = []
+        selected: list[type[SubdomainProvider]] = []
         for name in names:
             provider = PASSIVE_PROVIDERS.get(name)
             if provider is None:
                 logger.warning("unknown subdomain provider '%s', skipping", name)
                 continue
-            selected.append(provider)
+            if provider not in selected:
+                selected.append(provider)
         return selected
 
     def _run_providers(
         self,
-        provider_classes: list[type],
+        provider_classes: list[type[SubdomainProvider]],
         pctx: ProviderContext,
         activity: ActivityLogService,
     ) -> list[ProviderResult]:
@@ -156,6 +160,7 @@ class SubdomainEngine(Engine):
             target_id=self.ctx.target_id,
         )
         self.session.commit()
+        self.emit_progress(message, source=source)
 
     def _resolve(self, names: list[str], cfg: SubdomainConfig) -> dict[str, dict]:
         if not names:
@@ -164,6 +169,8 @@ class SubdomainEngine(Engine):
             client = DnsxClient(
                 timeout=max(120, cfg.tool_timeout),
                 threads=max(cfg.threads, _RESOLVE_BATCH_THREADS),
+                recorder=self.ctx.recorder,
+                extra_args=self.ctx.resolved.tool_args("dnsx"),
             )
         except DnsxError:
             logger.warning("dnsx unavailable, storing subdomains without resolution")

@@ -26,6 +26,7 @@ class SubdomainConfig:
     excluded_subdomains: list[str] = field(default_factory=list)
     included_subdomains: list[str] = field(default_factory=list)
     proxy_url: str | None = None
+    tool_options: dict[str, str] = field(default_factory=dict)
 
     @property
     def tool_timeout(self) -> int:
@@ -58,4 +59,5 @@ class SubdomainConfig:
             excluded_subdomains=list(resolved.excluded_subdomains or []),
             included_subdomains=list(resolved.included_subdomains or []),
             proxy_url=resolved.proxy_url,
+            tool_options=dict(resolved.tool_options or {}),
         )

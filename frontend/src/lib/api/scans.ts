@@ -1,7 +1,10 @@
 import { api } from './client';
 import type {
+	ScanActivityRead,
 	ScanChanges,
 	ScanChangeWindow,
+	ScanCommandDetail,
+	ScanCommandRead,
 	ScanCreate,
 	ScanExportRow,
 	ScanPreview,
@@ -104,5 +107,19 @@ export const scansApi = {
 
 	async remove(id: string, projectId: string): Promise<void> {
 		return api.delete<void>(`/scans/${id}?project_id=${projectId}`);
+	},
+
+	async activities(id: string, projectId: string): Promise<ScanActivityRead[]> {
+		return api.get<ScanActivityRead[]>(`/scans/${id}/activities?project_id=${projectId}`);
+	},
+
+	async commands(id: string, projectId: string, activityId?: string): Promise<ScanCommandRead[]> {
+		const sp = new URLSearchParams({ project_id: projectId });
+		if (activityId) sp.append('activity_id', activityId);
+		return api.get<ScanCommandRead[]>(`/scans/${id}/commands?${sp.toString()}`);
+	},
+
+	async command(id: string, commandId: string, projectId: string): Promise<ScanCommandDetail> {
+		return api.get<ScanCommandDetail>(`/scans/${id}/commands/${commandId}?project_id=${projectId}`);
 	}
 };

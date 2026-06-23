@@ -4,6 +4,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { activityFeed } from '$lib/stores/activity-feed.svelte';
+	import { dashboardStore } from '$lib/stores/dashboard.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { SSEChannel, SSEEventType } from '$lib/types/sse';
 	import type { ActivityLog } from '$lib/types/activity';
@@ -15,6 +16,9 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import ActivityTimeline from '$lib/components/activity/activity-timeline.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
+	import AttackSurfaceDelta from '$lib/components/dashboard/attack-surface-delta.svelte';
+	import NeedsAttention from '$lib/components/dashboard/needs-attention.svelte';
+	import TargetsByTypeDonut from '$lib/components/dashboard/targets-by-type-donut.svelte';
 	import {
 		Boxes,
 		CalendarClock,
@@ -27,7 +31,7 @@
 		ArrowRight
 	} from 'lucide-svelte';
 	import type { SignalFilter } from '$lib/utilities/target-signals';
-	import { TargetType, formatTargetType } from '$lib/types/target';
+	import { TargetType } from '$lib/types/target';
 
 	let activeProject = $derived(projectsStore.activeProject);
 	let addTargetOpen = $state(false);
@@ -46,6 +50,13 @@
 				activityFeed.reset();
 				activityFeed.load(pid, 1);
 			}
+		});
+	});
+
+	$effect(() => {
+		const pid = activeProject?.id;
+		untrack(() => {
+			if (pid) dashboardStore.init(pid);
 		});
 	});
 
@@ -73,7 +84,10 @@
 		const slug = activeProject?.slug;
 		const pid = activeProject?.id;
 		if (slug) targetsStore.refresh();
-		if (pid) activityFeed.load(pid, 1);
+		if (pid) {
+			activityFeed.load(pid, 1);
+			dashboardStore.refresh();
+		}
 	}
 
 	interface Kpi {
@@ -99,7 +113,13 @@
 			icon: CalendarClock,
 			accent: 'text-amber-600 dark:text-amber-500'
 		},
-		{ signal: null, label: 'Total targets', value: summary.total, icon: Boxes, accent: 'text-foreground' },
+		{
+			signal: null,
+			label: 'Total targets',
+			value: summary.total,
+			icon: Boxes,
+			accent: 'text-foreground'
+		},
 		{
 			signal: 'awaiting',
 			label: 'Awaiting enrichment',
@@ -194,9 +214,7 @@
 									{...props}
 									type="button"
 									onclick={() => openSignal(kpi.signal)}
-									aria-label={kpi.signal
-										? `View ${kpi.label} targets`
-										: 'View all targets'}
+									aria-label={kpi.signal ? `View ${kpi.label} targets` : 'View all targets'}
 									class="w-full text-left"
 								>
 									<Card.Root class="h-full transition-colors hover:bg-muted/40">
@@ -228,18 +246,29 @@
 				{/each}
 			</div>
 
+			<AttackSurfaceDelta
+				changes={dashboardStore.changes}
+				window={dashboardStore.changeWindow}
+				onWindow={(w) => dashboardStore.setChangeWindow(w)}
+			/>
+
+			<NeedsAttention
+				signals={dashboardStore.signals}
+				loading={dashboardStore.loadingSignals}
+				error={dashboardStore.signalsError}
+				onRetry={() => dashboardStore.retrySignals()}
+			/>
+
 			<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-				<Card.Root class="lg:col-span-2">
+				<Card.Root>
 					<Card.Header>
 						<Card.Title class="text-sm">Attack surface</Card.Title>
 						<Card.Description>By asset type across {summary.total} targets</Card.Description>
 					</Card.Header>
 					<Card.Content>
 						{#if !targetsStore.hasFetched}
-							<div class="space-y-2">
-								{#each { length: 4 } as _, i (i)}
-									<Skeleton class="h-6 rounded" />
-								{/each}
+							<div class="flex justify-center py-6">
+								<Skeleton class="h-[170px] w-[170px] rounded-full" />
 							</div>
 						{:else if summary.total === 0}
 							<Empty.Root class="border-none py-8">
@@ -248,7 +277,9 @@
 										<Boxes class="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
 									</Empty.Media>
 									<Empty.Title class="text-sm">No targets yet</Empty.Title>
-									<Empty.Description>Add a target to start mapping your attack surface.</Empty.Description>
+									<Empty.Description
+										>Add a target to start mapping your attack surface.</Empty.Description
+									>
 								</Empty.Header>
 								<Empty.Content>
 									<Button onclick={() => (addTargetOpen = true)}>
@@ -258,32 +289,12 @@
 								</Empty.Content>
 							</Empty.Root>
 						{:else}
-							<div class="space-y-1.5">
-								{#each breakdown as row (row.type)}
-									{@const pct = summary.total > 0 ? Math.round((row.count / summary.total) * 100) : 0}
-									<button
-										type="button"
-										onclick={() => openType(row.type)}
-										class="group flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted/40"
-									>
-										<span class="w-28 shrink-0 text-sm">{formatTargetType(row.type)}</span>
-										<span class="relative h-2 flex-1 overflow-hidden rounded-full bg-muted">
-											<span
-												class="absolute inset-y-0 left-0 rounded-full bg-foreground/70"
-												style="width:{pct}%"
-											></span>
-										</span>
-										<span class="w-10 shrink-0 text-right text-sm font-semibold tabular-nums"
-											>{row.count}</span
-										>
-									</button>
-								{/each}
-							</div>
+							<TargetsByTypeDonut {breakdown} total={summary.total} onSelect={openType} />
 						{/if}
 					</Card.Content>
 				</Card.Root>
 
-				<Card.Root class="flex flex-col">
+				<Card.Root class="flex flex-col lg:col-span-2">
 					<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0">
 						<div class="flex items-center gap-2">
 							<Card.Title class="text-sm">Recent activity</Card.Title>

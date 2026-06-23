@@ -63,6 +63,12 @@ from shared.models.scan import (
     ScanCreate,
     ScanRead,
 )
+from shared.models.scan_activity import ScanActivity, ScanActivityRead
+from shared.models.scan_command import (
+    ScanCommand,
+    ScanCommandDetail,
+    ScanCommandRead,
+)
 from shared.models.scan_context import (
     AuthConfig,
     AuthHeader,
@@ -160,6 +166,11 @@ __all__ = [
     "RIPEStatPrefixOverview",
     "RIPEStatRelatedPrefix",
     "Scan",
+    "ScanActivity",
+    "ScanActivityRead",
+    "ScanCommand",
+    "ScanCommandDetail",
+    "ScanCommandRead",
     "ScanContext",
     "ScanContextCreate",
     "ScanContextRead",

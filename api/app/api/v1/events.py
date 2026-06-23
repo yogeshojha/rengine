@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/events", tags=["events"])
 
 CHANNEL_PATTERN = re.compile(
-    rf"^({SSEChannel.PROJECT}:[a-f0-9\-]+|{SSEChannel.BROADCAST})$"
+    rf"^({SSEChannel.PROJECT}:[a-f0-9\-]+"
+    rf"|{SSEChannel.SCAN}:[a-f0-9\-]+"
+    rf"|{SSEChannel.BROADCAST})$"
 )
 
 

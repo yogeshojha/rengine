@@ -3,6 +3,49 @@ import type { HttpProtocol } from './scan-context';
 export const SCAN_STATUSES = ['pending', 'running', 'completed', 'failed', 'cancelled'] as const;
 export type ScanStatus = (typeof SCAN_STATUSES)[number];
 
+export const SCAN_ACTIVITY_STATUSES = [
+	'pending',
+	'running',
+	'success',
+	'failed',
+	'skipped',
+	'aborted'
+] as const;
+export type ScanActivityStatus = (typeof SCAN_ACTIVITY_STATUSES)[number];
+
+export interface ScanActivityRead {
+	id: string;
+	scan_id: string;
+	name: string;
+	title: string;
+	status: ScanActivityStatus;
+	error: string | null;
+	result: Record<string, number | string>;
+	command_count: number;
+	started_at: string | null;
+	completed_at: string | null;
+	duration_seconds: number | null;
+	created_at: string;
+}
+
+export interface ScanCommandRead {
+	id: string;
+	scan_id: string;
+	activity_id: string | null;
+	tool: string;
+	command: string;
+	status: ScanActivityStatus;
+	return_code: number | null;
+	error: string | null;
+	duration_seconds: number | null;
+	started_at: string;
+	completed_at: string | null;
+}
+
+export interface ScanCommandDetail extends ScanCommandRead {
+	output: string | null;
+}
+
 export const SCAN_SORT_KEYS = [
 	'started',
 	'duration',
@@ -147,6 +190,7 @@ export type ScanChangeWindow = (typeof SCAN_CHANGE_WINDOWS)[number]['key'];
 export interface ScanChanges {
 	window: ScanChangeWindow;
 	new_subdomains: number;
+	retired_subdomains: number;
 	targets_changed: number;
 	scans_run: number;
 	failed_runs: number;

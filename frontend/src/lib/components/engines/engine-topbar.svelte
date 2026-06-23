@@ -6,7 +6,21 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { ArrowLeft, Save, Copy, Trash2, Download, LayoutGrid, Code2, Loader2, Pencil, FlaskConical, Plus, MoreHorizontal } from 'lucide-svelte';
+	import {
+		ArrowLeft,
+		Save,
+		Copy,
+		Trash2,
+		Download,
+		LayoutGrid,
+		Code2,
+		Loader2,
+		Pencil,
+		FlaskConical,
+		Plus,
+		MoreHorizontal,
+		Terminal
+	} from 'lucide-svelte';
 	import type { ScanEngine, Intensity } from '$lib/types/engine';
 
 	const intensityHelp: Record<Intensity, string> = {
@@ -32,6 +46,7 @@
 		onIntensityChange?: (intensity: Intensity) => void;
 		onTogglePreview?: () => void;
 		onAddStep?: () => void;
+		onToolOptions?: () => void;
 		onBack?: () => void;
 	}
 
@@ -52,6 +67,7 @@
 		onIntensityChange,
 		onTogglePreview,
 		onAddStep,
+		onToolOptions,
 		onBack
 	}: Props = $props();
 
@@ -99,7 +115,12 @@
 		{:else}
 			<div class="name-row">
 				<span class="engine-name">{engine?.name ?? 'Untitled Engine'}</span>
-				<Button variant="ghost" size="icon-sm" class="h-6 w-6 text-muted-foreground" onclick={startEditName}>
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					class="h-6 w-6 text-muted-foreground"
+					onclick={startEditName}
+				>
 					<Pencil size={11} />
 				</Button>
 			</div>
@@ -175,6 +196,16 @@
 		</Button>
 
 		<Button
+			variant="outline"
+			size="sm"
+			onclick={() => onToolOptions?.()}
+			class="gap-1.5 h-7 text-xs"
+		>
+			<Terminal size={14} />
+			Tool Args
+		</Button>
+
+		<Button
 			variant={previewMode ? 'default' : 'outline'}
 			size="sm"
 			onclick={() => onTogglePreview?.()}
@@ -184,7 +215,10 @@
 			{previewMode ? 'Exit dry run' : 'Dry run'}
 		</Button>
 
-		<Separator orientation="vertical" class="hidden sm:block data-[orientation=vertical]:h-[18px]" />
+		<Separator
+			orientation="vertical"
+			class="hidden sm:block data-[orientation=vertical]:h-[18px]"
+		/>
 
 		<Button
 			variant="outline"

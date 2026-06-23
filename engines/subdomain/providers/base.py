@@ -6,13 +6,26 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, ClassVar
 
+from shared.definitions.tools import parse_tool_args
 from shared.logging import get_logger
 
 if TYPE_CHECKING:
     from shared.enums.api_key import APIProvider
     from shared.enums.subdomain import SubdomainSource
+    from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
+
+
+def proxy_env(proxy_url: str | None) -> dict[str, str] | None:
+    """Proxy env vars honored by Go HTTP tools that lack a proxy flag."""
+    if not proxy_url:
+        return None
+    return {
+        "HTTP_PROXY": proxy_url,
+        "HTTPS_PROXY": proxy_url,
+        "ALL_PROXY": proxy_url,
+    }
 
 
 @dataclass
@@ -22,6 +35,8 @@ class ProviderContext:
     threads: int
     proxy_url: str | None
     api_keys: dict[str, str | None]
+    recorder: CommandRecorder | None = None
+    tool_options: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -43,6 +58,10 @@ class SubdomainProvider(ABC):
 
     def __init__(self, ctx: ProviderContext) -> None:
         self.ctx = ctx
+
+    @property
+    def extra_args(self) -> list[str]:
+        return parse_tool_args((self.ctx.tool_options or {}).get(self.tool, ""))
 
     def availability(self) -> tuple[bool, str | None]:
         if self.binary and shutil.which(self.binary) is None:

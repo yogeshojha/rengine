@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from engines.subdomain.providers.base import SubdomainProvider
+from engines.subdomain.providers.base import SubdomainProvider, proxy_env
 from shared.enums.subdomain import SubdomainSource
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 
@@ -23,6 +23,10 @@ class TlsxProvider(SubdomainProvider):
                 silent=True,
                 silent_flag="-silent",
                 timeout=self.ctx.timeout,
+                env=proxy_env(self.ctx.proxy_url),
+                recorder=self.ctx.recorder,
+                tool=self.tool,
+                extra_args=self.extra_args,
             )
         except ToolNotFoundError:
             return set()

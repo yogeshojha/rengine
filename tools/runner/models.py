@@ -1,6 +1,7 @@
 """Tool-agnostic models for CLI tool execution results."""
 
 from enum import Enum
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
@@ -10,6 +11,23 @@ class OutputFormat(Enum):
 
     JSONL = "jsonl"
     PLAIN = "plain"
+
+
+@runtime_checkable
+class CommandRecorder(Protocol):
+    """Optional hook the executor calls to register a command and capture its log."""
+
+    def start(self, tool: str, command: str) -> Any: ...
+
+    def finish(
+        self,
+        handle: Any,
+        *,
+        return_code: int,
+        output: str,
+        error: str | None,
+        duration_seconds: float,
+    ) -> None: ...
 
 
 class ToolResult(BaseModel):
@@ -24,10 +42,6 @@ class ToolResult(BaseModel):
     duration_seconds: float = 0.0
     command: str = ""
     error: str | None = None
-
-    @property
-    def record_count(self) -> int:
-        return len(self.json_records) if self.json_records else len(self.output_lines)
 
     @property
     def has_output(self) -> bool:

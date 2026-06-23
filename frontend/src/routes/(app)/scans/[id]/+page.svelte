@@ -1,17 +1,22 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onDestroy, untrack } from 'svelte';
-	import { ArrowLeft, RefreshCw, Play, Network } from 'lucide-svelte';
+	import { ArrowLeft, RefreshCw, Play, Network, Activity, Terminal } from 'lucide-svelte';
 
 	import { scansApi } from '$lib/api/scans';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
+	import { sseStore } from '$lib/stores/sse.svelte';
+	import { SSEChannel, SSEEventType } from '$lib/types/sse';
+	import type { ScanEvent } from '$lib/types/sse';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Empty from '$lib/components/ui/empty';
 	import SubdomainTable from '$lib/components/scans/subdomain-table.svelte';
+	import ScanActivityTimeline from '$lib/components/scans/scan-activity-timeline.svelte';
+	import ScanCommandLog from '$lib/components/scans/scan-command-log.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import {
@@ -23,17 +28,19 @@
 		isLiveStatus,
 		SCAN_POLL_MS
 	} from '$lib/utilities/scan-status';
-	import type { ScanRead } from '$lib/types/scan';
+	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
 	import type { SubdomainRead } from '$lib/types/subdomain';
 
 	const scanId = $derived(page.params.id ?? '');
 
 	let scan = $state<ScanRead | null>(null);
 	let subs = $state<SubdomainRead[]>([]);
+	let activities = $state<ScanActivityRead[]>([]);
+	let commands = $state<ScanCommandRead[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let showRescan = $state(false);
-	let pollTimer: ReturnType<typeof setInterval> | null = null;
+	let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 	let now = $state(Date.now());
 
 	$effect(() => {
@@ -43,6 +50,8 @@
 	});
 
 	let counters = $derived(scan ? scanCountPills(scan) : []);
+
+	let shouldPoll = $derived(!!scan && isLiveStatus(scan.status) && !sseStore.isConnected);
 
 	let subRows = $derived(
 		subs.map((s) => ({
@@ -56,27 +65,22 @@
 		}))
 	);
 
-	function stopPolling() {
-		if (pollTimer) {
-			clearInterval(pollTimer);
-			pollTimer = null;
-		}
-	}
-
-	function maybePoll() {
-		const live = scan != null && isLiveStatus(scan.status);
-		if (live && !pollTimer) {
-			pollTimer = setInterval(() => load(true), SCAN_POLL_MS);
-		} else if (!live) {
-			stopPolling();
-		}
-	}
-
 	async function loadSubs(projectId: string) {
 		try {
 			subs = await subdomainsApi.listByScan(projectId, scanId, { limit: 1000 });
 		} catch {
 			// non-fatal: results table just stays empty
+		}
+	}
+
+	async function loadPipeline(projectId: string) {
+		try {
+			[activities, commands] = await Promise.all([
+				scansApi.activities(scanId, projectId),
+				scansApi.commands(scanId, projectId)
+			]);
+		} catch {
+			// non-fatal: pipeline panels stay empty
 		}
 	}
 
@@ -88,13 +92,20 @@
 		try {
 			scan = await scansApi.get(scanId, project.id);
 			if (!silent) breadcrumbStore.set(scanId, `${scan.execution_config.target_value} scan`);
-			await loadSubs(project.id);
-			maybePoll();
+			await Promise.all([loadSubs(project.id), loadPipeline(project.id)]);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load scan';
 		} finally {
 			if (!silent) loading = false;
 		}
+	}
+
+	function scheduleRefresh() {
+		if (refreshTimer) return;
+		refreshTimer = setTimeout(() => {
+			refreshTimer = null;
+			load(true);
+		}, 600);
 	}
 
 	$effect(() => {
@@ -103,8 +114,25 @@
 		if (project && id) untrack(() => load());
 	});
 
+	// scan events ride the project channel; filter to this scan
+	$effect(() => {
+		const project = projectsStore.activeProject;
+		const id = scanId;
+		if (!project || !id) return;
+		return sseStore.on<ScanEvent>(SSEChannel.project(project.id), SSEEventType.SCAN, (data) => {
+			if (data.scan_id === id) scheduleRefresh();
+		});
+	});
+
+	// fallback poll only when SSE is unavailable
+	$effect(() => {
+		if (!shouldPoll) return;
+		const t = setInterval(() => load(true), SCAN_POLL_MS);
+		return () => clearInterval(t);
+	});
+
 	onDestroy(() => {
-		stopPolling();
+		if (refreshTimer) clearTimeout(refreshTimer);
 		if (scanId) breadcrumbStore.remove(scanId);
 	});
 </script>
@@ -197,6 +225,28 @@
 				{/each}
 			</div>
 		</div>
+
+		{#if activities.length}
+			<div class="space-y-2">
+				<div class="flex items-center gap-2">
+					<Activity class="h-4 w-4 text-muted-foreground" />
+					<h2 class="text-sm font-medium">Pipeline</h2>
+					<span class="text-xs text-muted-foreground">({activities.length})</span>
+				</div>
+				<ScanActivityTimeline {activities} />
+			</div>
+		{/if}
+
+		{#if commands.length}
+			<div class="space-y-2">
+				<div class="flex items-center gap-2">
+					<Terminal class="h-4 w-4 text-muted-foreground" />
+					<h2 class="text-sm font-medium">Commands</h2>
+					<span class="text-xs text-muted-foreground">({commands.length})</span>
+				</div>
+				<ScanCommandLog {scanId} projectId={projectsStore.activeProject?.id ?? ''} {commands} />
+			</div>
+		{/if}
 
 		<div class="space-y-2">
 			<div class="flex items-center gap-2">

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from shared.logging import get_logger
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError, ToolResult
+from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
 
@@ -24,11 +25,15 @@ class DnsxClient:
         retry: int = DEFAULT_RETRY,
         threads: int = DEFAULT_THREADS,
         resolvers: list[str] | None = None,
+        recorder: CommandRecorder | None = None,
+        extra_args: list[str] | None = None,
     ) -> None:
         self.timeout = timeout
         self.retry = retry
         self.threads = threads
         self.resolvers = resolvers
+        self.recorder = recorder
+        self.extra_args = extra_args or []
 
         try:
             self._runner = CLIToolRunner(DNSX_BINARY, default_timeout=timeout)
@@ -116,4 +121,7 @@ class DnsxClient:
             timeout=self.timeout,
             silent=True,
             silent_flag="-silent",
+            recorder=self.recorder,
+            tool=DNSX_BINARY,
+            extra_args=self.extra_args,
         )

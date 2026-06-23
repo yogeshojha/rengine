@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, Field, PrivateAttr
 
+from shared.definitions.tools import parse_tool_args
+
 if TYPE_CHECKING:
     from fastapi import HTTPException
 
@@ -22,6 +24,18 @@ SECRET_FIELDS = {
 _SENSITIVE_HEADER = re.compile(
     r"^(authorization|cookie|x-api-key)$|token|secret", re.IGNORECASE
 )
+
+PROXY_CREDS_RE = re.compile(r"(\w+://)[^/\s]*@")
+_HEADER_VALUE = re.compile(
+    r'(-H\s+["\']?(?:authorization|cookie|x-api-key|[\w-]*(?:token|secret)[\w-]*)'
+    r'\s*:\s*)([^"\'\n]+?)(?=["\']|\s+-|\s*$)',
+    re.IGNORECASE,
+)
+_CRED_FLAG = re.compile(
+    r"((?:-{1,2}(?:api[-_]?key|key|token|password|passwd|pass|secret))[ =])(\S+)",
+    re.IGNORECASE,
+)
+_UNSAFE_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 _CTRL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
 
@@ -59,6 +73,18 @@ def _mask_headers(headers: list) -> list:
             value = MASK
         out.append({"name": name, "value": value})
     return out
+
+
+def mask_proxy_url(value: str | None) -> str | None:
+    return PROXY_CREDS_RE.sub(rf"\1{MASK}@", value) if value else value
+
+
+def redact_command(command: str) -> str:
+    """Strip NUL/control bytes + proxy creds + sensitive header/flag values for safe storage."""
+    safe = _UNSAFE_CTRL.sub("", command or "")
+    safe = PROXY_CREDS_RE.sub(rf"\1{MASK}@", safe)
+    safe = _HEADER_VALUE.sub(rf"\1{MASK}", safe)
+    return _CRED_FLAG.sub(rf"\1{MASK}", safe)
 
 
 def _auth_summary(auth: dict, extra_headers: list) -> str:  # noqa: PLR0911
@@ -175,8 +201,12 @@ class ResolvedScanConfig(BaseModel):
     global_http_crawl: bool = True
     intensity: str = "normal"
     proxy_url: str | None = None
+    tool_options: dict[str, str] = Field(default_factory=dict)
 
     _auth_header_names: list[str] = PrivateAttr(default_factory=list)
+
+    def tool_args(self, tool: str) -> list[str]:
+        return parse_tool_args((self.tool_options or {}).get(tool, ""))
 
     def __repr__(self) -> str:
         proxy = "<set>" if self.proxy_url else "None"
@@ -385,6 +415,7 @@ def merge_engine_context(
         http_protocol=http_protocol,
         global_http_crawl=engine.global_http_crawl,
         intensity=engine.intensity,
+        tool_options=dict(getattr(engine, "tool_options", None) or {}),
     )
     config._auth_header_names = auth_header_names
     config.proxy_url = proxy_url

@@ -10,6 +10,7 @@ from celery.signals import (
 from kombu import Exchange, Queue
 
 from app.config import settings
+from shared.definitions.constants import SCANS_QUEUE
 from shared.logging import get_logger
 from shared.logging import setup_logging as setup_rengine_logging
 
@@ -65,7 +66,7 @@ celery_app.conf.task_queues = (
         queue_arguments={"x-max-priority": 5},
     ),
     Queue(
-        "scans",
+        SCANS_QUEUE,
         exchange=scan_exchange,
         routing_key="scans",
         queue_arguments={"x-max-priority": 5},
@@ -81,7 +82,7 @@ celery_app.conf.task_default_routing_key = "default"
 # #############################################################
 
 celery_app.conf.task_routes = {
-    "app.tasks.scan.*": {"queue": "scans"},
+    "app.tasks.scan.*": {"queue": SCANS_QUEUE},
     "app.tasks.whois.*": {"queue": "default"},
     "app.tasks.debug.*": {"queue": "default"},
     "app.tasks.ripestat.*": {"queue": "default"},

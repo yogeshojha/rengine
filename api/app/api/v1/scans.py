@@ -18,6 +18,8 @@ from shared.models.scan import (
     ScanStats,
     ScanTargetGroup,
 )
+from shared.models.scan_activity import ScanActivityRead
+from shared.models.scan_command import ScanCommandDetail, ScanCommandRead
 from shared.models.scan_preview import ScanPreview
 
 router = APIRouter(
@@ -211,6 +213,44 @@ async def get_scan(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     return await service.get(id=id, project_id=project_id)
+
+
+@router.get("/{id}/activities", response_model=list[ScanActivityRead])
+async def list_scan_activities(
+    id: UUID,
+    _current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.list_activities(scan_id=id, project_id=project_id)
+
+
+@router.get("/{id}/commands", response_model=list[ScanCommandRead])
+async def list_scan_commands(
+    id: UUID,
+    _current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    activity_id: Annotated[
+        UUID | None, Query(description="Filter by stage activity ID")
+    ] = None,
+):
+    return await service.list_commands(
+        scan_id=id, project_id=project_id, activity_id=activity_id
+    )
+
+
+@router.get("/{id}/commands/{command_id}", response_model=ScanCommandDetail)
+async def get_scan_command(
+    id: UUID,
+    command_id: UUID,
+    _current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.get_command(
+        scan_id=id, command_id=command_id, project_id=project_id
+    )
 
 
 @router.post("/{id}/cancel", response_model=ScanRead)

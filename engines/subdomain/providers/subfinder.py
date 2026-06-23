@@ -51,6 +51,9 @@ class SubfinderProvider(SubdomainProvider):
                 silent=True,
                 silent_flag="-silent",
                 timeout=self.ctx.timeout,
+                recorder=self.ctx.recorder,
+                tool=self.tool,
+                extra_args=self.extra_args,
             )
         except ToolNotFoundError:
             return set()

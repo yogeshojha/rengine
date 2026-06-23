@@ -5,6 +5,7 @@ from app.api.v1 import (
     api_keys,
     auth,
     celery_health,
+    dashboard,
     events,
     instance_settings,
     notification_channels,
@@ -45,6 +46,7 @@ router.include_router(scan_engines.router)
 router.include_router(scan_contexts.router)
 router.include_router(scans.router)
 router.include_router(subdomains.router)
+router.include_router(dashboard.router)
 router.include_router(celery_health.router)
 router.include_router(instance_settings.router)
 router.include_router(proxies.router)
