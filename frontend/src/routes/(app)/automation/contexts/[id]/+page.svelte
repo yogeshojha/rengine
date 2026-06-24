@@ -137,7 +137,7 @@
 		draft = d;
 		loaded = null;
 		baseline = '';
-		touchedSecrets = new SvelteSet();
+		touchedSecrets.clear();
 		seedKey++;
 	}
 
@@ -167,7 +167,7 @@
 	async function loadContext(id: string, projectId: string) {
 		isLoading = true;
 		loadError = null;
-		touchedSecrets = new SvelteSet();
+		touchedSecrets.clear();
 		try {
 			const cached = scanContextsStore.contexts.find((c) => c.id === id);
 			if (cached) {
@@ -228,7 +228,7 @@
 					loaded = created;
 					draft = JSON.parse(JSON.stringify(readToDraft(created)));
 					baseline = JSON.stringify(draft);
-					touchedSecrets = new SvelteSet();
+					touchedSecrets.clear();
 					seedKey++;
 					bypassGuard = true;
 					goto(`/automation/contexts/${created.id}`, { replaceState: true });
@@ -244,7 +244,7 @@
 					loaded = updated;
 					draft = JSON.parse(JSON.stringify(readToDraft(updated)));
 					baseline = JSON.stringify(draft);
-					touchedSecrets = new SvelteSet();
+					touchedSecrets.clear();
 					seedKey++;
 					toast.success('Context saved');
 				} else {
@@ -484,7 +484,8 @@
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
 		title="Delete Context"
-		description="Are you sure you want to delete '{draft?.name ?? 'this context'}'? This action cannot be undone."
+		description="Are you sure you want to delete '{draft?.name ??
+			'this context'}'? This action cannot be undone."
 		{isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={handleDelete}

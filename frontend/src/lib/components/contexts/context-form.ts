@@ -3,7 +3,7 @@ import type { SvelteSet } from 'svelte/reactivity';
 
 export type ContextFormSection = 'identity' | 'auth' | 'rate' | 'scope' | 'runtime' | 'proxy';
 
-export const SECRET_KEYS = [
+const SECRET_KEYS = [
 	'bearer_token',
 	'basic_password',
 	'header_value',
@@ -11,11 +11,11 @@ export const SECRET_KEYS = [
 	'api_key_value'
 ] as const;
 
-export function isPathValid(v: string): boolean {
+function isPathValid(v: string): boolean {
 	return v.startsWith('/');
 }
 
-export function isIpValid(v: string): boolean {
+function isIpValid(v: string): boolean {
 	const cidr = v.split('/');
 	if (cidr.length > 2) return false;
 	const ip = cidr[0];
