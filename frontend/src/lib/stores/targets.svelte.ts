@@ -6,6 +6,7 @@ import { TaskStatus } from '$lib/types/task-status';
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
+import { scansStore } from '$lib/stores/scans.svelte';
 
 interface TargetFilters {
 	projectSlug?: string;
@@ -260,8 +261,7 @@ function createTargetsStore() {
 			if (!filters.projectSlug) return;
 			try {
 				counts = await targetsApi.getCounts(filters.projectSlug);
-			} catch {
-			}
+			} catch {}
 		},
 
 		setSearchQuery(query: string) {
@@ -426,6 +426,7 @@ function createTargetsStore() {
 			try {
 				await targetsApi.delete(targetId);
 				await this.refresh();
+				scansStore.markStale();
 				return true;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to delete target';
