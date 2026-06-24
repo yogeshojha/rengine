@@ -1,19 +1,18 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { fade } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 	import { cubicIn, cubicOut } from 'svelte/easing';
 	import BoxesIcon from '@lucide/svelte/icons/boxes';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import { cn } from '$lib/utils.js';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Progress } from '$lib/components/ui/progress/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import { PrefersReducedMotion } from '$lib/hooks/prefers-reduced-motion.svelte';
 	import WizardFooter from './wizard-footer.svelte';
 	import type { StepFooter } from '$lib/types/onboarding';
 
 	interface Props {
 		steps: { key: string; title: string }[];
 		currentIndex: number;
+		direction: 'forward' | 'back';
 		footer: StepFooter;
 		onBack: () => void;
 		onSkip: () => void;
@@ -21,96 +20,75 @@
 		children: Snippet;
 	}
 
-	let { steps, currentIndex, footer, onBack, onSkip, isFirst, children }: Props = $props();
+	let { steps, currentIndex, direction, footer, onBack, onSkip, isFirst, children }: Props = $props();
 
 	let total = $derived(steps.length);
 	let current = $derived(steps[currentIndex]);
 	let pct = $derived(total > 0 ? Math.round(((currentIndex + 1) / total) * 100) : 0);
 
-	function stateOf(i: number): 'done' | 'current' | 'upcoming' {
-		if (i < currentIndex) return 'done';
-		if (i === currentIndex) return 'current';
-		return 'upcoming';
-	}
+	const reduce = new PrefersReducedMotion();
+	let dx = $derived(direction === 'back' ? -8 : 8);
+	let transIn = $derived(
+		reduce.current
+			? { x: 0, duration: 90, easing: cubicOut }
+			: { x: dx, duration: 260, easing: cubicOut }
+	);
+	let transOut = $derived(
+		reduce.current
+			? { x: 0, duration: 70, easing: cubicIn }
+			: { x: -dx, duration: 170, easing: cubicIn }
+	);
+
+	let bodyEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		const _step = currentIndex;
+		bodyEl?.focus({ preventScroll: true });
+	});
 </script>
 
-<Dialog.Root open={true}>
-	<Dialog.Content
-		showCloseButton={false}
-		interactOutsideBehavior="ignore"
-		escapeKeydownBehavior="ignore"
-		class="top-[7vh] grid max-h-[86vh] translate-y-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-2xl"
-	>
-		<Dialog.Title class="sr-only">Set up reNgine — {current?.title}</Dialog.Title>
+<div class="flex h-dvh flex-col bg-background">
+	<Progress
+		value={pct}
+		class="h-0.5 w-full shrink-0 rounded-none transition-all duration-500 ease-out"
+	/>
 
-		<div class="border-b px-6 py-5">
-			<div class="flex items-center justify-between gap-3">
-				<div class="flex items-center gap-2">
-					<div class="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-						<BoxesIcon class="size-3.5" />
-					</div>
-					<span class="text-sm font-semibold tracking-tight">reNgine setup</span>
+	<header class="shrink-0 border-b">
+		<div class="mx-auto flex w-full max-w-xl items-center justify-between gap-3 px-6 py-4 sm:px-8">
+			<div class="flex items-center gap-2">
+				<div
+					class="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md"
+				>
+					<BoxesIcon class="size-3.5" />
 				</div>
-				<span class="text-xs font-medium text-muted-foreground">
-					Step {currentIndex + 1} of {total} · {current?.title}
-				</span>
+				<span class="text-sm font-semibold tracking-tight">reNgine setup</span>
 			</div>
-			<Progress value={pct} class="mt-4 h-1 transition-all duration-300 ease-out" />
+			<span class="text-xs font-medium tabular-nums text-muted-foreground">
+				Step {currentIndex + 1} of {total}
+			</span>
 		</div>
+	</header>
 
-		<div class="flex min-h-0">
-			<nav aria-label="Setup steps" class="bg-muted/30 hidden w-48 shrink-0 border-r px-3 py-6 sm:block">
-				<ol class="space-y-0.5">
-					{#each steps as step, i (step.key)}
-						{@const st = stateOf(i)}
-						<li
-							class={cn(
-								'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs transition-colors',
-								st === 'current' && 'bg-background text-foreground font-medium shadow-sm',
-								st === 'done' && 'text-muted-foreground',
-								st === 'upcoming' && 'text-muted-foreground/60'
-							)}
-							aria-current={st === 'current' ? 'step' : undefined}
-						>
-							<span
-								class={cn(
-									'flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px] font-medium',
-									st === 'current' && 'border-primary bg-primary text-primary-foreground',
-									st === 'done' && 'border-foreground/30 bg-foreground/10 text-foreground',
-									st === 'upcoming' && 'border-muted-foreground/30'
-								)}
-							>
-								{#if st === 'done'}
-									<CheckIcon class="size-3" />
-								{:else}
-									{i + 1}
-								{/if}
-							</span>
-							<span class="truncate">{step.title}</span>
-						</li>
-					{/each}
-				</ol>
-			</nav>
-
-			<ScrollArea class="min-h-0 flex-1">
-				<div class="px-6 py-6">
-					<div class="grid min-h-[21rem]">
-						{#key currentIndex}
-							<div
-								class="[grid-area:1/1]"
-								in:fade={{ duration: 150, easing: cubicOut }}
-								out:fade={{ duration: 120, easing: cubicIn }}
-							>
-								{@render children()}
-							</div>
-						{/key}
-					</div>
+	<main class="min-h-0 flex-1" aria-label="Setup">
+		<ScrollArea class="h-full">
+			<div
+				bind:this={bodyEl}
+				tabindex="-1"
+				class="mx-auto flex min-h-full w-full max-w-xl flex-col justify-center px-6 py-12 outline-none sm:px-8 sm:py-16"
+			>
+				<div class="grid">
+					{#key currentIndex}
+						<div class="[grid-area:1/1]" in:fly={transIn} out:fly={transOut}>
+							{@render children()}
+						</div>
+					{/key}
 				</div>
-			</ScrollArea>
-		</div>
+			</div>
+		</ScrollArea>
+	</main>
 
-		{#if !footer.hidden}
-			<div class="border-t px-6 py-4">
+	{#if !footer.hidden}
+		<footer class="shrink-0 border-t">
+			<div class="mx-auto w-full max-w-xl px-6 py-4 sm:px-8">
 				<WizardFooter
 					{onBack}
 					{onSkip}
@@ -122,6 +100,10 @@
 					canSkip={footer.canSkip ?? false}
 				/>
 			</div>
-		{/if}
-	</Dialog.Content>
-</Dialog.Root>
+		</footer>
+	{/if}
+
+	<div class="sr-only" role="status" aria-live="polite">
+		Step {currentIndex + 1} of {total}, {current?.title}
+	</div>
+</div>

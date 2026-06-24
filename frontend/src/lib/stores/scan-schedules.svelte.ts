@@ -1,4 +1,5 @@
 import { scanSchedulesApi } from '$lib/api/scan-schedules';
+import { scansStore } from '$lib/stores/scans.svelte';
 import type {
 	ScanScheduleCreate,
 	ScanScheduleRead,
@@ -96,6 +97,7 @@ function createScanSchedulesStore() {
 			error = null;
 			try {
 				const scans = await scanSchedulesApi.runNow(id, projectId);
+				scansStore.markStale();
 				return scans.length;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to run schedule';

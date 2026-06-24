@@ -33,6 +33,7 @@
 
 	let ready = $state(false);
 	let currentIndex = $state(0);
+	let direction = $state<'forward' | 'back'>('forward');
 	let data = $state<WizardData>({ mode: null, instanceName: '', twoFactorEnabled: false });
 
 	let fcfg = $state<StepFooter>({ onNext: () => {} });
@@ -81,6 +82,7 @@
 
 	function next() {
 		if (currentIndex < STEPS.length - 1) {
+			direction = 'forward';
 			currentIndex += 1;
 			persistProgress(currentIndex);
 		}
@@ -88,6 +90,7 @@
 
 	function back() {
 		if (currentIndex > 0) {
+			direction = 'back';
 			currentIndex -= 1;
 			persistProgress(currentIndex);
 		}
@@ -107,6 +110,7 @@
 	<WizardShell
 		{steps}
 		{currentIndex}
+		{direction}
 		footer={fcfg}
 		onBack={back}
 		onSkip={skip}

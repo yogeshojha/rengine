@@ -10,6 +10,7 @@ function createScanContextsStore() {
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let hasFetched = $state(false);
+	let fetchedProjectId = $state<string | null>(null);
 	let activeContext = $state<ScanContextRead | null>(null);
 
 	return {
@@ -25,6 +26,9 @@ function createScanContextsStore() {
 		get hasFetched() {
 			return hasFetched;
 		},
+		get fetchedProjectId() {
+			return fetchedProjectId;
+		},
 		get activeContext() {
 			return activeContext;
 		},
@@ -36,6 +40,7 @@ function createScanContextsStore() {
 			try {
 				contexts = await scanContextsApi.list(projectId);
 				hasFetched = true;
+				fetchedProjectId = projectId;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to fetch scan contexts';
 			} finally {
@@ -114,6 +119,7 @@ function createScanContextsStore() {
 			activeContext = null;
 			error = null;
 			hasFetched = false;
+			fetchedProjectId = null;
 		}
 	};
 }

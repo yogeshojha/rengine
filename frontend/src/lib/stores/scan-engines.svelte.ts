@@ -6,6 +6,7 @@ function createScanEnginesStore() {
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let hasFetched = $state(false);
+	let fetchedProjectId = $state<string | null>(null);
 	let activeEngine = $state<ScanEngine | null>(null);
 
 	return {
@@ -21,6 +22,9 @@ function createScanEnginesStore() {
 		get hasFetched() {
 			return hasFetched;
 		},
+		get fetchedProjectId() {
+			return fetchedProjectId;
+		},
 		get activeEngine() {
 			return activeEngine;
 		},
@@ -32,6 +36,7 @@ function createScanEnginesStore() {
 			try {
 				engines = await scanEnginesApi.list(projectId);
 				hasFetched = true;
+				fetchedProjectId = projectId;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to fetch scan engines';
 			} finally {
@@ -130,6 +135,7 @@ function createScanEnginesStore() {
 			activeEngine = null;
 			error = null;
 			hasFetched = false;
+			fetchedProjectId = null;
 		}
 	};
 }

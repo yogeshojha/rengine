@@ -4,17 +4,13 @@
 	import { page } from '$app/state';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { AlertTriangle, Loader2, ChevronLeft, Copy, Trash2, Save, ChevronDown, Info } from 'lucide-svelte';
+	import { AlertTriangle, Loader2, ChevronLeft, Copy, Trash2, Save } from 'lucide-svelte';
 
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
-	import { Textarea } from '$lib/components/ui/textarea';
-	import { Label } from '$lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card';
-	import * as Collapsible from '$lib/components/ui/collapsible';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import * as Popover from '$lib/components/ui/popover';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CopyButton from '@/components/copy-button.svelte';
@@ -24,21 +20,15 @@
 	import { scanContextsApi } from '$lib/api/scan-contexts';
 
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
-	import AuthSection from '$lib/components/contexts/auth-section.svelte';
-	import RateSection from '$lib/components/contexts/rate-section.svelte';
-	import ScopeSection from '$lib/components/contexts/scope-section.svelte';
-	import RuntimeSection from '$lib/components/contexts/runtime-section.svelte';
-	import ProxySection from '$lib/components/contexts/proxy-section.svelte';
+	import ContextSections from '$lib/components/contexts/context-sections.svelte';
 	import { buildContextSummary } from '$lib/components/contexts/context-summary';
+	import { validateDraft, buildContextPayload } from '$lib/components/contexts/context-form';
 
 	import {
 		DEFAULT_SCAN_CONTEXT,
-		MASK,
 		type ScanContextRead,
 		type ScanContextCreate,
-		type ScanContextUpdate,
-		type AuthConfig,
-		type AuthHeader
+		type ScanContextUpdate
 	} from '$lib/types/scan-context';
 
 	type Draft = ScanContextCreate;
@@ -67,14 +57,6 @@
 
 	let seedKey = $state(0);
 
-	const SECRET_KEYS = [
-		'bearer_token',
-		'basic_password',
-		'header_value',
-		'cookie_value',
-		'api_key_value'
-	] as const;
-
 	// ── Dirty detection ──────────────────────────────────────────────────────────
 	let baseline = $state<string>('');
 	let hasUnsavedChanges = $derived.by(() => {
@@ -83,43 +65,7 @@
 		return JSON.stringify(draft) !== baseline;
 	});
 
-	// ── Validation ─────────────────────────────────────────────────────────────────
-	function isPathValid(v: string): boolean {
-		return v.startsWith('/');
-	}
-
-	function isIpValid(v: string): boolean {
-		const cidr = v.split('/');
-		if (cidr.length > 2) return false;
-		const ip = cidr[0];
-		const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-		const v6 = /^[0-9a-fA-F:]+$/;
-		const isV4 = v4.test(ip) && ip.split('.').every((o) => Number(o) <= 255);
-		const isV6 = v6.test(ip) && ip.includes(':');
-		if (!isV4 && !isV6) return false;
-		if (cidr.length === 2) {
-			const n = Number(cidr[1]);
-			const maxPrefix = isV6 ? 128 : 32;
-			if (cidr[1].trim() === '' || !Number.isInteger(n) || n < 0 || n > maxPrefix) return false;
-		}
-		return true;
-	}
-
-	let validationIssue = $derived.by<{ message: string; section: keyof typeof open } | null>(() => {
-		if (!draft) return null;
-		if (!draft.name.trim()) return { message: 'Name is required', section: 'identity' };
-		const badPaths = draft.excluded_paths.filter((p) => !isPathValid(p)).length;
-		if (badPaths > 0)
-			return { message: `Fix ${badPaths} invalid path in Scope`, section: 'scope' };
-		const badIps = draft.excluded_ips.filter((ip) => !isIpValid(ip)).length;
-		if (badIps > 0) return { message: `Fix ${badIps} invalid IP in Scope`, section: 'scope' };
-		const badHeader = draft.extra_headers.some((h) => !h.name.trim() && h.value.trim());
-		if (badHeader)
-			return { message: 'A header has a value but no name in Authentication', section: 'auth' };
-		if (draft.auth_type === 'api_key' && !draft.auth?.api_key_name?.trim())
-			return { message: 'API key auth needs a key name in Authentication', section: 'auth' };
-		return null;
-	});
+	let validationIssue = $derived(draft ? validateDraft(draft) : null);
 	let isValid = $derived(validationIssue === null);
 
 	// ── Load / init ───────────────────────────────────────────────────────────────
@@ -255,69 +201,7 @@
 		draft = { ...draft, ...updates };
 	}
 
-	function handleAuthChange(next: { auth: AuthConfig; extraHeaders: AuthHeader[] }) {
-		if (!draft) return;
-		for (const k of SECRET_KEYS) {
-			const v = next.auth[k];
-			if (v != null && v !== MASK) touchedSecrets.add(k);
-		}
-		touchedSecrets = new SvelteSet(touchedSecrets);
-		draft = {
-			...draft,
-			auth_type: next.auth.auth_type as Draft['auth_type'],
-			auth: next.auth,
-			extra_headers: next.extraHeaders
-		};
-	}
-
 	// ── Save ──────────────────────────────────────────────────────────────────
-	function buildAuthPayload(): Partial<AuthConfig> | undefined {
-		if (!draft) return undefined;
-		const a = draft.auth;
-		if (!a) return undefined;
-		const out: Partial<AuthConfig> = { auth_type: a.auth_type };
-
-		const visible: (keyof AuthConfig)[] = [
-			'basic_username',
-			'header_name',
-			'api_key_name'
-		];
-		for (const k of visible) {
-			if (a[k] != null) out[k] = a[k];
-		}
-
-		for (const k of SECRET_KEYS) {
-			const v = a[k];
-			if (touchedSecrets.has(k) && v !== MASK) {
-				out[k] = v;
-			}
-		}
-		return out;
-	}
-
-	function buildPayload(): ScanContextCreate {
-		const d = draft!;
-		return {
-			name: d.name,
-			description: d.description,
-			auth_type: d.auth_type,
-			auth: buildAuthPayload() as ScanContextCreate['auth'],
-			extra_headers: d.extra_headers,
-			global_rate_limit_override: d.global_rate_limit_override,
-			per_tool_rate_overrides: d.per_tool_rate_overrides,
-			thread_multiplier: d.thread_multiplier,
-			timeout_multiplier: d.timeout_multiplier,
-			excluded_subdomains: d.excluded_subdomains,
-			excluded_paths: d.excluded_paths,
-			excluded_ips: d.excluded_ips,
-			included_subdomains: d.included_subdomains,
-			follow_redirects_override: d.follow_redirects_override,
-			http_protocol: d.http_protocol,
-			proxy_id: d.proxy_id,
-			compare_baseline_scan_id: null,
-			scan_only_new_assets: false
-		};
-	}
 
 	async function handleSave() {
 		if (!draft || isSaving) return;
@@ -335,7 +219,10 @@
 		isSaving = true;
 		try {
 			if (isNew) {
-				const created = await scanContextsStore.createContext(project.id, buildPayload());
+				const created = await scanContextsStore.createContext(
+					project.id,
+					buildContextPayload(draft!, touchedSecrets)
+				);
 				if (created) {
 					toast.success('Context created');
 					loaded = created;
@@ -349,7 +236,7 @@
 					toast.error(scanContextsStore.error ?? 'Failed to create context');
 				}
 			} else {
-				const update: ScanContextUpdate = buildPayload();
+				const update: ScanContextUpdate = buildContextPayload(draft!, touchedSecrets);
 				delete update.compare_baseline_scan_id;
 				delete update.scan_only_new_assets;
 				const updated = await scanContextsStore.updateContext(contextId!, project.id, update);
@@ -563,121 +450,13 @@
 
 		<div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
 			<div class="space-y-4">
-				{#snippet section(
-					key: keyof typeof open,
-					title: string,
-					subtitle: string,
-					content: import('svelte').Snippet,
-					info?: import('svelte').Snippet
-				)}
-					<Card.Root>
-						<Collapsible.Root bind:open={open[key]}>
-							<Card.Header class="flex flex-row items-center justify-between gap-2 py-4 text-left">
-								<Collapsible.Trigger class="flex min-w-0 flex-1 items-center justify-between gap-2">
-									<div class="min-w-0">
-										<Card.Title class="text-sm">{title}</Card.Title>
-										<Card.Description class="text-xs">{subtitle}</Card.Description>
-									</div>
-									<ChevronDown
-										class="h-4 w-4 shrink-0 text-muted-foreground transition-transform {open[key] ? 'rotate-180' : ''}"
-									/>
-								</Collapsible.Trigger>
-								{#if info}
-									<Popover.Root>
-										<Popover.Trigger>
-											{#snippet child({ props })}
-												<Button
-													{...props}
-													variant="ghost"
-													size="icon"
-													class="h-7 w-7 shrink-0 text-muted-foreground"
-													aria-label="Merge behaviour"
-												>
-													<Info class="h-3.5 w-3.5" />
-												</Button>
-											{/snippet}
-										</Popover.Trigger>
-										<Popover.Content class="w-72 text-xs text-muted-foreground">
-											{@render info()}
-										</Popover.Content>
-									</Popover.Root>
-								{/if}
-							</Card.Header>
-							<Collapsible.Content>
-								<Card.Content class="pb-5">
-									{@render content()}
-								</Card.Content>
-							</Collapsible.Content>
-						</Collapsible.Root>
-					</Card.Root>
-				{/snippet}
-
-				{#snippet authInfo()}
-					<p class="mb-1 font-medium text-foreground">Merge behaviour</p>
-					<ul class="space-y-1 pl-3">
-						<li class="list-disc">Headers: engine ∪ context — context wins on conflict.</li>
-						<li class="list-disc">A context cannot enable a tool the engine disabled.</li>
-					</ul>
-				{/snippet}
-
-				{#snippet rateInfo()}
-					<p class="mb-1 font-medium text-foreground">Merge behaviour</p>
-					<ul class="space-y-1 pl-3">
-						<li class="list-disc">Context rate overrides take precedence over engine defaults.</li>
-						<li class="list-disc">A context cannot enable a tool the engine disabled.</li>
-					</ul>
-				{/snippet}
-
-				{#snippet identityBody()}
-					<div class="space-y-4">
-						<div class="space-y-1.5">
-							<Label class="text-xs">Name</Label>
-							<Input bind:value={draft!.name} placeholder="e.g. Authenticated staging" class="h-9" />
-						</div>
-						<div class="space-y-1.5">
-							<Label class="text-xs">Description</Label>
-							<Textarea
-								value={draft!.description ?? ''}
-								placeholder="What this context is for (optional)"
-								class="min-h-20"
-								oninput={(e) => patchDraft({ description: e.currentTarget.value || null })}
-							/>
-						</div>
-					</div>
-				{/snippet}
-
-				{#snippet authBody()}
-					{#key seedKey}
-						<AuthSection
-							auth={draft!.auth as AuthConfig}
-							extraHeaders={draft!.extra_headers}
-							onChange={handleAuthChange}
-						/>
-					{/key}
-				{/snippet}
-
-				{#snippet rateBody()}
-					<RateSection context={draft!} onChange={patchDraft} />
-				{/snippet}
-
-				{#snippet scopeBody()}
-					<ScopeSection context={draft!} onChange={patchDraft} />
-				{/snippet}
-
-				{#snippet runtimeBody()}
-					<RuntimeSection context={draft!} onChange={patchDraft} />
-				{/snippet}
-
-				{#snippet proxyBody()}
-					<ProxySection context={draft!} onChange={patchDraft} />
-				{/snippet}
-
-				{@render section('identity', 'Identity', 'Name and description', identityBody)}
-				{@render section('auth', 'Authentication', 'How requests authenticate to the target', authBody, authInfo)}
-				{@render section('rate', 'Rate Limiting', 'Throughput ceilings and concurrency', rateBody, rateInfo)}
-				{@render section('scope', 'Scope', 'Include / exclude rules for assets', scopeBody)}
-				{@render section('runtime', 'Runtime Options', 'Protocol and redirect behaviour', runtimeBody)}
-				{@render section('proxy', 'Proxy', 'Route scan traffic through a proxy', proxyBody)}
+				<ContextSections
+					draft={draft!}
+					bind:open
+					touched={touchedSecrets}
+					onPatch={patchDraft}
+					{seedKey}
+				/>
 			</div>
 
 			<div class="hidden lg:block">

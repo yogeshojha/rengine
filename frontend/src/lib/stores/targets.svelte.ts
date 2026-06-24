@@ -7,6 +7,7 @@ import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
 import { scansStore } from '$lib/stores/scans.svelte';
+import { dashboardStore } from '$lib/stores/dashboard.svelte';
 
 interface TargetFilters {
 	projectSlug?: string;
@@ -427,6 +428,7 @@ function createTargetsStore() {
 				await targetsApi.delete(targetId);
 				await this.refresh();
 				scansStore.markStale();
+				dashboardStore.markStale();
 				return true;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Failed to delete target';

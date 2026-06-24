@@ -142,8 +142,10 @@
 		if (!project) return;
 		untrack(() => {
 			prefill();
-			if (!scanEnginesStore.hasFetched) scanEnginesStore.fetchEngines(project.id);
-			if (!scanContextsStore.hasFetched) scanContextsStore.fetchContexts(project.id);
+			if (scanEnginesStore.fetchedProjectId !== project.id)
+				scanEnginesStore.fetchEngines(project.id);
+			if (scanContextsStore.fetchedProjectId !== project.id)
+				scanContextsStore.fetchContexts(project.id);
 			if (!instanceSettingsStore.hasFetched) instanceSettingsStore.fetch();
 			loadTargets(project.slug);
 		});

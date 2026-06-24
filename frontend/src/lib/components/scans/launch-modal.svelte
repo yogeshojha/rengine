@@ -94,8 +94,10 @@
 		const project = projectsStore.activeProject;
 		if (!project) return;
 		untrack(() => {
-			if (!scanEnginesStore.hasFetched) scanEnginesStore.fetchEngines(project.id);
-			if (!scanContextsStore.hasFetched) scanContextsStore.fetchContexts(project.id);
+			if (scanEnginesStore.fetchedProjectId !== project.id)
+				scanEnginesStore.fetchEngines(project.id);
+			if (scanContextsStore.fetchedProjectId !== project.id)
+				scanContextsStore.fetchContexts(project.id);
 			loadTargets(project.slug);
 			if (targetId) selectedTargetId = targetId;
 		});

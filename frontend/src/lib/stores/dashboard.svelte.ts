@@ -87,6 +87,10 @@ function createDashboardStore() {
 			fetchChanges();
 		},
 
+		markStale() {
+			hasFetched = false;
+		},
+
 		setChangeWindow(win: ScanChangeWindow) {
 			changeWindow = win;
 			fetchChanges();
