@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import {
 		Ellipsis,
@@ -36,12 +37,25 @@
 		scan: ScanRead;
 		targetId?: string;
 		now: number;
+		selectable?: boolean;
+		isSelected?: boolean;
+		onSelect?: (id: string) => void;
 		onRescan: (scan: ScanRead) => void;
 		onCancel: (scan: ScanRead) => void;
 		onDelete: (scan: ScanRead) => void;
 	}
 
-	let { scan, targetId, now, onRescan, onCancel, onDelete }: Props = $props();
+	let {
+		scan,
+		targetId,
+		now,
+		selectable = false,
+		isSelected = false,
+		onSelect,
+		onRescan,
+		onCancel,
+		onDelete
+	}: Props = $props();
 
 	let StatusIcon = $derived(scanStatusIcon(scan.status));
 	let live = $derived(isLiveStatus(scan.status));
@@ -69,7 +83,9 @@
 </script>
 
 <div
-	class="group flex items-center gap-3 px-4 py-2.5 transition-colors cursor-pointer hover:bg-muted/30"
+	class="group flex items-center gap-3 px-4 py-2.5 transition-colors cursor-pointer {isSelected
+		? 'bg-primary/5 hover:bg-primary/10'
+		: 'hover:bg-muted/30'}"
 	onclick={open}
 	onkeydown={(e) => {
 		if (e.key === 'Enter' || e.key === ' ') {
@@ -81,6 +97,21 @@
 	tabindex="0"
 	aria-label="Open scan for {scan.execution_config.target_value}"
 >
+	{#if selectable}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="shrink-0" onclick={stopProp}>
+			<Checkbox
+				checked={isSelected}
+				onCheckedChange={() => onSelect?.(scan.id)}
+				aria-label="Select scan"
+				class="transition-opacity {isSelected
+					? 'opacity-100'
+					: 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}"
+			/>
+		</div>
+	{/if}
+
 	<div class="min-w-0 flex-1">
 		<div class="flex min-w-0 items-center gap-2">
 			<span class="font-mono text-sm font-medium truncate">{primary}</span>

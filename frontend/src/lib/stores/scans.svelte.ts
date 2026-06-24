@@ -385,6 +385,24 @@ function createScansStore() {
 			}
 		},
 
+		async removeMany(ids: string[]): Promise<{ ok: number; failed: number }> {
+			const projectId = filters.projectId;
+			if (!projectId) return { ok: 0, failed: ids.length };
+			const results = await Promise.allSettled(ids.map((id) => scansApi.remove(id, projectId)));
+			const ok = results.filter((r) => r.status === 'fulfilled').length;
+			this.refresh();
+			return { ok, failed: ids.length - ok };
+		},
+
+		async cancelMany(ids: string[]): Promise<{ ok: number; failed: number }> {
+			const projectId = filters.projectId;
+			if (!projectId) return { ok: 0, failed: ids.length };
+			const results = await Promise.allSettled(ids.map((id) => scansApi.cancel(id, projectId)));
+			const ok = results.filter((r) => r.status === 'fulfilled').length;
+			this.refresh();
+			return { ok, failed: ids.length - ok };
+		},
+
 		exportAll(): Promise<ScanExportRow[]> {
 			const projectId = filters.projectId;
 			if (!projectId) return Promise.resolve([]);

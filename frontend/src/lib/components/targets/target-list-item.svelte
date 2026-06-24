@@ -112,13 +112,17 @@
 	role="button"
 	tabindex="0"
 >
-	<Checkbox
-		checked={isSelected}
-		onCheckedChange={() => onSelect(target.id)}
-		class="transition-opacity {isSelected
-			? 'opacity-100'
-			: 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}"
-	/>
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="shrink-0" onclick={stopProp}>
+		<Checkbox
+			checked={isSelected}
+			onCheckedChange={() => onSelect(target.id)}
+			class="transition-opacity {isSelected
+				? 'opacity-100'
+				: 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}"
+		/>
+	</div>
 
 	<div class="min-w-0 flex-1">
 		<div class="flex min-w-0 items-center gap-2">

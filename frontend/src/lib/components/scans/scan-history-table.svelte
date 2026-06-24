@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { Plus, RefreshCw, X, TriangleAlert, History, Layers } from 'lucide-svelte';
 
@@ -14,7 +15,7 @@
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
-	import { SCAN_STATUS_LABEL, SCAN_POLL_MS } from '$lib/utilities/scan-status';
+	import { SCAN_STATUS_LABEL, SCAN_POLL_MS, isLiveStatus } from '$lib/utilities/scan-status';
 	import { SCAN_TIME_RANGES } from '$lib/types/scan';
 	import { downloadScans, type ExportFormat } from '$lib/utilities/scan-export';
 	import type { ScanRead } from '$lib/types/scan';
@@ -25,6 +26,7 @@
 	import ScanListHeader from './scan-list-header.svelte';
 	import ScanListItem from './scan-list-item.svelte';
 	import ScanTargetGroupRow from './scan-target-group.svelte';
+	import ScanBulkActionBar from './scan-bulk-action-bar.svelte';
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 
 	interface Props {
@@ -38,7 +40,11 @@
 
 	let cancelTarget = $state<ScanRead | null>(null);
 	let deleteTarget = $state<ScanRead | null>(null);
+	let bulkDeleteOpen = $state(false);
+	let bulkCancelOpen = $state(false);
 	let now = $state(Date.now());
+
+	const selectedScanIds = new SvelteSet<string>();
 
 	$effect(() => {
 		const project = projectsStore.activeProject;
@@ -64,6 +70,56 @@
 	let rowCount = $derived(grouped ? groups.length : scans.length);
 	let pagination = $derived(scansStore.pagination);
 	let showPagination = $derived(pagination.pageSize !== -1 && pagination.totalPages > 1);
+
+	let selectedScans = $derived(scans.filter((s) => selectedScanIds.has(s.id)));
+	let selectedLiveCount = $derived(selectedScans.filter((s) => isLiveStatus(s.status)).length);
+	let selectAllChecked = $derived<boolean | 'indeterminate'>(
+		scans.length > 0 && selectedScans.length === scans.length
+			? true
+			: selectedScans.length > 0
+				? 'indeterminate'
+				: false
+	);
+
+	$effect(() => {
+		const ids = new Set(scans.map((s) => s.id));
+		for (const id of selectedScanIds) {
+			if (!ids.has(id)) selectedScanIds.delete(id);
+		}
+	});
+
+	function toggleScan(id: string) {
+		if (selectedScanIds.has(id)) selectedScanIds.delete(id);
+		else selectedScanIds.add(id);
+	}
+
+	function toggleSelectAll() {
+		if (selectedScans.length === scans.length) selectedScanIds.clear();
+		else for (const s of scans) selectedScanIds.add(s.id);
+	}
+
+	function clearSelection() {
+		selectedScanIds.clear();
+	}
+
+	async function confirmBulkDelete() {
+		const ids = [...selectedScanIds];
+		bulkDeleteOpen = false;
+		if (ids.length === 0) return;
+		const { ok, failed } = await scansStore.removeMany(ids);
+		selectedScanIds.clear();
+		if (ok > 0) toast.success(`Deleted ${ok} scan${ok !== 1 ? 's' : ''}.`);
+		if (failed > 0) toast.error(`Failed to delete ${failed} scan${failed !== 1 ? 's' : ''}.`);
+	}
+
+	async function confirmBulkCancel() {
+		const ids = selectedScans.filter((s) => isLiveStatus(s.status)).map((s) => s.id);
+		bulkCancelOpen = false;
+		if (ids.length === 0) return;
+		const { ok, failed } = await scansStore.cancelMany(ids);
+		if (ok > 0) toast.success(`Cancelled ${ok} scan${ok !== 1 ? 's' : ''}.`);
+		if (failed > 0) toast.error(`Failed to cancel ${failed} scan${failed !== 1 ? 's' : ''}.`);
+	}
 
 	let activeChips = $derived.by(() => {
 		const chips: { key: string; label: string; remove: () => void }[] = [];
@@ -359,6 +415,9 @@
 		{:else}
 			<ScanListHeader
 				{targetId}
+				selectable
+				{selectAllChecked}
+				onSelectAll={toggleSelectAll}
 				sortKey={scansStore.filters.sortKey}
 				sortDir={scansStore.filters.sortDir}
 				onSort={(k) => scansStore.setSort(k)}
@@ -370,6 +429,9 @@
 						{scan}
 						{targetId}
 						{now}
+						selectable
+						isSelected={selectedScanIds.has(scan.id)}
+						onSelect={toggleScan}
 						onRescan={(s) => onRescan?.(s)}
 						onCancel={(s) => (cancelTarget = s)}
 						onDelete={(s) => (deleteTarget = s)}
@@ -452,6 +514,55 @@
 			>
 				Delete
 			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+{#if !grouped}
+	<ScanBulkActionBar
+		selectedCount={selectedScans.length}
+		liveCount={selectedLiveCount}
+		onCancel={() => (bulkCancelOpen = true)}
+		onDelete={() => (bulkDeleteOpen = true)}
+		onClear={clearSelection}
+	/>
+{/if}
+
+<AlertDialog.Root open={bulkDeleteOpen} onOpenChange={(o) => (bulkDeleteOpen = o)}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>
+				Delete {selectedScans.length} scan{selectedScans.length !== 1 ? 's' : ''}?
+			</AlertDialog.Title>
+			<AlertDialog.Description>
+				This removes the selected scans and all of their results. This cannot be undone.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Keep</AlertDialog.Cancel>
+			<AlertDialog.Action
+				class={buttonVariants({ variant: 'destructive' })}
+				onclick={confirmBulkDelete}
+			>
+				Delete {selectedScans.length}
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+<AlertDialog.Root open={bulkCancelOpen} onOpenChange={(o) => (bulkCancelOpen = o)}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>
+				Cancel {selectedLiveCount} running scan{selectedLiveCount !== 1 ? 's' : ''}?
+			</AlertDialog.Title>
+			<AlertDialog.Description>
+				The selected running scans will stop queuing further work and be marked cancelled.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Keep running</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={confirmBulkCancel}>Cancel scans</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

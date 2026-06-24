@@ -1,15 +1,27 @@
 <script lang="ts">
 	import { ArrowDown, ArrowUp } from 'lucide-svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import type { ScanSortKey, ScanSortDir } from '$lib/types/scan';
 
 	interface Props {
 		targetId?: string;
+		selectable?: boolean;
+		selectAllChecked?: boolean | 'indeterminate';
+		onSelectAll?: () => void;
 		sortKey: ScanSortKey;
 		sortDir: ScanSortDir;
 		onSort: (key: ScanSortKey) => void;
 	}
 
-	let { targetId, sortKey, sortDir, onSort }: Props = $props();
+	let {
+		targetId,
+		selectable = false,
+		selectAllChecked = false,
+		onSelectAll,
+		sortKey,
+		sortDir,
+		onSort
+	}: Props = $props();
 </script>
 
 {#snippet arrow(key: ScanSortKey)}
@@ -21,6 +33,15 @@
 <div
 	class="flex items-center gap-3 px-4 py-2 border-b border-border bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider"
 >
+	{#if selectable}
+		<Checkbox
+			checked={selectAllChecked === true}
+			indeterminate={selectAllChecked === 'indeterminate'}
+			onCheckedChange={onSelectAll}
+			aria-label="Select all scans"
+		/>
+	{/if}
+
 	<div class="min-w-0 flex-1">{targetId ? 'Engine' : 'Target'}</div>
 
 	<button

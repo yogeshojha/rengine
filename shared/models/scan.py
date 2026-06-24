@@ -18,7 +18,9 @@ class Scan(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
-    target_id: uuid.UUID = Field(foreign_key="targets.id", index=True)
+    target_id: uuid.UUID = Field(
+        foreign_key="targets.id", index=True, ondelete="CASCADE"
+    )
     engine_id: uuid.UUID = Field(index=True)
     engine_name: str = Field(max_length=200)
     context_id: uuid.UUID | None = Field(default=None)

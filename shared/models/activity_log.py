@@ -22,7 +22,7 @@ class ActivityLog(SQLModel, table=True):
         default=None, foreign_key="projects.id", index=True
     )
     target_id: uuid.UUID | None = Field(
-        default=None, foreign_key="targets.id", index=True
+        default=None, foreign_key="targets.id", index=True, ondelete="SET NULL"
     )
     user_id: uuid.UUID | None = Field(default=None, foreign_key="users.id", index=True)
 
