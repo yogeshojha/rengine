@@ -7,11 +7,9 @@
 	import { toast } from 'svelte-sonner';
 	import type { StepProps } from '$lib/types/onboarding';
 	import type { Component } from 'svelte';
-	import CompassIcon from '@lucide/svelte/icons/compass';
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import Building2Icon from '@lucide/svelte/icons/building-2';
 	import InfoIcon from '@lucide/svelte/icons/info';
-	import StepHeader from './step-header.svelte';
 
 	let { data, next, setFooter }: StepProps = $props();
 
@@ -20,15 +18,15 @@
 			value: InstanceMode.BugBounty,
 			title: 'Bug Bounty',
 			icon: TargetIcon,
-			desc: 'Hunting on public and private programs.',
-			unlocks: 'Enables HackerOne integration, program import, and breadth-tuned recon presets.'
+			desc: 'Researching public and private bug bounty programs.',
+			unlocks: 'Adds the HackerOne integration, program import, and breadth-first recon presets.'
 		},
 		{
 			value: InstanceMode.Corporate,
 			title: 'Corporate',
 			icon: Building2Icon,
-			desc: 'Securing your own organization.',
-			unlocks: 'Asset-centric workflows and internal scope controls. Bug-bounty features (HackerOne, program import) stay hidden.'
+			desc: "Continuously managing your organization's own attack surface.",
+			unlocks: 'Asset inventory, scope governance, and internal monitoring workflows. Bug-bounty tooling such as HackerOne stays hidden.'
 		}
 	];
 
@@ -56,12 +54,6 @@
 </script>
 
 <div class="space-y-6">
-	<StepHeader
-		icon={CompassIcon}
-		title="How will you use reNgine?"
-		description="Pick one — it tailors which features appear. Corporate hides bug-bounty tooling entirely. You can switch anytime in Settings."
-	/>
-
 	<RadioGroup.Root value={selected} onValueChange={(v) => (selected = v)} class="grid gap-3">
 		{#each MODES as mode (mode.value)}
 			{@const Icon = mode.icon}
@@ -89,7 +81,8 @@
 
 	<p class="flex items-start gap-2 text-xs text-muted-foreground">
 		<InfoIcon class="mt-px size-4 shrink-0" />
-		<span>reNgine runs in a single mode — it's not both. Corporate mode keeps the workspace
-			focused by hiding bug-bounty-only features like the HackerOne integration.</span>
+		<span>reNgine operates in a single mode at a time. Corporate mode tailors the workspace to
+			internal attack surface management and hides bug-bounty-specific tooling such as the HackerOne
+			integration.</span>
 	</p>
 </div>

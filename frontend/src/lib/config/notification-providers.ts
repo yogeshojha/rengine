@@ -87,7 +87,7 @@ export const NOTIFICATION_PROVIDERS: ProviderMeta[] = [
 	}
 ];
 
-export const ONBOARDING_NOTIFICATION_PROVIDERS: ProviderMeta[] = ['slack', 'discord', 'teams', 'telegram']
+export const ONBOARDING_NOTIFICATION_PROVIDERS: ProviderMeta[] = ['slack', 'discord', 'telegram', 'webhook']
 	.map((p) => NOTIFICATION_PROVIDERS.find((m) => m.provider === p))
 	.filter((m): m is ProviderMeta => m !== undefined);
 

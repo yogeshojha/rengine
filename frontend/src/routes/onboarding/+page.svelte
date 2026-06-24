@@ -16,20 +16,96 @@
 	import StepNotifications from '$lib/components/onboarding/step-notifications.svelte';
 	import StepFinish from '$lib/components/onboarding/step-finish.svelte';
 	import StepCelebration from '$lib/components/onboarding/step-celebration.svelte';
+	import RocketIcon from '@lucide/svelte/icons/rocket';
+	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
+	import CompassIcon from '@lucide/svelte/icons/compass';
+	import PlugIcon from '@lucide/svelte/icons/plug';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import BellIcon from '@lucide/svelte/icons/bell';
+	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
+	import PartyPopperIcon from '@lucide/svelte/icons/party-popper';
 
 	const STEPS = [
-		{ key: 'welcome-security', title: 'Welcome', component: StepWelcomeSecurity },
-		{ key: 'two-factor', title: 'Two-Factor', component: StepTwoFactor },
-		{ key: 'mode', title: 'Mode', component: StepMode },
-		{ key: 'integrations', title: 'Integrations', component: StepIntegrations },
-		{ key: 'proxy', title: 'Proxy', component: StepProxy },
-		{ key: 'ai', title: 'AI', component: StepAi },
-		{ key: 'notifications', title: 'Notifications', component: StepNotifications },
-		{ key: 'finish', title: 'Finish', component: StepFinish },
-		{ key: 'celebration', title: 'Done', component: StepCelebration }
+		{
+			key: 'welcome-security',
+			title: 'Welcome to reNgine',
+			description:
+				"Let's get your instance set up. It takes a couple of minutes, and you can change everything later in Settings.",
+			icon: RocketIcon,
+			component: StepWelcomeSecurity
+		},
+		{
+			key: 'two-factor',
+			title: 'Secure your account',
+			description:
+				'Add a second factor with an authenticator app. You can also set this up later from your profile.',
+			icon: ShieldCheckIcon,
+			component: StepTwoFactor
+		},
+		{
+			key: 'mode',
+			title: 'How will you use reNgine?',
+			description:
+				'Pick one — it tailors which features appear. Corporate hides bug-bounty tooling entirely. You can switch anytime in Settings.',
+			icon: CompassIcon,
+			component: StepMode
+		},
+		{
+			key: 'integrations',
+			title: 'Connect data sources',
+			description:
+				'Optional API keys that expand passive recon. Add any now, or later in Settings → API Keys.',
+			icon: PlugIcon,
+			component: StepIntegrations
+		},
+		{
+			key: 'proxy',
+			title: 'Route scans through a proxy',
+			description:
+				'Keep your source IP off WAF blocklists and distribute load across exit IPs. Optional, but recommended beyond light use.',
+			icon: ShieldIcon,
+			component: StepProxy
+		},
+		{
+			key: 'ai',
+			title: 'AI-powered analysis',
+			description:
+				'Use an LLM to summarize findings and draft remediation. Scan data is sent to the provider you choose.',
+			icon: SparklesIcon,
+			component: StepAi
+		},
+		{
+			key: 'notifications',
+			title: 'Connect notifications',
+			description:
+				'Route scan and recon events to Slack, Discord, Telegram, or a generic webhook. Add email, Teams, and more later in Settings.',
+			icon: BellIcon,
+			component: StepNotifications
+		},
+		{
+			key: 'finish',
+			title: 'Create your first project',
+			description:
+				'Projects organize targets, scans, and findings. Set data retention and name your first one.',
+			icon: FolderPlusIcon,
+			component: StepFinish
+		},
+		{
+			key: 'celebration',
+			title: "You're all set",
+			description: 'reNgine is configured and ready.',
+			icon: PartyPopperIcon,
+			component: StepCelebration
+		}
 	];
 
-	const steps = STEPS.map((s) => ({ key: s.key, title: s.title }));
+	const steps = STEPS.map((s) => ({
+		key: s.key,
+		title: s.title,
+		description: s.description,
+		icon: s.icon
+	}));
 
 	let ready = $state(false);
 	let currentIndex = $state(0);

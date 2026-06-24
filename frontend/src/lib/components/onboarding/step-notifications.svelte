@@ -9,9 +9,9 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { toast } from 'svelte-sonner';
-	import BellIcon from '@lucide/svelte/icons/bell';
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import InfoIcon from '@lucide/svelte/icons/info';
 	import { notificationChannelsApi } from '$lib/api/notificationChannels';
 	import {
 		NOTIF_CATEGORIES,
@@ -21,7 +21,6 @@
 	} from '$lib/types/notification-channel';
 	import { ONBOARDING_NOTIFICATION_PROVIDERS as PROVIDERS } from '$lib/config/notification-providers';
 	import type { StepProps } from '$lib/types/onboarding';
-	import StepHeader from './step-header.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	let { next, setFooter }: StepProps = $props();
@@ -137,12 +136,6 @@
 </script>
 
 <div class="space-y-6">
-	<StepHeader
-		icon={BellIcon}
-		title="Connect notifications"
-		description="Route scan and recon events to Slack, Discord, Telegram, email, and more. Skip and add channels later in Settings."
-	/>
-
 	<div class="space-y-4">
 		{#each PROVIDERS as meta (meta.provider)}
 			{@const d = drafts[meta.provider]}
@@ -209,6 +202,14 @@
 				</Card.Content>
 			</Card.Root>
 		{/each}
+
+		<p class="flex items-start gap-2 pt-1 text-xs text-muted-foreground">
+			<InfoIcon class="mt-px size-3.5 shrink-0" />
+			<span
+				>Don't see your channel? Email, Microsoft Teams, custom Apprise URLs, and 100+ more are
+				available anytime in Settings → Notifications.</span
+			>
+		</p>
 	</div>
 
 	{#if anyEnabled}
@@ -237,7 +238,11 @@
 				</div>
 				<div class="space-y-1.5">
 					<Label class="text-xs">Minimum severity</Label>
-					<Select.Root type="single" value={pref.min_severity} onValueChange={(v) => (pref = { ...pref, min_severity: v ?? 'info' })}>
+					<Select.Root
+						type="single"
+						value={pref.min_severity}
+						onValueChange={(v) => (pref = { ...pref, min_severity: v ?? 'info' })}
+					>
 						<Select.Trigger class="h-9 w-full text-sm sm:max-w-xs">{severityLabel}</Select.Trigger>
 						<Select.Content>
 							{#each NOTIF_SEVERITIES as s (s.value)}
@@ -245,7 +250,9 @@
 							{/each}
 						</Select.Content>
 					</Select.Root>
-					<p class="text-xs text-muted-foreground">Applies to every channel you connect here. Fine-tune per channel in Settings.</p>
+					<p class="text-xs text-muted-foreground">
+						Applies to every channel you connect here. Fine-tune per channel in Settings.
+					</p>
 				</div>
 			</Card.Content>
 		</Card.Root>

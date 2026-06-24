@@ -5,14 +5,12 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import { toast } from 'svelte-sonner';
-	import RocketIcon from '@lucide/svelte/icons/rocket';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { instanceSettingsApi } from '$lib/api/instanceSettings';
 	import { authApi } from '$lib/api/auth';
-	import StepHeader from './step-header.svelte';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { data, next, setFooter }: StepProps = $props();
@@ -107,12 +105,6 @@
 </script>
 
 <div class="space-y-6">
-	<StepHeader
-		icon={RocketIcon}
-		title="Welcome to reNgine"
-		description="Let's get your instance set up. It takes a couple of minutes, and you can change everything later in Settings."
-	/>
-
 	<div class="space-y-5">
 		<div class="space-y-1.5">
 			<Label for="instance-name" class="text-sm font-medium">Instance name</Label>

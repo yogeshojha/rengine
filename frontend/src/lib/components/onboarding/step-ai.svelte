@@ -9,14 +9,12 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { toast } from 'svelte-sonner';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import { instanceSettingsApi } from '$lib/api/instanceSettings';
 	import { AI_PROVIDERS as PROVIDERS, AI_FEATURES as FEATURES } from '$lib/config/ai';
-	import StepHeader from './step-header.svelte';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { next, setFooter }: StepProps = $props();
@@ -107,12 +105,6 @@
 </script>
 
 <div class="space-y-6">
-	<StepHeader
-		icon={SparklesIcon}
-		title="AI-powered analysis"
-		description="Use an LLM to summarize findings and draft remediation. Scan data is sent to the provider you choose."
-	/>
-
 	<div class="flex items-center justify-between rounded-lg border px-4 py-3">
 		<div class="space-y-0.5">
 			<Label class="text-sm font-medium">Enable AI-powered analysis</Label>

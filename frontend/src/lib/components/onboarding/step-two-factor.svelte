@@ -3,7 +3,6 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import CopyButton from '$lib/components/copy-button.svelte';
@@ -17,7 +16,6 @@
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { twoFactorApi } from '$lib/api/twoFactor';
 	import OtpInput from './otp-input.svelte';
-	import StepHeader from './step-header.svelte';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { data, next, setFooter }: StepProps = $props();
@@ -145,70 +143,85 @@
 	}
 </script>
 
-<div class="space-y-6">
-	<StepHeader
-		icon={ShieldCheckIcon}
-		title="Secure your account"
-		description="Add a second factor with an authenticator app — you can also set this up later from your profile."
-	/>
-
-	{#if phase === 'intro'}
-		<div class="rounded-xl border bg-card p-6">
-			<div class="flex items-start gap-4">
-				<div
-					class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted text-foreground"
-				>
-					<ShieldCheckIcon class="size-[18px]" />
-				</div>
-				<div class="flex-1 space-y-1">
-					<h3 class="text-sm font-medium">Authenticator app</h3>
-					<p class="text-sm text-muted-foreground">
-						Works with Google Authenticator, 1Password, Authy, and similar apps. You'll scan a QR
-						code and confirm with a 6-digit code.
-					</p>
-				</div>
+{#if phase === 'intro'}
+	<div class="rounded-xl border bg-card p-6">
+		<div class="flex items-start gap-4">
+			<div
+				class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted text-foreground"
+			>
+				<ShieldCheckIcon class="size-[18px]" />
 			</div>
-			<Button class="mt-6" onclick={startSetup} disabled={setupLoading}>
-				{#if setupLoading}<Spinner class="mr-2" />{/if}
-				Set up two-factor
-			</Button>
-		</div>
-	{:else if phase === 'enroll'}
-		<div class="space-y-6">
-			<div class="flex flex-col items-center gap-3">
-				{#if qrFailed}
-					<div
-						class="flex size-52 flex-col items-center justify-center gap-1.5 rounded-xl border bg-muted p-4 text-center"
-					>
-						<p class="text-sm font-medium">Can't display the QR</p>
-						<p class="text-xs text-muted-foreground">Use the manual key below instead.</p>
-					</div>
-				{:else}
-					<div class="rounded-xl border bg-white p-4 shadow-sm">
-						<img
-							src={qr}
-							alt="QR code to enroll this account in your authenticator app"
-							class="size-52"
-							onerror={() => (qrFailed = true)}
-						/>
-					</div>
-				{/if}
-				<p class="max-w-xs text-center text-sm text-muted-foreground">
-					Scan with your authenticator app, then enter the 6-digit code it shows.
+			<div class="flex-1 space-y-1">
+				<h3 class="text-sm font-medium">Authenticator app</h3>
+				<p class="text-sm text-muted-foreground">
+					Works with Google Authenticator, 1Password, Authy, and similar apps. You'll scan a QR code
+					and confirm with a 6-digit code.
 				</p>
 			</div>
+		</div>
+		<Button class="mt-6" onclick={startSetup} disabled={setupLoading}>
+			{#if setupLoading}<Spinner class="mr-2" />{/if}
+			Set up two-factor
+		</Button>
+	</div>
+{:else if phase === 'enroll'}
+	<div class="grid gap-8 sm:grid-cols-[auto_1fr] sm:items-start">
+		<div class="flex flex-col items-center gap-3">
+			{#if qrFailed}
+				<div
+					class="flex size-56 flex-col items-center justify-center gap-1.5 rounded-xl border bg-muted p-4 text-center"
+				>
+					<p class="text-sm font-medium">Can't display the QR</p>
+					<p class="text-xs text-muted-foreground">Use the manual key instead.</p>
+				</div>
+			{:else}
+				<div class="rounded-xl border bg-white p-4 shadow-sm">
+					<img
+						src={qr}
+						alt="QR code to enroll this account in your authenticator app"
+						class="size-56"
+						onerror={() => (qrFailed = true)}
+					/>
+				</div>
+			{/if}
+			<p class="max-w-[12rem] text-center text-xs text-muted-foreground">
+				Scan with your authenticator app.
+			</p>
+		</div>
 
-			<Collapsible.Root bind:open={manualOpen}>
+		<div class="space-y-4">
+			<div class="space-y-1">
+				<Label class="text-sm font-medium">Enter the 6-digit code</Label>
+				<p class="text-xs text-muted-foreground">Type the code your authenticator app shows.</p>
+			</div>
+			<OtpInput value={code} onValueChange={onCodeChange} disabled={verifying} />
+
+			{#if errorMsg}
+				<p class="text-xs text-destructive">{errorMsg}</p>
+			{/if}
+			{#if showClockHint}
+				<p class="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500">
+					<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
+					<span>Still failing? Make sure your phone's clock is set to update automatically.</span>
+				</p>
+			{/if}
+
+			<Button class="w-full sm:w-auto" onclick={verify} disabled={verifying || code.length !== 6}>
+				{#if verifying}<Spinner class="mr-2" />{/if}
+				Verify and enable
+			</Button>
+
+			<Collapsible.Root bind:open={manualOpen} class="pt-1">
 				<Collapsible.Trigger
-					class="flex w-full items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+					class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
 				>
 					Can't scan? Enter the key manually
 					<ChevronDownIcon class="size-3.5 transition-transform {manualOpen ? 'rotate-180' : ''}" />
 				</Collapsible.Trigger>
-				<Collapsible.Content class="pt-3">
+				<Collapsible.Content class="pt-2.5">
 					<div class="flex items-center gap-2">
 						<code
-							class="flex-1 select-all rounded-md bg-muted px-3 py-2 text-center font-mono text-sm tracking-[0.15em]"
+							class="flex-1 select-all rounded-md bg-muted px-3 py-2 font-mono text-sm tracking-[0.15em]"
 						>
 							{groupedSecret}
 						</code>
@@ -216,33 +229,10 @@
 					</div>
 				</Collapsible.Content>
 			</Collapsible.Root>
-
-			<Separator />
-
-			<div class="space-y-3">
-				<div class="space-y-1">
-					<Label class="text-sm font-medium">Enter the 6-digit code</Label>
-					<p class="text-xs text-muted-foreground">From your authenticator app.</p>
-				</div>
-				<OtpInput value={code} onValueChange={onCodeChange} disabled={verifying} />
-
-				{#if errorMsg}
-					<p class="text-xs text-destructive">{errorMsg}</p>
-				{/if}
-				{#if showClockHint}
-					<p class="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500">
-						<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
-						<span>Still failing? Make sure your phone's clock is set to update automatically.</span>
-					</p>
-				{/if}
-
-				<Button class="w-full sm:w-auto" onclick={verify} disabled={verifying || code.length !== 6}>
-					{#if verifying}<Spinner class="mr-2" />{/if}
-					Verify and enable
-				</Button>
-			</div>
 		</div>
-	{:else}
+	</div>
+{:else}
+	<div class="space-y-6">
 		<Alert.Root>
 			<ShieldCheckIcon class="size-4" />
 			<Alert.Title>Two-factor authentication is on</Alert.Title>
@@ -300,5 +290,5 @@
 				</Label>
 			</div>
 		{/if}
-	{/if}
-</div>
+	</div>
+{/if}

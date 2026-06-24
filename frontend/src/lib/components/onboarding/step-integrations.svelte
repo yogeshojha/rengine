@@ -8,7 +8,6 @@
 	import type { StepProps } from '$lib/types/onboarding';
 	import { Capability, modeHas } from '$lib/config/capabilities';
 	import type { Component } from 'svelte';
-	import PlugIcon from '@lucide/svelte/icons/plug';
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import RouteIcon from '@lucide/svelte/icons/route';
@@ -16,7 +15,6 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
-	import StepHeader from './step-header.svelte';
 
 	let { data, next, setFooter }: StepProps = $props();
 
@@ -118,12 +116,6 @@
 </script>
 
 <div class="space-y-6">
-	<StepHeader
-		icon={PlugIcon}
-		title="Connect data sources"
-		description="Optional API keys that expand passive recon. Add any now, or later in Settings → API Keys."
-	/>
-
 	<div class="space-y-3">
 		{#each SIMPLE as p (p.provider)}
 			{@const Icon = p.icon}

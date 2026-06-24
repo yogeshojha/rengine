@@ -8,9 +8,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
-	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import StepHeader from './step-header.svelte';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { next, setFooter }: StepProps = $props();
@@ -110,12 +108,6 @@
 </script>
 
 <div class="space-y-6">
-	<StepHeader
-		icon={FolderPlusIcon}
-		title="Create your first project"
-		description="Projects organize targets, scans, and findings. Set data retention and name your first one."
-	/>
-
 	<section class="space-y-5">
 		<div class="flex items-center gap-2">
 			<HardDriveIcon class="size-4 text-muted-foreground" />

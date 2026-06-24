@@ -10,7 +10,6 @@
 	import { proxiesApi } from '$lib/api/proxies';
 	import { PROXY_SCHEMES, type ProxyEndpoint } from '$lib/types/proxy';
 	import type { StepProps } from '$lib/types/onboarding';
-	import StepHeader from './step-header.svelte';
 	import { toast } from 'svelte-sonner';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
@@ -170,12 +169,6 @@
 </script>
 
 <div class="space-y-6">
-	<StepHeader
-		icon={ShieldIcon}
-		title="Route scans through a proxy"
-		description="Keep your source IP off WAF blocklists and distribute load across exit IPs. Optional, but recommended beyond light use."
-	/>
-
 	<RadioGroup.Root
 		value={choice}
 		onValueChange={(v) => (choice = v as ProxyChoice)}
