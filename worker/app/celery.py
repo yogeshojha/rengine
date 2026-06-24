@@ -87,6 +87,7 @@ celery_app.conf.task_routes = {
     "app.tasks.debug.*": {"queue": "default"},
     "app.tasks.ripestat.*": {"queue": "default"},
     "app.tasks.dns.*": {"queue": "default"},
+    "app.tasks.schedule.*": {"queue": "default"},
 }
 
 # #############################################################
@@ -100,6 +101,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.ripestat",
         "app.tasks.dns",
         "app.tasks.scan",
+        "app.tasks.schedule",
     ]
 )
 
@@ -107,7 +109,14 @@ celery_app.autodiscover_tasks(
 # Beat Schedule (Periodic Tasks)
 # #############################################################
 
-celery_app.conf.beat_schedule = {}
+SCHEDULE_TICK_SECONDS = 60.0
+
+celery_app.conf.beat_schedule = {
+    "scan-schedule-tick": {
+        "task": "app.tasks.schedule.tick",
+        "schedule": SCHEDULE_TICK_SECONDS,
+    },
+}
 
 
 # #############################################################

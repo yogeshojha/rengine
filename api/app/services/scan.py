@@ -49,12 +49,12 @@ from shared.models.target import Target
 from shared.services.celery_dispatch import revoke_scan_tasks
 from shared.services.notification import NotificationManager
 from shared.services.orchestrator.events import ScanEventPublisher
+from shared.services.scan_factory import build_scan_row
 from shared.services.scan_resolve import (
     MASK,
     ResolvedScanConfig,
     _auth_summary,
     _check_baseline_deferred,
-    _mask_auth,
     mask_proxy_url,
     merge_engine_context,
     redact_command,
@@ -441,16 +441,15 @@ class ScanService:
         )
 
     async def create(
-        self, data: ScanCreate, project_id: UUID, created_by: UUID
+        self,
+        data: ScanCreate,
+        project_id: UUID,
+        created_by: UUID,
+        schedule_id: UUID | None = None,
+        schedule_type: str | None = None,
     ) -> ScanRead:
         engine, context, target, resolved = await self._resolve_and_validate(
             data, project_id
-        )
-
-        execution_config = resolved.model_dump()
-        execution_config["_auth_header_names"] = list(resolved._auth_header_names)
-        execution_config["_auth"] = (
-            _mask_auth(context.auth) if context is not None else {"auth_type": "none"}
         )
         logger.info(
             "Creating scan for target=%s engine=%s header_names=%s",
@@ -459,21 +458,15 @@ class ScanService:
             list(resolved.headers.keys()),
         )
 
-        scan = Scan(
+        scan = build_scan_row(
+            resolved=resolved,
+            engine=engine,
+            context=context,
+            target=target,
             project_id=project_id,
-            target_id=target.id,
-            engine_id=engine.id,
-            engine_name=engine.name,
-            context_id=context.id if context is not None else None,
-            context_name=context.name if context is not None else None,
-            execution_config=execution_config,
-            status=ScanStatus.PENDING.value,
-            subdomains_found=0,
-            ips_found=0,
-            open_ports_found=0,
-            vulnerabilities_found=0,
-            endpoints_found=0,
             created_by=created_by,
+            schedule_id=schedule_id,
+            schedule_type=schedule_type,
         )
         self.session.add(scan)
         await self.session.commit()
@@ -535,6 +528,8 @@ class ScanService:
         time_range: str | None = None,
         sort_by: ScanSortKey = "started",
         sort_dir: ScanSortDir = "desc",
+        schedule_id: UUID | None = None,
+        scheduled: bool | None = None,
     ) -> Select:
         query = select(Scan).where(
             Scan.project_id == project_id,
@@ -542,6 +537,12 @@ class ScanService:
         )
         if target_id is not None:
             query = query.where(Scan.target_id == target_id)
+        if schedule_id is not None:
+            query = query.where(Scan.schedule_id == schedule_id)
+        if scheduled is True:
+            query = query.where(Scan.schedule_type.is_not(None))
+        elif scheduled is False:
+            query = query.where(Scan.schedule_type.is_(None))
         if search and search.strip():
             term = f"%{search.strip().lower()}%"
             query = query.join(Target, Scan.target_id == Target.id).where(
@@ -634,6 +635,7 @@ class ScanService:
         time_range: str | None = None,
         sort_by: ScanSortKey = "started",
         sort_dir: ScanSortDir = "desc",
+        scheduled: bool | None = None,
     ) -> list[ScanExportRow]:
         query = self.build_list_query(
             project_id=project_id,
@@ -645,6 +647,7 @@ class ScanService:
             time_range=time_range,
             sort_by=sort_by,
             sort_dir=sort_dir,
+            scheduled=scheduled,
         ).limit(MAX_SCAN_EXPORT)
         result = await self.session.execute(query)
         return [
@@ -653,6 +656,7 @@ class ScanService:
                 status=scan.status,
                 engine=scan.engine_name,
                 context=scan.context_name,
+                schedule_type=scan.schedule_type,
                 subdomains=scan.subdomains_found,
                 ips=scan.ips_found,
                 open_ports=scan.open_ports_found,
@@ -1166,6 +1170,8 @@ class ScanService:
             engine_name=scan.engine_name,
             context_id=scan.context_id,
             context_name=scan.context_name,
+            schedule_id=scan.schedule_id,
+            schedule_type=scan.schedule_type,
             execution_config=resolved,
             auth_summary=_auth_summary(auth, list(masked.get("headers", {}).keys())),
             status=scan.status,

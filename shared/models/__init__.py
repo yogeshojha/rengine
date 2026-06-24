@@ -86,6 +86,13 @@ from shared.models.scan_engine import (
     ScanEngineRead,
     ScanEngineUpdate,
 )
+from shared.models.scan_schedule import (
+    ScanSchedule,
+    ScanScheduleCreate,
+    ScanScheduleRead,
+    ScanScheduleUpdate,
+    ScheduleTargetRef,
+)
 from shared.models.subdomain import (
     Subdomain,
     SubdomainRead,
@@ -181,6 +188,11 @@ __all__ = [
     "ScanEngineRead",
     "ScanEngineUpdate",
     "ScanRead",
+    "ScanSchedule",
+    "ScanScheduleCreate",
+    "ScanScheduleRead",
+    "ScanScheduleUpdate",
+    "ScheduleTargetRef",
     "Subdomain",
     "SubdomainRead",
     "SubdomainSummary",

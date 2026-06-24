@@ -169,6 +169,8 @@
 					onToggleContext={(c) => scansStore.toggleContext(c)}
 					timeRange={scansStore.filters.timeRange}
 					onTimeRange={(r) => scansStore.setTimeRange(r)}
+					scheduleMode={scansStore.scheduleMode}
+					onScheduleMode={(m) => scansStore.setScheduleMode(m)}
 				/>
 			</div>
 			{#if !targetId}

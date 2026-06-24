@@ -182,6 +182,19 @@ def scan_completed(
     }
 
 
+def scan_new_subdomains(scan_id: str, target: str, count: int) -> dict:
+    return {
+        "type": NotificationType.SCAN,
+        "severity": NotificationSeverity.INFO,
+        "title": "New Subdomains Discovered",
+        "message": (
+            f"{count} new {'subdomain' if count == 1 else 'subdomains'} "
+            f"discovered on {target}."
+        ),
+        "metadata": _scan_meta(scan_id),
+    }
+
+
 def scan_failed(scan_id: str, target: str, engine: str, error: str) -> dict:
     return {
         "type": NotificationType.SCAN,

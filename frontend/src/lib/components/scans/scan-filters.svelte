@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Search, X, ListFilter, CalendarRange } from 'lucide-svelte';
+	import { Search, X, ListFilter, CalendarRange, CalendarClock } from 'lucide-svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -12,6 +12,13 @@
 	} from '$lib/types/scan';
 	import { SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
 	import type { ScanFacet, ScanStatusCounts } from '$lib/types/scan';
+	import type { ScheduleMode } from '$lib/stores/scans.svelte';
+
+	const SCHEDULE_MODES: { key: ScheduleMode; label: string }[] = [
+		{ key: 'all', label: 'All scans' },
+		{ key: 'scheduled', label: 'Scheduled only' },
+		{ key: 'manual', label: 'Manual only' }
+	];
 
 	interface Props {
 		search: string;
@@ -27,6 +34,8 @@
 		onToggleContext: (name: string) => void;
 		timeRange: ScanTimeRange;
 		onTimeRange: (range: ScanTimeRange) => void;
+		scheduleMode: ScheduleMode;
+		onScheduleMode: (mode: ScheduleMode) => void;
 	}
 
 	let {
@@ -42,10 +51,15 @@
 		contextOptions,
 		onToggleContext,
 		timeRange,
-		onTimeRange
+		onTimeRange,
+		scheduleMode,
+		onScheduleMode
 	}: Props = $props();
 
 	let rangeLabel = $derived(SCAN_TIME_RANGES.find((r) => r.key === timeRange)?.label ?? 'All time');
+	let scheduleModeLabel = $derived(
+		SCHEDULE_MODES.find((m) => m.key === scheduleMode)?.label ?? 'All scans'
+	);
 </script>
 
 <div class="flex flex-wrap items-center gap-3 gap-y-2">
@@ -186,6 +200,32 @@
 					onCheckedChange={() => onTimeRange(r.key)}
 				>
 					{r.label}
+				</DropdownMenu.CheckboxItem>
+			{/each}
+		</DropdownMenu.Content>
+	</DropdownMenu.Root>
+
+	<DropdownMenu.Root>
+		<DropdownMenu.Trigger>
+			{#snippet child({ props })}
+				<Button
+					{...props}
+					variant="outline"
+					size="sm"
+					class="h-9 gap-2 {scheduleMode !== 'all' ? 'border-primary/50 bg-primary/5' : ''}"
+				>
+					<CalendarClock class="h-4 w-4" />
+					<span class="hidden sm:inline">{scheduleModeLabel}</span>
+				</Button>
+			{/snippet}
+		</DropdownMenu.Trigger>
+		<DropdownMenu.Content align="start">
+			{#each SCHEDULE_MODES as m (m.key)}
+				<DropdownMenu.CheckboxItem
+					checked={scheduleMode === m.key}
+					onCheckedChange={() => onScheduleMode(m.key)}
+				>
+					{m.label}
 				</DropdownMenu.CheckboxItem>
 			{/each}
 		</DropdownMenu.Content>

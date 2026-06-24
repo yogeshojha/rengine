@@ -95,6 +95,8 @@ export interface ScanRead {
 	engine_name: string;
 	context_id: string | null;
 	context_name: string | null;
+	schedule_id: string | null;
+	schedule_type: string | null;
 	execution_config: ResolvedScanConfig;
 	auth_summary: string;
 	status: ScanStatus;

@@ -1,6 +1,6 @@
 """Aggregate stage outcomes into the final scan status + terminal notification/event."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from shared.definitions.notifications import (
@@ -8,12 +8,14 @@ from shared.definitions.notifications import (
     scan_completed,
     scan_count_summary,
     scan_failed,
+    scan_new_subdomains,
 )
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
+from shared.models.subdomain import Subdomain
 from shared.services.activity_log import ActivityLogService
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator import aggregate_counts, aggregate_status
@@ -37,6 +39,29 @@ def _notify(
         )
     except Exception:
         logger.warning("scan notification dispatch failed", exc_info=True)
+
+
+def _count_new_subdomains(session: Session, scan: Scan) -> int:
+    """Subdomain names this scan was the first to discover for its target."""
+    rn = (
+        func.row_number()
+        .over(
+            partition_by=[Subdomain.target_id, Subdomain.name],
+            order_by=[Subdomain.discovered_at.asc(), Subdomain.scan_id.asc()],
+        )
+        .label("rn")
+    )
+    firsts = (
+        select(Subdomain.scan_id.label("scan_id"), rn)
+        .where(Subdomain.target_id == scan.target_id)
+        .subquery()
+    )
+    return (
+        session.execute(
+            select(func.count()).where(firsts.c.rn == 1, firsts.c.scan_id == scan.id)
+        ).scalar_one()
+        or 0
+    )
 
 
 def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
@@ -122,6 +147,16 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
                 str(scan.id), target_value, scan.engine_name, counts, duration
             ),
         )
+        try:
+            new_subs = _count_new_subdomains(session, scan)
+            if new_subs > 0:
+                _notify(
+                    notifier,
+                    session,
+                    scan_new_subdomains(str(scan.id), target_value, new_subs),
+                )
+        except Exception:
+            logger.warning("new-subdomain notification failed", exc_info=True)
         return
 
     activity_log.log(

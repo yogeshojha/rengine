@@ -93,6 +93,33 @@ services:
       retries: 3
       start_period: 30s
 
+  # beat scheduler: emits the schedule tick that fires due scan schedules
+  worker-beat:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+      target: development
+    volumes:
+      - ./worker/app:/app/app
+      - ./shared:/app/shared
+      - ./tools:/app/tools
+      - ./engines:/app/engines
+      - /app/shared/build
+      - /app/shared/rengine_shared.egg-info
+      - /app/tools/build
+      - /app/tools/rengine_tools.egg-info
+    env_file:
+      - .env
+    command: >
+      uv run celery -A app.celery beat
+      --loglevel=INFO
+      --schedule=/tmp/celerybeat-schedule
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   flower:
     build:
       context: .

@@ -14,7 +14,17 @@
 	import DnsInline from '$lib/components/targets/dns-inline.svelte';
 	import DiscoveryBadge from '$lib/components/viewdns-discoveries/discovery-badge.svelte';
 	import TargetInfraBadge from '$lib/components/targets/target-infra-badge.svelte';
-	import { Ellipsis, Eye, History, Loader, Pencil, Play, RefreshCw, Trash2 } from 'lucide-svelte';
+	import {
+		CalendarClock,
+		Ellipsis,
+		Eye,
+		History,
+		Loader,
+		Pencil,
+		Play,
+		RefreshCw,
+		Trash2
+	} from 'lucide-svelte';
 	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
 	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
 	import { stopProp } from '$lib/utilities';
@@ -27,6 +37,7 @@
 		isSelected: boolean;
 		onSelect: (targetId: string) => void;
 		onScan: (target: Target) => void;
+		onSchedule: (target: Target) => void;
 		onOpenHistory: (target: Target) => void;
 		onView: (target: Target) => void;
 		onDelete: (target: Target) => void;
@@ -44,6 +55,7 @@
 		isSelected,
 		onSelect,
 		onScan,
+		onSchedule,
 		onOpenHistory,
 		onView,
 		onDelete,
@@ -248,6 +260,11 @@
 				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end" class="w-48">
+				<DropdownMenu.Item onclick={() => onSchedule(target)} class="gap-2">
+					<CalendarClock class="h-4 w-4" />
+					Schedule scan
+				</DropdownMenu.Item>
+
 				<DropdownMenu.Item onclick={() => onOpenHistory(target)} class="gap-2">
 					<History class="h-4 w-4" />
 					Scan history

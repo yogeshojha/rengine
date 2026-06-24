@@ -25,7 +25,10 @@ interface ScanFilters {
 	timeRange: ScanTimeRange;
 	sortKey: ScanSortKey;
 	sortDir: ScanSortDir;
+	scheduled: boolean | null;
 }
+
+export type ScheduleMode = 'all' | 'scheduled' | 'manual';
 
 interface PaginationState {
 	currentPage: number;
@@ -42,7 +45,8 @@ function defaultFilters(): ScanFilters {
 		contexts: [],
 		timeRange: 'all',
 		sortKey: 'started',
-		sortDir: 'desc'
+		sortDir: 'desc',
+		scheduled: null
 	};
 }
 
@@ -75,7 +79,8 @@ function createScansStore() {
 			filters.statuses.length > 0 ||
 			filters.engines.length > 0 ||
 			filters.contexts.length > 0 ||
-			filters.timeRange !== 'all'
+			filters.timeRange !== 'all' ||
+			filters.scheduled !== null
 	);
 
 	const hasLive = $derived(
@@ -93,7 +98,8 @@ function createScansStore() {
 			search: filters.search || undefined,
 			time_range: filters.timeRange,
 			sort_by: filters.sortKey,
-			sort_dir: filters.sortDir
+			sort_dir: filters.sortDir,
+			scheduled: filters.scheduled ?? undefined
 		};
 	}
 
@@ -311,6 +317,15 @@ function createScansStore() {
 			reload();
 		},
 
+		get scheduleMode(): ScheduleMode {
+			return filters.scheduled === null ? 'all' : filters.scheduled ? 'scheduled' : 'manual';
+		},
+
+		setScheduleMode(mode: ScheduleMode) {
+			filters.scheduled = mode === 'all' ? null : mode === 'scheduled';
+			reload();
+		},
+
 		setSort(key: ScanSortKey, dir?: ScanSortDir) {
 			if (dir) {
 				filters.sortKey = key;
@@ -330,6 +345,7 @@ function createScansStore() {
 			filters.engines = [];
 			filters.contexts = [];
 			filters.timeRange = 'all';
+			filters.scheduled = null;
 			reload();
 		},
 
@@ -380,7 +396,8 @@ function createScansStore() {
 				search: filters.search || undefined,
 				time_range: filters.timeRange,
 				sort_by: filters.sortKey,
-				sort_dir: filters.sortDir
+				sort_dir: filters.sortDir,
+				scheduled: filters.scheduled ?? undefined
 			});
 		},
 

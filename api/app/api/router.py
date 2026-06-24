@@ -17,6 +17,7 @@ from app.api.v1 import (
     ripestat,
     scan_contexts,
     scan_engines,
+    scan_schedules,
     scans,
     subdomains,
     tags,
@@ -44,6 +45,7 @@ router.include_router(viewdns.router)
 router.include_router(ripestat.router)
 router.include_router(scan_engines.router)
 router.include_router(scan_contexts.router)
+router.include_router(scan_schedules.router)
 router.include_router(scans.router)
 router.include_router(subdomains.router)
 router.include_router(dashboard.router)

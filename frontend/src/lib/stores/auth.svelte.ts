@@ -6,6 +6,7 @@ import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 import { onboardingStore } from '$lib/stores/onboarding.svelte';
 import { proxiesStore } from '$lib/stores/proxies.svelte';
 import { notificationChannelsStore } from '$lib/stores/notificationChannels.svelte';
+import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 
 interface AuthState {
 	user: User | null;
@@ -36,7 +37,12 @@ function createAuthStore() {
 	async function login(
 		username: string,
 		password: string
-	): Promise<{ success: boolean; mfaRequired?: boolean; mfaToken?: string | null; error?: string }> {
+	): Promise<{
+		success: boolean;
+		mfaRequired?: boolean;
+		mfaToken?: string | null;
+		error?: string;
+	}> {
 		try {
 			const res = await authApi.login({ username, password });
 			if (res.mfa_required) {
@@ -54,8 +60,7 @@ function createAuthStore() {
 	async function logout() {
 		try {
 			await authApi.logout();
-		} catch {
-		}
+		} catch {}
 		clearSession();
 	}
 
@@ -68,6 +73,7 @@ function createAuthStore() {
 		onboardingStore.clear();
 		proxiesStore.clear();
 		notificationChannelsStore.clear();
+		scanSchedulesStore.clear();
 	}
 
 	async function register(

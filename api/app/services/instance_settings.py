@@ -1,4 +1,5 @@
 import asyncio
+from zoneinfo import ZoneInfo
 
 import httpx
 from fastapi import HTTPException, status
@@ -101,6 +102,13 @@ class InstanceSettingsService:
         if data.instance_name is not None:
             settings.instance_name = data.instance_name
         if data.timezone is not None:
+            try:
+                ZoneInfo(data.timezone)
+            except Exception as exc:
+                msg = f"Invalid timezone '{data.timezone}'."
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail=msg
+                ) from exc
             settings.timezone = data.timezone
         if data.mode is not None:
             if data.mode not in VALID_MODES:

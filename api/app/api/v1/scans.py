@@ -80,6 +80,9 @@ async def list_scans(
     ] = None,
     sort_by: Annotated[ScanSortKey, Query(description="Sort field")] = "started",
     sort_dir: Annotated[ScanSortDir, Query(description="Sort direction")] = "desc",
+    scheduled: Annotated[
+        bool | None, Query(description="True=scheduled only, False=manual only")
+    ] = None,
 ):
     query = service.build_list_query(
         project_id=project_id,
@@ -91,6 +94,7 @@ async def list_scans(
         time_range=time_range,
         sort_by=sort_by,
         sort_dir=sort_dir,
+        scheduled=scheduled,
     )
     page = await paginate(
         session,
@@ -191,6 +195,7 @@ async def export_scans(
     time_range: Annotated[str | None, Query()] = None,
     sort_by: Annotated[ScanSortKey, Query()] = "started",
     sort_dir: Annotated[ScanSortDir, Query()] = "desc",
+    scheduled: Annotated[bool | None, Query()] = None,
 ):
     return await service.export_rows(
         project_id=project_id,
@@ -202,6 +207,7 @@ async def export_scans(
         time_range=time_range,
         sort_by=sort_by,
         sort_dir=sort_dir,
+        scheduled=scheduled,
     )
 
 

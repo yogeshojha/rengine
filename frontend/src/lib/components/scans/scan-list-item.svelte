@@ -14,12 +14,14 @@
 		CircleSlash,
 		Sparkles,
 		ShieldCheck,
-		TriangleAlert
+		TriangleAlert,
+		CalendarClock
 	} from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import CopyButton from '@/components/copy-button.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { stopProp } from '$lib/utilities';
+	import { SCHEDULE_TYPE_BADGE, type ScheduleType } from '$lib/types/scan-schedule';
 	import {
 		SCAN_STATUS_LABEL,
 		scanStatusVariant,
@@ -53,6 +55,9 @@
 	let isFirst = $derived(scan.is_first_scan === true);
 	let failedOrCancelled = $derived(scan.status === 'failed' || scan.status === 'cancelled');
 	let authed = $derived(!!scan.auth_summary && scan.auth_summary !== 'None');
+	let scheduleLabel = $derived(
+		scan.schedule_type ? (SCHEDULE_TYPE_BADGE[scan.schedule_type as ScheduleType] ?? null) : null
+	);
 	let noResults = $derived(completed && scan.subdomains_found === 0);
 	let dropAnomaly = $derived(
 		completed && prev != null && prev >= 10 && scan.subdomains_found < prev * 0.3
@@ -95,6 +100,18 @@
 					<span class="text-muted-foreground/40">·</span>
 					<span class="truncate">{scan.context_name}</span>
 				{/if}
+			{/if}
+
+			{#if scheduleLabel}
+				<Tooltip.Root>
+					<Tooltip.Trigger
+						class="inline-flex shrink-0 items-center gap-0.5 rounded border border-amber-500/30 px-1 font-medium text-amber-600 dark:text-amber-500"
+					>
+						<CalendarClock class="h-3 w-3 shrink-0" />
+						{scheduleLabel}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Scheduled scan · {scheduleLabel}</Tooltip.Content>
+				</Tooltip.Root>
 			{/if}
 
 			{#if failedOrCancelled}

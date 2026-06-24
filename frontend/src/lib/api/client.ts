@@ -2,6 +2,17 @@ const SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
 export const API_PREFIX = '/api/v1';
 
+function extractErrorMessage(detail: unknown, status: number): string {
+	if (typeof detail === 'string' && detail.trim()) return detail;
+	if (Array.isArray(detail)) {
+		const msgs = detail
+			.map((d) => (d && typeof d === 'object' && 'msg' in d ? String(d.msg) : ''))
+			.filter(Boolean);
+		if (msgs.length) return msgs.join('; ');
+	}
+	return `Request failed (${status})`;
+}
+
 class ApiClient {
 	private baseUrl = API_PREFIX;
 
@@ -31,7 +42,7 @@ class ApiClient {
 			}
 
 			const errorData = await response.json().catch(() => ({}));
-			throw new Error(errorData.detail || `API Error: ${response.status}`);
+			throw new Error(extractErrorMessage(errorData?.detail, response.status));
 		}
 
 		if (response.status === 204) {

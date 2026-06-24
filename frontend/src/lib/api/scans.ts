@@ -27,6 +27,7 @@ interface ScanFilterParams {
 	time_range?: ScanTimeRange;
 	sort_by?: ScanSortKey;
 	sort_dir?: ScanSortDir;
+	scheduled?: boolean | null;
 }
 
 interface ListScansParams extends ScanFilterParams {
@@ -44,6 +45,7 @@ function buildScanQuery(projectId: string, params: ScanFilterParams): URLSearchP
 	if (params.time_range && params.time_range !== 'all') sp.append('time_range', params.time_range);
 	if (params.sort_by) sp.append('sort_by', params.sort_by);
 	if (params.sort_dir) sp.append('sort_dir', params.sort_dir);
+	if (params.scheduled != null) sp.append('scheduled', String(params.scheduled));
 	return sp;
 }
 

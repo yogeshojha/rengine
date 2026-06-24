@@ -23,6 +23,8 @@ class Scan(SQLModel, table=True):
     engine_name: str = Field(max_length=200)
     context_id: uuid.UUID | None = Field(default=None)
     context_name: str | None = Field(default=None, max_length=200)
+    schedule_id: uuid.UUID | None = Field(default=None, index=True)
+    schedule_type: str | None = Field(default=None, max_length=20)
     execution_config: dict = Field(sa_column=Column(JSON, nullable=False))
     status: str = Field(default=ScanStatus.PENDING.value, index=True)
     celery_task_ids: list = Field(
@@ -56,6 +58,8 @@ class ScanRead(BaseModel):
     engine_name: str
     context_id: uuid.UUID | None
     context_name: str | None
+    schedule_id: uuid.UUID | None = None
+    schedule_type: str | None = None
     execution_config: ResolvedScanConfig
     auth_summary: str
     status: str
@@ -124,6 +128,7 @@ class ScanExportRow(BaseModel):
     status: str
     engine: str
     context: str | None
+    schedule_type: str | None = None
     subdomains: int
     ips: int
     open_ports: int

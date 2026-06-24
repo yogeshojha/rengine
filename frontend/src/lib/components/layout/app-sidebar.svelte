@@ -2,6 +2,7 @@
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import CrosshairIcon from '@lucide/svelte/icons/crosshair';
 	import RadarIcon from '@lucide/svelte/icons/radar';
+	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import ZapIcon from '@lucide/svelte/icons/zap';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 
@@ -29,6 +30,11 @@
 						title: 'Scans',
 						url: '/scans',
 						icon: RadarIcon
+					},
+					{
+						title: 'Scheduled Scans',
+						url: '/schedules',
+						icon: CalendarClockIcon
 					},
 					{
 						title: 'Automation',

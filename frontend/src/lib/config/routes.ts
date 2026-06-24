@@ -7,6 +7,7 @@ export const routeLabels: Record<string, string> = {
 	automation: 'Automation',
 	engines: 'Scan Engines',
 	contexts: 'Scan Contexts',
+	schedules: 'Scheduled Scans',
 
 	// Settings
 	settings: 'Settings',

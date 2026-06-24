@@ -10,7 +10,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.crypto import encrypt_secret, try_decrypt
+from app.core.crypto import encrypt_secret
 from shared.http import get_async_client
 from shared.models.proxy import (
     PROXY_MODES,
@@ -22,6 +22,15 @@ from shared.models.proxy import (
     ProxyRead,
     ProxyTestResult,
     ProxyUpdate,
+)
+from shared.services.proxy_resolve import (
+    build_proxy_url as _build_url,
+)
+from shared.services.proxy_resolve import (
+    load_proxy_endpoints as _load_endpoints,
+)
+from shared.services.proxy_resolve import (
+    resolve_proxy_url as _resolve_proxy_url,
 )
 from shared.services.scan_resolve import MASK
 from shared.utils.datetime import utc_now
@@ -82,20 +91,6 @@ def _endpoint_to_read(ep: ProxyEndpoint) -> ProxyEndpointRead:
         has_password=bool(ep.password),
         url_masked=_mask_url(ep),
     )
-
-
-def _build_url(ep: ProxyEndpoint) -> str:
-    if ep.username:
-        cred = f"{ep.username}:{ep.password}@" if ep.password else f"{ep.username}@"
-        return f"{ep.scheme}://{cred}{ep.host}:{ep.port}"
-    return f"{ep.scheme}://{ep.host}:{ep.port}"
-
-
-def _load_endpoints(proxy: Proxy) -> list[ProxyEndpoint]:
-    raw = try_decrypt(proxy.endpoints_encrypted)
-    if not raw:
-        return []
-    return [ProxyEndpoint(**e) for e in json.loads(raw)]
 
 
 def _encrypt_endpoints(endpoints: list[ProxyEndpoint]) -> str:
@@ -220,12 +215,7 @@ class ProxyService:
 
     async def resolve_proxy_url(self, proxy_id: UUID) -> str | None:
         proxy = await self.session.get(Proxy, proxy_id)
-        if proxy is None or not proxy.is_active:
-            return None
-        endpoints = _load_endpoints(proxy)
-        if not endpoints:
-            return None
-        return _build_url(endpoints[0])
+        return _resolve_proxy_url(proxy)
 
     def _merge_endpoints(
         self, proxy: Proxy, incoming: list[ProxyEndpoint]

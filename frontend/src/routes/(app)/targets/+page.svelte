@@ -34,6 +34,7 @@
 	import BulkActionBar from '$lib/components/targets/bulk-action-bar.svelte';
 	import ImportTargetsModal from '$lib/components/modals/import-targets-modal.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import WhoisDetailDialog from '$lib/components/whois/whois-detail-dialog.svelte';
 	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
 	import { downloadTargets, type ExportFormat } from '$lib/utilities/target-export';
@@ -105,6 +106,9 @@
 
 	let showLaunchModal = $state(false);
 	let launchTargetId = $state<string | undefined>(undefined);
+
+	let showScheduleModal = $state(false);
+	let scheduleTargetId = $state<string | undefined>(undefined);
 
 	let showEnrichConfirm = $state(false);
 	let enrichConfirmKind = $state<EnrichmentKind>('whois');
@@ -268,6 +272,11 @@
 
 	function handleScan(target: Target) {
 		openLaunch(target.id);
+	}
+
+	function handleSchedule(target: Target) {
+		scheduleTargetId = target.id;
+		showScheduleModal = true;
 	}
 
 	function handleScanAll() {
@@ -662,6 +671,7 @@
 						isScanning={false}
 						onSelect={handleTargetSelect}
 						onScan={handleScan}
+						onSchedule={handleSchedule}
 						onOpenHistory={handleOpenScanHistory}
 						onView={handleViewTarget}
 						onDelete={handleDeleteTarget}
@@ -740,6 +750,15 @@
 	onClose={() => {
 		showLaunchModal = false;
 		launchTargetId = undefined;
+	}}
+/>
+
+<ScheduleModal
+	bind:open={showScheduleModal}
+	presetTargetIds={scheduleTargetId ? [scheduleTargetId] : undefined}
+	onClose={() => {
+		showScheduleModal = false;
+		scheduleTargetId = undefined;
 	}}
 />
 
