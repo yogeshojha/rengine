@@ -16,8 +16,7 @@ from tools.runner.models import CommandRecorder, OutputFormat, ToolResult
 
 logger = get_logger(__name__)
 
-# orchestrated CLI tools (go binaries) live here; prefer them over venv console
-# scripts of the same name (e.g. the httpx PyPI CLI) when resolving under `uv run`.
+# go binaries, ahead of same-named venv console scripts on PATH
 _TOOL_BIN = os.environ.get("RENGINE_TOOL_BIN", "/root/go/bin")
 
 

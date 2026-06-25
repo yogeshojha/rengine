@@ -41,6 +41,7 @@ services:
       - ./tools:/app/tools
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
+      - ./scan_media:/app/scan_media
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build

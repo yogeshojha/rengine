@@ -7,11 +7,15 @@ from app.api.v1 import (
     celery_health,
     dashboard,
     events,
+    http_assets,
     instance_settings,
+    ip_addresses,
+    media,
     notification_channels,
     notifications,
     onboarding,
     organizations,
+    ports,
     projects,
     proxies,
     ripestat,
@@ -48,6 +52,10 @@ router.include_router(scan_contexts.router)
 router.include_router(scan_schedules.router)
 router.include_router(scans.router)
 router.include_router(subdomains.router)
+router.include_router(http_assets.router)
+router.include_router(ports.router)
+router.include_router(ip_addresses.router)
+router.include_router(media.router)
 router.include_router(dashboard.router)
 router.include_router(celery_health.router)
 router.include_router(instance_settings.router)

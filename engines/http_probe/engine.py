@@ -24,7 +24,6 @@ _HTTP_FIELDS = set(HttpAsset.model_fields)
 
 
 def _rank(asset: HttpAsset) -> tuple:
-    """Pick a subdomain's primary web service: prefer https, alive, 443/80."""
     alive = asset.status_code is not None and 200 <= asset.status_code < 400  # noqa: PLR2004
     return (asset.scheme == "https", alive, asset.port in (443, 80), -(asset.port or 0))
 
@@ -151,7 +150,6 @@ class HttpProbeEngine(Engine):
         return len(seen)
 
     def _denormalize_to_subdomains(self) -> None:
-        """Copy each subdomain's primary HttpAsset summary onto the row."""
         assets = (
             self.session.execute(
                 select(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)

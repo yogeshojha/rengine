@@ -1,5 +1,3 @@
-"""httpx CLI client - HTTP probing + asset enrichment via CLIToolRunner."""
-
 from __future__ import annotations
 
 from shared.logging import get_logger
@@ -11,7 +9,6 @@ logger = get_logger(__name__)
 HTTPX_BINARY = "httpx"
 DEFAULT_TIMEOUT = 900
 
-# one probe → the whole enriched asset (status/title/tech/tls/cdn/asn/jarm/favicon/hash)
 _ENRICH_FLAGS = [
     "-status-code",
     "-title",
@@ -35,7 +32,7 @@ _ENRICH_FLAGS = [
 
 
 class HttpxError(Exception):
-    """Raised when httpx execution fails."""
+    pass
 
 
 class HttpxClient:
@@ -68,7 +65,6 @@ class HttpxClient:
             raise HttpxError(str(e)) from e
 
     def probe(self, targets: list[str]) -> list[dict]:
-        """Probe host/host:port/URL targets; return raw httpx JSON records."""
         if not targets:
             return []
         args = list(_ENRICH_FLAGS)
@@ -98,7 +94,6 @@ class HttpxClient:
         return result.json_records
 
     def capture(self, targets: list[str]) -> list[dict]:
-        """Screenshot targets via headless chromium; records carry screenshot_path."""
         if not targets:
             return []
         args = [

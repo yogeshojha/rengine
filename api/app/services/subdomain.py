@@ -35,6 +35,18 @@ class SubdomainService:
             is_active=sub.is_active,
             is_wildcard=sub.is_wildcard,
             is_excluded=sub.is_excluded,
+            is_important=sub.is_important,
+            http_url=sub.http_url,
+            http_status=sub.http_status,
+            page_title=sub.page_title,
+            content_type=sub.content_type,
+            content_length=sub.content_length,
+            response_time=sub.response_time,
+            webserver=sub.webserver,
+            tech=list(sub.tech or []),
+            is_cdn=sub.is_cdn,
+            cdn_name=sub.cdn_name,
+            screenshot_path=sub.screenshot_path,
             discovered_at=sub.discovered_at,
         )
 

@@ -103,6 +103,7 @@ export interface ScanRead {
 	subdomains_found: number;
 	ips_found: number;
 	open_ports_found: number;
+	http_assets_found: number;
 	vulnerabilities_found: number;
 	endpoints_found: number;
 	error: string | null;

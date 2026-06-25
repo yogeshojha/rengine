@@ -8,6 +8,7 @@ import Ban from '@lucide/svelte/icons/ban';
 import Network from '@lucide/svelte/icons/network';
 import Server from '@lucide/svelte/icons/server';
 import Plug from '@lucide/svelte/icons/plug';
+import Globe from '@lucide/svelte/icons/globe';
 import Bug from '@lucide/svelte/icons/bug';
 import Link2 from '@lucide/svelte/icons/link-2';
 import type { ScanActivityStatus, ScanRead, ScanStatus, ScanSortKey } from '$lib/types/scan';
@@ -154,6 +155,13 @@ export function scanCountPills(scan: ScanRead): CountPill[] {
 			icon: Plug,
 			label: 'Open ports',
 			value: scan.open_ports_found,
+			emphasis: false
+		},
+		{
+			key: 'http',
+			icon: Globe,
+			label: 'Web assets',
+			value: scan.http_assets_found,
 			emphasis: false
 		},
 		{

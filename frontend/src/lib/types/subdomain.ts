@@ -32,6 +32,18 @@ export interface SubdomainRead {
 	is_active: boolean;
 	is_wildcard: boolean;
 	is_excluded: boolean;
+	is_important: boolean;
+	http_url: string | null;
+	http_status: number | null;
+	page_title: string | null;
+	content_type: string | null;
+	content_length: number | null;
+	response_time: number | null;
+	webserver: string | null;
+	tech: string[];
+	is_cdn: boolean;
+	cdn_name: string | null;
+	screenshot_path: string | null;
 	discovered_at: string;
 }
 

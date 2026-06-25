@@ -1178,6 +1178,7 @@ class ScanService:
             subdomains_found=scan.subdomains_found,
             ips_found=scan.ips_found,
             open_ports_found=scan.open_ports_found,
+            http_assets_found=scan.http_assets_found,
             vulnerabilities_found=scan.vulnerabilities_found,
             endpoints_found=scan.endpoints_found,
             error=scan.error,

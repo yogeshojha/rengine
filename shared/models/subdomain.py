@@ -33,7 +33,6 @@ class Subdomain(SQLModel, table=True):
     is_excluded: bool = Field(default=False, index=True)
     is_important: bool = Field(default=False)
 
-    # primary HTTP service summary (denormalized from the main HttpAsset)
     http_url: str | None = Field(default=None, max_length=2000)
     http_status: int | None = Field(default=None, index=True)
     page_title: str | None = Field(default=None, max_length=1000)

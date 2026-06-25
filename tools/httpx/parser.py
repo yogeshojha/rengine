@@ -1,6 +1,3 @@
-"""httpx JSON -> HttpAsset fields. The HTTPX_FIELDS map below is the single
-source of truth: when httpx adds/renames a field, edit one line here."""
-
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -49,7 +46,6 @@ def _parse_dt(value: Any) -> datetime | None:
 
 
 def _seconds(value: Any) -> float | None:
-    """httpx 'time' ('188.448623ms' / '1.23s') -> float seconds."""
     text = str(value).strip()
     try:
         if text.endswith("ms"):
@@ -62,7 +58,6 @@ def _seconds(value: Any) -> float | None:
 
 
 def _host_of(record: dict) -> str:
-    """The host we probed (the correlation key) — derived from httpx `input`."""
     raw = (record.get("input") or record.get("url") or "").strip()
     if "://" in raw:
         raw = raw.split("://", 1)[1]
@@ -80,7 +75,6 @@ def _tls_self_signed(record: dict) -> bool | None:
     return issuer == subject if (issuer and subject) else None
 
 
-# ── single source of truth: httpx JSON key/path -> HttpAsset column ──
 HTTPX_FIELDS: dict[str, F] = {
     "url": F(lambda r: r.get("url") or r.get("input") or "", max_len=2000),
     "final_url": F("final_url", max_len=2000),
