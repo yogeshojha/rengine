@@ -31,6 +31,7 @@ class HttpAsset(SQLModel, table=True):
     content_length: int | None = Field(default=None)
     content_type: str | None = Field(default=None, max_length=255)
     location: str | None = Field(default=None, max_length=2000)
+    final_url: str | None = Field(default=None, max_length=2000)
 
     tech: list = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
     ip: str | None = Field(default=None, max_length=45)
@@ -72,6 +73,7 @@ class HttpAssetRead(BaseModel):
     content_length: int | None = None
     content_type: str | None = None
     location: str | None = None
+    final_url: str | None = None
     tech: list[str] = Field(default_factory=list)
     ip: str | None = None
     cname: str | None = None

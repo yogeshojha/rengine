@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from urllib.parse import urlsplit
 
 
 def _int(value) -> int | None:
@@ -37,12 +36,16 @@ def _parse_dt(value) -> datetime | None:
     return dt.replace(tzinfo=UTC) if dt.tzinfo is None else dt
 
 
+def _first(value) -> str | None:
+    return value[0] if isinstance(value, list) and value else None
+
+
 def _host_of(record: dict) -> str:
-    url = record.get("url") or ""
-    host = urlsplit(url).hostname if url else None
-    if host:
-        return host
-    return (record.get("input") or "").split(":")[0]
+    """The host we probed (the correlation key) — derived from httpx `input`."""
+    raw = (record.get("input") or record.get("url") or "").strip()
+    if "://" in raw:
+        raw = raw.split("://", 1)[1]
+    return raw.split("/", 1)[0].rsplit(":", 1)[0].strip().lower()
 
 
 def parse_httpx_record(record: dict) -> dict:
@@ -59,8 +62,9 @@ def parse_httpx_record(record: dict) -> dict:
 
     return {
         "url": record.get("url") or record.get("input") or "",
+        "final_url": _trunc(record.get("final_url"), 2000),
         "host": _host_of(record),
-        "ip": _trunc(record.get("host"), 45),
+        "ip": _trunc(record.get("host_ip") or _first(record.get("a")), 45),
         "port": _int(record.get("port")) or 0,
         "scheme": (record.get("scheme") or "https")[:8],
         "status_code": _int(record.get("status_code")),

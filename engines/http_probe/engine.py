@@ -143,6 +143,7 @@ class HttpProbeEngine(Engine):
                     content_length=fields["content_length"],
                     content_type=fields["content_type"],
                     location=fields["location"],
+                    final_url=fields["final_url"],
                     tech=fields["tech"],
                     ip=fields["ip"],
                     cname=fields["cname"],
