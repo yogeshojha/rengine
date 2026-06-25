@@ -28,6 +28,8 @@ _ENRICH_FLAGS = [
     "-favicon",
     "-hash",
     "sha256",
+    "-http2",
+    "-pipeline",
     "-no-color",
 ]
 

@@ -6,8 +6,10 @@ from sqlalchemy import select
 
 from engines.base import Engine, EngineResult
 from engines.screenshot.config import ScreenshotConfig
+from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
+from shared.models.subdomain import Subdomain
 from tools.httpx.client import HttpxClient, HttpxError
 
 logger = get_logger(__name__)
@@ -73,5 +75,37 @@ class ScreenshotEngine(Engine):
                 self.session.add(row)
                 captured += 1
         self.session.commit()
+        if self.ctx.target_type == TargetType.DOMAIN.value:
+            self._denormalize_to_subdomains()
         self.emit_progress(f"captured {captured} screenshots")
         return EngineResult(counts={"screenshots": captured})
+
+    def _denormalize_to_subdomains(self) -> None:
+        shots = {
+            asset.url: asset.screenshot_path
+            for asset in self.session.execute(
+                select(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
+            )
+            .scalars()
+            .all()
+            if asset.screenshot_path
+        }
+        subs = (
+            self.session.execute(
+                select(Subdomain).where(
+                    Subdomain.scan_id == self.ctx.scan_id,
+                    Subdomain.http_url.isnot(None),
+                )
+            )
+            .scalars()
+            .all()
+        )
+        changed = 0
+        for sub in subs:
+            path = shots.get(sub.http_url)
+            if path:
+                sub.screenshot_path = path
+                self.session.add(sub)
+                changed += 1
+        if changed:
+            self.session.commit()

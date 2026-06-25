@@ -20,6 +20,14 @@ _IP_FAMILY = {TargetType.IP.value, TargetType.IP_RANGE.value, TargetType.ASN.val
 _DEFAULT_PORTS = (80, 443)
 _MAX_TARGETS = 50000
 
+_HTTP_FIELDS = set(HttpAsset.model_fields)
+
+
+def _rank(asset: HttpAsset) -> tuple:
+    """Pick a subdomain's primary web service: prefer https, alive, 443/80."""
+    alive = asset.status_code is not None and 200 <= asset.status_code < 400  # noqa: PLR2004
+    return (asset.scheme == "https", alive, asset.port in (443, 80), -(asset.port or 0))
+
 
 class HttpProbeEngine(Engine):
     name = "http_probe"
@@ -53,6 +61,8 @@ class HttpProbeEngine(Engine):
         records = client.probe(targets)
         self._check_abort()
         count = self._persist(records)
+        if self.ctx.target_type == TargetType.DOMAIN.value:
+            self._denormalize_to_subdomains()
         self.emit_progress(
             f"probed {len(targets)} targets → {count} live HTTP services"
         )
@@ -121,49 +131,60 @@ class HttpProbeEngine(Engine):
         seen: set[str] = set()
         for record in records:
             fields = parse_httpx_record(record)
-            url = fields["url"]
+            url = fields.get("url")
             if not url or url in seen:
                 continue
             seen.add(url)
-            asn, asn_org = fields["asn"], fields["asn_org"]
-            if asn is None and fields["ip"] in ip_asn:
-                asn, asn_org = ip_asn[fields["ip"]]
+            if fields.get("asn") is None and fields.get("ip") in ip_asn:
+                fields["asn"], fields["asn_org"] = ip_asn[fields["ip"]]
+            data = {k: v for k, v in fields.items() if k in _HTTP_FIELDS}
             self.session.add(
                 HttpAsset(
                     scan_id=self.ctx.scan_id,
                     target_id=self.ctx.target_id,
                     project_id=self.ctx.project_id,
-                    url=url[:2000],
-                    host=(fields["host"] or "")[:500],
-                    port=fields["port"],
-                    scheme=fields["scheme"],
-                    status_code=fields["status_code"],
-                    title=fields["title"],
-                    webserver=fields["webserver"],
-                    content_length=fields["content_length"],
-                    content_type=fields["content_type"],
-                    location=fields["location"],
-                    final_url=fields["final_url"],
-                    tech=fields["tech"],
-                    ip=fields["ip"],
-                    cname=fields["cname"],
-                    asn=asn,
-                    asn_org=asn_org,
-                    is_cdn=fields["is_cdn"],
-                    cdn_name=fields["cdn_name"],
-                    jarm=fields["jarm"],
-                    favicon_hash=fields["favicon_hash"],
-                    content_hash=fields["content_hash"],
-                    tls_issuer=fields["tls_issuer"],
-                    tls_subject_cn=fields["tls_subject_cn"],
-                    tls_sans=fields["tls_sans"],
-                    tls_not_after=fields["tls_not_after"],
-                    tls_self_signed=fields["tls_self_signed"],
-                    tls_expired=fields["tls_expired"],
-                    tls_version=fields["tls_version"],
-                    screenshot_path=fields["screenshot_path"],
                     discovered_at=now,
+                    **data,
                 )
             )
         self.session.commit()
         return len(seen)
+
+    def _denormalize_to_subdomains(self) -> None:
+        """Copy each subdomain's primary HttpAsset summary onto the row."""
+        assets = (
+            self.session.execute(
+                select(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
+            )
+            .scalars()
+            .all()
+        )
+        primary: dict[str, HttpAsset] = {}
+        for asset in assets:
+            current = primary.get(asset.host)
+            if current is None or _rank(asset) > _rank(current):
+                primary[asset.host] = asset
+
+        subs = (
+            self.session.execute(
+                select(Subdomain).where(Subdomain.scan_id == self.ctx.scan_id)
+            )
+            .scalars()
+            .all()
+        )
+        for sub in subs:
+            asset = primary.get(sub.name)
+            if asset is None:
+                continue
+            sub.http_url = asset.url
+            sub.http_status = asset.status_code
+            sub.page_title = asset.title
+            sub.content_type = asset.content_type
+            sub.content_length = asset.content_length
+            sub.response_time = asset.response_time
+            sub.webserver = asset.webserver
+            sub.tech = list(asset.tech or [])
+            sub.is_cdn = asset.is_cdn
+            sub.cdn_name = asset.cdn_name
+            self.session.add(sub)
+        self.session.commit()
