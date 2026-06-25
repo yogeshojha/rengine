@@ -31,3 +31,6 @@ CLAUDE.md
 .claude/
 .agents/
 skills-lock.json
+
+# scan artifacts (screenshots, etc.)
+scan_media/

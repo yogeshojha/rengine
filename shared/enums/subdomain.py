@@ -21,4 +21,5 @@ class SubdomainSource(Enum):
     ZONE_TRANSFER = "zone_transfer"
     SCRAPING = "scraping"
     TLS_CERT = "tls_cert"
+    VHOST = "vhost"
     OTHER = "other"

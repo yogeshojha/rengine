@@ -60,7 +60,10 @@ class PortScanEngine(Engine):
         if target_type in _IP_FAMILY:
             rows = (
                 self.session.execute(
-                    select(IpAddress.ip).where(IpAddress.scan_id == self.ctx.scan_id)
+                    select(IpAddress.ip).where(
+                        IpAddress.scan_id == self.ctx.scan_id,
+                        IpAddress.is_alive.isnot(False),
+                    )
                 )
                 .scalars()
                 .all()

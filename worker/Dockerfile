@@ -40,6 +40,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends libpcap-dev \
     && go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest \
     && go install -v github.com/projectdiscovery/cdncheck/cmd/cdncheck@latest
 
+# EX-2 / EX-4 tools: ffuf (vhost brute), chromium (httpx screenshots), wafw00f (WAF)
+RUN apt-get update && apt-get install -y --no-install-recommends chromium \
+    && rm -rf /var/lib/apt/lists/* \
+    && go install -v github.com/ffuf/ffuf/v2@latest \
+    && python3 -m pip install --no-cache-dir --break-system-packages wafw00f
+
 
 COPY shared /app/shared
 COPY tools /app/tools

@@ -6,13 +6,17 @@ from dataclasses import dataclass, field
 
 from engines.base import Engine
 from engines.cdn_check import CdnCheckEngine
+from engines.host_discovery import HostDiscoveryEngine
 from engines.http_probe import HttpProbeEngine
 from engines.ip_enrichment import IpEnrichmentEngine
 from engines.port_scan import PortScanEngine
 from engines.reverse_dns import ReverseDnsEngine
+from engines.screenshot import ScreenshotEngine
 from engines.seed_resolution import SeedResolutionEngine
 from engines.subdomain.engine import SubdomainEngine
 from engines.target_enrichment import TargetEnrichmentEngine
+from engines.vhost import VhostEngine
+from engines.waf_detect import WafDetectEngine
 from shared.enums.scan import PHASE_ORDER, Phase
 from shared.enums.target import TargetType
 
@@ -75,11 +79,21 @@ STAGES: tuple[StageSpec, ...] = (
     ),
     StageSpec(
         name="cdn_check",
-        title="CDN / WAF Detection",
+        title="CDN Detection",
         phase=Phase.EXPANSION.value,
-        level=1,
+        level=0,
         engine_cls=CdnCheckEngine,
         applies_to=_IP_FAMILY,
+    ),
+    StageSpec(
+        name="host_discovery",
+        title="Host Discovery",
+        phase=Phase.EXPANSION.value,
+        level=0,
+        engine_cls=HostDiscoveryEngine,
+        applies_to=frozenset(
+            {TargetType.IP_RANGE.value, TargetType.ASN.value}
+        ),
     ),
     StageSpec(
         name="port_scan",
@@ -90,11 +104,35 @@ STAGES: tuple[StageSpec, ...] = (
         applies_to=_ALL_TYPES,
     ),
     StageSpec(
+        name="vhost",
+        title="Virtual Host Discovery",
+        phase=Phase.EXPANSION.value,
+        level=1,
+        engine_cls=VhostEngine,
+        applies_to=frozenset({TargetType.DOMAIN.value}),
+    ),
+    StageSpec(
         name="http_probe",
         title="HTTP Probe",
         phase=Phase.EXPANSION.value,
         level=2,
         engine_cls=HttpProbeEngine,
+        applies_to=_ALL_TYPES,
+    ),
+    StageSpec(
+        name="screenshot",
+        title="Screenshots",
+        phase=Phase.EXPANSION.value,
+        level=3,
+        engine_cls=ScreenshotEngine,
+        applies_to=_ALL_TYPES,
+    ),
+    StageSpec(
+        name="waf_detect",
+        title="WAF Detection",
+        phase=Phase.EXPANSION.value,
+        level=3,
+        engine_cls=WafDetectEngine,
         applies_to=_ALL_TYPES,
     ),
 )

@@ -43,7 +43,6 @@ class HttpProbeEngine(Engine):
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 follow_redirects=cfg.follow_redirects,
-                screenshot=False,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),
             )

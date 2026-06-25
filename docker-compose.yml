@@ -68,6 +68,7 @@ services:
       - ./shared:/app/shared
       - ./tools:/app/tools
       - ./engines:/app/engines
+      - ./scan_media:/app/scan_media
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -104,6 +105,7 @@ services:
       - ./shared:/app/shared
       - ./tools:/app/tools
       - ./engines:/app/engines
+      - ./scan_media:/app/scan_media
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -130,6 +132,7 @@ services:
       - ./shared:/app/shared
       - ./tools:/app/tools
       - ./engines:/app/engines
+      - ./scan_media:/app/scan_media
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
