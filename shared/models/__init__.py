@@ -19,6 +19,12 @@ from shared.models.instance_settings import (
     InstanceSettingsRead,
     InstanceSettingsUpdate,
 )
+from shared.models.ip_address import (
+    IpAddress,
+    IpAddressRead,
+    IpAddressSummary,
+    TargetIpAddressRead,
+)
 from shared.models.notification import (
     Notification,
     NotificationCreate,
@@ -139,6 +145,9 @@ __all__ = [
     "InstanceSettings",
     "InstanceSettingsRead",
     "InstanceSettingsUpdate",
+    "IpAddress",
+    "IpAddressRead",
+    "IpAddressSummary",
     "Notification",
     "NotificationChannel",
     "NotificationChannelCreate",
@@ -209,6 +218,7 @@ __all__ = [
     "TargetImportItem",
     "TargetImportRequest",
     "TargetImportResult",
+    "TargetIpAddressRead",
     "TargetRead",
     "TargetSubdomainRead",
     "TargetType",

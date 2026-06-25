@@ -117,6 +117,16 @@ def run_stage(
         events=events,
     )
     resolved = load_resolved(scan.execution_config)
+
+    if resolved.target_type not in spec.applies_to:
+        activity_svc.finish(
+            activity,
+            status=ScanActivityStatus.SKIPPED,
+            result={"reason": "not applicable for target type"},
+        )
+        _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
+        return
+
     ctx = EngineContext(
         scan_id=scan.id,
         target_id=scan.target_id,

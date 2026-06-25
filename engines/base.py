@@ -65,6 +65,10 @@ class Engine(ABC):
             extra_args=self.ctx.resolved.tool_args(binary),
         )
 
+    def _check_abort(self) -> None:
+        if self.ctx.is_aborted is not None and self.ctx.is_aborted():
+            raise EngineAbortedError
+
     def emit_progress(self, message: str, source: str | None = None) -> None:
         if self.ctx.events is None:
             return

@@ -102,6 +102,16 @@ class DnsxClient:
             output_format=OutputFormat.PLAIN,
         )
 
+    def ptr(
+        self,
+        ips: str | list[str],
+    ) -> ToolResult:
+        """Reverse-DNS (PTR) lookup for one or more IPs (-ptr)."""
+        args = self._build_base_args()
+        args.extend(["-ptr", "-resp"])
+
+        return self._run(ips, args)
+
     def _run(
         self,
         targets: str | list[str],

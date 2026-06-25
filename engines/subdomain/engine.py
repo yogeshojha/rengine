@@ -16,7 +16,6 @@ from engines.subdomain.providers import (
 )
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
-from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
 from shared.services.activity_log import ActivityLogService
@@ -40,8 +39,6 @@ class SubdomainEngine(Engine):
     name = "subdomain"
 
     def should_run(self) -> bool:
-        if self.ctx.target_type != TargetType.DOMAIN.value:
-            return False
         return SubdomainConfig.from_resolved(self.ctx.resolved).enabled
 
     def run(self) -> EngineResult:

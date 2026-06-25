@@ -32,6 +32,21 @@ ACTIVITY_TERMINAL_STATUSES = (
 )
 
 
+class Phase(Enum):
+    DISCOVERY = "discovery"
+    EXPANSION = "expansion"
+    DEPTH = "depth"
+    FINALIZE = "finalize"
+
+
+PHASE_ORDER: dict[str, int] = {
+    Phase.DISCOVERY.value: 0,
+    Phase.EXPANSION.value: 1,
+    Phase.DEPTH.value: 2,
+    Phase.FINALIZE.value: 3,
+}
+
+
 class ScanEventKind(Enum):
     SCAN_STARTED = "scan_started"
     SCAN_COMPLETED = "scan_completed"
