@@ -149,6 +149,7 @@ _SCAN_COUNT_LABELS = {
     "subdomains_found": ("subdomain", "subdomains"),
     "ips_found": ("IP", "IPs"),
     "open_ports_found": ("open port", "open ports"),
+    "http_assets_found": ("HTTP service", "HTTP services"),
     "vulnerabilities_found": ("vulnerability", "vulnerabilities"),
     "endpoints_found": ("endpoint", "endpoints"),
 }

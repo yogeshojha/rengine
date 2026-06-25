@@ -14,6 +14,11 @@ from shared.models.dns import (
     DnsRecord,
     DnsRecordRead,
 )
+from shared.models.http_asset import (
+    HttpAsset,
+    HttpAssetRead,
+    HttpAssetSummary,
+)
 from shared.models.instance_settings import (
     InstanceSettings,
     InstanceSettingsRead,
@@ -45,6 +50,7 @@ from shared.models.organization import (
     OrganizationSummary,
     OrganizationUpdate,
 )
+from shared.models.port import Port, PortRead, PortSummary
 from shared.models.project import Project, ProjectBase, ProjectCreate, ProjectRead
 from shared.models.proxy import (
     Proxy,
@@ -142,6 +148,9 @@ __all__ = [
     "DnsRecord",
     "DnsRecordRead",
     "ExpansionConfig",
+    "HttpAsset",
+    "HttpAssetRead",
+    "HttpAssetSummary",
     "InstanceSettings",
     "InstanceSettingsRead",
     "InstanceSettingsUpdate",
@@ -162,6 +171,9 @@ __all__ = [
     "OrganizationRead",
     "OrganizationSummary",
     "OrganizationUpdate",
+    "Port",
+    "PortRead",
+    "PortSummary",
     "Project",
     "ProjectBase",
     "ProjectCreate",

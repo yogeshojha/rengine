@@ -33,6 +33,13 @@ RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest \
     && go install -v github.com/tomnomnom/assetfinder@latest \
     && go install -v github.com/owasp-amass/amass/v4/...@master
 
+# Expansion-phase tools (naabu needs libpcap)
+RUN apt-get update && apt-get install -y --no-install-recommends libpcap-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest \
+    && go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest \
+    && go install -v github.com/projectdiscovery/cdncheck/cmd/cdncheck@latest
+
 
 COPY shared /app/shared
 COPY tools /app/tools

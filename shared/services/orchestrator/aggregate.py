@@ -13,6 +13,7 @@ COUNT_TO_COLUMN = {
     "subdomains": "subdomains_found",
     "ips": "ips_found",
     "open_ports": "open_ports_found",
+    "http_assets": "http_assets_found",
     "vulnerabilities": "vulnerabilities_found",
     "endpoints": "endpoints_found",
 }

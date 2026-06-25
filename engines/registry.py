@@ -5,13 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from engines.base import Engine
-from engines.discovery import (
-    IpEnrichmentEngine,
-    ReverseDnsEngine,
-    SeedResolutionEngine,
-    TargetEnrichmentEngine,
-)
+from engines.cdn_check import CdnCheckEngine
+from engines.http_probe import HttpProbeEngine
+from engines.ip_enrichment import IpEnrichmentEngine
+from engines.port_scan import PortScanEngine
+from engines.reverse_dns import ReverseDnsEngine
+from engines.seed_resolution import SeedResolutionEngine
 from engines.subdomain.engine import SubdomainEngine
+from engines.target_enrichment import TargetEnrichmentEngine
 from shared.enums.scan import PHASE_ORDER, Phase
 from shared.enums.target import TargetType
 
@@ -71,6 +72,30 @@ STAGES: tuple[StageSpec, ...] = (
         level=0,
         engine_cls=SubdomainEngine,
         applies_to=frozenset({TargetType.DOMAIN.value}),
+    ),
+    StageSpec(
+        name="cdn_check",
+        title="CDN / WAF Detection",
+        phase=Phase.EXPANSION.value,
+        level=1,
+        engine_cls=CdnCheckEngine,
+        applies_to=_IP_FAMILY,
+    ),
+    StageSpec(
+        name="port_scan",
+        title="Port Scan",
+        phase=Phase.EXPANSION.value,
+        level=1,
+        engine_cls=PortScanEngine,
+        applies_to=_ALL_TYPES,
+    ),
+    StageSpec(
+        name="http_probe",
+        title="HTTP Probe",
+        phase=Phase.EXPANSION.value,
+        level=2,
+        engine_cls=HttpProbeEngine,
+        applies_to=_ALL_TYPES,
     ),
 )
 

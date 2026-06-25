@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 
 from engines.base import Engine, EngineResult
-from engines.discovery.config import DiscoveryStageConfig
+from engines.target_enrichment.config import TargetEnrichmentConfig
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
@@ -38,7 +38,7 @@ class TargetEnrichmentEngine(Engine):
 
     def run(self) -> EngineResult:
         self._check_abort()
-        cfg = DiscoveryStageConfig.from_resolved(self.ctx.resolved)
+        cfg = TargetEnrichmentConfig.from_resolved(self.ctx.resolved)
         target = self.session.get(Target, self.ctx.target_id)
         if target is None:
             return EngineResult(counts={})
@@ -59,7 +59,7 @@ class TargetEnrichmentEngine(Engine):
             }
         )
 
-    def _ensure_dns(self, target: Target, cfg: DiscoveryStageConfig) -> int:
+    def _ensure_dns(self, target: Target, cfg: TargetEnrichmentConfig) -> int:
         if self.ctx.target_type not in _DNS_TYPES:
             return 0
         lookup = (

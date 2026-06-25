@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 
 from engines.base import Engine, EngineResult
-from engines.discovery.config import DiscoveryStageConfig
+from engines.reverse_dns.config import ReverseDnsConfig
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
@@ -22,11 +22,11 @@ class ReverseDnsEngine(Engine):
     def should_run(self) -> bool:
         if self.ctx.target_type not in _IP_FAMILY:
             return False
-        return DiscoveryStageConfig.from_resolved(self.ctx.resolved).ip_reverse_dns
+        return ReverseDnsConfig.from_resolved(self.ctx.resolved).enabled
 
     def run(self) -> EngineResult:
         self._check_abort()
-        cfg = DiscoveryStageConfig.from_resolved(self.ctx.resolved)
+        cfg = ReverseDnsConfig.from_resolved(self.ctx.resolved)
         rows = list(
             self.session.execute(
                 select(IpAddress).where(IpAddress.scan_id == self.ctx.scan_id)
@@ -52,7 +52,7 @@ class ReverseDnsEngine(Engine):
         self.emit_progress(f"reverse-DNS resolved {resolved}/{len(ips)} IPs")
         return EngineResult(counts={"ptr": resolved})
 
-    def _lookup_ptr(self, ips: list[str], cfg: DiscoveryStageConfig) -> dict[str, list]:
+    def _lookup_ptr(self, ips: list[str], cfg: ReverseDnsConfig) -> dict[str, list]:
         if not ips:
             return {}
         try:

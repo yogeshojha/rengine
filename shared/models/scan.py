@@ -35,6 +35,7 @@ class Scan(SQLModel, table=True):
     subdomains_found: int = Field(default=0)
     ips_found: int = Field(default=0)
     open_ports_found: int = Field(default=0)
+    http_assets_found: int = Field(default=0)
     vulnerabilities_found: int = Field(default=0)
     endpoints_found: int = Field(default=0)
     error: str | None = Field(default=None, max_length=2000)
@@ -68,6 +69,7 @@ class ScanRead(BaseModel):
     subdomains_found: int
     ips_found: int
     open_ports_found: int
+    http_assets_found: int
     vulnerabilities_found: int
     endpoints_found: int
     error: str | None

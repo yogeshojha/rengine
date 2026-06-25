@@ -16,6 +16,10 @@ from tools.runner.models import CommandRecorder, OutputFormat, ToolResult
 
 logger = get_logger(__name__)
 
+# orchestrated CLI tools (go binaries) live here; prefer them over venv console
+# scripts of the same name (e.g. the httpx PyPI CLI) when resolving under `uv run`.
+_TOOL_BIN = os.environ.get("RENGINE_TOOL_BIN", "/root/go/bin")
+
 
 class ToolNotFoundError(Exception):
     """Raised when a CLI tool binary is not found in PATH."""
@@ -46,7 +50,8 @@ class CLIToolRunner:
 
     def _verify_binary(self) -> None:
         """Check that the binary exists in PATH."""
-        path = shutil.which(self.binary)
+        lookup = f"{_TOOL_BIN}{os.pathsep}{os.environ.get('PATH', '')}"
+        path = shutil.which(self.binary, path=lookup)
         if not path:
             msg = (
                 f"Binary '{self.binary}' not found in PATH. "

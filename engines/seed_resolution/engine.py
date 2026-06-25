@@ -5,7 +5,7 @@ import ipaddress
 from sqlalchemy import delete
 
 from engines.base import Engine, EngineResult
-from engines.discovery.config import DiscoveryStageConfig
+from engines.seed_resolution.config import SeedResolutionConfig
 from shared.enums.ip import IpSource
 from shared.enums.target import TargetType
 from shared.logging import get_logger
@@ -35,7 +35,7 @@ class SeedResolutionEngine(Engine):
 
     def run(self) -> EngineResult:
         self._check_abort()
-        cfg = DiscoveryStageConfig.from_resolved(self.ctx.resolved)
+        cfg = SeedResolutionConfig.from_resolved(self.ctx.resolved)
         value = self.ctx.target_value.strip()
 
         if self.ctx.target_type == TargetType.IP.value:
@@ -71,7 +71,7 @@ class SeedResolutionEngine(Engine):
         ]
 
     def _from_cidr(
-        self, value: str, cfg: DiscoveryStageConfig
+        self, value: str, cfg: SeedResolutionConfig
     ) -> tuple[list[dict], bool]:
         net = parse_network(value)
         if net is None:
@@ -96,7 +96,7 @@ class SeedResolutionEngine(Engine):
         return records, truncated
 
     def _from_asn(
-        self, value: str, cfg: DiscoveryStageConfig
+        self, value: str, cfg: SeedResolutionConfig
     ) -> tuple[list[dict], bool]:
         prefixes = self._asn_prefixes(value)[:_MAX_ASN_PREFIXES]
         if not prefixes:

@@ -39,6 +39,15 @@ class EngineResult:
     counts: dict[str, int] = field(default_factory=dict)
 
 
+@dataclass
+class NetOptions:
+    """User network config threaded into every tool that supports it."""
+
+    proxy_url: str | None = None
+    headers: dict[str, str] = field(default_factory=dict)
+    user_agent: str | None = None
+
+
 class EngineAbortedError(Exception):
     """Raised when a stage detects the scan was cancelled mid-run."""
 
@@ -68,6 +77,18 @@ class Engine(ABC):
     def _check_abort(self) -> None:
         if self.ctx.is_aborted is not None and self.ctx.is_aborted():
             raise EngineAbortedError
+
+    def net_options(self) -> NetOptions:
+        """Proxy / headers / user-agent from the resolved scan config."""
+        headers = dict(self.ctx.resolved.headers or {})
+        user_agent = next(
+            (v for k, v in headers.items() if k.lower() == "user-agent"), None
+        )
+        return NetOptions(
+            proxy_url=self.ctx.resolved.proxy_url,
+            headers=headers,
+            user_agent=user_agent,
+        )
 
     def emit_progress(self, message: str, source: str | None = None) -> None:
         if self.ctx.events is None:
