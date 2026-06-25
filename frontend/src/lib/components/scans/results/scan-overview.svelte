@@ -3,7 +3,8 @@
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
-	import StatBar from './stat-bar.svelte';
+	import RankBarChart from './rank-bar-chart.svelte';
+	import CategoryDonut from './category-donut.svelte';
 	import type { HttpAssetRead } from '$lib/types/http-asset';
 	import type { IpAddressRead } from '$lib/types/ip-address';
 	import type { PortRead } from '$lib/types/port';
@@ -23,15 +24,18 @@
 
 	let { assets, ips, ports }: Props = $props();
 
-	const BAR: Record<StatusClass, string> = {
-		success: 'bg-success',
-		info: 'bg-info',
-		warning: 'bg-warning',
-		destructive: 'bg-destructive',
-		muted: 'bg-muted-foreground/50'
+	const STATUS_VAR: Record<StatusClass, string> = {
+		success: 'var(--chart-1)',
+		info: 'var(--chart-2)',
+		warning: 'var(--chart-4)',
+		destructive: 'var(--destructive)',
+		muted: 'var(--muted-foreground)'
 	};
 
-	function topCounts(values: (string | null | undefined)[], n: number): [string, number][] {
+	function topCounts(
+		values: (string | null | undefined)[],
+		n: number
+	): { name: string; count: number }[] {
 		const counts: Record<string, number> = {};
 		for (const v of values) {
 			if (!v) continue;
@@ -39,10 +43,18 @@
 		}
 		return Object.entries(counts)
 			.sort((a, b) => b[1] - a[1])
-			.slice(0, n);
+			.slice(0, n)
+			.map(([name, count]) => ({ name, count }));
 	}
 
-	let statuses = $derived(statusDistribution(assets));
+	let statusDonut = $derived(
+		statusDistribution(assets).map((b) => ({
+			key: b.klass,
+			label: b.label,
+			count: b.count,
+			color: STATUS_VAR[b.klass]
+		}))
+	);
 	let techs = $derived(techDistribution(assets).slice(0, 8));
 	let servers = $derived(webserverDistribution(assets).slice(0, 5));
 	let tls = $derived(tlsHealth(assets));
@@ -69,37 +81,11 @@
 
 <div class="space-y-3">
 	<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-		{#if statuses.length}
+		{#if statusDonut.length}
 			<Card.Root>
 				<Card.Header class="pb-2"><Card.Title class="text-sm">HTTP status</Card.Title></Card.Header>
-				<Card.Content class="space-y-2.5">
-					{#each statuses as b (b.label)}
-						<StatBar label={b.label} count={b.count} total={assetTotal} colorClass={BAR[b.klass]} />
-					{/each}
-				</Card.Content>
-			</Card.Root>
-		{/if}
-
-		{#if techs.length}
-			<Card.Root>
-				<Card.Header class="pb-2"
-					><Card.Title class="text-sm">Top technologies</Card.Title></Card.Header
-				>
-				<Card.Content class="space-y-2.5">
-					{#each techs as t (t.name)}
-						<StatBar label={t.name} count={t.count} total={assetTotal} />
-					{/each}
-				</Card.Content>
-			</Card.Root>
-		{/if}
-
-		{#if servers.length}
-			<Card.Root>
-				<Card.Header class="pb-2"><Card.Title class="text-sm">Web servers</Card.Title></Card.Header>
-				<Card.Content class="space-y-2.5">
-					{#each servers as s (s.name)}
-						<StatBar label={s.name} count={s.count} total={assetTotal} />
-					{/each}
+				<Card.Content>
+					<CategoryDonut data={statusDonut} total={assetTotal} centerLabel="responses" />
 				</Card.Content>
 			</Card.Root>
 		{/if}
@@ -142,14 +128,32 @@
 			</Card.Root>
 		{/if}
 
+		{#if techs.length}
+			<Card.Root>
+				<Card.Header class="pb-2"
+					><Card.Title class="text-sm">Top technologies</Card.Title></Card.Header
+				>
+				<Card.Content>
+					<RankBarChart data={techs} color="var(--chart-1)" label="Assets" />
+				</Card.Content>
+			</Card.Root>
+		{/if}
+
+		{#if servers.length}
+			<Card.Root>
+				<Card.Header class="pb-2"><Card.Title class="text-sm">Web servers</Card.Title></Card.Header>
+				<Card.Content>
+					<RankBarChart data={servers} color="var(--chart-2)" label="Assets" />
+				</Card.Content>
+			</Card.Root>
+		{/if}
+
 		{#if orgs.length}
 			<Card.Root>
 				<Card.Header class="pb-2"><Card.Title class="text-sm">Top networks</Card.Title></Card.Header
 				>
-				<Card.Content class="space-y-2.5">
-					{#each orgs as [name, count] (name)}
-						<StatBar label={name} {count} total={ips.length} />
-					{/each}
+				<Card.Content>
+					<RankBarChart data={orgs} color="var(--chart-3)" label="IPs" />
 				</Card.Content>
 			</Card.Root>
 		{/if}
@@ -157,10 +161,8 @@
 		{#if services.length}
 			<Card.Root>
 				<Card.Header class="pb-2"><Card.Title class="text-sm">Services</Card.Title></Card.Header>
-				<Card.Content class="space-y-2.5">
-					{#each services as [name, count] (name)}
-						<StatBar label={name} {count} total={ports.length} />
-					{/each}
+				<Card.Content>
+					<RankBarChart data={services} color="var(--chart-4)" label="Ports" />
 				</Card.Content>
 			</Card.Root>
 		{/if}
