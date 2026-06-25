@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Copy, Trash2, Clock } from 'lucide-svelte';
+	import Copy from '@lucide/svelte/icons/copy';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Clock from '@lucide/svelte/icons/clock';
 	import type { ScanContextRead } from '$lib/types/scan-context';
 	import { authBadgeLabel, countExclusions, countOverrides } from './context-summary';
 	import { formatDistanceToNow } from '$lib/utilities/dates';
@@ -18,7 +20,9 @@
 	let chips = $derived.by(() => {
 		const out: string[] = [];
 		if (context.extra_headers.length > 0) {
-			out.push(`${context.extra_headers.length} header${context.extra_headers.length === 1 ? '' : 's'}`);
+			out.push(
+				`${context.extra_headers.length} header${context.extra_headers.length === 1 ? '' : 's'}`
+			);
 		}
 		if (context.global_rate_limit_override != null) {
 			out.push(`rate ${context.global_rate_limit_override}/s`);
@@ -84,7 +88,11 @@
 		{#if chips.length > 0}
 			<div class="chip-row">
 				{#each chips as chip (chip)}
-					<Badge variant="secondary" class="rounded-[5px] border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{chip}</Badge>
+					<Badge
+						variant="secondary"
+						class="rounded-sm border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+						>{chip}</Badge
+					>
 				{/each}
 			</div>
 		{:else}
@@ -118,7 +126,10 @@
 		background: var(--card);
 		overflow: hidden;
 		box-shadow: var(--shadow-sm);
-		transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+		transition:
+			box-shadow 0.2s,
+			transform 0.15s,
+			border-color 0.2s;
 		cursor: pointer;
 	}
 

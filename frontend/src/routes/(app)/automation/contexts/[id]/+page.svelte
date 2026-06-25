@@ -4,20 +4,26 @@
 	import { page } from '$app/state';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { AlertTriangle, Loader2, ChevronLeft, Copy, Trash2, Save } from 'lucide-svelte';
+	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import Copy from '@lucide/svelte/icons/copy';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Save from '@lucide/svelte/icons/save';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
 	import * as Card from '$lib/components/ui/card';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CopyButton from '@/components/copy-button.svelte';
+	import UnsavedChangesDialog from '@/components/unsaved-changes-dialog.svelte';
 
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scanContextsApi } from '$lib/api/scan-contexts';
+	import { ROUTES } from '$lib/config/routes';
 
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import ContextSections from '$lib/components/contexts/context-sections.svelte';
@@ -33,11 +39,11 @@
 
 	type Draft = ScanContextCreate;
 
-	// ── Route param ────────────────────────────────────────────────────────────
+	// route param
 	let contextId = $derived(page.params.id);
 	let isNew = $derived(contextId === 'new');
 
-	// ── Page state ─────────────────────────────────────────────────────────────
+	// state
 	let loaded = $state<ScanContextRead | null>(null);
 	let draft = $state<Draft | null>(null);
 	let isLoading = $state(false);
@@ -57,7 +63,7 @@
 
 	let seedKey = $state(0);
 
-	// ── Dirty detection ──────────────────────────────────────────────────────────
+	// dirty detection
 	let baseline = $state<string>('');
 	let hasUnsavedChanges = $derived.by(() => {
 		if (!draft) return false;
@@ -68,7 +74,7 @@
 	let validationIssue = $derived(draft ? validateDraft(draft) : null);
 	let isValid = $derived(validationIssue === null);
 
-	// ── Load / init ───────────────────────────────────────────────────────────────
+	// load
 	$effect(() => {
 		const project = projectsStore.activeProject;
 		const id = contextId;
@@ -195,13 +201,13 @@
 		if (project && contextId && !isNew) loadContext(contextId, project.id);
 	}
 
-	// ── Section change handlers ────────────────────────────────────────────────
+	// section handlers
 	function patchDraft(updates: Partial<Draft>) {
 		if (!draft) return;
 		draft = { ...draft, ...updates };
 	}
 
-	// ── Save ──────────────────────────────────────────────────────────────────
+	// save
 
 	async function handleSave() {
 		if (!draft || isSaving) return;
@@ -231,7 +237,7 @@
 					touchedSecrets.clear();
 					seedKey++;
 					bypassGuard = true;
-					goto(`/automation/contexts/${created.id}`, { replaceState: true });
+					goto(ROUTES.context(created.id), { replaceState: true });
 				} else {
 					toast.error(scanContextsStore.error ?? 'Failed to create context');
 				}
@@ -268,7 +274,7 @@
 			if (dup?.id) {
 				toast.success(`Duplicated as "${dup.name}"`);
 				bypassGuard = true;
-				goto(`/automation/contexts/${dup.id}`);
+				goto(ROUTES.context(dup.id));
 			} else {
 				toast.error(scanContextsStore.error ?? 'Duplicate failed');
 			}
@@ -294,7 +300,7 @@
 				toast.success('Context deleted');
 				showDeleteDialog = false;
 				bypassGuard = true;
-				goto('/automation/contexts');
+				goto(ROUTES.contexts);
 			} else {
 				toast.error(scanContextsStore.error ?? 'Delete failed');
 			}
@@ -306,10 +312,10 @@
 	}
 
 	function handleBack() {
-		goto('/automation/contexts');
+		goto(ROUTES.contexts);
 	}
 
-	// ── Collapsible open state ─────────────────────────────────────────────────
+	// collapsible state
 	let open = $state({
 		identity: true,
 		auth: true,
@@ -354,12 +360,10 @@
 			<Empty.Content>
 				<div class="flex items-center gap-2">
 					<Button onclick={retryLoad} disabled={isLoading}>
-						{#if isLoading}<Loader2 class="h-3.5 w-3.5 animate-spin" />{/if}
+						{#if isLoading}<Spinner class="h-3.5 w-3.5" />{/if}
 						Retry
 					</Button>
-					<Button variant="outline" onclick={() => goto('/automation/contexts')}>
-						Back to Contexts
-					</Button>
+					<Button variant="outline" onclick={() => goto(ROUTES.contexts)}>Back to Contexts</Button>
 				</div>
 			</Empty.Content>
 		</Empty.Root>
@@ -404,7 +408,7 @@
 						onclick={handleDuplicate}
 					>
 						{#if isDuplicating}
-							<Loader2 class="h-3.5 w-3.5 animate-spin" />
+							<Spinner class="h-3.5 w-3.5" />
 						{:else}
 							<Copy class="h-3.5 w-3.5" />
 						{/if}
@@ -430,7 +434,7 @@
 								onclick={handleSave}
 							>
 								{#if isSaving}
-									<Loader2 class="h-3.5 w-3.5 animate-spin" />
+									<Spinner class="h-3.5 w-3.5" />
 								{:else}
 									<Save class="h-3.5 w-3.5" />
 								{/if}
@@ -492,25 +496,14 @@
 	/>
 {/if}
 
-<AlertDialog.Root bind:open={showLeaveDialog}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Discard unsaved changes?</AlertDialog.Title>
-			<AlertDialog.Description>
-				You have unsaved changes to this context. If you leave now, they will be lost.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel onclick={cancelLeave}>Keep editing</AlertDialog.Cancel>
-			<AlertDialog.Action
-				class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-				onclick={confirmLeave}
-			>
-				Discard
-			</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<UnsavedChangesDialog
+	bind:open={showLeaveDialog}
+	description="You have unsaved changes to this context. If you leave now, they will be lost."
+	onOpenChange={(o) => {
+		if (!o) cancelLeave();
+	}}
+	onConfirm={confirmLeave}
+/>
 
 <style>
 	.dirty-dot {

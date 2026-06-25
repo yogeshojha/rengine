@@ -4,33 +4,26 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import {
-		Ellipsis,
-		ExternalLink,
-		Play,
-		Ban,
-		Trash2,
-		TrendingUp,
-		TrendingDown,
-		CircleSlash,
-		Sparkles,
-		ShieldCheck,
-		TriangleAlert,
-		CalendarClock
-	} from 'lucide-svelte';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import Play from '@lucide/svelte/icons/play';
+	import Ban from '@lucide/svelte/icons/ban';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import TrendingUp from '@lucide/svelte/icons/trending-up';
+	import TrendingDown from '@lucide/svelte/icons/trending-down';
+	import CircleSlash from '@lucide/svelte/icons/circle-slash';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import CopyButton from '@/components/copy-button.svelte';
+	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { stopProp } from '$lib/utilities';
 	import { SCHEDULE_TYPE_BADGE, type ScheduleType } from '$lib/types/scan-schedule';
-	import {
-		SCAN_STATUS_LABEL,
-		scanStatusVariant,
-		scanStatusIcon,
-		isLiveStatus,
-		durationLabel,
-		scanCountPills
-	} from '$lib/utilities/scan-status';
+	import { isLiveStatus, durationLabel, scanCountPills } from '$lib/utilities/scan-status';
+	import { ROUTES } from '$lib/config/routes';
 	import type { ScanRead } from '$lib/types/scan';
 
 	interface Props {
@@ -57,7 +50,6 @@
 		onDelete
 	}: Props = $props();
 
-	let StatusIcon = $derived(scanStatusIcon(scan.status));
 	let live = $derived(isLiveStatus(scan.status));
 	let primary = $derived(targetId ? scan.engine_name : scan.execution_config.target_value);
 	let startedLabel = $derived(relativeTime(scan.started_at ?? scan.created_at));
@@ -78,7 +70,7 @@
 	);
 
 	function open() {
-		goto(`/scans/${scan.id}`);
+		goto(ROUTES.scan(scan.id));
 	}
 </script>
 
@@ -136,7 +128,7 @@
 			{#if scheduleLabel}
 				<Tooltip.Root>
 					<Tooltip.Trigger
-						class="inline-flex shrink-0 items-center gap-0.5 rounded border border-amber-500/30 px-1 font-medium text-amber-600 dark:text-amber-500"
+						class="inline-flex shrink-0 items-center gap-0.5 rounded border border-warning/30 px-1 font-medium text-warning"
 					>
 						<CalendarClock class="h-3 w-3 shrink-0" />
 						{scheduleLabel}
@@ -168,7 +160,7 @@
 				{:else}
 					{#if newCount > 0}
 						<span
-							class="inline-flex shrink-0 items-center gap-0.5 rounded border border-amber-500/30 px-1 font-medium tabular-nums text-amber-600 dark:text-amber-500"
+							class="inline-flex shrink-0 items-center gap-0.5 rounded border border-warning/30 px-1 font-medium tabular-nums text-warning"
 						>
 							<TrendingUp class="h-3 w-3" />
 							{newCount} new
@@ -221,10 +213,7 @@
 	</div>
 
 	<div class="w-[120px] shrink-0">
-		<Badge variant={scanStatusVariant(scan.status)} class="gap-1 font-normal">
-			<StatusIcon class="h-3 w-3 {scan.status === 'running' ? 'animate-spin' : ''}" />
-			{SCAN_STATUS_LABEL[scan.status]}
-		</Badge>
+		<ScanStatusBadge status={scan.status} />
 	</div>
 
 	<div class="hidden w-[220px] shrink-0 xl:block">

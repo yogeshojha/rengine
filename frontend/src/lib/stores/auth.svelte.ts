@@ -7,6 +7,15 @@ import { onboardingStore } from '$lib/stores/onboarding.svelte';
 import { proxiesStore } from '$lib/stores/proxies.svelte';
 import { notificationChannelsStore } from '$lib/stores/notificationChannels.svelte';
 import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
+import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
+import { targetsStore } from '$lib/stores/targets.svelte';
+import { scansStore } from '$lib/stores/scans.svelte';
+import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
+import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
+import { dashboardStore } from '$lib/stores/dashboard.svelte';
+import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
+import { activityScope } from '$lib/stores/activity-scope.svelte';
+import { activityFeed } from '$lib/stores/activity-feed.svelte';
 
 interface AuthState {
 	user: User | null;
@@ -74,6 +83,15 @@ function createAuthStore() {
 		proxiesStore.clear();
 		notificationChannelsStore.clear();
 		scanSchedulesStore.clear();
+		instanceSettingsStore.clear();
+		targetsStore.clear();
+		scansStore.clear();
+		scanContextsStore.clear();
+		scanEnginesStore.clear();
+		dashboardStore.clear();
+		breadcrumbStore.clear();
+		activityScope.clear();
+		activityFeed.reset();
 	}
 
 	async function register(

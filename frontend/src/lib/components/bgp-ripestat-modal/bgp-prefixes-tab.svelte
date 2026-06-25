@@ -4,7 +4,10 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Loader, SearchX, Network, CirclePlus } from 'lucide-svelte';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import Network from '@lucide/svelte/icons/network';
+	import CirclePlus from '@lucide/svelte/icons/circle-plus';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		prefixes: AnnouncedPrefixRead[];
@@ -39,7 +42,7 @@
 	<Empty.Root>
 		<Empty.Header>
 			<Empty.Media variant="icon">
-				<Loader class="animate-spin" />
+				<Spinner />
 			</Empty.Media>
 			<Empty.Title>Loading announced prefixes…</Empty.Title>
 		</Empty.Header>

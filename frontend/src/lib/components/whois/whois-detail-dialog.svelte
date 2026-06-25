@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { whoisApi } from '$lib/api/whois';
 	import type { WhoisRecordRead, WhoisCorrelationResult } from '$lib/types/whois';
-	import type { TargetType } from '$lib/types/target';
+	import { TargetType } from '$lib/types/target';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -15,7 +15,10 @@
 	import WhoisRelatedTab from './whois-related-tab.svelte';
 	import CorrelationLookupDialog from './correlation-lookup-dialog.svelte';
 	import DiscoveriesSummary from '$lib/components/viewdns-discoveries/discoveries-summary.svelte';
-	import { RefreshCw, Loader, TriangleAlert, Sparkles } from 'lucide-svelte';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { getLookupTypeIcon } from '$lib/config/icons';
 	import { SvelteSet } from 'svelte/reactivity';
 
@@ -78,7 +81,7 @@
 	let LookupIcon = $derived(getLookupTypeIcon(displayRecord?.lookup_type ?? ''));
 
 	let showDiscoveriesTab = $derived(
-		targetValue != null && (targetType === 'domain' || targetType === 'ip')
+		targetValue != null && (targetType === TargetType.DOMAIN || targetType === TargetType.IP)
 	);
 
 	let headerEl = $state<HTMLDivElement | null>(null);
@@ -176,7 +179,7 @@
 				<div class="flex items-center gap-3">
 					<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
 						{#if isLoadingRecord}
-							<Loader class="h-5 w-5 text-primary animate-spin" />
+							<Spinner class="h-5 w-5 text-primary" />
 						{:else}
 							<LookupIcon class="h-5 w-5 text-primary" />
 						{/if}
@@ -224,7 +227,7 @@
 			<Empty.Root>
 				<Empty.Header>
 					<Empty.Media variant="icon">
-						<Loader class="animate-spin" />
+						<Spinner />
 					</Empty.Media>
 					<Empty.Title>Loading WHOIS record…</Empty.Title>
 				</Empty.Header>
@@ -254,7 +257,7 @@
 									{relatedCount}
 								</Badge>
 							{:else if isLoadingCorrelations}
-								<Loader class="h-3 w-3 animate-spin text-muted-foreground ml-1" />
+								<Spinner class="h-3 w-3 text-muted-foreground ml-1" />
 							{/if}
 						</Tabs.Trigger>
 						{#if showDiscoveriesTab}

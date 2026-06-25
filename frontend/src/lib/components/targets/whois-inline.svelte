@@ -2,6 +2,7 @@
 	import type { WhoisSummaryData } from '$lib/types/target';
 	import { TaskStatus } from '$lib/types/task-status';
 	import { goto } from '$app/navigation';
+	import { ROUTES } from '$lib/config/routes';
 	import {
 		formatShortDate,
 		formatMonthYear,
@@ -11,18 +12,16 @@
 		type ExpirationUrgency
 	} from '$lib/utilities/dates';
 	import * as HoverCard from '$lib/components/ui/hover-card';
-	import {
-		Network,
-		Clock,
-		CalendarDays,
-		CalendarClock,
-		Building,
-		UserRound,
-		TriangleAlert,
-		Loader,
-		Flag,
-		ExternalLink
-	} from 'lucide-svelte';
+	import Network from '@lucide/svelte/icons/network';
+	import Clock from '@lucide/svelte/icons/clock';
+	import CalendarDays from '@lucide/svelte/icons/calendar-days';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import Building from '@lucide/svelte/icons/building';
+	import UserRound from '@lucide/svelte/icons/user-round';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import Flag from '@lucide/svelte/icons/flag';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { getLookupTypeIcon } from '$lib/config/icons';
 
 	interface Props {
@@ -74,7 +73,7 @@
 		const map: Record<ExpirationUrgency, string> = {
 			expired: 'text-destructive',
 			critical: 'text-destructive',
-			warning: 'text-amber-600 dark:text-amber-500',
+			warning: 'text-warning',
 			healthy: 'text-muted-foreground',
 			none: 'text-muted-foreground'
 		};
@@ -85,7 +84,7 @@
 		const map: Record<ExpirationUrgency, string> = {
 			expired: 'bg-destructive',
 			critical: 'bg-destructive',
-			warning: 'bg-amber-500',
+			warning: 'bg-warning',
 			healthy: 'bg-muted-foreground',
 			none: 'bg-muted-foreground'
 		};
@@ -107,7 +106,7 @@
 
 {#if status === TaskStatus.PENDING || status === TaskStatus.QUERYING}
 	<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-		<Loader class="h-3 w-3 animate-spin" />
+		<Spinner class="h-3 w-3" />
 		<span class="animate-pulse">Fetching WHOIS…</span>
 	</div>
 {:else if status === TaskStatus.FAILED}
@@ -254,7 +253,7 @@
 					<button
 						type="button"
 						class="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
-						onclick={() => goto(`/targets/${targetId}`)}
+						onclick={() => goto(ROUTES.target(targetId))}
 					>
 						See Details
 						<ExternalLink class="h-2.5 w-2.5" />

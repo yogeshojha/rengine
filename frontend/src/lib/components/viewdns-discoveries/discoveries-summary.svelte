@@ -19,20 +19,19 @@
 	import { Button } from '$lib/components/ui/button';
 	import EnrichConfirmDialog from './enrich-confirm-dialog.svelte';
 	import { toast } from 'svelte-sonner';
-	import {
-		Loader,
-		Sparkles,
-		SearchX,
-		Telescope,
-		UserRound,
-		Server,
-		Globe,
-		Zap,
-		Plus,
-		Check,
-		ArrowRight
-	} from 'lucide-svelte';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import Telescope from '@lucide/svelte/icons/telescope';
+	import UserRound from '@lucide/svelte/icons/user-round';
+	import Server from '@lucide/svelte/icons/server';
+	import Globe from '@lucide/svelte/icons/globe';
+	import Zap from '@lucide/svelte/icons/zap';
+	import Plus from '@lucide/svelte/icons/plus';
+	import Check from '@lucide/svelte/icons/check';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { goto } from '$app/navigation';
+	import { ROUTES } from '$lib/config/routes';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
@@ -336,13 +335,15 @@
 		} else if (added > 0) {
 			toast.warning(`Added ${added} of ${total}; ${failed} failed`);
 		} else {
-			toast.error('Could not add domains — they may already exist or your ViewDNS quota is exhausted');
+			toast.error(
+				'Could not add domains — they may already exist or your ViewDNS quota is exhausted'
+			);
 		}
 	}
 
 	function handleOpenTargetSummary() {
 		if (onOpenTargetSummary) onOpenTargetSummary();
-		else goto(`/targets/${targetId}`);
+		else goto(ROUTES.target(targetId));
 	}
 </script>
 
@@ -350,7 +351,7 @@
 	<Empty.Root>
 		<Empty.Header>
 			<Empty.Media variant="icon">
-				<Loader class="animate-spin" />
+				<Spinner />
 			</Empty.Media>
 			<Empty.Title>Loading discoveries…</Empty.Title>
 			<Empty.Description>Checking cached ViewDNS intelligence.</Empty.Description>
@@ -494,7 +495,7 @@
 										Added
 									</span>
 								{:else if isAdding}
-									<Loader class="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+									<Spinner class="h-3.5 w-3.5 text-muted-foreground" />
 								{:else}
 									<Tooltip.Root>
 										<Tooltip.Trigger>

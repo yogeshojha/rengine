@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { BadgeCheck, BadgeX, BadgeMinus } from 'lucide-svelte';
+	import BadgeCheck from '@lucide/svelte/icons/badge-check';
+	import BadgeX from '@lucide/svelte/icons/badge-x';
+	import BadgeMinus from '@lucide/svelte/icons/badge-minus';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import type { TargetImportResult } from '$lib/types/target';
@@ -43,7 +45,7 @@
 				value: 'duplicates',
 				label: 'Duplicates',
 				count: duplicateResults.length,
-				color: 'bg-amber-500'
+				color: 'bg-warning'
 			});
 		return tabs;
 	});
@@ -91,7 +93,7 @@
 			<div class="text-xs text-muted-foreground">Imported</div>
 		</div>
 		<div class="rounded-lg border bg-card p-3 space-y-1">
-			<div class="text-2xl font-semibold tabular-nums text-amber-600 dark:text-amber-500">
+			<div class="text-2xl font-semibold tabular-nums text-warning">
 				{skipped_duplicates}
 			</div>
 			<div class="text-xs text-muted-foreground">Duplicates</div>
@@ -137,7 +139,7 @@
 								{:else if activeTab === 'failed'}
 									<BadgeX class="h-3.5 w-3.5 text-destructive flex-shrink-0" />
 								{:else}
-									<BadgeMinus class="h-3.5 w-3.5 text-amber-600 dark:text-amber-500 flex-shrink-0" />
+									<BadgeMinus class="h-3.5 w-3.5 text-warning flex-shrink-0" />
 								{/if}
 								<code class="text-xs font-mono truncate">{result.target_value}</code>
 							</div>

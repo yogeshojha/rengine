@@ -5,19 +5,18 @@ import {
 	type ActivityLevel,
 	type ActivityLog
 } from '$lib/types/activity';
-import {
-	Activity,
-	Crosshair,
-	FolderKanban,
-	Globe,
-	Radar,
-	RadioTower,
-	Server,
-	Waypoints
-} from 'lucide-svelte';
+import Activity from '@lucide/svelte/icons/activity';
+import Crosshair from '@lucide/svelte/icons/crosshair';
+import FolderKanban from '@lucide/svelte/icons/folder-kanban';
+import Globe from '@lucide/svelte/icons/globe';
+import Radar from '@lucide/svelte/icons/radar';
+import RadioTower from '@lucide/svelte/icons/radio-tower';
+import Server from '@lucide/svelte/icons/server';
+import Waypoints from '@lucide/svelte/icons/waypoints';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import type { IconComponent } from '$lib/config/icons';
 
-export function getActivityIcon(eventType: string): typeof Globe {
+export function getActivityIcon(eventType: string): IconComponent {
 	const s = eventType.toLowerCase();
 	if (/whois/.test(s)) return Globe;
 	if (/dns/.test(s)) return Waypoints;
@@ -54,7 +53,7 @@ export const FILTER_LABELS: Record<ActivityFilter, string> = {
 export const LEVEL_DOT: Record<ActivityLevel, string> = {
 	success: 'bg-foreground',
 	info: 'bg-muted-foreground/50',
-	warning: 'bg-amber-600 dark:bg-amber-500',
+	warning: 'bg-warning',
 	error: 'bg-destructive'
 };
 

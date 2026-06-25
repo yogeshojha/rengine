@@ -11,18 +11,16 @@
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import EnrichmentPill from './enrichment-pill.svelte';
-	import {
-		Play,
-		RefreshCw,
-		Ellipsis,
-		Globe,
-		Building2,
-		Tag,
-		FileBracesCorner,
-		FileSpreadsheet,
-		ExternalLink,
-		Trash2
-	} from 'lucide-svelte';
+	import Play from '@lucide/svelte/icons/play';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import Globe from '@lucide/svelte/icons/globe';
+	import Building2 from '@lucide/svelte/icons/building-2';
+	import Tag from '@lucide/svelte/icons/tag';
+	import FileBracesCorner from '@lucide/svelte/icons/file-braces-corner';
+	import FileSpreadsheet from '@lucide/svelte/icons/file-spreadsheet';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { TARGET_TYPE_ICONS } from '$lib/config/icons';
 
 	interface Props {
@@ -34,14 +32,8 @@
 		onDelete?: () => void;
 	}
 
-	let {
-		target,
-		onScan,
-		onRefreshEnrichment,
-		onExportJson,
-		onExportCsv,
-		onDelete
-	}: Props = $props();
+	let { target, onScan, onRefreshEnrichment, onExportJson, onExportCsv, onDelete }: Props =
+		$props();
 
 	const TargetIcon = $derived(TARGET_TYPE_ICONS[target.target_type] || Globe);
 
@@ -163,7 +155,7 @@
 										{...props}
 										variant="outline"
 										aria-label="Enrichment is stale — consider refreshing"
-										class="text-[10px] h-4 px-1.5 border-amber-500/30 text-amber-600 dark:text-amber-500"
+										class="text-[10px] h-4 px-1.5 border-warning/30 text-warning"
 									>
 										Stale
 									</Badge>

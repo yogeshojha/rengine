@@ -21,7 +21,7 @@
 	<Handle
 		type="source"
 		position={Position.Right}
-		style="background: var(--muted-foreground); width: 8px; height: 8px; border: 2px solid var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.2);"
+		style="background: var(--muted-foreground); width: 8px; height: 8px; border: 2px solid var(--card); box-shadow: var(--shadow-sm);"
 	/>
 </div>
 
@@ -31,7 +31,7 @@
 		background: var(--card);
 		border: 1px solid var(--border);
 		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+		box-shadow: var(--shadow-md);
 		padding: 12px;
 		display: flex;
 		flex-direction: column;

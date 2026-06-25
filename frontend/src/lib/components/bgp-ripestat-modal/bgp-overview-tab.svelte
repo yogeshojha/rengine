@@ -1,32 +1,33 @@
 <script lang="ts">
-	import type {
-		ASOverviewRead,
-		NetworkInfoRead,
-		AbuseContactRead,
-		PrefixOverviewRead,
-		RelatedPrefixRead
+	import {
+		type ASOverviewRead,
+		type NetworkInfoRead,
+		type AbuseContactRead,
+		type PrefixOverviewRead,
+		type RelatedPrefixRead,
+		type PrefixRelationship,
+		PREFIX_RELATIONSHIP_LABELS
 	} from '$lib/types/ripestat';
-	import type { TargetType, BgpSummaryData } from '$lib/types/target';
+	import { TargetType } from '$lib/types/target';
+	import type { BgpSummaryData } from '$lib/types/target';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
 	import CopyButton from '@/components/copy-button.svelte';
-	import {
-		RadioTower,
-		Radio,
-		CircleCheck,
-		CircleX,
-		Mail,
-		Shield,
-		Blocks,
-		Cable,
-		Network,
-		Globe,
-		ArrowUpRight,
-		CirclePlus
-	} from 'lucide-svelte';
+	import RadioTower from '@lucide/svelte/icons/radio-tower';
+	import Radio from '@lucide/svelte/icons/radio';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import CircleX from '@lucide/svelte/icons/circle-x';
+	import Mail from '@lucide/svelte/icons/mail';
+	import Shield from '@lucide/svelte/icons/shield';
+	import Blocks from '@lucide/svelte/icons/blocks';
+	import Cable from '@lucide/svelte/icons/cable';
+	import Network from '@lucide/svelte/icons/network';
+	import Globe from '@lucide/svelte/icons/globe';
+	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+	import CirclePlus from '@lucide/svelte/icons/circle-plus';
 
 	interface Props {
 		targetValue: string;
@@ -52,9 +53,9 @@
 		onAddAsTarget
 	}: Props = $props();
 
-	let isAsn = $derived(targetType === 'asn');
-	let isIp = $derived(targetType === 'ip');
-	let isIpRange = $derived(targetType === 'ip_range');
+	let isAsn = $derived(targetType === TargetType.ASN);
+	let isIp = $derived(targetType === TargetType.IP);
+	let isIpRange = $derived(targetType === TargetType.IP_RANGE);
 
 	let TargetIcon = $derived(isAsn ? RadioTower : Radio);
 
@@ -92,8 +93,9 @@
 	let relatedCount = $derived(relatedPrefixes?.length ?? 0);
 
 	let relatedByType = $derived.by(() => {
-		if (!relatedPrefixes || relatedPrefixes.length === 0) return new SvelteMap<string, RelatedPrefixRead[]>();
-		const map = new SvelteMap<string, RelatedPrefixRead[]>();
+		if (!relatedPrefixes || relatedPrefixes.length === 0)
+			return new SvelteMap<PrefixRelationship, RelatedPrefixRead[]>();
+		const map = new SvelteMap<PrefixRelationship, RelatedPrefixRead[]>();
 		for (const rp of relatedPrefixes) {
 			const key = rp.relationship;
 			if (!map.has(key)) map.set(key, []);
@@ -101,12 +103,6 @@
 		}
 		return map;
 	});
-
-	const RELATIONSHIP_LABELS: Record<string, string> = {
-		overlap: 'Overlapping',
-		more_specific: 'More Specific',
-		less_specific: 'Less Specific'
-	};
 
 	function formatAsnLabel(asn: number): string {
 		return `AS${asn}`;
@@ -352,7 +348,7 @@
 							variant="outline"
 							class="text-[10px] font-normal text-muted-foreground border-border/60"
 						>
-							{RELATIONSHIP_LABELS[relationship] ?? relationship}
+							{PREFIX_RELATIONSHIP_LABELS[relationship] ?? relationship}
 							<span class="ml-1 opacity-70">({prefixes.length})</span>
 						</Badge>
 						<div class="flex flex-wrap gap-1.5 ml-1">

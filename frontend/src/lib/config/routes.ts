@@ -15,6 +15,31 @@ export const routeLabels: Record<string, string> = {
 	profile: 'Profile'
 };
 
+export const SETTINGS_TABS = ['general', 'api-keys', 'proxies', 'notifications'] as const;
+export type SettingsTab = (typeof SETTINGS_TABS)[number];
+
+export const ROUTES = {
+	login: '/login',
+	dashboard: '/dashboard',
+	onboarding: '/onboarding',
+	profile: '/profile',
+	targets: '/targets',
+	target: (id: string) => `/targets/${id}`,
+	scans: '/scans',
+	scan: (id: string) => `/scans/${id}`,
+	automation: '/automation',
+	engines: '/automation/engines',
+	engine: (id: string) => `/automation/engines/${id}`,
+	newEngine: (projectId?: string) =>
+		`/automation/engines/new${projectId ? `?project=${projectId}` : ''}`,
+	contexts: '/automation/contexts',
+	context: (id: string) => `/automation/contexts/${id}`,
+	newContext: (projectId?: string) =>
+		`/automation/contexts/new${projectId ? `?project=${projectId}` : ''}`,
+	schedules: '/schedules',
+	settings: (tab?: SettingsTab) => (tab ? `/settings?tab=${tab}` : '/settings')
+} as const;
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function getRouteLabel(segment: string): string {

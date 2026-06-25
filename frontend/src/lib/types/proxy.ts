@@ -1,6 +1,17 @@
 export const PROXY_SCHEMES = ['http', 'https', 'socks5'] as const;
 export const PROXY_MODES = ['single', 'rotating'] as const;
 
+export const PROXY_SCHEME_LABELS: Record<(typeof PROXY_SCHEMES)[number], string> = {
+	http: 'HTTP',
+	https: 'HTTPS',
+	socks5: 'SOCKS5'
+};
+
+export const PROXY_MODE_LABELS: Record<(typeof PROXY_MODES)[number], string> = {
+	single: 'Single',
+	rotating: 'Rotating'
+};
+
 export interface ProxyEndpoint {
 	scheme: string;
 	host: string;

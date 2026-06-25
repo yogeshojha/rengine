@@ -65,7 +65,7 @@ export interface Capability {
 }
 
 export const CAPABILITIES: Capability[] = [
-	// ── DISCOVERY PHASE ─────────────────────────────────────────────────────────
+	// discovery phase
 
 	{
 		id: 'dns-whois',
@@ -170,7 +170,7 @@ export const CAPABILITIES: Capability[] = [
 		]
 	},
 
-	// ── EXPANSION PHASE ──────────────────────────────────────────────────────────
+	// expansion phase
 
 	{
 		id: 'subdomain-enum',
@@ -306,7 +306,10 @@ export const CAPABILITIES: Capability[] = [
 			}
 		},
 		getStatusPills: (engine: ScanEngine) => [
-			{ label: engine.expansion.port_scan_ports ?? 'top-100', active: engine.expansion.port_scan_enabled },
+			{
+				label: engine.expansion.port_scan_ports ?? 'top-100',
+				active: engine.expansion.port_scan_enabled
+			},
 			{ label: 'Nmap', active: engine.expansion.nmap_enabled },
 			{ label: 'Passive', active: engine.expansion.port_scan_passive_shodan }
 		]
@@ -438,7 +441,10 @@ export const CAPABILITIES: Capability[] = [
 			}
 		},
 		getStatusPills: (engine: ScanEngine) => [
-			{ label: engine.depth.dir_fuzz_wordlist || 'wordlist', active: engine.depth.dir_fuzz_enabled },
+			{
+				label: engine.depth.dir_fuzz_wordlist || 'wordlist',
+				active: engine.depth.dir_fuzz_enabled
+			},
 			{ label: 'Recursion', active: (engine.depth.dir_fuzz_recursive_depth ?? 0) > 0 }
 		]
 	},
@@ -471,7 +477,7 @@ export const CAPABILITIES: Capability[] = [
 		]
 	},
 
-	// ── DEPTH PHASE ──────────────────────────────────────────────────────────────
+	// depth phase
 
 	{
 		id: 'vuln-scan',
@@ -485,8 +491,7 @@ export const CAPABILITIES: Capability[] = [
 		produces: 'findings',
 		consumes: ['live-hosts', 'endpoints'],
 		tools: ['nuclei', 'dalfox', 'sqlmap', 'crlfuzz'],
-		isActive: (engine: ScanEngine) =>
-			engine.depth.nuclei_enabled || engine.depth.cors_check,
+		isActive: (engine: ScanEngine) => engine.depth.nuclei_enabled || engine.depth.cors_check,
 		enableFields: {
 			depth: {
 				nuclei_enabled: true,
@@ -620,7 +625,7 @@ export function getActiveCapabilities(engine: ScanEngine): Capability[] {
 	return CAPABILITIES.filter((c) => c.isActive(engine));
 }
 
-// ─── Recon outputs (terminal "Recon Data" node) ───────────────────────────────
+// recon outputs
 export interface ReconOutput {
 	key: string;
 	label: string;
@@ -633,7 +638,7 @@ export function getReconOutputs(engine: ScanEngine): ReconOutput[] {
 		if (cond) out.push({ key, label, icon });
 	};
 
-	// ── Surface (expansion / discovery outputs) ─────────────────────────────────
+	// surface outputs
 	push(true, 'hosts', 'Hosts & IPs', 'Globe');
 	push(
 		engine.discovery.related_domains_enabled ||
@@ -667,7 +672,7 @@ export function getReconOutputs(engine: ScanEngine): ReconOutput[] {
 		'Cloud'
 	);
 
-	// ── Findings (depth outputs) ────────────────────────────────────────────────
+	// findings
 	push(engine.expansion.subdomain_takeover, 'takeovers', 'Takeovers', 'Unlink');
 	push(engine.depth.js_secret_scan, 'secrets', 'Secrets', 'KeyRound');
 	push(engine.depth.ssl_tls_analysis, 'tls', 'TLS / SSL', 'Lock');
@@ -678,7 +683,7 @@ export function getReconOutputs(engine: ScanEngine): ReconOutput[] {
 		'ShieldAlert'
 	);
 
-	// ── Report ──────────────────────────────────────────────────────────────────
+	// report
 	push(engine.depth.report_enabled, 'report', 'Report', 'FileText');
 
 	return out;

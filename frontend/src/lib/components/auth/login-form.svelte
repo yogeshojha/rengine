@@ -9,13 +9,14 @@
 
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { ROUTES } from '$lib/config/routes';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { twoFactorApi } from '$lib/api/twoFactor';
 
 	import { cn } from '$lib/utils.js';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import Eye from 'lucide-svelte/icons/eye';
-	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 
@@ -41,7 +42,7 @@
 
 	$effect(() => {
 		if (auth.isAuthenticated && !auth.isLoading) {
-			goto('/dashboard');
+			goto(ROUTES.dashboard);
 		}
 	});
 

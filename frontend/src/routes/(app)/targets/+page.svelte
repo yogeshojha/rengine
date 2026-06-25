@@ -15,7 +15,12 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Upload, Play, Plus, RefreshCw, X, TriangleAlert } from 'lucide-svelte';
+	import Upload from '@lucide/svelte/icons/upload';
+	import Play from '@lucide/svelte/icons/play';
+	import Plus from '@lucide/svelte/icons/plus';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import X from '@lucide/svelte/icons/x';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
 
 	import TargetTypeTabs from '$lib/components/targets/target-type-tabs.svelte';
@@ -44,6 +49,7 @@
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import TargetViewsMenu from '$lib/components/targets/target-views-menu.svelte';
+	import { ROUTES } from '$lib/config/routes';
 
 	type EnrichmentKind = 'whois' | 'dns' | 'bgp';
 
@@ -807,7 +813,7 @@
 	initialTab={whoisInitialTab}
 	onOpenChange={(open) => (showWhoisDialog = open)}
 	onOpenTargetSummary={() => {
-		goto(`/targets/${whoisTarget?.id}`);
+		goto(ROUTES.target(whoisTarget?.id ?? ''));
 	}}
 />
 

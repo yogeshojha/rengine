@@ -31,6 +31,9 @@ export const sseStore = {
 	},
 
 	init(projectId?: string): void {
+		stateUnsub?.();
+		stateUnsub = null;
+
 		const channels: string[] = [SSEChannel.BROADCAST];
 
 		if (projectId) {

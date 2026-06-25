@@ -1,13 +1,16 @@
 import type { MessageLevel } from '$lib/types/message-level';
 
-export type NotificationType =
-	| 'scan'
-	| 'system'
-	| 'security'
-	| 'vulnerability'
-	| 'target'
-	| 'resource'
-	| 'integration';
+export const NOTIFICATION_TYPES = [
+	'scan',
+	'system',
+	'security',
+	'vulnerability',
+	'target',
+	'resource',
+	'integration'
+] as const;
+
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export type NotificationSeverity = MessageLevel;
 

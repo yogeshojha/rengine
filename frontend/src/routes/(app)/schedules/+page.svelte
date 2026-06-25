@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { CalendarClock, Plus, RefreshCw } from 'lucide-svelte';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import Plus from '@lucide/svelte/icons/plus';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 
 	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as Empty from '$lib/components/ui/empty';
+	import EmptyState from '@/components/empty-state.svelte';
 	import ScheduleListCard from '$lib/components/schedules/schedule-list-card.svelte';
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
@@ -26,7 +28,7 @@
 		const hasFetched = projectsStore.hasFetched;
 		if (project && hasFetched) {
 			untrack(() => {
-				if (!scanSchedulesStore.hasFetched) {
+				if (scanSchedulesStore.fetchedProjectId !== project.id) {
 					scanSchedulesStore.fetchSchedules(project.id);
 				}
 				if (!instanceSettingsStore.hasFetched) {
@@ -146,31 +148,23 @@
 		</div>
 	{/if}
 
-	{#if scanSchedulesStore.isLoading && !scanSchedulesStore.hasFetched}
+	{#if scanSchedulesStore.isLoading}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
-				<Skeleton class="h-[170px] rounded-[10px]" />
+				<Skeleton class="h-[170px] rounded-lg" />
 			{/each}
 		</div>
 	{:else if scanSchedulesStore.schedules.length === 0}
-		<Empty.Root class="border bg-muted/20 py-20">
-			<Empty.Header>
-				<Empty.Media class="size-16 rounded-2xl bg-muted">
-					<CalendarClock size={28} class="text-muted-foreground" />
-				</Empty.Media>
-				<Empty.Title class="text-lg font-bold">No scheduled scans yet</Empty.Title>
-				<Empty.Description class="max-w-md">
-					Put recon on autopilot — run a scan once at a set time, or repeat it hourly, daily, or on
-					a custom cron, and get notified the moment your attack surface changes.
-				</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<Button onclick={handleNew} class="gap-2">
-					<Plus size={15} />
-					Create Your First Schedule
-				</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState
+			icon={CalendarClock}
+			title="No scheduled scans yet"
+			description="Put recon on autopilot — run a scan once at a set time, or repeat it hourly, daily, or on a custom cron, and get notified the moment your attack surface changes."
+		>
+			<Button onclick={handleNew} class="gap-2">
+				<Plus size={15} />
+				Create Your First Schedule
+			</Button>
+		</EmptyState>
 	{:else}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each scanSchedulesStore.schedules as schedule (schedule.id)}

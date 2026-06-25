@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import LoaderIcon from '@lucide/svelte/icons/loader';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -99,7 +99,7 @@
 				</Button>
 				<Button type="submit" disabled={!isValid || isSubmitting}>
 					{#if isSubmitting}
-						<LoaderIcon class="mr-2 size-4 animate-spin" />
+						<Spinner class="mr-2 size-4" />
 						Creating...
 					{:else}
 						Create Project

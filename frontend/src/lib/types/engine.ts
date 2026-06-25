@@ -11,7 +11,12 @@ export type {
 export {
 	DEFAULT_DISCOVERY_CONFIG,
 	DEFAULT_EXPANSION_CONFIG,
-	DEFAULT_DEPTH_CONFIG
+	DEFAULT_DEPTH_CONFIG,
+	INTENSITIES,
+	INTENSITY_LABELS,
+	INTENSITY_HELP,
+	DEFAULT_INTENSITY,
+	DEFAULT_GLOBAL_THREADS
 } from './scan-engine';
 
 export type ArtifactType =
@@ -42,8 +47,6 @@ export const ARTIFACT_LABEL: Record<ArtifactType, string> = {
 	report: 'report',
 	results: 'results'
 };
-
-
 
 export const SEED_TYPES = ['domain', 'ip', 'cidr', 'url', 'org', 'asn'] as const;
 

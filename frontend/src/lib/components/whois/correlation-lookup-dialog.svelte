@@ -2,23 +2,27 @@
 	import { whoisApi } from '$lib/api/whois';
 	import { goto } from '$app/navigation';
 	import { SvelteSet } from 'svelte/reactivity';
-	import type { WhoisCorrelationResult, WhoisRecordSummary } from '$lib/types/whois';
+	import {
+		type WhoisCorrelationResult,
+		type WhoisRecordSummary,
+		CORRELATION_REASON_LABELS
+	} from '$lib/types/whois';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { formatShortDate } from '$lib/utilities/dates';
-	import {
-		Loader,
-		TriangleAlert,
-		UserRound,
-		Building,
-		Server,
-		Flag,
-		Globe,
-		Cable,
-		SearchX
-	} from 'lucide-svelte';
+	import { ROUTES } from '$lib/config/routes';
+	import type { IconComponent } from '$lib/config/icons';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import UserRound from '@lucide/svelte/icons/user-round';
+	import Building from '@lucide/svelte/icons/building';
+	import Server from '@lucide/svelte/icons/server';
+	import Flag from '@lucide/svelte/icons/flag';
+	import Globe from '@lucide/svelte/icons/globe';
+	import Cable from '@lucide/svelte/icons/cable';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		open: boolean;
@@ -31,7 +35,7 @@
 
 	function openTarget(value: string) {
 		onOpenChange(false);
-		goto('/targets?q=' + encodeURIComponent(value));
+		goto(`${ROUTES.targets}?q=${encodeURIComponent(value)}`);
 	}
 
 	let records = $state<WhoisRecordSummary[]>([]);
@@ -41,14 +45,14 @@
 	let headerEl = $state<HTMLDivElement | null>(null);
 	let scrollHeight = $state(0);
 
-	const TYPE_META: Record<string, { label: string; icon: typeof Globe }> = {
-		registrant_name: { label: 'Registrant', icon: UserRound },
-		registrant: { label: 'Registrant', icon: UserRound },
-		registrar_name: { label: 'Registrar', icon: Building },
-		registrar: { label: 'Registrar', icon: Building },
-		nameserver: { label: 'Nameserver', icon: Server },
-		network_cidr: { label: 'Network', icon: Cable },
-		network: { label: 'Network', icon: Cable }
+	const TYPE_META: Record<string, { label: string; icon: IconComponent }> = {
+		registrant_name: { label: CORRELATION_REASON_LABELS.registrant_name.short, icon: UserRound },
+		registrant: { label: CORRELATION_REASON_LABELS.registrant.short, icon: UserRound },
+		registrar_name: { label: CORRELATION_REASON_LABELS.registrar_name.short, icon: Building },
+		registrar: { label: CORRELATION_REASON_LABELS.registrar.short, icon: Building },
+		nameserver: { label: CORRELATION_REASON_LABELS.nameserver.short, icon: Server },
+		network_cidr: { label: CORRELATION_REASON_LABELS.network_cidr.short, icon: Cable },
+		network: { label: CORRELATION_REASON_LABELS.network.short, icon: Cable }
 	};
 
 	let meta = $derived(
@@ -160,7 +164,7 @@
 						<Empty.Root>
 							<Empty.Header>
 								<Empty.Media variant="icon">
-									<Loader class="animate-spin" />
+									<Spinner />
 								</Empty.Media>
 								<Empty.Title>Searching targets…</Empty.Title>
 							</Empty.Header>

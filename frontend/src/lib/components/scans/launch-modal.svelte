@@ -3,9 +3,14 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { AlertTriangle, ChevronLeft, LoaderCircle, Plus, RefreshCw, Rocket } from 'lucide-svelte';
+	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import Plus from '@lucide/svelte/icons/plus';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Rocket from '@lucide/svelte/icons/rocket';
 
 	import { Button } from '$lib/components/ui/button';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
@@ -29,6 +34,9 @@
 	import { scansApi } from '$lib/api/scans';
 	import { targetsApi } from '$lib/api/targets';
 	import { DEFAULT_SCAN_CONTEXT, type ScanContextCreate } from '$lib/types/scan-context';
+	import { ROUTES } from '$lib/config/routes';
+	import { SELECT_NONE } from '$lib/constants';
+	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import type { Target } from '$lib/types/target';
 	import type { ScanPreview } from '$lib/types/scan';
 
@@ -40,15 +48,12 @@
 
 	let { open = $bindable(), targetId, onClose }: Props = $props();
 
-	const NONE_CONTEXT = '__none__';
-	const LAST_ENGINE_KEY = 'rengine:launch:lastEngine';
-	const LAST_CONTEXT_KEY = 'rengine:launch:lastContext';
 	const CTX_MODAL_SECTIONS: ContextFormSection[] = ['scope', 'auth', 'rate', 'runtime', 'proxy'];
 
 	let view = $state<'launch' | 'newContext'>('launch');
 
 	let engineId = $state<string>('');
-	let contextId = $state<string>(NONE_CONTEXT);
+	let contextId = $state<string>(SELECT_NONE);
 	let selectedTargetId = $state<string>('');
 
 	let targets = $state<Target[]>([]);
@@ -85,7 +90,7 @@
 		scanEnginesStore.engines.find((e) => e.id === engineId)?.name ?? 'Select engine'
 	);
 	let contextLabel = $derived(
-		contextId === NONE_CONTEXT
+		contextId === SELECT_NONE
 			? 'None — engine defaults'
 			: (scanContextsStore.contexts.find((c) => c.id === contextId)?.name ?? 'Select context')
 	);
@@ -148,14 +153,14 @@
 	function restorePreferences() {
 		if (typeof localStorage === 'undefined') return;
 		if (!engineId) {
-			const lastEngine = localStorage.getItem(LAST_ENGINE_KEY);
+			const lastEngine = localStorage.getItem(STORAGE_KEYS.launchLastEngine);
 			if (lastEngine && scanEnginesStore.engines.some((e) => e.id === lastEngine)) {
 				engineId = lastEngine;
 			}
 		}
-		const lastContext = localStorage.getItem(LAST_CONTEXT_KEY);
-		if (lastContext === NONE_CONTEXT) {
-			contextId = NONE_CONTEXT;
+		const lastContext = localStorage.getItem(STORAGE_KEYS.launchLastContext);
+		if (lastContext === SELECT_NONE) {
+			contextId = SELECT_NONE;
 		} else if (lastContext && scanContextsStore.contexts.some((c) => c.id === lastContext)) {
 			contextId = lastContext;
 		}
@@ -215,7 +220,7 @@
 			try {
 				const result = await scansApi.preview(project.id, {
 					engine_id: eng,
-					context_id: ctx === NONE_CONTEXT ? null : ctx,
+					context_id: ctx === SELECT_NONE ? null : ctx,
 					target_id: tgt
 				});
 				if (seq === previewSeq) {
@@ -242,8 +247,8 @@
 
 	function rememberPreferences() {
 		if (typeof localStorage === 'undefined') return;
-		if (engineId) localStorage.setItem(LAST_ENGINE_KEY, engineId);
-		localStorage.setItem(LAST_CONTEXT_KEY, contextId);
+		if (engineId) localStorage.setItem(STORAGE_KEYS.launchLastEngine, engineId);
+		localStorage.setItem(STORAGE_KEYS.launchLastContext, contextId);
 	}
 
 	async function handleLaunch() {
@@ -253,14 +258,14 @@
 		try {
 			const created = await scansStore.launchScan(project.id, {
 				engine_id: engineId,
-				context_id: contextId === NONE_CONTEXT ? null : contextId,
+				context_id: contextId === SELECT_NONE ? null : contextId,
 				target_id: selectedTargetId
 			});
 			if (created) {
 				rememberPreferences();
 				toast.success('Scan queued — execution starts when a scanner is connected.');
 				handleOpenChange(false);
-				goto('/scans');
+				goto(ROUTES.scans);
 			} else {
 				toast.error(scansStore.error ?? 'Failed to launch scan');
 			}
@@ -271,7 +276,7 @@
 
 	function gotoCreateEngine() {
 		handleOpenChange(false);
-		goto('/automation/engines/new');
+		goto(ROUTES.newEngine());
 	}
 
 	async function startNewContext() {
@@ -334,7 +339,7 @@
 
 	function reset() {
 		engineId = '';
-		contextId = NONE_CONTEXT;
+		contextId = SELECT_NONE;
 		selectedTargetId = '';
 		preview = null;
 		previewLoading = false;
@@ -473,7 +478,7 @@
 										>{contextLabel}</Select.Trigger
 									>
 									<Select.Content>
-										<Select.Item value={NONE_CONTEXT} label="None — engine defaults">
+										<Select.Item value={SELECT_NONE} label="None — engine defaults">
 											None — engine defaults
 										</Select.Item>
 										{#each scanContextsStore.contexts as context (context.id)}
@@ -533,7 +538,7 @@
 										class="h-7 gap-1 text-xs"
 										onclick={() => {
 											handleOpenChange(false);
-											goto('/targets');
+											goto(ROUTES.targets);
 										}}
 									>
 										<Plus class="h-3 w-3" /> Go to targets
@@ -581,7 +586,7 @@
 								<div
 									class="absolute inset-x-0 top-0 flex items-center justify-center gap-2 text-xs text-muted-foreground"
 								>
-									<LoaderCircle class="h-3.5 w-3.5 animate-spin" />
+									<Spinner class="h-3.5 w-3.5" />
 									Updating preview…
 								</div>
 							</div>
@@ -608,7 +613,7 @@
 					</Button>
 					<Button onclick={handleLaunch} disabled={!canLaunch} class="gap-2">
 						{#if launching}
-							<LoaderCircle class="h-4 w-4 animate-spin" />
+							<Spinner class="h-4 w-4" />
 							Queuing...
 						{:else}
 							<Rocket class="h-4 w-4" />
@@ -679,7 +684,7 @@
 					class="gap-2"
 				>
 					{#if savingContext}
-						<LoaderCircle class="h-4 w-4 animate-spin" />
+						<Spinner class="h-4 w-4" />
 						Creating…
 					{:else}
 						<Plus class="h-4 w-4" />

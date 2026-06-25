@@ -19,7 +19,10 @@
 	import BgpOverviewTab from './bgp-overview-tab.svelte';
 	import BgpPrefixesTab from './bgp-prefixes-tab.svelte';
 	import BgpPeersTab from './bgp-peers-tab.svelte';
-	import { RadioTower, Radio, Loader, TriangleAlert } from 'lucide-svelte';
+	import RadioTower from '@lucide/svelte/icons/radio-tower';
+	import Radio from '@lucide/svelte/icons/radio';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		open: boolean;
@@ -64,7 +67,7 @@
 	let tabListEl = $state<HTMLDivElement | null>(null);
 	let scrollHeight = $state(0);
 
-	let isAsn = $derived(targetType === 'asn');
+	let isAsn = $derived(targetType === TargetType.ASN);
 
 	let DialogIcon = $derived(isAsn ? RadioTower : Radio);
 
@@ -177,7 +180,7 @@
 				<div class="flex items-center gap-3">
 					<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
 						{#if isLoadingOverview && !bgpSummary}
-							<Loader class="h-5 w-5 text-primary animate-spin" />
+							<Spinner class="h-5 w-5 text-primary" />
 						{:else}
 							<DialogIcon class="h-5 w-5 text-primary" />
 						{/if}
@@ -217,7 +220,7 @@
 										{prefixCount.toLocaleString()}
 									</Badge>
 								{:else if isLoadingPrefixes}
-									<Loader class="h-3 w-3 animate-spin text-muted-foreground ml-1" />
+									<Spinner class="h-3 w-3 text-muted-foreground ml-1" />
 								{/if}
 							</Tabs.Trigger>
 						{/if}
@@ -229,7 +232,7 @@
 										{peerCount.toLocaleString()}
 									</Badge>
 								{:else if isLoadingPeers}
-									<Loader class="h-3 w-3 animate-spin text-muted-foreground ml-1" />
+									<Spinner class="h-3 w-3 text-muted-foreground ml-1" />
 								{/if}
 							</Tabs.Trigger>
 						{/if}

@@ -6,7 +6,11 @@
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-	import { XCircle, RefreshCw, FileText, Globe, Router } from 'lucide-svelte';
+	import XCircle from '@lucide/svelte/icons/circle-x';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import Globe from '@lucide/svelte/icons/globe';
+	import Router from '@lucide/svelte/icons/router';
 
 	interface Props {
 		title: string;

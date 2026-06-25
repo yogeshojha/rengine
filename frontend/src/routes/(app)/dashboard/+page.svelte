@@ -19,19 +19,20 @@
 	import AttackSurfaceDelta from '$lib/components/dashboard/attack-surface-delta.svelte';
 	import NeedsAttention from '$lib/components/dashboard/needs-attention.svelte';
 	import TargetsByTypeDonut from '$lib/components/dashboard/targets-by-type-donut.svelte';
-	import {
-		Boxes,
-		CalendarClock,
-		TriangleAlert,
-		Hourglass,
-		ShieldCheck,
-		FolderOpen,
-		Plus,
-		RefreshCw,
-		ArrowRight
-	} from 'lucide-svelte';
+	import Boxes from '@lucide/svelte/icons/boxes';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import Hourglass from '@lucide/svelte/icons/hourglass';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import FolderOpen from '@lucide/svelte/icons/folder-open';
+	import Plus from '@lucide/svelte/icons/plus';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import type { SignalFilter } from '$lib/utilities/target-signals';
 	import { TargetType } from '$lib/types/target';
+	import { ROUTES } from '$lib/config/routes';
+	import type { IconComponent } from '$lib/config/icons';
+	import { ACTIVITY_TICK_MS } from '$lib/constants';
 
 	let activeProject = $derived(projectsStore.activeProject);
 	let addTargetOpen = $state(false);
@@ -69,7 +70,7 @@
 	});
 
 	$effect(() => {
-		const iv = setInterval(() => activityFeed.bumpTick(), 20_000);
+		const iv = setInterval(() => activityFeed.bumpTick(), ACTIVITY_TICK_MS);
 		return () => clearInterval(iv);
 	});
 
@@ -94,7 +95,7 @@
 		signal: SignalFilter | null;
 		label: string;
 		value: number;
-		icon: typeof Boxes;
+		icon: IconComponent;
 		accent: string;
 	}
 
@@ -111,7 +112,7 @@
 			label: 'Expiring',
 			value: summary.expiring,
 			icon: CalendarClock,
-			accent: 'text-amber-600 dark:text-amber-500'
+			accent: 'text-warning'
 		},
 		{
 			signal: null,
@@ -147,11 +148,11 @@
 	);
 
 	function openSignal(signal: SignalFilter | null) {
-		goto(signal ? `/targets?signal=${signal}` : '/targets');
+		goto(signal ? `${ROUTES.targets}?signal=${signal}` : ROUTES.targets);
 	}
 
 	function openType(type: TargetType) {
-		goto(`/targets?type=${type}`);
+		goto(`${ROUTES.targets}?type=${type}`);
 	}
 </script>
 

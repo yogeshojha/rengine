@@ -1,18 +1,17 @@
 <script lang="ts">
-	import type { ASNNeighbourRead } from '$lib/types/ripestat';
+	import { type ASNNeighbourRead, PEER_RELATIONSHIP_LABELS } from '$lib/types/ripestat';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Badge } from '$lib/components/ui/badge';
-	import {
-		Loader,
-		SearchX,
-		Waypoints,
-		ArrowUpRight,
-		ArrowDownRight,
-		Info,
-		CirclePlus,
-		Zap
-	} from 'lucide-svelte';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import Waypoints from '@lucide/svelte/icons/waypoints';
+	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+	import ArrowDownRight from '@lucide/svelte/icons/arrow-down-right';
+	import Info from '@lucide/svelte/icons/info';
+	import CirclePlus from '@lucide/svelte/icons/circle-plus';
+	import Zap from '@lucide/svelte/icons/zap';
+	import { Spinner } from '$lib/components/ui/spinner';
+	import type { IconComponent } from '$lib/config/icons';
 
 	interface Props {
 		neighbours: ASNNeighbourRead[];
@@ -39,25 +38,25 @@
 		string,
 		{
 			label: string;
-			icon: typeof ArrowUpRight;
+			icon: IconComponent;
 			badge: string;
 			bar: string;
 		}
 	> = {
 		upstream: {
-			label: 'Upstream',
+			label: PEER_RELATIONSHIP_LABELS.upstream,
 			icon: ArrowUpRight,
 			badge: 'text-muted-foreground border-border/60',
 			bar: 'bg-foreground'
 		},
 		downstream: {
-			label: 'Downstream',
+			label: PEER_RELATIONSHIP_LABELS.downstream,
 			icon: ArrowDownRight,
 			badge: 'text-muted-foreground border-border/60',
 			bar: 'bg-muted-foreground'
 		},
 		uncertain: {
-			label: 'Peer',
+			label: PEER_RELATIONSHIP_LABELS.uncertain,
 			icon: Info,
 			badge: 'text-muted-foreground border-border/60',
 			bar: 'bg-muted-foreground/50'
@@ -84,7 +83,7 @@
 	<Empty.Root>
 		<Empty.Header>
 			<Empty.Media variant="icon">
-				<Loader class="animate-spin" />
+				<Spinner />
 			</Empty.Media>
 			<Empty.Title>Loading BGP peers…</Empty.Title>
 		</Empty.Header>
@@ -223,10 +222,7 @@
 							</Tooltip.Content>
 						</Tooltip.Root>
 
-						<Badge
-							variant="outline"
-							class="text-[10px] font-normal gap-1 shrink-0 {meta.badge}"
-						>
+						<Badge variant="outline" class="text-[10px] font-normal gap-1 shrink-0 {meta.badge}">
 							<RelIcon class="h-3 w-3" />
 							{meta.label}
 						</Badge>

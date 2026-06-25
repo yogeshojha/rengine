@@ -6,8 +6,15 @@
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import * as ScrollArea from '$lib/components/ui/scroll-area/index.js';
 	import CopyButton from '$lib/components/copy-button.svelte';
-	import { Search, X, Copy, Check, ChevronRight, Mail, Info } from 'lucide-svelte';
+	import Search from '@lucide/svelte/icons/search';
+	import X from '@lucide/svelte/icons/x';
+	import Copy from '@lucide/svelte/icons/copy';
+	import Check from '@lucide/svelte/icons/check';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import Mail from '@lucide/svelte/icons/mail';
+	import Info from '@lucide/svelte/icons/info';
 	import { tick } from 'svelte';
+	import { formatShortDate } from '$lib/utilities/dates';
 
 	interface Props {
 		bgp: TargetBgpDetailResponse;
@@ -16,7 +23,9 @@
 	let { bgp }: Props = $props();
 
 	const byPower = (a: { power: number }, b: { power: number }) => (b.power ?? 0) - (a.power ?? 0);
-	let upstream = $derived(bgp.neighbours.filter((n) => n.relationship === 'upstream').sort(byPower));
+	let upstream = $derived(
+		bgp.neighbours.filter((n) => n.relationship === 'upstream').sort(byPower)
+	);
 	let downstream = $derived(
 		bgp.neighbours.filter((n) => n.relationship === 'downstream').sort(byPower)
 	);
@@ -155,11 +164,7 @@
 	function fmtDate(d: string | null): string {
 		if (!d) return '—';
 		try {
-			return new Date(d).toLocaleDateString('en-US', {
-				year: 'numeric',
-				month: 'short',
-				day: 'numeric'
-			});
+			return formatShortDate(d);
 		} catch {
 			return d;
 		}
@@ -202,11 +207,11 @@
 
 {#snippet chipGroup(items: typeof upstream)}
 	{#if items.length > 18}
-		<ScrollArea.Root class="h-[176px] rounded-md border border-border/15" scrollbarYClasses="w-1.5">
+		<ScrollArea.Root class="h-[176px] rounded-md border border-border/40" scrollbarYClasses="w-1.5">
 			{@render chipList(items)}
 		</ScrollArea.Root>
 	{:else}
-		<div class="rounded-md border border-border/15">{@render chipList(items)}</div>
+		<div class="rounded-md border border-border/40">{@render chipList(items)}</div>
 	{/if}
 {/snippet}
 
@@ -296,9 +301,12 @@
 		{#if bgp.as_overview}
 			<div class="flex items-center gap-2 mb-2.5">
 				<span class="h-1.5 w-1.5 rounded-full bg-foreground/70 shrink-0"></span>
-				<span class="text-[12px] font-semibold font-mono tracking-tight">AS{bgp.as_overview.asn}</span>
+				<span class="text-[12px] font-semibold font-mono tracking-tight"
+					>AS{bgp.as_overview.asn}</span
+				>
 				{#if bgp.as_overview.holder}
-					<span class="text-[10px] text-muted-foreground/50 truncate">{bgp.as_overview.holder}</span>
+					<span class="text-[10px] text-muted-foreground/50 truncate">{bgp.as_overview.holder}</span
+					>
 				{/if}
 			</div>
 		{/if}
@@ -395,12 +403,13 @@
 							{#each bgp.announced_prefixes as pfx, i (pfx.prefix)}
 								<div
 									class="flex items-center gap-2 px-2.5 py-1.5 text-[11px]
-									{i > 0 ? 'border-t border-border/15' : ''} hover:bg-muted/40 transition-colors"
+									{i > 0 ? 'border-t border-border/40' : ''} hover:bg-muted/40 transition-colors"
 								>
 									<code
 										class="font-mono text-foreground/80 flex-1"
-										title="first seen {fmtDate(pfx.first_seen)} · last seen {fmtDate(pfx.last_seen)}"
-										>{pfx.prefix}</code
+										title="first seen {fmtDate(pfx.first_seen)} · last seen {fmtDate(
+											pfx.last_seen
+										)}">{pfx.prefix}</code
 									>
 									<span class="text-[10px] text-muted-foreground/50">v{pfx.ip_version}</span>
 									<span class="font-mono tabular-nums text-[10px] text-muted-foreground/50"
@@ -411,13 +420,13 @@
 						{/snippet}
 						{#if bgp.announced_prefixes.length > 8}
 							<ScrollArea.Root
-								class="h-[200px] rounded-md border border-border/15"
+								class="h-[200px] rounded-md border border-border/40"
 								scrollbarYClasses="w-1.5"
 							>
 								{@render prefixRows()}
 							</ScrollArea.Root>
 						{:else}
-							<div class="rounded-md border border-border/15">{@render prefixRows()}</div>
+							<div class="rounded-md border border-border/40">{@render prefixRows()}</div>
 						{/if}
 					</div>
 				</Collapsible.Content>
@@ -447,7 +456,9 @@
 								>
 									<code class="font-mono text-foreground/70 shrink-0">{po.prefix}</code>
 									{#if po.holder}
-										<span class="text-muted-foreground/60 text-[10px] truncate flex-1">{po.holder}</span>
+										<span class="text-muted-foreground/60 text-[10px] truncate flex-1"
+											>{po.holder}</span
+										>
 									{:else}
 										<span class="flex-1"></span>
 									{/if}
@@ -498,7 +509,9 @@
 									class="flex items-center gap-2 px-2.5 py-1.5 text-[10px]
 									{i > 0 ? 'border-t border-border/10' : ''} hover:bg-accent/5 transition-colors"
 								>
-									<code class="font-mono text-[11px] text-foreground/80 flex-1">{rp.related_prefix}</code>
+									<code class="font-mono text-[11px] text-foreground/80 flex-1"
+										>{rp.related_prefix}</code
+									>
 									<Badge
 										variant="outline"
 										class="text-[10px] h-4 px-1 text-muted-foreground border-border/60"
@@ -549,7 +562,8 @@
 									>{/if}
 								{#if ac.rir}<Badge
 										variant="outline"
-										class="text-[10px] h-4 px-1 text-muted-foreground border-border/60">{ac.rir}</Badge
+										class="text-[10px] h-4 px-1 text-muted-foreground border-border/60"
+										>{ac.rir}</Badge
 									>{/if}
 								<div class="opacity-0 group-hover/ac:opacity-100 transition-opacity ml-auto">
 									<CopyButton value={ac.abuse_email} />

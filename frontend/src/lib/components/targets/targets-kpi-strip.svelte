@@ -1,6 +1,11 @@
 <script lang="ts">
 	import type { SignalFilter, TargetSummary } from '$lib/utilities/target-signals';
-	import { Boxes, CalendarClock, TriangleAlert, Loader, ShieldCheck } from 'lucide-svelte';
+	import type { IconComponent } from '$lib/config/icons';
+	import Boxes from '@lucide/svelte/icons/boxes';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import Loader from '@lucide/svelte/icons/loader';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 
 	interface Props {
 		summary: TargetSummary;
@@ -14,7 +19,7 @@
 		signal: SignalFilter | null;
 		label: string;
 		value: number;
-		icon: typeof Boxes;
+		icon: IconComponent;
 		accent: string;
 		activeRing: string;
 	}
@@ -33,8 +38,8 @@
 			label: 'Expiring',
 			value: summary.expiring,
 			icon: CalendarClock,
-			accent: 'text-amber-600 dark:text-amber-500',
-			activeRing: 'ring-amber-500/40 border-amber-500/40 bg-amber-500/10'
+			accent: 'text-warning',
+			activeRing: 'ring-warning/40 border-warning/40 bg-warning/10'
 		},
 		{
 			signal: 'attention',

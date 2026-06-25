@@ -2,7 +2,13 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { CalendarClock, Ellipsis, Pause, Pencil, Play, Rocket, Trash2 } from 'lucide-svelte';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import Pause from '@lucide/svelte/icons/pause';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Play from '@lucide/svelte/icons/play';
+	import Rocket from '@lucide/svelte/icons/rocket';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { SCHEDULE_STATUS_LABELS, type ScanScheduleRead } from '$lib/types/scan-schedule';
 
@@ -33,7 +39,7 @@
 </script>
 
 <div
-	class="group relative flex flex-col rounded-[10px] border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+	class="group relative flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
 >
 	<div class="mb-2 flex items-start justify-between gap-2">
 		<div class="flex min-w-0 flex-1 items-center gap-2">
@@ -41,7 +47,7 @@
 			<Badge
 				variant={isPaused ? 'outline' : 'secondary'}
 				class={isPaused
-					? 'border-amber-500/40 bg-amber-500/10 text-[10px] font-semibold text-amber-600 dark:text-amber-400'
+					? 'border-warning/40 bg-warning/10 text-[10px] font-semibold text-warning'
 					: 'text-[10px] font-semibold'}
 			>
 				{SCHEDULE_STATUS_LABELS[schedule.status]}
@@ -95,7 +101,7 @@
 		<span class="shrink-0">{schedule.timezone}</span>
 		{#if schedule.timezone_stale}
 			<span
-				class="shrink-0 rounded border border-amber-500/30 px-1 text-[10px] font-medium text-amber-600 dark:text-amber-500"
+				class="shrink-0 rounded border border-warning/30 px-1 text-[10px] font-medium text-warning"
 				title="The instance timezone changed after this schedule was created; it still fires in {schedule.timezone}."
 			>
 				tz changed
@@ -106,7 +112,7 @@
 	<div class="mb-3 flex flex-wrap items-center gap-1.5">
 		<Badge
 			variant="secondary"
-			class="rounded-[5px] border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+			class="rounded-sm border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
 		>
 			{schedule.targets.length || schedule.target_ids.length} target{(schedule.targets.length ||
 				schedule.target_ids.length) === 1
@@ -115,14 +121,14 @@
 		</Badge>
 		<Badge
 			variant="secondary"
-			class="rounded-[5px] border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+			class="rounded-sm border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
 		>
 			{schedule.engine_name}
 		</Badge>
 		{#if schedule.context_name}
 			<Badge
 				variant="secondary"
-				class="rounded-[5px] border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+				class="rounded-sm border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
 			>
 				{schedule.context_name}
 			</Badge>

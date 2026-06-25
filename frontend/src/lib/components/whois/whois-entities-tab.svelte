@@ -3,20 +3,18 @@
 	import { ENTITY_ROLE_LABELS } from '$lib/types/whois';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Empty from '$lib/components/ui/empty';
-	import {
-		UserRound,
-		Building,
-		Shield,
-		Wrench,
-		CreditCard,
-		Handshake,
-		Mail,
-		Phone,
-		MapPin,
-		Globe,
-		MonitorCog,
-		Cable
-	} from 'lucide-svelte';
+	import UserRound from '@lucide/svelte/icons/user-round';
+	import Building from '@lucide/svelte/icons/building';
+	import Shield from '@lucide/svelte/icons/shield';
+	import Wrench from '@lucide/svelte/icons/wrench';
+	import CreditCard from '@lucide/svelte/icons/credit-card';
+	import Handshake from '@lucide/svelte/icons/handshake';
+	import Mail from '@lucide/svelte/icons/mail';
+	import Phone from '@lucide/svelte/icons/phone';
+	import MapPin from '@lucide/svelte/icons/map-pin';
+	import Globe from '@lucide/svelte/icons/globe';
+	import MonitorCog from '@lucide/svelte/icons/monitor-cog';
+	import Cable from '@lucide/svelte/icons/cable';
 
 	interface Props {
 		record: WhoisRecordRead;

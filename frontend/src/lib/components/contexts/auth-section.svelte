@@ -4,7 +4,9 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
-	import { Eye, EyeOff, X } from 'lucide-svelte';
+	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import X from '@lucide/svelte/icons/x';
 	import {
 		AUTH_TYPES,
 		MASK,
@@ -189,7 +191,11 @@
 {/snippet}
 
 <div class="space-y-5">
-	<RadioGroup.Root value={local.auth_type} onValueChange={setType} class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+	<RadioGroup.Root
+		value={local.auth_type}
+		onValueChange={setType}
+		class="grid grid-cols-2 gap-2 sm:grid-cols-3"
+	>
 		{#each AUTH_TYPES as t (t)}
 			<Label
 				class="flex cursor-pointer items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm data-[active=true]:border-primary data-[active=true]:bg-muted"
@@ -289,8 +295,6 @@
 				</Button>
 			</div>
 		{/each}
-		<p class="text-xs text-muted-foreground">
-			Type in the empty row to add a header.
-		</p>
+		<p class="text-xs text-muted-foreground">Type in the empty row to add a header.</p>
 	</div>
 </div>

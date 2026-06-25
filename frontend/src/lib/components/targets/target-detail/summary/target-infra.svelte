@@ -27,7 +27,13 @@
 		const out: Group[] = [];
 		for (const kind of order) {
 			const entries = summary.infra.filter((e) => e.kind === kind);
-			if (entries.length) out.push({ key: kind, label: GROUP_META[kind].label, badge: GROUP_META[kind].badge, entries });
+			if (entries.length)
+				out.push({
+					key: kind,
+					label: GROUP_META[kind].label,
+					badge: GROUP_META[kind].badge,
+					entries
+				});
 		}
 		return out;
 	});
@@ -36,18 +42,26 @@
 </script>
 
 {#snippet rows()}
-	<div class="divide-y divide-border/15">
+	<div class="divide-y divide-border/40">
 		{#each groups as group (group.key)}
 			{#each group.entries as entry (entry.value)}
-				<div class="flex items-center gap-2 px-4 py-1.5 group/infra hover:bg-muted/40 transition-colors">
-					<span class="text-[10px] font-mono font-semibold uppercase tracking-wide text-muted-foreground/60 w-10 shrink-0">
+				<div
+					class="flex items-center gap-2 px-4 py-1.5 group/infra hover:bg-muted/40 transition-colors"
+				>
+					<span
+						class="text-[10px] font-mono font-semibold uppercase tracking-wide text-muted-foreground/60 w-10 shrink-0"
+					>
 						{group.badge}
 					</span>
-					<code class="text-[11px] font-mono text-foreground/80 truncate flex-1">{entry.value}</code>
+					<code class="text-[11px] font-mono text-foreground/80 truncate flex-1">{entry.value}</code
+					>
 					{#if entry.note}
-						<span class="text-[10px] font-mono text-muted-foreground/60 shrink-0">{entry.note}</span>
+						<span class="text-[10px] font-mono text-muted-foreground/60 shrink-0">{entry.note}</span
+						>
 					{/if}
-					<div class="opacity-100 sm:opacity-0 sm:group-hover/infra:opacity-100 sm:group-focus-within/infra:opacity-100 transition-opacity shrink-0">
+					<div
+						class="opacity-100 sm:opacity-0 sm:group-hover/infra:opacity-100 sm:group-focus-within/infra:opacity-100 transition-opacity shrink-0"
+					>
 						<CopyButton value={entry.value} />
 					</div>
 				</div>
@@ -60,7 +74,8 @@
 	<div class="rounded-lg border bg-card overflow-hidden">
 		<div class="flex items-center justify-between px-4 py-2.5 border-b border-border/50">
 			<h3 class="text-xs font-semibold tracking-tight text-foreground">Infrastructure</h3>
-			<span class="text-[10px] font-mono tabular-nums text-muted-foreground/60">{total} assets</span>
+			<span class="text-[10px] font-mono tabular-nums text-muted-foreground/60">{total} assets</span
+			>
 		</div>
 
 		{#if total > 10}

@@ -5,20 +5,21 @@
 	import { TaskStatus } from '@/types/task-status';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { goto } from '$app/navigation';
-	import {
-		Loader,
-		TriangleAlert,
-		Clock,
-		Globe,
-		Mail,
-		FileText,
-		Server,
-		Shield,
-		Network,
-		ExternalLink,
-		ShieldCheck,
-		Waypoints
-	} from 'lucide-svelte';
+	import { ROUTES } from '$lib/config/routes';
+	import type { IconComponent } from '$lib/config/icons';
+	import { formatShortDate } from '$lib/utilities/dates';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import Clock from '@lucide/svelte/icons/clock';
+	import Globe from '@lucide/svelte/icons/globe';
+	import Mail from '@lucide/svelte/icons/mail';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import Server from '@lucide/svelte/icons/server';
+	import Shield from '@lucide/svelte/icons/shield';
+	import Network from '@lucide/svelte/icons/network';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import Waypoints from '@lucide/svelte/icons/waypoints';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		status: string;
@@ -65,7 +66,7 @@
 		return { label: dns.cdn_name };
 	});
 
-	const RECORD_META: Partial<Record<DnsRecordType, { label: string; icon: typeof Globe }>> = {
+	const RECORD_META: Partial<Record<DnsRecordType, { label: string; icon: IconComponent }>> = {
 		[DnsRecordType.A]: { label: 'A (IPv4)', icon: Globe },
 		[DnsRecordType.AAAA]: { label: 'AAAA (IPv6)', icon: Globe },
 		[DnsRecordType.NS]: { label: 'Nameservers', icon: Server },
@@ -89,12 +90,6 @@
 		}));
 	});
 
-	function formatQueriedAt(dateStr: string | null | undefined): string {
-		if (!dateStr) return 'Unknown';
-		const d = new Date(dateStr);
-		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-	}
-
 	function handleClick(e: MouseEvent) {
 		e.stopPropagation();
 		onClick?.();
@@ -103,7 +98,7 @@
 
 {#if !isApplicable}{:else if status === TaskStatus.PENDING || status === TaskStatus.QUERYING}
 	<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-		<Loader class="h-3 w-3 animate-spin" />
+		<Spinner class="h-3 w-3" />
 		<span class="animate-pulse">DNS…</span>
 	</div>
 {:else if status === TaskStatus.FAILED}
@@ -184,12 +179,12 @@
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
 								<Clock class="h-3 w-3" />
-								<span>Queried {formatQueriedAt(dns.queried_at)}</span>
+								<span>Queried {dns.queried_at ? formatShortDate(dns.queried_at) : 'Unknown'}</span>
 							</div>
 							<button
 								type="button"
 								class="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
-								onclick={() => goto(`/targets/${targetId}`)}
+								onclick={() => goto(ROUTES.target(targetId))}
 							>
 								See Details
 								<ExternalLink class="h-2.5 w-2.5" />

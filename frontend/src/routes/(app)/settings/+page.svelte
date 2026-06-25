@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
-	import { untrack } from 'svelte';
+	import { untrack, type Component } from 'svelte';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import ApiKeysTab from '$lib/components/settings/api-keys-tab.svelte';
 	import InstanceSettingsTab from '$lib/components/settings/instance-settings-tab.svelte';
@@ -12,17 +12,29 @@
 	import KeyIcon from '@lucide/svelte/icons/key-round';
 	import RouteIcon from '@lucide/svelte/icons/route';
 	import BellIcon from '@lucide/svelte/icons/bell';
+	import { SETTINGS_TABS, type SettingsTab } from '$lib/config/routes';
+	import type { IconComponent } from '$lib/config/icons';
 
-	const validTabs = new Set(['general', 'api-keys', 'proxies', 'notifications']);
+	const TAB_META: Record<SettingsTab, { label: string; icon: IconComponent; panel: Component }> = {
+		general: { label: 'General', icon: SlidersHorizontalIcon, panel: InstanceSettingsTab },
+		'api-keys': { label: 'API Keys', icon: KeyIcon, panel: ApiKeysTab },
+		proxies: { label: 'Proxies', icon: RouteIcon, panel: ProxiesTab },
+		notifications: { label: 'Notifications', icon: BellIcon, panel: NotificationChannelsTab }
+	};
 
-	const initialTab = page.url.searchParams.get('tab') ?? 'general';
-	let activeTab = $state(validTabs.has(initialTab) ? initialTab : 'general');
+	const DEFAULT_TAB = SETTINGS_TABS[0];
+	const validTabs = new Set<string>(SETTINGS_TABS);
+
+	const initialTab = page.url.searchParams.get('tab') ?? DEFAULT_TAB;
+	let activeTab = $state<SettingsTab>(
+		validTabs.has(initialTab) ? (initialTab as SettingsTab) : DEFAULT_TAB
+	);
 
 	$effect(() => {
 		const tab = activeTab;
 		if (!browser) return;
 		const params = untrack(() => new URLSearchParams(page.url.searchParams));
-		if (tab === 'general') params.delete('tab');
+		if (tab === DEFAULT_TAB) params.delete('tab');
 		else params.set('tab', tab);
 		const qs = params.toString();
 		try {
@@ -39,40 +51,27 @@
 		<p class="text-sm text-muted-foreground mt-1">Manage your reNgine instance configuration</p>
 	</div>
 
-	<Tabs.Root value={activeTab} onValueChange={(v) => { if (v) activeTab = v; }}>
+	<Tabs.Root
+		value={activeTab}
+		onValueChange={(v) => {
+			if (v) activeTab = v as SettingsTab;
+		}}
+	>
 		<Tabs.List class="w-full sm:w-fit">
-			<Tabs.Trigger value="general" class="gap-1.5">
-				<SlidersHorizontalIcon class="size-4" />
-				<span class="hidden sm:inline">General</span>
-			</Tabs.Trigger>
-			<Tabs.Trigger value="api-keys" class="gap-1.5">
-				<KeyIcon class="size-4" />
-				<span class="hidden sm:inline">API Keys</span>
-			</Tabs.Trigger>
-			<Tabs.Trigger value="proxies" class="gap-1.5">
-				<RouteIcon class="size-4" />
-				<span class="hidden sm:inline">Proxies</span>
-			</Tabs.Trigger>
-			<Tabs.Trigger value="notifications" class="gap-1.5">
-				<BellIcon class="size-4" />
-				<span class="hidden sm:inline">Notifications</span>
-			</Tabs.Trigger>
+			{#each SETTINGS_TABS as tab (tab)}
+				{@const Icon = TAB_META[tab].icon}
+				<Tabs.Trigger value={tab} class="gap-1.5">
+					<Icon class="size-4" />
+					<span class="hidden sm:inline">{TAB_META[tab].label}</span>
+				</Tabs.Trigger>
+			{/each}
 		</Tabs.List>
 
-		<Tabs.Content value="general" class="mt-6">
-			<InstanceSettingsTab />
-		</Tabs.Content>
-
-		<Tabs.Content value="api-keys" class="mt-6">
-			<ApiKeysTab />
-		</Tabs.Content>
-
-		<Tabs.Content value="proxies" class="mt-6">
-			<ProxiesTab />
-		</Tabs.Content>
-
-		<Tabs.Content value="notifications" class="mt-6">
-			<NotificationChannelsTab />
-		</Tabs.Content>
+		{#each SETTINGS_TABS as tab (tab)}
+			{@const Panel = TAB_META[tab].panel}
+			<Tabs.Content value={tab} class="mt-6">
+				<Panel />
+			</Tabs.Content>
+		{/each}
 	</Tabs.Root>
 </div>

@@ -2,17 +2,15 @@
 	import type { WhoisRecordRead, WhoisEntityRole } from '$lib/types/whois';
 	import { ENTITY_ROLE_LABELS } from '$lib/types/whois';
 	import { TargetType } from '$lib/types/target';
-	import { MS_PER_DAY } from '$lib/utilities/dates';
+	import { MS_PER_DAY, formatShortDate } from '$lib/utilities/dates';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import CopyButton from '$lib/components/copy-button.svelte';
-	import {
-		Shield,
-		ShieldOff,
-		ChevronRight,
-		AlertTriangle,
-		CalendarClock
-	} from 'lucide-svelte';
+	import Shield from '@lucide/svelte/icons/shield';
+	import ShieldOff from '@lucide/svelte/icons/shield-off';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 
 	interface Props {
 		record: WhoisRecordRead;
@@ -51,11 +49,7 @@
 	function fmtDate(d: string | null): string {
 		if (!d) return '—';
 		try {
-			return new Date(d).toLocaleDateString('en-US', {
-				year: 'numeric',
-				month: 'short',
-				day: 'numeric'
-			});
+			return formatShortDate(d);
 		} catch {
 			return d;
 		}
@@ -75,7 +69,7 @@
 	let expiryColor = $derived.by(() => {
 		if (expiryDays == null) return '';
 		if (expiryDays < 0) return 'text-destructive';
-		if (expiryDays < 30) return 'text-amber-600 dark:text-amber-500';
+		if (expiryDays < 30) return 'text-warning';
 		return 'text-muted-foreground';
 	});
 </script>
@@ -172,7 +166,9 @@
 
 					{#if isDomain && record.nameservers?.length}
 						<div class="space-y-1">
-							<p class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+							<p
+								class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70"
+							>
 								Nameservers
 							</p>
 							<div class="flex flex-wrap gap-1">
@@ -189,14 +185,17 @@
 
 					{#if isDomain && record.domain_status?.length}
 						<div class="space-y-1">
-							<p class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+							<p
+								class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70"
+							>
 								Status locks
 							</p>
 							<div class="flex flex-wrap gap-1">
 								{#each record.domain_status as s (s)}
 									<Badge
 										variant="outline"
-										class="text-[10px] h-[18px] px-1.5 text-muted-foreground border-border/60">{s}</Badge
+										class="text-[10px] h-[18px] px-1.5 text-muted-foreground border-border/60"
+										>{s}</Badge
 									>
 								{/each}
 							</div>
@@ -205,13 +204,17 @@
 
 					{#if entities.length > 0}
 						<div class="space-y-1">
-							<p class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+							<p
+								class="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70"
+							>
 								Entities ({entities.reduce((a, e) => a + e.items.length, 0)})
 							</p>
 							<div class="space-y-1">
 								{#each entities as ent (ent.role)}
 									{#each ent.items as entity (entity.handle || entity.email || entity.name)}
-										<div class="rounded-md border border-border/15 bg-muted/20 px-2.5 py-1.5 space-y-0.5">
+										<div
+											class="rounded-md border border-border/40 bg-muted/20 px-2.5 py-1.5 space-y-0.5"
+										>
 											<span
 												class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50"
 												>{ent.label}</span

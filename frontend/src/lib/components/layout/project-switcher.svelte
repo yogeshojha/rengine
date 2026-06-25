@@ -11,6 +11,7 @@
 	import ProjectIcon from '../project-icons.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { ROUTES } from '$lib/config/routes';
 
 	const sidebar = useSidebar();
 
@@ -21,9 +22,9 @@
 	let showAddModal = $state(false);
 
 	const DETAIL_LIST_REDIRECTS: { match: RegExp; list: string }[] = [
-		{ match: /^\/targets\/[^/]+/, list: '/targets' },
-		{ match: /^\/automation\/engines\/[^/]+/, list: '/automation/engines' },
-		{ match: /^\/automation\/contexts\/[^/]+/, list: '/automation/contexts' }
+		{ match: /^\/targets\/[^/]+/, list: ROUTES.targets },
+		{ match: /^\/automation\/engines\/[^/]+/, list: ROUTES.engines },
+		{ match: /^\/automation\/contexts\/[^/]+/, list: ROUTES.contexts }
 	];
 
 	function handleProjectSelect(project: (typeof projects)[0]) {

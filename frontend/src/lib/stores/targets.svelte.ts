@@ -477,7 +477,7 @@ function createTargetsStore() {
 			};
 			pagination = {
 				currentPage: 1,
-				pageSize: 50,
+				pageSize: 20,
 				totalItems: 0,
 				totalPages: 0
 			};

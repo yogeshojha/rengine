@@ -2,7 +2,7 @@
 	import type { DiscoverySourceType } from '$lib/types/viewdns';
 	import { DISCOVERY_SOURCE_LABELS } from '$lib/types/viewdns';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Zap } from 'lucide-svelte';
+	import Zap from '@lucide/svelte/icons/zap';
 
 	interface Props {
 		open: boolean;

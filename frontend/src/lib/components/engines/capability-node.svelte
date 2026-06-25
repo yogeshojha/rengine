@@ -1,30 +1,29 @@
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-	import {
-		Globe,
-		Share2,
-		Building2,
-		Search,
-		Unlink,
-		Cloud,
-		Radar,
-		Globe2,
-		Compass,
-		FolderSearch,
-		SlidersHorizontal,
-		ShieldAlert,
-		KeyRound,
-		FileText,
-		Settings2,
-		X,
-		Check,
-		ArrowRight
-	} from 'lucide-svelte';
+	import Globe from '@lucide/svelte/icons/globe';
+	import Share2 from '@lucide/svelte/icons/share-2';
+	import Building2 from '@lucide/svelte/icons/building-2';
+	import Search from '@lucide/svelte/icons/search';
+	import Unlink from '@lucide/svelte/icons/unlink';
+	import Cloud from '@lucide/svelte/icons/cloud';
+	import Radar from '@lucide/svelte/icons/radar';
+	import Globe2 from '@lucide/svelte/icons/globe-2';
+	import Compass from '@lucide/svelte/icons/compass';
+	import FolderSearch from '@lucide/svelte/icons/folder-search';
+	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import KeyRound from '@lucide/svelte/icons/key-round';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import Settings2 from '@lucide/svelte/icons/settings-2';
+	import X from '@lucide/svelte/icons/x';
+	import Check from '@lucide/svelte/icons/check';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { PHASE_COLORS } from '$lib/types/engine';
+	import { ROUTES } from '$lib/config/routes';
 	import type { Phase } from '$lib/types/capabilities';
-	import type { Severity } from '$lib/types/severity';
+	import { type Severity, SEVERITY_DOT } from '$lib/types/severity';
 
 	interface CapNodeData extends Record<string, unknown> {
 		capId: string;
@@ -176,13 +175,17 @@
 			{#if sevDots.length}
 				<span class="sev-row" title="Severity coverage">
 					{#each sevDots as sev, i (`${sev}-${i}`)}
-						<span class="sev-dot" class:strong={i < 2}></span>
+						<span
+							class="sev-dot"
+							style:background={SEVERITY_DOT[sev]}
+							style:opacity={sev === 'low' ? 0.5 : 1}
+						></span>
 					{/each}
 				</span>
 			{/if}
 			{#if d.needsKey}
 				<a
-					href="/settings?tab=api-keys"
+					href={ROUTES.settings('api-keys')}
 					class="key-link"
 					title="This source needs an API key — configure it in Settings"
 					onclick={stop}
@@ -213,7 +216,7 @@
 		background: var(--card);
 		border: 1px solid var(--border);
 		border-radius: 0.75rem;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+		box-shadow: var(--shadow-xs);
 		cursor: pointer;
 		user-select: none;
 		overflow: hidden;
@@ -225,7 +228,7 @@
 	}
 	.cap-node:hover {
 		border-color: color-mix(in oklch, var(--ring) 55%, transparent);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		box-shadow: var(--shadow-lg);
 		transform: translateY(-1px);
 	}
 	.cap-node:focus-visible {
@@ -243,7 +246,7 @@
 		border-color: var(--ring);
 		box-shadow:
 			0 0 0 2px var(--ring),
-			0 6px 16px rgba(0, 0, 0, 0.12);
+			var(--shadow-lg);
 	}
 	.is-selected:hover {
 		border-color: var(--ring);
@@ -397,11 +400,6 @@
 		height: 5px;
 		border-radius: 50%;
 		background: var(--muted-foreground);
-		opacity: 0.45;
-	}
-	.sev-dot.strong {
-		opacity: 1;
-		background: var(--foreground);
 	}
 	.key-link {
 		display: inline-flex;

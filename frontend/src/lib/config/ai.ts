@@ -6,6 +6,8 @@ export const AIProvider = {
 } as const;
 export type AIProviderValue = (typeof AIProvider)[keyof typeof AIProvider];
 
+export const DEFAULT_AI_PROVIDER: AIProviderValue = AIProvider.OPENAI;
+
 export interface AIProviderMeta {
 	value: AIProviderValue;
 	name: string;
@@ -26,8 +28,16 @@ export interface AIFeature {
 }
 
 export const AI_FEATURES: readonly AIFeature[] = [
-	{ key: 'vuln_descriptions', label: 'Vulnerability descriptions', hint: 'Plain-language summaries of findings' },
-	{ key: 'impact_assessment', label: 'Impact assessment', hint: 'Severity and business-impact reasoning' },
+	{
+		key: 'vuln_descriptions',
+		label: 'Vulnerability descriptions',
+		hint: 'Plain-language summaries of findings'
+	},
+	{
+		key: 'impact_assessment',
+		label: 'Impact assessment',
+		hint: 'Severity and business-impact reasoning'
+	},
 	{ key: 'remediation', label: 'Remediation guidance', hint: 'Suggested fixes per finding' },
 	{ key: 'auto_report', label: 'Automated reports', hint: 'Draft scan reports automatically' }
 ] as const;

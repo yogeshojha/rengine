@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Empty from '$lib/components/ui/empty';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Play } from 'lucide-svelte';
+	import Play from '@lucide/svelte/icons/play';
 	import type { IconComponent } from '$lib/config/icons';
 
 	interface Props {

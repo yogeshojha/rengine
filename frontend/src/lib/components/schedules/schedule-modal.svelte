@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { AlertTriangle, CalendarClock, LoaderCircle } from 'lucide-svelte';
+	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 
 	import { Button } from '$lib/components/ui/button';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -23,10 +25,13 @@
 	import {
 		INTERVAL_UNITS,
 		INTERVAL_UNIT_LABELS,
+		type IntervalUnit,
 		type ScanScheduleCreate,
 		type ScanScheduleRead,
 		type ScheduleType
 	} from '$lib/types/scan-schedule';
+	import { ROUTES } from '$lib/config/routes';
+	import { SELECT_NONE } from '$lib/constants';
 	import type { Target } from '$lib/types/target';
 
 	interface Props {
@@ -38,16 +43,14 @@
 
 	let { open = $bindable(), schedule = null, presetTargetIds, onClose }: Props = $props();
 
-	const NONE_CONTEXT = '__none__';
-
 	let name = $state('');
 	let targetIds = $state<string[]>([]);
 	let engineId = $state('');
-	let contextId = $state<string>(NONE_CONTEXT);
+	let contextId = $state<string>(SELECT_NONE);
 	let scheduleType = $state<ScheduleType>('daily_at');
 	let onceLocal = $state('');
 	let intervalEvery = $state('6');
-	let intervalUnit = $state<string>('hours');
+	let intervalUnit = $state<IntervalUnit>('hours');
 	let dailyTime = $state('10:00');
 	let cronExpr = $state('0 0 * * *');
 
@@ -70,7 +73,7 @@
 		scanEnginesStore.engines.find((e) => e.id === engineId)?.name ?? 'Select engine'
 	);
 	let contextLabel = $derived(
-		contextId === NONE_CONTEXT
+		contextId === SELECT_NONE
 			? 'None — engine defaults'
 			: (scanContextsStore.contexts.find((c) => c.id === contextId)?.name ?? 'Select context')
 	);
@@ -81,9 +84,7 @@
 			label: targets.find((t) => t.id === id)?.target_value ?? id
 		}))
 	);
-	let unitLabel = $derived(
-		INTERVAL_UNIT_LABELS[intervalUnit as keyof typeof INTERVAL_UNIT_LABELS] ?? 'Unit'
-	);
+	let unitLabel = $derived(INTERVAL_UNIT_LABELS[intervalUnit] ?? 'Unit');
 
 	let timingValid = $derived.by(() => {
 		if (scheduleType === 'one_off') return !!onceLocal;
@@ -115,7 +116,7 @@
 			name = schedule.name;
 			targetIds = [...schedule.target_ids];
 			engineId = schedule.engine_id;
-			contextId = schedule.context_id ?? NONE_CONTEXT;
+			contextId = schedule.context_id ?? SELECT_NONE;
 			scheduleType = schedule.schedule_type;
 			onceLocal = schedule.run_at ? toLocalInput(schedule.run_at, timezone) : '';
 			intervalEvery = schedule.interval_every ? String(schedule.interval_every) : '6';
@@ -126,7 +127,7 @@
 			name = '';
 			targetIds = presetTargetIds ? [...presetTargetIds] : [];
 			engineId = '';
-			contextId = NONE_CONTEXT;
+			contextId = SELECT_NONE;
 			scheduleType = 'daily_at';
 			onceLocal = '';
 			intervalEvery = '6';
@@ -169,13 +170,13 @@
 			name: name.trim(),
 			target_ids: targetIds,
 			engine_id: engineId,
-			context_id: contextId === NONE_CONTEXT ? null : contextId,
+			context_id: contextId === SELECT_NONE ? null : contextId,
 			schedule_type: scheduleType
 		};
 		if (scheduleType === 'one_off') base.run_at = onceLocal;
 		else if (scheduleType === 'interval') {
 			base.interval_every = Number(intervalEvery);
-			base.interval_unit = intervalUnit as ScanScheduleCreate['interval_unit'];
+			base.interval_unit = intervalUnit;
 		} else if (scheduleType === 'daily_at') base.daily_at_time = dailyTime;
 		else if (scheduleType === 'cron') base.cron_expression = cronExpr.trim();
 		return base;
@@ -278,7 +279,7 @@
 							<Select.Root type="single" bind:value={contextId}>
 								<Select.Trigger id="schedule-context" class="w-full">{contextLabel}</Select.Trigger>
 								<Select.Content>
-									<Select.Item value={NONE_CONTEXT} label="None — engine defaults">
+									<Select.Item value={SELECT_NONE} label="None — engine defaults">
 										None — engine defaults
 									</Select.Item>
 									{#each scanContextsStore.contexts as context (context.id)}
@@ -362,7 +363,7 @@
 							Scheduled times use your timezone
 							<span class="font-medium text-foreground">{timezone}</span>
 							— change it in
-							<a href="/settings" class="underline underline-offset-2 hover:text-foreground"
+							<a href={ROUTES.settings()} class="underline underline-offset-2 hover:text-foreground"
 								>Settings</a
 							>.
 						</span>
@@ -378,7 +379,7 @@
 				Cancel
 			</Button>
 			<Button onclick={handleSave} disabled={!canSave} class="gap-2">
-				{#if saving}<LoaderCircle class="h-4 w-4 animate-spin" />{/if}
+				{#if saving}<Spinner class="h-4 w-4" />{/if}
 				{isEdit ? 'Save changes' : 'Create schedule'}
 			</Button>
 		</div>

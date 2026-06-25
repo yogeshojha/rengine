@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { Search, X, ListFilter, CalendarRange, CalendarClock } from 'lucide-svelte';
+	import Search from '@lucide/svelte/icons/search';
+	import X from '@lucide/svelte/icons/x';
+	import ListFilter from '@lucide/svelte/icons/list-filter';
+	import CalendarRange from '@lucide/svelte/icons/calendar-range';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';

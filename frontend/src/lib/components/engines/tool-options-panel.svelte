@@ -4,7 +4,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { AlertTriangle, Terminal } from 'lucide-svelte';
+	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+	import Terminal from '@lucide/svelte/icons/terminal';
 	import { SCAN_TOOLS } from '$lib/config/tools';
 
 	interface Props {
@@ -39,12 +40,10 @@
 
 		<ScrollArea class="min-h-0 flex-1">
 			<div class="space-y-5 px-5 py-4">
-				<Alert
-					class="border-amber-600/30 bg-amber-600/5 text-amber-600 dark:border-amber-500/30 dark:bg-amber-500/5 dark:text-amber-500"
-				>
+				<Alert class="border-warning/30 bg-warning/5 text-warning">
 					<AlertTriangle class="size-4" />
 					<AlertTitle>Advanced</AlertTitle>
-					<AlertDescription class="text-amber-600/90 dark:text-amber-500/90">
+					<AlertDescription class="text-warning/90">
 						These flags are appended to each tool's command exactly as written. reNgine does not
 						validate them: invalid, unsupported, or conflicting flags can make a tool error out or
 						cause the scan stage to fail. Leave blank unless you know the tool's CLI. Arguments are

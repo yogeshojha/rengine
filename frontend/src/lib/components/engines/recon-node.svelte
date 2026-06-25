@@ -1,22 +1,20 @@
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-	import {
-		Database,
-		Globe,
-		Share2,
-		Search,
-		Radar,
-		Globe2,
-		Cpu,
-		Camera,
-		Unlink,
-		Cloud,
-		Compass,
-		SlidersHorizontal,
-		KeyRound,
-		ShieldAlert,
-		FileText
-	} from 'lucide-svelte';
+	import Database from '@lucide/svelte/icons/database';
+	import Globe from '@lucide/svelte/icons/globe';
+	import Share2 from '@lucide/svelte/icons/share-2';
+	import Search from '@lucide/svelte/icons/search';
+	import Radar from '@lucide/svelte/icons/radar';
+	import Globe2 from '@lucide/svelte/icons/globe-2';
+	import Cpu from '@lucide/svelte/icons/cpu';
+	import Camera from '@lucide/svelte/icons/camera';
+	import Unlink from '@lucide/svelte/icons/unlink';
+	import Cloud from '@lucide/svelte/icons/cloud';
+	import Compass from '@lucide/svelte/icons/compass';
+	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+	import KeyRound from '@lucide/svelte/icons/key-round';
+	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import FileText from '@lucide/svelte/icons/file-text';
 	import type { ReconOutput } from '$lib/types/capabilities';
 
 	interface ReconNodeData extends Record<string, unknown> {
@@ -100,7 +98,7 @@
 		background: var(--card);
 		border: 1px solid var(--border);
 		border-radius: 0.75rem;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+		box-shadow: var(--shadow-xs);
 		overflow: hidden;
 		user-select: none;
 		cursor: default;

@@ -2,20 +2,26 @@
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
-	import { Plus, RefreshCw, X, TriangleAlert, History, Layers } from 'lucide-svelte';
+	import Plus from '@lucide/svelte/icons/plus';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import X from '@lucide/svelte/icons/x';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import History from '@lucide/svelte/icons/history';
+	import Layers from '@lucide/svelte/icons/layers';
 
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import { Button } from '$lib/components/ui/button';
+	import ConfirmDialog from '@/components/confirm-dialog.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { SCAN_STATUS_LABEL, SCAN_POLL_MS, isLiveStatus } from '$lib/utilities/scan-status';
+	import { NOW_TICK_MS } from '$lib/constants';
 	import { SCAN_TIME_RANGES } from '$lib/types/scan';
 	import { downloadScans, type ExportFormat } from '$lib/utilities/scan-export';
 	import type { ScanRead } from '$lib/types/scan';
@@ -56,7 +62,7 @@
 
 	$effect(() => {
 		if (!scansStore.hasLive) return;
-		const tick = setInterval(() => (now = Date.now()), 1000);
+		const tick = setInterval(() => (now = Date.now()), NOW_TICK_MS);
 		const poll = setInterval(() => scansStore.refresh(), SCAN_POLL_MS);
 		return () => {
 			clearInterval(tick);
@@ -483,40 +489,26 @@
 	</Card.Root>
 </div>
 
-<AlertDialog.Root open={!!cancelTarget} onOpenChange={(o) => !o && (cancelTarget = null)}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Cancel this scan?</AlertDialog.Title>
-			<AlertDialog.Description>
-				The scan will stop queuing further work and be marked cancelled.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Keep running</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={confirmCancel}>Cancel scan</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<ConfirmDialog
+	open={!!cancelTarget}
+	title="Cancel this scan?"
+	description="The scan will stop queuing further work and be marked cancelled."
+	confirmLabel="Cancel scan"
+	cancelLabel="Keep running"
+	onOpenChange={(o) => !o && (cancelTarget = null)}
+	onConfirm={confirmCancel}
+/>
 
-<AlertDialog.Root open={!!deleteTarget} onOpenChange={(o) => !o && (deleteTarget = null)}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Delete this scan?</AlertDialog.Title>
-			<AlertDialog.Description>
-				This removes the scan and all of its results. This cannot be undone.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Keep</AlertDialog.Cancel>
-			<AlertDialog.Action
-				class={buttonVariants({ variant: 'destructive' })}
-				onclick={confirmDelete}
-			>
-				Delete
-			</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<ConfirmDialog
+	open={!!deleteTarget}
+	title="Delete this scan?"
+	description="This removes the scan and all of its results. This cannot be undone."
+	confirmLabel="Delete"
+	cancelLabel="Keep"
+	destructive
+	onOpenChange={(o) => !o && (deleteTarget = null)}
+	onConfirm={confirmDelete}
+/>
 
 {#if !grouped}
 	<ScanBulkActionBar
@@ -528,41 +520,23 @@
 	/>
 {/if}
 
-<AlertDialog.Root open={bulkDeleteOpen} onOpenChange={(o) => (bulkDeleteOpen = o)}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>
-				Delete {selectedScans.length} scan{selectedScans.length !== 1 ? 's' : ''}?
-			</AlertDialog.Title>
-			<AlertDialog.Description>
-				This removes the selected scans and all of their results. This cannot be undone.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Keep</AlertDialog.Cancel>
-			<AlertDialog.Action
-				class={buttonVariants({ variant: 'destructive' })}
-				onclick={confirmBulkDelete}
-			>
-				Delete {selectedScans.length}
-			</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<ConfirmDialog
+	open={bulkDeleteOpen}
+	title="Delete {selectedScans.length} scan{selectedScans.length !== 1 ? 's' : ''}?"
+	description="This removes the selected scans and all of their results. This cannot be undone."
+	confirmLabel="Delete {selectedScans.length}"
+	cancelLabel="Keep"
+	destructive
+	onOpenChange={(o) => (bulkDeleteOpen = o)}
+	onConfirm={confirmBulkDelete}
+/>
 
-<AlertDialog.Root open={bulkCancelOpen} onOpenChange={(o) => (bulkCancelOpen = o)}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>
-				Cancel {selectedLiveCount} running scan{selectedLiveCount !== 1 ? 's' : ''}?
-			</AlertDialog.Title>
-			<AlertDialog.Description>
-				The selected running scans will stop queuing further work and be marked cancelled.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Keep running</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={confirmBulkCancel}>Cancel scans</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<ConfirmDialog
+	open={bulkCancelOpen}
+	title="Cancel {selectedLiveCount} running scan{selectedLiveCount !== 1 ? 's' : ''}?"
+	description="The selected running scans will stop queuing further work and be marked cancelled."
+	confirmLabel="Cancel scans"
+	cancelLabel="Keep running"
+	onOpenChange={(o) => (bulkCancelOpen = o)}
+	onConfirm={confirmBulkCancel}
+/>

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { ArrowDown, ArrowUp } from 'lucide-svelte';
+	import ArrowDown from '@lucide/svelte/icons/arrow-down';
+	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import type { ScanSortKey, ScanSortDir } from '$lib/types/scan';
 

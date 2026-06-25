@@ -1,3 +1,21 @@
+export const PEER_RELATIONSHIPS = ['upstream', 'downstream', 'uncertain'] as const;
+export type PeerRelationship = (typeof PEER_RELATIONSHIPS)[number];
+
+export const PEER_RELATIONSHIP_LABELS: Record<PeerRelationship, string> = {
+	upstream: 'Upstream',
+	downstream: 'Downstream',
+	uncertain: 'Peer'
+};
+
+export const PREFIX_RELATIONSHIPS = ['overlap', 'more_specific', 'less_specific'] as const;
+export type PrefixRelationship = (typeof PREFIX_RELATIONSHIPS)[number];
+
+export const PREFIX_RELATIONSHIP_LABELS: Record<PrefixRelationship, string> = {
+	overlap: 'Overlapping',
+	more_specific: 'More Specific',
+	less_specific: 'Less Specific'
+};
+
 export interface AnnouncedPrefixRead {
 	prefix: string;
 	ip_version: number;
@@ -7,7 +25,7 @@ export interface AnnouncedPrefixRead {
 
 export interface ASNNeighbourRead {
 	neighbour_asn: number;
-	relationship: string; // 'upstream' | 'downstream' | 'uncertain'
+	relationship: PeerRelationship;
 	power: number;
 }
 
@@ -41,6 +59,6 @@ export interface PrefixOverviewRead {
 
 export interface RelatedPrefixRead {
 	related_prefix: string;
-	relationship: string; // 'overlap' | 'more_specific' | 'less_specific'
+	relationship: PrefixRelationship;
 	origin_asn: number | null;
 }

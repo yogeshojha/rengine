@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { CrosshairIcon, Funnel } from 'lucide-svelte';
+	import CrosshairIcon from '@lucide/svelte/icons/crosshair';
+	import Funnel from '@lucide/svelte/icons/funnel';
 	import * as Empty from '$lib/components/ui/empty/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';

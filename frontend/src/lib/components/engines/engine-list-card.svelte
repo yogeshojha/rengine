@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Copy, Trash2, Network, ChevronRight } from 'lucide-svelte';
+	import Copy from '@lucide/svelte/icons/copy';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Network from '@lucide/svelte/icons/network';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import type { ScanEngine, Intensity } from '$lib/types/engine';
-	import { PHASE_COLORS } from '$lib/types/engine';
+	import { PHASE_COLORS, INTENSITY_LABELS } from '$lib/types/engine';
 	import { CAPABILITIES, getActiveCapabilities, type Phase } from '$lib/types/capabilities';
 	import { formatDistanceToNow } from '$lib/utilities/dates';
 
@@ -19,12 +22,7 @@
 	const intensityClass: Record<Intensity, string> = {
 		passive: 'text-muted-foreground border-border/60',
 		normal: 'text-foreground border-border',
-		aggressive: 'text-amber-600 dark:text-amber-500 border-amber-500/30'
-	};
-	const intensityLabel: Record<Intensity, string> = {
-		passive: 'Passive',
-		normal: 'Normal',
-		aggressive: 'Aggressive'
+		aggressive: 'text-warning border-warning/30'
 	};
 
 	let badgeClass = $derived(intensityClass[engine.intensity] ?? intensityClass.normal);
@@ -59,7 +57,9 @@
 		<div class="card-header">
 			<div class="name-block">
 				<h3 class="engine-name">{engine.name}</h3>
-				<Badge variant="outline" class="intensity-badge {badgeClass}">{intensityLabel[engine.intensity]}</Badge>
+				<Badge variant="outline" class="intensity-badge {badgeClass}"
+					>{INTENSITY_LABELS[engine.intensity]}</Badge
+				>
 			</div>
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -67,7 +67,12 @@
 				<Button variant="ghost" size="icon-sm" onclick={() => onDuplicate?.()}>
 					<Copy size={13} />
 				</Button>
-				<Button variant="ghost" size="icon-sm" onclick={() => onDelete?.()} class="text-destructive hover:text-destructive">
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					onclick={() => onDelete?.()}
+					class="text-destructive hover:text-destructive"
+				>
 					<Trash2 size={13} />
 				</Button>
 			</div>
@@ -78,16 +83,14 @@
 		{/if}
 
 		<div class="phase-row">
-			{#each [
-				{ label: 'Discovery', count: counts.discovery, total: PHASE_TOTAL.discovery, color: PHASE_COLORS.discovery },
-				{ label: 'Expansion', count: counts.expansion, total: PHASE_TOTAL.expansion, color: PHASE_COLORS.expansion },
-				{ label: 'Depth',     count: counts.depth,     total: PHASE_TOTAL.depth,     color: PHASE_COLORS.depth }
-			] as phase, i (phase.label)}
+			{#each [{ label: 'Discovery', count: counts.discovery, total: PHASE_TOTAL.discovery, color: PHASE_COLORS.discovery }, { label: 'Expansion', count: counts.expansion, total: PHASE_TOTAL.expansion, color: PHASE_COLORS.expansion }, { label: 'Depth', count: counts.depth, total: PHASE_TOTAL.depth, color: PHASE_COLORS.depth }] as phase, i (phase.label)}
 				{#if i > 0}<ChevronRight size={11} class="phase-arrow" />{/if}
 				<div class="phase-pill">
 					<span class="phase-dot" style="background:{phase.color.accent};"></span>
 					<span class="phase-pill-label" style="color:{phase.color.text};">{phase.label}</span>
-					<span class="phase-count" style="color:{phase.color.accent};">{phase.count}/{phase.total}</span>
+					<span class="phase-count" style="color:{phase.color.accent};"
+						>{phase.count}/{phase.total}</span
+					>
 				</div>
 			{/each}
 		</div>
@@ -115,7 +118,10 @@
 		background: var(--card);
 		overflow: hidden;
 		box-shadow: var(--shadow-sm);
-		transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+		transition:
+			box-shadow 0.2s,
+			transform 0.15s,
+			border-color 0.2s;
 		cursor: pointer;
 	}
 

@@ -12,19 +12,17 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Empty from '$lib/components/ui/empty';
 	import { toast } from 'svelte-sonner';
-	import {
-		TriangleAlert,
-		ChevronLeft,
-		LayoutDashboard,
-		FileText,
-		Network,
-		Link2,
-		ShieldAlert,
-		EthernetPort,
-		Cpu,
-		History,
-		RefreshCw
-	} from 'lucide-svelte';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import Network from '@lucide/svelte/icons/network';
+	import Link2 from '@lucide/svelte/icons/link-2';
+	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import EthernetPort from '@lucide/svelte/icons/ethernet-port';
+	import Cpu from '@lucide/svelte/icons/cpu';
+	import History from '@lucide/svelte/icons/history';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
@@ -43,6 +41,8 @@
 	import TargetSubdomains from '$lib/components/targets/target-detail/target-subdomains.svelte';
 	import { buildTargetSummary } from '$lib/components/targets/target-detail/summary/derive';
 	import { activityScope } from '$lib/stores/activity-scope.svelte';
+	import { ROUTES } from '$lib/config/routes';
+	import type { IconComponent } from '$lib/config/icons';
 
 	const targetId = $derived(page.params.id ?? '');
 
@@ -82,7 +82,7 @@
 		const tabs: Array<{
 			value: string;
 			label: string;
-			icon: typeof Network;
+			icon: IconComponent;
 			title: string;
 			description: string;
 		}> = [];
@@ -328,7 +328,7 @@
 			await targetsApi.delete(target.id);
 			toast.success(`Target ${target.target_value} deleted`);
 			showDeleteDialog = false;
-			goto('/targets');
+			goto(ROUTES.targets);
 		} catch {
 			toast.error('Failed to delete target');
 		} finally {
@@ -352,7 +352,7 @@
 			<Empty.Description class="max-w-md">{error}</Empty.Description>
 		</Empty.Header>
 		<Empty.Content>
-			<Button variant="outline" onclick={() => goto('/targets')}>
+			<Button variant="outline" onclick={() => goto(ROUTES.targets)}>
 				<ChevronLeft class="h-4 w-4 mr-2" />
 				Back to Targets
 			</Button>
@@ -385,7 +385,12 @@
 			</EnrichmentWidget>
 		{/snippet}
 
-		<Tabs.Root value={activeTab} onValueChange={(v) => { if (v) activeTab = v; }}>
+		<Tabs.Root
+			value={activeTab}
+			onValueChange={(v) => {
+				if (v) activeTab = v;
+			}}
+		>
 			<Tabs.List class="h-auto w-full flex-wrap justify-start gap-1">
 				<Tabs.Trigger value="overview" class="gap-1.5">
 					<LayoutDashboard class="h-3.5 w-3.5" />

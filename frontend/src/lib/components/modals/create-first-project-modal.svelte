@@ -5,7 +5,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import LoaderIcon from '@lucide/svelte/icons/loader';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
 	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
 	import { tick } from 'svelte';
@@ -105,7 +105,7 @@
 
 			<Button type="submit" class="w-full" disabled={!isValid || isSubmitting}>
 				{#if isSubmitting}
-					<LoaderIcon class="mr-2 size-4 animate-spin" />
+					<Spinner class="mr-2 size-4" />
 					Creating Project...
 				{:else}
 					Create Project & Get Started

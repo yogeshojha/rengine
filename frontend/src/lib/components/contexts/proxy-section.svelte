@@ -3,8 +3,11 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Select from '$lib/components/ui/select';
-	import { ExternalLink, Loader2 } from 'lucide-svelte';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
+	import { ROUTES } from '$lib/config/routes';
+	import { SELECT_NONE } from '$lib/constants';
 	import type { ScanContextRead, ScanContextCreate } from '$lib/types/scan-context';
 
 	type CtxLike = ScanContextRead | ScanContextCreate;
@@ -16,18 +19,16 @@
 
 	let { context, onChange }: Props = $props();
 
-	const NONE = '__none__';
-
 	onMount(() => {
 		if (!proxiesStore.hasFetched) proxiesStore.fetch();
 	});
 
 	let activeProxies = $derived(proxiesStore.proxies.filter((p) => p.is_active));
-	let selectedId = $derived(context.proxy_id ?? NONE);
+	let selectedId = $derived(context.proxy_id ?? SELECT_NONE);
 	let selected = $derived(activeProxies.find((p) => p.id === context.proxy_id) ?? null);
 
 	function setProxy(v: string | undefined) {
-		onChange({ proxy_id: v && v !== NONE ? v : null } as Partial<CtxLike>);
+		onChange({ proxy_id: v && v !== SELECT_NONE ? v : null } as Partial<CtxLike>);
 	}
 
 	let triggerLabel = $derived.by(() => {
@@ -44,7 +45,7 @@
 				{triggerLabel}
 			</Select.Trigger>
 			<Select.Content>
-				<Select.Item value={NONE} label="None">None</Select.Item>
+				<Select.Item value={SELECT_NONE} label="None">None</Select.Item>
 				{#each activeProxies as proxy (proxy.id)}
 					<Select.Item value={proxy.id} label={proxy.name}>
 						<span class="flex items-center gap-2">
@@ -64,7 +65,7 @@
 
 	{#if proxiesStore.isLoading && !proxiesStore.hasFetched}
 		<div class="flex items-center gap-2 text-xs text-muted-foreground">
-			<Loader2 class="h-3.5 w-3.5 animate-spin" />
+			<Spinner class="h-3.5 w-3.5" />
 			Loading proxies…
 		</div>
 	{:else if selected}
@@ -91,7 +92,7 @@
 	{/if}
 
 	<a
-		href="/settings"
+		href={ROUTES.settings()}
 		class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
 	>
 		Manage proxies in Settings

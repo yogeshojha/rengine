@@ -2,7 +2,9 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import { CircleAlert, Tag, Landmark } from 'lucide-svelte';
+	import CircleAlert from '@lucide/svelte/icons/circle-alert';
+	import Tag from '@lucide/svelte/icons/tag';
+	import Landmark from '@lucide/svelte/icons/landmark';
 	import { TargetType, formatTargetType } from '$lib/types/target';
 	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
 

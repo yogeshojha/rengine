@@ -7,6 +7,7 @@
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { SESSION_EXPIRED_EVENT } from '$lib/api/client';
+	import { ROUTES } from '$lib/config/routes';
 
 	let { children } = $props();
 
@@ -15,7 +16,7 @@
 
 		function handleSessionExpired() {
 			auth.clearSession();
-			goto('/login');
+			goto(ROUTES.login);
 		}
 
 		window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);

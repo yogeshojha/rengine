@@ -1,21 +1,20 @@
 <script lang="ts">
 	import { TargetType, type BgpSummaryData } from '$lib/types/target';
 	import { TaskStatus } from '@/types/task-status';
+	import { formatShortDate } from '$lib/utilities/dates';
 	import * as HoverCard from '$lib/components/ui/hover-card';
-	import {
-		Loader,
-		TriangleAlert,
-		Radio,
-		RadioTower,
-		Clock,
-		Network,
-		Server,
-		Users,
-		CircleDot,
-		CircleCheck,
-		CircleX,
-		ExternalLink
-	} from 'lucide-svelte';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import Radio from '@lucide/svelte/icons/radio';
+	import RadioTower from '@lucide/svelte/icons/radio-tower';
+	import Clock from '@lucide/svelte/icons/clock';
+	import Network from '@lucide/svelte/icons/network';
+	import Server from '@lucide/svelte/icons/server';
+	import Users from '@lucide/svelte/icons/users';
+	import CircleDot from '@lucide/svelte/icons/circle-dot';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import CircleX from '@lucide/svelte/icons/circle-x';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		status: string;
@@ -72,12 +71,6 @@
 		return str.slice(0, max - 1) + '…';
 	}
 
-	function formatQueriedAt(dateStr: string | null | undefined): string {
-		if (!dateStr) return 'Unknown';
-		const d = new Date(dateStr);
-		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-	}
-
 	function handleClick(e: MouseEvent) {
 		e.stopPropagation();
 		onClick?.();
@@ -86,7 +79,7 @@
 
 {#if isApplicable && (status === TaskStatus.PENDING || status === TaskStatus.QUERYING)}
 	<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-		<Loader class="h-3 w-3 animate-spin" />
+		<Spinner class="h-3 w-3" />
 		<span class="animate-pulse">BGP…</span>
 	</div>
 {:else if isApplicable && status === TaskStatus.FAILED}
@@ -102,9 +95,7 @@
 					{...props}
 					type="button"
 					class="flex items-center gap-1.5 text-xs transition-colors cursor-pointer max-w-full
-						{isNotAnnounced
-						? 'text-amber-600 dark:text-amber-500'
-						: 'text-muted-foreground hover:text-foreground'}"
+						{isNotAnnounced ? 'text-warning' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={handleClick}
 				>
 					{#if targetType === TargetType.ASN}
@@ -114,7 +105,7 @@
 					{/if}
 					<span class="truncate font-mono">{inlineSummary}</span>
 					{#if isNotAnnounced}
-						<span class="inline-block h-1.5 w-1.5 rounded-full shrink-0 bg-amber-500"></span>
+						<span class="inline-block h-1.5 w-1.5 rounded-full shrink-0 bg-warning"></span>
 					{/if}
 				</button>
 			{/snippet}
@@ -136,7 +127,7 @@
 				<div class="px-4 py-3 space-y-3">
 					<div class="flex items-start gap-2.5">
 						{#if bgp.announced === false}
-							<CircleX class="h-3.5 w-3.5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+							<CircleX class="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
 						{:else}
 							<CircleCheck class="h-3.5 w-3.5 text-foreground mt-0.5 shrink-0" />
 						{/if}
@@ -148,7 +139,7 @@
 							</p>
 							<p
 								class="text-sm font-medium {bgp.announced === false
-									? 'text-amber-600 dark:text-amber-500'
+									? 'text-warning'
 									: 'text-foreground'}"
 							>
 								{bgp.announced === false ? 'Not Announced' : 'Announced'}
@@ -244,7 +235,7 @@
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
 						<Clock class="h-3 w-3" />
-						<span>Queried {formatQueriedAt(bgp.queried_at)}</span>
+						<span>Queried {bgp.queried_at ? formatShortDate(bgp.queried_at) : 'Unknown'}</span>
 					</div>
 					<span class="flex items-center gap-1 text-[11px] text-primary/70">
 						Click for details

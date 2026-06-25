@@ -2,15 +2,20 @@
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { Plus, RefreshCw, Network, Zap, AlertCircle } from 'lucide-svelte';
+	import Plus from '@lucide/svelte/icons/plus';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Network from '@lucide/svelte/icons/network';
+	import Zap from '@lucide/svelte/icons/zap';
+	import AlertCircle from '@lucide/svelte/icons/alert-circle';
 
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { ROUTES } from '$lib/config/routes';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Alert from '$lib/components/ui/alert';
-	import * as Empty from '$lib/components/ui/empty';
+	import EmptyState from '@/components/empty-state.svelte';
 	import EngineListCard from '$lib/components/engines/engine-list-card.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 
@@ -25,7 +30,7 @@
 		const hasFetched = projectsStore.hasFetched;
 		if (project && hasFetched) {
 			untrack(() => {
-				if (!scanEnginesStore.hasFetched) {
+				if (scanEnginesStore.fetchedProjectId !== project.id) {
 					scanEnginesStore.fetchEngines(project.id);
 				}
 			});
@@ -38,7 +43,7 @@
 			toast.error('No active project selected');
 			return;
 		}
-		goto(`/automation/engines/new?project=${project.id}`);
+		goto(ROUTES.newEngine(project.id));
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,7 +151,7 @@
 	{#if scanEnginesStore.isLoading}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
-				<div class="h-[188px] overflow-hidden rounded-[14px] border border-border">
+				<div class="h-[188px] overflow-hidden rounded-xl border border-border">
 					<Skeleton class="h-1 rounded-none" />
 					<div class="flex flex-col gap-3 p-[18px_20px]">
 						<div class="flex items-center gap-2.5">
@@ -167,40 +172,30 @@
 				</div>
 			{/each}
 		</div>
-
 	{:else if scanEnginesStore.engines.length === 0}
-		<Empty.Root class="border bg-muted/20 py-20">
-			<Empty.Header>
-				<Empty.Media class="size-16 rounded-2xl bg-muted">
-					<Network size={28} class="text-muted-foreground" />
-				</Empty.Media>
-				<Empty.Title class="text-lg font-bold">No scan engines yet</Empty.Title>
-				<Empty.Description class="max-w-md">
-					Scan engines define which tools run, in which order, and with what configuration. Create
-					your first engine to get started.
-				</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<div class="flex flex-wrap items-center justify-center gap-2.5">
-					<Button onclick={handleNewEngine} class="gap-2">
-						<Plus size={15} />
-						Create Your First Engine
-					</Button>
-					<Badge variant="secondary" class="gap-1.5 text-muted-foreground">
-						<Zap size={12} />
-						3 recon phases: Discovery &rarr; Expansion &rarr; Depth
-					</Badge>
-				</div>
-			</Empty.Content>
-		</Empty.Root>
-
+		<EmptyState
+			icon={Network}
+			title="No scan engines yet"
+			description="Scan engines define which tools run, in which order, and with what configuration. Create your first engine to get started."
+		>
+			<div class="flex flex-wrap items-center justify-center gap-2.5">
+				<Button onclick={handleNewEngine} class="gap-2">
+					<Plus size={15} />
+					Create Your First Engine
+				</Button>
+				<Badge variant="secondary" class="gap-1.5 text-muted-foreground">
+					<Zap size={12} />
+					3 recon phases: Discovery &rarr; Expansion &rarr; Depth
+				</Badge>
+			</div>
+		</EmptyState>
 	{:else}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each scanEnginesStore.engines as engine (engine.id)}
 				{@const cardEngine = engine as unknown as import('$lib/types/engine').ScanEngine}
 				<EngineListCard
 					engine={cardEngine}
-					onEdit={() => goto(`/automation/engines/${engine.id}`)}
+					onEdit={() => goto(ROUTES.engine(engine.id))}
 					onDuplicate={() => handleDuplicate(engine)}
 					onDelete={() => handleDeleteRequest(engine)}
 				/>
@@ -208,7 +203,8 @@
 		</div>
 
 		<p class="text-xs text-muted-foreground text-center pt-2">
-			{scanEnginesStore.engines.length} engine{scanEnginesStore.engines.length !== 1 ? 's' : ''} in this project
+			{scanEnginesStore.engines.length} engine{scanEnginesStore.engines.length !== 1 ? 's' : ''} in this
+			project
 		</p>
 	{/if}
 </div>

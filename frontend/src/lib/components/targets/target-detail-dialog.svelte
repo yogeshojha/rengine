@@ -7,16 +7,14 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import CopyButton from '@/components/copy-button.svelte';
-	import {
-		Building2,
-		Calendar,
-		Clock,
-		Hash,
-		History,
-		Play,
-		Tag as TagIcon,
-		Trash2
-	} from 'lucide-svelte';
+	import Building2 from '@lucide/svelte/icons/building-2';
+	import Calendar from '@lucide/svelte/icons/calendar';
+	import Clock from '@lucide/svelte/icons/clock';
+	import Hash from '@lucide/svelte/icons/hash';
+	import History from '@lucide/svelte/icons/history';
+	import Play from '@lucide/svelte/icons/play';
+	import TagIcon from '@lucide/svelte/icons/tag';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { getTargetTypeIcon } from '$lib/config/icons';
 
 	interface Props {
@@ -77,7 +75,10 @@
 			<Separator />
 
 			<div class="p-6 space-y-6">
-				<Badge variant="outline" class="gap-1 text-muted-foreground border-border/60 shrink-0 max-w-[180px]">
+				<Badge
+					variant="outline"
+					class="gap-1 text-muted-foreground border-border/60 shrink-0 max-w-[180px]"
+				>
 					<TargetIcon class="h-3 w-3 shrink-0" />
 					<span class="truncate">{formatTargetType(target.target_type)}</span>
 				</Badge>
@@ -86,7 +87,12 @@
 						<span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 							Target Value
 						</span>
-						<Button variant="outline" size="sm" onclick={handleOpenHistory} class="h-7 gap-1.5 text-xs">
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={handleOpenHistory}
+							class="h-7 gap-1.5 text-xs"
+						>
 							<History class="h-3 w-3" />
 							History
 						</Button>

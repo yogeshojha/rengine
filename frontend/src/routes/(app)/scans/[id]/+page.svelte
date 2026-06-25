@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onDestroy, untrack } from 'svelte';
-	import { ArrowLeft, RefreshCw, Play, Network, Activity, Terminal } from 'lucide-svelte';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Play from '@lucide/svelte/icons/play';
+	import Network from '@lucide/svelte/icons/network';
+	import Activity from '@lucide/svelte/icons/activity';
+	import Terminal from '@lucide/svelte/icons/terminal';
 
 	import { scansApi } from '$lib/api/scans';
 	import { subdomainsApi } from '$lib/api/subdomains';
@@ -10,7 +15,6 @@
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { SSEChannel, SSEEventType } from '$lib/types/sse';
 	import type { ScanEvent } from '$lib/types/sse';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Empty from '$lib/components/ui/empty';
@@ -18,11 +22,9 @@
 	import ScanActivityTimeline from '$lib/components/scans/scan-activity-timeline.svelte';
 	import ScanCommandLog from '$lib/components/scans/scan-command-log.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import {
-		SCAN_STATUS_LABEL,
-		scanStatusVariant,
-		scanStatusIcon,
 		scanCountPills,
 		durationLabel,
 		isLiveStatus,
@@ -30,6 +32,8 @@
 	} from '$lib/utilities/scan-status';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
 	import type { SubdomainRead } from '$lib/types/subdomain';
+	import { ROUTES } from '$lib/config/routes';
+	import { NOW_TICK_MS } from '$lib/constants';
 
 	const scanId = $derived(page.params.id ?? '');
 
@@ -45,7 +49,7 @@
 
 	$effect(() => {
 		if (!scan || !isLiveStatus(scan.status)) return;
-		const t = setInterval(() => (now = Date.now()), 1000);
+		const t = setInterval(() => (now = Date.now()), NOW_TICK_MS);
 		return () => clearInterval(t);
 	});
 
@@ -139,7 +143,7 @@
 
 <div class="mx-auto w-full max-w-5xl space-y-4 p-4">
 	<a
-		href="/scans"
+		href={ROUTES.scans}
 		class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
 	>
 		<ArrowLeft class="h-3.5 w-3.5" />
@@ -160,16 +164,12 @@
 			</Empty.Content>
 		</Empty.Root>
 	{:else if scan}
-		{@const StatusIcon = scanStatusIcon(scan.status)}
 		<div class="rounded-lg border border-border p-4">
 			<div class="flex flex-wrap items-start justify-between gap-3">
 				<div class="space-y-1">
 					<div class="flex items-center gap-2">
 						<h1 class="font-mono text-lg">{scan.execution_config.target_value}</h1>
-						<Badge variant={scanStatusVariant(scan.status)} class="gap-1 font-normal">
-							<StatusIcon class="h-3 w-3 {scan.status === 'running' ? 'animate-spin' : ''}" />
-							{SCAN_STATUS_LABEL[scan.status]}
-						</Badge>
+						<ScanStatusBadge status={scan.status} />
 					</div>
 					<p class="text-sm text-muted-foreground">
 						{scan.engine_name} · {scan.context_name ?? 'engine defaults'}

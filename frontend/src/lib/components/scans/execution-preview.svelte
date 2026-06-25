@@ -5,15 +5,13 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Empty from '$lib/components/ui/empty/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import {
-		AlertTriangle,
-		CircleCheck,
-		CircleSlash,
-		KeyRound,
-		Gauge,
-		Cpu,
-		Timer
-	} from 'lucide-svelte';
+	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import CircleSlash from '@lucide/svelte/icons/circle-slash';
+	import KeyRound from '@lucide/svelte/icons/key-round';
+	import Gauge from '@lucide/svelte/icons/gauge';
+	import Cpu from '@lucide/svelte/icons/cpu';
+	import Timer from '@lucide/svelte/icons/timer';
 	import type { PreviewToolStatus, ScanPreview } from '$lib/types/scan';
 
 	interface Props {
@@ -31,8 +29,7 @@
 
 	function statusBadgeClass(status: PreviewToolStatus): string {
 		if (status === 'will_run') return 'border-foreground/30 text-foreground';
-		if (status === 'skipped_needs_key')
-			return 'border-amber-500/40 text-amber-600 dark:text-amber-500';
+		if (status === 'skipped_needs_key') return 'border-warning/40 text-warning';
 		return 'border-border text-muted-foreground';
 	}
 
@@ -85,7 +82,7 @@
 
 		{#if willRunCount === 0}
 			<div
-				class="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-500"
+				class="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-warning"
 			>
 				<AlertTriangle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
 				<span>No tools will run with this configuration — launching now scans nothing.</span>
@@ -94,7 +91,7 @@
 
 		{#if preview.warnings.length > 0}
 			<div
-				class="space-y-1 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-500"
+				class="space-y-1 rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-warning"
 			>
 				{#each preview.warnings as warning (warning)}
 					<div class="flex items-start gap-2">

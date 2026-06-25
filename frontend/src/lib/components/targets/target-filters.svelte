@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { Search, X, Building2, Tag } from 'lucide-svelte';
+	import Search from '@lucide/svelte/icons/search';
+	import X from '@lucide/svelte/icons/x';
+	import Building2 from '@lucide/svelte/icons/building-2';
+	import Tag from '@lucide/svelte/icons/tag';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';

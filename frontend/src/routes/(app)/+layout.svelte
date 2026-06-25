@@ -15,7 +15,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import CreateFirstProjectModal from '@/components/modals/create-first-project-modal.svelte';
-	import { getRouteLabel } from '$lib/config/routes';
+	import { getRouteLabel, ROUTES } from '$lib/config/routes';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import ActivityPanel from '$lib/components/activity/activity-panel.svelte';
 
@@ -35,7 +35,7 @@
 
 	$effect(() => {
 		if (!auth.isLoading && !auth.isAuthenticated) {
-			goto('/login');
+			goto(ROUTES.login);
 		}
 	});
 
@@ -62,9 +62,9 @@
 				status &&
 				!status.completed &&
 				status.can_setup &&
-				page.url.pathname !== '/onboarding'
+				page.url.pathname !== ROUTES.onboarding
 			) {
-				goto('/onboarding');
+				goto(ROUTES.onboarding);
 			}
 		}
 	});

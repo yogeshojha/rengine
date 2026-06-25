@@ -3,14 +3,15 @@
 	import { activityFeed, LEVEL_DOT } from '$lib/stores/activity-feed.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { Activity, Loader } from 'lucide-svelte';
+	import Activity from '@lucide/svelte/icons/activity';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	let latest = $derived(activityFeed.latest);
 	let statusDot = $derived(
 		sseStore.isConnected
 			? 'bg-foreground'
 			: sseStore.isReconnecting
-				? 'bg-amber-500'
+				? 'bg-warning'
 				: 'bg-muted-foreground/40'
 	);
 	let timeLabel = $derived.by(() => {
@@ -39,10 +40,10 @@
 
 	{#if activityFeed.runningCount > 0}
 		<span class="hidden items-center gap-1.5 text-chart-1 sm:flex">
-			<Loader class="h-3 w-3 animate-spin" />
+			<Spinner class="h-3 w-3" />
 			<span class="font-medium">{activityFeed.runningCount} running</span>
 		</span>
-		<Loader class="h-3.5 w-3.5 animate-spin text-chart-1 sm:hidden" />
+		<Spinner class="h-3.5 w-3.5 text-chart-1 sm:hidden" />
 	{:else if latest}
 		<span class="hidden min-w-0 items-center gap-2 sm:flex">
 			{#key latest.id}

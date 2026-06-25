@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Upload, FileText, X } from 'lucide-svelte';
+	import Upload from '@lucide/svelte/icons/upload';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import * as Tabs from '$lib/components/ui/tabs';

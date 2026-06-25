@@ -1,5 +1,22 @@
 export type Intensity = 'passive' | 'normal' | 'aggressive';
 
+export const INTENSITIES: readonly Intensity[] = ['passive', 'normal', 'aggressive'] as const;
+
+export const INTENSITY_LABELS: Record<Intensity, string> = {
+	passive: 'Passive',
+	normal: 'Normal',
+	aggressive: 'Aggressive'
+};
+
+export const INTENSITY_HELP: Record<Intensity, string> = {
+	passive: 'No active probing — lowest footprint, stealthiest, fewest findings.',
+	normal: 'Balanced active scanning — standard rate limits and tool coverage.',
+	aggressive: 'Maximum coverage — higher rate, noisier, most thorough but detectable.'
+};
+
+export const DEFAULT_INTENSITY: Intensity = 'normal';
+export const DEFAULT_GLOBAL_THREADS = 30;
+
 export interface DiscoveryConfig {
 	related_domains_enabled: boolean;
 	related_by_whois_registrant: boolean;

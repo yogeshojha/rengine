@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { CircleCheck, Clock } from 'lucide-svelte';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import Clock from '@lucide/svelte/icons/clock';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { ScanChanges, ScanChangeWindow, ScanStats, ScanStatus } from '$lib/types/scan';
 	import ScanChangesHero from './scan-changes-hero.svelte';
@@ -37,11 +38,7 @@
 			disabled={active === 0 || !onFilterStatus}
 			onclick={() => onFilterStatus?.(['running', 'pending'])}
 		>
-			<div
-				class="text-lg font-semibold tabular-nums {active > 0
-					? 'text-amber-600 dark:text-amber-500'
-					: ''}"
-			>
+			<div class="text-lg font-semibold tabular-nums {active > 0 ? 'text-warning' : ''}">
 				{active}
 			</div>
 			<div class="text-xs text-muted-foreground">In progress</div>

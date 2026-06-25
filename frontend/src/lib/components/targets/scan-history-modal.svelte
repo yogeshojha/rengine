@@ -2,7 +2,8 @@
 	import type { Target } from '$lib/types/target';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Separator } from '$lib/components/ui/separator';
-	import { Clock, History } from 'lucide-svelte';
+	import Clock from '@lucide/svelte/icons/clock';
+	import History from '@lucide/svelte/icons/history';
 	import CopyButton from '@/components/copy-button.svelte';
 	import * as Empty from '$lib/components/ui/empty/index.js';
 

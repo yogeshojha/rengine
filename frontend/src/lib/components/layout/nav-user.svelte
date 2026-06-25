@@ -15,6 +15,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { getInitials } from '$lib/utilities';
 	import { goto } from '$app/navigation';
+	import { ROUTES } from '$lib/config/routes';
 
 	let { user }: { user: { name: string; email: string; is_superuser: boolean } } = $props();
 	const sidebar = useSidebar();
@@ -76,7 +77,7 @@
 				</DropdownMenu.Label>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Group>
-					<DropdownMenu.Item onclick={() => goto('/profile')}>
+					<DropdownMenu.Item onclick={() => goto(ROUTES.profile)}>
 						<UserIcon class="size-4" />
 						Profile
 					</DropdownMenu.Item>
@@ -118,11 +119,7 @@
 			</div>
 			<div class="space-y-2">
 				<h4 class="font-medium">Wiki</h4>
-				<a
-					href="https://rengine.wiki"
-					target="_blank"
-					class="text-sm text-chart-1 hover:underline"
-				>
+				<a href="https://rengine.wiki" target="_blank" class="text-sm text-chart-1 hover:underline">
 					rengine.wiki
 				</a>
 			</div>

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Plus, Check, Tag } from 'lucide-svelte';
+	import Plus from '@lucide/svelte/icons/plus';
+	import Check from '@lucide/svelte/icons/check';
+	import Tag from '@lucide/svelte/icons/tag';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Popover from '$lib/components/ui/popover';

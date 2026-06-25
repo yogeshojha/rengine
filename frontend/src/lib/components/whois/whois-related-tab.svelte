@@ -1,9 +1,17 @@
 <script lang="ts">
-	import type { WhoisCorrelationResult, WhoisRecordSummary } from '$lib/types/whois';
+	import {
+		type WhoisCorrelationResult,
+		type WhoisRecordSummary,
+		CORRELATION_REASON_LABELS
+	} from '$lib/types/whois';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Empty from '$lib/components/ui/empty';
-	import { Loader, SearchX, Link2, ShieldAlert, GitBranch } from 'lucide-svelte';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import Link2 from '@lucide/svelte/icons/link-2';
+	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import GitBranch from '@lucide/svelte/icons/git-branch';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	interface Props {
@@ -26,28 +34,14 @@
 		reasons: CorrelationReason[];
 	}
 
-	const REASON_LABELS: Record<string, string> = {
-		registrant: 'Registrant Name',
-		registrant_name: 'Registrant Name',
-		registrar: 'Registrar',
-		registrar_name: 'Registrar',
-		nameserver: 'Nameserver',
-		network: 'Network Block',
-		network_cidr: 'Network Block'
-	};
-
-	const REASON_MATCH_LABELS: Record<string, string> = {
-		registrant: 'registrant name',
-		registrant_name: 'registrant name',
-		registrar: 'registrar',
-		registrar_name: 'registrar',
-		nameserver: 'nameserver',
-		network: 'network block',
-		network_cidr: 'network block'
-	};
+	const REASON_LABELS = CORRELATION_REASON_LABELS as Record<
+		string,
+		{ full: string; match: string; short: string }
+	>;
+	const reasonLabel = (t: string) => REASON_LABELS[t];
 
 	function buildMatchSummary(reasons: CorrelationReason[]): string {
-		const labels = reasons.map((r) => REASON_MATCH_LABELS[r.type] ?? r.type);
+		const labels = reasons.map((r) => reasonLabel(r.type)?.match ?? r.type);
 		if (labels.length === 1) return `Matching ${labels[0]}`;
 		if (labels.length === 2) return `Matching ${labels[0]} and ${labels[1]}`;
 		const last = labels.pop();
@@ -101,7 +95,7 @@
 	<Empty.Root>
 		<Empty.Header>
 			<Empty.Media variant="icon">
-				<Loader class="animate-spin" />
+				<Spinner />
 			</Empty.Media>
 			<Empty.Title>Correlating infrastructure…</Empty.Title>
 			<Empty.Description>
@@ -175,7 +169,7 @@
 						{#if reasons.length >= 3}
 							<Badge
 								variant="outline"
-								class="text-[10px] shrink-0 gap-1 border-amber-500/30 text-amber-600 dark:text-amber-500 bg-amber-500/10"
+								class="text-[10px] shrink-0 gap-1 border-warning/30 text-warning bg-warning/10"
 							>
 								<ShieldAlert class="h-3 w-3" />
 								Strong
@@ -200,7 +194,7 @@
 													class="inline-flex items-center text-[11px] border border-border/60 rounded-md overflow-hidden hover:ring-1 hover:ring-chart-1/30 transition-shadow"
 												>
 													<span class="px-2 py-1 font-medium bg-muted/60 text-foreground/70">
-														{REASON_LABELS[type] ?? type}
+														{reasonLabel(type)?.full ?? type}
 													</span>
 													<span
 														class="px-2 py-1 font-mono border-l border-border/60 text-foreground truncate max-w-[200px]"
@@ -212,7 +206,7 @@
 										{/snippet}
 									</Tooltip.Trigger>
 									<Tooltip.Content>
-										<p>Find all targets sharing this {REASON_MATCH_LABELS[type] ?? type}</p>
+										<p>Find all targets sharing this {reasonLabel(type)?.match ?? type}</p>
 									</Tooltip.Content>
 								</Tooltip.Root>
 							{/each}

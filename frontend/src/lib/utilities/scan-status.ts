@@ -1,20 +1,18 @@
-import {
-	Clock,
-	LoaderCircle,
-	CircleCheck,
-	CircleX,
-	CircleMinus,
-	TriangleAlert,
-	Ban,
-	Network,
-	Server,
-	Plug,
-	Bug,
-	Link2
-} from 'lucide-svelte';
+import Clock from '@lucide/svelte/icons/clock';
+import LoaderCircle from '@lucide/svelte/icons/loader-circle';
+import CircleCheck from '@lucide/svelte/icons/circle-check';
+import CircleX from '@lucide/svelte/icons/circle-x';
+import CircleMinus from '@lucide/svelte/icons/circle-minus';
+import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+import Ban from '@lucide/svelte/icons/ban';
+import Network from '@lucide/svelte/icons/network';
+import Server from '@lucide/svelte/icons/server';
+import Plug from '@lucide/svelte/icons/plug';
+import Bug from '@lucide/svelte/icons/bug';
+import Link2 from '@lucide/svelte/icons/link-2';
 import type { ScanActivityStatus, ScanRead, ScanStatus, ScanSortKey } from '$lib/types/scan';
-
-type IconComponent = typeof Network;
+import type { BadgeVariant } from '$lib/components/ui/badge';
+import type { IconComponent } from '$lib/config/icons';
 
 export const SCAN_STATUS_LABEL: Record<ScanStatus, string> = {
 	pending: 'Queued',
@@ -24,12 +22,16 @@ export const SCAN_STATUS_LABEL: Record<ScanStatus, string> = {
 	cancelled: 'Cancelled'
 };
 
-type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
+export const SCAN_STATUS_VARIANT: Record<ScanStatus, BadgeVariant> = {
+	pending: 'secondary',
+	running: 'info',
+	completed: 'success',
+	failed: 'destructive',
+	cancelled: 'outline'
+};
 
 export function scanStatusVariant(s: ScanStatus): BadgeVariant {
-	if (s === 'failed' || s === 'cancelled') return 'destructive';
-	if (s === 'completed') return 'default';
-	return 'secondary';
+	return SCAN_STATUS_VARIANT[s];
 }
 
 export function scanStatusIcon(s: ScanStatus): IconComponent {
@@ -74,9 +76,11 @@ export function activityStatusClass(s: ScanActivityStatus): string {
 			return 'text-destructive';
 		case 'aborted':
 		case 'skipped':
-			return 'text-amber-600 dark:text-amber-500';
+			return 'text-warning';
+		case 'success':
+			return 'text-success';
 		case 'running':
-			return 'text-foreground';
+			return 'text-info';
 		default:
 			return 'text-muted-foreground';
 	}

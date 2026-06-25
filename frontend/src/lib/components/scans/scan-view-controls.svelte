@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { ArrowDown, ArrowUp, ArrowUpDown, Check, Download } from 'lucide-svelte';
+	import ArrowDown from '@lucide/svelte/icons/arrow-down';
+	import ArrowUp from '@lucide/svelte/icons/arrow-up';
+	import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
+	import Check from '@lucide/svelte/icons/check';
+	import Download from '@lucide/svelte/icons/download';
 	import { SCAN_SORT_KEYS, type ScanSortKey, type ScanSortDir } from '$lib/types/scan';
 	import type { ExportFormat } from '$lib/utilities/scan-export';
 

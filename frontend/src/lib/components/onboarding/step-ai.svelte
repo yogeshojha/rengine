@@ -14,13 +14,17 @@
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import { instanceSettingsApi } from '$lib/api/instanceSettings';
-	import { AI_PROVIDERS as PROVIDERS, AI_FEATURES as FEATURES } from '$lib/config/ai';
+	import {
+		AI_PROVIDERS as PROVIDERS,
+		AI_FEATURES as FEATURES,
+		DEFAULT_AI_PROVIDER
+	} from '$lib/config/ai';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { next, setFooter }: StepProps = $props();
 
 	let enabled = $state(false);
-	let provider = $state<string>('openai');
+	let provider = $state<string>(DEFAULT_AI_PROVIDER);
 	let apiKey = $state('');
 	let model = $state('');
 	let showKey = $state(false);
@@ -44,7 +48,9 @@
 		if (meta && !model.trim()) model = meta.model;
 	}
 
-	let modelPlaceholder = $derived(PROVIDERS.find((p) => p.value === provider)?.model ?? 'model name');
+	let modelPlaceholder = $derived(
+		PROVIDERS.find((p) => p.value === provider)?.model ?? 'model name'
+	);
 
 	async function handleTest() {
 		if (!apiKey.trim()) {
@@ -118,8 +124,8 @@
 			<TriangleAlertIcon />
 			<Alert.Title>Scan data leaves your instance</Alert.Title>
 			<Alert.Description>
-				Enabling AI sends scan data (targets, findings, and context) to your chosen external provider
-				for processing. Do not enable this on air-gapped or sensitive deployments.
+				Enabling AI sends scan data (targets, findings, and context) to your chosen external
+				provider for processing. Do not enable this on air-gapped or sensitive deployments.
 			</Alert.Description>
 		</Alert.Root>
 

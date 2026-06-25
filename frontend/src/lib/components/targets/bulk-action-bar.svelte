@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { Building2, Play, RefreshCw, Tag, Trash2, X } from 'lucide-svelte';
+	import Building2 from '@lucide/svelte/icons/building-2';
+	import Play from '@lucide/svelte/icons/play';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Tag from '@lucide/svelte/icons/tag';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import X from '@lucide/svelte/icons/x';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';

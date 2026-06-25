@@ -4,7 +4,9 @@
 	import { page } from '$app/state';
 	import { goto, replaceState, beforeNavigate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { AlertTriangle, Loader2, X } from 'lucide-svelte';
+	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+	import X from '@lucide/svelte/icons/x';
+	import { Spinner } from '$lib/components/ui/spinner';
 	// @ts-expect-error no declaration file for js-yaml
 	import jsyamlRaw from 'js-yaml';
 	const jsyaml = jsyamlRaw as {
@@ -18,8 +20,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Sheet from '$lib/components/ui/sheet';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scanEnginesApi } from '$lib/api/scan-engines';
@@ -35,8 +37,11 @@
 	import {
 		DEFAULT_DISCOVERY_CONFIG,
 		DEFAULT_EXPANSION_CONFIG,
-		DEFAULT_DEPTH_CONFIG
+		DEFAULT_DEPTH_CONFIG,
+		DEFAULT_INTENSITY,
+		DEFAULT_GLOBAL_THREADS
 	} from '$lib/types/engine';
+	import { ROUTES } from '$lib/config/routes';
 	import { CAPABILITIES, getActiveCapabilities, configPhaseFor } from '$lib/types/capabilities';
 
 	let engineId = $derived(page.params.id);
@@ -104,11 +109,8 @@
 
 	function handleConfigChange(updates: Record<string, unknown>) {
 		if (!editedEngine || !configPanelConfigPhase) return;
-		editedEngine = {
-			...editedEngine,
-			[configPanelConfigPhase]: { ...editedEngine[configPanelConfigPhase], ...updates }
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		} as any;
+		const merged = { ...editedEngine[configPanelConfigPhase], ...updates };
+		editedEngine = { ...editedEngine, [configPanelConfigPhase]: merged };
 	}
 
 	$effect(() => {
@@ -147,8 +149,8 @@
 			name: '',
 			created_by: '',
 			description: null,
-			intensity: 'normal',
-			global_threads: 30,
+			intensity: DEFAULT_INTENSITY,
+			global_threads: DEFAULT_GLOBAL_THREADS,
 			global_http_crawl: true,
 			global_headers: [],
 			discovery: { ...DEFAULT_DISCOVERY_CONFIG },
@@ -168,14 +170,12 @@
 		try {
 			const cached = scanEnginesStore.engines.find((e) => e.id === id);
 			if (cached) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				engine = cached as any as ScanEngine;
+				engine = cached;
 				editedEngine = JSON.parse(JSON.stringify(engine));
 			}
 
 			const fresh = await scanEnginesApi.get(id, projectId);
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			engine = fresh as any as ScanEngine;
+			engine = fresh;
 			if (!hasUnsavedChanges) {
 				editedEngine = JSON.parse(JSON.stringify(engine));
 			}
@@ -285,18 +285,15 @@
 					global_threads: editedEngine.global_threads,
 					global_http_crawl: editedEngine.global_http_crawl,
 					global_headers: editedEngine.global_headers,
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					discovery: editedEngine.discovery as any,
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					expansion: editedEngine.expansion as any,
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					depth: editedEngine.depth as any,
+					discovery: editedEngine.discovery,
+					expansion: editedEngine.expansion,
+					depth: editedEngine.depth,
 					tool_options: editedEngine.tool_options
 				});
 				if (created) {
 					toast.success('Engine created');
 					allowNavigation = true;
-					goto(`/automation/engines/${created.id}`, { replaceState: true });
+					goto(ROUTES.engine(created.id), { replaceState: true });
 				} else {
 					saveError = scanEnginesStore.error ?? 'Failed to create engine';
 					toast.error(saveError);
@@ -309,18 +306,14 @@
 					global_threads: editedEngine.global_threads,
 					global_http_crawl: editedEngine.global_http_crawl,
 					global_headers: editedEngine.global_headers,
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					discovery: editedEngine.discovery as any,
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					expansion: editedEngine.expansion as any,
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					depth: editedEngine.depth as any,
+					discovery: editedEngine.discovery,
+					expansion: editedEngine.expansion,
+					depth: editedEngine.depth,
 					tool_options: editedEngine.tool_options
 				});
 
 				if (updated) {
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					engine = updated as any as ScanEngine;
+					engine = updated;
 					toast.success('Engine saved');
 				} else {
 					saveError = scanEnginesStore.error ?? 'Failed to save engine';
@@ -362,7 +355,7 @@
 			if (dup?.id) {
 				toast.success(`Duplicated as "${dup.name}"`);
 				allowNavigation = true;
-				goto(`/automation/engines/${dup.id}`);
+				goto(ROUTES.engine(dup.id));
 			} else {
 				toast.error('Duplicate failed');
 			}
@@ -385,7 +378,7 @@
 				toast.success('Engine deleted');
 				showDeleteDialog = false;
 				allowNavigation = true;
-				goto('/automation/engines');
+				goto(ROUTES.engines);
 			} else {
 				toast.error('Delete failed');
 			}
@@ -409,7 +402,7 @@
 	}
 
 	function handleBack() {
-		goto('/automation/engines');
+		goto(ROUTES.engines);
 	}
 
 	function confirmLeave() {
@@ -448,7 +441,7 @@
 <div class="editor-shell">
 	{#if isLoading && !engine}
 		<div class="state-center">
-			<Loader2 size={20} class="animate-spin text-muted-foreground" />
+			<Spinner size={20} class="text-muted-foreground" />
 			<span class="text-sm text-muted-foreground">Loading engine…</span>
 		</div>
 	{:else if loadError}
@@ -461,7 +454,7 @@
 				<Empty.Description>{loadError}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
-				<Button onclick={() => goto('/automation/engines')}>Back to Engines</Button>
+				<Button onclick={() => goto(ROUTES.engines)}>Back to Engines</Button>
 			</Empty.Content>
 		</Empty.Root>
 	{:else if editedEngine}
@@ -576,7 +569,6 @@
 	{/if}
 </div>
 
-<!-- Delete confirmation -->
 <DeleteConfirmationDialog
 	bind:open={showDeleteDialog}
 	title="Delete Engine"
@@ -587,21 +579,18 @@
 	onConfirm={confirmDelete}
 />
 
-<!-- Unsaved-changes guard -->
-<AlertDialog.Root bind:open={showLeaveDialog}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Unsaved changes</AlertDialog.Title>
-			<AlertDialog.Description>
-				You have unsaved changes that will be lost. Leave anyway?
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel onclick={() => (pendingNav = null)}>Stay</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={confirmLeave}>Leave</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<UnsavedChangesDialog
+	bind:open={showLeaveDialog}
+	title="Unsaved changes"
+	description="You have unsaved changes that will be lost. Leave anyway?"
+	confirmLabel="Leave"
+	cancelLabel="Stay"
+	onOpenChange={(o) => {
+		showLeaveDialog = o;
+		if (!o) pendingNav = null;
+	}}
+	onConfirm={confirmLeave}
+/>
 
 <style>
 	.editor-shell {

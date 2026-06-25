@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { X, Check, Plus, Search } from 'lucide-svelte';
+	import X from '@lucide/svelte/icons/x';
+	import Check from '@lucide/svelte/icons/check';
+	import Plus from '@lucide/svelte/icons/plus';
+	import Search from '@lucide/svelte/icons/search';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Popover from '$lib/components/ui/popover';
@@ -32,7 +35,7 @@
 	let open = $state(false);
 	let searchValue = $state('');
 	let showColorPicker = $state(false);
-	let selectedColor = $state('#6366f1');
+	let selectedColor = $state('#64748b');
 	let colorPickerEl = $state<HTMLDivElement | null>(null);
 
 	$effect(() => {
@@ -40,16 +43,14 @@
 	});
 
 	const presetColors = [
-		'#ef4444',
-		'#f97316',
-		'#eab308',
-		'#22c55e',
-		'#14b8a6',
-		'#3b82f6',
+		'#64748b',
+		'#4f7cc4',
 		'#6366f1',
-		'#a855f7',
-		'#ec4899',
-		'#64748b'
+		'#7c6bb0',
+		'#3f9e93',
+		'#c2855a',
+		'#be5a6e',
+		'#5a9e6f'
 	];
 
 	let filteredItems = $derived(

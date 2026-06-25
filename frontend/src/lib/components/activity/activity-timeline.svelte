@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Activity, SearchX, ShieldX } from 'lucide-svelte';
+	import Activity from '@lucide/svelte/icons/activity';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import ShieldX from '@lucide/svelte/icons/shield-x';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Empty from '$lib/components/ui/empty/index.js';
 	import ActivityTimelineItem from './activity-timeline-item.svelte';

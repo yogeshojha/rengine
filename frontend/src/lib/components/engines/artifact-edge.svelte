@@ -138,7 +138,7 @@
 	.artifact-chip.always {
 		color: var(--foreground);
 		font-weight: 500;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+		box-shadow: var(--shadow-sm);
 	}
 
 	.artifact-chip.on-hover {

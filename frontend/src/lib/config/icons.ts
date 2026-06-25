@@ -1,5 +1,11 @@
 import { TargetType } from '$lib/types/target';
-import { Globe, MapPin, Network, Hash, Building2, Link2, Server } from 'lucide-svelte';
+import Globe from '@lucide/svelte/icons/globe';
+import MapPin from '@lucide/svelte/icons/map-pin';
+import Network from '@lucide/svelte/icons/network';
+import Hash from '@lucide/svelte/icons/hash';
+import Building2 from '@lucide/svelte/icons/building-2';
+import Link2 from '@lucide/svelte/icons/link-2';
+import Server from '@lucide/svelte/icons/server';
 
 export type IconComponent = typeof Globe;
 

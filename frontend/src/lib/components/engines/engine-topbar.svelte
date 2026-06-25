@@ -6,28 +6,21 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import {
-		ArrowLeft,
-		Save,
-		Copy,
-		Trash2,
-		Download,
-		LayoutGrid,
-		Code2,
-		Loader2,
-		Pencil,
-		FlaskConical,
-		Plus,
-		MoreHorizontal,
-		Terminal
-	} from 'lucide-svelte';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import Save from '@lucide/svelte/icons/save';
+	import Copy from '@lucide/svelte/icons/copy';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Download from '@lucide/svelte/icons/download';
+	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import Code2 from '@lucide/svelte/icons/code-2';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import FlaskConical from '@lucide/svelte/icons/flask-conical';
+	import Plus from '@lucide/svelte/icons/plus';
+	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+	import Terminal from '@lucide/svelte/icons/terminal';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import type { ScanEngine, Intensity } from '$lib/types/engine';
-
-	const intensityHelp: Record<Intensity, string> = {
-		passive: 'No active probing — lowest footprint, stealthiest, fewest findings.',
-		normal: 'Balanced active scanning — standard rate limits and tool coverage.',
-		aggressive: 'Maximum coverage — higher rate, noisier, most thorough but detectable.'
-	};
+	import { INTENSITIES, INTENSITY_HELP } from '$lib/types/engine';
 
 	interface Props {
 		engine: ScanEngine | null;
@@ -129,7 +122,7 @@
 		{#if toolCount !== undefined}
 			<Badge
 				variant="secondary"
-				class="gap-1 rounded-[5px] border border-border bg-muted font-normal text-[11px]"
+				class="gap-1 rounded-sm border border-border bg-muted font-normal text-[11px]"
 			>
 				<span class="font-semibold text-foreground">{toolCount} tools</span>
 				{#if estDuration}
@@ -150,7 +143,7 @@
 				class="flex-row"
 			>
 				<Tabs.List class="h-8">
-					{#each ['passive', 'normal', 'aggressive'] as const as level (level)}
+					{#each INTENSITIES as level (level)}
 						<Tooltip.Root>
 							<Tooltip.Trigger>
 								{#snippet child({ props })}
@@ -160,7 +153,7 @@
 								{/snippet}
 							</Tooltip.Trigger>
 							<Tooltip.Content class="max-w-[220px] text-xs">
-								{intensityHelp[level]}
+								{INTENSITY_HELP[level]}
 							</Tooltip.Content>
 						</Tooltip.Root>
 					{/each}
@@ -248,7 +241,7 @@
 				class="gap-1.5 h-7 text-xs min-w-[100px]"
 			>
 				{#if isSaving}
-					<Loader2 size={13} class="animate-spin" />
+					<Spinner size={13} />
 					Saving…
 				{:else}
 					<Save size={13} />

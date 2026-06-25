@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Ban, Trash2, X } from 'lucide-svelte';
+	import Ban from '@lucide/svelte/icons/ban';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
 

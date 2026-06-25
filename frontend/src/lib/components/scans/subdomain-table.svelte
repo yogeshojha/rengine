@@ -42,12 +42,7 @@
 					<Table.Cell class="font-mono text-xs">
 						{row.name}
 						{#if row.is_wildcard}
-							<Badge
-								variant="outline"
-								class="ml-1.5 font-normal text-amber-600 dark:text-amber-500"
-							>
-								wildcard
-							</Badge>
+							<Badge variant="outline" class="ml-1.5 font-normal text-warning">wildcard</Badge>
 						{/if}
 					</Table.Cell>
 					<Table.Cell class="font-mono text-xs text-muted-foreground">
@@ -67,9 +62,7 @@
 					</Table.Cell>
 					<Table.Cell>
 						{#if row.is_excluded}
-							<Badge variant="outline" class="font-normal text-amber-600 dark:text-amber-500">
-								Excluded
-							</Badge>
+							<Badge variant="outline" class="font-normal text-warning">Excluded</Badge>
 						{:else if row.is_active}
 							<Badge variant="secondary" class="font-normal">Live</Badge>
 						{:else}

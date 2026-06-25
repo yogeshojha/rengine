@@ -6,7 +6,7 @@
 	import { EditorState } from '@codemirror/state';
 	import { lintGutter, linter, type Diagnostic } from '@codemirror/lint';
 	import { syntaxTree } from '@codemirror/language';
-	import { AlertCircle } from 'lucide-svelte';
+	import AlertCircle from '@lucide/svelte/icons/alert-circle';
 	import { mode } from 'mode-watcher';
 	import * as Alert from '$lib/components/ui/alert';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -46,8 +46,7 @@
 				.iterate((node) => {
 					if (!node.type.isError) return;
 					const from = node.from;
-					const to =
-						node.to > node.from ? node.to : Math.min(node.from + 1, view.state.doc.length);
+					const to = node.to > node.from ? node.to : Math.min(node.from + 1, view.state.doc.length);
 					const lineNo = view.state.doc.lineAt(from).number;
 					const message = 'Invalid YAML syntax';
 					diagnostics.push({ from, to, severity: 'error', message });
@@ -169,19 +168,18 @@
 			border-radius: 8px;
 			border: 1px solid var(--border);
 			margin: 12px;
-			box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+			box-shadow: var(--shadow-xs);
 		"
 	>
-		<div
-			bind:this={editorContainer}
-			style="height: 100%; overflow: auto;"
-		></div>
+		<div bind:this={editorContainer} style="height: 100%; overflow: auto;"></div>
 	</div>
 
 	<!-- Error list -->
 	{#if allErrors.length > 0}
 		<Alert.Root variant="destructive" class="mx-3 mb-3 block w-auto overflow-hidden p-0">
-			<div class="flex items-center gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-2">
+			<div
+				class="flex items-center gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-2"
+			>
 				<AlertCircle class="size-3.5 text-destructive" />
 				<span class="text-xs font-semibold text-destructive">
 					{allErrors.length} error{allErrors.length !== 1 ? 's' : ''}
@@ -189,9 +187,7 @@
 			</div>
 			<ScrollArea class="h-[140px]">
 				{#each allErrors as err, i (i)}
-					<div
-						class="flex items-start gap-2.5 border-b border-destructive/20 px-3 py-1.5 text-xs"
-					>
+					<div class="flex items-start gap-2.5 border-b border-destructive/20 px-3 py-1.5 text-xs">
 						<span
 							class="shrink-0 whitespace-nowrap rounded border border-destructive/40 bg-destructive/10 px-1.5 py-px font-mono font-semibold text-destructive"
 						>

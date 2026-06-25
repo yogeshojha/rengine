@@ -56,7 +56,6 @@ export function relativeTime(timestamp: string | null | undefined): string {
 	return `${months}mo ago`;
 }
 
-
 export function formatShortDate(date: string | Date): string {
 	return new Date(date).toLocaleDateString('en-US', {
 		year: 'numeric',
@@ -177,9 +176,9 @@ const FRESHNESS_COLOR_MAP: Record<FreshnessLevel, FreshnessColors> = {
 		border: 'border-border'
 	},
 	aging: {
-		dot: 'bg-amber-500',
-		text: 'text-amber-600 dark:text-amber-500',
-		border: 'border-amber-600/20'
+		dot: 'bg-warning',
+		text: 'text-warning',
+		border: 'border-warning/20'
 	},
 	stale: {
 		dot: 'bg-destructive',

@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { Sparkles, Network, Trash2, Play, Ban } from 'lucide-svelte';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import Network from '@lucide/svelte/icons/network';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Play from '@lucide/svelte/icons/play';
+	import Ban from '@lucide/svelte/icons/ban';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { SCAN_CHANGE_WINDOWS, type ScanChanges, type ScanChangeWindow } from '$lib/types/scan';
 
@@ -45,7 +49,7 @@
 				<div
 					class="flex items-center gap-1.5 text-2xl font-semibold tabular-nums {changes.new_subdomains >
 					0
-						? 'text-amber-600 dark:text-amber-500'
+						? 'text-warning'
 						: ''}"
 				>
 					<Network class="h-4 w-4 opacity-60" />

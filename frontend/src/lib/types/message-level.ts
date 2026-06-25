@@ -1,1 +1,3 @@
-export type MessageLevel = 'info' | 'success' | 'warning' | 'error';
+export const MESSAGE_LEVELS = ['info', 'success', 'warning', 'error'] as const;
+
+export type MessageLevel = (typeof MESSAGE_LEVELS)[number];

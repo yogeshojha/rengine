@@ -6,6 +6,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Input } from '$lib/components/ui/input';
 	import { goto } from '$app/navigation';
+	import { ROUTES } from '$lib/config/routes';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CopyButton from '@/components/copy-button.svelte';
@@ -14,17 +15,15 @@
 	import DnsInline from '$lib/components/targets/dns-inline.svelte';
 	import DiscoveryBadge from '$lib/components/viewdns-discoveries/discovery-badge.svelte';
 	import TargetInfraBadge from '$lib/components/targets/target-infra-badge.svelte';
-	import {
-		CalendarClock,
-		Ellipsis,
-		Eye,
-		History,
-		Loader,
-		Pencil,
-		Play,
-		RefreshCw,
-		Trash2
-	} from 'lucide-svelte';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import Eye from '@lucide/svelte/icons/eye';
+	import History from '@lucide/svelte/icons/history';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Play from '@lucide/svelte/icons/play';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
 	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
 	import { stopProp } from '$lib/utilities';
@@ -102,11 +101,11 @@
 	class="group flex items-center gap-3 px-4 py-2.5 border-b border-border/50 transition-colors cursor-pointer {isSelected
 		? 'bg-primary/5 hover:bg-primary/10'
 		: 'hover:bg-muted/30'}"
-	onclick={() => goto(`/targets/${target.id}`)}
+	onclick={() => goto(ROUTES.target(target.id))}
 	onkeydown={(e) => {
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
-			goto(`/targets/${target.id}`);
+			goto(ROUTES.target(target.id));
 		}
 	}}
 	role="button"
@@ -242,7 +241,7 @@
 						onclick={() => onScan(target)}
 					>
 						{#if isScanning}
-							<Loader class="h-4 w-4 animate-spin text-chart-1" />
+							<Spinner class="h-4 w-4 text-chart-1" />
 						{:else}
 							<Play class="h-4 w-4" />
 						{/if}

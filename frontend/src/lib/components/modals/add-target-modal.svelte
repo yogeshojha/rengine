@@ -1,21 +1,14 @@
 <script lang="ts">
-	import {
-		CircleCheck,
-		CircleX,
-		LoaderCircle,
-		Globe,
-		MapPin,
-		Hash,
-		Building2,
-		Link2,
-		X
-	} from 'lucide-svelte';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import CircleX from '@lucide/svelte/icons/circle-x';
+	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
+	import UnsavedChangesDialog from '@/components/unsaved-changes-dialog.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
 	import TagMultiSelect from '$lib/components/tag-multi-select.svelte';
@@ -25,6 +18,7 @@
 	import { organizationsApi } from '$lib/api/organizations';
 	import { tagsApi } from '$lib/api/tags';
 	import { TargetType, formatTargetType } from '$lib/types/target';
+	import { getTargetTypeIcon } from '$lib/config/icons';
 	import { toast } from 'svelte-sonner';
 	import { tick } from 'svelte';
 
@@ -67,16 +61,8 @@
 		}))
 	);
 
-	const typeIcons = {
-		[TargetType.DOMAIN]: Globe,
-		[TargetType.IP]: MapPin,
-		[TargetType.IP_RANGE]: Hash,
-		[TargetType.ASN]: Building2,
-		[TargetType.URL]: Link2
-	};
-
 	let TypeIcon = $derived(
-		validationResult?.target_type ? typeIcons[validationResult.target_type] : null
+		validationResult?.target_type ? getTargetTypeIcon(validationResult.target_type, true) : null
 	);
 
 	function validateValue(value: string) {
@@ -278,9 +264,9 @@
 						/>
 						<div class="absolute right-3 top-1/2 -translate-y-1/2">
 							{#if isValidating}
-								<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" />
+								<Spinner class="h-4 w-4 text-muted-foreground" />
 							{:else if validationResult?.valid}
-								<CircleCheck class="h-4 w-4 text-foreground" />
+								<CircleCheck class="h-4 w-4 text-success" />
 							{:else if validationResult && !validationResult.valid}
 								<CircleX class="h-4 w-4 text-destructive" />
 							{/if}
@@ -352,7 +338,7 @@
 				</Button>
 				<Button type="submit" disabled={!canSubmit}>
 					{#if isSubmitting}
-						<LoaderCircle class="h-4 w-4 mr-2 animate-spin" />
+						<Spinner class="h-4 w-4 mr-2" />
 						Adding...
 					{:else}
 						Add Target
@@ -363,17 +349,10 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<AlertDialog.Root bind:open={showDiscardConfirm}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Discard your changes?</AlertDialog.Title>
-			<AlertDialog.Description>
-				You have unsaved input for this target. Closing now will discard it.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Keep editing</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={confirmDiscard}>Discard</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<UnsavedChangesDialog
+	bind:open={showDiscardConfirm}
+	title="Discard your changes?"
+	description="You have unsaved input for this target. Closing now will discard it."
+	onOpenChange={(o) => (showDiscardConfirm = o)}
+	onConfirm={confirmDiscard}
+/>

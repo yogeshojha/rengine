@@ -13,25 +13,23 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
 	import CopyButton from '@/components/copy-button.svelte';
-	import {
-		Server,
-		Network,
-		ShieldCheck,
-		ShieldX,
-		Building,
-		UserRound,
-		Mail,
-		Hash,
-		MonitorCog,
-		Flag,
-		Cable,
-		CalendarDays,
-		CalendarClock,
-		CalendarCheck,
-		TriangleAlert,
-		OctagonAlert,
-		ExternalLink
-	} from 'lucide-svelte';
+	import Server from '@lucide/svelte/icons/server';
+	import Network from '@lucide/svelte/icons/network';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import ShieldX from '@lucide/svelte/icons/shield-x';
+	import Building from '@lucide/svelte/icons/building';
+	import UserRound from '@lucide/svelte/icons/user-round';
+	import Mail from '@lucide/svelte/icons/mail';
+	import Hash from '@lucide/svelte/icons/hash';
+	import MonitorCog from '@lucide/svelte/icons/monitor-cog';
+	import Flag from '@lucide/svelte/icons/flag';
+	import Cable from '@lucide/svelte/icons/cable';
+	import CalendarDays from '@lucide/svelte/icons/calendar-days';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import CalendarCheck from '@lucide/svelte/icons/calendar-check';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import OctagonAlert from '@lucide/svelte/icons/octagon-alert';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
 
 	interface Props {
 		record: WhoisRecordRead;
@@ -274,7 +272,7 @@
 						'expired' || urgency === 'critical'
 						? 'text-destructive'
 						: urgency === 'warning'
-							? 'text-amber-600 dark:text-amber-500'
+							? 'text-warning'
 							: ''}"
 				>
 					<CalendarClock class="h-3 w-3" />
@@ -286,7 +284,7 @@
 						class="text-xs font-medium {urgency === 'expired' || urgency === 'critical'
 							? 'text-destructive'
 							: urgency === 'warning'
-								? 'text-amber-600 dark:text-amber-500'
+								? 'text-warning'
 								: 'text-muted-foreground'}"
 					>
 						{expirationLabel}
@@ -353,7 +351,10 @@
 			<p class="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Domain Status</p>
 			<div class="flex flex-wrap gap-1.5">
 				{#each record.domain_status as status (status)}
-					<Badge variant="outline" class="text-xs font-normal text-muted-foreground border-border/60">
+					<Badge
+						variant="outline"
+						class="text-xs font-normal text-muted-foreground border-border/60"
+					>
 						{status}
 					</Badge>
 				{/each}

@@ -2,8 +2,14 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { ShieldCheck, ShieldAlert, Mail, Clock, RefreshCw, TriangleAlert } from 'lucide-svelte';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import Mail from '@lucide/svelte/icons/mail';
+	import Clock from '@lucide/svelte/icons/clock';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import { ROUTES } from '$lib/config/routes';
 	import { formatTargetType, type TargetType } from '$lib/types/target';
 	import type { DashboardSignals } from '$lib/types/dashboard';
 
@@ -17,7 +23,7 @@
 	let { signals, loading, error, onRetry }: Props = $props();
 
 	const PREVIEW = 4;
-	const amber = 'text-amber-600 dark:text-amber-500';
+	const warnText = 'text-warning';
 
 	let total = $derived(
 		signals
@@ -69,10 +75,10 @@
 			<div class="grid gap-5 md:grid-cols-3">
 				<div>
 					<div class="mb-2 flex items-center gap-2">
-						<ShieldAlert class="h-4 w-4 {amber}" />
+						<ShieldAlert class="h-4 w-4 {warnText}" />
 						<span class="text-sm font-medium">Possible takeover</span>
 						<span
-							class="ml-auto rounded-full bg-amber-500/10 px-1.5 text-xs font-semibold tabular-nums {amber}"
+							class="ml-auto rounded-full bg-warning/10 px-1.5 text-xs font-semibold tabular-nums {warnText}"
 						>
 							{signals.takeover.count}
 						</span>
@@ -84,12 +90,12 @@
 							{#each signals.takeover.items.slice(0, PREVIEW) as it (it.name)}
 								<li>
 									<a
-										href="/targets/{it.target_id}"
+										href={ROUTES.target(it.target_id)}
 										class="block rounded-md px-2 py-1 transition-colors hover:bg-muted/40"
 									>
 										<div class="truncate font-mono text-xs">{it.name}</div>
 										<div class="truncate text-[11px] text-muted-foreground">
-											→ {it.cname} <span class={amber}>({it.provider})</span>
+											→ {it.cname} <span class={warnText}>({it.provider})</span>
 										</div>
 									</a>
 								</li>
@@ -105,10 +111,10 @@
 
 				<div>
 					<div class="mb-2 flex items-center gap-2">
-						<Mail class="h-4 w-4 {amber}" />
+						<Mail class="h-4 w-4 {warnText}" />
 						<span class="text-sm font-medium">Spoofable email</span>
 						<span
-							class="ml-auto rounded-full bg-amber-500/10 px-1.5 text-xs font-semibold tabular-nums {amber}"
+							class="ml-auto rounded-full bg-warning/10 px-1.5 text-xs font-semibold tabular-nums {warnText}"
 						>
 							{signals.spoofable.count}
 						</span>
@@ -120,7 +126,7 @@
 							{#each signals.spoofable.items.slice(0, PREVIEW) as it (it.target_id)}
 								<li>
 									<a
-										href="/targets/{it.target_id}"
+										href={ROUTES.target(it.target_id)}
 										class="block rounded-md px-2 py-1 transition-colors hover:bg-muted/40"
 									>
 										<div class="truncate font-mono text-xs">{it.target_value}</div>
@@ -154,7 +160,7 @@
 							{#each signals.stale.items.slice(0, PREVIEW) as it (it.target_id)}
 								<li>
 									<a
-										href="/targets/{it.target_id}"
+										href={ROUTES.target(it.target_id)}
 										class="block rounded-md px-2 py-1 transition-colors hover:bg-muted/40"
 									>
 										<div class="truncate font-mono text-xs">{it.target_value}</div>

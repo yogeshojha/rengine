@@ -10,6 +10,7 @@
 		type ActivityFilter
 	} from '$lib/stores/activity-feed.svelte';
 	import { SSEChannel, SSEEventType } from '$lib/types/sse';
+	import { ACTIVITY_TICK_MS } from '$lib/constants';
 	import type { ActivityLog } from '$lib/types/activity';
 	import ActivityTimeline from './activity-timeline.svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
@@ -18,7 +19,10 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import { ArrowUp, Search, ShieldAlert, X } from 'lucide-svelte';
+	import ArrowUp from '@lucide/svelte/icons/arrow-up';
+	import Search from '@lucide/svelte/icons/search';
+	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import X from '@lucide/svelte/icons/x';
 
 	const PANEL_W = 360;
 
@@ -52,7 +56,7 @@
 	});
 
 	$effect(() => {
-		const iv = setInterval(() => activityFeed.bumpTick(), 20_000);
+		const iv = setInterval(() => activityFeed.bumpTick(), ACTIVITY_TICK_MS);
 		return () => clearInterval(iv);
 	});
 
@@ -119,7 +123,7 @@
 					class="h-1.5 w-1.5 rounded-full {sseStore.isConnected
 						? 'bg-chart-1'
 						: sseStore.isReconnecting
-							? 'bg-amber-600 dark:bg-amber-500'
+							? 'bg-warning'
 							: 'bg-muted-foreground/40'}"
 				></span>
 				Activity
@@ -228,24 +232,24 @@
 
 		<ScrollArea class="h-full" bind:viewportRef={scrollEl}>
 			<div class="px-3 pb-4 pt-2">
-			<ActivityTimeline
-				dayGroups={activityFeed.days}
-				newEventIds={activityFeed.freshIds}
-				runningIds={activityFeed.runningIds}
-				tick={activityFeed.tick}
-				isLoading={activityFeed.initialLoad}
-				isEmpty={!activityFeed.initialLoad && activityFeed.filtered.length === 0}
-			/>
+				<ActivityTimeline
+					dayGroups={activityFeed.days}
+					newEventIds={activityFeed.freshIds}
+					runningIds={activityFeed.runningIds}
+					tick={activityFeed.tick}
+					isLoading={activityFeed.initialLoad}
+					isEmpty={!activityFeed.initialLoad && activityFeed.filtered.length === 0}
+				/>
 
-			{#if activityFeed.loading && !activityFeed.initialLoad}
-				<div class="flex justify-center py-3">
-					<Spinner class="h-3.5 w-3.5 text-muted-foreground" />
-				</div>
-			{/if}
+				{#if activityFeed.loading && !activityFeed.initialLoad}
+					<div class="flex justify-center py-3">
+						<Spinner class="h-3.5 w-3.5 text-muted-foreground" />
+					</div>
+				{/if}
 
-			{#if activityFeed.hasMore && !activityFeed.initialLoad}
-				<div bind:this={sentinelEl} class="h-1"></div>
-			{/if}
+				{#if activityFeed.hasMore && !activityFeed.initialLoad}
+					<div bind:this={sentinelEl} class="h-1"></div>
+				{/if}
 			</div>
 		</ScrollArea>
 

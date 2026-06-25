@@ -2,7 +2,7 @@
 	import { TargetType, formatTargetType } from '$lib/types/target';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as ScrollArea from '$lib/components/ui/scroll-area/index.js';
-	import { Layers } from 'lucide-svelte';
+	import Layers from '@lucide/svelte/icons/layers';
 	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
 
 	interface Props {

@@ -98,8 +98,7 @@
 			try {
 				await navigator.clipboard.writeText(text);
 				return true;
-			} catch {
-			}
+			} catch {}
 		}
 		try {
 			const ta = document.createElement('textarea');
@@ -200,7 +199,7 @@
 				<p class="text-xs text-destructive">{errorMsg}</p>
 			{/if}
 			{#if showClockHint}
-				<p class="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500">
+				<p class="flex items-start gap-1.5 text-xs text-warning">
 					<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
 					<span>Still failing? Make sure your phone's clock is set to update automatically.</span>
 				</p>

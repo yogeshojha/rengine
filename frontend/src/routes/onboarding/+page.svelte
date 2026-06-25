@@ -4,6 +4,7 @@
 	import { onboardingStore } from '$lib/stores/onboarding.svelte';
 	import { onboardingApi } from '$lib/api/onboarding';
 	import type { StepFooter, WizardData } from '$lib/types/onboarding';
+	import { ROUTES } from '$lib/config/routes';
 	import { toast } from 'svelte-sonner';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import WizardShell from '$lib/components/onboarding/wizard-shell.svelte';
@@ -127,7 +128,7 @@
 	$effect(() => {
 		if (auth.isLoading) return;
 		if (!auth.isAuthenticated) {
-			goto('/login');
+			goto(ROUTES.login);
 			return;
 		}
 		guard();
@@ -138,7 +139,7 @@
 		const status = onboardingStore.status;
 		if (!status) return;
 		if (status.completed || !status.can_setup) {
-			goto('/dashboard');
+			goto(ROUTES.dashboard);
 			return;
 		}
 		data.instanceName = status.instance_name ?? '';

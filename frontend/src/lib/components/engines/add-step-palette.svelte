@@ -1,24 +1,33 @@
 <script lang="ts">
+	import Globe from '@lucide/svelte/icons/globe';
+	import Share2 from '@lucide/svelte/icons/share-2';
+	import Building2 from '@lucide/svelte/icons/building-2';
+	import Search from '@lucide/svelte/icons/search';
+	import Unlink from '@lucide/svelte/icons/unlink';
+	import Cloud from '@lucide/svelte/icons/cloud';
+	import Radar from '@lucide/svelte/icons/radar';
+	import Globe2 from '@lucide/svelte/icons/globe-2';
+	import Camera from '@lucide/svelte/icons/camera';
+	import Compass from '@lucide/svelte/icons/compass';
+	import FolderSearch from '@lucide/svelte/icons/folder-search';
+	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import Lock from '@lucide/svelte/icons/lock';
+	import KeyRound from '@lucide/svelte/icons/key-round';
+	import FileText from '@lucide/svelte/icons/file-text';
 	import {
-		Globe,
-		Share2,
-		Building2,
-		Search,
-		Unlink,
-		Cloud,
-		Radar,
-		Globe2,
-		Camera,
-		Compass,
-		FolderSearch,
-		SlidersHorizontal,
-		ShieldAlert,
-		Lock,
-		KeyRound,
-		FileText
-	} from 'lucide-svelte';
-	import { CAPABILITIES, getActiveCapabilities, type Capability, type Phase } from '$lib/types/capabilities';
-	import { PHASE_COLORS, ARTIFACT_LABEL, type ScanEngine, type ArtifactType } from '$lib/types/engine';
+		CAPABILITIES,
+		getActiveCapabilities,
+		type Capability,
+		type Phase
+	} from '$lib/types/capabilities';
+	import {
+		PHASE_COLORS,
+		ARTIFACT_LABEL,
+		type ScanEngine,
+		type ArtifactType
+	} from '$lib/types/engine';
+	import type { IconComponent } from '$lib/config/icons';
 	import * as Command from '$lib/components/ui/command';
 	import { Badge } from '$lib/components/ui/badge';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -37,7 +46,7 @@
 		onClose: () => void;
 	} = $props();
 
-	const ICONS: Record<string, typeof Globe> = {
+	const ICONS: Record<string, IconComponent> = {
 		Globe,
 		Share2,
 		Building2,
@@ -83,9 +92,7 @@
 	}
 
 	let groups = $derived(
-		activePhases
-			.map((ph) => ({ phase: ph, caps: addableFor(ph) }))
-			.filter((g) => g.caps.length > 0)
+		activePhases.map((ph) => ({ phase: ph, caps: addableFor(ph) })).filter((g) => g.caps.length > 0)
 	);
 
 	function commit(capId: string) {

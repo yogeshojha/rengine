@@ -5,7 +5,7 @@
 	import { TargetType } from '$lib/types/target';
 	import { DISCOVERY_SOURCE_LABELS } from '$lib/types/viewdns';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { Sparkles } from 'lucide-svelte';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	interface Props {

@@ -2,7 +2,7 @@
 	import { whoisApi } from '$lib/api/whois';
 	import type { WhoisCorrelationResult } from '$lib/types/whois';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { Share2 } from 'lucide-svelte';
+	import Share2 from '@lucide/svelte/icons/share-2';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	interface Props {

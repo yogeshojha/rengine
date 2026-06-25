@@ -1,6 +1,7 @@
 import type { TaskStatus } from './task-status';
 import type { TargetType, OrganizationSummary, TagSummary } from './target';
 import type { WhoisRecordRead } from './whois';
+import type { PeerRelationship, PrefixRelationship } from './ripestat';
 
 export interface DnsRecordRead {
 	id: string;
@@ -35,7 +36,7 @@ export interface AnnouncedPrefixDetail {
 
 export interface ASNNeighbourDetail {
 	neighbour_asn: number;
-	relationship: string;
+	relationship: PeerRelationship;
 	power: number;
 }
 
@@ -63,7 +64,7 @@ export interface PrefixOverviewDetail {
 
 export interface RelatedPrefixDetail {
 	related_prefix: string;
-	relationship: string;
+	relationship: PrefixRelationship;
 	origin_asn: number | null;
 }
 

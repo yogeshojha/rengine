@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { FileText, Code, List, CircleCheck, Eye, Upload } from 'lucide-svelte';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import Code from '@lucide/svelte/icons/code';
+	import List from '@lucide/svelte/icons/list';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import Eye from '@lucide/svelte/icons/eye';
+	import Upload from '@lucide/svelte/icons/upload';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Button } from '$lib/components/ui/button';
 	import { Progress } from '$lib/components/ui/progress';

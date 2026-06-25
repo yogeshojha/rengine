@@ -52,8 +52,8 @@
 		<p class="text-xs text-muted-foreground">
 			Keyword, wildcard (<code class="text-[11px]">*admin*</code>) or regex — matched against every
 			discovered subdomain. No domain names, so the context stays reusable. Matches are still stored
-			but flagged <span class="text-amber-600 dark:text-amber-500">excluded</span> and skipped from resolution,
-			ports, screenshots and later stages.
+			but flagged <span class="text-warning">excluded</span> and skipped from resolution, ports, screenshots
+			and later stages.
 		</p>
 		<StringListField
 			items={context.excluded_subdomains}

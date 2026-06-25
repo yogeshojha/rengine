@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { Network } from 'lucide-svelte';
+	import Network from '@lucide/svelte/icons/network';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';

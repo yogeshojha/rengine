@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { ChevronRight, Loader } from 'lucide-svelte';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CopyButton from '@/components/copy-button.svelte';
+	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { SCAN_STATUS_LABEL, scanStatusVariant, scanStatusIcon } from '$lib/utilities/scan-status';
 	import { getTargetTypeColor, formatTargetType, type TargetType } from '$lib/types/target';
 	import type { ScanRead, ScanTargetGroup } from '$lib/types/scan';
 	import ScanListItem from './scan-list-item.svelte';
@@ -28,7 +29,6 @@
 	let loaded = $state(false);
 	let scans = $state<ScanRead[]>([]);
 
-	let StatusIcon = $derived(scanStatusIcon(group.last_status));
 	let stale = $derived(
 		group.running === 0 && now - new Date(group.last_scan_at).getTime() > STALE_MS
 	);
@@ -84,25 +84,16 @@
 
 		{#if group.running > 0}
 			<Badge variant="secondary" class="shrink-0 gap-1 font-normal">
-				<Loader class="h-3 w-3 animate-spin" />
+				<Spinner class="h-3 w-3" />
 				{group.running} running
 			</Badge>
 		{:else if stale}
-			<Badge
-				variant="outline"
-				class="shrink-0 gap-1 border-amber-500/30 font-normal text-amber-600 dark:text-amber-500"
-			>
+			<Badge variant="outline" class="shrink-0 gap-1 border-warning/30 font-normal text-warning">
 				Stale
 			</Badge>
 		{/if}
 
-		<Badge
-			variant={scanStatusVariant(group.last_status)}
-			class="hidden shrink-0 gap-1 font-normal sm:inline-flex"
-		>
-			<StatusIcon class="h-3 w-3 {group.last_status === 'running' ? 'animate-spin' : ''}" />
-			{SCAN_STATUS_LABEL[group.last_status]}
-		</Badge>
+		<ScanStatusBadge status={group.last_status} class="hidden shrink-0 sm:inline-flex" />
 
 		<span
 			class="hidden w-16 shrink-0 text-right text-xs text-muted-foreground tabular-nums sm:block"

@@ -1,11 +1,13 @@
 <script lang="ts">
 	import type { DnsLookupRead, DnsRecordRead } from '$lib/types/target-detail';
+	import { DNS_RECORD_DISPLAY_ORDER, DnsRecordType } from '$lib/types/dns';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import * as ScrollArea from '$lib/components/ui/scroll-area/index.js';
 	import * as HoverCard from '$lib/components/ui/hover-card/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { CircleCheck, Globe } from 'lucide-svelte';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import Globe from '@lucide/svelte/icons/globe';
 
 	interface Props {
 		lookup: DnsLookupRead;
@@ -13,11 +15,9 @@
 
 	let { lookup }: Props = $props();
 
-	const TYPE_ORDER = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA', 'SRV', 'CAA', 'PTR'];
-
 	let rows = $derived.by(() => {
 		const o = (t: string) => {
-			const i = TYPE_ORDER.indexOf(t);
+			const i = DNS_RECORD_DISPLAY_ORDER.indexOf(t as DnsRecordType);
 			return i === -1 ? 99 : i;
 		};
 		return [...lookup.records].sort(
@@ -42,7 +42,8 @@
 
 	function hasMeta(rec: DnsRecordRead): boolean {
 		return (
-			(rec.record_type === 'SOA' && !!(rec.soa_email || rec.soa_serial)) || rec.record_type === 'SRV'
+			(rec.record_type === DnsRecordType.SOA && !!(rec.soa_email || rec.soa_serial)) ||
+			rec.record_type === DnsRecordType.SRV
 		);
 	}
 </script>
@@ -51,7 +52,7 @@
 	<Table.Root>
 		<Table.Body>
 			{#each rows as rec (rec.id)}
-				<Table.Row class="group/rec border-border/15 hover:bg-muted/40">
+				<Table.Row class="group/rec border-border/40 hover:bg-muted/40">
 					<Table.Cell class="py-1 w-12 align-top">
 						<Badge
 							variant="outline"
@@ -61,12 +62,13 @@
 					</Table.Cell>
 					<Table.Cell class="py-1 align-top max-w-0">
 						<div class="flex items-start gap-1.5 min-w-0">
-							{#if rec.record_type === 'MX' && rec.priority != null}
-								<span class="shrink-0 mt-px text-[11px] font-mono tabular-nums text-muted-foreground/50"
+							{#if rec.record_type === DnsRecordType.MX && rec.priority != null}
+								<span
+									class="shrink-0 mt-px text-[11px] font-mono tabular-nums text-muted-foreground/50"
 									>{rec.priority}</span
 								>
 							{/if}
-							{#if rec.record_type === 'TXT'}
+							{#if rec.record_type === DnsRecordType.TXT}
 								{@const p = detectProvider(rec.value)}
 								{#if p}
 									<Badge variant="secondary" class="shrink-0 mt-px text-[9px] px-1 py-0 font-medium"
@@ -88,7 +90,9 @@
 										{#if rec.soa_serial}<div>
 												<span class="text-muted-foreground/60">serial </span>{rec.soa_serial}
 											</div>{/if}
-										{#if rec.record_type === 'SRV'}<div class="text-muted-foreground/60">
+										{#if rec.record_type === DnsRecordType.SRV}<div
+												class="text-muted-foreground/60"
+											>
 												pri {rec.priority} · wt {rec.weight} · :{rec.port}
 											</div>{/if}
 									</HoverCard.Content>
@@ -128,11 +132,11 @@
 	</div>
 
 	{#if rows.length > 8}
-		<ScrollArea.Root class="h-[260px] rounded-md border border-border/15" scrollbarYClasses="w-1.5">
+		<ScrollArea.Root class="h-[260px] rounded-md border border-border/40" scrollbarYClasses="w-1.5">
 			{@render table()}
 		</ScrollArea.Root>
 	{:else if rows.length > 0}
-		<div class="rounded-md border border-border/15">
+		<div class="rounded-md border border-border/40">
 			{@render table()}
 		</div>
 	{/if}

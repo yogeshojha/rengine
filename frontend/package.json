@@ -59,7 +59,6 @@
 		"d3-scale": "^4.0.2",
 		"js-yaml": "^4.1.0",
 		"d3-shape": "^3.2.0",
-		"lucide-svelte": "^0.563.0",
 		"mode-watcher": "^1.1.0",
 		"tailwindcss": "^4.1.18",
 		"topojson-client": "^3.1.0",

@@ -2,13 +2,16 @@
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { Plus, RefreshCw, KeyRound } from 'lucide-svelte';
+	import Plus from '@lucide/svelte/icons/plus';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import KeyRound from '@lucide/svelte/icons/key-round';
 
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { ROUTES } from '$lib/config/routes';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as Empty from '$lib/components/ui/empty';
+	import EmptyState from '@/components/empty-state.svelte';
 	import ContextListCard from '$lib/components/contexts/context-list-card.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import type { ScanContextRead } from '$lib/types/scan-context';
@@ -23,7 +26,7 @@
 		const hasFetched = projectsStore.hasFetched;
 		if (project && hasFetched) {
 			untrack(() => {
-				if (!scanContextsStore.hasFetched) {
+				if (scanContextsStore.fetchedProjectId !== project.id) {
 					scanContextsStore.fetchContexts(project.id);
 				}
 			});
@@ -36,7 +39,7 @@
 			toast.error('No active project selected');
 			return;
 		}
-		goto(`/automation/contexts/new?project=${project.id}`);
+		goto(ROUTES.newContext(project.id));
 	}
 
 	async function handleDuplicate(context: ScanContextRead) {
@@ -122,7 +125,9 @@
 	</div>
 
 	{#if scanContextsStore.error && !scanContextsStore.isLoading}
-		<div class="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+		<div
+			class="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+		>
 			{scanContextsStore.error}
 		</div>
 	{/if}
@@ -130,34 +135,26 @@
 	{#if scanContextsStore.isLoading}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
-				<Skeleton class="h-[150px] rounded-[10px]" />
+				<Skeleton class="h-[150px] rounded-lg" />
 			{/each}
 		</div>
 	{:else if scanContextsStore.contexts.length === 0}
-		<Empty.Root class="border bg-muted/20 py-20">
-			<Empty.Header>
-				<Empty.Media class="size-16 rounded-2xl bg-muted">
-					<KeyRound size={28} class="text-muted-foreground" />
-				</Empty.Media>
-				<Empty.Title class="text-lg font-bold">No scan contexts yet</Empty.Title>
-				<Empty.Description class="max-w-md">
-					Contexts hold authentication, rate limits, and scope rules you can reuse across scans.
-					Scans can also run with Context: None.
-				</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<Button onclick={handleNewContext} class="gap-2">
-					<Plus size={15} />
-					Create Your First Context
-				</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState
+			icon={KeyRound}
+			title="No scan contexts yet"
+			description="Contexts hold authentication, rate limits, and scope rules you can reuse across scans. Scans can also run with Context: None."
+		>
+			<Button onclick={handleNewContext} class="gap-2">
+				<Plus size={15} />
+				Create Your First Context
+			</Button>
+		</EmptyState>
 	{:else}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each scanContextsStore.contexts as context (context.id)}
 				<ContextListCard
 					{context}
-					onEdit={() => goto(`/automation/contexts/${context.id}`)}
+					onEdit={() => goto(ROUTES.context(context.id))}
 					onDuplicate={() => handleDuplicate(context)}
 					onDelete={() => handleDeleteRequest(context)}
 				/>
@@ -165,8 +162,9 @@
 		</div>
 
 		<p class="pt-2 text-center text-xs text-muted-foreground">
-			{scanContextsStore.contexts.length} context{scanContextsStore.contexts.length !== 1 ? 's' : ''} in
-			this project
+			{scanContextsStore.contexts.length} context{scanContextsStore.contexts.length !== 1
+				? 's'
+				: ''} in this project
 		</p>
 	{/if}
 </div>
@@ -175,7 +173,8 @@
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
 		title="Delete Context"
-		description="Are you sure you want to delete '{contextToDelete.name || 'this context'}'? This action cannot be undone."
+		description="Are you sure you want to delete '{contextToDelete.name ||
+			'this context'}'? This action cannot be undone."
 		{isDeleting}
 		onOpenChange={(open) => {
 			showDeleteDialog = open;

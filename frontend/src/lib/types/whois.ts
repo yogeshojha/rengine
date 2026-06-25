@@ -146,3 +146,27 @@ export const ENTITY_ROLE_LABELS: Record<WhoisEntityRole, string> = {
 	noc: 'NOC',
 	routing: 'Routing'
 };
+
+export const CORRELATION_REASONS = [
+	'registrant',
+	'registrant_name',
+	'registrar',
+	'registrar_name',
+	'nameserver',
+	'network',
+	'network_cidr'
+] as const;
+export type CorrelationReason = (typeof CORRELATION_REASONS)[number];
+
+export const CORRELATION_REASON_LABELS: Record<
+	CorrelationReason,
+	{ full: string; match: string; short: string }
+> = {
+	registrant: { full: 'Registrant Name', match: 'registrant name', short: 'Registrant' },
+	registrant_name: { full: 'Registrant Name', match: 'registrant name', short: 'Registrant' },
+	registrar: { full: 'Registrar', match: 'registrar', short: 'Registrar' },
+	registrar_name: { full: 'Registrar', match: 'registrar', short: 'Registrar' },
+	nameserver: { full: 'Nameserver', match: 'nameserver', short: 'Nameserver' },
+	network: { full: 'Network Block', match: 'network block', short: 'Network' },
+	network_cidr: { full: 'Network Block', match: 'network block', short: 'Network' }
+};

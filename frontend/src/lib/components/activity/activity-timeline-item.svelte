@@ -3,7 +3,10 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import { getCategoryLabel, type ActivityCluster, type ActivityLevel } from '$lib/types/activity';
 	import { activityFeed, getActivityIcon } from '$lib/stores/activity-feed.svelte';
-	import { ChevronRight, Loader, ArrowUpRight } from 'lucide-svelte';
+	import { ROUTES } from '$lib/config/routes';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		cluster: ActivityCluster;
@@ -26,14 +29,14 @@
 	const nodeTint: Record<ActivityLevel, string> = {
 		success: 'bg-muted text-foreground ring-1 ring-border',
 		info: 'bg-muted text-muted-foreground ring-1 ring-border',
-		warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-500 ring-1 ring-amber-500/30',
+		warning: 'bg-warning/10 text-warning ring-1 ring-warning/30',
 		error: 'bg-destructive/10 text-destructive ring-1 ring-destructive/40'
 	};
 	const RUNNING_TINT = 'bg-chart-1/10 text-chart-1 ring-1 ring-chart-1/30';
 
 	function navigate(targetId: string | null) {
 		if (!targetId) return;
-		goto(`/targets/${targetId}`);
+		goto(ROUTES.target(targetId));
 		activityFeed.setOpen(false);
 	}
 </script>
@@ -47,7 +50,7 @@
 				: (nodeTint[level] ?? nodeTint.info)}"
 		>
 			{#if isRunning}
-				<Loader class="h-3 w-3 animate-spin" />
+				<Spinner class="h-3 w-3" />
 			{:else}
 				<Icon class="h-3 w-3" />
 			{/if}

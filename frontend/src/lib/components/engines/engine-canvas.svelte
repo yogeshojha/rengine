@@ -21,7 +21,8 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { SvelteFlowProvider, ViewportPortal, MarkerType } from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
-	import { Wand2, Plus } from 'lucide-svelte';
+	import Wand2 from '@lucide/svelte/icons/wand-2';
+	import Plus from '@lucide/svelte/icons/plus';
 
 	import { Button } from '$lib/components/ui/button';
 
@@ -34,6 +35,7 @@
 		type ArtifactType,
 		type ScanEngine
 	} from '$lib/types/engine';
+	import { SEVERITIES, type Severity } from '$lib/types/severity';
 	import {
 		CAPABILITIES,
 		PHASE_COLUMN_RANGE,
@@ -120,9 +122,12 @@
 		return { pos, maxCol };
 	}
 
-	const SEVERITY_ALLOWED = new Set(['critical', 'high', 'medium', 'low']);
+	const SEVERITY_ALLOWED = new Set<string>(SEVERITIES);
 
-	function computePreviewState(cap: Capability, activeIds: string[]): 'run' | 'skip-disabled' | null {
+	function computePreviewState(
+		cap: Capability,
+		activeIds: string[]
+	): 'run' | 'skip-disabled' | null {
 		if (!previewMode) return null;
 		if (cap.consumes.includes('live-hosts') && !activeIds.includes('http-probe')) {
 			return 'skip-disabled';
@@ -130,7 +135,10 @@
 		return 'run';
 	}
 
-	function previewHintFor(cap: Capability, state: 'run' | 'skip-disabled' | null): string | undefined {
+	function previewHintFor(
+		cap: Capability,
+		state: 'run' | 'skip-disabled' | null
+	): string | undefined {
 		if (state !== 'skip-disabled') return undefined;
 		if (cap.consumes.includes('live-hosts')) return 'skipped — no live hosts (enable HTTP probe)';
 		return 'skipped';
@@ -140,11 +148,11 @@
 	function buildCapData(cap: Capability, activeIds: string[]): any {
 		const needsKey = (cap.needsKeyTools?.length ?? 0) > 0;
 
-		let severityDots: ('critical' | 'high' | 'medium' | 'low')[] | undefined;
+		let severityDots: Severity[] | undefined;
 		if (cap.id === 'vuln-scan') {
 			severityDots = (engine.depth.nuclei_severities ?? [])
 				.filter((s) => SEVERITY_ALLOWED.has(s))
-				.map((s) => s as 'critical' | 'high' | 'medium' | 'low');
+				.map((s) => s as Severity);
 		}
 
 		const previewState = computePreviewState(cap, activeIds);
@@ -219,7 +227,11 @@
 			specs.push({ source: 'subdomain-enum', target: 'port-scan', artifact: 'subdomains' });
 		}
 		if (on('http-probe')) {
-			const liveSrc = on('port-scan') ? 'port-scan' : on('subdomain-enum') ? 'subdomain-enum' : null;
+			const liveSrc = on('port-scan')
+				? 'port-scan'
+				: on('subdomain-enum')
+					? 'subdomain-enum'
+					: null;
 			if (liveSrc) {
 				specs.push({
 					source: liveSrc,
@@ -335,7 +347,6 @@
 
 		return result;
 	}
-
 
 	function buildEdges(
 		specs: EdgeSpec[],
@@ -795,7 +806,7 @@
 
 	:global(.svelte-flow__controls) {
 		border-radius: 8px !important;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12) !important;
+		box-shadow: var(--shadow-sm) !important;
 		overflow: hidden;
 	}
 

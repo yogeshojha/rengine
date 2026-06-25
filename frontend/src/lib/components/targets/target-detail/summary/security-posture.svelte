@@ -3,7 +3,11 @@
 	import type { TargetDetailRead } from '$lib/types/target-detail';
 	import { buildTargetSummary, type PostureStatus } from './derive';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
-	import { CircleCheck, TriangleAlert, CircleX, Info } from 'lucide-svelte';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import CircleX from '@lucide/svelte/icons/circle-x';
+	import Info from '@lucide/svelte/icons/info';
+	import type { IconComponent } from '$lib/config/icons';
 
 	interface Props {
 		target: Target;
@@ -15,7 +19,7 @@
 
 	const summary = $derived(buildTargetSummary(target, detail));
 
-	const ICON: Record<PostureStatus, typeof Info> = {
+	const ICON: Record<PostureStatus, IconComponent> = {
 		pass: CircleCheck,
 		warn: TriangleAlert,
 		fail: CircleX,
@@ -24,7 +28,7 @@
 	};
 	const COLOR: Record<PostureStatus, string> = {
 		pass: 'text-muted-foreground/45',
-		warn: 'text-amber-600 dark:text-amber-500',
+		warn: 'text-warning',
 		fail: 'text-destructive',
 		info: 'text-muted-foreground/35',
 		pending: 'text-chart-1/70'
@@ -44,7 +48,7 @@
 		{/if}
 	</div>
 
-	<div class="divide-y divide-border/15">
+	<div class="divide-y divide-border/40">
 		{#if loading && items.length === 0}
 			<div class="flex items-center gap-2 px-4 py-6 text-muted-foreground/50">
 				<Spinner class="h-3.5 w-3.5" />
@@ -66,7 +70,9 @@
 					<div class="min-w-0">
 						<p class="text-[11px] leading-snug text-foreground">{item.label}</p>
 						{#if item.detail}
-							<p class="text-[10px] leading-snug text-muted-foreground/50 break-words">{item.detail}</p>
+							<p class="text-[10px] leading-snug text-muted-foreground/50 break-words">
+								{item.detail}
+							</p>
 						{/if}
 					</div>
 				</div>

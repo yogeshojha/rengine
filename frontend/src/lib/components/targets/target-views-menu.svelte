@@ -2,10 +2,13 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
+	import ConfirmDialog from '@/components/confirm-dialog.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Bookmark, Plus, Trash2, Check } from 'lucide-svelte';
+	import Bookmark from '@lucide/svelte/icons/bookmark';
+	import Plus from '@lucide/svelte/icons/plus';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Check from '@lucide/svelte/icons/check';
 	import { browser } from '$app/environment';
 	import { toast } from 'svelte-sonner';
 
@@ -119,26 +122,17 @@
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<AlertDialog.Root
+<ConfirmDialog
 	open={!!pendingDelete}
+	title="Delete view"
+	description={`Delete the saved view "${pendingDelete?.name ?? ''}"? This removes the saved filter only — your targets are not affected.`}
+	confirmLabel="Delete view"
+	destructive
 	onOpenChange={(o) => {
 		if (!o) pendingDelete = null;
 	}}
->
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Delete view</AlertDialog.Title>
-			<AlertDialog.Description>
-				Delete the saved view "{pendingDelete?.name}"? This removes the saved filter only — your
-				targets are not affected.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={confirmDelete}>Delete view</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+	onConfirm={confirmDelete}
+/>
 
 <Dialog.Root bind:open={saveOpen}>
 	<Dialog.Content class="w-[calc(100%-2rem)] sm:max-w-md">

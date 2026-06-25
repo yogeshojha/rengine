@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { ROUTES } from '$lib/config/routes';
+	import { MODE_LABELS, coerceInstanceMode } from '$lib/config/capabilities';
 	import { onboardingApi } from '$lib/api/onboarding';
 	import { onboardingStore } from '$lib/stores/onboarding.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -18,17 +20,11 @@
 
 	let finishing = $state(true);
 
-	const MODE_LABELS: Record<string, string> = {
-		bug_bounty: 'Bug Bounty',
-		corporate: 'Corporate',
-		both: 'Bug Bounty + Corporate'
-	};
-
 	let done = $derived.by(() => {
 		const status = onboardingStore.status;
 		const items: string[] = ['Instance secured'];
 		if (status?.mode) {
-			items.push(`Mode set to ${MODE_LABELS[status.mode] ?? status.mode}`);
+			items.push(`Mode set to ${MODE_LABELS[coerceInstanceMode(status.mode)]}`);
 		}
 		const s = status?.summary;
 		if (s && s.integrations > 0) {
@@ -49,10 +45,10 @@
 		const s = onboardingStore.status?.summary;
 		if (!s) return [] as { label: string; href: string }[];
 		const items: { label: string; href: string }[] = [];
-		if (s.integrations === 0) items.push({ label: 'Integrations', href: '/settings' });
-		if (s.proxies === 0) items.push({ label: 'Proxies', href: '/settings' });
-		if (!s.ai_enabled) items.push({ label: 'AI assistance', href: '/settings' });
-		if (s.channels === 0) items.push({ label: 'Notifications', href: '/settings' });
+		if (s.integrations === 0) items.push({ label: 'Integrations', href: ROUTES.settings() });
+		if (s.proxies === 0) items.push({ label: 'Proxies', href: ROUTES.settings() });
+		if (!s.ai_enabled) items.push({ label: 'AI assistance', href: ROUTES.settings() });
+		if (s.channels === 0) items.push({ label: 'Notifications', href: ROUTES.settings() });
 		return items;
 	});
 
@@ -72,7 +68,7 @@
 	});
 
 	function launch() {
-		goto('/dashboard');
+		goto(ROUTES.dashboard);
 	}
 </script>
 

@@ -3,7 +3,7 @@
 	import { curveNatural } from 'd3-shape';
 	import { cubicInOut } from 'svelte/easing';
 	import { Area, AreaChart, ChartClipPath } from 'layerchart';
-	import { Activity } from 'lucide-svelte';
+	import Activity from '@lucide/svelte/icons/activity';
 	import * as Card from '$lib/components/ui/card';
 	import * as Select from '$lib/components/ui/select';
 	import * as Chart from '$lib/components/ui/chart';

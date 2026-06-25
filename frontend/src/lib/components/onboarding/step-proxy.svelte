@@ -8,10 +8,10 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { proxiesApi } from '$lib/api/proxies';
-	import { PROXY_SCHEMES, type ProxyEndpoint } from '$lib/types/proxy';
+	import { PROXY_SCHEMES, PROXY_SCHEME_LABELS, type ProxyEndpoint } from '$lib/types/proxy';
 	import type { StepProps } from '$lib/types/onboarding';
+	import type { Component } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import CircleSlashIcon from '@lucide/svelte/icons/circle-slash';
@@ -26,24 +26,63 @@
 	let choice = $state<ProxyChoice>('none');
 	let busy = $state(false);
 
-	let single = $state<ProxyEndpoint>({ scheme: 'http', host: '', port: 8080, username: '', password: '' });
+	let single = $state<ProxyEndpoint>({
+		scheme: 'http',
+		host: '',
+		port: 8080,
+		username: '',
+		password: ''
+	});
 
 	let listText = $state('');
 
-	const CHOICES: { value: ProxyChoice; label: string; hint: string; icon: typeof ShieldIcon; recommended?: boolean }[] = [
-		{ value: 'none', label: 'No proxy', hint: 'Send recon traffic directly from this host.', icon: CircleSlashIcon },
-		{ value: 'single', label: 'Single rotating proxy', hint: 'One gateway that rotates the exit IP per request.', icon: RepeatIcon, recommended: true },
-		{ value: 'list', label: 'Multiple static proxies', hint: 'A pool of fixed endpoints you maintain yourself.', icon: ListIcon }
+	const CHOICES: {
+		value: ProxyChoice;
+		label: string;
+		hint: string;
+		icon: Component;
+		recommended?: boolean;
+	}[] = [
+		{
+			value: 'none',
+			label: 'No proxy',
+			hint: 'Send recon traffic directly from this host.',
+			icon: CircleSlashIcon
+		},
+		{
+			value: 'single',
+			label: 'Single rotating proxy',
+			hint: 'One gateway that rotates the exit IP per request.',
+			icon: RepeatIcon,
+			recommended: true
+		},
+		{
+			value: 'list',
+			label: 'Multiple static proxies',
+			hint: 'A pool of fixed endpoints you maintain yourself.',
+			icon: ListIcon
+		}
 	];
 
-	const SCHEME_LABELS: Record<string, string> = { http: 'HTTP', https: 'HTTPS', socks5: 'SOCKS5' };
-
-	const LIST_PLACEHOLDER = 'http://user:pass@host:8080\nsocks5://10.0.0.4:1080\nhttps://gate.provider.com:3128';
+	const LIST_PLACEHOLDER =
+		'http://user:pass@host:8080\nsocks5://10.0.0.4:1080\nhttps://gate.provider.com:3128';
 
 	const PROVIDERS = [
-		{ name: 'Bright Data', note: 'Large residential and datacenter pools with per-request rotation.', url: 'https://brightdata.com' },
-		{ name: 'Smartproxy', note: 'Residential and ISP proxies with a simple rotating gateway.', url: 'https://smartproxy.com' },
-		{ name: 'Oxylabs', note: 'Enterprise residential and datacenter proxy infrastructure.', url: 'https://oxylabs.io' }
+		{
+			name: 'Bright Data',
+			note: 'Large residential and datacenter pools with per-request rotation.',
+			url: 'https://brightdata.com'
+		},
+		{
+			name: 'Smartproxy',
+			note: 'Residential and ISP proxies with a simple rotating gateway.',
+			url: 'https://smartproxy.com'
+		},
+		{
+			name: 'Oxylabs',
+			note: 'Enterprise residential and datacenter proxy infrastructure.',
+			url: 'https://oxylabs.io'
+		}
 	];
 
 	function setSinglePort(raw: string) {
@@ -186,7 +225,9 @@
 					<span class="flex items-center gap-2 text-sm font-medium">
 						{opt.label}
 						{#if opt.recommended}
-							<span class="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+							<span
+								class="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+							>
 								Recommended
 							</span>
 						{/if}
@@ -208,11 +249,13 @@
 						onValueChange={(v) => (single.scheme = v ?? 'http')}
 					>
 						<Select.Trigger class="h-9 w-full text-sm">
-							{SCHEME_LABELS[single.scheme] ?? 'HTTP'}
+							{PROXY_SCHEME_LABELS[single.scheme as keyof typeof PROXY_SCHEME_LABELS] ?? 'HTTP'}
 						</Select.Trigger>
 						<Select.Content>
 							{#each PROXY_SCHEMES as s (s)}
-								<Select.Item value={s} label={SCHEME_LABELS[s]}>{SCHEME_LABELS[s]}</Select.Item>
+								<Select.Item value={s} label={PROXY_SCHEME_LABELS[s]}
+									>{PROXY_SCHEME_LABELS[s]}</Select.Item
+								>
 							{/each}
 						</Select.Content>
 					</Select.Root>
@@ -242,7 +285,9 @@
 			</div>
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				<div class="space-y-1.5">
-					<Label class="text-xs">Username <span class="text-muted-foreground">(optional)</span></Label>
+					<Label class="text-xs"
+						>Username <span class="text-muted-foreground">(optional)</span></Label
+					>
 					<Input
 						value={single.username ?? ''}
 						placeholder="username"
@@ -252,7 +297,9 @@
 					/>
 				</div>
 				<div class="space-y-1.5">
-					<Label class="text-xs">Password <span class="text-muted-foreground">(optional)</span></Label>
+					<Label class="text-xs"
+						>Password <span class="text-muted-foreground">(optional)</span></Label
+					>
 					<Input
 						type="password"
 						value={single.password ?? ''}
@@ -294,7 +341,13 @@
 
 	{#if choice !== 'none'}
 		<div>
-			<Button variant="outline" size="sm" class="h-8 text-xs" disabled={busy || !configured} onclick={handleTest}>
+			<Button
+				variant="outline"
+				size="sm"
+				class="h-8 text-xs"
+				disabled={busy || !configured}
+				onclick={handleTest}
+			>
 				{#if busy}
 					<Spinner class="mr-1.5 size-4" />
 				{:else}
@@ -303,7 +356,8 @@
 				Test connection
 			</Button>
 			<p class="mt-1.5 text-[11px] text-muted-foreground">
-				Saves the proxy and runs a live reachability check. It becomes the default only when you continue.
+				Saves the proxy and runs a live reachability check. It becomes the default only when you
+				continue.
 			</p>
 		</div>
 	{/if}

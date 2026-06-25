@@ -3,7 +3,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import { X, Plus } from 'lucide-svelte';
+	import X from '@lucide/svelte/icons/x';
+	import Plus from '@lucide/svelte/icons/plus';
 	import {
 		VALID_RATE_TOOLS,
 		MULTIPLIERS,
@@ -192,7 +193,12 @@
 			</div>
 		{/each}
 		{#if canAddTool}
-			<Button variant="ghost" size="sm" class="h-8 gap-1.5 text-muted-foreground" onclick={addToolRow}>
+			<Button
+				variant="ghost"
+				size="sm"
+				class="h-8 gap-1.5 text-muted-foreground"
+				onclick={addToolRow}
+			>
 				<Plus class="h-3.5 w-3.5" />
 				Add tool override
 			</Button>
@@ -208,7 +214,8 @@
 				onValueChange={(v) => setMultiplier('thread_multiplier', v)}
 			>
 				<Select.Trigger class="h-9 w-full text-sm">
-					{MULTIPLIER_LABELS.find((m) => m.value === String(context.thread_multiplier))?.label ?? '1×'}
+					{MULTIPLIER_LABELS.find((m) => m.value === String(context.thread_multiplier))?.label ??
+						'1×'}
 				</Select.Trigger>
 				<Select.Content>
 					{#each MULTIPLIER_LABELS as opt (opt.value)}
@@ -225,7 +232,8 @@
 				onValueChange={(v) => setMultiplier('timeout_multiplier', v)}
 			>
 				<Select.Trigger class="h-9 w-full text-sm">
-					{MULTIPLIER_LABELS.find((m) => m.value === String(context.timeout_multiplier))?.label ?? '1×'}
+					{MULTIPLIER_LABELS.find((m) => m.value === String(context.timeout_multiplier))?.label ??
+						'1×'}
 				</Select.Trigger>
 				<Select.Content>
 					{#each MULTIPLIER_LABELS as opt (opt.value)}

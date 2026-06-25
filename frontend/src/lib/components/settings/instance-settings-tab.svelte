@@ -3,7 +3,7 @@
 	import { beforeNavigate } from '$app/navigation';
 	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
 	import { MASK } from '$lib/constants';
-	import { AI_PROVIDERS, AI_FEATURES } from '$lib/config/ai';
+	import { AI_PROVIDERS, AI_FEATURES, DEFAULT_AI_PROVIDER } from '$lib/config/ai';
 	import {
 		INSTANCE_MODES,
 		MODE_LABELS,
@@ -79,7 +79,7 @@
 	let screenshotRetention = $state('30');
 
 	let aiEnabled = $state(false);
-	let aiProvider = $state('openai');
+	let aiProvider = $state<string>(DEFAULT_AI_PROVIDER);
 	let aiModel = $state('');
 	let aiKey = $state('');
 	let aiKeyMasked = $state<string | null>(null);
@@ -101,7 +101,9 @@
 	let modePlaceholder = $derived(
 		INSTANCE_MODES.find((m) => m.value === mode)?.label ?? MODE_LABELS[DEFAULT_INSTANCE_MODE]
 	);
-	let aiModelPlaceholder = $derived(AI_PROVIDERS.find((p) => p.value === aiProvider)?.model ?? 'model name');
+	let aiModelPlaceholder = $derived(
+		AI_PROVIDERS.find((p) => p.value === aiProvider)?.model ?? 'model name'
+	);
 
 	let snapshot = $state<string | null>(null);
 
@@ -131,7 +133,7 @@
 		scanRetention = String(s.scan_history_retention_days);
 		screenshotRetention = String(s.screenshot_retention_days);
 		aiEnabled = s.ai_enabled;
-		aiProvider = s.ai_provider ?? 'openai';
+		aiProvider = s.ai_provider ?? DEFAULT_AI_PROVIDER;
 		aiModel = s.ai_model ?? '';
 		aiConfigured = s.ai_configured;
 		aiKeyMasked = s.ai_api_key_masked;
@@ -285,7 +287,9 @@
 		<Card.Root>
 			<Card.Header>
 				<Card.Title class="text-base">Instance</Card.Title>
-				<Card.Description>Identify this deployment and set its default time zone and posture.</Card.Description>
+				<Card.Description
+					>Identify this deployment and set its default time zone and posture.</Card.Description
+				>
 			</Card.Header>
 			<Card.Content class="space-y-5">
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -332,7 +336,9 @@
 		<Card.Root>
 			<Card.Header>
 				<Card.Title class="text-base">Data retention</Card.Title>
-				<Card.Description>How long scan history and screenshots are kept before pruning.</Card.Description>
+				<Card.Description
+					>How long scan history and screenshots are kept before pruning.</Card.Description
+				>
 			</Card.Header>
 			<Card.Content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -353,7 +359,8 @@
 						<Label class="text-xs">Screenshots</Label>
 						<Select.Root type="single" bind:value={screenshotRetention}>
 							<Select.Trigger class="h-9 w-full text-sm">
-								{SCREENSHOT_RETENTION.find((o) => o.value === screenshotRetention)?.label ?? '30 days'}
+								{SCREENSHOT_RETENTION.find((o) => o.value === screenshotRetention)?.label ??
+									'30 days'}
 							</Select.Trigger>
 							<Select.Content>
 								{#each SCREENSHOT_RETENTION as o (o.value)}
@@ -372,7 +379,9 @@
 					<SparklesIcon class="size-4 text-foreground" />
 					<Card.Title class="text-base">AI-powered analysis</Card.Title>
 				</div>
-				<Card.Description>Enrich findings with descriptions, impact, and remediation via an external LLM.</Card.Description>
+				<Card.Description
+					>Enrich findings with descriptions, impact, and remediation via an external LLM.</Card.Description
+				>
 			</Card.Header>
 			<Card.Content class="space-y-5">
 				<div class="flex items-center justify-between rounded-lg border px-4 py-3">
@@ -420,7 +429,9 @@
 									id="ai-key"
 									type={showKey ? 'text' : 'password'}
 									bind:value={aiKey}
-									placeholder={aiConfigured ? (aiKeyMasked ?? 'Leave blank to keep current key') : 'Paste your API key'}
+									placeholder={aiConfigured
+										? (aiKeyMasked ?? 'Leave blank to keep current key')
+										: 'Paste your API key'}
 									autocomplete="off"
 									class="h-9 pr-9 font-mono text-xs"
 									disabled={saving}
@@ -431,11 +442,15 @@
 									onclick={() => (showKey = !showKey)}
 									aria-label={showKey ? 'Hide key' : 'Show key'}
 								>
-									{#if showKey}<EyeOffIcon class="size-3.5" />{:else}<EyeIcon class="size-3.5" />{/if}
+									{#if showKey}<EyeOffIcon class="size-3.5" />{:else}<EyeIcon
+											class="size-3.5"
+										/>{/if}
 								</button>
 							</div>
 							{#if aiConfigured}
-								<p class="text-xs text-muted-foreground">Key set — leave blank to keep, or type to replace.</p>
+								<p class="text-xs text-muted-foreground">
+									Key set — leave blank to keep, or type to replace.
+								</p>
 							{/if}
 						</div>
 						<div class="space-y-1.5">
@@ -450,7 +465,8 @@
 							/>
 							{#if modelMismatch}
 								<p class="text-xs text-muted-foreground">
-									Custom model — may not match {AI_PROVIDERS.find((p) => p.value === aiProvider)?.name}.
+									Custom model — may not match {AI_PROVIDERS.find((p) => p.value === aiProvider)
+										?.name}.
 								</p>
 							{/if}
 						</div>

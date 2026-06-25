@@ -29,6 +29,9 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import { toast } from 'svelte-sonner';
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -318,7 +321,11 @@
 			{#each channels as channel (channel.id)}
 				{@const meta = metaFor(channel.provider)}
 				{@const Icon = meta.icon}
-				<Card.Root class="relative transition-all duration-200 {channel.is_active ? 'ring-1 ring-border' : 'border-dashed opacity-75'}">
+				<Card.Root
+					class="relative transition-all duration-200 {channel.is_active
+						? 'ring-1 ring-border'
+						: 'border-dashed opacity-75'}"
+				>
 					<Card.Content class="p-5">
 						<div class="flex items-start justify-between gap-3">
 							<div class="flex min-w-0 items-start gap-3">
@@ -345,7 +352,9 @@
 							{#each meta.fields.filter((f) => f.kind !== 'bool') as f (f.key)}
 								<div class="flex items-center gap-2 text-xs">
 									<span class="shrink-0 text-muted-foreground">{f.label}</span>
-									<code class="truncate font-mono text-muted-foreground">{String(channel.config_masked[f.key] ?? '—')}</code>
+									<code class="truncate font-mono text-muted-foreground"
+										>{String(channel.config_masked[f.key] ?? '—')}</code
+									>
 								</div>
 							{/each}
 							<div class="flex flex-wrap items-center gap-2 pt-1">
@@ -366,7 +375,12 @@
 						</div>
 
 						<div class="mt-3 flex items-center gap-1.5">
-							<Button variant="ghost" size="sm" class="h-7 px-2 text-xs" onclick={() => openEdit(channel)}>
+							<Button
+								variant="ghost"
+								size="sm"
+								class="h-7 px-2 text-xs"
+								onclick={() => openEdit(channel)}
+							>
 								<Pencil class="mr-1 size-3" />
 								Edit
 							</Button>
@@ -418,171 +432,188 @@
 
 		<ScrollArea class="flex-1">
 			<div class="space-y-5 px-6 py-4">
-			{#if !editingId}
-				<div class="space-y-2">
-					<Label class="text-xs">Provider</Label>
-					<RadioGroup.Root value={formProvider} onValueChange={setProvider} class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-						{#each PROVIDERS as p (p.provider)}
-							{@const PIcon = p.icon}
-							<Label
-								class="flex cursor-pointer items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm data-[active=true]:border-primary data-[active=true]:bg-muted"
-								data-active={formProvider === p.provider}
-							>
-								<RadioGroup.Item value={p.provider} class="sr-only" />
-								<PIcon class="size-4 shrink-0 text-muted-foreground" />
-								<span class="truncate">{p.name}</span>
-							</Label>
-						{/each}
-					</RadioGroup.Root>
-				</div>
-			{:else}
-				{@const FIcon = formMeta.icon}
-				<div class="space-y-1.5">
-					<Label class="text-xs">Provider</Label>
-					<div class="flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-						<FIcon class="size-4 shrink-0" />
-						<span class="truncate">{formMeta.name}</span>
-					</div>
-					<p class="text-xs text-muted-foreground">Provider can't be changed after creation — remove and re-add to switch.</p>
-				</div>
-			{/if}
-
-			<div class="space-y-1.5">
-				<Label class="text-xs" for="channel-name">Name</Label>
-				<Input
-					id="channel-name"
-					bind:value={formName}
-					placeholder="{formMeta.name} alerts"
-					class="h-9"
-					disabled={saving}
-					aria-invalid={!!nameError}
-					oninput={() => { if (nameError) nameError = ''; }}
-				/>
-				{#if nameError}<p class="text-xs text-destructive">{nameError}</p>{/if}
-			</div>
-
-			<div class="space-y-3">
-				{#if formMeta.help}
-					<a href={formMeta.help.url} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-						{formMeta.help.label}<ExternalLinkIcon class="size-3" />
-					</a>
-				{/if}
-				{#each formMeta.fields as field (field.key)}
-					{#if field.kind === 'bool'}
-						<div class="flex items-center justify-between rounded-md border px-3 py-2">
-							<Label class="text-xs">{field.label}</Label>
-							<Switch
-								checked={formConfig[field.key] === undefined ? !!field.default : !!formConfig[field.key]}
-								onCheckedChange={(v) => setField(field.key, v)}
-								disabled={saving}
-							/>
-						</div>
-					{:else}
-						<div class="space-y-1.5">
-							<Label class="text-xs" for="channel-{field.key}">{field.label}</Label>
-							<Input
-								id="channel-{field.key}"
-								type={field.kind === 'secret' && !editingId ? 'password' : field.kind === 'number' ? 'number' : 'text'}
-								value={formConfig[field.key] === undefined ? '' : String(formConfig[field.key])}
-								placeholder={field.kind === 'secret' && editingId && formMasked[field.key]
-									? 'Leave blank to keep current'
-									: (field.placeholder ?? '')}
-								autocomplete="off"
-								class="h-9 font-mono text-xs"
-								disabled={saving}
-								aria-invalid={!!fieldErrors[field.key]}
-								oninput={(e) => setField(field.key, e.currentTarget.value)}
-							/>
-							{#if fieldErrors[field.key]}
-								<p class="text-xs text-destructive">{fieldErrors[field.key]}</p>
-							{:else if field.kind === 'secret' && editingId && formMasked[field.key]}
-								<p class="text-xs text-muted-foreground">Stored — leave blank to keep, or type to replace.</p>
-							{/if}
-						</div>
-					{/if}
-				{/each}
-			</div>
-
-			<Separator />
-
-			<div class="space-y-2">
-				<Label class="text-xs">Notify me about</Label>
-				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-					{#each NOTIF_CATEGORIES as cat (cat.value)}
-						<Label
-							class="flex cursor-pointer items-start gap-2 rounded-md border border-input px-2.5 py-2 text-xs data-[active=true]:border-primary data-[active=true]:bg-muted"
-							data-active={formPref.types.includes(cat.value)}
+				{#if !editingId}
+					<div class="space-y-2">
+						<Label class="text-xs">Provider</Label>
+						<RadioGroup.Root
+							value={formProvider}
+							onValueChange={setProvider}
+							class="grid grid-cols-2 gap-2 sm:grid-cols-3"
 						>
-							<Checkbox
-								checked={formPref.types.includes(cat.value)}
-								onCheckedChange={(v) => toggleCategory(cat.value, v === true)}
-								class="mt-0.5"
-							/>
-							<span class="min-w-0">
-								<span class="block font-medium">{cat.label}</span>
-								<span class="block text-muted-foreground">{cat.hint}</span>
-							</span>
-						</Label>
+							{#each PROVIDERS as p (p.provider)}
+								{@const PIcon = p.icon}
+								<Label
+									class="flex cursor-pointer items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm data-[active=true]:border-primary data-[active=true]:bg-muted"
+									data-active={formProvider === p.provider}
+								>
+									<RadioGroup.Item value={p.provider} class="sr-only" />
+									<PIcon class="size-4 shrink-0 text-muted-foreground" />
+									<span class="truncate">{p.name}</span>
+								</Label>
+							{/each}
+						</RadioGroup.Root>
+					</div>
+				{:else}
+					{@const FIcon = formMeta.icon}
+					<div class="space-y-1.5">
+						<Label class="text-xs">Provider</Label>
+						<div
+							class="flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+						>
+							<FIcon class="size-4 shrink-0" />
+							<span class="truncate">{formMeta.name}</span>
+						</div>
+						<p class="text-xs text-muted-foreground">
+							Provider can't be changed after creation — remove and re-add to switch.
+						</p>
+					</div>
+				{/if}
+
+				<FormField label="Name" error={nameError}>
+					{#snippet children({ id })}
+						<Input
+							{id}
+							bind:value={formName}
+							placeholder="{formMeta.name} alerts"
+							class="h-9"
+							disabled={saving}
+							aria-invalid={!!nameError}
+							oninput={() => {
+								if (nameError) nameError = '';
+							}}
+						/>
+					{/snippet}
+				</FormField>
+
+				<div class="space-y-3">
+					{#if formMeta.help}
+						<a
+							href={formMeta.help.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+						>
+							{formMeta.help.label}<ExternalLinkIcon class="size-3" />
+						</a>
+					{/if}
+					{#each formMeta.fields as field (field.key)}
+						{#if field.kind === 'bool'}
+							<div class="flex items-center justify-between rounded-md border px-3 py-2">
+								<Label class="text-xs">{field.label}</Label>
+								<Switch
+									checked={formConfig[field.key] === undefined
+										? !!field.default
+										: !!formConfig[field.key]}
+									onCheckedChange={(v) => setField(field.key, v)}
+									disabled={saving}
+								/>
+							</div>
+						{:else}
+							<FormField
+								label={field.label}
+								error={fieldErrors[field.key]}
+								description={field.kind === 'secret' && editingId && formMasked[field.key]
+									? 'Stored — leave blank to keep, or type to replace.'
+									: undefined}
+							>
+								{#snippet children({ id })}
+									<Input
+										{id}
+										type={field.kind === 'secret' && !editingId
+											? 'password'
+											: field.kind === 'number'
+												? 'number'
+												: 'text'}
+										value={formConfig[field.key] === undefined ? '' : String(formConfig[field.key])}
+										placeholder={field.kind === 'secret' && editingId && formMasked[field.key]
+											? 'Leave blank to keep current'
+											: (field.placeholder ?? '')}
+										autocomplete="off"
+										class="h-9 font-mono text-xs"
+										disabled={saving}
+										aria-invalid={!!fieldErrors[field.key]}
+										oninput={(e) => setField(field.key, e.currentTarget.value)}
+									/>
+								{/snippet}
+							</FormField>
+						{/if}
 					{/each}
 				</div>
-				{#if categoryError}<p class="text-xs text-destructive">{categoryError}</p>{/if}
-			</div>
 
-			<div class="space-y-1.5">
-				<Label class="text-xs">Minimum severity</Label>
-				<Select.Root type="single" value={formPref.min_severity} onValueChange={(v) => (formPref = { ...formPref, min_severity: v ?? 'info' })}>
-					<Select.Trigger class="h-9 w-full text-sm">{severityLabel}</Select.Trigger>
-					<Select.Content>
-						{#each NOTIF_SEVERITIES as s (s.value)}
-							<Select.Item value={s.value} label={s.label}>{s.label}</Select.Item>
+				<Separator />
+
+				<div class="space-y-2">
+					<Label class="text-xs">Notify me about</Label>
+					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+						{#each NOTIF_CATEGORIES as cat (cat.value)}
+							<Label
+								class="flex cursor-pointer items-start gap-2 rounded-md border border-input px-2.5 py-2 text-xs data-[active=true]:border-primary data-[active=true]:bg-muted"
+								data-active={formPref.types.includes(cat.value)}
+							>
+								<Checkbox
+									checked={formPref.types.includes(cat.value)}
+									onCheckedChange={(v) => toggleCategory(cat.value, v === true)}
+									class="mt-0.5"
+								/>
+								<span class="min-w-0">
+									<span class="block font-medium">{cat.label}</span>
+									<span class="block text-muted-foreground">{cat.hint}</span>
+								</span>
+							</Label>
 						{/each}
-					</Select.Content>
-				</Select.Root>
-			</div>
-
-			<div class="flex items-center justify-between rounded-lg border px-4 py-3">
-				<div class="space-y-0.5">
-					<Label class="text-sm font-medium">Active</Label>
-					<p class="text-xs text-muted-foreground">Disabled channels keep their config but send nothing.</p>
+					</div>
+					{#if categoryError}<p class="text-xs text-destructive">{categoryError}</p>{/if}
 				</div>
-				<Switch checked={formActive} onCheckedChange={(v) => (formActive = v)} disabled={saving} />
+
+				<div class="space-y-1.5">
+					<Label class="text-xs">Minimum severity</Label>
+					<Select.Root
+						type="single"
+						value={formPref.min_severity}
+						onValueChange={(v) => (formPref = { ...formPref, min_severity: v ?? 'info' })}
+					>
+						<Select.Trigger class="h-9 w-full text-sm">{severityLabel}</Select.Trigger>
+						<Select.Content>
+							{#each NOTIF_SEVERITIES as s (s.value)}
+								<Select.Item value={s.value} label={s.label}>{s.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+
+				<div class="flex items-center justify-between rounded-lg border px-4 py-3">
+					<div class="space-y-0.5">
+						<Label class="text-sm font-medium">Active</Label>
+						<p class="text-xs text-muted-foreground">
+							Disabled channels keep their config but send nothing.
+						</p>
+					</div>
+					<Switch
+						checked={formActive}
+						onCheckedChange={(v) => (formActive = v)}
+						disabled={saving}
+					/>
+				</div>
 			</div>
-		</div>
 		</ScrollArea>
 
 		<Dialog.Footer class="border-t px-6 py-4">
-			<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}>Cancel</Button>
-			<Button onclick={handleSave} disabled={saving}>
-				{#if saving}
-					<Spinner class="mr-2" />
-					Saving...
-				{:else}
-					{editingId ? 'Save changes' : 'Add channel'}
-				{/if}
-			</Button>
+			<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}
+				>Cancel</Button
+			>
+			<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving...">
+				{editingId ? 'Save changes' : 'Add channel'}
+			</LoadingButton>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root bind:open={deleteOpen}>
-	<Dialog.Content class="sm:max-w-md">
-		<Dialog.Header>
-			<Dialog.Title>Remove channel</Dialog.Title>
-			<Dialog.Description>
-				Are you sure you want to remove {deletingChannel?.name ?? 'this channel'}? Notifications to it
-				will stop immediately.
-			</Dialog.Description>
-		</Dialog.Header>
-		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (deleteOpen = false)} disabled={isDeleting}>Cancel</Button>
-			<Button variant="destructive" onclick={handleDelete} disabled={isDeleting}>
-				{#if isDeleting}
-					<Spinner class="mr-2" />
-					Removing...
-				{:else}
-					Remove channel
-				{/if}
-			</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
+<DeleteConfirmationDialog
+	bind:open={deleteOpen}
+	title="Remove channel"
+	description={`Are you sure you want to remove ${deletingChannel?.name ?? 'this channel'}? Notifications to it will stop immediately.`}
+	confirmLabel="Remove channel"
+	{isDeleting}
+	onOpenChange={(o) => (deleteOpen = o)}
+	onConfirm={handleDelete}
+/>
