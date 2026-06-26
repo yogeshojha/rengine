@@ -50,7 +50,17 @@ export interface HttpAssetRead {
 	tls_expired: boolean | null;
 	tls_self_signed: boolean | null;
 	screenshot_path: string | null;
+	body_preview: string | null;
 	discovered_at: string;
+}
+
+export interface HttpAssetDetail extends HttpAssetRead {
+	tls_subject_dn: string | null;
+	tls_issuer_cn: string | null;
+	raw_request: string | null;
+	raw_response_header: string | null;
+	response_body: string | null;
+	response_headers: Record<string, string | string[]>;
 }
 
 export interface HttpAssetSummary {

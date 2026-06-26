@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column
+from sqlalchemy import Column, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
@@ -11,6 +11,10 @@ from shared.utils.datetime import utc_now
 
 def _json_list() -> Field:
     return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+
+
+def _text() -> Field:
+    return Field(default=None, sa_column=Column(Text, nullable=True))
 
 
 class HttpAsset(SQLModel, table=True):
@@ -86,6 +90,15 @@ class HttpAsset(SQLModel, table=True):
 
     screenshot_path: str | None = Field(default=None, max_length=500)
 
+    # raw capture (httpx -irr)
+    raw_request: str | None = _text()
+    raw_response_header: str | None = _text()
+    response_body: str | None = _text()
+    response_headers: dict = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False)
+    )
+    body_preview: str | None = Field(default=None, max_length=512)
+
     discovered_at: datetime = Field(default_factory=utc_now)
     created_at: datetime = Field(default_factory=utc_now)
 
@@ -142,7 +155,17 @@ class HttpAssetRead(BaseModel):
     tls_expired: bool | None = None
     tls_self_signed: bool | None = None
     screenshot_path: str | None = None
+    body_preview: str | None = None
     discovered_at: datetime
+
+
+class HttpAssetDetail(HttpAssetRead):
+    tls_subject_dn: str | None = None
+    tls_issuer_cn: str | None = None
+    raw_request: str | None = None
+    raw_response_header: str | None = None
+    response_body: str | None = None
+    response_headers: dict = Field(default_factory=dict)
 
 
 class HttpAssetSummary(BaseModel):

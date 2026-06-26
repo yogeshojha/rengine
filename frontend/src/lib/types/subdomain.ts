@@ -34,6 +34,7 @@ export interface SubdomainRead {
 	is_excluded: boolean;
 	is_important: boolean;
 	http_url: string | null;
+	final_url: string | null;
 	http_status: number | null;
 	page_title: string | null;
 	content_type: string | null;
@@ -43,7 +44,15 @@ export interface SubdomainRead {
 	tech: string[];
 	is_cdn: boolean;
 	cdn_name: string | null;
+	waf: string | null;
+	asn: number | null;
+	asn_org: string | null;
+	favicon_hash: string | null;
+	tls_not_after: string | null;
+	tls_expired: boolean | null;
+	tls_self_signed: boolean | null;
 	screenshot_path: string | null;
+	ports?: number[];
 	discovered_at: string;
 }
 

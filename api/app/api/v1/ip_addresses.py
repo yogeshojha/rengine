@@ -8,6 +8,7 @@ from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.ip_address import IpAddressService
 from shared.models.ip_address import IpAddressRead, IpAddressSummary
+from shared.models.scan_correlation import IpGroupPage
 
 router = APIRouter(
     prefix="/ips",
@@ -36,6 +37,27 @@ async def list_ips(
         project_id=project_id,
         scan_id=scan_id,
         target_id=target_id,
+        search=search,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/groups", response_model=IpGroupPage)
+async def ip_groups(
+    _current_user: CurrentUser,
+    service: Annotated[IpAddressService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    search: Annotated[
+        str | None, Query(description="Filter IP / network / PTR")
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=200, description="Max rows")] = 50,
+    offset: Annotated[int, Query(ge=0, description="Rows to skip")] = 0,
+):
+    return await service.groups(
+        project_id=project_id,
+        scan_id=scan_id,
         search=search,
         limit=limit,
         offset=offset,

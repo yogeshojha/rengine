@@ -7,8 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.subdomain import SubdomainService
+from shared.models.scan_correlation import SubdomainCorrelation, SubdomainInsights
 from shared.models.subdomain import (
+    SubdomainFacets,
+    SubdomainFilter,
     SubdomainRead,
+    SubdomainRelation,
+    SubdomainSearchResult,
     SubdomainSummary,
     TargetSubdomainRead,
 )
@@ -48,6 +53,59 @@ async def list_subdomains(
         limit=limit,
         offset=offset,
     )
+
+
+@router.post("/search", response_model=SubdomainSearchResult)
+async def search_subdomains(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    body: SubdomainFilter,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    return await service.search(project_id=project_id, scan_id=scan_id, f=body)
+
+
+@router.get("/facets", response_model=SubdomainFacets)
+async def subdomain_facets(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    return await service.facets(project_id=project_id, scan_id=scan_id)
+
+
+@router.get("/related", response_model=list[SubdomainRelation])
+async def subdomain_related(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    name: Annotated[str, Query(description="Subdomain name")],
+):
+    return await service.related(project_id=project_id, scan_id=scan_id, name=name)
+
+
+@router.get("/insights", response_model=SubdomainInsights)
+async def subdomain_insights(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    return await service.insights(project_id=project_id, scan_id=scan_id)
+
+
+@router.get("/correlation", response_model=SubdomainCorrelation)
+async def subdomain_correlation(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    name: Annotated[str, Query(description="Subdomain name")],
+):
+    return await service.correlation(project_id=project_id, scan_id=scan_id, name=name)
 
 
 @router.get("/summary", response_model=SubdomainSummary)

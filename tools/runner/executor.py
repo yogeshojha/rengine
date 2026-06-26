@@ -6,7 +6,9 @@ import os
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
+from collections.abc import Iterator
 from pathlib import Path
 
 from shared.definitions.constants import MAX_COMMAND_OUTPUT
@@ -212,6 +214,123 @@ class CLIToolRunner:
 
         finally:
             self._cleanup(input_file, output_file)
+
+    @contextlib.contextmanager
+    def stream_json(  # noqa: PLR0915
+        self,
+        *,
+        args: list[str] | None = None,
+        input_data: str | list[str] | None = None,
+        input_flag: str = "-l",
+        json_flag: str = "-json",
+        silent: bool = True,
+        silent_flag: str = "-silent",
+        timeout: int | None = None,
+        env: dict[str, str] | None = None,
+        recorder: CommandRecorder | None = None,
+        tool: str | None = None,
+        extra_args: list[str] | None = None,
+    ) -> Iterator[Iterator[dict]]:
+        """Stream-parse the tool's JSONL stdout one record at a time (memory-bounded), consumed inside the `with`; a watchdog kills the process after `timeout`s."""
+        timeout = timeout or self.default_timeout
+        args = list(args) if args else []
+        recorder = recorder if recorder is not None else self._recorder
+        tool = tool if tool is not None else self._tool
+        args.extend(extra_args if extra_args is not None else self._extra_args)
+
+        input_file: Path | None = None
+        start_time = time.monotonic()
+        handle = None
+        proc: subprocess.Popen | None = None
+        timer: threading.Timer | None = None
+        stderr_thread: threading.Thread | None = None
+        stderr_chunks: list[str] = []
+        try:
+            if input_data is not None:
+                raw_input = self._normalize_input(input_data)
+                input_file = self._write_temp_file(raw_input, prefix="input_")
+                args.extend([input_flag, str(input_file)])
+            if json_flag not in args:
+                args.append(json_flag)
+            if silent and silent_flag not in args:
+                args.append(silent_flag)
+
+            cmd = [self._binary_path, *args]
+            logger.info("Executing (stream): %s", redact_command(" ".join(cmd)))
+            if recorder is not None:
+                handle = recorder.start(tool or self.binary, " ".join(cmd))
+
+            proc = subprocess.Popen(  # noqa: S603
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=self._build_env(env),
+                cwd=tempfile.gettempdir(),
+            )
+            timer = threading.Timer(timeout, proc.kill)
+            timer.start()
+            stdout = proc.stdout
+
+            # drain stderr concurrently — else a full 64KB stderr pipe deadlocks our stdout read
+            def _drain_stderr() -> None:
+                if proc is None or proc.stderr is None:
+                    return
+                size = 0
+                for line in proc.stderr:
+                    if size < MAX_COMMAND_OUTPUT:
+                        stderr_chunks.append(line)
+                        size += len(line)
+
+            stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
+            stderr_thread.start()
+
+            def _records() -> Iterator[dict]:
+                if stdout is None:
+                    return
+                for line in stdout:
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    try:
+                        obj = json.loads(stripped)
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(obj, dict):
+                        yield obj
+
+            yield _records()
+        finally:
+            if timer is not None:
+                timer.cancel()
+            return_code = -1
+            if proc is not None:
+                with contextlib.suppress(Exception):
+                    return_code = proc.wait(timeout=10)
+                if proc.poll() is None:
+                    with contextlib.suppress(Exception):
+                        proc.kill()
+                        proc.wait(timeout=5)
+                    return_code = proc.returncode if proc.returncode is not None else -1
+            if stderr_thread is not None:
+                stderr_thread.join(timeout=5)
+            stderr = "".join(stderr_chunks)
+            if recorder is not None and handle is not None:
+                err = (
+                    None
+                    if return_code == 0
+                    else f"{self.binary} exited with code {return_code}"
+                    + (f": {stderr.strip()[:500]}" if stderr.strip() else "")
+                )
+                with contextlib.suppress(Exception):
+                    recorder.finish(
+                        handle,
+                        return_code=return_code,
+                        output=(stderr or "")[:MAX_COMMAND_OUTPUT],
+                        error=err,
+                        duration_seconds=round(time.monotonic() - start_time, 3),
+                    )
+            self._cleanup(input_file)
 
     @staticmethod
     def _normalize_input(data: str | list[str]) -> str:

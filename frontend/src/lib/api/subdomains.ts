@@ -1,5 +1,13 @@
 import { api } from './client';
-import type { SubdomainRead, SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
+import type { SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
+import type {
+	SubdomainFilter,
+	SubdomainSearchResult,
+	SubdomainFacetSet,
+	SubdomainRelation,
+	SubdomainInsights,
+	SubdomainCorrelation
+} from '$lib/utilities/scan-insights';
 
 interface ListParams {
 	active_only?: boolean;
@@ -18,21 +26,6 @@ function buildQuery(base: Record<string, string>, params: ListParams): string {
 }
 
 export const subdomainsApi = {
-	async listByScan(
-		projectId: string,
-		scanId: string,
-		params: ListParams = {}
-	): Promise<SubdomainRead[]> {
-		const q = buildQuery({ project_id: projectId, scan_id: scanId }, params);
-		return api.get<SubdomainRead[]>(`/subdomains?${q}`);
-	},
-
-	async scanSummary(projectId: string, scanId: string): Promise<SubdomainSummary> {
-		return api.get<SubdomainSummary>(
-			`/subdomains/summary?project_id=${projectId}&scan_id=${scanId}`
-		);
-	},
-
 	async rollup(
 		projectId: string,
 		targetId: string,
@@ -45,6 +38,45 @@ export const subdomainsApi = {
 	async rollupSummary(projectId: string, targetId: string): Promise<SubdomainSummary> {
 		return api.get<SubdomainSummary>(
 			`/subdomains/rollup/summary?project_id=${projectId}&target_id=${targetId}`
+		);
+	},
+
+	async search(
+		projectId: string,
+		scanId: string,
+		filter: SubdomainFilter
+	): Promise<SubdomainSearchResult> {
+		return api.post<SubdomainSearchResult>(
+			`/subdomains/search?project_id=${projectId}&scan_id=${scanId}`,
+			filter
+		);
+	},
+
+	async facets(projectId: string, scanId: string): Promise<SubdomainFacetSet> {
+		return api.get<SubdomainFacetSet>(
+			`/subdomains/facets?project_id=${projectId}&scan_id=${scanId}`
+		);
+	},
+
+	async related(projectId: string, scanId: string, name: string): Promise<SubdomainRelation[]> {
+		return api.get<SubdomainRelation[]>(
+			`/subdomains/related?project_id=${projectId}&scan_id=${scanId}&name=${encodeURIComponent(name)}`
+		);
+	},
+
+	async insights(projectId: string, scanId: string): Promise<SubdomainInsights> {
+		return api.get<SubdomainInsights>(
+			`/subdomains/insights?project_id=${projectId}&scan_id=${scanId}`
+		);
+	},
+
+	async correlation(
+		projectId: string,
+		scanId: string,
+		name: string
+	): Promise<SubdomainCorrelation> {
+		return api.get<SubdomainCorrelation>(
+			`/subdomains/correlation?project_id=${projectId}&scan_id=${scanId}&name=${encodeURIComponent(name)}`
 		);
 	}
 };

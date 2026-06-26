@@ -6,7 +6,12 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.models.http_asset import HttpAsset, HttpAssetRead, HttpAssetSummary
+from shared.models.http_asset import (
+    HttpAsset,
+    HttpAssetDetail,
+    HttpAssetRead,
+    HttpAssetSummary,
+)
 
 
 class HttpAssetService:
@@ -66,8 +71,28 @@ class HttpAssetService:
             tls_expired=asset.tls_expired,
             tls_self_signed=asset.tls_self_signed,
             screenshot_path=asset.screenshot_path,
+            body_preview=asset.body_preview,
             discovered_at=asset.discovered_at,
         )
+
+    def _to_detail(self, asset: HttpAsset) -> HttpAssetDetail:
+        return HttpAssetDetail(
+            **self._to_read(asset).model_dump(),
+            tls_subject_dn=asset.tls_subject_dn,
+            tls_issuer_cn=asset.tls_issuer_cn,
+            raw_request=asset.raw_request,
+            raw_response_header=asset.raw_response_header,
+            response_body=asset.response_body,
+            response_headers=dict(asset.response_headers or {}),
+        )
+
+    async def get(self, asset_id: UUID, project_id: UUID) -> HttpAssetDetail | None:
+        query = select(HttpAsset).where(
+            HttpAsset.id == asset_id, HttpAsset.project_id == project_id
+        )
+        result = await self.session.execute(query)
+        asset = result.scalar_one_or_none()
+        return self._to_detail(asset) if asset else None
 
     def _base_query(
         self,

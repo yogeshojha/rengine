@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import contextlib
+from collections.abc import Iterator
+
 from shared.logging import get_logger
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 from tools.runner.models import CommandRecorder
@@ -8,6 +11,9 @@ logger = get_logger(__name__)
 
 HTTPX_BINARY = "httpx"
 DEFAULT_TIMEOUT = 900
+
+# cap response-body read to bound DB growth + worker memory (per-record, times N hosts)
+_RESPONSE_SIZE_CAP = 131072  # 128 KiB
 
 _ENRICH_FLAGS = [
     "-status-code",
@@ -27,6 +33,11 @@ _ENRICH_FLAGS = [
     "sha256",
     "-http2",
     "-pipeline",
+    "-include-response",
+    "-body-preview",
+    "500",
+    "-response-size-to-read",
+    str(_RESPONSE_SIZE_CAP),
     "-no-color",
 ]
 
@@ -64,9 +75,12 @@ class HttpxClient:
         except ToolNotFoundError as e:
             raise HttpxError(str(e)) from e
 
-    def probe(self, targets: list[str]) -> list[dict]:
+    @contextlib.contextmanager
+    def stream_probe(self, targets: list[str]) -> Iterator[Iterator[dict]]:
+        """Probe targets, streaming parsed httpx records one at a time (memory-bounded)."""
         if not targets:
-            return []
+            yield iter(())
+            return
         args = list(_ENRICH_FLAGS)
         if self.follow_redirects:
             args.append("-follow-redirects")
@@ -78,20 +92,18 @@ class HttpxClient:
         for key, value in self.headers.items():
             args += ["-header", f"{key}: {value}"]
 
-        result = self._runner.run(
+        with self._runner.stream_json(
             args=args,
             input_data=targets,
             input_flag="-l",
-            use_output_file=False,
-            output_format=OutputFormat.JSONL,
             json_flag="-json",
             silent=True,
             silent_flag="-silent",
             recorder=self.recorder,
             tool=HTTPX_BINARY,
             extra_args=self.extra_args,
-        )
-        return result.json_records
+        ) as records:
+            yield records
 
     def capture(self, targets: list[str]) -> list[dict]:
         if not targets:

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from sqlalchemy import delete, select
+from sqlalchemy.orm import defer
 
 from engines.base import Engine, EngineResult
 from engines.http_probe.config import HttpProbeConfig
@@ -19,6 +22,7 @@ logger = get_logger(__name__)
 _IP_FAMILY = {TargetType.IP.value, TargetType.IP_RANGE.value, TargetType.ASN.value}
 _DEFAULT_PORTS = (80, 443)
 _MAX_TARGETS = 50000
+_PERSIST_BATCH = 500
 
 _HTTP_FIELDS = set(HttpAsset.model_fields)
 
@@ -57,9 +61,9 @@ class HttpProbeEngine(Engine):
             logger.warning("httpx unavailable, skipping HTTP probe")
             return EngineResult(counts={"http_assets": 0})
 
-        records = client.probe(targets)
-        self._check_abort()
-        count = self._persist(records)
+        with client.stream_probe(targets) as records:
+            self._check_abort()
+            count = self._persist(records)
         if self.ctx.target_type == TargetType.DOMAIN.value:
             self._denormalize_to_subdomains()
         self.emit_progress(
@@ -84,23 +88,24 @@ class HttpProbeEngine(Engine):
         port_map = self._port_map()
         targets: list[str] = []
         if target_type == TargetType.DOMAIN.value:
-            subs = (
-                self.session.execute(
-                    select(Subdomain).where(
-                        Subdomain.scan_id == self.ctx.scan_id,
-                        Subdomain.is_excluded.is_(False),
-                    )
+            rows = self.session.execute(
+                select(
+                    Subdomain.name,
+                    Subdomain.is_wildcard,
+                    Subdomain.is_active,
+                    Subdomain.resolved_ips,
+                ).where(
+                    Subdomain.scan_id == self.ctx.scan_id,
+                    Subdomain.is_excluded.is_(False),
                 )
-                .scalars()
-                .all()
-            )
-            for sub in subs:
-                if sub.is_wildcard or not sub.is_active:
+            ).all()
+            for name, is_wildcard, is_active, resolved_ips in rows:
+                if is_wildcard or not is_active:
                     continue
                 ports = set(_DEFAULT_PORTS)
-                for ip in sub.resolved_ips or []:
+                for ip in resolved_ips or []:
                     ports |= port_map.get(ip, set())
-                targets.extend(f"{sub.name}:{port}" for port in sorted(ports))
+                targets.extend(f"{name}:{port}" for port in sorted(ports))
         elif target_type in _IP_FAMILY:
             ips = (
                 self.session.execute(
@@ -114,20 +119,30 @@ class HttpProbeEngine(Engine):
                 targets.extend(f"{ip}:{port}" for port in sorted(ports))
         return list(dict.fromkeys(targets))[:_MAX_TARGETS]
 
-    def _persist(self, records: list[dict]) -> int:
+    def _persist(self, records: Iterable[dict]) -> int:
         self.session.execute(
             delete(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
         )
         now = utc_now()
         ip_asn = {
-            row.ip: (row.asn, row.asn_org)
-            for row in self.session.execute(
-                select(IpAddress).where(IpAddress.scan_id == self.ctx.scan_id)
-            )
-            .scalars()
-            .all()
+            ip: (asn, asn_org)
+            for ip, asn, asn_org in self.session.execute(
+                select(IpAddress.ip, IpAddress.asn, IpAddress.asn_org).where(
+                    IpAddress.scan_id == self.ctx.scan_id
+                )
+            ).all()
         }
         seen: set[str] = set()
+        batch: list[HttpAsset] = []
+
+        def _flush() -> None:
+            if not batch:
+                return
+            self.session.flush()
+            for obj in batch:
+                self.session.expunge(obj)  # free the row (incl. body) from RAM
+            batch.clear()
+
         for record in records:
             fields = parse_httpx_record(record)
             url = fields.get("url")
@@ -137,22 +152,34 @@ class HttpProbeEngine(Engine):
             if fields.get("asn") is None and fields.get("ip") in ip_asn:
                 fields["asn"], fields["asn_org"] = ip_asn[fields["ip"]]
             data = {k: v for k, v in fields.items() if k in _HTTP_FIELDS}
-            self.session.add(
-                HttpAsset(
-                    scan_id=self.ctx.scan_id,
-                    target_id=self.ctx.target_id,
-                    project_id=self.ctx.project_id,
-                    discovered_at=now,
-                    **data,
-                )
+            asset = HttpAsset(
+                scan_id=self.ctx.scan_id,
+                target_id=self.ctx.target_id,
+                project_id=self.ctx.project_id,
+                discovered_at=now,
+                **data,
             )
+            self.session.add(asset)
+            batch.append(asset)
+            if len(batch) >= _PERSIST_BATCH:
+                _flush()
+                self._check_abort()
+        _flush()
         self.session.commit()
         return len(seen)
 
     def _denormalize_to_subdomains(self) -> None:
+        # defer heavy raw-capture columns — denormalize only reads small summary fields
         assets = (
             self.session.execute(
-                select(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
+                select(HttpAsset)
+                .where(HttpAsset.scan_id == self.ctx.scan_id)
+                .options(
+                    defer(HttpAsset.response_body),
+                    defer(HttpAsset.raw_request),
+                    defer(HttpAsset.raw_response_header),
+                    defer(HttpAsset.response_headers),
+                )
             )
             .scalars()
             .all()
@@ -175,6 +202,7 @@ class HttpProbeEngine(Engine):
             if asset is None:
                 continue
             sub.http_url = asset.url
+            sub.final_url = asset.final_url
             sub.http_status = asset.status_code
             sub.page_title = asset.title
             sub.content_type = asset.content_type
@@ -184,5 +212,12 @@ class HttpProbeEngine(Engine):
             sub.tech = list(asset.tech or [])
             sub.is_cdn = asset.is_cdn
             sub.cdn_name = asset.cdn_name
+            sub.waf = asset.waf
+            sub.asn = asset.asn
+            sub.asn_org = asset.asn_org
+            sub.favicon_hash = asset.favicon_hash
+            sub.tls_not_after = asset.tls_not_after
+            sub.tls_expired = asset.tls_expired
+            sub.tls_self_signed = asset.tls_self_signed
             self.session.add(sub)
         self.session.commit()

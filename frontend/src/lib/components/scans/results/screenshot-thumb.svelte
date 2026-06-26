@@ -29,6 +29,7 @@
 			<img src={url} {alt} loading="lazy" class="h-full w-full object-cover object-top" />
 		</Dialog.Trigger>
 		<Dialog.Content class="max-w-5xl">
+			<Dialog.Title class="sr-only">Screenshot of {alt}</Dialog.Title>
 			<img src={url} {alt} class="max-h-[80vh] w-full rounded object-contain" />
 		</Dialog.Content>
 	</Dialog.Root>
@@ -40,6 +41,6 @@
 	<div
 		class="flex items-center justify-center rounded border border-dashed border-border text-muted-foreground {className}"
 	>
-		<ImageOff class="h-4 w-4" />
+		<ImageOff class="size-4" />
 	</div>
 {/if}

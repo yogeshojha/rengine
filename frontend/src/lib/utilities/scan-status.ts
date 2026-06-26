@@ -97,6 +97,9 @@ export const ACTIVITY_STATUS_LABEL: Record<ScanActivityStatus, string> = {
 };
 
 export const SCAN_POLL_MS = 4000;
+export const RESULTS_PAGE_SIZE = 50;
+export const SEARCH_DEBOUNCE_MS = 220;
+export const RESULTS_SCROLL = 'max-h-[calc(100svh-25rem)] min-h-[15rem]';
 
 export const SCAN_STATUS_RANK: Record<ScanStatus, number> = {
 	running: 0,
@@ -160,7 +163,7 @@ export function scanCountPills(scan: ScanRead): CountPill[] {
 		{
 			key: 'http',
 			icon: Globe,
-			label: 'Web assets',
+			label: 'HTTP services',
 			value: scan.http_assets_found,
 			emphasis: false
 		},

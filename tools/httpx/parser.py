@@ -1,10 +1,24 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from typing import Any
 
+from shared.services.scan_resolve import MASK
 from shared.utils.datetime import utc_now
 from tools.runner.fieldmap import F, parse_record
+
+# mask scan-context auth headers the scanner injected (same contract as command redaction)
+_REQUEST_SECRET_HEADER = re.compile(
+    r"(?im)^((?:authorization|proxy-authorization|cookie|x-api-key|"
+    r"[\w-]*(?:token|secret|api-?key)[\w-]*)\s*:\s*).+$"
+)
+
+
+def _redact_request(value: Any) -> str | None:
+    if not value or not isinstance(value, str):
+        return None
+    return _REQUEST_SECRET_HEADER.sub(rf"\1{MASK}", value)
 
 
 def _int(value: Any) -> int | None:
@@ -127,6 +141,11 @@ HTTPX_FIELDS: dict[str, F] = {
     "tls_self_signed": F(_tls_self_signed),
     "asn": F("asn.as_number", _asn_number),
     "asn_org": F("asn.as_name", str, max_len=255),
+    "raw_request": F(lambda r: _redact_request(r.get("request")), max_len=65536),
+    "raw_response_header": F("raw_header", str, max_len=65536),
+    "response_headers": F(lambda r: r.get("header") or {}),
+    "response_body": F("body", str, max_len=131072),
+    "body_preview": F("body_preview", str, max_len=512),
 }
 
 
