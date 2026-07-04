@@ -22,8 +22,14 @@ if "%1" == "setup" %DOCKER_COMPOSE% -f docker-compose.setup.yml run --rm certs
 if "%1" == "up" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% up -d --build %SERVICES%
 :: Build all services.
 if "%1" == "build" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% build %SERVICES%
+:: Build all services no cache.
+if "%1" == "rebuild" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% build --no-cache %SERVICES%
 :: Generate Username (Use only after make up).
 if "%1" == "username" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% exec web python3 manage.py createsuperuser
+:: Change Password
+if "%1" == "changepass" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% exec web python3 manage.py changepassword
+:: Apply migrations
+if "%1" == "makemigrations" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% exec web python3 manage.py makemigrations
 :: Apply migrations
 if "%1" == "migrate" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% exec web python3 manage.py migrate
 :: Pull Docker images.
@@ -36,6 +42,10 @@ if "%1" == "stop" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% stop %SERVICES%
 if "%1" == "restart" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% restart %SERVICES%
 :: Remove all services containers.
 if "%1" == "rm" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% rm -f %SERVICES%
+:: Load external tools.
+if "%1" == "loadtools" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% exec web python3 manage.py loaddata external_tools.yaml
+:: Load default engines.
+if "%1" == "loadengines" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% exec web python3 manage.py loaddata default_scan_engines.yaml
 :: Tail all logs with -n 1000.
 if "%1" == "logs" %DOCKER_COMPOSE% %COMPOSE_ALL_FILES% logs --follow --tail=1000 %SERVICES%
 :: Show all Docker images.

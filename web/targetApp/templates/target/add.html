@@ -118,6 +118,46 @@ Add or Import Targets
                 <label for="targetDescription">Target Organization (Optional)</label>
                 <input type="text" class="form-control form-control-lg" id="targetOrganization" placeholder="Example Org" name="targetOrganization">
               </div>
+              <div class="col-12 mt-4">
+                <div class="card border-primary border">
+                  <div class="card-body">
+                    <h5 class="card-title text-primary"><i class="fe-monitor me-1"></i> Continuous Monitoring Settings</h5>
+                    <div class="row">
+                      <div class="col-md-3">
+                        <div class="form-check form-switch mt-2">
+                          <input type="checkbox" class="form-check-input" id="is_monitored" name="is_monitored">
+                          <label class="form-check-label" for="is_monitored">Enable Monitoring</label>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <label for="monitor_frequency" class="form-label">Frequency</label>
+                        <select class="form-select" id="monitor_frequency" name="monitor_frequency">
+                          <option value="hourly">Hourly</option>
+                          <option value="daily" selected>Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </div>
+                      <div class="col-md-3">
+                        <label for="monitor_engine" class="form-label">Engine for Scans</label>
+                        <select class="form-select" id="monitor_engine" name="monitor_engine">
+                          {% for engine in scan_engines %}
+                          <option value="{{ engine.id }}" {% if engine.default_engine %}selected{% endif %}>{{ engine.engine_name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-md-3">
+                        <label for="monitor_scan_scope" class="form-label">Auto Scan Scope</label>
+                        <select class="form-select" id="monitor_scan_scope" name="monitor_scan_scope">
+                          <option value="none" selected>None (Discovery Only)</option>
+                          <option value="targeted">Targeted Scan (New Discoveries)</option>
+                          <option value="full">Full Scan</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <button class="btn btn-primary submit-fn mt-2 float-end" type="submit" id="add-multiple-targets" name="add-multiple-targets" value="submit">Add 0 Target</button>
           </form>

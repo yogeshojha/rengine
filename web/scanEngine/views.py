@@ -12,7 +12,12 @@ from django.urls import reverse
 from rolepermissions.decorators import has_permission_decorator
 
 from reNgine.common_func import *
-from reNgine.tasks import (run_command, send_discord_message, send_slack_message,send_lark_message, send_telegram_message)
+from reNgine.tasks import (run_command, send_discord_message, send_slack_message,send_lark_message, send_telegram_message, fetch_proxies_task)
+from celery.result import AsyncResult
+from django.core.cache import cache
+from reNgine.celery import app
+from reNgine.llm_utils import LLMModelManager
+from dashboard.models import LLMConfig
 from scanEngine.forms import *
 from scanEngine.forms import ConfigurationForm
 from scanEngine.models import *
@@ -363,6 +368,40 @@ def proxy_settings(request, slug):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def opsec_settings(request, slug):
+    context = {}
+    form = OpSecForm()
+    context['form'] = form
+
+    opsec = None
+    if OpSec.objects.all().exists():
+        opsec = OpSec.objects.all()[0]
+        form.set_value(opsec)
+    else:
+        form.set_initial()
+
+    if request.method == "POST":
+        if opsec:
+            form = OpSecForm(request.POST, instance=opsec)
+        else:
+            form = OpSecForm(request.POST or None)
+
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.INFO,
+                'OpSec Settings updated.')
+            return http.HttpResponseRedirect(reverse('opsec_settings', kwargs={'slug': slug}))
+    
+    context['settings_nav_active'] = 'active'
+    context['opsec_settings_li'] = 'active'
+    context['settings_ul_show'] = 'show'
+
+    return render(request, 'scanEngine/settings/opsec.html', context)
+
+
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def test_hackerone(request, slug):
     if request.method == "POST":
         headers = {
@@ -454,6 +493,36 @@ def report_settings(request, slug):
     return render(request, 'scanEngine/settings/report.html', context)
 
 
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def fetch_proxies(request, slug):
+    if request.method == "POST":
+        logger.info("Initiating fetch_proxies_task...")
+        task = fetch_proxies_task.delay()
+        logger.info(f"Task initiated with ID: {task.id}")
+        return http.JsonResponse({'task_id': task.id})
+    return http.JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def get_proxy_task_status(request, slug, task_id):
+    logger.info(f"Checking status for task: {task_id}")
+    task_result = AsyncResult(task_id, app=app)
+    result = {
+        "task_id": task_id,
+        "status": task_result.status,
+        "result": task_result.result if task_result.ready() else None,
+    }
+    if task_result.status == 'PROGRESS':
+        result['message'] = task_result.info.get('message')
+        result['progress'] = task_result.info.get('progress')
+    elif task_result.status == 'SUCCESS':
+        result['message'] = 'Proxy list updated'
+        result['progress'] = 100
+    
+    logger.info(f"Task {task_id} status: {task_result.status}")
+    return http.JsonResponse(result)
+
+
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def tool_arsenal_section(request, slug):
     context = {}
@@ -464,37 +533,79 @@ def tool_arsenal_section(request, slug):
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def llm_toolkit_section(request, slug):
-    context = {}
-    list_all_models_url = f'{OLLAMA_INSTANCE}/api/tags'
-    response = requests.get(list_all_models_url)
-    all_models = []
-    selected_model = None
-    all_models = DEFAULT_GPT_MODELS.copy()
-    if response.status_code == 200:
-        models = response.json()
-        ollama_models = models.get('models')
-        date_format = "%Y-%m-%dT%H:%M:%S"
-        for model in ollama_models:
-           all_models.append({**model, 
-                'modified_at': datetime.strptime(model['modified_at'].split('.')[0], date_format),
-                'is_local': True,
-            })
-    # find selected model name from db
-    selected_model = OllamaSettings.objects.first()
-    if selected_model:
-        selected_model = {'selected_model': selected_model.selected_model}
-    else:
-        # use gpt3.5-turbo as default
-        selected_model = {'selected_model': 'gpt-3.5-turbo'}
-    for model in all_models:
-        if model['name'] == selected_model['selected_model']:
-            model['selected'] = True
-    context['installed_models'] = all_models
-    # show error message for openai key, if any gpt is selected
-    openai_key = get_open_ai_key()
-    if not openai_key and 'gpt' in selected_model['selected_model']:
-        context['openai_key_error'] = True
+    context = {
+        'settings_nav_active': 'active',
+        'llm_toolkit_nav_active': 'active',
+        'slug': slug
+    }
+    # Sync OpenAI from vault if LLMConfig doesn't have it
+    from dashboard.models import OpenAiAPIKey
+    openai_vault = OpenAiAPIKey.objects.first()
+    if openai_vault:
+        openai_config, created = LLMConfig.objects.get_or_create(provider=OPENAI)
+        if not openai_config.api_key:
+            openai_config.api_key = openai_vault.key
+            openai_config.save()
+
+    # Get all LLM configs
+    configs = LLMConfig.objects.all()
+    context['llm_configs'] = configs
+    
+    # Identify active provider for default selection
+    active_config = configs.filter(is_active=True).first()
+    context['active_provider'] = active_config.provider if active_config else 'ollama'
+    context['active_config'] = active_config
+    
     return render(request, 'scanEngine/settings/llm_toolkit.html', context)
+
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def update_llm_settings(request, slug):
+    if request.method == "POST":
+        provider = request.POST.get('provider')
+        api_key = request.POST.get('api_key')
+        selected_model = request.POST.get('selected_model')
+        is_active = request.POST.get('is_active') == 'true'
+        action = request.POST.get('action') # 'save' or 'pull'
+        
+        config, created = LLMConfig.objects.get_or_create(provider=provider)
+        config.api_key = api_key
+        config.selected_model = selected_model
+        
+        if is_active:
+            # Deactivate others
+            LLMConfig.objects.exclude(id=config.id).update(is_active=False)
+            config.is_active = True
+        
+        config.save()
+        
+        if action == 'pull' and provider == 'ollama':
+            from reNgine.tasks import pull_ollama_model
+            pull_ollama_model.delay(selected_model)
+            return http.JsonResponse({'status': 'pulling', 'message': f'Started pulling {selected_model}'})
+            
+        return http.JsonResponse({'status': 'success', 'message': 'Settings updated successfully'})
+    return http.JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def fetch_llm_models(request, slug):
+    provider = request.GET.get('provider')
+    api_key = request.GET.get('api_key')
+    
+    manager = LLMModelManager()
+    models = manager.get_models(provider, api_key)
+    
+    return http.JsonResponse({'status': 'success', 'models': models})
+
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def get_ollama_pull_status(request, slug):
+    model_name = request.GET.get('model')
+    log = cache.get(f"ollama_pull_log_{model_name}", "Waiting for logs...")
+    status = cache.get(f"ollama_pull_status_{model_name}", "running")
+    
+    return http.JsonResponse({
+        'status': status,
+        'log': log
+    })
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
@@ -506,6 +617,9 @@ def api_vault(request, slug):
         key_chaos = request.POST.get('key_chaos')
         key_hackerone = request.POST.get('key_hackerone')
         username_hackerone = request.POST.get('username_hackerone')
+        key_shodan = request.POST.get('key_shodan')
+        key_censys_id = request.POST.get('key_censys_id')
+        key_censys_secret = request.POST.get('key_censys_secret')
 
 
         if key_openai:
@@ -544,9 +658,31 @@ def api_vault(request, slug):
                     key=key_hackerone
                 )
 
+        if key_shodan:
+            shodan_api_key = ShodanAPIKey.objects.first()
+            if shodan_api_key:
+                shodan_api_key.key = key_shodan
+                shodan_api_key.save()
+            else:
+                ShodanAPIKey.objects.create(key=key_shodan)
+
+        if key_censys_id and key_censys_secret:
+            censys_api_key = CensysAPIKey.objects.first()
+            if censys_api_key:
+                censys_api_key.api_id = key_censys_id
+                censys_api_key.api_secret = key_censys_secret
+                censys_api_key.save()
+            else:
+                CensysAPIKey.objects.create(
+                    api_id=key_censys_id,
+                    api_secret=key_censys_secret
+                )
+
     openai_key = OpenAiAPIKey.objects.first()
     netlas_key = NetlasAPIKey.objects.first()
     chaos_key = ChaosAPIKey.objects.first()
+    shodan_key = ShodanAPIKey.objects.first()
+    censys_key = CensysAPIKey.objects.first()
     h1_key = HackerOneAPIKey.objects.first()
     if h1_key:
         hackerone_key = h1_key.key
@@ -560,6 +696,8 @@ def api_vault(request, slug):
     context['chaos_key'] = chaos_key
     context['hackerone_key'] = hackerone_key
     context['hackerone_username'] = hackerone_username
+    context['shodan_key'] = shodan_key
+    context['censys_key'] = censys_key
     
     return render(request, 'scanEngine/settings/api.html', context)
 

@@ -36,9 +36,11 @@ uro==1.0.0
 validators==0.18.2
 watchdog==4.0.0
 whatportis
-weasyprint==53.3
+weasyprint==64.1
 wafw00f==2.2.0
 xmltodict==0.13.0
 django-environ==0.11.2
 plotly==5.23.0
 kaleido==0.2.1
+shodan==1.31.0
+censys==2.2.19

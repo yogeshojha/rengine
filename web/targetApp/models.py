@@ -165,5 +165,26 @@ class Domain(models.Model):
 		if obj:
 			return obj[0].id
 
+	# Monitoring Settings
+	is_monitored = models.BooleanField(default=False)
+	monitor_frequency = models.CharField(
+		max_length=20,
+		choices=(('hourly', 'Hourly'), ('daily', 'Daily'), ('weekly', 'Weekly'), ('monthly', 'Monthly')),
+		default='daily'
+	)
+	monitor_engine = models.ForeignKey('scanEngine.EngineType', on_delete=models.SET_NULL, null=True, blank=True)
+	monitor_scan_scope = models.CharField(
+		max_length=20,
+		choices=(('targeted', 'Targeted Scan'), ('full', 'Full Scan')),
+		default='targeted'
+	)
+	last_monitored = models.DateTimeField(null=True, blank=True)
+	monitor_periodic_task = models.ForeignKey(
+		'django_celery_beat.PeriodicTask',
+		on_delete=models.SET_NULL,
+		null=True,
+		blank=True
+	)
+
 	def __str__(self):
 		return str(self.name)

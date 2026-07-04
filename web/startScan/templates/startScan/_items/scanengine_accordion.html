@@ -116,6 +116,30 @@
                 {% endif %}
               </td>
             </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Brute Force Scan</p>
+              </td>
+              <td>
+                {% if 'brute_force_scan' in engine.tasks %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Firewall & VPN Scan</p>
+              </td>
+              <td>
+                {% if 'firewall_vpn_scan' in engine.tasks %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
           </table>
           <div class="card">
             <a data-bs-toggle="collapse" class="card-header bg-primary py-3 text-light p-4" href="#cardCollpase{{engine.id}}" role="button" aria-expanded="false" aria-controls="cardCollpase2">

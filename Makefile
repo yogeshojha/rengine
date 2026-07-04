@@ -58,6 +58,12 @@ restart:		## Restart all services.
 rm:				## Remove all services containers.
 	${COMPOSE_PREFIX_CMD} ${DOCKER_COMPOSE} $(COMPOSE_ALL_FILES) rm -f ${SERVICES}
 
+loadtools:		## Load external tools.
+	${COMPOSE_PREFIX_CMD} ${DOCKER_COMPOSE} ${COMPOSE_ALL_FILES} exec web python3 manage.py loaddata external_tools.yaml
+
+loadengines:		## Load default engines.
+	${COMPOSE_PREFIX_CMD} ${DOCKER_COMPOSE} ${COMPOSE_ALL_FILES} exec web python3 manage.py loaddata default_scan_engines.yaml
+
 test:
 	${COMPOSE_PREFIX_CMD} ${DOCKER_COMPOSE} $(COMPOSE_ALL_FILES) exec celery python3 -m unittest tests/test_scan.py
 

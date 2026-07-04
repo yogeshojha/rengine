@@ -50,10 +50,12 @@ Scan Engines
             <th class="text-center">Screenshot</th>
             <th class="text-center">OSINT</th>
             <th class="text-center">Port Scan</th>
-            <th class="text-center">Directory & Files Discovery</th>
-            <th class="text-center">Fetch URLs</th>
-            <th class="text-center">Vulnerability Scan</th>
-            <th class="text-center">Action</th>
+            <th>Directory & Files Discovery</th>
+            <th>Fetch URLs</th>
+            <th>Vulnerability Scan</th>
+            <th>Brute Force Scan</th>
+            <th>Firewall & VPN Scan</th>
+            <th class="no-content">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -103,28 +105,42 @@ Scan Engines
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
-            <td class="text-center">
+            <td>
               {% if 'dir_file_fuzz' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
-            <td class="text-center">
+            <td>
               {% if 'fetch_url' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
-            <td class="text-center">
+            <td>
               {% if 'vulnerability_scan' in engine.tasks %}
-              {% include 'base/_items/green_tick.html' %}
+                {% include 'base/_items/green_tick.html' %}
               {% else %}
-              {% include 'base/_items/red_cross.html' %}
-              {%endif%}
+                {% include 'base/_items/red_cross.html' %}
+              {% endif %}
             </td>
-            <td class="text-center">
+            <td>
+              {% if 'brute_force_scan' in engine.tasks %}
+                {% include 'base/_items/green_tick.html' %}
+              {% else %}
+                {% include 'base/_items/red_cross.html' %}
+              {% endif %}
+            </td>
+            <td>
+              {% if 'firewall_vpn_scan' in engine.tasks %}
+                {% include 'base/_items/green_tick.html' %}
+              {% else %}
+                {% include 'base/_items/red_cross.html' %}
+              {% endif %}
+            </td>
+            <td>
               {% if user|can:'add_modify_scan_settings' %}
                 <a href="/scanEngine/{{current_project.slug}}/update/{{engine.id}}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Edit Engine">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">

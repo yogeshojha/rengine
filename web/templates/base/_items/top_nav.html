@@ -20,6 +20,11 @@
               <i class="fe-crosshair me-1"></i> Targets
             </a>
           </li>
+          <li class="nav-item dropdown {{monitoring_active}}">
+            <a class="nav-link arrow-none" href="{% url 'monitoring_dashboard' current_project.slug %}">
+              <i class="fe-monitor me-1"></i> Monitoring
+            </a>
+          </li>
           <li class="nav-item dropdown {{scan_history_active}} {{scheduled_scan_active}}">
             <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-history" role="button"
               data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -100,6 +105,7 @@
             <div class="dropdown-menu" aria-labelledby="topnav-settings">
               {% if user|can:'modify_scan_configurations' %}
               <a href="{% url 'proxy_settings' current_project.slug %}" class="dropdown-item">Proxies</a>
+              <a href="{% url 'opsec_settings' current_project.slug %}" class="dropdown-item">OpSec Settings</a>
               <a href="{% url 'tool_settings' current_project.slug %}" class="dropdown-item">Tool Settings</a>
               {% endif %}
               {% if user|can:'modify_system_configurations' %}

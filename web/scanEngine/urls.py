@@ -61,6 +61,18 @@ urlpatterns = [
         views.llm_toolkit_section,
         name='llm_toolkit'),
     path(
+        '<slug:slug>/update_llm_settings',
+        views.update_llm_settings,
+        name='update_llm_settings'),
+    path(
+        '<slug:slug>/fetch_llm_models',
+        views.fetch_llm_models,
+        name='fetch_llm_models'),
+    path(
+        '<slug:slug>/get_ollama_pull_status',
+        views.get_ollama_pull_status,
+        name='get_ollama_pull_status'),
+    path(
         '<slug:slug>/rengine_settings',
         views.rengine_settings,
         name='rengine_settings'),
@@ -72,6 +84,10 @@ urlpatterns = [
         '<slug:slug>/proxy_settings',
         views.proxy_settings,
         name='proxy_settings'),
+    path(
+        '<slug:slug>/opsec_settings',
+        views.opsec_settings,
+        name='opsec_settings'),
     path(
         '<slug:slug>/hackerone_settings',
         views.hackerone_settings,
@@ -85,4 +101,12 @@ urlpatterns = [
         views.test_hackerone,
         name='testHackerone'
     ),
+    path(
+        '<slug:slug>/fetch_proxies',
+        views.fetch_proxies,
+        name='fetch_proxies'),
+    path(
+        '<slug:slug>/task_status/<str:task_id>',
+        views.get_proxy_task_status,
+        name='get_proxy_task_status'),
 ]

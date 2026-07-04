@@ -13,6 +13,10 @@ urlpatterns = [
         views.index,
         name='dashboardIndex'),
     path(
+        '<slug:slug>/monitoring/',
+        views.monitoring_dashboard,
+        name='monitoring_dashboard'),
+    path(
         '<slug:slug>/profile/',
         views.profile,
         name='profile'),

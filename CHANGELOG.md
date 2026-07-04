@@ -1,5 +1,64 @@
 # Changelog
 
+## v2.6.0
+
+### New Features
+- **Centralized AI Hub**: Introduced a unified AI management interface supporting multiple providers (OpenAI, Anthropic, Google Gemini, and Ollama).
+- **Multi-Provider LLM Support**: Added production-ready integration for Claude 3 (Anthropic) and Gemini (Google) via REST APIs, alongside existing OpenAI and Ollama support.
+- **Dynamic Model Fetching**: Implemented real-time model discovery for all supported providers, including hardware requirements and expertise insights for local models.
+- **On-Demand Model Loading**: Optimized the AI Hub by fetching available models only when the dropdown is clicked, reducing initial page load overhead.
+- **Legacy API Vault Sync**: Automatically migrates existing OpenAI keys from the legacy API Vault to the new AI Hub configuration.
+
+### Bug Fixes
+- **Scan Engine Task Mapping**: Fixed a critical bug in the "Full Scan" engine where malformed YAML configuration prevented modules from being correctly identified and displayed.
+- **Firewall/VPN Module Restoration**: Restored the missing Firewall/VPN module to the default Full Scan engine configuration.
+- **AI Hub UI Refinements**: Fixed layout issues in the AI Hub, including responsive grid adjustments for non-Ollama providers and improved vertical spacing of navigation elements.
+- **Notification Fixes**: Replaced the missing `toastr` library with reNgine's native SweetAlert2 to resolve console errors during LLM configuration saves.
+
+
+## v2.5.2
+
+### Bug Fixes
+- **SSLScan Parser**: Hardened the SSLScan XML parser against `NoneType` errors and missing elements in reports.
+- **UI Rendering**: Fixed a bug where newlines in vulnerability descriptions, impacts, and remediations were being lost due to aggressive HTML encoding. Added `white-space: pre-wrap` to correctly render multi-line text in the dashboard.
+- **Medusa Brute-Force Parser**: Fixed success identification logic for Medusa v2.2 by updating the result parsing regex to handle variations in output format, including optional Host fields and bracket styles.
+- **Selective Brute-Force Triggering**: Restricted automatic brute-force scan triggering to only occur if `brute_force_scan` is explicitly selected for the current scan or subscan, preventing unintended executions.
+
+
+## v2.5.1
+
+### Bug Fixes
+- **Monitoring Frequency**: Fixed a bug where monitoring frequency was stored as an integer, causing mismatch with the expected choice values in task scheduling.
+- **Nmap Parser**: Added validation logic to filter out common false positive alerts from Nmap script results (e.g., timeouts, failed executions, and "not vulnerable" messages).
+
+
+### New Features
+- **Continuous Monitoring Engine**: Automated periodic discovery of new subdomains, directories, and login pages with real-time alerting and automated scan triggers.
+- **Monitoring Dashboards**: Dedicated global monitoring dashboard and target-specific monitoring tabs to track asset growth over time.
+- **Auth Brute-Force Engine**: Integrated Medusa for high-performance authentication testing across multiple services (HTTP, SSH, etc.).
+- **Stealth Brute-Force Orchestrator**: Advanced orchestrator with dynamic proxy rotation via Proxychains4, batched attempts (1-10 per proxy), and random delays to bypass account lockout and IP blacklisting.
+- **Deep Fingerprint Parsing**: Enhanced Nmap parsing to extract page titles even from 404, 401, and 403 responses by analyzing raw service fingerprint strings.
+- **Automated Auth Triggering**: New logic to automatically trigger brute-force scans when an authentication portal or VPN gateway is detected, provided the brute-force module is enabled in the selected scan engine.
+- **Curated Auth Wordlists**: Added specially curated "top/default" and "most common" wordlists for authentication testing, persisted in the `/usr/src/wordlist/auth/` volume.
+- **Nmap Vuln Script Support**: Added comprehensive parsing for Nmap `vuln` script outputs, integrating them directly into the vulnerability dashboard.
+- **Repository Migration**: Formally transitioned the project to `whiterabb17/rengine` as an unofficial fork.
+- **Enhanced Update Check**: Implemented a fallback mechanism that checks both GitHub Releases and the raw `.version` file in the master branch. If a newer version is detected in the repository root, the system directs users to the main repo instead of the releases page.
+
+## v2.4.0
+
+### New Features
+- **OpSec Settings**: Advanced stealth configuration including User-Agent rotation, custom rate limiting, WAF bypass headers, and custom DNS resolvers.
+- **Stealth Presets**: Quick configuration for "Quiet", "Balanced", and "Aggressive" scan modes.
+- **Metadata Stripping**: Automatically remove sensitive EXIF data and metadata from captured screenshots and downloaded OSINT documents.
+- **New Scan Engine (Firewall & VPN)**: Dedicated Sophos Firewall and VPN scan engine with IKE and SSL scan capabilities.
+- **New Tool Integrations**: Integrated Chaos, TLSX, CTFR, Netlas, and Katana for broader and more efficient reconnaissance.
+- **Automatic Proxy Fetching and Validation**: Automatically sources and tests live proxies from multiple providers to ensure scan stability and stealth.
+- **Improved NMap Vulners Script Parsing**: Enhanced parsing of NMap vulnerability scan results for more accurate service and version identification.
+- **LLM-Powered Report Summaries and Conclusions**: Automatically generates Assessment Overviews, Executive Briefs, and Final Conclusions in PDF reports using OpenAI or local LLMs (Ollama).
+
+### Bug Fixes
+- **theHarvester Integration**: Fixed Docker installation and runtime issues for theHarvester OSINT tool.
+
 ## v2.2.0
 
 ## What's Changed

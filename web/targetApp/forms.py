@@ -2,6 +2,7 @@ from django import forms
 from reNgine.validators import validate_domain
 
 from .models import *
+from scanEngine.models import EngineType
 
 
 class AddTargetForm(forms.Form):
@@ -40,6 +41,51 @@ class AddTargetForm(forms.Form):
                 "class": "form-control form-control-lg",
                 "id": "organizationName",
                 "placeholder": "Organization Name"
+            }
+        ))
+    is_monitored = forms.BooleanField(
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "isMonitored",
+            }
+        ))
+    monitor_frequency = forms.ChoiceField(
+        required=False,
+        choices=(
+            ('hourly', 'Hourly'),
+            ('daily', 'Daily'),
+            ('weekly', 'Weekly'),
+            ('monthly', 'Monthly'),
+        ),
+        widget=forms.Select(
+            attrs={
+                "class": "form-control",
+                "id": "monitorFrequency",
+            }
+        ))
+    monitor_engine = forms.ModelChoiceField(
+        required=False,
+        queryset=EngineType.objects.all(),
+        widget=forms.Select(
+            attrs={
+                "class": "form-control",
+                "id": "monitorEngine",
+            }
+        ))
+    monitor_scan_scope = forms.ChoiceField(
+        required=False,
+        choices=(
+            ('none', 'None (Discovery Only)'),
+            ('targeted', 'Targeted Scan (New Discoveries)'),
+            ('full', 'Full Scan'),
+        ),
+        widget=forms.Select(
+            attrs={
+                "class": "form-control",
+                "id": "monitorScanScope",
             }
         ))
 
@@ -121,11 +167,59 @@ class UpdateTargetForm(forms.ModelForm):
                 "id": "h1_team_handle",
             }
         ))
+    is_monitored = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "isMonitored",
+            }
+        ))
+    monitor_frequency = forms.ChoiceField(
+        required=False,
+        choices=(
+            ('hourly', 'Hourly'),
+            ('daily', 'Daily'),
+            ('weekly', 'Weekly'),
+            ('monthly', 'Monthly'),
+        ),
+        widget=forms.Select(
+            attrs={
+                "class": "form-control",
+                "id": "monitorFrequency",
+            }
+        ))
+    monitor_engine = forms.ModelChoiceField(
+        required=False,
+        queryset=EngineType.objects.all(),
+        widget=forms.Select(
+            attrs={
+                "class": "form-control",
+                "id": "monitorEngine",
+            }
+        ))
+    monitor_scan_scope = forms.ChoiceField(
+        required=False,
+        choices=(
+            ('none', 'None (Discovery Only)'),
+            ('targeted', 'Targeted Scan (New Discoveries)'),
+            ('full', 'Full Scan'),
+        ),
+        widget=forms.Select(
+            attrs={
+                "class": "form-control",
+                "id": "monitorScanScope",
+            }
+        ))
 
-    def set_value(self, domain_value, description_value, h1_team_handle):
+    def set_value(self, domain_value, description_value, h1_team_handle, is_monitored, monitor_frequency, monitor_engine, monitor_scan_scope):
         self.initial['name'] = domain_value
         self.initial['description'] = description_value
         self.initial['h1_team_handle'] = h1_team_handle
+        self.initial['is_monitored'] = is_monitored
+        self.initial['monitor_frequency'] = monitor_frequency
+        self.initial['monitor_engine'] = monitor_engine
+        self.initial['monitor_scan_scope'] = monitor_scan_scope
 
 
 class UpdateOrganizationForm(forms.ModelForm):

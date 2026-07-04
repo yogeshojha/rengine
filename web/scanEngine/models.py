@@ -34,9 +34,18 @@ class EngineType(models.Model):
 
     @hybrid_property
     def tasks(self):
-        if not self.yaml_configuration or not yaml.safe_load(self.yaml_configuration):
+        if not self.yaml_configuration:
             return []
-        return list(yaml.safe_load(self.yaml_configuration).keys())
+        try:
+            config = yaml.safe_load(self.yaml_configuration)
+            if isinstance(config, dict):
+                return list(config.keys())
+        except Exception:
+            return []
+        return []
+
+    def has_task(self, task_name):
+        return task_name in self.tasks
 
 class Wordlist(models.Model):
     id = models.AutoField(primary_key=True)
@@ -95,6 +104,23 @@ class Proxy(models.Model):
     proxies = models.TextField(blank=True, null=True)
 
 
+class OpSec(models.Model):
+    id = models.AutoField(primary_key=True)
+    enable_opsec = models.BooleanField(default=False)
+    enable_random_ua = models.BooleanField(default=True)
+    enable_rate_limit = models.BooleanField(default=False)
+    max_rps = models.IntegerField(default=10)
+    enable_delay = models.BooleanField(default=False)
+    delay_ms = models.IntegerField(default=100)
+    enable_jitter = models.BooleanField(default=False)
+    jitter_percent = models.IntegerField(default=10)
+    enable_waf_bypass = models.BooleanField(default=False)
+    enable_ja3_randomization = models.BooleanField(default=False)
+    http_protocol = models.CharField(max_length=10, default='http2') # http1.1, http2
+    custom_dns_servers = models.TextField(blank=True, null=True)
+    enable_metadata_stripping = models.BooleanField(default=False)
+
+
 class Hackerone(models.Model):
     id = models.AutoField(primary_key=True)
     # TODO: username and api_key fields will be deprecated in another major release, Instead HackerOneAPIKey model from dasbhboard/models.py will be used
@@ -118,6 +144,7 @@ class VulnerabilityReportSetting(models.Model):
     show_rengine_banner = models.BooleanField(default=True)
     show_executive_summary = models.BooleanField(default=True)
     executive_summary_description = models.TextField(blank=True, null=True)
+    enable_llm_report_generation = models.BooleanField(default=False)
     show_footer = models.BooleanField(default=False)
     footer_text = models.CharField(max_length=200, null=True, blank=True)
 

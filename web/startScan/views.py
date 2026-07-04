@@ -1,4 +1,5 @@
 import markdown
+import requests
 
 from celery import group
 from weasyprint import HTML, CSS
@@ -160,6 +161,10 @@ def detail_scan(request, id, slug):
     total_count = vulns.count()
     total_count_ignore_info = vulns.exclude(severity=0).count()
 
+    # Exploitable vulnerabilities
+    exploitable_vulns = vulns.exclude(exploit_url__isnull=True).exclude(exploit_url__exact='')
+    exploitable_count = exploitable_vulns.count()
+
     # Emails
     exposed_count = emails.exclude(password__isnull=True).count()
 
@@ -181,6 +186,8 @@ def detail_scan(request, id, slug):
         'unknown_count': unknown_count,
         'total_vulnerability_count': total_count,
         'total_vul_ignore_info_count': total_count_ignore_info,
+        'exploitable_count': exploitable_count,
+        'non_exploitable_count': total_count - exploitable_count,
         'vulnerability_list': vulns.order_by('-severity').all(),
         'scan_history_active': 'active',
         'scan_engines': scan_engines,
@@ -747,6 +754,46 @@ def change_vuln_status(request, id):
     return HttpResponse('')
 
 
+def update_vuln_validation_status(request, id):
+    if request.method == 'POST':
+        vuln = get_object_or_404(Vulnerability, id=id)
+        status = request.POST.get('status')
+        if status in ['unverified', 'verified', 'not_working', 'patched']:
+            vuln.validation_status = status
+            vuln.save()
+            return JsonResponse({'status': True})
+    return JsonResponse({'status': False})
+
+
+def fetch_exploit_source(request, id):
+    vuln = get_object_or_404(Vulnerability, id=id)
+    if vuln.exploit_url:
+        try:
+            # We should probably use a timeout and limit the response size
+            response = requests.get(vuln.exploit_url, timeout=10, verify=False)
+            if response.status_code == 200:
+                # If it's HTML, we might want to extract just the code if possible
+                # But for now let's just return the text
+                return JsonResponse({
+                    'status': True,
+                    'content': response.text
+                })
+            else:
+                return JsonResponse({
+                    'status': False,
+                    'error': f'Failed to fetch exploit source. Status code: {response.status_code}'
+                })
+        except Exception as e:
+            return JsonResponse({
+                'status': False,
+                'error': str(e)
+            })
+    return JsonResponse({
+        'status': False,
+        'error': 'No exploit URL found for this vulnerability.'
+    })
+
+
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_all_scan_results(request):
     if request.method == 'POST':
@@ -1119,6 +1166,35 @@ def create_report(request, id):
 
         # Convert to Markdown
         data['executive_summary_description'] = markdown.markdown(description)
+
+        # LLM Generated Sections
+        if report.enable_llm_report_generation:
+            from reNgine.llm import LLMReportGenerator
+            llm_gen = LLMReportGenerator()
+            
+            # Prepare context for LLM
+            llm_context = f"Target: {scan.domain.name}\n"
+            if scan.domain.description:
+                llm_context += f"Target Description: {scan.domain.description}\n"
+            llm_context += f"Scan Date: {scan.start_scan_date.strftime('%d %B, %Y')}\n"
+            llm_context += f"Subdomains discovered: {subdomains.count()}\n"
+            llm_context += f"Vulnerabilities identified: {vulns.count()}\n"
+            llm_context += f"- Critical: {vulns.filter(severity=4).count()}\n"
+            llm_context += f"- High: {vulns.filter(severity=3).count()}\n"
+            llm_context += f"- Medium: {vulns.filter(severity=2).count()}\n"
+            llm_context += f"- Low: {vulns.filter(severity=1).count()}\n"
+            llm_context += f"- Info: {vulns.filter(severity=0).count()}\n"
+            
+            # List some vulnerability names if any
+            if vulns.exists():
+                llm_context += "Top Vulnerabilities:\n"
+                for v in unique_vulns[:10]:
+                    llm_context += f"- {v['name']} ({v['count']})\n"
+
+            data['llm_overview'] = markdown.markdown(llm_gen.generate_overview(llm_context))
+            data['llm_executive_brief'] = markdown.markdown(llm_gen.generate_executive_brief(llm_context))
+            data['llm_conclusion'] = markdown.markdown(llm_gen.generate_conclusion(llm_context))
+            data['enable_llm_report_generation'] = True
 
         primary_color = report.primary_color
         secondary_color = report.secondary_color

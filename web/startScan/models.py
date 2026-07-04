@@ -3,6 +3,7 @@ from django.apps import apps
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from reNgine.definitions import (CELERY_TASK_STATUSES,
 								 NUCLEI_REVERSE_SEVERITY_MAP)
@@ -161,6 +162,12 @@ class ScanHistory(models.Model):
 			.count()
 		)
 
+	def get_firewall_count(self):
+		return Subdomain.objects.filter(scan_history__id=self.id).filter(
+			Q(waf__name__icontains='Sophos') |
+			Q(ip_addresses__ports__number__in=[4444, 500, 4500, 8443, 1194])
+		).distinct().count()
+
 	def get_progress(self):
 		"""Formulae to calculate count number of true things to do, for http
 		crawler, it is always +1 divided by total scan activity associated - 2
@@ -222,6 +229,7 @@ class Subdomain(models.Model):
 	ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True)
 	directories = models.ManyToManyField('DirectoryScan', related_name='directories', blank=True)
 	waf = models.ManyToManyField('Waf', related_name='waf', blank=True)
+	origin_ip = models.CharField(max_length=45, null=True, blank=True)
 	attack_surface = models.TextField(null=True, blank=True)
 
 
@@ -492,6 +500,15 @@ class Vulnerability(models.Model):
 	# used for subscans
 	vuln_subscan_ids = models.ManyToManyField('SubScan', related_name='vuln_subscan_ids', blank=True)
 
+	exploit_url = models.CharField(max_length=2500, null=True, blank=True)
+	VULNERABILITY_STATUS_CHOICES = (
+		('unverified', 'Unverified'),
+		('verified', 'Verified'),
+		('not_working', 'Not Working'),
+		('patched', 'Patched'),
+	)
+	validation_status = models.CharField(max_length=20, choices=VULNERABILITY_STATUS_CHOICES, default='unverified')
+
 	def __str__(self):
 		cve_str = ', '.join(f'`{cve.name}`' for cve in self.cve_ids.all())
 		severity = NUCLEI_REVERSE_SEVERITY_MAP[self.severity]
@@ -551,6 +568,19 @@ class Waf(models.Model):
 
 	def __str__(self):
 		return str(self.name)
+
+
+class WafBypassFinding(models.Model):
+	id = models.AutoField(primary_key=True)
+	subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE, related_name='waf_bypass_findings')
+	technique = models.CharField(max_length=200)
+	is_successful = models.BooleanField(default=False)
+	payload_evidence = models.TextField(null=True, blank=True)
+	discovered_date = models.DateTimeField(auto_now_add=True)
+
+	def __str__(self):
+		status = "SUCCESS" if self.is_successful else "FAILED"
+		return f"{self.subdomain.name} | {self.technique} | {status}"
 
 
 class Technology(models.Model):
@@ -679,3 +709,21 @@ class S3Bucket(models.Model):
 	perm_all_users_full_control = models.IntegerField(default=0)
 	num_objects = models.IntegerField(default=0)
 	size = models.IntegerField(default=0)
+
+class MonitoringDiscovery(models.Model):
+	id = models.AutoField(primary_key=True)
+	domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
+	discovery_type = models.CharField(max_length=50, choices=(
+		('subdomain', 'New Subdomain'),
+		('ip', 'IP Change'),
+		('vhost', 'New Virtual Host'),
+		('directory', 'New Directory'),
+		('login', 'New Login Page'),
+		('status_change', 'Status Code Change'),
+	))
+	content = models.JSONField()
+	discovered_at = models.DateTimeField(auto_now_add=True)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.SET_NULL, null=True, blank=True)
+
+	def __str__(self):
+		return f"{self.discovery_type} - {self.domain.name}"

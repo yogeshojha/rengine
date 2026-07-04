@@ -1,0 +1,291 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}
+Continuous Monitoring Dashboard
+{% endblock title %}
+
+{% block page_title %}
+Continuous Monitoring Dashboard
+{% endblock page_title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'custom/custom.css' %}">
+<style>
+  /* Professional reNgine Card Style */
+  .card-monitoring {
+    padding: 1.5rem;
+  }
+  /* Force Table and Controls to Share the Exact Same Grid */
+  .dataTables_wrapper {
+    padding: 0 !important;
+  }
+  .dataTables_wrapper .row:first-child {
+    margin: 0 0 1rem 0 !important;
+    padding: 0 !important;
+    align-items: center;
+  }
+  .dataTables_wrapper .col-sm-6 {
+    padding: 0 !important;
+  }
+  /* Results Dropdown Styling */
+  .dataTables_length label {
+    display: inline-flex !important;
+    align-items: center !important;
+    margin-bottom: 0;
+    color: #3b3f5c;
+    font-weight: 600;
+    height: 38px;
+  }
+  .dataTables_length select {
+    margin: 0 10px !important;
+    border: 1px solid #bfc9d4;
+    border-radius: 6px;
+    padding: 6px 30px 6px 12px !important;
+    background-color: #fff !important;
+    min-width: 80px !important;
+    height: 38px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%233b3f5c' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 12px 10px !important;
+  }
+  /* Search Box Styling - PERFECT ICON CENTERING */
+  .dataTables_filter {
+    text-align: right !important;
+    margin: 0 !important;
+  }
+  .dataTables_filter label {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-end;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: relative;
+    color: #3b3f5c;
+    font-weight: 600;
+    height: 38px; /* Force label height to match input */
+  }
+  .dataTables_filter input {
+    margin: 0 !important;
+    border: 1px solid #bfc9d4;
+    border-radius: 6px;
+    padding: 8px 35px 8px 15px !important;
+    width: 280px !important;
+    background-color: #fff;
+    height: 38px !important;
+  }
+  .dataTables_filter label svg {
+    position: absolute;
+    right: 12px;
+    color: #bfc9d4;
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+    /* Absolute centering relative to the 38px height */
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+  }
+  /* Table Styling */
+  .table-responsive {
+    margin: 0;
+    padding: 0;
+  }
+  .table thead th {
+    background-color: #f1f2f3;
+    color: #3b3f5c;
+    font-weight: 700;
+    border: none;
+    padding: 12px 15px;
+  }
+</style>
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="{% url 'dashboardIndex' project.slug %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Monitoring</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-md-6 col-xl-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-6">
+            <div class="avatar-sm bg-soft-primary rounded">
+              <i class="fe-monitor avatar-title font-22 text-primary"></i>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="text-end">
+              <h3 class="text-dark my-1"><span data-plugin="counterup">{{ total_discoveries }}</span></h3>
+              <p class="text-muted mb-1 text-truncate">Total Discoveries</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-6">
+            <div class="avatar-sm bg-soft-success rounded">
+              <i class="fe-globe avatar-title font-22 text-success"></i>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="text-end">
+              <h3 class="text-dark my-1"><span data-plugin="counterup">{{ subdomain_discoveries }}</span></h3>
+              <p class="text-muted mb-1 text-truncate">New Subdomains</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-6">
+            <div class="avatar-sm bg-soft-info rounded">
+              <i class="fe-link avatar-title font-22 text-info"></i>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="text-end">
+              <h3 class="text-dark my-1"><span data-plugin="counterup">{{ endpoint_discoveries }}</span></h3>
+              <p class="text-muted mb-1 text-truncate">New Directories</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-6">
+            <div class="avatar-sm bg-soft-warning rounded">
+              <i class="fe-lock avatar-title font-22 text-warning"></i>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="text-end">
+              <h3 class="text-dark my-1"><span data-plugin="counterup">{{ login_discoveries }}</span></h3>
+              <p class="text-muted mb-1 text-truncate">Login Pages</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card card-monitoring">
+      <h4 class="header-title mb-3">Recent Discoveries</h4>
+      <div class="table-responsive">
+        <table class="table table-hover table-centered w-100" id="monitoring-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Target</th>
+              <th>Discovery</th>
+              <th>Details</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for discovery in discoveries %}
+            <tr>
+              <td>
+                {% if discovery.discovery_type == 'subdomain' %}
+                <span class="badge badge-soft-success">Subdomain</span>
+                {% elif discovery.discovery_type == 'ip' %}
+                <span class="badge badge-soft-primary">IP</span>
+                {% elif discovery.discovery_type == 'vhost' %}
+                <span class="badge badge-soft-info">VHost</span>
+                {% elif discovery.discovery_type == 'directory' %}
+                <span class="badge badge-soft-secondary">Directory</span>
+                {% elif discovery.discovery_type == 'login' %}
+                <span class="badge badge-soft-warning">Login Page</span>
+                {% elif discovery.discovery_type == 'status_change' %}
+                <span class="badge badge-soft-danger">Status Change</span>
+                {% else %}
+                <span class="badge badge-soft-dark">{{ discovery.discovery_type }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'target_summary' project.slug discovery.domain.id %}" class="font-weight-bold">
+                  {{ discovery.domain.name }}
+                </a>
+              </td>
+              <td>{{ discovery.content.name|default:discovery.content.url|default:"N/A" }}</td>
+              <td>
+                {% if discovery.content.status %}
+                <span class="badge badge-outline-secondary">{{ discovery.content.status }}</span>
+                {% endif %}
+                {% if discovery.content.title %}
+                <span class="text-muted ms-1">{{ discovery.content.title|truncatechars:20 }}</span>
+                {% endif %}
+              </td>
+              <td>{{ discovery.discovered_at|naturaltime }}</td>
+              <td>
+                {% if discovery.scan_history %}
+                <a href="{% url 'scan_history' project.slug discovery.scan_history.id %}" class="btn btn-xs btn-light">
+                  <i class="mdi mdi-eye"></i> View Scan
+                </a>
+                {% else %}
+                <span class="text-muted">N/A</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+{% block page_level_script %}
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('#monitoring-table').DataTable({
+      "dom": "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+      "oLanguage": {
+        "oPaginate": { 
+          "sPrevious": '<i class="mdi mdi-chevron-left"></i>', 
+          "sNext": '<i class="mdi mdi-chevron-right"></i>' 
+        },
+        "sInfo": "Showing page _PAGE_ of _PAGES_",
+        "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+        "sSearchPlaceholder": "Search discoveries...",
+        "sLengthMenu": "Results :  _MENU_",
+        "emptyTable": "No discoveries found yet. Monitoring runs will populate this table."
+      },
+      "order": [[4, "desc"]],
+      "pageLength": 25,
+      "stripeClasses": [],
+      "lengthMenu": [10, 25, 50, 100],
+      "drawCallback": function() {
+          $('.dataTables_paginate > .pagination').addClass('pagination-rounded');
+      }
+    });
+  });
+</script>
+{% endblock page_level_script %}

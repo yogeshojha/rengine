@@ -41,8 +41,17 @@ Proxy Settings
           <p>You can enter as many proxies as you want, reNgine will <span class="text-primary">randomly</span> pick one among them during the scan.</p>
           <label class="form-label" for="proxies">Separate the proxies by new line.</label>
           {{form.proxies}}
-          <button type="submit" class="btn btn-primary mt-3 float-end">Save Proxies</button>
+          <div class="mt-3">
+            <button type="button" id="fetch-proxies-btn" class="btn btn-info">Fetch & Update Proxies</button>
+            <button type="submit" class="btn btn-primary float-end">Save Proxies</button>
+          </div>
         </form>
+        <div id="proxy-progress-container" class="mt-4" style="display: none;">
+          <h5 id="proxy-status-text">Starting...</h5>
+          <div class="progress">
+            <div id="proxy-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -62,6 +71,70 @@ $(document).ready(function(){
       document.getElementById("proxies").readOnly = true;
     }
   });
+
+  $('#fetch-proxies-btn').click(function() {
+    if (!confirm('This will fetch new proxies and update the list. Existing list will be replaced if you save. Continue?')) {
+      return;
+    }
+
+    $(this).prop('disabled', true);
+    $('#proxy-progress-container').show();
+    $('#proxy-progress-bar').css('width', '0%').text('0%').attr('aria-valuenow', 0);
+    $('#proxy-status-text').text('Initiating fetch...');
+
+    $.ajax({
+      url: '{% url "fetch_proxies" slug=request.resolver_match.kwargs.slug %}',
+      method: 'POST',
+      data: {
+        'csrfmiddlewaretoken': '{{ csrf_token }}'
+      },
+      success: function(data) {
+        if (data.task_id) {
+          pollTaskStatus(data.task_id);
+        } else {
+          alert('Failed to start task.');
+          $('#fetch-proxies-btn').prop('disabled', false);
+        }
+      },
+      error: function() {
+        alert('Error initiating fetch.');
+        $('#fetch-proxies-btn').prop('disabled', false);
+      }
+    });
+  });
+
+  function pollTaskStatus(taskId) {
+    var statusUrl = '{% url "get_proxy_task_status" slug=request.resolver_match.kwargs.slug task_id="TASK_ID" %}'.replace('TASK_ID', taskId);
+    $.ajax({
+      url: statusUrl,
+      method: 'GET',
+      success: function(data) {
+        if (data.status === 'PROGRESS' || data.status === 'PENDING') {
+          var progress = data.progress || 0;
+          var message = data.message || 'Processing...';
+          $('#proxy-progress-bar').css('width', progress + '%').text(progress + '%').attr('aria-valuenow', progress);
+          $('#proxy-status-text').text(message);
+          setTimeout(function() { pollTaskStatus(taskId); }, 2000);
+        } else if (data.status === 'SUCCESS') {
+          $('#proxy-progress-bar').css('width', '100%').text('100%').attr('aria-valuenow', 100).removeClass('progress-bar-animated');
+          $('#proxy-status-text').text('Proxy list updated!');
+          $('#proxies').val(data.result);
+          $('#fetch-proxies-btn').prop('disabled', false);
+          // Automatically enable proxy if we got results
+          if (data.result && data.result.length > 0) {
+              $('#use_proxy').prop('checked', true).trigger('change');
+          }
+        } else {
+          $('#proxy-status-text').text('Task failed or was interrupted.');
+          $('#fetch-proxies-btn').prop('disabled', false);
+        }
+      },
+      error: function() {
+        $('#proxy-status-text').text('Error polling status.');
+        $('#fetch-proxies-btn').prop('disabled', false);
+      }
+    });
+  }
 });
 </script>
 {% endblock page_level_script %}

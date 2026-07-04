@@ -21,8 +21,58 @@ from scanEngine.models import *
 from startScan.models import *
 from targetApp.forms import *
 from targetApp.models import *
+from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
 logger = logging.getLogger(__name__)
+
+def manage_monitoring_task(domain):
+    if domain.is_monitored:
+        # Get or create interval
+        frequency = domain.monitor_frequency
+        if frequency == 'hourly':
+            period = IntervalSchedule.HOURS
+            every = 1
+        elif frequency == 'daily':
+            period = IntervalSchedule.DAYS
+            every = 1
+        elif frequency == 'weekly':
+            period = IntervalSchedule.DAYS
+            every = 7
+        elif frequency == 'monthly':
+            period = IntervalSchedule.DAYS
+            every = 30
+        else:
+            # default to daily
+            period = IntervalSchedule.DAYS
+            every = 1
+
+        schedule, created = IntervalSchedule.objects.get_or_create(
+            every=every,
+            period=period,
+        )
+
+        if domain.monitor_periodic_task:
+            domain.monitor_periodic_task.interval = schedule
+            domain.monitor_periodic_task.task = 'monitor_target_task'
+            domain.monitor_periodic_task.args = json.dumps([domain.id])
+            domain.monitor_periodic_task.enabled = True
+            domain.monitor_periodic_task.save()
+        else:
+            task = PeriodicTask.objects.create(
+                interval=schedule,
+                name=f'Monitoring for {domain.name} ({domain.id})',
+                task='monitor_target_task',
+                args=json.dumps([domain.id]),
+                enabled=True,
+            )
+            domain.monitor_periodic_task = task
+            domain.save()
+    else:
+        if domain.monitor_periodic_task:
+            task = domain.monitor_periodic_task
+            domain.monitor_periodic_task = None
+            domain.save()
+            task.delete()
 
 
 def index(request):
@@ -109,14 +159,32 @@ def add_target(request, slug):
 
                     for domain_name in domains:
                         if not Domain.objects.filter(name=domain_name).exists():
+                            # Monitoring fields from POST
+                            is_monitored = request.POST.get('is_monitored') == 'on'
+                            monitor_frequency = request.POST.get('monitor_frequency', 'daily')
+                            monitor_scan_scope = request.POST.get('monitor_scan_scope', 'none')
+                            monitor_engine_id = request.POST.get('monitor_engine')
+                            monitor_engine = None
+                            if monitor_engine_id:
+                                monitor_engine = EngineType.objects.filter(id=monitor_engine_id).first()
+
                             domain, created = Domain.objects.get_or_create(
                                 name=domain_name,
                                 description=description,
                                 h1_team_handle=h1_team_handle,
                                 project=project,
-                                ip_address_cidr=domain_name if is_ip else None)
+                                ip_address_cidr=domain_name if is_ip else None,
+                                is_monitored=is_monitored,
+                                monitor_frequency=monitor_frequency,
+                                monitor_engine=monitor_engine,
+                                monitor_scan_scope=monitor_scan_scope
+                            )
                             domain.insert_date = timezone.now()
                             domain.save()
+                            
+                            if is_monitored:
+                                manage_monitoring_task(domain)
+
                             added_target_count += 1
                             if created:
                                 logger.info(f'Added new domain {domain.name}')
@@ -244,14 +312,32 @@ def add_target(request, slug):
                     description = request.POST.get('targetDescription', '')
                     h1_team_handle = request.POST.get('targetH1TeamHandle', '')
                     if not Domain.objects.filter(name=ip).exists():
+                        # Monitoring fields from POST
+                        is_monitored = request.POST.get('is_monitored') == 'on'
+                        monitor_frequency = request.POST.get('monitor_frequency', 'daily')
+                        monitor_scan_scope = request.POST.get('monitor_scan_scope', 'none')
+                        monitor_engine_id = request.POST.get('monitor_engine')
+                        monitor_engine = None
+                        if monitor_engine_id:
+                            monitor_engine = EngineType.objects.filter(id=monitor_engine_id).first()
+
                         domain, created = Domain.objects.get_or_create(
                             name=ip,
                             description=description,
                             h1_team_handle=h1_team_handle,
                             project=project,
-                            ip_address_cidr=ip if is_ip else None)
+                            ip_address_cidr=ip if is_ip else None,
+                            is_monitored=is_monitored,
+                            monitor_frequency=monitor_frequency,
+                            monitor_engine=monitor_engine,
+                            monitor_scan_scope=monitor_scan_scope
+                        )
                         domain.insert_date = timezone.now()
                         domain.save()
+                        
+                        if is_monitored:
+                            manage_monitoring_task(domain)
+
                         added_target_count += 1
                         if created:
                             logger.info(f'Added new domain {domain.name}')
@@ -291,7 +377,8 @@ def add_target(request, slug):
     context = {
         "add_target_li": "active",
         "target_data_active": "active",
-        'form': form
+        'form': form,
+        'scan_engines': EngineType.objects.all()
     }
     return render(request, 'target/add.html', context)
 
@@ -348,13 +435,22 @@ def update_target(request, slug, id):
         form = UpdateTargetForm(request.POST, instance=domain)
         if form.is_valid():
             form.save()
+            manage_monitoring_task(domain)
             messages.add_message(
                 request,
                 messages.INFO,
                 f'Domain {domain.name} modified!')
             return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
     else:
-        form.set_value(domain.name, domain.description, domain.h1_team_handle)
+        form.set_value(
+            domain.name,
+            domain.description,
+            domain.h1_team_handle,
+            domain.is_monitored,
+            domain.monitor_frequency,
+            domain.monitor_engine,
+            domain.monitor_scan_scope
+        )
     context = {
         'list_target_li': 'active',
         'target_data_active': 'active',
@@ -504,6 +600,13 @@ def target_summary(request, slug, id):
     )
 
     context['slug'] = slug
+    
+    # Monitoring Discoveries
+    context['monitoring_discoveries'] = (
+        MonitoringDiscovery.objects
+        .filter(domain__id=id)
+        .order_by('-discovered_at')
+    )
 
     return render(request, 'target/summary.html', context)
 

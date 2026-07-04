@@ -1,11 +1,11 @@
 # Base image
 FROM ubuntu:22.04
 
-ARG GECKOVERSION=0.33.0
+ARG GECKOVERSION=0.36.0
 ARG GOVERSION=1.21.5
 
 RUN ARCH=$(dpkg --print-architecture) \ 
-    && if [ "${ARCH}" ! "arm64" ] || [ "${ARCH}" ! "amd64" ]; then \
+    && if [ "${ARCH}" != "arm64" ] && [ "${ARCH}" != "amd64" ]; then \
       echo "reNgine not supported, encountered unknown architecture: ${TARGETPLATFORM}" \
       && exit 1; \
     fi
@@ -30,7 +30,14 @@ RUN apt update -y && \
     apt install -y \
     python3.10 \
     python3-dev \
-    python3-pip 
+    python3-pip \
+    libpci-dev \
+    libpciaccess-dev \
+    libegl-dev \
+    libegl1 \
+    libcap2-bin \
+    libcap2
+
 
 # Install essential packages
 RUN apt install -y --no-install-recommends \
@@ -50,10 +57,25 @@ RUN apt install -y --no-install-recommends \
     xvfb \
     wget \
     curl \
+    libcairo2 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    libjpeg-dev \
+    libopenjp2-7-dev \
     python3-netaddr \
-    software-properties-common
+    software-properties-common \
+    ike-scan \
+    sslscan \
+    medusa \
+    proxychains4
 
 RUN add-apt-repository ppa:mozillateam/ppa
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
 
 RUN ARCH=$(dpkg --print-architecture) \ 
     && curl -L https://go.dev/dl/go${GOVERSION}.linux-${ARCH}.tar.gz | tar -xzC /usr/local

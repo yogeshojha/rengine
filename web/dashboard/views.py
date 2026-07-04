@@ -9,7 +9,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.contrib import messages
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import TruncDay
 from django.dispatch import receiver
 from django.shortcuts import redirect, render, get_object_or_404
@@ -57,6 +57,7 @@ def index(request, slug):
     high_count = vulnerabilities.filter(severity=3).count()
     critical_count = vulnerabilities.filter(severity=4).count()
     unknown_count = vulnerabilities.filter(severity=-1).count()
+    firewall_count = subdomains.filter(Q(waf__name__icontains='Sophos') | Q(ip_addresses__ports__number__in=[4444, 500, 4500])).distinct().count()
 
     vulnerability_feed = vulnerabilities.order_by('-discovered_date')[:50]
     activity_feed = scan_activities.order_by('-time')[:50]
@@ -144,6 +145,7 @@ def index(request, slug):
         'high_count': high_count,
         'critical_count': critical_count,
         'unknown_count': unknown_count,
+        'firewall_count': firewall_count,
         'total_vul_count': total_vul_count,
         'total_vul_ignore_info_count': total_vul_ignore_info_count,
         'vulnerability_feed': vulnerability_feed,
@@ -338,6 +340,9 @@ def onboarding(request):
         key_chaos = request.POST.get('key_chaos')
         key_hackerone = request.POST.get('key_hackerone')
         username_hackerone = request.POST.get('username_hackerone')
+        key_shodan = request.POST.get('key_shodan')
+        key_censys_id = request.POST.get('key_censys_id')
+        key_censys_secret = request.POST.get('key_censys_secret')
         bug_bounty_mode = request.POST.get('bug_bounty_mode') == 'on'
 
         insert_date = timezone.now()
@@ -412,6 +417,26 @@ def onboarding(request):
                     key=key_hackerone
                 )
 
+        if key_shodan:
+            shodan_api_key = ShodanAPIKey.objects.first()
+            if shodan_api_key:
+                shodan_api_key.key = key_shodan
+                shodan_api_key.save()
+            else:
+                ShodanAPIKey.objects.create(key=key_shodan)
+
+        if key_censys_id and key_censys_secret:
+            censys_api_key = CensysAPIKey.objects.first()
+            if censys_api_key:
+                censys_api_key.api_id = key_censys_id
+                censys_api_key.api_secret = key_censys_secret
+                censys_api_key.save()
+            else:
+                CensysAPIKey.objects.create(
+                    api_id=key_censys_id,
+                    api_secret=key_censys_secret
+                )
+
     context['error'] = error
     
 
@@ -420,6 +445,8 @@ def onboarding(request):
     context['chaos_key'] = ChaosAPIKey.objects.first()
     context['hackerone_key'] = HackerOneAPIKey.objects.first().key if HackerOneAPIKey.objects.first() else ''
     context['hackerone_username'] = HackerOneAPIKey.objects.first().username if HackerOneAPIKey.objects.first() else ''
+    context['shodan_key'] = ShodanAPIKey.objects.first()
+    context['censys_key'] = CensysAPIKey.objects.first()
 
     context['user_preferences'], _ = UserPreferences.objects.get_or_create(
         user=request.user
@@ -436,3 +463,34 @@ def list_bountyhub_programs(request, slug):
     context['platform'] = platform.capitalize()
     
     return render(request, 'dashboard/bountyhub_programs.html', context)
+    
+
+def monitoring_dashboard(request, slug):
+    try:
+        project = Project.objects.get(slug=slug)
+    except Project.DoesNotExist:
+        return HttpResponseRedirect(reverse('four_oh_four'))
+    
+    # Get all monitoring discoveries for this project
+    discoveries = MonitoringDiscovery.objects.filter(domain__project=project).order_by('-discovered_at')
+    
+    # Statistics
+    total_discoveries = discoveries.count()
+    subdomain_discoveries = discoveries.filter(discovery_type='subdomain').count()
+    endpoint_discoveries = discoveries.filter(discovery_type='directory').count()
+    login_discoveries = discoveries.filter(discovery_type='login').count()
+    
+    # Recent discoveries
+    recent_discoveries = discoveries[:100]
+    
+    context = {
+        'monitoring_active': 'active',
+        'project': project,
+        'discoveries': recent_discoveries,
+        'total_discoveries': total_discoveries,
+        'subdomain_discoveries': subdomain_discoveries,
+        'endpoint_discoveries': endpoint_discoveries,
+        'login_discoveries': login_discoveries,
+    }
+    
+    return render(request, 'dashboard/monitoring.html', context)

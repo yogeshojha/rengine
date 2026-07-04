@@ -87,6 +87,14 @@ urlpatterns = [
         views.change_vuln_status,
         name='change_vuln_status'),
     path(
+        'update/vuln_validation_status/<int:id>',
+        views.update_vuln_validation_status,
+        name='update_vuln_validation_status'),
+    path(
+        'fetch/exploit_source/<int:id>',
+        views.fetch_exploit_source,
+        name='fetch_exploit_source'),
+    path(
         '<slug:slug>/start/multiple/',
         views.start_multiple_scan,
         name='start_multiple_scan'),

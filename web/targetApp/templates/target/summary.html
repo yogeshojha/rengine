@@ -43,6 +43,9 @@ Target Summary
 				<li class="nav-item">
 					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#vulnerabilities-tab">Vulnerabilities</a>
 				</li>
+				<li class="nav-item">
+					<a class="nav-link" id="pills-monitoring-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#monitoring-tab">Monitoring</a>
+				</li>
 			</ul>
 		</div>
 	</div>
@@ -716,6 +719,69 @@ Target Summary
 	{% include 'base/_items/vulnerability_tab_content.html' %}
 </div>
 
+<div class="tab-pane" id="monitoring-tab">
+	<div class="row">
+		<div class="col-12">
+			<div class="card">
+				<div class="card-body">
+					<h4 class="header-title mb-4">Monitoring Discoveries for {{ target.name }}</h4>
+					<div class="table-responsive">
+						<table class="table table-hover table-centered mb-0" id="target-monitoring-table">
+							<thead class="table-light">
+								<tr>
+									<th>Type</th>
+									<th>Discovery</th>
+									<th>Details</th>
+									<th>Date</th>
+									<th>Scan History</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for discovery in monitoring_discoveries %}
+								<tr>
+									<td>
+										{% if discovery.discovery_type == 'subdomain' %}
+										<span class="badge badge-soft-success">Subdomain</span>
+										{% elif discovery.discovery_type == 'login' %}
+										<span class="badge badge-soft-warning">Login Page</span>
+										{% elif discovery.discovery_type == 'directory' %}
+										<span class="badge badge-soft-info">Directory</span>
+										{% endif %}
+									</td>
+									<td>
+										<code class="text-dark">
+											{% if discovery.discovery_type == 'subdomain' %}
+											{{ discovery.content.name }}
+											{% else %}
+											{{ discovery.content.url }}
+											{% endif %}
+										</code>
+									</td>
+									<td>
+										{% if discovery.discovery_type == 'login' or discovery.discovery_type == 'directory' %}
+										<span class="badge badge-outline-secondary">{{ discovery.content.status }}</span>
+										<small class="ms-1 text-muted">{{ discovery.content.title|truncatechars:30 }}</small>
+										{% endif %}
+									</td>
+									<td>{{ discovery.discovered_at|naturaltime }}</td>
+									<td>
+										<a href="{% url 'scan_history' current_project.slug discovery.scan_history.id %}" class="btn btn-xs btn-light"><i class="mdi mdi-eye"></i> View</a>
+									</td>
+								</tr>
+								{% empty %}
+								<tr>
+									<td colspan="5" class="text-center">No monitoring discoveries found for this target.</td>
+								</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
 </div>
 
 {% include "base/_items/recon_note_modal.html" %}
@@ -938,7 +1004,7 @@ $(document).ready(function(){
 			"columnDefs": [
 				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 				{
-					"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28],
+					"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26],
 					"visible": false,
 					"searchable": false,
 				},
@@ -1162,7 +1228,7 @@ $(document).ready(function(){
 							</div>
 							`;
 						},
-						"targets": 24,
+						"targets": 11,
 					},
 				],
 				"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
@@ -1378,16 +1444,10 @@ $(document).ready(function(){
 			"order": [[ 7, "desc" ]],
 			"columns": vuln_datatable_columns,
 			"columnDefs": [
-			{ "orderable": false, "targets": [16]},
+			{ "orderable": false, "targets": [18]},
 			{
-				"targets": [2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 17, 18, 19],
-				"visible": false,
+				"targets": [2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 19, 20, 21],
 				"searchable": true,
-			},
-			{
-				"targets": [20, 21, 22, 23, 24, 25, 26, 27],
-				"visible": false,
-				"searchable": false,
 			},
 			{
 				"className": "text-center",
@@ -1396,9 +1456,9 @@ $(document).ready(function(){
 			{
 				"render": function(data, type, row) {
 					if (row['open_status']) {
-						return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, ` + data + `);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ row.id + ']" class="float-start form-check-input" onchange="vuln_status_change(this, ` + data + `);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
 					} else {
-						return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, ` + data + `);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ row.id + ']" class="float-start form-check-input" onchange="vuln_status_change(this, ` + data + `);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
 					}
 				},
 				"targets": 0,
@@ -1464,12 +1524,12 @@ $(document).ready(function(){
 					if (row['cve_ids'] || row['cwe_ids']) {
 						cve_cwe_badge += '<br>';
 					}
-					if (row['cve_ids']) {
+					if (row['cve_ids'] && Array.isArray(row['cve_ids'])) {
 						row['cve_ids'].forEach(cve => {
 							cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
 						});
 					}
-					if (row['cwe_ids']) {
+					if (row['cwe_ids'] && Array.isArray(row['cwe_ids'])) {
 						row['cwe_ids'].forEach(cwe => {
 							cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
 						});
@@ -1525,18 +1585,36 @@ $(document).ready(function(){
 				"targets": 11,
 			},
 			{
-				"render": function(data, type, row) {
+				"render": function ( data, type, row ) {
 					if (data) {
+						return `<a href="${data}" target="_blank" class="btn btn-soft-danger btn-sm">Exploit Source</a>`;
+					}
+					return '<span class="text-muted">N/A</span>';
+				},
+				"targets": 15,
+			},
+			{
+				"render": function ( data, type, row ) {
+					var badge_class = 'soft-secondary';
+					if (data === 'Verified') badge_class = 'soft-success';
+					else if (data === 'Not Working') badge_class = 'soft-danger';
+					return `<span class="badge badge-${badge_class}">${data || 'Unverified'}</span>`;
+				},
+				"targets": 16,
+			},
+			{
+				"render": function(data, type, row) {
+					if (row.open_status) {
 						return '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
 					} else {
 						return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
 					}
 				},
-				"targets": 15,
+				"targets": 17,
 			},
 			{
 				"render": function(data, type, row) {
-					if (!data) {
+					if (row.id) {
 						return `
 									<div class="btn-group mb-2 dropstart">
 									<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -1554,14 +1632,8 @@ $(document).ready(function(){
 						return '';
 					}
 				},
-				"targets": 16,
+				"targets": 18,
 			},
-			{
-				"render": function ( data, type, row ) {
-					return htmlEncode(data);
-				},
-				"targets": 17,
-			}
 		],
 		"initComplete": function(settings, json) {
 			api = this.api();
@@ -1593,7 +1665,7 @@ $(document).ready(function(){
 				vulnerability_table.ajax.reload();
 			});
 			// column visibility
-			vulnerability_datatable_col_visibility(vulnerability_table);
+			vulnerability_datatable_col_visibility(this.api());
 		},
 		drawCallback: function (settings) {
 			drawCallback_api = this.api();
@@ -1658,19 +1730,37 @@ $(document).ready(function(){
 
 		$('input[name=vuln_status_checkbox]').change(function() {
 			if ($(this).is(':checked')) {
+				vulnerability_table.column(17).visible(true);
+			} else {
+				vulnerability_table.column(17).visible(false);
+			}
+			window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=vuln_exploit_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
 				vulnerability_table.column(15).visible(true);
 			} else {
 				vulnerability_table.column(15).visible(false);
 			}
-			window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
+			window.localStorage.setItem('vuln_exploit_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=vuln_validation_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				vulnerability_table.column(16).visible(true);
+			} else {
+				vulnerability_table.column(16).visible(false);
+			}
+			window.localStorage.setItem('vuln_validation_checkbox', $(this).is(':checked'));
 		});
 
 		$('#vulnerability_results').on('click', 'tr' , function (e) {
 			if ($(e.target).is('input[type="checkbox"]') || $(e.target).is('svg') || $(e.target).is('a')) {
 				return;
 			}
-			var data = vulnerability_table.row(this).data();
-			render_vuln_offcanvas(data);
+			// var data = vulnerability_table.row(this).data();
+			// render_vuln_offcanvas(data);
 		});
 	});
 

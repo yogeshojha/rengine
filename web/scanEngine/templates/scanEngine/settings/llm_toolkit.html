@@ -1,286 +1,596 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load humanize %}
+
 {% block title %}
-LLM Toolkit
+AI Hub - reNgine
 {% endblock title %}
 
 {% block custom_js_css_link %}
+<style>
+    /* Premium AI Hub Styling */
+    .ai-hub-container {
+        display: grid;
+        grid-template-columns: 280px 1fr 320px;
+        gap: 32px;
+        align-items: stretch;
+        margin-bottom: 40px;
+        transition: grid-template-columns 0.4s ease;
+    }
+
+    .ai-hub-container.info-hidden {
+        grid-template-columns: 280px 1fr;
+        gap: 32px;
+    }
+
+    /* Vertical centering for breadcrumb row */
+    .page-title-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 32px;
+        margin-top: -22px; /* Tighten gap to navbar */
+        margin-bottom: 12px !important;
+        padding: 0 5px;
+    }
+
+    .page-title-box .page-title {
+        font-size: 18px;
+        margin: 0;
+        line-height: 32px;
+    }
+
+    .page-title-box .breadcrumb {
+        padding: 0;
+        margin: 0;
+    }
+
+    .ai-hub-container {
+        margin-top: 0;
+    }
+
+    @media (max-width: 1200px) {
+        .ai-hub-container {
+            grid-template-columns: 1fr;
+        }
+        .ai-sidebar, .ai-info-panel {
+            grid-row: auto;
+        }
+    }
+
+    /* Left Sidebar: Providers */
+    .ai-sidebar {
+        background: #fff;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ai-sidebar-footer {
+        margin-top: auto;
+        padding-top: 24px;
+        border-top: 1px solid #f1f5f9;
+        font-size: 13px;
+        color: #6b7280;
+        line-height: 1.6;
+    }
+
+    .provider-btn {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        background: #f8f9fa;
+        color: #4b5563;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: left;
+        font-weight: 500;
+    }
+
+    .provider-btn i {
+        font-size: 20px;
+        margin-right: 12px;
+    }
+
+    .provider-btn:hover {
+        background: #f1f5f9;
+        transform: translateX(4px);
+    }
+
+    .provider-btn.active {
+        background: #eff6ff;
+        border-color: #3b82f6;
+        color: #2563eb;
+    }
+
+    /* Main Content Area */
+    .ai-main-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .status-badge {
+        font-size: 12px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-inactive { background: #f3f4f6; color: #4b5563; }
+
+    /* Info Panel Sidebar */
+    .ai-info-panel {
+        background: #fff;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        position: sticky;
+        top: 24px;
+        overflow: hidden;
+    }
+
+    .model-stat {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f3f4f6;
+    }
+
+    .stat-label {
+        color: #6b7280;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+    }
+
+    .stat-value {
+        font-weight: 600;
+        color: #111827;
+    }
+
+    /* Terminal Component */
+    .terminal-wrapper {
+        margin-top: 24px;
+        display: none;
+    }
+
+    .terminal-header {
+        background: #333;
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 8px 8px 0 0;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .terminal-body {
+        background: #1a1a1a;
+        color: #10b981;
+        padding: 16px;
+        border-radius: 0 0 8px 8px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 13px;
+        height: 200px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+
+    /* Loading Spinner Overlay */
+    .loading-overlay {
+        display: none;
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255,255,255,0.7);
+        z-index: 10;
+        border-radius: 16px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        color: #3b82f6;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
 <li class="breadcrumb-item"><a href="#">Settings</a></li>
-<li class="breadcrumb-item active">LLM Toolkit</li>
+<li class="breadcrumb-item active">AI Hub</li>
 {% endblock breadcrumb_title %}
 
-{% block page_title %}
-LLM Toolkit (Beta)
-{% endblock page_title %}
-
 {% block main_content %}
-<div class="row">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-body">
-        <b>LLM Toolkit</b> includes the ability to download new LLMs, view available models, and delete models no longer needed, and also choose between various models.
-        <br>
-        <p>reNgine makes use of various LLMs to enhance reporting process. Using various LLM AI Models penetration testers will be able to to generate detailed, insightful penetration testing reports. 
-          <br>
-          If you are using custom LLM models, it is expected that response time are much slower in CPU. We recommend using GPU for better performance. Models such as llama2, or llama3 requires significant computation and GPU are required. <b>Having only CPU will result in slow response time.</b>
-          <br>
-          <b>OpenAI GPT models do not run locally, hence the requirement of GPU is not necessary.</b>
-        </p>
-      </div>
-    </div>
-  </div>
-  <div class="row mb-2">
-    <div class="col-sm-4">
-      <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3" onclick="showAddNewModelModal()"><i class="mdi mdi-plus"></i> Add new model</a>
-    </div>
-  </div>
-  <h5>{{installed_models|length}} available Models</h5>
-  {% if openai_key_error %}
-  <div class="alert alert-danger border-0 mb-3 mt-3" role="alert">
-    <b>Warning:</b> GPT model is currently selected and requires API key to be set. Please set the API key in the <a href="/scanEngine/{{current_project.slug}}/api_vault" target="_blank"> API Vault.</a>
-  </div>
-  {% endif %}
-  <div class="row mt-2">
-    {% for model in installed_models %}
-    <div class="col-lg-4">
-      <div class="card project-box">
-        <div class="card-body">
-          <div class="dropdown float-end">
-            <a href="#" class="dropdown-toggle card-drop arrow-none" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="mdi mdi-dots-horizontal m-0 text-muted h3"></i>
-            </a>
-            <div class="dropdown-menu dropdown-menu-end">
-              {% if model.is_local %}
-                <a class="dropdown-item" href="#" onClick=deleteModel('{{model.name}}')>Delete</a>
-              {% endif %}
-              {% if not model.selected %}
-                <a class="dropdown-item" href="#" onClick=selectModel('{{model.name}}')>Use Model</a>
-              {% endif %}
-            </div>
-          </div>
-          <h4 class="mt-0">
-            <span class="{% if model.selected %}text-success{% endif %}">{{model.name}} {% if model.selected %}<span class="badge bg-soft-primary text-primary ms-4">Selected Model</span>{% endif %}</span>
-          </h4>
-          </p>
-          <p class="mb-1">
-            <span class="pe-2 text-nowrap mb-2 d-inline-block">
-              <i class="mdi mdi-calendar-range text-primary"></i>
-              Modified <b>{% if model.modified_at %}{{model.modified_at|naturaltime}} {% else %} NA{% endif %}</b>
-            </span>
-            <br>
-            <span class="pe-2 text-nowrap mb-2 d-inline-block">
-              <i class="mdi mdi-database text-info"></i>
-              {% if model.is_local %}
-              Locally installed model
-              {% else %}
-              Open AI Model
-              {% endif %}
-            </span>
-            <br>
-            <span class="pe-2 text-nowrap mb-2 d-inline-block">
-              <i class="mdi mdi-numeric text-info"></i>
-              <b>{{model.details.parameter_size}}</b> Parameters 
-            </span>
-            <span class="text-nowrap mb-2 d-inline-block">
-              <i class="mdi mdi-family-tree text-success"></i>
-              <b>{{model.details.family}}</b> Family 
-            </span>
-          </p>
+<div class="ai-hub-container fade-in">
+    <!-- Provider Sidebar -->
+    <div class="ai-sidebar">
+        <h5 class="mb-3">LLM Providers</h5>
+        <button class="provider-btn {% if active_provider == 'ollama' %}active{% endif %}" data-provider="ollama">
+            <i class="mdi mdi-cube-outline"></i> Ollama (Local)
+        </button>
+        <button class="provider-btn {% if active_provider == 'openai' %}active{% endif %}" data-provider="openai">
+            <i class="mdi mdi-openai"></i> OpenAI
+        </button>
+        <button class="provider-btn {% if active_provider == 'anthropic' %}active{% endif %}" data-provider="anthropic">
+            <i class="mdi mdi-robot"></i> Anthropic
+        </button>
+        <button class="provider-btn {% if active_provider == 'gemini' %}active{% endif %}" data-provider="gemini">
+            <i class="mdi mdi-google"></i> Google Gemini
+        </button>
+        
+        <div class="ai-sidebar-footer">
+            reNgine uses LLMs for intelligent reporting, vulnerability analysis, and attack path suggestions.
         </div>
-      </div>
     </div>
-    {% empty %}
-    <div class="alert alert-danger border-0" role="alert">
-      No LLM Models are installed. You can install models using the 'Add New LLM' button.
+
+    <!-- Main Config Area -->
+    <div class="position-relative">
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="spinner-border" role="status"></div>
+        </div>
+        
+        <div class="ai-main-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 id="provider-title">Ollama Configuration</h4>
+                <span id="active-status" class="status-badge status-inactive">Inactive</span>
+            </div>
+
+            <form id="llm-config-form">
+                {% csrf_token %}
+                <input type="hidden" id="provider-input" name="provider" value="ollama">
+                
+                <div id="api-key-group" class="mb-4">
+                    <label class="form-label font-weight-bold">API Key / Host URL</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="mdi mdi-key-variant"></i></span>
+                        <input type="password" id="api-key-input" name="api_key" class="form-control" placeholder="Enter API key or URL">
+                        <button type="button" class="btn btn-outline-secondary" id="toggle-key">
+                            <i class="mdi mdi-eye"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted" id="api-key-help">For Ollama, this defaults to the internal container URL.</small>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label font-weight-bold">Select Model</label>
+                    <select id="model-select" name="selected_model" class="form-control select2">
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="is-active-switch" name="is_active">
+                        <label class="form-check-label" for="is-active-switch">Set as Default reNgine LLM</label>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4" id="save-btn">
+                        <i class="mdi mdi-content-save me-1"></i> Save Configuration
+                    </button>
+                    <button type="button" class="btn btn-soft-info px-4 d-none" id="pull-btn">
+                        <i class="mdi mdi-download me-1"></i> Download Model
+                    </button>
+                </div>
+            </form>
+
+            <!-- Terminal for Ollama -->
+            <div class="terminal-wrapper" id="terminal-wrapper">
+                <div class="terminal-header">
+                    <span>Ollama Pull Progress</span>
+                    <span id="terminal-status">In Progress</span>
+                </div>
+                <div class="terminal-body" id="terminal-output">Ready to pull...</div>
+            </div>
+        </div>
     </div>
-    {% endfor %}
-  </div>
+
+    <!-- Info Sidebar -->
+    <div class="ai-info-panel" id="info-panel">
+        <h5 class="mb-3">Model Insights</h5>
+        <div id="no-model-info" class="text-muted small">
+            Select a model to see its expertise and hardware requirements.
+        </div>
+        <div id="model-info-content" class="d-none">
+            <p id="model-description" class="small text-muted mb-4"></p>
+            
+            <div class="model-stat">
+                <div class="stat-label">Primary Expertise</div>
+                <div id="model-expertise" class="stat-value text-primary">Cybersecurity Analysis</div>
+            </div>
+            
+            <div class="model-stat">
+                <div class="stat-label">Model Size</div>
+                <div id="model-size" class="stat-value">4.7 GB</div>
+            </div>
+            
+            <div class="model-stat">
+                <div class="stat-label">Suggested RAM</div>
+                <div id="model-ram" class="stat-value">8 GB+</div>
+            </div>
+
+            <div class="mt-4 p-3 bg-soft-warning rounded small">
+                <i class="mdi mdi-alert-circle-outline me-1"></i>
+                Local models (Ollama) perform best with GPU acceleration. CPU inference will be significantly slower.
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock main_content %}
 
-
 {% block page_level_script %}
-<script type="text/javascript">
-  function deleteModel(model_name) {
-    // split model name by : and only use first part
-    model_name = model_name.split(':')[0];
-    var url = "/api/tool/ollama/?model=" + model_name;
-    swal.queue([{
-      title: 'Are you sure you want to delete this model?',
-      text: "This action can not be undone.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Delete',
-      padding: '2em',
-      showLoaderOnConfirm: true,
-      preConfirm: function() {
-        return fetch(url, {
-          method: 'DELETE',
-          credentials: "same-origin",
-          headers: {
-            "X-CSRFToken": getCookie("csrftoken")
-          }
-        }).then(function(response) {
-          return response.json();
-        }).then(function(data) {
-          if (data.status){
-            swal.insertQueueStep({
-              icon: 'error',
-              title: 'Oops! Unable to delete the model!'
-            })
-          }
-          else{
-            swal.queue([{
-              title: 'Model Successfully deleted!',
-              icon: 'success',
-              showCancelButton: false,
-              confirmButtonText: 'Okay',
-              padding: '2em',
-              showLoaderOnConfirm: true,
-              preConfirm: function() {
-                location.reload();
-              }
-            }]);
-          }
-          //return location.reload();
-        }).catch(function() {
-          swal.insertQueueStep({
-            icon: 'error',
-            title: 'Oops! Unable to delete the model!'
-          })
-        })
-      }
-    }])
-  }
+<script>
+    // Config Data from Django
+    const llmConfigs = {
+        {% for config in llm_configs %}
+        "{{ config.provider }}": {
+            api_key: "{{ config.api_key|default:'' }}",
+            selected_model: "{{ config.selected_model|default:'' }}",
+            is_active: {{ config.is_active|yesno:"true,false" }}
+        },
+        {% endfor %}
+    };
 
-  function showAddNewModelModal(){
-    $('#modal_title').html('Add new LLM Model');
-    $('#modal-content').empty();
-    $('#modal-content').append(`
-      <p>You can find the list of supported models in <a href="https://ollama.com/library" target="_blank">Ollama Library</a></p>
-      <p>We recommend using llama2-uncensored model for better results.</p>
-      <div class="mb-3">
-        <label for="model_name" class="form-label">Model name</label>
-        <input class="form-control" type="text" id="model_name" required="" placeholder="llama2">
-      </div>
-      <div class="mb-3 text-center">
-        <button class="btn btn-primary float-end" type="submit" onclick="download_model()">Download Model</button>
-      </div>
-    `);
-    $('#modal_dialog').modal('show');
-  }
+    let currentProvider = "{{ active_provider }}";
+    let modelMetadata = [];
+    let pollingInterval = null;
 
-  function download_model(){
-    var model_name = $('#model_name').val();
-    if (model_name == ""){
-      Swal.fire({
-        title: 'Oops!',
-        text: 'Model name is required',
-        icon: 'error'
-      });
-      return;
+    $(document).ready(function() {
+        // Initialize with default
+        loadProvider(currentProvider);
+
+        // Provider Switcher
+        $('.provider-btn').on('click', function() {
+            $('.provider-btn').removeClass('active');
+            $(this).addClass('active');
+            loadProvider($(this).data('provider'));
+        });
+
+        // Key Toggle
+        $('#toggle-key').on('click', function() {
+            const input = $('#api-key-input');
+            const type = input.attr('type') === 'password' ? 'text' : 'password';
+            input.attr('type', type);
+            $(this).find('i').toggleClass('mdi-eye mdi-eye-off');
+        });
+
+        // Fetch models on dropdown click/open
+        $('#model-select').on('select2:opening', function() {
+            if ($(this).data('loaded-provider') !== currentProvider) {
+                fetchModels();
+            }
+        });
+
+        // Model Selection Change
+        $('#model-select').on('change', function() {
+            updateModelInfo($(this).val());
+        });
+
+        // Form Submit
+        $('#llm-config-form').on('submit', function(e) {
+            e.preventDefault();
+            saveSettings('save');
+        });
+
+        // Pull Button
+        $('#pull-btn').on('click', function() {
+            saveSettings('pull');
+        });
+    });
+
+    function loadProvider(provider) {
+        currentProvider = provider;
+        const config = llmConfigs[provider] || { api_key: "", selected_model: "", is_active: false };
+        
+        // Update UI
+        $('#provider-title').text(provider.charAt(0).toUpperCase() + provider.slice(1) + " Configuration");
+        $('#provider-input').val(provider);
+        $('#api-key-input').val(config.api_key);
+        $('#is-active-switch').prop('checked', config.is_active);
+        updateStatusBadge(config.is_active);
+        
+        // Contextual help
+        let helpText = "Enter your API key.";
+        if (provider === 'ollama') {
+            helpText = "URL of your Ollama instance (e.g., http://ollama:11434).";
+            $('.ai-hub-container').removeClass('info-hidden');
+            $('#info-panel').fadeIn();
+        } else {
+            if (provider === 'openai') helpText = "Your OpenAI API Key (sk-...).";
+            $('.ai-hub-container').addClass('info-hidden');
+            $('#info-panel').fadeOut();
+        }
+        $('#api-key-help').text(helpText);
+
+        // Reset model select state
+        $('#model-select').data('loaded-provider', '');
+        $('#model-select').html('<option value="">Click to load models...</option>');
     }
-    var url = "/api/tool/ollama/?model=" + model_name;
-    swal.queue([{
-      title: 'Are you sure you want to download this model?',
-      text: "Downloading models can take a long time, sometimes a few minutes. Please be patient.",
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonText: 'Download',
-      padding: '2em',
-      showLoaderOnConfirm: true,
-      preConfirm: function() {
-        return fetch(url, {
-          method: 'GET',
-          credentials: "same-origin",
-          headers: {
-            "X-CSRFToken": getCookie("csrftoken")
-          }
-        }).then(function(response) {
-          return response.json();
-        }).then(function(data) {
-          if (!data.status){
-            swal.insertQueueStep({
-              icon: 'error',
-              title: 'Oops! Unable to download the model, model does not exist!'
-            })
-          }
-          else{
-            swal.queue([{
-              title: 'Model Successfully downloaded!',
-              icon: 'success',
-              showCancelButton: false,
-              confirmButtonText: 'Okay',
-              padding: '2em',
-              showLoaderOnConfirm: true,
-              preConfirm: function() {
-                location.reload();
-              }
-            }]);
-          }
-          //return location.reload();
-        }).catch(function() {
-          swal.insertQueueStep({
-            icon: 'error',
-            title: 'Oops! Unable to download the model!'
-          })
-        })
-      }
-    }])
-  }
 
-  function selectModel(model_name){
-    var url = "/api/tool/ollama/?model=" + model_name;
-    swal.queue([{
-      title: 'Are you sure you want to select this model?',
-      text: "This model will be used to generate Scan Reports and Attack Suggestions.",
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonText: 'Select',
-      padding: '2em',
-      showLoaderOnConfirm: true,
-      preConfirm: function() {
-        return fetch(url, {
-          method: 'PUT',
-          credentials: "same-origin",
-          headers: {
-            "X-CSRFToken": getCookie("csrftoken")
-          }
-        }).then(function(response) {
-          return response.json();
-        }).then(function(data) {
-          if (!data.status){
-            swal.insertQueueStep({
-              icon: 'error',
-              title: 'Oops! Unable to select the model!'
-            })
-          }
-          else{
-            swal.queue([{
-              title: 'Model Successfully selected!',
-              icon: 'success',
-              showCancelButton: false,
-              confirmButtonText: 'Okay',
-              padding: '2em',
-              showLoaderOnConfirm: true,
-              preConfirm: function() {
-                location.reload();
-              }
-            }]);
-          }
-          //return location.reload();
-        }).catch(function() {
-          swal.insertQueueStep({
-            icon: 'error',
-            title: 'Oops! Unable to select the model!'
-          })
-        })
-      }
-    }])
-  }
+    function updateStatusBadge(isActive) {
+        const badge = $('#active-status');
+        if (isActive) {
+            badge.text('Active').removeClass('status-inactive').addClass('status-active');
+        } else {
+            badge.text('Inactive').removeClass('status-active').addClass('status-inactive');
+        }
+    }
+
+    function fetchModels(selectedToRestore = null) {
+        const apiKey = $('#api-key-input').val();
+        if (currentProvider !== 'ollama' && !apiKey) {
+            Swal.fire({
+                title: 'API Key Required',
+                text: 'Please enter an API key to fetch models.',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        $('#loading-overlay').css('display', 'flex');
+        
+        $.ajax({
+            url: `/scanEngine/{{ slug }}/fetch_llm_models`,
+            data: { provider: currentProvider, api_key: apiKey },
+            success: function(data) {
+                if (data.status === 'success') {
+                    modelMetadata = data.models;
+                    const select = $('#model-select');
+                    select.empty();
+                    
+                    data.models.forEach(m => {
+                        const label = m.name;
+                        select.append(`<option value="${m.name}">${label}</option>`);
+                    });
+
+                    // Mark as loaded for this provider
+                    select.data('loaded-provider', currentProvider);
+
+                    if (selectedToRestore) {
+                        select.val(selectedToRestore);
+                    } else if (llmConfigs[currentProvider].selected_model) {
+                        select.val(llmConfigs[currentProvider].selected_model);
+                    }
+                    
+                    updateModelInfo(select.val());
+                    // Trigger change for select2
+                    select.trigger('change');
+                }
+            },
+            complete: function() {
+                $('#loading-overlay').hide();
+            }
+        });
+    }
+
+    function updateModelInfo(modelName) {
+        const model = modelMetadata.find(m => m.name === modelName);
+        if (!model) {
+            $('#no-model-info').removeClass('d-none');
+            $('#model-info-content').addClass('d-none');
+            $('#pull-btn').addClass('d-none');
+            return;
+        }
+
+        $('#no-model-info').addClass('d-none');
+        $('#model-info-content').removeClass('d-none');
+        
+        $('#model-description').text(model.description || "No description available.");
+        $('#model-expertise').text(model.expertise || "General Purpose");
+        $('#model-size').text(model.size || "N/A");
+        $('#model-ram').text(model.suggested_ram || "N/A");
+
+        // Show pull button for Ollama models not installed locally
+        if (currentProvider === 'ollama' && !model.is_local) {
+            $('#pull-btn').removeClass('d-none');
+        } else {
+            $('#pull-btn').addClass('d-none');
+        }
+    }
+
+    function saveSettings(action) {
+        const formData = {
+            provider: currentProvider,
+            api_key: $('#api-key-input').val(),
+            selected_model: $('#model-select').val(),
+            is_active: $('#is-active-switch').is(':checked') ? 'true' : 'false',
+            action: action,
+            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+        };
+
+        $('#loading-overlay').css('display', 'flex');
+
+        $.post(`/scanEngine/{{ slug }}/update_llm_settings`, formData, function(data) {
+            if (data.status === 'success' || data.status === 'pulling') {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Update local cache
+                llmConfigs[currentProvider] = {
+                    api_key: formData.api_key,
+                    selected_model: formData.selected_model,
+                    is_active: formData.is_active === 'true'
+                };
+                updateStatusBadge(formData.is_active === 'true');
+
+                if (data.status === 'pulling') {
+                    startTerminal(formData.selected_model);
+                }
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error'
+                });
+            }
+        }).fail(function() {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to update settings.',
+                icon: 'error'
+            });
+        }).always(function() {
+            $('#loading-overlay').hide();
+        });
+    }
+
+    function startTerminal(modelName) {
+        $('#terminal-wrapper').slideDown();
+        $('#terminal-output').text(`[*] Requesting pull for ${modelName}...\n`);
+        
+        if (pollingInterval) clearInterval(pollingInterval);
+        
+        pollingInterval = setInterval(function() {
+            $.get(`/scanEngine/{{ slug }}/get_ollama_pull_status`, { model: modelName }, function(data) {
+                $('#terminal-output').text(data.log);
+                const terminalBody = document.getElementById('terminal-output');
+                terminalBody.scrollTop = terminalBody.scrollHeight;
+
+                if (data.status === 'success') {
+                    $('#terminal-status').text('Completed').css('color', '#10b981');
+                    clearInterval(pollingInterval);
+                    Swal.fire({
+                    title: 'Success!',
+                    text: 'Configuration updated successfully',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                    fetchModels(modelName); // Refresh list
+                } else if (data.status === 'failed') {
+                    $('#terminal-status').text('Failed').css('color', '#ef4444');
+                    clearInterval(pollingInterval);
+                }
+            });
+        }, 2000);
+    }
 </script>
 {% endblock page_level_script %}

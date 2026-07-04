@@ -879,6 +879,12 @@ class WafSerializer(serializers.ModelSerializer):
 		fields = '__all__'
 
 
+class WafBypassFindingSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = WafBypassFinding
+		fields = '__all__'
+
+
 class SubdomainSerializer(serializers.ModelSerializer):
 
 	vuln_count = serializers.SerializerMethodField('get_vuln_count')
@@ -898,6 +904,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
 	waf = WafSerializer(many=True)
 	technologies = TechnologySerializer(many=True)
 	directories = DirectoryScanSerializer(many=True)
+	waf_bypass_findings = WafBypassFindingSerializer(many=True, read_only=True)
 
 
 	class Meta:

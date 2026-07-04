@@ -9,8 +9,9 @@ function checkDailyUpdate() {
     .then(function (response) {
       if (response["update_available"]) {
         window.localStorage.setItem("update_available", true);
+        window.localStorage.setItem("update_redirect_link", response["redirect_link"]);
         $(".rengine_update_available").show();
-        update_available(response["latest_version"], response["changelog"]);
+        update_available(response["latest_version"], response["changelog"], response["redirect_link"]);
       } else {
         window.localStorage.setItem("update_available", false);
         $(".rengine_update_available").hide();
@@ -23,8 +24,10 @@ function check_rengine_update() {
     window.localStorage.getItem("update_available") &&
     window.localStorage.getItem("update_available") === "true"
   ) {
-    // redirect to github release page
-    window.open("https://github.com/yogeshojha/rengine/releases", "_blank");
+    // redirect to the link provided by api or default to releases
+    // defaults to raw version file in the v3 repo location
+    const redirectLink = window.localStorage.getItem("update_redirect_link") || "https://raw.githubusercontent.com/whiterabb17/r3ngine/refs/heads/main/web/.version";
+    window.open(redirectLink, "_blank");
   } else {
     Swal.fire({
       title: "Checking reNgine latest version...",
@@ -36,7 +39,7 @@ function check_rengine_update() {
       .then(function (response) {
         console.log(response);
         swal.close();
-        if (response["description"] == "RateLimited") {
+        if (response["message"] == "RateLimited") {
           Swal.fire({
             title: "Oops!",
             text: "Github rate limit exceeded, please try again in an hour!",
@@ -46,8 +49,9 @@ function check_rengine_update() {
           $(".rengine_update_available").hide();
         } else if (response["update_available"]) {
           window.localStorage.setItem("update_available", true);
+          window.localStorage.setItem("update_redirect_link", response["redirect_link"]);
           $(".rengine_update_available").show();
-          update_available(response["latest_version"], response["changelog"]);
+          update_available(response["latest_version"], response["changelog"], response["redirect_link"]);
         } else {
           window.localStorage.setItem("update_available", false);
           $(".rengine_update_available").hide();
@@ -61,7 +65,7 @@ function check_rengine_update() {
   }
 }
 
-function update_available(latest_version_number, changelog) {
+function update_available(latest_version_number, changelog, redirect_link) {
   // Ensure marked and highlight.js are loaded, to render the changelog
   Promise.all([
     loadScript("https://cdn.jsdelivr.net/npm/marked/marked.min.js"),
@@ -85,42 +89,42 @@ function update_available(latest_version_number, changelog) {
     const changelogStyle = `
         <style>
           .changelog-content {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            text-align: left;
-          }
-          .changelog-content h1, .changelog-content h2 {
-            border-bottom: 1px solid #eaecef;
-            padding-bottom: 0.3em;
-          }
-          .changelog-content pre {
-            background-color: #f6f8fa;
-            border-radius: 6px;
-            padding: 16px;
-          }
-          .changelog-content code {
-            background-color: rgba(27,31,35,.05);
-            border-radius: 3px;
-            font-size: 85%;
-            margin: 0;
-            padding: .2em .4em;
-          }
-        </style>
-      `;
+             background-color: #f8f9fa;
+             border-radius: 8px;
+             padding: 20px;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+             text-align: left;
+           }
+           .changelog-content h1, .changelog-content h2 {
+             border-bottom: 1px solid #eaecef;
+             padding-bottom: 0.3em;
+           }
+           .changelog-content pre {
+             background-color: #f6f8fa;
+             border-radius: 6px;
+             padding: 16px;
+           }
+           .changelog-content code {
+             background-color: rgba(27,31,35,.05);
+             border-radius: 3px;
+             font-size: 85%;
+             margin: 0;
+             padding: .2em .4em;
+           }
+         </style>
+       `;
 
     Swal.fire({
       title: "Update Available!",
       html: `
-          ${changelogStyle}
-          <h5>reNgine's new update ${latest_version_number} is available, please follow the update instructions.</h5>
-          <div class="changelog-content" style="max-height: 500px;" data-simplebar>
-            ${parsedChangelog}
-          </div>
-        `,
+           ${changelogStyle}
+           <h5>reNgine's new update ${latest_version_number} is available, please follow the update instructions.</h5>
+           <div class="changelog-content" style="max-height: 500px;" data-simplebar>
+             ${parsedChangelog}
+           </div>
+         `,
       icon: "info",
-      confirmButtonText: "Update Instructions",
+      confirmButtonText: "Update Now",
       showCancelButton: true,
       cancelButtonText: "Dismiss",
       width: "70%",
@@ -131,7 +135,7 @@ function update_available(latest_version_number, changelog) {
       },
     }).then((result) => {
       if (result.isConfirmed) {
-        window.open("https://www.rengine.wiki/update", "_blank");
+        window.open(redirect_link || "https://github.com/whiterabb17/r3ngine/releases", "_blank");
       }
     });
   });
@@ -166,7 +170,7 @@ function showAfterUpdatePopup() {
     //   cancelButtonText: "No, thanks",
     // }).then((result) => {
     //   if (result.isConfirmed) {
-    //     window.open("https://rengine.wiki/changelog/latest", "_blank");
+    //     window.open("https://github.com/whiterabb17/r3ngine", "_blank");
     //   }
     //   localStorage.setItem("lastShownUpdateVersion", currentVersion);
     // });
@@ -179,7 +183,7 @@ function showAfterUpdatePopup() {
       cancelButtonText: "No, thanks",
     }).then((result) => {
       if (result.isConfirmed) {
-        window.open(`https://rengine.wiki/whats-new/${currentVersion.replace(/\./g, "_")}`, "_blank");
+        window.open(`https://github.com/whiterabb17/r3ngine`, "_blank");
       }
       localStorage.setItem("lastShownUpdateVersion", currentVersion);
     });

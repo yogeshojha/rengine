@@ -85,7 +85,7 @@ services:
       context: ./web
     entrypoint: /usr/src/app/entrypoint.sh
     restart: always
-    image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
+    image: docker.pkg.github.com/whiterabb17/rengine/rengine:latest
     environment:
       - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0

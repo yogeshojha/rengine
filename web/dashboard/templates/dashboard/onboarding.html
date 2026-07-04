@@ -136,6 +136,22 @@
                     <input class="form-control" type="text" id="key_hackerone" name="key_hackerone" placeholder="Enter HackerOne Token" value="{{hackerone_key}}">
                     <small class="text-muted">Used for importing targets, bookmarked programs, and submitting automated vulnerability reports. <a href="https://hackerone.com/settings/api_token/edit" target="_blank">Generate your API Token</a></small>
                   </div>
+                  <div class="mb-3">
+                    <label for="key_shodan" class="form-label">Shodan API Key</label>
+                    <input class="form-control" type="text" id="key_shodan" name="key_shodan" placeholder="Enter Shodan API Key" value="{{shodan_key}}">
+                    <small class="text-muted">Used for origin discovery and historical IP lookups.</small>
+                  </div>
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label for="key_censys_id" class="form-label">Censys API ID</label>
+                      <input class="form-control" type="text" id="key_censys_id" name="key_censys_id" placeholder="Enter Censys API ID" value="{{censys_key.api_id}}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label for="key_censys_secret" class="form-label">Censys API Secret</label>
+                      <input class="form-control" type="password" id="key_censys_secret" name="key_censys_secret" placeholder="Enter Censys API Secret" value="{{censys_key.api_secret}}">
+                    </div>
+                  </div>
+                  <small class="text-muted d-block mb-3">Censys keys are used for origin discovery and SSL serial matching. <a href="https://search.censys.io/account/api" target="_blank">Get your API keys</a></small>
                 </div>
               </div>
               <div class="text-end">

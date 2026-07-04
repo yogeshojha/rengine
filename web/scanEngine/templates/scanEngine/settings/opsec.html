@@ -1,0 +1,240 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% block title %}
+OpSec Settings
+{% endblock title %}
+
+{% block page_title %}
+OpSec Settings
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="header-title">Stealth & Operational Security (OpSec)</h4>
+                <p>Configure stealth parameters to bypass WAFs, avoid rate limits, and minimize detection during assessments. These settings are applied globally when "OpSec Mode" is enabled in your scan engine.</p>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mb-2">
+                                {{form.enable_opsec}}
+                                <label class="form-check-label h4" for="enable_opsec">Global OpSec Mode</label>
+                            </div>
+                            <p class="text-muted">Master switch to enable/disable stealth features for all compatible tools.</p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h4 class="header-title mb-3">Stealth Presets</h4>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card border border-info cursor-pointer preset-card" data-preset="quiet">
+                                <div class="card-body text-center">
+                                    <h5 class="text-info"><i class="fe-wind"></i> Quiet</h5>
+                                    <p class="small text-muted">Maximum stealth. Very slow. Random jitter (50%), long delays (5s), HTTP/2 only.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border border-primary cursor-pointer preset-card" data-preset="balanced">
+                                <div class="card-body text-center">
+                                    <h5 class="text-primary"><i class="fe-activity"></i> Balanced</h5>
+                                    <p class="small text-muted">Optimized for reliability. 100ms delay, 10% jitter, random UA, WAF bypass.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border border-danger cursor-pointer preset-card" data-preset="aggressive">
+                                <div class="card-body text-center">
+                                    <h5 class="text-danger"><i class="fe-zap"></i> Aggressive</h5>
+                                    <p class="small text-muted">Low stealth. Fast scans. Only random UA and basic WAF bypass enabled.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Identity & Traffic -->
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="header-title"><i class="fe-user"></i> Identity & Traffic</h5>
+                                    <div class="form-check mb-2">
+                                        {{form.enable_random_ua}}
+                                        <label class="form-check-label" for="enable_random_ua">Random User-Agents</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        {{form.enable_waf_bypass}}
+                                        <label class="form-check-label" for="enable_waf_bypass">Inject WAF Bypass Headers</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        {{form.enable_ja3_randomization}}
+                                        <label class="form-check-label" for="enable_ja3_randomization">JA3 Fingerprint Randomization</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timing & Rate Limiting -->
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="header-title"><i class="fe-clock"></i> Timing & Rate Limiting</h5>
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                {{form.enable_rate_limit}}
+                                                <label class="form-check-label" for="enable_rate_limit">Max RPS</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            {{form.max_rps}}
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                {{form.enable_delay}}
+                                                <label class="form-check-label" for="enable_delay">Delay (ms)</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            {{form.delay_ms}}
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                {{form.enable_jitter}}
+                                                <label class="form-check-label" for="enable_jitter">Jitter (%)</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            {{form.jitter_percent}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Network -->
+                        <div class="col-md-6 mt-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="header-title"><i class="fe-globe"></i> Network</h5>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="http_protocol">Preferred HTTP Protocol</label>
+                                        {{form.http_protocol}}
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="form-label" for="custom_dns_servers">Custom DNS Servers (per line)</label>
+                                        {{form.custom_dns_servers}}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post-Processing -->
+                        <div class="col-md-6 mt-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="header-title"><i class="fe-shield"></i> Post-Processing</h5>
+                                    <div class="form-check mb-2">
+                                        {{form.enable_metadata_stripping}}
+                                        <label class="form-check-label" for="enable_metadata_stripping">Automatic Metadata Stripping</label>
+                                    </div>
+                                    <p class="small text-muted">Cleans EXIF, GPS, and author metadata from discovered files (PDF, JPG, PNG, etc.).</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary float-end btn-lg">Save OpSec Configuration</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}
+
+{% block page_level_script %}
+<script>
+$(document).ready(function() {
+    // Preset implementation
+    $('.preset-card').click(function() {
+        const preset = $(this).data('preset');
+        applyPreset(preset);
+        
+        // Visual feedback
+        $('.preset-card').removeClass('border-4 shadow');
+        $(this).addClass('border-4 shadow');
+    });
+
+    function applyPreset(type) {
+        if (type === 'quiet') {
+            $('#enable_random_ua').prop('checked', true);
+            $('#enable_waf_bypass').prop('checked', true);
+            $('#enable_ja3_randomization').prop('checked', true);
+            $('#enable_rate_limit').prop('checked', true);
+            $('#max_rps').val(2);
+            $('#enable_delay').prop('checked', true);
+            $('#delay_ms').val(5000);
+            $('#enable_jitter').prop('checked', true);
+            $('#jitter_percent').val(50);
+            $('#http_protocol').val('http2');
+        } else if (type === 'balanced') {
+            $('#enable_random_ua').prop('checked', true);
+            $('#enable_waf_bypass').prop('checked', true);
+            $('#enable_ja3_randomization').prop('checked', false);
+            $('#enable_rate_limit').prop('checked', true);
+            $('#max_rps').val(10);
+            $('#enable_delay').prop('checked', true);
+            $('#delay_ms').val(100);
+            $('#enable_jitter').prop('checked', true);
+            $('#jitter_percent').val(10);
+            $('#http_protocol').val('http2');
+        } else if (type === 'aggressive') {
+            $('#enable_random_ua').prop('checked', true);
+            $('#enable_waf_bypass').prop('checked', true);
+            $('#enable_ja3_randomization').prop('checked', false);
+            $('#enable_rate_limit').prop('checked', false);
+            $('#enable_delay').prop('checked', false);
+            $('#enable_jitter').prop('checked', false);
+            $('#http_protocol').val('http1.1');
+        }
+        
+        // Trigger changes for sub-fields
+        $('#enable_rate_limit, #enable_delay, #enable_jitter').trigger('change');
+    }
+
+    // Toggle fields based on checkboxes
+    function setupToggle(checkboxId, fieldIds) {
+        const checkbox = document.getElementById(checkboxId);
+        const update = () => {
+            fieldIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.readOnly = !checkbox.checked;
+            });
+        };
+        checkbox.addEventListener('change', update);
+        update();
+    }
+
+    setupToggle('enable_rate_limit', ['max_rps']);
+    setupToggle('enable_delay', ['delay_ms']);
+    setupToggle('enable_jitter', ['jitter_percent']);
+});
+</script>
+<style>
+    .preset-card { transition: all 0.2s; cursor: pointer; }
+    .preset-card:hover { transform: translateY(-5px); }
+    .border-4 { border-width: 4px !important; }
+</style>
+{% endblock page_level_script %}

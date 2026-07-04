@@ -1,4 +1,5 @@
 import csv
+import requests
 import json
 import os
 import pprint
@@ -24,6 +25,7 @@ from django.shortcuts import get_object_or_404
 from pycvesearch import CVESearch
 from metafinder.extractor import extract_metadata_from_google_search
 
+from django.core.cache import cache
 from reNgine.celery import app
 from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *
@@ -31,10 +33,13 @@ from reNgine.definitions import *
 from reNgine.settings import *
 from reNgine.llm import *
 from reNgine.utilities import *
-from scanEngine.models import (EngineType, InstalledExternalTool, Notification, Proxy)
+from reNgine.opsec_utils import OpSecManager, BruteForceOrchestrator
+from reNgine.waf_utils import OriginDiscoveryManager, WafBypassOrchestrator
+from scanEngine.models import (EngineType, InstalledExternalTool, Notification, Proxy, OpSec)
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain, Vulnerability
 from targetApp.models import Domain
+from reNgine.monitor_tasks import *
 
 """
 Celery tasks.
@@ -187,7 +192,13 @@ def initiate_scan(
 		# osint								             	  vulnerability_scan
 		# osint								             	  dalfox xss scan
 		#						 	   		         	  	  screenshot
-		#													  waf_detection
+		# WAF Logic: If WAF Bypass is enabled, WAF Detection MUST also be enabled
+		tasks = engine.tasks
+		if 'waf_bypass' in tasks and 'waf_detection' not in tasks:
+			tasks.append('waf_detection')
+			scan.tasks = tasks
+			scan.save()
+
 		workflow = chain(
 			group(
 				subdomain_discovery.si(ctx=ctx, description='Subdomain discovery'),
@@ -199,7 +210,11 @@ def initiate_scan(
 				dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
 				vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
 				screenshot.si(ctx=ctx, description='Screenshot'),
-				waf_detection.si(ctx=ctx, description='WAF detection')
+				chain(
+					waf_detection.si(ctx=ctx, description='WAF detection'),
+					waf_bypass.si(ctx=ctx, description='WAF bypass')
+				),
+				firewall_vpn_scan.si(ctx=ctx, description='Firewall & VPN scan')
 			)
 		)
 
@@ -442,6 +457,7 @@ def subdomain_discovery(
 	default_subdomain_tools.append('amass-active')
 
 	# Run tools
+	opsec = OpSecManager()
 	for tool in tools:
 		cmd = None
 		logger.info(f'Scanning subdomains for {host} with {tool}')
@@ -529,6 +545,9 @@ def subdomain_discovery(
 			logger.warning(
 				f'Subdomain discovery tool "{tool}" is not supported by reNgine. Skipping.')
 			continue
+
+		# Apply OpSec stealth
+		cmd = opsec.apply_stealth(tool, cmd)
 
 		# Run tool
 		try:
@@ -758,9 +777,10 @@ def osint_discovery(config, host, scan_history_id, activity_id, results_dir, ctx
 		# wait for all jobs to complete
 		time.sleep(5)
 
-	# results['emails'] = results.get('emails', []) + emails
-	# results['creds'] = creds
-	# results['meta_info'] = meta_info
+	# Strip metadata from OSINT results
+	opsec = OpSecManager()
+	opsec.strip_directory(results_dir)
+
 	return results
 
 
@@ -1053,7 +1073,6 @@ def theHarvester(config, host, scan_history_id, activity_id, results_dir, ctx={}
 	output_path_json = f'{results_dir}/theHarvester.json'
 	theHarvester_dir = '/usr/src/github/theHarvester'
 	history_file = f'{results_dir}/commands.txt'
-	cmd  = f'python3 {theHarvester_dir}/theHarvester.py -d {host} -b all -f {output_path_json}'
 
 	# Update proxies.yaml
 	proxy_query = Proxy.objects.all()
@@ -1295,6 +1314,13 @@ def screenshot(self, ctx={}, description=None):
 				self.filename)
 			send_file_to_discord.delay(path, title)
 
+	# Strip metadata from screenshots
+	opsec = OpSecManager()
+	for path in screenshot_paths:
+		opsec.strip_metadata(path)
+
+	return True
+
 
 @app.task(name='port_scan', queue='main_scan_queue', base=RengineTask, bind=True)
 def port_scan(self, hosts=[], ctx={}, description=None):
@@ -1308,7 +1334,9 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 		list: List of open ports (dict).
 	"""
 	input_file = f'{self.results_dir}/input_subdomains_port_scan.txt'
-	proxy = get_random_proxy()
+	# projectdiscovery tools like naabu and httpx seem to fail when proxies are used
+	# ensuring that proxies are never used for naabu
+	proxy = ''
 
 	# Config
 	config = self.yaml_configuration.get(PORT_SCAN) or {}
@@ -1508,8 +1536,6 @@ def nmap(
 	output_file = self.output_path
 	output_file_xml = f'{self.results_dir}/{host}_{self.filename}'
 	vulns_file = f'{self.results_dir}/{host}_{filename_vulns}'
-	logger.warning(f'Running nmap on {host}:{ports}')
-
 	# Build cmd
 	nmap_cmd = get_nmap_cmd(
 		cmd=cmd,
@@ -1524,6 +1550,10 @@ def nmap(
 	if not nmap_cmd:
 		logger.error('Could not build nmap command')
 		return
+
+	# Apply OpSec stealth
+	opsec = OpSecManager()
+	nmap_cmd = opsec.apply_stealth('nmap', nmap_cmd)
 
 	# Run cmd
 	run_command(
@@ -1560,9 +1590,24 @@ def nmap(
 			logger.warning(str(vuln))
 
 	# Send only 1 notif for all vulns to reduce number of notifs
-	if notif and notif.send_vuln_notif and vulns_str:
-		logger.warning(vulns_str)
-		self.notify(fields={'CVEs': vulns_str})
+	if len(vulns) > 0:
+		self.notify(
+			severity=0,
+			fields={'Vulnerabilities discovered': vulns_str},
+			add_meta_info=False)
+
+	# Automatic Trigger for Brute Force Scan
+	auth_targets = []
+	for v in vulns:
+		if 'auth_portal' in v.get('tags', []):
+			auth_targets.append(v['http_url'])
+	
+	if auth_targets and self.scan.tasks and 'brute_force_scan' in self.scan.tasks:
+		logger.warning(f'Detected Auth Portals on {host}. Triggering Brute Force Scan...')
+		# We use delay to run it asynchronously
+		from reNgine.tasks import brute_force_scan
+		brute_force_scan.delay(targets=list(set(auth_targets)), ctx=ctx)
+
 	return vulns
 
 
@@ -1624,7 +1669,57 @@ def waf_detection(self, ctx={}, description=None):
 		subdomain_query, _ = Subdomain.objects.get_or_create(scan_history=self.scan, name=subdomain)
 		subdomain_query.waf.add(waf)
 		subdomain_query.save()
+
+		# Phase 2: Origin Discovery
+		# If WAF is detected and Origin Discovery is enabled (implied by WAF detection in this context)
+		# We check engine config for origin discovery specific settings
+		waf_config = config or {}
+		use_shodan = waf_config.get('use_shodan', True)
+		use_censys = waf_config.get('use_censys', True)
+		
+		logger.info(f"Starting Origin Discovery for {subdomain}")
+		origin_manager = OriginDiscoveryManager(subdomain_query)
+		origin_ips = origin_manager.find_origin(
+			use_shodan=use_shodan,
+			use_censys=use_censys
+		)
+		
+		if origin_ips:
+			# Store the first one as primary origin_ip
+			subdomain_query.origin_ip = origin_ips[0]
+			subdomain_query.save()
+			logger.info(f"Origin IP found for {subdomain}: {origin_ips[0]}")
+
 	return wafs
+
+
+@app.task(name='waf_bypass', queue='main_scan_queue', base=RengineTask, bind=True)
+def waf_bypass(self, ctx={}, description=None):
+	"""
+	Tests various WAF bypass techniques.
+	"""
+	if 'waf_bypass' not in self.scan.tasks:
+		return
+
+	config = self.yaml_configuration.get('waf_bypass') or {}
+	use_nuclei = config.get('use_nuclei', True)
+	use_benchmarking = config.get('use_benchmarking', True)
+
+	# Get all subdomains with WAFs in this scan
+	subdomains = Subdomain.objects.filter(scan_history=self.scan).exclude(waf=None)
+	
+	for subdomain in subdomains:
+		logger.info(f"Starting WAF Bypass tests for {subdomain.name}")
+		orchestrator = WafBypassOrchestrator(subdomain)
+		findings = orchestrator.run_all_tests(
+			use_nuclei=use_nuclei,
+			use_benchmarking=use_benchmarking
+		)
+		
+		if findings:
+			logger.info(f"Found {len(findings)} potential WAF bypasses for {subdomain.name}")
+	
+	return True
 
 
 @app.task(name='dir_file_fuzz', queue='main_scan_queue', base=RengineTask, bind=True)
@@ -1715,6 +1810,10 @@ def dir_file_fuzz(self, ctx={}, description=None):
 		fcmd = cmd
 		fcmd += f' -x {proxy}' if proxy else ''
 		fcmd += f' -u {url} -json'
+
+		# Apply OpSec stealth
+		opsec = OpSecManager()
+		fcmd = opsec.apply_stealth('ffuf', fcmd)
 
 		# Initialize DirectoryScan object
 		dirscan = DirectoryScan()
@@ -2474,13 +2573,22 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 			templates.extend(nuclei_templates)
 
 	if custom_nuclei_templates:
-		custom_nuclei_template_paths = [f'{str(elem)}.yaml' for elem in custom_nuclei_templates]
-		template = templates.extend(custom_nuclei_template_paths)
+		custom_nuclei_template_paths = []
+		for elem in custom_nuclei_templates:
+			if str(elem).endswith(('.yaml', '.yml')) or str(elem).endswith('/'):
+				custom_nuclei_template_paths.append(str(elem))
+			else:
+				custom_nuclei_template_paths.append(f'{str(elem)}.yaml')
+		templates.extend(custom_nuclei_template_paths)
 
 	# Build CMD
 	cmd = 'nuclei -j'
 	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
 	cmd += f' -irr'
+
+	# Apply OpSec stealth
+	opsec = OpSecManager()
+	cmd = opsec.apply_stealth('nuclei', cmd)
 	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
 	if formatted_headers:
 		cmd += formatted_headers
@@ -2897,8 +3005,9 @@ def http_crawl(
 	if len(urls) < threads:
 		threads = len(urls)
 
-	# Get random proxy
-	proxy = get_random_proxy()
+	# projectdiscovery tools like naabu and httpx seem to fail when proxies are used
+	# ensuring that proxies are never used for httpx
+	proxy = ''
 
 	# Run command
 	cmd += f' -cl -ct -rt -location -td -websocket -cname -asn -cdn -probe -random-agent'
@@ -2910,9 +3019,13 @@ def http_crawl(
 	cmd += f' -json'
 	cmd += f' -u {urls[0]}' if len(urls) == 1 else f' -l {input_path}'
 	cmd += f' -x {method}' if method else ''
-	cmd += f' -silent'
 	if follow_redirect:
 		cmd += ' -fr'
+	
+	# Apply OpSec stealth
+	opsec = OpSecManager()
+	cmd = opsec.apply_stealth('httpx', cmd)
+
 	results = []
 	endpoint_ids = []
 	for line in stream_command(
@@ -2932,6 +3045,7 @@ def http_crawl(
 
 		# Parse httpx output
 		host = line.get('host', '')
+		ip_address = line.get('ip')
 		content_length = line.get('content_length', 0)
 		http_status = line.get('status_code')
 		http_url, is_redirect = extract_httpx_url(line)
@@ -3014,15 +3128,16 @@ def http_crawl(
 			add_meta_info=False)
 
 		# Add IP object for host in DB
-		if host:
+		if ip_address:
 			ip, created = save_ip_address(
-				host,
+				ip_address,
 				subdomain,
 				subscan=self.subscan,
 				cdn=cdn)
-			self.notify(
-				fields={'IPs': f'• `{ip.address}`'},
-				add_meta_info=False)
+			if ip:
+				self.notify(
+					fields={'IPs': f'• `{ip.address}`'},
+					add_meta_info=False)
 
 		# Save subdomain and endpoint
 		if is_ran_from_subdomain_scan:
@@ -3440,27 +3555,55 @@ def parse_nmap_results(xml_file, output_file=None):
 					script_id = script['@id']
 					script_output = script['@output']
 					script_output_table = script.get('table', [])
+					service = port.get('service', {})
+					service_product = service.get('@product', '')
+					service_version = service.get('@version', '')
+					service_title = f"{service_product} {service_version}".strip()
 					logger.debug(f'Ran nmap script "{script_id}" on {port_number}/{port_protocol}:\n{script_output}\n')
 					if script_id == 'vulscan':
 						vulns = parse_nmap_vulscan_output(script_output)
 						url_vulns.extend(vulns)
 					elif script_id == 'vulners':
-						vulns = parse_nmap_vulners_output(script_output)
+						vulns = parse_nmap_vulners_output(script_output, service_title=service_title)
 						url_vulns.extend(vulns)
-					# elif script_id == 'http-server-header':
-					# 	TODO: nmap can help find technologies as well using the http-server-header script
-					# 	regex = r'(\w+)/([\d.]+)\s?(?:\((\w+)\))?'
-					# 	tech_name, tech_version, tech_os = re.match(regex, test_string).groups()
-					# 	Technology.objects.get_or_create(...)
-					# elif script_id == 'http_csrf':
-					# 	vulns = parse_nmap_http_csrf_output(script_output)
-					# 	url_vulns.extend(vulns)
+					elif script_id == 'http-server-header':
+						vulns = parse_nmap_http_server_header_output(script_output)
+						url_vulns.extend(vulns)
+					elif script_id == 'fingerprint-strings':
+						vulns = parse_nmap_fingerprint_strings_output(script_output)
+						url_vulns.extend(vulns)
+					elif script_id == 'https-redirect':
+						vulns = parse_nmap_https_redirect_output(script_output)
+						url_vulns.extend(vulns)
+					elif script_id == 'http-title':
+						vulns = parse_nmap_http_title_output(script_output)
+						url_vulns.extend(vulns)
+					elif script_id == 'http-vuln-*' or script_id.startswith('http-vuln'):
+						vulns = parse_nmap_generic_vuln_output(script_id, script_output)
+						url_vulns.extend(vulns)
 					else:
-						logger.warning(f'Script output parsing for script "{script_id}" is not supported yet.')
+						# Generic vuln script handling if script_id contains 'vuln'
+						if 'vuln' in script_id:
+							vulns = parse_nmap_generic_vuln_output(script_id, script_output)
+							url_vulns.extend(vulns)
+						else:
+							# Robust catch-all for any script output indicating a vulnerability
+							lower_output = script_output.lower()
+							if "vulnerable" in lower_output or "vulnerability" in lower_output or "account found" in lower_output:
+								vulns = parse_nmap_generic_vuln_output(script_id, script_output)
+								url_vulns.extend(vulns)
+							else:
+								# Support for specific non-'vuln' scripts that can still find issues
+								if any(s in script_id for s in ['csrf', 'xss', 'exec', 'exploit', 'injection', 'drown']):
+									vulns = parse_nmap_generic_vuln_output(script_id, script_output)
+									url_vulns.extend(vulns)
+								else:
+									logger.warning(f'Script output parsing for script "{script_id}" is not supported yet.')
 
 				# Add URL & source to vuln
 				for vuln in url_vulns:
-					vuln['source'] = NMAP
+					if 'source' not in vuln:
+						vuln['source'] = NMAP
 					# TODO: This should extend to any URL, not just HTTP
 					vuln['http_url'] = url
 					if 'http_path' in vuln:
@@ -3468,6 +3611,92 @@ def parse_nmap_results(xml_file, output_file=None):
 					all_vulns.append(vuln)
 
 	return all_vulns
+
+
+def parse_nmap_https_redirect_output(script_output):
+	return [{
+		'name': 'HTTPS Redirect Detected',
+		'severity': 0,
+		'description': f'Service redirects to HTTPS:\n{script_output}',
+		'type': 'info'
+	}]
+
+
+def parse_nmap_http_server_header_output(script_output):
+	return [{
+		'name': 'HTTP Server Header',
+		'severity': 0,
+		'description': f'HTTP Server Header detected: {script_output}',
+		'type': 'info'
+	}]
+
+
+def parse_nmap_fingerprint_strings_output(script_output):
+	vulns = [{
+		'name': 'Service Fingerprint',
+		'severity': 0,
+		'description': f'Nmap discovered service fingerprint strings:\n{script_output}',
+		'type': 'info'
+	}]
+	# Deep inspection for titles
+	title_match = re.search(r'<title>(.*?)</title>', script_output, re.IGNORECASE | re.DOTALL)
+	if title_match:
+		title = title_match.group(1).strip()
+		vulns.append({
+			'name': f'{title} (Service Fingerprint)',
+			'severity': 0,
+			'description': f'Extracted title "{title}" from service fingerprint.',
+			'type': 'info',
+			'tags': ['auth_portal'] if any(x in title.lower() for x in ['vpn', 'portal', 'login', 'auth', 'admin']) else []
+		})
+	return vulns
+
+
+def parse_nmap_http_title_output(script_output):
+	title = script_output.strip()
+	return [{
+		'name': f'HTTP Title: {title}',
+		'severity': 0,
+		'description': f'Detected HTTP page title: {title}',
+		'type': 'info',
+		'tags': ['auth_portal'] if any(x in title.lower() for x in ['vpn', 'portal', 'login', 'auth', 'admin']) else []
+	}]
+
+
+def parse_nmap_generic_vuln_output(script_id, script_output):
+	if not script_output or not script_output.strip():
+		return []
+
+	lower_output = script_output.lower()
+
+	# List of common "negative" indicators in nmap script output
+	false_positive_indicators = [
+		"couldn't find",
+		"could not find",
+		"error: script execution failed",
+		"no reply from server",
+		"timeout",
+		"did not work",
+		"might not be vulnerable",
+		"not vulnerable",
+		"no findings",
+		"0 vulnerabilities found",
+		"no vulnerabilities found",
+		"vulnerabilities: 0",
+		"vulnerable: no",
+	]
+
+	if any(indicator in lower_output for indicator in false_positive_indicators):
+		return []
+
+	return [{
+		'name': f'Nmap Vuln Script: {script_id}',
+		'severity': 2, # Medium by default for vuln scripts
+		'description': f'Nmap script {script_id} flagged a potential issue:\n{script_output}',
+		'type': 'Vulnerability',
+		'tags': ['auth_portal'] if any(x in script_output.lower() for x in ['login', 'auth', 'brute', 'password']) else []
+	}]
+
 
 
 def parse_nmap_http_csrf_output(script_output):
@@ -3544,11 +3773,20 @@ def parse_nmap_vulscan_output(script_output):
 	return vulns
 
 
-def parse_nmap_vulners_output(script_output, url=''):
-	"""Parse nmap vulners script output.
+def get_severity_from_cvss(cvss_score):
+	"""Get severity integer from CVSS score."""
+	if cvss_score < 4:
+		return NUCLEI_SEVERITY_MAP['low']
+	elif cvss_score < 7:
+		return NUCLEI_SEVERITY_MAP['medium']
+	elif cvss_score < 9:
+		return NUCLEI_SEVERITY_MAP['high']
+	else:
+		return NUCLEI_SEVERITY_MAP['critical']
 
-	TODO: Rework this as it's currently matching all CVEs no matter the
-	confidence.
+
+def parse_nmap_vulners_output(script_output, url='', service_title=''):
+	"""Parse nmap vulners script output.
 
 	Args:
 		script_output (str): Script output.
@@ -3556,15 +3794,110 @@ def parse_nmap_vulners_output(script_output, url=''):
 	Returns:
 		list: List of found vulnerabilities.
 	"""
+	if not script_output or not isinstance(script_output, str):
+		return []
 	vulns = []
-	# Check for CVE in script output
-	CVE_REGEX = re.compile(r'.*(CVE-\d\d\d\d-\d+).*')
-	matches = CVE_REGEX.findall(script_output)
-	matches = list(dict.fromkeys(matches))
-	for cve_id in matches: # get CVE info
-		vuln = cve_to_vuln(cve_id, vuln_type='nmap-vulners-nse')
-		if vuln:
-			vulns.append(vuln)
+	lines = script_output.split('\n')
+	for line in lines:
+		line = line.strip()
+		# Typical line: ID   SCORE   URL   [*EXPLOIT*]
+		# Example: PACKETSTORM:173661      9.8     https://vulners.com/packetstorm/PACKETSTORM:173661      *EXPLOIT*
+		parts = re.split(r'\s+', line)
+		if len(parts) >= 3:
+			vuln_id = parts[0]
+			try:
+				vuln_cvss = float(parts[1])
+			except (ValueError, TypeError):
+				continue # Not a vuln line
+
+			vuln_url = parts[2]
+			is_exploit = '*EXPLOIT*' in line
+
+			# Determine a better vulnerability name
+			vuln_name = vuln_id
+			if service_title:
+				vuln_name = f"{service_title} ({vuln_id})"
+
+			# Extract tags
+			tags = []
+			if is_exploit:
+				tags.append('is exploit')
+			
+			source_tag = ''
+			vuln_url_lower = vuln_url.lower()
+			if 'packetstorm' in vuln_url_lower:
+				source_tag = 'packetstorm'
+			elif 'githubexploit' in vuln_url_lower:
+				source_tag = 'githubexploit'
+			elif 'seebug' in vuln_url_lower or 'ssv:' in vuln_id.lower():
+				source_tag = 'seebug'
+			elif 'zdt' in vuln_url_lower or '1337day' in vuln_url_lower or '1337day' in vuln_id.lower():
+				source_tag = '1337day'
+			elif 'exploit-db' in vuln_url_lower or 'edb' in vuln_id.lower():
+				source_tag = 'exploit-db'
+			
+			if source_tag:
+				tags.append(source_tag)
+
+			# Create a base vulnerability object
+			vuln = {
+				'name': vuln_name,
+				'type': 'nmap-vulners-nse',
+				'severity': get_severity_from_cvss(vuln_cvss),
+				'description': f"Vulnerability found by nmap vulners script: {vuln_id}. Product: {service_title}",
+				'cvss_score': vuln_cvss,
+				'references': [vuln_url],
+				'cve_ids': [],
+				'cwe_ids': [],
+				'tags': tags
+			}
+
+			# If it's a CVE, try to enrich it with cve_to_vuln
+			if vuln_id.startswith('CVE-'):
+				enriched_vuln = cve_to_vuln(vuln_id, vuln_type='nmap-vulners-nse')
+				if enriched_vuln:
+					# Use enriched data but keep some nmap specifics if needed
+					old_tags = vuln.get('tags', [])
+					vuln.update(enriched_vuln)
+					
+					# Merge tags
+					if 'tags' not in vuln:
+						vuln['tags'] = []
+					vuln['tags'].extend(old_tags)
+					vuln['tags'] = list(set(vuln['tags']))
+					
+					# Improve name if service_title is present
+					if service_title:
+						# If enriched name is just the CVE, use service title
+						if enriched_vuln.get('name') == vuln_id:
+							vuln['name'] = f"{service_title} ({vuln_id})"
+						else:
+							# Combine them if they are different
+							if service_title.lower() not in enriched_vuln.get('name', '').lower():
+								vuln['name'] = f"{service_title}: {enriched_vuln.get('name')}"
+					
+					# Ensure the CVSS score from nmap is used if API has -1 or something
+					if vuln.get('cvss_score', -1) == -1:
+						vuln['cvss_score'] = vuln_cvss
+						vuln['severity'] = get_severity_from_cvss(vuln_cvss)
+
+			if vuln:
+				vuln['source'] = 'VULNERS'
+				if is_exploit:
+					vuln['exploit_url'] = vuln_url
+				vulns.append(vuln)
+
+	# If no structured findings found, fallback to the old regex
+	if not vulns:
+		# Check for CVE in script output
+		CVE_REGEX = re.compile(r'.*(CVE-\d\d\d\d-\d+).*')
+		matches = CVE_REGEX.findall(script_output)
+		matches = list(dict.fromkeys(matches))
+		for cve_id in matches: # get CVE info
+			vuln = cve_to_vuln(cve_id, vuln_type='nmap-vulners-nse')
+			if vuln:
+				vuln['source'] = 'VULNERS'
+				vulns.append(vuln)
 	return vulns
 
 
@@ -3581,7 +3914,7 @@ def cve_to_vuln(cve_id, vuln_type=''):
 	if not cve_info:
 		logger.error(f'Could not fetch CVE info for cve {cve_id}. Skipping.')
 		return None
-	vuln_cve_id = cve_info['id']
+	vuln_cve_id = cve_info.get('id', cve_info.get('CVE', cve_id))
 	vuln_name = vuln_cve_id
 	vuln_description = cve_info.get('summary', 'none').replace(vuln_cve_id, '').strip()
 	try:
@@ -3596,9 +3929,9 @@ def cve_to_vuln(cve_id, vuln_type=''):
 
 	# Parse ovals for a better vuln name / type
 	ovals = cve_info.get('oval', [])
-	if ovals:
-		vuln_name = ovals[0]['title']
-		vuln_type = ovals[0]['family']
+	if ovals and isinstance(ovals, list) and len(ovals) > 0:
+		vuln_name = ovals[0].get('title', vuln_name)
+		vuln_type = ovals[0].get('family', vuln_type)
 
 	# Set vulnerability severity based on CVSS score
 	vuln_severity = 'info'
@@ -4366,6 +4699,9 @@ def save_vulnerability(**vuln_data):
 	tags = vuln_data.pop('tags', [])
 	subscan = vuln_data.pop('subscan', None)
 
+	exploit_url = vuln_data.pop('exploit_url', None)
+	validation_status = vuln_data.pop('validation_status', 'unverified')
+
 	# remove nulls
 	vuln_data = replace_nulls(vuln_data)
 
@@ -4374,6 +4710,12 @@ def save_vulnerability(**vuln_data):
 	if created:
 		vuln.discovered_date = timezone.now()
 		vuln.open_status = True
+		if exploit_url:
+			vuln.exploit_url = exploit_url
+		vuln.validation_status = validation_status
+		vuln.save()
+	elif exploit_url and not vuln.exploit_url:
+		vuln.exploit_url = exploit_url
 		vuln.save()
 
 	# Save vuln tags
@@ -4453,11 +4795,12 @@ def save_endpoint(
 			urls=[http_url],
 			method='HEAD',
 			ctx=ctx)
-		if results:
+		if results and isinstance(results, list) and isinstance(results[0], dict):
 			endpoint_data = results[0]
-			endpoint_id = endpoint_data['endpoint_id']
-			created = endpoint_data['endpoint_created']
-			endpoint = EndPoint.objects.get(pk=endpoint_id)
+			if 'endpoint_id' in endpoint_data:
+				endpoint_id = endpoint_data['endpoint_id']
+				created = endpoint_data.get('endpoint_created', False)
+				endpoint = EndPoint.objects.get(pk=endpoint_id)
 	elif not scheme:
 		return None, False
 	else: # add dumb endpoint without probing it
@@ -4733,3 +5076,380 @@ def llm_vulnerability_description(vulnerability_id):
 			vuln.save()
 
 	return response
+
+
+@app.task(name='fetch_proxies_task', bind=True, queue='main_scan_queue')
+def fetch_proxies_task(self):
+    logger.info("Starting automated proxy fetch and verification task.")
+    self.update_state(state='PROGRESS', meta={'message': 'Downloading new proxies', 'progress': 10})
+    urls = [
+        'https://github.com/ProxyScraper/ProxyScraper/raw/refs/heads/main/http.txt',
+        'https://sunny9577.github.io/proxy-scraper/proxies.txt'
+    ]
+    all_proxies = set()
+    for url in urls:
+        logger.info(f"Downloading proxy list from: {url}")
+        try:
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                proxies = response.text.splitlines()
+                logger.info(f"Successfully downloaded {len(proxies)} proxies from {url}")
+                for p in proxies:
+                    p = p.strip()
+                    if p:
+                        all_proxies.add(p)
+            else:
+                logger.warning(f"Failed to download proxy list from {url}. Status code: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Error fetching proxies from {url}: {str(e)}")
+
+    logger.info(f"Total unique proxies found after merging: {len(all_proxies)}")
+    self.update_state(state='PROGRESS', meta={'message': 'Merging proxy lists', 'progress': 30})
+    unique_proxies = list(all_proxies)
+
+    logger.info("Starting proxy verification process...")
+    self.update_state(state='PROGRESS', meta={'message': 'Checking proxy access', 'progress': 40})
+    live_proxies = []
+    total = len(unique_proxies)
+
+    def check_proxy(proxy_str):
+        try:
+            proxies = {
+                "http": f"http://{proxy_str}",
+                "https": f"http://{proxy_str}",
+            }
+            # Use a fast responding site
+            requests.get("http://www.google.com", proxies=proxies, timeout=3)
+            logger.info(f"Proxy LIVE: {proxy_str}")
+            return proxy_str
+        except:
+            # logger.debug(f"Proxy DEAD: {proxy_str}")
+            return None
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+        future_to_proxy = {executor.submit(check_proxy, proxy): proxy for proxy in unique_proxies}
+        completed = 0
+        for future in concurrent.futures.as_completed(future_to_proxy):
+            completed += 1
+            res = future.result()
+            if res:
+                live_proxies.append(res)
+
+            if completed % 100 == 0 or completed == total:
+                logger.info(f"Verification progress: {completed}/{total} - Found {len(live_proxies)} live proxies so far.")
+                progress = 40 + int((completed / total) * 50)
+                self.update_state(state='PROGRESS', meta={
+                    'message': f'Checking proxies: {completed}/{total} ({len(live_proxies)} live)',
+                    'progress': progress
+                })
+
+    logger.info(f"Proxy verification complete. Found {len(live_proxies)} live proxies out of {total} tested.")
+    self.update_state(state='PROGRESS', meta={'message': 'Discarding bad hits', 'progress': 95})
+
+    logger.info("Updating final proxy list and adding http:// prefix.")
+    self.update_state(state='PROGRESS', meta={'message': 'Proxy list updated', 'progress': 100})
+
+    # Prefix with http:// as requested
+    final_list = [f"http://{p}" if not p.startswith('http') else p for p in live_proxies]
+    
+    logger.info("Automated proxy fetch task finished successfully.")
+    return "\n".join(final_list)
+
+
+
+def parse_sslscan_results(xml_file):
+	"""Parse results from sslscan XML output file.
+
+	Args:
+		xml_file (str): sslscan XML report file path.
+
+	Returns:
+		str: Formatted description of SSL/TLS findings.
+	"""
+	if not os.path.isfile(xml_file):
+		return "SSLScan XML report not found."
+
+	try:
+		with open(xml_file, 'r', encoding='utf8') as f:
+			content = f.read()
+		
+		data = xmltodict.parse(content) or {}
+		document = data.get('document') or {}
+		ssltest = document.get('ssltest') or {}
+		
+		if not ssltest:
+			return "No SSLScan results found in the report."
+		
+		host = ssltest.get('@host', '')
+		port = ssltest.get('@port', '')
+		
+		description = f"SSLScan Results for {host}:{port}\n\n"
+		
+		# Protocols
+		protocols = ssltest.get('protocol', [])
+		if protocols is None: protocols = []
+		if isinstance(protocols, dict):
+			protocols = [protocols]
+		
+		description += "Protocols:\n"
+		for proto in protocols:
+			if not proto: continue
+			status = "Enabled" if proto.get('@enabled') == '1' else "Disabled"
+			description += f"- {proto.get('@type', 'UNKNOWN').upper()} {proto.get('@version', '')}: {status}\n"
+		description += "\n"
+		
+		# Renegotiation
+		reneg = ssltest.get('renegotiation') or {}
+		if reneg:
+			supp = "Supported" if reneg.get('@supported') == '1' else "Not supported"
+			sec = "Secure" if reneg.get('@secure') == '1' else "Insecure"
+			description += f"Renegotiation: {supp} ({sec})\n\n"
+			
+		# Heartbleed
+		heartbleed = ssltest.get('heartbleed', [])
+		if heartbleed is None: heartbleed = []
+		if isinstance(heartbleed, dict):
+			heartbleed = [heartbleed]
+		
+		vulnerable_to_heartbleed = False
+		for hb in heartbleed:
+			if hb and hb.get('@vulnerable') == '1':
+				vulnerable_to_heartbleed = True
+				break
+		
+		description += f"Heartbleed: {'Vulnerable' if vulnerable_to_heartbleed else 'Not vulnerable'}\n\n"
+		
+		# Ciphers
+		ciphers = ssltest.get('cipher', [])
+		if ciphers is None: ciphers = []
+		if isinstance(ciphers, dict):
+			ciphers = [ciphers]
+		
+		preferred_ciphers = [c for c in ciphers if c and c.get('@status') == 'preferred']
+		if preferred_ciphers:
+			description += "Preferred Ciphers:\n"
+			for c in preferred_ciphers:
+				description += f"- {c.get('@sslversion', '')}: {c.get('@cipher', '')} ({c.get('@bits', '')} bits, {c.get('@strength', '')} strength)\n"
+			description += "\n"
+			
+		# Certificates
+		certificates_sec = ssltest.get('certificates') or {}
+		certs = certificates_sec.get('certificate', [])
+		if certs is None: certs = []
+		if isinstance(certs, dict):
+			certs = [certs]
+		
+		if certs:
+			description += "Certificate Information:\n"
+			for cert in certs:
+				if not cert: continue
+				description += f"- Subject: {cert.get('subject', 'N/A')}\n"
+				description += f"- Issuer: {cert.get('issuer', 'N/A')}\n"
+				description += f"- Signature Algorithm: {cert.get('signature-algorithm', 'N/A')}\n"
+				pk = cert.get('pk') or {}
+				description += f"- Key: {pk.get('@type', 'N/A')} {pk.get('@bits', 'N/A')} bits\n"
+				description += f"- Not Valid After: {cert.get('not-valid-after', 'N/A')}\n"
+				if cert.get('expired') == 'true':
+					description += "- Status: EXPIRED\n"
+				description += "\n"
+			description += "\n"
+			
+		return description
+
+	except Exception as e:
+		logger.exception(e)
+		return f"Error parsing SSLScan XML: {str(e)}"
+
+
+@app.task(name='firewall_vpn_scan', queue='main_scan_queue', base=RengineTask, bind=True)
+def firewall_vpn_scan(self, ctx={}, description=None):
+	"""
+	Specialized scan for Firewalls and VPNs (Sophos focus).
+	Runs ike-scan and sslscan.
+	"""
+	config = self.yaml_configuration.get(FIREWALL_VPN_SCAN) or {}
+	run_ike_scan = config.get('run_ike_scan', True)
+	run_sslscan = config.get('run_sslscan', True)
+	ssl_ports = config.get('ports', [443, 4444, 8443])
+
+	target = self.domain.name
+	proxy = get_random_proxy()
+
+	# 1. IKE-scan
+	if run_ike_scan:
+		logger.warning(f'Running IKE-scan on {target}')
+		ike_output_file = f'{self.results_dir}/ike_scan_{target}.txt'
+		# ike-scan does not natively support HTTP/SOCKS proxies
+		cmd = f'ike-scan --multiline {target} > {ike_output_file}'
+		run_command(
+			cmd,
+			shell=True,
+			history_file=self.history_file,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id)
+
+		if os.path.isfile(ike_output_file):
+			with open(ike_output_file, 'r') as f:
+				content = f.read()
+			if "Main Mode" in content or "Aggressive Mode" in content:
+				vuln_data = {
+					'name': 'IPSec VPN Detected',
+					'severity': 0,
+					'description': f'IKE-scan detected an IPSec VPN service.\n\nResults:\n{content}',
+					'http_url': target,
+					'type': 'Infrastructure'
+				}
+				save_vulnerability(target_domain=self.domain, scan_history=self.scan, **vuln_data)
+
+	# 2. SSLScan
+	if run_sslscan:
+		for port in ssl_ports:
+			logger.warning(f'Running SSLScan on {target}:{port}')
+			ssl_output_file = f'{self.results_dir}/sslscan_{target}_{port}.xml'
+			# sslscan does not natively support proxies
+			cmd = f'sslscan --xml={ssl_output_file} {target}:{port}'
+			run_command(
+				cmd,
+				shell=True,
+				history_file=self.history_file,
+				scan_id=self.scan_id,
+				activity_id=self.activity_id)
+
+			if os.path.isfile(ssl_output_file):
+				vuln_data = {
+					'name': f'SSL/TLS Configuration Audit (Port {port})',
+					'severity': 0,
+					'description': parse_sslscan_results(ssl_output_file),
+					'http_url': f'https://{target}:{port}',
+					'type': 'SSL/TLS'
+				}
+				save_vulnerability(target_domain=self.domain, scan_history=self.scan, **vuln_data)
+	
+	# Automatic Trigger for Brute Force Scan on Sophos Portals
+	if run_sslscan and self.scan.tasks and 'brute_force_scan' in self.scan.tasks:
+		auth_targets = [f'https://{target}:{port}' for port in ssl_ports]
+		logger.warning(f'Triggering Brute Force Scan for potential Sophos Portals on {target}')
+		from reNgine.tasks import brute_force_scan
+		brute_force_scan.delay(targets=auth_targets, ctx=ctx)
+
+	return True
+
+
+@app.task(name='brute_force_scan', queue='main_scan_queue', base=RengineTask, bind=True)
+def brute_force_scan(self, targets=[], ctx={}, description=None):
+	"""
+	Perform brute-force authentication testing on selected targets.
+	"""
+	logger.info(f'Running Brute Force Scan on {len(targets)} targets...')
+	
+	# Load configuration from ctx
+	# Supporting multiple wordlists as requested ['wordlist1', 'wordlist2']
+	users_wordlists = ctx.get('users_wordlist', [DEFAULT_AUTH_USER_WORDLIST])
+	pass_wordlists = ctx.get('pass_wordlist', [DEFAULT_AUTH_PASS_WORDLIST])
+	
+	# Handle both string and list inputs for robustness
+	if isinstance(users_wordlists, str): users_wordlists = [users_wordlists]
+	if isinstance(pass_wordlists, str): pass_wordlists = [pass_wordlists]
+	
+	service = ctx.get('service', 'http')
+	port = ctx.get('port', None)
+	
+	# Load and merge wordlists
+	users = []
+	for wl in users_wordlists:
+		path = os.path.join(AUTH_WORDLIST_PATH, wl)
+		if os.path.exists(path):
+			with open(path, 'r') as f:
+				users.extend([l.strip() for l in f.readlines() if l.strip()])
+		else:
+			logger.warning(f"Wordlist not found: {path}")
+	
+	passwords = []
+	for wl in pass_wordlists:
+		path = os.path.join(AUTH_WORDLIST_PATH, wl)
+		if os.path.exists(path):
+			with open(path, 'r') as f:
+				passwords.extend([l.strip() for l in f.readlines() if l.strip()])
+		else:
+			logger.warning(f"Wordlist not found: {path}")
+
+    # Remove duplicates
+	users = list(set(users))
+	passwords = list(set(passwords))
+
+	if not users or not passwords:
+		logger.error("No valid credentials found in wordlists. Skipping brute force.")
+		return False
+
+	total_found = 0
+	for target in targets:
+		logger.warning(f"Starting brute-force orchestration for {target} ({service})")
+		orchestrator = BruteForceOrchestrator(target, service, port, users, passwords)
+		
+		# Execute with 1-10 attempts per proxy rotation
+		results = orchestrator.run(min_attempts=1, max_attempts=10, stop_on_success=True)
+		
+		for res in results:
+			total_found += 1
+			vuln_data = {
+				'name': f'Successful Brute-Force: {res["service"]}',
+				'severity': 4, # Critical
+				'description': f'Successfully identified valid credentials via Medusa on {res["target"]}.\n\n'
+							 f'User: {res["user"]}\n'
+							 f'Password: {res["password"]}\n'
+							 f'Service: {res["service"]}',
+				'http_url': res["target"],
+				'type': 'Broken Authentication'
+			}
+			save_vulnerability(target_domain=self.domain, scan_history=self.scan, **vuln_data)
+	
+	logger.info(f"Brute Force Scan completed. Targets: {len(targets)}, Credentials Found: {total_found}")
+	return True
+
+@app.task(name='pull_ollama_model', queue='main_scan_queue')
+def pull_ollama_model(model_name):
+    """
+    Pulls a model from Ollama and stores progress in cache for live terminal.
+    """
+    cache_key = f"ollama_pull_log_{model_name}"
+    cache.set(cache_key, f"[*] Starting download of {model_name}...\n", 3600)
+    
+    try:
+        url = f"{OLLAMA_INSTANCE}/api/pull"
+        payload = {"name": model_name, "stream": True}
+        
+        response = requests.post(url, json=payload, stream=True, timeout=None)
+        
+        for line in response.iter_lines():
+            if line:
+                data = json.loads(line)
+                status = data.get('status', '')
+                digest = data.get('digest', '')
+                total = data.get('total', 0)
+                completed = data.get('completed', 0)
+                
+                if total > 0:
+                    percent = round((completed / total) * 100, 2)
+                    progress_msg = f"[*] {status} {digest[:12]}... {percent}%\n"
+                else:
+                    progress_msg = f"[*] {status}\n"
+                
+                # Append to cache
+                current_log = cache.get(cache_key, "")
+                # Keep only last 50 lines to prevent cache bloat
+                log_lines = current_log.split('\n')[-50:]
+                log_lines.append(progress_msg.strip())
+                cache.set(cache_key, '\n'.join(log_lines) + '\n', 3600)
+                
+                if status == 'success':
+                    cache.set(f"ollama_pull_status_{model_name}", "success", 3600)
+                    return True
+                    
+    except Exception as e:
+        error_msg = f"[!] Error pulling model: {str(e)}\n"
+        current_log = cache.get(cache_key, "")
+        cache.set(cache_key, current_log + error_msg, 3600)
+        cache.set(f"ollama_pull_status_{model_name}", "failed", 3600)
+        return False
+    
+    return True

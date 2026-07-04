@@ -199,8 +199,6 @@
     github_url: https://github.com/laramies/theHarvester
     license_url: https://github.com/laramies/theHarvester/blob/master/README/LICENSES
     version_lookup_command: cat /usr/src/github/theHarvester/theHarvester/lib/version.py
-    update_command: git pull
-    install_command: git clone https://github.com/laramies/theHarvester
     version_match_regex: \b\d+\.\d+\.\d+\b
     is_default: true
     is_subdomain_gathering: false
@@ -343,6 +341,40 @@
     version_match_regex: (?i:v)?(\d+(?:\.\d+){2,})
     is_default: true
     is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 20
+  fields:
+    logo_url: null
+    name: ike-scan
+    description: ike-scan is a command-line tool that uses IKE (Internet Key Exchange) to discover, fingerprint and test IPsec VPN servers.
+    github_url: https://github.com/royhills/ike-scan
+    license_url: https://github.com/royhills/ike-scan/blob/master/COPYING
+    version_lookup_command: ike-scan --version
+    update_command: apt install ike-scan --upgrade
+    install_command: apt install ike-scan
+    version_match_regex: '(\b\d+\.\d+\.\d+\b)'
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 21
+  fields:
+    logo_url: null
+    name: sslscan
+    description: sslscan queries SSL/TLS services, such as HTTPS, in order to determine the ciphers that are supported.
+    github_url: https://github.com/rbsec/sslscan
+    license_url: https://github.com/rbsec/sslscan/blob/master/LICENSE
+    version_lookup_command: sslscan --version
+    update_command: apt install sslscan --upgrade
+    install_command: apt install sslscan
+    version_match_regex: '(\b\d+\.\d+\.\d+\b)'
+    is_default: true
+    is_subdomain_gathering: false
     is_github_cloned: false
     github_clone_path: null
     subdomain_gathering_command: null

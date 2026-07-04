@@ -11,6 +11,8 @@ import humanize
 import redis
 import requests
 import tldextract
+import shlex
+import re
 import xmltodict
 
 from time import sleep
@@ -895,7 +897,10 @@ def _build_cmd(cmd, options, flags, sep=" "):
 	for k,v in options.items():
 		if not v:
 			continue
-		cmd += f" {k}{sep}{v}"
+		if v is True:
+			cmd += f" {k}"
+		else:
+			cmd += f" {k}{sep}{v}"
 
 	for flag in flags:
 		if not flag:
@@ -1662,32 +1667,38 @@ def is_valid_nmap_command(cmd):
 			cmd: str: nmap command
 		Returns:
 			bool: True if valid, False otherwise
-
-		Allowing user input in nmap command is by design
-		as user can provide custom nmap command to run
-		but we need to make sure that the command is safe
-		and doesn't contain any malicious commands
-		We do this by checking if the command starts with nmap
-		and doesn't contain any dangerous characters, in the most basic form
 	"""
-	# if this is not a valid command nmap command at all, dont even run it
-	if not cmd.strip().startswith('nmap'):
+	try:
+		parts = shlex.split(cmd)
+	except ValueError as e:
+		logger.error(f'Nmap command shlex split failed: {e}')
+		return False
+
+	if not parts:
+		logger.error('Nmap command is empty after split')
+		return False
+
+	if not (parts[0] == 'nmap' or parts[0].endswith('/nmap') or parts[0].endswith('\\nmap') or parts[0].endswith('\\nmap.exe')):
+		logger.error(f'Nmap command does not start with nmap: {parts[0]}')
 		return False
 	
-	# check for dangerous chars
-	dangerous_chars = {';', '&', '|', '>', '<', '`', '$', '(', ')', '#', '\\'}
+	# Block dangerous shell characters (potentially used with shell=True)
+	dangerous_chars = {';', '&', '|', '>', '<', '`', '$', '(', ')'}
 	if any(char in cmd for char in dangerous_chars):
+		logger.error(f'Nmap command contains dangerous characters: {cmd}')
 		return False
 		
-	# but we also need to check for flags and options, for example - and -- are allowed
-	parts = cmd.split()
 	for part in parts[1:]: # ignoring nmap the first part of command
 		if part.startswith('-') or part.startswith('--'):
 			continue
 		
 		# check for valid characters, . - etc are allowed in valid nmap command
-		if all(c.isalnum() or c in '.,/-_' for c in part):
+		# adding : and = to support script args, port specifications and Windows paths
+		# adding [] for IPv6, @ for script-args, +!*# for general nmap flexibility
+		# adding space to support quoted arguments from shlex.split
+		if all(c.isalnum() or c in '.,/-_:=\\ []@+!*#' for c in part):
 			continue
+		logger.error(f'Nmap command part rejected by whitelist: {part}')
 		return False
 		
 	return True

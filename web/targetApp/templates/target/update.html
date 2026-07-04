@@ -39,14 +39,40 @@ Update Target   {{ form.name.value }}
             </div>
           </div>
           {% if user_preferences.bug_bounty_mode %}
-          <div class="col-12">
+          <div class="col-12 mb-3">
             <label for="domainDescription" class="form-label">HackerOne Target Team Handle
               <br>
-              This is used to send vulnerability reports to the HackerOne Program automatically. Team handle can be found from the program URL, hackerone.com/team_handle.
+              <small class="text-muted">This is used to send vulnerability reports to the HackerOne Program automatically. Team handle can be found from the program URL, hackerone.com/team_handle.</small>
             </label>
             {{ form.h1_team_handle }}
           </div>
           {% endif %}
+
+          <div class="card border-primary border mt-3">
+            <div class="card-body">
+              <h5 class="card-title text-primary"><i class="fe-monitor me-1"></i> Continuous Monitoring Settings</h5>
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="form-check form-switch mt-2">
+                    {{ form.is_monitored }}
+                    <label class="form-check-label" for="isMonitored">Enable Monitoring</label>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label for="monitorFrequency" class="form-label">Frequency</label>
+                  {{ form.monitor_frequency }}
+                </div>
+                <div class="col-md-3">
+                  <label for="monitorEngine" class="form-label">Engine for Scans</label>
+                  {{ form.monitor_engine }}
+                </div>
+                <div class="col-md-3">
+                  <label for="monitorScanScope" class="form-label">Auto Scan Scope</label>
+                  {{ form.monitor_scan_scope }}
+                </div>
+              </div>
+            </div>
+          </div>
           <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Update Target</button>
         </form>
       </div>

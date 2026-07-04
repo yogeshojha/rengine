@@ -181,6 +181,10 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
+FIXTURE_DIRS = [
+    os.path.join(BASE_DIR, "fixtures"),
+]
+
 LOGIN_REQUIRED_IGNORE_VIEW_NAMES = [
     'login',
 ]

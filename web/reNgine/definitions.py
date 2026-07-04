@@ -91,6 +91,8 @@ BLIND_XSS_SERVER = 'blind_xss_server'
 USER_AGENT = 'user_agent'
 DELAY = 'delay'
 PROVIDERS = 'providers'
+FIREWALL_VPN_SCAN = 'firewall_vpn_scan'
+BRUTE_FORCE_SCAN = 'brute_force_scan'
 
 ###############################################################################
 # Scan DEFAULTS
@@ -98,6 +100,7 @@ PROVIDERS = 'providers'
 
 LIVE_SCAN = 1
 SCHEDULED_SCAN = 0
+MONITORING_SCAN = 2
 
 DEFAULT_SCAN_INTENSITY = 'normal'
 
@@ -456,6 +459,51 @@ FOUR_OH_FOUR_URL = '/404/'
 ###############################################################################
 # OLLAMA DEFINITIONS
 ###############################################################################
+
+# LLM Providers
+OLLAMA = 'ollama'
+OPENAI = 'openai'
+ANTHROPIC = 'anthropic'
+GEMINI = 'gemini'
+
+SUGGESTED_OLLAMA_MODELS = [
+    {
+        'name': 'llama3',
+        'expertise': 'General Summarization & Reasoning',
+        'size': '4.7GB',
+        'suggested_ram': '8GB+',
+        'description': 'Latest general purpose model from Meta, excellent for distilling complex security findings into summaries.'
+    },
+    {
+        'name': 'mistral',
+        'expertise': 'Efficient Context Analysis',
+        'size': '4.1GB',
+        'suggested_ram': '8GB+',
+        'description': 'Highly efficient model known for its performance-to-size ratio, great for fast report generation.'
+    },
+    {
+        'name': 'codellama',
+        'expertise': 'Code & Exploit Analysis',
+        'size': '3.8GB',
+        'suggested_ram': '8GB+',
+        'description': 'Optimized for code-related tasks; helps in explaining vulnerable code snippets and remediation steps.'
+    },
+    {
+        'name': 'phi3',
+        'expertise': 'Lightweight Summarization',
+        'size': '2.3GB',
+        'suggested_ram': '4GB+',
+        'description': 'Microsoft\'s lightweight model, perfect for environments with limited resources.'
+    },
+    {
+        'name': 'deepseek-coder',
+        'expertise': 'Vulnerability Pattern Matching',
+        'size': '4.5GB',
+        'suggested_ram': '8GB+',
+        'description': 'Trained on high-quality code, helpful for summarizing complex vulnerability patterns.'
+    }
+]
+
 OLLAMA_INSTANCE = 'http://ollama:11434'
 
 DEFAULT_GPT_MODELS = [
@@ -546,8 +594,40 @@ ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
 """
 
 
+LLM_REPORT_OVERVIEW_SYSTEM_PROMPT = """
+You are an expert penetration tester. Based on the provided assessment data, write a professional 'Overview' section for a security assessment report.
+The overview should provide a high-level summary of the assessment's scope, objectives, and key findings.
+Ensure the tone is technical yet accessible to project managers.
+Avoid using markdown headers like # or ##. Use bold text for emphasis if needed.
+CRITICAL: Do NOT include any sign-offs, signatures, or placeholders like 'Sincerely', '[Your Name]', or '[Company Name]' at the end.
+"""
+
+LLM_REPORT_EXECUTIVE_BRIEF_SYSTEM_PROMPT = """
+You are an expert penetration tester. Based on the provided assessment data, write a professional 'Executive Brief' section for a security assessment report.
+The executive brief should be concise and aimed at non-technical stakeholders (CTOs, CEOs), highlighting the overall risk posture and the most critical findings.
+Avoid using markdown headers like # or ##. Use bold text for emphasis if needed.
+CRITICAL: Do NOT include any sign-offs, signatures, or placeholders like 'Sincerely', '[Your Name]', '[Company Name]', or 'Penetration Testing Expert' at the end. The text should end immediately after the final paragraph of the brief.
+"""
+
+LLM_REPORT_CONCLUSION_SYSTEM_PROMPT = """
+You are an expert penetration tester. Based on the provided assessment data, write a professional 'Conclusion' section for a security assessment report.
+The conclusion should wrap up the assessment, provide final thoughts on the security posture of the target, and emphasize the importance of remediation.
+Avoid using markdown headers like # or ##. Use bold text for emphasis if needed.
+CRITICAL: Do NOT include any sign-offs, signatures, or placeholders like 'Sincerely', '[Your Name]', or '[Company Name]' at the end.
+"""
+
+
 # OSINT GooFuzz Path
 GOFUZZ_EXEC_PATH = '/usr/src/github/goofuzz/GooFuzz'
+
+# Auth Brute-Force Paths
+MEDUSA_EXEC_PATH = '/usr/bin/medusa'
+PROXYCHAINS_EXEC_PATH = '/usr/bin/proxychains4'
+AUTH_WORDLIST_PATH = '/usr/src/wordlist/auth'
+DEFAULT_AUTH_USER_WORDLIST = 'top_default_usernames.txt'
+DEFAULT_AUTH_PASS_WORDLIST = 'top_default_passwords.txt'
+COMPREHENSIVE_USER_WORDLIST = 'most_common_usernames.txt'
+COMPREHENSIVE_PASS_WORDLIST = 'most_common_passwords.txt'
 
 
 # In App Notification Definitions

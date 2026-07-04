@@ -62,6 +62,23 @@ class HackerOneAPIKey(models.Model):
 		return self.username
 
 
+class ShodanAPIKey(models.Model):
+	id = models.AutoField(primary_key=True)
+	key = models.CharField(max_length=500)
+
+	def __str__(self):
+		return self.key
+
+
+class CensysAPIKey(models.Model):
+	id = models.AutoField(primary_key=True)
+	api_id = models.CharField(max_length=500)
+	api_secret = models.CharField(max_length=500)
+
+	def __str__(self):
+		return self.api_id
+
+
 class InAppNotification(models.Model):
 	project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=True)
 	notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES, default='system')
@@ -95,3 +112,13 @@ class UserPreferences(models.Model):
 	
 	def __str__(self):
 		return f"{self.user.username}'s preferences"
+
+
+class LLMConfig(models.Model):
+	provider = models.CharField(max_length=50) # ollama, openai, anthropic, gemini
+	api_key = models.CharField(max_length=500, blank=True, null=True)
+	selected_model = models.CharField(max_length=500)
+	is_active = models.BooleanField(default=True)
+
+	def __str__(self):
+		return f"{self.provider} - {self.selected_model}"

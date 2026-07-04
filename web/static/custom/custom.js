@@ -1,4 +1,5 @@
 function loadScript(src) {
+	console.log("reNgine custom.js loaded");
 	// helper function to load a script asynchronously
 	return new Promise((resolve, reject) => {
 		const script = document.createElement('script');
@@ -978,6 +979,92 @@ function delete_subscan(subscan_id) {
 		}
 	}])
 }
+
+function delete_vulnerability(vulnerability_id) {
+	// This function will delete the vulnerability using rest api
+	// Supported method: POST
+	const delAPI = "/api/action/vulnerability/delete/";
+	var data = {
+		'vulnerability_ids': [vulnerability_id]
+	}
+	swal.queue([{
+		title: 'Are you sure you want to delete this vulnerability?',
+		text: "You won't be able to revert this!",
+		icon: 'warning',
+		showCancelButton: true,
+		confirmButtonText: 'Delete',
+		padding: '2em',
+		showLoaderOnConfirm: true,
+		preConfirm: function() {
+			return fetch(delAPI, {
+				method: 'POST',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken"),
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(data)
+			}).then(function(response) {
+				return response.json();
+			}).then(function(response) {
+				if (response['status']) {
+					delete_datatable_rows('#vulnerability_results', [vulnerability_id], show_snackbar = true, '1 Vulnerability Deleted!')
+				}
+			}).catch(function() {
+				swal.insertQueueStep({
+					icon: 'error',
+					title: 'Oops! Unable to delete the vulnerability!'
+				})
+			})
+		}
+	}])
+}
+
+function delete_multiple_vulnerabilities() {
+	var vulnerability_ids = [];
+	$(".vulnerability-checkbox:checked").each(function() {
+		vulnerability_ids.push(parseInt($(this).val()));
+	});
+	if (vulnerability_ids.length > 0) {
+		const delAPI = "/api/action/vulnerability/delete/";
+		var data = {
+			'vulnerability_ids': vulnerability_ids
+		}
+		swal.queue([{
+			title: 'Are you sure you want to delete ' + vulnerability_ids.length + ' vulnerabilities?',
+			text: "You won't be able to revert this!",
+			icon: 'warning',
+			showCancelButton: true,
+			confirmButtonText: 'Delete',
+			padding: '2em',
+			showLoaderOnConfirm: true,
+			preConfirm: function() {
+				return fetch(delAPI, {
+					method: 'POST',
+					credentials: "same-origin",
+					headers: {
+						"X-CSRFToken": getCookie("csrftoken"),
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify(data)
+				}).then(function(response) {
+					return response.json();
+				}).then(function(response) {
+					if (response['status']) {
+						delete_datatable_rows('#vulnerability_results', vulnerability_ids, true, vulnerability_ids.length + ' Vulnerabilities Deleted!')
+						uncheckVulnerabilities();
+					}
+				}).catch(function() {
+					swal.insertQueueStep({
+						icon: 'error',
+						title: 'Oops! Unable to delete the vulnerabilities!'
+					})
+				})
+			}
+		}])
+	}
+}
+
 
 function show_subscan_results(subscan_id) {
 	// This function will popup a modal and show the subscan results
@@ -2885,7 +2972,9 @@ function render_vuln_offcanvas(vuln){
 			rel="noopener noreferrer">
 			${split_into_lines(htmlEncode(vuln.http_url), 150)}
 		</a></p>`;
-	body += `<p><b>Severity: </b>${vuln.severity}<br><b>Type: </b>${vuln.type.toUpperCase()}<br><b>Source: </b> ${vuln.source.toUpperCase()}</p>`;
+	var vuln_type = vuln.type ? vuln.type.toUpperCase() : 'N/A';
+	var vuln_source = vuln.source ? vuln.source.toUpperCase() : 'N/A';
+	body += `<p><b>Severity: </b>${vuln.severity}<br><b>Type: </b>${vuln_type}<br><b>Source: </b> ${vuln_source}</p>`;
 
 	if (vuln.description) {
 		description = vuln.description.replace(new RegExp('\r?\n','g'), '<br />');

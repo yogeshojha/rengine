@@ -1235,52 +1235,60 @@ class RengineUpdateCheck(APIView):
 	def get(self, request):
 		req = self.request
 		github_api = \
-			'https://api.github.com/repos/yogeshojha/rengine/releases'
-		response = requests.get(github_api).json()
-		if 'message' in response:
-			return Response({'status': False, 'message': 'RateLimited'})
+			'https://api.github.com/repos/whiterabb17/rengine/releases'
+		
+		return_response = {
+			'status': False,
+			'update_available': False,
+			'latest_version': None,
+			'current_version': RENGINE_CURRENT_VERSION,
+			'redirect_link': 'https://github.com/whiterabb17/rengine/releases'
+		}
 
-		return_response = {}
+		try:
+			response = requests.get(github_api).json()
+			if 'message' in response and 'rate limit' in response['message'].lower():
+				return_response['message'] = 'RateLimited'
+			elif isinstance(response, list) and len(response) > 0:
+				latest_release_name = response[0]['name']
+				latest_release_version = re.search(r'v?(\d+\.)?(\d+\.)?(\*|\d+)', latest_release_name)
+				if latest_release_version:
+					latest_release_version = latest_release_version.group(0).replace('v', '')
+					return_response['latest_version'] = latest_release_version
+					return_response['changelog'] = response[0]['body']
+					return_response['status'] = True
+		except Exception as e:
+			logger.error(f"Error fetching GitHub releases: {str(e)}")
 
-		# get current version_number
-		# remove quotes from current_version
-		current_version = RENGINE_CURRENT_VERSION
+		# Fallback: check .version file in master branch
+		version_url = 'https://raw.githubusercontent.com/whiterabb17/rengine/master/web/.version'
+		try:
+			raw_version_response = requests.get(version_url)
+			if raw_version_response.status_code == 200:
+				raw_version = raw_version_response.text.strip().replace('v', '')
+				# If raw_version is higher than latest release or no release found
+				if not return_response['latest_version'] or version.parse(raw_version) > version.parse(return_response['latest_version']):
+					return_response['latest_version'] = raw_version
+					return_response['redirect_link'] = 'https://github.com/whiterabb17/rengine'
+					return_response['changelog'] = 'A new update is available in the repository. Please pull the latest changes from the master branch.'
+					return_response['status'] = True
+		except Exception as e:
+			logger.error(f"Error fetching raw .version: {str(e)}")
 
-		# for consistency remove v from both if exists
-		latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
-								   ((response[0]['name'
-								   ])[1:] if response[0]['name'][0] == 'v'
-									else response[0]['name']))
+		if return_response['status'] and return_response['latest_version']:
+			is_version_update_available = version.parse(return_response['current_version']) < version.parse(return_response['latest_version'])
+			return_response['update_available'] = is_version_update_available
 
-		latest_version = latest_version.group(0) if latest_version else None
-
-		if not latest_version:
-			latest_version = re.search(r'(\d+\.)?(\d+\.)?(\*|\d+)',
-										((response[0]['name'
-										])[1:] if response[0]['name'][0]
-										== 'v' else response[0]['name']))
-			if latest_version:
-				latest_version = latest_version.group(0)
-
-		return_response['status'] = True
-		return_response['latest_version'] = latest_version
-		return_response['current_version'] = current_version
-		is_version_update_available = version.parse(current_version) < version.parse(latest_version)
-
-		# if is_version_update_available then we should create inapp notification
-		create_inappnotification(
-			title='reNgine Update Available',
-			description=f'Update to version {latest_version} is available',
-			notification_type=SYSTEM_LEVEL_NOTIFICATION,
-			project_slug=None,
-			icon='mdi-update',
-			redirect_link='https://github.com/yogeshojha/rengine/releases',
-			open_in_new_tab=True
-		)
-
-		return_response['update_available'] = is_version_update_available
-		if is_version_update_available:
-			return_response['changelog'] = response[0]['body']
+			if is_version_update_available:
+				create_inappnotification(
+					title='reNgine Update Available',
+					description=f'Update to version {return_response["latest_version"]} is available',
+					notification_type=SYSTEM_LEVEL_NOTIFICATION,
+					project_slug=None,
+					icon='mdi-update',
+					redirect_link=return_response['redirect_link'],
+					open_in_new_tab=True
+				)
 
 		return Response(return_response)
 

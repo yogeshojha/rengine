@@ -1,33 +1,31 @@
 const subdomain_datatable_columns = [
-  {'data': 'id'},
-  {'data': 'name'},
-  {'data': 'endpoint_count'},
-  {'data': 'endpoint_count'},
-  {'data': 'http_status'},
-  {'data': 'page_title'},
-  {'data': 'ip_addresses'},
-  {'data': 'ip_addresses'},
-  {'data': 'content_length', 'searchable': false},
-  {'data': 'screenshot_path', 'searchable': false},
-  {'data': 'response_time'},
-  {'data': 'technologies'},
-  {'data': 'http_url'},
-  {'data': 'cname'},
-  {'data': 'is_interesting'},
-  {'data': 'info_count'},
-  {'data': 'low_count'},
-  {'data': 'medium_count'},
-  {'data': 'high_count'},
-  {'data': 'critical_count'},
-  {'data': 'todos_count'},
-  {'data': 'is_important'},
-  {'data': 'webserver'},
-  {'data': 'content_type'},
-  {'data': 'id'},
-  {'data': 'directories_count'},
-  {'data': 'subscan_count'},
-  {'data': 'waf'},
-  {'data': 'attack_surface'},
+  { 'data': 'id' }, // 0: Status/Checkbox
+  { 'data': 'name' }, // 1: Subdomain
+  { 'data': 'endpoint_count' }, // 2: Endpoints
+  { 'data': 'id' }, // 3: Vulnerabilities (Placeholder)
+  { 'data': 'http_status' }, // 4: Status
+  { 'data': 'page_title' }, // 5: Title
+  { 'data': 'ip_addresses' }, // 6: IP
+  { 'data': 'ip_addresses' }, // 7: Ports
+  { 'data': 'content_length' }, // 8: Content Length
+  { 'data': 'screenshot_path' }, // 9: Screenshot
+  { 'data': 'response_time' }, // 10: Response Time
+  { 'data': 'technologies' }, // 11: Technology
+  { 'data': 'id' }, // 12: Checked (Placeholder)
+  { 'data': 'http_url' }, // 13: HTTP URL
+  { 'data': 'cname' }, // 14: CNAME
+  { 'data': 'is_interesting' }, // 15: is_interesting
+  { 'data': 'info_count' }, // 16: Info
+  { 'data': 'low_count' }, // 17: Low
+  { 'data': 'medium_count' }, // 18: Medium
+  { 'data': 'high_count' }, // 19: High
+  { 'data': 'critical_count' }, // 20: Critical
+  { 'data': 'todos_count' }, // 21: Todos
+  { 'data': 'is_important' }, // 22: Is Important
+  { 'data': 'webserver' }, // 23: Webserver
+  { 'data': 'id' }, // 24: Action
+  { 'data': 'directories_count' }, // 25: Directories Count
+  { 'data': 'subscan_count' }, // 26: Subscan Count
 ];
 
 const subdomain_datatable_page_length = 50;
@@ -42,29 +40,26 @@ const subdomain_oLanguage = {
   "sProcessing": "Fetching Subdomains... Please wait..."
 };
 
-function subdomain_datatable_col_visibility(subdomain_datatables){
-  if(!$('#sub_http_status_filter_checkbox').is(":checked")){
+function subdomain_datatable_col_visibility(subdomain_datatables) {
+  if (!$('#sub_http_status_filter_checkbox').is(":checked")) {
     subdomain_datatables.column(get_datatable_col_index('http_status', subdomain_datatable_columns)).visible(false);
   }
-  if(!$('#sub_page_title_filter_checkbox').is(":checked")){
+  if (!$('#sub_page_title_filter_checkbox').is(":checked")) {
     subdomain_datatables.column(get_datatable_col_index('page_title', subdomain_datatable_columns)).visible(false);
   }
-  if(!$('#sub_ip_filter_checkbox').is(":checked")){
+  if (!$('#sub_ip_filter_checkbox').is(":checked")) {
     subdomain_datatables.column(get_datatable_col_index('ip_addresses', subdomain_datatable_columns)).visible(false);
   }
-  if(!$('#sub_ports_filter_checkbox').is(":checked")){
+  if (!$('#sub_ports_filter_checkbox').is(":checked")) {
     subdomain_datatables.column(get_datatable_col_index('ip_addresses', subdomain_datatable_columns)).visible(false);
   }
-  if(!$('#sub_content_length_filter_checkbox').is(":checked")){
+  if (!$('#sub_content_length_filter_checkbox').is(":checked")) {
     subdomain_datatables.column(get_datatable_col_index('content_length', subdomain_datatable_columns)).visible(false);
   }
-  if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-    subdomain_datatables.column(get_datatable_col_index('http_status', subdomain_datatable_columns)).visible(false);
-  }
-  if(!$('#sub_response_time_filter_checkbox').is(":checked")){
+  if (!$('#sub_response_time_filter_checkbox').is(":checked")) {
     subdomain_datatables.column(get_datatable_col_index('response_time', subdomain_datatable_columns)).visible(false);
   }
-  if(!$('#sub_screenshot_filter_checkbox').is(":checked")){
+  if (!$('#sub_screenshot_filter_checkbox').is(":checked")) {
     subdomain_datatables.column(get_datatable_col_index('screenshot_path', subdomain_datatable_columns)).visible(false);
   }
 }

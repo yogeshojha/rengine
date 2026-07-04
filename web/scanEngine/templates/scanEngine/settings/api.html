@@ -98,6 +98,41 @@ API Vault
                 </div>
               </div>
               {% endif %}
+              <div class="mb-3">
+                <label for="key_shodan" class="form-label">Shodan</label>
+                <p class="text-muted">Shodan keys will be used for origin discovery and historical IP lookups.</p>
+                <div class="flex-grow-1 position-relative">
+                {% if shodan_key %}
+                  <input class="form-control" type="password" id="key_shodan" name="key_shodan" placeholder="Enter Shodan Key" value="{{shodan_key.key}}">
+                {% else %}
+                  <input class="form-control" type="text" id="key_shodan" name="key_shodan" placeholder="Enter Shodan Key">
+                {% endif %}
+                  <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                    <span class="password-eye"></span>
+                  </div>
+                </div>
+                <span class="text-muted float-end optional-text mt-2">This is optional. Get your API key from <a href="https://shodan.io" target="_blank">https://shodan.io</a></span>
+              </div>
+              <div class="mb-3">
+                <label for="key_censys" class="form-label">Censys</label>
+                <p class="text-muted">Censys keys are used for origin discovery and SSL serial matching.</p>
+                <div class="row">
+                  <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+                    <label for="key_censys_id" class="form-label">API ID</label>
+                    {% if censys_key %} <input class="form-control" type="text" id="key_censys_id" name="key_censys_id" placeholder="Enter Censys API ID" value="{{censys_key.api_id}}"> {% else %} <input class="form-control" type="text" id="key_censys_id" name="key_censys_id" placeholder="Enter Censys API ID"> {% endif %}
+                  </div>
+                  <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+                    <label for="key_censys_secret" class="form-label">API Secret</label>
+                    <div class="flex-grow-1 position-relative">
+                    {% if censys_key %} <input class="form-control" type="password" id="key_censys_secret" name="key_censys_secret" placeholder="Enter Censys Secret" value="{{censys_key.api_secret}}"> {% else %} <input class="form-control" type="password" id="key_censys_secret" name="key_censys_secret" placeholder="Enter Censys Secret"> {% endif %}
+                    <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                      <span class="password-eye"></span>
+                    </div>
+                    </div>
+                  </div>
+                </div>
+                <span class="text-muted float-end optional-text mt-2">This is optional. Get your API key from <a href="https://search.censys.io/account/api" target="_blank">https://search.censys.io/account/api</a></span>
+              </div>
               </div>
               <div class="mb-0">
                 <button class="btn btn-primary float-sm-end my-4" type="submit"> Update API Keys</button>
