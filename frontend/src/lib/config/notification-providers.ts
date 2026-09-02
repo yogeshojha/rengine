@@ -33,42 +33,110 @@ export const NOTIFICATION_PROVIDERS: ProviderMeta[] = [
 		provider: 'slack',
 		name: 'Slack',
 		icon: SlackIcon,
-		fields: [{ key: 'webhook_url', label: 'Webhook URL', placeholder: 'https://hooks.slack.com/services/...', kind: 'secret', required: true }],
+		fields: [
+			{
+				key: 'webhook_url',
+				label: 'Webhook URL',
+				placeholder: 'https://hooks.slack.com/services/...',
+				kind: 'secret',
+				required: true
+			}
+		],
 		help: { label: 'Create a Slack webhook', url: 'https://api.slack.com/messaging/webhooks' }
 	},
 	{
 		provider: 'discord',
 		name: 'Discord',
 		icon: MessageSquareIcon,
-		fields: [{ key: 'webhook_url', label: 'Webhook URL', placeholder: 'https://discord.com/api/webhooks/...', kind: 'secret', required: true }]
+		fields: [
+			{
+				key: 'webhook_url',
+				label: 'Webhook URL',
+				placeholder: 'https://discord.com/api/webhooks/...',
+				kind: 'secret',
+				required: true
+			}
+		]
 	},
 	{
 		provider: 'telegram',
 		name: 'Telegram',
 		icon: SendIcon,
 		fields: [
-			{ key: 'bot_token', label: 'Bot token', placeholder: '123456:ABC-DEF...', kind: 'secret', required: true },
-			{ key: 'chat_id', label: 'Chat ID', placeholder: '-1001234567890', kind: 'text', required: true }
+			{
+				key: 'bot_token',
+				label: 'Bot token',
+				placeholder: '123456:ABC-DEF...',
+				kind: 'secret',
+				required: true
+			},
+			{
+				key: 'chat_id',
+				label: 'Chat ID',
+				placeholder: '-1001234567890',
+				kind: 'text',
+				required: true
+			}
 		],
-		help: { label: 'Create a Telegram bot', url: 'https://core.telegram.org/bots#how-do-i-create-a-bot' }
+		help: {
+			label: 'Create a Telegram bot',
+			url: 'https://core.telegram.org/bots#how-do-i-create-a-bot'
+		}
 	},
 	{
 		provider: 'teams',
 		name: 'Microsoft Teams',
 		icon: UsersIcon,
-		fields: [{ key: 'webhook_url', label: 'Incoming webhook URL', placeholder: 'https://...webhook.office.com/...', kind: 'secret', required: true }]
+		fields: [
+			{
+				key: 'webhook_url',
+				label: 'Incoming webhook URL',
+				placeholder: 'https://...webhook.office.com/...',
+				kind: 'secret',
+				required: true
+			}
+		]
 	},
 	{
 		provider: 'email',
 		name: 'Email (SMTP)',
 		icon: MailIcon,
 		fields: [
-			{ key: 'smtp_host', label: 'SMTP host', placeholder: 'smtp.gmail.com', kind: 'text', required: true },
+			{
+				key: 'smtp_host',
+				label: 'SMTP host',
+				placeholder: 'smtp.gmail.com',
+				kind: 'text',
+				required: true
+			},
 			{ key: 'smtp_port', label: 'Port', placeholder: '587', kind: 'number', default: 587 },
-			{ key: 'username', label: 'Username', placeholder: 'you@example.com', kind: 'text', required: true },
-			{ key: 'password', label: 'Password / app password', placeholder: MASK, kind: 'secret', required: true },
-			{ key: 'from_email', label: 'From address', placeholder: 'rengine@example.com', kind: 'text' },
-			{ key: 'to_email', label: 'Send to', placeholder: 'soc@example.com', kind: 'text', required: true },
+			{
+				key: 'username',
+				label: 'Username',
+				placeholder: 'you@example.com',
+				kind: 'text',
+				required: true
+			},
+			{
+				key: 'password',
+				label: 'Password / app password',
+				placeholder: MASK,
+				kind: 'secret',
+				required: true
+			},
+			{
+				key: 'from_email',
+				label: 'From address',
+				placeholder: 'rengine@example.com',
+				kind: 'text'
+			},
+			{
+				key: 'to_email',
+				label: 'Send to',
+				placeholder: 'soc@example.com',
+				kind: 'text',
+				required: true
+			},
 			{ key: 'use_tls', label: 'Use TLS', kind: 'bool', default: true }
 		]
 	},
@@ -76,18 +144,42 @@ export const NOTIFICATION_PROVIDERS: ProviderMeta[] = [
 		provider: 'webhook',
 		name: 'Webhook',
 		icon: WebhookIcon,
-		fields: [{ key: 'webhook_url', label: 'Endpoint URL', placeholder: 'https://example.com/hook', kind: 'secret', required: true }]
+		fields: [
+			{
+				key: 'webhook_url',
+				label: 'Endpoint URL',
+				placeholder: 'https://example.com/hook',
+				kind: 'secret',
+				required: true
+			}
+		]
 	},
 	{
 		provider: 'custom',
 		name: 'Custom (Apprise)',
 		icon: SlidersHorizontalIcon,
-		fields: [{ key: 'apprise_url', label: 'Apprise URL', placeholder: 'ntfy://user:pass@ntfy.sh/topic', kind: 'secret', required: true }],
-		help: { label: 'Apprise URL formats (100+ services)', url: 'https://github.com/caronc/apprise/wiki' }
+		fields: [
+			{
+				key: 'apprise_url',
+				label: 'Apprise URL',
+				placeholder: 'ntfy://user:pass@ntfy.sh/topic',
+				kind: 'secret',
+				required: true
+			}
+		],
+		help: {
+			label: 'Apprise URL formats (100+ services)',
+			url: 'https://github.com/caronc/apprise/wiki'
+		}
 	}
 ];
 
-export const ONBOARDING_NOTIFICATION_PROVIDERS: ProviderMeta[] = ['slack', 'discord', 'telegram', 'webhook']
+export const ONBOARDING_NOTIFICATION_PROVIDERS: ProviderMeta[] = [
+	'slack',
+	'discord',
+	'telegram',
+	'webhook'
+]
 	.map((p) => NOTIFICATION_PROVIDERS.find((m) => m.provider === p))
 	.filter((m): m is ProviderMeta => m !== undefined);
 

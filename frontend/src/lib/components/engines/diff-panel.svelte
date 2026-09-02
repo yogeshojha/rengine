@@ -57,17 +57,16 @@
 <div class="wrap">
 	<div class="head">
 		{#if changes.length}
-			{changes.length} setting{changes.length === 1 ? '' : 's'} differ from engine defaults
+			{changes.length} setting{changes.length === 1 ? '' : 's'} differ from stage defaults
 		{:else}
-			Identical to engine defaults
+			Matches stage defaults
 		{/if}
 	</div>
 	<ScrollArea class="min-h-0 flex-1">
 		<div class="body">
 			{#if !changes.length}
 				<p class="empty">
-					Every value in this engine matches what its stages ship with. Anything you change will
-					show up here.
+					Every setting in this engine matches its stage default. Changed settings are listed here.
 				</p>
 			{/if}
 			{#each byStage as [stage, items] (stage)}

@@ -22,7 +22,7 @@ PRESETS: tuple[PresetSpec, ...] = (
     PresetSpec(
         Preset.STANDARD.value,
         "Standard Recon",
-        "Balanced coverage — every engine at its own defaults.",
+        "Every stage at its default settings.",
     ),
     PresetSpec(
         Preset.PASSIVE.value,
@@ -32,12 +32,12 @@ PRESETS: tuple[PresetSpec, ...] = (
     PresetSpec(
         Preset.FULL.value,
         "Full Sweep",
-        "Every stage enabled — most thorough, noisiest.",
+        "Every stage enabled. Highest coverage and highest footprint.",
     ),
     PresetSpec(
         Preset.BLANK.value,
         "Blank",
-        "Nothing enabled — switch on what you need.",
+        "No stages enabled. Build the engine from scratch.",
     ),
 )
 

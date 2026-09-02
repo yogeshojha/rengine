@@ -1,16 +1,16 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { SvelteSet } from 'svelte/reactivity';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Info from '@lucide/svelte/icons/info';
+	import Check from '@lucide/svelte/icons/check';
+	import Minus from '@lucide/svelte/icons/minus';
 
-	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
-	import * as Card from '$lib/components/ui/card';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import * as Popover from '$lib/components/ui/popover';
+	import { proxiesStore } from '$lib/stores/proxies.svelte';
 
 	import AuthSection from './auth-section.svelte';
 	import RateSection from './rate-section.svelte';
@@ -18,15 +18,16 @@
 	import RuntimeSection from './runtime-section.svelte';
 	import ProxySection from './proxy-section.svelte';
 	import { markTouchedSecrets, type ContextFormSection } from './context-form';
+	import { contextFacets } from './context-summary';
 	import type { ScanContextCreate, AuthConfig, AuthHeader } from '$lib/types/scan-context';
 
 	const ALL_SECTIONS: ContextFormSection[] = [
-		'identity',
 		'auth',
 		'rate',
 		'scope',
 		'runtime',
-		'proxy'
+		'proxy',
+		'identity'
 	];
 
 	interface Props {
@@ -48,13 +49,36 @@
 	}: Props = $props();
 
 	const META: Record<ContextFormSection, { title: string; subtitle: string }> = {
-		identity: { title: 'Identity', subtitle: 'Name and description' },
-		auth: { title: 'Authentication', subtitle: 'How requests authenticate to the target' },
-		rate: { title: 'Rate Limiting', subtitle: 'Throughput ceilings and concurrency' },
-		scope: { title: 'Scope', subtitle: 'Include / exclude rules for assets' },
-		runtime: { title: 'Runtime Options', subtitle: 'Protocol and redirect behaviour' },
+		identity: { title: 'Description', subtitle: 'Notes on when to use this context' },
+		auth: { title: 'Authentication', subtitle: 'Credentials and headers sent with every request' },
+		rate: { title: 'Rate limiting', subtitle: 'Request rate caps and concurrency multipliers' },
+		scope: { title: 'Scope', subtitle: 'Assets to include in or exclude from scanning' },
+		runtime: { title: 'Runtime', subtitle: 'Protocol and redirect behaviour' },
 		proxy: { title: 'Proxy', subtitle: 'Route scan traffic through a proxy' }
 	};
+
+	const proxyName = $derived(
+		draft.proxy_id
+			? (proxiesStore.proxies.find((p) => p.id === draft.proxy_id)?.name ?? null)
+			: null
+	);
+	const facets = $derived(contextFacets(draft, proxyName));
+
+	function facetOf(key: ContextFormSection): { set: boolean; value: string } {
+		if (key === 'identity') {
+			const text = draft.description?.trim() ?? '';
+			return { set: text.length > 0, value: text || 'No description' };
+		}
+		if (key === 'auth') {
+			const auth = facets.find((f) => f.key === 'auth')!;
+			const headers = facets.find((f) => f.key === 'headers')!;
+			const parts = [auth.set ? auth.value : null, headers.set ? `+ ${headers.value}` : null];
+			const value = parts.filter(Boolean).join(' ');
+			return { set: auth.set || headers.set, value: value || 'None' };
+		}
+		const facet = facets.find((f) => f.key === key)!;
+		return { set: facet.set, value: facet.value };
+	}
 
 	function handleAuthChange(next: { auth: AuthConfig; extraHeaders: AuthHeader[] }) {
 		markTouchedSecrets(next.auth, touched);
@@ -66,94 +90,80 @@
 	}
 </script>
 
-{#snippet section(
-	key: ContextFormSection,
-	title: string,
-	subtitle: string,
-	content: Snippet,
-	info?: Snippet
-)}
-	<Card.Root>
-		<Collapsible.Root bind:open={open[key]}>
-			<Card.Header class="flex flex-row items-center justify-between gap-2 py-4 text-left">
-				<Collapsible.Trigger class="flex min-w-0 flex-1 items-center justify-between gap-2">
-					<div class="min-w-0">
-						<Card.Title class="text-sm">{title}</Card.Title>
-						<Card.Description class="text-xs">{subtitle}</Card.Description>
-					</div>
-					<ChevronDown
-						class="h-4 w-4 shrink-0 text-muted-foreground transition-transform {open[key]
-							? 'rotate-180'
-							: ''}"
-					/>
-				</Collapsible.Trigger>
-				{#if info}
-					<Popover.Root>
-						<Popover.Trigger>
-							{#snippet child({ props })}
-								<Button
-									{...props}
-									variant="ghost"
-									size="icon"
-									class="h-7 w-7 shrink-0 text-muted-foreground"
-									aria-label="Merge behaviour"
-								>
-									<Info class="h-3.5 w-3.5" />
-								</Button>
-							{/snippet}
-						</Popover.Trigger>
-						<Popover.Content class="w-72 text-xs text-muted-foreground">
-							{@render info()}
-						</Popover.Content>
-					</Popover.Root>
+{#snippet section(key: ContextFormSection, content: Snippet, info?: Snippet)}
+	{@const facet = facetOf(key)}
+	<Collapsible.Root bind:open={open[key]} class="section" data-set={facet.set}>
+		<div class="head">
+			<span class="mark" aria-hidden="true">
+				{#if facet.set}
+					<Check size={13} class="text-primary" />
+				{:else}
+					<Minus size={13} class="opacity-60" />
 				{/if}
-			</Card.Header>
-			<Collapsible.Content>
-				<Card.Content class="pb-5">
-					{@render content()}
-				</Card.Content>
-			</Collapsible.Content>
-		</Collapsible.Root>
-	</Card.Root>
+			</span>
+			<Collapsible.Trigger
+				class="disclose"
+				aria-label="{open[key] ? 'Collapse' : 'Expand'} {META[key].title}"
+			>
+				<span class="titles">
+					<span class="title">{META[key].title}</span>
+					<span class="subtitle">{META[key].subtitle}</span>
+				</span>
+				<span class="value" class:muted={!facet.set}>{facet.value}</span>
+				<ChevronRight size={14} class="chev" />
+			</Collapsible.Trigger>
+			{#if info}
+				<Popover.Root>
+					<Popover.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon-sm"
+								class="h-7 w-7 shrink-0 text-muted-foreground"
+								aria-label="Precedence"
+							>
+								<Info size={13} />
+							</Button>
+						{/snippet}
+					</Popover.Trigger>
+					<Popover.Content class="w-72 text-xs text-muted-foreground">
+						{@render info()}
+					</Popover.Content>
+				</Popover.Root>
+			{/if}
+		</div>
+		<Collapsible.Content class="body">
+			{@render content()}
+		</Collapsible.Content>
+	</Collapsible.Root>
 {/snippet}
 
 {#snippet authInfo()}
-	<p class="mb-1 font-medium text-foreground">Merge behaviour</p>
+	<p class="mb-1 font-medium text-foreground">Precedence</p>
 	<ul class="space-y-1 pl-3">
-		<li class="list-disc">Headers: engine ∪ context — context wins on conflict.</li>
-		<li class="list-disc">A context cannot enable a tool the engine disabled.</li>
+		<li class="list-disc">
+			Context headers are added to the engine headers. On a conflict, the context value is used.
+		</li>
+		<li class="list-disc">A context cannot enable a stage the engine disabled.</li>
 	</ul>
 {/snippet}
 
 {#snippet rateInfo()}
-	<p class="mb-1 font-medium text-foreground">Merge behaviour</p>
+	<p class="mb-1 font-medium text-foreground">Precedence</p>
 	<ul class="space-y-1 pl-3">
-		<li class="list-disc">Context rate overrides take precedence over engine defaults.</li>
-		<li class="list-disc">A context cannot enable a tool the engine disabled.</li>
+		<li class="list-disc">Context rate overrides replace the engine rate limits.</li>
+		<li class="list-disc">The global limit is a ceiling. It lowers rates but never raises them.</li>
 	</ul>
 {/snippet}
 
 {#snippet identityBody()}
-	<div class="space-y-4">
-		<div class="space-y-1.5">
-			<Label class="text-xs">Name</Label>
-			<Input
-				value={draft.name}
-				placeholder="e.g. Authenticated staging"
-				class="h-9"
-				oninput={(e) => onPatch({ name: e.currentTarget.value })}
-			/>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-xs">Description</Label>
-			<Textarea
-				value={draft.description ?? ''}
-				placeholder="What this context is for (optional)"
-				class="min-h-20"
-				oninput={(e) => onPatch({ description: e.currentTarget.value || null })}
-			/>
-		</div>
-	</div>
+	<Textarea
+		value={draft.description ?? ''}
+		placeholder="Describe when to use this context, such as the environment or program it applies to."
+		class="min-h-20 text-sm"
+		oninput={(e) => onPatch({ description: e.currentTarget.value || null })}
+	/>
 {/snippet}
 
 {#snippet authBody()}
@@ -184,22 +194,122 @@
 
 {#snippet sectionFor(key: ContextFormSection)}
 	{#if key === 'identity'}
-		{@render section('identity', META.identity.title, META.identity.subtitle, identityBody)}
+		{@render section('identity', identityBody)}
 	{:else if key === 'auth'}
-		{@render section('auth', META.auth.title, META.auth.subtitle, authBody, authInfo)}
+		{@render section('auth', authBody, authInfo)}
 	{:else if key === 'rate'}
-		{@render section('rate', META.rate.title, META.rate.subtitle, rateBody, rateInfo)}
+		{@render section('rate', rateBody, rateInfo)}
 	{:else if key === 'scope'}
-		{@render section('scope', META.scope.title, META.scope.subtitle, scopeBody)}
+		{@render section('scope', scopeBody)}
 	{:else if key === 'runtime'}
-		{@render section('runtime', META.runtime.title, META.runtime.subtitle, runtimeBody)}
+		{@render section('runtime', runtimeBody)}
 	{:else if key === 'proxy'}
-		{@render section('proxy', META.proxy.title, META.proxy.subtitle, proxyBody)}
+		{@render section('proxy', proxyBody)}
 	{/if}
 {/snippet}
 
-<div class="space-y-4">
+<div class="sections">
 	{#each sections as key (key)}
 		{@render sectionFor(key)}
 	{/each}
 </div>
+
+<style>
+	.sections {
+		border: 1px solid var(--border);
+		border-radius: 0.7rem;
+		background: var(--card);
+		overflow: hidden;
+	}
+	:global(.section) {
+		border-bottom: 1px solid var(--border);
+	}
+	:global(.section:last-child) {
+		border-bottom: none;
+	}
+	:global(.section[data-state='open']) {
+		background: color-mix(in oklch, var(--primary) 3%, transparent);
+	}
+
+	.head {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 0 10px 0 14px;
+		min-height: 52px;
+	}
+	.mark {
+		display: inline-flex;
+		flex-shrink: 0;
+		width: 14px;
+	}
+	:global(.section .disclose) {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		flex: 1;
+		min-width: 0;
+		padding: 10px 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		text-align: left;
+		color: inherit;
+	}
+	.titles {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		min-width: 0;
+		flex: 0 0 auto;
+		max-width: 46%;
+	}
+	.title {
+		font-size: 13px;
+		font-weight: 500;
+	}
+	.subtitle {
+		font-size: 11px;
+		color: var(--muted-foreground);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.value {
+		flex: 1;
+		min-width: 0;
+		text-align: right;
+		font-size: 11.5px;
+		color: var(--foreground);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-variant-numeric: tabular-nums;
+	}
+	.value.muted {
+		color: var(--muted-foreground);
+	}
+	:global(.section .disclose .chev) {
+		flex-shrink: 0;
+		color: var(--muted-foreground);
+		transition: transform 0.15s ease;
+	}
+	:global(.section[data-state='open'] .disclose .chev) {
+		transform: rotate(90deg);
+	}
+	:global(.section .body) {
+		padding: 4px 16px 18px 38px;
+	}
+
+	@media (max-width: 640px) {
+		.value {
+			display: none;
+		}
+		.titles {
+			max-width: none;
+		}
+		:global(.section .body) {
+			padding-left: 16px;
+		}
+	}
+</style>

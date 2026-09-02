@@ -5,17 +5,30 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import LoadingButton from '@/components/loading-button.svelte';
-	import type { EnginePreset } from '$lib/types/scan-engine';
+	import StageList from './stage-list.svelte';
+	import FootprintMeter from './footprint-meter.svelte';
+	import { summarize } from '$lib/utilities/engine-summary';
+	import type { EnginePreset, StageCatalogEntry } from '$lib/types/scan-engine';
 
 	interface Props {
 		open: boolean;
 		presets: EnginePreset[];
+		stages: StageCatalogEntry[];
 		isCreating: boolean;
+		initialPreset?: string | null;
 		onOpenChange: (open: boolean) => void;
 		onCreate: (name: string, preset: EnginePreset) => void;
 	}
 
-	let { open, presets, isCreating, onOpenChange, onCreate }: Props = $props();
+	let {
+		open,
+		presets,
+		stages,
+		isCreating,
+		initialPreset = null,
+		onOpenChange,
+		onCreate
+	}: Props = $props();
 
 	let name = $state('');
 	let selected = $state('');
@@ -23,7 +36,7 @@
 	$effect(() => {
 		if (open) {
 			name = '';
-			selected = presets[0]?.name ?? '';
+			selected = initialPreset ?? presets[0]?.name ?? '';
 		}
 	});
 
@@ -37,11 +50,12 @@
 </script>
 
 <Dialog.Root {open} {onOpenChange}>
-	<Dialog.Content class="sm:max-w-lg">
+	<Dialog.Content class="sm:max-w-xl">
 		<Dialog.Header>
 			<Dialog.Title>New scan engine</Dialog.Title>
-			<Dialog.Description>Pick a starting point — you can change anything after.</Dialog.Description
-			>
+			<Dialog.Description>
+				Choose a preset to start from. Every stage and setting can be changed later.
+			</Dialog.Description>
 		</Dialog.Header>
 
 		<div class="space-y-4 py-1">
@@ -50,22 +64,38 @@
 				<Input
 					id="engine-name"
 					bind:value={name}
-					placeholder="e.g. Deep Recon"
+					placeholder={preset ? `e.g. ${preset.title}` : 'e.g. Deep Recon'}
 					autocomplete="off"
 					onkeydown={(e) => e.key === 'Enter' && submit()}
 				/>
 			</div>
 
-			<RadioGroup.Root bind:value={selected} class="gap-2">
+			<RadioGroup.Root bind:value={selected} class="grid gap-2 sm:grid-cols-2">
 				{#each presets as p (p.name)}
+					{@const summary = summarize(p.stages, stages, 'normal')}
 					<Label
 						for="preset-{p.name}"
-						class="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40 has-[[data-state=checked]]:border-foreground/25 has-[[data-state=checked]]:bg-muted/50"
+						class="flex cursor-pointer flex-col gap-2.5 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40 has-[[data-state=checked]]:border-primary/50 has-[[data-state=checked]]:bg-primary/5"
 					>
-						<RadioGroup.Item value={p.name} id="preset-{p.name}" class="mt-0.5" />
-						<span class="flex flex-col gap-0.5">
-							<span class="text-sm font-medium">{p.title}</span>
-							<span class="text-xs font-normal text-muted-foreground">{p.description}</span>
+						<span class="flex items-start gap-2.5">
+							<RadioGroup.Item value={p.name} id="preset-{p.name}" class="mt-0.5" />
+							<span class="flex min-w-0 flex-col gap-0.5">
+								<span class="text-sm font-medium">{p.title}</span>
+								<span class="text-xs font-normal text-muted-foreground">{p.description}</span>
+							</span>
+						</span>
+						<span class="flex flex-col gap-1.5 pl-6">
+							<StageList {stages} config={p.stages} variant="inline" max={4} />
+							<span class="flex items-center justify-between gap-2 text-[11px] font-normal">
+								<span class="text-muted-foreground tabular-nums">
+									{summary.activeStages} of {summary.totalStages} stages
+								</span>
+								<FootprintMeter
+									footprint={summary.footprint}
+									requestsPerSecond={summary.requestsPerSecond}
+									class="text-[11px]"
+								/>
+							</span>
 						</span>
 					</Label>
 				{/each}

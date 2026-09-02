@@ -175,7 +175,7 @@
 		{#if secretHint(field)}
 			<div class="flex items-center gap-2">
 				<p class="text-xs text-muted-foreground">
-					Value set — leave blank to keep, or type to replace.
+					A value is stored. Leave blank to keep it, or enter a new value to replace it.
 				</p>
 				<Button
 					variant="ghost"
@@ -208,9 +208,7 @@
 	</RadioGroup.Root>
 
 	{#if local.auth_type === 'none'}
-		<p class="text-sm text-muted-foreground">
-			No authentication headers are injected. Requests are sent unauthenticated.
-		</p>
+		<p class="text-sm text-muted-foreground">Requests are sent without credentials.</p>
 	{:else if local.auth_type === 'bearer'}
 		{@render secretInput('bearer_token', 'Bearer token', SECRET_PLACEHOLDER)}
 	{:else if local.auth_type === 'basic'}
@@ -264,9 +262,10 @@
 
 	<div class="space-y-2">
 		<div>
-			<Label class="text-xs">Extra headers</Label>
+			<Label class="text-xs">Additional headers</Label>
 			<p class="mt-0.5 text-xs text-muted-foreground">
-				Merged into every request. On conflict, these win over the auth header above.
+				Added to every request. If a name conflicts with the authentication header, this value is
+				used.
 			</p>
 		</div>
 		{#each headerRows as row, i (i)}
@@ -295,6 +294,6 @@
 				</Button>
 			</div>
 		{/each}
-		<p class="text-xs text-muted-foreground">Type in the empty row to add a header.</p>
+		<p class="text-xs text-muted-foreground">Fill in the empty row to add another header.</p>
 	</div>
 </div>

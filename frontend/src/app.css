@@ -189,9 +189,11 @@
 	--shadow-2xl: var(--shadow-2xl);
 }
 
-* {
-	border-color: var(--border);
-	outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
+@layer base {
+	* {
+		border-color: var(--border);
+		outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
+	}
 }
 
 h1,

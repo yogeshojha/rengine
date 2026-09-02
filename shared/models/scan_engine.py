@@ -7,6 +7,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON, Text
 from sqlmodel import Field, SQLModel
 
+from shared.models.scan_context import ScanContextCreate
 from shared.utils.datetime import utc_now
 
 
@@ -132,15 +133,30 @@ class EngineCatalog(BaseModel):
     target_types: list[str]
 
 
+class PreviewResolved(BaseModel):
+    header_names: list[str] = PydanticField(default_factory=list)
+    global_threads: int = 30
+    global_rate_limit_ceiling: int | None = None
+    per_tool_rate_limits: dict[str, int] = PydanticField(default_factory=dict)
+    excluded_subdomains: list[str] = PydanticField(default_factory=list)
+    excluded_paths: list[str] = PydanticField(default_factory=list)
+    excluded_ips: list[str] = PydanticField(default_factory=list)
+    included_subdomains: list[str] = PydanticField(default_factory=list)
+    follow_redirects: bool | None = None
+    http_protocol: str = "both"
+
+
 class EnginePreviewResult(BaseModel):
     phases: list = PydanticField(default_factory=list)
     resolved_stages: dict[str, dict] = PydanticField(default_factory=dict)
+    resolved: PreviewResolved = PydanticField(default_factory=PreviewResolved)
     warnings: list[str] = PydanticField(default_factory=list)
 
 
 class EnginePreviewRequest(BaseModel):
     target_type: str
     context_id: uuid.UUID | None = None
+    context: ScanContextCreate | None = None
     intensity: str = "normal"
     global_threads: int = 30
     stages: dict[str, dict] = PydanticField(default_factory=dict)

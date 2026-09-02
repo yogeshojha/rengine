@@ -14,7 +14,7 @@
 	let {
 		open = $bindable(),
 		title = 'Delete this item?',
-		description = 'This is permanent.',
+		description = 'This action cannot be undone.',
 		confirmLabel = 'Delete',
 		isDeleting = false,
 		onOpenChange,

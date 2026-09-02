@@ -10,14 +10,21 @@ export const FOOTPRINT_LABEL: Record<Footprint, string> = {
 };
 
 export const FOOTPRINT_HELP: Record<Footprint, string> = {
-	none: 'Every enabled stage reads public sources — nothing is sent to the target.',
-	quiet: 'Sends traffic to the target at a low combined rate.',
-	moderate: 'Sends a noticeable volume of traffic to the target.',
-	loud: 'High combined request rate — likely to trip rate limits or a WAF.'
+	none: 'All enabled stages use public data sources. No traffic is sent to the target.',
+	quiet: 'Sends a low volume of traffic to the target.',
+	moderate: 'Sends a moderate volume of traffic to the target.',
+	loud: 'Sends a high volume of traffic to the target. Likely to trigger rate limiting or WAF blocking.'
 };
 
 const MODERATE_RPS = 300;
 const LOUD_RPS = 1000;
+
+export function footprintFor(requestsPerSecond: number, touchesTarget: boolean): Footprint {
+	if (!touchesTarget) return 'none';
+	if (requestsPerSecond >= LOUD_RPS) return 'loud';
+	if (requestsPerSecond >= MODERATE_RPS) return 'moderate';
+	return 'quiet';
+}
 
 export interface EngineSummary {
 	activeStages: number;
@@ -56,15 +63,7 @@ export function summarize(
 	const loud = running.filter((s) => s.touches_target);
 	const requestsPerSecond = loud.reduce((n, s) => n + rateOf(s, stages?.[s.name] ?? {}), 0);
 
-	let footprint: Footprint = 'none';
-	if (loud.length) {
-		footprint =
-			requestsPerSecond >= LOUD_RPS
-				? 'loud'
-				: requestsPerSecond >= MODERATE_RPS
-					? 'moderate'
-					: 'quiet';
-	}
+	const footprint = footprintFor(requestsPerSecond, loud.length > 0);
 
 	const tools = [...new Set(running.flatMap((s) => s.tools))].sort();
 

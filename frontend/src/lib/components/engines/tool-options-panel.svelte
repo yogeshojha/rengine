@@ -45,10 +45,9 @@
 					<AlertTriangle class="size-4" />
 					<AlertTitle>Advanced</AlertTitle>
 					<AlertDescription class="text-warning/90">
-						These flags are appended to each tool's command exactly as written. reNgine does not
-						validate them: invalid, unsupported, or conflicting flags can make a tool error out or
-						cause the scan stage to fail. Leave blank unless you know the tool's CLI. Arguments are
-						passed safely (never shell-interpreted).
+						Flags are appended to each tool command exactly as written and are not validated.
+						Invalid or conflicting flags can cause the tool, and its stage, to fail. Arguments are
+						passed directly to the tool and are never interpreted by a shell.
 					</AlertDescription>
 				</Alert>
 

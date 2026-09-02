@@ -1,10 +1,12 @@
 <script lang="ts">
+	import * as Field from '$lib/components/ui/field';
+	import * as Select from '$lib/components/ui/select';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
-	import { Badge } from '$lib/components/ui/badge';
-	import * as Select from '$lib/components/ui/select';
-	import Check from '@lucide/svelte/icons/check';
+	import { Button } from '$lib/components/ui/button';
+	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import type { StageField } from '$lib/types/scan-engine';
 	import { SCALE_HELP } from '$lib/types/scan-engine';
 	import { parseCsv } from '$lib/utilities/parse';
@@ -23,13 +25,12 @@
 	const listValue = $derived<string[]>(
 		Array.isArray(value) ? (value as string[]) : ((field.default as string[]) ?? [])
 	);
-
-	function toggleListItem(option: string) {
-		const next = listValue.includes(option)
-			? listValue.filter((v) => v !== option)
-			: [...listValue, option];
-		onChange(next);
-	}
+	const modified = $derived(
+		value !== undefined && JSON.stringify(value) !== JSON.stringify(field.default)
+	);
+	const defaultLabel = $derived(
+		Array.isArray(field.default) ? field.default.join(', ') || '(none)' : String(field.default)
+	);
 
 	function commitNumber(raw: string) {
 		const parsed = Number(raw);
@@ -41,40 +42,66 @@
 	}
 </script>
 
-<div class="field" class:inline={field.type === 'boolean'}>
-	<div class="label-col">
-		<Label for={id} class="text-sm font-normal">{field.title}</Label>
+<Field.Field orientation="horizontal" class="gap-6 py-2.5">
+	<Field.Content class="gap-0.5">
+		<span class="flex items-center gap-1.5">
+			<Field.Label for={id} class="text-[13px] font-normal">{field.title}</Field.Label>
+			{#if modified}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon-sm"
+								class="h-5 w-5 text-primary hover:text-primary"
+								onclick={() => onChange(field.default)}
+							>
+								<RotateCcw size={11} />
+							</Button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content class="text-xs">Reset to default ({defaultLabel})</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
+		</span>
 		{#if field.description}
-			<p class="help">{field.description}</p>
+			<Field.Description class="text-[11px] leading-snug">{field.description}</Field.Description>
 		{/if}
 		{#if field.scale}
-			<p class="help scale-help">{SCALE_HELP[field.scale]}</p>
+			<Field.Description class="text-[11px] leading-snug opacity-75">
+				{SCALE_HELP[field.scale]}
+			</Field.Description>
 		{/if}
-	</div>
+	</Field.Content>
 
-	<div class="control">
+	<div class="shrink-0">
 		{#if field.type === 'boolean'}
 			<Switch {id} checked={boolValue} onCheckedChange={(v) => onChange(v)} />
 		{:else if field.type === 'array' && field.options}
-			<div class="chips">
+			<ToggleGroup.Root
+				type="multiple"
+				variant="outline"
+				size="sm"
+				spacing={1}
+				value={listValue}
+				onValueChange={(v) => onChange(v)}
+				class="max-w-[320px] flex-wrap justify-end"
+				aria-label={field.title}
+			>
 				{#each field.options as option (option)}
-					{@const on = listValue.includes(option)}
-					<button
-						type="button"
-						class="chip"
-						class:on
-						aria-pressed={on}
-						onclick={() => toggleListItem(option)}
+					<ToggleGroup.Item
+						value={option}
+						class="h-6 px-2 font-mono text-[11px] font-normal aria-pressed:bg-foreground aria-pressed:text-background data-[state=on]:bg-foreground data-[state=on]:text-background"
 					>
-						{#if on}<Check size={11} />{/if}
 						{option}
-					</button>
+					</ToggleGroup.Item>
 				{/each}
-			</div>
+			</ToggleGroup.Root>
 		{:else if field.type === 'array'}
 			<Input
 				{id}
-				class="h-8 w-[260px] text-sm"
+				class="h-8 w-[240px] text-sm"
 				value={listValue.join(', ')}
 				placeholder="comma separated"
 				onchange={(e) => onChange(parseCsv(e.currentTarget.value))}
@@ -87,7 +114,7 @@
 				value={String(value ?? field.default ?? '')}
 				onValueChange={(v) => v && onChange(v)}
 			>
-				<Select.Trigger {id} class="h-8 w-[200px] text-sm">
+				<Select.Trigger {id} class="h-8 w-[180px] text-sm">
 					{String(value ?? field.default ?? 'Select…')}
 				</Select.Trigger>
 				<Select.Content>
@@ -97,24 +124,26 @@
 				</Select.Content>
 			</Select.Root>
 		{:else if field.type === 'integer' || field.type === 'number'}
-			<div class="num">
+			<div class="flex items-center gap-2">
 				<Input
 					{id}
 					type="number"
-					class="h-8 w-24 text-sm"
+					class="h-8 w-24 text-sm tabular-nums"
 					min={field.minimum ?? undefined}
 					max={field.maximum ?? undefined}
 					value={String(value ?? field.default ?? '')}
 					onchange={(e) => commitNumber(e.currentTarget.value)}
 				/>
 				{#if field.minimum !== null && field.maximum !== null}
-					<Badge variant="outline" class="range">{field.minimum}–{field.maximum}</Badge>
+					<span class="text-[10px] text-muted-foreground tabular-nums">
+						{field.minimum}–{field.maximum}
+					</span>
 				{/if}
 			</div>
 		{:else}
 			<Input
 				{id}
-				class="h-8 w-[260px] text-sm"
+				class="h-8 w-[240px] font-mono text-xs"
 				value={String(value ?? field.default ?? '')}
 				oninput={(e) => onChange(e.currentTarget.value)}
 				autocomplete="off"
@@ -122,78 +151,4 @@
 			/>
 		{/if}
 	</div>
-</div>
-
-<style>
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		padding: 10px 0;
-	}
-	.field.inline {
-		flex-direction: row;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 24px;
-	}
-	.label-col {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-	}
-	.help {
-		font-size: 11px;
-		line-height: 1.45;
-		color: var(--muted-foreground);
-	}
-	.scale-help {
-		opacity: 0.75;
-	}
-	.control {
-		flex-shrink: 0;
-	}
-	.num {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-	.num :global(.range) {
-		font-size: 10px;
-		font-weight: 400;
-		color: var(--muted-foreground);
-	}
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 5px;
-	}
-	.chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		height: 24px;
-		padding: 0 9px;
-		border-radius: 6px;
-		border: 1px solid var(--border);
-		background: var(--background);
-		color: var(--muted-foreground);
-		font-size: 11px;
-		font-family: var(--font-mono, ui-monospace, monospace);
-		cursor: pointer;
-		transition:
-			background 0.12s ease,
-			color 0.12s ease,
-			border-color 0.12s ease;
-	}
-	.chip:hover {
-		border-color: var(--ring);
-		color: var(--foreground);
-	}
-	.chip.on {
-		background: var(--foreground);
-		border-color: var(--foreground);
-		color: var(--background);
-	}
-</style>
+</Field.Field>

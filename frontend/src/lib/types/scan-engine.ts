@@ -9,9 +9,9 @@ export const INTENSITY_LABELS: Record<Intensity, string> = {
 };
 
 export const INTENSITY_HELP: Record<Intensity, string> = {
-	passive: 'No active probing — lowest footprint, stealthiest, fewest findings.',
-	normal: 'Balanced active scanning — standard rate limits and tool coverage.',
-	aggressive: 'Maximum coverage — higher rate, noisier, most thorough but detectable.'
+	passive: 'Passive sources only. No traffic is sent to the target.',
+	normal: 'Active scanning at standard rate limits.',
+	aggressive: 'Maximum coverage at higher request rates. More likely to be detected.'
 };
 
 export type StageConfig = Record<string, unknown>;
@@ -107,15 +107,30 @@ export interface EngineCatalog {
 	target_types: string[];
 }
 
+export interface PreviewResolved {
+	header_names: string[];
+	global_threads: number;
+	global_rate_limit_ceiling: number | null;
+	per_tool_rate_limits: Record<string, number>;
+	excluded_subdomains: string[];
+	excluded_paths: string[];
+	excluded_ips: string[];
+	included_subdomains: string[];
+	follow_redirects: boolean | null;
+	http_protocol: string;
+}
+
 export interface EnginePreviewResult {
 	phases: import('./scan').PreviewPhase[];
 	resolved_stages: Record<string, StageConfig>;
+	resolved: PreviewResolved;
 	warnings: string[];
 }
 
 export interface EnginePreviewRequest {
 	target_type: string;
 	context_id?: string | null;
+	context?: import('./scan-context').ScanContextCreate | null;
 	intensity?: Intensity;
 	global_threads?: number;
 	stages?: Record<string, StageConfig>;

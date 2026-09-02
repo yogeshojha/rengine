@@ -7,9 +7,10 @@
 	import LoadingButton from '@/components/loading-button.svelte';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import Upload from '@lucide/svelte/icons/upload';
-	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import StageList from './stage-list.svelte';
+	import FootprintMeter from './footprint-meter.svelte';
 	import { parse, validate, draftFromDoc } from '$lib/utilities/engine-yaml';
-	import { summarize, FOOTPRINT_LABEL } from '$lib/utilities/engine-summary';
+	import { summarize } from '$lib/utilities/engine-summary';
 	import type { EngineCatalog } from '$lib/types/scan-engine';
 
 	interface Props {
@@ -55,7 +56,8 @@ stages:
 		<Dialog.Header>
 			<Dialog.Title>Import engine</Dialog.Title>
 			<Dialog.Description>
-				Paste or drop an engine YAML. You'll see what it does before it's created.
+				Paste or drop an engine YAML document. Review the resolved configuration before the engine
+				is created.
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -103,12 +105,22 @@ stages:
 				<div class="preview-head">
 					<span class="preview-name">{parsed.name || 'Untitled engine'}</span>
 					<Badge variant="outline" class="cap">{parsed.intensity}</Badge>
-					<Badge variant="outline" class="cap">
-						{#if summary.footprint === 'none'}<EyeOff size={10} />{/if}
-						{FOOTPRINT_LABEL[summary.footprint]}
-					</Badge>
 				</div>
-				<p class="preview-line">{summary.headline}</p>
+				{#if catalog}
+					<StageList
+						stages={catalog.stages}
+						config={parsed.stages}
+						intensity={parsed.intensity}
+						class="py-1"
+					/>
+				{/if}
+				<div class="preview-line">
+					<span>{summary.activeStages} of {summary.totalStages} stages will run</span>
+					<FootprintMeter
+						footprint={summary.footprint}
+						requestsPerSecond={summary.requestsPerSecond}
+					/>
+				</div>
 				{#if summary.tools.length}
 					<p class="preview-tools">{summary.tools.join(' · ')}</p>
 				{/if}
@@ -175,6 +187,11 @@ stages:
 		text-transform: capitalize;
 	}
 	.preview-line {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		flex-wrap: wrap;
 		font-size: 12px;
 		color: var(--muted-foreground);
 	}

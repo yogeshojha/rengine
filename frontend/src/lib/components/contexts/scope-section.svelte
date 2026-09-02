@@ -50,10 +50,10 @@
 	<div class="space-y-1.5">
 		<Label class="text-xs">Excluded subdomain patterns</Label>
 		<p class="text-xs text-muted-foreground">
-			Keyword, wildcard (<code class="text-[11px]">*admin*</code>) or regex — matched against every
-			discovered subdomain. No domain names, so the context stays reusable. Matches are still stored
-			but flagged <span class="text-warning">excluded</span> and skipped from resolution, ports, screenshots
-			and later stages.
+			Keyword, wildcard (<code class="text-[11px]">*admin*</code>) or regex matched against every
+			discovered subdomain. Use patterns rather than full domain names so the context works across
+			targets. Matching subdomains are recorded, flagged as
+			<span class="text-warning">excluded</span> and skipped by all later stages.
 		</p>
 		<StringListField
 			items={context.excluded_subdomains}
@@ -66,7 +66,7 @@
 	<div class="space-y-1.5">
 		<Label class="text-xs">Excluded paths</Label>
 		<p class="text-xs text-muted-foreground">
-			Path prefix or regex excluded from crawling and fuzzing. Examples:
+			Path prefixes or regular expressions excluded from crawling and fuzzing, for example
 			<code class="text-[11px]">/admin</code>, <code class="text-[11px]">/static/(?:css|js)/</code>,
 			<code class="text-[11px]">/images/.*\.jpg</code>
 		</p>
@@ -90,7 +90,7 @@
 
 	<div class="space-y-1.5">
 		<Label class="text-xs">Included subdomains</Label>
-		<p class="text-xs text-muted-foreground">empty = scan everything discovered</p>
+		<p class="text-xs text-muted-foreground">Leave empty to scan every discovered subdomain.</p>
 		<StringListField
 			items={context.included_subdomains}
 			placeholder="api.example.com"
@@ -101,6 +101,6 @@
 	<Separator />
 
 	<p class="text-xs text-muted-foreground">
-		Baseline comparison and new-asset-only scanning are applied per scan at launch, not here.
+		Baseline comparison and new-asset-only scanning are chosen when a scan is launched.
 	</p>
 </div>

@@ -32,8 +32,13 @@ export const ROUTES = {
 	engine: (id: string) => `/automation/engines/${id}`,
 	contexts: '/automation/contexts',
 	context: (id: string) => `/automation/contexts/${id}`,
-	newContext: (projectId?: string) =>
-		`/automation/contexts/new${projectId ? `?project=${projectId}` : ''}`,
+	newContext: (projectId?: string, template?: string) => {
+		const params = new URLSearchParams();
+		if (projectId) params.set('project', projectId);
+		if (template) params.set('template', template);
+		const query = params.toString();
+		return `/automation/contexts/new${query ? `?${query}` : ''}`;
+	},
 	schedules: '/schedules',
 	settings: (tab?: SettingsTab) => (tab ? `/settings?tab=${tab}` : '/settings')
 } as const;

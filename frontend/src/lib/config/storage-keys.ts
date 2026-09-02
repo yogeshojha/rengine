@@ -5,6 +5,9 @@ export const STORAGE_KEYS = {
 	targetViews: 'targets:views',
 	engineLensTargetType: 'rengine:engine:lensTargetType',
 	engineSidePane: 'rengine:engine:sidePane',
+	engineSplit: 'rengine:engine:split',
+	engineSideTab: 'rengine:engine:sideTab',
+	contextSplit: 'rengine:context:split',
 	activityPinned: 'rengine:activity:pinned',
 	activityGrouping: 'rengine:activity:grouping'
 } as const;

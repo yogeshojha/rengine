@@ -7,20 +7,31 @@
 	import X from '@lucide/svelte/icons/x';
 	import Code2 from '@lucide/svelte/icons/code-2';
 	import PanelRightClose from '@lucide/svelte/icons/panel-right-close';
-	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import PanelRightOpen from '@lucide/svelte/icons/panel-right-open';
 	import Search from '@lucide/svelte/icons/search';
+	import Copy from '@lucide/svelte/icons/copy';
+	import Download from '@lucide/svelte/icons/download';
+	import WandSparkles from '@lucide/svelte/icons/wand-sparkles';
+	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+	import Workflow from '@lucide/svelte/icons/workflow';
+	import GitCompare from '@lucide/svelte/icons/git-compare';
+	import Layers from '@lucide/svelte/icons/layers';
 
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Empty from '$lib/components/ui/empty';
+	import * as Resizable from '$lib/components/ui/resizable';
+	import * as InputGroup from '$lib/components/ui/input-group';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 
 	import EngineTopbar from '$lib/components/engines/engine-topbar.svelte';
+	import EngineSummaryBar from '$lib/components/engines/engine-summary-bar.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import StageRow from '$lib/components/engines/stage-row.svelte';
 	import YamlPane from '$lib/components/engines/yaml-pane.svelte';
@@ -36,28 +47,43 @@
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import type { IconComponent } from '$lib/config/icons';
 	import { downloadBlob } from '$lib/utilities/download';
+	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { phaseLabel } from '$lib/types/scan-engine';
-	import type { Intensity, ScanEngine, StageConfig } from '$lib/types/scan-engine';
+	import type {
+		Intensity,
+		ScanEngine,
+		StageCatalogEntry,
+		StageConfig
+	} from '$lib/types/scan-engine';
 	import type { PreviewPhase } from '$lib/types/scan';
 	import {
 		engineToYaml,
 		parse,
 		validate,
+		formatYaml,
 		setStageField as yamlSetStageField,
 		deleteStage as yamlDeleteStage,
 		pruneEmptyStages,
 		draftFromDoc,
 		overridesOf,
-		stageRange,
 		stageAtOffset,
 		type YamlIssue
 	} from '$lib/utilities/engine-yaml';
 
 	const PREVIEW_DEBOUNCE_MS = 250;
 
+	type SideTab = 'yaml' | 'pipeline' | 'resolved' | 'diff';
+	const SIDE_TABS: { key: SideTab; label: string; icon: IconComponent }[] = [
+		{ key: 'yaml', label: 'engine.yaml', icon: Code2 },
+		{ key: 'pipeline', label: 'Pipeline', icon: Workflow },
+		{ key: 'resolved', label: 'Resolved', icon: Layers },
+		{ key: 'diff', label: 'Diff', icon: GitCompare }
+	];
+
 	const engineId = $derived(page.params.id);
-	const isNarrow = new IsMobile(1180);
+	const isNarrow = new IsMobile(1100);
 
 	let engine = $state<ScanEngine | null>(null);
 	let yamlSource = $state('');
@@ -74,13 +100,14 @@
 	let isDeleting = $state(false);
 	let showLeaveDialog = $state(false);
 	let showSidePane = $state(true);
-	let sideTab = $state<'yaml' | 'pipeline' | 'resolved' | 'diff'>('yaml');
+	let sideTab = $state<SideTab>('yaml');
+	let mobileView = $state<'stages' | 'code'>('stages');
 	let pendingNav: (() => void) | null = $state(null);
 	let allowNavigation = $state(false);
 	let filter = $state('');
 	let modifiedOnly = $state(false);
-	let focusRange = $state<[number, number] | null>(null);
 	let activeStage = $state<string | null>(null);
+	let revealToken = $state(0);
 
 	let lensTargetType = $state('domain');
 	let previewPhases = $state<PreviewPhase[]>([]);
@@ -90,6 +117,7 @@
 	let previewError = $state<string | null>(null);
 
 	const catalog = $derived(engineCatalogStore.catalog);
+	const catalogStages = $derived(engineCatalogStore.stages);
 	const doc = $derived(yamlSource ? parse(yamlSource) : null);
 	const issues = $derived<YamlIssue[]>(doc ? validate(yamlSource, doc, catalog) : []);
 	const errorCount = $derived(issues.filter((i) => i.severity === 'error').length);
@@ -114,6 +142,21 @@
 			(yamlSource !== savedYaml || pendingToolOptions !== null)
 	);
 
+	const stageStates = $derived(
+		Object.fromEntries(
+			catalogStages.map((s) => [
+				s.name,
+				Boolean(parsed?.stages?.[s.name]?.enabled ?? s.defaults.enabled)
+			])
+		)
+	);
+
+	const modifiedCount = $derived(
+		catalogStages.filter(
+			(s) => Object.keys(overridesOf(parsed?.stages?.[s.name] ?? {}, s.defaults)).length > 0
+		).length
+	);
+
 	const stagesByPhase = $derived.by(() => {
 		const term = filter.trim().toLowerCase();
 		return engineCatalogStore.byPhase().map((group) => ({
@@ -136,7 +179,37 @@
 		}));
 	});
 
-	const visibleCount = $derived(stagesByPhase.reduce((n, g) => n + g.stages.length, 0));
+	const visibleGroups = $derived(stagesByPhase.filter((g) => g.stages.length > 0));
+
+	function levelsOf(stages: StageCatalogEntry[]): StageCatalogEntry[][] {
+		const out: StageCatalogEntry[][] = [];
+		for (const stage of stages) {
+			const last = out[out.length - 1];
+			if (last && last[0].level === stage.level) last.push(stage);
+			else out.push([stage]);
+		}
+		return out;
+	}
+
+	type RailKind = 'none' | 'solid' | 'dotted';
+
+	function railKinds(
+		si: number,
+		level: StageCatalogEntry[],
+		li: number,
+		levels: StageCatalogEntry[][],
+		gi: number,
+		groups: number
+	): { up: RailKind; down: RailKind } {
+		const up = si > 0 ? 'solid' : li > 0 || gi > 0 ? 'dotted' : 'none';
+		const down =
+			si < level.length - 1
+				? 'solid'
+				: li < levels.length - 1 || gi < groups - 1
+					? 'dotted'
+					: 'none';
+		return { up, down };
+	}
 
 	function stageConfig(name: string): StageConfig {
 		return parsed?.stages?.[name] ?? {};
@@ -160,15 +233,20 @@
 		flashStage(stageName);
 	}
 
+	function toggleStageFromGutter(stageName: string) {
+		const current = stageStates[stageName] ?? true;
+		editDoc((d) => yamlSetStageField(d, stageName, 'enabled', !current));
+		activeStage = stageName;
+	}
+
 	function resetStage(stageName: string) {
 		editDoc((d) => yamlDeleteStage(d, stageName));
 		activeStage = stageName;
-		focusRange = null;
 	}
 
 	function flashStage(stageName: string) {
 		activeStage = stageName;
-		focusRange = yamlSource ? stageRange(parse(yamlSource), stageName) : null;
+		revealToken++;
 	}
 
 	function handleCursorMove(offset: number) {
@@ -275,7 +353,7 @@
 			return;
 		}
 		if (!draft.name.trim()) {
-			saveError = 'Give the engine a name before saving.';
+			saveError = 'Enter an engine name before saving.';
 			toast.error(saveError);
 			return;
 		}
@@ -323,6 +401,18 @@
 		toast.success('YAML exported');
 	}
 
+	async function handleCopyYaml() {
+		const ok = await writeClipboard(yamlSource);
+		if (ok) toast.success('YAML copied');
+		else toast.error('Could not copy to clipboard');
+	}
+
+	function handleFormatYaml() {
+		const next = formatYaml(yamlSource);
+		if (next === yamlSource) toast.message('Already formatted');
+		else yamlSource = next;
+	}
+
 	async function handleDuplicate() {
 		const project = projectsStore.activeProject;
 		if (!project || !draft) return;
@@ -359,6 +449,11 @@
 		localStorage.setItem(STORAGE_KEYS.engineSidePane, String(showSidePane));
 	}
 
+	function setSideTab(value: string) {
+		sideTab = value as SideTab;
+		localStorage.setItem(STORAGE_KEYS.engineSideTab, sideTab);
+	}
+
 	function setLensTargetType(value: string) {
 		lensTargetType = value;
 		localStorage.setItem(STORAGE_KEYS.engineLensTargetType, value);
@@ -383,6 +478,8 @@
 		if (storedLens) lensTargetType = storedLens;
 		const storedPane = localStorage.getItem(STORAGE_KEYS.engineSidePane);
 		if (storedPane !== null) showSidePane = storedPane === 'true';
+		const storedTab = localStorage.getItem(STORAGE_KEYS.engineSideTab);
+		if (storedTab && SIDE_TABS.some((t) => t.key === storedTab)) sideTab = storedTab as SideTab;
 
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -403,6 +500,247 @@
 		};
 	});
 </script>
+
+{#snippet controls()}
+	<section class="controls">
+		<div class="toolbar">
+			<InputGroup.Root
+				class="h-7 min-w-0 flex-1 rounded-md border-0 bg-transparent shadow-none has-[[data-slot=input-group-control]:focus-visible]:ring-0 dark:bg-transparent"
+			>
+				<InputGroup.Addon class="text-muted-foreground">
+					<Search />
+				</InputGroup.Addon>
+				<InputGroup.Input
+					bind:value={filter}
+					placeholder="Filter stages, tools, settings…"
+					class="h-7 text-xs"
+				/>
+			</InputGroup.Root>
+			<Toggle
+				size="sm"
+				variant="outline"
+				pressed={modifiedOnly}
+				onPressedChange={(v) => (modifiedOnly = v)}
+				class="h-7 gap-1.5 px-2 text-[11px]"
+				aria-label="Show only modified stages"
+			>
+				Modified
+				{#if modifiedCount}
+					<span class="count">{modifiedCount}</span>
+				{/if}
+			</Toggle>
+			{#if !isNarrow.current}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon-sm"
+								class="h-7 w-7 text-muted-foreground"
+								onclick={toggleSidePane}
+								aria-label="{showSidePane ? 'Hide' : 'Show'} code panel"
+							>
+								{#if showSidePane}<PanelRightClose size={14} />{:else}<PanelRightOpen
+										size={14}
+									/>{/if}
+							</Button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content class="text-xs"
+						>{showSidePane ? 'Hide' : 'Show'} code panel</Tooltip.Content
+					>
+				</Tooltip.Root>
+			{/if}
+		</div>
+
+		<ScrollArea class="min-h-0 flex-1">
+			<div class="stages">
+				{#if !parsed}
+					<p class="none">
+						The YAML document has a syntax error. Fix it in the editor to restore the stage
+						controls.
+					</p>
+				{:else if visibleGroups.length === 0}
+					<p class="none">No stages match.</p>
+				{/if}
+
+				{#if parsed}
+					{#each visibleGroups as group, gi (group.phase)}
+						{@const levels = levelsOf(group.stages)}
+						<div class="phase" class:linked={gi > 0}>
+							<header class="phase-head">
+								{#if gi > 0}
+									<span class="dotted phase-link" aria-hidden="true"></span>
+								{/if}
+								<h2>{phaseLabel(group.phase)}</h2>
+								<span class="phase-count">
+									{group.stages.filter((s) => stageStates[s.name]).length}/{group.stages.length} on
+								</span>
+							</header>
+							<div class="phase-body">
+								{#each levels as level, li (level[0].level)}
+									{#if li > 0}
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												{#snippet child({ props })}
+													<div {...props} class="level-gap">
+														<span class="dotted" aria-hidden="true"></span>
+													</div>
+												{/snippet}
+											</Tooltip.Trigger>
+											<Tooltip.Content side="right" class="text-xs">
+												Waits for the stages above to finish
+											</Tooltip.Content>
+										</Tooltip.Root>
+									{/if}
+									<div class="level">
+										{#each level as stage, si (stage.name)}
+											{@const rails = railKinds(si, level, li, levels, gi, visibleGroups.length)}
+											<StageRow
+												{stage}
+												config={stageConfig(stage.name)}
+												open={openStages[stage.name] ?? false}
+												active={activeStage === stage.name}
+												railUp={rails.up}
+												railDown={rails.down}
+												applicable={stage.applies_to.includes(lensTargetType)}
+												blockedByIntensity={blockedByIntensity(stage.name)}
+												{lensTargetType}
+												onToggleOpen={() => {
+													openStages = { ...openStages, [stage.name]: !openStages[stage.name] };
+													flashStage(stage.name);
+												}}
+												onChange={(field, value) => setStageField(stage.name, field, value)}
+												onReset={() => resetStage(stage.name)}
+											/>
+										{/each}
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/each}
+				{/if}
+			</div>
+		</ScrollArea>
+	</section>
+{/snippet}
+
+{#snippet side()}
+	<section class="side">
+		<Tabs.Root value={sideTab} onValueChange={setSideTab} class="side-tabs">
+			<div class="side-head">
+				<Tabs.List class="h-9 gap-0 rounded-none bg-transparent p-0">
+					{#each SIDE_TABS as tab (tab.key)}
+						<Tabs.Trigger
+							value={tab.key}
+							class="h-9 flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 text-xs font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
+						>
+							<tab.icon size={13} />
+							<span class={tab.key === 'yaml' ? 'font-mono' : ''}>{tab.label}</span>
+							{#if tab.key === 'yaml' && hasUnsavedChanges}
+								<span class="tab-dot" aria-label="Unsaved changes"></span>
+							{/if}
+						</Tabs.Trigger>
+					{/each}
+				</Tabs.List>
+
+				{#if sideTab === 'yaml'}
+					<div class="side-actions">
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								{#snippet child({ props })}
+									<Button
+										{...props}
+										variant="ghost"
+										size="icon-sm"
+										class="h-7 w-7 text-muted-foreground"
+										onclick={handleFormatYaml}
+										aria-label="Format document"
+									>
+										<WandSparkles size={13} />
+									</Button>
+								{/snippet}
+							</Tooltip.Trigger>
+							<Tooltip.Content class="text-xs">Format document</Tooltip.Content>
+						</Tooltip.Root>
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								{#snippet child({ props })}
+									<Button
+										{...props}
+										variant="ghost"
+										size="icon-sm"
+										class="h-7 w-7 text-muted-foreground"
+										onclick={handleCopyYaml}
+										aria-label="Copy YAML"
+									>
+										<Copy size={13} />
+									</Button>
+								{/snippet}
+							</Tooltip.Trigger>
+							<Tooltip.Content class="text-xs">Copy YAML</Tooltip.Content>
+						</Tooltip.Root>
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								{#snippet child({ props })}
+									<Button
+										{...props}
+										variant="ghost"
+										size="icon-sm"
+										class="h-7 w-7 text-muted-foreground"
+										onclick={handleExportYaml}
+										aria-label="Download YAML"
+									>
+										<Download size={13} />
+									</Button>
+								{/snippet}
+							</Tooltip.Trigger>
+							<Tooltip.Content class="text-xs">Download .yaml</Tooltip.Content>
+						</Tooltip.Root>
+					</div>
+				{/if}
+			</div>
+
+			<Tabs.Content value="yaml" class="side-body">
+				<YamlPane
+					value={yamlSource}
+					{issues}
+					{activeStage}
+					{stageStates}
+					reveal={revealToken}
+					onChange={(next) => (yamlSource = next)}
+					onCursorMove={handleCursorMove}
+					onToggleStage={toggleStageFromGutter}
+				/>
+			</Tabs.Content>
+
+			<Tabs.Content value="pipeline" class="side-body">
+				<EffectPanel
+					phases={previewPhases}
+					stages={catalogStages}
+					targetType={lensTargetType}
+					isLoading={previewLoading}
+					error={previewError}
+				/>
+			</Tabs.Content>
+
+			<Tabs.Content value="resolved" class="side-body">
+				<ResolvedPanel
+					resolved={resolvedStages}
+					warnings={previewWarnings}
+					targetType={lensTargetType}
+					isLoading={previewLoading}
+					error={previewError}
+				/>
+			</Tabs.Content>
+
+			<Tabs.Content value="diff" class="side-body">
+				<DiffPanel stages={parsed?.stages ?? {}} {catalog} />
+			</Tabs.Content>
+		</Tabs.Root>
+	</section>
+{/snippet}
 
 <div class="editor">
 	{#if isLoading && !engine}
@@ -428,6 +766,7 @@
 			engine={draft ?? engine}
 			{isSaving}
 			{hasUnsavedChanges}
+			{errorCount}
 			onSave={handleSave}
 			onNameChange={setName}
 			onIntensityChange={setIntensity}
@@ -437,6 +776,17 @@
 			onDuplicate={handleDuplicate}
 			onDelete={() => (showDeleteDialog = true)}
 			onExportYaml={handleExportYaml}
+		/>
+
+		<EngineSummaryBar
+			targetType={lensTargetType}
+			targetTypes={engineCatalogStore.targetTypes}
+			phases={previewPhases}
+			warnings={previewWarnings}
+			stages={catalogStages}
+			isLoading={previewLoading}
+			error={previewError}
+			onTargetTypeChange={setLensTargetType}
 		/>
 
 		{#if saveError}
@@ -455,158 +805,50 @@
 			</div>
 		{/if}
 
-		<div class="content">
-			<section class="controls" class:solo={!showSidePane}>
-				<div class="toolbar">
-					<div class="search">
-						<Search size={13} class="search-icon" />
-						<Input
-							bind:value={filter}
-							placeholder="Filter settings…"
-							class="h-7 border-0 bg-transparent pl-7 text-xs shadow-none focus-visible:ring-0"
-						/>
-					</div>
-					<Toggle
-						size="sm"
-						pressed={modifiedOnly}
-						onPressedChange={(v) => (modifiedOnly = v)}
-						class="h-7 px-2 text-[11px]"
-						aria-label="Show only modified settings"
-					>
-						Modified
-					</Toggle>
-					{#if true}
-						<Button
-							variant="ghost"
-							size="sm"
-							class="h-7 gap-1.5 px-2 text-[11px]"
-							onclick={toggleSidePane}
-						>
-							{#if showSidePane}<PanelRightClose size={13} />{:else}<Code2 size={13} />{/if}
-							{showSidePane ? 'Hide' : 'Show'} panel
-						</Button>
-					{/if}
-				</div>
-
-				<ScrollArea class="min-h-0 flex-1">
-					<div class="stages">
-						{#if !parsed}
-							<p class="none">
-								The YAML has a syntax error. Fix it in the editor to get the controls back.
-							</p>
-						{:else if visibleCount === 0}
-							<p class="none">No stages match.</p>
-						{/if}
-
-						{#each stagesByPhase as group (group.phase)}
-							{#if group.stages.length && parsed}
-								<div class="phase">
-									<header class="phase-head">
-										<h2>{phaseLabel(group.phase)}</h2>
-										<span class="phase-count">
-											{group.stages.filter((s) => stageConfig(s.name).enabled ?? s.defaults.enabled)
-												.length}/{group.stages.length} on
-										</span>
-									</header>
-									<div class="phase-body">
-										{#each group.stages as stage (stage.name)}
-											<div class="row-wrap" class:active={activeStage === stage.name}>
-												<StageRow
-													{stage}
-													config={stageConfig(stage.name)}
-													open={openStages[stage.name] ?? false}
-													applicable={true}
-													blockedByIntensity={blockedByIntensity(stage.name)}
-													lensTargetType={null}
-													onToggleOpen={() => {
-														openStages = {
-															...openStages,
-															[stage.name]: !openStages[stage.name]
-														};
-														flashStage(stage.name);
-													}}
-													onChange={(field, value) => setStageField(stage.name, field, value)}
-													onReset={() => resetStage(stage.name)}
-												/>
-											</div>
-										{/each}
-									</div>
-								</div>
-							{/if}
-						{/each}
-					</div>
-				</ScrollArea>
-			</section>
-
-			{#if showSidePane}
-				<section class="side" class:narrow={isNarrow.current}>
-					<Tabs.Root
-						value={sideTab}
-						onValueChange={(v) => (sideTab = v as 'yaml' | 'pipeline')}
-						class="side-tabs"
-					>
-						<div class="side-head">
-							<Tabs.List class="h-7">
-								<Tabs.Trigger value="yaml" class="gap-1.5 px-2.5 text-[11px]">
-									<Code2 size={12} />
-									engine.yaml
-								</Tabs.Trigger>
-								<Tabs.Trigger value="pipeline" class="px-2.5 text-[11px]">Pipeline</Tabs.Trigger>
-								<Tabs.Trigger value="resolved" class="px-2.5 text-[11px]">Resolved</Tabs.Trigger>
-								<Tabs.Trigger value="diff" class="px-2.5 text-[11px]">Diff</Tabs.Trigger>
-							</Tabs.List>
-							{#if sideTab === 'yaml'}
-								{#if errorCount}
-									<span class="status err">
-										<AlertTriangle size={11} />
-										{errorCount} error{errorCount === 1 ? '' : 's'}
-									</span>
-								{:else}
-									<span class="status ok"><CircleCheck size={11} /> valid</span>
-								{/if}
-							{/if}
-						</div>
-
-						<Tabs.Content value="yaml" class="side-body">
-							<YamlPane
-								value={yamlSource}
-								{issues}
-								highlight={focusRange}
-								onChange={(next) => (yamlSource = next)}
-								onCursorMove={handleCursorMove}
-							/>
-						</Tabs.Content>
-
-						<Tabs.Content value="resolved" class="side-body">
-							<ResolvedPanel
-								resolved={resolvedStages}
-								warnings={previewWarnings}
-								targetType={lensTargetType}
-								targetTypes={engineCatalogStore.targetTypes}
-								isLoading={previewLoading}
-								error={previewError}
-								onTargetTypeChange={setLensTargetType}
-							/>
-						</Tabs.Content>
-
-						<Tabs.Content value="diff" class="side-body">
-							<DiffPanel stages={parsed?.stages ?? {}} catalog={engineCatalogStore.catalog} />
-						</Tabs.Content>
-
-						<Tabs.Content value="pipeline" class="side-body">
-							<EffectPanel
-								phases={previewPhases}
-								targetType={lensTargetType}
-								targetTypes={engineCatalogStore.targetTypes}
-								isLoading={previewLoading}
-								error={previewError}
-								onTargetTypeChange={setLensTargetType}
-							/>
-						</Tabs.Content>
-					</Tabs.Root>
-				</section>
-			{/if}
-		</div>
+		{#if isNarrow.current}
+			<div class="mobile-switch">
+				<ToggleGroup.Root
+					type="single"
+					variant="outline"
+					size="sm"
+					value={mobileView}
+					onValueChange={(v) => v && (mobileView = v as 'stages' | 'code')}
+					aria-label="Editor view"
+				>
+					<ToggleGroup.Item value="stages" class="h-7 gap-1.5 px-3 text-xs">
+						<SlidersHorizontal size={13} />
+						Stages
+					</ToggleGroup.Item>
+					<ToggleGroup.Item value="code" class="h-7 gap-1.5 px-3 text-xs">
+						<Code2 size={13} />
+						Code
+					</ToggleGroup.Item>
+				</ToggleGroup.Root>
+			</div>
+			<div class="content">
+				{#if mobileView === 'stages'}
+					{@render controls()}
+				{:else}
+					{@render side()}
+				{/if}
+			</div>
+		{:else}
+			<Resizable.PaneGroup
+				direction="horizontal"
+				autoSaveId={STORAGE_KEYS.engineSplit}
+				class="content"
+			>
+				<Resizable.Pane defaultSize={52} minSize={32} order={1} class="pane">
+					{@render controls()}
+				</Resizable.Pane>
+				{#if showSidePane}
+					<Resizable.Handle class="handle" />
+					<Resizable.Pane defaultSize={48} minSize={28} order={2} class="pane">
+						{@render side()}
+					</Resizable.Pane>
+				{/if}
+			</Resizable.PaneGroup>
+		{/if}
 
 		<LaunchModal bind:open={showLaunch} presetEngineId={engine.id} />
 
@@ -624,8 +866,8 @@
 	bind:open={showDeleteDialog}
 	title="Delete this engine?"
 	description={engine?.usage?.schedules
-		? `'${draft?.name ?? 'This engine'}' is used by ${engine.usage.schedules} scheduled scan${engine.usage.schedules === 1 ? '' : 's'} — those will stop working. This cannot be undone.`
-		: `Delete '${draft?.name ?? 'this engine'}'? This cannot be undone.`}
+		? `'${draft?.name ?? 'This engine'}' is used by ${engine.usage.schedules} scheduled scan${engine.usage.schedules === 1 ? '' : 's'}. Those schedules will fail to launch without it. Completed scans and their results are unaffected. This action cannot be undone.`
+		: `Removes '${draft?.name ?? 'this engine'}' from the project. Completed scans and their results are unaffected. This action cannot be undone.`}
 	{isDeleting}
 	onOpenChange={(open) => (showDeleteDialog = open)}
 	onConfirm={confirmDelete}
@@ -651,7 +893,11 @@
 />
 
 <style>
-	:global(main:has(.editor)) {
+	:global([data-slot='scroll-area-viewport']:has(.editor) > div) {
+		display: block;
+		height: 100%;
+	}
+	:global([data-slot='scroll-area-viewport'] > div > main:has(.editor)) {
 		height: 100%;
 		padding: 0;
 	}
@@ -688,25 +934,41 @@
 		font-weight: 500;
 	}
 
-	.content {
+	.mobile-switch {
+		display: flex;
+		justify-content: center;
+		flex-shrink: 0;
+		padding: 6px 12px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.editor :global(.content) {
 		position: relative;
 		display: flex;
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
 	}
-
-	.controls {
+	.editor :global(.pane) {
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
 		min-width: 0;
-		flex: 1 1 54%;
-		border-right: 1px solid var(--border);
 	}
-	.controls.solo {
-		flex: 1 1 100%;
-		border-right: none;
+	.editor :global(.handle) {
+		width: 1px;
+		background: var(--border);
+	}
+	.editor :global(.handle[data-active]) {
+		background: var(--primary);
+	}
+
+	.controls {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		min-width: 0;
 	}
 
 	.toolbar {
@@ -714,27 +976,26 @@
 		align-items: center;
 		gap: 6px;
 		flex-shrink: 0;
-		padding: 6px 10px;
+		padding: 5px 8px 5px 6px;
 		border-bottom: 1px solid var(--border);
 	}
-	.search {
-		position: relative;
-		flex: 1;
-		min-width: 0;
-	}
-	.search :global(.search-icon) {
-		position: absolute;
-		left: 6px;
-		top: 50%;
-		transform: translateY(-50%);
-		color: var(--muted-foreground);
-		pointer-events: none;
-		z-index: 1;
+	.count {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 16px;
+		height: 16px;
+		padding: 0 4px;
+		border-radius: 999px;
+		background: var(--primary);
+		color: var(--primary-foreground);
+		font-size: 10px;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.stages {
-		max-width: 760px;
-		padding: 16px 16px 48px;
+		max-width: 820px;
+		padding: 16px 16px 56px;
 	}
 	.none {
 		font-size: 12px;
@@ -742,15 +1003,32 @@
 		padding: 8px 2px;
 	}
 
-	.phase + .phase {
-		margin-top: 20px;
+	.dotted {
+		display: block;
+		width: 3px;
+		background: radial-gradient(
+				circle,
+				color-mix(in oklch, var(--muted-foreground) 65%, transparent) 1px,
+				transparent 1.6px
+			)
+			center / 3px 5px repeat-y;
+	}
+	.phase.linked {
+		margin-top: 12px;
 	}
 	.phase-head {
+		position: relative;
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 10px;
-		padding: 0 2px 7px;
+		padding: 2px 2px 8px 32px;
+	}
+	.phase-head .phase-link {
+		position: absolute;
+		left: 15px;
+		top: -12px;
+		bottom: 0;
 	}
 	.phase-head h2 {
 		font-size: 11px;
@@ -765,42 +1043,35 @@
 		font-variant-numeric: tabular-nums;
 	}
 	.phase-body {
+		position: relative;
 		border: 1px solid var(--border);
 		border-radius: 0.7rem;
 		background: var(--card);
 		overflow: hidden;
 	}
-
-	.row-wrap {
+	.level {
 		position: relative;
-		transition: background 0.15s ease;
 	}
-	.row-wrap.active {
-		background: color-mix(in oklch, var(--muted) 55%, transparent);
+	.level-gap {
+		position: relative;
+		height: 14px;
+		border-top: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+		background: color-mix(in oklch, var(--muted) 35%, transparent);
 	}
-	.row-wrap.active::before {
-		content: '';
+	.level-gap .dotted {
 		position: absolute;
-		left: 0;
+		left: 15px;
 		top: 0;
 		bottom: 0;
-		width: 2px;
-		background: var(--foreground);
-		opacity: 0.4;
 	}
 
-	.side.narrow {
-		position: absolute;
-		inset: 0;
-		z-index: 20;
-		flex: 1 1 100%;
-	}
 	.side {
 		display: flex;
 		flex-direction: column;
+		flex: 1;
 		min-height: 0;
 		min-width: 0;
-		flex: 1 1 46%;
 		background: var(--card);
 	}
 	.side :global(.side-tabs) {
@@ -808,6 +1079,7 @@
 		flex-direction: column;
 		min-height: 0;
 		flex: 1;
+		gap: 0;
 	}
 	.side-head {
 		display: flex;
@@ -815,8 +1087,13 @@
 		justify-content: space-between;
 		gap: 8px;
 		flex-shrink: 0;
-		padding: 5px 10px;
+		padding: 0 6px 0 4px;
 		border-bottom: 1px solid var(--border);
+	}
+	.side-actions {
+		display: flex;
+		align-items: center;
+		gap: 1px;
 	}
 	.side :global(.side-body) {
 		flex: 1;
@@ -824,17 +1101,11 @@
 		overflow: hidden;
 		margin: 0;
 	}
-	.status {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-size: 11px;
-		padding-right: 2px;
-	}
-	.status.ok {
-		color: var(--muted-foreground);
-	}
-	.status.err {
-		color: var(--destructive);
+	.tab-dot {
+		display: inline-block;
+		width: 6px;
+		height: 6px;
+		border-radius: 999px;
+		background: var(--primary);
 	}
 </style>

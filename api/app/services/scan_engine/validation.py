@@ -215,7 +215,7 @@ def _validate_stages(submitted: dict | None) -> dict[str, dict]:
             )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid config for stage '{name}' — {problems}",
+                detail=f"Invalid config for stage '{name}': {problems}",
             ) from exc
     return clean
 

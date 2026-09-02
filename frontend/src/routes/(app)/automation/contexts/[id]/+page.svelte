@@ -1,50 +1,75 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { page } from '$app/state';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
-	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Save from '@lucide/svelte/icons/save';
-	import { Spinner } from '$lib/components/ui/spinner';
+	import Check from '@lucide/svelte/icons/check';
+	import Play from '@lucide/svelte/icons/play';
+	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+	import GitCompare from '@lucide/svelte/icons/git-compare';
 
 	import { Button } from '$lib/components/ui/button';
-	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
-	import * as Card from '$lib/components/ui/card';
-	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { Separator } from '$lib/components/ui/separator';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import CopyButton from '@/components/copy-button.svelte';
+	import { Spinner } from '$lib/components/ui/spinner';
+	import * as Empty from '$lib/components/ui/empty';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as ButtonGroup from '$lib/components/ui/button-group';
+	import * as Kbd from '$lib/components/ui/kbd';
+	import * as Resizable from '$lib/components/ui/resizable';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import LoadingButton from '@/components/loading-button.svelte';
 	import UnsavedChangesDialog from '@/components/unsaved-changes-dialog.svelte';
+	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
+	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { proxiesStore } from '$lib/stores/proxies.svelte';
 	import { scanContextsApi } from '$lib/api/scan-contexts';
 	import { ROUTES } from '$lib/config/routes';
+	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
-	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import ContextSections from '$lib/components/contexts/context-sections.svelte';
 	import ContextEffect from '$lib/components/contexts/context-effect.svelte';
-	import { buildContextSummary } from '$lib/components/contexts/context-summary';
+	import ContextFacets from '$lib/components/contexts/context-facets.svelte';
 	import { validateDraft, buildContextPayload } from '$lib/components/contexts/context-form';
+	import type { ContextFormSection } from '$lib/components/contexts/context-form';
+	import { contextTemplate, templateDraft } from '$lib/components/contexts/context-templates';
 
-	import {
-		DEFAULT_SCAN_CONTEXT,
-		type ScanContextRead,
-		type ScanContextCreate,
-		type ScanContextUpdate
+	import type {
+		ScanContextRead,
+		ScanContextCreate,
+		ScanContextUpdate
 	} from '$lib/types/scan-context';
 
 	type Draft = ScanContextCreate;
 
-	// route param
+	const PAGE_SECTIONS: ContextFormSection[] = [
+		'auth',
+		'rate',
+		'scope',
+		'runtime',
+		'proxy',
+		'identity'
+	];
+
 	let contextId = $derived(page.params.id);
 	let isNew = $derived(contextId === 'new');
+	const isNarrow = new IsMobile(1100);
+	const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
-	// state
 	let loaded = $state<ScanContextRead | null>(null);
 	let draft = $state<Draft | null>(null);
 	let isLoading = $state(false);
@@ -53,6 +78,8 @@
 	let isDuplicating = $state(false);
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
+	let showLaunch = $state(false);
+	let mobileView = $state<'form' | 'effect'>('form');
 
 	let nameInputEl = $state<HTMLInputElement | null>(null);
 
@@ -61,10 +88,8 @@
 	let bypassGuard = false;
 
 	let touchedSecrets = new SvelteSet<string>();
-
 	let seedKey = $state(0);
 
-	// dirty detection
 	let baseline = $state<string>('');
 	let hasUnsavedChanges = $derived.by(() => {
 		if (!draft) return false;
@@ -74,23 +99,41 @@
 
 	let validationIssue = $derived(draft ? validateDraft(draft) : null);
 	let isValid = $derived(validationIssue === null);
+	let hasName = $derived(Boolean(draft?.name.trim()));
+	let attemptedSave = $state(false);
+	const showIssue = $derived(Boolean(validationIssue) && (attemptedSave || !isNew));
 
-	// load
+	let open = $state<Record<ContextFormSection, boolean>>({
+		identity: false,
+		auth: true,
+		rate: false,
+		scope: false,
+		runtime: false,
+		proxy: false
+	});
+
+	const proxyName = $derived(
+		draft?.proxy_id
+			? (proxiesStore.proxies.find((p) => p.id === draft?.proxy_id)?.name ?? null)
+			: null
+	);
+
+	$effect(() => {
+		if (!proxiesStore.hasFetched) proxiesStore.fetch();
+	});
+
 	$effect(() => {
 		const project = projectsStore.activeProject;
 		const id = contextId;
 		if (!project) return;
 		untrack(() => {
-			if (id === 'new') {
-				initNew();
-			} else if (id) {
-				loadContext(id, project.id);
-			}
+			if (id === 'new') initNew();
+			else if (id) loadContext(id, project.id);
 		});
 	});
 
 	$effect(() => {
-		if (isNew && draft && nameInputEl) nameInputEl.focus();
+		if (isNew && nameInputEl) nameInputEl.focus();
 	});
 
 	beforeNavigate((nav) => {
@@ -108,15 +151,24 @@
 		showLeaveDialog = true;
 	});
 
-	$effect(() => {
-		function onBeforeUnload(e: BeforeUnloadEvent) {
-			if (hasUnsavedChanges) {
+	onMount(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
 				e.preventDefault();
-				e.returnValue = '';
+				if (draft && !isSaving) handleSave();
 			}
-		}
+		};
+		const onBeforeUnload = (e: BeforeUnloadEvent) => {
+			if (!hasUnsavedChanges) return;
+			e.preventDefault();
+			e.returnValue = '';
+		};
+		window.addEventListener('keydown', onKey);
 		window.addEventListener('beforeunload', onBeforeUnload);
-		return () => window.removeEventListener('beforeunload', onBeforeUnload);
+		return () => {
+			window.removeEventListener('keydown', onKey);
+			window.removeEventListener('beforeunload', onBeforeUnload);
+		};
 	});
 
 	function confirmLeave() {
@@ -131,21 +183,15 @@
 		pendingNav = null;
 	}
 
-	function onKeydown(e: KeyboardEvent) {
-		if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-			e.preventDefault();
-			if (draft && !isSaving) handleSave();
-		}
-	}
-
 	function initNew() {
-		const d = DEFAULT_SCAN_CONTEXT();
-		d.name = '';
-		draft = d;
+		const templateKey = page.url.searchParams.get('template');
+		const template = contextTemplate(templateKey);
+		draft = templateDraft(templateKey);
 		loaded = null;
 		baseline = '';
 		touchedSecrets.clear();
 		seedKey++;
+		if (template) open = { ...open, auth: template.focus === 'auth', [template.focus]: true };
 	}
 
 	function readToDraft(ctx: ScanContextRead): Draft {
@@ -202,18 +248,17 @@
 		if (project && contextId && !isNew) loadContext(contextId, project.id);
 	}
 
-	// section handlers
 	function patchDraft(updates: Partial<Draft>) {
 		if (!draft) return;
 		draft = { ...draft, ...updates };
 	}
 
-	// save
-
 	async function handleSave() {
 		if (!draft || isSaving) return;
 		if (validationIssue) {
-			open[validationIssue.section] = true;
+			attemptedSave = true;
+			if (validationIssue.section === 'identity') nameInputEl?.focus();
+			else open[validationIssue.section] = true;
 			toast.error(validationIssue.message);
 			return;
 		}
@@ -267,7 +312,9 @@
 		const project = projectsStore.activeProject;
 		if (!project || !contextId || isNew || isDuplicating) return;
 		if (hasUnsavedChanges) {
-			toast.warning('Unsaved changes are not copied — the saved version is duplicated.');
+			toast.warning(
+				'The duplicate is based on the last saved version. Unsaved changes are not included.'
+			);
 		}
 		isDuplicating = true;
 		try {
@@ -284,11 +331,6 @@
 		} finally {
 			isDuplicating = false;
 		}
-	}
-
-	function requestDelete() {
-		if (!contextId || isNew) return;
-		showDeleteDialog = true;
 	}
 
 	async function handleDelete() {
@@ -311,46 +353,48 @@
 			isDeleting = false;
 		}
 	}
-
-	function handleBack() {
-		goto(ROUTES.contexts);
-	}
-
-	// collapsible state
-	let open = $state({
-		identity: true,
-		auth: true,
-		rate: false,
-		scope: false,
-		runtime: false,
-		proxy: false
-	});
-
-	let summary = $derived(draft ? buildContextSummary(draft) : '');
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+{#snippet form()}
+	<section class="form">
+		<ScrollArea class="min-h-0 flex-1">
+			<div class="form-body">
+				{#if draft}
+					<ContextSections
+						draft={draft!}
+						bind:open
+						touched={touchedSecrets}
+						onPatch={patchDraft}
+						sections={PAGE_SECTIONS}
+						{seedKey}
+					/>
+				{/if}
+			</div>
+		</ScrollArea>
+	</section>
+{/snippet}
 
-<div class="mx-auto w-full max-w-5xl space-y-6">
-	{#if isLoading && !loaded && !isNew}
-		<div class="flex items-center gap-2">
-			<Skeleton class="h-8 w-8 rounded-md" />
-			<Skeleton class="h-9 w-56" />
-			<div class="ml-auto flex gap-2">
-				<Skeleton class="h-8 w-24" />
-				<Skeleton class="h-8 w-20" />
-			</div>
+{#snippet effect()}
+	<section class="side">
+		<div class="side-head">
+			<GitCompare size={13} class="text-muted-foreground" />
+			<span class="side-title">Effect on an engine</span>
+			<span class="side-sub">Engine settings this context overrides at scan time</span>
 		</div>
-		<div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
-			<div class="space-y-4">
-				{#each Array(6) as _, i (i)}
-					<Skeleton class="h-16 w-full rounded-xl" />
-				{/each}
-			</div>
-			<Skeleton class="hidden h-48 w-full rounded-xl lg:block" />
+		<div class="side-body">
+			<ContextEffect {draft} />
+		</div>
+	</section>
+{/snippet}
+
+<div class="ctx-editor">
+	{#if isLoading && !loaded && !isNew}
+		<div class="state">
+			<Skeleton class="h-6 w-56" />
+			<Skeleton class="h-4 w-80" />
 		</div>
 	{:else if loadError}
-		<Empty.Root class="min-h-[50vh]">
+		<Empty.Root class="flex-1">
 			<Empty.Header>
 				<Empty.Media class="size-[52px] rounded-xl bg-destructive/10">
 					<AlertTriangle size={22} class="text-destructive" />
@@ -369,133 +413,170 @@
 			</Empty.Content>
 		</Empty.Root>
 	{:else if draft}
-		<div class="flex flex-wrap items-center gap-2">
-			<div class="flex min-w-0 flex-1 items-center gap-2">
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								variant="ghost"
-								size="icon"
-								class="h-8 w-8 shrink-0"
-								aria-label="Back to contexts"
-								onclick={handleBack}
-							>
-								<ChevronLeft class="h-4 w-4" />
-							</Button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content><p>Back to contexts</p></Tooltip.Content>
-				</Tooltip.Root>
+		<header class="topbar">
+			<div class="left">
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					aria-label="Back to contexts"
+					onclick={() => goto(ROUTES.contexts)}
+				>
+					<ArrowLeft size={15} />
+				</Button>
+				<Separator orientation="vertical" class="data-[orientation=vertical]:h-[18px]" />
 				<Input
 					bind:value={draft.name}
 					bind:ref={nameInputEl}
 					placeholder="Context name"
+					aria-label="Context name"
 					onkeydown={(e) => e.key === 'Enter' && handleSave()}
-					class="h-9 min-w-0 flex-1 sm:max-w-sm border-transparent bg-transparent text-base font-semibold shadow-none focus-visible:border-input focus-visible:bg-background"
+					class="h-8 min-w-0 flex-1 px-2 text-sm font-semibold sm:max-w-sm {isNew
+						? ''
+						: 'border-transparent bg-transparent shadow-none hover:border-input focus-visible:border-input focus-visible:bg-background dark:bg-transparent'}"
 				/>
-			</div>
-			<div class="flex flex-wrap items-center justify-end gap-2">
-				{#if !isNew}
-					{#if contextId}
-						<CopyButton value={contextId} class="h-8 w-8" />
-					{/if}
-					<Button
-						variant="ghost"
-						size="sm"
-						class="gap-1.5"
-						disabled={isDuplicating}
-						onclick={handleDuplicate}
-					>
-						{#if isDuplicating}
-							<Spinner class="h-3.5 w-3.5" />
-						{:else}
-							<Copy class="h-3.5 w-3.5" />
-						{/if}
-						Duplicate
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						class="gap-1.5 text-destructive hover:text-destructive"
-						onclick={requestDelete}
-					>
-						<Trash2 class="h-3.5 w-3.5" /> Delete
-					</Button>
+				{#if hasUnsavedChanges}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<span {...props} class="dot" aria-label="Unsaved changes"></span>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Content class="text-xs">
+							{isNew ? 'Not saved yet' : 'Unsaved changes'}
+						</Tooltip.Content>
+					</Tooltip.Root>
 				{/if}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								class="gap-1.5"
-								size="sm"
-								disabled={isSaving || !isValid}
-								onclick={handleSave}
-							>
-								{#if isSaving}
-									<Spinner class="h-3.5 w-3.5" />
-								{:else}
-									<Save class="h-3.5 w-3.5" />
-								{/if}
-								Save
-								{#if hasUnsavedChanges}<span class="dirty-dot"></span>{/if}
-							</Button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content>
-						<p>{validationIssue ? validationIssue.message : 'Save changes (⌘S)'}</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
 			</div>
+
+			<div class="right">
+				{#if !isNew}
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<Button {...props} variant="ghost" size="icon-sm" class="h-7 w-7" aria-label="More">
+									<MoreHorizontal size={14} />
+								</Button>
+							{/snippet}
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="end" class="w-40">
+							<DropdownMenu.Item disabled={isDuplicating} onclick={handleDuplicate}>
+								<Copy size={13} />
+								Duplicate
+							</DropdownMenu.Item>
+							<DropdownMenu.Separator />
+							<DropdownMenu.Item variant="destructive" onclick={() => (showDeleteDialog = true)}>
+								<Trash2 size={13} />
+								Delete
+							</DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				{/if}
+
+				<ButtonGroup.Root>
+					{#if !isNew}
+						<Button
+							variant="outline"
+							size="sm"
+							class="h-8 gap-1.5 text-xs"
+							onclick={() => (showLaunch = true)}
+						>
+							<Play size={13} />
+							Run
+						</Button>
+					{/if}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<span {...props} class="inline-flex">
+									<LoadingButton
+										size="sm"
+										variant={hasUnsavedChanges ? 'default' : 'outline'}
+										class="h-8 gap-1.5 text-xs {isNew ? '' : 'rounded-l-none border-l-0'}"
+										loading={isSaving}
+										loadingLabel="Saving…"
+										disabled={!hasUnsavedChanges || !hasName || (!isValid && attemptedSave)}
+										onclick={handleSave}
+									>
+										{#if hasUnsavedChanges}
+											<Save size={13} />
+											{isNew ? 'Create' : 'Save'}
+											<Kbd.Group class="ml-0.5 hidden sm:inline-flex">
+												<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">
+													{isMac ? '⌘' : 'Ctrl'}
+												</Kbd.Root>
+												<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">
+													S
+												</Kbd.Root>
+											</Kbd.Group>
+										{:else}
+											<Check size={13} />
+											Saved
+										{/if}
+									</LoadingButton>
+								</span>
+							{/snippet}
+						</Tooltip.Trigger>
+						{#if validationIssue}
+							<Tooltip.Content class="text-xs">{validationIssue.message}</Tooltip.Content>
+						{/if}
+					</Tooltip.Root>
+				</ButtonGroup.Root>
+			</div>
+		</header>
+
+		<div class="summary">
+			<ContextFacets context={draft} {proxyName} variant="inline" class="min-w-0 flex-1" />
+			{#if showIssue && validationIssue}
+				<span class="issue"><AlertTriangle size={12} /> {validationIssue.message}</span>
+			{/if}
 		</div>
 
-		<p class="text-xs text-muted-foreground lg:hidden">{summary}</p>
-
-		<div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
-			<div class="space-y-4">
-				<ContextSections
-					draft={draft!}
-					bind:open
-					touched={touchedSecrets}
-					onPatch={patchDraft}
-					{seedKey}
-				/>
+		{#if isNarrow.current}
+			<div class="mobile-switch">
+				<ToggleGroup.Root
+					type="single"
+					variant="outline"
+					size="sm"
+					value={mobileView}
+					onValueChange={(v) => v && (mobileView = v as 'form' | 'effect')}
+					aria-label="Editor view"
+				>
+					<ToggleGroup.Item value="form" class="h-7 gap-1.5 px-3 text-xs">
+						<SlidersHorizontal size={13} />
+						Settings
+					</ToggleGroup.Item>
+					<ToggleGroup.Item value="effect" class="h-7 gap-1.5 px-3 text-xs">
+						<GitCompare size={13} />
+						Effect
+					</ToggleGroup.Item>
+				</ToggleGroup.Root>
 			</div>
-
-			<div class="hidden lg:block">
-				<div class="sticky top-6 flex max-h-[calc(100vh-3rem)] flex-col gap-4">
-					<Card.Root class="shrink-0">
-						<Card.Header class="py-4">
-							<Card.Title class="text-sm">Summary</Card.Title>
-							<Card.Description class="text-xs">{summary}</Card.Description>
-						</Card.Header>
-						<Card.Content class="space-y-3 pb-5 text-xs text-muted-foreground">
-							<div>
-								<p class="mb-1 font-medium text-foreground">Merge notes</p>
-								<ul class="space-y-1 pl-3">
-									<li class="list-disc">Headers: engine ∪ context — context wins on conflict.</li>
-									<li class="list-disc">A context cannot enable a tool the engine disabled.</li>
-								</ul>
-							</div>
-						</Card.Content>
-					</Card.Root>
-
-					<Card.Root class="flex min-h-[240px] flex-1 flex-col overflow-hidden">
-						<Card.Header class="shrink-0 py-4">
-							<Card.Title class="text-sm">Effect on an engine</Card.Title>
-							<Card.Description class="text-xs">
-								What this context changes when a scan runs.
-							</Card.Description>
-						</Card.Header>
-						<div class="min-h-0 flex-1 border-t">
-							<ContextEffect contextId={isNew ? null : (contextId ?? null)} />
-						</div>
-					</Card.Root>
-				</div>
+			<div class="content">
+				{#if mobileView === 'form'}
+					{@render form()}
+				{:else}
+					{@render effect()}
+				{/if}
 			</div>
-		</div>
+		{:else}
+			<Resizable.PaneGroup
+				direction="horizontal"
+				autoSaveId={STORAGE_KEYS.contextSplit}
+				class="content"
+			>
+				<Resizable.Pane defaultSize={60} minSize={40} order={1} class="pane">
+					{@render form()}
+				</Resizable.Pane>
+				<Resizable.Handle class="handle" />
+				<Resizable.Pane defaultSize={40} minSize={24} order={2} class="pane">
+					{@render effect()}
+				</Resizable.Pane>
+			</Resizable.PaneGroup>
+		{/if}
+
+		{#if !isNew && contextId}
+			<LaunchModal bind:open={showLaunch} presetContextId={contextId} />
+		{/if}
 	{/if}
 </div>
 
@@ -504,8 +585,8 @@
 		bind:open={showDeleteDialog}
 		title="Delete this context?"
 		description={loaded?.usage?.schedules
-			? `'${draft?.name ?? 'This context'}' is used by ${loaded.usage.schedules} scheduled scan${loaded.usage.schedules === 1 ? '' : 's'} — those would fail without it. This cannot be undone.`
-			: `Delete '${draft?.name ?? 'this context'}'? This cannot be undone.`}
+			? `'${draft?.name ?? 'This context'}' is used by ${loaded.usage.schedules} scheduled scan${loaded.usage.schedules === 1 ? '' : 's'}. Those schedules will fail to launch without it. Completed scans and their results are unaffected. This action cannot be undone.`
+			: `Removes '${draft?.name ?? 'this context'}' from the project. Completed scans and their results are unaffected. This action cannot be undone.`}
 		{isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={handleDelete}
@@ -522,11 +603,150 @@
 />
 
 <style>
-	.dirty-dot {
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: currentColor;
-		margin-left: 2px;
+	:global([data-slot='scroll-area-viewport']:has(.ctx-editor) > div) {
+		display: block;
+		height: 100%;
+	}
+	:global([data-slot='scroll-area-viewport'] > div > main:has(.ctx-editor)) {
+		height: 100%;
+		padding: 0;
+	}
+
+	.ctx-editor {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.state {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 24px;
+	}
+
+	.topbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px 16px;
+		flex-wrap: wrap;
+		flex-shrink: 0;
+		min-height: 52px;
+		padding: 8px 16px;
+		border-bottom: 1px solid var(--border);
+		background: var(--card);
+	}
+	.left,
+	.right {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+	}
+	.left {
+		flex: 1 1 auto;
+	}
+	.dot {
+		display: inline-block;
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--primary);
+		flex-shrink: 0;
+	}
+
+	.summary {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px 14px;
+		flex-shrink: 0;
+		min-height: 36px;
+		padding: 6px 16px;
+		border-bottom: 1px solid var(--border);
+		background: color-mix(in oklch, var(--muted) 45%, var(--background));
+		font-size: 12px;
+	}
+	.issue {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		color: var(--destructive);
+		white-space: nowrap;
+	}
+
+	.mobile-switch {
+		display: flex;
+		justify-content: center;
+		flex-shrink: 0;
+		padding: 6px 12px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.ctx-editor :global(.content) {
+		position: relative;
+		display: flex;
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
+	}
+	.ctx-editor :global(.pane) {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		min-width: 0;
+	}
+	.ctx-editor :global(.handle) {
+		width: 1px;
+		background: var(--border);
+	}
+	.ctx-editor :global(.handle[data-active]) {
+		background: var(--primary);
+	}
+
+	.form {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		min-width: 0;
+	}
+	.form-body {
+		max-width: 860px;
+		padding: 16px 16px 56px;
+	}
+
+	.side {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		min-width: 0;
+		background: var(--card);
+	}
+	.side-head {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px 8px;
+		flex-shrink: 0;
+		min-height: 36px;
+		padding: 6px 14px;
+		border-bottom: 1px solid var(--border);
+	}
+	.side-title {
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.side-sub {
+		font-size: 11px;
+		color: var(--muted-foreground);
+	}
+	.side-body {
+		flex: 1;
+		min-height: 0;
 	}
 </style>

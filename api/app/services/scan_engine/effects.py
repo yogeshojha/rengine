@@ -10,7 +10,7 @@ from app.services.scan_engine.validation import (
 from shared.enums.scan import Intensity
 from shared.enums.target import TargetType
 from shared.models.scan_context import ScanContext
-from shared.models.scan_engine import EnginePreviewResult
+from shared.models.scan_engine import EnginePreviewResult, PreviewResolved
 from shared.models.scan_preview import PreviewPhase, PreviewTool, PreviewToolStatus
 from shared.services.scan_resolve import merge_engine_context
 from stages.config import Scale
@@ -46,7 +46,7 @@ def stage_effects(
 
             if not values.get("enabled", True):
                 reason = (
-                    "Blocked by passive intensity — this stage sends traffic to the target."
+                    "Skipped at passive intensity. This stage sends traffic to the target."
                     if resolved.intensity == Intensity.PASSIVE.value
                     and spec.touches_target
                     else "Disabled in engine."
@@ -115,8 +115,10 @@ async def preview_engine(
         )
     _validate_intensity(data.intensity)
     _validate_global_threads(data.global_threads)
-    context = None
-    if data.context_id is not None and session is not None:
+    context: object | None = None
+    if data.context is not None:
+        context = data.context.model_dump()
+    elif data.context_id is not None and session is not None:
         context = (
             await session.execute(
                 select(ScanContext).where(ScanContext.id == data.context_id)
@@ -131,5 +133,19 @@ async def preview_engine(
     )
     phases, warnings = stage_effects(resolved, set())
     return EnginePreviewResult(
-        phases=phases, resolved_stages=resolved.stages, warnings=warnings
+        phases=phases,
+        resolved_stages=resolved.stages,
+        resolved=PreviewResolved(
+            header_names=list(resolved.headers),
+            global_threads=resolved.global_threads,
+            global_rate_limit_ceiling=resolved.global_rate_limit_ceiling,
+            per_tool_rate_limits=resolved.per_tool_rate_limits,
+            excluded_subdomains=resolved.excluded_subdomains,
+            excluded_paths=resolved.excluded_paths,
+            excluded_ips=resolved.excluded_ips,
+            included_subdomains=resolved.included_subdomains,
+            follow_redirects=resolved.follow_redirects,
+            http_protocol=resolved.http_protocol,
+        ),
+        warnings=warnings,
     )

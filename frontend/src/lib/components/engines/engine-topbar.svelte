@@ -2,11 +2,14 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Separator } from '$lib/components/ui/separator';
-	import * as Tabs from '$lib/components/ui/tabs';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as ButtonGroup from '$lib/components/ui/button-group';
+	import * as Kbd from '$lib/components/ui/kbd';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Save from '@lucide/svelte/icons/save';
+	import Check from '@lucide/svelte/icons/check';
 	import Play from '@lucide/svelte/icons/play';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -16,12 +19,13 @@
 	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
 	import LoadingButton from '@/components/loading-button.svelte';
 	import type { Intensity, ScanEngine } from '$lib/types/scan-engine';
-	import { INTENSITIES, INTENSITY_HELP } from '$lib/types/scan-engine';
+	import { INTENSITIES, INTENSITY_HELP, INTENSITY_LABELS } from '$lib/types/scan-engine';
 
 	interface Props {
 		engine: ScanEngine;
 		isSaving: boolean;
 		hasUnsavedChanges: boolean;
+		errorCount: number;
 		onSave: () => void;
 		onNameChange: (name: string) => void;
 		onIntensityChange: (intensity: Intensity) => void;
@@ -37,6 +41,7 @@
 		engine,
 		isSaving,
 		hasUnsavedChanges,
+		errorCount,
 		onSave,
 		onNameChange,
 		onIntensityChange,
@@ -51,6 +56,8 @@
 	let editingName = $state(false);
 	let draftName = $state('');
 
+	const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+
 	function startEdit() {
 		draftName = engine.name;
 		editingName = true;
@@ -63,7 +70,7 @@
 	}
 </script>
 
-<div class="topbar">
+<header class="topbar">
 	<div class="left">
 		<Button variant="ghost" size="icon-sm" aria-label="Back to engines" onclick={onBack}>
 			<ArrowLeft size={15} />
@@ -80,56 +87,58 @@
 					else if (e.key === 'Escape') editingName = false;
 				}}
 				autofocus
-				class="h-7 max-w-[260px] text-sm font-semibold"
+				class="h-7 max-w-[280px] text-sm font-semibold"
 				placeholder="Engine name…"
 			/>
 		{:else}
-			<div class="name-row">
+			<button type="button" class="name-btn" onclick={startEdit} aria-label="Rename engine">
 				<span class="name">{engine.name || 'Untitled engine'}</span>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					class="h-6 w-6 text-muted-foreground"
-					aria-label="Rename engine"
-					onclick={startEdit}
-				>
-					<Pencil size={11} />
-				</Button>
-			</div>
+				<Pencil size={11} class="pencil" />
+			</button>
+		{/if}
+
+		{#if hasUnsavedChanges}
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					{#snippet child({ props })}
+						<span {...props} class="dot" aria-label="Unsaved changes"></span>
+					{/snippet}
+				</Tooltip.Trigger>
+				<Tooltip.Content class="text-xs">Unsaved changes</Tooltip.Content>
+			</Tooltip.Root>
 		{/if}
 	</div>
 
 	<div class="center">
-		<span class="intensity-label">Intensity</span>
-		<Tabs.Root
+		<ToggleGroup.Root
+			type="single"
+			variant="outline"
+			size="sm"
 			value={engine.intensity}
-			onValueChange={(v) => onIntensityChange(v as Intensity)}
-			class="flex-row"
+			onValueChange={(v) => v && onIntensityChange(v as Intensity)}
+			aria-label="Intensity"
 		>
-			<Tabs.List class="h-8">
-				{#each INTENSITIES as level (level)}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							{#snippet child({ props })}
-								<Tabs.Trigger {...props} value={level} class="px-3 text-xs capitalize">
-									{level}
-								</Tabs.Trigger>
-							{/snippet}
-						</Tooltip.Trigger>
-						<Tooltip.Content class="max-w-[220px] text-xs">{INTENSITY_HELP[level]}</Tooltip.Content>
-					</Tooltip.Root>
-				{/each}
-			</Tabs.List>
-		</Tabs.Root>
+			{#each INTENSITIES as level (level)}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<ToggleGroup.Item
+								{...props}
+								value={level}
+								class="h-7 px-3 text-xs data-[state=on]:bg-foreground data-[state=on]:text-background dark:data-[state=on]:bg-foreground dark:data-[state=on]:text-background"
+							>
+								{INTENSITY_LABELS[level]}
+							</ToggleGroup.Item>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content class="max-w-[220px] text-xs">{INTENSITY_HELP[level]}</Tooltip.Content>
+				</Tooltip.Root>
+			{/each}
+		</ToggleGroup.Root>
 	</div>
 
 	<div class="right">
-		<Button variant="outline" size="sm" class="h-7 gap-1.5 text-xs" onclick={onRun}>
-			<Play size={13} />
-			Run
-		</Button>
-
-		<Button variant="outline" size="sm" class="h-7 gap-1.5 text-xs" onclick={onToolOptions}>
+		<Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2 text-xs" onclick={onToolOptions}>
 			<Terminal size={13} />
 			Tool args
 		</Button>
@@ -137,7 +146,7 @@
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="outline" size="icon-sm" class="h-7 w-7" aria-label="More">
+					<Button {...props} variant="ghost" size="icon-sm" class="h-7 w-7" aria-label="More">
 						<MoreHorizontal size={14} />
 					</Button>
 				{/snippet}
@@ -159,29 +168,46 @@
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 
-		<LoadingButton
-			size="sm"
-			class="h-7 gap-1.5 text-xs"
-			loading={isSaving}
-			loadingLabel="Saving…"
-			disabled={!hasUnsavedChanges}
-			onclick={onSave}
-		>
-			<Save size={13} />
-			{hasUnsavedChanges ? 'Save changes' : 'Saved'}
-		</LoadingButton>
+		<ButtonGroup.Root>
+			<Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs" onclick={onRun}>
+				<Play size={13} />
+				Run
+			</Button>
+			<LoadingButton
+				size="sm"
+				variant={hasUnsavedChanges ? 'default' : 'outline'}
+				class="h-8 gap-1.5 text-xs"
+				loading={isSaving}
+				loadingLabel="Saving…"
+				disabled={!hasUnsavedChanges || errorCount > 0}
+				onclick={onSave}
+			>
+				{#if hasUnsavedChanges}
+					<Save size={13} />
+					Save
+					<Kbd.Group class="ml-0.5 hidden sm:inline-flex">
+						<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">
+							{isMac ? '⌘' : 'Ctrl'}
+						</Kbd.Root>
+						<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">S</Kbd.Root>
+					</Kbd.Group>
+				{:else}
+					<Check size={13} />
+					Saved
+				{/if}
+			</LoadingButton>
+		</ButtonGroup.Root>
 	</div>
-</div>
+</header>
 
 <style>
 	.topbar {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 16px;
+		gap: 12px 16px;
 		flex-wrap: wrap;
 		flex-shrink: 0;
-		height: auto;
 		min-height: 52px;
 		padding: 8px 16px;
 		border-bottom: 1px solid var(--border);
@@ -196,12 +222,35 @@
 		gap: 8px;
 		min-width: 0;
 	}
+	.left {
+		flex: 1 1 auto;
+	}
 
-	.name-row {
+	.name-btn {
 		display: flex;
 		align-items: center;
-		gap: 2px;
+		gap: 6px;
 		min-width: 0;
+		padding: 2px 6px;
+		margin-left: -6px;
+		border-radius: 6px;
+		background: none;
+		border: none;
+		color: inherit;
+		cursor: text;
+	}
+	.name-btn:hover {
+		background: var(--muted);
+	}
+	.name-btn :global(.pencil) {
+		flex-shrink: 0;
+		color: var(--muted-foreground);
+		opacity: 0;
+		transition: opacity 0.12s ease;
+	}
+	.name-btn:hover :global(.pencil),
+	.name-btn:focus-visible :global(.pencil) {
+		opacity: 1;
 	}
 	.name {
 		font-size: 14px;
@@ -210,10 +259,13 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-
-	.intensity-label {
-		font-size: 11px;
-		color: var(--muted-foreground);
+	.dot {
+		display: inline-block;
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--primary);
+		flex-shrink: 0;
 	}
 
 	@media (max-width: 900px) {

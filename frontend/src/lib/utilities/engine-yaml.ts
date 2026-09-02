@@ -1,4 +1,4 @@
-import { parseDocument, stringify, type Document } from 'yaml';
+import { isMap, isPair, isSeq, parseDocument, stringify, type Document } from 'yaml';
 import type {
 	EngineCatalog,
 	ScanEngine,
@@ -255,13 +255,66 @@ export function stageRange(doc: Document.Parsed, stage: string): [number, number
 	return rangeOf(doc, ['stages', stage]);
 }
 
-export function stageAtOffset(doc: Document.Parsed, offset: number): string | null {
-	const stages = doc.get('stages') as { items?: { key: { value: string } }[] } | undefined;
-	if (!stages?.items) return null;
+export interface StageBlock {
+	name: string;
+	from: number;
+	to: number;
+}
+
+type Ranged = { range?: [number, number, number] } | null | undefined;
+
+export function stageBlocks(doc: Document.Parsed): StageBlock[] {
+	const stages = doc.get('stages', true);
+	if (!isMap(stages)) return [];
+	const out: StageBlock[] = [];
 	for (const item of stages.items) {
-		const name = item.key.value;
-		const range = rangeOf(doc, ['stages', name]);
-		if (range && offset >= range[0] && offset <= range[1]) return name;
+		const key = item.key as Ranged & { value?: unknown };
+		const name = String(key?.value ?? '');
+		if (!name || !key?.range) continue;
+		const value = item.value as Ranged;
+		out.push({ name, from: key.range[0], to: value?.range?.[1] ?? key.range[1] });
 	}
-	return null;
+	return out;
+}
+
+export function stageAtOffset(doc: Document.Parsed, offset: number): string | null {
+	return stageBlocks(doc).find((b) => offset >= b.from && offset <= b.to)?.name ?? null;
+}
+
+function spans(item: unknown, offset: number): boolean {
+	let from: number | undefined;
+	let to: number | undefined;
+	if (isPair(item)) {
+		from = (item.key as Ranged)?.range?.[0];
+		to = (item.value as Ranged)?.range?.[2] ?? (item.key as Ranged)?.range?.[2];
+	} else {
+		const range = (item as Ranged)?.range;
+		from = range?.[0];
+		to = range?.[2];
+	}
+	return from !== undefined && to !== undefined && offset >= from && offset <= to;
+}
+
+export function pathAtOffset(doc: Document.Parsed, offset: number): string[] {
+	const path: string[] = [];
+	let node: unknown = doc.contents;
+	while (node) {
+		if (isMap(node)) {
+			const hit = node.items.find((p) => spans(p, offset));
+			if (!hit) break;
+			path.push(String((hit.key as { value?: unknown }).value ?? ''));
+			node = hit.value;
+		} else if (isSeq(node)) {
+			const index = node.items.findIndex((n) => spans(n, offset));
+			if (index < 0) break;
+			path.push(String(index));
+			node = node.items[index];
+		} else break;
+	}
+	return path;
+}
+
+export function formatYaml(source: string): string {
+	const doc = parse(source);
+	return doc.errors.length ? source : String(doc);
 }

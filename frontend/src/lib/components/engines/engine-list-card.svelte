@@ -1,278 +1,186 @@
 <script lang="ts">
+	import * as Card from '$lib/components/ui/card';
+	import { Badge, type BadgeVariant } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import Copy from '@lucide/svelte/icons/copy';
-	import Play from '@lucide/svelte/icons/play';
-	import Trash2 from '@lucide/svelte/icons/trash-2';
-	import ChevronRight from '@lucide/svelte/icons/chevron-right';
-	import EyeOff from '@lucide/svelte/icons/eye-off';
-	import type { Intensity, ScanEngine, StageCatalogEntry } from '$lib/types/scan-engine';
-	import { INTENSITY_LABELS, phaseLabel } from '$lib/types/scan-engine';
-	import { summarize, FOOTPRINT_LABEL, FOOTPRINT_HELP } from '$lib/utilities/engine-summary';
+	import { Separator } from '$lib/components/ui/separator';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import Play from '@lucide/svelte/icons/play';
+	import Copy from '@lucide/svelte/icons/copy';
+	import Download from '@lucide/svelte/icons/download';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+	import KeyRound from '@lucide/svelte/icons/key-round';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import StageList from './stage-list.svelte';
+	import FootprintMeter from './footprint-meter.svelte';
+	import type { Intensity, ScanEngine, StageCatalogEntry } from '$lib/types/scan-engine';
+	import { INTENSITY_LABELS } from '$lib/types/scan-engine';
+	import { summarize } from '$lib/utilities/engine-summary';
 	import { formatDistanceToNow } from '$lib/utilities/dates';
 
 	interface Props {
 		engine: ScanEngine;
 		stages: StageCatalogEntry[];
+		isSelected?: boolean;
+		onSelect?: () => void;
 		onEdit?: () => void;
 		onRun?: () => void;
 		onDuplicate?: () => void;
+		onExport?: () => void;
 		onDelete?: () => void;
-		isSelected?: boolean;
-		onSelect?: () => void;
 	}
 
 	let {
 		engine,
 		stages,
+		isSelected = false,
+		onSelect,
 		onEdit,
 		onRun,
 		onDuplicate,
-		onDelete,
-		isSelected = false,
-		onSelect
+		onExport,
+		onDelete
 	}: Props = $props();
+
+	const INTENSITY_VARIANT: Record<Intensity, BadgeVariant> = {
+		passive: 'outline',
+		normal: 'secondary',
+		aggressive: 'warning'
+	};
 
 	const summary = $derived(summarize(engine.stages ?? {}, stages, engine.intensity));
 
-	const intensityClass: Record<Intensity, string> = {
-		passive: 'text-muted-foreground border-border/60',
-		normal: 'text-foreground border-border',
-		aggressive: 'text-warning border-warning/30'
-	};
-	const badgeClass = $derived(intensityClass[engine.intensity] ?? intensityClass.normal);
+	const keyedStages = $derived(
+		stages.filter(
+			(s) => s.api_keys.length && Boolean(engine.stages?.[s.name]?.enabled ?? s.defaults.enabled)
+		)
+	);
+	const keyNames = $derived([...new Set(keyedStages.flatMap((s) => s.api_keys))]);
 
-	function isOn(stage: StageCatalogEntry): boolean {
-		return Boolean(engine.stages?.[stage.name]?.enabled ?? stage.defaults.enabled);
-	}
-
-	const active = $derived(stages.filter(isOn));
-	const phases = $derived([...new Set(stages.map((s) => s.phase))]);
+	const usage = $derived.by(() => {
+		const parts: string[] = [];
+		const scans = engine.usage?.scans ?? 0;
+		if (scans) parts.push(`${scans} scan${scans === 1 ? '' : 's'}`);
+		if (engine.last_used_at) parts.push(`used ${formatDistanceToNow(engine.last_used_at)}`);
+		return parts.length ? parts.join(' · ') : 'Never used';
+	});
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="card" class:selected={isSelected} onclick={() => onEdit?.()}>
-	<div class="body">
-		<div class="top">
-			{#if onSelect}
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div class="select" class:on={isSelected} onclick={(e) => e.stopPropagation()}>
-					<Checkbox
-						checked={isSelected}
-						onCheckedChange={() => onSelect()}
-						aria-label="Select {engine.name}"
-					/>
-				</div>
-			{/if}
-			<div class="ident">
-				<h3 class="name">{engine.name}</h3>
-				<Badge variant="outline" class="intensity {badgeClass}">
-					{INTENSITY_LABELS[engine.intensity]}
-				</Badge>
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<Badge
-								{...props}
-								variant="outline"
-								class="intensity {summary.footprint === 'loud'
-									? 'text-warning border-warning/30'
-									: 'text-muted-foreground'}"
-							>
-								{#if summary.footprint === 'none'}<EyeOff size={10} />{/if}
-								{FOOTPRINT_LABEL[summary.footprint]}
-							</Badge>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content class="max-w-[240px] text-xs">
-						{FOOTPRINT_HELP[summary.footprint]}
-					</Tooltip.Content>
-				</Tooltip.Root>
+<Card.Root
+	class="group relative gap-0 py-0 transition-colors hover:border-foreground/25 data-[selected=true]:border-primary/50 data-[selected=true]:bg-primary/5"
+	data-selected={isSelected}
+>
+	<div class="flex items-start gap-3 px-4 pt-4">
+		{#if onSelect}
+			<div
+				class="relative z-10 flex h-5 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 data-[on=true]:opacity-100 [@media(hover:none)]:opacity-100"
+				data-on={isSelected}
+			>
+				<Checkbox
+					checked={isSelected}
+					onCheckedChange={() => onSelect()}
+					aria-label="Select {engine.name}"
+				/>
 			</div>
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="actions" onclick={(e) => e.stopPropagation()}>
-				<Button variant="ghost" size="icon-sm" aria-label="Run scan" onclick={() => onRun?.()}>
-					<Play size={13} />
-				</Button>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					aria-label="Duplicate"
-					onclick={() => onDuplicate?.()}
-				>
-					<Copy size={13} />
-				</Button>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					class="text-muted-foreground hover:text-destructive"
-					aria-label="Delete"
-					onclick={() => onDelete?.()}
-				>
-					<Trash2 size={13} />
-				</Button>
-			</div>
-		</div>
-
-		{#if engine.description}
-			<p class="description">{engine.description}</p>
 		{/if}
 
-		<div class="phases">
-			{#each phases as phase, i (phase)}
-				{@const total = stages.filter((s) => s.phase === phase).length}
-				{@const on = active.filter((s) => s.phase === phase).length}
-				{#if i > 0}<ChevronRight size={11} class="arrow" />{/if}
-				<span class="pill">
-					<span class="pill-label">{phaseLabel(phase)}</span>
-					<span class="pill-count">{on}/{total}</span>
-				</span>
-			{/each}
+		<div class="min-w-0 flex-1">
+			<div class="flex flex-wrap items-center gap-2">
+				<button
+					type="button"
+					class="truncate text-left text-sm font-semibold after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+					onclick={() => onEdit?.()}
+				>
+					{engine.name}
+				</button>
+				<Badge variant={INTENSITY_VARIANT[engine.intensity] ?? 'secondary'} class="text-[10px]">
+					{INTENSITY_LABELS[engine.intensity] ?? engine.intensity}
+				</Badge>
+			</div>
+			{#if engine.description}
+				<p class="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{engine.description}</p>
+			{/if}
 		</div>
 
-		<div class="foot">
-			<span>{summary.headline}</span>
-			<span>
-				{#if engine.usage?.schedules}
-					{engine.usage.schedules} schedule{engine.usage.schedules === 1 ? '' : 's'}
-				{:else if engine.last_used_at}
-					Used {formatDistanceToNow(engine.last_used_at)}
-				{:else}
-					Never used
-				{/if}
-			</span>
+		<div class="relative z-10 -mt-1 -mr-2 flex items-center">
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon-sm"
+							class="text-muted-foreground"
+							aria-label="More actions for {engine.name}"
+						>
+							<MoreHorizontal size={15} />
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-44">
+					<DropdownMenu.Item onclick={() => onDuplicate?.()}>
+						<Copy size={13} />
+						Duplicate
+					</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => onExport?.()}>
+						<Download size={13} />
+						Export YAML
+					</DropdownMenu.Item>
+					<DropdownMenu.Separator />
+					<DropdownMenu.Item variant="destructive" onclick={() => onDelete?.()}>
+						<Trash2 size={13} />
+						Delete
+					</DropdownMenu.Item>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
 		</div>
 	</div>
-</div>
 
-<style>
-	.card {
-		display: flex;
-		flex-direction: column;
-		border: 1px solid var(--border);
-		border-radius: 0.75rem;
-		background: var(--card);
-		cursor: pointer;
-		transition:
-			border-color 0.14s ease,
-			background 0.14s ease;
-	}
-	.card:hover {
-		border-color: color-mix(in oklch, var(--foreground) 22%, var(--border));
-		background: color-mix(in oklch, var(--muted) 35%, var(--card));
-	}
-	.card.selected {
-		border-color: color-mix(in oklch, var(--primary) 45%, var(--border));
-		background: color-mix(in oklch, var(--primary) 6%, var(--card));
-	}
+	<div class="px-4 pt-4">
+		<StageList {stages} config={engine.stages ?? {}} intensity={engine.intensity} />
+	</div>
 
-	.select {
-		display: flex;
-		align-items: center;
-		padding-top: 1px;
-		opacity: 0;
-		transition: opacity 0.14s ease;
-	}
-	.card:hover .select,
-	.select.on,
-	.select:focus-within {
-		opacity: 1;
-	}
-	@media (hover: none) {
-		.select {
-			opacity: 1;
-		}
-	}
+	<div class="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 text-xs">
+		<FootprintMeter footprint={summary.footprint} requestsPerSecond={summary.requestsPerSecond} />
+		{#if keyNames.length}
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					{#snippet child({ props })}
+						<span
+							{...props}
+							class="relative z-10 inline-flex items-center gap-1.5 text-muted-foreground"
+						>
+							<KeyRound size={12} />
+							{keyNames.length} API key{keyNames.length === 1 ? '' : 's'}
+						</span>
+					{/snippet}
+				</Tooltip.Trigger>
+				<Tooltip.Content class="text-xs">Uses {keyNames.join(', ')}</Tooltip.Content>
+			</Tooltip.Root>
+		{/if}
+	</div>
 
-	.body {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		padding: 16px 18px;
-	}
+	<Separator class="mt-4" />
 
-	.top {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 10px;
-	}
-	.ident {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 7px;
-		min-width: 0;
-	}
-	.name {
-		font-size: 14px;
-		font-weight: 600;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.ident :global(.intensity) {
-		gap: 3px;
-		font-size: 10px;
-		font-weight: 400;
-		padding: 1px 6px;
-	}
-	.actions {
-		display: flex;
-		gap: 1px;
-		flex-shrink: 0;
-	}
-
-	.description {
-		font-size: 12px;
-		color: var(--muted-foreground);
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-
-	.phases {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 4px;
-	}
-	.phases :global(.arrow) {
-		color: var(--muted-foreground);
-		opacity: 0.5;
-	}
-	.pill {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		height: 22px;
-		padding: 0 8px;
-		border-radius: 5px;
-		background: var(--muted);
-		font-size: 11px;
-	}
-	.pill-label {
-		color: var(--muted-foreground);
-	}
-	.pill-count {
-		font-variant-numeric: tabular-nums;
-		font-weight: 500;
-	}
-
-	.foot {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		padding-top: 2px;
-		font-size: 11px;
-		color: var(--muted-foreground);
-	}
-</style>
+	<div class="flex items-center justify-between gap-3 px-4 py-2">
+		<span class="flex min-w-0 items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+			{#if engine.usage?.schedules}
+				<CalendarClock size={12} class="shrink-0" />
+				{engine.usage.schedules} schedule{engine.usage.schedules === 1 ? '' : 's'}
+				<span aria-hidden="true">·</span>
+			{/if}
+			{usage}
+		</span>
+		<Button
+			variant="ghost"
+			size="sm"
+			class="relative z-10 h-7 gap-1.5 px-2 text-xs"
+			onclick={() => onRun?.()}
+		>
+			<Play size={12} />
+			Run
+		</Button>
+	</div>
+</Card.Root>

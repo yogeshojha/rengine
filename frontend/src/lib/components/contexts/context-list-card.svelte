@@ -1,308 +1,140 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import Copy from '@lucide/svelte/icons/copy';
+	import { Separator } from '$lib/components/ui/separator';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import Play from '@lucide/svelte/icons/play';
+	import Copy from '@lucide/svelte/icons/copy';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
-	import Clock from '@lucide/svelte/icons/clock';
+	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import ContextFacets from './context-facets.svelte';
 	import type { ScanContextRead } from '$lib/types/scan-context';
-	import { authBadgeLabel, countExclusions, countOverrides } from './context-summary';
+	import { authBadgeLabel } from './context-summary';
 	import { formatDistanceToNow } from '$lib/utilities/dates';
 
 	interface Props {
 		context: ScanContextRead;
+		proxyName?: string | null;
+		isSelected?: boolean;
+		onSelect?: () => void;
 		onEdit?: () => void;
 		onRun?: () => void;
 		onDuplicate?: () => void;
 		onDelete?: () => void;
-		isSelected?: boolean;
-		onSelect?: () => void;
 	}
 
 	let {
 		context,
+		proxyName = null,
+		isSelected = false,
+		onSelect,
 		onEdit,
 		onRun,
 		onDuplicate,
-		onDelete,
-		isSelected = false,
-		onSelect
+		onDelete
 	}: Props = $props();
 
-	let chips = $derived.by(() => {
-		const out: string[] = [];
-		if (context.extra_headers.length > 0) {
-			out.push(
-				`${context.extra_headers.length} header${context.extra_headers.length === 1 ? '' : 's'}`
-			);
-		}
-		if (context.global_rate_limit_override != null) {
-			out.push(`rate ${context.global_rate_limit_override}/s`);
-		}
-		const tools = Object.keys(context.per_tool_rate_overrides).length;
-		if (tools > 0) out.push(`${tools} tool rate${tools === 1 ? '' : 's'}`);
-		const excl = countExclusions(context);
-		if (excl > 0) out.push(`${excl} exclusion${excl === 1 ? '' : 's'}`);
-		return out;
+	const usage = $derived.by(() => {
+		const parts: string[] = [];
+		const scans = context.usage?.scans ?? 0;
+		if (scans) parts.push(`${scans} scan${scans === 1 ? '' : 's'}`);
+		if (context.last_used_at) parts.push(`used ${formatDistanceToNow(context.last_used_at)}`);
+		return parts.length ? parts.join(' · ') : 'Never used';
 	});
-
-	let overrideCount = $derived(countOverrides(context));
 </script>
 
-<div
-	class="card"
-	class:selected={isSelected}
-	role="button"
-	tabindex={0}
-	onclick={() => onEdit?.()}
-	onkeydown={(e) => {
-		if (e.key === 'Enter' || e.key === ' ') {
-			e.preventDefault();
-			onEdit?.();
-		}
-	}}
+<Card.Root
+	class="group relative gap-0 py-0 transition-colors hover:border-foreground/25 data-[selected=true]:border-primary/50 data-[selected=true]:bg-primary/5"
+	data-selected={isSelected}
 >
-	<div class="rail"></div>
-	<div class="card-body">
-		<div class="card-header">
-			{#if onSelect}
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div class="select" class:on={isSelected} onclick={(e) => e.stopPropagation()}>
-					<Checkbox
-						checked={isSelected}
-						onCheckedChange={() => onSelect()}
-						aria-label="Select {context.name}"
-					/>
-				</div>
+	<div class="flex items-start gap-3 px-4 pt-4">
+		{#if onSelect}
+			<div
+				class="relative z-10 flex h-5 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 data-[on=true]:opacity-100 [@media(hover:none)]:opacity-100"
+				data-on={isSelected}
+			>
+				<Checkbox
+					checked={isSelected}
+					onCheckedChange={() => onSelect()}
+					aria-label="Select {context.name}"
+				/>
+			</div>
+		{/if}
+
+		<div class="min-w-0 flex-1">
+			<div class="flex flex-wrap items-center gap-2">
+				<button
+					type="button"
+					class="truncate text-left text-sm font-semibold after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+					onclick={() => onEdit?.()}
+				>
+					{context.name}
+				</button>
+				<Badge variant={context.auth_type === 'none' ? 'outline' : 'secondary'} class="text-[10px]">
+					{authBadgeLabel(context)}
+				</Badge>
+			</div>
+			{#if context.description}
+				<p class="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{context.description}</p>
 			{/if}
-			<div class="name-block">
-				<h3 class="ctx-name">{context.name}</h3>
-				<Badge variant="outline" class="auth-badge">{authBadgeLabel(context)}</Badge>
-			</div>
-			<div class="actions">
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					aria-label="Run scan with this context"
-					onclick={(e) => {
-						e.stopPropagation();
-						onRun?.();
-					}}
-				>
-					<Play size={13} />
-				</Button>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					aria-label="Duplicate"
-					onclick={(e) => {
-						e.stopPropagation();
-						onDuplicate?.();
-					}}
-				>
-					<Copy size={13} />
-				</Button>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					class="text-destructive hover:text-destructive"
-					onclick={(e) => {
-						e.stopPropagation();
-						onDelete?.();
-					}}
-				>
-					<Trash2 size={13} />
-				</Button>
-			</div>
 		</div>
 
-		{#if context.description}
-			<p class="description">{context.description}</p>
-		{/if}
-
-		{#if chips.length > 0}
-			<div class="chip-row">
-				{#each chips as chip (chip)}
-					<Badge
-						variant="secondary"
-						class="rounded-sm border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-						>{chip}</Badge
-					>
-				{/each}
-			</div>
-		{:else}
-			<p class="passthrough">Pass-through — no overrides</p>
-		{/if}
-
-		<div class="card-footer">
-			<div class="footer-left">
-				<Clock size={12} class="footer-icon" />
-				<span class="ts">
-					{#if context.usage?.schedules}
-						{context.usage.schedules} schedule{context.usage.schedules === 1 ? '' : 's'}
-					{:else if context.last_used_at}
-						Used {formatDistanceToNow(context.last_used_at)} ago
-					{:else}
-						Never used
-					{/if}
-				</span>
-			</div>
-			<span class="override-count">
-				{overrideCount} override{overrideCount === 1 ? '' : 's'}
-			</span>
+		<div class="relative z-10 -mt-1 -mr-2 flex items-center">
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon-sm"
+							class="text-muted-foreground"
+							aria-label="More actions for {context.name}"
+						>
+							<MoreHorizontal size={15} />
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-40">
+					<DropdownMenu.Item onclick={() => onDuplicate?.()}>
+						<Copy size={13} />
+						Duplicate
+					</DropdownMenu.Item>
+					<DropdownMenu.Separator />
+					<DropdownMenu.Item variant="destructive" onclick={() => onDelete?.()}>
+						<Trash2 size={13} />
+						Delete
+					</DropdownMenu.Item>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
 		</div>
 	</div>
-</div>
 
-<style>
-	.card {
-		position: relative;
-		display: flex;
-		border-radius: 10px;
-		border: 1px solid var(--border);
-		background: var(--card);
-		overflow: hidden;
-		box-shadow: var(--shadow-sm);
-		transition:
-			box-shadow 0.2s,
-			transform 0.15s,
-			border-color 0.2s;
-		cursor: pointer;
-	}
+	<div class="px-4 pt-4 pb-1">
+		<ContextFacets {context} {proxyName} />
+	</div>
 
-	.card:hover {
-		box-shadow: var(--shadow-md);
-		transform: translateY(-1px);
-		border-color: var(--ring);
-	}
+	<Separator class="mt-3" />
 
-	.card.selected {
-		border-color: color-mix(in oklch, var(--primary) 45%, var(--border));
-		background: color-mix(in oklch, var(--primary) 6%, var(--card));
-	}
-
-	.select {
-		display: flex;
-		align-items: center;
-		padding-top: 1px;
-		opacity: 0;
-		transition: opacity 0.14s ease;
-	}
-	.card:hover .select,
-	.select.on,
-	.select:focus-within {
-		opacity: 1;
-	}
-	@media (hover: none) {
-		.select {
-			opacity: 1;
-		}
-	}
-
-	.rail {
-		width: 3px;
-		background: var(--muted-foreground);
-		opacity: 0.45;
-		flex-shrink: 0;
-	}
-
-	.card-body {
-		flex: 1;
-		min-width: 0;
-		padding: 14px 16px;
-	}
-
-	.card-header {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 10px;
-		margin-bottom: 8px;
-	}
-
-	.name-block {
-		display: flex;
-		align-items: center;
-		gap: 7px;
-		flex-wrap: wrap;
-		flex: 1;
-		min-width: 0;
-	}
-
-	.ctx-name {
-		font-size: 14px;
-		font-weight: 700;
-		color: var(--foreground);
-		margin: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	:global(.auth-badge) {
-		padding: 1px 8px;
-		font-size: 10px;
-		font-weight: 600;
-	}
-
-	.actions {
-		display: flex;
-		align-items: center;
-		gap: 2px;
-		flex-shrink: 0;
-	}
-
-	.description {
-		font-size: 12px;
-		color: var(--muted-foreground);
-		margin: 0 0 8px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.chip-row {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		margin-bottom: 12px;
-		flex-wrap: wrap;
-	}
-
-	.passthrough {
-		font-size: 11px;
-		color: var(--muted-foreground);
-		font-style: italic;
-		margin: 0 0 12px;
-	}
-
-	.card-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding-top: 10px;
-		border-top: 1px solid var(--border);
-	}
-
-	.footer-left {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-	}
-
-	:global(.footer-icon) {
-		color: var(--muted-foreground);
-	}
-
-	.ts {
-		font-size: 11px;
-		color: var(--muted-foreground);
-	}
-
-	.override-count {
-		font-size: 11px;
-		color: var(--muted-foreground);
-	}
-</style>
+	<div class="flex items-center justify-between gap-3 px-4 py-2">
+		<span class="flex min-w-0 items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+			{#if context.usage?.schedules}
+				<CalendarClock size={12} class="shrink-0" />
+				{context.usage.schedules} schedule{context.usage.schedules === 1 ? '' : 's'}
+				<span aria-hidden="true">·</span>
+			{/if}
+			{usage}
+		</span>
+		<Button
+			variant="ghost"
+			size="sm"
+			class="relative z-10 h-7 gap-1.5 px-2 text-xs"
+			onclick={() => onRun?.()}
+		>
+			<Play size={12} />
+			Run
+		</Button>
+	</div>
+</Card.Root>

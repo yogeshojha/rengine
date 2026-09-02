@@ -139,7 +139,7 @@
 			min={RATE_MIN}
 			max={RATE_MAX}
 			value={globalRaw}
-			placeholder="engine default · hard ceiling"
+			placeholder="Engine default"
 			class="h-9 max-w-xs {globalError ? 'border-destructive focus-visible:ring-destructive' : ''}"
 			aria-invalid={globalError}
 			oninput={(e) => setGlobalRate(e.currentTarget.value)}
@@ -148,7 +148,7 @@
 			<p class="text-xs text-destructive">{RATE_ERR}</p>
 		{:else}
 			<p class="text-xs text-muted-foreground">
-				Requests/sec ceiling applied across the scan. Leave blank to use the engine's value.
+				Maximum requests per second across the whole scan. Leave blank to use the engine limit.
 			</p>
 		{/if}
 	</div>
