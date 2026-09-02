@@ -120,13 +120,6 @@ function createActivityFeed() {
 		}
 		return running;
 	});
-	const runningCount = $derived.by(() => {
-		const targets = new SvelteSet<string>();
-		for (const a of items) {
-			if (runningIds.has(a.id)) targets.add(a.target_id ?? a.id);
-		}
-		return targets.size;
-	});
 
 	const counts = $derived.by(() => {
 		const c: Record<ActivityFilter, number> = {
@@ -197,9 +190,6 @@ function createActivityFeed() {
 		},
 		get runningIds() {
 			return runningIds;
-		},
-		get runningCount() {
-			return runningCount;
 		},
 
 		toggleErrorsOnly() {

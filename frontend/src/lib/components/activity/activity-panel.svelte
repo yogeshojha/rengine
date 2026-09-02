@@ -9,17 +9,22 @@
 		FILTER_LABELS,
 		type ActivityFilter
 	} from '$lib/stores/activity-feed.svelte';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { SSEChannel, SSEEventType } from '$lib/types/sse';
-	import { ACTIVITY_TICK_MS } from '$lib/constants';
+	import { ACTIVITY_TICK_MS, NOW_TICK_MS } from '$lib/constants';
 	import type { ActivityLog } from '$lib/types/activity';
 	import ActivityTimeline from './activity-timeline.svelte';
+	import LiveScanRow from '$lib/components/scans/live-scan-row.svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import { Badge, type BadgeVariant } from '$lib/components/ui/badge/index.js';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Search from '@lucide/svelte/icons/search';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import X from '@lucide/svelte/icons/x';
@@ -33,6 +38,23 @@
 	let scrollTop = $state(0);
 
 	let showJump = $derived(scrollTop > 80 && activityFeed.freshIds.size > 0);
+	let runningOpen = $state(true);
+
+	let connection = $derived.by((): { label: string; variant: BadgeVariant; dot: string } => {
+		if (sseStore.isConnected) return { label: 'Live', variant: 'success', dot: 'bg-success' };
+		if (sseStore.isReconnecting)
+			return { label: 'Reconnecting', variant: 'warning', dot: 'bg-warning animate-pulse' };
+		if (sseStore.connectionState === 'connecting')
+			return { label: 'Connecting', variant: 'warning', dot: 'bg-warning animate-pulse' };
+		return { label: 'Offline', variant: 'outline', dot: 'bg-muted-foreground/50' };
+	});
+
+	let now = $state(Date.now());
+	$effect(() => {
+		if (!liveScans.hasLive || !activityFeed.open) return;
+		const t = setInterval(() => (now = Date.now()), NOW_TICK_MS);
+		return () => clearInterval(t);
+	});
 
 	$effect(() => {
 		const pid = projectId;
@@ -115,27 +137,21 @@
 	style="width: {PANEL_W}px"
 >
 	<div class="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5">
-		<div class="flex min-w-0 items-center gap-2.5">
-			<span
-				class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground"
-			>
-				<span
-					class="h-1.5 w-1.5 rounded-full {sseStore.isConnected
-						? 'bg-chart-1'
-						: sseStore.isReconnecting
-							? 'bg-warning'
-							: 'bg-muted-foreground/40'}"
-				></span>
+		<div class="flex min-w-0 items-center gap-2">
+			<span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
 				Activity
 			</span>
 
-			{#if activityFeed.runningCount > 0}
-				<span
-					class="inline-flex items-center gap-1 rounded-full bg-chart-1/10 px-1.5 py-0.5 text-[10px] font-medium text-chart-1"
-				>
-					<Spinner class="h-2.5 w-2.5" />
-					{activityFeed.runningCount} running
-				</span>
+			<Badge variant={connection.variant} class="h-5 gap-1 px-1.5 text-[10px]">
+				<span class="size-1.5 rounded-full {connection.dot}"></span>
+				{connection.label}
+			</Badge>
+
+			{#if liveScans.hasLive}
+				<Badge variant="info" class="h-5 gap-1 px-1.5 text-[10px] tabular-nums">
+					<Spinner class="size-2.5" />
+					{liveScans.count} running
+				</Badge>
 			{/if}
 
 			{#if activityFeed.targetId}
@@ -215,6 +231,37 @@
 			</button>
 		</div>
 	</div>
+
+	{#if liveScans.hasLive}
+		<Collapsible.Root bind:open={runningOpen} class="mx-3 mb-2 shrink-0">
+			<div class="overflow-hidden rounded-md border border-info/20 bg-info/5">
+				<Collapsible.Trigger
+					class="flex w-full items-center justify-between px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-info transition-colors hover:bg-info/10"
+				>
+					<span class="flex items-center gap-1.5">
+						<Spinner class="size-3" />
+						Running now
+						<span class="font-mono tabular-nums opacity-70">{liveScans.count}</span>
+					</span>
+					<ChevronDown
+						class="size-3 transition-transform duration-150 {runningOpen ? '' : '-rotate-90'}"
+					/>
+				</Collapsible.Trigger>
+				<Collapsible.Content>
+					<div class="space-y-px px-1 pb-1">
+						{#each liveScans.scans as scan (scan.id)}
+							<LiveScanRow
+								{scan}
+								stage={liveScans.stageFor(scan.id)}
+								{now}
+								onNavigate={() => activityFeed.setOpen(false)}
+							/>
+						{/each}
+					</div>
+				</Collapsible.Content>
+			</div>
+		</Collapsible.Root>
+	{/if}
 
 	<Separator />
 

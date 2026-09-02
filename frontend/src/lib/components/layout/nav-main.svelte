@@ -1,31 +1,39 @@
+<script lang="ts" module>
+	import type { IconComponent } from '$lib/config/icons';
+
+	export interface NavBadge {
+		count: number;
+		live?: boolean;
+	}
+
+	export interface NavItem {
+		title: string;
+		url: string;
+		icon?: IconComponent;
+		badge?: NavBadge | null;
+		items?: { title: string; url: string }[];
+	}
+
+	export interface NavGroup {
+		label: string | null;
+		items: NavItem[];
+	}
+</script>
+
 <script lang="ts">
 	import { navAccent } from '$lib/config/nav-accents';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import { page } from '$app/stores';
-	import type { Component } from 'svelte';
+	import { page } from '$app/state';
 	import { SvelteSet } from 'svelte/reactivity';
-
-	type NavItem = {
-		title: string;
-		url: string;
-		icon?: Component;
-		items?: {
-			title: string;
-			url: string;
-		}[];
-	};
-
-	type NavGroup = {
-		label: string | null;
-		items: NavItem[];
-	};
 
 	let { groups }: { groups: NavGroup[] } = $props();
 
 	const isActive = (url: string) => {
-		return $page.url.pathname === url || $page.url.pathname.startsWith(url + '/');
+		const path = page.url.pathname;
+		const base = url.split('?')[0];
+		return path === base || path.startsWith(base + '/');
 	};
 
 	const hasActiveChild = (items?: { url: string }[]) => {
@@ -46,11 +54,33 @@
 	};
 </script>
 
+{#snippet link(item: NavItem, props: Record<string, unknown>)}
+	{@const active = isActive(item.url)}
+	{@const accent = active ? navAccent(item.url) : null}
+	<a href={item.url} {...props}>
+		{#if item.icon}
+			<item.icon class="size-4" style={accent ? `color: ${accent}` : undefined} />
+		{/if}
+		<span>{item.title}</span>
+	</a>
+{/snippet}
+
+{#snippet badge(b: NavBadge)}
+	<Sidebar.MenuBadge
+		class="gap-1 rounded-full bg-info/10 px-1.5 font-mono text-[10px] font-semibold text-info peer-hover/menu-button:text-info peer-data-[active=true]/menu-button:text-info"
+	>
+		{#if b.live}
+			<span class="size-1.5 animate-pulse rounded-full bg-info"></span>
+		{/if}
+		{b.count}
+	</Sidebar.MenuBadge>
+{/snippet}
+
 {#each groups as group, groupIndex (group.label ?? groupIndex)}
-	<Sidebar.Group>
+	<Sidebar.Group class={groupIndex > 0 ? 'pt-0' : undefined}>
 		{#if group.label}
 			<Sidebar.GroupLabel
-				class="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium px-2"
+				class="h-7 px-2 text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/60 uppercase"
 			>
 				{group.label}
 			</Sidebar.GroupLabel>
@@ -67,17 +97,7 @@
 							<Sidebar.MenuItem {...props}>
 								<Sidebar.MenuButton tooltipContent={item.title} isActive={isActive(item.url)}>
 									{#snippet child({ props })}
-										<a href={item.url} {...props}>
-											{#if item.icon}
-												<item.icon
-													class="size-4"
-													style={isActive(item.url) && navAccent(item.url)
-														? `color: ${navAccent(item.url)}`
-														: undefined}
-												/>
-											{/if}
-											<span>{item.title}</span>
-										</a>
+										{@render link(item, props)}
 									{/snippet}
 								</Sidebar.MenuButton>
 								<Collapsible.Trigger>
@@ -115,19 +135,12 @@
 					<Sidebar.MenuItem>
 						<Sidebar.MenuButton tooltipContent={item.title} isActive={isActive(item.url)}>
 							{#snippet child({ props })}
-								<a href={item.url} {...props}>
-									{#if item.icon}
-										<item.icon
-											class="size-4"
-											style={isActive(item.url) && navAccent(item.url)
-												? `color: ${navAccent(item.url)}`
-												: undefined}
-										/>
-									{/if}
-									<span>{item.title}</span>
-								</a>
+								{@render link(item, props)}
 							{/snippet}
 						</Sidebar.MenuButton>
+						{#if item.badge}
+							{@render badge(item.badge)}
+						{/if}
 					</Sidebar.MenuItem>
 				{/if}
 			{/each}

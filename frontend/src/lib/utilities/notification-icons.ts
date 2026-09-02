@@ -20,13 +20,14 @@ import type { IconComponent } from '$lib/config/icons';
 interface SeverityIcon {
 	icon: IconComponent;
 	class: string;
+	bar: string;
 }
 
 const SEVERITY_ICONS: Record<MessageLevel, SeverityIcon> = {
-	error: { icon: ShieldAlert, class: 'text-destructive' },
-	warning: { icon: TriangleAlert, class: 'text-warning' },
-	success: { icon: CircleCheck, class: 'text-foreground' },
-	info: { icon: Info, class: 'text-chart-1' }
+	error: { icon: ShieldAlert, class: 'text-destructive', bar: 'bg-destructive' },
+	warning: { icon: TriangleAlert, class: 'text-warning', bar: 'bg-warning' },
+	success: { icon: CircleCheck, class: 'text-success', bar: 'bg-success' },
+	info: { icon: Info, class: 'text-info', bar: 'bg-info' }
 };
 
 const TYPE_ICONS: Record<NotificationType, IconComponent> = {

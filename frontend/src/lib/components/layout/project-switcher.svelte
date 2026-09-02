@@ -7,6 +7,8 @@
 	import FolderIcon from '@lucide/svelte/icons/folder';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+	import { coerceInstanceMode, MODE_LABELS } from '$lib/config/capabilities';
 	import AddProjectModal from '$lib/components/modals/add-project-modal.svelte';
 	import ProjectIcon from '../project-icons.svelte';
 	import { page } from '$app/state';
@@ -18,6 +20,7 @@
 	let activeProject = $derived(projectsStore.activeProject);
 	let projects = $derived(projectsStore.projects);
 	let isLoading = $derived(projectsStore.isLoading);
+	let modeLabel = $derived(MODE_LABELS[coerceInstanceMode(capabilitiesStore.mode)]);
 
 	let showAddModal = $state(false);
 
@@ -82,8 +85,9 @@
 								<span class="truncate font-medium">
 									{activeProject.name}
 								</span>
+								<span class="truncate text-[11px] text-muted-foreground">{modeLabel}</span>
 							</div>
-							<ChevronsUpDownIcon class="ms-auto" />
+							<ChevronsUpDownIcon class="ms-auto size-4 text-muted-foreground" />
 						</Sidebar.MenuButton>
 					{/snippet}
 				</DropdownMenu.Trigger>

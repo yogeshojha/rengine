@@ -2,6 +2,7 @@
 	import { fly } from 'svelte/transition';
 	import { activityFeed, LEVEL_DOT } from '$lib/stores/activity-feed.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import Activity from '@lucide/svelte/icons/activity';
 	import { Spinner } from '$lib/components/ui/spinner';
@@ -38,12 +39,12 @@
 		<span class="relative inline-flex h-2 w-2 rounded-full {statusDot}"></span>
 	</span>
 
-	{#if activityFeed.runningCount > 0}
-		<span class="hidden items-center gap-1.5 text-chart-1 sm:flex">
+	{#if liveScans.hasLive}
+		<span class="hidden items-center gap-1.5 text-info sm:flex">
 			<Spinner class="h-3 w-3" />
-			<span class="font-medium">{activityFeed.runningCount} running</span>
+			<span class="font-medium tabular-nums">{liveScans.count} running</span>
 		</span>
-		<Spinner class="h-3.5 w-3.5 text-chart-1 sm:hidden" />
+		<Spinner class="h-3.5 w-3.5 text-info sm:hidden" />
 	{:else if latest}
 		<span class="hidden min-w-0 items-center gap-2 sm:flex">
 			{#key latest.id}

@@ -4,5 +4,6 @@ export const STORAGE_KEYS = {
 	launchLastContext: 'rengine:launch:lastContext',
 	targetViews: 'targets:views',
 	engineLensTargetType: 'rengine:engine:lensTargetType',
-	engineSidePane: 'rengine:engine:sidePane'
+	engineSidePane: 'rengine:engine:sidePane',
+	scanNudgeDismissed: 'rengine:scanNudge:dismissed'
 } as const;

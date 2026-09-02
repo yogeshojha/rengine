@@ -13,8 +13,22 @@ export const SSEEventType = {
 	SCAN: 'scan'
 } as const;
 
+export const SCAN_EVENT_KIND = {
+	SCAN_STARTED: 'scan_started',
+	SCAN_COMPLETED: 'scan_completed',
+	SCAN_FAILED: 'scan_failed',
+	SCAN_CANCELLED: 'scan_cancelled',
+	STAGE_STARTED: 'stage_started',
+	STAGE_PROGRESS: 'stage_progress',
+	STAGE_COMPLETED: 'stage_completed',
+	COMMAND_STARTED: 'command_started',
+	COMMAND_FINISHED: 'command_finished'
+} as const;
+
+export type ScanEventKind = (typeof SCAN_EVENT_KIND)[keyof typeof SCAN_EVENT_KIND];
+
 export interface ScanEvent {
-	kind: string;
+	kind: ScanEventKind;
 	scan_id: string;
 	activity_id?: string | null;
 	stage?: string;

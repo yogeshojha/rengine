@@ -12,6 +12,16 @@ export const NOTIFICATION_TYPES = [
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
+export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
+	scan: 'Scan',
+	system: 'System',
+	security: 'Security',
+	vulnerability: 'Vulnerability',
+	target: 'Target',
+	resource: 'Resource',
+	integration: 'Integration'
+};
+
 export type NotificationSeverity = MessageLevel;
 
 export interface NotificationMetadata {

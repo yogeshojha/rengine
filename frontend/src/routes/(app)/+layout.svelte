@@ -7,6 +7,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { onMount } from 'svelte';
 	import AppSidebar from '$lib/components/layout/app-sidebar.svelte';
 	import TopBar from '$lib/components/layout/top-bar.svelte';
@@ -88,6 +89,11 @@
 				sseStore.destroy();
 			};
 		}
+	});
+
+	$effect(() => {
+		const projectId = projectsStore.activeProject?.id;
+		if (auth.isAuthenticated && !auth.isLoading && projectId) liveScans.init(projectId);
 	});
 
 	let prevProjectId: string | undefined;
