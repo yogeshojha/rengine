@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { notificationChannelsStore } from '$lib/stores/notificationChannels.svelte';
+	import { notificationChannelsApi } from '$lib/api/notificationChannels';
 	import {
 		NOTIF_CATEGORIES,
 		NOTIF_SEVERITIES,
@@ -18,6 +19,7 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
+	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -41,6 +43,9 @@
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CircleXIcon from '@lucide/svelte/icons/circle-x';
+	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import { formatDate } from '$lib/utilities';
 	import { SvelteSet } from 'svelte/reactivity';
 
@@ -55,7 +60,9 @@
 	let formConfig = $state<Record<string, unknown>>({});
 	let formMasked = $state<Record<string, boolean>>({});
 	let formPref = $state<NotificationPreference>(defaultNotificationPreference());
+	let revealed = $state<Record<string, boolean>>({});
 	let saving = $state(false);
+	let testingDraft = $state(false);
 
 	let nameError = $state('');
 	let categoryError = $state('');
@@ -70,6 +77,8 @@
 	let severityLabel = $derived(
 		NOTIF_SEVERITIES.find((s) => s.value === formPref.min_severity)?.label ?? 'Everything'
 	);
+	let twoColumnFields = $derived(formMeta.fields.length > 2);
+	let allCategories = $derived(formPref.types.length === NOTIF_CATEGORIES.length);
 
 	function applyDefaults(meta: ProviderMeta) {
 		const cfg: Record<string, unknown> = {};
@@ -84,6 +93,33 @@
 		nameError = '';
 		categoryError = '';
 		fieldErrors = {};
+		revealed = {};
+	}
+
+	function toggleAllCategories() {
+		formPref = {
+			...formPref,
+			types: allCategories ? [] : NOTIF_CATEGORIES.map((c) => c.value)
+		};
+		if (categoryError) categoryError = '';
+	}
+
+	async function handleTestDraft() {
+		const config = buildConfig();
+		if (config === null) {
+			toast.error('Complete the connection fields first');
+			return;
+		}
+		testingDraft = true;
+		try {
+			const result = await notificationChannelsApi.testConfig({ provider: formProvider, config });
+			if (result.success) toast.success(result.message);
+			else toast.error(result.message);
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Test failed');
+		} finally {
+			testingDraft = false;
+		}
 	}
 
 	function openAdd() {
@@ -424,187 +460,294 @@
 </div>
 
 <Dialog.Root bind:open={dialogOpen}>
-	<Dialog.Content class="flex max-h-[88vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-		<Dialog.Header class="px-6 pt-6 pb-2">
+	<Dialog.Content
+		class="grid max-h-[90vh] grid-rows-[auto_auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 {editingId
+			? 'sm:max-w-[560px]'
+			: 'sm:max-w-[760px]'}"
+	>
+		<Dialog.Header class="p-6 pb-4">
 			<Dialog.Title>{editingId ? 'Edit channel' : 'Add channel'}</Dialog.Title>
 			<Dialog.Description>Connect a provider and choose which events reach it.</Dialog.Description>
 		</Dialog.Header>
 
-		<ScrollArea class="flex-1">
-			<div class="space-y-5 px-6 py-4">
-				{#if !editingId}
-					<div class="space-y-2">
-						<Label class="text-xs">Provider</Label>
+		<Separator />
+
+		<div
+			class="grid min-h-0 {editingId
+				? 'grid-rows-[minmax(0,1fr)]'
+				: 'grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[212px_minmax(0,1fr)] md:grid-rows-1'}"
+		>
+			{#if !editingId}
+				<div class="flex min-h-0 flex-col border-b bg-muted/20 md:border-r md:border-b-0">
+					<ScrollArea class="md:min-h-0 md:flex-1">
 						<RadioGroup.Root
 							value={formProvider}
 							onValueChange={setProvider}
-							class="grid grid-cols-2 gap-2 sm:grid-cols-3"
+							aria-label="Provider"
+							class="flex flex-wrap gap-1.5 p-3 md:flex-col md:gap-0.5 md:p-2"
 						>
 							{#each PROVIDERS as p (p.provider)}
 								{@const PIcon = p.icon}
 								<Label
-									class="flex cursor-pointer items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm data-[active=true]:border-primary data-[active=true]:bg-muted"
+									class="group/provider flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-normal text-muted-foreground transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50 hover:bg-muted/60 hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:shadow-xs"
 									data-active={formProvider === p.provider}
 								>
-									<RadioGroup.Item value={p.provider} class="sr-only" />
-									<PIcon class="size-4 shrink-0 text-muted-foreground" />
+									<RadioGroup.Item value={p.provider} class="sr-only" disabled={saving} />
+									<span
+										class="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground group-data-[active=true]/provider:border-primary/40 group-data-[active=true]/provider:text-primary"
+									>
+										<PIcon class="size-3.5" />
+									</span>
 									<span class="truncate">{p.name}</span>
+									{#if formProvider === p.provider}
+										<CheckIcon class="ml-auto hidden size-3.5 shrink-0 text-primary md:block" />
+									{/if}
 								</Label>
 							{/each}
 						</RadioGroup.Root>
-					</div>
-				{:else}
-					{@const FIcon = formMeta.icon}
-					<div class="space-y-1.5">
-						<Label class="text-xs">Provider</Label>
-						<div
-							class="flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
-						>
-							<FIcon class="size-4 shrink-0" />
-							<span class="truncate">{formMeta.name}</span>
-						</div>
-						<p class="text-xs text-muted-foreground">
-							Provider can't be changed after creation — remove and re-add to switch.
-						</p>
-					</div>
-				{/if}
+					</ScrollArea>
+				</div>
+			{/if}
 
-				<FormField label="Name" error={nameError}>
-					{#snippet children({ id })}
-						<Input
-							{id}
-							bind:value={formName}
-							placeholder="{formMeta.name} alerts"
-							class="h-9"
-							disabled={saving}
-							aria-invalid={!!nameError}
-							oninput={() => {
-								if (nameError) nameError = '';
-							}}
-						/>
-					{/snippet}
-				</FormField>
-
-				<div class="space-y-3">
-					{#if formMeta.help}
-						<a
-							href={formMeta.help.url}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-						>
-							{formMeta.help.label}<ExternalLinkIcon class="size-3" />
-						</a>
-					{/if}
-					{#each formMeta.fields as field (field.key)}
-						{#if field.kind === 'bool'}
-							<div class="flex items-center justify-between rounded-md border px-3 py-2">
-								<Label class="text-xs">{field.label}</Label>
-								<Switch
-									checked={formConfig[field.key] === undefined
-										? !!field.default
-										: !!formConfig[field.key]}
-									onCheckedChange={(v) => setField(field.key, v)}
-									disabled={saving}
-								/>
+			<ScrollArea class="min-h-0">
+				<div class="space-y-6 p-6">
+					{#if editingId}
+						{@const FIcon = formMeta.icon}
+						<div class="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2.5">
+							<span
+								class="flex size-8 shrink-0 items-center justify-center rounded-md border bg-background text-primary"
+							>
+								<FIcon class="size-4" />
+							</span>
+							<div class="min-w-0">
+								<p class="truncate text-sm font-medium">{formMeta.name}</p>
+								<p class="text-xs text-muted-foreground">Provider is fixed after creation.</p>
 							</div>
-						{:else}
-							<FormField
-								label={field.label}
-								error={fieldErrors[field.key]}
-								description={field.kind === 'secret' && editingId && formMasked[field.key]
-									? 'Stored — leave blank to keep, or type to replace.'
-									: undefined}
-							>
-								{#snippet children({ id })}
-									<Input
-										{id}
-										type={field.kind === 'secret' && !editingId
-											? 'password'
-											: field.kind === 'number'
-												? 'number'
-												: 'text'}
-										value={formConfig[field.key] === undefined ? '' : String(formConfig[field.key])}
-										placeholder={field.kind === 'secret' && editingId && formMasked[field.key]
-											? 'Leave blank to keep current'
-											: (field.placeholder ?? '')}
-										autocomplete="off"
-										class="h-9 font-mono text-xs"
-										disabled={saving}
-										aria-invalid={!!fieldErrors[field.key]}
-										oninput={(e) => setField(field.key, e.currentTarget.value)}
-									/>
-								{/snippet}
-							</FormField>
-						{/if}
-					{/each}
-				</div>
+						</div>
+					{/if}
 
-				<Separator />
+					<section class="space-y-4">
+						<div class="flex items-center justify-between gap-3">
+							<h4 class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+								Connection
+							</h4>
+							{#if formMeta.help}
+								<a
+									href={formMeta.help.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+								>
+									{formMeta.help.label}<ExternalLinkIcon class="size-3" />
+								</a>
+							{/if}
+						</div>
 
-				<div class="space-y-2">
-					<Label class="text-xs">Notify me about</Label>
-					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-						{#each NOTIF_CATEGORIES as cat (cat.value)}
-							<Label
-								class="flex cursor-pointer items-start gap-2 rounded-md border border-input px-2.5 py-2 text-xs data-[active=true]:border-primary data-[active=true]:bg-muted"
-								data-active={formPref.types.includes(cat.value)}
-							>
-								<Checkbox
-									checked={formPref.types.includes(cat.value)}
-									onCheckedChange={(v) => toggleCategory(cat.value, v === true)}
-									class="mt-0.5"
+						<FormField label="Name" error={nameError}>
+							{#snippet children({ id })}
+								<Input
+									{id}
+									bind:value={formName}
+									placeholder="{formMeta.name} alerts"
+									disabled={saving}
+									aria-invalid={!!nameError}
+									oninput={() => {
+										if (nameError) nameError = '';
+									}}
 								/>
-								<span class="min-w-0">
-									<span class="block font-medium">{cat.label}</span>
-									<span class="block text-muted-foreground">{cat.hint}</span>
-								</span>
-							</Label>
-						{/each}
-					</div>
-					{#if categoryError}<p class="text-xs text-destructive">{categoryError}</p>{/if}
-				</div>
+							{/snippet}
+						</FormField>
 
-				<div class="space-y-1.5">
-					<Label class="text-xs">Minimum severity</Label>
-					<Select.Root
-						type="single"
-						value={formPref.min_severity}
-						onValueChange={(v) => (formPref = { ...formPref, min_severity: v ?? 'info' })}
-					>
-						<Select.Trigger class="h-9 w-full text-sm">{severityLabel}</Select.Trigger>
-						<Select.Content>
-							{#each NOTIF_SEVERITIES as s (s.value)}
-								<Select.Item value={s.value} label={s.label}>{s.label}</Select.Item>
+						<div class="grid gap-4 {twoColumnFields ? 'sm:grid-cols-2' : ''}">
+							{#each formMeta.fields as field (field.key)}
+								{#if field.kind === 'bool'}
+									<div
+										class="flex items-center justify-between rounded-md border px-3 py-2 sm:col-span-2"
+									>
+										<Label class="text-sm font-normal">{field.label}</Label>
+										<Switch
+											checked={formConfig[field.key] === undefined
+												? !!field.default
+												: !!formConfig[field.key]}
+											onCheckedChange={(v) => setField(field.key, v)}
+											disabled={saving}
+										/>
+									</div>
+								{:else if field.kind === 'secret'}
+									{@const stored = !!editingId && formMasked[field.key]}
+									<FormField
+										label={field.label}
+										error={fieldErrors[field.key]}
+										description={stored ? 'A value is stored. Leave blank to keep it.' : undefined}
+										class="sm:col-span-2"
+									>
+										{#snippet children({ id })}
+											<InputGroup.Root>
+												<InputGroup.Addon>
+													<KeyRoundIcon />
+												</InputGroup.Addon>
+												<InputGroup.Input
+													{id}
+													type={revealed[field.key] ? 'text' : 'password'}
+													value={formConfig[field.key] === undefined
+														? ''
+														: String(formConfig[field.key])}
+													placeholder={stored
+														? 'Leave blank to keep the current value'
+														: (field.placeholder ?? '')}
+													autocomplete="off"
+													class="font-mono text-xs"
+													disabled={saving}
+													aria-invalid={!!fieldErrors[field.key]}
+													oninput={(e) => setField(field.key, e.currentTarget.value)}
+												/>
+												<InputGroup.Addon align="inline-end">
+													<InputGroup.Button
+														size="icon-xs"
+														aria-label={revealed[field.key] ? 'Hide value' : 'Show value'}
+														aria-pressed={!!revealed[field.key]}
+														onclick={() =>
+															(revealed = { ...revealed, [field.key]: !revealed[field.key] })}
+													>
+														{#if revealed[field.key]}
+															<EyeOffIcon />
+														{:else}
+															<EyeIcon />
+														{/if}
+													</InputGroup.Button>
+												</InputGroup.Addon>
+											</InputGroup.Root>
+										{/snippet}
+									</FormField>
+								{:else}
+									<FormField label={field.label} error={fieldErrors[field.key]}>
+										{#snippet children({ id })}
+											<Input
+												{id}
+												type={field.kind === 'number' ? 'number' : 'text'}
+												value={formConfig[field.key] === undefined
+													? ''
+													: String(formConfig[field.key])}
+												placeholder={field.placeholder ?? ''}
+												autocomplete="off"
+												class="font-mono text-xs"
+												disabled={saving}
+												aria-invalid={!!fieldErrors[field.key]}
+												oninput={(e) => setField(field.key, e.currentTarget.value)}
+											/>
+										{/snippet}
+									</FormField>
+								{/if}
 							{/each}
-						</Select.Content>
-					</Select.Root>
-				</div>
+						</div>
+					</section>
 
-				<div class="flex items-center justify-between rounded-lg border px-4 py-3">
-					<div class="space-y-0.5">
-						<Label class="text-sm font-medium">Active</Label>
-						<p class="text-xs text-muted-foreground">
-							Disabled channels keep their config but send nothing.
-						</p>
-					</div>
-					<Switch
-						checked={formActive}
-						onCheckedChange={(v) => (formActive = v)}
-						disabled={saving}
-					/>
+					<Separator />
+
+					<section class="space-y-3">
+						<div class="flex items-center justify-between gap-3">
+							<h4 class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+								Events
+							</h4>
+							<div class="flex items-center gap-2 text-xs text-muted-foreground">
+								<span class="tabular-nums"
+									>{formPref.types.length} of {NOTIF_CATEGORIES.length}</span
+								>
+								<Button
+									variant="link"
+									size="sm"
+									class="h-auto px-0 text-xs"
+									onclick={toggleAllCategories}
+									disabled={saving}
+								>
+									{allCategories ? 'Clear all' : 'Select all'}
+								</Button>
+							</div>
+						</div>
+
+						<div
+							class="divide-y overflow-hidden rounded-lg border {categoryError
+								? 'border-destructive'
+								: ''}"
+						>
+							{#each NOTIF_CATEGORIES as cat (cat.value)}
+								<Label
+									class="flex cursor-pointer items-center gap-3 px-3 py-2.5 font-normal transition-colors hover:bg-muted/40"
+								>
+									<Checkbox
+										checked={formPref.types.includes(cat.value)}
+										onCheckedChange={(v) => toggleCategory(cat.value, v === true)}
+										disabled={saving}
+									/>
+									<span class="min-w-0 flex-1">
+										<span class="block text-sm font-medium">{cat.label}</span>
+										<span class="block text-xs text-muted-foreground">{cat.hint}</span>
+									</span>
+								</Label>
+							{/each}
+						</div>
+						{#if categoryError}<p class="text-xs text-destructive">{categoryError}</p>{/if}
+
+						<div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+							<div class="space-y-0.5">
+								<Label class="text-sm">Minimum severity</Label>
+								<p class="text-xs text-muted-foreground">Events below this level are not sent.</p>
+							</div>
+							<Select.Root
+								type="single"
+								value={formPref.min_severity}
+								onValueChange={(v) => (formPref = { ...formPref, min_severity: v ?? 'info' })}
+								disabled={saving}
+							>
+								<Select.Trigger class="w-full text-sm sm:w-56">{severityLabel}</Select.Trigger>
+								<Select.Content>
+									{#each NOTIF_SEVERITIES as s (s.value)}
+										<Select.Item value={s.value} label={s.label}>{s.label}</Select.Item>
+									{/each}
+								</Select.Content>
+							</Select.Root>
+						</div>
+					</section>
 				</div>
+			</ScrollArea>
+		</div>
+
+		<Separator />
+
+		<div class="flex flex-wrap items-center justify-between gap-3 bg-muted/30 p-4">
+			<Label class="cursor-pointer gap-3">
+				<Switch checked={formActive} onCheckedChange={(v) => (formActive = v)} disabled={saving} />
+				<span class="space-y-0.5">
+					<span class="block text-sm font-medium">Active</span>
+					<span class="hidden text-xs font-normal text-muted-foreground sm:block">
+						Disabled channels keep their settings but send nothing.
+					</span>
+				</span>
+			</Label>
+			<div class="flex items-center gap-2">
+				{#if !editingId}
+					<Button
+						variant="ghost"
+						onclick={handleTestDraft}
+						disabled={saving || testingDraft}
+						class="gap-1.5"
+					>
+						{#if testingDraft}
+							<Spinner class="size-4" />
+						{:else}
+							<FlaskConicalIcon class="size-4" />
+						{/if}
+						Send test
+					</Button>
+				{/if}
+				<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}>
+					Cancel
+				</Button>
+				<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving…">
+					{editingId ? 'Save changes' : 'Add channel'}
+				</LoadingButton>
 			</div>
-		</ScrollArea>
-
-		<Dialog.Footer class="border-t px-6 py-4">
-			<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}
-				>Cancel</Button
-			>
-			<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving…">
-				{editingId ? 'Save changes' : 'Add channel'}
-			</LoadingButton>
-		</Dialog.Footer>
+		</div>
 	</Dialog.Content>
 </Dialog.Root>
 
