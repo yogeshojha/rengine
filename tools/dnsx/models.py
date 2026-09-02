@@ -90,12 +90,7 @@ class DnsxRecord(BaseModel):
 
 
 class DnsxReconResponse(BaseModel):
-    """Fully parsed DNS recon result for a single domain.
-
-    This is the enriched/parsed version of DnsxRecord with structured
-    MX, SRV, SOA, and CAA entries. Used by the service layer and stored
-    in the database.
-    """
+    """Fully parsed DNS recon result for a single domain."""
 
     host: str
 
@@ -125,11 +120,7 @@ class DnsxReconResponse(BaseModel):
     timestamp: str = ""
 
     def to_db_records(self) -> list[dict]:
-        """Convert to list of flat dicts suitable for DnsRecord DB rows.
-
-        Each DNS record type becomes one or more rows in the dns_records table.
-        This enables queries like "find all targets with the same NS" easily.
-        """
+        """Flatten to dicts suitable for DnsRecord rows."""
         records: list[dict] = []
         base = {"host": self.host}
 

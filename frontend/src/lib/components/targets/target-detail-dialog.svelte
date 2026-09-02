@@ -197,7 +197,7 @@
 			<div class="flex items-center justify-end gap-2 p-4 bg-muted/30">
 				<Button onclick={handleScan} class="gap-2">
 					<Play class="h-4 w-4" />
-					Scan Target
+					Scan target
 				</Button>
 				<Button variant="outline" size="sm" onclick={handleOpenHistory} class="gap-1.5">
 					<History class="h-3.5 w-3.5" />

@@ -17,5 +17,5 @@
 
 <div class="min-h-screen flex items-center justify-center">
 	<Spinner />
-	<p class="text-muted-foreground">Loading...</p>
+	<p class="text-muted-foreground">Loading…</p>
 </div>

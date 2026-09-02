@@ -113,10 +113,10 @@
 	const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 	const NEW_ENTITY_LABEL: Record<string, string> = {
-		contexts: 'New Context',
-		engines: 'New Scan Engine',
-		targets: 'New Target',
-		scans: 'New Scan'
+		contexts: 'New context',
+		engines: 'New engine',
+		targets: 'New target',
+		scans: 'New scan'
 	};
 
 	let breadcrumbs = $derived.by(() => {
@@ -152,7 +152,7 @@
 {#if auth.isLoading}
 	<div class="min-h-screen flex flex-col items-center justify-center gap-3">
 		<Spinner />
-		<p class="text-muted-foreground">Loading...</p>
+		<p class="text-muted-foreground">Loading…</p>
 	</div>
 {:else if auth.isAuthenticated}
 	<Sidebar.Provider open={sidebarOpen} class="!h-svh !min-h-0 overflow-hidden">

@@ -180,7 +180,7 @@
 	>
 		{#if copiedGroup === group}
 			<Check class="h-2.5 w-2.5" />
-			<span>copied</span>
+			<span>Copied</span>
 		{:else}
 			<Copy class="h-2.5 w-2.5" />
 			<span>copy all</span>
@@ -392,7 +392,7 @@
 							>
 								{#if copiedPrefixes}
 									<Check class="h-2.5 w-2.5" />
-									<span>copied</span>
+									<span>Copied</span>
 								{:else}
 									<Copy class="h-2.5 w-2.5" />
 									<span>copy all</span>

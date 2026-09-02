@@ -62,10 +62,3 @@ export interface HttpAssetDetail extends HttpAssetRead {
 	response_body: string | null;
 	response_headers: Record<string, string | string[]>;
 }
-
-export interface HttpAssetSummary {
-	total: number;
-	by_status: Record<string, number>;
-	by_tech: Record<string, number>;
-	cdn: number;
-}

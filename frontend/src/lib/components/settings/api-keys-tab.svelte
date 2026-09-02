@@ -306,7 +306,7 @@
 <Dialog.Root bind:open={addDialogOpen}>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Add API Key</Dialog.Title>
+			<Dialog.Title>Add API key</Dialog.Title>
 			<Dialog.Description>
 				{#if addDialogProvider}
 					{@const meta = providers.find((p) => p.provider === addDialogProvider)}
@@ -384,7 +384,7 @@
 				<LoadingButton
 					type="submit"
 					loading={addDialogSaving}
-					loadingLabel="Saving..."
+					loadingLabel="Saving…"
 					disabled={!addCanSave}
 				>
 					Add Key
@@ -396,11 +396,11 @@
 
 <DeleteConfirmationDialog
 	bind:open={deleteDialogOpen}
-	title="Remove API Key"
+	title="Remove this API key?"
 	description={deletingProvider
-		? `Are you sure you want to remove the ${providers.find((p) => p.provider === deletingProvider)?.name ?? ''} API key? Any features depending on this provider will stop working.`
+		? `Anything using ${providers.find((p) => p.provider === deletingProvider)?.name ?? 'this provider'} will stop working.`
 		: ''}
-	confirmLabel="Remove Key"
+	confirmLabel="Remove key"
 	{isDeleting}
 	onOpenChange={(open) => (deleteDialogOpen = open)}
 	onConfirm={handleDelete}
@@ -425,7 +425,7 @@
 			</Button>
 			<LoadingButton
 				loading={testingKeyId !== null}
-				loadingLabel="Testing..."
+				loadingLabel="Testing…"
 				onclick={async () => {
 					if (testDialogKeyId) {
 						testDialogOpen = false;

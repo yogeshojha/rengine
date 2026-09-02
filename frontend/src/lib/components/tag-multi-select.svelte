@@ -29,7 +29,7 @@
 		onSelect,
 		onRemove,
 		onCreate,
-		placeholder = 'Search tags...'
+		placeholder = 'Search tags…'
 	}: Props = $props();
 
 	let open = $state(false);

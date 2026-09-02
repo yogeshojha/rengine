@@ -13,18 +13,6 @@ export const SSEEventType = {
 	SCAN: 'scan'
 } as const;
 
-export const ScanEventKind = {
-	SCAN_STARTED: 'scan_started',
-	SCAN_COMPLETED: 'scan_completed',
-	SCAN_FAILED: 'scan_failed',
-	SCAN_CANCELLED: 'scan_cancelled',
-	STAGE_STARTED: 'stage_started',
-	STAGE_PROGRESS: 'stage_progress',
-	STAGE_COMPLETED: 'stage_completed',
-	COMMAND_STARTED: 'command_started',
-	COMMAND_FINISHED: 'command_finished'
-} as const;
-
 export interface ScanEvent {
 	kind: string;
 	scan_id: string;

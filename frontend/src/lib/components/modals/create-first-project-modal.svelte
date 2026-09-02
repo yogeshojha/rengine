@@ -64,11 +64,10 @@
 				<div class="flex size-10 items-center justify-center rounded-full bg-primary/10">
 					<FolderPlusIcon class="size-5 text-primary" />
 				</div>
-				<Dialog.Title class="leading-none">Create Your First Project</Dialog.Title>
+				<Dialog.Title class="leading-none">Create your first project</Dialog.Title>
 			</div>
 			<Dialog.Description>
-				Projects provide isolated workspaces for organizing targets, scans, and findings by
-				engagement.
+				A project keeps its targets, scans, and findings separate from your other work.
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -106,9 +105,9 @@
 			<Button type="submit" class="w-full" disabled={!isValid || isSubmitting}>
 				{#if isSubmitting}
 					<Spinner class="mr-2 size-4" />
-					Creating Project...
+					Creating project…
 				{:else}
-					Create Project & Get Started
+					Create project
 				{/if}
 			</Button>
 		</form>

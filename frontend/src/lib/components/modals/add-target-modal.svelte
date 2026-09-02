@@ -154,7 +154,7 @@
 			});
 
 			if (result) {
-				toast.success('Target added successfully');
+				toast.success('Target added');
 				resetForm();
 				open = false;
 			} else {
@@ -242,8 +242,8 @@
 			<X class="size-4" />
 		</button>
 		<Dialog.Header class="p-6 pb-4">
-			<Dialog.Title>Add Target</Dialog.Title>
-			<Dialog.Description>Add a target for monitoring</Dialog.Description>
+			<Dialog.Title>Add target</Dialog.Title>
+			<Dialog.Description>Domain, IP, CIDR range, URL, or ASN.</Dialog.Description>
 		</Dialog.Header>
 
 		<Separator />
@@ -310,7 +310,7 @@
 						onSelect={handleSelectOrganization}
 						onRemove={handleRemoveOrganization}
 						onCreate={handleCreateOrganization}
-						placeholder="Search or create organizations..."
+						placeholder="Search or create organizations…"
 						emptyText="No organizations found."
 					/>
 					<p class="text-xs text-muted-foreground">Group targets by organization</p>
@@ -324,7 +324,7 @@
 						onSelect={handleSelectTag}
 						onRemove={handleRemoveTag}
 						onCreate={handleCreateTag}
-						placeholder="Search or create tags..."
+						placeholder="Search or create tags…"
 					/>
 					<p class="text-xs text-muted-foreground">Add tags to categorize and filter targets</p>
 				</div>
@@ -339,9 +339,9 @@
 				<Button type="submit" disabled={!canSubmit}>
 					{#if isSubmitting}
 						<Spinner class="h-4 w-4 mr-2" />
-						Adding...
+						Adding…
 					{:else}
-						Add Target
+						Add target
 					{/if}
 				</Button>
 			</div>

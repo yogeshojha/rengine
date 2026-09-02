@@ -122,7 +122,9 @@
 			<Card.Root>
 				<Card.Content class="p-4">
 					<div class="flex items-start gap-3">
-						<div class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted">
+						<div
+							class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
+						>
 							<Icon class="size-[18px] text-muted-foreground" />
 						</div>
 						<div class="min-w-0 flex-1 space-y-3">
@@ -170,7 +172,9 @@
 			<Card.Root>
 				<Card.Content class="p-4">
 					<div class="flex items-start gap-3">
-						<div class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted">
+						<div
+							class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
+						>
 							<ShieldIcon class="size-[18px] text-muted-foreground" />
 						</div>
 						<div class="min-w-0 flex-1 space-y-3">

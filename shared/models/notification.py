@@ -71,10 +71,6 @@ class NotificationRead(NotificationBase):
     expires_at: datetime
 
 
-class NotificationMarkRead(BaseModel):
-    notification_id: int
-
-
 class NotificationStats(BaseModel):
     total: int
     unread: int

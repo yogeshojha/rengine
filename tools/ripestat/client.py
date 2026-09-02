@@ -1,12 +1,4 @@
-"""RIPEstat HTTP client.
-
-respect the limits of the api, need to warn user or think later
-
-All endpoints follow the same pattern:
-    GET https://stat.ripe.net/data/{endpoint}/data.json?resource=X&sourceapp=rengine
-
-make users signup for sourceapp as its user's responsibility to respect the limits of the api, need to warn user or think later
-"""
+"""RIPEstat HTTP client — GET /data/{endpoint}/data.json?resource=X&sourceapp=rengine."""
 
 import os
 from typing import Any

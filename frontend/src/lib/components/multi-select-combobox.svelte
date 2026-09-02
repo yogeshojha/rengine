@@ -32,7 +32,7 @@
 		onSelect,
 		onRemove,
 		onCreate,
-		placeholder = 'Search...',
+		placeholder = 'Search…',
 		emptyText = 'No items found.',
 		allowCreate = true,
 		showColors = false

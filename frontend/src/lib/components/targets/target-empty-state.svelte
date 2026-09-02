@@ -44,11 +44,11 @@
 	<Empty.Content>
 		<div class="flex gap-2">
 			{#if hasFilters}
-				<Button variant="outline" onclick={onClearFilters}>Clear Filters</Button>
+				<Button variant="outline" onclick={onClearFilters}>Clear filters</Button>
 			{:else}
-				<Button onclick={onAddTarget}>Add new Target</Button>
+				<Button onclick={onAddTarget}>Add target</Button>
 				{#if onImport}
-					<Button variant="outline" onclick={onImport}>Import Target</Button>
+					<Button variant="outline" onclick={onImport}>Import targets</Button>
 				{/if}
 			{/if}
 		</div>
@@ -61,6 +61,6 @@
 		class="text-muted-foreground"
 		size="sm"
 	>
-		Learn More <ArrowUpRightIcon class="inline" />
+		Learn more <ArrowUpRightIcon class="inline" />
 	</Button>
 </Empty.Root>

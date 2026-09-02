@@ -30,8 +30,6 @@ export const ROUTES = {
 	automation: '/automation',
 	engines: '/automation/engines',
 	engine: (id: string) => `/automation/engines/${id}`,
-	newEngine: (projectId?: string) =>
-		`/automation/engines/new${projectId ? `?project=${projectId}` : ''}`,
 	contexts: '/automation/contexts',
 	context: (id: string) => `/automation/contexts/${id}`,
 	newContext: (projectId?: string) =>

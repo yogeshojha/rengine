@@ -10,7 +10,14 @@ from shared.utils.datetime import utc_now
 
 AUTH_TYPES = ("none", "header", "bearer", "basic", "cookie", "api_key")
 HTTP_PROTOCOLS = ("both", "http_only", "https_only")
-VALID_RATE_TOOLS = ("naabu", "ffuf", "nuclei")
+
+
+def valid_rate_tools() -> tuple[str, ...]:
+    from stages.registry import rate_tools  # noqa: PLC0415
+
+    return rate_tools()
+
+
 MULTIPLIERS = (0.5, 1.0, 2.0)
 
 
@@ -115,6 +122,11 @@ class ScanContextUpdate(BaseModel):
     scan_only_new_assets: bool | None = None
 
 
+class ContextUsage(BaseModel):
+    schedules: int = 0
+    scans: int = 0
+
+
 class ScanContextRead(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
@@ -142,3 +154,4 @@ class ScanContextRead(BaseModel):
     updated_at: datetime
     last_used_at: datetime | None
     last_used_scan_id: uuid.UUID | None
+    usage: ContextUsage = Field(default_factory=ContextUsage)

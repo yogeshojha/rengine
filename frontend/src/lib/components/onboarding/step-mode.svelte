@@ -13,7 +13,13 @@
 
 	let { data, next, setFooter }: StepProps = $props();
 
-	const MODES: { value: InstanceMode; title: string; icon: Component; desc: string; unlocks: string }[] = [
+	const MODES: {
+		value: InstanceMode;
+		title: string;
+		icon: Component;
+		desc: string;
+		unlocks: string;
+	}[] = [
 		{
 			value: InstanceMode.BugBounty,
 			title: 'Bug Bounty',
@@ -26,7 +32,8 @@
 			title: 'Corporate',
 			icon: Building2Icon,
 			desc: "Continuously managing your organization's own attack surface.",
-			unlocks: 'Asset inventory, scope governance, and internal monitoring workflows. Bug-bounty tooling such as HackerOne stays hidden.'
+			unlocks:
+				'Asset inventory, scope governance, and internal monitoring workflows. Bug-bounty tooling such as HackerOne stays hidden.'
 		}
 	];
 
@@ -81,8 +88,10 @@
 
 	<p class="flex items-start gap-2 text-xs text-muted-foreground">
 		<InfoIcon class="mt-px size-4 shrink-0" />
-		<span>reNgine operates in a single mode at a time. Corporate mode tailors the workspace to
-			internal attack surface management and hides bug-bounty-specific tooling such as the HackerOne
-			integration.</span>
+		<span
+			>reNgine operates in a single mode at a time. Corporate mode tailors the workspace to internal
+			attack surface management and hides bug-bounty-specific tooling such as the HackerOne
+			integration.</span
+		>
 	</p>
 </div>

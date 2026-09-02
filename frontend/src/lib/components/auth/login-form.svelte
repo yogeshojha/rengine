@@ -115,7 +115,7 @@
 						<p class="text-sm text-destructive">{mfaError}</p>
 					{/if}
 					<Button class="w-full" onclick={verifyMfa} disabled={verifying || code.length !== 6}>
-						{#if verifying}<Spinner class="mr-2" />Verifying...{:else}Verify{/if}
+						{#if verifying}<Spinner class="mr-2" />Verifying…{:else}Verify{/if}
 					</Button>
 					<Button
 						variant="ghost"
@@ -180,7 +180,7 @@
 						<p class="text-sm text-destructive">{error}</p>
 					{/if}
 					<Button type="submit" class="w-full mt-4" disabled={isLoading}>
-						{#if isLoading}<Spinner class="mr-2" />Logging in...{:else}Log In{/if}
+						{#if isLoading}<Spinner class="mr-2" />Logging in…{:else}Log in{/if}
 					</Button>
 				</form>
 			</Card.Content>

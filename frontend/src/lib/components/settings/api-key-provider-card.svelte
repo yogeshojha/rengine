@@ -351,7 +351,7 @@
 									size="sm"
 									class="w-full h-8 text-xs"
 									loading={editSaving}
-									loadingLabel="Saving..."
+									loadingLabel="Saving…"
 									disabled={!editKeyValue.trim() ||
 										(provider.requires_username && !editUsername.trim())}
 									onclick={saveEdit}
@@ -414,7 +414,7 @@
 					onclick={() => onAdd(provider.provider)}
 				>
 					<PlusIcon class="size-3.5 mr-1.5" />
-					Add API Key
+					Add API key
 				</Button>
 			</div>
 		{/if}

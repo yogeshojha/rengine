@@ -6,19 +6,20 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import Terminal from '@lucide/svelte/icons/terminal';
-	import { SCAN_TOOLS } from '$lib/config/tools';
+	import type { ToolOption } from '$lib/types/scan-engine';
 
 	interface Props {
 		open: boolean;
 		toolOptions: Record<string, string>;
+		tools: ToolOption[];
 		onOpenChange: (open: boolean) => void;
 		onChange: (toolOptions: Record<string, string>) => void;
 	}
 
-	let { open, toolOptions, onOpenChange, onChange }: Props = $props();
+	let { open, toolOptions, tools, onOpenChange, onChange }: Props = $props();
 
 	let options = $derived(toolOptions ?? {});
-	let phases = $derived([...new Set(SCAN_TOOLS.map((t) => t.phase))]);
+	let phases = $derived([...new Set(tools.map((t) => t.phase))]);
 
 	function handleInput(name: string, value: string) {
 		const next = { ...options };
@@ -56,7 +57,7 @@
 						<h4 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 							{phase}
 						</h4>
-						{#each SCAN_TOOLS.filter((t) => t.phase === phase) as tool (tool.name)}
+						{#each tools.filter((t) => t.phase === phase) as tool (tool.name)}
 							<div class="space-y-1.5">
 								<Label for="tool-opt-{tool.name}" class="text-sm">{tool.label}</Label>
 								<Input

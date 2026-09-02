@@ -13,8 +13,8 @@
 
 	let {
 		open = $bindable(),
-		title = 'Delete Item',
-		description = 'Are you sure you want to delete this item? This action cannot be undone.',
+		title = 'Delete this item?',
+		description = 'This is permanent.',
 		confirmLabel = 'Delete',
 		isDeleting = false,
 		onOpenChange,
@@ -29,7 +29,7 @@
 	{confirmLabel}
 	destructive
 	loading={isDeleting}
-	loadingLabel="Deleting..."
+	loadingLabel="Deleting…"
 	{onOpenChange}
 	{onConfirm}
 />

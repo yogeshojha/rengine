@@ -601,7 +601,7 @@
 			<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}
 				>Cancel</Button
 			>
-			<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving...">
+			<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving…">
 				{editingId ? 'Save changes' : 'Add channel'}
 			</LoadingButton>
 		</Dialog.Footer>
@@ -610,8 +610,8 @@
 
 <DeleteConfirmationDialog
 	bind:open={deleteOpen}
-	title="Remove channel"
-	description={`Are you sure you want to remove ${deletingChannel?.name ?? 'this channel'}? Notifications to it will stop immediately.`}
+	title="Remove this channel?"
+	description={`Notifications to ${deletingChannel?.name ?? 'this channel'} stop immediately.`}
 	confirmLabel="Remove channel"
 	{isDeleting}
 	onOpenChange={(o) => (deleteOpen = o)}

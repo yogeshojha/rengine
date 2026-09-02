@@ -7,7 +7,6 @@ from celery import shared_task
 from app.config import settings
 from app.database import get_sync_session
 from app.orchestrator import build_canvas, finalize_scan_run, run_stage
-from engines.registry import STAGE_BY_NAME
 from shared.definitions.notifications import scan_started
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
@@ -17,6 +16,7 @@ from shared.services.activity_log import ActivityLogService
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.utils.datetime import utc_now
+from stages.registry import get_stage
 
 logger = get_logger(__name__)
 
@@ -97,7 +97,7 @@ def run_scan(self, scan_id: str) -> dict:
 @shared_task(bind=True, name="app.tasks.scan.run_scan_stage", max_retries=0)
 def run_scan_stage(self, scan_id: str, stage_name: str) -> dict:
     """Run one engine stage with activity tracking + command registration."""
-    spec = STAGE_BY_NAME.get(stage_name)
+    spec = get_stage(stage_name)
     if spec is None:
         logger.warning("unknown scan stage %s", stage_name)
         return {"error": "unknown stage", "stage": stage_name}

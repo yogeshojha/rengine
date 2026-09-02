@@ -36,45 +36,6 @@ def whois_enrichment_failed(error: str) -> dict:
     }
 
 
-def viewdns_enrichment_complete(
-    success: int, failed: int, skipped: int, total: int
-) -> dict:
-    if failed == 0 and skipped == 0:
-        severity = NotificationSeverity.SUCCESS
-        title = "ViewDNS Enrichment Complete"
-        message = f"Successfully enriched {success}/{total} targets with ViewDNS data."
-    elif success > 0:
-        severity = NotificationSeverity.WARNING
-        title = "ViewDNS Enrichment Partially Complete"
-        message = (
-            f"ViewDNS enrichment finished: {success} succeeded, "
-            f"{failed} failed, {skipped} skipped out of {total} targets."
-        )
-    else:
-        severity = NotificationSeverity.ERROR
-        title = "ViewDNS Enrichment Failed"
-        message = (
-            f"ViewDNS enrichment could not complete: "
-            f"{failed} failed, {skipped} skipped out of {total} targets."
-        )
-
-    return {
-        "type": NotificationType.TARGET,
-        "severity": severity,
-        "title": title,
-        "message": message,
-    }
-
-
-def viewdns_enrichment_failed(error: str) -> dict:
-    return {
-        "type": NotificationType.TARGET,
-        "severity": NotificationSeverity.ERROR,
-        "title": "ViewDNS Enrichment Failed",
-        "message": f"ViewDNS enrichment task failed: {error}",
-    }
-
-
 def ripestat_enrichment_complete(
     success: int, failed: int, skipped: int, total: int
 ) -> dict:

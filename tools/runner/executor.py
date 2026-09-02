@@ -231,7 +231,7 @@ class CLIToolRunner:
         tool: str | None = None,
         extra_args: list[str] | None = None,
     ) -> Iterator[Iterator[dict]]:
-        """Stream-parse the tool's JSONL stdout one record at a time (memory-bounded), consumed inside the `with`; a watchdog kills the process after `timeout`s."""
+        """Stream-parse the tool's JSONL stdout one record at a time; a watchdog kills the process after timeout."""
         timeout = timeout or self.default_timeout
         args = list(args) if args else []
         recorder = recorder if recorder is not None else self._recorder
@@ -246,16 +246,19 @@ class CLIToolRunner:
         stderr_thread: threading.Thread | None = None
         stderr_chunks: list[str] = []
         try:
+            # go's flag parser stops at the first non-flag arg, so these lead —
+            # a malformed later flag must not be able to strip our input/output
+            lead: list[str] = []
             if input_data is not None:
                 raw_input = self._normalize_input(input_data)
                 input_file = self._write_temp_file(raw_input, prefix="input_")
-                args.extend([input_flag, str(input_file)])
+                lead.extend([input_flag, str(input_file)])
             if json_flag not in args:
-                args.append(json_flag)
+                lead.append(json_flag)
             if silent and silent_flag not in args:
-                args.append(silent_flag)
+                lead.append(silent_flag)
 
-            cmd = [self._binary_path, *args]
+            cmd = [self._binary_path, *lead, *args]
             logger.info("Executing (stream): %s", redact_command(" ".join(cmd)))
             if recorder is not None:
                 handle = recorder.start(tool or self.binary, " ".join(cmd))

@@ -41,19 +41,7 @@ def _parse_entity(raw: dict[str, Any]) -> WhoisEntity:
 
 
 def _parse_entities(raw: Any) -> WhoisEntities:
-    """Parse the entities
-
-    The whoisit library returns entities as:
-    {
-        "registrant": [{ ... }, ...],
-        "administrative": [{ ... }, ...],
-        ...
-    }
-
-    We parse each role's list into typed WhoisEntity objects.
-    Unknown roles are silently ignored to avoid breaking on
-    new/unexpected role names from different RDAP servers.
-    """
+    """Parse whoisit's role-keyed entity lists into WhoisEntity objects; unknown roles are ignored."""
     if not isinstance(raw, dict):
         return WhoisEntities()
 
@@ -109,15 +97,7 @@ def _network_to_str(value: Any) -> str:
 
 
 def parse_domain_response(raw: dict[str, Any], query: str) -> WhoisDomainResponse:
-    """Parse a raw whoisit domain response into a typed model.
-
-    Args:
-        raw: Raw dict from whoisit.domain()
-        query: The original domain query string
-
-    Returns:
-        WhoisDomainResponse with all fields populated
-    """
+    """Parse a raw whoisit domain response into a typed model."""
     base = _parse_base_fields(raw, query)
     return WhoisDomainResponse(
         **base,
@@ -129,15 +109,7 @@ def parse_domain_response(raw: dict[str, Any], query: str) -> WhoisDomainRespons
 
 
 def parse_ip_response(raw: dict[str, Any], query: str) -> WhoisIPResponse:
-    """Parse a raw whoisit IP response into a typed model.
-
-    Args:
-        raw: Raw dict from whoisit.ip()
-        query: The original IP/CIDR query string
-
-    Returns:
-        WhoisIPResponse with all fields populated
-    """
+    """Parse a raw whoisit IP response into a typed model."""
     base = _parse_base_fields(raw, query)
     return WhoisIPResponse(
         **base,
@@ -150,15 +122,7 @@ def parse_ip_response(raw: dict[str, Any], query: str) -> WhoisIPResponse:
 
 
 def parse_asn_response(raw: dict[str, Any], query: str) -> WhoisASNResponse:
-    """Parse a raw whoisit ASN response into a typed model.
-
-    Args:
-        raw: Raw dict from whoisit.asn()
-        query: The original ASN query string (e.g. "38565")
-
-    Returns:
-        WhoisASNResponse with all fields populated
-    """
+    """Parse a raw whoisit ASN response into a typed model."""
     base = _parse_base_fields(raw, query)
 
     # asn_range comes as [start, end] list e.g. [38565, 38565]

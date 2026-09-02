@@ -40,6 +40,11 @@ class BaseAppSettings(BaseSettings):
     def celery_broker_url(self) -> str:
         return self.redis_url
 
+    @property
+    def celery_result_backend(self) -> str:
+        # the scan canvas chains groups, which celery runs as chords — those need a backend
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB + 1}"
+
     class Config:
         env_file = ".env"
         case_sensitive = True

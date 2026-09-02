@@ -27,6 +27,7 @@
 
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import ContextSections from '$lib/components/contexts/context-sections.svelte';
+	import ContextEffect from '$lib/components/contexts/context-effect.svelte';
 	import { buildContextSummary } from '$lib/components/contexts/context-summary';
 	import { validateDraft, buildContextPayload } from '$lib/components/contexts/context-form';
 
@@ -363,7 +364,7 @@
 						{#if isLoading}<Spinner class="h-3.5 w-3.5" />{/if}
 						Retry
 					</Button>
-					<Button variant="outline" onclick={() => goto(ROUTES.contexts)}>Back to Contexts</Button>
+					<Button variant="outline" onclick={() => goto(ROUTES.contexts)}>Back to contexts</Button>
 				</div>
 			</Empty.Content>
 		</Empty.Root>
@@ -378,14 +379,14 @@
 								variant="ghost"
 								size="icon"
 								class="h-8 w-8 shrink-0"
-								aria-label="Back to Contexts"
+								aria-label="Back to contexts"
 								onclick={handleBack}
 							>
 								<ChevronLeft class="h-4 w-4" />
 							</Button>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content><p>Back to Contexts</p></Tooltip.Content>
+					<Tooltip.Content><p>Back to contexts</p></Tooltip.Content>
 				</Tooltip.Root>
 				<Input
 					bind:value={draft.name}
@@ -464,21 +465,35 @@
 			</div>
 
 			<div class="hidden lg:block">
-				<Card.Root class="lg:sticky lg:top-6">
-					<Card.Header class="py-4">
-						<Card.Title class="text-sm">Summary</Card.Title>
-						<Card.Description class="text-xs">{summary}</Card.Description>
-					</Card.Header>
-					<Card.Content class="space-y-3 pb-5 text-xs text-muted-foreground">
-						<div>
-							<p class="mb-1 font-medium text-foreground">Merge notes</p>
-							<ul class="space-y-1 pl-3">
-								<li class="list-disc">Headers: engine ∪ context — context wins on conflict.</li>
-								<li class="list-disc">A context cannot enable a tool the engine disabled.</li>
-							</ul>
+				<div class="sticky top-6 flex max-h-[calc(100vh-3rem)] flex-col gap-4">
+					<Card.Root class="shrink-0">
+						<Card.Header class="py-4">
+							<Card.Title class="text-sm">Summary</Card.Title>
+							<Card.Description class="text-xs">{summary}</Card.Description>
+						</Card.Header>
+						<Card.Content class="space-y-3 pb-5 text-xs text-muted-foreground">
+							<div>
+								<p class="mb-1 font-medium text-foreground">Merge notes</p>
+								<ul class="space-y-1 pl-3">
+									<li class="list-disc">Headers: engine ∪ context — context wins on conflict.</li>
+									<li class="list-disc">A context cannot enable a tool the engine disabled.</li>
+								</ul>
+							</div>
+						</Card.Content>
+					</Card.Root>
+
+					<Card.Root class="flex min-h-[240px] flex-1 flex-col overflow-hidden">
+						<Card.Header class="shrink-0 py-4">
+							<Card.Title class="text-sm">Effect on an engine</Card.Title>
+							<Card.Description class="text-xs">
+								What this context changes when a scan runs.
+							</Card.Description>
+						</Card.Header>
+						<div class="min-h-0 flex-1 border-t">
+							<ContextEffect contextId={isNew ? null : (contextId ?? null)} />
 						</div>
-					</Card.Content>
-				</Card.Root>
+					</Card.Root>
+				</div>
 			</div>
 		</div>
 	{/if}
@@ -487,9 +502,10 @@
 {#if !isNew}
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
-		title="Delete Context"
-		description="Are you sure you want to delete '{draft?.name ??
-			'this context'}'? This action cannot be undone."
+		title="Delete this context?"
+		description={loaded?.usage?.schedules
+			? `'${draft?.name ?? 'This context'}' is used by ${loaded.usage.schedules} scheduled scan${loaded.usage.schedules === 1 ? '' : 's'} — those would fail without it. This cannot be undone.`
+			: `Delete '${draft?.name ?? 'this context'}'? This cannot be undone.`}
 		{isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={handleDelete}
@@ -498,7 +514,7 @@
 
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}
-	description="You have unsaved changes to this context. If you leave now, they will be lost."
+	description="Your edits to this context have not been saved."
 	onOpenChange={(o) => {
 		if (!o) cancelLeave();
 	}}

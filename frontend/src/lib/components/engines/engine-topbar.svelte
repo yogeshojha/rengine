@@ -2,322 +2,198 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Separator } from '$lib/components/ui/separator';
-	import { Badge } from '$lib/components/ui/badge';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Save from '@lucide/svelte/icons/save';
+	import Play from '@lucide/svelte/icons/play';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Download from '@lucide/svelte/icons/download';
-	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
-	import Code2 from '@lucide/svelte/icons/code-2';
 	import Pencil from '@lucide/svelte/icons/pencil';
-	import FlaskConical from '@lucide/svelte/icons/flask-conical';
-	import Plus from '@lucide/svelte/icons/plus';
-	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
 	import Terminal from '@lucide/svelte/icons/terminal';
-	import { Spinner } from '$lib/components/ui/spinner';
-	import type { ScanEngine, Intensity } from '$lib/types/engine';
-	import { INTENSITIES, INTENSITY_HELP } from '$lib/types/engine';
+	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+	import LoadingButton from '@/components/loading-button.svelte';
+	import type { Intensity, ScanEngine } from '$lib/types/scan-engine';
+	import { INTENSITIES, INTENSITY_HELP } from '$lib/types/scan-engine';
 
 	interface Props {
-		engine: ScanEngine | null;
+		engine: ScanEngine;
 		isSaving: boolean;
-		viewMode: 'canvas' | 'yaml';
-		previewMode?: boolean;
-		toolCount?: number;
-		estDuration?: string;
-		hasUnsavedChanges?: boolean;
-		onSave?: () => void;
+		hasUnsavedChanges: boolean;
+		onSave: () => void;
+		onNameChange: (name: string) => void;
+		onIntensityChange: (intensity: Intensity) => void;
+		onToolOptions: () => void;
+		onRun: () => void;
+		onBack: () => void;
 		onDuplicate?: () => void;
 		onDelete?: () => void;
 		onExportYaml?: () => void;
-		onViewModeChange?: (mode: 'canvas' | 'yaml') => void;
-		onNameChange?: (name: string) => void;
-		onIntensityChange?: (intensity: Intensity) => void;
-		onTogglePreview?: () => void;
-		onAddStep?: () => void;
-		onToolOptions?: () => void;
-		onBack?: () => void;
 	}
 
 	let {
 		engine,
 		isSaving,
-		viewMode,
-		previewMode = false,
-		toolCount,
-		estDuration,
-		hasUnsavedChanges = false,
+		hasUnsavedChanges,
 		onSave,
-		onDuplicate,
-		onDelete,
-		onExportYaml,
-		onViewModeChange,
 		onNameChange,
 		onIntensityChange,
-		onTogglePreview,
-		onAddStep,
 		onToolOptions,
-		onBack
+		onRun,
+		onBack,
+		onDuplicate,
+		onDelete,
+		onExportYaml
 	}: Props = $props();
 
-	let isEditingName = $state(false);
-	let editNameValue = $state('');
+	let editingName = $state(false);
+	let draftName = $state('');
 
-	function startEditName() {
-		editNameValue = engine?.name ?? '';
-		isEditingName = true;
+	function startEdit() {
+		draftName = engine.name;
+		editingName = true;
 	}
 
-	function commitName() {
-		const next = editNameValue.trim();
-		if (next && next !== engine?.name) {
-			onNameChange?.(next);
-		}
-		isEditingName = false;
-	}
-
-	function handleNameKeyDown(e: KeyboardEvent) {
-		if (e.key === 'Enter') commitName();
-		else if (e.key === 'Escape') isEditingName = false;
+	function commit() {
+		const next = draftName.trim();
+		if (next && next !== engine.name) onNameChange(next);
+		editingName = false;
 	}
 </script>
 
 <div class="topbar">
-	<!-- Left: back + name -->
-	<div class="topbar-left">
-		<Button variant="ghost" size="icon-sm" onclick={() => onBack?.()}>
+	<div class="left">
+		<Button variant="ghost" size="icon-sm" aria-label="Back to engines" onclick={onBack}>
 			<ArrowLeft size={15} />
 		</Button>
-
 		<Separator orientation="vertical" class="data-[orientation=vertical]:h-[18px]" />
 
-		{#if isEditingName}
+		{#if editingName}
+			<!-- svelte-ignore a11y_autofocus -->
 			<Input
-				value={editNameValue}
-				oninput={(e) => (editNameValue = e.currentTarget.value)}
-				onblur={commitName}
-				onkeydown={handleNameKeyDown}
+				bind:value={draftName}
+				onblur={commit}
+				onkeydown={(e) => {
+					if (e.key === 'Enter') commit();
+					else if (e.key === 'Escape') editingName = false;
+				}}
 				autofocus
-				class="h-7 text-sm font-semibold max-w-[240px]"
+				class="h-7 max-w-[260px] text-sm font-semibold"
 				placeholder="Engine name…"
 			/>
 		{:else}
 			<div class="name-row">
-				<span class="engine-name">{engine?.name ?? 'Untitled Engine'}</span>
+				<span class="name">{engine.name || 'Untitled engine'}</span>
 				<Button
 					variant="ghost"
 					size="icon-sm"
 					class="h-6 w-6 text-muted-foreground"
-					onclick={startEditName}
+					aria-label="Rename engine"
+					onclick={startEdit}
 				>
 					<Pencil size={11} />
 				</Button>
 			</div>
 		{/if}
-
-		{#if toolCount !== undefined}
-			<Badge
-				variant="secondary"
-				class="gap-1 rounded-sm border border-border bg-muted font-normal text-[11px]"
-			>
-				<span class="font-semibold text-foreground">{toolCount} tools</span>
-				{#if estDuration}
-					<span class="opacity-50">·</span>
-					<span>~{estDuration}</span>
-				{/if}
-			</Badge>
-		{/if}
 	</div>
 
-	<!-- Center: intensity -->
-	<Tooltip.Provider delayDuration={150}>
-		<div class="intensity-group">
-			<span class="intensity-label">Intensity</span>
-			<Tabs.Root
-				value={engine?.intensity}
-				onValueChange={(v) => onIntensityChange?.(v as Intensity)}
-				class="flex-row"
-			>
-				<Tabs.List class="h-8">
-					{#each INTENSITIES as level (level)}
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								{#snippet child({ props })}
-									<Tabs.Trigger {...props} value={level} class="text-xs px-3 capitalize">
-										{level}
-									</Tabs.Trigger>
-								{/snippet}
-							</Tooltip.Trigger>
-							<Tooltip.Content class="max-w-[220px] text-xs">
-								{INTENSITY_HELP[level]}
-							</Tooltip.Content>
-						</Tooltip.Root>
-					{/each}
-				</Tabs.List>
-			</Tabs.Root>
-		</div>
-	</Tooltip.Provider>
-
-	<!-- Right: view toggle + actions -->
-	<div class="topbar-right">
+	<div class="center">
+		<span class="intensity-label">Intensity</span>
 		<Tabs.Root
-			value={viewMode}
-			onValueChange={(v) => onViewModeChange?.(v as 'canvas' | 'yaml')}
+			value={engine.intensity}
+			onValueChange={(v) => onIntensityChange(v as Intensity)}
 			class="flex-row"
 		>
 			<Tabs.List class="h-8">
-				<Tabs.Trigger value="canvas" class="text-xs px-3 gap-1.5">
-					<LayoutGrid size={13} />
-					Canvas
-				</Tabs.Trigger>
-				<Tabs.Trigger value="yaml" class="text-xs px-3 gap-1.5">
-					<Code2 size={13} />
-					YAML
-				</Tabs.Trigger>
+				{#each INTENSITIES as level (level)}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<Tabs.Trigger {...props} value={level} class="px-3 text-xs capitalize">
+									{level}
+								</Tabs.Trigger>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Content class="max-w-[220px] text-xs">{INTENSITY_HELP[level]}</Tooltip.Content>
+					</Tooltip.Root>
+				{/each}
 			</Tabs.List>
 		</Tabs.Root>
+	</div>
 
-		<Separator orientation="vertical" class="data-[orientation=vertical]:h-[18px]" />
-
-		<Button variant="outline" size="sm" onclick={() => onAddStep?.()} class="gap-1.5 h-7 text-xs">
-			<Plus size={14} />
-			Add Step
+	<div class="right">
+		<Button variant="outline" size="sm" class="h-7 gap-1.5 text-xs" onclick={onRun}>
+			<Play size={13} />
+			Run
 		</Button>
 
-		<Button
-			variant="outline"
-			size="sm"
-			onclick={() => onToolOptions?.()}
-			class="gap-1.5 h-7 text-xs"
-		>
-			<Terminal size={14} />
-			Tool Args
+		<Button variant="outline" size="sm" class="h-7 gap-1.5 text-xs" onclick={onToolOptions}>
+			<Terminal size={13} />
+			Tool args
 		</Button>
-
-		<Button
-			variant={previewMode ? 'default' : 'outline'}
-			size="sm"
-			onclick={() => onTogglePreview?.()}
-			class="gap-1.5 h-7 text-xs"
-		>
-			<FlaskConical size={14} />
-			{previewMode ? 'Exit dry run' : 'Dry run'}
-		</Button>
-
-		<Separator
-			orientation="vertical"
-			class="hidden sm:block data-[orientation=vertical]:h-[18px]"
-		/>
-
-		<Button
-			variant="outline"
-			size="sm"
-			onclick={() => onExportYaml?.()}
-			class="hidden sm:inline-flex gap-1.5 h-7 text-xs"
-		>
-			<Download size={13} />
-			Export
-		</Button>
-
-		<Button
-			variant="outline"
-			size="sm"
-			onclick={() => onDuplicate?.()}
-			class="hidden sm:inline-flex gap-1.5 h-7 text-xs"
-		>
-			<Copy size={13} />
-			Duplicate
-		</Button>
-
-		<div class="save-wrap">
-			<Button
-				size="sm"
-				disabled={isSaving}
-				onclick={() => onSave?.()}
-				class="gap-1.5 h-7 text-xs min-w-[100px]"
-			>
-				{#if isSaving}
-					<Spinner size={13} />
-					Saving…
-				{:else}
-					<Save size={13} />
-					Save Engine
-				{/if}
-			</Button>
-			{#if hasUnsavedChanges && !isSaving}
-				<span class="dirty-dot"></span>
-			{/if}
-		</div>
-
-		{#if engine?.id}
-			<Button
-				variant="ghost"
-				size="icon-sm"
-				onclick={() => onDelete?.()}
-				class="hidden sm:inline-flex text-muted-foreground hover:text-destructive h-7 w-7"
-			>
-				<Trash2 size={14} />
-			</Button>
-		{/if}
 
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="ghost"
-						size="icon-sm"
-						class="sm:hidden h-7 w-7 text-muted-foreground"
-						aria-label="More actions"
-					>
-						<MoreHorizontal size={15} />
+					<Button {...props} variant="outline" size="icon-sm" class="h-7 w-7" aria-label="More">
+						<MoreHorizontal size={14} />
 					</Button>
 				{/snippet}
 			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end" class="w-40">
-				<DropdownMenu.Item onclick={() => onExportYaml?.()} class="gap-2">
-					<Download size={14} />
-					Export
+			<DropdownMenu.Content align="end" class="w-44">
+				<DropdownMenu.Item disabled={!onExportYaml} onclick={() => onExportYaml?.()}>
+					<Download size={13} />
+					Export YAML
 				</DropdownMenu.Item>
-				<DropdownMenu.Item onclick={() => onDuplicate?.()} class="gap-2">
-					<Copy size={14} />
+				<DropdownMenu.Item disabled={!onDuplicate} onclick={() => onDuplicate?.()}>
+					<Copy size={13} />
 					Duplicate
 				</DropdownMenu.Item>
-				{#if engine?.id}
-					<DropdownMenu.Separator />
-					<DropdownMenu.Item onclick={() => onDelete?.()} class="gap-2 text-destructive">
-						<Trash2 size={14} />
-						Delete
-					</DropdownMenu.Item>
-				{/if}
+				<DropdownMenu.Separator />
+				<DropdownMenu.Item variant="destructive" disabled={!onDelete} onclick={() => onDelete?.()}>
+					<Trash2 size={13} />
+					Delete
+				</DropdownMenu.Item>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
+
+		<LoadingButton
+			size="sm"
+			class="h-7 gap-1.5 text-xs"
+			loading={isSaving}
+			loadingLabel="Saving…"
+			disabled={!hasUnsavedChanges}
+			onclick={onSave}
+		>
+			<Save size={13} />
+			{hasUnsavedChanges ? 'Save changes' : 'Saved'}
+		</LoadingButton>
 	</div>
 </div>
 
 <style>
 	.topbar {
-		min-height: 52px;
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
 		flex-wrap: wrap;
-		gap: 10px;
-		padding: 8px 14px;
+		flex-shrink: 0;
+		height: auto;
+		min-height: 52px;
+		padding: 8px 16px;
 		border-bottom: 1px solid var(--border);
 		background: var(--card);
-		flex-shrink: 0;
-		z-index: 10;
 	}
 
-	.topbar-left {
+	.left,
+	.center,
+	.right {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		flex: 1;
 		min-width: 0;
 	}
 
@@ -325,56 +201,25 @@
 		display: flex;
 		align-items: center;
 		gap: 2px;
+		min-width: 0;
 	}
-
-	.engine-name {
+	.name {
 		font-size: 14px;
 		font-weight: 600;
-		color: var(--foreground);
-		max-width: 260px;
+		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.intensity-group {
-		display: flex;
-		align-items: center;
-		gap: 8px;
 	}
 
 	.intensity-label {
 		font-size: 11px;
-		font-weight: 500;
 		color: var(--muted-foreground);
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		white-space: nowrap;
 	}
 
-	.save-wrap {
-		position: relative;
-		display: flex;
-		flex-shrink: 0;
-	}
-
-	.dirty-dot {
-		position: absolute;
-		top: -3px;
-		right: -3px;
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: var(--primary);
-		border: 2px solid var(--card);
-		pointer-events: none;
-	}
-
-	.topbar-right {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 6px;
-		margin-left: auto;
+	@media (max-width: 900px) {
+		.center {
+			order: 3;
+			width: 100%;
+		}
 	}
 </style>

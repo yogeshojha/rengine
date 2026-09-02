@@ -32,6 +32,15 @@ ACTIVITY_TERMINAL_STATUSES = (
 )
 
 
+class Intensity(Enum):
+    PASSIVE = "passive"
+    NORMAL = "normal"
+    AGGRESSIVE = "aggressive"
+
+
+INTENSITIES = tuple(i.value for i in Intensity)
+
+
 class Phase(Enum):
     DISCOVERY = "discovery"
     EXPANSION = "expansion"

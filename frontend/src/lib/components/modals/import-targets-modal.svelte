@@ -348,9 +348,7 @@
 			await targetsStore.refresh();
 
 			if (response.imported > 0) {
-				toast.success(
-					`Successfully imported ${response.imported} target${response.imported !== 1 ? 's' : ''}`
-				);
+				toast.success(`Imported ${response.imported} target${response.imported !== 1 ? 's' : ''}`);
 			}
 
 			if (response.failed > 0) {
@@ -393,7 +391,7 @@
 			<Dialog.Title>Import Targets</Dialog.Title>
 			<Dialog.Description>
 				{#if mode === 'input'}
-					Import multiple targets from various sources
+					Paste a list, upload a file, or pull from a connected source
 				{:else if mode === 'preview'}
 					Review targets before importing
 				{:else}
@@ -511,7 +509,7 @@ https://app.example.com"
 					>
 						{#if isProcessing}
 							<Spinner />
-							Processing...
+							Processing…
 						{:else}
 							<Eye class="h-4 w-4 mr-2" />
 							Preview
@@ -520,7 +518,7 @@ https://app.example.com"
 					<Button onclick={handleDirectImport} disabled={!hasInput || isProcessing || isImporting}>
 						{#if isImporting}
 							<Spinner />
-							Importing...
+							Importing…
 						{:else}
 							<Upload class="h-4 w-4 mr-2" />
 							Import
@@ -532,7 +530,7 @@ https://app.example.com"
 				<Button onclick={handleImportFromPreview} disabled={!canImport || isImporting}>
 					{#if isImporting}
 						<Spinner />
-						Importing...
+						Importing…
 					{:else}
 						Import {previewItems.filter((item) => !item.error).length}
 					{/if}

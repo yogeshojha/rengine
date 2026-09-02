@@ -1,11 +1,8 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
 
-	let {
-		icon,
-		title,
-		description
-	}: { icon?: Component; title: string; description?: string } = $props();
+	let { icon, title, description }: { icon?: Component; title: string; description?: string } =
+		$props();
 </script>
 
 <div class="space-y-3">

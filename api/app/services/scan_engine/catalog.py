@@ -1,0 +1,80 @@
+from shared.definitions.tools import SCAN_TOOLS
+from shared.enums.target import TargetType
+from shared.models.scan_engine import (
+    EngineCatalog,
+    EnginePreset,
+    StageCatalogEntry,
+    StageField,
+    ToolOption,
+)
+from stages.presets import PRESETS, preset_stages
+from stages.registry import phases, rate_tools, stages
+
+
+def _field_specs(spec) -> list[StageField]:
+    schema = spec.schema
+    defaults = spec.defaults
+    out: list[StageField] = []
+    for name, prop in (schema.get("properties") or {}).items():
+        options = prop.get("enum") or (prop.get("json_schema_extra") or {}).get(
+            "options"
+        )
+        if options is None and "items" in prop:
+            options = prop.get("options")
+        out.append(
+            StageField(
+                name=name,
+                title=prop.get("title") or name.replace("_", " ").capitalize(),
+                description=prop.get("description") or None,
+                type=_JSON_TYPES.get(prop.get("type"), prop.get("type") or "string"),
+                default=defaults.get(name, prop.get("default")),
+                options=list(options) if options else None,
+                minimum=prop.get("minimum"),
+                maximum=prop.get("maximum"),
+                scale=prop.get("scale"),
+            )
+        )
+    return out
+
+
+def build_catalog() -> EngineCatalog:
+    return EngineCatalog(
+        phases=[phase for phase, _ in phases()],
+        stages=[
+            StageCatalogEntry(
+                name=spec.name,
+                title=spec.title,
+                description=spec.description,
+                phase=spec.phase,
+                level=spec.level,
+                applies_to=sorted(spec.applies_to),
+                tools=list(spec.tools),
+                api_keys=list(spec.api_keys),
+                requires_api_keys=spec.requires_api_keys,
+                touches_target=spec.touches_target,
+                defaults=spec.defaults,
+                fields=_field_specs(spec),
+            )
+            for spec in stages()
+        ],
+        rate_tools=list(rate_tools()),
+        tool_options=[ToolOption(**t.model_dump()) for t in SCAN_TOOLS],
+        presets=[
+            EnginePreset(
+                name=p.name,
+                title=p.title,
+                description=p.description,
+                stages=preset_stages(p.name),
+            )
+            for p in PRESETS
+        ],
+        target_types=[t.value for t in TargetType],
+    )
+
+
+_JSON_TYPES = {
+    "integer": "integer",
+    "number": "number",
+    "boolean": "boolean",
+    "string": "string",
+}

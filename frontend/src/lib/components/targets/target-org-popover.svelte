@@ -163,7 +163,7 @@
 		</Popover.Trigger>
 		<Popover.Content class="w-[240px] p-0" align="start">
 			<Command.Root shouldFilter={false}>
-				<Command.Input placeholder="Search or create orgs..." bind:value={searchValue} />
+				<Command.Input placeholder="Search or create orgs…" bind:value={searchValue} />
 				<Command.List>
 					<Command.Empty>
 						{#if !showCreateOption}

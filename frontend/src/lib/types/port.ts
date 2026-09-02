@@ -10,8 +10,3 @@ export interface PortRead {
 	source: string;
 	discovered_at: string;
 }
-
-export interface PortSummary {
-	total: number;
-	by_service: Record<string, number>;
-}

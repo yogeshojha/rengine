@@ -28,11 +28,7 @@ logger = get_logger(__name__)
     time_limit=900,
 )
 def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
-    """Perform WHOIS lookups for a batch of targets.
-
-    Groups targets by normalized query value to avoid duplicate RDAP queries.
-    Each target gets individual status tracking.
-    """
+    """WHOIS a batch of targets, deduped by normalized query value."""
     if not target_ids:
         return {"success": 0, "failed": 0, "total": 0}
 

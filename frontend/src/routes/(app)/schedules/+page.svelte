@@ -135,7 +135,7 @@
 			</Button>
 			<Button onclick={handleNew} class="gap-2">
 				<Plus class="h-4 w-4" />
-				New Schedule
+				New schedule
 			</Button>
 		</div>
 	</div>
@@ -162,7 +162,7 @@
 		>
 			<Button onclick={handleNew} class="gap-2">
 				<Plus size={15} />
-				Create Your First Schedule
+				Schedule a scan
 			</Button>
 		</EmptyState>
 	{:else}
@@ -191,8 +191,8 @@
 {#if scheduleToDelete}
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
-		title="Delete Schedule"
-		description="Are you sure you want to delete '{scheduleToDelete.name}'? Scans it already launched are kept. This action cannot be undone."
+		title="Delete this schedule?"
+		description="It stops running. Scans it already launched are kept."
 		{isDeleting}
 		onOpenChange={(open) => {
 			showDeleteDialog = open;

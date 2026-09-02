@@ -1,11 +1,22 @@
 import { api } from './client';
 import type {
+	EngineCatalog,
+	EnginePreviewRequest,
+	EnginePreviewResult,
 	ScanEngine,
 	ScanEngineCreate,
 	ScanEngineUpdate
 } from '$lib/types/scan-engine';
 
 export const scanEnginesApi = {
+	async catalog(): Promise<EngineCatalog> {
+		return api.get<EngineCatalog>('/engines/catalog');
+	},
+
+	async preview(body: EnginePreviewRequest): Promise<EnginePreviewResult> {
+		return api.post<EnginePreviewResult>('/engines/preview', body);
+	},
+
 	async list(projectId: string): Promise<ScanEngine[]> {
 		return api.get<ScanEngine[]>(`/engines?project_id=${projectId}`);
 	},

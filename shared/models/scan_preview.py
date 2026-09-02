@@ -8,6 +8,7 @@ class PreviewToolStatus(StrEnum):
     WILL_RUN = "will_run"
     SKIPPED_DISABLED = "skipped_disabled"
     SKIPPED_NEEDS_KEY = "skipped_needs_key"
+    SKIPPED_NOT_APPLICABLE = "skipped_not_applicable"
 
 
 class PreviewTool(BaseModel):

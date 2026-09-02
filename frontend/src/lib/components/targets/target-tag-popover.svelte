@@ -238,7 +238,7 @@
 				</div>
 			{:else}
 				<Command.Root shouldFilter={false}>
-					<Command.Input placeholder="Search or create tags..." bind:value={searchValue} />
+					<Command.Input placeholder="Search or create tags…" bind:value={searchValue} />
 					<Command.List>
 						<Command.Empty>
 							{#if !showCreateOption}

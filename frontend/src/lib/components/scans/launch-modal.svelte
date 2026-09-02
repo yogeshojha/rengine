@@ -43,10 +43,12 @@
 	interface Props {
 		open: boolean;
 		targetId?: string;
+		presetEngineId?: string;
+		presetContextId?: string;
 		onClose?: () => void;
 	}
 
-	let { open = $bindable(), targetId, onClose }: Props = $props();
+	let { open = $bindable(), targetId, presetEngineId, presetContextId, onClose }: Props = $props();
 
 	const CTX_MODAL_SECTIONS: ContextFormSection[] = ['scope', 'auth', 'rate', 'runtime', 'proxy'];
 
@@ -145,6 +147,8 @@
 			prefsRestored = true;
 			untrack(() => {
 				restorePreferences();
+				if (presetEngineId) engineId = presetEngineId;
+				if (presetContextId) contextId = presetContextId;
 				focusEngine();
 			});
 		}
@@ -276,7 +280,7 @@
 
 	function gotoCreateEngine() {
 		handleOpenChange(false);
-		goto(ROUTES.newEngine());
+		goto(ROUTES.engines);
 	}
 
 	async function startNewContext() {
@@ -614,7 +618,7 @@
 					<Button onclick={handleLaunch} disabled={!canLaunch} class="gap-2">
 						{#if launching}
 							<Spinner class="h-4 w-4" />
-							Queuing...
+							Queuing…
 						{:else}
 							<Rocket class="h-4 w-4" />
 							{lockedTargetValue ? `Queue scan against ${lockedTargetValue}` : 'Queue scan'}

@@ -28,7 +28,7 @@
 		onFileRemove,
 		onTextChange,
 		disabled = false,
-		placeholder = 'Enter data...',
+		placeholder = 'Enter data…',
 		mode = $bindable('text'),
 		showTextInput = true
 	}: Props = $props();

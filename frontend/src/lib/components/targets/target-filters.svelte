@@ -51,7 +51,7 @@
 		<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 		<Input
 			type="text"
-			placeholder="Search targets..."
+			placeholder="Search targets…"
 			class="pl-9 h-9"
 			value={searchQuery}
 			oninput={(e) => onSearchChange(e.currentTarget.value)}
@@ -91,7 +91,7 @@
 		</Popover.Trigger>
 		<Popover.Content class="w-56 p-0" align="start">
 			<Command.Root>
-				<Command.Input placeholder="Search organizations..." />
+				<Command.Input placeholder="Search organizations…" />
 				<Command.List>
 					<Command.Empty>No organizations found.</Command.Empty>
 					<Command.Group>
@@ -131,7 +131,7 @@
 		</Popover.Trigger>
 		<Popover.Content class="w-56 p-0" align="start">
 			<Command.Root>
-				<Command.Input placeholder="Search tags..." />
+				<Command.Input placeholder="Search tags…" />
 				<Command.List>
 					<Command.Empty>No tags found.</Command.Empty>
 					<Command.Group>

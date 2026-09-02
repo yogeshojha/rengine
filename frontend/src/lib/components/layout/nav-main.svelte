@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { navAccent } from '$lib/config/nav-accents';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
@@ -68,7 +69,12 @@
 									{#snippet child({ props })}
 										<a href={item.url} {...props}>
 											{#if item.icon}
-												<item.icon class="size-4" />
+												<item.icon
+													class="size-4"
+													style={isActive(item.url) && navAccent(item.url)
+														? `color: ${navAccent(item.url)}`
+														: undefined}
+												/>
 											{/if}
 											<span>{item.title}</span>
 										</a>
@@ -111,7 +117,12 @@
 							{#snippet child({ props })}
 								<a href={item.url} {...props}>
 									{#if item.icon}
-										<item.icon class="size-4" />
+										<item.icon
+											class="size-4"
+											style={isActive(item.url) && navAccent(item.url)
+												? `color: ${navAccent(item.url)}`
+												: undefined}
+										/>
 									{/if}
 									<span>{item.title}</span>
 								</a>

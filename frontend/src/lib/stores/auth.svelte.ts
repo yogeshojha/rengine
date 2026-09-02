@@ -12,6 +12,7 @@ import { targetsStore } from '$lib/stores/targets.svelte';
 import { scansStore } from '$lib/stores/scans.svelte';
 import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
+import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 import { dashboardStore } from '$lib/stores/dashboard.svelte';
 import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 import { activityScope } from '$lib/stores/activity-scope.svelte';
@@ -88,6 +89,7 @@ function createAuthStore() {
 		scansStore.clear();
 		scanContextsStore.clear();
 		scanEnginesStore.clear();
+		engineCatalogStore.clear();
 		dashboardStore.clear();
 		breadcrumbStore.clear();
 		activityScope.clear();

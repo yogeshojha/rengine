@@ -44,7 +44,7 @@
 		try {
 			await authApi.changeUsername({ new_username: newUsername });
 			await auth.checkAuth();
-			toast.success('Username changed successfully');
+			toast.success('Username changed');
 			usernameSavedAt = new Date();
 			newUsername = '';
 			usernameDirty = false;
@@ -116,7 +116,7 @@
 				class="w-full"
 				type="submit"
 				loading={isChangingUsername}
-				loadingLabel="Updating..."
+				loadingLabel="Updating…"
 				disabled={!usernameValid}
 			>
 				Update Username

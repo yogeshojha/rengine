@@ -188,7 +188,7 @@
 							>
 								{#if d.testing}
 									<Spinner class="mr-1.5 size-4" />
-									Testing...
+									Testing…
 								{:else if d.tested}
 									<CheckIcon class="mr-1.5 size-4" />
 									Tested

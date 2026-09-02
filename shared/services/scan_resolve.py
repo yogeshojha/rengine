@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, Field, PrivateAttr
 
+from shared.definitions.constants import MAX_RATE, MAX_THREADS, MAX_TIMEOUT
 from shared.definitions.tools import parse_tool_args
 
 if TYPE_CHECKING:
@@ -38,10 +39,6 @@ _CRED_FLAG = re.compile(
 _UNSAFE_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 _CTRL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
-
-_MAX_RATE = 10000
-_MAX_THREADS = 1000
-_MAX_TIMEOUT = 3600
 
 
 def _bad(detail: str) -> HTTPException:
@@ -187,11 +184,9 @@ class ResolvedScanConfig(BaseModel):
     per_tool_rate_limits: dict[str, int] = Field(default_factory=dict)
     global_rate_limit_ceiling: int | None = None
     global_threads: int = 30
-    resolved_threads: dict[str, int] = Field(default_factory=dict)
-    resolved_timeouts: dict[str, int] = Field(default_factory=dict)
     thread_multiplier: float = 1.0
     timeout_multiplier: float = 1.0
-    phases: dict = Field(default_factory=dict)
+    stages: dict[str, dict] = Field(default_factory=dict)
     excluded_subdomains: list[str] = Field(default_factory=list)
     excluded_paths: list[str] = Field(default_factory=list)
     excluded_ips: list[str] = Field(default_factory=list)
@@ -207,6 +202,9 @@ class ResolvedScanConfig(BaseModel):
 
     def tool_args(self, tool: str) -> list[str]:
         return parse_tool_args((self.tool_options or {}).get(tool, ""))
+
+    def stage(self, name: str) -> dict:
+        return self.stages.get(name) or {}
 
     def __repr__(self) -> str:
         proxy = "<set>" if self.proxy_url else "None"
@@ -270,24 +268,30 @@ def _build_headers(engine, ctx) -> tuple[dict[str, str], list[str]]:
     return headers, auth_header_names
 
 
-def _resolve_rate(engine_base: int, tool: str, ctx) -> int:
-    per_tool = _ctx_get(ctx, "per_tool_rate_overrides") or {}
-    global_override = _ctx_get(ctx, "global_rate_limit_override")
-    val = per_tool.get(tool, engine_base)
-    if global_override is not None:
-        val = min(val, global_override)
-    return _clamp(int(val), 1, _MAX_RATE)
+def _resolve_rate(
+    base: int, tool: str | None, overrides: dict, ceiling: int | None
+) -> int:
+    value = overrides.get(tool, base) if tool else base
+    if ceiling is not None:
+        value = min(value, ceiling)
+    return _clamp(int(value), 1, MAX_RATE)
+
+
+def _assert_flags_preserved(stage: str, original: dict, scaled: dict) -> None:
+    for key, value in original.items():
+        if isinstance(value, bool) and scaled[key] != value:
+            msg = f"Resolved enable flag {stage}.{key} diverged from engine."
+            raise RuntimeError(msg)
 
 
 def merge_engine_context(
     engine, context, target_value: str, target_type: str, proxy_url: str | None = None
 ) -> ResolvedScanConfig:
-    from shared.models.scan_context import VALID_RATE_TOOLS  # noqa: PLC0415
-    from shared.models.scan_engine import (  # noqa: PLC0415
-        DepthConfig,
-        DiscoveryConfig,
-        ExpansionConfig,
-    )
+    from shared.enums.scan import Intensity  # noqa: PLC0415
+    from stages.config import Scale  # noqa: PLC0415
+    from stages.registry import stages as stage_specs  # noqa: PLC0415
+
+    passive = engine.intensity == Intensity.PASSIVE.value
 
     ctx = context if context is not None else _NeutralContext()
 
@@ -296,93 +300,36 @@ def merge_engine_context(
         _ctx_get(ctx, "scan_only_new_assets"),
     )
 
-    discovery = DiscoveryConfig(**(engine.discovery or {}))
-    expansion = ExpansionConfig(**(engine.expansion or {}))
-    depth = DepthConfig(**(engine.depth or {}))
-
     thread_mult = float(_ctx_get(ctx, "thread_multiplier", 1.0))
     timeout_mult = float(_ctx_get(ctx, "timeout_multiplier", 1.0))
-
-    headers, auth_header_names = _build_headers(engine, ctx)
-
-    per_tool_rate_limits = {
-        tool: _resolve_rate(base, tool, ctx)
-        for tool, base in zip(
-            VALID_RATE_TOOLS,
-            (
-                expansion.port_scan_rate_limit,
-                depth.dir_fuzz_rate_limit,
-                depth.nuclei_rate_limit,
-            ),
-            strict=True,
-        )
-    }
-
+    rate_overrides = _ctx_get(ctx, "per_tool_rate_overrides") or {}
     global_rate_limit_ceiling = _ctx_get(ctx, "global_rate_limit_override")
 
-    global_threads = _clamp(round(engine.global_threads * thread_mult), 1, _MAX_THREADS)
+    headers, auth_header_names = _build_headers(engine, ctx)
+    global_threads = _clamp(round(engine.global_threads * thread_mult), 1, MAX_THREADS)
 
-    def _thr(base: int) -> int:
-        return _clamp(int(base * thread_mult) or 1, 1, _MAX_THREADS)
+    stored = engine.stages or {}
+    stages: dict[str, dict] = {}
+    per_tool_rate_limits: dict[str, int] = {}
 
-    def _tmo(base: int) -> int:
-        return _clamp(int(base * timeout_mult) or 1, 1, _MAX_TIMEOUT)
-
-    resolved_threads = {
-        "dns_threads": _thr(discovery.dns_threads),
-        "port_scan_threads": _thr(expansion.port_scan_threads),
-        "screenshot_threads": _thr(expansion.screenshot_threads),
-        "dir_fuzz_threads": _thr(depth.dir_fuzz_threads),
-        "url_threads": _thr(depth.url_threads),
-        "nuclei_concurrency": _thr(depth.nuclei_concurrency),
-    }
-
-    resolved_timeouts = {
-        "dns_timeout": _tmo(discovery.dns_timeout),
-        "whois_timeout": _tmo(discovery.whois_timeout),
-        "port_scan_timeout": _tmo(expansion.port_scan_timeout),
-        "screenshot_timeout": _tmo(expansion.screenshot_timeout),
-        "dir_fuzz_timeout": _tmo(depth.dir_fuzz_timeout),
-        "nuclei_timeout": _tmo(depth.nuclei_timeout),
-    }
-
-    discovery_phase = discovery.model_dump()
-    expansion_phase = expansion.model_dump()
-    depth_phase = depth.model_dump()
-
-    discovery_phase["dns_threads"] = resolved_threads["dns_threads"]
-    discovery_phase["dns_timeout"] = resolved_timeouts["dns_timeout"]
-    discovery_phase["whois_timeout"] = resolved_timeouts["whois_timeout"]
-
-    expansion_phase["port_scan_rate_limit"] = per_tool_rate_limits["naabu"]
-    expansion_phase["port_scan_threads"] = resolved_threads["port_scan_threads"]
-    expansion_phase["port_scan_timeout"] = resolved_timeouts["port_scan_timeout"]
-    expansion_phase["screenshot_threads"] = resolved_threads["screenshot_threads"]
-    expansion_phase["screenshot_timeout"] = resolved_timeouts["screenshot_timeout"]
-
-    depth_phase["dir_fuzz_rate_limit"] = per_tool_rate_limits["ffuf"]
-    depth_phase["dir_fuzz_threads"] = resolved_threads["dir_fuzz_threads"]
-    depth_phase["dir_fuzz_timeout"] = resolved_timeouts["dir_fuzz_timeout"]
-    depth_phase["url_threads"] = resolved_threads["url_threads"]
-    depth_phase["nuclei_rate_limit"] = per_tool_rate_limits["nuclei"]
-    depth_phase["nuclei_concurrency"] = resolved_threads["nuclei_concurrency"]
-    depth_phase["nuclei_timeout"] = resolved_timeouts["nuclei_timeout"]
-
-    phases = {
-        "discovery": discovery_phase,
-        "expansion": expansion_phase,
-        "depth": depth_phase,
-    }
-
-    for phase_name, original in (
-        ("discovery", discovery.model_dump()),
-        ("expansion", expansion.model_dump()),
-        ("depth", depth.model_dump()),
-    ):
-        for key, val in original.items():
-            if isinstance(val, bool) and phases[phase_name][key] != val:
-                msg = f"Resolved enable flag {phase_name}.{key} diverged from engine."
-                raise RuntimeError(msg)
+    for spec in stage_specs():
+        config = spec.config_model(**(stored.get(spec.name) or {}))
+        values = config.model_dump()
+        for name, (scale, tool) in spec.config_model.scaled_fields().items():
+            base = values[name]
+            if scale is Scale.THREADS:
+                values[name] = _clamp(int(base * thread_mult) or 1, 1, MAX_THREADS)
+            elif scale is Scale.TIMEOUT:
+                values[name] = _clamp(int(base * timeout_mult) or 1, 1, MAX_TIMEOUT)
+            elif scale is Scale.RATE:
+                values[name] = _resolve_rate(
+                    base, tool, rate_overrides, global_rate_limit_ceiling
+                )
+                per_tool_rate_limits[tool] = values[name]
+        _assert_flags_preserved(spec.name, config.model_dump(), values)
+        if passive and spec.touches_target:
+            values["enabled"] = False
+        stages[spec.name] = values
 
     excluded_subdomains = list(_ctx_get(ctx, "excluded_subdomains") or [])
     excluded_paths = list(_ctx_get(ctx, "excluded_paths") or [])
@@ -402,11 +349,9 @@ def merge_engine_context(
         per_tool_rate_limits=per_tool_rate_limits,
         global_rate_limit_ceiling=global_rate_limit_ceiling,
         global_threads=global_threads,
-        resolved_threads=resolved_threads,
-        resolved_timeouts=resolved_timeouts,
         thread_multiplier=thread_mult,
         timeout_multiplier=timeout_mult,
-        phases=phases,
+        stages=stages,
         excluded_subdomains=excluded_subdomains,
         excluded_paths=excluded_paths,
         excluded_ips=excluded_ips,

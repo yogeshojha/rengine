@@ -11,7 +11,7 @@ from sqlalchemy.orm import aliased
 
 from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
-from app.services.scan_engine import ScanEngineService
+from app.services.scan_engine import ScanEngineService, stage_effects
 from shared.config import BaseAppSettings
 from shared.definitions.notifications import scan_cancelled
 from shared.enums.api_key import APIProvider
@@ -35,12 +35,10 @@ from shared.models.scan_command import (
     ScanCommandDetail,
     ScanCommandRead,
 )
-from shared.models.scan_context import VALID_RATE_TOOLS, ScanContext
+from shared.models.scan_context import ScanContext
 from shared.models.scan_engine import ScanEngine
 from shared.models.scan_preview import (
-    PreviewPhase,
     PreviewSummary,
-    PreviewTool,
     PreviewToolStatus,
     ScanPreview,
 )
@@ -62,93 +60,6 @@ from shared.services.scan_resolve import (
 from shared.utils.datetime import utc_now
 
 logger = logging.getLogger(__name__)
-
-# TODO(api-keys): expand APIProvider to cover these providers.
-CAPABILITY_API_KEYS = {
-    "subdomain_securitytrails": "securitytrails",
-    "subdomain_censys": "censys",
-    "subdomain_virustotal": "virustotal",
-    "subdomain_chaos": "chaos",
-    "subdomain_binaryedge": "binaryedge",
-    "port_scan_passive_shodan": "shodan",
-}
-
-_SPEC_RATE_TOOL = 2
-_SPEC_THREADS_KEY = 3
-_SPEC_TIMEOUT_KEY = 4
-
-_PHASE_TOOLS = {
-    "discovery": (
-        "Discovery",
-        [
-            ("related_domains_enabled", "Related Domains"),
-            ("org_whois_search", "Org WHOIS Search"),
-            ("org_cert_transparency", "Org Cert Transparency"),
-            ("org_asn_lookup", "Org ASN Lookup"),
-            ("ip_reverse_dns", "IP Reverse DNS"),
-            ("ip_vhost_discovery", "IP VHost Discovery"),
-        ],
-    ),
-    "expansion": (
-        "Expansion",
-        [
-            ("subdomain_passive", "Passive Subdomain Enum"),
-            ("subdomain_securitytrails", "SecurityTrails"),
-            ("subdomain_censys", "Censys"),
-            ("subdomain_virustotal", "VirusTotal"),
-            ("subdomain_chaos", "Chaos"),
-            ("subdomain_binaryedge", "BinaryEdge"),
-            ("subdomain_active", "Active Subdomain Brute"),
-            ("subdomain_permutation", "Permutations"),
-            ("subdomain_takeover", "Subdomain Takeover"),
-            ("port_scan_enabled", "Port Scan", "naabu"),
-            ("port_scan_passive_shodan", "Shodan Port Scan"),
-            ("nmap_enabled", "Nmap"),
-            ("http_crawl", "HTTP Crawl"),
-            ("tech_detection", "Tech Detection"),
-            (
-                "screenshot",
-                "Screenshot",
-                None,
-                "screenshot_threads",
-                "screenshot_timeout",
-            ),
-            ("waf_detection", "WAF Detection"),
-            ("cdn_detection", "CDN Detection"),
-        ],
-    ),
-    "depth": (
-        "Depth",
-        [
-            (
-                "dir_fuzz_enabled",
-                "Directory Fuzzing",
-                "ffuf",
-                "dir_fuzz_threads",
-                "dir_fuzz_timeout",
-            ),
-            ("url_discovery_enabled", "URL Discovery", None, "url_threads"),
-            ("js_secret_scan", "JS Secret Scan"),
-            ("param_discovery", "Param Discovery"),
-            (
-                "nuclei_enabled",
-                "Nuclei",
-                "nuclei",
-                "nuclei_concurrency",
-                "nuclei_timeout",
-            ),
-            ("dalfox_enabled", "Dalfox (XSS)"),
-            ("crlfuzz_enabled", "CRLFuzz"),
-            ("sqlmap_enabled", "SQLMap"),
-            ("ssrf_enabled", "SSRF"),
-            ("cors_check", "CORS Check"),
-            ("ssl_tls_analysis", "SSL/TLS Analysis"),
-            ("bypass_403", "403 Bypass"),
-            ("graphql_detection", "GraphQL Detection"),
-            ("report_enabled", "Reporting"),
-        ],
-    ),
-}
 
 _SECONDS_PER_MINUTE = 60
 _MINUTES_PER_HOUR = 60
@@ -188,9 +99,6 @@ def _mask_config_headers(config: dict) -> dict:
             t: redact_command(v) for t, v in out["tool_options"].items()
         }
 
-    depth = (out.get("phases") or {}).get("depth")
-    if isinstance(depth, dict) and depth.get("report_webhook_url"):
-        depth["report_webhook_url"] = MASK
     return out
 
 
@@ -314,81 +222,14 @@ class ScanService:
         )
         configured = await self._configured_providers()
 
-        warnings: list[str] = []
-        phases: list[PreviewPhase] = []
-
-        for phase_key, (label, tools) in _PHASE_TOOLS.items():
-            phase_dict = resolved.phases.get(phase_key, {})
-            preview_tools: list[PreviewTool] = []
-            for spec in tools:
-                capability = spec[0]
-                tool_label = spec[1]
-                rate_tool = (
-                    spec[_SPEC_RATE_TOOL] if len(spec) > _SPEC_RATE_TOOL else None
-                )
-                threads_key = (
-                    spec[_SPEC_THREADS_KEY] if len(spec) > _SPEC_THREADS_KEY else None
-                )
-                timeout_key = (
-                    spec[_SPEC_TIMEOUT_KEY] if len(spec) > _SPEC_TIMEOUT_KEY else None
-                )
-
-                enabled = bool(phase_dict.get(capability, False))
-                if not enabled:
-                    preview_tools.append(
-                        PreviewTool(
-                            capability=capability,
-                            label=tool_label,
-                            status=PreviewToolStatus.SKIPPED_DISABLED,
-                            reason="Disabled in engine.",
-                        )
-                    )
-                    continue
-
-                provider = CAPABILITY_API_KEYS.get(capability)
-                if provider is not None and provider not in configured:
-                    preview_tools.append(
-                        PreviewTool(
-                            capability=capability,
-                            label=tool_label,
-                            status=PreviewToolStatus.SKIPPED_NEEDS_KEY,
-                            reason=f"{tool_label} skipped — API key not configured.",
-                        )
-                    )
-                    warnings.append(f"{tool_label} skipped — API key not configured.")
-                    continue
-
-                rate = (
-                    resolved.per_tool_rate_limits.get(rate_tool) if rate_tool else None
-                )
-                threads = (
-                    resolved.resolved_threads.get(threads_key) if threads_key else None
-                )
-                timeout = (
-                    resolved.resolved_timeouts.get(timeout_key) if timeout_key else None
-                )
-                preview_tools.append(
-                    PreviewTool(
-                        capability=capability,
-                        label=tool_label,
-                        status=PreviewToolStatus.WILL_RUN,
-                        rate=rate,
-                        threads=threads,
-                        timeout=timeout,
-                    )
-                )
-            phases.append(
-                PreviewPhase(phase=phase_key, label=label, tools=preview_tools)
-            )
+        phases, warnings = stage_effects(resolved, configured)
 
         will_run = sum(
             1 for p in phases for t in p.tools if t.status == PreviewToolStatus.WILL_RUN
         )
         est_seconds = will_run * _SECONDS_PER_MINUTE
         rates = resolved.per_tool_rate_limits
-        rate_summary = ", ".join(
-            f"{tool} {rates.get(tool)}/s" for tool in VALID_RATE_TOOLS
-        )
+        rate_summary = ", ".join(f"{tool} {rates[tool]}/s" for tool in sorted(rates))
         if resolved.global_rate_limit_ceiling is not None:
             rate_summary += f" (ceiling {resolved.global_rate_limit_ceiling}/s)"
 

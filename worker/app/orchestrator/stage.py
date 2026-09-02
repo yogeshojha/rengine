@@ -8,8 +8,6 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.database import get_sync_session
-from engines.base import EngineAbortedError, EngineContext
-from engines.registry import StageSpec
 from shared.enums.scan import ScanActivityStatus, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
@@ -22,6 +20,8 @@ from shared.services.orchestrator.tracking import (
 )
 from shared.services.scan_resolve import ResolvedScanConfig
 from shared.utils.datetime import utc_now
+from stages.base import StageAbortedError, StageContext
+from stages.registry import StageSpec
 
 logger = get_logger(__name__)
 
@@ -65,7 +65,7 @@ def _supersede_orphan_activities(session: Session, scan: Scan, name: str) -> Non
             ScanActivity.status == ScanActivityStatus.RUNNING.value,
         )
         .values(
-            status=ScanActivityStatus.FAILED.value,
+            status=ScanActivityStatus.SKIPPED.value,
             error="superseded by stage retry",
             completed_at=utc_now(),
         )
@@ -127,7 +127,7 @@ def run_stage(
         _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
         return
 
-    ctx = EngineContext(
+    ctx = StageContext(
         scan_id=scan.id,
         target_id=scan.target_id,
         project_id=scan.project_id,
@@ -140,7 +140,7 @@ def run_stage(
         events=events,
         is_aborted=lambda: _scan_is_cancelled(session_factory, scan.id),
     )
-    engine = spec.engine_cls(session, ctx)
+    engine = spec.stage_cls(session, ctx)
 
     if not engine.should_run():
         activity_svc.finish(
@@ -153,7 +153,7 @@ def run_stage(
 
     try:
         result = engine.run()
-    except EngineAbortedError:
+    except StageAbortedError:
         _fail_stage(activity_svc, events, spec, activity.id, ScanActivityStatus.ABORTED)
         return
     except Exception as exc:

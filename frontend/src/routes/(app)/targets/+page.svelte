@@ -203,8 +203,8 @@
 
 	let deleteDialogDescription = $derived(
 		deleteMode === 'single'
-			? `Are you sure you want to delete '${targetToDelete?.target_value}'? This action cannot be undone and will remove all associated scan data.`
-			: `This permanently deletes ${selectedTargetIds.size} target${selectedTargetIds.size !== 1 ? 's' : ''} and all associated scan data. This cannot be undone.${bulkDeletePreview}`
+			? `This also deletes every scan and finding for ${targetToDelete?.target_value}.`
+			: `This also deletes every scan and finding for ${selectedTargetIds.size} target${selectedTargetIds.size !== 1 ? 's' : ''}.${bulkDeletePreview}`
 	);
 
 	let organizationSummaries = $derived(
@@ -444,7 +444,7 @@
 			isDeleting = false;
 
 			if (success) {
-				toast.success('Target deleted successfully');
+				toast.success('Target deleted');
 				showDeleteDialog = false;
 				showDetailDialog = false;
 				targetToDelete = null;
@@ -548,7 +548,7 @@
 			{#if !targetsStore.isLoading && targetsStore.filteredTargets.length > 0}
 				<Button variant="outline" size="sm" class="gap-2 h-9" onclick={handleScanAll}>
 					<Play class="h-4 w-4" />
-					Scan All ({targetsStore.filteredTargets.length})
+					Scan all ({targetsStore.filteredTargets.length})
 				</Button>
 			{/if}
 
@@ -559,7 +559,7 @@
 
 			<Button onclick={() => (showAddModal = true)} class="gap-2">
 				<Plus class="h-4 w-4" />
-				Add Target
+				Add target
 			</Button>
 		</div>
 	</div>

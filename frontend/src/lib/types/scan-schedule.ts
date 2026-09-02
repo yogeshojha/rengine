@@ -1,13 +1,6 @@
 export const SCHEDULE_TYPES = ['one_off', 'interval', 'daily_at', 'cron'] as const;
 export type ScheduleType = (typeof SCHEDULE_TYPES)[number];
 
-export const SCHEDULE_TYPE_LABELS: Record<ScheduleType, string> = {
-	one_off: 'Once',
-	interval: 'Repeating interval',
-	daily_at: 'Daily at time',
-	cron: 'Cron expression'
-};
-
 export const SCHEDULE_TYPE_BADGE: Record<ScheduleType, string> = {
 	one_off: 'Once',
 	interval: 'Recurring',

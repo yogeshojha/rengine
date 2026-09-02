@@ -18,7 +18,7 @@
 		{#snippet child({ props })}
 			<Button {...props} variant="ghost" size="icon" title="Quick actions">
 				<Plus class="h-4 w-4" />
-				<span class="sr-only">Quick Actions</span>
+				<span class="sr-only">Quick actions</span>
 			</Button>
 		{/snippet}
 	</DropdownMenu.Trigger>
@@ -27,7 +27,7 @@
 		<DropdownMenu.Separator />
 		<DropdownMenu.Item onclick={onAddTarget}>
 			<Crosshair class="mr-2 h-4 w-4" />
-			Add Target
+			Add target
 		</DropdownMenu.Item>
 		<DropdownMenu.Item disabled class="justify-between">
 			<span class="flex items-center">

@@ -50,7 +50,7 @@ TAKEOVER_FINGERPRINTS: tuple[tuple[str, str], ...] = (
     ("myshopify.com", "Shopify"),
     ("fastly.net", "Fastly"),
     ("ghost.io", "Ghost"),
-    ("wpengine.com", "WP Engine"),
+    ("wpengine.com", "WP Stage"),
     ("zendesk.com", "Zendesk"),
     ("surge.sh", "Surge"),
     ("bitbucket.io", "Bitbucket"),

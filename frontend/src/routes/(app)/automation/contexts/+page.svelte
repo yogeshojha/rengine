@@ -13,10 +13,13 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '@/components/empty-state.svelte';
 	import ContextListCard from '$lib/components/contexts/context-list-card.svelte';
+	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import type { ScanContextRead } from '$lib/types/scan-context';
 
 	let isRefreshing = $state(false);
+	let showLaunch = $state(false);
+	let launchContextId = $state('');
 	let contextToDelete = $state<ScanContextRead | null>(null);
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
@@ -119,7 +122,7 @@
 			</Button>
 			<Button onclick={handleNewContext} class="gap-2">
 				<Plus class="h-4 w-4" />
-				New Context
+				New context
 			</Button>
 		</div>
 	</div>
@@ -146,7 +149,7 @@
 		>
 			<Button onclick={handleNewContext} class="gap-2">
 				<Plus size={15} />
-				Create Your First Context
+				Create a context
 			</Button>
 		</EmptyState>
 	{:else}
@@ -155,6 +158,10 @@
 				<ContextListCard
 					{context}
 					onEdit={() => goto(ROUTES.context(context.id))}
+					onRun={() => {
+						launchContextId = context.id;
+						showLaunch = true;
+					}}
 					onDuplicate={() => handleDuplicate(context)}
 					onDelete={() => handleDeleteRequest(context)}
 				/>
@@ -172,9 +179,8 @@
 {#if contextToDelete}
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
-		title="Delete Context"
-		description="Are you sure you want to delete '{contextToDelete.name ||
-			'this context'}'? This action cannot be undone."
+		title="Delete this context?"
+		description="Scans already run with it keep their results. This is permanent."
 		{isDeleting}
 		onOpenChange={(open) => {
 			showDeleteDialog = open;
@@ -183,3 +189,5 @@
 		onConfirm={confirmDelete}
 	/>
 {/if}
+
+<LaunchModal bind:open={showLaunch} presetContextId={launchContextId} />

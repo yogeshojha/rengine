@@ -42,12 +42,7 @@ logger = get_logger(__name__)
     time_limit=900,
 )
 def enrich_targets_bgp(target_ids: list[str]) -> dict:
-    """Run RIPEstat lookups for a batch of targets.
-
-    Groups by target type and runs the appropriate queries.
-    Shared cache means if two ASN targets have overlapping neighbours,
-    the second one is a cache hit.
-    """
+    """Run the RIPEstat lookups for a batch of targets, grouped by target type."""
     if not target_ids:
         return {"success": 0, "failed": 0, "skipped": 0}
 

@@ -124,7 +124,7 @@
 
 <ConfirmDialog
 	open={!!pendingDelete}
-	title="Delete view"
+	title="Delete this view?"
 	description={`Delete the saved view "${pendingDelete?.name ?? ''}"? This removes the saved filter only — your targets are not affected.`}
 	confirmLabel="Delete view"
 	destructive

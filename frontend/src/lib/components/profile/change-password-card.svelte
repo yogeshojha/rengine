@@ -60,7 +60,7 @@
 				current_password: currentPassword,
 				new_password: newPassword
 			});
-			toast.success('Password changed successfully');
+			toast.success('Password changed');
 			passwordSavedAt = new Date();
 			currentPassword = '';
 			newPassword = '';
@@ -197,7 +197,7 @@
 				class="w-full"
 				type="submit"
 				loading={isChangingPassword}
-				loadingLabel="Updating..."
+				loadingLabel="Updating…"
 				disabled={!passwordValid}
 			>
 				Update Password

@@ -21,6 +21,7 @@ from app.services.target_filters import (
     with_whois_join,
 )
 from shared.enums.activity import ActivityLevel
+from shared.enums.scan import SCAN_LIVE_STATUSES
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.models import (
@@ -51,6 +52,7 @@ from shared.models.ripestat import (
     RIPEStatPrefixOverview,
     RIPEStatRelatedPrefix,
 )
+from shared.models.scan import Scan
 from shared.models.whois import WhoisRecordRead, WhoisRecordSummary
 from shared.schemas.target_detail import (
     AbuseContactDetail,
@@ -509,6 +511,23 @@ class TargetService:
 
     async def delete_target(self, target_id: str, user_id: str) -> None:
         target = await self._get_target_or_404(target_id)
+
+        # scans cascade with the target — a live one would keep probing a deleted asset
+        running = (
+            await self.session.execute(
+                select(func.count())
+                .select_from(Scan)
+                .where(Scan.target_id == target.id, Scan.status.in_(SCAN_LIVE_STATUSES))
+            )
+        ).scalar_one()
+        if running:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"'{target.target_value}' has {running} running "
+                    f"scan{'s' if running != 1 else ''}. Cancel them before deleting."
+                ),
+            )
 
         target_value = target.target_value
         project_id = target.project_id

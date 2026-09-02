@@ -1,41 +1,41 @@
 <script lang="ts" module>
-	import { getContext, setContext } from "svelte";
-	import type { VariantProps } from "tailwind-variants";
-	import { toggleVariants } from "$lib/components/ui/toggle/index.js";
+	import { getContext, setContext } from 'svelte';
+	import type { VariantProps } from 'tailwind-variants';
+	import { toggleVariants } from '$lib/components/ui/toggle/index.js';
 
 	type ToggleVariants = VariantProps<typeof toggleVariants>;
 
 	interface ToggleGroupContext extends ToggleVariants {
 		spacing?: number;
-		orientation?: "horizontal" | "vertical";
+		orientation?: 'horizontal' | 'vertical';
 	}
 
 	export function setToggleGroupCtx(props: ToggleGroupContext) {
-		setContext("toggleGroup", props);
+		setContext('toggleGroup', props);
 	}
 
 	export function getToggleGroupCtx() {
-		return getContext<Required<ToggleGroupContext>>("toggleGroup");
+		return getContext<Required<ToggleGroupContext>>('toggleGroup');
 	}
 </script>
 
 <script lang="ts">
-	import { ToggleGroup as ToggleGroupPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+	import { ToggleGroup as ToggleGroupPrimitive } from 'bits-ui';
+	import { cn } from '$lib/utils.js';
 
 	let {
 		ref = $bindable(null),
 		value = $bindable(),
 		class: className,
-		size = "default",
+		size = 'default',
 		spacing = 0,
-		orientation = "horizontal",
-		variant = "default",
+		orientation = 'horizontal',
+		variant = 'default',
 		...restProps
 	}: ToggleGroupPrimitive.RootProps &
 		ToggleVariants & {
 			spacing?: number;
-			orientation?: "horizontal" | "vertical";
+			orientation?: 'horizontal' | 'vertical';
 		} = $props();
 
 	setToggleGroupCtx({
@@ -50,7 +50,7 @@
 		},
 		get orientation() {
 			return orientation;
-		},
+		}
 	});
 </script>
 
@@ -68,7 +68,7 @@ get along, so we shut typescript up by casting `value` to `never`.
 	data-spacing={spacing}
 	style={`--gap: ${spacing}`}
 	class={cn(
-		"rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] data-vertical:flex-col data-vertical:items-stretch",
+		'rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] data-vertical:flex-col data-vertical:items-stretch',
 		className
 	)}
 	{...restProps}

@@ -2,76 +2,94 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import Copy from '@lucide/svelte/icons/copy';
+	import Play from '@lucide/svelte/icons/play';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
-	import Network from '@lucide/svelte/icons/network';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
-	import type { ScanEngine, Intensity } from '$lib/types/engine';
-	import { PHASE_COLORS, INTENSITY_LABELS } from '$lib/types/engine';
-	import { CAPABILITIES, getActiveCapabilities, type Phase } from '$lib/types/capabilities';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import type { Intensity, ScanEngine, StageCatalogEntry } from '$lib/types/scan-engine';
+	import { INTENSITY_LABELS, phaseLabel } from '$lib/types/scan-engine';
+	import { summarize, FOOTPRINT_LABEL, FOOTPRINT_HELP } from '$lib/utilities/engine-summary';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { formatDistanceToNow } from '$lib/utilities/dates';
 
 	interface Props {
 		engine: ScanEngine;
+		stages: StageCatalogEntry[];
 		onEdit?: () => void;
+		onRun?: () => void;
 		onDuplicate?: () => void;
 		onDelete?: () => void;
 	}
 
-	let { engine, onEdit, onDuplicate, onDelete }: Props = $props();
+	let { engine, stages, onEdit, onRun, onDuplicate, onDelete }: Props = $props();
+
+	const summary = $derived(summarize(engine.stages ?? {}, stages, engine.intensity));
 
 	const intensityClass: Record<Intensity, string> = {
 		passive: 'text-muted-foreground border-border/60',
 		normal: 'text-foreground border-border',
 		aggressive: 'text-warning border-warning/30'
 	};
+	const badgeClass = $derived(intensityClass[engine.intensity] ?? intensityClass.normal);
 
-	let badgeClass = $derived(intensityClass[engine.intensity] ?? intensityClass.normal);
+	function isOn(stage: StageCatalogEntry): boolean {
+		return Boolean(engine.stages?.[stage.name]?.enabled ?? stage.defaults.enabled);
+	}
 
-	const PHASE_TOTAL: Record<Phase, number> = {
-		discovery: CAPABILITIES.filter((c) => c.phase === 'discovery').length,
-		expansion: CAPABILITIES.filter((c) => c.phase === 'expansion').length,
-		depth: CAPABILITIES.filter((c) => c.phase === 'depth').length
-	};
-
-	let active = $derived(getActiveCapabilities(engine));
-
-	let counts = $derived({
-		discovery: active.filter((c) => c.phase === 'discovery').length,
-		expansion: active.filter((c) => c.phase === 'expansion').length,
-		depth: active.filter((c) => c.phase === 'depth').length
-	});
-
-	let totalActive = $derived(active.length);
+	const active = $derived(stages.filter(isOn));
+	const phases = $derived([...new Set(stages.map((s) => s.phase))]);
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="card" onclick={() => onEdit?.()}>
-	<div class="color-bar">
-		<div style="flex:1; background:{PHASE_COLORS.discovery.accent};"></div>
-		<div style="flex:1; background:{PHASE_COLORS.expansion.accent};"></div>
-		<div style="flex:1; background:{PHASE_COLORS.depth.accent};"></div>
-	</div>
-
-	<div class="card-body">
-		<div class="card-header">
-			<div class="name-block">
-				<h3 class="engine-name">{engine.name}</h3>
-				<Badge variant="outline" class="intensity-badge {badgeClass}"
-					>{INTENSITY_LABELS[engine.intensity]}</Badge
-				>
+	<div class="body">
+		<div class="top">
+			<div class="ident">
+				<h3 class="name">{engine.name}</h3>
+				<Badge variant="outline" class="intensity {badgeClass}">
+					{INTENSITY_LABELS[engine.intensity]}
+				</Badge>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<Badge
+								{...props}
+								variant="outline"
+								class="intensity {summary.footprint === 'loud'
+									? 'text-warning border-warning/30'
+									: 'text-muted-foreground'}"
+							>
+								{#if summary.footprint === 'none'}<EyeOff size={10} />{/if}
+								{FOOTPRINT_LABEL[summary.footprint]}
+							</Badge>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content class="max-w-[240px] text-xs">
+						{FOOTPRINT_HELP[summary.footprint]}
+					</Tooltip.Content>
+				</Tooltip.Root>
 			</div>
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div class="actions" onclick={(e) => e.stopPropagation()}>
-				<Button variant="ghost" size="icon-sm" onclick={() => onDuplicate?.()}>
+				<Button variant="ghost" size="icon-sm" aria-label="Run scan" onclick={() => onRun?.()}>
+					<Play size={13} />
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					aria-label="Duplicate"
+					onclick={() => onDuplicate?.()}
+				>
 					<Copy size={13} />
 				</Button>
 				<Button
 					variant="ghost"
 					size="icon-sm"
+					class="text-muted-foreground hover:text-destructive"
+					aria-label="Delete"
 					onclick={() => onDelete?.()}
-					class="text-destructive hover:text-destructive"
 				>
 					<Trash2 size={13} />
 				</Button>
@@ -82,188 +100,133 @@
 			<p class="description">{engine.description}</p>
 		{/if}
 
-		<div class="phase-row">
-			{#each [{ label: 'Discovery', count: counts.discovery, total: PHASE_TOTAL.discovery, color: PHASE_COLORS.discovery }, { label: 'Expansion', count: counts.expansion, total: PHASE_TOTAL.expansion, color: PHASE_COLORS.expansion }, { label: 'Depth', count: counts.depth, total: PHASE_TOTAL.depth, color: PHASE_COLORS.depth }] as phase, i (phase.label)}
-				{#if i > 0}<ChevronRight size={11} class="phase-arrow" />{/if}
-				<div class="phase-pill">
-					<span class="phase-dot" style="background:{phase.color.accent};"></span>
-					<span class="phase-pill-label" style="color:{phase.color.text};">{phase.label}</span>
-					<span class="phase-count" style="color:{phase.color.accent};"
-						>{phase.count}/{phase.total}</span
-					>
-				</div>
+		<div class="phases">
+			{#each phases as phase, i (phase)}
+				{@const total = stages.filter((s) => s.phase === phase).length}
+				{@const on = active.filter((s) => s.phase === phase).length}
+				{#if i > 0}<ChevronRight size={11} class="arrow" />{/if}
+				<span class="pill">
+					<span class="pill-label">{phaseLabel(phase)}</span>
+					<span class="pill-count">{on}/{total}</span>
+				</span>
 			{/each}
 		</div>
 
-		<div class="card-footer">
-			<div class="footer-left">
-				<Network size={12} class="footer-icon" />
-				<span class="footer-stat"><strong>{totalActive}</strong> steps</span>
-			</div>
-			<div class="footer-right">
-				{#if engine.updated_at}
-					<span class="ts">Updated {formatDistanceToNow(engine.updated_at)}</span>
-				{:else if engine.created_at}
-					<span class="ts">Created {formatDistanceToNow(engine.created_at)}</span>
+		<div class="foot">
+			<span>{summary.headline}</span>
+			<span>
+				{#if engine.usage?.schedules}
+					{engine.usage.schedules} schedule{engine.usage.schedules === 1 ? '' : 's'}
+				{:else if engine.last_used_at}
+					Used {formatDistanceToNow(engine.last_used_at)}
+				{:else}
+					Never used
 				{/if}
-			</div>
+			</span>
 		</div>
 	</div>
 </div>
 
 <style>
 	.card {
-		border-radius: 10px;
-		border: 1px solid var(--border);
-		background: var(--card);
-		overflow: hidden;
-		box-shadow: var(--shadow-sm);
-		transition:
-			box-shadow 0.2s,
-			transform 0.15s,
-			border-color 0.2s;
-		cursor: pointer;
-	}
-
-	.card:hover {
-		box-shadow: var(--shadow-md);
-		transform: translateY(-1px);
-		border-color: var(--ring);
-	}
-
-	.color-bar {
-		height: 3px;
 		display: flex;
+		flex-direction: column;
+		border: 1px solid var(--border);
+		border-radius: 0.75rem;
+		background: var(--card);
+		cursor: pointer;
+		transition:
+			border-color 0.14s ease,
+			background 0.14s ease;
+	}
+	.card:hover {
+		border-color: color-mix(in oklch, var(--foreground) 22%, var(--border));
+		background: color-mix(in oklch, var(--muted) 35%, var(--card));
 	}
 
-	.card-body {
-		padding: 14px 16px;
+	.body {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 16px 18px;
 	}
 
-	.card-header {
+	.top {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 10px;
-		margin-bottom: 8px;
 	}
-
-	.name-block {
+	.ident {
 		display: flex;
 		align-items: center;
-		gap: 7px;
 		flex-wrap: wrap;
-		flex: 1;
+		gap: 7px;
 		min-width: 0;
 	}
-
-	.engine-name {
+	.name {
 		font-size: 14px;
-		font-weight: 700;
-		color: var(--foreground);
-		margin: 0;
+		font-weight: 600;
+		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
-
-	:global(.intensity-badge) {
-		padding: 1px 8px;
+	.ident :global(.intensity) {
+		gap: 3px;
 		font-size: 10px;
-		font-weight: 600;
-		letter-spacing: 0.04em;
+		font-weight: 400;
+		padding: 1px 6px;
 	}
-
 	.actions {
 		display: flex;
-		align-items: center;
-		gap: 2px;
+		gap: 1px;
 		flex-shrink: 0;
 	}
 
 	.description {
 		font-size: 12px;
 		color: var(--muted-foreground);
-		margin: 0 0 8px;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
 		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
-	.phase-row {
+	.phases {
 		display: flex;
 		align-items: center;
-		gap: 3px;
-		margin-bottom: 12px;
 		flex-wrap: wrap;
+		gap: 4px;
 	}
-
-	:global(.phase-arrow) {
+	.phases :global(.arrow) {
 		color: var(--muted-foreground);
 		opacity: 0.5;
 	}
-
-	.phase-pill {
-		display: flex;
+	.pill {
+		display: inline-flex;
 		align-items: center;
-		gap: 4px;
-		padding: 2px 8px;
+		gap: 5px;
+		height: 22px;
+		padding: 0 8px;
 		border-radius: 5px;
 		background: var(--muted);
-		border: 1px solid var(--border);
+		font-size: 11px;
 	}
-
-	.phase-dot {
-		width: 5px;
-		height: 5px;
-		border-radius: 50%;
-		flex-shrink: 0;
+	.pill-label {
+		color: var(--muted-foreground);
 	}
-
-	.phase-pill-label {
-		font-size: 10px;
-		font-weight: 600;
-	}
-
-	.phase-count {
-		font-size: 10px;
+	.pill-count {
+		font-variant-numeric: tabular-nums;
 		font-weight: 500;
 	}
 
-	.card-footer {
+	.foot {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding-top: 10px;
-		border-top: 1px solid var(--border);
-	}
-
-	.footer-left {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-	}
-
-	:global(.footer-icon) {
-		color: var(--muted-foreground);
-	}
-
-	.footer-stat {
-		font-size: 11px;
-		color: var(--muted-foreground);
-	}
-
-	.footer-stat strong {
-		color: var(--foreground);
-	}
-
-	.footer-right {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.ts {
+		gap: 8px;
+		padding-top: 2px;
 		font-size: 11px;
 		color: var(--muted-foreground);
 	}

@@ -35,7 +35,6 @@ _ENRICH_FLAGS = [
     "-pipeline",
     "-include-response",
     "-body-preview",
-    "500",
     "-response-size-to-read",
     str(_RESPONSE_SIZE_CAP),
     "-no-color",

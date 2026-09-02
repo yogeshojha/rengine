@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import Copy from '@lucide/svelte/icons/copy';
+	import Play from '@lucide/svelte/icons/play';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Clock from '@lucide/svelte/icons/clock';
 	import type { ScanContextRead } from '$lib/types/scan-context';
@@ -11,11 +12,12 @@
 	interface Props {
 		context: ScanContextRead;
 		onEdit?: () => void;
+		onRun?: () => void;
 		onDuplicate?: () => void;
 		onDelete?: () => void;
 	}
 
-	let { context, onEdit, onDuplicate, onDelete }: Props = $props();
+	let { context, onEdit, onRun, onDuplicate, onDelete }: Props = $props();
 
 	let chips = $derived.by(() => {
 		const out: string[] = [];
@@ -60,6 +62,18 @@
 				<Button
 					variant="ghost"
 					size="icon-sm"
+					aria-label="Run scan with this context"
+					onclick={(e) => {
+						e.stopPropagation();
+						onRun?.();
+					}}
+				>
+					<Play size={13} />
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					aria-label="Duplicate"
 					onclick={(e) => {
 						e.stopPropagation();
 						onDuplicate?.();
@@ -103,7 +117,9 @@
 			<div class="footer-left">
 				<Clock size={12} class="footer-icon" />
 				<span class="ts">
-					{#if context.last_used_at}
+					{#if context.usage?.schedules}
+						{context.usage.schedules} schedule{context.usage.schedules === 1 ? '' : 's'}
+					{:else if context.last_used_at}
 						Used {formatDistanceToNow(context.last_used_at)} ago
 					{:else}
 						Never used

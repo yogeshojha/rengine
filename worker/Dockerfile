@@ -49,7 +49,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends chromium \
 
 COPY shared /app/shared
 COPY tools /app/tools
-COPY engines /app/engines
+COPY stages /app/stages
 
 COPY worker/pyproject.toml worker/uv.lock* ./
 
@@ -60,6 +60,6 @@ CMD ["uv", "run", "celery", "-A", "app.celery", "worker", "--loglevel=INFO"]
 
 ###################################################################
 # TODO: Production
-# NOTE: engines/ resolves via PYTHONPATH=/app (not a packaged dep) —
-# the prod stage MUST `COPY engines /app/engines` and keep PYTHONPATH=/app.
+# NOTE: stages/ resolves via PYTHONPATH=/app (not a packaged dep) —
+# the prod stage MUST `COPY stages /app/stages` and keep PYTHONPATH=/app.
 ###################################################################

@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class SubdomainSource(Enum):
+    TARGET = "target"
     SUBFINDER = "subfinder"
     CTFR = "ctfr"
     SUBLIST3R = "sublist3r"

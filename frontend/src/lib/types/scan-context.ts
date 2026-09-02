@@ -1,6 +1,5 @@
 export const AUTH_TYPES = ['none', 'header', 'bearer', 'basic', 'cookie', 'api_key'] as const;
 export const HTTP_PROTOCOLS = ['both', 'http_only', 'https_only'] as const;
-export const VALID_RATE_TOOLS = ['naabu', 'ffuf', 'nuclei'] as const;
 export const MULTIPLIERS = [0.5, 1.0, 2.0] as const;
 
 export type AuthType = (typeof AUTH_TYPES)[number];
@@ -25,7 +24,13 @@ export interface AuthConfig {
 	api_key_value: string | null;
 }
 
+export interface ContextUsage {
+	schedules: number;
+	scans: number;
+}
+
 export interface ScanContextRead {
+	usage: ContextUsage;
 	id: string;
 	project_id: string;
 	created_by: string;
@@ -64,6 +69,7 @@ export type ScanContextCreate = Omit<
 	| 'updated_at'
 	| 'last_used_at'
 	| 'last_used_scan_id'
+	| 'usage'
 > & {
 	auth?: Partial<AuthConfig>;
 };

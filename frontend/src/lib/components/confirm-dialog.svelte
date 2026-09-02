@@ -23,11 +23,11 @@
 		open = $bindable(),
 		title,
 		description,
-		confirmLabel = 'Confirm',
+		confirmLabel = 'Continue',
 		cancelLabel = 'Cancel',
 		destructive = false,
 		loading = false,
-		loadingLabel = 'Working...',
+		loadingLabel = 'Working…',
 		icon,
 		onOpenChange,
 		onConfirm

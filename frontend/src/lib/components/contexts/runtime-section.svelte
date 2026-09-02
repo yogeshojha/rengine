@@ -1,11 +1,7 @@
 <script lang="ts">
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import type {
-		ScanContextRead,
-		ScanContextCreate,
-		HttpProtocol
-	} from '$lib/types/scan-context';
+	import type { ScanContextRead, ScanContextCreate, HttpProtocol } from '$lib/types/scan-context';
 
 	type CtxLike = ScanContextRead | ScanContextCreate;
 

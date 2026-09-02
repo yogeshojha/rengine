@@ -3,27 +3,40 @@
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import Plus from '@lucide/svelte/icons/plus';
+	import Upload from '@lucide/svelte/icons/upload';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Network from '@lucide/svelte/icons/network';
-	import Zap from '@lucide/svelte/icons/zap';
 	import AlertCircle from '@lucide/svelte/icons/alert-circle';
 
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
+	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Alert from '$lib/components/ui/alert';
 	import EmptyState from '@/components/empty-state.svelte';
 	import EngineListCard from '$lib/components/engines/engine-list-card.svelte';
+	import NewEngineDialog from '$lib/components/engines/new-engine-dialog.svelte';
+	import ImportEngineDialog from '$lib/components/engines/import-engine-dialog.svelte';
+	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
+	import type { EnginePreset, ScanEngine } from '$lib/types/scan-engine';
 
 	let isRefreshing = $state(false);
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	let engineToDelete = $state<any | null>(null);
+	let engineToDelete = $state<ScanEngine | null>(null);
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
+	let showNewDialog = $state(false);
+	let isCreating = $state(false);
+	let showImportDialog = $state(false);
+	let isImporting = $state(false);
+	let showLaunch = $state(false);
+	let launchEngineId = $state('');
+
+	$effect(() => {
+		engineCatalogStore.fetch();
+	});
 
 	$effect(() => {
 		const project = projectsStore.activeProject;
@@ -37,40 +50,62 @@
 		}
 	});
 
-	function handleNewEngine() {
+	async function handleCreate(name: string, preset: EnginePreset) {
 		const project = projectsStore.activeProject;
 		if (!project) {
 			toast.error('No active project selected');
 			return;
 		}
-		goto(ROUTES.newEngine(project.id));
-	}
-
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	async function handleDuplicate(engine: any) {
-		const project = projectsStore.activeProject;
-		if (!project || !engine.id) return;
-
+		isCreating = true;
 		try {
-			const duplicate = await scanEnginesStore.duplicateEngine(engine.id, project.id);
-			if (duplicate) {
-				toast.success(`Duplicated "${engine.name}"`);
+			const created = await scanEnginesStore.createEngine(project.id, {
+				name,
+				description: preset.description,
+				stages: preset.stages
+			});
+			if (created) {
+				showNewDialog = false;
+				toast.success(`Created "${created.name}"`);
+				goto(ROUTES.engine(created.id));
 			} else {
-				toast.error(scanEnginesStore.error ?? 'Failed to duplicate engine');
+				toast.error(scanEnginesStore.error ?? 'Failed to create engine');
 			}
-		} catch {
-			toast.error('Failed to duplicate engine');
+		} finally {
+			isCreating = false;
 		}
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	function handleDeleteRequest(engine: any) {
-		engineToDelete = engine;
-		showDeleteDialog = true;
+	async function handleImport(yaml: string) {
+		const project = projectsStore.activeProject;
+		if (!project) {
+			toast.error('No active project selected');
+			return;
+		}
+		isImporting = true;
+		try {
+			const imported = await scanEnginesStore.importYaml(project.id, yaml);
+			if (imported) {
+				showImportDialog = false;
+				toast.success(`Imported "${imported.name}"`);
+				goto(ROUTES.engine(imported.id));
+			} else {
+				toast.error(scanEnginesStore.error ?? 'Failed to import engine');
+			}
+		} finally {
+			isImporting = false;
+		}
+	}
+
+	async function handleDuplicate(engine: ScanEngine) {
+		const project = projectsStore.activeProject;
+		if (!project) return;
+		const copy = await scanEnginesStore.duplicateEngine(engine.id, project.id);
+		if (copy) toast.success(`Duplicated "${engine.name}"`);
+		else toast.error(scanEnginesStore.error ?? 'Failed to duplicate engine');
 	}
 
 	async function confirmDelete() {
-		if (!engineToDelete?.id) return;
+		if (!engineToDelete) return;
 		isDeleting = true;
 		try {
 			const ok = await scanEnginesStore.deleteEngine(engineToDelete.id);
@@ -91,24 +126,28 @@
 		if (!project) return;
 		isRefreshing = true;
 		try {
-			await scanEnginesStore.fetchEngines(project.id);
-			if (scanEnginesStore.error) {
-				toast.error(scanEnginesStore.error);
-			} else {
-				toast.success('Engines refreshed');
-			}
+			await Promise.all([
+				scanEnginesStore.fetchEngines(project.id),
+				engineCatalogStore.fetch(true)
+			]);
+			if (scanEnginesStore.error) toast.error(scanEnginesStore.error);
+			else toast.success('Engines refreshed');
 		} finally {
 			isRefreshing = false;
 		}
 	}
+
+	const stageCount = $derived(engineCatalogStore.stages.length);
 </script>
 
 <div class="space-y-6">
-	<div class="flex items-start justify-between">
+	<div class="flex items-start justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Scan Engines</h1>
-			<p class="text-sm text-muted-foreground mt-1">
-				Build and manage reusable scan configurations for your recon pipeline
+			<p class="mt-1 text-sm text-muted-foreground">
+				Reusable scan configurations built from the
+				{stageCount || ''}
+				stages installed on this instance.
 			</p>
 		</div>
 		<div class="flex items-center gap-2">
@@ -116,14 +155,19 @@
 				variant="outline"
 				size="icon"
 				class="h-9 w-9"
+				aria-label="Refresh"
 				onclick={handleRefresh}
 				disabled={isRefreshing}
 			>
 				<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
 			</Button>
-			<Button onclick={handleNewEngine} class="gap-2">
+			<Button variant="outline" class="gap-2" onclick={() => (showImportDialog = true)}>
+				<Upload class="h-4 w-4" />
+				Import
+			</Button>
+			<Button class="gap-2" onclick={() => (showNewDialog = true)}>
 				<Plus class="h-4 w-4" />
-				New Engine
+				New engine
 			</Button>
 		</div>
 	</div>
@@ -151,24 +195,11 @@
 	{#if scanEnginesStore.isLoading}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
-				<div class="h-[188px] overflow-hidden rounded-xl border border-border">
-					<Skeleton class="h-1 rounded-none" />
-					<div class="flex flex-col gap-3 p-[18px_20px]">
-						<div class="flex items-center gap-2.5">
-							<Skeleton class="h-[18px] w-40" />
-							<Skeleton class="h-[18px] w-[60px] rounded-full" />
-						</div>
-						<Skeleton class="h-3.5 w-4/5" />
-						<div class="flex gap-1.5">
-							<Skeleton class="h-[26px] w-[90px]" />
-							<Skeleton class="h-[26px] w-[90px]" />
-							<Skeleton class="h-[26px] w-20" />
-						</div>
-						<div class="flex justify-between pt-1">
-							<Skeleton class="h-3.5 w-[100px]" />
-							<Skeleton class="h-7 w-[60px]" />
-						</div>
-					</div>
+				<div class="flex flex-col gap-3 rounded-xl border border-border p-[16px_18px]">
+					<Skeleton class="h-[18px] w-40" />
+					<Skeleton class="h-3.5 w-4/5" />
+					<Skeleton class="h-[22px] w-[180px]" />
+					<Skeleton class="h-3.5 w-[120px]" />
 				</div>
 			{/each}
 		</div>
@@ -176,44 +207,58 @@
 		<EmptyState
 			icon={Network}
 			title="No scan engines yet"
-			description="Scan engines define which tools run, in which order, and with what configuration. Create your first engine to get started."
+			description="An engine decides which stages run and how they're tuned. Start from a preset and adjust."
 		>
-			<div class="flex flex-wrap items-center justify-center gap-2.5">
-				<Button onclick={handleNewEngine} class="gap-2">
-					<Plus size={15} />
-					Create Your First Engine
-				</Button>
-				<Badge variant="secondary" class="gap-1.5 text-muted-foreground">
-					<Zap size={12} />
-					3 recon phases: Discovery &rarr; Expansion &rarr; Depth
-				</Badge>
-			</div>
+			<Button class="gap-2" onclick={() => (showNewDialog = true)}>
+				<Plus size={15} />
+				Create your first engine
+			</Button>
 		</EmptyState>
 	{:else}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each scanEnginesStore.engines as engine (engine.id)}
-				{@const cardEngine = engine as unknown as import('$lib/types/engine').ScanEngine}
 				<EngineListCard
-					engine={cardEngine}
+					{engine}
+					stages={engineCatalogStore.stages}
 					onEdit={() => goto(ROUTES.engine(engine.id))}
+					onRun={() => {
+						launchEngineId = engine.id;
+						showLaunch = true;
+					}}
 					onDuplicate={() => handleDuplicate(engine)}
-					onDelete={() => handleDeleteRequest(engine)}
+					onDelete={() => {
+						engineToDelete = engine;
+						showDeleteDialog = true;
+					}}
 				/>
 			{/each}
 		</div>
-
-		<p class="text-xs text-muted-foreground text-center pt-2">
-			{scanEnginesStore.engines.length} engine{scanEnginesStore.engines.length !== 1 ? 's' : ''} in this
-			project
-		</p>
 	{/if}
 </div>
+
+<ImportEngineDialog
+	open={showImportDialog}
+	catalog={engineCatalogStore.catalog}
+	{isImporting}
+	onOpenChange={(o) => (showImportDialog = o)}
+	onImport={handleImport}
+/>
+
+<LaunchModal bind:open={showLaunch} presetEngineId={launchEngineId} />
+
+<NewEngineDialog
+	open={showNewDialog}
+	presets={engineCatalogStore.presets}
+	{isCreating}
+	onOpenChange={(o) => (showNewDialog = o)}
+	onCreate={handleCreate}
+/>
 
 {#if engineToDelete}
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
-		title="Delete Engine"
-		description="Are you sure you want to delete '{engineToDelete.name}'? This action cannot be undone."
+		title="Delete this engine?"
+		description="Scans already run with it keep their results. This is permanent."
 		{isDeleting}
 		onOpenChange={(open) => {
 			showDeleteDialog = open;

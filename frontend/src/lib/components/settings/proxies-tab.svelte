@@ -614,7 +614,7 @@
 			<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}
 				>Cancel</Button
 			>
-			<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving...">
+			<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving…">
 				{editingId ? 'Save changes' : 'Add proxy'}
 			</LoadingButton>
 		</Dialog.Footer>
@@ -623,8 +623,8 @@
 
 <DeleteConfirmationDialog
 	bind:open={deleteOpen}
-	title="Remove proxy"
-	description={`Are you sure you want to remove ${deletingProxy?.name ?? 'this proxy'}? Scan contexts using it will fall back to direct traffic.`}
+	title="Remove this proxy?"
+	description={`Scan contexts using ${deletingProxy?.name ?? 'this proxy'} will fall back to direct traffic.`}
 	confirmLabel="Remove proxy"
 	{isDeleting}
 	onOpenChange={(o) => (deleteOpen = o)}

@@ -1,13 +1,4 @@
 from datetime import UTC, datetime
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-
-
-def is_valid_timezone(tz: str) -> bool:
-    try:
-        ZoneInfo(tz)
-    except (ZoneInfoNotFoundError, ValueError):
-        return False
-    return True
 
 
 def normalize_datetime(dt: datetime | None) -> datetime | None:

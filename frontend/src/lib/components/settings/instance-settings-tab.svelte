@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { beforeNavigate } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { MASK } from '$lib/constants';
 	import { AI_PROVIDERS, AI_FEATURES, DEFAULT_AI_PROVIDER } from '$lib/config/ai';
 	import {
@@ -233,9 +234,22 @@
 
 	onMount(load);
 
+	let showLeaveDialog = $state(false);
+	let pendingNav: (() => void) | null = $state(null);
+	let allowNavigation = $state(false);
+
 	beforeNavigate((nav) => {
-		if (!isDirty || saving) return;
-		if (!confirm('You have unsaved changes. Leave without saving?')) nav.cancel();
+		if (allowNavigation) {
+			allowNavigation = false;
+			return;
+		}
+		if (!isDirty || saving || pendingNav) return;
+		nav.cancel();
+		pendingNav = () => {
+			allowNavigation = true;
+			if (nav.to) goto(nav.to.url);
+		};
+		showLeaveDialog = true;
 	});
 
 	$effect(() => {
@@ -482,7 +496,7 @@
 						>
 							{#if testing}
 								<Spinner class="mr-1.5 size-3" />
-								Testing...
+								Testing…
 							{:else}
 								<FlaskConicalIcon class="mr-1.5 size-3" />
 								Test connection
@@ -524,7 +538,7 @@
 			<Button onclick={handleSave} disabled={saving || !isDirty}>
 				{#if saving}
 					<Spinner class="mr-2" />
-					Saving...
+					Saving…
 				{:else}
 					Save changes
 				{/if}
@@ -532,3 +546,17 @@
 		</div>
 	{/if}
 </div>
+
+<UnsavedChangesDialog
+	bind:open={showLeaveDialog}
+	onOpenChange={(o) => {
+		showLeaveDialog = o;
+		if (!o) pendingNav = null;
+	}}
+	onConfirm={() => {
+		showLeaveDialog = false;
+		const resume = pendingNav;
+		pendingNav = null;
+		resume?.();
+	}}
+/>

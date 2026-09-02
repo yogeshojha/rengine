@@ -354,7 +354,7 @@
 		<Empty.Content>
 			<Button variant="outline" onclick={() => goto(ROUTES.targets)}>
 				<ChevronLeft class="h-4 w-4 mr-2" />
-				Back to Targets
+				Back to targets
 			</Button>
 		</Empty.Content>
 	</Empty.Root>
@@ -518,8 +518,8 @@
 
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
-		title="Delete Target"
-		description="Are you sure you want to delete '{target.target_value}'? This action cannot be undone and will remove all associated scan data."
+		title="Delete this target?"
+		description="This also deletes every scan and finding for {target.target_value}."
 		{isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={confirmDelete}

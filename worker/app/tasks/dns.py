@@ -1,8 +1,4 @@
-"""Celery task for DNS enrichment of domain targets.
-
-Runs post-target-creation
-Only processes targets with target_type == DOMAIN.
-"""
+"""Celery task for DNS enrichment of domain targets."""
 
 from celery import shared_task
 from sqlalchemy import select
@@ -29,17 +25,7 @@ logger = get_logger(__name__)
     time_limit=360,
 )
 def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, PLR0915
-    """Perform DNS recon for domain targets.
-
-    Runs dnsx -recon -json on each domain target and stores
-    all DNS records in the dns_records table for correlation.
-
-    Args:
-        target_ids: List of target UUIDs to process.
-
-    Returns:
-        Summary dict with success/failed/skipped counts.
-    """
+    """Run dnsx recon on domain targets and store the records for correlation."""
     logger.info(f"DNS lookup task started for {len(target_ids)} target(s)")
 
     try:

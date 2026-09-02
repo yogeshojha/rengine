@@ -17,14 +17,6 @@ def parse_network(cidr: str) -> IPNetwork | None:
         return None
 
 
-def count_hosts(cidr: str) -> int:
-    """Usable host count for a CIDR (0 if invalid)."""
-    net = parse_network(cidr)
-    if net is None:
-        return 0
-    return _usable_count(net)
-
-
 def _usable_count(net: IPNetwork) -> int:
     total = net.num_addresses
     if net.version == 4 and net.prefixlen < 31 and total > 2:  # noqa: PLR2004
@@ -38,11 +30,7 @@ def expand_network(
     max_hosts: int = DEFAULT_MAX_HOSTS,
     skip_private: bool = False,
 ) -> tuple[list[str], bool]:
-    """Expand a CIDR to host IPs, capped at max_hosts via even-stride sampling.
-
-    Returns (ips, truncated). Indexes the network directly so huge ranges are
-    not materialized. Network/broadcast addresses are skipped for IPv4 /<31.
-    """
+    """Expand a CIDR to host IPs, capped at max_hosts by even-stride sampling; returns (ips, truncated)."""
     net = parse_network(cidr)
     if net is None:
         return [], False

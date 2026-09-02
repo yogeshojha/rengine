@@ -69,7 +69,7 @@
 	onclick={() => (commandOpen = true)}
 >
 	<SearchIcon class="mr-2 h-4 w-4" />
-	<span>Search...</span>
+	<span>Search…</span>
 	<kbd
 		class="pointer-events-none absolute right-1.5 top-1.5 hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex"
 	>
@@ -80,7 +80,7 @@
 <Dialog.Root bind:open={commandOpen}>
 	<Dialog.Content class="overflow-hidden p-0 shadow-lg sm:max-w-[550px]">
 		<Command.Root shouldFilter={false} class="[&_[data-cmd-input-wrapper]]:border-b">
-			<Command.Input bind:value={searchQuery} placeholder="Search targets or run an action..." />
+			<Command.Input bind:value={searchQuery} placeholder="Search targets or run an action…" />
 			<Command.List>
 				{#if searchQuery.trim().length >= 2}
 					{#if searching}
@@ -106,7 +106,7 @@
 						</Command.Group>
 					{/if}
 				{:else}
-					<Command.Group heading="Quick Actions">
+					<Command.Group heading="Quick actions">
 						<Command.Item
 							onSelect={() => {
 								commandOpen = false;
@@ -114,7 +114,7 @@
 							}}
 						>
 							<Crosshair class="mr-2 h-4 w-4" />
-							<span>Add Target</span>
+							<span>Add target</span>
 						</Command.Item>
 						<Command.Item disabled class="justify-between">
 							<span class="flex items-center">

@@ -108,7 +108,13 @@
 	<div class="space-y-5">
 		<div class="space-y-1.5">
 			<Label for="instance-name" class="text-sm font-medium">Instance name</Label>
-			<Input id="instance-name" bind:value={instanceName} placeholder="reNgine" disabled={busy} maxlength={120} />
+			<Input
+				id="instance-name"
+				bind:value={instanceName}
+				placeholder="reNgine"
+				disabled={busy}
+				maxlength={120}
+			/>
 			<p class="text-xs text-muted-foreground">Shown in the header and on reports.</p>
 		</div>
 
@@ -135,9 +141,14 @@
 			<span class="flex items-center gap-2">
 				<LockIcon class="size-4 text-muted-foreground" />
 				<span class="font-medium">Change admin password</span>
-				<span class="rounded-full border border-input px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Recommended</span>
+				<span
+					class="rounded-full border border-input px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+					>Recommended</span
+				>
 			</span>
-			<ChevronDownIcon class="size-4 text-muted-foreground transition-transform {pwOpen ? 'rotate-180' : ''}" />
+			<ChevronDownIcon
+				class="size-4 text-muted-foreground transition-transform {pwOpen ? 'rotate-180' : ''}"
+			/>
 		</Collapsible.Trigger>
 		<Collapsible.Content class="space-y-4 pt-4">
 			<p class="text-xs text-muted-foreground">

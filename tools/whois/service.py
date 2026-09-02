@@ -1,11 +1,4 @@
-"""Whois service - main interface for all sort of WHOIS lookups.
-
-1. Standalone lookup, wont store in db
-2. Persistent lookup, will store in db and link to target if target_id provided
-
-The stored records enable correlation queries across all targets:
-mostly for Same registrant? Same registrar? Same nameservers?
-"""
+"""WHOIS lookups — standalone, or persisted and linked to a target for correlation."""
 
 import asyncio
 import uuid

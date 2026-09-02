@@ -11,7 +11,7 @@ import Plug from '@lucide/svelte/icons/plug';
 import Globe from '@lucide/svelte/icons/globe';
 import Bug from '@lucide/svelte/icons/bug';
 import Link2 from '@lucide/svelte/icons/link-2';
-import type { ScanActivityStatus, ScanRead, ScanStatus, ScanSortKey } from '$lib/types/scan';
+import type { ScanActivityStatus, ScanRead, ScanStatus } from '$lib/types/scan';
 import type { BadgeVariant } from '$lib/components/ui/badge';
 import type { IconComponent } from '$lib/config/icons';
 
@@ -182,32 +182,4 @@ export function scanCountPills(scan: ScanRead): CountPill[] {
 			emphasis: false
 		}
 	];
-}
-
-function effectiveDuration(scan: ScanRead, now: number): number {
-	return elapsedSeconds(scan, now) ?? scan.duration_seconds ?? 0;
-}
-
-export function compareScans(
-	a: ScanRead,
-	b: ScanRead,
-	key: ScanSortKey,
-	now: number = Date.now()
-): number {
-	switch (key) {
-		case 'duration':
-			return effectiveDuration(a, now) - effectiveDuration(b, now);
-		case 'status':
-			return SCAN_STATUS_RANK[a.status] - SCAN_STATUS_RANK[b.status];
-		case 'subdomains':
-			return a.subdomains_found - b.subdomains_found;
-		case 'vulnerabilities':
-			return a.vulnerabilities_found - b.vulnerabilities_found;
-		case 'started':
-		default: {
-			const at = new Date(a.started_at ?? a.created_at).getTime();
-			const bt = new Date(b.started_at ?? b.created_at).getTime();
-			return at - bt;
-		}
-	}
 }

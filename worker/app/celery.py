@@ -25,7 +25,7 @@ celery_app = Celery("rengine")
 celery_app.conf.update(
     broker_url=settings.celery_broker_url,
     broker_connection_retry_on_startup=True,
-    result_backend=None,
+    result_backend=settings.celery_result_backend,
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
@@ -34,7 +34,8 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     task_reject_on_worker_lost=True,
-    task_ignore_result=True,
+    task_ignore_result=False,
+    result_expires=3600,
     task_soft_time_limit=settings.TASK_SOFT_TIME_LIMIT,
     task_time_limit=settings.TASK_HARD_TIME_LIMIT,
     worker_send_task_events=True,

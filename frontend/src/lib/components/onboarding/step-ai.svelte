@@ -194,7 +194,7 @@
 			>
 				{#if testing}
 					<Spinner class="mr-1.5 size-3" />
-					Testing...
+					Testing…
 				{:else}
 					<FlaskConicalIcon class="mr-1.5 size-3" />
 					Test connection

@@ -2,22 +2,26 @@ import ipaddress
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.enums.scan import SCAN_LIVE_STATUSES
 from shared.models.proxy import Proxy
+from shared.models.scan import Scan
 from shared.models.scan_context import (
     AUTH_TYPES,
     HTTP_PROTOCOLS,
     MULTIPLIERS,
-    VALID_RATE_TOOLS,
     AuthConfig,
     AuthHeader,
+    ContextUsage,
     ScanContext,
     ScanContextCreate,
     ScanContextRead,
     ScanContextUpdate,
+    valid_rate_tools,
 )
+from shared.models.scan_schedule import ScanSchedule
 from shared.services.scan_resolve import (
     _SENSITIVE_HEADER,
     MASK,
@@ -39,10 +43,28 @@ _AUTH_KEEP = {
 }
 
 
-def _to_read(ctx: ScanContext) -> ScanContextRead:
+async def _usage_for(
+    session: AsyncSession, context_ids: list[UUID]
+) -> dict[UUID, ContextUsage]:
+    out = {cid: ContextUsage() for cid in context_ids}
+    if not context_ids:
+        return out
+    for model, field in ((ScanSchedule, "schedules"), (Scan, "scans")):
+        rows = await session.execute(
+            select(model.context_id, func.count())
+            .where(model.context_id.in_(context_ids))
+            .group_by(model.context_id)
+        )
+        for context_id, count in rows.all():
+            setattr(out[context_id], field, count)
+    return out
+
+
+def _to_read(ctx: ScanContext, usage: ContextUsage | None = None) -> ScanContextRead:
     masked_auth = _mask_auth(ctx.auth or {})
     masked_headers = _mask_headers(ctx.extra_headers or [])
     return ScanContextRead(
+        usage=usage or ContextUsage(),
         id=ctx.id,
         project_id=ctx.project_id,
         created_by=ctx.created_by,
@@ -125,8 +147,9 @@ def _validate_rate(name: str, value: int) -> None:
 
 def _validate_per_tool(overrides: dict) -> None:
     for tool, val in (overrides or {}).items():
-        if tool not in VALID_RATE_TOOLS:
-            msg = f"Invalid per-tool rate key '{tool}'. Must be one of {', '.join(VALID_RATE_TOOLS)}."
+        allowed = valid_rate_tools()
+        if tool not in allowed:
+            msg = f"Invalid per-tool rate key '{tool}'. Must be one of {', '.join(allowed)}."
             raise _bad(msg)
         _validate_rate(f"per_tool_rate_overrides[{tool}]", val)
 
@@ -332,12 +355,14 @@ class ScanContextService:
             .where(ScanContext.project_id == project_id)
             .order_by(ScanContext.updated_at.desc())
         )
-        contexts = result.scalars().all()
-        return [_to_read(c) for c in contexts]
+        contexts = list(result.scalars().all())
+        usage = await _usage_for(self.session, [c.id for c in contexts])
+        return [_to_read(c, usage.get(c.id)) for c in contexts]
 
     async def get(self, id: UUID, project_id: UUID) -> ScanContextRead:
         ctx = await self._get_or_404(id, project_id)
-        return _to_read(ctx)
+        usage = await _usage_for(self.session, [ctx.id])
+        return _to_read(ctx, usage.get(ctx.id))
 
     async def update(
         self,
@@ -404,6 +429,31 @@ class ScanContextService:
 
     async def delete(self, id: UUID, project_id: UUID) -> bool:
         ctx = await self._get_or_404(id, project_id)
+        running = (
+            await self.session.execute(
+                select(func.count())
+                .select_from(Scan)
+                .where(Scan.context_id == ctx.id, Scan.status.in_(SCAN_LIVE_STATUSES))
+            )
+        ).scalar_one()
+        if running:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"'{ctx.name}' is in use by {running} running "
+                    f"scan{'s' if running != 1 else ''}. Cancel them first."
+                ),
+            )
+        usage = (await _usage_for(self.session, [ctx.id]))[ctx.id]
+        if usage.schedules:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"'{ctx.name}' is used by {usage.schedules} scheduled "
+                    f"scan{'s' if usage.schedules != 1 else ''} and they would fail without it. "
+                    "Detach or delete those schedules first."
+                ),
+            )
         await self.session.delete(ctx)
         await self.session.commit()
         return True

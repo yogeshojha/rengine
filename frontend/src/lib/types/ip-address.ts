@@ -15,10 +15,3 @@ export interface IpAddressRead {
 	is_alive: boolean | null;
 	discovered_at: string;
 }
-
-export interface IpAddressSummary {
-	total: number;
-	alive: number;
-	cdn: number;
-	by_source: Record<string, number>;
-}

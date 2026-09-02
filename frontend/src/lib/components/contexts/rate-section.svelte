@@ -6,11 +6,11 @@
 	import X from '@lucide/svelte/icons/x';
 	import Plus from '@lucide/svelte/icons/plus';
 	import {
-		VALID_RATE_TOOLS,
 		MULTIPLIERS,
 		type ScanContextRead,
 		type ScanContextCreate
 	} from '$lib/types/scan-context';
+	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 
 	type CtxLike = ScanContextRead | ScanContextCreate;
 
@@ -20,6 +20,12 @@
 	}
 
 	let { context, onChange }: Props = $props();
+
+	$effect(() => {
+		engineCatalogStore.fetch();
+	});
+
+	const rateTools = $derived(engineCatalogStore.catalog?.rate_tools ?? []);
 
 	const MULTIPLIER_LABELS: { value: string; label: string }[] = MULTIPLIERS.map((m) => ({
 		value: String(m),
@@ -101,7 +107,7 @@
 
 	function addToolRow() {
 		const used = new Set(toolRows.map((r) => r.tool));
-		const free = VALID_RATE_TOOLS.find((t) => !used.has(t));
+		const free = rateTools.find((t) => !used.has(t));
 		if (!free) return;
 		toolRows = [...toolRows, { tool: free, rate: '100' }];
 		commitTools();
@@ -117,11 +123,11 @@
 		commitTools();
 	}
 
-	let canAddTool = $derived(toolRows.length < VALID_RATE_TOOLS.length);
+	let canAddTool = $derived(rateTools.length > 0 && toolRows.length < rateTools.length);
 
 	function toolsFor(i: number): readonly string[] {
 		const usedElsewhere = new Set(toolRows.filter((_, idx) => idx !== i).map((r) => r.tool));
-		return VALID_RATE_TOOLS.filter((t) => !usedElsewhere.has(t));
+		return rateTools.filter((t) => !usedElsewhere.has(t));
 	}
 </script>
 

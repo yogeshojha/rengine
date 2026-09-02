@@ -59,8 +59,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Create New Project</Dialog.Title>
 			<Dialog.Description>
-				Projects provide isolated workspaces for organizing targets, scans, and findings by
-				engagement.
+				A project keeps its targets, scans, and findings separate from your other work.
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -100,9 +99,9 @@
 				<Button type="submit" disabled={!isValid || isSubmitting}>
 					{#if isSubmitting}
 						<Spinner class="mr-2 size-4" />
-						Creating...
+						Creating…
 					{:else}
-						Create Project
+						Create project
 					{/if}
 				</Button>
 			</Dialog.Footer>

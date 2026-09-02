@@ -195,7 +195,7 @@
 							{/if}
 						</Dialog.Title>
 						<Dialog.Description class="text-sm text-muted-foreground">
-							WHOIS / RDAP Record Details
+							WHOIS / RDAP record details
 						</Dialog.Description>
 					</div>
 					{#if displayRecord}

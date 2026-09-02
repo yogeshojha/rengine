@@ -1,8 +1,4 @@
-"""RIPEstat service, structured BGP data with caching.
-
-Flow: check query_log TTL -> if fresh, read structured rows -> return.
-If stale: fetch API -> parse -> delete old rows -> insert fresh -> update log.
-"""
+"""RIPEstat service — structured BGP data with caching."""
 
 from datetime import timedelta
 

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { beforeNavigate } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { twoFactorApi } from '$lib/api/twoFactor';
 	import OtpInput from '$lib/components/onboarding/otp-input.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
@@ -61,11 +62,22 @@
 		setupOpen && ((!backupCodes && setupCode.length > 0) || (!!backupCodes && !backupCodesSaved))
 	);
 
+	let showLeaveDialog = $state(false);
+	let pendingNav: (() => void) | null = $state(null);
+	let allowNavigation = $state(false);
+
 	beforeNavigate((nav) => {
-		if (!enrollDirty) return;
-		if (!confirm('You have an unfinished two-factor setup. Leave and discard it?')) {
-			nav.cancel();
+		if (allowNavigation) {
+			allowNavigation = false;
+			return;
 		}
+		if (!enrollDirty || pendingNav) return;
+		nav.cancel();
+		pendingNav = () => {
+			allowNavigation = true;
+			if (nav.to) goto(nav.to.url);
+		};
+		showLeaveDialog = true;
 	});
 
 	function handleBeforeUnload(e: BeforeUnloadEvent) {
@@ -243,7 +255,7 @@
 							variant="destructive"
 							onclick={handleDisable}
 							loading={isDisabling}
-							loadingLabel="Disabling..."
+							loadingLabel="Disabling…"
 							disabled={disableCode.length !== 6}
 						>
 							Disable 2FA
@@ -345,7 +357,7 @@
 							<LoadingButton
 								onclick={handleVerify}
 								loading={isVerifying}
-								loadingLabel="Verifying..."
+								loadingLabel="Verifying…"
 								disabled={setupCode.length !== 6}
 							>
 								Verify &amp; enable
@@ -360,7 +372,7 @@
 				<TriangleAlertIcon class="w-4 h-4 text-muted-foreground shrink-0" />
 				Two-factor authentication is not enabled on your account.
 			</div>
-			<LoadingButton onclick={handleStartSetup} loading={isSettingUp} loadingLabel="Preparing...">
+			<LoadingButton onclick={handleStartSetup} loading={isSettingUp} loadingLabel="Preparing…">
 				Enable 2FA
 			</LoadingButton>
 		{/if}
@@ -381,3 +393,21 @@
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
+
+<UnsavedChangesDialog
+	bind:open={showLeaveDialog}
+	title="Discard two-factor setup?"
+	description="Your two-factor enrolment is unfinished. Leaving now discards it and 2FA stays off."
+	confirmLabel="Discard setup"
+	cancelLabel="Keep setting up"
+	onOpenChange={(o) => {
+		showLeaveDialog = o;
+		if (!o) pendingNav = null;
+	}}
+	onConfirm={() => {
+		showLeaveDialog = false;
+		const resume = pendingNav;
+		pendingNav = null;
+		resume?.();
+	}}
+/>
