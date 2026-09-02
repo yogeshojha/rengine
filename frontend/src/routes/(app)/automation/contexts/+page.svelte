@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import KeyRound from '@lucide/svelte/icons/key-round';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import ListChecks from '@lucide/svelte/icons/list-checks';
 
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -15,6 +18,7 @@
 	import ContextListCard from '$lib/components/contexts/context-list-card.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
+	import SelectionActionBar from '@/components/selection-action-bar.svelte';
 	import type { ScanContextRead } from '$lib/types/scan-context';
 
 	let isRefreshing = $state(false);
@@ -23,6 +27,8 @@
 	let contextToDelete = $state<ScanContextRead | null>(null);
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
+	let deleteMode = $state<'single' | 'bulk'>('single');
+	const selectedIds = new SvelteSet<string>();
 
 	$effect(() => {
 		const project = projectsStore.activeProject;
@@ -30,6 +36,7 @@
 		if (project && hasFetched) {
 			untrack(() => {
 				if (scanContextsStore.fetchedProjectId !== project.id) {
+					selectedIds.clear();
 					scanContextsStore.fetchContexts(project.id);
 				}
 			});
@@ -61,29 +68,87 @@
 	}
 
 	function handleDeleteRequest(context: ScanContextRead) {
+		deleteMode = 'single';
 		contextToDelete = context;
 		showDeleteDialog = true;
 	}
 
+	function toggleSelect(id: string) {
+		if (selectedIds.has(id)) selectedIds.delete(id);
+		else selectedIds.add(id);
+	}
+
+	function clearSelection() {
+		selectedIds.clear();
+	}
+
+	function toggleSelectAll() {
+		const all = scanContextsStore.contexts;
+		if (selectedIds.size >= all.length) selectedIds.clear();
+		else for (const c of all) selectedIds.add(c.id);
+	}
+
+	function requestBulkDelete() {
+		if (selectedIds.size === 0) return;
+		deleteMode = 'bulk';
+		showDeleteDialog = true;
+	}
+
 	async function confirmDelete() {
-		if (!contextToDelete?.id) return;
 		isDeleting = true;
 		try {
-			const ok = await scanContextsStore.deleteContext(
-				contextToDelete.id,
-				contextToDelete.project_id
-			);
-			if (ok) {
-				toast.success(`Deleted "${contextToDelete.name}"`);
-				showDeleteDialog = false;
-				contextToDelete = null;
-			} else {
-				toast.error(scanContextsStore.error ?? 'Failed to delete context');
+			if (deleteMode === 'single') {
+				if (!contextToDelete?.id) return;
+				const ok = await scanContextsStore.deleteContext(
+					contextToDelete.id,
+					contextToDelete.project_id
+				);
+				if (ok) {
+					toast.success(`Deleted "${contextToDelete.name}"`);
+					selectedIds.delete(contextToDelete.id);
+					showDeleteDialog = false;
+					contextToDelete = null;
+				} else {
+					toast.error(scanContextsStore.error ?? 'Failed to delete context');
+				}
+				return;
 			}
+
+			const byId = new Map(scanContextsStore.contexts.map((c) => [c.id, c]));
+			const ids = Array.from(selectedIds);
+			let failed = 0;
+			let lastError = '';
+			for (const id of ids) {
+				const ok = await scanContextsStore.deleteContext(id, byId.get(id)?.project_id);
+				if (ok) selectedIds.delete(id);
+				else {
+					failed++;
+					lastError = scanContextsStore.error ?? '';
+				}
+			}
+			const deleted = ids.length - failed;
+			if (deleted) toast.success(`${deleted} context${deleted !== 1 ? 's' : ''} deleted`);
+			if (failed) {
+				toast.error(
+					`${failed} context${failed !== 1 ? 's' : ''} kept${lastError ? ` — ${lastError}` : ''}`
+				);
+			}
+			showDeleteDialog = false;
 		} finally {
 			isDeleting = false;
 		}
 	}
+
+	const deleteTitle = $derived(
+		deleteMode === 'single'
+			? 'Delete this context?'
+			: `Delete ${selectedIds.size} context${selectedIds.size !== 1 ? 's' : ''}?`
+	);
+	const deleteDescription = $derived(
+		deleteMode === 'single'
+			? 'Scans already run with it keep their results. This is permanent.'
+			: `Scans already run with ${selectedIds.size === 1 ? 'it' : 'them'} keep their results. A context still used by a schedule or a running scan is kept. This is permanent.`
+	);
 
 	async function handleRefresh() {
 		const project = projectsStore.activeProject;
@@ -157,6 +222,8 @@
 			{#each scanContextsStore.contexts as context (context.id)}
 				<ContextListCard
 					{context}
+					isSelected={selectedIds.has(context.id)}
+					onSelect={() => toggleSelect(context.id)}
 					onEdit={() => goto(ROUTES.context(context.id))}
 					onRun={() => {
 						launchContextId = context.id;
@@ -176,18 +243,32 @@
 	{/if}
 </div>
 
-{#if contextToDelete}
-	<DeleteConfirmationDialog
-		bind:open={showDeleteDialog}
-		title="Delete this context?"
-		description="Scans already run with it keep their results. This is permanent."
-		{isDeleting}
-		onOpenChange={(open) => {
-			showDeleteDialog = open;
-			if (!open) contextToDelete = null;
-		}}
-		onConfirm={confirmDelete}
-	/>
-{/if}
+<SelectionActionBar selectedCount={selectedIds.size} noun="context" onClear={clearSelection}>
+	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={toggleSelectAll}>
+		<ListChecks class="h-3.5 w-3.5 text-muted-foreground" />
+		{selectedIds.size >= scanContextsStore.contexts.length ? 'Deselect all' : 'Select all'}
+	</Button>
+	<Button
+		variant="ghost"
+		size="sm"
+		class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+		onclick={requestBulkDelete}
+	>
+		<Trash2 class="h-3.5 w-3.5" />
+		Delete
+	</Button>
+</SelectionActionBar>
+
+<DeleteConfirmationDialog
+	bind:open={showDeleteDialog}
+	title={deleteTitle}
+	description={deleteDescription}
+	{isDeleting}
+	onOpenChange={(open) => {
+		showDeleteDialog = open;
+		if (!open) contextToDelete = null;
+	}}
+	onConfirm={confirmDelete}
+/>
 
 <LaunchModal bind:open={showLaunch} presetContextId={launchContextId} />

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Play from '@lucide/svelte/icons/play';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -15,9 +16,19 @@
 		onRun?: () => void;
 		onDuplicate?: () => void;
 		onDelete?: () => void;
+		isSelected?: boolean;
+		onSelect?: () => void;
 	}
 
-	let { context, onEdit, onRun, onDuplicate, onDelete }: Props = $props();
+	let {
+		context,
+		onEdit,
+		onRun,
+		onDuplicate,
+		onDelete,
+		isSelected = false,
+		onSelect
+	}: Props = $props();
 
 	let chips = $derived.by(() => {
 		const out: string[] = [];
@@ -41,6 +52,7 @@
 
 <div
 	class="card"
+	class:selected={isSelected}
 	role="button"
 	tabindex={0}
 	onclick={() => onEdit?.()}
@@ -54,6 +66,17 @@
 	<div class="rail"></div>
 	<div class="card-body">
 		<div class="card-header">
+			{#if onSelect}
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div class="select" class:on={isSelected} onclick={(e) => e.stopPropagation()}>
+					<Checkbox
+						checked={isSelected}
+						onCheckedChange={() => onSelect()}
+						aria-label="Select {context.name}"
+					/>
+				</div>
+			{/if}
 			<div class="name-block">
 				<h3 class="ctx-name">{context.name}</h3>
 				<Badge variant="outline" class="auth-badge">{authBadgeLabel(context)}</Badge>
@@ -153,6 +176,29 @@
 		box-shadow: var(--shadow-md);
 		transform: translateY(-1px);
 		border-color: var(--ring);
+	}
+
+	.card.selected {
+		border-color: color-mix(in oklch, var(--primary) 45%, var(--border));
+		background: color-mix(in oklch, var(--primary) 6%, var(--card));
+	}
+
+	.select {
+		display: flex;
+		align-items: center;
+		padding-top: 1px;
+		opacity: 0;
+		transition: opacity 0.14s ease;
+	}
+	.card:hover .select,
+	.select.on,
+	.select:focus-within {
+		opacity: 1;
+	}
+	@media (hover: none) {
+		.select {
+			opacity: 1;
+		}
 	}
 
 	.rail {

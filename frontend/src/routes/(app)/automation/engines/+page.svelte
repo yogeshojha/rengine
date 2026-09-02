@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -7,6 +8,8 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Network from '@lucide/svelte/icons/network';
 	import AlertCircle from '@lucide/svelte/icons/alert-circle';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import ListChecks from '@lucide/svelte/icons/list-checks';
 
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
@@ -21,12 +24,15 @@
 	import ImportEngineDialog from '$lib/components/engines/import-engine-dialog.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
+	import SelectionActionBar from '@/components/selection-action-bar.svelte';
 	import type { EnginePreset, ScanEngine } from '$lib/types/scan-engine';
 
 	let isRefreshing = $state(false);
 	let engineToDelete = $state<ScanEngine | null>(null);
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
+	let deleteMode = $state<'single' | 'bulk'>('single');
+	const selectedIds = new SvelteSet<string>();
 	let showNewDialog = $state(false);
 	let isCreating = $state(false);
 	let showImportDialog = $state(false);
@@ -44,6 +50,7 @@
 		if (project && hasFetched) {
 			untrack(() => {
 				if (scanEnginesStore.fetchedProjectId !== project.id) {
+					selectedIds.clear();
 					scanEnginesStore.fetchEngines(project.id);
 				}
 			});
@@ -104,22 +111,78 @@
 		else toast.error(scanEnginesStore.error ?? 'Failed to duplicate engine');
 	}
 
+	function toggleSelect(id: string) {
+		if (selectedIds.has(id)) selectedIds.delete(id);
+		else selectedIds.add(id);
+	}
+
+	function clearSelection() {
+		selectedIds.clear();
+	}
+
+	function toggleSelectAll() {
+		const all = scanEnginesStore.engines;
+		if (selectedIds.size >= all.length) selectedIds.clear();
+		else for (const e of all) selectedIds.add(e.id);
+	}
+
+	function requestBulkDelete() {
+		if (selectedIds.size === 0) return;
+		deleteMode = 'bulk';
+		showDeleteDialog = true;
+	}
+
 	async function confirmDelete() {
-		if (!engineToDelete) return;
 		isDeleting = true;
 		try {
-			const ok = await scanEnginesStore.deleteEngine(engineToDelete.id);
-			if (ok) {
-				toast.success(`Deleted "${engineToDelete.name}"`);
-				showDeleteDialog = false;
-				engineToDelete = null;
-			} else {
-				toast.error(scanEnginesStore.error ?? 'Failed to delete engine');
+			if (deleteMode === 'single') {
+				if (!engineToDelete) return;
+				const ok = await scanEnginesStore.deleteEngine(engineToDelete.id);
+				if (ok) {
+					toast.success(`Deleted "${engineToDelete.name}"`);
+					selectedIds.delete(engineToDelete.id);
+					showDeleteDialog = false;
+					engineToDelete = null;
+				} else {
+					toast.error(scanEnginesStore.error ?? 'Failed to delete engine');
+				}
+				return;
 			}
+
+			const ids = Array.from(selectedIds);
+			let failed = 0;
+			let lastError = '';
+			for (const id of ids) {
+				const ok = await scanEnginesStore.deleteEngine(id);
+				if (ok) selectedIds.delete(id);
+				else {
+					failed++;
+					lastError = scanEnginesStore.error ?? '';
+				}
+			}
+			const deleted = ids.length - failed;
+			if (deleted) toast.success(`${deleted} engine${deleted !== 1 ? 's' : ''} deleted`);
+			if (failed) {
+				toast.error(
+					`${failed} engine${failed !== 1 ? 's' : ''} kept${lastError ? ` — ${lastError}` : ''}`
+				);
+			}
+			showDeleteDialog = false;
 		} finally {
 			isDeleting = false;
 		}
 	}
+
+	const deleteTitle = $derived(
+		deleteMode === 'single'
+			? 'Delete this engine?'
+			: `Delete ${selectedIds.size} engine${selectedIds.size !== 1 ? 's' : ''}?`
+	);
+	const deleteDescription = $derived(
+		deleteMode === 'single'
+			? 'Scans already run with it keep their results. This is permanent.'
+			: `Scans already run with ${selectedIds.size === 1 ? 'it' : 'them'} keep their results. An engine still used by a schedule or a running scan is kept. This is permanent.`
+	);
 
 	async function handleRefresh() {
 		const project = projectsStore.activeProject;
@@ -220,6 +283,8 @@
 				<EngineListCard
 					{engine}
 					stages={engineCatalogStore.stages}
+					isSelected={selectedIds.has(engine.id)}
+					onSelect={() => toggleSelect(engine.id)}
 					onEdit={() => goto(ROUTES.engine(engine.id))}
 					onRun={() => {
 						launchEngineId = engine.id;
@@ -227,6 +292,7 @@
 					}}
 					onDuplicate={() => handleDuplicate(engine)}
 					onDelete={() => {
+						deleteMode = 'single';
 						engineToDelete = engine;
 						showDeleteDialog = true;
 					}}
@@ -254,16 +320,30 @@
 	onCreate={handleCreate}
 />
 
-{#if engineToDelete}
-	<DeleteConfirmationDialog
-		bind:open={showDeleteDialog}
-		title="Delete this engine?"
-		description="Scans already run with it keep their results. This is permanent."
-		{isDeleting}
-		onOpenChange={(open) => {
-			showDeleteDialog = open;
-			if (!open) engineToDelete = null;
-		}}
-		onConfirm={confirmDelete}
-	/>
-{/if}
+<SelectionActionBar selectedCount={selectedIds.size} noun="engine" onClear={clearSelection}>
+	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={toggleSelectAll}>
+		<ListChecks class="h-3.5 w-3.5 text-muted-foreground" />
+		{selectedIds.size >= scanEnginesStore.engines.length ? 'Deselect all' : 'Select all'}
+	</Button>
+	<Button
+		variant="ghost"
+		size="sm"
+		class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+		onclick={requestBulkDelete}
+	>
+		<Trash2 class="h-3.5 w-3.5" />
+		Delete
+	</Button>
+</SelectionActionBar>
+
+<DeleteConfirmationDialog
+	bind:open={showDeleteDialog}
+	title={deleteTitle}
+	description={deleteDescription}
+	{isDeleting}
+	onOpenChange={(open) => {
+		showDeleteDialog = open;
+		if (!open) engineToDelete = null;
+	}}
+	onConfirm={confirmDelete}
+/>

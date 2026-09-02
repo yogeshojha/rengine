@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Play from '@lucide/svelte/icons/play';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -19,9 +20,20 @@
 		onRun?: () => void;
 		onDuplicate?: () => void;
 		onDelete?: () => void;
+		isSelected?: boolean;
+		onSelect?: () => void;
 	}
 
-	let { engine, stages, onEdit, onRun, onDuplicate, onDelete }: Props = $props();
+	let {
+		engine,
+		stages,
+		onEdit,
+		onRun,
+		onDuplicate,
+		onDelete,
+		isSelected = false,
+		onSelect
+	}: Props = $props();
 
 	const summary = $derived(summarize(engine.stages ?? {}, stages, engine.intensity));
 
@@ -42,9 +54,20 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="card" onclick={() => onEdit?.()}>
+<div class="card" class:selected={isSelected} onclick={() => onEdit?.()}>
 	<div class="body">
 		<div class="top">
+			{#if onSelect}
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div class="select" class:on={isSelected} onclick={(e) => e.stopPropagation()}>
+					<Checkbox
+						checked={isSelected}
+						onCheckedChange={() => onSelect()}
+						aria-label="Select {engine.name}"
+					/>
+				</div>
+			{/if}
 			<div class="ident">
 				<h3 class="name">{engine.name}</h3>
 				<Badge variant="outline" class="intensity {badgeClass}">
@@ -142,6 +165,28 @@
 	.card:hover {
 		border-color: color-mix(in oklch, var(--foreground) 22%, var(--border));
 		background: color-mix(in oklch, var(--muted) 35%, var(--card));
+	}
+	.card.selected {
+		border-color: color-mix(in oklch, var(--primary) 45%, var(--border));
+		background: color-mix(in oklch, var(--primary) 6%, var(--card));
+	}
+
+	.select {
+		display: flex;
+		align-items: center;
+		padding-top: 1px;
+		opacity: 0;
+		transition: opacity 0.14s ease;
+	}
+	.card:hover .select,
+	.select.on,
+	.select:focus-within {
+		opacity: 1;
+	}
+	@media (hover: none) {
+		.select {
+			opacity: 1;
+		}
 	}
 
 	.body {
