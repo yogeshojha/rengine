@@ -1,153 +1,226 @@
 <script lang="ts">
 	import { scaleUtc } from 'd3-scale';
-	import { curveNatural } from 'd3-shape';
+	import { curveMonotoneX } from 'd3-shape';
+	import { Area, AreaChart, ChartClipPath, LinearGradient } from 'layerchart';
 	import { cubicInOut } from 'svelte/easing';
-	import { Area, AreaChart, ChartClipPath } from 'layerchart';
-	import Activity from '@lucide/svelte/icons/activity';
+	import ChartSpline from '@lucide/svelte/icons/chart-spline';
 	import * as Card from '$lib/components/ui/card';
-	import * as Select from '$lib/components/ui/select';
 	import * as Chart from '$lib/components/ui/chart';
-	import { SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
-	import type { ScanDailyCount, ScanStatus } from '$lib/types/scan';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import type { ScanDailyCount, ScanStats } from '$lib/types/scan';
 
 	interface Props {
-		daily: ScanDailyCount[];
+		stats: ScanStats | null;
 	}
-	let { daily }: Props = $props();
 
-	type StatusKey = ScanStatus;
+	let { stats }: Props = $props();
 
-	const SERIES_COLORS: Record<StatusKey, string> = {
-		completed: 'var(--chart-1)',
-		running: 'var(--chart-2)',
-		pending: 'var(--chart-3)',
-		cancelled: 'var(--muted-foreground)',
-		failed: 'var(--destructive)'
-	};
+	type Metric = 'scans' | 'new_subdomains';
 
-	const SERIES: { key: StatusKey; label: string; color: string }[] = (
-		['completed', 'running', 'pending', 'cancelled', 'failed'] as StatusKey[]
-	).map((key) => ({ key, label: SCAN_STATUS_LABEL[key], color: SERIES_COLORS[key] }));
+	const chartConfig = {
+		scans: { label: 'Scans', color: 'var(--chart-1)' },
+		new_subdomains: { label: 'New subdomains', color: 'var(--chart-1)' }
+	} satisfies Chart.ChartConfig;
 
-	const chartConfig = Object.fromEntries(
-		SERIES.map((s) => [s.key, { label: s.label, color: s.color }])
-	) satisfies Chart.ChartConfig;
-
+	const METRICS: { value: Metric; label: string; unit: string }[] = [
+		{ value: 'scans', label: 'Scans', unit: 'scans' },
+		{ value: 'new_subdomains', label: 'Subdomains', unit: 'new subdomains' }
+	];
 	const RANGES = [
-		{ value: '30d', label: 'Last 30 days', days: 30 },
-		{ value: '14d', label: 'Last 14 days', days: 14 },
-		{ value: '7d', label: 'Last 7 days', days: 7 }
-	] as const;
+		{ value: '7', label: '7d', full: 'last 7 days' },
+		{ value: '14', label: '14d', full: 'last 14 days' },
+		{ value: '30', label: '30d', full: 'last 30 days' }
+	];
 
-	let timeRange = $state('30d');
-	let rangeDays = $derived(RANGES.find((r) => r.value === timeRange)?.days ?? 30);
-	let rangeLabel = $derived(RANGES.find((r) => r.value === timeRange)?.label ?? 'Last 30 days');
+	let metric = $state<Metric>('scans');
+	let range = $state('30');
 
-	let recent = $derived(daily.slice(-rangeDays));
-	let data = $derived(
+	let rangeDays = $derived(Number(range));
+	let rangeLabel = $derived(RANGES.find((r) => r.value === range)?.full ?? 'last 30 days');
+	let unit = $derived(METRICS.find((m) => m.value === metric)?.unit ?? '');
+
+	let recent = $derived<ScanDailyCount[]>((stats?.daily ?? []).slice(-rangeDays));
+	let chartData = $derived(
 		recent.map((d) => ({
-			date: new Date(d.date),
-			completed: d.completed,
-			running: d.running,
-			pending: d.pending,
-			cancelled: d.cancelled,
+			date: new Date(`${d.date}T00:00:00Z`),
+			scans: d.count,
+			new_subdomains: d.new_subdomains,
 			failed: d.failed
 		}))
 	);
 
-	// Only series with data in the window — avoids stacking empty statuses (baseline
-	// artifact + padding the tooltip with "Cancelled 0" rows).
-	let chartSeries = $derived(
-		SERIES.filter((s) => recent.some((d) => d[s.key] > 0)).map((s) => ({
-			key: s.key,
-			label: s.label,
-			color: s.color
-		}))
+	let total = $derived(
+		recent.reduce((a, d) => a + (metric === 'scans' ? d.count : d.new_subdomains), 0)
 	);
-	let hasActivity = $derived(chartSeries.length > 0);
-	let runs = $derived(recent.reduce((sum, d) => sum + d.count, 0));
+	let failedTotal = $derived(recent.reduce((a, d) => a + d.failed, 0));
+	let perDay = $derived(recent.length ? total / recent.length : 0);
+	let failureDays = $derived(metric === 'scans' ? chartData.filter((d) => d.failed > 0) : []);
 
-	function fmtDay(v: Date): string {
-		return v.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-	}
+	let series = $derived([
+		{ key: metric, label: chartConfig[metric].label, color: chartConfig[metric].color }
+	]);
+	let xTicks = $derived.by(() => {
+		const dates = chartData.map((d) => d.date);
+		if (dates.length < 4) return dates;
+		const inner = dates.slice(1, -1);
+		const want = Math.min(rangeDays <= 7 ? 4 : 5, inner.length);
+		const step = (inner.length - 1) / (want - 1);
+		return Array.from({ length: want }, (_, i) => inner[Math.round(i * step)]);
+	});
+
+	const fmtDay = (v: Date) =>
+		v.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+	const fmtFullDay = (v: Date) =>
+		v.toLocaleDateString('en-US', {
+			weekday: 'short',
+			month: 'short',
+			day: 'numeric',
+			timeZone: 'UTC'
+		});
+	const stops = [
+		'color-mix(in oklab, var(--chart-1) 85%, transparent)',
+		'color-mix(in oklab, var(--chart-1) 20%, transparent)'
+	];
 </script>
 
 <Card.Root class="gap-0 py-0">
 	<Card.Header
-		class="flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 py-3 sm:px-6"
+		class="flex flex-col items-start justify-between gap-4 px-6 pt-6 pb-2 sm:flex-row sm:items-center"
 	>
-		<div class="flex min-w-0 items-center gap-2">
-			<Activity class="h-4 w-4 shrink-0 text-muted-foreground" />
-			<Card.Title class="text-sm font-medium">Scan activity</Card.Title>
-			{#if runs > 0}
-				<span class="truncate text-xs tabular-nums text-muted-foreground">
-					· {runs}
-					{runs === 1 ? 'scan' : 'scans'}
-				</span>
+		<div class="flex flex-col gap-1.5">
+			{#if stats}
+				<Card.Title class="text-3xl leading-none font-semibold tracking-tight tabular-nums">
+					{total.toLocaleString()}
+				</Card.Title>
+				<Card.Description class="flex flex-wrap items-center gap-x-2 gap-y-1">
+					<span>{unit} in the {rangeLabel}</span>
+					{#if metric === 'scans' && failedTotal > 0}
+						<span aria-hidden="true">·</span>
+						<span class="flex items-center gap-1.5 text-destructive">
+							<span class="size-1.5 rounded-full bg-destructive"></span>
+							{failedTotal} failed
+						</span>
+					{:else if metric === 'new_subdomains' && total > 0}
+						<span aria-hidden="true">·</span>
+						<span>{perDay < 10 ? perDay.toFixed(1) : Math.round(perDay)} per day</span>
+					{/if}
+				</Card.Description>
+			{:else}
+				<Skeleton class="h-8 w-24" />
+				<Skeleton class="h-4 w-44" />
 			{/if}
 		</div>
-		<Select.Root type="single" bind:value={timeRange}>
-			<Select.Trigger size="sm" class="w-[132px] rounded-lg text-xs" aria-label="Select time range">
-				{rangeLabel}
-			</Select.Trigger>
-			<Select.Content class="rounded-xl">
-				{#each RANGES as r (r.value)}
-					<Select.Item value={r.value} label={r.label} class="rounded-lg text-xs">
-						{r.label}
-					</Select.Item>
+		<div class="flex flex-wrap items-center gap-2">
+			<ToggleGroup.Root
+				type="single"
+				value={metric}
+				onValueChange={(v) => v && (metric = v as Metric)}
+				variant="outline"
+			>
+				{#each METRICS as m (m.value)}
+					<ToggleGroup.Item value={m.value} class="px-3">{m.label}</ToggleGroup.Item>
 				{/each}
-			</Select.Content>
-		</Select.Root>
+			</ToggleGroup.Root>
+			<ToggleGroup.Root
+				type="single"
+				value={range}
+				onValueChange={(v) => v && (range = v)}
+				variant="outline"
+			>
+				{#each RANGES as r (r.value)}
+					<ToggleGroup.Item value={r.value} class="px-3" aria-label={r.full}>
+						{r.label}
+					</ToggleGroup.Item>
+				{/each}
+			</ToggleGroup.Root>
+		</div>
 	</Card.Header>
-	<Card.Content class="px-2 py-4 sm:px-6">
-		{#if hasActivity}
-			<Chart.Container config={chartConfig} class="aspect-auto h-[250px] w-full">
-				<AreaChart
-					legend
-					{data}
-					x="date"
-					xScale={scaleUtc()}
-					series={chartSeries}
-					seriesLayout="stack"
-					props={{
-						xAxis: { ticks: rangeDays <= 7 ? 7 : 6, format: fmtDay },
-						yAxis: { format: () => '' }
-					}}
-				>
-					{#snippet marks({ visibleSeries, getAreaProps })}
-						<defs>
-							{#each visibleSeries as s (s.key)}
-								<linearGradient id="scanfill-{s.key}" x1="0" y1="0" x2="0" y2="1">
-									<stop offset="5%" stop-color="var(--color-{s.key})" stop-opacity={0.8} />
-									<stop offset="95%" stop-color="var(--color-{s.key})" stop-opacity={0.1} />
-								</linearGradient>
-							{/each}
-						</defs>
-						<ChartClipPath
-							initialWidth={0}
-							motion={{ width: { type: 'tween', duration: 800, easing: cubicInOut } }}
-						>
-							{#each visibleSeries as s, i (s.key)}
-								<Area
-									{...getAreaProps(s, i)}
-									curve={curveNatural}
-									fillOpacity={0.4}
-									line={{ class: 'stroke-1' }}
-									motion="tween"
-									fill="url(#scanfill-{s.key})"
-								/>
-							{/each}
-						</ChartClipPath>
-					{/snippet}
-					{#snippet tooltip()}
-						<Chart.Tooltip labelFormatter={fmtDay} indicator="line" />
-					{/snippet}
-				</AreaChart>
-			</Chart.Container>
+	<Card.Content class="px-0 pt-2 pb-4">
+		{#if !stats}
+			<Skeleton class="h-[180px] w-full" />
+		{:else if total === 0}
+			<EmptyState
+				compact
+				icon={ChartSpline}
+				title={metric === 'scans' ? 'No scans in this window' : 'No new subdomains in this window'}
+				description={metric === 'scans'
+					? `Nothing has run in the ${rangeLabel}. Launch a scan to start building history.`
+					: `No first-time subdomains were discovered in the ${rangeLabel}.`}
+				class="h-[180px] justify-center border-0 bg-transparent"
+			/>
 		{:else}
-			<div class="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
-				No scans in the {rangeLabel.toLowerCase()}.
-			</div>
+			{#key `${metric}:${range}`}
+				<Chart.Container
+					config={chartConfig}
+					class="aspect-auto h-[180px] w-full [&_.lc-highlight-line]:stroke-border [&_.lc-highlight-line]:stroke-1 [&_.lc-highlight-point]:stroke-background [&_.lc-highlight-point]:stroke-2"
+				>
+					<AreaChart
+						data={chartData}
+						x="date"
+						xScale={scaleUtc()}
+						yPadding={[0, 8]}
+						padding={{ top: 8, left: 16, right: 16, bottom: 26 }}
+						axis="x"
+						grid={false}
+						{series}
+						props={{
+							area: {
+								curve: curveMonotoneX,
+								fillOpacity: 1,
+								motion: 'tween',
+								line: { class: 'stroke-2' }
+							},
+							xAxis: { ticks: xTicks, tickLength: 0, format: fmtDay },
+							highlight: { points: { r: 4 } }
+						}}
+					>
+						{#snippet marks({ visibleSeries, getAreaProps, context })}
+							<ChartClipPath
+								initialWidth={0}
+								motion={{ width: { type: 'tween', duration: 900, easing: cubicInOut } }}
+							>
+								{#each visibleSeries as s, i (s.key)}
+									<LinearGradient {stops} vertical>
+										{#snippet children({ gradient })}
+											<Area {...getAreaProps(s, i)} fill={gradient} />
+										{/snippet}
+									</LinearGradient>
+								{/each}
+								{#each failureDays as d (d.date.valueOf())}
+									<circle
+										cx={context.xScale(d.date)}
+										cy={context.yScale(d.scans)}
+										r="3.5"
+										class="fill-destructive stroke-background stroke-2"
+									/>
+								{/each}
+							</ChartClipPath>
+						{/snippet}
+						{#snippet tooltip()}
+							<Chart.Tooltip class="min-w-[11rem]" indicator="line" labelFormatter={fmtFullDay}>
+								{#snippet footer({ payload })}
+									{@const day = payload[0]?.payload as { failed?: number } | undefined}
+									{#if metric === 'scans' && (day?.failed ?? 0) > 0}
+										<div
+											class="mt-0.5 flex items-center justify-between gap-4 border-t border-border/50 pt-1.5"
+										>
+											<span class="flex items-center gap-1.5 text-destructive">
+												<span class="size-2.5 rounded-[2px] bg-destructive"></span>
+												Failed
+											</span>
+											<span class="font-mono font-medium text-destructive tabular-nums">
+												{day?.failed}
+											</span>
+										</div>
+									{/if}
+								{/snippet}
+							</Chart.Tooltip>
+						{/snippet}
+					</AreaChart>
+				</Chart.Container>
+			{/key}
 		{/if}
 	</Card.Content>
 </Card.Root>

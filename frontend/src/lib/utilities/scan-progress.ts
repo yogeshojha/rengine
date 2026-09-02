@@ -13,6 +13,13 @@ export function plannedStages(scan: ScanRead, catalog: StageCatalogEntry[]): Sta
 
 export type StageStepState = 'done' | 'failed' | 'running' | 'pending';
 
+export const STAGE_STEP_CLASS: Record<StageStepState, string> = {
+	done: 'bg-info',
+	failed: 'bg-destructive',
+	running: 'bg-info/45 animate-pulse',
+	pending: 'bg-muted-foreground/20'
+};
+
 export interface StageStep {
 	name: string;
 	title: string;

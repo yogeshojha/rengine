@@ -804,6 +804,25 @@ class ScanService:
         for d, st, n in status_day_rows:
             by_day_status.setdefault(str(d), {})[st] = n
 
+        sub_conds = [Subdomain.project_id == project_id]
+        if target_id is not None:
+            sub_conds.append(Subdomain.target_id == target_id)
+        firsts = (
+            select(func.min(Subdomain.discovered_at).label("first_seen"))
+            .where(*sub_conds)
+            .group_by(Subdomain.target_id, Subdomain.name)
+            .subquery()
+        )
+        first_day = func.date(firsts.c.first_seen)
+        new_day_rows = (
+            await self.session.execute(
+                select(first_day, func.count())
+                .where(first_day >= start)
+                .group_by(first_day)
+            )
+        ).all()
+        new_by_day = {str(d): n for d, n in new_day_rows}
+
         daily = []
         for i in range(30):
             d = (start + timedelta(days=i)).isoformat()
@@ -817,6 +836,7 @@ class ScanService:
                     cancelled=s.get(ScanStatus.CANCELLED.value, 0),
                     running=s.get(ScanStatus.RUNNING.value, 0),
                     pending=s.get(ScanStatus.PENDING.value, 0),
+                    new_subdomains=new_by_day.get(d, 0),
                 )
             )
 

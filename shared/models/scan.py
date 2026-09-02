@@ -100,6 +100,7 @@ class ScanDailyCount(BaseModel):
     cancelled: int = 0
     running: int = 0
     pending: int = 0
+    new_subdomains: int = 0
 
 
 class ScanFacet(BaseModel):

@@ -196,6 +196,7 @@ export interface ScanDailyCount {
 	cancelled: number;
 	running: number;
 	pending: number;
+	new_subdomains: number;
 }
 
 export const SCAN_CHANGE_WINDOWS = [

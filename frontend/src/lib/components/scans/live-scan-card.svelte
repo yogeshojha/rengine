@@ -6,8 +6,12 @@
 	import Ban from '@lucide/svelte/icons/ban';
 	import { ROUTES } from '$lib/config/routes';
 	import { elapsedSeconds, formatSeconds, scanCountPills } from '$lib/utilities/scan-status';
-	import { etaLabel, plannedStages, stageProgress } from '$lib/utilities/scan-progress';
-	import type { StageStepState } from '$lib/utilities/scan-progress';
+	import {
+		STAGE_STEP_CLASS,
+		etaLabel,
+		plannedStages,
+		stageProgress
+	} from '$lib/utilities/scan-progress';
 	import type { ScanRead } from '$lib/types/scan';
 	import type { StageCatalogEntry } from '$lib/types/scan-engine';
 	import type { LiveRun } from '$lib/stores/live-scans.svelte';
@@ -23,13 +27,6 @@
 	}
 
 	let { scan, run, catalog, previousDuration = null, now, onNavigate, onCancel }: Props = $props();
-
-	const STEP_CLASS: Record<StageStepState, string> = {
-		done: 'bg-info',
-		failed: 'bg-destructive',
-		running: 'bg-info/45 animate-pulse',
-		pending: 'bg-muted-foreground/20'
-	};
 
 	let queued = $derived(scan.status === 'pending');
 	let elapsedSec = $derived(elapsedSeconds(scan, now));
@@ -77,7 +74,7 @@
 					aria-label="{progress.done} of {progress.total} stages done"
 				>
 					{#each progress.steps as step (step.name)}
-						<span title={step.title} class="h-1 flex-1 rounded-full {STEP_CLASS[step.state]}"
+						<span title={step.title} class="h-1 flex-1 rounded-full {STAGE_STEP_CLASS[step.state]}"
 						></span>
 					{/each}
 				</div>

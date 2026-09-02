@@ -11,7 +11,7 @@ import Plug from '@lucide/svelte/icons/plug';
 import Globe from '@lucide/svelte/icons/globe';
 import Bug from '@lucide/svelte/icons/bug';
 import Link2 from '@lucide/svelte/icons/link-2';
-import type { ScanActivityStatus, ScanRead, ScanStatus } from '$lib/types/scan';
+import type { ScanActivityStatus, ScanRead, ScanStatus, ScanStatusCounts } from '$lib/types/scan';
 import type { BadgeVariant } from '$lib/components/ui/badge';
 import type { IconComponent } from '$lib/config/icons';
 
@@ -52,6 +52,33 @@ export function scanStatusIcon(s: ScanStatus): IconComponent {
 
 export function isLiveStatus(s: ScanStatus): boolean {
 	return s === 'running' || s === 'pending';
+}
+
+export type ScanStatusTab = 'all' | 'active' | 'completed' | 'failed' | 'cancelled';
+
+export const SCAN_STATUS_TABS: { key: ScanStatusTab; label: string; statuses: ScanStatus[] }[] = [
+	{ key: 'all', label: 'All', statuses: [] },
+	{ key: 'active', label: 'Active', statuses: ['running', 'pending'] },
+	{ key: 'completed', label: 'Completed', statuses: ['completed'] },
+	{ key: 'failed', label: 'Failed', statuses: ['failed'] },
+	{ key: 'cancelled', label: 'Cancelled', statuses: ['cancelled'] }
+];
+
+const tabKey = (statuses: ScanStatus[]) => [...statuses].sort().join(',');
+
+export function scanStatusTab(statuses: ScanStatus[]): ScanStatusTab {
+	const key = tabKey(statuses);
+	return SCAN_STATUS_TABS.find((t) => tabKey(t.statuses) === key)?.key ?? 'all';
+}
+
+export function scanStatusTabCount(
+	tab: ScanStatusTab,
+	counts: ScanStatusCounts,
+	total: number
+): number {
+	if (tab === 'all') return total;
+	const statuses = SCAN_STATUS_TABS.find((t) => t.key === tab)?.statuses ?? [];
+	return statuses.reduce((n, s) => n + counts[s], 0);
 }
 
 export function activityStatusIcon(s: ScanActivityStatus): IconComponent {

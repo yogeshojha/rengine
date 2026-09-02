@@ -23,6 +23,9 @@
 	import { stopProp } from '$lib/utilities';
 	import { SCHEDULE_TYPE_BADGE, type ScheduleType } from '$lib/types/scan-schedule';
 	import { isLiveStatus, durationLabel, scanCountPills } from '$lib/utilities/scan-status';
+	import { STAGE_STEP_CLASS, plannedStages, stageProgress } from '$lib/utilities/scan-progress';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import type { ScanRead } from '$lib/types/scan';
 
@@ -67,6 +70,10 @@
 	let noResults = $derived(completed && scan.subdomains_found === 0);
 	let dropAnomaly = $derived(
 		completed && prev != null && prev >= 10 && scan.subdomains_found < prev * 0.3
+	);
+	let run = $derived(live ? liveScans.runFor(scan.id) : undefined);
+	let progress = $derived(
+		live ? stageProgress(scan, run, plannedStages(scan, engineCatalogStore.stages)) : null
 	);
 
 	function open() {
@@ -217,8 +224,27 @@
 	</div>
 
 	<div class="hidden w-[220px] shrink-0 xl:block">
-		{#if live}
-			<span class="text-xs text-muted-foreground">{scan.subdomains_found} subs · scanning…</span>
+		{#if live && progress}
+			<div class="flex items-center gap-2">
+				{#if scan.status === 'running' && progress.steps.length > 0}
+					<div
+						class="flex w-16 shrink-0 gap-[2px]"
+						role="img"
+						aria-label="{progress.done} of {progress.total} stages done"
+					>
+						{#each progress.steps as step (step.name)}
+							<span
+								title={step.title}
+								class="h-1 flex-1 rounded-full {STAGE_STEP_CLASS[step.state]}"
+							></span>
+						{/each}
+					</div>
+				{/if}
+				<span class="truncate text-xs text-muted-foreground">
+					{scan.status === 'pending' ? 'Waiting to start' : progress.label}{#if run?.tool}
+						<span class="font-mono"> · {run.tool}</span>{/if}
+				</span>
+			</div>
 		{:else}
 			<div class="flex flex-wrap gap-1">
 				{#each scanCountPills(scan) as pill (pill.key)}

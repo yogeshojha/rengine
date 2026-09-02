@@ -1,7 +1,5 @@
 import { scansApi } from '$lib/api/scans';
 import type {
-	ScanChanges,
-	ScanChangeWindow,
 	ScanCreate,
 	ScanExportRow,
 	ScanRead,
@@ -55,8 +53,6 @@ function createScansStore() {
 	let targetGroups = $state<ScanTargetGroup[]>([]);
 	let groupByTarget = $state(false);
 	let stats = $state<ScanStats | null>(null);
-	let changes = $state<ScanChanges | null>(null);
-	let changeWindow = $state<ScanChangeWindow>('7d');
 
 	let isLoading = $state(false);
 	let refreshing = $state(false);
@@ -159,24 +155,6 @@ function createScansStore() {
 			.catch(() => {});
 	}
 
-	function fetchChanges() {
-		const projectId = filters.projectId;
-		const targetId = filters.targetId;
-		const win = changeWindow;
-		if (!projectId) return;
-		scansApi
-			.changes(projectId, win, targetId)
-			.then((c) => {
-				if (
-					projectId === filters.projectId &&
-					targetId === filters.targetId &&
-					win === changeWindow
-				)
-					changes = c;
-			})
-			.catch(() => {});
-	}
-
 	function reload() {
 		pagination.currentPage = 1;
 		fetchAll(1, false);
@@ -194,12 +172,6 @@ function createScansStore() {
 		},
 		get stats() {
 			return stats;
-		},
-		get changes() {
-			return changes;
-		},
-		get changeWindow() {
-			return changeWindow;
 		},
 		get isLoading() {
 			return isLoading;
@@ -241,31 +213,22 @@ function createScansStore() {
 				scans = [];
 				targetGroups = [];
 				stats = null;
-				changes = null;
 				hasFetched = false;
 				fetchAll(1, false);
 				fetchStats();
-				fetchChanges();
 			} else if (!hasFetched && !isLoading) {
 				fetchAll(undefined, false);
 				fetchStats();
-				fetchChanges();
 			}
 		},
 
 		refresh() {
 			fetchAll(pagination.currentPage, true);
 			fetchStats();
-			fetchChanges();
 		},
 
 		markStale() {
 			hasFetched = false;
-		},
-
-		setChangeWindow(win: ScanChangeWindow) {
-			changeWindow = win;
-			fetchChanges();
 		},
 
 		toggleGroupByTarget() {
@@ -440,7 +403,6 @@ function createScansStore() {
 			targetGroups = [];
 			groupByTarget = false;
 			stats = null;
-			changes = null;
 			filters = defaultFilters();
 			pagination = { currentPage: 1, pageSize: 20, totalItems: 0, totalPages: 0 };
 			error = null;

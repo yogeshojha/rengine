@@ -8,11 +8,13 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import History from '@lucide/svelte/icons/history';
 	import Layers from '@lucide/svelte/icons/layers';
+	import List from '@lucide/svelte/icons/list';
 
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
 	import { Badge } from '$lib/components/ui/badge';
@@ -20,14 +22,21 @@
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
-	import { SCAN_STATUS_LABEL, SCAN_POLL_MS, isLiveStatus } from '$lib/utilities/scan-status';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
+	import {
+		SCAN_STATUS_TABS,
+		SCAN_POLL_MS,
+		isLiveStatus,
+		scanStatusTab
+	} from '$lib/utilities/scan-status';
 	import { NOW_TICK_MS } from '$lib/constants';
 	import { SCAN_TIME_RANGES } from '$lib/types/scan';
 	import { downloadScans, type ExportFormat } from '$lib/utilities/scan-export';
 	import type { ScanRead } from '$lib/types/scan';
 
-	import ScanInsights from './scan-insights.svelte';
 	import ScanFilters from './scan-filters.svelte';
+	import ScanStatusTabs from './scan-status-tabs.svelte';
 	import ScanViewControls from './scan-view-controls.svelte';
 	import ScanListHeader from './scan-list-header.svelte';
 	import ScanListItem from './scan-list-item.svelte';
@@ -37,12 +46,11 @@
 
 	interface Props {
 		targetId?: string;
-		showSummary?: boolean;
 		onLaunch?: () => void;
 		onRescan?: (scan: ScanRead) => void;
 	}
 
-	let { targetId, showSummary = false, onLaunch, onRescan }: Props = $props();
+	let { targetId, onLaunch, onRescan }: Props = $props();
 
 	let cancelTarget = $state<ScanRead | null>(null);
 	let deleteTarget = $state<ScanRead | null>(null);
@@ -70,12 +78,21 @@
 		};
 	});
 
+	$effect(() => {
+		if (scansStore.hasLive) engineCatalogStore.fetch();
+	});
+
+	$effect(() => {
+		if (liveScans.completedTick > 0) untrack(() => scansStore.refresh());
+	});
+
 	let scans = $derived(scansStore.scans);
 	let groups = $derived(scansStore.targetGroups);
 	let grouped = $derived(scansStore.groupByTarget);
 	let rowCount = $derived(grouped ? groups.length : scans.length);
 	let pagination = $derived(scansStore.pagination);
 	let showPagination = $derived(pagination.pageSize !== -1 && pagination.totalPages > 1);
+	let statusTab = $derived(scanStatusTab(scansStore.filters.statuses));
 
 	let selectedScans = $derived(scans.filter((s) => selectedScanIds.has(s.id)));
 	let selectedLiveCount = $derived(selectedScans.filter((s) => isLiveStatus(s.status)).length);
@@ -108,6 +125,11 @@
 		selectedScanIds.clear();
 	}
 
+	function setView(view: string) {
+		if (!view) return;
+		if ((view === 'targets') !== grouped) scansStore.toggleGroupByTarget();
+	}
+
 	async function confirmBulkDelete() {
 		const ids = [...selectedScanIds];
 		bulkDeleteOpen = false;
@@ -137,13 +159,6 @@
 				remove: () => scansStore.setSearch('')
 			});
 		}
-		for (const s of f.statuses) {
-			chips.push({
-				key: `status-${s}`,
-				label: SCAN_STATUS_LABEL[s],
-				remove: () => scansStore.toggleStatus(s)
-			});
-		}
 		for (const e of f.engines) {
 			chips.push({ key: `engine-${e}`, label: e, remove: () => scansStore.toggleEngine(e) });
 		}
@@ -155,6 +170,13 @@
 				key: 'time',
 				label: SCAN_TIME_RANGES.find((r) => r.key === f.timeRange)?.label ?? 'Time',
 				remove: () => scansStore.setTimeRange('all')
+			});
+		}
+		if (f.scheduled !== null) {
+			chips.push({
+				key: 'scheduled',
+				label: f.scheduled ? 'Scheduled only' : 'Manual only',
+				remove: () => scansStore.setScheduleMode('all')
 			});
 		}
 		return chips;
@@ -203,49 +225,114 @@
 	}
 </script>
 
-<div class="space-y-3">
-	{#if showSummary && !scansStore.isLoading && !scansStore.error}
-		<ScanInsights
-			stats={scansStore.stats}
-			changes={scansStore.changes}
-			changeWindow={scansStore.changeWindow}
-			onWindow={(w) => scansStore.setChangeWindow(w)}
-			onFilterStatus={(s) => scansStore.setStatuses(s)}
-		/>
+{#snippet pager()}
+	{#if showPagination}
+		<Pagination.Root
+			count={pagination.totalItems}
+			perPage={pagination.pageSize}
+			page={pagination.currentPage}
+			onPageChange={(p) => scansStore.setPage(p)}
+		>
+			{#snippet children({ pages, currentPage })}
+				<Pagination.Content>
+					<Pagination.Item><Pagination.Previous /></Pagination.Item>
+					{#each pages as p (p.key)}
+						{#if p.type === 'ellipsis'}
+							<Pagination.Item><Pagination.Ellipsis /></Pagination.Item>
+						{:else}
+							<Pagination.Item>
+								<Pagination.Link page={p} isActive={currentPage === p.value}>
+									{p.value}
+								</Pagination.Link>
+							</Pagination.Item>
+						{/if}
+					{/each}
+					<Pagination.Item><Pagination.Next /></Pagination.Item>
+				</Pagination.Content>
+			{/snippet}
+		</Pagination.Root>
 	{/if}
+{/snippet}
 
-	<Card.Root class="overflow-hidden">
-		<div class="p-4 border-b flex items-center gap-3 flex-wrap">
-			<div class="flex-1 min-w-0">
-				<ScanFilters
-					search={scansStore.filters.search}
-					onSearchChange={(q) => scansStore.setSearch(q)}
-					statuses={scansStore.filters.statuses}
-					statusCounts={scansStore.stats?.by_status}
-					onToggleStatus={(s) => scansStore.toggleStatus(s)}
-					engines={scansStore.filters.engines}
-					engineOptions={scansStore.engineOptions}
-					onToggleEngine={(e) => scansStore.toggleEngine(e)}
-					contexts={scansStore.filters.contexts}
-					contextOptions={scansStore.contextOptions}
-					onToggleContext={(c) => scansStore.toggleContext(c)}
-					timeRange={scansStore.filters.timeRange}
-					onTimeRange={(r) => scansStore.setTimeRange(r)}
-					scheduleMode={scansStore.scheduleMode}
-					onScheduleMode={(m) => scansStore.setScheduleMode(m)}
-				/>
+{#snippet footer(shown: number, noun: string)}
+	<div class="flex items-center justify-between border-t bg-muted/20 px-4 py-3">
+		<div class="flex items-center gap-4">
+			<div class="text-xs text-muted-foreground">
+				Showing {shown} of {pagination.totalItems}
+				{noun}{pagination.totalItems !== 1 ? 's' : ''}
 			</div>
+			<PageSizeSelector
+				pageSize={pagination.pageSize}
+				onPageSizeChange={(size) => scansStore.setPageSize(size)}
+			/>
+		</div>
+		{@render pager()}
+	</div>
+{/snippet}
+
+<Card.Root class="gap-0 overflow-hidden py-0">
+	<div class="border-b px-2">
+		<ScanStatusTabs
+			active={statusTab}
+			counts={scansStore.stats?.by_status ?? null}
+			total={scansStore.stats?.total ?? 0}
+			onChange={(tab) =>
+				scansStore.setStatuses(SCAN_STATUS_TABS.find((t) => t.key === tab)?.statuses ?? [])}
+		/>
+	</div>
+
+	<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+		<div class="min-w-0 flex-1">
+			<ScanFilters
+				search={scansStore.filters.search}
+				onSearchChange={(q) => scansStore.setSearch(q)}
+				engines={scansStore.filters.engines}
+				engineOptions={scansStore.engineOptions}
+				onToggleEngine={(e) => scansStore.toggleEngine(e)}
+				contexts={scansStore.filters.contexts}
+				contextOptions={scansStore.contextOptions}
+				onToggleContext={(c) => scansStore.toggleContext(c)}
+				timeRange={scansStore.filters.timeRange}
+				onTimeRange={(r) => scansStore.setTimeRange(r)}
+				scheduleMode={scansStore.scheduleMode}
+				onScheduleMode={(m) => scansStore.setScheduleMode(m)}
+			/>
+		</div>
+		<div class="flex items-center gap-2">
 			{#if !targetId}
-				<Button
+				<ToggleGroup.Root
+					type="single"
 					variant="outline"
-					size="sm"
-					class="h-9 gap-2 {grouped ? 'border-primary/50 bg-primary/5' : ''}"
-					aria-pressed={grouped}
-					onclick={() => scansStore.toggleGroupByTarget()}
+					value={grouped ? 'targets' : 'runs'}
+					onValueChange={setView}
+					aria-label="View"
 				>
-					<Layers class="h-4 w-4" />
-					<span class="hidden sm:inline">Group by target</span>
-				</Button>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<ToggleGroup.Item {...props} value="runs" aria-label="List scans" class="h-9 px-3">
+									<List class="h-4 w-4" />
+								</ToggleGroup.Item>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Content>List scans</Tooltip.Content>
+					</Tooltip.Root>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<ToggleGroup.Item
+									{...props}
+									value="targets"
+									aria-label="Group by target"
+									class="h-9 px-3"
+								>
+									<Layers class="h-4 w-4" />
+								</ToggleGroup.Item>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Content>Group by target</Tooltip.Content>
+					</Tooltip.Root>
+				</ToggleGroup.Root>
 			{/if}
 			{#if !grouped}
 				<ScanViewControls
@@ -271,223 +358,138 @@
 				</Button>
 			{/if}
 		</div>
+	</div>
 
-		{#if activeChips.length > 0}
-			<div class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b bg-muted/10">
-				{#each activeChips as chip (chip.key)}
-					<Badge variant="outline" class="gap-1 bg-background font-normal">
-						{chip.label}
-						<Tooltip.Root>
-							<Tooltip.Trigger
-								class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								onclick={chip.remove}
-								aria-label={`Remove filter ${chip.label}`}
-							>
-								<X class="h-3 w-3" />
-								<span class="sr-only">Remove filter {chip.label}</span>
-							</Tooltip.Trigger>
-							<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
-						</Tooltip.Root>
-					</Badge>
-				{/each}
-				<button
-					class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					onclick={() => scansStore.clearFilters()}
-					aria-label="Clear all filters"
+	{#if activeChips.length > 0}
+		<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
+			{#each activeChips as chip (chip.key)}
+				<Badge variant="outline" class="gap-1 bg-background font-normal">
+					{chip.label}
+					<Tooltip.Root>
+						<Tooltip.Trigger
+							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+							onclick={chip.remove}
+							aria-label={`Remove filter ${chip.label}`}
+						>
+							<X class="h-3 w-3" />
+							<span class="sr-only">Remove filter {chip.label}</span>
+						</Tooltip.Trigger>
+						<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
+					</Tooltip.Root>
+				</Badge>
+			{/each}
+			<button
+				class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+				onclick={() => scansStore.clearFilters()}
+				aria-label="Clear all filters"
+			>
+				Clear all
+			</button>
+		</div>
+	{/if}
+
+	{#if scansStore.isLoading && rowCount === 0}
+		<div class="divide-y divide-border/50">
+			{#each Array(8) as _, i (i)}
+				<div class="flex items-center gap-3 px-4 py-3">
+					<Skeleton class="h-9 flex-1" />
+					<Skeleton class="hidden h-6 w-[120px] sm:block" />
+					<Skeleton class="hidden h-6 w-[120px] sm:block" />
+				</div>
+			{/each}
+		</div>
+	{:else if scansStore.error && rowCount === 0}
+		<Empty.Root class="py-16">
+			<Empty.Header>
+				<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
+					<TriangleAlert class="size-6 text-destructive" />
+				</Empty.Media>
+				<Empty.Title>Couldn't load scans</Empty.Title>
+				<Empty.Description class="max-w-md">{scansStore.error}</Empty.Description>
+			</Empty.Header>
+			<Empty.Content>
+				<Button variant="outline" class="gap-2" onclick={() => scansStore.refresh()}>
+					<RefreshCw class="h-4 w-4" /> Retry
+				</Button>
+			</Empty.Content>
+		</Empty.Root>
+	{:else if rowCount === 0 && scansStore.hasActiveFilters}
+		<Empty.Root class="py-16">
+			<Empty.Header>
+				<Empty.Title>No scans match your filters</Empty.Title>
+				<Empty.Description>Try widening the search or clearing filters.</Empty.Description>
+			</Empty.Header>
+			<Empty.Content>
+				<Button size="sm" variant="outline" class="gap-2" onclick={() => scansStore.clearFilters()}>
+					<X class="h-4 w-4" /> Clear filters
+				</Button>
+			</Empty.Content>
+		</Empty.Root>
+	{:else if rowCount === 0}
+		<Empty.Root class="py-16">
+			<Empty.Header>
+				<Empty.Media
+					variant="icon"
+					class="h-14 w-14 rounded-2xl bg-muted text-muted-foreground/60 [&_svg:not([class*='size-'])]:size-6"
 				>
-					Clear all
-				</button>
-			</div>
-		{/if}
-
-		{#if scansStore.isLoading && rowCount === 0}
-			<div class="divide-y divide-border/50">
-				{#each Array(8) as _, i (i)}
-					<div class="flex items-center gap-3 px-4 py-3">
-						<Skeleton class="h-9 flex-1" />
-						<Skeleton class="hidden h-6 w-[120px] sm:block" />
-						<Skeleton class="hidden h-6 w-[120px] sm:block" />
-					</div>
-				{/each}
-			</div>
-		{:else if scansStore.error && rowCount === 0}
-			<Empty.Root class="py-16">
-				<Empty.Header>
-					<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
-						<TriangleAlert class="size-6 text-destructive" />
-					</Empty.Media>
-					<Empty.Title>Couldn't load scans</Empty.Title>
-					<Empty.Description class="max-w-md">{scansStore.error}</Empty.Description>
-				</Empty.Header>
+					<History />
+				</Empty.Media>
+				<Empty.Title>No scans yet</Empty.Title>
+				<Empty.Description class="max-w-sm">
+					Launch a scan to start building scan history.
+				</Empty.Description>
+			</Empty.Header>
+			{#if onLaunch}
 				<Empty.Content>
-					<Button variant="outline" class="gap-2" onclick={() => scansStore.refresh()}>
-						<RefreshCw class="h-4 w-4" /> Retry
+					<Button class="gap-2" onclick={onLaunch}>
+						<Plus class="h-4 w-4" /> New scan
 					</Button>
 				</Empty.Content>
-			</Empty.Root>
-		{:else if rowCount === 0 && scansStore.hasActiveFilters}
-			<Empty.Root class="py-16">
-				<Empty.Header>
-					<Empty.Title>No scans match your filters</Empty.Title>
-					<Empty.Description>Try widening the search or clearing filters.</Empty.Description>
-				</Empty.Header>
-				<Empty.Content>
-					<Button
-						size="sm"
-						variant="outline"
-						class="gap-2"
-						onclick={() => scansStore.clearFilters()}
-					>
-						<X class="h-4 w-4" /> Clear filters
-					</Button>
-				</Empty.Content>
-			</Empty.Root>
-		{:else if rowCount === 0}
-			<Empty.Root class="py-16">
-				<Empty.Header>
-					<Empty.Media
-						variant="icon"
-						class="h-14 w-14 rounded-2xl bg-muted text-muted-foreground/60 [&_svg:not([class*='size-'])]:size-6"
-					>
-						<History />
-					</Empty.Media>
-					<Empty.Title>No scans yet</Empty.Title>
-					<Empty.Description class="max-w-sm">
-						Launch a scan to start building scan history.
-					</Empty.Description>
-				</Empty.Header>
-				{#if onLaunch}
-					<Empty.Content>
-						<Button class="gap-2" onclick={onLaunch}>
-							<Plus class="h-4 w-4" /> New scan
-						</Button>
-					</Empty.Content>
-				{/if}
-			</Empty.Root>
-		{:else if grouped}
-			<div class="divide-y divide-border/50">
-				{#each groups as group (group.target_id)}
-					<ScanTargetGroupRow
-						{group}
-						{now}
-						loadScans={(tid) => scansStore.loadTargetScans(tid)}
-						onRescan={(s) => onRescan?.(s)}
-						onCancel={(s) => (cancelTarget = s)}
-						onDelete={(s) => (deleteTarget = s)}
-					/>
-				{/each}
-			</div>
+			{/if}
+		</Empty.Root>
+	{:else if grouped}
+		<div class="divide-y divide-border/50">
+			{#each groups as group (group.target_id)}
+				<ScanTargetGroupRow
+					{group}
+					{now}
+					loadScans={(tid) => scansStore.loadTargetScans(tid)}
+					onRescan={(s) => onRescan?.(s)}
+					onCancel={(s) => (cancelTarget = s)}
+					onDelete={(s) => (deleteTarget = s)}
+				/>
+			{/each}
+		</div>
+		{@render footer(groups.length, 'target')}
+	{:else}
+		<ScanListHeader
+			{targetId}
+			selectable
+			{selectAllChecked}
+			onSelectAll={toggleSelectAll}
+			sortKey={scansStore.filters.sortKey}
+			sortDir={scansStore.filters.sortDir}
+			onSort={(k) => scansStore.setSort(k)}
+		/>
 
-			<div class="px-4 py-3 border-t bg-muted/20 flex items-center justify-between">
-				<div class="flex items-center gap-4">
-					<div class="text-xs text-muted-foreground">
-						Showing {groups.length} of {pagination.totalItems} target{pagination.totalItems !== 1
-							? 's'
-							: ''}
-					</div>
-					<PageSizeSelector
-						pageSize={pagination.pageSize}
-						onPageSizeChange={(size) => scansStore.setPageSize(size)}
-					/>
-				</div>
-
-				{#if showPagination}
-					<Pagination.Root
-						count={pagination.totalItems}
-						perPage={pagination.pageSize}
-						page={pagination.currentPage}
-						onPageChange={(p) => scansStore.setPage(p)}
-					>
-						{#snippet children({ pages, currentPage })}
-							<Pagination.Content>
-								<Pagination.Item><Pagination.Previous /></Pagination.Item>
-								{#each pages as p (p.key)}
-									{#if p.type === 'ellipsis'}
-										<Pagination.Item><Pagination.Ellipsis /></Pagination.Item>
-									{:else}
-										<Pagination.Item>
-											<Pagination.Link page={p} isActive={currentPage === p.value}>
-												{p.value}
-											</Pagination.Link>
-										</Pagination.Item>
-									{/if}
-								{/each}
-								<Pagination.Item><Pagination.Next /></Pagination.Item>
-							</Pagination.Content>
-						{/snippet}
-					</Pagination.Root>
-				{/if}
-			</div>
-		{:else}
-			<ScanListHeader
-				{targetId}
-				selectable
-				{selectAllChecked}
-				onSelectAll={toggleSelectAll}
-				sortKey={scansStore.filters.sortKey}
-				sortDir={scansStore.filters.sortDir}
-				onSort={(k) => scansStore.setSort(k)}
-			/>
-
-			<div class="divide-y divide-border/50">
-				{#each scans as scan (scan.id)}
-					<ScanListItem
-						{scan}
-						{targetId}
-						{now}
-						selectable
-						isSelected={selectedScanIds.has(scan.id)}
-						onSelect={toggleScan}
-						onRescan={(s) => onRescan?.(s)}
-						onCancel={(s) => (cancelTarget = s)}
-						onDelete={(s) => (deleteTarget = s)}
-					/>
-				{/each}
-			</div>
-
-			<div class="px-4 py-3 border-t bg-muted/20 flex items-center justify-between">
-				<div class="flex items-center gap-4">
-					<div class="text-xs text-muted-foreground">
-						Showing {scans.length} of {pagination.totalItems} scan{pagination.totalItems !== 1
-							? 's'
-							: ''}
-					</div>
-					<PageSizeSelector
-						pageSize={pagination.pageSize}
-						onPageSizeChange={(size) => scansStore.setPageSize(size)}
-					/>
-				</div>
-
-				{#if showPagination}
-					<Pagination.Root
-						count={pagination.totalItems}
-						perPage={pagination.pageSize}
-						page={pagination.currentPage}
-						onPageChange={(p) => scansStore.setPage(p)}
-					>
-						{#snippet children({ pages, currentPage })}
-							<Pagination.Content>
-								<Pagination.Item><Pagination.Previous /></Pagination.Item>
-								{#each pages as p (p.key)}
-									{#if p.type === 'ellipsis'}
-										<Pagination.Item><Pagination.Ellipsis /></Pagination.Item>
-									{:else}
-										<Pagination.Item>
-											<Pagination.Link page={p} isActive={currentPage === p.value}>
-												{p.value}
-											</Pagination.Link>
-										</Pagination.Item>
-									{/if}
-								{/each}
-								<Pagination.Item><Pagination.Next /></Pagination.Item>
-							</Pagination.Content>
-						{/snippet}
-					</Pagination.Root>
-				{/if}
-			</div>
-		{/if}
-	</Card.Root>
-</div>
+		<div class="divide-y divide-border/50">
+			{#each scans as scan (scan.id)}
+				<ScanListItem
+					{scan}
+					{targetId}
+					{now}
+					selectable
+					isSelected={selectedScanIds.has(scan.id)}
+					onSelect={toggleScan}
+					onRescan={(s) => onRescan?.(s)}
+					onCancel={(s) => (cancelTarget = s)}
+					onDelete={(s) => (deleteTarget = s)}
+				/>
+			{/each}
+		</div>
+		{@render footer(scans.length, 'scan')}
+	{/if}
+</Card.Root>
 
 <ConfirmDialog
 	open={!!cancelTarget}
