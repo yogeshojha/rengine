@@ -18,7 +18,7 @@
 	import Inbox from '@lucide/svelte/icons/inbox';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import NotificationListItem from '$lib/components/layout/notification-list-item.svelte';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import {
@@ -70,6 +70,11 @@
 		if (open) tab = notificationStore.unreadCount > 0 ? 'unread' : 'all';
 	}
 
+	beforeNavigate(() => {
+		popoverOpen = false;
+		modalOpen = false;
+	});
+
 	const navigateToUrl = (url: string, openNewTab?: boolean) => {
 		if (openNewTab) {
 			window.open(url, '_blank', 'noopener,noreferrer');
@@ -89,12 +94,11 @@
 
 		notificationStore.markAsRead(notificationId);
 
+		popoverOpen = false;
+		modalOpen = false;
+
 		const metadata = notification.notification_metadata;
-		if (metadata?.url) {
-			popoverOpen = false;
-			modalOpen = false;
-			navigateToUrl(metadata.url, metadata.open_new_tab);
-		}
+		if (metadata?.url) navigateToUrl(metadata.url, metadata.open_new_tab);
 	};
 
 	const handleActionClick = (notificationId: number, event: Event) => {
