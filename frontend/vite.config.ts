@@ -30,7 +30,14 @@ export default defineConfig({
 		proxy: {
 			'/api': {
 				target: 'http://api:8000',
-				changeOrigin: true
+				changeOrigin: true,
+				configure: (proxy) => {
+					proxy.on('proxyRes', (proxyRes, _req, res) => {
+						if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
+							setImmediate(() => res.flushHeaders());
+						}
+					});
+				}
 			}
 		}
 	}

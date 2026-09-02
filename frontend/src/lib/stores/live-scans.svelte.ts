@@ -2,7 +2,13 @@ import { SvelteMap } from 'svelte/reactivity';
 import { scansApi } from '$lib/api/scans';
 import { sseStore } from '$lib/stores/sse.svelte';
 import { SCAN_EVENT_KIND, SSEChannel, SSEEventType, type ScanEvent } from '$lib/types/sse';
-import { SCAN_STATUSES, type ScanRead, type ScanStats } from '$lib/types/scan';
+import {
+	ACTIVITY_TERMINAL_STATUSES,
+	SCAN_COUNT_COLUMNS,
+	SCAN_STATUSES,
+	type ScanActivityRead,
+	type ScanRead
+} from '$lib/types/scan';
 import { isLiveStatus } from '$lib/utilities/scan-status';
 
 const LIVE_STATUSES = SCAN_STATUSES.filter(isLiveStatus);
@@ -10,19 +16,42 @@ const REFRESH_DEBOUNCE_MS = 400;
 const FALLBACK_POLL_MS = 30_000;
 const LIVE_PAGE_SIZE = 25;
 
-export interface LiveStage {
-	stage: string;
-	title: string;
+export interface LiveRun {
+	stage: { name: string; title: string } | null;
 	message: string | null;
+	tool: string | null;
+	commandId: string | null;
+	done: string[];
+	failed: string[];
+}
+
+const EMPTY_RUN: LiveRun = {
+	stage: null,
+	message: null,
+	tool: null,
+	commandId: null,
+	done: [],
+	failed: []
+};
+
+function runFromActivities(activities: ScanActivityRead[]): LiveRun {
+	const terminal = activities.filter((a) => ACTIVITY_TERMINAL_STATUSES.includes(a.status));
+	const running = activities.filter((a) => a.status === 'running').at(-1);
+	return {
+		...EMPTY_RUN,
+		stage: running ? { name: running.name, title: running.title } : null,
+		done: [...new Set(terminal.map((a) => a.name))],
+		failed: terminal.filter((a) => a.status === 'failed').map((a) => a.name)
+	};
 }
 
 function createLiveScansStore() {
 	let projectId = $state<string | undefined>(undefined);
 	let scans = $state<ScanRead[]>([]);
-	let stats = $state<ScanStats | null>(null);
 	let hasFetched = $state(false);
 	let completedTick = $state(0);
-	const stages = new SvelteMap<string, LiveStage>();
+	const runs = new SvelteMap<string, LiveRun>();
+	const previousDurations = new SvelteMap<string, number | null>();
 
 	let sseUnsub: (() => void) | null = null;
 	let refreshTimer: ReturnType<typeof setTimeout> | undefined;
@@ -42,20 +71,16 @@ function createLiveScansStore() {
 		if (!pid) return;
 		const mySeq = ++seq;
 		try {
-			const [live, s] = await Promise.all([
-				scansApi.list(pid, {
-					status: LIVE_STATUSES,
-					size: LIVE_PAGE_SIZE,
-					sort_by: 'started',
-					sort_dir: 'desc'
-				}),
-				scansApi.stats(pid)
-			]);
+			const live = await scansApi.list(pid, {
+				status: LIVE_STATUSES,
+				size: LIVE_PAGE_SIZE,
+				sort_by: 'started',
+				sort_dir: 'desc'
+			});
 			if (mySeq !== seq || pid !== projectId) return;
 			scans = live.items;
-			stats = s;
 			hasFetched = true;
-			void seedStages(pid, mySeq);
+			void seedRuns(pid, mySeq);
 		} catch (e) {
 			console.error('[liveScans]', e);
 		} finally {
@@ -63,24 +88,50 @@ function createLiveScansStore() {
 		}
 	}
 
-	async function seedStages(pid: string, mySeq: number) {
-		const missing = scans.filter((sc) => sc.status === 'running' && !stages.has(sc.id));
-		await Promise.all(
-			missing.map(async (sc) => {
+	async function seedRuns(pid: string, mySeq: number) {
+		const missingRuns = scans.filter((sc) => sc.status === 'running' && !runs.has(sc.id));
+		const missingPrev = scans.filter((sc) => !previousDurations.has(sc.id));
+		await Promise.all([
+			...missingRuns.map(async (sc) => {
 				try {
 					const activities = await scansApi.activities(sc.id, pid);
-					if (mySeq !== seq || pid !== projectId || stages.has(sc.id)) return;
-					const running = activities.filter((a) => a.status === 'running').at(-1);
-					if (running)
-						stages.set(sc.id, { stage: running.name, title: running.title, message: null });
+					if (mySeq !== seq || pid !== projectId || runs.has(sc.id)) return;
+					runs.set(sc.id, runFromActivities(activities));
+				} catch {}
+			}),
+			...missingPrev.map(async (sc) => {
+				try {
+					const prev = await scansApi.list(pid, {
+						target_id: sc.target_id,
+						status: ['completed'],
+						size: 1,
+						sort_by: 'started',
+						sort_dir: 'desc'
+					});
+					if (mySeq !== seq || pid !== projectId) return;
+					previousDurations.set(sc.id, prev.items[0]?.duration_seconds ?? null);
 				} catch {}
 			})
-		);
+		]);
 	}
 
 	function scheduleRefresh() {
 		clearTimeout(refreshTimer);
 		refreshTimer = setTimeout(() => void load(), REFRESH_DEBOUNCE_MS);
+	}
+
+	function patch(scanId: string, update: (run: LiveRun) => Partial<LiveRun>) {
+		const current = runs.get(scanId) ?? EMPTY_RUN;
+		runs.set(scanId, { ...current, ...update(current) });
+	}
+
+	function applyCounts(scanId: string, counts: Record<string, number> | undefined) {
+		const scan = scans.find((s) => s.id === scanId);
+		if (!scan || !counts) return;
+		for (const [key, column] of Object.entries(SCAN_COUNT_COLUMNS)) {
+			const value = counts[key];
+			if (typeof value === 'number') scan[column] = value;
+		}
 	}
 
 	function onEvent(e: ScanEvent) {
@@ -91,22 +142,44 @@ function createLiveScansStore() {
 			case SCAN_EVENT_KIND.SCAN_COMPLETED:
 			case SCAN_EVENT_KIND.SCAN_FAILED:
 			case SCAN_EVENT_KIND.SCAN_CANCELLED:
-				stages.delete(e.scan_id);
+				runs.delete(e.scan_id);
+				previousDurations.delete(e.scan_id);
 				completedTick++;
 				scheduleRefresh();
 				break;
 			case SCAN_EVENT_KIND.STAGE_STARTED:
-				stages.set(e.scan_id, {
-					stage: e.stage ?? '',
-					title: e.title ?? e.stage ?? '',
-					message: null
-				});
+				patch(e.scan_id, () => ({
+					stage: { name: e.stage ?? '', title: e.title ?? e.stage ?? '' },
+					message: null,
+					tool: null,
+					commandId: null
+				}));
 				break;
-			case SCAN_EVENT_KIND.STAGE_PROGRESS: {
-				const current = stages.get(e.scan_id);
-				if (current) stages.set(e.scan_id, { ...current, message: e.message ?? null });
+			case SCAN_EVENT_KIND.STAGE_PROGRESS:
+				patch(e.scan_id, () => ({ message: e.message ?? null }));
+				break;
+			case SCAN_EVENT_KIND.STAGE_COMPLETED: {
+				const name = e.stage ?? '';
+				patch(e.scan_id, (run) => ({
+					stage: run.stage?.name === name ? null : run.stage,
+					tool: null,
+					commandId: null,
+					done: run.done.includes(name) ? run.done : [...run.done, name],
+					failed:
+						e.status === 'failed' && !run.failed.includes(name) ? [...run.failed, name] : run.failed
+				}));
+				applyCounts(e.scan_id, e.counts);
+				scheduleRefresh();
 				break;
 			}
+			case SCAN_EVENT_KIND.COMMAND_STARTED:
+				patch(e.scan_id, () => ({ tool: e.tool ?? null, commandId: e.command_id ?? null }));
+				break;
+			case SCAN_EVENT_KIND.COMMAND_FINISHED:
+				patch(e.scan_id, (run) =>
+					run.commandId === e.command_id ? { tool: null, commandId: null } : {}
+				);
+				break;
 		}
 	}
 
@@ -118,17 +191,14 @@ function createLiveScansStore() {
 		seq++;
 		projectId = undefined;
 		scans = [];
-		stats = null;
 		hasFetched = false;
-		stages.clear();
+		runs.clear();
+		previousDurations.clear();
 	}
 
 	return {
 		get scans() {
 			return scans;
-		},
-		get stats() {
-			return stats;
 		},
 		get hasFetched() {
 			return hasFetched;
@@ -143,8 +213,16 @@ function createLiveScansStore() {
 			return completedTick;
 		},
 
-		stageFor(scanId: string): LiveStage | undefined {
-			return stages.get(scanId);
+		runFor(scanId: string): LiveRun | undefined {
+			return runs.get(scanId);
+		},
+
+		isLive(scanId: string): boolean {
+			return scans.some((s) => s.id === scanId);
+		},
+
+		previousDuration(scanId: string): number | null {
+			return previousDurations.get(scanId) ?? null;
 		},
 
 		init(pid: string) {
@@ -160,6 +238,18 @@ function createLiveScansStore() {
 
 		refresh() {
 			scheduleRefresh();
+		},
+
+		async cancel(scan: ScanRead): Promise<boolean> {
+			const pid = projectId;
+			if (!pid) return false;
+			try {
+				await scansApi.cancel(scan.id, pid);
+				scheduleRefresh();
+				return true;
+			} catch {
+				return false;
+			}
 		},
 
 		clear() {

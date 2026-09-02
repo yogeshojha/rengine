@@ -75,17 +75,19 @@ def run_scan(self, scan_id: str) -> dict:
             events = ScanEventPublisher(
                 redis_url, scan_id=scan_id, project_id=str(scan.project_id)
             )
+            target_value = (scan.execution_config or {}).get("target_value", "")
             ActivityLogService(session).log(
                 event=ActivityEvent.SCAN_STARTED,
-                title="Scan started",
+                title=f"Scan started · {target_value}",
                 description=scan.engine_name,
                 level=ActivityLevel.INFO,
                 project_id=scan.project_id,
                 target_id=scan.target_id,
+                scan_id=scan.id,
+                target_value=target_value,
             )
             session.commit()
             events.scan_started(status=scan.status, engine=scan.engine_name)
-            target_value = (scan.execution_config or {}).get("target_value", "")
             _send_notif(
                 redis_url,
                 session,

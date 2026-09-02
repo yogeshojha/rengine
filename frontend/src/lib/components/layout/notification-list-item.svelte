@@ -5,9 +5,17 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import { relativeTime } from '$lib/utilities/dates.js';
-	import { getSeverityIcon, getTypeIcon } from '$lib/utilities/notification-icons';
+	import { getTypeIcon } from '$lib/utilities/notification-icons';
 	import { NOTIFICATION_TYPE_LABELS, type Notification } from '$lib/types/notification';
+	import type { MessageLevel } from '$lib/types/message-level';
 	import { cn } from '$lib/utils.js';
+
+	const TILE_CLASS: Record<MessageLevel, string> = {
+		info: 'bg-muted text-muted-foreground',
+		success: 'bg-muted text-muted-foreground',
+		warning: 'bg-warning/10 text-warning',
+		error: 'bg-destructive/10 text-destructive'
+	};
 
 	interface Props {
 		notification: Notification;
@@ -29,7 +37,6 @@
 
 	const full = $derived(variant === 'full');
 	const unread = $derived(!notification.is_read);
-	const severity = $derived(getSeverityIcon(notification.severity));
 	const TypeIcon = $derived(getTypeIcon(notification.type));
 	const meta = $derived(notification.notification_metadata);
 
@@ -49,22 +56,14 @@
 	class={cn(
 		'group relative flex cursor-pointer gap-3 text-left transition-colors outline-none hover:bg-accent/50 focus-visible:bg-accent/60',
 		full ? 'rounded-lg border px-4 py-3' : 'px-4 py-2.5',
-		!unread && 'opacity-70 hover:opacity-100 focus-visible:opacity-100'
+		unread ? 'bg-primary/[0.03]' : 'opacity-70 hover:opacity-100 focus-visible:opacity-100'
 	)}
 >
-	<span
-		class={cn(
-			'absolute top-2.5 bottom-2.5 w-0.5 rounded-full',
-			full ? 'left-1.5' : 'left-0',
-			unread ? severity.bar : 'bg-transparent'
-		)}
-	></span>
-
 	<div
 		class={cn(
-			'mt-0.5 flex shrink-0 items-center justify-center rounded-md bg-muted',
+			'mt-0.5 flex shrink-0 items-center justify-center rounded-md',
 			full ? 'size-8' : 'size-7',
-			severity.class
+			TILE_CLASS[notification.severity]
 		)}
 	>
 		<TypeIcon class={full ? 'size-4' : 'size-3.5'} />

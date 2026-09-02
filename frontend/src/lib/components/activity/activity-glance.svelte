@@ -40,9 +40,18 @@
 	</span>
 
 	{#if liveScans.hasLive}
-		<span class="hidden items-center gap-1.5 text-info sm:flex">
-			<Spinner class="h-3 w-3" />
-			<span class="font-medium tabular-nums">{liveScans.count} running</span>
+		{@const solo = liveScans.count === 1 ? liveScans.scans[0] : null}
+		{@const soloStage = solo ? liveScans.runFor(solo.id)?.stage?.title : null}
+		<span class="hidden min-w-0 items-center gap-1.5 text-info sm:flex">
+			<Spinner class="h-3 w-3 shrink-0" />
+			{#if solo}
+				<span class="max-w-[140px] truncate font-mono text-foreground/80"
+					>{solo.execution_config.target_value}</span
+				>
+				<span class="truncate font-medium">{soloStage ?? 'running'}</span>
+			{:else}
+				<span class="font-medium tabular-nums">{liveScans.count} running</span>
+			{/if}
 		</span>
 		<Spinner class="h-3.5 w-3.5 text-info sm:hidden" />
 	{:else if latest}

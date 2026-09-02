@@ -9,7 +9,6 @@
 	import NavMain, { type NavGroup } from './nav-main.svelte';
 	import NavUser from './nav-user.svelte';
 	import ProjectSwitcher from './project-switcher.svelte';
-	import ScanNudge from './scan-nudge.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -68,7 +67,6 @@
 		<NavMain groups={navGroups} />
 	</Sidebar.Content>
 	<Sidebar.Footer>
-		<ScanNudge />
 		<NavUser user={userData} />
 	</Sidebar.Footer>
 	<Sidebar.Rail />

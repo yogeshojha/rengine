@@ -3,15 +3,19 @@
 import traceback as tb_mod
 import uuid
 from collections.abc import Callable
+from typing import NamedTuple
 
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.database import get_sync_session
+from shared.definitions.notifications import stage_count_summary
+from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import ScanActivityStatus, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
+from shared.services.activity_log import ActivityLogService
 from shared.services.orchestrator.aggregate import COUNT_TO_COLUMN
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.orchestrator.tracking import (
@@ -95,6 +99,12 @@ def run_stage(
         redis_url, scan_id=str(scan.id), project_id=str(scan.project_id)
     )
     activity_svc = ScanActivityService(session)
+    ids = _ScanIds(
+        scan.id,
+        scan.project_id,
+        scan.target_id,
+        (scan.execution_config or {}).get("target_value", ""),
+    )
     _register_task_id(session, scan, celery_task_id)
     _supersede_orphan_activities(session, scan, spec.name)
 
@@ -154,7 +164,9 @@ def run_stage(
     try:
         result = engine.run()
     except StageAbortedError:
-        _fail_stage(activity_svc, events, spec, activity.id, ScanActivityStatus.ABORTED)
+        _fail_stage(
+            activity_svc, events, spec, activity.id, ScanActivityStatus.ABORTED, ids
+        )
         return
     except Exception as exc:
         logger.error("stage %s failed for scan %s: %s", spec.name, scan.id, exc)
@@ -164,6 +176,7 @@ def run_stage(
             spec,
             activity.id,
             ScanActivityStatus.FAILED,
+            ids,
             error=str(exc),
             traceback=tb_mod.format_exc(),
         )
@@ -171,6 +184,13 @@ def run_stage(
 
     activity_svc.finish(
         activity, status=ScanActivityStatus.SUCCESS, result=result.counts
+    )
+    _log_stage(
+        session,
+        spec,
+        ids,
+        ActivityEvent.SCAN_STAGE_COMPLETED,
+        summary=stage_count_summary(result.counts),
     )
     scan = session.get(Scan, scan.id)
     if scan is not None:
@@ -190,6 +210,7 @@ def _fail_stage(
     spec: StageSpec,
     activity_id: uuid.UUID,
     status: ScanActivityStatus,
+    ids: "_ScanIds",
     *,
     error: str | None = None,
     traceback: str | None = None,
@@ -197,7 +218,45 @@ def _fail_stage(
     activity_svc.session.rollback()
     activity = activity_svc.session.get(ScanActivity, activity_id)
     activity_svc.finish(activity, status=status, error=error, traceback=traceback)
+    if status == ScanActivityStatus.FAILED:
+        _log_stage(
+            activity_svc.session,
+            spec,
+            ids,
+            ActivityEvent.SCAN_STAGE_FAILED,
+            error=error,
+        )
     _emit_stage_done(events, spec, activity, status.value)
+
+
+class _ScanIds(NamedTuple):
+    scan_id: uuid.UUID
+    project_id: uuid.UUID
+    target_id: uuid.UUID
+    target_value: str
+
+
+def _log_stage(
+    session: Session,
+    spec: StageSpec,
+    ids: _ScanIds,
+    event: ActivityEvent,
+    *,
+    summary: str | None = None,
+    error: str | None = None,
+) -> None:
+    failed = event == ActivityEvent.SCAN_STAGE_FAILED
+    ActivityLogService(session).log(
+        event=event,
+        title=spec.title,
+        description=(error or "stage failed") if failed else summary,
+        level=ActivityLevel.ERROR if failed else ActivityLevel.INFO,
+        project_id=ids.project_id,
+        target_id=ids.target_id,
+        scan_id=ids.scan_id,
+        target_value=ids.target_value or None,
+    )
+    session.commit()
 
 
 def _emit_stage_done(

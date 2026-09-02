@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { activityScope } from '$lib/stores/activity-scope.svelte';
@@ -10,11 +11,17 @@
 		type ActivityFilter
 	} from '$lib/stores/activity-feed.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { SSEChannel, SSEEventType } from '$lib/types/sse';
 	import { ACTIVITY_TICK_MS, NOW_TICK_MS } from '$lib/constants';
+	import { ROUTES } from '$lib/config/routes';
 	import type { ActivityLog } from '$lib/types/activity';
+	import type { ScanRead } from '$lib/types/scan';
 	import ActivityTimeline from './activity-timeline.svelte';
-	import LiveScanRow from '$lib/components/scans/live-scan-row.svelte';
+	import LiveScanCard from '$lib/components/scans/live-scan-card.svelte';
+	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
@@ -22,14 +29,22 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
+	import { Toggle } from '$lib/components/ui/toggle/index.js';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Layers from '@lucide/svelte/icons/layers';
+	import Pin from '@lucide/svelte/icons/pin';
+	import PinOff from '@lucide/svelte/icons/pin-off';
 	import Search from '@lucide/svelte/icons/search';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import X from '@lucide/svelte/icons/x';
 
 	const PANEL_W = 360;
+	const MAX_CARDS = 4;
+	const sidebar = useSidebar();
 
 	let projectId = $derived(projectsStore.activeProject?.id);
 	let panelEl = $state<HTMLElement | null>(null);
@@ -37,8 +52,28 @@
 	let scrollEl = $state<HTMLDivElement | null>(null);
 	let scrollTop = $state(0);
 
+	let docked = $derived(activityFeed.pinned && !sidebar.isMobile);
+	let scopedToTarget = $derived(!!activityFeed.targetId && activityFeed.scopeMode === 'current');
+	let grouping = $derived(scopedToTarget ? 'timeline' : activityFeed.grouping);
 	let showJump = $derived(scrollTop > 80 && activityFeed.freshIds.size > 0);
 	let runningOpen = $state(true);
+	let visibleScans = $derived(liveScans.scans.slice(0, MAX_CARDS));
+	let overflow = $derived(liveScans.count - MAX_CARDS);
+
+	let cancelTarget = $state<ScanRead | null>(null);
+	let cancelling = $state(false);
+	let rescanOpen = $state(false);
+	let rescanTargetId = $state<string | undefined>(undefined);
+
+	function rescan(targetId: string) {
+		rescanTargetId = targetId;
+		rescanOpen = true;
+	}
+	function onRescanClose() {
+		rescanOpen = false;
+		rescanTargetId = undefined;
+		liveScans.refresh();
+	}
 
 	let connection = $derived.by((): { label: string; variant: BadgeVariant; dot: string } => {
 		if (sseStore.isConnected) return { label: 'Live', variant: 'success', dot: 'bg-success' };
@@ -54,6 +89,10 @@
 		if (!liveScans.hasLive || !activityFeed.open) return;
 		const t = setInterval(() => (now = Date.now()), NOW_TICK_MS);
 		return () => clearInterval(t);
+	});
+
+	$effect(() => {
+		if (liveScans.hasLive) engineCatalogStore.fetch();
 	});
 
 	$effect(() => {
@@ -110,35 +149,51 @@
 	});
 
 	function onWindowPointerDown(e: PointerEvent) {
-		if (!activityFeed.open) return;
+		if (!activityFeed.open || docked) return;
 		const t = e.target as HTMLElement;
 		if (panelEl?.contains(t)) return;
 		if (t.closest('[data-activity-glance]')) return;
+		if (t.closest('[data-slot=alert-dialog-content]')) return;
+		if (t.closest('[data-slot=dialog-content]')) return;
 		activityFeed.setOpen(false);
 	}
 
 	function jumpToLive() {
 		scrollEl?.scrollTo({ top: 0, behavior: 'smooth' });
 	}
+
+	async function confirmCancel() {
+		const scan = cancelTarget;
+		if (!scan) return;
+		cancelling = true;
+		const ok = await liveScans.cancel(scan);
+		cancelling = false;
+		cancelTarget = null;
+		if (ok) toast.success(`Cancelling scan of ${scan.execution_config.target_value}`);
+		else toast.error("Couldn't cancel scan — try again");
+	}
 </script>
 
 <svelte:window
 	onkeydown={(e) => {
-		if (e.key === 'Escape' && activityFeed.open) activityFeed.setOpen(false);
+		if (e.key === 'Escape' && activityFeed.open && !docked) activityFeed.setOpen(false);
 	}}
 	onpointerdown={onWindowPointerDown}
 />
 
 <aside
 	bind:this={panelEl}
-	class="absolute inset-y-0 right-0 z-30 flex flex-col border-l border-border bg-background shadow-2xl transition-transform duration-300 ease-out {activityFeed.open
-		? 'translate-x-0'
-		: 'translate-x-full'}"
-	style="width: {PANEL_W}px"
+	aria-label="Activity"
+	aria-hidden={!activityFeed.open}
+	inert={!activityFeed.open}
+	class="flex flex-col border-l border-border bg-background {docked
+		? 'relative z-10 shrink-0'
+		: `absolute inset-y-0 right-0 z-30 shadow-2xl transition-transform duration-300 ease-out ${activityFeed.open ? 'translate-x-0' : 'translate-x-full'}`}"
+	style="width: min({PANEL_W}px, 100vw)"
 >
 	<div class="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5">
 		<div class="flex min-w-0 items-center gap-2">
-			<span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+			<span class="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 				Activity
 			</span>
 
@@ -167,33 +222,112 @@
 			{/if}
 		</div>
 
-		<Button
-			variant="ghost"
-			size="icon-sm"
-			onclick={() => activityFeed.setOpen(false)}
-			title="Close"
-			class="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
-		>
-			<X class="h-3.5 w-3.5" />
-		</Button>
+		<div class="flex shrink-0 items-center">
+			{#if !sidebar.isMobile}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon-sm"
+								onclick={() => activityFeed.setPinned(!activityFeed.pinned)}
+								aria-label={activityFeed.pinned ? 'Unpin panel' : 'Pin panel'}
+								aria-pressed={activityFeed.pinned}
+								class="size-6 {activityFeed.pinned
+									? 'text-foreground'
+									: 'text-muted-foreground hover:text-foreground'}"
+							>
+								{#if activityFeed.pinned}
+									<PinOff class="size-3.5" />
+								{:else}
+									<Pin class="size-3.5" />
+								{/if}
+							</Button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content side="bottom">
+						{activityFeed.pinned ? 'Unpin' : 'Pin open beside the page'}
+					</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onclick={() => activityFeed.setOpen(false)}
+				aria-label="Close"
+				class="size-6 text-muted-foreground hover:text-foreground"
+			>
+				<X class="size-3.5" />
+			</Button>
+		</div>
 	</div>
+
+	{#if liveScans.hasLive}
+		<Collapsible.Root bind:open={runningOpen} class="shrink-0 px-3 pb-2">
+			<Collapsible.Trigger
+				class="flex w-full items-center justify-between rounded-md px-1 py-1 text-[10px] font-semibold tracking-[0.08em] text-info uppercase transition-colors hover:bg-info/10"
+			>
+				<span class="flex items-center gap-1.5">
+					<span class="relative flex size-1.5">
+						<span
+							class="absolute inline-flex size-full animate-ping rounded-full bg-info opacity-75"
+						></span>
+						<span class="relative inline-flex size-1.5 rounded-full bg-info"></span>
+					</span>
+					Running now
+					<span class="font-mono tabular-nums opacity-70">{liveScans.count}</span>
+				</span>
+				<ChevronDown
+					class="size-3 transition-transform duration-150 {runningOpen ? '' : '-rotate-90'}"
+				/>
+			</Collapsible.Trigger>
+			<Collapsible.Content>
+				<div class="mt-1 space-y-1.5">
+					{#each visibleScans as scan (scan.id)}
+						<LiveScanCard
+							{scan}
+							run={liveScans.runFor(scan.id)}
+							catalog={engineCatalogStore.stages}
+							previousDuration={liveScans.previousDuration(scan.id)}
+							{now}
+							onNavigate={() => {
+								if (!docked) activityFeed.setOpen(false);
+							}}
+							onCancel={(s) => (cancelTarget = s)}
+						/>
+					{/each}
+					{#if overflow > 0}
+						<a
+							href={ROUTES.scans}
+							class="inline-flex items-center gap-1 px-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+						>
+							+{overflow} more running
+							<ArrowRight class="size-3" />
+						</a>
+					{/if}
+				</div>
+			</Collapsible.Content>
+		</Collapsible.Root>
+	{/if}
 
 	<div class="px-3 pb-2">
 		<div class="relative">
-			<Search class="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+			<Search class="absolute top-1/2 left-2 size-3 -translate-y-1/2 text-muted-foreground" />
 			<Input
 				value={activityFeed.search}
 				oninput={(e) => activityFeed.setSearch(e.currentTarget.value)}
 				placeholder="Search activity…"
-				class="h-7 border-border bg-muted/30 pl-7 pr-7 text-[11px] transition-colors focus:border-primary/40 focus:bg-background"
+				class="h-7 border-border bg-muted/30 pr-7 pl-7 text-[11px] transition-colors focus:border-primary/40 focus:bg-background"
 			/>
 			{#if activityFeed.search}
 				<button
 					type="button"
+					aria-label="Clear search"
 					onclick={() => activityFeed.setSearch('')}
-					class="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+					class="absolute top-1/2 right-1.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
 				>
-					<X class="h-3 w-3" />
+					<X class="size-3" />
 				</button>
 			{/if}
 		</div>
@@ -205,6 +339,7 @@
 			{#if f === 'all' || n > 0}
 				<button
 					type="button"
+					aria-pressed={activityFeed.filter === f}
 					class="rounded-full px-2.5 py-[3px] text-[10px] font-medium transition-colors {activityFeed.filter ===
 					f
 						? 'bg-accent text-foreground ring-1 ring-border'
@@ -212,56 +347,53 @@
 					onclick={() => activityFeed.setFilter(f as ActivityFilter)}
 				>
 					{FILTER_LABELS[f]}
-					<span class="ml-0.5 font-mono text-[9px] opacity-60">{n}</span>
+					<span class="ml-0.5 font-mono text-[9px] tabular-nums opacity-60">{n}</span>
 				</button>
 			{/if}
 		{/each}
 
-		<div class="ml-auto">
+		<div class="ml-auto flex items-center gap-0.5">
+			{#if !scopedToTarget}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<Toggle
+								{...props}
+								size="sm"
+								pressed={activityFeed.grouping === 'target'}
+								onPressedChange={(v) => activityFeed.setGrouping(v ? 'target' : 'timeline')}
+								aria-label="Group by target"
+								class="h-6 min-w-6 rounded-full px-1.5 text-muted-foreground data-[state=on]:text-foreground"
+							>
+								<Layers class="size-3" />
+							</Toggle>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content side="bottom">
+						{activityFeed.grouping === 'target' ? 'Grouped by target' : 'Group by target'}
+					</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
 			<button
 				type="button"
+				aria-pressed={activityFeed.errorsOnly}
 				title="Errors only"
 				onclick={() => activityFeed.toggleErrorsOnly()}
 				class="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[10px] font-medium transition-colors {activityFeed.errorsOnly
 					? 'bg-destructive/10 text-destructive ring-1 ring-destructive/40'
-					: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}"
+					: activityFeed.errorCount > 0
+						? 'text-destructive/80 hover:bg-destructive/10 hover:text-destructive'
+						: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}"
 			>
-				<ShieldAlert class="h-3 w-3" />
+				<ShieldAlert class="size-3" />
 				Errors
+				{#if activityFeed.errorCount > 0}
+					<span class="font-mono text-[9px] tabular-nums opacity-80">{activityFeed.errorCount}</span
+					>
+				{/if}
 			</button>
 		</div>
 	</div>
-
-	{#if liveScans.hasLive}
-		<Collapsible.Root bind:open={runningOpen} class="mx-3 mb-2 shrink-0">
-			<div class="overflow-hidden rounded-md border border-info/20 bg-info/5">
-				<Collapsible.Trigger
-					class="flex w-full items-center justify-between px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-info transition-colors hover:bg-info/10"
-				>
-					<span class="flex items-center gap-1.5">
-						<Spinner class="size-3" />
-						Running now
-						<span class="font-mono tabular-nums opacity-70">{liveScans.count}</span>
-					</span>
-					<ChevronDown
-						class="size-3 transition-transform duration-150 {runningOpen ? '' : '-rotate-90'}"
-					/>
-				</Collapsible.Trigger>
-				<Collapsible.Content>
-					<div class="space-y-px px-1 pb-1">
-						{#each liveScans.scans as scan (scan.id)}
-							<LiveScanRow
-								{scan}
-								stage={liveScans.stageFor(scan.id)}
-								{now}
-								onNavigate={() => activityFeed.setOpen(false)}
-							/>
-						{/each}
-					</div>
-				</Collapsible.Content>
-			</div>
-		</Collapsible.Root>
-	{/if}
 
 	<Separator />
 
@@ -270,27 +402,30 @@
 			<button
 				type="button"
 				onclick={jumpToLive}
-				class="absolute left-1/2 top-2 z-20 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-primary/20 bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105"
+				class="absolute top-2 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-primary/20 bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105"
 			>
-				<ArrowUp class="h-3 w-3" />
+				<ArrowUp class="size-3" />
 				{activityFeed.freshIds.size} new
 			</button>
 		{/if}
 
 		<ScrollArea class="h-full" bind:viewportRef={scrollEl}>
-			<div class="px-3 pb-4 pt-2">
+			<div class="px-3 pt-2 pb-4">
 				<ActivityTimeline
 					dayGroups={activityFeed.days}
+					targetGroups={activityFeed.targetGroups}
+					{grouping}
 					newEventIds={activityFeed.freshIds}
 					runningIds={activityFeed.runningIds}
 					tick={activityFeed.tick}
 					isLoading={activityFeed.initialLoad}
 					isEmpty={!activityFeed.initialLoad && activityFeed.filtered.length === 0}
+					onRescan={rescan}
 				/>
 
 				{#if activityFeed.loading && !activityFeed.initialLoad}
 					<div class="flex justify-center py-3">
-						<Spinner class="h-3.5 w-3.5 text-muted-foreground" />
+						<Spinner class="size-3.5 text-muted-foreground" />
 					</div>
 				{/if}
 
@@ -305,3 +440,20 @@
 		></div>
 	</div>
 </aside>
+
+<LaunchModal bind:open={rescanOpen} targetId={rescanTargetId} onClose={onRescanClose} />
+
+<ConfirmDialog
+	open={!!cancelTarget}
+	title="Cancel this scan?"
+	description="The scan will stop queuing further work and be marked cancelled."
+	confirmLabel="Cancel scan"
+	cancelLabel="Keep running"
+	destructive
+	loading={cancelling}
+	loadingLabel="Cancelling…"
+	onOpenChange={(o) => {
+		if (!o) cancelTarget = null;
+	}}
+	onConfirm={confirmCancel}
+/>

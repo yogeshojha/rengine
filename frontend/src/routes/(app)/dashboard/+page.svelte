@@ -5,6 +5,7 @@
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { activityFeed } from '$lib/stores/activity-feed.svelte';
 	import { dashboardStore } from '$lib/stores/dashboard.svelte';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { SSEChannel, SSEEventType } from '$lib/types/sse';
 	import type { ActivityLog } from '$lib/types/activity';
@@ -59,6 +60,10 @@
 		untrack(() => {
 			if (pid) dashboardStore.init(pid);
 		});
+	});
+
+	$effect(() => {
+		if (liveScans.completedTick > 0) dashboardStore.refresh();
 	});
 
 	$effect(() => {
@@ -321,6 +326,8 @@
 							<div class="px-4 pb-4">
 								<ActivityTimeline
 									dayGroups={activityFeed.days}
+									targetGroups={activityFeed.targetGroups}
+									grouping={activityFeed.grouping}
 									newEventIds={activityFeed.freshIds}
 									runningIds={activityFeed.runningIds}
 									tick={activityFeed.tick}

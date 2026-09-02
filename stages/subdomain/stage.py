@@ -169,6 +169,8 @@ class SubdomainStage(Stage):
             level=level,
             project_id=self.ctx.project_id,
             target_id=self.ctx.target_id,
+            scan_id=self.ctx.scan_id,
+            target_value=self.ctx.target_value,
         )
         self.session.commit()
         self.emit_progress(message, source=source)

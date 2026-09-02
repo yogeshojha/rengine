@@ -41,6 +41,32 @@ def _notify(
         logger.warning("scan notification dispatch failed", exc_info=True)
 
 
+def _finalize_user_cancelled(
+    session: Session, scan: Scan, events: ScanEventPublisher
+) -> None:
+    if scan.completed_at is None:
+        scan.completed_at = utc_now()
+        session.add(scan)
+        session.commit()
+        _log_cancelled(ActivityLogService(session), scan)
+        session.commit()
+    events.scan_cancelled(status=scan.status)
+
+
+def _log_cancelled(activity_log: ActivityLogService, scan: Scan) -> None:
+    target_value = (scan.execution_config or {}).get("target_value", "")
+    activity_log.log(
+        event=ActivityEvent.SCAN_CANCELLED,
+        title=f"Scan cancelled · {target_value}",
+        description=scan.engine_name,
+        level=ActivityLevel.WARNING,
+        project_id=scan.project_id,
+        target_id=scan.target_id,
+        scan_id=scan.id,
+        target_value=target_value,
+    )
+
+
 def _count_new_subdomains(session: Session, scan: Scan) -> int:
     """Subdomain names this scan was the first to discover for its target."""
     rn = (
@@ -75,11 +101,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
         return
 
     if scan.status == ScanStatus.CANCELLED.value:
-        if scan.completed_at is None:
-            scan.completed_at = utc_now()
-            session.add(scan)
-            session.commit()
-        events.scan_cancelled(status=scan.status)
+        _finalize_user_cancelled(session, scan, events)
         return
 
     activities = (
@@ -121,6 +143,8 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     activity_log = ActivityLogService(session)
 
     if status == ScanStatus.CANCELLED.value:
+        _log_cancelled(activity_log, scan)
+        session.commit()
         events.scan_cancelled(status=status)
         _notify(
             notifier,
@@ -132,11 +156,13 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     if status == ScanStatus.COMPLETED.value:
         activity_log.log(
             event=ActivityEvent.SCAN_COMPLETED,
-            title="Scan completed",
+            title=f"Scan completed · {target_value}",
             description=scan_count_summary(counts),
             level=ActivityLevel.SUCCESS,
             project_id=scan.project_id,
             target_id=scan.target_id,
+            scan_id=scan.id,
+            target_value=target_value,
         )
         session.commit()
         events.scan_completed(status=status, counts=counts, duration_seconds=duration)
@@ -161,11 +187,13 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
 
     activity_log.log(
         event=ActivityEvent.SCAN_FAILED,
-        title="Scan failed",
+        title=f"Scan failed · {target_value}",
         description=scan.error or "One or more stages failed",
         level=ActivityLevel.ERROR,
         project_id=scan.project_id,
         target_id=scan.target_id,
+        scan_id=scan.id,
+        target_value=target_value,
     )
     session.commit()
     events.scan_failed(status=status, error=scan.error)

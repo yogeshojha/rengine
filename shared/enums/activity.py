@@ -29,6 +29,9 @@ class ActivityEvent(Enum):
     SCAN_PROGRESS = "scan.progress"
     SCAN_COMPLETED = "scan.completed"
     SCAN_FAILED = "scan.failed"
+    SCAN_CANCELLED = "scan.cancelled"
+    SCAN_STAGE_COMPLETED = "scan.stage.completed"
+    SCAN_STAGE_FAILED = "scan.stage.failed"
 
     # project events
     PROJECT_CREATED = "project.created"

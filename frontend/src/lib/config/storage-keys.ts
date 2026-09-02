@@ -5,5 +5,6 @@ export const STORAGE_KEYS = {
 	targetViews: 'targets:views',
 	engineLensTargetType: 'rengine:engine:lensTargetType',
 	engineSidePane: 'rengine:engine:sidePane',
-	scanNudgeDismissed: 'rengine:scanNudge:dismissed'
+	activityPinned: 'rengine:activity:pinned',
+	activityGrouping: 'rengine:activity:grouping'
 } as const;

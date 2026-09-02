@@ -7,6 +7,7 @@ from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.sse import SSEChannel, SSEEventType
 from shared.logging import get_logger
 from shared.models.activity_log import ActivityLog
+from shared.models.target import Target
 from shared.services.event_publisher import SyncEventPublisher
 from shared.sse import sse_manager
 from shared.utils.coerce import safe_uuid
@@ -39,6 +40,8 @@ def _entry_to_sse_payload(entry: ActivityLog) -> dict:
         "project_id": str(entry.project_id) if entry.project_id else None,
         "target_id": str(entry.target_id) if entry.target_id else None,
         "user_id": str(entry.user_id) if entry.user_id else None,
+        "scan_id": str(entry.scan_id) if entry.scan_id else None,
+        "target_value": entry.target_value,
     }
 
 
@@ -56,7 +59,11 @@ class ActivityLogService:
         project_id: uuid.UUID | str | None = None,
         target_id: uuid.UUID | str | None = None,
         user_id: uuid.UUID | str | None = None,
+        scan_id: uuid.UUID | str | None = None,
+        target_value: str | None = None,
     ) -> ActivityLog:
+        if target_id and not target_value:
+            target_value = self._resolve_target_value_sync(target_id)
         entry = self._build_entry(
             event=event,
             title=title,
@@ -65,6 +72,8 @@ class ActivityLogService:
             project_id=project_id,
             target_id=target_id,
             user_id=user_id,
+            scan_id=scan_id,
+            target_value=target_value,
         )
 
         self._session.add(entry)
@@ -87,7 +96,11 @@ class ActivityLogService:
         project_id: uuid.UUID | str | None = None,
         target_id: uuid.UUID | str | None = None,
         user_id: uuid.UUID | str | None = None,
+        scan_id: uuid.UUID | str | None = None,
+        target_value: str | None = None,
     ) -> ActivityLog:
+        if target_id and not target_value:
+            target_value = await self._resolve_target_value_async(target_id)
         entry = self._build_entry(
             event=event,
             title=title,
@@ -96,6 +109,8 @@ class ActivityLogService:
             project_id=project_id,
             target_id=target_id,
             user_id=user_id,
+            scan_id=scan_id,
+            target_value=target_value,
         )
 
         self._session.add(entry)
@@ -107,6 +122,22 @@ class ActivityLogService:
             await self._publish_async(entry)
 
         return entry
+
+    def _resolve_target_value_sync(self, target_id: uuid.UUID | str) -> str | None:
+        tid = safe_uuid(target_id)
+        if tid is None:
+            return None
+        target = self._session.get(Target, tid)
+        return target.target_value if target else None
+
+    async def _resolve_target_value_async(
+        self, target_id: uuid.UUID | str
+    ) -> str | None:
+        tid = safe_uuid(target_id)
+        if tid is None:
+            return None
+        target = await self._session.get(Target, tid)
+        return target.target_value if target else None
 
     @staticmethod
     def _publish_sync(entry: ActivityLog) -> None:
@@ -141,6 +172,8 @@ class ActivityLogService:
         project_id: uuid.UUID | str | None,
         target_id: uuid.UUID | str | None,
         user_id: uuid.UUID | str | None,
+        scan_id: uuid.UUID | str | None = None,
+        target_value: str | None = None,
     ) -> ActivityLog:
         return ActivityLog(
             level=level,
@@ -150,4 +183,6 @@ class ActivityLogService:
             project_id=safe_uuid(project_id),
             target_id=safe_uuid(target_id),
             user_id=safe_uuid(user_id),
+            scan_id=safe_uuid(scan_id),
+            target_value=target_value[:500] if target_value else None,
         )

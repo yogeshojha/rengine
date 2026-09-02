@@ -28,6 +28,7 @@ async def list_activity_logs(
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: Annotated[str | None, Query(description="Filter by project ID")] = None,
     target_id: Annotated[str | None, Query(description="Filter by target ID")] = None,
+    scan_id: Annotated[str | None, Query(description="Filter by scan ID")] = None,
     level: Annotated[
         ActivityLevel | None, Query(description="Filter by severity level")
     ] = None,
@@ -37,7 +38,9 @@ async def list_activity_logs(
 ):
     query = select(ActivityLog)
 
-    if target_id:
+    if scan_id:
+        query = query.where(ActivityLog.scan_id == scan_id)
+    elif target_id:
         query = query.where(ActivityLog.target_id == target_id)
     elif project_id:
         query = query.where(ActivityLog.project_id == project_id)

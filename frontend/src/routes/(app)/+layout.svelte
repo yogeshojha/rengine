@@ -163,14 +163,14 @@
 {:else if auth.isAuthenticated}
 	<Sidebar.Provider open={sidebarOpen} class="!h-svh !min-h-0 overflow-hidden">
 		<AppSidebar variant="inset" />
-		<Sidebar.Inset>
+		<Sidebar.Inset class="min-w-0">
 			<div class="flex flex-1 flex-col min-h-0 overflow-hidden">
 				<div
 					class="relative flex flex-1 flex-col rounded-lg bg-background shadow-sm overflow-hidden"
 				>
 					<TopBar {breadcrumbs} />
 					<div class="relative flex flex-1 min-h-0 overflow-hidden">
-						<ScrollArea class="flex-1 min-h-0">
+						<ScrollArea class="min-h-0 min-w-0 flex-1">
 							<main class="p-6">
 								{@render children()}
 							</main>

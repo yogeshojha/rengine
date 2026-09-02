@@ -1,4 +1,5 @@
 import type { HttpProtocol } from './scan-context';
+import type { StageConfig } from './scan-engine';
 
 export const SCAN_STATUSES = ['pending', 'running', 'completed', 'failed', 'cancelled'] as const;
 export type ScanStatus = (typeof SCAN_STATUSES)[number];
@@ -12,6 +13,22 @@ export const SCAN_ACTIVITY_STATUSES = [
 	'aborted'
 ] as const;
 export type ScanActivityStatus = (typeof SCAN_ACTIVITY_STATUSES)[number];
+
+export const ACTIVITY_TERMINAL_STATUSES: readonly ScanActivityStatus[] = [
+	'success',
+	'failed',
+	'skipped',
+	'aborted'
+];
+
+export const SCAN_COUNT_COLUMNS = {
+	subdomains: 'subdomains_found',
+	ips: 'ips_found',
+	open_ports: 'open_ports_found',
+	http_assets: 'http_assets_found',
+	vulnerabilities: 'vulnerabilities_found',
+	endpoints: 'endpoints_found'
+} as const satisfies Record<string, keyof ScanRead>;
 
 export interface ScanActivityRead {
 	id: string;
@@ -76,7 +93,7 @@ export interface ResolvedScanConfig {
 	resolved_timeouts: Record<string, number>;
 	thread_multiplier: number;
 	timeout_multiplier: number;
-	phases: Record<string, Record<string, unknown>>;
+	stages: Record<string, StageConfig>;
 	excluded_subdomains: string[];
 	excluded_paths: string[];
 	excluded_ips: string[];

@@ -25,6 +25,8 @@ class ActivityLog(SQLModel, table=True):
         default=None, foreign_key="targets.id", index=True, ondelete="SET NULL"
     )
     user_id: uuid.UUID | None = Field(default=None, foreign_key="users.id", index=True)
+    scan_id: uuid.UUID | None = Field(default=None, index=True)
+    target_value: str | None = Field(default=None, max_length=500)
 
 
 class ActivityLogRead(BaseModel):
@@ -37,3 +39,5 @@ class ActivityLogRead(BaseModel):
     project_id: uuid.UUID | None = None
     target_id: uuid.UUID | None = None
     user_id: uuid.UUID | None = None
+    scan_id: uuid.UUID | None = None
+    target_value: str | None = None

@@ -5,25 +5,36 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Empty from '$lib/components/ui/empty/index.js';
 	import ActivityTimelineItem from './activity-timeline-item.svelte';
-	import type { ActivityDayGroup } from '$lib/types/activity';
+	import ActivityTargetGroup from './activity-target-group.svelte';
+	import type {
+		ActivityDayGroup,
+		ActivityGrouping,
+		ActivityTargetGroup as TargetGroup
+	} from '$lib/types/activity';
 	import { activityFeed, FILTER_LABELS } from '$lib/stores/activity-feed.svelte';
 
 	interface Props {
 		dayGroups: ActivityDayGroup[];
+		targetGroups?: TargetGroup[];
+		grouping?: ActivityGrouping;
 		newEventIds?: Set<string>;
 		runningIds?: Set<string>;
 		tick?: number;
 		isLoading?: boolean;
 		isEmpty?: boolean;
+		onRescan?: (targetId: string) => void;
 	}
 
 	let {
 		dayGroups,
+		targetGroups = [],
+		grouping = 'timeline',
 		newEventIds = new Set(),
 		runningIds = new Set(),
 		tick = 0,
 		isLoading = false,
-		isEmpty = false
+		isEmpty = false,
+		onRescan
 	}: Props = $props();
 
 	let empty = $derived.by(() => {
@@ -70,6 +81,10 @@
 			>
 		</Empty.Header>
 	</Empty.Root>
+{:else if grouping === 'target'}
+	{#each targetGroups as group (group.key)}
+		<ActivityTargetGroup {group} {newEventIds} {runningIds} {tick} {onRescan} />
+	{/each}
 {:else}
 	{#each dayGroups as group, gi (group.date)}
 		<div
@@ -94,6 +109,7 @@
 					{cluster}
 					{tick}
 					{runningIds}
+					{onRescan}
 					isNew={newEventIds.has(cluster.items[0]?.id)}
 				/>
 			{/each}

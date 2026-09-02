@@ -1,7 +1,11 @@
 import { activityApi } from '$lib/api/activity';
 import {
+	ACTIVITY_GROUPINGS,
 	clusterEvents,
+	DEFAULT_ACTIVITY_GROUPING,
 	groupByDay,
+	groupByTarget,
+	type ActivityGrouping,
 	type ActivityLevel,
 	type ActivityLog
 } from '$lib/types/activity';
@@ -15,6 +19,7 @@ import Server from '@lucide/svelte/icons/server';
 import Waypoints from '@lucide/svelte/icons/waypoints';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import type { IconComponent } from '$lib/config/icons';
+import { STORAGE_KEYS } from '$lib/config/storage-keys';
 
 export function getActivityIcon(eventType: string): IconComponent {
 	const s = eventType.toLowerCase();
@@ -65,6 +70,25 @@ export function categorize(t: string): ActivityFilter {
 	return 'system';
 }
 
+function readPinned(): boolean {
+	try {
+		return localStorage.getItem(STORAGE_KEYS.activityPinned) === '1';
+	} catch {
+		return false;
+	}
+}
+
+function readGrouping(): ActivityGrouping {
+	try {
+		const v = localStorage.getItem(STORAGE_KEYS.activityGrouping);
+		return ACTIVITY_GROUPINGS.includes(v as ActivityGrouping)
+			? (v as ActivityGrouping)
+			: DEFAULT_ACTIVITY_GROUPING;
+	} catch {
+		return DEFAULT_ACTIVITY_GROUPING;
+	}
+}
+
 function createActivityFeed() {
 	let items = $state<ActivityLog[]>([]);
 	let page = $state(1);
@@ -75,7 +99,11 @@ function createActivityFeed() {
 	let newCount = $state(0);
 	let tick = $state(0);
 
-	let open = $state(false);
+	const initialPinned = readPinned();
+	let pinned = $state(initialPinned);
+	let open = $state(initialPinned);
+	let grouping = $state<ActivityGrouping>(readGrouping());
+	const collapsedGroups = new SvelteSet<string>();
 	let filter = $state<ActivityFilter>('all');
 	let errorsOnly = $state(false);
 	let search = $state('');
@@ -97,10 +125,13 @@ function createActivityFeed() {
 		}
 		return r;
 	});
-	const days = $derived(groupByDay(clusterEvents(filtered)));
+	const clusters = $derived(clusterEvents(filtered));
+	const days = $derived(groupByDay(clusters));
+	const targetGroups = $derived(groupByTarget(clusters));
 	const hasMore = $derived(page < totalPages);
 	const latest = $derived(items[0] ?? null);
 	const isLive = $derived(freshIds.size > 0);
+	const errorCount = $derived(scoped.filter((a) => a.level === 'error').length);
 
 	const runningIds = $derived.by(() => {
 		const latestTerminal = new SvelteMap<string, number>();
@@ -140,6 +171,15 @@ function createActivityFeed() {
 		get days() {
 			return days;
 		},
+		get targetGroups() {
+			return targetGroups;
+		},
+		get grouping() {
+			return grouping;
+		},
+		get collapsedGroups() {
+			return collapsedGroups;
+		},
 		get filtered() {
 			return filtered;
 		},
@@ -163,6 +203,12 @@ function createActivityFeed() {
 		},
 		get open() {
 			return open;
+		},
+		get pinned() {
+			return pinned;
+		},
+		get errorCount() {
+			return errorCount;
 		},
 		get filter() {
 			return filter;
@@ -202,6 +248,27 @@ function createActivityFeed() {
 		setOpen(v: boolean) {
 			open = v;
 			if (v) newCount = 0;
+			else if (pinned) this.setPinned(false);
+		},
+		setGrouping(g: ActivityGrouping) {
+			grouping = g;
+			try {
+				localStorage.setItem(STORAGE_KEYS.activityGrouping, g);
+			} catch {}
+		},
+		toggleGroup(key: string) {
+			if (collapsedGroups.has(key)) collapsedGroups.delete(key);
+			else collapsedGroups.add(key);
+		},
+		setPinned(v: boolean) {
+			pinned = v;
+			if (v) {
+				open = true;
+				newCount = 0;
+			}
+			try {
+				localStorage.setItem(STORAGE_KEYS.activityPinned, v ? '1' : '0');
+			} catch {}
 		},
 		toggle() {
 			this.setOpen(!open);
@@ -256,6 +323,7 @@ function createActivityFeed() {
 		},
 
 		reset() {
+			collapsedGroups.clear();
 			items = [];
 			page = 1;
 			totalPages = 1;

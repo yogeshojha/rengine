@@ -544,6 +544,7 @@ class TargetService:
             title=f"Target deleted: {target_value}",
             project_id=project_id,
             user_id=user_id,
+            target_value=target_value,
         )
         await self.session.commit()
 

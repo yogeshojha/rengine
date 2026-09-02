@@ -125,6 +125,15 @@ def scan_count_summary(counts: dict) -> str:
     return ", ".join(parts) if parts else "no assets"
 
 
+def stage_count_summary(counts: dict) -> str:
+    parts = [
+        f"{n} {key.replace('_', ' ')}"
+        for key, n in counts.items()
+        if isinstance(n, int) and n and key != "excluded"
+    ]
+    return ", ".join(parts) if parts else "no results"
+
+
 def scan_completed(
     scan_id: str,
     target: str,

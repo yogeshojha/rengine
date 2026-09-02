@@ -189,7 +189,7 @@
 		align="end"
 		sideOffset={8}
 		onOpenAutoFocus={(e) => e.preventDefault()}
-		class="flex max-h-[min(70vh,34rem)] w-[min(24rem,calc(100vw-1rem))] flex-col overflow-hidden p-0"
+		class="w-[min(24rem,calc(100vw-1rem))] overflow-hidden p-0"
 	>
 		<div class="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
 			<div class="flex items-center gap-2">
@@ -258,7 +258,7 @@
 			</Tabs.List>
 		</Tabs.Root>
 
-		<ScrollArea class="min-h-0 flex-1 border-t">
+		<ScrollArea class="border-t [&_[data-slot=scroll-area-viewport]]:max-h-[min(60vh,26rem)]">
 			{#if notificationStore.isLoading && !notificationStore.hasLoaded}
 				{@render skeletonRows(4)}
 			{:else if notificationStore.error}
@@ -316,11 +316,13 @@
 			{/if}
 		</ScrollArea>
 
-		<div class="flex items-center justify-between border-t px-2 py-1.5">
+		<div
+			class="relative z-10 flex items-center justify-between gap-2 border-t bg-muted/40 px-3 py-2"
+		>
 			<Button
 				variant="ghost"
 				size="sm"
-				class="h-7 text-xs text-muted-foreground hover:text-destructive"
+				class="h-7 px-2 text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
 				disabled={notificationStore.notifications.length === 0}
 				onclick={() => (clearAllOpen = true)}
 			>
@@ -328,9 +330,9 @@
 				Clear all
 			</Button>
 			<Button
-				variant="ghost"
+				variant="secondary"
 				size="sm"
-				class="h-7 text-xs"
+				class="h-7 px-2.5 text-xs"
 				disabled={viewAllLoading}
 				onclick={handleViewAll}
 			>
