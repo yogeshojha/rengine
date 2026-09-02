@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import logging
 from datetime import datetime, timedelta
@@ -20,6 +21,7 @@ from shared.models.api_key import APIKey
 from shared.models.scan import (
     SCAN_STATUSES,
     Scan,
+    ScanBatchCreate,
     ScanChanges,
     ScanCreate,
     ScanDailyCount,
@@ -162,6 +164,23 @@ class ScanService:
             )
         return ctx
 
+    async def _get_targets(
+        self, target_ids: list[UUID], project_id: UUID
+    ) -> list[Target]:
+        result = await self.session.execute(
+            select(Target).where(
+                Target.id.in_(target_ids), Target.project_id == project_id
+            )
+        )
+        found = {t.id: t for t in result.scalars().all()}
+        missing = [tid for tid in target_ids if tid not in found]
+        if missing:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Target not found: {missing[0]}",
+            )
+        return [found[tid] for tid in target_ids]
+
     async def _get_target(self, target_id: UUID, project_id: UUID) -> Target:
         result = await self.session.execute(
             select(Target).where(
@@ -175,14 +194,13 @@ class ScanService:
             )
         return target
 
-    async def _resolve_and_validate(self, data: ScanCreate, project_id: UUID):
-        engine = await self._get_engine(data.engine_id, project_id)
+    async def _resolve_scope(
+        self, engine_id: UUID, context_id: UUID | None, project_id: UUID
+    ):
+        engine = await self._get_engine(engine_id, project_id)
         context = None
-        if data.context_id is not None:
-            context = await self._get_context(data.context_id, project_id)
-        target = await self._get_target(data.target_id, project_id)
-
-        if context is not None:
+        if context_id is not None:
+            context = await self._get_context(context_id, project_id)
             _check_baseline_deferred(
                 context.compare_baseline_scan_id, context.scan_only_new_assets
             )
@@ -192,7 +210,13 @@ class ScanService:
             proxy_url = await ProxyService(self.session).resolve_proxy_url(
                 context.proxy_id
             )
+        return engine, context, proxy_url
 
+    async def _resolve_and_validate(self, data: ScanCreate, project_id: UUID):
+        engine, context, proxy_url = await self._resolve_scope(
+            data.engine_id, data.context_id, project_id
+        )
+        target = await self._get_target(data.target_id, project_id)
         resolved = merge_engine_context(
             engine,
             context,
@@ -320,10 +344,74 @@ class ScanService:
         self._dispatch_scan(scan)
         return self._to_read(scan)
 
+    async def create_batch(
+        self,
+        data: ScanBatchCreate,
+        project_id: UUID,
+        created_by: UUID,
+    ) -> list[ScanRead]:
+        engine, context, proxy_url = await self._resolve_scope(
+            data.engine_id, data.context_id, project_id
+        )
+        target_ids = list(dict.fromkeys(data.target_ids))
+        targets = await self._get_targets(target_ids, project_id)
+
+        scans: list[Scan] = []
+        for target in targets:
+            resolved = merge_engine_context(
+                engine,
+                context,
+                target.target_value,
+                target.target_type.value,
+                proxy_url=proxy_url,
+            )
+            scan = build_scan_row(
+                resolved=resolved,
+                engine=engine,
+                context=context,
+                target=target,
+                project_id=project_id,
+                created_by=created_by,
+            )
+            self.session.add(scan)
+            scans.append(scan)
+
+        logger.info("Creating %d scans for engine=%s", len(scans), engine.id)
+        await self.session.commit()
+
+        await self.engine_service.touch(engine.id, project_id)
+        if context is not None:
+            await self.context_service.touch(
+                context.id, project_id, scan_id=scans[-1].id
+            )
+
+        await self._dispatch_batch(scans)
+        return [self._to_read(scan) for scan in scans]
+
     def _dispatch_scan(self, scan: Scan) -> None:
         from shared.services.celery_dispatch import dispatch_scan_run  # noqa: PLC0415
 
         dispatch_scan_run(str(scan.id))
+
+    def _dispatch_each(self, scans: list[Scan]) -> list[Scan]:
+        failed = []
+        for scan in scans:
+            try:
+                self._dispatch_scan(scan)
+            except Exception:
+                logger.exception("Failed to dispatch scan %s", scan.id)
+                failed.append(scan)
+        return failed
+
+    async def _dispatch_batch(self, scans: list[Scan]) -> None:
+        failed = await asyncio.to_thread(self._dispatch_each, scans)
+        if not failed:
+            return
+        for scan in failed:
+            scan.status = ScanStatus.FAILED.value
+            scan.error = "Could not be queued for execution."
+            scan.completed_at = utc_now()
+        await self.session.commit()
 
     def _sort_expr(self, sort_by: ScanSortKey):
         if sort_by == "duration":

@@ -1,4 +1,5 @@
 MAX_TARGET_IMPORT = 1000
+MAX_SCAN_BATCH = 500
 
 # Max captured stdout/stderr stored per registered scan command.
 MAX_COMMAND_OUTPUT = 200_000

@@ -11,6 +11,7 @@ from app.core.database import get_session
 from app.services.scan import ScanService, ScanSortDir, ScanSortKey
 from shared.enums.scan import ScanStatus
 from shared.models.scan import (
+    ScanBatchCreate,
     ScanChanges,
     ScanCreate,
     ScanExportRow,
@@ -52,6 +53,20 @@ async def create_scan(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     return await service.create(
+        data=data, project_id=project_id, created_by=current_user.id
+    )
+
+
+@router.post(
+    "/batch", response_model=list[ScanRead], status_code=status.HTTP_201_CREATED
+)
+async def create_scans(
+    data: ScanBatchCreate,
+    current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.create_batch(
         data=data, project_id=project_id, created_by=current_user.id
     )
 

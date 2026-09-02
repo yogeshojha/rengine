@@ -24,6 +24,7 @@
 		emptyText?: string;
 		allowCreate?: boolean;
 		showColors?: boolean;
+		id?: string;
 	}
 
 	let {
@@ -35,7 +36,8 @@
 		placeholder = 'Search…',
 		emptyText = 'No items found.',
 		allowCreate = true,
-		showColors = false
+		showColors = false,
+		id
 	}: Props = $props();
 
 	let open = $state(false);
@@ -108,6 +110,7 @@
 			{#snippet child({ props })}
 				<Button
 					{...props}
+					{id}
 					variant="outline"
 					role="combobox"
 					class="w-full justify-start text-muted-foreground font-normal h-9"

@@ -1,6 +1,6 @@
 import { scansApi } from '$lib/api/scans';
 import type {
-	ScanCreate,
+	ScanBatchCreate,
 	ScanExportRow,
 	ScanRead,
 	ScanStats,
@@ -386,14 +386,14 @@ function createScansStore() {
 			});
 		},
 
-		async launchScan(projectId: string, body: ScanCreate): Promise<ScanRead | null> {
+		async launchScans(projectId: string, body: ScanBatchCreate): Promise<ScanRead[] | null> {
 			error = null;
 			try {
-				const created = await scansApi.launch(projectId, body);
+				const created = await scansApi.launchBatch(projectId, body);
 				if (projectId === filters.projectId) this.refresh();
 				return created;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to launch scan';
+				error = e instanceof Error ? e.message : 'Failed to launch scans';
 				return null;
 			}
 		},

@@ -1,6 +1,7 @@
 import { api } from './client';
 import type {
 	ScanActivityRead,
+	ScanBatchCreate,
 	ScanChanges,
 	ScanChangeWindow,
 	ScanCommandDetail,
@@ -54,8 +55,8 @@ export const scansApi = {
 		return api.post<ScanPreview>(`/scans/preview?project_id=${projectId}`, body);
 	},
 
-	async launch(projectId: string, body: ScanCreate): Promise<ScanRead> {
-		return api.post<ScanRead>(`/scans?project_id=${projectId}`, body);
+	async launchBatch(projectId: string, body: ScanBatchCreate): Promise<ScanRead[]> {
+		return api.post<ScanRead[]>(`/scans/batch?project_id=${projectId}`, body);
 	},
 
 	async list(

@@ -141,6 +141,14 @@ export interface ScanCreate {
 	target_id: string;
 }
 
+export const MAX_SCAN_BATCH = 500;
+
+export interface ScanBatchCreate {
+	engine_id: string;
+	context_id?: string | null;
+	target_ids: string[];
+}
+
 export const PREVIEW_TOOL_STATUSES = ['will_run', 'skipped_disabled', 'skipped_needs_key'] as const;
 export type PreviewToolStatus = (typeof PREVIEW_TOOL_STATUSES)[number];
 

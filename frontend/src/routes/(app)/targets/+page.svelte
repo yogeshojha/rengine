@@ -112,6 +112,7 @@
 
 	let showLaunchModal = $state(false);
 	let launchTargetId = $state<string | undefined>(undefined);
+	let launchTargetIds = $state<string[] | undefined>(undefined);
 
 	let showScheduleModal = $state(false);
 	let scheduleTargetId = $state<string | undefined>(undefined);
@@ -273,6 +274,13 @@
 	});
 	function openLaunch(targetId?: string) {
 		launchTargetId = targetId;
+		launchTargetIds = undefined;
+		showLaunchModal = true;
+	}
+
+	function openLaunchMany(ids: string[]) {
+		launchTargetId = undefined;
+		launchTargetIds = ids;
 		showLaunchModal = true;
 	}
 
@@ -286,7 +294,7 @@
 	}
 
 	function handleScanAll() {
-		openLaunch();
+		openLaunchMany(targetsStore.filteredTargets.map((t) => t.id));
 	}
 
 	function handleTargetSelect(targetId: string) {
@@ -307,8 +315,7 @@
 	}
 
 	function handleBulkScan() {
-		const ids = Array.from(selectedTargetIds);
-		openLaunch(ids.length === 1 ? ids[0] : undefined);
+		openLaunchMany(Array.from(selectedTargetIds));
 	}
 
 	function handleBulkDelete() {
@@ -753,9 +760,11 @@
 <LaunchModal
 	bind:open={showLaunchModal}
 	targetId={launchTargetId}
+	targetIds={launchTargetIds}
 	onClose={() => {
 		showLaunchModal = false;
 		launchTargetId = undefined;
+		launchTargetIds = undefined;
 	}}
 />
 

@@ -20,6 +20,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import ExecutionPreview from './execution-preview.svelte';
+	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
 	import ContextSections from '$lib/components/contexts/context-sections.svelte';
 	import {
 		validateDraft,
@@ -37,30 +38,42 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { SELECT_NONE } from '$lib/constants';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { MAX_SCAN_BATCH } from '$lib/types/scan';
 	import type { Target } from '$lib/types/target';
 	import type { ScanPreview } from '$lib/types/scan';
 
 	interface Props {
 		open: boolean;
 		targetId?: string;
+		targetIds?: string[];
 		presetEngineId?: string;
 		presetContextId?: string;
 		onClose?: () => void;
 	}
 
-	let { open = $bindable(), targetId, presetEngineId, presetContextId, onClose }: Props = $props();
+	let {
+		open = $bindable(),
+		targetId,
+		targetIds,
+		presetEngineId,
+		presetContextId,
+		onClose
+	}: Props = $props();
 
 	const CTX_MODAL_SECTIONS: ContextFormSection[] = ['scope', 'auth', 'rate', 'runtime', 'proxy'];
+	const TARGET_PAGE_SIZE = 100;
+	const TARGET_FETCH_CONCURRENCY = 10;
 
 	let view = $state<'launch' | 'newContext'>('launch');
 
 	let engineId = $state<string>('');
 	let contextId = $state<string>(SELECT_NONE);
-	let selectedTargetId = $state<string>('');
+	let selectedTargetIds = $state<string[]>([]);
 
 	let targets = $state<Target[]>([]);
 	let targetsLoading = $state(false);
 	let targetsError = $state<string | null>(null);
+	let unresolvedTargets = $state(0);
 	let preview = $state<ScanPreview | null>(null);
 	let previewLoading = $state(false);
 	let previewError = $state<string | null>(null);
@@ -73,8 +86,17 @@
 
 	let lockedTarget = $derived(targetId ? (targets.find((t) => t.id === targetId) ?? null) : null);
 	let lockedTargetValue = $derived(lockedTarget?.target_value ?? '');
-	let currentTargetValue = $derived(
-		lockedTargetValue || (targets.find((t) => t.id === selectedTargetId)?.target_value ?? '')
+	let selectedTargets = $derived(
+		selectedTargetIds.map((id) => targets.find((t) => t.id === id)).filter((t): t is Target => !!t)
+	);
+	let currentTargetValue = $derived(lockedTargetValue || (selectedTargets[0]?.target_value ?? ''));
+	let previewTargetId = $derived(selectedTargetIds[0] ?? '');
+	let targetItems = $derived(targets.map((t) => ({ id: t.id, label: t.target_value })));
+	let selectedTargetItems = $derived(
+		selectedTargetIds.map((id) => ({
+			id,
+			label: targets.find((t) => t.id === id)?.target_value ?? id
+		}))
 	);
 
 	let enginesReady = $derived(
@@ -96,18 +118,20 @@
 			? 'None — engine defaults'
 			: (scanContextsStore.contexts.find((c) => c.id === contextId)?.name ?? 'Select context')
 	);
-	let targetLabel = $derived(
-		targets.find((t) => t.id === selectedTargetId)?.target_value ?? 'Select target'
-	);
+
+	let overBatchLimit = $derived(selectedTargetIds.length > MAX_SCAN_BATCH);
 
 	let launchBlockReason = $derived.by(() => {
 		if (noEngines) return 'Create a scan engine first.';
 		if (!engineId) return 'Select an engine to launch.';
-		if (!selectedTargetId) return 'Select a target to launch.';
+		if (selectedTargetIds.length === 0) return 'Select at least one target to launch.';
+		if (overBatchLimit) return `Select at most ${MAX_SCAN_BATCH} targets.`;
 		return null;
 	});
 
-	let canLaunch = $derived(!!engineId && !!selectedTargetId && !launching);
+	let canLaunch = $derived(
+		!!engineId && selectedTargetIds.length > 0 && !overBatchLimit && !launching
+	);
 
 	let savingContext = $state(false);
 	let ctxDraft = $state<ScanContextCreate | null>(null);
@@ -132,8 +156,8 @@
 				scanEnginesStore.fetchEngines(project.id);
 			if (scanContextsStore.fetchedProjectId !== project.id)
 				scanContextsStore.fetchContexts(project.id);
-			loadTargets(project.slug);
-			if (targetId) selectedTargetId = targetId;
+			selectedTargetIds = targetId ? [targetId] : [...(targetIds ?? [])];
+			loadTargets(project.slug, selectedTargetIds);
 		});
 	});
 
@@ -175,14 +199,34 @@
 		engineTrigger?.focus();
 	}
 
-	async function loadTargets(projectSlug: string) {
+	async function loadTargets(projectSlug: string, ensureIds: string[] = []) {
 		targetsLoading = true;
 		targetsError = null;
+		unresolvedTargets = 0;
 		try {
-			const res = await targetsApi.list({ project_slug: projectSlug, size: 100 });
-			targets = res.items;
+			const res = await targetsApi.list({ project_slug: projectSlug, size: TARGET_PAGE_SIZE });
+			const loaded = res.items;
+			const known = new SvelteSet(loaded.map((t) => t.id));
+			const missing = ensureIds.filter((id) => !known.has(id)).slice(0, MAX_SCAN_BATCH);
+			for (let i = 0; i < missing.length; i += TARGET_FETCH_CONCURRENCY) {
+				const fetched = await Promise.all(
+					missing
+						.slice(i, i + TARGET_FETCH_CONCURRENCY)
+						.map((id) => targetsApi.get(id).catch(() => null))
+				);
+				for (const t of fetched) {
+					if (!t) continue;
+					loaded.push(t);
+					known.add(t.id);
+				}
+			}
+			targets = loaded;
+			const kept = selectedTargetIds.filter((id) => known.has(id));
+			unresolvedTargets = selectedTargetIds.length - kept.length;
+			selectedTargetIds = kept;
 		} catch (e) {
 			targetsError = e instanceof Error ? e.message : 'Failed to load targets';
+			selectedTargetIds = [];
 		} finally {
 			targetsLoading = false;
 		}
@@ -200,13 +244,13 @@
 
 	function retryTargets() {
 		const project = projectsStore.activeProject;
-		if (project) loadTargets(project.slug);
+		if (project) loadTargets(project.slug, selectedTargetIds);
 	}
 
 	function runPreview() {
 		const eng = engineId;
 		const ctx = contextId;
-		const tgt = selectedTargetId;
+		const tgt = previewTargetId;
 		const project = projectsStore.activeProject;
 
 		clearTimeout(previewDebounce);
@@ -244,7 +288,7 @@
 	$effect(() => {
 		void engineId;
 		void contextId;
-		void selectedTargetId;
+		void previewTargetId;
 		void projectsStore.activeProject?.id;
 		runPreview();
 	});
@@ -257,17 +301,18 @@
 
 	async function handleLaunch() {
 		const project = projectsStore.activeProject;
-		if (!project || !engineId || !selectedTargetId || launching) return;
+		if (!project || !canLaunch) return;
 		launching = true;
 		try {
-			const created = await scansStore.launchScan(project.id, {
+			const created = await scansStore.launchScans(project.id, {
 				engine_id: engineId,
 				context_id: contextId === SELECT_NONE ? null : contextId,
-				target_id: selectedTargetId
+				target_ids: selectedTargetIds
 			});
 			if (created) {
 				rememberPreferences();
-				toast.success('Scan queued — execution starts when a scanner is connected.');
+				const label = created.length === 1 ? 'Scan queued' : `${created.length} scans queued`;
+				toast.success(`${label} — execution starts when a scanner is connected.`);
 				handleOpenChange(false);
 				goto(ROUTES.scans);
 			} else {
@@ -344,11 +389,12 @@
 	function reset() {
 		engineId = '';
 		contextId = SELECT_NONE;
-		selectedTargetId = '';
+		selectedTargetIds = [];
 		preview = null;
 		previewLoading = false;
 		previewError = null;
 		targetsError = null;
+		unresolvedTargets = 0;
 		view = 'launch';
 		ctxDraft = null;
 		clearTimeout(previewDebounce);
@@ -549,18 +595,32 @@
 									</Button>
 								</div>
 							{:else}
-								<Select.Root type="single" bind:value={selectedTargetId}>
-									<Select.Trigger id="scan-target-select" class="w-full"
-										>{targetLabel}</Select.Trigger
-									>
-									<Select.Content>
-										{#each targets as target (target.id)}
-											<Select.Item value={target.id} label={target.target_value}>
-												{target.target_value}
-											</Select.Item>
-										{/each}
-									</Select.Content>
-								</Select.Root>
+								<MultiSelectCombobox
+									id="scan-target-select"
+									items={targetItems}
+									selected={selectedTargetItems}
+									onSelect={(item) =>
+										(selectedTargetIds = selectedTargetIds.includes(item.id)
+											? selectedTargetIds
+											: [...selectedTargetIds, item.id])}
+									onRemove={(item) =>
+										(selectedTargetIds = selectedTargetIds.filter((id) => id !== item.id))}
+									allowCreate={false}
+									placeholder="Search targets…"
+									emptyText="No targets in this project."
+								/>
+								{#if unresolvedTargets > 0}
+									<p class="text-[11px] text-warning">
+										{unresolvedTargets}
+										{unresolvedTargets === 1 ? 'target' : 'targets'} could not be loaded and {unresolvedTargets ===
+										1
+											? 'was'
+											: 'were'} removed from this scan.
+									</p>
+								{/if}
+								{#if selectedTargetIds.length > 1}
+									<p class="text-[11px] text-muted-foreground">Each target runs as its own scan.</p>
+								{/if}
 							{/if}
 						</div>
 					</div>
@@ -569,6 +629,14 @@
 				<!-- Preview -->
 				<ScrollArea class="h-full min-h-0 border-t bg-muted/20 md:border-t-0 md:border-l">
 					<div class="p-6">
+						{#if selectedTargetIds.length > 1 && !previewError && (preview || previewLoading)}
+							<p
+								class="mb-4 rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground"
+							>
+								Preview is for <span class="font-mono text-foreground">{currentTargetValue}</span>.
+								All {selectedTargetIds.length} targets queue with this engine and context.
+							</p>
+						{/if}
 						{#if previewError}
 							<div
 								class="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-8 text-center"
@@ -621,7 +689,13 @@
 							Queuing…
 						{:else}
 							<Rocket class="h-4 w-4" />
-							{lockedTargetValue ? `Queue scan against ${lockedTargetValue}` : 'Queue scan'}
+							{#if lockedTargetValue}
+								Queue scan against {lockedTargetValue}
+							{:else if selectedTargetIds.length > 1}
+								Queue {selectedTargetIds.length} scans
+							{:else}
+								Queue scan
+							{/if}
 						{/if}
 					</Button>
 				</div>

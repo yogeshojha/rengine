@@ -6,6 +6,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.constants import MAX_SCAN_BATCH
 from shared.enums.scan import ScanStatus
 from shared.services.scan_resolve import ResolvedScanConfig
 from shared.utils.datetime import utc_now
@@ -51,6 +52,14 @@ class ScanCreate(BaseModel):
     engine_id: uuid.UUID
     context_id: uuid.UUID | None = None
     target_id: uuid.UUID
+
+
+class ScanBatchCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    engine_id: uuid.UUID
+    context_id: uuid.UUID | None = None
+    target_ids: list[uuid.UUID] = Field(min_length=1, max_length=MAX_SCAN_BATCH)
 
 
 class ScanRead(BaseModel):
