@@ -5,6 +5,7 @@ class SubdomainSource(Enum):
     TARGET = "target"
     SUBFINDER = "subfinder"
     CTFR = "ctfr"
+    CRTNAME = "crtname"
     SUBLIST3R = "sublist3r"
     ASSETFINDER = "assetfinder"
     AMASS = "amass"

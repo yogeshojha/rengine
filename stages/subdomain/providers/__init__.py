@@ -7,6 +7,7 @@ from stages.subdomain.providers.base import (
     ProviderResult,
     SubdomainProvider,
 )
+from stages.subdomain.providers.crtname import CrtNameProvider
 from stages.subdomain.providers.ctfr import CtfrProvider
 from stages.subdomain.providers.netlas import NetlasProvider
 from stages.subdomain.providers.oneforall import OneForAllProvider
@@ -18,6 +19,7 @@ from stages.subdomain.providers.tlsx import TlsxProvider
 PASSIVE_PROVIDERS: dict[str, type[SubdomainProvider]] = {
     SubfinderProvider.tool: SubfinderProvider,
     CtfrProvider.tool: CtfrProvider,
+    CrtNameProvider.tool: CrtNameProvider,
     Sublist3rProvider.tool: Sublist3rProvider,
     AssetfinderProvider.tool: AssetfinderProvider,
     AmassProvider.tool: AmassProvider,

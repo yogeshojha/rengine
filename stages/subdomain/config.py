@@ -7,7 +7,7 @@ from stages.config import StageConfig, threads
 from stages.subdomain.providers import PASSIVE_PROVIDERS
 
 PASSIVE_TOOLS: tuple[str, ...] = tuple(sorted(PASSIVE_PROVIDERS))
-DEFAULT_PASSIVE_TOOLS: list[str] = ["subfinder", "ctfr", "assetfinder", "amass"]
+DEFAULT_PASSIVE_TOOLS: list[str] = ["subfinder", "ctfr", "crtname", "assetfinder", "amass"]
 
 _TOOL_TIMEOUTS = {
     Intensity.PASSIVE.value: 240,
