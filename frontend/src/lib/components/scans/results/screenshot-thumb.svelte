@@ -61,14 +61,13 @@
 					</span>
 				{/snippet}
 			</HoverCard.Trigger>
-			<HoverCard.Content side="right" align="start" class="w-96 overflow-hidden p-0">
+			<HoverCard.Content side="right" align="start" class="w-[28rem] overflow-hidden p-0">
 				<img
 					src={url}
 					{alt}
 					onerror={() => (failed = true)}
-					class="max-h-80 w-full bg-muted object-cover object-top"
+					class="block max-h-[26rem] w-full bg-muted object-cover object-top"
 				/>
-				<p class="truncate border-t border-border px-3 py-2 font-mono text-[11px]">{alt}</p>
 			</HoverCard.Content>
 		</HoverCard.Root>
 		{@render lightbox(url)}
