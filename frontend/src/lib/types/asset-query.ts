@@ -78,6 +78,27 @@ export interface QueryGroups {
 	covered: number;
 }
 
+export interface RelatedEvidence {
+	hostname: string;
+	seen_on: string;
+}
+
+export interface RelatedDomain {
+	domain: string;
+	reason: string;
+	reason_label: string;
+	reason_detail: string;
+	hostnames: string[];
+	hostname_count: number;
+	evidence: RelatedEvidence[];
+	is_target: boolean;
+}
+
+export interface RelatedDomains {
+	domains: RelatedDomain[];
+	root: string;
+}
+
 export interface QuerySchema {
 	max_length: number;
 	max_terms: number;

@@ -9,8 +9,10 @@
 	import SummaryCard from './overview/summary-card.svelte';
 	import InsightsCard from './overview/insights-card.svelte';
 	import RunCard from './overview/run-card.svelte';
+	import RelatedDomainsCard from './related-domains-card.svelte';
 	import PreviousRuns from './overview/previous-runs.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
+	import type { RelatedDomains } from '$lib/types/asset-query';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { isLiveStatus } from '$lib/utilities/scan-status';
@@ -90,6 +92,7 @@
 	const MIN_SLICES = 2;
 
 	let insights = $state<SubdomainInsights | null>(null);
+	let relatedDomains = $state<RelatedDomains | null>(null);
 	let loading = $state(true);
 	let errored = $state(false);
 
@@ -138,6 +141,22 @@
 		if (!seen) return;
 		untrack(loadInsights);
 	});
+
+	$effect(() => {
+		void revision;
+		void scanId;
+		void projectId;
+		if (!seen) return;
+		untrack(loadRelated);
+	});
+
+	function loadRelated() {
+		if (!scanId || !projectId) return;
+		subdomainsApi
+			.relatedDomains(projectId, scanId)
+			.then((d) => (relatedDomains = d))
+			.catch(() => (relatedDomains = null));
+	}
 
 	$effect(() => {
 		if (!engineCatalogStore.hasFetched) engineCatalogStore.fetch();
@@ -352,6 +371,7 @@
 
 	<div class="flex min-w-0 flex-col gap-6">
 		<RunCard {scan} {run} {catalog} {activities} {now} onPipeline={() => onTab('pipeline')} />
+		<RelatedDomainsCard set={relatedDomains} />
 		<PreviousRuns {history} current={scan} loading={!historyLoaded} {nounPlural} />
 	</div>
 </div>

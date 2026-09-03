@@ -7,8 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.asset_query import build_schema
+from app.services.related_domains import RelatedDomainService
 from app.services.subdomain import SubdomainService
 from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
+from shared.models.related import RelatedDomains
 from shared.models.scan_correlation import SubdomainCorrelation, SubdomainInsights
 from shared.models.subdomain import (
     Facet,
@@ -96,6 +98,18 @@ async def subdomain_search_groups(
 ):
     return await service.groups(
         project_id=project_id, scan_id=scan_id, f=body, key=group_by
+    )
+
+
+@router.get("/related-domains", response_model=RelatedDomains)
+async def subdomain_related_domains(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    return await RelatedDomainService(session).for_scan(
+        project_id=project_id, scan_id=scan_id
     )
 
 

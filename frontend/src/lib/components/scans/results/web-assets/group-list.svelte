@@ -36,7 +36,7 @@
 		note: string | null;
 	}
 
-	const MONO = new Set(['ip', 'favicon', 'cname']);
+	const MONO = new Set(['ip', 'favicon', 'cname', 'content_hash', 'jarm']);
 	const ICONS: Record<string, IconComponent> = {
 		tech: Boxes,
 		cdn: Globe,

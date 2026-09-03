@@ -365,6 +365,7 @@ _ASSET_BUILDERS = {
     "words": lambda c, _ctx: _number(HttpAsset.words, c, _int(c)),
     "lines": lambda c, _ctx: _number(HttpAsset.lines, c, _int(c)),
     "redirect": lambda c, _ctx: _string(HttpAsset.location, c),
+    "content_hash": lambda c, _ctx: _string(HttpAsset.content_hash, c),
     "body": lambda c, _ctx: _tsv(c, _BODY_WEIGHT),
     "header": lambda c, _ctx: _header(c),
     "cert.cn": lambda c, _ctx: _string(HttpAsset.tls_subject_cn, c),

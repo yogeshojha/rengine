@@ -48,9 +48,10 @@
 		targetId?: string;
 		onLaunch?: () => void;
 		onRescan?: (scan: ScanRead) => void;
+		onRescanMany?: (targetIds: string[]) => void;
 	}
 
-	let { targetId, onLaunch, onRescan }: Props = $props();
+	let { targetId, onLaunch, onRescan, onRescanMany }: Props = $props();
 
 	let cancelTarget = $state<ScanRead | null>(null);
 	let deleteTarget = $state<ScanRead | null>(null);
@@ -96,6 +97,7 @@
 
 	let selectedScans = $derived(scans.filter((s) => selectedScanIds.has(s.id)));
 	let selectedLiveCount = $derived(selectedScans.filter((s) => isLiveStatus(s.status)).length);
+	let selectedTargetIds = $derived([...new Set(selectedScans.map((s) => s.target_id))]);
 	let selectAllChecked = $derived<boolean | 'indeterminate'>(
 		scans.length > 0 && selectedScans.length === scans.length
 			? true
@@ -516,6 +518,11 @@
 	<ScanBulkActionBar
 		selectedCount={selectedScans.length}
 		liveCount={selectedLiveCount}
+		targetCount={selectedTargetIds.length}
+		onRescan={() => {
+			onRescanMany?.(selectedTargetIds);
+			clearSelection();
+		}}
 		onCancel={() => (bulkCancelOpen = true)}
 		onDelete={() => (bulkDeleteOpen = true)}
 		onClear={clearSelection}

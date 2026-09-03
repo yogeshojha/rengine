@@ -4,12 +4,13 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from sqlalchemy import case, cast, desc, func, select
+from sqlalchemy import and_, case, cast, desc, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.asset_query import MAX_GROUPS
 from shared.models.asset_query import QueryGroup, QueryGroups
+from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
 
 from . import predicates as preds
@@ -42,13 +43,14 @@ def _status_case():
     )
 
 
-_DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str]] = {
+_DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
     "ip": (
         lambda: func.jsonb_array_elements_text(
             cast(Subdomain.resolved_ips, JSONB)
         ).column_valued("ip_value"),
         "ip",
         ":",
+        False,
     ),
     "tech": (
         lambda: func.jsonb_array_elements_text(
@@ -56,13 +58,17 @@ _DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str]] = {
         ).column_valued("tech_value"),
         "tech",
         "=",
+        False,
     ),
-    "favicon": (lambda: Subdomain.favicon_hash, "favicon", "="),
-    "title": (lambda: Subdomain.page_title, "title", "="),
-    "cname": (lambda: Subdomain.cname, "cname", "="),
-    "server": (lambda: Subdomain.webserver, "server", "="),
-    "cdn": (lambda: Subdomain.cdn_name, "cdn", "="),
-    "status": (_status_case, "status", ":"),
+    "favicon": (lambda: Subdomain.favicon_hash, "favicon", "=", False),
+    "title": (lambda: Subdomain.page_title, "title", "=", False),
+    "cname": (lambda: Subdomain.cname, "cname", "=", False),
+    "server": (lambda: Subdomain.webserver, "server", "=", False),
+    "cdn": (lambda: Subdomain.cdn_name, "cdn", "=", False),
+    "status": (_status_case, "status", ":", False),
+    "content_hash": (lambda: HttpAsset.content_hash, "content_hash", "=", True),
+    "jarm": (lambda: HttpAsset.jarm, "jarm", "=", True),
+    "cert.issuer": (lambda: HttpAsset.tls_issuer, "cert.issuer", "=", True),
 }
 
 
@@ -70,24 +76,32 @@ def _dimension(key: str):
     found = _DIMENSIONS.get(key)
     if found is None:
         return None
-    build, field, op = found
-    return build(), field, op
+    build, field, op, asset = found
+    return build(), field, op, asset
 
 
 async def build_groups(session: AsyncSession, base, key: str) -> QueryGroups:
     dimension = _dimension(key)
     if dimension is None:
         return QueryGroups(dimension=key)
-    column, field, op = dimension
+    column, field, op, asset = dimension
 
     scoped = base.subquery()
     value = column.label("value")
     joined = (
-        select(value, func.count().label("n"))
+        select(value, func.count(func.distinct(Subdomain.id)).label("n"))
         .select_from(Subdomain)
         .join(scoped, Subdomain.id == scoped.c.id)
-        .where(value.isnot(None), value != "")
     )
+    if asset:
+        joined = joined.join(
+            HttpAsset,
+            and_(
+                HttpAsset.scan_id == Subdomain.scan_id,
+                HttpAsset.host == Subdomain.name,
+            ),
+        )
+    joined = joined.where(value.isnot(None), value != "")
     hosts = await session.scalar(select(func.count()).select_from(scoped))
     covered, total = (
         await session.execute(

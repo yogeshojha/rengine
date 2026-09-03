@@ -10,6 +10,7 @@
 
 	let showLaunch = $state(false);
 	let launchTargetId = $state<string | undefined>(undefined);
+	let launchTargetIds = $state<string[] | undefined>(undefined);
 
 	function newScan() {
 		if (!projectsStore.activeProject) {
@@ -17,17 +18,27 @@
 			return;
 		}
 		launchTargetId = undefined;
+		launchTargetIds = undefined;
 		showLaunch = true;
 	}
 
 	function rescan(scan: ScanRead) {
+		launchTargetIds = undefined;
 		launchTargetId = scan.target_id;
+		showLaunch = true;
+	}
+
+	function rescanMany(targetIds: string[]) {
+		if (targetIds.length === 0) return;
+		launchTargetId = undefined;
+		launchTargetIds = targetIds;
 		showLaunch = true;
 	}
 
 	function onModalClose() {
 		showLaunch = false;
 		launchTargetId = undefined;
+		launchTargetIds = undefined;
 		scansStore.refresh();
 	}
 </script>
@@ -35,7 +46,12 @@
 <div class="flex flex-col gap-4">
 	<h1 class="sr-only">Scans</h1>
 	<ScanActivityChart stats={scansStore.stats} />
-	<ScanHistoryTable onLaunch={newScan} onRescan={rescan} />
+	<ScanHistoryTable onLaunch={newScan} onRescan={rescan} onRescanMany={rescanMany} />
 </div>
 
-<LaunchModal bind:open={showLaunch} targetId={launchTargetId} onClose={onModalClose} />
+<LaunchModal
+	bind:open={showLaunch}
+	targetId={launchTargetId}
+	targetIds={launchTargetIds}
+	onClose={onModalClose}
+/>

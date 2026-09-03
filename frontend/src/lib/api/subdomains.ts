@@ -1,6 +1,6 @@
 import { api } from './client';
 import type { SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
-import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
+import type { QueryGroups, QueryLeads, RelatedDomains } from '$lib/types/asset-query';
 import type {
 	Facet,
 	SubdomainFilter,
@@ -70,6 +70,12 @@ export const subdomainsApi = {
 		return api.post<QueryGroups>(
 			`/subdomains/search/groups?project_id=${projectId}&scan_id=${scanId}&group_by=${encodeURIComponent(groupBy)}`,
 			filter
+		);
+	},
+
+	async relatedDomains(projectId: string, scanId: string): Promise<RelatedDomains> {
+		return api.get<RelatedDomains>(
+			`/subdomains/related-domains?project_id=${projectId}&scan_id=${scanId}`
 		);
 	},
 

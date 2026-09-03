@@ -403,6 +403,14 @@ FIELDS: tuple[QueryField, ...] = (
         example="tls.version:tls10",
     ),
     QueryField(
+        name="content_hash",
+        type=FieldType.STRING,
+        group="Response",
+        description="Hash of the response body. Identical hashes mean identical content.",
+        example="content_hash:8f4e2a",
+        aliases=("body_hash",),
+    ),
+    QueryField(
         name="jarm",
         type=FieldType.STRING,
         group="Certificates",
@@ -480,6 +488,21 @@ GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         key="tech",
         label="Technology",
         description="Names running the same technology",
+    ),
+    GroupDimension(
+        key="content_hash",
+        label="Identical content",
+        description="Names serving a byte-identical response",
+    ),
+    GroupDimension(
+        key="jarm",
+        label="TLS fingerprint",
+        description="Names sharing a JARM TLS fingerprint",
+    ),
+    GroupDimension(
+        key="cert.issuer",
+        label="Certificate issuer",
+        description="Names whose certificate has the same issuer",
     ),
     GroupDimension(
         key="server",

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Play from '@lucide/svelte/icons/play';
 	import Ban from '@lucide/svelte/icons/ban';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import X from '@lucide/svelte/icons/x';
@@ -8,12 +9,15 @@
 	interface Props {
 		selectedCount: number;
 		liveCount: number;
+		targetCount: number;
+		onRescan: () => void;
 		onCancel: () => void;
 		onDelete: () => void;
 		onClear: () => void;
 	}
 
-	let { selectedCount, liveCount, onCancel, onDelete, onClear }: Props = $props();
+	let { selectedCount, liveCount, targetCount, onRescan, onCancel, onDelete, onClear }: Props =
+		$props();
 </script>
 
 <div
@@ -33,6 +37,14 @@
 		</div>
 
 		<Separator orientation="vertical" class="h-4 self-center mx-0.5" />
+
+		{#if targetCount > 0}
+			<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={onRescan}>
+				<Play class="h-3.5 w-3.5 text-muted-foreground" />
+				Re-scan {targetCount}
+				{targetCount === 1 ? 'target' : 'targets'}
+			</Button>
+		{/if}
 
 		{#if liveCount > 0}
 			<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={onCancel}>
