@@ -90,6 +90,7 @@ class StageField(BaseModel):
     type: str
     default: object = None
     options: list[str] | None = None
+    option_labels: dict[str, str] | None = None
     minimum: int | None = None
     maximum: int | None = None
     scale: str | None = None

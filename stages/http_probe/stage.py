@@ -5,6 +5,12 @@ from collections.abc import Iterable
 from sqlalchemy import delete, select
 from sqlalchemy.orm import defer
 
+from shared.definitions.ports import (
+    DEFAULT_WEB_PORTS,
+    PortSource,
+    ServiceClass,
+    service_class,
+)
 from shared.enums.scan import Phase
 from shared.enums.target import TargetType
 from shared.logging import get_logger
@@ -12,6 +18,8 @@ from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
+from shared.services import port_inventory
+from shared.services.port_inventory import ServiceObservation
 from shared.utils.datetime import utc_now
 from stages.base import Stage, StageResult
 from stages.http_probe.config import HttpProbeConfig
@@ -21,8 +29,8 @@ from tools.httpx.parser import parse_httpx_record
 logger = get_logger(__name__)
 
 _IP_FAMILY = {TargetType.IP.value, TargetType.IP_RANGE.value, TargetType.ASN.value}
-_DEFAULT_PORTS = (80, 443)
 _MAX_TARGETS = 50000
+_WEB_CAPABLE = (ServiceClass.WEB.value, ServiceClass.OTHER.value)
 _PERSIST_BATCH = 500
 
 _HTTP_FIELDS = set(HttpAsset.model_fields)
@@ -38,7 +46,7 @@ class HttpProbeStage(Stage):
     title = "HTTP Probe"
     description = "Fingerprint every host/port for live HTTP, tech and titles."
     phase = Phase.EXPANSION.value
-    level = 2
+    level = 3
     tools = ("httpx",)
     config_model = HttpProbeConfig
 
@@ -68,21 +76,38 @@ class HttpProbeStage(Stage):
         with client.stream_probe(targets) as records:
             self._check_abort()
             count = self._persist(records)
+        services = self._record_services()
         if self.ctx.target_type == TargetType.DOMAIN.value:
             self._denormalize_to_subdomains()
         self.emit_progress(
-            f"probed {len(targets)} targets → {count} live HTTP services"
+            f"probed {len(targets)} host and port pairs, {count} answered HTTP"
         )
-        return StageResult(counts={"http_assets": count})
+        return StageResult(counts={"http_assets": count, "web_services": services})
 
     def _port_map(self) -> dict[str, set[int]]:
+        """Open ports per address, filtered to what can plausibly answer HTTP."""
+        if not self.cfg.probe_open_ports:
+            return {}
         rows = self.session.execute(
-            select(Port.ip, Port.number).where(Port.scan_id == self.ctx.scan_id)
+            select(Port.ip, Port.number, Port.service_name, Port.service_class).where(
+                Port.scan_id == self.ctx.scan_id
+            )
         ).all()
         out: dict[str, set[int]] = {}
-        for ip, number in rows:
+        for ip, number, name, klass in rows:
+            if not self.cfg.probe_all_ports:
+                resolved = klass or service_class(name, number)
+                if resolved not in _WEB_CAPABLE:
+                    continue
             out.setdefault(ip, set()).add(number)
         return out
+
+    def _ports_for(self, ips: list[str], port_map: dict[str, set[int]]) -> list[int]:
+        ports = set(DEFAULT_WEB_PORTS)
+        for ip in ips or []:
+            ports |= port_map.get(ip, set())
+        ordered = sorted(ports, key=lambda p: (p not in DEFAULT_WEB_PORTS, p))
+        return ordered[: self.cfg.max_ports_per_host]
 
     def _build_targets(self) -> list[str]:
         target_type = self.ctx.target_type
@@ -106,10 +131,10 @@ class HttpProbeStage(Stage):
             for name, is_wildcard, is_active, resolved_ips in rows:
                 if is_wildcard or not is_active:
                     continue
-                ports = set(_DEFAULT_PORTS)
-                for ip in resolved_ips or []:
-                    ports |= port_map.get(ip, set())
-                targets.extend(f"{name}:{port}" for port in sorted(ports))
+                targets.extend(
+                    f"{name}:{port}"
+                    for port in self._ports_for(resolved_ips or [], port_map)
+                )
         elif target_type in _IP_FAMILY:
             ips = (
                 self.session.execute(
@@ -119,9 +144,62 @@ class HttpProbeStage(Stage):
                 .all()
             )
             for ip in dict.fromkeys(ips):
-                ports = set(_DEFAULT_PORTS) | port_map.get(ip, set())
-                targets.extend(f"{ip}:{port}" for port in sorted(ports))
+                targets.extend(
+                    f"{ip}:{port}" for port in self._ports_for([ip], port_map)
+                )
         return list(dict.fromkeys(targets))[:_MAX_TARGETS]
+
+    def _record_services(self) -> int:
+        """Fold every live HTTP response back onto its port so a service is one row."""
+        resolved = self._resolved_ips()
+        rows = self.session.execute(
+            select(
+                HttpAsset.host,
+                HttpAsset.ip,
+                HttpAsset.port,
+                HttpAsset.scheme,
+                HttpAsset.webserver,
+            ).where(
+                HttpAsset.scan_id == self.ctx.scan_id,
+                HttpAsset.port > 0,
+            )
+        ).all()
+        merged: dict[tuple[str, int], ServiceObservation] = {}
+        for host, ip, port, scheme, webserver in rows:
+            https = scheme == "https"
+            # host:port was probed because the port was open on every address it resolves to
+            addresses = set(resolved.get(host, ()))
+            if ip:
+                addresses.add(ip)
+            for address in addresses:
+                key = (address, port)
+                current = merged.get(key)
+                if current is not None and not https:
+                    continue
+                merged[key] = ServiceObservation(
+                    ip=address,
+                    port=port,
+                    is_http=True,
+                    tls=https,
+                    service_name="https" if https else "http",
+                    product=(webserver or None),
+                )
+        return port_inventory.upsert(
+            self.session,
+            scan_id=self.ctx.scan_id,
+            target_id=self.ctx.target_id,
+            project_id=self.ctx.project_id,
+            source=PortSource.HTTP_PROBE.value,
+            observations=list(merged.values()),
+        )
+
+    def _resolved_ips(self) -> dict[str, list[str]]:
+        rows = self.session.execute(
+            select(Subdomain.name, Subdomain.resolved_ips).where(
+                Subdomain.scan_id == self.ctx.scan_id
+            )
+        ).all()
+        return {name: list(ips or []) for name, ips in rows}
 
     def _persist(self, records: Iterable[dict]) -> int:
         self.session.execute(

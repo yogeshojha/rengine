@@ -64,6 +64,7 @@ export interface StageField {
 	type: FieldType;
 	default: unknown;
 	options: string[] | null;
+	option_labels: Record<string, string> | null;
 	minimum: number | null;
 	maximum: number | null;
 	scale: FieldScale | null;

@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-import ipaddress
-import uuid
-
 from sqlalchemy import select, text
 
-from shared.enums.ip import IpSource
 from shared.enums.scan import Phase
 from shared.enums.target import TargetType
 from shared.logging import get_logger
@@ -15,26 +11,11 @@ from shared.models.ripestat import RIPEStatASOverview
 from shared.models.target import Target
 from shared.models.whois import WhoisRecord
 from shared.services.ip_asn import ranges_ready, sync_ranges
-from shared.utils.datetime import utc_now
+from shared.services.ip_inventory import collect_ips, materialize
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.ip_enrichment.config import IpEnrichmentConfig
 
 logger = get_logger(__name__)
-
-_MAX_IPS = 100_000
-
-# every table a scan can park an IP in
-_COLLECT_SQL = """
-SELECT ip FROM subdomains s,
-       LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip
-WHERE s.scan_id = :sid
-UNION
-SELECT ip FROM http_assets WHERE scan_id = :sid AND ip IS NOT NULL
-UNION
-SELECT ip FROM ports WHERE scan_id = :sid
-UNION
-SELECT ip FROM ip_addresses WHERE scan_id = :sid
-"""
 
 _ENRICH_SQL = """
 UPDATE ip_addresses a SET
@@ -117,46 +98,16 @@ class IpEnrichmentStage(Stage):
         )
 
     def _collect(self) -> list[str]:
-        rows = self.session.execute(
-            text(_COLLECT_SQL).bindparams(sid=self.ctx.scan_id)
-        ).scalars()
-        seen: dict[str, None] = {}
-        for raw in rows:
-            value = (raw or "").strip()
-            if not value or value in seen:
-                continue
-            try:
-                ipaddress.ip_address(value)
-            except ValueError:
-                continue
-            seen[value] = None
-            if len(seen) >= _MAX_IPS:
-                break
-        return list(seen)
+        return collect_ips(self.session, self.ctx.scan_id)
 
     def _materialize(self, ips: list[str]) -> int:
-        known = set(
-            self.session.execute(
-                select(IpAddress.ip).where(IpAddress.scan_id == self.ctx.scan_id)
-            ).scalars()
+        return materialize(
+            self.session,
+            scan_id=self.ctx.scan_id,
+            target_id=self.ctx.target_id,
+            project_id=self.ctx.project_id,
+            ips=ips,
         )
-        now = utc_now()
-        fresh = [ip for ip in ips if ip not in known]
-        for ip in fresh:
-            self.session.add(
-                IpAddress(
-                    id=uuid.uuid4(),
-                    scan_id=self.ctx.scan_id,
-                    target_id=self.ctx.target_id,
-                    project_id=self.ctx.project_id,
-                    ip=ip,
-                    version=ipaddress.ip_address(ip).version,
-                    source=IpSource.DNS_RESOLUTION.value,
-                    discovered_at=now,
-                )
-            )
-        self.session.flush()
-        return len(fresh)
 
     def _ensure_ranges(self) -> None:
         if ranges_ready(self.session):

@@ -4,6 +4,7 @@
 	import Boxes from '@lucide/svelte/icons/boxes';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Server from '@lucide/svelte/icons/server';
+	import Fingerprint from '@lucide/svelte/icons/fingerprint';
 	import Network from '@lucide/svelte/icons/network';
 	import Waypoints from '@lucide/svelte/icons/waypoints';
 	import Heading from '@lucide/svelte/icons/heading';
@@ -21,6 +22,8 @@
 		PROVIDER_KIND_LABELS
 	} from '$lib/config/hosting-providers';
 	import { httpStatusClass, isPrivateIp, STATUS_DOT } from '$lib/utilities/scan-correlation';
+	import { productBrand } from '$lib/utilities/services';
+	import { SERVICE_CLASS_ICONS } from '$lib/config/service-classes';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { QueryGroup, QueryGroups, QueryGroupSpec } from '$lib/types/asset-query';
 
@@ -56,13 +59,20 @@
 		prefix: Network,
 		country: Flag,
 		port: Plug,
-		service: Server
+		service: Plug,
+		product: Boxes,
+		class: Layers,
+		source: Fingerprint
 	};
-	const LOGO_DIMENSIONS = new Set(['tech', 'cdn', 'server']);
+	const LOGO_DIMENSIONS = new Set(['tech', 'cdn', 'server', 'service', 'product']);
 
 	function identify(dimension: string, group: QueryGroup): Identity {
 		const base: Identity = { icon: ICONS[dimension] ?? Layers, logo: null, dot: null, note: null };
-		if (LOGO_DIMENSIONS.has(dimension)) return { ...base, logo: group.label };
+		if (dimension === 'class') {
+			return { ...base, icon: SERVICE_CLASS_ICONS[group.value] ?? Layers };
+		}
+		if (LOGO_DIMENSIONS.has(dimension))
+			return { ...base, logo: productBrand(group.label) || group.label };
 		if (dimension === 'status') {
 			return { ...base, dot: STATUS_DOT[httpStatusClass(Number.parseInt(group.value, 10) * 100)] };
 		}

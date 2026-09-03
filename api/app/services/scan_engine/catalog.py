@@ -11,16 +11,25 @@ from stages.presets import PRESETS, preset_stages
 from stages.registry import phases, rate_tools, stages
 
 
+def _resolve(prop: dict, defs: dict) -> dict:
+    """Flatten a $ref/allOf property (an enum field) onto its definition."""
+    ref = prop.get("$ref") or next(
+        (m.get("$ref") for m in prop.get("allOf") or [] if isinstance(m, dict)), None
+    )
+    if not ref or not ref.startswith("#/$defs/"):
+        return prop
+    target = defs.get(ref.rsplit("/", 1)[-1])
+    return {**target, **prop} if isinstance(target, dict) else prop
+
+
 def _field_specs(spec) -> list[StageField]:
     schema = spec.schema
+    defs = schema.get("$defs") or {}
     defaults = spec.defaults
     out: list[StageField] = []
-    for name, prop in (schema.get("properties") or {}).items():
-        options = prop.get("enum") or (prop.get("json_schema_extra") or {}).get(
-            "options"
-        )
-        if options is None and "items" in prop:
-            options = prop.get("options")
+    for name, raw in (schema.get("properties") or {}).items():
+        prop = _resolve(raw, defs)
+        options = prop.get("enum") or prop.get("options")
         out.append(
             StageField(
                 name=name,
@@ -29,6 +38,7 @@ def _field_specs(spec) -> list[StageField]:
                 type=_JSON_TYPES.get(prop.get("type"), prop.get("type") or "string"),
                 default=defaults.get(name, prop.get("default")),
                 options=list(options) if options else None,
+                option_labels=prop.get("option_labels") or None,
                 minimum=prop.get("minimum"),
                 maximum=prop.get("maximum"),
                 scale=prop.get("scale"),

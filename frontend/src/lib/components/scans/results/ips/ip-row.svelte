@@ -5,6 +5,7 @@
 	import Filter from '@lucide/svelte/icons/filter';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Network from '@lucide/svelte/icons/network';
+	import Plug from '@lucide/svelte/icons/plug';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Lock from '@lucide/svelte/icons/lock';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -38,6 +39,7 @@
 		onOpen: (g: IpGroupRead) => void;
 		onFilter: (token: string) => void;
 		onHosts: (filter: string) => void;
+		onServices: (filter: string) => void;
 	}
 
 	let {
@@ -52,7 +54,8 @@
 		pad,
 		onOpen,
 		onFilter,
-		onHosts
+		onHosts,
+		onServices
 	}: Props = $props();
 
 	const MAX_PORTS = 5;
@@ -378,6 +381,11 @@
 					{#if g.host_count}
 						<DropdownMenu.Item onclick={() => onHosts(filterToken('ip', g.ip))}>
 							<Globe /> Hosts in Web Assets
+						</DropdownMenu.Item>
+					{/if}
+					{#if g.port_count}
+						<DropdownMenu.Item onclick={() => onServices(filterToken('ip', g.ip))}>
+							<Plug /> Services on this address
 						</DropdownMenu.Item>
 					{/if}
 				</DropdownMenu.Group>

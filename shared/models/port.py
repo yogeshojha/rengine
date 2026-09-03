@@ -2,8 +2,11 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
+from sqlalchemy import Column
+from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.ports import PortSource, PortState, ServiceClass
 from shared.utils.datetime import utc_now
 
 
@@ -25,9 +28,19 @@ class Port(SQLModel, table=True):
     ip: str = Field(max_length=45, index=True)
     number: int = Field(index=True)
     protocol: str = Field(default="tcp", max_length=8)
-    state: str = Field(default="open", max_length=16)
-    service_name: str | None = Field(default=None, max_length=64)
+    state: str = Field(default=PortState.OPEN.value, max_length=16)
+    service_name: str | None = Field(default=None, max_length=64, index=True)
+    service_class: str = Field(
+        default=ServiceClass.OTHER.value, max_length=16, index=True
+    )
     source: str = Field(max_length=30)
+
+    is_http: bool = Field(default=False, index=True)
+    tls: bool = Field(default=False)
+    product: str | None = Field(default=None, max_length=200)
+    version: str | None = Field(default=None, max_length=100)
+    banner: str | None = Field(default=None, max_length=1000)
+    cpe: list = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
 
     discovered_at: datetime = Field(default_factory=utc_now)
     created_at: datetime = Field(default_factory=utc_now)
@@ -42,7 +55,14 @@ class PortRead(BaseModel):
     protocol: str
     state: str
     service_name: str | None = None
-    source: str
+    service_class: str = ServiceClass.OTHER.value
+    source: str = PortSource.NAABU.value
+    is_http: bool = False
+    tls: bool = False
+    product: str | None = None
+    version: str | None = None
+    banner: str | None = None
+    cpe: list[str] = Field(default_factory=list)
     discovered_at: datetime
 
 

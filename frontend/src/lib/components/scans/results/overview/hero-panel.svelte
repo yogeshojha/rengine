@@ -236,7 +236,7 @@
 				key: 'ports',
 				label: 'Open ports',
 				value: scan.open_ports_found,
-				tab: 'ips',
+				tab: 'services',
 				diff: diffVs(scan.open_ports_found, cmp?.open_ports_found),
 				trend: trendOf('open_ports_found')
 			}

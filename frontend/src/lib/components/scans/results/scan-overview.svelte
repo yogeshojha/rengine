@@ -7,7 +7,9 @@
 	import AttentionPanel from './overview/attention-panel.svelte';
 	import PosturePanel from './overview/posture-panel.svelte';
 	import CompositionPanel from './overview/composition-panel.svelte';
+	import ExposurePanel from './overview/exposure-panel.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
+	import { servicesApi } from '$lib/api/scan-results';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { isLiveStatus } from '$lib/utilities/scan-status';
@@ -15,6 +17,7 @@
 	import type { RelatedDomains } from '$lib/types/asset-query';
 	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
 	import type { SubdomainInsights } from '$lib/utilities/scan-insights';
+	import type { ScanExposure } from '$lib/utilities/services';
 
 	interface Props {
 		scan: ScanRead;
@@ -59,6 +62,7 @@
 
 	let insights = $state<SubdomainInsights | null>(null);
 	let relatedDomains = $state<RelatedDomains | null>(null);
+	let exposure = $state<ScanExposure | null>(null);
 	let loading = $state(true);
 	let errored = $state(false);
 
@@ -97,6 +101,14 @@
 			.finally(() => (loading = false));
 	}
 
+	function loadExposure() {
+		if (!scanId || !projectId) return;
+		servicesApi
+			.exposure(projectId, scanId)
+			.then((d) => (exposure = d))
+			.catch(() => (exposure = null));
+	}
+
 	function loadRelated() {
 		if (!scanId || !projectId) return;
 		subdomainsApi
@@ -113,6 +125,7 @@
 		untrack(() => {
 			loadInsights();
 			loadRelated();
+			loadExposure();
 		});
 	});
 
@@ -171,6 +184,7 @@
 		</EmptyState>
 	{:else}
 		<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
+		<ExposurePanel {exposure} {loading} {onTab} />
 		<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} {onTab} />
 	{/if}
 </div>

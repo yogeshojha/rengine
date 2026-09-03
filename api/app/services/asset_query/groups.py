@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.asset_query import MAX_GROUPS
+from shared.definitions.ports import PORT_SOURCE_LABELS, SERVICE_CLASS_LABELS
 from shared.models.asset_query import QueryGroup, QueryGroups
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
@@ -190,6 +191,68 @@ async def build_ip_groups(
         QueryGroup(
             value=str(raw),
             label=f"AS{raw}" if key == "asn" else str(raw),
+            count=int(n),
+            query=_token(field, op, str(raw)),
+        )
+        for raw, n in rows.all()
+    ]
+    counted = int(total or 0)
+    return QueryGroups(
+        dimension=key,
+        groups=groups,
+        total_groups=counted,
+        truncated=counted > len(groups),
+        rows=int(rows_in_scope or 0),
+        covered=int(covered or 0),
+    )
+
+
+_SERVICE_COLUMNS: dict[str, tuple[str, str, str]] = {
+    "service": ("service_name", "service", "="),
+    "class": ("service_class", "class", "="),
+    "port": ("port", "port", ":"),
+    "product": ("product", "product", "="),
+    "ip": ("ip", "ip", "="),
+    "asn": ("asn", "asn", ":"),
+    "org": ("asn_org", "org", "="),
+    "country": ("country", "country", "="),
+    "source": ("source", "source", "="),
+}
+_SERVICE_LABELS: dict[str, dict[str, str]] = {
+    "class": SERVICE_CLASS_LABELS,
+    "source": PORT_SOURCE_LABELS,
+}
+
+
+async def build_service_groups(session: AsyncSession, base, key: str) -> QueryGroups:
+    column = _SERVICE_COLUMNS.get(key)
+    if column is None:
+        return QueryGroups(dimension=key)
+    attr, field, op = column
+
+    scoped = base.subquery()
+    value = getattr(scoped.c, attr).label("value")
+    services = func.count()
+    joined = (
+        select(value, services.label("n"))
+        .select_from(scoped)
+        .where(value.isnot(None), cast(value, Text) != "")
+    )
+    rows_in_scope = await session.scalar(select(func.count()).select_from(scoped))
+    covered, total = (
+        await session.execute(
+            joined.with_only_columns(services, func.count(func.distinct(value)))
+        )
+    ).one()
+    rows = await session.execute(
+        joined.group_by(value).order_by(desc("n"), value).limit(MAX_GROUPS)
+    )
+
+    labels = _SERVICE_LABELS.get(key, {})
+    groups = [
+        QueryGroup(
+            value=str(raw),
+            label=labels.get(str(raw)) or (f"AS{raw}" if key == "asn" else str(raw)),
             count=int(n),
             query=_token(field, op, str(raw)),
         )

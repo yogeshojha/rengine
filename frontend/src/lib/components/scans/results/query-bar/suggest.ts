@@ -98,8 +98,9 @@ function optionsFor(
 	if (field.name === 'is') {
 		return schema.flags.map((f) => ({ value: f.value, detail: f.description }));
 	}
-	if (field.facet) {
-		return (facets[field.facet] ?? []).map((f) => ({
+	const observed = field.facet ? (facets[field.facet] ?? []) : [];
+	if (observed.length) {
+		return observed.map((f) => ({
 			value: f.value,
 			detail: f.label !== f.value ? f.label : undefined,
 			hint: f.count ? f.count.toLocaleString() : undefined

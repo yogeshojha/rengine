@@ -18,7 +18,11 @@ from shared.models.scan_activity import ScanActivity
 from shared.models.subdomain import Subdomain
 from shared.services.activity_log import ActivityLogService
 from shared.services.notification_sync import SyncNotificationPublisher
-from shared.services.orchestrator import aggregate_counts, aggregate_status
+from shared.services.orchestrator import (
+    aggregate_counts,
+    aggregate_status,
+    derived_counts,
+)
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.utils.datetime import utc_now
 
@@ -113,7 +117,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     if status == ScanStatus.RUNNING.value:
         logger.info("finalize deferred: scan %s still has in-flight stages", scan.id)
         return
-    counts = aggregate_counts(activities)
+    counts = {**aggregate_counts(activities), **derived_counts(session, scan.id)}
 
     # Row-lock + re-check so a concurrent user-cancel (or a duplicate finalize) wins.
     locked = session.get(Scan, scan.id, with_for_update=True)

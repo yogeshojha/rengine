@@ -32,7 +32,10 @@ class IpAddress(SQLModel, table=True):
     country: str | None = Field(default=None, max_length=10)
     is_cdn: bool = Field(default=False, index=True)
     cdn_name: str | None = Field(default=None, max_length=100)
+    cdn_type: str | None = Field(default=None, max_length=20)
     is_alive: bool | None = Field(default=None)
+    scan_policy: str | None = Field(default=None, max_length=16, index=True)
+    scan_policy_reason: str | None = Field(default=None, max_length=32)
 
     discovered_at: datetime = Field(default_factory=utc_now)
     created_at: datetime = Field(default_factory=utc_now)
@@ -52,7 +55,10 @@ class IpAddressRead(BaseModel):
     country: str | None = None
     is_cdn: bool = False
     cdn_name: str | None = None
+    cdn_type: str | None = None
     is_alive: bool | None = None
+    scan_policy: str | None = None
+    scan_policy_reason: str | None = None
     discovered_at: datetime
 
 
@@ -74,7 +80,9 @@ class TargetIpAddressRead(BaseModel):
     country: str | None = None
     is_cdn: bool = False
     cdn_name: str | None = None
+    cdn_type: str | None = None
     is_alive: bool | None = None
+    scan_policy: str | None = None
     scan_count: int
     last_scan_id: uuid.UUID
     first_seen: datetime

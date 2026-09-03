@@ -14,6 +14,7 @@
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Server from '@lucide/svelte/icons/server';
+	import Plug from '@lucide/svelte/icons/plug';
 
 	import { scansApi } from '$lib/api/scans';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -37,6 +38,7 @@
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
+	import ServicesTable from '$lib/components/scans/results/services-table.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import {
@@ -48,6 +50,7 @@
 	} from '$lib/utilities/scan-status';
 	import { emptyQuery, type WebAssetQuery } from '$lib/utilities/scan-insights';
 	import { emptyIpQuery, type IpQuery } from '$lib/utilities/ip-groups';
+	import { emptyServiceQuery, type ServiceQuery } from '$lib/utilities/services';
 	import { targetTypeLabel } from '$lib/types/scan-engine';
 	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
 	import type { TargetType } from '$lib/types/target';
@@ -55,11 +58,12 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { NOW_TICK_MS } from '$lib/constants';
 
-	const TABS = ['overview', 'web-assets', 'ips'] as const;
+	const TABS = ['overview', 'web-assets', 'services', 'ips'] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
 		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
 		{ key: 'web-assets', label: 'Web Assets', icon: Globe },
+		{ key: 'services', label: 'Services', icon: Plug },
 		{ key: 'ips', label: 'IPs', icon: Server }
 	];
 	const HISTORY_SIZE = 12;
@@ -86,8 +90,13 @@
 	let tabsHeight = $state(0);
 	let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 	let now = $state(Date.now());
-	let webQuery = $state<WebAssetQuery>(emptyQuery());
-	let ipQuery = $state<IpQuery>(emptyIpQuery());
+	const initialSearch = (key: string) => page.url.searchParams.get(key) ?? '';
+	let webQuery = $state<WebAssetQuery>({ ...emptyQuery(), search: initialSearch('q') });
+	let ipQuery = $state<IpQuery>({ ...emptyIpQuery(), search: initialSearch('ip_q') });
+	let serviceQuery = $state<ServiceQuery>({
+		...emptyServiceQuery(),
+		search: initialSearch('svc_q')
+	});
 
 	const initialTab = page.url.searchParams.get('tab');
 	let activeTab = $state<TabKey>(
@@ -120,6 +129,11 @@
 		if (tab === 'ips') {
 			ipQuery = { ...emptyIpQuery(), search: filter };
 			setTab('ips');
+			return;
+		}
+		if (tab === 'services') {
+			serviceQuery = { ...emptyServiceQuery(), search: filter };
+			setTab('services');
 			return;
 		}
 		applyFilter(filter);
@@ -181,9 +195,11 @@
 		return done.find((s) => s.engine_name === scan!.engine_name)?.duration_seconds ?? null;
 	});
 	let ipsTotal = $state<number | null>(null);
+	let servicesTotal = $state<number | null>(null);
 	let tabCounts = $derived<Record<TabKey, number | null>>({
 		overview: null,
 		'web-assets': scan?.subdomains_found ?? 0,
+		services: servicesTotal ?? scan?.open_ports_found ?? 0,
 		ips: ipsTotal ?? scan?.ips_found ?? 0
 	});
 	let timing = $derived.by(() => {
@@ -195,13 +211,15 @@
 		return `${end} · took ${durationLabel(scan, now)}`;
 	});
 
-	let lastScanId = '';
+	// seeded so the first mount keeps the queries the URL asked for
+	let lastScanId = page.params.id ?? '';
 	$effect(() => {
 		if (scanId && scanId !== lastScanId) {
 			lastScanId = scanId;
 			untrack(() => {
 				webQuery = emptyQuery();
 				ipQuery = emptyIpQuery();
+				serviceQuery = emptyServiceQuery();
 				history = [];
 				historyLoaded = false;
 			});
@@ -495,6 +513,19 @@
 						apex={scan.execution_config.target_value}
 						active={activeTab === 'web-assets'}
 						bind:query={webQuery}
+					/>
+				{/key}
+			</Tabs.Content>
+
+			<Tabs.Content value="services" class="mt-6">
+				{#key scan.id}
+					<ServicesTable
+						scanId={scan.id}
+						{projectId}
+						active={activeTab === 'services'}
+						onTab={openTab}
+						onScanTotal={(n) => (servicesTotal = n)}
+						bind:query={serviceQuery}
 					/>
 				{/key}
 			</Tabs.Content>

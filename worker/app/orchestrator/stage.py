@@ -16,7 +16,7 @@ from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.services.activity_log import ActivityLogService
-from shared.services.orchestrator.aggregate import aggregate_counts
+from shared.services.orchestrator.aggregate import aggregate_counts, derived_counts
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.orchestrator.tracking import (
     ScanActivityService,
@@ -84,7 +84,8 @@ def _apply_counts(session: Session, scan: Scan) -> None:
         .scalars()
         .all()
     )
-    for column, value in aggregate_counts(activities).items():
+    totals = {**aggregate_counts(activities), **derived_counts(session, scan.id)}
+    for column, value in totals.items():
         setattr(scan, column, value)
     session.add(scan)
     session.commit()

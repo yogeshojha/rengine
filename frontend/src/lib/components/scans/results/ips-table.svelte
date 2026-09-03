@@ -66,7 +66,7 @@
 		active = true,
 		onTab,
 		onScanTotal,
-		query = $bindable({ ...emptyIpQuery(), search: appPage.url.searchParams.get('ip_q') ?? '' })
+		query = $bindable(emptyIpQuery())
 	}: Props = $props();
 
 	const DEFAULT_SORT = { key: 'hosts', dir: -1 as const };
@@ -434,6 +434,11 @@
 		syncUrl();
 		onTab?.('web-assets', filter);
 	}
+	function showServices(filter: string) {
+		drawerOpen = false;
+		syncUrl();
+		onTab?.('services', filter);
+	}
 	function scrollCursor() {
 		document.querySelector(`[data-ip-row-index="${cursor}"]`)?.scrollIntoView({ block: 'nearest' });
 	}
@@ -628,6 +633,7 @@
 						onOpen={open}
 						onFilter={applyDsl}
 						onHosts={showHosts}
+						onServices={showServices}
 					/>
 				{/each}
 			</div>
@@ -663,4 +669,5 @@
 	onStep={step}
 	onFilter={applyDsl}
 	onHosts={showHosts}
+	onServices={showServices}
 />

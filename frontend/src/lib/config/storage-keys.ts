@@ -18,5 +18,9 @@ export const STORAGE_KEYS = {
 	ipsColumns: 'rengine:ips:columns',
 	ipsRecentQueries: 'rengine:ips:recentQueries',
 	ipsDensity: 'rengine:ips:density',
-	ipsPageSize: 'rengine:ips:pageSize'
+	ipsPageSize: 'rengine:ips:pageSize',
+	servicesColumns: 'rengine:services:columns',
+	servicesRecentQueries: 'rengine:services:recentQueries',
+	servicesDensity: 'rengine:services:density',
+	servicesPageSize: 'rengine:services:pageSize'
 } as const;

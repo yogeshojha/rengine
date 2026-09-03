@@ -32,6 +32,8 @@
 		Array.isArray(field.default) ? field.default.join(', ') || '(none)' : String(field.default)
 	);
 
+	const optionLabel = (option: string) => field.option_labels?.[option] ?? option ?? 'Select…';
+
 	function commitNumber(raw: string) {
 		const parsed = Number(raw);
 		if (raw === '' || Number.isNaN(parsed)) return;
@@ -115,11 +117,13 @@
 				onValueChange={(v) => v && onChange(v)}
 			>
 				<Select.Trigger {id} class="h-8 w-[180px] text-sm">
-					{String(value ?? field.default ?? 'Select…')}
+					{optionLabel(String(value ?? field.default ?? ''))}
 				</Select.Trigger>
 				<Select.Content>
 					{#each field.options as option (option)}
-						<Select.Item value={option} label={option}>{option}</Select.Item>
+						<Select.Item value={option} label={optionLabel(option)}>
+							{optionLabel(option)}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>

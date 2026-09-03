@@ -4,6 +4,11 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from enum import StrEnum
 
+from shared.definitions.ports import (
+    PORT_SOURCE_LABELS,
+    SERVICE_CLASS_LABELS,
+)
+
 MAX_QUERY_LENGTH = 2000
 MAX_QUERY_NODES = 40
 MAX_FREE_TERMS = 8
@@ -1107,4 +1112,327 @@ IP_QUERY = QueryRegistry(
     dimensions=IP_GROUP_DIMENSIONS,
     examples=IP_EXAMPLES,
     example_groups=IP_EXAMPLE_GROUPS,
+)
+
+SERVICE_GROUPS: tuple[str, ...] = ("Service", "Software", "Address", "Hosts", "Flags")
+
+SERVICE_FLAGS: dict[str, str] = {
+    "http": "Answered an HTTP request",
+    "tls": "Negotiates TLS",
+    "sensitive": "An administrative or datastore port",
+    "named": "The software behind it was identified",
+    "passive": "Reported by an internet-wide scanner, not confirmed here",
+    "confirmed": "Observed directly by this scan",
+    "cdn": "On a CDN-fronted address",
+    "hosted": "A hostname resolves to the address",
+    "private": "In a private address range",
+    "v4": "IPv4 address",
+    "v6": "IPv6 address",
+}
+
+SERVICE_EXPOSURE: dict[str, str] = dict(SERVICE_CLASS_LABELS)
+
+SERVICE_FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="port",
+        type=FieldType.NUMBER,
+        group="Service",
+        description="Port number. Accepts a list or a range.",
+        example="port:[22,3389]",
+        facet="port",
+    ),
+    QueryField(
+        name="service",
+        type=FieldType.STRING,
+        group="Service",
+        description="Service running on the port.",
+        example="service:ssh",
+        facet="service",
+        free_text=True,
+    ),
+    QueryField(
+        name="class",
+        type=FieldType.ENUM,
+        group="Service",
+        description="Which kind of service this is.",
+        example="class:database",
+        aliases=("kind",),
+        values=tuple(SERVICE_EXPOSURE),
+        facet="class",
+    ),
+    QueryField(
+        name="protocol",
+        type=FieldType.ENUM,
+        group="Service",
+        description="Transport protocol.",
+        example="protocol:tcp",
+        values=("tcp", "udp"),
+    ),
+    QueryField(
+        name="source",
+        type=FieldType.ENUM,
+        group="Service",
+        description="How the service was observed.",
+        example="source:naabu",
+        values=tuple(PORT_SOURCE_LABELS),
+        facet="source",
+    ),
+    QueryField(
+        name="product",
+        type=FieldType.STRING,
+        group="Software",
+        description="Software named by the service banner.",
+        example="product:OpenSSH",
+        free_text=True,
+    ),
+    QueryField(
+        name="version",
+        type=FieldType.STRING,
+        group="Software",
+        description="Version reported by the service.",
+        example="version:8.9",
+        free_text=True,
+    ),
+    QueryField(
+        name="banner",
+        type=FieldType.TEXT,
+        group="Software",
+        description="Text the service returned on connect.",
+        example="banner:ubuntu",
+        free_text=True,
+    ),
+    QueryField(
+        name="ip",
+        type=FieldType.IP,
+        group="Address",
+        description="Address the service listens on. Accepts a CIDR range.",
+        example="ip:104.16.0.0/12",
+        aliases=("address", "addr"),
+        free_text=True,
+    ),
+    QueryField(
+        name="asn",
+        type=FieldType.NUMBER,
+        group="Address",
+        description="Autonomous system announcing the address.",
+        example="asn:13335",
+        facet="asn",
+    ),
+    QueryField(
+        name="org",
+        type=FieldType.STRING,
+        group="Address",
+        description="Operator of the announcing network.",
+        example="org:cloudflare",
+        aliases=("as_name", "asn_org"),
+        free_text=True,
+    ),
+    QueryField(
+        name="country",
+        type=FieldType.ENUM,
+        group="Address",
+        description="Two-letter country of the address.",
+        example="country:DE",
+        facet="country",
+    ),
+    QueryField(
+        name="cdn",
+        type=FieldType.STRING,
+        group="Address",
+        description="CDN in front of the address. yes or no filters on presence.",
+        example="cdn:cloudflare",
+        free_text=True,
+    ),
+    QueryField(
+        name="host",
+        type=FieldType.STRING,
+        group="Hosts",
+        description="Hostname resolving to the address.",
+        example="host:api",
+        aliases=("name", "subdomain"),
+        free_text=True,
+    ),
+    QueryField(
+        name="status",
+        type=FieldType.NUMBER,
+        group="Hosts",
+        description="HTTP status returned on this port.",
+        example="status:200",
+    ),
+    QueryField(
+        name="is",
+        type=FieldType.FLAG,
+        group="Flags",
+        description="Property of the service.",
+        example="is:sensitive",
+        aliases=("has",),
+        values=tuple(SERVICE_FLAGS),
+    ),
+)
+
+SERVICE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
+    GroupDimension(
+        key="service",
+        label="Service",
+        description="Ports running the same service",
+    ),
+    GroupDimension(
+        key="class",
+        label="Service class",
+        description="Ports grouped by what kind of service they run",
+    ),
+    GroupDimension(
+        key="port",
+        label="Port",
+        description="Services on the same port number",
+    ),
+    GroupDimension(
+        key="product",
+        label="Software",
+        description="Services running the same named software",
+    ),
+    GroupDimension(
+        key="ip",
+        label="Address",
+        description="Services on the same address",
+    ),
+    GroupDimension(
+        key="asn",
+        label="Autonomous system",
+        description="Services in the same announced network",
+    ),
+    GroupDimension(
+        key="org",
+        label="Network operator",
+        description="Services run on the same operator's network",
+    ),
+    GroupDimension(
+        key="country",
+        label="Country",
+        description="Services in the same country",
+    ),
+    GroupDimension(
+        key="source",
+        label="Evidence",
+        description="Services grouped by how they were observed",
+    ),
+)
+
+SERVICE_EXAMPLE_GROUPS: tuple[str, ...] = (
+    "Critical exposure",
+    "Remote access",
+    "Web surface",
+    "Evidence",
+    "Hygiene",
+)
+
+SERVICE_EXAMPLES: tuple[QueryExample, ...] = (
+    QueryExample(
+        query="class:database",
+        description="Data stores reachable from the internet",
+        group="Critical exposure",
+        generic=True,
+    ),
+    QueryExample(
+        query="service:[redis,memcached,mongodb,elasticsearch]",
+        description="Data stores that ship without authentication",
+        group="Critical exposure",
+    ),
+    QueryExample(
+        query="service:docker",
+        description="Container runtime API exposed",
+        group="Critical exposure",
+    ),
+    QueryExample(
+        query="is:sensitive and not is:cdn",
+        description="Administrative ports on an origin address",
+        group="Critical exposure",
+    ),
+    QueryExample(
+        query="class:remote",
+        description="Interactive administration reachable",
+        group="Remote access",
+        generic=True,
+    ),
+    QueryExample(
+        query="service:ssh and not port:22",
+        description="SSH moved off its usual port",
+        group="Remote access",
+    ),
+    QueryExample(
+        query="service:[telnet,ftp,rlogin,rexec]",
+        description="Protocols that carry credentials in the clear",
+        group="Remote access",
+    ),
+    QueryExample(
+        query="service:rdp or service:vnc",
+        description="Remote desktop reachable from the internet",
+        group="Remote access",
+    ),
+    QueryExample(
+        query="is:http and not port:[80,443]",
+        description="Web services on a non-standard port",
+        group="Web surface",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:http and not is:tls",
+        description="Web services answering without TLS",
+        group="Web surface",
+    ),
+    QueryExample(
+        query="class:web and not is:http",
+        description="Web ports open with nothing answering",
+        group="Web surface",
+    ),
+    QueryExample(
+        query="status:401 or status:403",
+        description="Services behind a login wall",
+        group="Web surface",
+    ),
+    QueryExample(
+        query="is:passive",
+        description="Ports reported by scanners but not confirmed here",
+        group="Evidence",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:named",
+        description="Services whose software was identified",
+        group="Evidence",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:confirmed and not is:named",
+        description="Open ports with no service identified yet",
+        group="Evidence",
+    ),
+    QueryExample(
+        query="class:mail and not is:tls",
+        description="Mail services without transport encryption",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="not is:hosted",
+        description="Services on addresses with no known hostname",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="class:infra",
+        description="Directory, file and management services",
+        group="Hygiene",
+        generic=True,
+    ),
+)
+
+SERVICE_QUERY = QueryRegistry(
+    key="service",
+    noun="service",
+    noun_plural="services",
+    fields=SERVICE_FIELDS,
+    flags=SERVICE_FLAGS,
+    groups=SERVICE_GROUPS,
+    dimensions=SERVICE_GROUP_DIMENSIONS,
+    examples=SERVICE_EXAMPLES,
+    example_groups=SERVICE_EXAMPLE_GROUPS,
 )

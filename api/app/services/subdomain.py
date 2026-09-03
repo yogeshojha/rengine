@@ -833,7 +833,7 @@ class SubdomainService:
                 "sensitive",
                 "Exposed sensitive services",
                 int(sensitive or 0),
-                "sensitive:true",
+                "is:sensitive",
                 "destructive",
             ),
         ]
@@ -942,19 +942,6 @@ class SubdomainService:
             .order_by(func.count().desc())
         )
         geography = [Tally(name=c, count=n) for c, n in geo_rows.all()]
-        service_rows = await self.session.execute(
-            select(Port.service_name, func.count())
-            .where(
-                Port.project_id == project_id,
-                Port.scan_id == scan_id,
-                Port.service_name.isnot(None),
-            )
-            .group_by(Port.service_name)
-            .order_by(func.count().desc())
-            .limit(8)
-        )
-        services = [Tally(name=n, count=c) for n, c in service_rows.all()]
-
         clusters: list[ClusterStat] = []
         clusters += await self._cluster(
             Subdomain.favicon_hash, "favicon", project_id, scan_id
@@ -1005,7 +992,6 @@ class SubdomainService:
             top_asn=top_asn,
             geography=geography,
             geo_total=sum(t.count for t in geography),
-            services=services,
             clusters=clusters[:_CLUSTER_LIMIT],
         )
 

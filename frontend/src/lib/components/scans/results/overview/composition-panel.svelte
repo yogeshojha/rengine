@@ -144,16 +144,6 @@
 				pick: onFilter
 			});
 
-		if (insights.services.length)
-			out.push({
-				key: 'services',
-				title: 'Exposed services',
-				total: plural(stat('ports'), 'open port', 'open ports'),
-				base: stat('ports'),
-				rows: tallies(insights.services, 'service'),
-				pick: onFilter
-			});
-
 		return out;
 	});
 </script>

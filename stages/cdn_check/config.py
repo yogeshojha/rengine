@@ -8,6 +8,6 @@ from stages.config import StageConfig
 class CdnCheckConfig(StageConfig):
     enabled: bool = Field(
         default=True,
-        title="Detect CDNs",
-        description="Flag hosts served from a CDN so port scans can skip them.",
+        title="Attribute CDNs and cloud",
+        description="Identify which addresses sit behind a CDN, WAF or cloud provider.",
     )

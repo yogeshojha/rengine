@@ -6,8 +6,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.services.asset_query import build_schema
 from app.services.port import PortService
+from shared.definitions.asset_query import SERVICE_QUERY
+from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
 from shared.models.port import PortRead, PortSummary
+from shared.models.scan_correlation import (
+    ScanExposure,
+    ServiceFacets,
+    ServiceFilter,
+    ServicePage,
+)
 
 router = APIRouter(
     prefix="/ports",
@@ -53,3 +62,57 @@ async def port_summary(
     return await service.summary(
         project_id=project_id, scan_id=scan_id, target_id=target_id
     )
+
+
+@router.get("/search/schema", response_model=QuerySchema)
+async def service_query_schema(_current_user: CurrentUser):
+    return build_schema(SERVICE_QUERY)
+
+
+@router.post("/search", response_model=ServicePage)
+async def search_services(
+    _current_user: CurrentUser,
+    service: Annotated[PortService, Depends(get_service)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    body: ServiceFilter,
+):
+    return await service.search(scan_id, body)
+
+
+@router.post("/search/leads", response_model=QueryLeads)
+async def service_leads(
+    _current_user: CurrentUser,
+    service: Annotated[PortService, Depends(get_service)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    body: ServiceFilter,
+):
+    return await service.leads(scan_id, body)
+
+
+@router.post("/search/groups", response_model=QueryGroups)
+async def service_groups(
+    _current_user: CurrentUser,
+    service: Annotated[PortService, Depends(get_service)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    group_by: Annotated[str, Query(description="Group dimension key", max_length=40)],
+    body: ServiceFilter,
+):
+    return await service.groups(scan_id, body, group_by)
+
+
+@router.get("/facets", response_model=ServiceFacets)
+async def service_facets(
+    _current_user: CurrentUser,
+    service: Annotated[PortService, Depends(get_service)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    return await service.facets(scan_id)
+
+
+@router.get("/exposure", response_model=ScanExposure)
+async def scan_exposure(
+    _current_user: CurrentUser,
+    service: Annotated[PortService, Depends(get_service)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    return await service.exposure(scan_id)

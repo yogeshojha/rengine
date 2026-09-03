@@ -19,7 +19,7 @@ class WafDetectStage(Stage):
     title = "WAF Detection"
     description = "Fingerprint web application firewalls in front of live services."
     phase = Phase.EXPANSION.value
-    level = 3
+    level = 4
     tools = ("wafw00f",)
     config_model = WafDetectConfig
 

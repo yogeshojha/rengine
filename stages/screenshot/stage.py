@@ -34,7 +34,7 @@ class ScreenshotStage(Stage):
     title = "Screenshots"
     description = "Render every live HTTP service to an image."
     phase = Phase.EXPANSION.value
-    level = 3
+    level = 4
     tools = ("httpx",)
     config_model = ScreenshotConfig
 

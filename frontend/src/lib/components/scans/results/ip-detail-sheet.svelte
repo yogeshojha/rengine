@@ -37,6 +37,7 @@
 		onStep?: (dir: -1 | 1) => void;
 		onFilter?: (dsl: string) => void;
 		onHosts?: (filter: string) => void;
+		onServices?: (filter: string) => void;
 	}
 
 	let {
@@ -48,7 +49,8 @@
 		total = 0,
 		onStep,
 		onFilter,
-		onHosts
+		onHosts,
+		onServices
 	}: Props = $props();
 
 	let contentEl = $state<HTMLElement | null>(null);
@@ -267,7 +269,15 @@
 						<div class="flex items-center justify-between">
 							{@render heading(Plug, 'Open ports')}
 							{#if group.ports.length}
-								<span class="text-xs text-muted-foreground tabular-nums">{group.ports.length}</span>
+								<Button
+									variant="link"
+									size="sm"
+									class="h-auto gap-1 px-0 text-xs"
+									onclick={() => onServices?.(filterToken('ip', group.ip))}
+								>
+									{group.ports.length} in Services
+									<ChevronRight class="size-3.5" />
+								</Button>
 							{/if}
 						</div>
 						{#if group.ports.length}

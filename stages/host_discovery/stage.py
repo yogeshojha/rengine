@@ -7,7 +7,7 @@ from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from stages.base import RANGE_TARGETS, Stage, StageResult
 from stages.host_discovery.config import HostDiscoveryConfig
-from tools.naabu.client import NaabuClient, NaabuError
+from tools.naabu.client import NaabuClient, NaabuError, NaabuOptions
 
 logger = get_logger(__name__)
 
@@ -40,20 +40,20 @@ class HostDiscoveryStage(Stage):
 
         try:
             client = NaabuClient(
-                ports=_LIVENESS_PORTS,
-                rate=cfg.rate,
-                concurrency=cfg.threads,
-                timeout=cfg.timeout,
-                proxy_url=net.proxy_url,
-                exclude_cdn=False,
+                options=NaabuOptions(
+                    rate=cfg.rate,
+                    concurrency=cfg.threads,
+                    timeout=cfg.timeout,
+                    proxy_url=net.proxy_url,
+                    extra_args=self.ctx.resolved.tool_args("naabu"),
+                ),
                 recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("naabu"),
             )
         except NaabuError:
             logger.warning("naabu unavailable, skipping host discovery")
             return StageResult(counts={"alive": 0})
 
-        found = client.scan([row.ip for row in rows])
+        found = client.scan([row.ip for row in rows], ["-p", _LIVENESS_PORTS])
         self._check_abort()
         alive_ips = {item["ip"] for item in found}
 
