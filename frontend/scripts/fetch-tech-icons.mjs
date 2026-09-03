@@ -88,6 +88,7 @@ async function main() {
 
 		let written = 0;
 		let plated = 0;
+		let aliased = 0;
 		const claimed = new Set();
 		const skipped = { missing: 0, raster: 0, oversized: 0, collided: 0 };
 		for (const [name, icon] of icons) {
@@ -118,14 +119,23 @@ async function main() {
 			claimed.add(slug);
 			const plate = contrastPlate(min);
 			if (plate) plated++;
-			await writeFile(join(OUT, `${slug}.svg`), plate ? withPlate(min, plate) : min);
+			const out = plate ? withPlate(min, plate) : min;
+			await writeFile(join(OUT, `${slug}.svg`), out);
 			written++;
+			// several technologies share one logo file, so key it by brand too (Google Web Server -> google)
+			const brand = techIconSlug(icon.replace(/\.svg$/, ''));
+			if (brand && !claimed.has(brand)) {
+				claimed.add(brand);
+				await writeFile(join(OUT, `${brand}.svg`), out);
+				aliased++;
+			}
 		}
 
 		process.stdout.write(
-			`wrote ${written} icons to static/tech-icons (${plated} plated for contrast) ` +
-			`(skipped ${skipped.raster} raster, ${skipped.oversized} oversized, ` +
-			`${skipped.collided} slug collisions, ${skipped.missing} missing)\n`
+			`wrote ${written} icons + ${aliased} brand aliases to static/tech-icons ` +
+				`(${plated} plated for contrast) ` +
+				`(skipped ${skipped.raster} raster, ${skipped.oversized} oversized, ` +
+				`${skipped.collided} slug collisions, ${skipped.missing} missing)\n`
 		);
 	} finally {
 		await rm(tmp, { recursive: true, force: true });

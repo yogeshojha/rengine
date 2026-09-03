@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { Badge } from '$lib/components/ui/badge';
+	import TechIcon from '../tech-icon.svelte';
 	import { isSensitivePort } from '$lib/utilities/scan-correlation';
 	import type { IpGroupRead } from '$lib/utilities/scan-insights';
 
@@ -34,6 +35,7 @@
 			<span class="text-muted-foreground">{group.is_alive ? 'responding' : 'no response'}</span>
 			{#if group.is_cdn}
 				<Badge variant="info" class="ml-auto px-1 text-[9px] font-normal">
+					<TechIcon name={group.cdn_name ?? ''} class="size-2.5" />
 					{group.cdn_name ?? 'CDN'}
 				</Badge>
 			{/if}

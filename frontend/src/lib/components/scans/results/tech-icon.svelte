@@ -1,12 +1,14 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { techIconUrl } from '$lib/config/tech-icons';
 
 	interface Props {
 		name: string;
 		class?: string;
+		fallback?: Snippet;
 	}
 
-	let { name, class: className = 'size-3' }: Props = $props();
+	let { name, class: className = 'size-3', fallback }: Props = $props();
 
 	let failed = $state(false);
 	$effect(() => {
@@ -25,4 +27,6 @@
 		onerror={() => (failed = true)}
 		class="shrink-0 object-contain {className}"
 	/>
+{:else if fallback}
+	{@render fallback()}
 {/if}

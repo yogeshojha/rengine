@@ -72,7 +72,11 @@
 				{/if}
 				{#if sub.resolved_ips?.length && provider && ProviderIcon}
 					<p class="flex items-center gap-1 text-muted-foreground">
-						<ProviderIcon class="size-3 shrink-0" />
+						<TechIcon name={provider.label} class="size-3">
+							{#snippet fallback()}
+								<ProviderIcon class="size-3 shrink-0" />
+							{/snippet}
+						</TechIcon>
 						<span>{provider.label}</span>
 						<span class="truncate font-mono">· {sub.cname}</span>
 					</p>

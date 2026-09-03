@@ -545,7 +545,11 @@
 																applyDsl(`cname:${prov.suffix}`);
 															}}
 														>
-															<ProvIcon class="size-2.5" />
+															<TechIcon name={prov.label} class="size-2.5">
+																{#snippet fallback()}
+																	<ProvIcon class="size-2.5" />
+																{/snippet}
+															</TechIcon>
 															{prov.label}
 														</button>
 													{/snippet}
@@ -693,6 +697,7 @@
 													{#snippet child({ props })}
 														<span {...props} class="mt-0.5 inline-flex">
 															<Badge variant="info" class="px-1 text-[9px] font-normal">
+																<TechIcon name={s.cdn_name ?? ''} class="size-2.5" />
 																{s.cdn_name ?? 'CDN'}
 															</Badge>
 														</span>

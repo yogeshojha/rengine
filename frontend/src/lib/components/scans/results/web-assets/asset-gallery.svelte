@@ -109,9 +109,10 @@
 					{#if s.tech.length || s.is_cdn}
 						<div class="mt-0.5 flex flex-wrap gap-1">
 							{#if s.is_cdn}
-								<Badge variant="info" class="px-1 text-[9px] font-normal"
-									>{s.cdn_name ?? 'CDN'}</Badge
-								>
+								<Badge variant="info" class="px-1 text-[9px] font-normal">
+									<TechIcon name={s.cdn_name ?? ''} class="size-2.5" />
+									{s.cdn_name ?? 'CDN'}
+								</Badge>
 							{/if}
 							{#each s.tech.slice(0, MAX_TECH) as t (t)}
 								<Badge variant="outline" class="px-1 text-[9px] font-normal">

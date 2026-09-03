@@ -25,6 +25,7 @@
 
 	import SearchBar from './web-assets/search-bar.svelte';
 	import OverflowPopover from './web-assets/overflow-popover.svelte';
+	import TechIcon from './tech-icon.svelte';
 	import ResultsPagination from './web-assets/results-pagination.svelte';
 	import type { ColumnDef } from './web-assets/filter-bar.svelte';
 	import IpFilterBar from './ips/ip-filter-bar.svelte';
@@ -461,6 +462,7 @@
 									{/if}
 									{#if g.is_cdn}
 										<Badge variant="info" class="px-1 text-[9px] font-normal">
+											<TechIcon name={g.cdn_name ?? ''} class="size-2.5" />
 											{g.cdn_name ?? 'CDN'}
 										</Badge>
 									{/if}
