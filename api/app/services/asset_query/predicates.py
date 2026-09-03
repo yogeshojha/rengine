@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from sqlalchemy import Text, and_, cast, exists, false, func, or_, select
+from sqlalchemy import Text, and_, cast, exists, false, func, not_, or_, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import aliased
 
@@ -80,6 +80,21 @@ def seen_earlier():
             earlier.discovered_at < Subdomain.discovered_at,
         )
     )
+
+
+def has_baseline():
+    earlier = aliased(Subdomain)
+    return exists(
+        select(1).where(
+            earlier.target_id == Subdomain.target_id,
+            earlier.scan_id != Subdomain.scan_id,
+            earlier.discovered_at < Subdomain.discovered_at,
+        )
+    )
+
+
+def is_new():
+    return and_(has_baseline(), not_(seen_earlier()))
 
 
 def live():

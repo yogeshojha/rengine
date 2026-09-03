@@ -43,7 +43,7 @@
 		type WebAssetQuery,
 		type SubdomainFacetSet
 	} from '$lib/utilities/scan-insights';
-	import type { QueryError } from '$lib/types/asset-query';
+	import type { QueryError, QueryLeads } from '$lib/types/asset-query';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 
 	interface Props {
@@ -88,11 +88,6 @@
 		}
 	}
 
-	let seen = $state(false);
-	$effect(() => {
-		if (active) seen = true;
-	});
-
 	const initial = appPage.url.searchParams;
 	const initialSort = initial.get('sort')?.split(':') ?? [];
 	let pendingAsset = initial.get('asset');
@@ -119,6 +114,7 @@
 	let errored = $state(false);
 	let facets = $state<SubdomainFacetSet>(EMPTY_FACETS);
 	let facetsLoaded = $state(false);
+	let leadSet = $state<QueryLeads | null>(null);
 
 	let selected = $state<SubdomainRead | null>(null);
 	let drawerOpen = $state(false);
@@ -176,6 +172,7 @@
 	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let lastSig = '';
+	let primed = false;
 
 	function flushSearch() {
 		if (timer) clearTimeout(timer);
@@ -184,7 +181,10 @@
 	}
 
 	async function runSearch() {
-		if (!queryReady) return;
+		if (!queryReady) {
+			syncLeads();
+			return;
+		}
 		const q = view === 'gallery' && onlyShots ? { ...query, hasScreenshot: true } : query;
 		const filter = compileQuery(q, sort.key, sort.dir, pageIndex * pageSize, pageSize);
 		const sig = JSON.stringify({ ...filter, offset: 0 });
@@ -223,8 +223,43 @@
 				errored = true;
 			}
 		} finally {
-			if (my === reqId) loading = false;
+			if (my === reqId) {
+				loading = false;
+				syncLeads();
+			}
 		}
+	}
+
+	let leadFilter = $derived(
+		compileQuery(
+			view === 'gallery' && onlyShots
+				? { ...query, search: '', hasScreenshot: true }
+				: { ...query, search: '' },
+			'name',
+			1,
+			0,
+			1
+		)
+	);
+	let leadSig = $derived(JSON.stringify(leadFilter));
+	let loadedLeadSig = '';
+
+	async function loadLeads() {
+		const sig = leadSig;
+		loadedLeadSig = sig;
+		try {
+			const res = await subdomainsApi.leads(projectId, scanId, leadFilter);
+			if (leadSig === sig) leadSet = res.computed ? res : null;
+		} catch {
+			if (leadSig === sig) leadSet = null;
+			loadedLeadSig = '';
+		}
+	}
+
+	function syncLeads() {
+		if (!active || loading || !scanId || !projectId) return;
+		if (leadSig === loadedLeadSig) return;
+		void loadLeads();
 	}
 
 	async function loadFacets() {
@@ -241,6 +276,7 @@
 	async function refresh() {
 		refreshing = true;
 		try {
+			loadedLeadSig = '';
 			await Promise.all([runSearch(), loadFacets()]);
 		} finally {
 			refreshing = false;
@@ -258,9 +294,9 @@
 		void scanId;
 		void projectId;
 		void queryReady;
-		if (!seen) return;
 		if (timer) clearTimeout(timer);
-		timer = setTimeout(runSearch, SEARCH_DEBOUNCE_MS);
+		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
+		primed = true;
 		return () => {
 			if (timer) clearTimeout(timer);
 		};
@@ -269,8 +305,12 @@
 	$effect(() => {
 		void scanId;
 		void projectId;
-		if (!seen) return;
 		untrack(loadFacets);
+	});
+
+	$effect(() => {
+		void active;
+		untrack(syncLeads);
 	});
 
 	function syncUrl() {
@@ -301,7 +341,7 @@
 		void sort.dir;
 		void drawerOpen;
 		void selected?.name;
-		if (!seen || !active) return;
+		if (!active) return;
 		untrack(syncUrl);
 	});
 
@@ -431,6 +471,7 @@
 		value={query.search}
 		facets={facets as unknown as Record<string, Facet[]>}
 		busy={loading && !!query.search}
+		{leadSet}
 		total={errored ? null : total}
 		capped={totalCapped}
 		serverError={queryError}

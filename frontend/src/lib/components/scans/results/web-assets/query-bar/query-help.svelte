@@ -12,21 +12,18 @@
 	import { lex } from '$lib/utilities/query-lexer';
 	import type { QueryFieldSpec, QuerySchema } from '$lib/types/asset-query';
 	import QueryHighlight from './query-highlight.svelte';
-	import QueryExample from './query-example.svelte';
 
 	interface Props {
 		open: boolean;
 		schema: QuerySchema;
 		onOpenChange: (open: boolean) => void;
 		onInsert: (fragment: string) => void;
-		onQuery: (query: string) => void;
 	}
 
-	let { open, schema, onOpenChange, onInsert, onQuery }: Props = $props();
+	let { open, schema, onOpenChange, onInsert }: Props = $props();
 
 	const ANATOMY = 'is:live and status:>=400 and not (cdn:yes or waf:yes)';
 	const SECTIONS = [
-		{ id: 'examples', label: 'Examples' },
 		{ id: 'grammar', label: 'Grammar' },
 		{ id: 'fields', label: 'Fields' },
 		{ id: 'flags', label: 'Flags' }
@@ -58,10 +55,6 @@
 		)
 	);
 
-	function apply(query: string) {
-		onQuery(query);
-		onOpenChange(false);
-	}
 	function insert(fragment: string) {
 		onInsert(fragment);
 		onOpenChange(false);
@@ -140,17 +133,6 @@
 							>
 						</div>
 					</section>
-
-					{#if schema.examples.length}
-						<section id="query-help-examples" class="flex scroll-mt-5 flex-col gap-2.5">
-							{@render label('Start from an example')}
-							<div class="grid gap-2 sm:grid-cols-2">
-								{#each schema.examples as example (example.query)}
-									<QueryExample {example} onPick={apply} />
-								{/each}
-							</div>
-						</section>
-					{/if}
 
 					<section id="query-help-grammar" class="grid scroll-mt-5 gap-6 sm:grid-cols-2">
 						<div class="flex flex-col gap-2.5">

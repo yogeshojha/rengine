@@ -139,7 +139,11 @@ export function queryChips(q: WebAssetQuery): FilterChip[] {
 	if (q.liveOnly)
 		chips.push({ id: 'live', label: 'Live', remove: (x) => ({ ...x, liveOnly: false }) });
 	if (q.newOnly)
-		chips.push({ id: 'new', label: 'New this scan', remove: (x) => ({ ...x, newOnly: false }) });
+		chips.push({
+			id: 'new',
+			label: 'New since last scan',
+			remove: (x) => ({ ...x, newOnly: false })
+		});
 	if (q.hasScreenshot)
 		chips.push({
 			id: 'screenshot',

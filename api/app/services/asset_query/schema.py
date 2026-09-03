@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from shared.definitions.asset_query import (
     CONNECTORS,
+    EXAMPLE_GROUPS,
     EXAMPLES,
     FIELDS,
     FLAGS,
@@ -25,6 +26,7 @@ def build_schema() -> QuerySchema:
         max_length=MAX_QUERY_LENGTH,
         max_terms=MAX_FREE_TERMS,
         groups=list(GROUPS),
+        example_groups=list(EXAMPLE_GROUPS),
         fields=[
             QueryFieldSpec(
                 name=spec.name,
@@ -55,7 +57,12 @@ def build_schema() -> QuerySchema:
             for value, description in FLAGS.items()
         ],
         examples=[
-            QueryExampleSpec(query=item.query, description=item.description)
+            QueryExampleSpec(
+                query=item.query,
+                description=item.description,
+                group=item.group,
+                generic=item.generic,
+            )
             for item in EXAMPLES
         ],
     )

@@ -37,12 +37,30 @@ export interface QueryFlagSpec {
 export interface QueryExampleSpec {
 	query: string;
 	description: string;
+	group: string;
+	generic: boolean;
+}
+
+export interface QueryLead extends QueryExampleSpec {
+	count: number;
+	capped: boolean;
+}
+
+export type QueryStarter = QueryExampleSpec | QueryLead;
+
+export interface QueryLeads {
+	leads: QueryLead[];
+	total: number;
+	total_capped: boolean;
+	filtered: boolean;
+	computed: boolean;
 }
 
 export interface QuerySchema {
 	max_length: number;
 	max_terms: number;
 	groups: string[];
+	example_groups: string[];
 	fields: QueryFieldSpec[];
 	operators: QueryOperatorSpec[];
 	connectors: QueryOperatorSpec[];
@@ -68,6 +86,7 @@ export const EMPTY_QUERY_SCHEMA: QuerySchema = {
 	max_length: 2000,
 	max_terms: 8,
 	groups: [],
+	example_groups: [],
 	fields: [],
 	operators: [],
 	connectors: [],

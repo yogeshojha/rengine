@@ -8,7 +8,7 @@ from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.asset_query import build_schema
 from app.services.subdomain import SubdomainService
-from shared.models.asset_query import QuerySchema
+from shared.models.asset_query import QueryLeads, QuerySchema
 from shared.models.scan_correlation import SubdomainCorrelation, SubdomainInsights
 from shared.models.subdomain import (
     Facet,
@@ -72,6 +72,17 @@ async def search_subdomains(
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
     return await service.search(project_id=project_id, scan_id=scan_id, f=body)
+
+
+@router.post("/search/leads", response_model=QueryLeads)
+async def subdomain_search_leads(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    body: SubdomainFilter,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    return await service.leads(project_id=project_id, scan_id=scan_id, f=body)
 
 
 @router.get("/facets", response_model=SubdomainFacets)

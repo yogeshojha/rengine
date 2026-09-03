@@ -2,6 +2,7 @@
 	import Search from '@lucide/svelte/icons/search';
 	import X from '@lucide/svelte/icons/x';
 	import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -12,11 +13,12 @@
 	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { caretContext, lex, replaceRange, type QueryProblem } from '$lib/utilities/query-lexer';
-	import type { QueryError } from '$lib/types/asset-query';
+	import type { QueryError, QueryLeads, QueryStarter } from '$lib/types/asset-query';
 	import type { Facet } from '$lib/utilities/scan-insights';
 	import QueryHighlight from './query-highlight.svelte';
 	import QuerySuggestions from './query-suggestions.svelte';
 	import QueryHelp from './query-help.svelte';
+	import FindingsDialog from './findings-dialog.svelte';
 	import { buildSuggestions, type Suggestion } from './suggest';
 
 	interface Props {
@@ -24,6 +26,7 @@
 		facets: Record<string, Facet[]>;
 		onChange: (value: string) => void;
 		busy?: boolean;
+		leadSet?: QueryLeads | null;
 		total?: number | null;
 		capped?: boolean;
 		serverError?: QueryError | null;
@@ -37,6 +40,7 @@
 		facets,
 		onChange,
 		busy = false,
+		leadSet = null,
 		total = null,
 		capped = false,
 		serverError = null,
@@ -52,6 +56,7 @@
 	let focused = $state(false);
 	let dismissed = $state(false);
 	let helpOpen = $state(false);
+	let findingsOpen = $state(false);
 	let active = $state(-1);
 	let caret = $state(0);
 	let anchor = $state<HTMLElement | null>(null);
@@ -95,9 +100,15 @@
 	let suggestions = $derived(
 		buildSuggestions(context, querySchema.schema, facets, querySchema.byName)
 	);
-	let showStarters = $derived(
-		!value.trim() && (recents.length > 0 || querySchema.schema.examples.length > 0)
-	);
+	let findings = $derived((leadSet?.leads ?? []).filter((lead) => lead.count > 0));
+	let counted = $derived(findings.length > 0);
+	let findingWord = $derived(findings.length === 1 ? 'finding' : 'findings');
+	let starters = $derived.by<QueryStarter[]>(() => {
+		if (counted) return findings;
+		const generic = querySchema.schema.examples.filter((example) => example.generic);
+		return generic.length ? generic : querySchema.schema.examples;
+	});
+	let showStarters = $derived(!value.trim() && (recents.length > 0 || starters.length > 0));
 	let open = $derived(focused && !dismissed && (showStarters || suggestions.length > 0));
 
 	$effect(() => {
@@ -163,6 +174,11 @@
 	function openHelp() {
 		dismissed = true;
 		helpOpen = true;
+	}
+
+	function openFindings() {
+		dismissed = true;
+		findingsOpen = true;
 	}
 
 	function submit() {
@@ -310,6 +326,19 @@
 			<div class="mx-1 flex h-5 items-stretch max-sm:hidden">
 				<Separator orientation="vertical" />
 			</div>
+			{#if counted}
+				<Button
+					variant="ghost"
+					size="sm"
+					class="h-8 gap-1.5 px-2 text-primary hover:bg-primary/10 hover:text-primary"
+					aria-label="{findings.length} {findingWord} in this scan"
+					onclick={openFindings}
+				>
+					<Sparkles class="size-4" />
+					<span class="tabular-nums">{findings.length}</span>
+					<span class="max-sm:hidden">{findingWord}</span>
+				</Button>
+			{/if}
 			<Button
 				variant="ghost"
 				size="sm"
@@ -359,8 +388,11 @@
 			{suggestions}
 			{active}
 			{recents}
-			examples={querySchema.schema.examples.slice(0, EXAMPLE_LIMIT)}
+			examples={starters.slice(0, EXAMPLE_LIMIT)}
+			{counted}
 			{showStarters}
+			moreCount={Math.max(findings.length - EXAMPLE_LIMIT, 0)}
+			onShowAll={openFindings}
 			onPick={pick}
 			onQuery={setQuery}
 			onForget={(query) => writeRecents(recents.filter((r) => r !== query))}
@@ -370,10 +402,17 @@
 	</Popover.Content>
 </Popover.Root>
 
+<FindingsDialog
+	open={findingsOpen}
+	{leadSet}
+	groups={querySchema.schema.example_groups}
+	onOpenChange={(next) => (findingsOpen = next)}
+	onQuery={setQuery}
+/>
+
 <QueryHelp
 	open={helpOpen}
 	schema={querySchema.schema}
 	onOpenChange={(next) => (helpOpen = next)}
 	onInsert={insertFragment}
-	onQuery={setQuery}
 />

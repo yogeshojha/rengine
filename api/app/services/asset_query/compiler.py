@@ -283,7 +283,7 @@ def _flag(cmp: Compare, ctx: QueryContext):
 _FLAG_BUILDERS = {
     "live": lambda _ctx: preds.live(),
     "web": lambda _ctx: Subdomain.http_status.isnot(None),
-    "new": lambda _ctx: not_(preds.seen_earlier()),
+    "new": lambda _ctx: preds.is_new(),
     "resolved": lambda _ctx: preds.resolved(),
     "auth": lambda _ctx: preds.auth(),
     "cdn": lambda _ctx: Subdomain.is_cdn.is_(True),

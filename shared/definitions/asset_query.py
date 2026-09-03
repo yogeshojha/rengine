@@ -100,7 +100,7 @@ STATUS_CLASSES: tuple[str, ...] = ("2xx", "3xx", "4xx", "5xx", "none")
 FLAGS: dict[str, str] = {
     "live": "Responded with 2xx or 3xx",
     "web": "Answered on HTTP at all",
-    "new": "First seen in this scan",
+    "new": "Absent from the previous scan of this target",
     "resolved": "Resolves to at least one IP",
     "auth": "Login wall or 401/403",
     "cdn": "Served through a CDN",
@@ -356,7 +356,7 @@ FIELDS: tuple[QueryField, ...] = (
     QueryField(
         name="cert",
         type=FieldType.ENUM,
-        group="TLS",
+        group="Certificates",
         description="Certificate state.",
         example="cert:expired",
         values=CERT_STATES,
@@ -364,7 +364,7 @@ FIELDS: tuple[QueryField, ...] = (
     QueryField(
         name="cert.cn",
         type=FieldType.STRING,
-        group="TLS",
+        group="Certificates",
         description="Certificate subject common name.",
         example="cert.cn:*.internal",
         free_text=True,
@@ -373,7 +373,7 @@ FIELDS: tuple[QueryField, ...] = (
     QueryField(
         name="cert.san",
         type=FieldType.STRING,
-        group="TLS",
+        group="Certificates",
         description="Subject alternative name on the certificate.",
         example="cert.san:staging",
         free_text=True,
@@ -382,7 +382,7 @@ FIELDS: tuple[QueryField, ...] = (
     QueryField(
         name="cert.issuer",
         type=FieldType.STRING,
-        group="TLS",
+        group="Certificates",
         description="Certificate issuer.",
         example='cert.issuer:"let\'s encrypt"',
         free_text=True,
@@ -391,21 +391,21 @@ FIELDS: tuple[QueryField, ...] = (
     QueryField(
         name="cert.expires",
         type=FieldType.DATE,
-        group="TLS",
+        group="Certificates",
         description="Certificate expiry date.",
         example="cert.expires:<30d",
     ),
     QueryField(
         name="tls.version",
         type=FieldType.STRING,
-        group="TLS",
+        group="Certificates",
         description="Negotiated TLS version.",
         example="tls.version:tls10",
     ),
     QueryField(
         name="jarm",
         type=FieldType.STRING,
-        group="TLS",
+        group="Certificates",
         description="JARM TLS fingerprint.",
         example="jarm:29d3fd00029d29d0",
     ),
@@ -448,43 +448,262 @@ EVIDENCE_LABELS: dict[str, str] = {
 }
 
 
+EXAMPLE_GROUPS: tuple[str, ...] = (
+    "Takeover risk",
+    "Exposed services",
+    "Non-production",
+    "Access control",
+    "Certificates",
+    "Origin exposure",
+    "Change",
+    "Hygiene",
+)
+
+
 @dataclass(frozen=True)
 class QueryExample:
     query: str
     description: str
+    group: str
+    generic: bool = False
 
 
 EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
-        query="is:live and not cdn:yes and waf:no",
-        description="Reachable hosts with nothing in front of them",
+        query="is:resolved and not is:web",
+        description="Resolving hosts with no HTTP service",
+        group="Takeover risk",
+        generic=True,
     ),
     QueryExample(
-        query="status:>=500 or title:exception",
-        description="Servers leaking errors",
+        query="cname:. and not is:web",
+        description="CNAME records with no HTTP service",
+        group="Takeover risk",
+    ),
+    QueryExample(
+        query="cname:elb.amazonaws.com and status:404",
+        description="Load balancer aliases returning 404",
+        group="Takeover risk",
+    ),
+    QueryExample(
+        query=(
+            "cname:[myshopify.com,github.io,herokuapp.com,azurewebsites.net,"
+            "netlify.app,pantheonsite.io,wpengine.com,ghost.io]"
+        ),
+        description="Aliases pointing to third-party hosting",
+        group="Takeover risk",
+    ),
+    QueryExample(
+        query="cname:. and not is:resolved",
+        description="CNAME records that fail to resolve",
+        group="Takeover risk",
+    ),
+    QueryExample(
+        query="is:wildcard",
+        description="Hosts matched only by a wildcard record",
+        group="Takeover risk",
+    ),
+    QueryExample(
+        query="is:sensitive",
+        description="Administrative or database ports exposed",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="port:[3306,5432,27017,6379,9200,11211,5984]",
+        description="Database ports reachable from the internet",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="port:[22,23,3389,5900]",
+        description="Remote administration ports reachable",
+        group="Exposed services",
     ),
     QueryExample(
         query='body:"index of" and status:200',
-        description="Open directory listings",
+        description="Directory listings enabled",
+        group="Exposed services",
     ),
     QueryExample(
-        query="header.x-powered-by:php and not tech:cloudflare",
-        description="Origin servers still announcing PHP",
+        query=(
+            'body:"begin rsa private key" or body:"begin private key" '
+            "or body:aws_secret_access_key"
+        ),
+        description="Private key material in a response body",
+        group="Exposed services",
     ),
     QueryExample(
-        query="cert.expires:<30d and is:live",
-        description="Certificates about to lapse on live hosts",
+        query='body:traceback or body:"stack trace" or title:exception',
+        description="Application stack traces in responses",
+        group="Exposed services",
     ),
     QueryExample(
-        query="is:sensitive and ip:10.0.0.0/8",
-        description="Admin ports answering on internal space",
+        query='body:"sql syntax" or body:"odbc driver"',
+        description="Database error messages in responses",
+        group="Exposed services",
     ),
     QueryExample(
-        query="tech:[jenkins,gitlab,grafana] and status:200",
+        query="title:phpinfo or body:phpinfo",
+        description="phpinfo diagnostic pages exposed",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="body:swagger or url:swagger or title:swagger",
+        description="API documentation publicly accessible",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query=(
+            "tech:[jenkins,gitlab,grafana,kibana,prometheus,sonarqube,jira,"
+            "confluence] and status:200"
+        ),
         description="Developer tooling exposed to the internet",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="host:[jenkins,gitlab,grafana,kibana,jira,confluence,vault,consul]",
+        description="Hostnames indicating internal tooling",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="content_type:json and status:200",
+        description="JSON endpoints served directly",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="host:[staging,dev,test,uat,qa,sandbox,preprod,demo]",
+        description="Non-production hostnames publicly resolvable",
+        group="Non-production",
+        generic=True,
+    ),
+    QueryExample(
+        query=(
+            "host:[staging,dev,test,uat,qa,sandbox,preprod] and is:live and not is:auth"
+        ),
+        description="Non-production hosts served without authentication",
+        group="Non-production",
+    ),
+    QueryExample(
+        query="(host:admin or host:portal or host:console) and is:live and not is:auth",
+        description="Administrative interfaces without authentication",
+        group="Non-production",
+    ),
+    QueryExample(
+        query="is:auth and is:live",
+        description="Authenticated interfaces currently serving",
+        group="Access control",
+    ),
+    QueryExample(
+        query="is:auth",
+        description="Hosts requiring authentication",
+        group="Access control",
+    ),
+    QueryExample(
+        query="header.access-control-allow-origin:*",
+        description="Wildcard cross-origin policy on responses",
+        group="Access control",
+    ),
+    QueryExample(
+        query="cert:expired and is:live",
+        description="Live hosts serving an expired certificate",
+        group="Certificates",
+    ),
+    QueryExample(
+        query="cert:expiring",
+        description="Certificates expiring within 30 days",
+        group="Certificates",
+        generic=True,
+    ),
+    QueryExample(
+        query="cert:self-signed",
+        description="Self-signed certificates in use",
+        group="Certificates",
+    ),
+    QueryExample(
+        query="cert.cn:internal or cert.san:internal or cert.san:local",
+        description="Internal hostnames disclosed in certificates",
+        group="Certificates",
+    ),
+    QueryExample(
+        query="cert.san:*. and is:live",
+        description="Wildcard certificates in use",
+        group="Certificates",
+    ),
+    QueryExample(
+        query="tls.version:[tls10,tls11]",
+        description="Obsolete TLS versions negotiated",
+        group="Certificates",
+    ),
+    QueryExample(
+        query="is:live and not cdn:yes and waf:no",
+        description="Hosts served without CDN or WAF",
+        group="Origin exposure",
+        generic=True,
+    ),
+    QueryExample(
+        query="server:[apache,nginx,iis] and not cdn:yes",
+        description="Origin server banners disclosed",
+        group="Origin exposure",
+    ),
+    QueryExample(
+        query="header:x-powered-by and not cdn:yes",
+        description="Runtime disclosed in response headers",
+        group="Origin exposure",
+    ),
+    QueryExample(
+        query="tech:[php,tomcat,jboss,weblogic,coldfusion] and status:200",
+        description="Runtimes with significant CVE history",
+        group="Origin exposure",
     ),
     QueryExample(
         query="is:new and (status:2xx or status:3xx)",
-        description="What this scan added to the reachable surface",
+        description="Newly reachable since the previous scan",
+        group="Change",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:new and is:auth",
+        description="New authenticated interfaces since the previous scan",
+        group="Change",
+    ),
+    QueryExample(
+        query="is:new and cert:expired",
+        description="New hosts serving an expired certificate",
+        group="Change",
+    ),
+    QueryExample(
+        query="is:new",
+        description="Hosts absent from the previous scan",
+        group="Change",
+    ),
+    QueryExample(
+        query="discovered:<7d and is:live",
+        description="Reachable hosts discovered in the last 7 days",
+        group="Change",
+    ),
+    QueryExample(
+        query="status:>=500 or title:exception",
+        description="Server-side errors returned",
+        group="Hygiene",
+        generic=True,
+    ),
+    QueryExample(
+        query="not is:resolved",
+        description="Hostnames that no longer resolve",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="size:<500 and status:200",
+        description="Minimal-content responses returning 200",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="time:>5s",
+        description="Responses slower than 5 seconds",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="is:redirect and not is:live",
+        description="Redirects terminating in an error",
+        group="Hygiene",
     ),
 )

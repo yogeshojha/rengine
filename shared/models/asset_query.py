@@ -24,6 +24,21 @@ class QueryOperatorSpec(BaseModel):
 class QueryExampleSpec(BaseModel):
     query: str
     description: str
+    group: str = ""
+    generic: bool = False
+
+
+class QueryLead(QueryExampleSpec):
+    count: int = 0
+    capped: bool = False
+
+
+class QueryLeads(BaseModel):
+    leads: list[QueryLead] = Field(default_factory=list)
+    total: int = 0
+    total_capped: bool = False
+    filtered: bool = False
+    computed: bool = False
 
 
 class QueryFlagSpec(BaseModel):
@@ -35,6 +50,7 @@ class QuerySchema(BaseModel):
     max_length: int = 0
     max_terms: int = 0
     groups: list[str] = Field(default_factory=list)
+    example_groups: list[str] = Field(default_factory=list)
     fields: list[QueryFieldSpec] = Field(default_factory=list)
     operators: list[QueryOperatorSpec] = Field(default_factory=list)
     connectors: list[QueryOperatorSpec] = Field(default_factory=list)

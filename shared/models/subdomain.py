@@ -130,6 +130,21 @@ class SubdomainFilter(BaseModel):
     limit: int = Field(default=50, ge=1, le=200)
     offset: int = Field(default=0, ge=0, le=100_000_000)
 
+    def has_facets(self) -> bool:
+        return bool(
+            self.statuses
+            or self.tech
+            or self.services
+            or self.cert
+            or self.sources
+            or self.cdn != "any"
+            or self.waf != "any"
+            or self.live
+            or self.screenshot
+            or self.issues
+            or self.new
+        )
+
 
 class SubdomainSearchResult(BaseModel):
     items: list[SubdomainRow] = Field(default_factory=list)

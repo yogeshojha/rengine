@@ -1,13 +1,15 @@
 <script lang="ts">
 	import CornerDownLeft from '@lucide/svelte/icons/corner-down-left';
 	import Clock from '@lucide/svelte/icons/clock';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
 	import X from '@lucide/svelte/icons/x';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
-	import type { QueryExampleSpec } from '$lib/types/asset-query';
+	import type { QueryStarter } from '$lib/types/asset-query';
 	import type { Suggestion } from './suggest';
 	import QueryExample from './query-example.svelte';
 
@@ -15,12 +17,15 @@
 		suggestions: Suggestion[];
 		active: number;
 		recents: string[];
-		examples: QueryExampleSpec[];
+		examples: QueryStarter[];
+		counted: boolean;
 		showStarters: boolean;
+		moreCount: number;
 		onPick: (suggestion: Suggestion) => void;
 		onQuery: (query: string) => void;
 		onForget: (query: string) => void;
 		onHover: (index: number) => void;
+		onShowAll: () => void;
 		onHelp: () => void;
 	}
 
@@ -29,7 +34,10 @@
 		active,
 		recents,
 		examples,
+		counted,
 		showStarters,
+		moreCount,
+		onShowAll,
 		onPick,
 		onQuery,
 		onForget,
@@ -48,13 +56,20 @@
 	});
 	let split = $derived(showStarters && recents.length > 0);
 	let shownExamples = $derived(split ? examples.slice(0, 4) : examples);
+	let columns = $derived(
+		shownExamples.length === 1
+			? ''
+			: !split && shownExamples.length >= 5
+				? 'sm:grid-cols-2 lg:grid-cols-3'
+				: 'sm:grid-cols-2'
+	);
 </script>
 
-{#snippet heading(label: string)}
+{#snippet heading(label: string, spark = false)}
 	<p
-		class="px-2 pt-2 pb-1.5 text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase"
+		class="flex items-center gap-1.5 px-2 pt-2 pb-1.5 text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase"
 	>
-		{label}
+		{#if spark}<Sparkles class="size-3 text-primary" />{/if}{label}
 	</p>
 {/snippet}
 
@@ -91,12 +106,24 @@
 			{/if}
 			{#if shownExamples.length}
 				<div class="flex min-w-0 flex-col">
-					{@render heading('Start from an example')}
-					<div class="grid gap-1.5 px-1 pb-1 sm:grid-cols-2 {split ? '' : 'lg:grid-cols-3'}">
+					{@render heading(counted ? 'Findings in this scan' : 'Suggested queries', counted)}
+					<div class="grid gap-1.5 px-1 pb-1 {columns}">
 						{#each shownExamples as example (example.query)}
 							<QueryExample {example} onPick={onQuery} />
 						{/each}
 					</div>
+					{#if counted}
+						<button
+							type="button"
+							class="mx-1 mt-1.5 mb-1 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/50 hover:text-foreground"
+							onclick={onShowAll}
+						>
+							{moreCount > 0
+								? `Show ${moreCount.toLocaleString()} more ${moreCount === 1 ? 'finding' : 'findings'}`
+								: 'Browse all findings'}
+							<ArrowRight class="size-3.5" />
+						</button>
+					{/if}
 				</div>
 			{/if}
 		</div>

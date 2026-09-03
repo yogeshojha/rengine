@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.asset_query import (
     QueryContext,
     QuerySyntaxError,
+    build_leads,
     collect_evidence,
     compile_query,
     parse_query,
@@ -34,7 +35,7 @@ from app.services.port import PortService
 from shared.definitions.asset_query import COUNT_CAP
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.logging import get_logger
-from shared.models.asset_query import QueryError
+from shared.models.asset_query import QueryError, QueryLeads
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
@@ -238,7 +239,7 @@ class SubdomainService:
     _status_pred = staticmethod(preds.status_class)
     _cert_pred = staticmethod(preds.cert_state)
     _port_exists = staticmethod(preds.port_match)
-    _seen_earlier = staticmethod(preds.seen_earlier)
+    _is_new = staticmethod(preds.is_new)
 
     def _apply_filter(self, query, f: SubdomainFilter, now: datetime):
         if f.statuses:
@@ -270,7 +271,7 @@ class SubdomainService:
         if f.screenshot:
             query = query.where(Subdomain.screenshot_path.isnot(None))
         if f.new:
-            query = query.where(~self._seen_earlier())
+            query = query.where(self._is_new())
         if f.issues:
             query = query.where(preds.issues(now))
         return query
@@ -366,6 +367,27 @@ class SubdomainService:
             total=min(total, COUNT_CAP) if capped else total,
             total_capped=capped,
         )
+
+    async def leads(
+        self, project_id: UUID, scan_id: UUID, f: SubdomainFilter
+    ) -> QueryLeads:
+        now = utc_now()
+        base = select(Subdomain.id).where(
+            Subdomain.project_id == project_id, Subdomain.scan_id == scan_id
+        )
+        base = self._apply_filter(base, f, now)
+        await self.session.execute(text(_STATEMENT_TIMEOUT))
+        try:
+            return await build_leads(
+                self.session,
+                base,
+                QueryContext(scan_id=scan_id, now=now),
+                filtered=f.has_facets(),
+            )
+        except DBAPIError as exc:
+            await self.session.rollback()
+            logger.info("search leads failed", error=str(exc.orig))
+            return QueryLeads()
 
     async def _shared_counts(self, scan_id: UUID, col, values: set) -> dict:
         if not values:
