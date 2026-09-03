@@ -36,6 +36,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import CountryFlag from './country-flag.svelte';
 	import TechIcon from './tech-icon.svelte';
+	import ServiceIcon from './services/service-icon.svelte';
 
 	interface Props {
 		service: ServiceRead | null;
@@ -104,6 +105,12 @@
 		{#if s}
 			<Sheet.Header class="gap-3 border-b border-border px-5 pt-5 pr-12 pb-4">
 				<div class="flex items-center gap-2">
+					<ServiceIcon
+						service={s.service_name}
+						serviceClass={s.service_class}
+						product={s.product}
+						class="size-4 shrink-0"
+					/>
 					<Sheet.Title class="truncate font-mono text-base font-medium">{endpoint}</Sheet.Title>
 					<Tooltip.Root>
 						<Tooltip.Trigger>
@@ -222,6 +229,19 @@
 									{/if}
 								</dd>
 							</div>
+							{#if s.description}
+								<div class={ROW}>
+									<dt class={DT}>What this is</dt>
+									<dd class="flex flex-col gap-0.5">
+										<span class="text-sm">{s.description}</span>
+										{#if s.registered}
+											<span class="text-xs text-muted-foreground">
+												IANA registration for port {s.port}. This scan did not confirm it.
+											</span>
+										{/if}
+									</dd>
+								</div>
+							{/if}
 							<div class={ROW}>
 								<dt class={DT}>Class</dt>
 								<dd class="flex flex-wrap items-center gap-1.5">

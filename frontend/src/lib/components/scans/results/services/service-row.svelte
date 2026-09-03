@@ -18,6 +18,7 @@
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
+	import ServiceIcon from './service-icon.svelte';
 	import CountryFlag from '../country-flag.svelte';
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
@@ -123,11 +124,17 @@
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						{#snippet child({ props })}
-							<span {...props} class="flex h-5 shrink-0 items-center">
+							<span {...props} class="flex h-5 shrink-0 items-center gap-1.5">
 								<span
 									class="size-1.5 rounded-full"
 									style="background:{SERVICE_CLASS_FILL[s.service_class]}"
 								></span>
+								<ServiceIcon
+									service={s.service_name}
+									serviceClass={s.service_class}
+									product={s.product}
+									class="size-3.5"
+								/>
 							</span>
 						{/snippet}
 					</Tooltip.Trigger>
@@ -142,16 +149,34 @@
 			</span>
 
 			{#if s.service_name}
-				<button
-					type="button"
-					class="flex h-5 shrink-0 items-center"
-					onclick={(e) => pivot(e, exactToken('service', s.service_name ?? ''))}
-					title="Filter to {s.service_name}"
-				>
-					<Badge variant="secondary" class="px-1.5 font-mono text-[10px] font-normal">
-						{s.service_name}
-					</Badge>
-				</button>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<button
+								{...props}
+								type="button"
+								class="flex h-5 shrink-0 items-center"
+								onclick={(e) => pivot(e, exactToken('service', s.service_name ?? ''))}
+							>
+								<Badge variant="secondary" class="px-1.5 font-mono text-[10px] font-normal">
+									{s.service_name}
+								</Badge>
+							</button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content side="bottom" class="max-w-72">
+						{#if s.description}
+							<span class="block">{s.description}</span>
+							{#if s.registered}
+								<span class="block text-muted-foreground">
+									IANA registration for port {s.port}, not observed
+								</span>
+							{/if}
+						{:else}
+							Filter to {s.service_name}
+						{/if}
+					</Tooltip.Content>
+				</Tooltip.Root>
 			{/if}
 			{#if s.is_new}
 				<Tooltip.Root>

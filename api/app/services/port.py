@@ -41,6 +41,7 @@ from shared.definitions.ports import (
     PortSource,
     ScanPolicy,
     ServiceClass,
+    describe,
     service_label,
 )
 from shared.logging import get_logger
@@ -393,6 +394,7 @@ class PortService:
         baseline, seen = await self._seen_before(scan_id, page_ips)
         for r in rows:
             names = sorted(hosts.get(r["ip"], set()))
+            description, registered = describe(int(r["port"]), r["service_name"])
             page.items.append(
                 ServiceRead(
                     id=r["id"],
@@ -402,6 +404,8 @@ class PortService:
                     state=r["state"],
                     service_name=r["service_name"],
                     service_class=r["service_class"],
+                    description=description,
+                    registered=registered,
                     source=r["source"],
                     is_http=bool(r["is_http"]),
                     tls=bool(r["tls"]),

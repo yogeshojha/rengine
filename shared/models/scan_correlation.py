@@ -144,6 +144,8 @@ class ServiceRead(BaseModel):
     state: str
     service_name: str | None = None
     service_class: str
+    description: str = ""
+    registered: bool = False
     source: str
     is_http: bool = False
     tls: bool = False

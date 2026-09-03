@@ -19,7 +19,11 @@ const ICON_ALIASES: Record<string, string> = {
 	statuspage: 'atlassian-statuspage',
 	'bitbucket-pages': 'atlassian-bitbucket',
 	incapsula: 'imperva',
-	office365: 'microsoft-365'
+	office365: 'microsoft-365',
+	// service names from shared/definitions/ports.py that spell a brand differently
+	mssql: 'microsoft',
+	'ms-sql-s': 'microsoft',
+	weblogic: 'weblogic-server'
 };
 
 export function techIconSlug(name: string): string {

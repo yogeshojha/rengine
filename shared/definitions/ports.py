@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from enum import StrEnum
+from functools import lru_cache
+from pathlib import Path
 
 MAX_PORT = 65535
 DEFAULT_WEB_PORTS: tuple[int, ...] = (80, 443)
@@ -87,82 +90,240 @@ class ServiceSpec:
     name: str
     label: str
     klass: str
+    description: str = ""
     tls: bool = False
 
 
-def _s(name: str, label: str, klass: ServiceClass, *, tls: bool = False) -> ServiceSpec:
-    return ServiceSpec(name=name, label=label, klass=klass.value, tls=tls)
+def _s(
+    name: str,
+    label: str,
+    klass: ServiceClass,
+    description: str = "",
+    *,
+    tls: bool = False,
+) -> ServiceSpec:
+    return ServiceSpec(
+        name=name,
+        label=label,
+        klass=klass.value,
+        description=description,
+        tls=tls,
+    )
 
 
 # port -> canonical service. Keep names lowercase and stable: they are query values.
 WELL_KNOWN: dict[int, ServiceSpec] = {
-    21: _s("ftp", "FTP", ServiceClass.INFRA),
-    22: _s("ssh", "SSH", ServiceClass.REMOTE),
-    23: _s("telnet", "Telnet", ServiceClass.REMOTE),
-    25: _s("smtp", "SMTP", ServiceClass.MAIL),
-    53: _s("dns", "DNS", ServiceClass.INFRA),
-    69: _s("tftp", "TFTP", ServiceClass.INFRA),
-    88: _s("kerberos", "Kerberos", ServiceClass.INFRA),
-    110: _s("pop3", "POP3", ServiceClass.MAIL),
-    111: _s("rpcbind", "RPC portmapper", ServiceClass.INFRA),
-    135: _s("msrpc", "MSRPC", ServiceClass.INFRA),
-    137: _s("netbios", "NetBIOS", ServiceClass.INFRA),
-    139: _s("netbios-ssn", "NetBIOS session", ServiceClass.INFRA),
-    143: _s("imap", "IMAP", ServiceClass.MAIL),
-    161: _s("snmp", "SNMP", ServiceClass.INFRA),
-    389: _s("ldap", "LDAP", ServiceClass.INFRA),
-    427: _s("slp", "SLP", ServiceClass.INFRA),
-    445: _s("smb", "SMB", ServiceClass.INFRA),
-    465: _s("smtps", "SMTPS", ServiceClass.MAIL, tls=True),
-    500: _s("isakmp", "IKE", ServiceClass.INFRA),
-    512: _s("rexec", "rexec", ServiceClass.REMOTE),
-    513: _s("rlogin", "rlogin", ServiceClass.REMOTE),
-    514: _s("syslog", "Syslog", ServiceClass.INFRA),
-    515: _s("printer", "LPD", ServiceClass.INFRA),
-    548: _s("afp", "AFP", ServiceClass.INFRA),
-    554: _s("rtsp", "RTSP", ServiceClass.OTHER),
-    587: _s("smtp", "SMTP submission", ServiceClass.MAIL),
-    623: _s("ipmi", "IPMI", ServiceClass.INFRA),
-    636: _s("ldaps", "LDAPS", ServiceClass.INFRA, tls=True),
-    873: _s("rsync", "rsync", ServiceClass.INFRA),
-    993: _s("imaps", "IMAPS", ServiceClass.MAIL, tls=True),
-    995: _s("pop3s", "POP3S", ServiceClass.MAIL, tls=True),
-    1080: _s("socks", "SOCKS proxy", ServiceClass.INFRA),
-    1433: _s("mssql", "Microsoft SQL Server", ServiceClass.DATABASE),
-    1521: _s("oracle", "Oracle DB", ServiceClass.DATABASE),
-    1723: _s("pptp", "PPTP", ServiceClass.REMOTE),
-    2049: _s("nfs", "NFS", ServiceClass.INFRA),
-    2181: _s("zookeeper", "ZooKeeper", ServiceClass.INFRA),
-    2375: _s("docker", "Docker API", ServiceClass.INFRA),
-    2376: _s("docker", "Docker API", ServiceClass.INFRA, tls=True),
-    2379: _s("etcd", "etcd", ServiceClass.DATABASE),
-    3128: _s("http-proxy", "HTTP proxy", ServiceClass.WEB),
-    3268: _s("ldap", "Global catalog", ServiceClass.INFRA),
-    3306: _s("mysql", "MySQL", ServiceClass.DATABASE),
-    3389: _s("rdp", "RDP", ServiceClass.REMOTE),
-    4369: _s("epmd", "Erlang port mapper", ServiceClass.INFRA),
-    4444: _s("metasploit", "Metasploit", ServiceClass.OTHER),
-    5060: _s("sip", "SIP", ServiceClass.OTHER),
-    5222: _s("xmpp", "XMPP", ServiceClass.OTHER),
-    5353: _s("mdns", "mDNS", ServiceClass.INFRA),
-    5432: _s("postgresql", "PostgreSQL", ServiceClass.DATABASE),
-    5672: _s("amqp", "AMQP", ServiceClass.INFRA),
-    5900: _s("vnc", "VNC", ServiceClass.REMOTE),
-    5901: _s("vnc", "VNC", ServiceClass.REMOTE),
-    5984: _s("couchdb", "CouchDB", ServiceClass.DATABASE),
-    6379: _s("redis", "Redis", ServiceClass.DATABASE),
-    7001: _s("weblogic", "WebLogic", ServiceClass.WEB),
-    7199: _s("cassandra", "Cassandra JMX", ServiceClass.DATABASE),
-    8086: _s("influxdb", "InfluxDB", ServiceClass.DATABASE),
-    9042: _s("cassandra", "Cassandra", ServiceClass.DATABASE),
-    9092: _s("kafka", "Kafka", ServiceClass.INFRA),
-    9160: _s("cassandra", "Cassandra Thrift", ServiceClass.DATABASE),
-    9200: _s("elasticsearch", "Elasticsearch", ServiceClass.DATABASE),
-    9300: _s("elasticsearch", "Elasticsearch transport", ServiceClass.DATABASE),
-    11211: _s("memcached", "Memcached", ServiceClass.DATABASE),
-    27017: _s("mongodb", "MongoDB", ServiceClass.DATABASE),
-    27018: _s("mongodb", "MongoDB shard", ServiceClass.DATABASE),
-    50000: _s("db2", "IBM Db2", ServiceClass.DATABASE),
+    21: _s(
+        "ftp",
+        "FTP",
+        ServiceClass.INFRA,
+        "File transfer, credentials in the clear unless FTPS",
+    ),
+    22: _s("ssh", "SSH", ServiceClass.REMOTE, "Secure Shell remote administration"),
+    23: _s("telnet", "Telnet", ServiceClass.REMOTE, "Telnet remote shell, unencrypted"),
+    25: _s("smtp", "SMTP", ServiceClass.MAIL, "Mail transfer between servers"),
+    53: _s("dns", "DNS", ServiceClass.INFRA, "Domain name resolution"),
+    69: _s(
+        "tftp", "TFTP", ServiceClass.INFRA, "Trivial file transfer, no authentication"
+    ),
+    88: _s("kerberos", "Kerberos", ServiceClass.INFRA, "Kerberos authentication"),
+    110: _s("pop3", "POP3", ServiceClass.MAIL, "Mailbox retrieval, unencrypted"),
+    111: _s(
+        "rpcbind",
+        "RPC portmapper",
+        ServiceClass.INFRA,
+        "RPC portmapper, enumerates other services",
+    ),
+    135: _s("msrpc", "MSRPC", ServiceClass.INFRA, "Windows RPC endpoint mapper"),
+    137: _s("netbios", "NetBIOS", ServiceClass.INFRA, "NetBIOS name service"),
+    139: _s(
+        "netbios-ssn",
+        "NetBIOS session",
+        ServiceClass.INFRA,
+        "NetBIOS session service over SMB",
+    ),
+    143: _s("imap", "IMAP", ServiceClass.MAIL, "Mailbox access, unencrypted"),
+    161: _s(
+        "snmp",
+        "SNMP",
+        ServiceClass.INFRA,
+        "SNMP management, often left on a default community string",
+    ),
+    389: _s("ldap", "LDAP", ServiceClass.INFRA, "Directory service, unencrypted"),
+    427: _s("slp", "SLP", ServiceClass.INFRA, "Service Location Protocol"),
+    443: _s("https", "HTTPS", ServiceClass.WEB, "Web server over TLS", tls=True),
+    445: _s("smb", "SMB", ServiceClass.INFRA, "Windows file sharing"),
+    465: _s(
+        "smtps",
+        "SMTPS",
+        ServiceClass.MAIL,
+        "Mail submission over implicit TLS",
+        tls=True,
+    ),
+    500: _s("isakmp", "IKE", ServiceClass.INFRA, "IPsec key exchange"),
+    512: _s(
+        "rexec", "rexec", ServiceClass.REMOTE, "Remote command execution, unencrypted"
+    ),
+    513: _s("rlogin", "rlogin", ServiceClass.REMOTE, "Remote login, unencrypted"),
+    514: _s("syslog", "Syslog", ServiceClass.INFRA, "Syslog collection"),
+    515: _s("printer", "LPD", ServiceClass.INFRA, "Line printer daemon"),
+    548: _s("afp", "AFP", ServiceClass.INFRA, "Apple file sharing"),
+    554: _s("rtsp", "RTSP", ServiceClass.OTHER, "Streaming media control"),
+    587: _s(
+        "smtp", "SMTP submission", ServiceClass.MAIL, "Authenticated mail submission"
+    ),
+    623: _s(
+        "ipmi",
+        "IPMI",
+        ServiceClass.INFRA,
+        "Baseboard management controller, out-of-band server access",
+    ),
+    636: _s(
+        "ldaps", "LDAPS", ServiceClass.INFRA, "Directory service over TLS", tls=True
+    ),
+    873: _s("rsync", "rsync", ServiceClass.INFRA, "rsync file synchronisation"),
+    993: _s("imaps", "IMAPS", ServiceClass.MAIL, "Mailbox access over TLS", tls=True),
+    995: _s(
+        "pop3s", "POP3S", ServiceClass.MAIL, "Mailbox retrieval over TLS", tls=True
+    ),
+    1080: _s(
+        "socks",
+        "SOCKS proxy",
+        ServiceClass.INFRA,
+        "SOCKS proxy; an open one relays traffic for anyone",
+    ),
+    1433: _s(
+        "mssql", "Microsoft SQL Server", ServiceClass.DATABASE, "Microsoft SQL Server"
+    ),
+    1521: _s("oracle", "Oracle DB", ServiceClass.DATABASE, "Oracle database listener"),
+    1723: _s("pptp", "PPTP", ServiceClass.REMOTE, "PPTP VPN, cryptographically broken"),
+    2049: _s("nfs", "NFS", ServiceClass.INFRA, "Network file system export"),
+    2181: _s(
+        "zookeeper",
+        "ZooKeeper",
+        ServiceClass.INFRA,
+        "ZooKeeper coordination, usually unauthenticated",
+    ),
+    2375: _s(
+        "docker",
+        "Docker API",
+        ServiceClass.INFRA,
+        "Docker API without TLS, equivalent to root on the host",
+    ),
+    2376: _s(
+        "docker", "Docker API", ServiceClass.INFRA, "Docker API over TLS", tls=True
+    ),
+    2379: _s(
+        "etcd",
+        "etcd",
+        ServiceClass.DATABASE,
+        "etcd key-value store, holds cluster secrets",
+    ),
+    3128: _s("http-proxy", "HTTP proxy", ServiceClass.WEB, "Forward web proxy"),
+    3268: _s(
+        "ldap", "Global catalog", ServiceClass.INFRA, "Active Directory global catalog"
+    ),
+    3306: _s("mysql", "MySQL", ServiceClass.DATABASE, "MySQL or MariaDB database"),
+    3389: _s("rdp", "RDP", ServiceClass.REMOTE, "Windows remote desktop"),
+    4369: _s(
+        "epmd",
+        "Erlang port mapper",
+        ServiceClass.INFRA,
+        "Erlang port mapper, enumerates node names",
+    ),
+    4444: _s(
+        "metasploit",
+        "Metasploit",
+        ServiceClass.OTHER,
+        "Common Metasploit listener port",
+    ),
+    5060: _s("sip", "SIP", ServiceClass.OTHER, "SIP telephony signalling"),
+    5222: _s("xmpp", "XMPP", ServiceClass.OTHER, "XMPP client connection"),
+    5353: _s("mdns", "mDNS", ServiceClass.INFRA, "Multicast DNS"),
+    5432: _s("postgresql", "PostgreSQL", ServiceClass.DATABASE, "PostgreSQL database"),
+    5601: _s(
+        "kibana", "Kibana", ServiceClass.WEB, "Kibana dashboards for Elasticsearch"
+    ),
+    5672: _s("amqp", "AMQP", ServiceClass.INFRA, "AMQP message broker"),
+    5900: _s(
+        "vnc", "VNC", ServiceClass.REMOTE, "VNC remote desktop, often password-only"
+    ),
+    5901: _s("vnc", "VNC", ServiceClass.REMOTE, "VNC remote desktop, second display"),
+    5984: _s(
+        "couchdb",
+        "CouchDB",
+        ServiceClass.DATABASE,
+        "CouchDB, unauthenticated in older releases",
+    ),
+    6379: _s(
+        "redis", "Redis", ServiceClass.DATABASE, "Redis, no authentication by default"
+    ),
+    7001: _s(
+        "weblogic",
+        "WebLogic",
+        ServiceClass.WEB,
+        "Oracle WebLogic admin and application traffic",
+    ),
+    7199: _s(
+        "cassandra",
+        "Cassandra JMX",
+        ServiceClass.DATABASE,
+        "Cassandra JMX, remote code execution if exposed",
+    ),
+    8086: _s(
+        "influxdb", "InfluxDB", ServiceClass.DATABASE, "InfluxDB time-series database"
+    ),
+    8500: _s(
+        "consul",
+        "Consul",
+        ServiceClass.WEB,
+        "Consul service catalogue and key-value store",
+    ),
+    8834: _s(
+        "nessus", "Nessus", ServiceClass.WEB, "Nessus vulnerability scanner console"
+    ),
+    9042: _s(
+        "cassandra", "Cassandra", ServiceClass.DATABASE, "Cassandra native protocol"
+    ),
+    9092: _s("kafka", "Kafka", ServiceClass.INFRA, "Kafka broker"),
+    9160: _s(
+        "cassandra",
+        "Cassandra Thrift",
+        ServiceClass.DATABASE,
+        "Cassandra Thrift interface",
+    ),
+    9200: _s(
+        "elasticsearch",
+        "Elasticsearch",
+        ServiceClass.DATABASE,
+        "Elasticsearch REST API, unauthenticated in older releases",
+    ),
+    9300: _s(
+        "elasticsearch",
+        "Elasticsearch transport",
+        ServiceClass.DATABASE,
+        "Elasticsearch node transport",
+    ),
+    10250: _s("kubelet", "kubelet", ServiceClass.WEB, "Kubernetes node agent API"),
+    11211: _s(
+        "memcached",
+        "Memcached",
+        ServiceClass.DATABASE,
+        "Memcached, no authentication and usable for amplification",
+    ),
+    15672: _s(
+        "rabbitmq", "RabbitMQ", ServiceClass.WEB, "RabbitMQ management interface"
+    ),
+    27017: _s(
+        "mongodb",
+        "MongoDB",
+        ServiceClass.DATABASE,
+        "MongoDB, unauthenticated before the 3.6 defaults",
+    ),
+    27018: _s(
+        "mongodb", "MongoDB shard", ServiceClass.DATABASE, "MongoDB shard member"
+    ),
+    50000: _s("db2", "IBM Db2", ServiceClass.DATABASE, "IBM Db2 database"),
 }
 
 # ports that commonly answer HTTP; the web probe seeds every host with these
@@ -261,15 +422,52 @@ _SENSITIVE_PORT_SET: frozenset[int] = frozenset(SENSITIVE_PORTS)
 _BY_NAME: dict[str, ServiceSpec] = {}
 for _spec in WELL_KNOWN.values():
     _BY_NAME.setdefault(_spec.name, _spec)
-_BY_NAME.setdefault("http", _s("http", "HTTP", ServiceClass.WEB))
-_BY_NAME.setdefault("https", _s("https", "HTTPS", ServiceClass.WEB, tls=True))
+_BY_NAME.setdefault("http", _s("http", "HTTP", ServiceClass.WEB, "Web server"))
+_BY_NAME.setdefault(
+    "https", _s("https", "HTTPS", ServiceClass.WEB, "Web server over TLS", tls=True)
+)
+
+
+# IANA's registry, generated by scripts/fetch_port_registry.py. It is the fallback,
+# never the authority: IANA still calls 9200 wap-wsp and 5601 esmagent.
+_REGISTRY_PATH = Path(__file__).parent / "data" / "port_registry.json"
+
+
+@lru_cache(maxsize=1)
+def _registry() -> dict[str, list[str]]:
+    try:
+        return json.loads(_REGISTRY_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def registered(port: int) -> tuple[str | None, str]:
+    """The IANA service name and description for a port, or (None, "")."""
+    entry = _registry().get(str(port))
+    if not entry:
+        return None, ""
+    return entry[0], entry[1] if len(entry) > 1 else ""
 
 
 def service_for_port(port: int) -> str | None:
     spec = WELL_KNOWN.get(port)
     if spec is not None:
         return spec.name
-    return "http" if port in _WEB_PORT_SET else None
+    if port in _WEB_PORT_SET:
+        return "http"
+    return registered(port)[0]
+
+
+def describe(port: int, service: str | None = None) -> tuple[str, bool]:
+    """One line on what a port is for, and whether it is only IANA's registration."""
+    named = _BY_NAME.get(service or "")
+    if named is not None and named.description:
+        return named.description, False
+    spec = WELL_KNOWN.get(port)
+    if spec is not None and spec.description:
+        return spec.description, False
+    text = registered(port)[1]
+    return (text, True) if text else ("", False)
 
 
 def service_class(service: str | None, port: int, *, is_http: bool = False) -> str:

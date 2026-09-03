@@ -11,6 +11,8 @@ export interface ServiceRead {
 	state: string;
 	service_name: string | null;
 	service_class: string;
+	description: string;
+	registered: boolean;
 	source: string;
 	is_http: boolean;
 	tls: boolean;

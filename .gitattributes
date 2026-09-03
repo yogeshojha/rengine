@@ -1,2 +1,3 @@
 Dockerfile  eol=lf
 *.sh        eol=lf
+shared/definitions/data/port_registry.json linguist-generated=true -diff
