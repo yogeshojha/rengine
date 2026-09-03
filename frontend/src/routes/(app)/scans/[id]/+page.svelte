@@ -86,6 +86,7 @@
 	let cancelling = $state(false);
 	let headerEl = $state<HTMLElement | null>(null);
 	let condensed = $state(false);
+	let tabsHeight = $state(0);
 	let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 	let now = $state(Date.now());
 	let webQuery = $state<WebAssetQuery>(emptyQuery());
@@ -407,8 +408,9 @@
 			</p>
 		{/if}
 
-		<Tabs.Root value={activeTab} onValueChange={setTab}>
+		<Tabs.Root value={activeTab} onValueChange={setTab} style="--scan-tabs-h: {tabsHeight}px">
 			<div
+				bind:clientHeight={tabsHeight}
 				class="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-6 md:px-6"
 			>
 				<div class="flex items-center gap-4">

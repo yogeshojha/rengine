@@ -52,17 +52,21 @@ function describes(description: string, prefix: string): boolean {
 function fieldSuggestions(schema: QuerySchema, prefix: string): Suggestion[] {
 	const lowered = prefix.toLowerCase();
 	const scored = schema.fields
-		.map((field) => {
+		.map((field, order) => {
 			const names = [field.name, ...field.aliases];
 			const hit = names.find((n) => n.startsWith(lowered));
 			const loose = names.find((n) => n.includes(lowered));
-			if (!lowered) return { field, rank: 1, name: field.name };
-			if (hit) return { field, rank: 0, name: hit };
-			if (loose) return { field, rank: 2, name: field.name };
-			return describes(field.description, lowered) ? { field, rank: 3, name: field.name } : null;
+			if (!lowered) return { field, rank: 1, name: field.name, order };
+			if (hit) return { field, rank: 0, name: hit, order };
+			if (loose) return { field, rank: 2, name: field.name, order };
+			return describes(field.description, lowered)
+				? { field, rank: 3, name: field.name, order }
+				: null;
 		})
-		.filter((v): v is { field: QueryFieldSpec; rank: number; name: string } => v !== null)
-		.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+		.filter(
+			(v): v is { field: QueryFieldSpec; rank: number; name: string; order: number } => v !== null
+		)
+		.sort((a, b) => a.rank - b.rank || a.order - b.order);
 
 	return scored.slice(0, 10).map(({ field, name }) => ({
 		id: `field:${field.name}`,

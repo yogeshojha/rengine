@@ -177,6 +177,12 @@
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let lastSig = '';
 
+	function flushSearch() {
+		if (timer) clearTimeout(timer);
+		timer = null;
+		void runSearch();
+	}
+
 	async function runSearch() {
 		if (!queryReady) return;
 		const q = view === 'gallery' && onlyShots ? { ...query, hasScreenshot: true } : query;
@@ -418,18 +424,23 @@
 
 <svelte:window onkeydown={onKey} />
 
-<QueryBar
-	bind:this={queryBar}
-	bind:ref={searchRef}
-	value={query.search}
-	facets={facets as unknown as Record<string, Facet[]>}
-	busy={loading && !!query.search}
-	serverError={queryError}
-	onReady={(value) => (queryReady = value)}
-	onChange={(v) => setQuery({ ...query, search: v })}
-/>
+<div class="z-10 md:sticky md:top-[var(--scan-tabs-h,0px)]">
+	<QueryBar
+		bind:this={queryBar}
+		bind:ref={searchRef}
+		value={query.search}
+		facets={facets as unknown as Record<string, Facet[]>}
+		busy={loading && !!query.search}
+		total={errored ? null : total}
+		capped={totalCapped}
+		serverError={queryError}
+		onReady={(value) => (queryReady = value)}
+		onChange={(v) => setQuery({ ...query, search: v })}
+		onSubmit={flushSearch}
+	/>
+</div>
 
-<Card.Root class="mt-6 gap-0 overflow-hidden py-0">
+<Card.Root class="gap-0 overflow-hidden rounded-t-none border-t-0 py-0">
 	<div class="border-b px-2">
 		<CountTabs
 			tabs={STATUS_CLASS_TABS}

@@ -227,6 +227,7 @@ export function caretContext(
 	caret: number,
 	known: FieldLookup
 ): CaretContext | null {
+	if (caret < source.length && !/[\s()]/.test(source[caret])) return null;
 	let start = caret;
 	while (start > 0 && !/[\s()]/.test(source[start - 1])) start -= 1;
 	const head = source.slice(start, caret);
