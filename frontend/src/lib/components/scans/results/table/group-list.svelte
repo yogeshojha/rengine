@@ -14,6 +14,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import TechIcon from '../tech-icon.svelte';
+	import CountryFlag from '../country-flag.svelte';
 	import {
 		providerFor,
 		PROVIDER_KIND_ICONS,
@@ -176,7 +177,9 @@
 					<span
 						class="flex size-8 shrink-0 items-center justify-center rounded-md border bg-background"
 					>
-						{#if id.dot}
+						{#if dimension === 'country'}
+							<CountryFlag code={group.value} showCode={false} />
+						{:else if id.dot}
 							<span class="size-2.5 rounded-full {id.dot}"></span>
 						{:else if id.logo}
 							<TechIcon name={id.logo} class="size-4">

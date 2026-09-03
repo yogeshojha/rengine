@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import ChartCard from './overview/chart-card.svelte';
+	import GeographyCard from './overview/geography-card.svelte';
 	import SummaryCard from './overview/summary-card.svelte';
 	import InsightsCard from './overview/insights-card.svelte';
 	import RunCard from './overview/run-card.svelte';
@@ -17,7 +18,7 @@
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { isLiveStatus } from '$lib/utilities/scan-status';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
-	import { filterToken } from '$lib/utilities/scan-insights';
+	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 	import type { StatusClass } from '$lib/utilities/scan-correlation';
 	import type {
@@ -90,6 +91,7 @@
 	const SEED_SOURCE = 'target';
 	const MAX_CHARTS = 4;
 	const MIN_SLICES = 2;
+	const MIN_COUNTRIES = 2;
 
 	let insights = $state<SubdomainInsights | null>(null);
 	let relatedDomains = $state<RelatedDomains | null>(null);
@@ -188,6 +190,13 @@
 	let resolved = $derived(insights?.surface.find((s) => s.key === 'resolved')?.value ?? null);
 	let liveHosts = $derived(insights?.surface.find((s) => s.key === 'live')?.value ?? 0);
 	let webHosts = $derived(insights?.surface.find((s) => s.key === 'web')?.value ?? 0);
+	let geography = $derived(insights?.geography ?? []);
+	let showGeography = $derived(geography.length >= MIN_COUNTRIES);
+
+	function pickCountry(code: string) {
+		onTab('ips', code ? exactToken('country', code) : '');
+	}
+
 	let charts = $derived.by<ChartSpec[]>(() => {
 		if (!insights) return [];
 		const status = toDonut(insights.status_reframe, STATUS_FILTER);
@@ -312,6 +321,10 @@
 			{onRescan}
 			onRetry={loadInsights}
 		/>
+
+		{#if showGeography && insights}
+			<GeographyCard {geography} total={insights.geo_total} onPick={pickCountry} />
+		{/if}
 
 		{#if charts.length && insights}
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">

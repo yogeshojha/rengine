@@ -3,6 +3,7 @@
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { Badge } from '$lib/components/ui/badge';
 	import TechIcon from '../tech-icon.svelte';
+	import CountryFlag from '../country-flag.svelte';
 	import { isSensitivePort } from '$lib/utilities/scan-correlation';
 	import type { IpGroupRead } from '$lib/utilities/scan-insights';
 
@@ -17,7 +18,7 @@
 	const MAX_HOSTS = 5;
 
 	let network = $derived(
-		[group.asn ? `AS${group.asn}` : null, group.asn_org, group.country].filter(Boolean).join(' · ')
+		[group.asn ? `AS${group.asn}` : null, group.asn_org].filter(Boolean).join(' · ')
 	);
 </script>
 
@@ -40,8 +41,11 @@
 				</Badge>
 			{/if}
 		</div>
-		{#if network}
-			<p class="text-muted-foreground">{network}{group.prefix ? ` · ${group.prefix}` : ''}</p>
+		{#if network || group.country}
+			<p class="flex flex-wrap items-center gap-1.5 text-muted-foreground">
+				{#if group.country}<CountryFlag code={group.country} />{/if}
+				<span>{network}{group.prefix ? ` · ${group.prefix}` : ''}</span>
+			</p>
 		{/if}
 		{#if group.ports.length}
 			<div class="flex flex-wrap gap-1">
@@ -76,7 +80,7 @@
 				{/if}
 			</div>
 		{:else}
-			<p class="text-muted-foreground">No host names resolve here.</p>
+			<p class="text-muted-foreground">No hostnames resolve to this address.</p>
 		{/if}
 	</HoverCard.Content>
 </HoverCard.Root>

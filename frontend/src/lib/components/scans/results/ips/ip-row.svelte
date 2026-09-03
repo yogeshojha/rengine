@@ -17,6 +17,7 @@
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
 	import IpHoverCard from './ip-hover-card.svelte';
+	import CountryFlag from '../country-flag.svelte';
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
@@ -109,19 +110,18 @@
 			<Tooltip.Root>
 				<Tooltip.Trigger>
 					{#snippet child({ props })}
-						<span
-							{...props}
-							class="mt-1.5 size-1.5 shrink-0 rounded-full {g.is_alive
-								? 'bg-success'
-								: 'bg-muted-foreground/40'}"
-						></span>
+						<span {...props} class="flex h-5 shrink-0 items-center">
+							<span
+								class="size-1.5 rounded-full {g.is_alive ? 'bg-success' : 'bg-muted-foreground/40'}"
+							></span>
+						</span>
 					{/snippet}
 				</Tooltip.Trigger>
 				<Tooltip.Content side="right">
-					{g.is_alive ? 'Answered a probe' : 'Never answered'}
+					{g.is_alive ? 'Responded to a probe' : 'No response'}
 				</Tooltip.Content>
 			</Tooltip.Root>
-			<span class="min-w-0 wrap-anywhere">
+			<span class="min-w-0 leading-5 wrap-anywhere">
 				<IpHoverCard group={g}>
 					<span class="font-mono text-sm leading-5 font-medium">
 						<HighlightText text={g.ip} {term} />
@@ -129,16 +129,19 @@
 				</IpHoverCard>
 			</span>
 			{#if g.version === 6}
-				<Badge
-					variant="outline"
-					class="mt-px shrink-0 px-1 text-[10px] font-normal text-muted-foreground"
-				>
-					IPv6
-				</Badge>
+				<span class="flex h-5 shrink-0 items-center">
+					<Badge variant="outline" class="px-1 text-[10px] font-normal text-muted-foreground">
+						IPv6
+					</Badge>
+				</span>
 			{/if}
 			{#if g.is_cdn}
-				<button type="button" onclick={(e) => pivot(e, filterToken('cdn', g.cdn_name ?? 'yes'))}>
-					<Badge variant="info" class="mt-px shrink-0 gap-1 px-1 text-[10px] font-normal">
+				<button
+					type="button"
+					class="flex h-5 shrink-0 items-center"
+					onclick={(e) => pivot(e, filterToken('cdn', g.cdn_name ?? 'yes'))}
+				>
+					<Badge variant="info" class="gap-1 px-1 text-[10px] font-normal">
 						<TechIcon name={g.cdn_name ?? ''} class="size-2.5" />
 						{g.cdn_name ?? 'CDN'}
 					</Badge>
@@ -151,7 +154,7 @@
 							<button
 								{...props}
 								type="button"
-								class="mt-px inline-flex shrink-0 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 py-px text-xs font-medium text-warning"
+								class="flex h-5 shrink-0 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 text-xs font-medium text-warning"
 								onclick={(e) => pivot(e, 'is:private')}
 							>
 								<Lock class="size-3" /> private
@@ -168,7 +171,7 @@
 							<button
 								{...props}
 								type="button"
-								class="mt-px inline-flex shrink-0 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 py-px text-xs font-medium text-warning"
+								class="flex h-5 shrink-0 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 text-xs font-medium text-warning"
 								onclick={(e) => pivot(e, 'is:sensitive')}
 							>
 								<TriangleAlert class="size-3" /> sensitive
@@ -178,10 +181,12 @@
 					<Tooltip.Content>An admin or database port is open</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
-			<CopyButton
-				value={g.ip}
-				class="-my-0.5 hidden h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
-			/>
+			<span class="hidden h-5 shrink-0 items-center sm:flex">
+				<CopyButton
+					value={g.ip}
+					class="size-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+				/>
+			</span>
 		</div>
 
 		{#if ptr.length}
@@ -299,7 +304,7 @@
 						class="text-xs text-muted-foreground hover:text-foreground hover:underline"
 						onclick={(e) => pivot(e, exactToken('country', g.country ?? ''))}
 					>
-						{g.country}
+						<CountryFlag code={g.country} />
 					</button>
 				{:else}
 					<span class="text-xs text-muted-foreground">—</span>

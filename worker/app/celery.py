@@ -103,6 +103,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.dns",
         "app.tasks.scan",
         "app.tasks.schedule",
+        "app.tasks.ip_asn",
     ]
 )
 
@@ -111,11 +112,16 @@ celery_app.autodiscover_tasks(
 # #############################################################
 
 SCHEDULE_TICK_SECONDS = 60.0
+IP_RANGE_REFRESH_SECONDS = 7 * 24 * 60 * 60.0
 
 celery_app.conf.beat_schedule = {
     "scan-schedule-tick": {
         "task": "app.tasks.schedule.tick",
         "schedule": SCHEDULE_TICK_SECONDS,
+    },
+    "ip-range-refresh": {
+        "task": "app.tasks.ip_asn.refresh",
+        "schedule": IP_RANGE_REFRESH_SECONDS,
     },
 }
 
@@ -143,6 +149,22 @@ def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
         sender.hostname,
         sender.concurrency,
     )
+    _warm_ip_ranges()
+
+
+def _warm_ip_ranges() -> None:
+    """Pre-load the IP -> ASN/country tables so the first scan never waits on the download."""
+    try:
+        from app.database import get_sync_session  # noqa: PLC0415
+        from shared.services.ip_asn import ranges_ready  # noqa: PLC0415
+
+        with get_sync_session() as session:
+            if ranges_ready(session):
+                return
+        celery_app.send_task("app.tasks.ip_asn.refresh")
+        logger.info("ip range tables empty, refresh dispatched")
+    except Exception:
+        logger.warning("ip range warm-up could not be scheduled", exc_info=True)
 
 
 @worker_shutdown.connect

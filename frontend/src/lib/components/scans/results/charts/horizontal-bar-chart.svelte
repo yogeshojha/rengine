@@ -38,7 +38,7 @@
 		grid={false}
 		rule={false}
 		axis="y"
-		labels={{ offset: 8 }}
+		labels={{ offset: 8, format: (v: unknown) => Math.round(Number(v)).toLocaleString() }}
 		props={{
 			bars: {
 				stroke: 'none',

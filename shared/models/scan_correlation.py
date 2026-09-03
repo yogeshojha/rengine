@@ -52,6 +52,8 @@ class SubdomainInsights(BaseModel):
     top_tech: list[Tally] = Field(default_factory=list)
     tech_total: int = 0
     top_asn: list[Tally] = Field(default_factory=list)
+    geography: list[Tally] = Field(default_factory=list)
+    geo_total: int = 0
     services: list[Tally] = Field(default_factory=list)
     clusters: list[ClusterStat] = Field(default_factory=list)
 

@@ -913,6 +913,17 @@ class SubdomainService:
             .limit(8)
         )
         top_asn = [Tally(name=n, count=c) for n, c in asn_rows.all()]
+        geo_rows = await self.session.execute(
+            select(IpAddress.country, func.count())
+            .where(
+                IpAddress.project_id == project_id,
+                IpAddress.scan_id == scan_id,
+                IpAddress.country.isnot(None),
+            )
+            .group_by(IpAddress.country)
+            .order_by(func.count().desc())
+        )
+        geography = [Tally(name=c, count=n) for c, n in geo_rows.all()]
         service_rows = await self.session.execute(
             select(Port.service_name, func.count())
             .where(
@@ -973,6 +984,8 @@ class SubdomainService:
             top_tech=top_tech,
             tech_total=tech_total,
             top_asn=top_asn,
+            geography=geography,
+            geo_total=sum(t.count for t in geography),
             services=services,
             clusters=clusters[:_CLUSTER_LIMIT],
         )

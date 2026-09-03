@@ -9,5 +9,5 @@ class IpEnrichmentConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Enrich IPs",
-        description="Attach ASN, prefix and WHOIS context to discovered IPs.",
+        description="Resolve ASN, network operator and country for every IP address.",
     )

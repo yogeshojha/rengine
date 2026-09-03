@@ -30,6 +30,7 @@ from shared.models.ip_address import (
     IpAddressSummary,
     TargetIpAddressRead,
 )
+from shared.models.ip_asn_range import IpAsnRange, IpCountryRange
 from shared.models.notification import (
     Notification,
     NotificationCreate,
@@ -153,6 +154,8 @@ __all__ = [
     "IpAddress",
     "IpAddressRead",
     "IpAddressSummary",
+    "IpAsnRange",
+    "IpCountryRange",
     "Notification",
     "NotificationChannel",
     "NotificationChannelCreate",

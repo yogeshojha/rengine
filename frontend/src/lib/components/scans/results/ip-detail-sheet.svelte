@@ -25,6 +25,7 @@
 	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import CountryFlag from './country-flag.svelte';
 
 	interface Props {
 		group: IpGroupRead | null;
@@ -222,7 +223,10 @@
 										{@render chip(
 											group.country,
 											exactToken('country', group.country),
-											'Filter by country'
+											'Filter by country',
+											false,
+											false,
+											true
 										)}
 									</dd>
 								</div>
@@ -351,7 +355,7 @@
 	</div>
 {/snippet}
 
-{#snippet chip(text: string, dsl: string, hint: string, mono = false, warn = false)}
+{#snippet chip(text: string, dsl: string, hint: string, mono = false, warn = false, flag = false)}
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			{#snippet child({ props })}
@@ -362,7 +366,7 @@
 							? 'font-mono text-[10px]'
 							: ''} {warn ? 'text-warning' : ''}"
 					>
-						{text}
+						{#if flag}<CountryFlag code={text} />{:else}{text}{/if}
 					</Badge>
 				</button>
 			{/snippet}

@@ -278,6 +278,8 @@ export interface SubdomainInsights {
 	top_tech: InsightTally[];
 	tech_total: number;
 	top_asn: InsightTally[];
+	geography: InsightTally[];
+	geo_total: number;
 	services: InsightTally[];
 	clusters: InsightCluster[];
 }

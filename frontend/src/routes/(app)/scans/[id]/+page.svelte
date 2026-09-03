@@ -50,6 +50,7 @@
 		SCAN_POLL_MS
 	} from '$lib/utilities/scan-status';
 	import { emptyQuery, type WebAssetQuery } from '$lib/utilities/scan-insights';
+	import { emptyIpQuery, type IpQuery } from '$lib/utilities/ip-groups';
 	import { targetTypeLabel } from '$lib/types/scan-engine';
 	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
 	import type { TargetType } from '$lib/types/target';
@@ -90,6 +91,7 @@
 	let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 	let now = $state(Date.now());
 	let webQuery = $state<WebAssetQuery>(emptyQuery());
+	let ipQuery = $state<IpQuery>(emptyIpQuery());
 
 	const initialTab = page.url.searchParams.get('tab');
 	let activeTab = $state<TabKey>(
@@ -115,8 +117,16 @@
 	}
 
 	function openTab(tab: string, filter?: string) {
-		if (filter) applyFilter(filter);
-		else setTab(tab);
+		if (!filter) {
+			setTab(tab);
+			return;
+		}
+		if (tab === 'ips') {
+			ipQuery = { ...emptyIpQuery(), search: filter };
+			setTab('ips');
+			return;
+		}
+		applyFilter(filter);
 	}
 
 	function onKeydown(e: KeyboardEvent) {
@@ -196,6 +206,7 @@
 			lastScanId = scanId;
 			untrack(() => {
 				webQuery = emptyQuery();
+				ipQuery = emptyIpQuery();
 				history = [];
 				historyLoaded = false;
 			});
@@ -500,6 +511,7 @@
 						active={activeTab === 'ips'}
 						onTab={openTab}
 						onScanTotal={(n) => (ipsTotal = n)}
+						bind:query={ipQuery}
 					/>
 				{/key}
 			</Tabs.Content>

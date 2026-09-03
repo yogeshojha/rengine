@@ -57,9 +57,17 @@
 		active?: boolean;
 		onTab?: (tab: string, filter?: string) => void;
 		onScanTotal?: (total: number) => void;
+		query?: IpQuery;
 	}
 
-	let { scanId, projectId, active = true, onTab, onScanTotal }: Props = $props();
+	let {
+		scanId,
+		projectId,
+		active = true,
+		onTab,
+		onScanTotal,
+		query = $bindable({ ...emptyIpQuery(), search: appPage.url.searchParams.get('ip_q') ?? '' })
+	}: Props = $props();
 
 	const DEFAULT_SORT = { key: 'hosts', dir: -1 as const };
 	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
@@ -84,7 +92,6 @@
 	const initialSort = initial.get('ip_sort')?.split(':') ?? [];
 	let pendingIp = initial.get('ip');
 
-	let query = $state<IpQuery>({ ...emptyIpQuery(), search: initial.get('ip_q') ?? '' });
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.ipsColumns, null));
 	let density = $state<string>(readPref(STORAGE_KEYS.ipsDensity, 'cozy'));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.ipsPageSize, RESULTS_PAGE_SIZE));
@@ -590,7 +597,7 @@
 			<EmptyState
 				icon={Network}
 				title="No addresses yet"
-				description="Addresses appear here once hostnames resolve or ports are found."
+				description="Addresses appear once hostnames resolve or ports are discovered."
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{/if}

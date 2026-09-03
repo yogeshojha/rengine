@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import 'flag-icons/css/flag-icons.min.css';
 
 @source "../src/**/*.{html,js,svelte,ts,svelte.ts}";
 @source not "../node_modules";

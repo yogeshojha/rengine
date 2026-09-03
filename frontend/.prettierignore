@@ -7,3 +7,6 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# vendored geodata (Natural Earth via world-atlas)
+src/lib/data

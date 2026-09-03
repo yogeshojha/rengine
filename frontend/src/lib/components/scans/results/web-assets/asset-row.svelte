@@ -175,7 +175,7 @@
 				load={() => hostsWithTitle(pageTitle)}
 				{onHost}
 				onFilter={() => onFilter(exactToken('title', pageTitle))}
-				class="mt-px"
+				class="flex h-4 items-center"
 			/>
 		{/if}
 	{:else if s.http_status}
@@ -215,9 +215,11 @@
 	<div class="flex min-w-0 flex-[3] flex-col gap-1 contain-inline-size sm:min-w-56">
 		<div class="flex items-start gap-1.5">
 			{#if s.is_important}
-				<Star class="mt-1 size-3 shrink-0 fill-warning text-warning" />
+				<span class="flex h-5 shrink-0 items-center">
+					<Star class="size-3 fill-warning text-warning" />
+				</span>
 			{/if}
-			<span class="min-w-0 wrap-anywhere">
+			<span class="min-w-0 leading-5 wrap-anywhere">
 				<HostHoverCard sub={s}>
 					<span
 						class="font-mono text-sm leading-5 font-medium {s.is_active
@@ -232,29 +234,31 @@
 				</HostHoverCard>
 			</span>
 			{#if s.is_wildcard}
-				<Badge
-					variant="outline"
-					class="mt-px shrink-0 px-1 text-[10px] font-normal text-muted-foreground"
-				>
-					wildcard
-				</Badge>
+				<span class="flex h-5 shrink-0 items-center">
+					<Badge variant="outline" class="px-1 text-[10px] font-normal text-muted-foreground">
+						wildcard
+					</Badge>
+				</span>
 			{/if}
 			{#if !s.is_active}
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						{#snippet child({ props })}
-							<span {...props} class="mt-1 shrink-0 text-[10px] text-muted-foreground/70"
-								>no DNS</span
+							<span
+								class="flex h-5 shrink-0 items-center text-[10px] text-muted-foreground/70"
+								{...props}>no DNS</span
 							>
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content side="right">Did not resolve to an address</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
-			<CopyButton
-				value={s.name}
-				class="-my-0.5 hidden h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
-			/>
+			<span class="hidden h-5 shrink-0 items-center sm:flex">
+				<CopyButton
+					value={s.name}
+					class="size-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+				/>
+			</span>
 		</div>
 
 		{#if s.http_status}
