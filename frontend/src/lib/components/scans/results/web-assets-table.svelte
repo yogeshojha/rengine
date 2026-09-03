@@ -34,6 +34,7 @@
 	import ResultsPagination from './web-assets/results-pagination.svelte';
 	import SamePagePopover from './web-assets/same-page-popover.svelte';
 	import ScreenshotThumb from './screenshot-thumb.svelte';
+	import TechIcon from './tech-icon.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
 
 	import { subdomainsApi } from '$lib/api/subdomains';
@@ -643,6 +644,7 @@
 															variant="outline"
 															class="cursor-pointer font-normal hover:bg-accent"
 														>
+															<TechIcon name={t} />
 															{t}
 														</Badge>
 													</button>
@@ -651,6 +653,7 @@
 													items={s.tech}
 													shown={MAX_TECH}
 													label="technologies"
+													icons
 													onSelect={(t) => applyDsl(`tech:${t}`)}
 												/>
 											</div>

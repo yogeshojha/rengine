@@ -51,6 +51,7 @@
 	import { Progress } from '$lib/components/ui/progress';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import ScreenshotThumb from './screenshot-thumb.svelte';
+	import TechIcon from './tech-icon.svelte';
 	import OverflowPopover from './web-assets/overflow-popover.svelte';
 	import { httpAssetsApi } from '$lib/api/scan-results';
 	import { subdomainsApi } from '$lib/api/subdomains';
@@ -563,7 +564,7 @@
 								{@render heading(Layers, 'Technologies')}
 								<div class="flex flex-wrap gap-1">
 									{#each sub.tech as t (t)}
-										{@render chip(t, `tech:${t}`)}
+										{@render chip(t, `tech:${t}`, false, undefined, false, true)}
 									{/each}
 								</div>
 								{#if detail?.cpe?.length}
@@ -933,7 +934,7 @@
 	{/if}
 {/snippet}
 
-{#snippet chip(text: string, dsl: string, mono = false, hint?: string, warn = false)}
+{#snippet chip(text: string, dsl: string, mono = false, hint?: string, warn = false, tech = false)}
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			{#snippet child({ props })}
@@ -944,6 +945,7 @@
 							? 'font-mono text-[10px]'
 							: ''} {warn ? 'text-warning' : ''}"
 					>
+						{#if tech}<TechIcon name={text} />{/if}
 						{text}
 					</Badge>
 				</button>

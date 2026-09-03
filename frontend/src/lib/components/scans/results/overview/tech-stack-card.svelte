@@ -7,6 +7,7 @@
 	import * as Item from '$lib/components/ui/item';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Badge } from '$lib/components/ui/badge';
+	import TechIcon from '../tech-icon.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -85,6 +86,7 @@
 			{#each top as t (t.name)}
 				<button type="button" class="cursor-pointer" onclick={() => onFilter(`tech:${t.name}`)}>
 					<Badge variant="secondary" class="gap-1.5 font-normal hover:bg-secondary/70">
+						<TechIcon name={t.name} />
 						{t.name}
 						<span class="text-muted-foreground tabular-nums">{t.count.toLocaleString()}</span>
 					</Badge>
@@ -157,7 +159,12 @@
 								{#snippet child({ props })}
 									<button type="button" {...props} onclick={() => pick(t.value)}>
 										<Item.Content class="gap-1.5">
-											<Item.Title class="font-normal">{t.label}</Item.Title>
+											<Item.Title class="flex items-center gap-1.5 font-normal">
+												<span class="flex w-3 shrink-0 justify-center">
+													<TechIcon name={t.value} />
+												</span>
+												{t.label}
+											</Item.Title>
 											<div class="h-1 w-full overflow-hidden rounded-full bg-muted">
 												<div
 													class="h-full rounded-full bg-chart-1"

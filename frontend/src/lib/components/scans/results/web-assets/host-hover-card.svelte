@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { Badge } from '$lib/components/ui/badge';
+	import TechIcon from '../tech-icon.svelte';
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { providerFor, PROVIDER_KIND_ICONS } from '$lib/config/hosting-providers';
 	import { httpStatusClass, httpStatusReason, STATUS_DOT } from '$lib/utilities/scan-correlation';
@@ -82,7 +83,10 @@
 				{#if sub.tech.length}
 					<div class="flex flex-wrap gap-1">
 						{#each sub.tech.slice(0, MAX_TECH) as t (t)}
-							<Badge variant="outline" class="font-normal">{t}</Badge>
+							<Badge variant="outline" class="font-normal">
+								<TechIcon name={t} />
+								{t}
+							</Badge>
 						{/each}
 						{#if sub.tech.length > MAX_TECH}
 							<Badge variant="outline" class="font-normal text-muted-foreground">

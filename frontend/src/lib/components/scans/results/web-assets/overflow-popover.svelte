@@ -2,6 +2,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import * as Popover from '$lib/components/ui/popover';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import TechIcon from '../tech-icon.svelte';
 	import { cn } from '$lib/utils';
 
 	interface Props {
@@ -9,11 +10,20 @@
 		shown: number;
 		label: string;
 		mono?: boolean;
+		icons?: boolean;
 		onSelect?: (value: string) => void;
 		class?: string;
 	}
 
-	let { items, shown, label, mono = false, onSelect, class: className }: Props = $props();
+	let {
+		items,
+		shown,
+		label,
+		mono = false,
+		icons = false,
+		onSelect,
+		class: className
+	}: Props = $props();
 
 	let open = $state(false);
 	let hidden = $derived(Math.max(0, items.length - shown));
@@ -58,12 +68,22 @@
 										: ''}"
 									onclick={() => pick(item)}
 								>
-									<span class="truncate">{item}</span>
+									<span class="flex min-w-0 items-center gap-1.5">
+										{#if icons}<span class="flex w-3 shrink-0 justify-center">
+												<TechIcon name={item} />
+											</span>{/if}
+										<span class="truncate">{item}</span>
+									</span>
 									<ChevronRight class="size-3 shrink-0 text-muted-foreground" />
 								</button>
 							{:else}
-								<span class="block truncate px-2 py-1.5 text-xs {mono ? 'font-mono' : ''}">
-									{item}
+								<span
+									class="flex items-center gap-1.5 px-2 py-1.5 text-xs {mono ? 'font-mono' : ''}"
+								>
+									{#if icons}<span class="flex w-3 shrink-0 justify-center">
+											<TechIcon name={item} />
+										</span>{/if}
+									<span class="truncate">{item}</span>
 								</span>
 							{/if}
 						</li>

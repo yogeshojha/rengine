@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge';
+	import TechIcon from './tech-icon.svelte';
 
 	interface Props {
 		tech: string[];
@@ -16,7 +17,10 @@
 {#if tech.length}
 	<div class="flex flex-wrap gap-1 {className}">
 		{#each shown as t (t)}
-			<Badge variant="outline" class="font-normal">{t}</Badge>
+			<Badge variant="outline" class="font-normal">
+				<TechIcon name={t} />
+				{t}
+			</Badge>
 		{/each}
 		{#if extra}
 			<Badge variant="outline" class="font-normal text-muted-foreground">+{extra}</Badge>

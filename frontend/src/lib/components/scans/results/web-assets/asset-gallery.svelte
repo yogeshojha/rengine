@@ -3,6 +3,7 @@
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Lock from '@lucide/svelte/icons/lock';
 	import { Badge } from '$lib/components/ui/badge';
+	import TechIcon from '../tech-icon.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { httpStatusClass, STATUS_DOT } from '$lib/utilities/scan-correlation';
@@ -113,7 +114,10 @@
 								>
 							{/if}
 							{#each s.tech.slice(0, MAX_TECH) as t (t)}
-								<Badge variant="outline" class="px-1 text-[9px] font-normal">{t}</Badge>
+								<Badge variant="outline" class="px-1 text-[9px] font-normal">
+									<TechIcon name={t} class="size-2.5" />
+									{t}
+								</Badge>
 							{/each}
 							{#if s.tech.length > MAX_TECH}
 								<Badge variant="outline" class="px-1 text-[9px] font-normal text-muted-foreground">
