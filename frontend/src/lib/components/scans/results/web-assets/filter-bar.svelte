@@ -8,6 +8,7 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import { ButtonGroup } from '$lib/components/ui/button-group';
@@ -200,17 +201,19 @@
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-52">
+					<DropdownMenu.Content align="end" class="max-h-none w-52 overflow-visible">
 						<DropdownMenu.Label>Group by</DropdownMenu.Label>
 						<DropdownMenu.Separator />
-						<DropdownMenu.RadioGroup value={groupBy} onValueChange={onGroupBy}>
-							<DropdownMenu.RadioItem value="">No grouping</DropdownMenu.RadioItem>
-							{#each dimensions as dimension (dimension.key)}
-								<DropdownMenu.RadioItem value={dimension.key}
-									>{dimension.label}</DropdownMenu.RadioItem
-								>
-							{/each}
-						</DropdownMenu.RadioGroup>
+						<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
+							<DropdownMenu.RadioGroup value={groupBy} onValueChange={onGroupBy}>
+								<DropdownMenu.RadioItem value="">No grouping</DropdownMenu.RadioItem>
+								{#each dimensions as dimension (dimension.key)}
+									<DropdownMenu.RadioItem value={dimension.key}
+										>{dimension.label}</DropdownMenu.RadioItem
+									>
+								{/each}
+							</DropdownMenu.RadioGroup>
+						</ScrollArea>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 				{#if groupBy}
@@ -241,18 +244,20 @@
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end" class="w-44">
+				<DropdownMenu.Content align="end" class="max-h-none w-44 overflow-visible">
 					<DropdownMenu.Group>
 						<DropdownMenu.Label>Columns</DropdownMenu.Label>
-						{#each columns as col (col.key)}
-							<DropdownMenu.CheckboxItem
-								checked={visible.includes(col.key)}
-								onCheckedChange={() => onToggleColumn(col.key)}
-								closeOnSelect={false}
-							>
-								{col.label}
-							</DropdownMenu.CheckboxItem>
-						{/each}
+						<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-64">
+							{#each columns as col (col.key)}
+								<DropdownMenu.CheckboxItem
+									checked={visible.includes(col.key)}
+									onCheckedChange={() => onToggleColumn(col.key)}
+									closeOnSelect={false}
+								>
+									{col.label}
+								</DropdownMenu.CheckboxItem>
+							{/each}
+						</ScrollArea>
 					</DropdownMenu.Group>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Group>

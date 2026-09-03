@@ -7,6 +7,7 @@ export interface TableColumn extends ColumnDef {
 	sort?: string;
 	align?: 'right';
 	width: string;
+	grow?: boolean;
 }
 
 export interface SortOption {

@@ -59,7 +59,12 @@
 		<div class={col.width}>{@render cell(col)}</div>
 	{/each}
 	{#each columns as col (col.key)}
-		<div class="hidden shrink-0 sm:flex {col.width} {col.align === 'right' ? 'justify-end' : ''}">
+		<div
+			class="hidden sm:flex {col.grow ? 'min-w-0 flex-1' : 'shrink-0'} {col.width} {col.align ===
+			'right'
+				? 'justify-end'
+				: ''}"
+		>
 			{@render cell(col)}
 		</div>
 	{/each}

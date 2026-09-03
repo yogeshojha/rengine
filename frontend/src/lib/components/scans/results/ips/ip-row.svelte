@@ -23,6 +23,7 @@
 	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
 	import type { TableColumn } from '../table/columns';
+	import { IP_LEAD_COLUMNS } from './columns';
 
 	interface Props {
 		group: IpGroupRead;
@@ -55,7 +56,7 @@
 	}: Props = $props();
 
 	const MAX_PORTS = 5;
-	const MAX_HOSTS = 1;
+	const MAX_HOSTS = 3;
 
 	let ptr = $derived(g.ptr_hostnames ?? []);
 	let ports = $derived(g.ports ?? []);
@@ -105,7 +106,7 @@
 		/>
 	</div>
 
-	<div class="flex min-w-0 flex-[3] flex-col gap-1 contain-inline-size sm:min-w-56">
+	<div class="flex flex-col gap-1 {IP_LEAD_COLUMNS[0].width}">
 		<div class="flex items-start gap-1.5">
 			<Tooltip.Root>
 				<Tooltip.Trigger>
@@ -123,9 +124,21 @@
 			</Tooltip.Root>
 			<span class="min-w-0 leading-5 wrap-anywhere">
 				<IpHoverCard group={g}>
-					<span class="font-mono text-sm leading-5 font-medium">
-						<HighlightText text={g.ip} {term} />
-					</span>
+					{#if priv}
+						<span
+							class="inline-flex h-5 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 align-top text-warning"
+							title="Private address published in public DNS"
+						>
+							<Lock class="size-3 shrink-0" />
+							<span class="font-mono text-sm leading-5 font-medium">
+								<HighlightText text={g.ip} {term} />
+							</span>
+						</span>
+					{:else}
+						<span class="font-mono text-sm leading-5 font-medium">
+							<HighlightText text={g.ip} {term} />
+						</span>
+					{/if}
 				</IpHoverCard>
 			</span>
 			{#if g.version === 6}
@@ -146,23 +159,6 @@
 						{g.cdn_name ?? 'CDN'}
 					</Badge>
 				</button>
-			{/if}
-			{#if priv}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<button
-								{...props}
-								type="button"
-								class="flex h-5 shrink-0 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 text-xs font-medium text-warning"
-								onclick={(e) => pivot(e, 'is:private')}
-							>
-								<Lock class="size-3" /> private
-							</button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content>Private address published in public DNS</Tooltip.Content>
-				</Tooltip.Root>
 			{/if}
 			{#if g.has_sensitive}
 				<Tooltip.Root>
@@ -206,7 +202,7 @@
 		{/if}
 	</div>
 
-	<div class="hidden min-w-40 flex-[2] sm:block">
+	<div class={IP_LEAD_COLUMNS[1].width}>
 		{#if g.asn}
 			<button
 				type="button"
@@ -228,9 +224,9 @@
 
 	{#each columns as col (col.key)}
 		<div
-			class="hidden shrink-0 self-center sm:flex {col.width} {col.align === 'right'
-				? 'justify-end'
-				: ''}"
+			class="hidden self-center sm:flex {col.grow
+				? 'min-w-0 flex-1'
+				: 'shrink-0'} {col.width} {col.align === 'right' ? 'justify-end' : ''}"
 		>
 			{#if col.key === 'ports'}
 				{#if ports.length}
@@ -287,6 +283,7 @@
 							</button>
 						{/each}
 						<OverflowPopover
+							class="shrink-0"
 							items={hosts}
 							shown={MAX_HOSTS}
 							label="hosts"
@@ -400,6 +397,11 @@
 					{#if g.country}
 						<DropdownMenu.Item onclick={() => onFilter(exactToken('country', g.country ?? ''))}>
 							<Filter /> Same country
+						</DropdownMenu.Item>
+					{/if}
+					{#if priv}
+						<DropdownMenu.Item onclick={() => onFilter('is:private')}>
+							<Lock /> Private addresses
 						</DropdownMenu.Item>
 					{/if}
 					{#if g.cdn_name}
