@@ -2,6 +2,8 @@ const SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
 export const API_PREFIX = '/api/v1';
 
+type RefreshResult = 'ok' | 'expired' | 'error';
+
 function extractErrorMessage(detail: unknown, status: number): string {
 	if (typeof detail === 'string' && detail.trim()) return detail;
 	if (Array.isArray(detail)) {
@@ -16,7 +18,7 @@ function extractErrorMessage(detail: unknown, status: number): string {
 class ApiClient {
 	private baseUrl = API_PREFIX;
 
-	private refreshPromise: Promise<boolean> | null = null;
+	private refreshPromise: Promise<RefreshResult> | null = null;
 
 	private async request<T>(
 		endpoint: string,
@@ -34,11 +36,15 @@ class ApiClient {
 
 		if (!response.ok) {
 			if (response.status === 401 && !isRetry && !this.isAuthEndpoint(endpoint)) {
-				const refreshed = await this.tryRefresh();
-				if (refreshed) {
+				const result = await this.tryRefresh();
+				if (result === 'ok') {
 					return this.request<T>(endpoint, options, true);
 				}
-				throw new Error('Session expired. Please log in again.');
+				throw new Error(
+					result === 'expired'
+						? 'Session expired. Please log in again.'
+						: 'Could not refresh your session. Please retry.'
+				);
 			}
 
 			const errorData = await response.json().catch(() => ({}));
@@ -56,7 +62,7 @@ class ApiClient {
 		return endpoint.startsWith('/auth/');
 	}
 
-	private async tryRefresh(): Promise<boolean> {
+	private async tryRefresh(): Promise<RefreshResult> {
 		if (this.refreshPromise) {
 			return this.refreshPromise;
 		}
@@ -68,7 +74,7 @@ class ApiClient {
 		return this.refreshPromise;
 	}
 
-	private async performRefresh(): Promise<boolean> {
+	private async performRefresh(): Promise<RefreshResult> {
 		try {
 			const response = await fetch(`${this.baseUrl}/auth/refresh`, {
 				method: 'POST',
@@ -76,14 +82,17 @@ class ApiClient {
 			});
 
 			if (response.ok) {
-				return true;
+				return 'ok';
+			}
+
+			if (response.status !== 401 && response.status !== 403) {
+				return 'error';
 			}
 
 			this.emitSessionExpired();
-			return false;
+			return 'expired';
 		} catch {
-			this.emitSessionExpired();
-			return false;
+			return 'error';
 		}
 	}
 

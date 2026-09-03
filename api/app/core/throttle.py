@@ -10,7 +10,7 @@ from app.core.ratelimit import _client
 
 logger = logging.getLogger(__name__)
 
-_EXEMPT_PREFIXES = ("/api/v1/events",)
+_EXEMPT_PREFIXES = ("/api/v1/events", "/api/v1/media")
 
 
 def _client_id(request: Request) -> str:
