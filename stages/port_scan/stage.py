@@ -86,9 +86,6 @@ class PortScanStage(Stage):
             logger.warning("naabu unavailable, skipping port scan")
             return StageResult(counts={"open_ports": 0, "scanned": 0})
 
-        port_inventory.clear(
-            self.session, self.ctx.scan_id, sources=[PortSource.NAABU.value]
-        )
         found: list[dict] = []
         failures: list[str] = []
         if full:
@@ -120,6 +117,7 @@ class PortScanStage(Stage):
                 )
                 for item in found
             ],
+            replace=True,
         )
         scanned = len(full) + len(edge)
         if failures:

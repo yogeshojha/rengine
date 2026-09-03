@@ -90,9 +90,19 @@ def upsert(
     observations: list[ServiceObservation],
     batch: int = 1000,
     keep_source: bool = False,
+    replace: bool = False,
 ) -> int:
-    """Merge observations into ports. Never loses a field a weaker source already filled."""
+    """Merge observations into ports. Never loses a field a weaker source already filled.
+
+    replace drops this source's earlier rows in the same transaction as the insert, so a
+    re-running stage never leaves the table short of what it already knew.
+    """
+    if replace:
+        session.execute(
+            delete(Port).where(Port.scan_id == scan_id, Port.source == source)
+        )
     if not observations:
+        session.commit()
         return 0
     now = utc_now()
     seen: dict[tuple[str, int, str], ServiceObservation] = {}
@@ -152,14 +162,3 @@ def upsert(
         )
     session.commit()
     return len(rows)
-
-
-def clear(
-    session: Session, scan_id: uuid.UUID, sources: list[str] | None = None
-) -> None:
-    """Drop this scan's ports so a re-run of a stage does not leave stale rows."""
-    statement = delete(Port).where(Port.scan_id == scan_id)
-    if sources:
-        statement = statement.where(Port.source.in_(sources))
-    session.execute(statement)
-    session.commit()

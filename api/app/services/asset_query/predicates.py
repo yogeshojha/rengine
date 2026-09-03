@@ -9,6 +9,7 @@ from sqlalchemy.orm import aliased
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
+from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
 
 HTTP_OK = 200
@@ -110,20 +111,31 @@ def service_seen_earlier(source, scan_id):
     )
 
 
-def service_has_baseline(source, scan_id):
+def service_has_baseline(scan_id):
+    """Whether an earlier scan of this target recorded any port at all.
+
+    Scan-level, so it must not correlate with the row: joining every port of this
+    scan against every port of the target on target_id alone is quadratic.
+    """
     earlier = aliased(Port)
+    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    cutoff = (
+        select(func.min(Port.discovered_at))
+        .where(Port.scan_id == scan_id)
+        .scalar_subquery()
+    )
     return exists(
         select(1).where(
-            earlier.target_id == source.c.target_id,
+            earlier.target_id == target,
             earlier.scan_id != scan_id,
-            earlier.discovered_at < source.c.discovered_at,
+            earlier.discovered_at < cutoff,
         )
     )
 
 
 def service_is_new(source, scan_id):
     return and_(
-        service_has_baseline(source, scan_id),
+        service_has_baseline(scan_id),
         not_(service_seen_earlier(source, scan_id)),
     )
 

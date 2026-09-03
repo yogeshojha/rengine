@@ -30,6 +30,7 @@ from app.services.asset_query import (
     compile_service_query,
     parse_query,
     query_error_for,
+    service_has_baseline,
     service_is_new,
 )
 from shared.definitions.asset_query import COUNT_CAP, SERVICE_QUERY
@@ -132,15 +133,6 @@ FROM ports e
 JOIN ports cur ON cur.scan_id = :sid AND cur.ip = e.ip AND cur.number = e.number
 WHERE e.target_id = cur.target_id AND e.scan_id <> :sid
   AND e.discovered_at < cur.discovered_at AND e.ip = ANY(:ips)
-"""
-
-_BASELINE_SQL = """
-SELECT EXISTS (
-    SELECT 1 FROM ports e
-    WHERE e.scan_id <> :sid
-      AND e.target_id = (SELECT target_id FROM scans WHERE id = :sid)
-      AND e.discovered_at < (SELECT min(discovered_at) FROM ports WHERE scan_id = :sid)
-)
 """
 
 
@@ -323,9 +315,7 @@ class PortService:
     async def _seen_before(
         self, scan_id: UUID, ips: list[str]
     ) -> tuple[bool, set[tuple[str, int]]]:
-        baseline = await self.session.scalar(
-            text(_BASELINE_SQL).bindparams(sid=scan_id)
-        )
+        baseline = await self.session.scalar(select(service_has_baseline(scan_id)))
         if not baseline:
             return False, set()
         rows = (

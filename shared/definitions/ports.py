@@ -30,15 +30,6 @@ SERVICE_CLASS_LABELS: dict[str, str] = {
     ServiceClass.OTHER.value: "Other",
 }
 
-SERVICE_CLASS_HELP: dict[str, str] = {
-    ServiceClass.WEB.value: "Answered an HTTP request, or listens on a web port",
-    ServiceClass.REMOTE.value: "Interactive administration such as SSH, RDP and VNC",
-    ServiceClass.DATABASE.value: "Databases, caches and search clusters",
-    ServiceClass.MAIL.value: "SMTP, IMAP and POP endpoints",
-    ServiceClass.INFRA.value: "Directory, file, name and management services",
-    ServiceClass.OTHER.value: "Listening, with no service identified",
-}
-
 # a service belongs to exactly one class; order is the tab order, not a precedence
 SERVICE_CLASS_ORDER: tuple[str, ...] = tuple(SERVICE_CLASS_LABELS)
 
@@ -407,8 +398,6 @@ PORT_PROFILES: tuple[PortProfileSpec, ...] = (
     ),
 )
 
-PORT_PROFILE_KEYS: tuple[str, ...] = tuple(p.key for p in PORT_PROFILES)
-
 EXPOSURE_PORTS: tuple[int, ...] = tuple(sorted(set(WEB_PORTS) | set(SENSITIVE_PORTS)))
 
 # the only ports a CDN edge proxies; scanning past them profiles the CDN, not the target
@@ -418,7 +407,6 @@ CDN_EDGE_PORTS: tuple[int, ...] = (
 
 
 _WEB_PORT_SET: frozenset[int] = frozenset(WEB_PORTS)
-_SENSITIVE_PORT_SET: frozenset[int] = frozenset(SENSITIVE_PORTS)
 _BY_NAME: dict[str, ServiceSpec] = {}
 for _spec in WELL_KNOWN.values():
     _BY_NAME.setdefault(_spec.name, _spec)
@@ -460,24 +448,30 @@ def service_for_port(port: int) -> str | None:
 
 def describe(port: int, service: str | None = None) -> tuple[str, bool]:
     """One line on what a port is for, and whether it is only IANA's registration."""
-    named = _BY_NAME.get(service or "")
-    if named is not None and named.description:
-        return named.description, False
-    spec = WELL_KNOWN.get(port)
+    spec = _spec_for(port, service)
     if spec is not None and spec.description:
         return spec.description, False
     text = registered(port)[1]
     return (text, True) if text else ("", False)
 
 
+def _spec_for(port: int, service: str | None) -> ServiceSpec | None:
+    """The port's own entry unless a banner named something the port does not imply.
+
+    _BY_NAME keeps one spec per name, so consulting it first would give 2376 the
+    description of 2375 and tell an operator that Docker over TLS is unauthenticated.
+    """
+    spec = WELL_KNOWN.get(port)
+    if spec is not None and (not service or service == spec.name):
+        return spec
+    return _BY_NAME.get(service or "") or spec
+
+
 def service_class(service: str | None, port: int, *, is_http: bool = False) -> str:
     """The one class a service belongs to. HTTP evidence always wins."""
     if is_http:
         return ServiceClass.WEB.value
-    named = _BY_NAME.get(service or "")
-    if named is not None:
-        return named.klass
-    spec = WELL_KNOWN.get(port)
+    spec = _spec_for(port, service)
     if spec is not None:
         return spec.klass
     if port in _WEB_PORT_SET:
@@ -488,10 +482,6 @@ def service_class(service: str | None, port: int, *, is_http: bool = False) -> s
 def service_label(service: str | None) -> str:
     named = _BY_NAME.get(service or "")
     return named.label if named else (service or "Unknown")
-
-
-def is_sensitive(port: int) -> bool:
-    return port in _SENSITIVE_PORT_SET
 
 
 def likely_tls(port: int) -> bool:
