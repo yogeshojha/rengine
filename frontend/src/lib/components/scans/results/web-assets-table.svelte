@@ -89,7 +89,7 @@
 	}
 	const COLUMNS: Column[] = [
 		{ key: 'screenshot', label: 'Screenshot', width: 'w-20' },
-		{ key: 'status', label: 'Status', sort: 'status', width: 'w-28' },
+		{ key: 'status', label: 'Status', sort: 'status', width: 'w-24' },
 		{ key: 'title', label: 'Title', sort: 'title' },
 		{ key: 'tech', label: 'Tech' },
 		{ key: 'ip', label: 'IP / CDN', sort: 'ip' },
@@ -605,16 +605,16 @@
 											</Tooltip.Trigger>
 											<Tooltip.Content>{httpStatusReason(s.http_status)}</Tooltip.Content>
 										</Tooltip.Root>
-										{#if s.http_status}
-											<div class="truncate text-[10px] text-muted-foreground">
-												{httpStatusReason(s.http_status)}
-											</div>
-										{/if}
 									</Table.Cell>
 								{:else if col.key === 'title'}
-									<Table.Cell class="max-w-64">
-										<div class="flex items-center gap-1.5">
-											<span class="truncate text-xs">{s.page_title ?? '—'}</span>
+									<Table.Cell class="max-w-96 min-w-72">
+										<div class="flex items-start gap-1.5">
+											<span
+												class="line-clamp-2 text-xs leading-4 whitespace-normal"
+												title={s.page_title ?? undefined}
+											>
+												{s.page_title ?? '—'}
+											</span>
 											{#if s.page_title && (s.title_count ?? 0) > 1}
 												{@const pageTitle = s.page_title}
 												<SamePagePopover
@@ -626,9 +626,6 @@
 												/>
 											{/if}
 										</div>
-										{#if s.webserver}
-											<div class="truncate text-[10px] text-muted-foreground">{s.webserver}</div>
-										{/if}
 									</Table.Cell>
 								{:else if col.key === 'tech'}
 									<Table.Cell class="min-w-52">
