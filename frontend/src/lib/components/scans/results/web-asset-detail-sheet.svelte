@@ -52,7 +52,7 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import ScreenshotThumb from './screenshot-thumb.svelte';
 	import TechIcon from './tech-icon.svelte';
-	import OverflowPopover from './web-assets/overflow-popover.svelte';
+	import OverflowPopover from './table/overflow-popover.svelte';
 	import { httpAssetsApi } from '$lib/api/scan-results';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import type { SubdomainRead } from '$lib/types/subdomain';

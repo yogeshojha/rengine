@@ -19,17 +19,22 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 
-	import QueryBar from './web-assets/query-bar/query-bar.svelte';
+	import QueryBar from './query-bar/query-bar.svelte';
 	import FilterBar from './web-assets/filter-bar.svelte';
-	import ListHeader from './web-assets/list-header.svelte';
+	import ListHeader from './table/list-header.svelte';
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
-	import ResultsPagination from './web-assets/results-pagination.svelte';
-	import GroupList from './web-assets/group-list.svelte';
+	import ResultsPagination from './table/results-pagination.svelte';
+	import GroupList from './table/group-list.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
-	import { WEB_ASSET_COLUMNS, DEFAULT_VISIBLE_COLUMNS } from './web-assets/columns';
+	import {
+		WEB_ASSET_COLUMNS,
+		WEB_ASSET_LEAD_COLUMNS,
+		DEFAULT_VISIBLE_COLUMNS
+	} from './web-assets/columns';
 
 	import { subdomainsApi } from '$lib/api/subdomains';
+	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import {
@@ -40,6 +45,7 @@
 		compileQuery,
 		queryChips,
 		STATUS_CLASS_TABS,
+		WEB_ASSET_SORTS,
 		type Facet,
 		type WebAssetQuery,
 		type SubdomainFacetSet
@@ -508,6 +514,9 @@
 	<QueryBar
 		bind:this={queryBar}
 		bind:ref={searchRef}
+		store={querySchema}
+		recentsKey={STORAGE_KEYS.webAssetsRecentQueries}
+		hint="status:>=500 is:live"
 		value={query.search}
 		facets={facets as unknown as Record<string, Facet[]>}
 		busy={loading && !!query.search}
@@ -552,6 +561,7 @@
 			onlyShots = v;
 			pageIndex = 0;
 		}}
+		sorts={WEB_ASSET_SORTS}
 		sortKey={sort.key}
 		sortDir={sort.dir}
 		onSort={toggleSort}
@@ -611,7 +621,14 @@
 			</Button>
 		</EmptyState>
 	{:else if groupBy}
-		<GroupList set={groupSet} loading={groupLoading} onPick={drillGroup} />
+		<GroupList
+			set={groupSet}
+			dimensions={querySchema.schema.group_dimensions}
+			noun={querySchema.schema.noun}
+			nounPlural={querySchema.schema.noun_plural}
+			loading={groupLoading}
+			onPick={drillGroup}
+		/>
 	{:else if items.length === 0}
 		{#if queryError}
 			<EmptyState
@@ -649,8 +666,10 @@
 	{:else}
 		<ScrollArea orientation="horizontal">
 			<ListHeader
+				lead={WEB_ASSET_LEAD_COLUMNS}
 				columns={shownColumns}
 				{selectAllChecked}
+				selectAllLabel="Select all hosts on this page"
 				onSelectAll={toggleSelectAll}
 				sortKey={sort.key}
 				sortDir={sort.dir}

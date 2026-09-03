@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
+
 from sqlalchemy import func, literal_column, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.definitions.asset_query import COUNT_CAP, EXAMPLES
+from shared.definitions.asset_query import COUNT_CAP, QueryExample
 from shared.logging import get_logger
 from shared.models.asset_query import QueryLead, QueryLeads
 
 from .ast import QuerySyntaxError
-from .compiler import QueryContext, compile_query
-from .parser import parse_query
 
 logger = get_logger(__name__)
 
@@ -29,13 +29,18 @@ def _rank(lead: QueryLead, total: int) -> int:
 
 
 async def build_leads(
-    session: AsyncSession, base, ctx: QueryContext, *, filtered: bool = False
+    session: AsyncSession,
+    base,
+    examples: Sequence[QueryExample],
+    predicate_for: Callable[[str], object | None],
+    *,
+    filtered: bool = False,
 ) -> QueryLeads:
     kept = []
     branches = [_branch(base, _TOTAL_IDX)]
-    for example in EXAMPLES:
+    for example in examples:
         try:
-            predicate = compile_query(parse_query(example.query), ctx)
+            predicate = predicate_for(example.query)
         except QuerySyntaxError as exc:
             logger.warning(
                 "search example does not compile",

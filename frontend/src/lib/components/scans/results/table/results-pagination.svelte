@@ -10,6 +10,7 @@
 		pageSize: number;
 		capped?: boolean;
 		noun?: string;
+		plural?: string;
 		selectedCount?: number;
 		onClearSelection?: () => void;
 		onPage: (page: number) => void;
@@ -22,6 +23,7 @@
 		pageSize,
 		capped = false,
 		noun = 'host',
+		plural = '',
 		selectedCount = 0,
 		onClearSelection,
 		onPage,
@@ -40,7 +42,7 @@
 			Showing {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}{capped
 				? '+'
 				: ''}
-			{noun}{total !== 1 ? 's' : ''}
+			{total === 1 ? noun : plural || `${noun}s`}
 		</span>
 		<PageSizeSelector {pageSize} options={SIZES} onPageSizeChange={onPageSize} />
 		{#if selectedCount > 0}

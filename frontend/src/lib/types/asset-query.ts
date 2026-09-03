@@ -74,7 +74,7 @@ export interface QueryGroups {
 	groups: QueryGroup[];
 	total_groups: number;
 	truncated: boolean;
-	hosts: number;
+	rows: number;
 	covered: number;
 }
 
@@ -102,6 +102,8 @@ export interface RelatedDomains {
 export interface QuerySchema {
 	max_length: number;
 	max_terms: number;
+	noun: string;
+	noun_plural: string;
 	groups: string[];
 	example_groups: string[];
 	group_dimensions: QueryGroupSpec[];
@@ -129,6 +131,8 @@ export interface MatchEvidence {
 export const EMPTY_QUERY_SCHEMA: QuerySchema = {
 	max_length: 2000,
 	max_terms: 8,
+	noun: 'host',
+	noun_plural: 'hosts',
 	groups: [],
 	example_groups: [],
 	group_dimensions: [],

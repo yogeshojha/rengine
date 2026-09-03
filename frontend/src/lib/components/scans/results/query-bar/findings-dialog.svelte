@@ -12,12 +12,14 @@
 	interface Props {
 		open: boolean;
 		leadSet: QueryLeads | null;
+		noun: string;
+		nounPlural: string;
 		groups: string[];
 		onOpenChange: (open: boolean) => void;
 		onQuery: (query: string) => void;
 	}
 
-	let { open, leadSet, groups, onOpenChange, onQuery }: Props = $props();
+	let { open, leadSet, noun, nounPlural, groups, onOpenChange, onQuery }: Props = $props();
 
 	let showEmpty = $state(false);
 
@@ -32,9 +34,10 @@
 	});
 	let scope = $derived.by(() => {
 		if (!leadSet) return '';
-		const hosts = `${leadSet.total.toLocaleString()}${leadSet.total_capped ? '+' : ''}`;
+		const rows = `${leadSet.total.toLocaleString()}${leadSet.total_capped ? '+' : ''}`;
 		const where = leadSet.filtered ? 'the filters in view' : 'this scan';
-		return `${matched.length} of ${leads.length} queries matched ${where} · ${hosts} hosts`;
+		const word = leadSet.total === 1 ? noun : nounPlural;
+		return `${matched.length} of ${leads.length} queries matched ${where} · ${rows} ${word}`;
 	});
 
 	function apply(query: string) {
@@ -74,7 +77,7 @@
 						</h3>
 						<div class="grid gap-2 sm:grid-cols-2">
 							{#each section.leads as lead (lead.query)}
-								<QueryExample example={lead} onPick={apply} />
+								<QueryExample example={lead} {noun} {nounPlural} onPick={apply} />
 							{/each}
 						</div>
 					</section>

@@ -6,7 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.services.asset_query import build_schema
 from app.services.ip_address import IpAddressService
+from shared.definitions.asset_query import IP_QUERY
+from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
 from shared.models.ip_address import IpAddressRead, IpAddressSummary
 from shared.models.scan_correlation import IpFacets, IpGroupFilter, IpGroupPage
 
@@ -43,25 +46,9 @@ async def list_ips(
     )
 
 
-@router.get("/groups", response_model=IpGroupPage)
-async def ip_groups(
-    _current_user: CurrentUser,
-    service: Annotated[IpAddressService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
-    search: Annotated[
-        str | None, Query(description="Filter IP / network / PTR")
-    ] = None,
-    limit: Annotated[int, Query(ge=1, le=200, description="Max rows")] = 50,
-    offset: Annotated[int, Query(ge=0, description="Rows to skip")] = 0,
-):
-    return await service.groups(
-        project_id=project_id,
-        scan_id=scan_id,
-        search=search,
-        limit=limit,
-        offset=offset,
-    )
+@router.get("/search/schema", response_model=QuerySchema)
+async def ip_search_schema(_current_user: CurrentUser) -> QuerySchema:
+    return build_schema(IP_QUERY)
 
 
 @router.post("/search", response_model=IpGroupPage)
@@ -73,6 +60,29 @@ async def ip_search(
     body: IpGroupFilter,
 ):
     return await service.search(scan_id=scan_id, f=body)
+
+
+@router.post("/search/leads", response_model=QueryLeads)
+async def ip_search_leads(
+    _current_user: CurrentUser,
+    service: Annotated[IpAddressService, Depends(get_service)],
+    _project_id: Annotated[UUID, Query(alias="project_id", description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    body: IpGroupFilter,
+):
+    return await service.leads(scan_id=scan_id, f=body)
+
+
+@router.post("/search/groups", response_model=QueryGroups)
+async def ip_search_groups(
+    _current_user: CurrentUser,
+    service: Annotated[IpAddressService, Depends(get_service)],
+    _project_id: Annotated[UUID, Query(alias="project_id", description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    group_by: Annotated[str, Query(max_length=40, description="Group dimension")],
+    body: IpGroupFilter,
+):
+    return await service.groups(scan_id=scan_id, f=body, key=group_by)
 
 
 @router.get("/facets", response_model=IpFacets)

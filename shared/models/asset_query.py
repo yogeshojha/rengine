@@ -59,7 +59,7 @@ class QueryGroups(BaseModel):
     groups: list[QueryGroup] = Field(default_factory=list)
     total_groups: int = 0
     truncated: bool = False
-    hosts: int = 0
+    rows: int = 0
     covered: int = 0
 
 
@@ -71,6 +71,8 @@ class QueryFlagSpec(BaseModel):
 class QuerySchema(BaseModel):
     max_length: int = 0
     max_terms: int = 0
+    noun: str = "host"
+    noun_plural: str = "hosts"
     groups: list[str] = Field(default_factory=list)
     example_groups: list[str] = Field(default_factory=list)
     group_dimensions: list[QueryGroupSpec] = Field(default_factory=list)

@@ -10,8 +10,7 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Spinner } from '$lib/components/ui/spinner';
-	import { querySchema } from '$lib/stores/query-schema.svelte';
-	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import type { QuerySchemaStore } from '$lib/stores/query-schema.svelte';
 	import { caretContext, lex, replaceRange, type QueryProblem } from '$lib/utilities/query-lexer';
 	import type { QueryError, QueryLeads, QueryStarter } from '$lib/types/asset-query';
 	import type { Facet } from '$lib/utilities/scan-insights';
@@ -22,6 +21,9 @@
 	import { buildSuggestions, type Suggestion } from './suggest';
 
 	interface Props {
+		store: QuerySchemaStore;
+		recentsKey: string;
+		hint: string;
 		value: string;
 		facets: Record<string, Facet[]>;
 		onChange: (value: string) => void;
@@ -36,6 +38,9 @@
 	}
 
 	let {
+		store,
+		recentsKey,
+		hint,
 		value,
 		facets,
 		onChange,
@@ -64,10 +69,13 @@
 	let recents = $state<string[]>(readRecents());
 
 	$effect(() => {
-		void querySchema.load();
+		void store.load();
 	});
 
-	let known = $derived((name: string) => querySchema.byName.has(name));
+	let schema = $derived(store.schema);
+	let noun = $derived(schema.noun);
+	let nounPlural = $derived(schema.noun_plural);
+	let known = $derived((name: string) => store.byName.has(name));
 	let lexed = $derived(lex(value, known));
 	let problems = $derived.by<QueryProblem[]>(() => {
 		if (!serverError) return lexed.problems;
@@ -91,22 +99,20 @@
 	let countLabel = $derived.by(() => {
 		if (!value.trim() || hasError || total == null || busy) return null;
 		const n = capped ? `${total.toLocaleString()}+` : total.toLocaleString();
-		return `${n} ${total === 1 && !capped ? 'host' : 'hosts'}`;
+		return `${n} ${total === 1 && !capped ? noun : nounPlural}`;
 	});
 
 	$effect(() => onReady?.(ready));
 
 	let context = $derived(focused ? caretContext(value, caret, known) : null);
-	let suggestions = $derived(
-		buildSuggestions(context, querySchema.schema, facets, querySchema.byName)
-	);
+	let suggestions = $derived(buildSuggestions(context, schema, facets, store.byName));
 	let findings = $derived((leadSet?.leads ?? []).filter((lead) => lead.count > 0));
 	let counted = $derived(findings.length > 0);
 	let findingWord = $derived(findings.length === 1 ? 'finding' : 'findings');
 	let starters = $derived.by<QueryStarter[]>(() => {
 		if (counted) return findings;
-		const generic = querySchema.schema.examples.filter((example) => example.generic);
-		return generic.length ? generic : querySchema.schema.examples;
+		const generic = schema.examples.filter((example) => example.generic);
+		return generic.length ? generic : schema.examples;
 	});
 	let showStarters = $derived(!value.trim() && (recents.length > 0 || starters.length > 0));
 	let open = $derived(focused && !dismissed && (showStarters || suggestions.length > 0));
@@ -118,7 +124,7 @@
 
 	function readRecents(): string[] {
 		try {
-			const raw = localStorage.getItem(STORAGE_KEYS.webAssetsRecentQueries);
+			const raw = localStorage.getItem(recentsKey);
 			const parsed = raw ? (JSON.parse(raw) as unknown) : [];
 			return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
 		} catch {
@@ -129,7 +135,7 @@
 	function writeRecents(next: string[]) {
 		recents = next;
 		try {
-			localStorage.setItem(STORAGE_KEYS.webAssetsRecentQueries, JSON.stringify(next));
+			localStorage.setItem(recentsKey, JSON.stringify(next));
 		} catch {
 			// recent searches are a convenience
 		}
@@ -256,7 +262,7 @@
 				{:else}
 					<span class="font-sans text-muted-foreground"
 						>Search everything, or filter with
-						<span class="font-mono text-muted-foreground/80">status:>=500 is:live</span></span
+						<span class="font-mono text-muted-foreground/80">{hint}</span></span
 					>
 				{/if}
 			</div>
@@ -270,12 +276,12 @@
 				aria-activedescendant={open && !showStarters && active >= 0
 					? `query-option-${active}`
 					: undefined}
-				aria-label="Search web assets"
+				aria-label="Search {nounPlural}"
 				autocomplete="off"
 				autocapitalize="off"
 				autocorrect="off"
 				spellcheck={false}
-				maxlength={querySchema.schema.max_length}
+				maxlength={schema.max_length}
 				class="relative w-full bg-transparent px-0.5 text-transparent caret-primary outline-none selection:bg-primary/25 {TEXT}"
 				oninput={(e) => {
 					dismissed = false;
@@ -385,6 +391,8 @@
 		class="w-(--bits-popover-anchor-width) overflow-hidden p-0 shadow-lg"
 	>
 		<QuerySuggestions
+			{noun}
+			{nounPlural}
 			{suggestions}
 			{active}
 			{recents}
@@ -405,14 +413,17 @@
 <FindingsDialog
 	open={findingsOpen}
 	{leadSet}
-	groups={querySchema.schema.example_groups}
+	{noun}
+	{nounPlural}
+	groups={schema.example_groups}
 	onOpenChange={(next) => (findingsOpen = next)}
 	onQuery={setQuery}
 />
 
 <QueryHelp
 	open={helpOpen}
-	schema={querySchema.schema}
+	{schema}
+	{noun}
 	onOpenChange={(next) => (helpOpen = next)}
 	onInsert={insertFragment}
 />

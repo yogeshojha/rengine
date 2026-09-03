@@ -23,7 +23,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
-	import type { IpGroupRead } from '$lib/utilities/scan-insights';
+	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 
 	interface Props {
@@ -219,7 +219,11 @@
 								<div class={ROW}>
 									<dt class={DT}>Country</dt>
 									<dd>
-										{@render chip(group.country, `country:${group.country}`, 'Filter by country')}
+										{@render chip(
+											group.country,
+											exactToken('country', group.country),
+											'Filter by country'
+										)}
 									</dd>
 								</div>
 							{/if}
@@ -227,7 +231,12 @@
 								<div class={ROW}>
 									<dt class={DT}>Prefix</dt>
 									<dd>
-										{@render chip(group.prefix, `prefix:${group.prefix}`, 'Filter by prefix', true)}
+										{@render chip(
+											group.prefix,
+											exactToken('prefix', group.prefix),
+											'Filter by prefix',
+											true
+										)}
 									</dd>
 								</div>
 							{/if}
@@ -236,7 +245,7 @@
 									<dt class={DT}>PTR</dt>
 									<dd class="flex flex-wrap gap-1">
 										{#each group.ptr_hostnames as ptr (ptr)}
-											{@render chip(ptr, `ptr:${ptr}`, 'Filter by PTR', true)}
+											{@render chip(ptr, filterToken('ptr', ptr), 'Filter by PTR', true)}
 										{/each}
 									</dd>
 								</div>
@@ -289,7 +298,7 @@
 									variant="outline"
 									size="sm"
 									class="h-7 text-xs"
-									onclick={() => onHosts?.(`ip:${group.ip}`)}
+									onclick={() => onHosts?.(filterToken('ip', group.ip))}
 								>
 									<Globe data-icon="inline-start" />
 									{group.host_count} in Web Assets
@@ -301,7 +310,11 @@
 								{#each group.hosts as h (h)}
 									<Item.Root size="sm" class="hover:bg-muted/60">
 										{#snippet child({ props })}
-											<button type="button" {...props} onclick={() => onHosts?.(`name:${h}`)}>
+											<button
+												type="button"
+												{...props}
+												onclick={() => onHosts?.(exactToken('host', h))}
+											>
 												<Item.Content>
 													<Item.Title class="font-mono text-xs font-normal">{h}</Item.Title>
 												</Item.Content>

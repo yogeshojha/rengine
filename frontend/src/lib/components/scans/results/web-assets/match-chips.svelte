@@ -18,7 +18,7 @@
 	import { stopProp } from '$lib/utilities';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { MatchEvidence } from '$lib/types/asset-query';
-	import HighlightText from './highlight-text.svelte';
+	import HighlightText from '../table/highlight-text.svelte';
 
 	interface Props {
 		matches: MatchEvidence[];

@@ -4,13 +4,13 @@ import re
 from dataclasses import dataclass
 
 from shared.definitions.asset_query import (
-    CANONICAL,
-    FIELDS_BY_NAME,
+    HOST_QUERY,
     MAX_FREE_TERMS,
     MAX_QUERY_LENGTH,
     MAX_QUERY_NODES,
     OPS_BY_TYPE,
     Op,
+    QueryRegistry,
 )
 
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
@@ -19,7 +19,6 @@ _OPS = ("!=", ">=", "<=", "!~", ":", "=", ">", "<", "~")
 _CONNECTORS = {"and": "AND", "&&": "AND", "or": "OR", "||": "OR", "not": "NOT"}
 _MAX_REGEX = 200
 _QUOTE_PAIR = 2
-_DYNAMIC_PARENT = "header"
 
 
 @dataclass(frozen=True)
@@ -35,13 +34,14 @@ class Token:
     sub: str | None = None
 
 
-def _resolve(name: str) -> tuple[str, str | None] | None:
+def _resolve(name: str, registry: QueryRegistry) -> tuple[str, str | None] | None:
     key = name.lower()
-    if key in CANONICAL:
-        return CANONICAL[key], None
+    if key in registry.canonical:
+        return registry.canonical[key], None
     parent, _, sub = key.partition(".")
-    if sub and CANONICAL.get(parent) == _DYNAMIC_PARENT:
-        return _DYNAMIC_PARENT, sub
+    dynamic = registry.dynamic_parent
+    if sub and dynamic is not None and registry.canonical.get(parent) == dynamic:
+        return dynamic, sub
     return None
 
 
@@ -157,7 +157,7 @@ class _Scanner:
         return None
 
 
-def tokenize(source: str) -> list[Token]:
+def tokenize(source: str, registry: QueryRegistry) -> list[Token]:
     scanner = _Scanner(source)
     tokens: list[Token] = []
     while True:
@@ -185,42 +185,51 @@ def tokenize(source: str) -> list[Token]:
             tokens.append(Token("NOT", start, start + 1, text=text[0]))
             scanner.i = start + 1
             continue
-        tokens.append(_field_or_term(scanner, text, start, end))
+        tokens.append(_field_or_term(scanner, text, start, end, registry))
 
 
-def _field_or_term(scanner: _Scanner, text: str, start: int, end: int) -> Token:
-    split = _find_operator(text)
+def _field_or_term(
+    scanner: _Scanner, text: str, start: int, end: int, registry: QueryRegistry
+) -> Token:
+    split = _find_operator(text, registry)
     if split is not None:
         name, op_text, rest = split
         if not rest:
             scanner.skip_space()
             rest, _, end = scanner.chunk()
-        return _compare(name, op_text, rest, start, end)
-    if _resolve(text) is not None:
+        return _compare(name, op_text, rest, start, end, registry)
+    if _resolve(text, registry) is not None:
         found = scanner.peek_op()
         if found is not None:
             op_text, _, _ = found
             scanner.skip_space()
             rest, _, end = scanner.chunk()
-            return _compare(text, op_text, rest, start, end)
+            return _compare(text, op_text, rest, start, end, registry)
     if len(text) >= _QUOTE_PAIR and text.startswith('"') and text.endswith('"'):
         return Token("TERM", start, end, text=_unescape(text[1:-1]), quoted=True)
     return Token("TERM", start, end, text=text)
 
 
-def _find_operator(text: str) -> tuple[str, str, str] | None:
+def _find_operator(text: str, registry: QueryRegistry) -> tuple[str, str, str] | None:
     for i in range(1, len(text)):
         for op in _OPS:
             if not text.startswith(op, i):
                 continue
-            if _resolve(text[:i]) is None:
+            if _resolve(text[:i], registry) is None:
                 continue
             return text[:i], op, text[i + len(op) :]
     return None
 
 
-def _compare(name: str, op_text: str, raw: str, start: int, end: int) -> Token:
-    resolved = _resolve(name)
+def _compare(
+    name: str,
+    op_text: str,
+    raw: str,
+    start: int,
+    end: int,
+    registry: QueryRegistry,
+) -> Token:
+    resolved = _resolve(name, registry)
     if resolved is None:
         msg = f"Unknown field {name!r}."
         hint = "Press ? for the full field list."
@@ -234,7 +243,7 @@ def _compare(name: str, op_text: str, raw: str, start: int, end: int) -> Token:
                 raw = raw[len(candidate) :].lstrip()
                 break
     values, quoted = _split_values(raw, end)
-    spec = FIELDS_BY_NAME[canonical]
+    spec = registry.by_name[canonical]
     if op not in OPS_BY_TYPE[spec.type]:
         allowed = " ".join(o.value for o in OPS_BY_TYPE[spec.type])
         msg = f"{canonical} does not support {op.value}."
@@ -359,10 +368,12 @@ class _Parser:
         raise QuerySyntaxError(msg, token.start, token.end)
 
 
-def parse_query(source: str | None) -> Node | None:
+def parse_query(
+    source: str | None, registry: QueryRegistry = HOST_QUERY
+) -> Node | None:
     if not source or not source.strip():
         return None
     if len(source) > MAX_QUERY_LENGTH:
         msg = "That query is too long."
         raise QuerySyntaxError(msg, 0, len(source))
-    return _Parser(tokenize(source), source).parse()
+    return _Parser(tokenize(source, registry), source).parse()

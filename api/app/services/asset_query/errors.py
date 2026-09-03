@@ -4,6 +4,8 @@ from sqlalchemy.exc import DBAPIError
 
 from shared.models.asset_query import QueryError
 
+STATEMENT_TIMEOUT = "SET LOCAL statement_timeout = '20s'"
+
 QUERY_SQLSTATES = {
     "2201B": (
         "That regular expression is not valid here.",

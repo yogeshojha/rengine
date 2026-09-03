@@ -2,16 +2,12 @@ from __future__ import annotations
 
 from shared.definitions.asset_query import (
     CONNECTORS,
-    EXAMPLE_GROUPS,
-    EXAMPLES,
-    FIELDS,
-    FLAGS,
-    GROUP_DIMENSIONS,
-    GROUPS,
+    HOST_QUERY,
     MAX_FREE_TERMS,
     MAX_QUERY_LENGTH,
     OP_HELP,
     OPS_BY_TYPE,
+    QueryRegistry,
 )
 from shared.models.asset_query import (
     QueryExampleSpec,
@@ -23,15 +19,17 @@ from shared.models.asset_query import (
 )
 
 
-def build_schema() -> QuerySchema:
+def build_schema(registry: QueryRegistry = HOST_QUERY) -> QuerySchema:
     return QuerySchema(
         max_length=MAX_QUERY_LENGTH,
         max_terms=MAX_FREE_TERMS,
-        groups=list(GROUPS),
-        example_groups=list(EXAMPLE_GROUPS),
+        noun=registry.noun,
+        noun_plural=registry.noun_plural,
+        groups=list(registry.groups),
+        example_groups=list(registry.example_groups),
         group_dimensions=[
             QueryGroupSpec(key=d.key, label=d.label, description=d.description)
-            for d in GROUP_DIMENSIONS
+            for d in registry.dimensions
         ],
         fields=[
             QueryFieldSpec(
@@ -48,7 +46,7 @@ def build_schema() -> QuerySchema:
                 unit=spec.unit,
                 dynamic_sub=spec.dynamic_sub,
             )
-            for spec in FIELDS
+            for spec in registry.fields
         ],
         operators=[
             QueryOperatorSpec(symbol=symbol, description=description)
@@ -60,7 +58,7 @@ def build_schema() -> QuerySchema:
         ],
         flags=[
             QueryFlagSpec(value=value, description=description)
-            for value, description in FLAGS.items()
+            for value, description in registry.flags.items()
         ],
         examples=[
             QueryExampleSpec(
@@ -69,6 +67,6 @@ def build_schema() -> QuerySchema:
                 group=item.group,
                 generic=item.generic,
             )
-            for item in EXAMPLES
+            for item in registry.examples
         ],
     )

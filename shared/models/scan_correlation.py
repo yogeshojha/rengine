@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from shared.definitions.asset_query import MAX_QUERY_LENGTH
+from shared.models.asset_query import QueryError
 from shared.models.http_asset import HttpAssetRead
 from shared.models.ip_address import IpAddressRead
 from shared.models.port import PortRead
@@ -84,10 +86,13 @@ class IpGroupRead(BaseModel):
 class IpGroupPage(BaseModel):
     items: list[IpGroupRead] = Field(default_factory=list)
     total: int = 0
+    total_capped: bool = False
+    error: QueryError | None = None
 
 
 class IpGroupFilter(BaseModel):
-    text: str | None = Field(default=None, max_length=200)
+    q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
+    exposure: list[str] = Field(default_factory=list, max_length=4)
     asns: list[int] = Field(default_factory=list, max_length=100)
     countries: list[str] = Field(default_factory=list, max_length=100)
     ports: list[int] = Field(default_factory=list, max_length=200)
@@ -98,17 +103,29 @@ class IpGroupFilter(BaseModel):
     sensitive: bool = False
     hosted: bool = False
     open: bool = False
-    host: str | None = Field(default=None, max_length=253)
-    ptr: str | None = Field(default=None, max_length=253)
-    org: str | None = Field(default=None, max_length=200)
-    prefix: str | None = Field(default=None, max_length=64)
-    sort: str = Field(default="ip", max_length=20)
-    order: str = Field(default="asc", max_length=4)
+    sort: str = Field(default="hosts", max_length=20)
+    order: str = Field(default="desc", max_length=4)
     limit: int = Field(default=50, ge=1, le=200)
     offset: int = Field(default=0, ge=0, le=100_000_000)
 
+    def has_facets(self) -> bool:
+        return bool(
+            self.exposure
+            or self.asns
+            or self.countries
+            or self.ports
+            or self.services
+            or self.cdn != "any"
+            or self.alive != "any"
+            or self.version
+            or self.sensitive
+            or self.hosted
+            or self.open
+        )
+
 
 class IpFacets(BaseModel):
+    exposure: list[Facet] = Field(default_factory=list)
     asn: list[Facet] = Field(default_factory=list)
     country: list[Facet] = Field(default_factory=list)
     port: list[Facet] = Field(default_factory=list)

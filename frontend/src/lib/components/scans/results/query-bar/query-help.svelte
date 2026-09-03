@@ -16,13 +16,17 @@
 	interface Props {
 		open: boolean;
 		schema: QuerySchema;
+		noun: string;
 		onOpenChange: (open: boolean) => void;
 		onInsert: (fragment: string) => void;
 	}
 
-	let { open, schema, onOpenChange, onInsert }: Props = $props();
+	let { open, schema, noun, onOpenChange, onInsert }: Props = $props();
 
-	const ANATOMY = 'is:live and status:>=400 and not (cdn:yes or waf:yes)';
+	const ANATOMY: Record<string, string> = {
+		host: 'is:live and status:>=400 and not (cdn:yes or waf:yes)',
+		address: 'is:open and ports:>2 and not (cdn:yes or country=US)'
+	};
 	const SECTIONS = [
 		{ id: 'grammar', label: 'Grammar' },
 		{ id: 'fields', label: 'Fields' },
@@ -36,7 +40,9 @@
 		const names = new Set(schema.fields.flatMap((f) => [f.name, ...f.aliases]));
 		return (name: string) => names.has(name);
 	});
-	let anatomy = $derived(lex(ANATOMY, known));
+	let dates = $derived(schema.fields.filter((f) => f.type === 'date'));
+	let sample = $derived(ANATOMY[noun] ?? ANATOMY.host);
+	let anatomy = $derived(lex(sample, known));
 
 	let groups = $derived.by(() => {
 		const match = (field: QueryFieldSpec) =>
@@ -114,7 +120,7 @@
 					<section class="rounded-lg border bg-muted/30 p-4">
 						{@render label('How a query reads')}
 						<p class="mt-2.5 font-mono text-sm leading-7 break-all whitespace-pre-wrap">
-							<QueryHighlight source={ANATOMY} tokens={anatomy.tokens} problems={[]} />
+							<QueryHighlight source={sample} tokens={anatomy.tokens} problems={[]} />
 						</p>
 						<div
 							class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground"
@@ -143,12 +149,12 @@
 									<dd class="text-muted-foreground">{operator.description}</dd>
 								{/each}
 							</dl>
-							<p class="text-xs text-muted-foreground">
-								Dates take a calendar date or an age. <span class="font-mono"
-									>discovered:&lt;7d</span
-								>
-								is the last week, <span class="font-mono">cert.expires:&lt;30d</span> is the next month.
-							</p>
+							{#if dates.length}
+								<p class="text-xs text-muted-foreground">
+									Dates take a calendar date or an age.
+									<span class="font-mono">{dates[0].name}:&lt;7d</span> is the last week.
+								</p>
+							{/if}
 						</div>
 						<div class="flex flex-col gap-2.5">
 							{@render label('Combine terms')}
@@ -236,7 +242,8 @@
 						<div class="flex items-baseline justify-between">
 							{@render label('Flags')}
 							<span class="text-[11px] text-muted-foreground"
-								>Properties of a host, used as <span class="font-mono">is:live</span></span
+								>Properties of {noun === 'host' ? 'a host' : 'an address'}, used as
+								<span class="font-mono">is:{schema.flags[0]?.value ?? 'live'}</span></span
 							>
 						</div>
 						<div class="grid gap-x-4 gap-y-0.5 sm:grid-cols-2">

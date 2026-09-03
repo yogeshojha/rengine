@@ -3,10 +3,12 @@
 
 	interface Props {
 		example: QueryStarter;
+		noun: string;
+		nounPlural: string;
 		onPick: (query: string) => void;
 	}
 
-	let { example, onPick }: Props = $props();
+	let { example, noun, nounPlural, onPick }: Props = $props();
 
 	let count = $derived('count' in example ? example.count : null);
 	let capped = $derived('capped' in example ? example.capped : false);
@@ -15,7 +17,7 @@
 	let hint = $derived(
 		count == null
 			? example.description
-			: `${example.description}. ${label} ${count === 1 ? 'host matches' : 'hosts match'}.`
+			: `${example.description}. ${label} ${count === 1 ? `${noun} matches` : `${nounPlural} match`}.`
 	);
 </script>
 

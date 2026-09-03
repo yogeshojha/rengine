@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field as dc_field
 from enum import StrEnum
 
 MAX_QUERY_LENGTH = 2000
@@ -92,7 +93,14 @@ class QueryField:
     dynamic_sub: str | None = None
 
 
-GROUPS: tuple[str, ...] = ("Host", "HTTP", "Response", "Network", "TLS", "Flags")
+GROUPS: tuple[str, ...] = (
+    "Host",
+    "HTTP",
+    "Response",
+    "Network",
+    "Certificates",
+    "Flags",
+)
 
 CERT_STATES: tuple[str, ...] = ("expired", "expiring", "self-signed", "valid")
 STATUS_CLASSES: tuple[str, ...] = ("2xx", "3xx", "4xx", "5xx", "none")
@@ -427,12 +435,6 @@ FIELDS: tuple[QueryField, ...] = (
         values=tuple(FLAGS),
     ),
 )
-
-FIELDS_BY_NAME: dict[str, QueryField] = {f.name: f for f in FIELDS}
-CANONICAL: dict[str, str] = {
-    **{f.name: f.name for f in FIELDS},
-    **{alias: f.name for f in FIELDS for alias in f.aliases},
-}
 
 EVIDENCE_LABELS: dict[str, str] = {
     "host": "Hostname",
@@ -782,4 +784,327 @@ EXAMPLES: tuple[QueryExample, ...] = (
         description="Redirects terminating in an error",
         group="Hygiene",
     ),
+)
+
+
+@dataclass(frozen=True)
+class QueryRegistry:
+    key: str
+    noun: str
+    noun_plural: str
+    fields: tuple[QueryField, ...]
+    flags: dict[str, str]
+    groups: tuple[str, ...]
+    dimensions: tuple[GroupDimension, ...]
+    examples: tuple[QueryExample, ...]
+    example_groups: tuple[str, ...]
+    by_name: dict[str, QueryField] = dc_field(init=False, repr=False)
+    canonical: dict[str, str] = dc_field(init=False, repr=False)
+    dynamic_parent: str | None = dc_field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        set_ = object.__setattr__
+        set_(self, "by_name", {f.name: f for f in self.fields})
+        set_(
+            self,
+            "canonical",
+            {
+                **{f.name: f.name for f in self.fields},
+                **{a: f.name for f in self.fields for a in f.aliases},
+            },
+        )
+        dynamic = next((f.name for f in self.fields if f.dynamic_sub), None)
+        set_(self, "dynamic_parent", dynamic)
+
+
+HOST_QUERY = QueryRegistry(
+    key="host",
+    noun="host",
+    noun_plural="hosts",
+    fields=FIELDS,
+    flags=FLAGS,
+    groups=GROUPS,
+    dimensions=GROUP_DIMENSIONS,
+    examples=EXAMPLES,
+    example_groups=EXAMPLE_GROUPS,
+)
+
+IP_GROUPS: tuple[str, ...] = ("Address", "Network", "Services", "Hosts", "Flags")
+
+IP_FLAGS: dict[str, str] = {
+    "alive": "Answered a probe",
+    "open": "At least one port is open",
+    "sensitive": "An admin or database port is open",
+    "hosted": "At least one hostname resolves here",
+    "web": "An HTTP service was probed here",
+    "cdn": "Fronted by a CDN",
+    "ptr": "Has a PTR record",
+    "private": "Sits in a private address range",
+    "v4": "IPv4 address",
+    "v6": "IPv6 address",
+}
+
+IP_EXPOSURE: dict[str, str] = {
+    "open": "Open ports",
+    "responding": "Responding",
+    "quiet": "No response",
+}
+
+IP_FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="ip",
+        type=FieldType.IP,
+        group="Address",
+        description="The address itself. Accepts a CIDR range.",
+        example="ip:104.16.0.0/12",
+        aliases=("address", "addr"),
+        free_text=True,
+    ),
+    QueryField(
+        name="ptr",
+        type=FieldType.STRING,
+        group="Address",
+        description="PTR record the address reverses to.",
+        example="ptr:.internal",
+        aliases=("reverse", "rdns"),
+        free_text=True,
+    ),
+    QueryField(
+        name="asn",
+        type=FieldType.NUMBER,
+        group="Network",
+        description="Autonomous system number announcing the address.",
+        example="asn:13335",
+    ),
+    QueryField(
+        name="org",
+        type=FieldType.STRING,
+        group="Network",
+        description="Operator of the autonomous system.",
+        example='org:"digital ocean"',
+        aliases=("asn_org", "operator"),
+        free_text=True,
+    ),
+    QueryField(
+        name="country",
+        type=FieldType.ENUM,
+        group="Network",
+        description="Two-letter country the address geolocates to.",
+        example="country:DE",
+        facet="country",
+    ),
+    QueryField(
+        name="prefix",
+        type=FieldType.STRING,
+        group="Network",
+        description="Announced prefix the address falls in.",
+        example="prefix:104.16",
+        free_text=True,
+    ),
+    QueryField(
+        name="cdn",
+        type=FieldType.STRING,
+        group="Network",
+        description="CDN in front of the address. yes or no filters on presence.",
+        example="cdn:cloudflare",
+        free_text=True,
+    ),
+    QueryField(
+        name="port",
+        type=FieldType.NUMBER,
+        group="Services",
+        description="Open port on the address.",
+        example="port:[22,3389]",
+        facet="port",
+    ),
+    QueryField(
+        name="service",
+        type=FieldType.ENUM,
+        group="Services",
+        description="Service name on an open port.",
+        example="service:ssh",
+        facet="service",
+        free_text=True,
+    ),
+    QueryField(
+        name="ports",
+        type=FieldType.NUMBER,
+        group="Services",
+        description="How many ports are open on the address.",
+        example="ports:>10",
+        aliases=("port_count",),
+    ),
+    QueryField(
+        name="host",
+        type=FieldType.STRING,
+        group="Hosts",
+        description="Hostname that resolves to the address.",
+        example="host:api",
+        aliases=("name", "subdomain"),
+        free_text=True,
+    ),
+    QueryField(
+        name="hosts",
+        type=FieldType.NUMBER,
+        group="Hosts",
+        description="How many hostnames resolve to the address.",
+        example="hosts:>5",
+        aliases=("host_count",),
+    ),
+    QueryField(
+        name="assets",
+        type=FieldType.NUMBER,
+        group="Hosts",
+        description="How many HTTP services were probed on the address.",
+        example="assets:>0",
+        aliases=("asset_count",),
+    ),
+    QueryField(
+        name="is",
+        type=FieldType.FLAG,
+        group="Flags",
+        description="Property of the address.",
+        example="is:sensitive",
+        aliases=("has",),
+        values=tuple(IP_FLAGS),
+    ),
+)
+
+IP_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
+    GroupDimension(
+        key="asn",
+        label="Autonomous system",
+        description="Addresses announced by the same AS",
+    ),
+    GroupDimension(
+        key="org",
+        label="Network operator",
+        description="Addresses run by the same operator",
+    ),
+    GroupDimension(
+        key="prefix",
+        label="Announced prefix",
+        description="Addresses inside the same announced prefix",
+    ),
+    GroupDimension(
+        key="country",
+        label="Country",
+        description="Addresses geolocating to the same country",
+    ),
+    GroupDimension(
+        key="cdn",
+        label="CDN",
+        description="Addresses fronted by the same CDN",
+    ),
+    GroupDimension(
+        key="port",
+        label="Open port",
+        description="Addresses exposing the same port",
+    ),
+    GroupDimension(
+        key="service",
+        label="Service",
+        description="Addresses running the same service",
+    ),
+)
+
+IP_EXAMPLE_GROUPS: tuple[str, ...] = (
+    "Exposed services",
+    "Origin exposure",
+    "Hosting",
+    "Hygiene",
+)
+
+IP_EXAMPLES: tuple[QueryExample, ...] = (
+    QueryExample(
+        query="is:sensitive",
+        description="Administrative or database ports exposed",
+        group="Exposed services",
+        generic=True,
+    ),
+    QueryExample(
+        query="port:[3306,5432,27017,6379,9200,11211,5984]",
+        description="Database ports reachable from the internet",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="port:[22,23,3389,5900]",
+        description="Remote administration ports reachable",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="service:[ftp,telnet,rlogin,vnc]",
+        description="Cleartext remote-access services running",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="ports:>10",
+        description="Addresses exposing more than ten ports",
+        group="Exposed services",
+    ),
+    QueryExample(
+        query="is:open and not is:cdn",
+        description="Open ports on an address no CDN fronts",
+        group="Origin exposure",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:web and not is:cdn",
+        description="HTTP served straight from the origin address",
+        group="Origin exposure",
+    ),
+    QueryExample(
+        query="is:cdn and is:open",
+        description="Ports open behind a CDN address",
+        group="Origin exposure",
+    ),
+    QueryExample(
+        query="hosts:>10",
+        description="Addresses many hostnames share",
+        group="Hosting",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:open and not is:hosted",
+        description="Open ports with no hostname pointing here",
+        group="Hosting",
+    ),
+    QueryExample(
+        query="is:v6",
+        description="IPv6 addresses in the surface",
+        group="Hosting",
+    ),
+    QueryExample(
+        query="is:alive and not is:ptr",
+        description="Responding addresses with no PTR record",
+        group="Hosting",
+    ),
+    QueryExample(
+        query="is:private",
+        description="Private addresses published in public DNS",
+        group="Hygiene",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:hosted and not is:alive",
+        description="Hostnames resolving to an address that never answered",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="ptr:. and not is:hosted",
+        description="Named addresses no hostname of ours resolves to",
+        group="Hygiene",
+    ),
+)
+
+IP_QUERY = QueryRegistry(
+    key="ip",
+    noun="address",
+    noun_plural="addresses",
+    fields=IP_FIELDS,
+    flags=IP_FLAGS,
+    groups=IP_GROUPS,
+    dimensions=IP_GROUP_DIMENSIONS,
+    examples=IP_EXAMPLES,
+    example_groups=IP_EXAMPLE_GROUPS,
 )

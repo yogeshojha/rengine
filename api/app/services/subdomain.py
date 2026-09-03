@@ -20,6 +20,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query import (
+    STATEMENT_TIMEOUT,
     QueryContext,
     QuerySyntaxError,
     build_groups,
@@ -33,7 +34,7 @@ from app.services.asset_query import predicates as preds
 from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
-from shared.definitions.asset_query import COUNT_CAP
+from shared.definitions.asset_query import COUNT_CAP, HOST_QUERY
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.logging import get_logger
 from shared.models.asset_query import QueryError, QueryGroups, QueryLeads
@@ -76,7 +77,6 @@ _HTTP_MAX = preds.HTTP_MAX
 _AUTH_STATUS = preds.AUTH_STATUS
 _STATUS_BUCKETS = preds.STATUS_BUCKETS
 _SENSITIVE_PORTS = SENSITIVE_PORTS
-_STATEMENT_TIMEOUT = "SET LOCAL statement_timeout = '20s'"
 _STATUS_LABELS = {
     "2xx": "2xx OK",
     "3xx": "3xx Redirect",
@@ -311,7 +311,7 @@ class SubdomainService:
         if predicate is not None:
             base = base.where(predicate)
 
-        await self.session.execute(text(_STATEMENT_TIMEOUT))
+        await self.session.execute(text(STATEMENT_TIMEOUT))
         try:
             counted = await self.session.scalar(
                 select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
@@ -377,12 +377,14 @@ class SubdomainService:
             Subdomain.project_id == project_id, Subdomain.scan_id == scan_id
         )
         base = self._apply_filter(base, f, now)
-        await self.session.execute(text(_STATEMENT_TIMEOUT))
+        await self.session.execute(text(STATEMENT_TIMEOUT))
         try:
+            ctx = QueryContext(scan_id=scan_id, now=now)
             return await build_leads(
                 self.session,
                 base,
-                QueryContext(scan_id=scan_id, now=now),
+                HOST_QUERY.examples,
+                lambda q: compile_query(parse_query(q), ctx),
                 filtered=f.has_facets(),
             )
         except DBAPIError as exc:
@@ -405,7 +407,7 @@ class SubdomainService:
             return QueryGroups(dimension=key)
         if predicate is not None:
             base = base.where(predicate)
-        await self.session.execute(text(_STATEMENT_TIMEOUT))
+        await self.session.execute(text(STATEMENT_TIMEOUT))
         try:
             return await build_groups(self.session, base, key)
         except DBAPIError as exc:

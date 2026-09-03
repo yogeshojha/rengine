@@ -1,37 +1,29 @@
 <script lang="ts">
-	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
-	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import Columns3 from '@lucide/svelte/icons/columns-3';
 	import Layers from '@lucide/svelte/icons/layers';
 	import X from '@lucide/svelte/icons/x';
-	import Image from '@lucide/svelte/icons/image';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { Toggle } from '$lib/components/ui/toggle';
 	import { ButtonGroup } from '$lib/components/ui/button-group';
 	import { Button } from '$lib/components/ui/button';
 	import FacetedFilter from '../faceted-filter.svelte';
 	import SortMenu from '../table/sort-menu.svelte';
 	import type { SortOption, TableColumn } from '../table/columns';
-	import type { SubdomainFacetSet, WebAssetQuery } from '$lib/utilities/scan-insights';
-	import { querySchema } from '$lib/stores/query-schema.svelte';
+	import type { QueryGroupSpec } from '$lib/types/asset-query';
+	import type { IpFacetSet, IpQuery } from '$lib/utilities/ip-groups';
 
 	interface Props {
-		sorts: SortOption[];
-		query: WebAssetQuery;
-		facets: SubdomainFacetSet;
-		onQuery: (q: WebAssetQuery) => void;
-		view: string;
-		onView: (v: string) => void;
+		query: IpQuery;
+		facets: IpFacetSet;
+		onQuery: (q: IpQuery) => void;
+		dimensions: QueryGroupSpec[];
 		columns: TableColumn[];
 		visible: string[];
 		onToggleColumn: (key: string) => void;
 		density: string;
 		onDensity: (d: string) => void;
-		onlyShots: boolean;
-		onOnlyShots: (v: boolean) => void;
+		sorts: SortOption[];
 		sortKey: string;
 		sortDir: 1 | -1;
 		onSort: (key: string) => void;
@@ -42,19 +34,16 @@
 	}
 
 	let {
-		sorts,
 		query,
 		facets,
 		onQuery,
-		view,
-		onView,
+		dimensions,
 		columns,
 		visible,
 		onToggleColumn,
 		density,
 		onDensity,
-		onlyShots,
-		onOnlyShots,
+		sorts,
 		sortKey,
 		sortDir,
 		onSort,
@@ -64,42 +53,62 @@
 		onGroupBy
 	}: Props = $props();
 
-	let dimensions = $derived(querySchema.schema.group_dimensions);
 	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
 
 	const QUICK = [
-		{ value: 'new', label: 'New' },
-		{ value: 'issues', label: 'Issues' },
-		{ value: 'nowaf', label: 'No WAF' }
+		{ value: 'sensitive', label: 'Sensitive' },
+		{ value: 'hosted', label: 'Has hosts' },
+		{ value: 'nocdn', label: 'No CDN' },
+		{ value: 'v6', label: 'IPv6' }
 	];
 
 	let quick = $derived(
-		[query.newOnly && 'new', query.issuesOnly && 'issues', query.waf === 'none' && 'nowaf'].filter(
-			(v): v is string => !!v
-		)
+		[
+			query.sensitiveOnly && 'sensitive',
+			query.hostedOnly && 'hosted',
+			query.cdn === 'no' && 'nocdn',
+			query.version === 6 && 'v6'
+		].filter((v): v is string => !!v)
 	);
 
 	function setQuick(values: string[]) {
 		onQuery({
 			...query,
-			newOnly: values.includes('new'),
-			issuesOnly: values.includes('issues'),
-			waf: values.includes('nowaf') ? 'none' : query.waf === 'none' ? 'any' : query.waf
+			sensitiveOnly: values.includes('sensitive'),
+			hostedOnly: values.includes('hosted'),
+			cdn: values.includes('nocdn') ? 'no' : query.cdn === 'no' ? 'any' : query.cdn,
+			version: values.includes('v6') ? 6 : query.version === 6 ? 0 : query.version
 		});
 	}
-	function setList<K extends 'tech' | 'service' | 'cert' | 'source'>(key: K, value: string[]) {
+	function setList<K extends 'asn' | 'country' | 'port' | 'service'>(key: K, value: string[]) {
 		onQuery({ ...query, [key]: value });
 	}
 </script>
 
 <div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
 	<div class="flex min-w-0 flex-1 basis-72 flex-wrap items-center gap-2">
-		{#if facets.tech.length}
+		{#if facets.asn.length}
 			<FacetedFilter
-				title="Tech"
-				options={facets.tech}
-				selected={query.tech}
-				onChange={(v) => setList('tech', v)}
+				title="Network"
+				options={facets.asn}
+				selected={query.asn}
+				onChange={(v) => setList('asn', v)}
+			/>
+		{/if}
+		{#if facets.country.length}
+			<FacetedFilter
+				title="Country"
+				options={facets.country}
+				selected={query.country}
+				onChange={(v) => setList('country', v)}
+			/>
+		{/if}
+		{#if facets.port.length}
+			<FacetedFilter
+				title="Port"
+				options={facets.port}
+				selected={query.port}
+				onChange={(v) => setList('port', v)}
 			/>
 		{/if}
 		{#if facets.service.length}
@@ -108,22 +117,6 @@
 				options={facets.service}
 				selected={query.service}
 				onChange={(v) => setList('service', v)}
-			/>
-		{/if}
-		{#if facets.cert.length}
-			<FacetedFilter
-				title="Cert"
-				options={facets.cert}
-				selected={query.cert}
-				onChange={(v) => setList('cert', v)}
-			/>
-		{/if}
-		{#if facets.source.length}
-			<FacetedFilter
-				title="Source"
-				options={facets.source}
-				selected={query.source}
-				onChange={(v) => setList('source', v)}
 			/>
 		{/if}
 		<ToggleGroup.Root
@@ -142,48 +135,6 @@
 	</div>
 
 	<div class="flex items-center gap-2">
-		<ToggleGroup.Root
-			type="single"
-			variant="outline"
-			value={view}
-			onValueChange={(v) => v && onView(v)}
-			aria-label="View"
-		>
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					{#snippet child({ props })}
-						<ToggleGroup.Item {...props} value="table" aria-label="List view" class="h-9 px-3">
-							<Rows3 class="h-4 w-4" />
-						</ToggleGroup.Item>
-					{/snippet}
-				</Tooltip.Trigger>
-				<Tooltip.Content>List view</Tooltip.Content>
-			</Tooltip.Root>
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					{#snippet child({ props })}
-						<ToggleGroup.Item {...props} value="gallery" aria-label="Gallery view" class="h-9 px-3">
-							<LayoutGrid class="h-4 w-4" />
-						</ToggleGroup.Item>
-					{/snippet}
-				</Tooltip.Trigger>
-				<Tooltip.Content>Gallery view</Tooltip.Content>
-			</Tooltip.Root>
-		</ToggleGroup.Root>
-
-		{#if view === 'gallery'}
-			<Toggle
-				pressed={onlyShots}
-				onPressedChange={onOnlyShots}
-				variant="outline"
-				class="h-9 gap-2 px-3 text-sm font-normal"
-				aria-label="Only hosts with a screenshot"
-			>
-				<Image class="h-4 w-4" />
-				<span class="hidden sm:inline">With screenshot</span>
-			</Toggle>
-		{/if}
-
 		{#if dimensions.length}
 			<ButtonGroup>
 				<DropdownMenu.Root>
@@ -206,9 +157,9 @@
 						<DropdownMenu.RadioGroup value={groupBy} onValueChange={onGroupBy}>
 							<DropdownMenu.RadioItem value="">No grouping</DropdownMenu.RadioItem>
 							{#each dimensions as dimension (dimension.key)}
-								<DropdownMenu.RadioItem value={dimension.key}
-									>{dimension.label}</DropdownMenu.RadioItem
-								>
+								<DropdownMenu.RadioItem value={dimension.key}>
+									{dimension.label}
+								</DropdownMenu.RadioItem>
 							{/each}
 						</DropdownMenu.RadioGroup>
 					</DropdownMenu.Content>
@@ -229,9 +180,7 @@
 
 		{#if !groupBy}
 			<SortMenu {sorts} {sortKey} {sortDir} {onSort} />
-		{/if}
 
-		{#if view === 'table' && !groupBy}
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}

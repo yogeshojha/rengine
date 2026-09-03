@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.asset_query import (
     EVIDENCE_LABELS,
-    FIELDS_BY_NAME,
+    HOST_QUERY,
     SNIPPET_LENGTH,
     SNIPPET_RADIUS,
     Op,
@@ -60,7 +60,7 @@ def probes(node: Node | None) -> list[Probe]:
         if term.value:
             found.append(Probe(term.value, None))
     for cmp in positive_compares(node):
-        spec = FIELDS_BY_NAME.get(cmp.name)
+        spec = HOST_QUERY.by_name.get(cmp.name)
         if spec is None or spec.evidence is None or cmp.op not in (Op.MATCH, Op.EQ):
             continue
         for value in cmp.values:

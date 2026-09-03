@@ -8,10 +8,12 @@
 	import Waypoints from '@lucide/svelte/icons/waypoints';
 	import Heading from '@lucide/svelte/icons/heading';
 	import Image from '@lucide/svelte/icons/image';
+	import Building2 from '@lucide/svelte/icons/building-2';
+	import Flag from '@lucide/svelte/icons/flag';
+	import Plug from '@lucide/svelte/icons/plug';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import TechIcon from '../tech-icon.svelte';
-	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import {
 		providerFor,
 		PROVIDER_KIND_ICONS,
@@ -19,15 +21,18 @@
 	} from '$lib/config/hosting-providers';
 	import { httpStatusClass, isPrivateIp, STATUS_DOT } from '$lib/utilities/scan-correlation';
 	import type { IconComponent } from '$lib/config/icons';
-	import type { QueryGroup, QueryGroups } from '$lib/types/asset-query';
+	import type { QueryGroup, QueryGroups, QueryGroupSpec } from '$lib/types/asset-query';
 
 	interface Props {
 		set: QueryGroups | null;
+		dimensions: QueryGroupSpec[];
+		noun: string;
+		nounPlural: string;
 		loading: boolean;
 		onPick: (query: string) => void;
 	}
 
-	let { set, loading, onPick }: Props = $props();
+	let { set, dimensions, noun, nounPlural, loading, onPick }: Props = $props();
 
 	interface Identity {
 		icon: IconComponent;
@@ -36,7 +41,7 @@
 		note: string | null;
 	}
 
-	const MONO = new Set(['ip', 'favicon', 'cname', 'content_hash', 'jarm']);
+	const MONO = new Set(['ip', 'favicon', 'cname', 'content_hash', 'jarm', 'prefix', 'port']);
 	const ICONS: Record<string, IconComponent> = {
 		tech: Boxes,
 		cdn: Globe,
@@ -44,7 +49,13 @@
 		ip: Network,
 		cname: Waypoints,
 		title: Heading,
-		favicon: Image
+		favicon: Image,
+		asn: Network,
+		org: Building2,
+		prefix: Network,
+		country: Flag,
+		port: Plug,
+		service: Server
 	};
 	const LOGO_DIMENSIONS = new Set(['tech', 'cdn', 'server']);
 
@@ -73,12 +84,12 @@
 
 	let dimension = $derived(set?.dimension ?? '');
 	let groups = $derived(set?.groups ?? []);
-	let spec = $derived(querySchema.schema.group_dimensions.find((d) => d.key === dimension));
+	let spec = $derived(dimensions.find((d) => d.key === dimension));
 	let label = $derived(spec?.label ?? 'value');
 	let mono = $derived(MONO.has(dimension));
 	let covered = $derived(set?.covered ?? 0);
-	let hosts = $derived(set?.hosts ?? 0);
-	let coverage = $derived(hosts ? Math.round((covered / hosts) * 100) : 0);
+	let rows = $derived(set?.rows ?? 0);
+	let coverage = $derived(rows ? Math.round((covered / rows) * 100) : 0);
 	let summary = $derived.by(() => {
 		const n = set?.total_groups ?? 0;
 		const base = `${n.toLocaleString()} ${n === 1 ? 'group' : 'groups'}`;
@@ -118,7 +129,7 @@
 	<EmptyState
 		icon={Layers}
 		title="Nothing to group"
-		description="No host in this view has a {label.toLowerCase()}."
+		description="No {noun} in this view has a {label.toLowerCase()}."
 		class="rounded-none border-0 bg-transparent py-16"
 	/>
 {:else}
@@ -134,14 +145,14 @@
 		>
 			<span>{summary}</span>
 			<span class="flex items-center gap-2">
-				<span>Covers {covered.toLocaleString()} of {hosts.toLocaleString()} hosts</span>
+				<span>Covers {covered.toLocaleString()} of {rows.toLocaleString()} {nounPlural}</span>
 				<span
 					class="h-1.5 w-20 overflow-hidden rounded-full bg-muted"
 					role="meter"
 					aria-valuenow={coverage}
 					aria-valuemin={0}
 					aria-valuemax={100}
-					aria-label="Hosts with a {label.toLowerCase()}"
+					aria-label="{nounPlural} with a {label.toLowerCase()}"
 				>
 					<span class="block h-full rounded-full bg-primary" style="width: {coverage}%"></span>
 				</span>
@@ -158,7 +169,7 @@
 			<button
 				type="button"
 				class="group flex flex-col gap-3 rounded-lg border bg-card p-3.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-				aria-label="{group.label}, {group.count} hosts, filter to this group"
+				aria-label="{group.label}, {group.count} {nounPlural}, filter to this group"
 				onclick={() => onPick(group.query)}
 			>
 				<span class="flex items-start gap-2.5">
@@ -199,7 +210,8 @@
 						<span class="text-2xl font-semibold tracking-tight tabular-nums"
 							>{group.count.toLocaleString()}</span
 						>
-						<span class="text-xs text-muted-foreground">{group.count === 1 ? 'host' : 'hosts'}</span
+						<span class="text-xs text-muted-foreground"
+							>{group.count === 1 ? noun : nounPlural}</span
 						>
 					</span>
 					<span class="text-xs tabular-nums text-muted-foreground">{shareLabel(group.count)}</span>

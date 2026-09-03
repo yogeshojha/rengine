@@ -1,15 +1,17 @@
-export interface ColumnDef {
-	key: string;
-	label: string;
-}
+import type { TableColumn } from '../table/columns';
 
-export interface WebAssetColumn extends ColumnDef {
-	sort?: string;
-	align?: 'right';
-	width: string;
-}
+export const WEB_ASSET_LEAD_COLUMNS: TableColumn[] = [
+	{
+		key: 'name',
+		label: 'Host',
+		sort: 'name',
+		width: 'min-w-0 flex-[3] contain-inline-size sm:min-w-56'
+	},
+	{ key: 'status', label: 'Status', sort: 'status', width: 'w-12 shrink-0 sm:w-16' },
+	{ key: 'title', label: 'Title', sort: 'title', width: 'hidden min-w-40 flex-[2] sm:block' }
+];
 
-export const WEB_ASSET_COLUMNS: WebAssetColumn[] = [
+export const WEB_ASSET_COLUMNS: TableColumn[] = [
 	{ key: 'tech', label: 'Tech', width: 'w-52' },
 	{ key: 'ip', label: 'IP / Network', sort: 'ip', width: 'w-32' },
 	{ key: 'ports', label: 'Ports', width: 'w-32' },

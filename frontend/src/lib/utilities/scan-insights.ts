@@ -309,11 +309,6 @@ export interface IpGroupRead {
 	asset_count: number;
 }
 
-export interface IpGroupPage {
-	items: IpGroupRead[];
-	total: number;
-}
-
 export function compileQuery(
 	q: WebAssetQuery,
 	sortKey: string,

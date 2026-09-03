@@ -7,6 +7,8 @@ class QuerySchemaStore {
 	loaded = $state(false);
 	private pending: Promise<void> | null = null;
 
+	constructor(private readonly endpoint: string) {}
+
 	byName = $derived.by(() => {
 		const map = new SvelteMap<string, QueryFieldSpec>();
 		for (const field of this.schema.fields) {
@@ -21,7 +23,7 @@ class QuerySchemaStore {
 	async load(): Promise<void> {
 		if (this.loaded) return;
 		this.pending ??= api
-			.get<QuerySchema>('/subdomains/search/schema')
+			.get<QuerySchema>(this.endpoint)
 			.then((schema) => {
 				this.schema = schema;
 				this.loaded = true;
@@ -46,4 +48,7 @@ class QuerySchemaStore {
 	}
 }
 
-export const querySchema = new QuerySchemaStore();
+export type { QuerySchemaStore };
+
+export const querySchema = new QuerySchemaStore('/subdomains/search/schema');
+export const ipQuerySchema = new QuerySchemaStore('/ips/search/schema');

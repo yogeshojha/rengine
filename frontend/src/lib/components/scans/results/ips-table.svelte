@@ -2,82 +2,67 @@
 	import { page as appPage } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { untrack } from 'svelte';
-	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
-	import ArrowUp from '@lucide/svelte/icons/arrow-up';
-	import ArrowDown from '@lucide/svelte/icons/arrow-down';
-	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
-	import Ellipsis from '@lucide/svelte/icons/ellipsis';
-	import Copy from '@lucide/svelte/icons/copy';
-	import Filter from '@lucide/svelte/icons/filter';
-	import Globe from '@lucide/svelte/icons/globe';
-	import Network from '@lucide/svelte/icons/network';
+	import X from '@lucide/svelte/icons/x';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import SearchX from '@lucide/svelte/icons/search-x';
+	import Network from '@lucide/svelte/icons/network';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 
-	import * as Table from '$lib/components/ui/table';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Card from '$lib/components/ui/card';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import CountTabs from '$lib/components/count-tabs.svelte';
 
-	import SearchBar from './dsl-search-bar.svelte';
-	import OverflowPopover from './web-assets/overflow-popover.svelte';
-	import TechIcon from './tech-icon.svelte';
-	import ResultsPagination from './web-assets/results-pagination.svelte';
-	import type { ColumnDef } from './web-assets/columns';
-	import IpFilterBar from './ips/ip-filter-bar.svelte';
-	import IpHoverCard from './ips/ip-hover-card.svelte';
+	import QueryBar from './query-bar/query-bar.svelte';
+	import ListHeader from './table/list-header.svelte';
+	import ResultsPagination from './table/results-pagination.svelte';
+	import GroupList from './table/group-list.svelte';
+	import FilterBar from './ips/filter-bar.svelte';
+	import IpRow from './ips/ip-row.svelte';
 	import IpDetailSheet from './ip-detail-sheet.svelte';
+	import { IP_COLUMNS, IP_LEAD_COLUMNS, DEFAULT_VISIBLE_IP_COLUMNS } from './ips/columns';
 
 	import { ipsApi } from '$lib/api/scan-results';
+	import { ipQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
-	import { isSensitivePort } from '$lib/utilities/scan-correlation';
-	import { appendToken, type IpGroupRead } from '$lib/utilities/scan-insights';
+	import {
+		appendToken,
+		filterToken,
+		type Facet,
+		type IpGroupRead
+	} from '$lib/utilities/scan-insights';
 	import {
 		compileIpQuery,
 		emptyIpQuery,
 		ipActiveFacetCount,
+		ipQueryChips,
 		EMPTY_IP_FACETS,
-		IP_DSL_KEYS,
+		IP_EXPOSURE_TABS,
+		IP_SORTS,
 		type IpFacetSet,
 		type IpQuery
 	} from '$lib/utilities/ip-groups';
-	import {
-		RESULTS_PAGE_SIZE,
-		SEARCH_DEBOUNCE_MS,
-		RESULTS_SCROLL
-	} from '$lib/utilities/scan-status';
-	import { writeClipboard } from '$lib/utilities/clipboard';
+	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
+	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 
 	interface Props {
 		scanId: string;
 		projectId: string;
 		active?: boolean;
 		onTab?: (tab: string, filter?: string) => void;
+		onScanTotal?: (total: number) => void;
 	}
 
-	let { scanId, projectId, active = true, onTab }: Props = $props();
+	let { scanId, projectId, active = true, onTab, onScanTotal }: Props = $props();
 
-	interface Column extends ColumnDef {
-		sort?: string;
-		align?: 'right';
-		width?: string;
-	}
-	const COLUMNS: Column[] = [
-		{ key: 'asn', label: 'Network', sort: 'asn' },
-		{ key: 'country', label: 'Country', sort: 'country', width: 'w-24' },
-		{ key: 'ports', label: 'Ports', sort: 'ports' },
-		{ key: 'hosts', label: 'Hosts', sort: 'hosts' },
-		{ key: 'prefix', label: 'Prefix', width: 'w-36' },
-		{ key: 'ptr', label: 'PTR' }
-	];
-	const DEFAULT_VISIBLE = ['asn', 'country', 'ports', 'hosts'];
 	const DEFAULT_SORT = { key: 'hosts', dir: -1 as const };
-	const MAX_PORTS = 4;
-	const MAX_HOSTS = 2;
+	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
 
 	function readPref<T>(key: string, fallback: T): T {
 		try {
@@ -95,18 +80,13 @@
 		}
 	}
 
-	let seen = $state(false);
-	$effect(() => {
-		if (active) seen = true;
-	});
-
 	const initial = appPage.url.searchParams;
 	const initialSort = initial.get('ip_sort')?.split(':') ?? [];
 	let pendingIp = initial.get('ip');
 
 	let query = $state<IpQuery>({ ...emptyIpQuery(), search: initial.get('ip_q') ?? '' });
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.ipsColumns, null));
-	let density = $state<string>(readPref(STORAGE_KEYS.ipsDensity, 'compact'));
+	let density = $state<string>(readPref(STORAGE_KEYS.ipsDensity, 'cozy'));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.ipsPageSize, RESULTS_PAGE_SIZE));
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
 		initialSort[0]
@@ -117,47 +97,88 @@
 
 	let items = $state<IpGroupRead[]>([]);
 	let total = $state(0);
+	let totalCapped = $state(false);
+	let queryError = $state<QueryError | null>(null);
+	let queryReady = $state(true);
 	let loading = $state(true);
+	let refreshing = $state(false);
 	let errored = $state(false);
 	let facets = $state<IpFacetSet>(EMPTY_IP_FACETS);
+	let facetsLoaded = $state(false);
+	let leadSet = $state<QueryLeads | null>(null);
+	let groupBy = $state<string>(initial.get('ip_group') ?? '');
+	let groupSet = $state<QueryGroups | null>(null);
+	let groupLoading = $state(false);
+	let groupReq = 0;
 
 	let selected = $state<IpGroupRead | null>(null);
 	let drawerOpen = $state(false);
 	let cursor = $state(-1);
 	let searchRef = $state<HTMLInputElement | null>(null);
+	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let pendingSelect: 'first' | 'last' | null = null;
+	const checkedIps = new SvelteSet<string>();
 
+	let seen = $state(false);
+	$effect(() => {
+		if (active) seen = true;
+	});
+
+	let scanTotal = $derived(facets.exposure.reduce((n, f) => n + f.count, 0));
 	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
 	let selectedIndex = $derived(selected ? items.findIndex((g) => g.ip === selected?.ip) : -1);
 	let visible = $derived(
-		visiblePref ??
-			DEFAULT_VISIBLE.filter(
-				(k) =>
-					!(
-						((k === 'asn' || k === 'country') && !facets.asn.length && !facets.country.length) ||
-						(k === 'ports' && !facets.port.length)
-					)
-			)
+		visiblePref ?? DEFAULT_VISIBLE_IP_COLUMNS.filter((k) => k !== 'ports' || facets.port.length > 0)
 	);
-	let shownColumns = $derived(COLUMNS.filter((c) => visible.includes(c.key)));
+	let shownColumns = $derived(IP_COLUMNS.filter((c) => visible.includes(c.key)));
+	let checkedCount = $derived(items.filter((g) => checkedIps.has(g.ip)).length);
+	let selectAllChecked = $derived<boolean | 'indeterminate'>(
+		items.length > 0 && checkedCount === items.length
+			? true
+			: checkedCount > 0
+				? 'indeterminate'
+				: false
+	);
 	let filtered = $derived(ipActiveFacetCount(query) > 0 || !!query.search);
-	let stripe = $derived(
-		density === 'compact'
-			? '[&_td]:h-12 [&_td]:py-2 [&_td]:align-top'
-			: '[&_td]:h-16 [&_td]:py-3.5 [&_td]:align-top'
+	let chips = $derived(ipQueryChips(query, facets));
+	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
+	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
+	let exposureTab = $derived(
+		query.exposure.length === 0 ? 'all' : query.exposure.length === 1 ? query.exposure[0] : ''
 	);
+	let exposureCounts = $derived.by(() => {
+		if (!facetsLoaded) return null;
+		const m: Record<string, number> = { all: scanTotal };
+		for (const f of facets.exposure) m[f.value] = f.count;
+		return m;
+	});
 
 	$effect(() => {
 		if (visiblePref) writePref(STORAGE_KEYS.ipsColumns, visiblePref);
 	});
 	$effect(() => writePref(STORAGE_KEYS.ipsDensity, density));
 	$effect(() => writePref(STORAGE_KEYS.ipsPageSize, pageSize));
+	$effect(() => {
+		const ips = new Set(items.map((g) => g.ip));
+		for (const ip of checkedIps) if (!ips.has(ip)) checkedIps.delete(ip);
+	});
 
 	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let lastSig = '';
+	let primed = false;
+
+	function flushSearch() {
+		if (timer) clearTimeout(timer);
+		timer = null;
+		void runSearch();
+	}
 
 	async function runSearch() {
+		if (!queryReady) {
+			syncLeads();
+			return;
+		}
 		const filter = compileIpQuery(query, sort.key, sort.dir, pageIndex * pageSize, pageSize);
 		const sig = JSON.stringify({ ...filter, offset: 0 });
 		if (sig !== lastSig && pageIndex !== 0 && !pendingSelect) {
@@ -173,7 +194,10 @@
 			if (my !== reqId) return;
 			items = res.items;
 			total = res.total;
+			totalCapped = res.total_capped;
+			queryError = res.error;
 			errored = false;
+			if (!res.error && filter.q) queryBar?.remember(filter.q);
 			if (pendingSelect) {
 				selected = pendingSelect === 'first' ? (items[0] ?? null) : (items.at(-1) ?? null);
 				pendingSelect = null;
@@ -188,10 +212,77 @@
 			if (my === reqId) {
 				items = [];
 				total = 0;
+				totalCapped = false;
 				errored = true;
 			}
 		} finally {
-			if (my === reqId) loading = false;
+			if (my === reqId) {
+				loading = false;
+				syncLeads();
+			}
+		}
+	}
+
+	let leadFilter = $derived(compileIpQuery({ ...query, search: '' }, 'ip', 1, 0, 1));
+	let leadSig = $derived(JSON.stringify(leadFilter));
+	let leadFilterWithQuery = $derived({ ...leadFilter, q: query.search.trim() || null });
+	let groupSig = $derived(groupBy ? JSON.stringify(leadFilterWithQuery) + groupBy : '');
+	let loadedLeadSig = '';
+
+	async function loadLeads() {
+		const sig = leadSig;
+		loadedLeadSig = sig;
+		try {
+			const res = await ipsApi.leads(projectId, scanId, leadFilter);
+			if (leadSig === sig) leadSet = res.computed ? res : null;
+		} catch {
+			if (leadSig === sig) leadSet = null;
+			loadedLeadSig = '';
+		}
+	}
+
+	function syncLeads() {
+		if (!active || loading || !scanId || !projectId) return;
+		if (leadSig === loadedLeadSig) return;
+		void loadLeads();
+	}
+
+	async function loadGroups() {
+		if (!groupBy || !scanId || !projectId) {
+			groupSet = null;
+			return;
+		}
+		const my = ++groupReq;
+		groupLoading = true;
+		try {
+			const res = await ipsApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
+			if (my === groupReq) groupSet = res;
+		} catch {
+			if (my === groupReq) groupSet = null;
+		} finally {
+			if (my === groupReq) groupLoading = false;
+		}
+	}
+
+	async function loadFacets() {
+		if (!scanId || !projectId) return;
+		try {
+			facets = await ipsApi.facets(projectId, scanId);
+		} catch {
+			facets = EMPTY_IP_FACETS;
+		} finally {
+			facetsLoaded = true;
+			onScanTotal?.(facets.exposure.reduce((n, f) => n + f.count, 0));
+		}
+	}
+
+	async function refresh() {
+		refreshing = true;
+		try {
+			loadedLeadSig = '';
+			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
+		} finally {
+			refreshing = false;
 		}
 	}
 
@@ -203,22 +294,36 @@
 		void pageSize;
 		void scanId;
 		void projectId;
+		void queryReady;
 		if (!seen) return;
 		if (timer) clearTimeout(timer);
-		timer = setTimeout(runSearch, SEARCH_DEBOUNCE_MS);
+		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
+		primed = true;
 		return () => {
 			if (timer) clearTimeout(timer);
 		};
 	});
 
 	$effect(() => {
-		const id = scanId;
-		const pid = projectId;
-		if (!id || !pid || !seen) return;
-		ipsApi
-			.facets(pid, id)
-			.then((f) => (facets = f))
-			.catch(() => (facets = EMPTY_IP_FACETS));
+		void scanId;
+		void projectId;
+		if (!seen) return;
+		untrack(loadFacets);
+	});
+
+	$effect(() => {
+		void active;
+		untrack(syncLeads);
+	});
+
+	$effect(() => {
+		void groupSig;
+		if (!groupBy) {
+			groupSet = null;
+			return;
+		}
+		const handle = setTimeout(() => untrack(loadGroups), SEARCH_DEBOUNCE_MS);
+		return () => clearTimeout(handle);
 	});
 
 	function syncUrl() {
@@ -226,6 +331,7 @@
 			const sp = new SvelteURLSearchParams(location.search);
 			const set = (k: string, v: string | null) => (v ? sp.set(k, v) : sp.delete(k));
 			set('ip_q', query.search || null);
+			set('ip_group', groupBy || null);
 			set('ip_page', pageIndex > 0 ? String(pageIndex + 1) : null);
 			set(
 				'ip_sort',
@@ -242,6 +348,7 @@
 	}
 	$effect(() => {
 		void query.search;
+		void groupBy;
 		void pageIndex;
 		void sort.key;
 		void sort.dir;
@@ -262,7 +369,7 @@
 			const res = await ipsApi.search(
 				projectId,
 				scanId,
-				compileIpQuery({ ...emptyIpQuery(), search: ip }, 'ip', 1, 0, 5)
+				compileIpQuery({ ...emptyIpQuery(), search: filterToken('ip', ip) }, 'ip', 1, 0, 5)
 			);
 			const exact = res.items.find((g) => g.ip === ip);
 			if (exact) open(exact);
@@ -289,12 +396,27 @@
 		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
 		pageIndex = 0;
 	}
+	function toggleCheck(ip: string) {
+		if (checkedIps.has(ip)) checkedIps.delete(ip);
+		else checkedIps.add(ip);
+	}
+	function toggleSelectAll() {
+		if (checkedCount === items.length) checkedIps.clear();
+		else for (const g of items) checkedIps.add(g.ip);
+	}
 	function toggleCol(key: string) {
 		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 	}
 	function setQuery(q: IpQuery) {
 		query = q;
 		pageIndex = 0;
+	}
+	function setExposureTab(key: string) {
+		setQuery({ ...query, exposure: key === 'all' ? [] : [key] });
+	}
+	function drillGroup(token: string) {
+		setQuery({ ...query, search: appendToken(query.search, token) });
+		groupBy = '';
 	}
 	function applyDsl(token: string) {
 		setQuery({ ...query, search: appendToken(query.search, token) });
@@ -304,9 +426,6 @@
 		drawerOpen = false;
 		syncUrl();
 		onTab?.('web-assets', filter);
-	}
-	async function copy(text: string) {
-		if (await writeClipboard(text)) toast.success('Copied');
 	}
 	function scrollCursor() {
 		document.querySelector(`[data-ip-row-index="${cursor}"]`)?.scrollIntoView({ block: 'nearest' });
@@ -336,360 +455,188 @@
 			cursor = -1;
 		}
 	}
-	const stop = (e: Event) => e.stopPropagation();
 </script>
 
 <svelte:window onkeydown={onKey} />
 
-<div class="flex flex-col gap-3">
-	<div class="mx-auto w-full max-w-3xl">
-		<SearchBar
-			bind:ref={searchRef}
-			value={query.search}
-			keys={IP_DSL_KEYS}
-			values={facets}
-			placeholder="Search addresses, networks, hosts — or filter with port:22 is:sensitive asn:13335"
-			onChange={(v) => setQuery({ ...query, search: v })}
+<div class="z-10 md:sticky md:top-[var(--scan-tabs-h,0px)]">
+	<QueryBar
+		bind:this={queryBar}
+		bind:ref={searchRef}
+		store={ipQuerySchema}
+		recentsKey={STORAGE_KEYS.ipsRecentQueries}
+		hint="is:sensitive not cdn:yes"
+		value={query.search}
+		facets={facets as unknown as Record<string, Facet[]>}
+		busy={loading && !!query.search}
+		{leadSet}
+		total={errored ? null : total}
+		capped={totalCapped}
+		serverError={queryError}
+		onReady={(value) => (queryReady = value)}
+		onChange={(v) => setQuery({ ...query, search: v })}
+		onSubmit={flushSearch}
+	/>
+</div>
+
+<Card.Root class="gap-0 overflow-hidden rounded-t-none border-t-0 py-0">
+	<div class="border-b px-2">
+		<CountTabs
+			tabs={IP_EXPOSURE_TABS}
+			value={exposureTab}
+			counts={exposureCounts}
+			onChange={setExposureTab}
 		/>
 	</div>
 
-	<IpFilterBar
+	<FilterBar
 		{query}
 		{facets}
 		onQuery={setQuery}
-		{total}
-		columns={COLUMNS}
+		dimensions={ipQuerySchema.schema.group_dimensions}
+		columns={IP_COLUMNS}
 		{visible}
 		onToggleColumn={toggleCol}
 		{density}
 		onDensity={(d) => (density = d)}
+		sorts={IP_SORTS}
+		sortKey={sort.key}
+		sortDir={sort.dir}
+		onSort={toggleSort}
+		{refreshing}
+		onRefresh={refresh}
+		{groupBy}
+		onGroupBy={(key) => (groupBy = key)}
 	/>
 
-	{#if loading && items.length === 0}
-		<div class="flex flex-col gap-2">
+	{#if chips.length > 0}
+		<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
+			{#each chips as chip (chip.id)}
+				<Badge variant="outline" class="gap-1 bg-background font-normal">
+					{chip.label}
+					<Tooltip.Root>
+						<Tooltip.Trigger
+							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+							onclick={() => setQuery(chip.remove(query))}
+							aria-label="Remove filter {chip.label}"
+						>
+							<X class="h-3 w-3" />
+							<span class="sr-only">Remove filter {chip.label}</span>
+						</Tooltip.Trigger>
+						<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
+					</Tooltip.Root>
+				</Badge>
+			{/each}
+			<button
+				class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+				onclick={() => setQuery({ ...emptyIpQuery(), search: query.search })}
+				aria-label="Clear all filters"
+			>
+				Clear all
+			</button>
+		</div>
+	{/if}
+
+	{#if loading && items.length === 0 && !groupBy}
+		<div class="divide-y divide-border/50">
 			{#each Array(8) as _, i (i)}
-				<Skeleton class="h-12 w-full" />
+				<div class="flex items-center gap-3 px-4 py-3">
+					<Skeleton class="h-9 flex-1" />
+					<Skeleton class="hidden h-5 w-40 sm:block" />
+					<Skeleton class="hidden h-6 w-44 sm:block" />
+					<Skeleton class="hidden h-5 w-24 sm:block" />
+				</div>
 			{/each}
 		</div>
 	{:else if errored}
-		<EmptyState icon={TriangleAlert} title="Addresses could not be loaded">
-			<Button size="sm" variant="outline" onclick={runSearch}>Retry</Button>
+		<EmptyState
+			icon={TriangleAlert}
+			title="Addresses could not be loaded"
+			class="rounded-none border-0 bg-transparent py-16"
+		>
+			<Button variant="outline" class="gap-2" onclick={refresh}>
+				<RefreshCw class="h-4 w-4" /> Retry
+			</Button>
 		</EmptyState>
+	{:else if groupBy}
+		<GroupList
+			set={groupSet}
+			dimensions={ipQuerySchema.schema.group_dimensions}
+			noun={ipQuerySchema.schema.noun}
+			nounPlural={ipQuerySchema.schema.noun_plural}
+			loading={groupLoading}
+			onPick={drillGroup}
+		/>
 	{:else if items.length === 0}
-		{#if filtered}
+		{#if queryError}
+			<EmptyState
+				icon={SearchX}
+				title="That query could not run"
+				description={queryError.message}
+				class="rounded-none border-0 bg-transparent py-16"
+			/>
+		{:else if filtered}
 			<EmptyState
 				icon={SearchX}
 				title="No addresses match"
 				description="Widen the search or remove a filter."
+				class="rounded-none border-0 bg-transparent py-16"
 			>
-				<Button size="sm" variant="outline" onclick={() => setQuery(emptyIpQuery())}>
-					Clear filters
+				<Button size="sm" variant="outline" class="gap-2" onclick={() => setQuery(emptyIpQuery())}>
+					<X class="h-4 w-4" /> Clear filters
 				</Button>
 			</EmptyState>
 		{:else}
 			<EmptyState
 				icon={Network}
 				title="No addresses yet"
-				description="Addresses appear here once host names resolve or ports are found."
+				description="Addresses appear here once hostnames resolve or ports are found."
+				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{/if}
 	{:else}
-		<div class="overflow-hidden rounded-lg border transition-opacity {loading ? 'opacity-60' : ''}">
-			<Table.Root containerClass={RESULTS_SCROLL}>
-				<Table.Header class="sticky top-0 z-20 bg-background">
-					<Table.Row class="hover:bg-transparent">
-						<Table.Head class="sticky left-0 z-30 min-w-52 bg-background">
-							{@render sortHead('Address', 'ip')}
-						</Table.Head>
-						{#each shownColumns as col (col.key)}
-							<Table.Head class="{col.width ?? ''} {col.align === 'right' ? 'text-right' : ''}">
-								{#if col.sort}
-									{@render sortHead(col.label, col.sort)}
-								{:else}
-									{col.label}
-								{/if}
-							</Table.Head>
-						{/each}
-						<Table.Head class="w-16"></Table.Head>
-					</Table.Row>
-				</Table.Header>
-				<Table.Body class={stripe}>
-					{#each items as g, i (g.ip)}
-						{@const isSelected = drawerOpen && selected?.ip === g.ip}
-						<Table.Row
-							class="group cursor-pointer {cursor === i ? 'bg-muted/40' : ''}"
-							data-state={isSelected ? 'selected' : undefined}
-							data-ip-row-index={i}
-							role="button"
-							tabindex={0}
-							onclick={() => open(g)}
-							onkeydown={(e) => {
-								if (e.key === 'Enter' || e.key === ' ') {
-									e.preventDefault();
-									open(g);
-								}
-							}}
-						>
-							<Table.Cell
-								class="sticky left-0 z-10 bg-background group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))] group-data-[state=selected]:bg-muted"
-							>
-								<div class="flex items-center gap-1.5">
-									<Tooltip.Root>
-										<Tooltip.Trigger>
-											{#snippet child({ props })}
-												<span
-													{...props}
-													class="size-1.5 shrink-0 rounded-full {g.is_alive
-														? 'bg-success'
-														: 'bg-muted-foreground/40'}"
-												></span>
-											{/snippet}
-										</Tooltip.Trigger>
-										<Tooltip.Content side="right">
-											{g.is_alive ? 'Responding' : 'No response observed'}
-										</Tooltip.Content>
-									</Tooltip.Root>
-									<IpHoverCard group={g}>
-										<span class="font-mono text-xs font-medium">{g.ip}</span>
-									</IpHoverCard>
-									{#if g.version === 6}
-										<Badge
-											variant="outline"
-											class="px-1 text-[9px] font-normal text-muted-foreground"
-										>
-											v6
-										</Badge>
-									{/if}
-									{#if g.is_cdn}
-										<Badge variant="info" class="px-1 text-[9px] font-normal">
-											<TechIcon name={g.cdn_name ?? ''} class="size-2.5" />
-											{g.cdn_name ?? 'CDN'}
-										</Badge>
-									{/if}
-									{#if g.has_sensitive}
-										<Tooltip.Root>
-											<Tooltip.Trigger>
-												{#snippet child({ props })}
-													<span {...props}>
-														<TriangleAlert class="size-3 text-warning" />
-													</span>
-												{/snippet}
-											</Tooltip.Trigger>
-											<Tooltip.Content>Exposes a sensitive service</Tooltip.Content>
-										</Tooltip.Root>
-									{/if}
-								</div>
-							</Table.Cell>
-
-							{#each shownColumns as col (col.key)}
-								{#if col.key === 'asn'}
-									<Table.Cell class="max-w-56">
-										{#if g.asn}
-											<button
-												type="button"
-												class="block max-w-full text-left hover:underline"
-												onclick={(e) => {
-													stop(e);
-													applyDsl(`asn:${g.asn}`);
-												}}
-												title="Filter addresses in AS{g.asn}"
-											>
-												<span class="block font-mono text-[11px]">AS{g.asn}</span>
-												{#if g.asn_org}
-													<span class="block truncate text-[10px] text-muted-foreground">
-														{g.asn_org}
-													</span>
-												{/if}
-											</button>
-										{:else}
-											<span class="text-[10px] text-muted-foreground">—</span>
-										{/if}
-									</Table.Cell>
-								{:else if col.key === 'country'}
-									<Table.Cell class="text-xs text-muted-foreground">
-										{#if g.country}
-											<button
-												type="button"
-												class="hover:text-foreground hover:underline"
-												onclick={(e) => {
-													stop(e);
-													applyDsl(`country:${g.country}`);
-												}}
-											>
-												{g.country}
-											</button>
-										{:else}
-											—
-										{/if}
-									</Table.Cell>
-								{:else if col.key === 'ports'}
-									<Table.Cell>
-										{#if g.ports.length}
-											<div class="flex flex-nowrap items-center gap-0.5 whitespace-nowrap">
-												{#each g.ports.slice(0, MAX_PORTS) as p (p.id)}
-													<button
-														type="button"
-														onclick={(e) => {
-															stop(e);
-															applyDsl(`port:${p.number}`);
-														}}
-													>
-														<Badge
-															variant="outline"
-															class="cursor-pointer px-1 font-mono text-[9px] font-normal hover:bg-accent {isSensitivePort(
-																p.number
-															)
-																? 'text-warning'
-																: ''}"
-														>
-															{p.number}
-														</Badge>
-													</button>
-												{/each}
-												<OverflowPopover
-													items={g.ports.map((p) =>
-														p.service_name ? `${p.number}/${p.service_name}` : String(p.number)
-													)}
-													shown={MAX_PORTS}
-													label="open ports"
-													mono
-													onSelect={(v) => applyDsl(`port:${v.split('/')[0]}`)}
-												/>
-											</div>
-										{:else}
-											<span class="text-[10px] text-muted-foreground">—</span>
-										{/if}
-									</Table.Cell>
-								{:else if col.key === 'hosts'}
-									<Table.Cell class="min-w-64">
-										{#if g.host_count}
-											<div class="flex flex-nowrap items-center gap-1 whitespace-nowrap">
-												<span class="w-6 text-right font-mono text-xs tabular-nums">
-													{g.host_count}
-												</span>
-												{#each g.hosts.slice(0, MAX_HOSTS) as h (h)}
-													<button
-														type="button"
-														onclick={(e) => {
-															stop(e);
-															showHosts(`name:${h}`);
-														}}
-														title="Open {h} in Web Assets"
-													>
-														<Badge
-															variant="outline"
-															class="max-w-40 cursor-pointer font-mono text-[9px] font-normal hover:bg-accent"
-														>
-															<span class="truncate">{h}</span>
-														</Badge>
-													</button>
-												{/each}
-												<OverflowPopover
-													items={g.hosts}
-													shown={MAX_HOSTS}
-													label="hosts"
-													mono
-													onSelect={(h) => showHosts(`name:${h}`)}
-												/>
-											</div>
-										{:else}
-											<span class="text-[10px] text-muted-foreground">—</span>
-										{/if}
-									</Table.Cell>
-								{:else if col.key === 'prefix'}
-									<Table.Cell class="font-mono text-[11px] text-muted-foreground">
-										{g.prefix ?? '—'}
-									</Table.Cell>
-								{:else if col.key === 'ptr'}
-									<Table.Cell class="max-w-56 truncate font-mono text-[11px] text-muted-foreground">
-										{g.ptr_hostnames.join(', ') || '—'}
-									</Table.Cell>
-								{/if}
-							{/each}
-
-							<Table.Cell class="pr-2">
-								<div
-									class="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
-								>
-									{#if g.host_count}
-										<Tooltip.Root>
-											<Tooltip.Trigger>
-												{#snippet child({ props })}
-													<Button
-														{...props}
-														variant="ghost"
-														size="icon-sm"
-														class="size-6"
-														onclick={(e) => {
-															stop(e);
-															showHosts(`ip:${g.ip}`);
-														}}
-														aria-label="Show hosts on {g.ip} in Web Assets"
-													>
-														<Globe />
-													</Button>
-												{/snippet}
-											</Tooltip.Trigger>
-											<Tooltip.Content>Hosts in Web Assets</Tooltip.Content>
-										</Tooltip.Root>
-									{/if}
-									<DropdownMenu.Root>
-										<DropdownMenu.Trigger onclick={stop} onkeydown={stop}>
-											{#snippet child({ props })}
-												<Button
-													{...props}
-													variant="ghost"
-													size="icon-sm"
-													class="size-6"
-													aria-label="More actions for {g.ip}"
-												>
-													<Ellipsis />
-												</Button>
-											{/snippet}
-										</DropdownMenu.Trigger>
-										<DropdownMenu.Content align="end" class="w-48" onclick={stop}>
-											<DropdownMenu.Group>
-												<DropdownMenu.Item onclick={() => copy(g.ip)}>
-													<Copy /> Copy address
-												</DropdownMenu.Item>
-												{#if g.host_count}
-													<DropdownMenu.Item onclick={() => showHosts(`ip:${g.ip}`)}>
-														<Globe /> Hosts in Web Assets
-													</DropdownMenu.Item>
-												{/if}
-											</DropdownMenu.Group>
-											{#if g.asn || g.country}
-												<DropdownMenu.Separator />
-												<DropdownMenu.Group>
-													<DropdownMenu.Label>Pivot</DropdownMenu.Label>
-													{#if g.asn}
-														<DropdownMenu.Item onclick={() => applyDsl(`asn:${g.asn}`)}>
-															<Filter /> Same network
-														</DropdownMenu.Item>
-													{/if}
-													{#if g.country}
-														<DropdownMenu.Item onclick={() => applyDsl(`country:${g.country}`)}>
-															<Filter /> Same country
-														</DropdownMenu.Item>
-													{/if}
-												</DropdownMenu.Group>
-											{/if}
-										</DropdownMenu.Content>
-									</DropdownMenu.Root>
-								</div>
-							</Table.Cell>
-						</Table.Row>
-					{/each}
-				</Table.Body>
-			</Table.Root>
-		</div>
+		<ScrollArea orientation="horizontal">
+			<ListHeader
+				lead={IP_LEAD_COLUMNS}
+				columns={shownColumns}
+				{selectAllChecked}
+				selectAllLabel="Select all addresses on this page"
+				onSelectAll={toggleSelectAll}
+				sortKey={sort.key}
+				sortDir={sort.dir}
+				onSort={toggleSort}
+			/>
+			<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
+				{#each items as g, i (g.ip)}
+					<IpRow
+						group={g}
+						index={i}
+						{term}
+						columns={shownColumns}
+						checked={checkedIps.has(g.ip)}
+						onCheck={toggleCheck}
+						selected={drawerOpen && selected?.ip === g.ip}
+						focused={cursor === i}
+						pad={rowPad}
+						onOpen={open}
+						onFilter={applyDsl}
+						onHosts={showHosts}
+					/>
+				{/each}
+			</div>
+		</ScrollArea>
 	{/if}
 
-	{#if !errored && total > 0}
+	{#if !errored && total > 0 && !groupBy}
 		<ResultsPagination
 			{total}
+			capped={totalCapped}
 			page={pageIndex}
 			{pageSize}
+			noun="address"
+			plural="addresses"
+			selectedCount={checkedCount}
+			onClearSelection={() => checkedIps.clear()}
 			onPage={(p) => (pageIndex = p)}
 			onPageSize={(s) => {
 				pageSize = s;
@@ -697,7 +644,7 @@
 			}}
 		/>
 	{/if}
-</div>
+</Card.Root>
 
 <IpDetailSheet
 	group={selected}
@@ -710,21 +657,3 @@
 	onFilter={applyDsl}
 	onHosts={showHosts}
 />
-
-{#snippet sortHead(label: string, key: string)}
-	<button
-		type="button"
-		class="-ml-1 inline-flex items-center gap-1 rounded px-1 hover:text-foreground"
-		onclick={(e) => {
-			e.stopPropagation();
-			toggleSort(key);
-		}}
-	>
-		{label}
-		{#if sort.key === key}
-			{#if sort.dir === 1}<ArrowUp class="size-3" />{:else}<ArrowDown class="size-3" />{/if}
-		{:else}
-			<ChevronsUpDown class="size-3 opacity-40" />
-		{/if}
-	</button>
-{/snippet}

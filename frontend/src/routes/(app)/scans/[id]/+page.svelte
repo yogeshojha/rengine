@@ -174,10 +174,11 @@
 		);
 		return done.find((s) => s.engine_name === scan!.engine_name)?.duration_seconds ?? null;
 	});
+	let ipsTotal = $state<number | null>(null);
 	let tabCounts = $derived<Record<TabKey, number | null>>({
 		overview: null,
 		'web-assets': scan?.subdomains_found ?? 0,
-		ips: scan?.ips_found ?? 0,
+		ips: ipsTotal ?? scan?.ips_found ?? 0,
 		pipeline: null
 	});
 	let timing = $derived.by(() => {
@@ -493,7 +494,13 @@
 
 			<Tabs.Content value="ips" class="mt-6">
 				{#key scan.id}
-					<IpsTable scanId={scan.id} {projectId} active={activeTab === 'ips'} onTab={openTab} />
+					<IpsTable
+						scanId={scan.id}
+						{projectId}
+						active={activeTab === 'ips'}
+						onTab={openTab}
+						onScanTotal={(n) => (ipsTotal = n)}
+					/>
 				{/key}
 			</Tabs.Content>
 

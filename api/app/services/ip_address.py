@@ -1,28 +1,44 @@
 from __future__ import annotations
 
 from collections import Counter
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
     Integer,
     String,
-    Text,
+    and_,
     bindparam,
     cast,
     column,
     distinct,
     exists,
     func,
+    not_,
     or_,
     select,
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, INET, JSONB
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.asset_query import (
+    STATEMENT_TIMEOUT,
+    IpQueryContext,
+    QuerySyntaxError,
+    build_ip_groups,
+    build_leads,
+    compile_ip_query,
+    parse_query,
+    query_error_for,
+)
 from app.services.port import PortService
+from shared.definitions.asset_query import COUNT_CAP, IP_EXPOSURE, IP_QUERY
 from shared.definitions.ports import SENSITIVE_PORTS
+from shared.logging import get_logger
+from shared.models.asset_query import QueryError, QueryGroups, QueryLeads
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress, IpAddressRead, IpAddressSummary
 from shared.models.port import Port
@@ -32,7 +48,10 @@ from shared.models.scan_correlation import (
     IpGroupPage,
     IpGroupRead,
 )
-from shared.models.subdomain import Facet, Subdomain
+from shared.models.subdomain import Facet
+from shared.utils.datetime import utc_now
+
+logger = get_logger(__name__)
 
 _FACET_LIMIT = 30
 _HOSTS_PER_ROW = 50
@@ -151,65 +170,6 @@ class IpAddressService:
             total=len(rows), alive=alive, cdn=cdn, by_source=dict(by_source)
         )
 
-    async def groups(
-        self,
-        project_id: UUID,
-        scan_id: UUID,
-        search: str | None = None,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> IpGroupPage:
-        base = select(IpAddress).where(
-            IpAddress.project_id == project_id, IpAddress.scan_id == scan_id
-        )
-        if search:
-            like = f"%{search}%"
-            base = base.where(
-                or_(
-                    IpAddress.ip.ilike(like),
-                    IpAddress.asn_org.ilike(like),
-                    cast(IpAddress.ptr_hostnames, Text).ilike(like),
-                )
-            )
-        total = await self.session.scalar(
-            select(func.count()).select_from(base.subquery())
-        )
-        rows = (
-            (
-                await self.session.execute(
-                    base.order_by(IpAddress.ip).limit(limit).offset(offset)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        page_ips = [r.ip for r in rows]
-        if not page_ips:
-            return IpGroupPage(items=[], total=int(total or 0))
-        ports_by_ip, hosts_by_ip = await self._page_details(scan_id, page_ips)
-        items = []
-        for r in rows:
-            host_set = hosts_by_ip.get(r.ip, set())
-            items.append(
-                IpGroupRead(
-                    ip=r.ip,
-                    version=r.version,
-                    asn=r.asn,
-                    asn_org=r.asn_org,
-                    country=r.country,
-                    prefix=r.prefix,
-                    is_cdn=r.is_cdn,
-                    cdn_name=r.cdn_name,
-                    is_alive=r.is_alive,
-                    ptr_hostnames=list(r.ptr_hostnames or []),
-                    ports=ports_by_ip.get(r.ip, []),
-                    host_count=len(host_set),
-                    hosts=sorted(host_set)[:_HOSTS_PER_ROW],
-                    port_count=len(ports_by_ip.get(r.ip, [])),
-                )
-            )
-        return IpGroupPage(items=items, total=int(total or 0))
-
     async def _page_details(
         self, scan_id: UUID, page_ips: list[str]
     ) -> tuple[dict[str, list], dict[str, set]]:
@@ -281,32 +241,24 @@ class IpAddressService:
         )
 
     @staticmethod
-    def _host_match(scan_id: UUID, d, like: str):
-        return exists(
-            select(1).where(
-                Subdomain.scan_id == scan_id,
-                Subdomain.name.ilike(like),
-                func.jsonb_exists(cast(Subdomain.resolved_ips, JSONB), d.c.ip),
-            )
-        )
-
-    @staticmethod
     def _port_exists(scan_id: UUID, d, cond):
         return exists(select(1).where(Port.scan_id == scan_id, Port.ip == d.c.ip, cond))
 
-    def _apply(self, q, d, f: IpGroupFilter, scan_id: UUID):  # noqa: PLR0912
-        if f.text:
-            like = f"%{f.text}%"
-            conds = [
-                d.c.ip.ilike(like),
-                d.c.asn_org.ilike(like),
-                cast(d.c.ptr_hostnames, Text).ilike(like),
-                self._host_match(scan_id, d, like),
-            ]
-            digits = f.text[2:] if f.text[:2].upper() == "AS" else f.text
-            if digits.isdigit():
-                conds.append(d.c.asn == int(digits))
-            q = q.where(or_(*conds))
+    @staticmethod
+    def _exposure(d, bucket: str):
+        if bucket == "open":
+            return d.c.port_count > 0
+        alive = d.c.is_alive.is_(True)
+        if bucket == "responding":
+            return and_(d.c.port_count == 0, alive)
+        if bucket == "quiet":
+            return and_(d.c.port_count == 0, not_(alive))
+        return None
+
+    def _apply_filter(self, q, d, f: IpGroupFilter, scan_id: UUID):
+        if f.exposure:
+            buckets = [self._exposure(d, b) for b in f.exposure]
+            q = q.where(or_(*[b for b in buckets if b is not None]))
         if f.asns:
             q = q.where(d.c.asn.in_(f.asns))
         if f.countries:
@@ -333,14 +285,6 @@ class IpAddressService:
             q = q.where(d.c.host_count > 0)
         if f.open:
             q = q.where(d.c.port_count > 0)
-        if f.host:
-            q = q.where(self._host_match(scan_id, d, f"%{f.host}%"))
-        if f.ptr:
-            q = q.where(cast(d.c.ptr_hostnames, Text).ilike(f"%{f.ptr}%"))
-        if f.org:
-            q = q.where(d.c.asn_org.ilike(f"%{f.org}%"))
-        if f.prefix:
-            q = q.where(d.c.prefix.ilike(f"%{f.prefix}%"))
         return q
 
     @staticmethod
@@ -349,35 +293,72 @@ class IpAddressService:
         col = {
             "hosts": d.c.host_count,
             "ports": d.c.port_count,
+            "assets": d.c.asset_count,
             "asn": d.c.asn,
             "country": d.c.country,
         }.get(f.sort, ip_num)
         primary = col.desc() if f.order == "desc" else col.asc()
         return q.order_by(primary.nulls_last(), ip_num.asc())
 
-    async def search(self, scan_id: UUID, f: IpGroupFilter) -> IpGroupPage:
+    def _scoped(self, scan_id: UUID, f: IpGroupFilter, columns=None):
         d = self._derived(scan_id)
-        q = self._apply(select(d), d, f, scan_id)
-        total = await self.session.scalar(
-            select(func.count()).select_from(q.subquery())
-        )
-        rows = (
-            (
-                await self.session.execute(
-                    self._order(q, d, f).limit(f.limit).offset(f.offset)
+        base = select(d) if columns is None else select(*columns(d))
+        return d, self._apply_filter(base, d, f, scan_id)
+
+    @staticmethod
+    def _context(scan_id: UUID, d, now: datetime) -> IpQueryContext:
+        return IpQueryContext(scan_id=scan_id, now=now, source=d)
+
+    async def search(self, scan_id: UUID, f: IpGroupFilter) -> IpGroupPage:
+        now = utc_now()
+        d, base = self._scoped(scan_id, f)
+        try:
+            predicate = compile_ip_query(
+                parse_query(f.q, IP_QUERY), self._context(scan_id, d, now)
+            )
+        except QuerySyntaxError as exc:
+            return IpGroupPage(
+                error=QueryError(
+                    message=exc.message, hint=exc.hint, start=exc.start, end=exc.end
                 )
             )
-            .mappings()
-            .all()
+        if predicate is not None:
+            base = base.where(predicate)
+
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        try:
+            counted = await self.session.scalar(
+                select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
+            )
+            rows = (
+                (
+                    await self.session.execute(
+                        self._order(base, d, f).limit(f.limit).offset(f.offset)
+                    )
+                )
+                .mappings()
+                .all()
+            )
+        except DBAPIError as exc:
+            await self.session.rollback()
+            rejected = query_error_for(exc)
+            if rejected is None:
+                raise
+            logger.info("address query rejected by postgres", error=str(exc.orig))
+            return IpGroupPage(error=rejected)
+
+        total = int(counted or 0)
+        capped = total > COUNT_CAP
+        page = IpGroupPage(
+            total=min(total, COUNT_CAP) if capped else total, total_capped=capped
         )
         page_ips = [r["ip"] for r in rows]
         if not page_ips:
-            return IpGroupPage(items=[], total=int(total or 0))
+            return page
         ports_by_ip, hosts_by_ip = await self._page_details(scan_id, page_ips)
-        items = []
         for r in rows:
             host_set = hosts_by_ip.get(r["ip"], set())
-            items.append(
+            page.items.append(
                 IpGroupRead(
                     ip=r["ip"],
                     version=r["version"],
@@ -397,11 +378,58 @@ class IpAddressService:
                     asset_count=int(r["asset_count"] or 0),
                 )
             )
-        return IpGroupPage(items=items, total=int(total or 0))
+        return page
+
+    async def leads(self, scan_id: UUID, f: IpGroupFilter) -> QueryLeads:
+        now = utc_now()
+        d, base = self._scoped(scan_id, f, columns=lambda d: (d.c.ip,))
+        ctx = self._context(scan_id, d, now)
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        try:
+            return await build_leads(
+                self.session,
+                base,
+                IP_QUERY.examples,
+                lambda q: compile_ip_query(parse_query(q, IP_QUERY), ctx),
+                filtered=f.has_facets(),
+            )
+        except DBAPIError as exc:
+            await self.session.rollback()
+            logger.info("address leads failed", error=str(exc.orig))
+            return QueryLeads()
+
+    async def groups(self, scan_id: UUID, f: IpGroupFilter, key: str) -> QueryGroups:
+        now = utc_now()
+        d, base = self._scoped(scan_id, f)
+        try:
+            predicate = compile_ip_query(
+                parse_query(f.q, IP_QUERY), self._context(scan_id, d, now)
+            )
+        except QuerySyntaxError:
+            return QueryGroups(dimension=key)
+        if predicate is not None:
+            base = base.where(predicate)
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        try:
+            return await build_ip_groups(self.session, base, key, scan_id)
+        except DBAPIError as exc:
+            await self.session.rollback()
+            logger.info("address groups failed", error=str(exc.orig))
+            return QueryGroups(dimension=key)
 
     async def facets(self, scan_id: UUID) -> IpFacets:
         d = self._derived(scan_id)
         n = func.count()
+        exposure_rows = (
+            await self.session.execute(
+                select(
+                    *[
+                        func.count().filter(self._exposure(d, bucket)).label(bucket)
+                        for bucket in IP_EXPOSURE
+                    ]
+                ).select_from(d)
+            )
+        ).one()
         asn_rows = (
             await self.session.execute(
                 select(d.c.asn, func.max(d.c.asn_org), n)
@@ -440,6 +468,10 @@ class IpAddressService:
             )
         ).all()
         return IpFacets(
+            exposure=[
+                Facet(value=bucket, label=label, count=int(exposure_rows[index]))
+                for index, (bucket, label) in enumerate(IP_EXPOSURE.items())
+            ],
             asn=[
                 Facet(
                     value=str(asn),

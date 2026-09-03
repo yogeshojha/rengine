@@ -21,8 +21,8 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import MatchChips from './match-chips.svelte';
-	import HighlightText from './highlight-text.svelte';
-	import OverflowPopover from './overflow-popover.svelte';
+	import HighlightText from '../table/highlight-text.svelte';
+	import OverflowPopover from '../table/overflow-popover.svelte';
 	import HostHoverCard from './host-hover-card.svelte';
 	import SamePagePopover from './same-page-popover.svelte';
 	import ScreenshotThumb from '../screenshot-thumb.svelte';
@@ -53,13 +53,13 @@
 	} from '$lib/utilities/scan-insights';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { SubdomainRead } from '$lib/types/subdomain';
-	import type { WebAssetColumn } from './columns';
+	import type { TableColumn } from '../table/columns';
 
 	interface Props {
 		sub: SubdomainRead;
 		index: number;
 		apex?: string;
-		columns: WebAssetColumn[];
+		columns: TableColumn[];
 		checked: boolean;
 		onCheck: (id: string) => void;
 		selected: boolean;

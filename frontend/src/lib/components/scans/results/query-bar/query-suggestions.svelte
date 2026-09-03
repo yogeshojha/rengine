@@ -14,6 +14,8 @@
 	import QueryExample from './query-example.svelte';
 
 	interface Props {
+		noun: string;
+		nounPlural: string;
 		suggestions: Suggestion[];
 		active: number;
 		recents: string[];
@@ -30,6 +32,8 @@
 	}
 
 	let {
+		noun,
+		nounPlural,
 		suggestions,
 		active,
 		recents,
@@ -109,7 +113,7 @@
 					{@render heading(counted ? 'Findings in this scan' : 'Suggested queries', counted)}
 					<div class="grid gap-1.5 px-1 pb-1 {columns}">
 						{#each shownExamples as example (example.query)}
-							<QueryExample {example} onPick={onQuery} />
+							<QueryExample {example} {noun} {nounPlural} onPick={onQuery} />
 						{/each}
 					</div>
 					{#if counted}

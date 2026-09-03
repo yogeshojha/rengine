@@ -1,7 +1,7 @@
 import { api } from './client';
 import type { HttpAssetDetail } from '$lib/types/http-asset';
-import type { IpGroupPage } from '$lib/utilities/scan-insights';
-import type { IpFacetSet, IpGroupFilter } from '$lib/utilities/ip-groups';
+import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
+import type { IpFacetSet, IpGroupFilter, IpSearchResult } from '$lib/utilities/ip-groups';
 
 export const httpAssetsApi = {
 	async detail(projectId: string, assetId: string): Promise<HttpAssetDetail> {
@@ -10,20 +10,30 @@ export const httpAssetsApi = {
 };
 
 export const ipsApi = {
+	async search(projectId: string, scanId: string, filter: IpGroupFilter): Promise<IpSearchResult> {
+		return api.post<IpSearchResult>(
+			`/ips/search?project_id=${projectId}&scan_id=${scanId}`,
+			filter
+		);
+	},
+
+	async leads(projectId: string, scanId: string, filter: IpGroupFilter): Promise<QueryLeads> {
+		return api.post<QueryLeads>(
+			`/ips/search/leads?project_id=${projectId}&scan_id=${scanId}`,
+			filter
+		);
+	},
+
 	async groups(
 		projectId: string,
 		scanId: string,
-		params: { search?: string; limit?: number; offset?: number } = {}
-	): Promise<IpGroupPage> {
-		const sp = new URLSearchParams({ project_id: projectId, scan_id: scanId });
-		if (params.search) sp.append('search', params.search);
-		if (params.limit != null) sp.append('limit', String(params.limit));
-		if (params.offset != null) sp.append('offset', String(params.offset));
-		return api.get<IpGroupPage>(`/ips/groups?${sp.toString()}`);
-	},
-
-	async search(projectId: string, scanId: string, filter: IpGroupFilter): Promise<IpGroupPage> {
-		return api.post<IpGroupPage>(`/ips/search?project_id=${projectId}&scan_id=${scanId}`, filter);
+		groupBy: string,
+		filter: IpGroupFilter
+	): Promise<QueryGroups> {
+		return api.post<QueryGroups>(
+			`/ips/search/groups?project_id=${projectId}&scan_id=${scanId}&group_by=${encodeURIComponent(groupBy)}`,
+			filter
+		);
 	},
 
 	async facets(projectId: string, scanId: string): Promise<IpFacetSet> {

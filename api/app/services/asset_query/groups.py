@@ -3,14 +3,16 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 from typing import Any
+from uuid import UUID
 
-from sqlalchemy import and_, case, cast, desc, func, select
+from sqlalchemy import Text, and_, case, cast, desc, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.asset_query import MAX_GROUPS
 from shared.models.asset_query import QueryGroup, QueryGroups
 from shared.models.http_asset import HttpAsset
+from shared.models.port import Port
 from shared.models.subdomain import Subdomain
 
 from . import predicates as preds
@@ -132,6 +134,73 @@ async def build_groups(session: AsyncSession, base, key: str) -> QueryGroups:
         groups=groups,
         total_groups=counted,
         truncated=counted > len(groups),
-        hosts=int(hosts or 0),
+        rows=int(hosts or 0),
+        covered=int(covered or 0),
+    )
+
+
+_IP_COLUMNS: dict[str, tuple[str, str, str]] = {
+    "asn": ("asn", "asn", ":"),
+    "org": ("asn_org", "org", "="),
+    "prefix": ("prefix", "prefix", "="),
+    "country": ("country", "country", "="),
+    "cdn": ("cdn_name", "cdn", "="),
+}
+_IP_PORT_COLUMNS: dict[str, tuple[Any, str, str]] = {
+    "port": (Port.number, "port", ":"),
+    "service": (Port.service_name, "service", "="),
+}
+
+
+async def build_ip_groups(
+    session: AsyncSession, base, key: str, scan_id: UUID
+) -> QueryGroups:
+    scoped = base.subquery()
+    joined = None
+    if key in _IP_COLUMNS:
+        attr, field, op = _IP_COLUMNS[key]
+        value = getattr(scoped.c, attr).label("value")
+        joined = select(value).select_from(scoped)
+    elif key in _IP_PORT_COLUMNS:
+        column, field, op = _IP_PORT_COLUMNS[key]
+        value = column.label("value")
+        joined = (
+            select(value)
+            .select_from(scoped)
+            .join(Port, and_(Port.scan_id == scan_id, Port.ip == scoped.c.ip))
+        )
+    if joined is None:
+        return QueryGroups(dimension=key)
+
+    addresses = func.count(func.distinct(scoped.c.ip))
+    joined = joined.add_columns(addresses.label("n")).where(
+        value.isnot(None), cast(value, Text) != ""
+    )
+    rows_in_scope = await session.scalar(select(func.count()).select_from(scoped))
+    covered, total = (
+        await session.execute(
+            joined.with_only_columns(addresses, func.count(func.distinct(value)))
+        )
+    ).one()
+    rows = await session.execute(
+        joined.group_by(value).order_by(desc("n"), value).limit(MAX_GROUPS)
+    )
+
+    groups = [
+        QueryGroup(
+            value=str(raw),
+            label=f"AS{raw}" if key == "asn" else str(raw),
+            count=int(n),
+            query=_token(field, op, str(raw)),
+        )
+        for raw, n in rows.all()
+    ]
+    counted = int(total or 0)
+    return QueryGroups(
+        dimension=key,
+        groups=groups,
+        total_groups=counted,
+        truncated=counted > len(groups),
+        rows=int(rows_in_scope or 0),
         covered=int(covered or 0),
     )

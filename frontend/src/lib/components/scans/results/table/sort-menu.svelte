@@ -5,17 +5,18 @@
 	import Check from '@lucide/svelte/icons/check';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { WEB_ASSET_SORTS } from '$lib/utilities/scan-insights';
+	import type { SortOption } from './columns';
 
 	interface Props {
+		sorts: SortOption[];
 		sortKey: string;
 		sortDir: 1 | -1;
 		onSort: (key: string) => void;
 	}
 
-	let { sortKey, sortDir, onSort }: Props = $props();
+	let { sorts, sortKey, sortDir, onSort }: Props = $props();
 
-	let activeLabel = $derived(WEB_ASSET_SORTS.find((s) => s.key === sortKey)?.label ?? 'Sort');
+	let activeLabel = $derived(sorts.find((s) => s.key === sortKey)?.label ?? 'Sort');
 </script>
 
 <DropdownMenu.Root>
@@ -35,7 +36,7 @@
 	<DropdownMenu.Content align="end" class="w-44">
 		<DropdownMenu.Label>Sort by</DropdownMenu.Label>
 		<DropdownMenu.Separator />
-		{#each WEB_ASSET_SORTS as s (s.key)}
+		{#each sorts as s (s.key)}
 			<DropdownMenu.Item
 				onSelect={(e) => {
 					e.preventDefault();

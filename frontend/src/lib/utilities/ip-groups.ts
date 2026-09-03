@@ -1,24 +1,16 @@
-import { unquote } from './query-lexer';
-import { tokenize } from './scan-insights';
-import type { Facet } from './scan-insights';
-
-export interface DslKey {
-	key: string;
-	hint: string;
-	values?: string[];
-	facet?: string;
-}
+import type { QueryError } from '$lib/types/asset-query';
+import type { Facet, IpGroupRead } from './scan-insights';
+import type { SortOption } from '$lib/components/scans/results/table/columns';
 
 export interface IpQuery {
 	search: string;
+	exposure: string[];
 	asn: string[];
 	country: string[];
 	port: string[];
 	service: string[];
 	cdn: 'any' | 'yes' | 'no';
-	aliveOnly: boolean;
 	hostedOnly: boolean;
-	openOnly: boolean;
 	sensitiveOnly: boolean;
 	version: 0 | 4 | 6;
 }
@@ -26,22 +18,21 @@ export interface IpQuery {
 export function emptyIpQuery(): IpQuery {
 	return {
 		search: '',
+		exposure: [],
 		asn: [],
 		country: [],
 		port: [],
 		service: [],
 		cdn: 'any',
-		aliveOnly: false,
 		hostedOnly: false,
-		openOnly: false,
 		sensitiveOnly: false,
 		version: 0
 	};
 }
 
-// mirror shared/models/scan_correlation.py
 export interface IpGroupFilter {
-	text: string | null;
+	q: string | null;
+	exposure: string[];
 	asns: number[];
 	countries: string[];
 	ports: number[];
@@ -52,52 +43,61 @@ export interface IpGroupFilter {
 	sensitive: boolean;
 	hosted: boolean;
 	open: boolean;
-	host: string | null;
-	ptr: string | null;
-	org: string | null;
-	prefix: string | null;
 	sort: string;
 	order: 'asc' | 'desc';
 	limit: number;
 	offset: number;
 }
 
+export interface IpSearchResult {
+	items: IpGroupRead[];
+	total: number;
+	total_capped: boolean;
+	error: QueryError | null;
+}
+
 export interface IpFacetSet {
+	exposure: Facet[];
 	asn: Facet[];
 	country: Facet[];
 	port: Facet[];
 	service: Facet[];
 }
 
-export const EMPTY_IP_FACETS: IpFacetSet = { asn: [], country: [], port: [], service: [] };
+export const EMPTY_IP_FACETS: IpFacetSet = {
+	exposure: [],
+	asn: [],
+	country: [],
+	port: [],
+	service: []
+};
 
-export const IP_DSL_KEYS: DslKey[] = [
-	{ key: 'asn', hint: 'Autonomous system', facet: 'asn' },
-	{ key: 'country', hint: 'Country', facet: 'country' },
-	{ key: 'port', hint: 'Open port', facet: 'port' },
-	{ key: 'service', hint: 'Port service', facet: 'service' },
-	{
-		key: 'is',
-		hint: 'IP property',
-		values: ['alive', 'cdn', 'hosted', 'open', 'sensitive', 'v4', 'v6']
-	},
-	{ key: 'cdn', hint: 'Fronted by a CDN', values: ['yes', 'no'] },
-	{ key: 'host', hint: 'Host name contains' },
-	{ key: 'org', hint: 'Network operator contains' },
-	{ key: 'ptr', hint: 'PTR record contains' },
-	{ key: 'prefix', hint: 'Announced prefix' }
+// mirrors shared/definitions/asset_query.py IP_EXPOSURE
+export const IP_EXPOSURE_TABS: { key: string; label: string }[] = [
+	{ key: 'all', label: 'All' },
+	{ key: 'open', label: 'Open ports' },
+	{ key: 'responding', label: 'Responding' },
+	{ key: 'quiet', label: 'No response' }
+];
+
+export const IP_SORTS: SortOption[] = [
+	{ key: 'hosts', label: 'Hosts' },
+	{ key: 'ports', label: 'Ports' },
+	{ key: 'ip', label: 'Address' },
+	{ key: 'asn', label: 'Network' },
+	{ key: 'country', label: 'Country' },
+	{ key: 'assets', label: 'Web services' }
 ];
 
 export function ipActiveFacetCount(q: IpQuery): number {
 	return (
+		q.exposure.length +
 		q.asn.length +
 		q.country.length +
 		q.port.length +
 		q.service.length +
 		(q.cdn !== 'any' ? 1 : 0) +
-		(q.aliveOnly ? 1 : 0) +
 		(q.hostedOnly ? 1 : 0) +
-		(q.openOnly ? 1 : 0) +
 		(q.sensitiveOnly ? 1 : 0) +
 		(q.version !== 0 ? 1 : 0)
 	);
@@ -131,12 +131,8 @@ export function ipQueryChips(q: IpQuery, facets: IpFacetSet): IpFilterChip[] {
 			label: q.cdn === 'yes' ? 'Behind CDN' : 'Not behind CDN',
 			remove: (x) => ({ ...x, cdn: 'any' })
 		});
-	if (q.aliveOnly)
-		chips.push({ id: 'alive', label: 'Responding', remove: (x) => ({ ...x, aliveOnly: false }) });
 	if (q.hostedOnly)
 		chips.push({ id: 'hosted', label: 'Has hosts', remove: (x) => ({ ...x, hostedOnly: false }) });
-	if (q.openOnly)
-		chips.push({ id: 'open', label: 'Open ports', remove: (x) => ({ ...x, openOnly: false }) });
 	if (q.sensitiveOnly)
 		chips.push({
 			id: 'sensitive',
@@ -148,8 +144,6 @@ export function ipQueryChips(q: IpQuery, facets: IpFacetSet): IpFilterChip[] {
 	return chips;
 }
 
-const uniq = <T>(a: T[]): T[] => a.filter((x, i) => a.indexOf(x) === i);
-
 export function compileIpQuery(
 	q: IpQuery,
 	sortKey: string,
@@ -157,89 +151,22 @@ export function compileIpQuery(
 	offset: number,
 	limit: number
 ): IpGroupFilter {
-	const f: IpGroupFilter = {
-		text: null,
+	return {
+		q: q.search.trim() || null,
+		exposure: [...q.exposure],
 		asns: q.asn.map(Number).filter((n) => !Number.isNaN(n)),
 		countries: [...q.country],
 		ports: q.port.map(Number).filter((n) => !Number.isNaN(n)),
 		services: [...q.service],
 		cdn: q.cdn,
-		alive: q.aliveOnly ? 'yes' : 'any',
+		alive: 'any',
 		version: q.version,
 		sensitive: q.sensitiveOnly,
 		hosted: q.hostedOnly,
-		open: q.openOnly,
-		host: null,
-		ptr: null,
-		org: null,
-		prefix: null,
+		open: false,
 		sort: sortKey,
 		order: dir === 1 ? 'asc' : 'desc',
 		limit,
 		offset
 	};
-	const words: string[] = [];
-	for (const part of tokenize(q.search)) {
-		const i = part.indexOf(':');
-		if (i <= 0) {
-			words.push(unquote(part));
-			continue;
-		}
-		const key = part.slice(0, i).toLowerCase();
-		const raw = unquote(part.slice(i + 1));
-		const v = raw.toLowerCase();
-		switch (key) {
-			case 'asn': {
-				const n = parseInt(v.replace(/^as/, ''), 10);
-				if (!Number.isNaN(n)) f.asns.push(n);
-				break;
-			}
-			case 'country':
-				f.countries.push(raw.toUpperCase());
-				break;
-			case 'port': {
-				const n = parseInt(v, 10);
-				if (!Number.isNaN(n)) f.ports.push(n);
-				break;
-			}
-			case 'service':
-				f.services.push(raw);
-				break;
-			case 'cdn':
-				f.cdn = /^(true|yes)$/.test(v) ? 'yes' : 'no';
-				break;
-			case 'is':
-				if (v === 'alive') f.alive = 'yes';
-				else if (v === 'cdn') f.cdn = 'yes';
-				else if (v === 'hosted') f.hosted = true;
-				else if (v === 'open') f.open = true;
-				else if (v === 'sensitive') f.sensitive = true;
-				else if (v === 'v4') f.version = 4;
-				else if (v === 'v6') f.version = 6;
-				break;
-			case 'host':
-				f.host = raw;
-				break;
-			case 'org':
-				f.org = raw;
-				break;
-			case 'ptr':
-				f.ptr = raw;
-				break;
-			case 'prefix':
-				f.prefix = raw;
-				break;
-			case 'ip':
-				words.push(raw);
-				break;
-			default:
-				words.push(part);
-		}
-	}
-	f.text = words.length ? words.join(' ') : null;
-	f.asns = uniq(f.asns);
-	f.countries = uniq(f.countries);
-	f.ports = uniq(f.ports);
-	f.services = uniq(f.services);
-	return f;
 }
