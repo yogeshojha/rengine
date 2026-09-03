@@ -92,26 +92,26 @@ _CERT_LABELS = {
 }
 _AUTH_RE = preds.AUTH_RE
 _REFRAME = {
-    "live": ("Live", "success"),
-    "redirect": ("Redirect", "info"),
-    "auth": ("Auth required", "warning"),
-    "error": ("Broken", "destructive"),
-    "none": ("No HTTP", "muted"),
+    "live": ("Responding (2xx)", "success"),
+    "redirect": ("Redirect (3xx)", "info"),
+    "auth": ("Authentication required", "warning"),
+    "error": ("Error response (4xx, 5xx)", "destructive"),
+    "none": ("No HTTP response", "muted"),
 }
 _REFRAME_ORDER = ["live", "redirect", "auth", "error", "none"]
 _EXPIRY = {
     "expired": ("Expired", "destructive"),
-    "d7": ("< 7 days", "destructive"),
-    "d30": ("< 30 days", "warning"),
-    "d90": ("< 90 days", "info"),
-    "ok": ("> 90 days", "success"),
+    "d7": ("Expires within 7 days", "destructive"),
+    "d30": ("Expires within 30 days", "warning"),
+    "d90": ("Expires within 90 days", "info"),
+    "ok": ("Valid beyond 90 days", "success"),
 }
 _EXPIRY_ORDER = ["expired", "d7", "d30", "d90", "ok"]
 _CLUSTER_REASON = {
-    "cert": "share a TLS certificate",
-    "favicon": "share a favicon hash",
-    "ip": "resolve to one IP",
-    "cname": "share a CNAME target",
+    "cert": "Shared TLS certificate",
+    "favicon": "Shared favicon hash",
+    "ip": "Shared IP address",
+    "cname": "Shared CNAME target",
 }
 _CLUSTER_MIN = 3
 _CLUSTER_LIMIT = 8
@@ -689,6 +689,11 @@ class SubdomainService:
                     func.count()
                     .filter(Subdomain.screenshot_path.isnot(None))
                     .label("shots"),
+                    func.count()
+                    .filter(
+                        func.jsonb_array_length(cast(Subdomain.sources, JSONB)) == 1
+                    )
+                    .label("single_source"),
                     func.count().filter(Subdomain.is_cdn.is_(True)).label("cdn"),
                     func.count().filter(Subdomain.waf.isnot(None)).label("waf"),
                     func.count()
@@ -781,36 +786,49 @@ class SubdomainService:
         ]
 
         raw_attention = [
-            ("expired", "Expired certs", counts.expired, "cert:expired", "destructive"),
+            (
+                "expired",
+                "Expired certificates",
+                counts.expired,
+                "cert:expired",
+                "destructive",
+            ),
+            (
+                "takeover",
+                "Dangling CNAME records",
+                counts.cname_only,
+                "cname:. and not is:resolved",
+                "destructive",
+            ),
             (
                 "expiring",
-                "Certs expiring <30d",
+                "Certificates expiring within 30 days",
                 counts.expiring,
                 "cert:expiring",
                 "warning",
             ),
             (
                 "selfsigned",
-                "Self-signed certs",
+                "Self-signed certificates",
                 counts.self_signed,
                 "cert:self-signed",
                 "warning",
             ),
             (
                 "nowaf",
-                "Live hosts, no WAF",
+                "Live hosts without a CDN or WAF",
                 counts.nowaf,
-                "is:live waf:none",
+                "is:live waf:none cdn:no",
                 "warning",
             ),
             (
                 "server",
-                "Server errors (5xx)",
+                "Hosts returning server errors",
                 counts.server_err,
                 "status:5xx",
                 "destructive",
             ),
-            ("auth", "Auth / login panels", counts.auth, "is:auth", "warning"),
+            ("auth", "Login or admin panels", counts.auth, "is:auth", "warning"),
             (
                 "sensitive",
                 "Exposed sensitive services",
@@ -957,13 +975,13 @@ class SubdomainService:
             for v, c in ip_cluster_rows.all()
         ]
         cert_cluster_rows = await self.session.execute(
-            select(HttpAsset.tls_fingerprint, func.count(distinct(HttpAsset.host)))
+            select(HttpAsset.tls_subject_cn, func.count(distinct(HttpAsset.host)))
             .where(
                 HttpAsset.project_id == project_id,
                 HttpAsset.scan_id == scan_id,
-                HttpAsset.tls_fingerprint.isnot(None),
+                HttpAsset.tls_subject_cn.isnot(None),
             )
-            .group_by(HttpAsset.tls_fingerprint)
+            .group_by(HttpAsset.tls_subject_cn)
             .having(func.count(distinct(HttpAsset.host)) >= _CLUSTER_MIN)
             .order_by(func.count(distinct(HttpAsset.host)).desc())
             .limit(_CLUSTER_LIMIT)
@@ -978,6 +996,7 @@ class SubdomainService:
             surface=surface,
             attention=attention,
             sources=sources,
+            single_source=counts.single_source,
             resolution=resolution,
             status_reframe=status_reframe,
             cert_buckets=cert_buckets,

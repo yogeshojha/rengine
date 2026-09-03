@@ -14,7 +14,6 @@
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Server from '@lucide/svelte/icons/server';
-	import Workflow from '@lucide/svelte/icons/workflow';
 
 	import { scansApi } from '$lib/api/scans';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -34,8 +33,6 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
-	import ScanActivityTimeline from '$lib/components/scans/scan-activity-timeline.svelte';
-	import ScanCommandLog from '$lib/components/scans/scan-command-log.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
@@ -58,13 +55,12 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { NOW_TICK_MS } from '$lib/constants';
 
-	const TABS = ['overview', 'web-assets', 'ips', 'pipeline'] as const;
+	const TABS = ['overview', 'web-assets', 'ips'] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
 		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
 		{ key: 'web-assets', label: 'Web Assets', icon: Globe },
-		{ key: 'ips', label: 'IPs', icon: Server },
-		{ key: 'pipeline', label: 'Pipeline', icon: Workflow }
+		{ key: 'ips', label: 'IPs', icon: Server }
 	];
 	const HISTORY_SIZE = 12;
 	const STATUS_TEXT: Record<string, string> = {
@@ -188,8 +184,7 @@
 	let tabCounts = $derived<Record<TabKey, number | null>>({
 		overview: null,
 		'web-assets': scan?.subdomains_found ?? 0,
-		ips: ipsTotal ?? scan?.ips_found ?? 0,
-		pipeline: null
+		ips: ipsTotal ?? scan?.ips_found ?? 0
 	});
 	let timing = $derived.by(() => {
 		if (!scan) return '';
@@ -478,6 +473,7 @@
 						scanId={scan.id}
 						{projectId}
 						{activities}
+						{commands}
 						{history}
 						{historyLoaded}
 						{previous}
@@ -515,28 +511,9 @@
 					/>
 				{/key}
 			</Tabs.Content>
-
-			<Tabs.Content value="pipeline" class="mt-6 space-y-4">
-				{#if activities.length}
-					<ScanActivityTimeline {activities} />
-				{:else}
-					{@render emptyTab('No pipeline activity recorded yet.')}
-				{/if}
-				{#if commands.length}
-					<ScanCommandLog {scanId} {projectId} {commands} />
-				{/if}
-			</Tabs.Content>
 		</Tabs.Root>
 	{/if}
 </div>
-
-{#snippet emptyTab(message: string)}
-	<p
-		class="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground"
-	>
-		{message}
-	</p>
-{/snippet}
 
 {#if scan}
 	<LaunchModal

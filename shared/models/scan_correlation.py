@@ -46,6 +46,7 @@ class SubdomainInsights(BaseModel):
     surface: list[SurfaceStat] = Field(default_factory=list)
     attention: list[AttentionItem] = Field(default_factory=list)
     sources: list[Tally] = Field(default_factory=list)
+    single_source: int = 0
     resolution: list[Bucket] = Field(default_factory=list)
     status_reframe: list[Bucket] = Field(default_factory=list)
     cert_buckets: list[Bucket] = Field(default_factory=list)

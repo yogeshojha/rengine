@@ -80,7 +80,6 @@ export interface FilterChip {
 	remove: (q: WebAssetQuery) => WebAssetQuery;
 }
 
-// mirrors api/app/services/subdomain.py _STATUS_LABELS
 export const STATUS_CLASS_TABS: { key: string; label: string }[] = [
 	{ key: 'all', label: 'All' },
 	{ key: '2xx', label: '2xx OK' },
@@ -173,7 +172,6 @@ export function appendToken(search: string, token: string): string {
 	return [...parts, token].join(' ');
 }
 
-// mirror api/app/services/subdomain.py + ip_address.py
 export interface Facet {
 	value: string;
 	label: string;
@@ -272,6 +270,7 @@ export interface SubdomainInsights {
 	surface: InsightStat[];
 	attention: InsightAttention[];
 	sources: InsightTally[];
+	single_source: number;
 	resolution: InsightBucket[];
 	status_reframe: InsightBucket[];
 	cert_buckets: InsightBucket[];

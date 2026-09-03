@@ -5,14 +5,16 @@
 	import * as Chart from '$lib/components/ui/chart';
 	import { cn } from '$lib/utils.js';
 
-	let { values, class: className }: { values: number[]; class?: string } = $props();
+	let {
+		values,
+		label = 'Subdomains',
+		class: className
+	}: { values: number[]; label?: string; class?: string } = $props();
 
 	let data = $derived(values.map((v, i) => ({ i: String(i), v })));
 
-	const config = {
-		v: { label: 'Subdomains', color: 'var(--chart-1)' }
-	} satisfies Chart.ChartConfig;
-	const series = [{ key: 'v', label: 'Subdomains', color: 'var(--chart-1)' }];
+	let config = $derived({ v: { label, color: 'var(--chart-1)' } } satisfies Chart.ChartConfig);
+	let series = $derived([{ key: 'v', label, color: 'var(--chart-1)' }]);
 	const stops = [
 		'color-mix(in oklab, var(--chart-1) 30%, transparent)',
 		'color-mix(in oklab, var(--chart-1) 2%, transparent)'

@@ -54,8 +54,8 @@ export function etaLabel(
 ): string | null {
 	if (previousSeconds == null || elapsedSeconds == null) return null;
 	const remaining = previousSeconds - elapsedSeconds;
-	if (remaining > 0) return `~${formatSeconds(remaining)} left`;
-	return `past last run (${formatSeconds(previousSeconds)})`;
+	if (remaining > 0) return `${formatSeconds(remaining)} remaining`;
+	return `previous run took ${formatSeconds(previousSeconds)}`;
 }
 
 export function stageProgress(
