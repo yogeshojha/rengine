@@ -9,5 +9,12 @@ export const STORAGE_KEYS = {
 	engineSideTab: 'rengine:engine:sideTab',
 	contextSplit: 'rengine:context:split',
 	activityPinned: 'rengine:activity:pinned',
-	activityGrouping: 'rengine:activity:grouping'
+	activityGrouping: 'rengine:activity:grouping',
+	webAssetsView: 'rengine:webassets:view',
+	webAssetsColumns: 'rengine:webassets:columns',
+	webAssetsDensity: 'rengine:webassets:density',
+	webAssetsPageSize: 'rengine:webassets:pageSize',
+	ipsColumns: 'rengine:ips:columns',
+	ipsDensity: 'rengine:ips:density',
+	ipsPageSize: 'rengine:ips:pageSize'
 } as const;

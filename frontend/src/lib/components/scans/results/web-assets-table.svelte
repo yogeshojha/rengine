@@ -1,55 +1,77 @@
 <script lang="ts">
-	import Search from '@lucide/svelte/icons/search';
+	import { page as appPage } from '$app/state';
+	import { replaceState } from '$app/navigation';
+	import { untrack } from 'svelte';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { toast } from 'svelte-sonner';
 	import Star from '@lucide/svelte/icons/star';
-	import Columns3 from '@lucide/svelte/icons/columns-3';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
-	import ChevronRight from '@lucide/svelte/icons/chevron-right';
-	import ImageOff from '@lucide/svelte/icons/image-off';
-	import X from '@lucide/svelte/icons/x';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import Copy from '@lucide/svelte/icons/copy';
+	import Link from '@lucide/svelte/icons/link';
+	import Filter from '@lucide/svelte/icons/filter';
+	import CornerDownRight from '@lucide/svelte/icons/corner-down-right';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import Globe from '@lucide/svelte/icons/globe';
 
 	import * as Table from '$lib/components/ui/table';
-	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Input } from '$lib/components/ui/input';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Separator } from '$lib/components/ui/separator';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import * as Empty from '$lib/components/ui/empty';
+	import EmptyState from '$lib/components/empty-state.svelte';
 
+	import SearchBar from './web-assets/search-bar.svelte';
+	import FilterBar, { type ColumnDef } from './web-assets/filter-bar.svelte';
+	import OverflowPopover from './web-assets/overflow-popover.svelte';
+	import HostHoverCard from './web-assets/host-hover-card.svelte';
+	import AssetGallery from './web-assets/asset-gallery.svelte';
+	import ResultsPagination from './web-assets/results-pagination.svelte';
+	import SamePagePopover from './web-assets/same-page-popover.svelte';
 	import ScreenshotThumb from './screenshot-thumb.svelte';
-	import TechBadges from './tech-badges.svelte';
-	import FacetedFilter from './faceted-filter.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
 
 	import { subdomainsApi } from '$lib/api/subdomains';
+	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import {
+		providerFor,
+		PROVIDER_KIND_ICONS,
+		PROVIDER_KIND_LABELS
+	} from '$lib/config/hosting-providers';
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import {
 		formatBytes,
 		formatResponseTime,
+		httpStatusClass,
+		httpStatusReason,
 		httpStatusTextClass,
-		isSensitivePort
+		isSensitivePort,
+		STATUS_DOT
 	} from '$lib/utilities/scan-correlation';
 	import {
+		appendToken,
+		exactToken,
 		certState,
 		daysUntilExpiry,
 		activeFacetCount,
 		emptyQuery,
 		compileQuery,
+		DSL_KEYS,
 		type WebAssetQuery,
 		type SubdomainFacetSet
 	} from '$lib/utilities/scan-insights';
 	import {
-		RESULTS_PAGE_SIZE as PAGE_SIZE,
+		RESULTS_PAGE_SIZE,
 		SEARCH_DEBOUNCE_MS,
 		RESULTS_SCROLL
 	} from '$lib/utilities/scan-status';
+	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
+	import { writeClipboard } from '$lib/utilities/clipboard';
 
 	interface Props {
 		scanId: string;
@@ -60,25 +82,28 @@
 
 	let { scanId, projectId, active = true, query = $bindable(emptyQuery()) }: Props = $props();
 
-	let seen = $state(false);
-	$effect(() => {
-		if (active) seen = true;
-	});
-
-	const TOGGLE_COLS = [
-		{ key: 'screenshot', label: 'Screenshot' },
-		{ key: 'status', label: 'Status' },
-		{ key: 'title', label: 'Title' },
+	interface Column extends ColumnDef {
+		sort?: string;
+		align?: 'right';
+		width?: string;
+	}
+	const COLUMNS: Column[] = [
+		{ key: 'screenshot', label: 'Screenshot', width: 'w-20' },
+		{ key: 'status', label: 'Status', sort: 'status', width: 'w-28' },
+		{ key: 'title', label: 'Title', sort: 'title' },
 		{ key: 'tech', label: 'Tech' },
-		{ key: 'ip', label: 'IP / CDN' },
+		{ key: 'ip', label: 'IP / CDN', sort: 'ip' },
 		{ key: 'ports', label: 'Ports' },
+		{ key: 'cert', label: 'Cert', sort: 'cert', width: 'w-24' },
 		{ key: 'waf', label: 'WAF' },
-		{ key: 'cert', label: 'Cert' },
 		{ key: 'asn', label: 'Network' },
 		{ key: 'sources', label: 'Sources' },
-		{ key: 'size', label: 'Size' },
-		{ key: 'time', label: 'Time' }
+		{ key: 'discovered', label: 'Found', sort: 'discovered', width: 'w-24' },
+		{ key: 'size', label: 'Size', sort: 'size', align: 'right', width: 'w-20' },
+		{ key: 'time', label: 'Time', sort: 'time', align: 'right', width: 'w-20' }
 	];
+	const DEFAULT_VISIBLE = ['status', 'title', 'tech', 'ip', 'ports', 'cert', 'size', 'time'];
+	const DEFAULT_SORT = { key: 'status', dir: 1 as const };
 	const EMPTY_FACETS: SubdomainFacetSet = {
 		status: [],
 		tech: [],
@@ -86,21 +111,46 @@
 		source: [],
 		cert: []
 	};
+	const MAX_TECH = 2;
+	const MAX_PORTS = 3;
+	const MAX_SOURCES = 2;
 
-	let visible = $state<string[]>([
-		'screenshot',
-		'status',
-		'title',
-		'tech',
-		'ip',
-		'ports',
-		'size',
-		'time'
-	]);
-	let view = $state('table');
-	let density = $state('compact');
-	let sort = $state<{ key: string; dir: 1 | -1 }>({ key: 'name', dir: 1 });
-	let page = $state(0);
+	function readPref<T>(key: string, fallback: T): T {
+		try {
+			const raw = localStorage.getItem(key);
+			return raw ? (JSON.parse(raw) as T) : fallback;
+		} catch {
+			return fallback;
+		}
+	}
+	function writePref(key: string, value: unknown) {
+		try {
+			localStorage.setItem(key, JSON.stringify(value));
+		} catch {
+			// storage is a convenience
+		}
+	}
+
+	let seen = $state(false);
+	$effect(() => {
+		if (active) seen = true;
+	});
+
+	const initial = appPage.url.searchParams;
+	const initialSort = initial.get('sort')?.split(':') ?? [];
+	let pendingAsset = initial.get('asset');
+
+	let visible = $state<string[]>(readPref(STORAGE_KEYS.webAssetsColumns, DEFAULT_VISIBLE));
+	let view = $state<string>(initial.get('view') === 'gallery' ? 'gallery' : 'table');
+	let density = $state<string>(readPref(STORAGE_KEYS.webAssetsDensity, 'compact'));
+	let pageSize = $state<number>(readPref(STORAGE_KEYS.webAssetsPageSize, RESULTS_PAGE_SIZE));
+	let onlyShots = $state(true);
+	let sort = $state<{ key: string; dir: 1 | -1 }>(
+		initialSort[0]
+			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
+			: { ...DEFAULT_SORT }
+	);
+	let pageIndex = $state(Math.max(0, Number(initial.get('page') ?? 1) - 1));
 
 	let items = $state<SubdomainRead[]>([]);
 	let total = $state(0);
@@ -110,21 +160,39 @@
 
 	let selected = $state<SubdomainRead | null>(null);
 	let drawerOpen = $state(false);
+	let cursor = $state(-1);
+	let searchRef = $state<HTMLInputElement | null>(null);
+	let pendingSelect: 'first' | 'last' | null = null;
 
 	let scanTotal = $derived(facets.status.reduce((n, f) => n + f.count, 0));
-	let pageCount = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
-	let selectedIndex = $derived(selected ? items.findIndex((s) => s.name === selected?.name) : -1);
+	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
+	let selectedIndex = $derived(selected ? items.findIndex((s) => s.id === selected?.id) : -1);
+	let shownColumns = $derived(COLUMNS.filter((c) => visible.includes(c.key)));
+	let filtered = $derived(activeFacetCount(query) > 0 || !!query.search);
+	let stripe = $derived(
+		density === 'compact'
+			? '[&_td]:h-12 [&_td]:py-2 [&_td]:align-top'
+			: '[&_td]:h-16 [&_td]:py-3.5 [&_td]:align-top'
+	);
+
+	$effect(() => writePref(STORAGE_KEYS.webAssetsColumns, visible));
+	$effect(() => writePref(STORAGE_KEYS.webAssetsDensity, density));
+	$effect(() => writePref(STORAGE_KEYS.webAssetsPageSize, pageSize));
+
+	const initialSearch = initial.get('q');
+	if (initialSearch) query = { ...query, search: initialSearch };
 
 	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let lastSig = '';
 
 	async function runSearch() {
-		const filter = compileQuery(query, sort.key, sort.dir, page * PAGE_SIZE, PAGE_SIZE);
+		const q = view === 'gallery' && onlyShots ? { ...query, hasScreenshot: true } : query;
+		const filter = compileQuery(q, sort.key, sort.dir, pageIndex * pageSize, pageSize);
 		const sig = JSON.stringify({ ...filter, offset: 0 });
-		if (sig !== lastSig && page !== 0) {
+		if (sig !== lastSig && pageIndex !== 0 && !pendingSelect) {
 			lastSig = sig;
-			page = 0;
+			pageIndex = 0;
 			return;
 		}
 		lastSig = sig;
@@ -132,10 +200,19 @@
 		loading = true;
 		try {
 			const res = await subdomainsApi.search(projectId, scanId, filter);
-			if (my === reqId) {
-				items = res.items;
-				total = res.total;
-				errored = false;
+			if (my !== reqId) return;
+			items = res.items;
+			total = res.total;
+			errored = false;
+			if (pendingSelect) {
+				selected = pendingSelect === 'first' ? (items[0] ?? null) : (items.at(-1) ?? null);
+				pendingSelect = null;
+			} else if (pendingAsset) {
+				const name = pendingAsset;
+				pendingAsset = null;
+				const hit = items.find((s) => s.name === name);
+				if (hit) open(hit);
+				else openHost(name);
 			}
 		} catch {
 			if (my === reqId) {
@@ -152,7 +229,10 @@
 		void JSON.stringify(query);
 		void sort.key;
 		void sort.dir;
-		void page;
+		void pageIndex;
+		void pageSize;
+		void view;
+		void onlyShots;
 		void scanId;
 		void projectId;
 		if (!seen) return;
@@ -173,274 +253,233 @@
 			.catch(() => (facets = EMPTY_FACETS));
 	});
 
+	function syncUrl() {
+		try {
+			const sp = new SvelteURLSearchParams(location.search);
+			const set = (k: string, v: string | null) => (v ? sp.set(k, v) : sp.delete(k));
+			set('q', query.search || null);
+			set('view', view === 'gallery' ? 'gallery' : null);
+			set('page', pageIndex > 0 ? String(pageIndex + 1) : null);
+			set(
+				'sort',
+				sort.key !== DEFAULT_SORT.key || sort.dir !== DEFAULT_SORT.dir
+					? `${sort.key}:${sort.dir === 1 ? 'asc' : 'desc'}`
+					: null
+			);
+			set('asset', drawerOpen && selected ? selected.name : null);
+			const qs = sp.toString();
+			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
+		} catch {
+			// URL state is best-effort
+		}
+	}
+	$effect(() => {
+		void query.search;
+		void view;
+		void pageIndex;
+		void sort.key;
+		void sort.dir;
+		void drawerOpen;
+		void selected?.name;
+		if (!seen || !active) return;
+		untrack(syncUrl);
+	});
+
 	function open(s: SubdomainRead) {
 		selected = s;
 		drawerOpen = true;
 	}
+	async function openHost(name: string) {
+		const hit = items.find((s) => s.name === name);
+		if (hit) return open(hit);
+		try {
+			const res = await subdomainsApi.search(
+				projectId,
+				scanId,
+				compileQuery({ ...emptyQuery(), search: `name:${name}` }, 'name', 1, 0, 5)
+			);
+			const exact = res.items.find((s) => s.name === name);
+			if (exact) open(exact);
+			else toast.error('Host not found in this scan');
+		} catch {
+			toast.error('Could not load host');
+		}
+	}
 	function step(dir: -1 | 1) {
 		const next = selectedIndex + dir;
-		if (next >= 0 && next < items.length) selected = items[next];
+		if (next >= 0 && next < items.length) {
+			selected = items[next];
+			return;
+		}
+		if (dir === 1 && pageIndex < pageCount - 1) {
+			pendingSelect = 'first';
+			pageIndex += 1;
+		} else if (dir === -1 && pageIndex > 0) {
+			pendingSelect = 'last';
+			pageIndex -= 1;
+		}
 	}
 	function toggleSort(key: string) {
 		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
-		page = 0;
+		pageIndex = 0;
 	}
 	function toggleCol(key: string) {
 		visible = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 	}
-	function setFacet<K extends keyof WebAssetQuery>(key: K, value: WebAssetQuery[K]) {
-		query = { ...query, [key]: value };
-		page = 0;
+	function setQuery(q: WebAssetQuery) {
+		query = q;
+		pageIndex = 0;
 	}
-	function statusLabel(code: number | null): string {
-		return code == null ? '—' : String(code);
+	function applyDsl(token: string) {
+		setQuery({ ...query, search: appendToken(query.search, token) });
+		drawerOpen = false;
 	}
+	function hostsWithTitle(title: string): Promise<string[]> {
+		return subdomainsApi
+			.search(
+				projectId,
+				scanId,
+				compileQuery({ ...emptyQuery(), search: exactToken('title', title) }, 'name', 1, 0, 50)
+			)
+			.then((r) => r.items.map((i) => i.name));
+	}
+	async function copy(text: string, label = 'Copied') {
+		if (await writeClipboard(text)) toast.success(label);
+	}
+	function scrollCursor() {
+		document.querySelector(`[data-row-index="${cursor}"]`)?.scrollIntoView({ block: 'nearest' });
+	}
+	function onKey(e: KeyboardEvent) {
+		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
+		const t = e.target as HTMLElement | null;
+		const typing =
+			!!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+		if (e.key === '/' && !typing) {
+			e.preventDefault();
+			searchRef?.focus();
+			return;
+		}
+		if (typing || drawerOpen || view !== 'table' || !items.length) return;
+		if (e.key === 'j' || e.key === 'ArrowDown') {
+			e.preventDefault();
+			cursor = Math.min(cursor + 1, items.length - 1);
+			scrollCursor();
+		} else if (e.key === 'k' || e.key === 'ArrowUp') {
+			e.preventDefault();
+			cursor = Math.max(cursor - 1, 0);
+			scrollCursor();
+		} else if (e.key === 'Enter' && cursor >= 0 && items[cursor]) {
+			open(items[cursor]);
+		} else if (e.key === 'Escape') {
+			cursor = -1;
+		}
+	}
+	const stop = (e: Event) => e.stopPropagation();
 </script>
 
+<svelte:window onkeydown={onKey} />
+
 <div class="flex flex-col gap-3">
-	<div class="mx-auto flex w-full max-w-2xl items-center gap-2">
-		<div class="relative flex-1">
-			<Search
-				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-			/>
-			<Input
-				value={query.search}
-				oninput={(e) => setFacet('search', e.currentTarget.value)}
-				placeholder="Search or filter — try  status:200 tech:nginx waf:none  ·  is:live"
-				class="h-10 pl-9 font-mono text-sm"
-			/>
-			{#if query.search}
-				<Button
-					variant="ghost"
-					size="icon"
-					class="absolute top-1/2 right-1 size-7 -translate-y-1/2"
-					onclick={() => setFacet('search', '')}
-					aria-label="Clear search"
-				>
-					<X class="size-3.5" />
-				</Button>
-			{/if}
-		</div>
+	<div class="mx-auto w-full max-w-3xl">
+		<SearchBar
+			bind:ref={searchRef}
+			value={query.search}
+			keys={DSL_KEYS}
+			values={facets}
+			placeholder="Search hosts, titles, IPs — or filter with status:2xx tech:nginx is:live"
+			onChange={(v) => setQuery({ ...query, search: v })}
+		/>
 	</div>
 
-	<div class="flex flex-wrap items-center gap-2">
-		<FacetedFilter
-			title="Status"
-			options={facets.status}
-			selected={query.status}
-			onChange={(v) => setFacet('status', v)}
-		/>
-		<FacetedFilter
-			title="Tech"
-			options={facets.tech}
-			selected={query.tech}
-			onChange={(v) => setFacet('tech', v)}
-		/>
-		<FacetedFilter
-			title="Service"
-			options={facets.service}
-			selected={query.service}
-			onChange={(v) => setFacet('service', v)}
-		/>
-		{#if facets.cert.length}
-			<FacetedFilter
-				title="Cert"
-				options={facets.cert}
-				selected={query.cert}
-				onChange={(v) => setFacet('cert', v)}
-			/>
-		{/if}
-		<FacetedFilter
-			title="Source"
-			options={facets.source}
-			selected={query.source}
-			onChange={(v) => setFacet('source', v)}
-		/>
-
-		<Separator orientation="vertical" class="mx-0.5 h-5" />
-		<Button
-			variant={query.liveOnly ? 'secondary' : 'outline'}
-			size="sm"
-			class="h-8"
-			onclick={() => setFacet('liveOnly', !query.liveOnly)}>Live</Button
-		>
-		<Button
-			variant={query.hasScreenshot ? 'secondary' : 'outline'}
-			size="sm"
-			class="h-8"
-			onclick={() => setFacet('hasScreenshot', !query.hasScreenshot)}>Screenshot</Button
-		>
-		<Button
-			variant={query.waf === 'none' ? 'secondary' : 'outline'}
-			size="sm"
-			class="h-8"
-			onclick={() => setFacet('waf', query.waf === 'none' ? 'any' : 'none')}>No WAF</Button
-		>
-		<Button
-			variant={query.issuesOnly ? 'secondary' : 'outline'}
-			size="sm"
-			class="h-8"
-			onclick={() => setFacet('issuesOnly', !query.issuesOnly)}>Issues</Button
-		>
-
-		{#if activeFacetCount(query) > 0 || query.search}
-			<Button
-				variant="ghost"
-				size="sm"
-				class="h-8 text-muted-foreground"
-				onclick={() => (query = emptyQuery())}
-			>
-				Reset <X data-icon="inline-end" />
-			</Button>
-		{/if}
-
-		<div class="ml-auto flex items-center gap-2">
-			<span class="text-xs tabular-nums text-muted-foreground">
-				{total.toLocaleString()}{scanTotal ? ` of ${scanTotal.toLocaleString()}` : ''}
-			</span>
-			<ToggleGroup.Root type="single" bind:value={view} variant="outline" size="sm">
-				<ToggleGroup.Item value="table" class="text-xs">Table</ToggleGroup.Item>
-				<ToggleGroup.Item value="gallery" class="text-xs">Gallery</ToggleGroup.Item>
-			</ToggleGroup.Root>
-			{#if view === 'table'}
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						{#snippet child({ props })}
-							<Button variant="outline" size="sm" class="h-8" {...props}>
-								<Columns3 data-icon="inline-start" /> Columns
-							</Button>
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-40">
-						<DropdownMenu.Label>Toggle columns</DropdownMenu.Label>
-						<DropdownMenu.Separator />
-						{#each TOGGLE_COLS as col (col.key)}
-							<DropdownMenu.CheckboxItem
-								checked={visible.includes(col.key)}
-								onCheckedChange={() => toggleCol(col.key)}
-							>
-								{col.label}
-							</DropdownMenu.CheckboxItem>
-						{/each}
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-				<ToggleGroup.Root type="single" bind:value={density} variant="outline" size="sm">
-					<ToggleGroup.Item value="compact" class="text-xs">Compact</ToggleGroup.Item>
-					<ToggleGroup.Item value="cozy" class="text-xs">Cozy</ToggleGroup.Item>
-				</ToggleGroup.Root>
-			{/if}
-		</div>
-	</div>
+	<FilterBar
+		{query}
+		{facets}
+		onQuery={setQuery}
+		{total}
+		{scanTotal}
+		{view}
+		onView={(v) => {
+			view = v;
+			pageIndex = 0;
+		}}
+		columns={COLUMNS}
+		{visible}
+		onToggleColumn={toggleCol}
+		{density}
+		onDensity={(d) => (density = d)}
+		{onlyShots}
+		onOnlyShots={(v) => {
+			onlyShots = v;
+			pageIndex = 0;
+		}}
+	/>
 
 	{#if loading && items.length === 0}
 		<div class="flex flex-col gap-2">
 			{#each Array(8) as _, i (i)}
-				<Skeleton class="h-9 w-full" />
+				<Skeleton class="h-12 w-full" />
 			{/each}
 		</div>
 	{:else if errored}
-		<Empty.Root class="rounded-lg border border-dashed py-16">
-			<Empty.Header>
-				<Empty.Media variant="icon"><TriangleAlert /></Empty.Media>
-				<Empty.Title class="text-sm">Couldn't load web assets</Empty.Title>
-				<Empty.Description>The request failed. Retry or adjust the filters.</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<Button size="sm" variant="outline" onclick={runSearch}>Retry</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState icon={TriangleAlert} title="Web assets could not be loaded">
+			<Button size="sm" variant="outline" onclick={runSearch}>Retry</Button>
+		</EmptyState>
 	{:else if items.length === 0}
-		<Empty.Root class="rounded-lg border border-dashed py-16">
-			<Empty.Header>
-				{#if activeFacetCount(query) === 0 && !query.search}
-					<Empty.Title class="text-sm">No web assets discovered yet</Empty.Title>
-					<Empty.Description>Nothing has been probed for this scan so far.</Empty.Description>
-				{:else}
-					<Empty.Title class="text-sm">No matching hosts</Empty.Title>
-					<Empty.Description>Adjust the search or filters to widen results.</Empty.Description>
-				{/if}
-			</Empty.Header>
-		</Empty.Root>
-	{:else if view === 'gallery'}
-		<ScrollArea class={RESULTS_SCROLL}>
-			<div
-				class="grid grid-cols-2 gap-3 transition-opacity sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 {loading
-					? 'opacity-60'
-					: ''}"
+		{#if filtered || (view === 'gallery' && onlyShots)}
+			<EmptyState
+				icon={SearchX}
+				title="No hosts match"
+				description="Widen the search or remove a filter."
 			>
-				{#each items as s (s.id)}
-					<button
-						type="button"
-						class="group flex flex-col overflow-hidden rounded-lg border text-left transition-colors hover:border-foreground/30"
-						onclick={() => open(s)}
-					>
-						{#if s.screenshot_path}
-							<ScreenshotThumb
-								path={s.screenshot_path}
-								alt={s.name}
-								class="aspect-video w-full"
-								interactive={false}
-							/>
-						{:else}
-							<div
-								class="flex aspect-video w-full items-center justify-center bg-muted/40 text-muted-foreground"
-							>
-								<ImageOff class="size-6" />
-							</div>
-						{/if}
-						<div class="flex flex-col gap-1 p-2">
-							<div class="flex items-center gap-1.5">
-								<Badge
-									variant="outline"
-									class="font-mono text-[10px] {httpStatusTextClass(s.http_status)}"
-								>
-									{statusLabel(s.http_status)}
-								</Badge>
-								<span class="truncate font-mono text-xs">{s.name}</span>
-							</div>
-							{#if s.page_title}<span class="truncate text-[11px] text-muted-foreground"
-									>{s.page_title}</span
-								>{/if}
-						</div>
-					</button>
-				{/each}
-			</div>
-		</ScrollArea>
+				<Button size="sm" variant="outline" onclick={() => setQuery(emptyQuery())}>
+					Clear filters
+				</Button>
+			</EmptyState>
+		{:else}
+			<EmptyState
+				icon={Globe}
+				title="No web assets yet"
+				description="Hosts appear here as subdomain discovery and HTTP probing complete."
+			/>
+		{/if}
+	{:else if view === 'gallery'}
+		<AssetGallery
+			{items}
+			{loading}
+			selectedId={drawerOpen ? (selected?.id ?? null) : null}
+			onOpen={open}
+		/>
 	{:else}
 		<div class="overflow-hidden rounded-lg border transition-opacity {loading ? 'opacity-60' : ''}">
 			<Table.Root containerClass={RESULTS_SCROLL}>
 				<Table.Header class="sticky top-0 z-20 bg-background">
 					<Table.Row class="hover:bg-transparent">
-						<Table.Head class="sticky left-0 z-30 bg-background">
+						<Table.Head class="sticky left-0 z-30 min-w-56 bg-background">
 							{@render sortHead('Host', 'name')}
 						</Table.Head>
-						{#if visible.includes('screenshot')}<Table.Head class="w-16">Shot</Table.Head>{/if}
-						{#if visible.includes('status')}<Table.Head class="w-20"
-								>{@render sortHead('Status', 'status')}</Table.Head
-							>{/if}
-						{#if visible.includes('title')}<Table.Head>Title</Table.Head>{/if}
-						{#if visible.includes('tech')}<Table.Head>Tech</Table.Head>{/if}
-						{#if visible.includes('ip')}<Table.Head>IP / CDN</Table.Head>{/if}
-						{#if visible.includes('ports')}<Table.Head>Ports</Table.Head>{/if}
-						{#if visible.includes('waf')}<Table.Head>WAF</Table.Head>{/if}
-						{#if visible.includes('cert')}<Table.Head>Cert</Table.Head>{/if}
-						{#if visible.includes('asn')}<Table.Head>Network</Table.Head>{/if}
-						{#if visible.includes('sources')}<Table.Head>Sources</Table.Head>{/if}
-						{#if visible.includes('size')}<Table.Head class="text-right"
-								>{@render sortHead('Size', 'size')}</Table.Head
-							>{/if}
-						{#if visible.includes('time')}<Table.Head class="text-right"
-								>{@render sortHead('Time', 'time')}</Table.Head
-							>{/if}
-						<Table.Head class="w-10"></Table.Head>
+						{#each shownColumns as col (col.key)}
+							<Table.Head class="{col.width ?? ''} {col.align === 'right' ? 'text-right' : ''}">
+								{#if col.sort}
+									{@render sortHead(col.label, col.sort)}
+								{:else}
+									{col.label}
+								{/if}
+							</Table.Head>
+						{/each}
+						<Table.Head class="w-16"></Table.Head>
 					</Table.Row>
 				</Table.Header>
-				<Table.Body class={density === 'compact' ? '[&_td]:py-1.5' : '[&_td]:py-3'}>
-					{#each items as s (s.id)}
+				<Table.Body class={stripe}>
+					{#each items as s, i (s.id)}
 						{@const cert = certState(s)}
-						{@const sps = s.ports ?? []}
+						{@const ports = s.ports ?? []}
+						{@const ips = s.resolved_ips ?? []}
+						{@const isSelected = drawerOpen && selected?.id === s.id}
+						{@const redirected = !!s.final_url && s.final_url !== s.http_url}
 						<Table.Row
-							class="cursor-pointer"
+							class="group cursor-pointer {cursor === i ? 'bg-muted/40' : ''}"
+							data-state={isSelected ? 'selected' : undefined}
+							data-row-index={i}
 							role="button"
 							tabindex={0}
 							onclick={() => open(s)}
@@ -451,154 +490,427 @@
 								}
 							}}
 						>
-							<Table.Cell class="sticky left-0 z-10 bg-background">
+							<Table.Cell
+								class="sticky left-0 z-10 bg-background group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))] group-data-[state=selected]:bg-muted"
+							>
 								<div class="flex items-center gap-1.5">
-									{#if s.is_important}<Star
-											class="size-3 shrink-0 fill-warning text-warning"
-										/>{/if}
-									<span class="font-mono text-xs font-medium">{s.name}</span>
-									{#if s.is_wildcard}<Badge
+									{#if s.is_important}
+										<Star class="size-3 shrink-0 fill-warning text-warning" />
+									{/if}
+									<HostHoverCard sub={s}>
+										<span
+											class="font-mono text-xs font-medium {s.is_active
+												? ''
+												: 'text-muted-foreground'}">{s.name}</span
+										>
+									</HostHoverCard>
+									{#if s.is_wildcard}
+										<Badge
 											variant="outline"
-											class="px-1 text-[9px] font-normal text-muted-foreground">wildcard</Badge
-										>{/if}
-									{#if !s.is_active}<Badge
-											variant="outline"
-											class="px-1 text-[9px] font-normal text-muted-foreground">inactive</Badge
-										>{/if}
+											class="px-1 text-[9px] font-normal text-muted-foreground"
+										>
+											wildcard
+										</Badge>
+									{/if}
+									{#if !s.is_active}
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												{#snippet child({ props })}
+													<span {...props} class="text-[10px] text-muted-foreground/70">no DNS</span
+													>
+												{/snippet}
+											</Tooltip.Trigger>
+											<Tooltip.Content side="right">Did not resolve to an address</Tooltip.Content>
+										</Tooltip.Root>
+									{/if}
 								</div>
-								{#if s.cname}<div class="truncate pl-4 font-mono text-[10px] text-muted-foreground">
-										→ {s.cname}
-									</div>{/if}
-							</Table.Cell>
-							{#if visible.includes('screenshot')}
-								<Table.Cell>
-									<ScreenshotThumb
-										path={s.screenshot_path}
-										alt={s.name}
-										class="h-9 w-14"
-										interactive={false}
-									/>
-								</Table.Cell>
-							{/if}
-							{#if visible.includes('status')}
-								<Table.Cell>
-									<span class="font-mono text-xs {httpStatusTextClass(s.http_status)}"
-										>{statusLabel(s.http_status)}</span
+								{#if s.cname}
+									{@const prov = providerFor(s.cname)}
+									<div
+										class="mt-0.5 flex max-w-80 items-center gap-1 font-mono text-[10px] text-muted-foreground"
 									>
-								</Table.Cell>
-							{/if}
-							{#if visible.includes('title')}
-								<Table.Cell class="max-w-56">
-									<div class="truncate text-xs">{s.page_title ?? '—'}</div>
-									{#if s.webserver}<div class="truncate text-[10px] text-muted-foreground">
-											{s.webserver}
-										</div>{/if}
-								</Table.Cell>
-							{/if}
-							{#if visible.includes('tech')}<Table.Cell
-									><TechBadges tech={s.tech} max={3} /></Table.Cell
-								>{/if}
-							{#if visible.includes('ip')}
-								<Table.Cell>
-									<div class="flex items-center gap-1">
-										<span class="font-mono text-[11px]">{s.resolved_ips?.[0] ?? '—'}</span>
-										{#if (s.resolved_ips?.length ?? 0) > 1}<span
-												class="text-[10px] text-muted-foreground">+{s.resolved_ips.length - 1}</span
-											>{/if}
-										{#if s.is_cdn}<Badge variant="info" class="px-1 text-[9px] font-normal"
-												>{s.cdn_name ?? 'CDN'}</Badge
-											>{/if}
+										<CornerDownRight class="size-2.5 shrink-0" />
+										{#if prov}
+											{@const ProvIcon = PROVIDER_KIND_ICONS[prov.kind]}
+											<Tooltip.Root>
+												<Tooltip.Trigger>
+													{#snippet child({ props })}
+														<button
+															{...props}
+															type="button"
+															class="inline-flex shrink-0 items-center gap-0.5 rounded-sm border border-border/70 px-1 font-sans text-[9px] hover:bg-accent hover:text-foreground"
+															onclick={(e) => {
+																stop(e);
+																applyDsl(`cname:${prov.suffix}`);
+															}}
+														>
+															<ProvIcon class="size-2.5" />
+															{prov.label}
+														</button>
+													{/snippet}
+												</Tooltip.Trigger>
+												<Tooltip.Content>
+													{PROVIDER_KIND_LABELS[prov.kind]} · filter hosts on {prov.label}
+												</Tooltip.Content>
+											</Tooltip.Root>
+										{/if}
+										<button
+											type="button"
+											class="truncate hover:text-foreground"
+											onclick={(e) => {
+												stop(e);
+												applyDsl(`cname:${s.cname}`);
+											}}
+											title="Filter hosts pointing at {s.cname}"
+										>
+											{s.cname}
+										</button>
 									</div>
-								</Table.Cell>
-							{/if}
-							{#if visible.includes('ports')}
-								<Table.Cell>
-									<div class="flex flex-wrap gap-0.5">
-										{#each sps.slice(0, 4) as p (p)}
-											<Badge
-												variant="outline"
-												class="px-1 font-mono text-[9px] font-normal {isSensitivePort(p)
-													? 'text-warning'
-													: ''}">{p}</Badge
-											>
-										{/each}
-										{#if sps.length > 4}<span class="text-[10px] text-muted-foreground"
-												>+{sps.length - 4}</span
-											>{/if}
-									</div>
-								</Table.Cell>
-							{/if}
-							{#if visible.includes('waf')}
-								<Table.Cell>
-									{#if s.waf}<Badge variant="secondary" class="px-1 text-[10px] font-normal"
-											>{s.waf}</Badge
-										>{:else}<span class="text-[10px] text-muted-foreground">—</span>{/if}
-								</Table.Cell>
-							{/if}
-							{#if visible.includes('cert')}
-								<Table.Cell>
-									{#if cert === 'expired'}<Badge
-											variant="destructive"
-											class="px-1 text-[10px] font-normal">expired</Badge
-										>
-									{:else if cert === 'expiring'}<Badge
-											variant="warning"
-											class="px-1 text-[10px] font-normal">{daysUntilExpiry(s)}d</Badge
-										>
-									{:else if cert === 'self-signed'}<Badge
-											variant="warning"
-											class="px-1 text-[10px] font-normal">self-signed</Badge
-										>
-									{:else if cert === 'valid'}<span class="text-[10px] text-muted-foreground"
-											>valid</span
-										>
-									{:else}<span class="text-[10px] text-muted-foreground">—</span>{/if}
-								</Table.Cell>
-							{/if}
-							{#if visible.includes('asn')}
-								<Table.Cell class="max-w-40">
-									{#if s.asn}<div class="truncate text-[11px]">
-											<span class="font-mono">AS{s.asn}</span>
-											{s.asn_org ?? ''}
-										</div>{:else}<span class="text-[10px] text-muted-foreground">—</span>{/if}
-								</Table.Cell>
-							{/if}
-							{#if visible.includes('sources')}
-								<Table.Cell>
-									<div class="flex flex-wrap gap-0.5">
-										{#each (s.sources ?? []).slice(0, 2) as src (src)}
-											<Badge
-												variant="outline"
-												class="px-1 text-[9px] font-normal text-muted-foreground">{src}</Badge
-											>
-										{/each}
-										{#if (s.sources?.length ?? 0) > 2}<span
-												class="text-[10px] text-muted-foreground">+{s.sources.length - 2}</span
-											>{/if}
-									</div>
-								</Table.Cell>
-							{/if}
-							{#if visible.includes('size')}<Table.Cell
-									class="text-right font-mono text-[11px] text-muted-foreground"
-									>{formatBytes(s.content_length)}</Table.Cell
-								>{/if}
-							{#if visible.includes('time')}<Table.Cell
-									class="text-right font-mono text-[11px] text-muted-foreground"
-									>{formatResponseTime(s.response_time)}</Table.Cell
-								>{/if}
-							<Table.Cell>
-								{#if s.http_url}
-									<a
-										href={s.http_url}
-										target="_blank"
-										rel="noreferrer noopener"
-										onclick={(e) => e.stopPropagation()}
-										class="text-muted-foreground hover:text-foreground"
-										aria-label="Open in browser"
+								{:else if redirected}
+									<div
+										class="mt-0.5 flex max-w-72 items-center gap-1 truncate font-mono text-[10px] text-muted-foreground"
 									>
-										<ExternalLink class="size-3.5" />
-									</a>
+										<CornerDownRight class="size-2.5 shrink-0" />
+										<span class="truncate">{s.final_url}</span>
+									</div>
 								{/if}
+							</Table.Cell>
+
+							{#each shownColumns as col (col.key)}
+								{#if col.key === 'screenshot'}
+									<Table.Cell>
+										<ScreenshotThumb
+											path={s.screenshot_path}
+											alt={s.name}
+											class="h-11 w-16"
+											preview
+										/>
+									</Table.Cell>
+								{:else if col.key === 'status'}
+									<Table.Cell>
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												{#snippet child({ props })}
+													<span {...props} class="inline-flex items-center gap-1.5">
+														<span
+															class="size-1.5 rounded-full {STATUS_DOT[
+																httpStatusClass(s.http_status)
+															]}"
+														></span>
+														<span class="font-mono text-xs {httpStatusTextClass(s.http_status)}">
+															{s.http_status ?? '—'}
+														</span>
+													</span>
+												{/snippet}
+											</Tooltip.Trigger>
+											<Tooltip.Content>{httpStatusReason(s.http_status)}</Tooltip.Content>
+										</Tooltip.Root>
+										{#if s.http_status}
+											<div class="truncate text-[10px] text-muted-foreground">
+												{httpStatusReason(s.http_status)}
+											</div>
+										{/if}
+									</Table.Cell>
+								{:else if col.key === 'title'}
+									<Table.Cell class="max-w-64">
+										<div class="flex items-center gap-1.5">
+											<span class="truncate text-xs">{s.page_title ?? '—'}</span>
+											{#if s.page_title && (s.title_count ?? 0) > 1}
+												{@const pageTitle = s.page_title}
+												<SamePagePopover
+													count={s.title_count ?? 0}
+													title="{s.title_count} hosts show “{pageTitle}”"
+													load={() => hostsWithTitle(pageTitle)}
+													onHost={openHost}
+													onFilter={() => applyDsl(exactToken('title', pageTitle))}
+												/>
+											{/if}
+										</div>
+										{#if s.webserver}
+											<div class="truncate text-[10px] text-muted-foreground">{s.webserver}</div>
+										{/if}
+									</Table.Cell>
+								{:else if col.key === 'tech'}
+									<Table.Cell class="min-w-52">
+										{#if s.tech.length}
+											<div class="flex flex-nowrap items-center gap-1 whitespace-nowrap">
+												{#each s.tech.slice(0, MAX_TECH) as t (t)}
+													<button
+														type="button"
+														onclick={(e) => {
+															stop(e);
+															applyDsl(`tech:${t}`);
+														}}
+													>
+														<Badge
+															variant="outline"
+															class="cursor-pointer font-normal hover:bg-accent"
+														>
+															{t}
+														</Badge>
+													</button>
+												{/each}
+												<OverflowPopover
+													items={s.tech}
+													shown={MAX_TECH}
+													label="technologies"
+													onSelect={(t) => applyDsl(`tech:${t}`)}
+												/>
+											</div>
+										{:else}
+											<span class="text-xs text-muted-foreground">—</span>
+										{/if}
+									</Table.Cell>
+								{:else if col.key === 'ip'}
+									<Table.Cell>
+										<div class="flex items-center gap-1">
+											{#if ips[0]}
+												<button
+													type="button"
+													class="font-mono text-[11px] hover:underline"
+													onclick={(e) => {
+														stop(e);
+														applyDsl(`ip:${ips[0]}`);
+													}}
+													title="Filter hosts on {ips[0]}"
+												>
+													{ips[0]}
+												</button>
+											{:else}
+												<span class="text-xs text-muted-foreground">—</span>
+											{/if}
+											<OverflowPopover
+												items={ips}
+												shown={1}
+												label="IP addresses"
+												mono
+												onSelect={(ip) => applyDsl(`ip:${ip}`)}
+											/>
+										</div>
+										{#if s.is_cdn}
+											<Tooltip.Root>
+												<Tooltip.Trigger>
+													{#snippet child({ props })}
+														<span {...props} class="mt-0.5 inline-flex">
+															<Badge variant="info" class="px-1 text-[9px] font-normal">
+																{s.cdn_name ?? 'CDN'}
+															</Badge>
+														</span>
+													{/snippet}
+												</Tooltip.Trigger>
+												<Tooltip.Content>Fronted by a CDN</Tooltip.Content>
+											</Tooltip.Root>
+										{/if}
+									</Table.Cell>
+								{:else if col.key === 'ports'}
+									<Table.Cell>
+										{#if ports.length}
+											<div class="flex flex-nowrap items-center gap-0.5 whitespace-nowrap">
+												{#each ports.slice(0, MAX_PORTS) as p (p)}
+													<button
+														type="button"
+														onclick={(e) => {
+															stop(e);
+															applyDsl(`port:${p}`);
+														}}
+													>
+														<Badge
+															variant="outline"
+															class="cursor-pointer px-1 font-mono text-[9px] font-normal hover:bg-accent {isSensitivePort(
+																p
+															)
+																? 'text-warning'
+																: ''}"
+														>
+															{p}
+														</Badge>
+													</button>
+												{/each}
+												<OverflowPopover
+													items={ports.map(String)}
+													shown={MAX_PORTS}
+													label="open ports"
+													mono
+													onSelect={(p) => applyDsl(`port:${p}`)}
+												/>
+											</div>
+										{:else}
+											<span class="text-xs text-muted-foreground">—</span>
+										{/if}
+									</Table.Cell>
+								{:else if col.key === 'cert'}
+									<Table.Cell>
+										{#if cert}
+											<Tooltip.Root>
+												<Tooltip.Trigger>
+													{#snippet child({ props })}
+														<span {...props}>
+															{#if cert === 'expired'}
+																<Badge variant="destructive" class="px-1 text-[10px] font-normal">
+																	expired
+																</Badge>
+															{:else if cert === 'expiring'}
+																<Badge variant="warning" class="px-1 text-[10px] font-normal">
+																	{daysUntilExpiry(s)}d
+																</Badge>
+															{:else if cert === 'self-signed'}
+																<Badge variant="warning" class="px-1 text-[10px] font-normal">
+																	self-signed
+																</Badge>
+															{:else}
+																<span class="text-[10px] text-muted-foreground">valid</span>
+															{/if}
+														</span>
+													{/snippet}
+												</Tooltip.Trigger>
+												<Tooltip.Content>
+													{s.tls_not_after
+														? `Expires ${formatShortDate(s.tls_not_after)}`
+														: 'Self-signed certificate'}
+												</Tooltip.Content>
+											</Tooltip.Root>
+										{:else}
+											<span class="text-[10px] text-muted-foreground">—</span>
+										{/if}
+									</Table.Cell>
+								{:else if col.key === 'waf'}
+									<Table.Cell>
+										{#if s.waf}
+											<Badge variant="secondary" class="px-1 text-[10px] font-normal">{s.waf}</Badge
+											>
+										{:else}
+											<span class="text-[10px] text-muted-foreground">—</span>
+										{/if}
+									</Table.Cell>
+								{:else if col.key === 'asn'}
+									<Table.Cell class="max-w-44">
+										{#if s.asn}
+											<div class="truncate font-mono text-[11px]">AS{s.asn}</div>
+											{#if s.asn_org}
+												<div class="truncate text-[10px] text-muted-foreground" title={s.asn_org}>
+													{s.asn_org}
+												</div>
+											{/if}
+										{:else}
+											<span class="text-[10px] text-muted-foreground">—</span>
+										{/if}
+									</Table.Cell>
+								{:else if col.key === 'sources'}
+									<Table.Cell>
+										<div class="flex flex-nowrap items-center gap-0.5 whitespace-nowrap">
+											{#each (s.sources ?? []).slice(0, MAX_SOURCES) as src (src)}
+												<button
+													type="button"
+													onclick={(e) => {
+														stop(e);
+														applyDsl(`source:${src}`);
+													}}
+												>
+													<Badge
+														variant="outline"
+														class="cursor-pointer px-1 text-[9px] font-normal text-muted-foreground hover:bg-accent"
+													>
+														{src}
+													</Badge>
+												</button>
+											{/each}
+											<OverflowPopover
+												items={s.sources ?? []}
+												shown={MAX_SOURCES}
+												label="sources"
+												onSelect={(src) => applyDsl(`source:${src}`)}
+											/>
+										</div>
+									</Table.Cell>
+								{:else if col.key === 'discovered'}
+									<Table.Cell class="text-[11px] text-muted-foreground" title={s.discovered_at}>
+										<div>{relativeTime(s.discovered_at)}</div>
+										{#if s.discovered_at}
+											<div class="text-[10px] text-muted-foreground/70">
+												{formatShortDate(s.discovered_at)}
+											</div>
+										{/if}
+									</Table.Cell>
+								{:else if col.key === 'size'}
+									<Table.Cell class="text-right font-mono text-[11px] text-muted-foreground">
+										{formatBytes(s.content_length)}
+									</Table.Cell>
+								{:else if col.key === 'time'}
+									<Table.Cell class="text-right font-mono text-[11px] text-muted-foreground">
+										{formatResponseTime(s.response_time)}
+									</Table.Cell>
+								{/if}
+							{/each}
+
+							<Table.Cell class="pr-2">
+								<div
+									class="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+								>
+									{#if s.http_url}
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											class="size-6"
+											href={s.http_url}
+											target="_blank"
+											rel="noreferrer noopener"
+											onclick={stop}
+											aria-label="Open {s.name} in browser"
+										>
+											<ExternalLink />
+										</Button>
+									{/if}
+									<DropdownMenu.Root>
+										<DropdownMenu.Trigger onclick={stop} onkeydown={stop}>
+											{#snippet child({ props })}
+												<Button
+													{...props}
+													variant="ghost"
+													size="icon-sm"
+													class="size-6"
+													aria-label="More actions for {s.name}"
+												>
+													<Ellipsis />
+												</Button>
+											{/snippet}
+										</DropdownMenu.Trigger>
+										<DropdownMenu.Content align="end" class="w-48" onclick={stop}>
+											<DropdownMenu.Group>
+												<DropdownMenu.Item onclick={() => copy(s.name)}>
+													<Copy /> Copy host
+												</DropdownMenu.Item>
+												{#if s.http_url}
+													<DropdownMenu.Item onclick={() => copy(s.http_url ?? '')}>
+														<Link /> Copy URL
+													</DropdownMenu.Item>
+												{/if}
+											</DropdownMenu.Group>
+											{#if ips[0] || s.cname || s.favicon_hash}
+												<DropdownMenu.Separator />
+												<DropdownMenu.Group>
+													<DropdownMenu.Label>Pivot</DropdownMenu.Label>
+													{#if ips[0]}
+														<DropdownMenu.Item onclick={() => applyDsl(`ip:${ips[0]}`)}>
+															<Filter /> Same IP
+														</DropdownMenu.Item>
+													{/if}
+													{#if s.cname}
+														<DropdownMenu.Item onclick={() => applyDsl(`cname:${s.cname}`)}>
+															<Filter /> Same CNAME
+														</DropdownMenu.Item>
+													{/if}
+													{#if s.favicon_hash}
+														<DropdownMenu.Item
+															onclick={() => applyDsl(`favicon:${s.favicon_hash}`)}
+														>
+															<Filter /> Same favicon
+														</DropdownMenu.Item>
+													{/if}
+												</DropdownMenu.Group>
+											{/if}
+										</DropdownMenu.Content>
+									</DropdownMenu.Root>
+								</div>
 							</Table.Cell>
 						</Table.Row>
 					{/each}
@@ -607,37 +919,17 @@
 		</div>
 	{/if}
 
-	{#if total > PAGE_SIZE}
-		<div class="flex items-center justify-between text-xs text-muted-foreground">
-			<span class="tabular-nums">
-				{(page * PAGE_SIZE + 1).toLocaleString()}–{Math.min(
-					(page + 1) * PAGE_SIZE,
-					total
-				).toLocaleString()}
-				of {total.toLocaleString()}
-			</span>
-			<div class="flex items-center gap-2">
-				<Button
-					variant="outline"
-					size="sm"
-					class="h-7"
-					disabled={page === 0 || loading}
-					onclick={() => (page = page - 1)}
-				>
-					<ChevronLeft data-icon="inline-start" /> Prev
-				</Button>
-				<span class="tabular-nums">Page {page + 1} / {pageCount.toLocaleString()}</span>
-				<Button
-					variant="outline"
-					size="sm"
-					class="h-7"
-					disabled={page >= pageCount - 1 || loading}
-					onclick={() => (page = page + 1)}
-				>
-					Next <ChevronRight data-icon="inline-end" />
-				</Button>
-			</div>
-		</div>
+	{#if !errored && total > 0}
+		<ResultsPagination
+			{total}
+			page={pageIndex}
+			{pageSize}
+			onPage={(p) => (pageIndex = p)}
+			onPageSize={(s) => {
+				pageSize = s;
+				pageIndex = 0;
+			}}
+		/>
 	{/if}
 </div>
 
@@ -648,12 +940,11 @@
 	{projectId}
 	{scanId}
 	index={selectedIndex}
-	total={items.length}
+	pageOffset={pageIndex * pageSize}
+	{total}
 	onStep={step}
-	onHost={(name) => {
-		query = { ...emptyQuery(), search: `name:${name}` };
-		drawerOpen = false;
-	}}
+	onFilter={applyDsl}
+	onPivot={openHost}
 />
 
 {#snippet sortHead(label: string, key: string)}

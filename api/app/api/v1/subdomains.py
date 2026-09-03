@@ -9,6 +9,7 @@ from app.core.database import get_session
 from app.services.subdomain import SubdomainService
 from shared.models.scan_correlation import SubdomainCorrelation, SubdomainInsights
 from shared.models.subdomain import (
+    Facet,
     SubdomainFacets,
     SubdomainFilter,
     SubdomainRead,
@@ -85,6 +86,18 @@ async def subdomain_related(
     name: Annotated[str, Query(description="Subdomain name")],
 ):
     return await service.related(project_id=project_id, scan_id=scan_id, name=name)
+
+
+@router.get("/tech", response_model=list[Facet])
+async def subdomain_tech(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    search: Annotated[str | None, Query(max_length=100)] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+):
+    return await service.tech(project_id, scan_id, search, limit)
 
 
 @router.get("/insights", response_model=SubdomainInsights)

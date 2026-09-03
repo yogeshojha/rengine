@@ -36,6 +36,7 @@ export interface WebAssetQuery {
 	liveOnly: boolean;
 	hasScreenshot: boolean;
 	issuesOnly: boolean;
+	newOnly: boolean;
 }
 
 export function emptyQuery(): WebAssetQuery {
@@ -50,7 +51,8 @@ export function emptyQuery(): WebAssetQuery {
 		waf: 'any',
 		liveOnly: false,
 		hasScreenshot: false,
-		issuesOnly: false
+		issuesOnly: false,
+		newOnly: false
 	};
 }
 
@@ -65,9 +67,128 @@ export function activeFacetCount(q: WebAssetQuery): number {
 		(q.waf !== 'any' ? 1 : 0) +
 		(q.liveOnly ? 1 : 0) +
 		(q.hasScreenshot ? 1 : 0) +
-		(q.issuesOnly ? 1 : 0)
+		(q.issuesOnly ? 1 : 0) +
+		(q.newOnly ? 1 : 0)
 	);
 }
+
+export interface FilterChip {
+	id: string;
+	label: string;
+	remove: (q: WebAssetQuery) => WebAssetQuery;
+}
+
+const STATUS_CHIP: Record<string, string> = {
+	'2xx': 'Status 2xx',
+	'3xx': 'Status 3xx',
+	'4xx': 'Status 4xx',
+	'5xx': 'Status 5xx',
+	none: 'No HTTP'
+};
+const CERT_CHIP: Record<string, string> = {
+	expired: 'Cert expired',
+	expiring: 'Cert expiring',
+	'self-signed': 'Self-signed cert',
+	valid: 'Cert valid'
+};
+
+type ListKey = 'status' | 'tech' | 'service' | 'cert' | 'source';
+
+export function queryChips(q: WebAssetQuery): FilterChip[] {
+	const chips: FilterChip[] = [];
+	const list = (key: ListKey, fmt: (v: string) => string) => {
+		for (const v of q[key])
+			chips.push({
+				id: `${key}:${v}`,
+				label: fmt(v),
+				remove: (x) => ({ ...x, [key]: x[key].filter((o) => o !== v) })
+			});
+	};
+	list('status', (v) => STATUS_CHIP[v] ?? v);
+	list('tech', (v) => v);
+	list('service', (v) => `Service ${v}`);
+	list('cert', (v) => CERT_CHIP[v] ?? v);
+	list('source', (v) => `Source ${v}`);
+	if (q.cdn !== 'any')
+		chips.push({
+			id: 'cdn',
+			label: q.cdn === 'yes' ? 'Behind CDN' : 'Not behind CDN',
+			remove: (x) => ({ ...x, cdn: 'any' })
+		});
+	if (q.waf !== 'any')
+		chips.push({
+			id: 'waf',
+			label: q.waf === 'none' ? 'No WAF' : 'WAF present',
+			remove: (x) => ({ ...x, waf: 'any' })
+		});
+	if (q.liveOnly)
+		chips.push({ id: 'live', label: 'Live', remove: (x) => ({ ...x, liveOnly: false }) });
+	if (q.newOnly)
+		chips.push({ id: 'new', label: 'New this scan', remove: (x) => ({ ...x, newOnly: false }) });
+	if (q.hasScreenshot)
+		chips.push({
+			id: 'screenshot',
+			label: 'With screenshot',
+			remove: (x) => ({ ...x, hasScreenshot: false })
+		});
+	if (q.issuesOnly)
+		chips.push({ id: 'issues', label: 'Has issues', remove: (x) => ({ ...x, issuesOnly: false }) });
+	return chips;
+}
+
+export function tokenize(search: string): string[] {
+	return search.match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
+}
+
+export function isQuoted(value: string): boolean {
+	return value.length >= 2 && value.startsWith('"') && value.endsWith('"');
+}
+
+export function unquote(value: string): string {
+	return isQuoted(value) ? value.slice(1, -1) : value;
+}
+
+export function exactToken(key: string, value: string): string {
+	return `${key}:"${value.replace(/"/g, '')}"`;
+}
+
+export function appendToken(search: string, token: string): string {
+	const parts = tokenize(search);
+	if (parts.includes(token)) return search;
+	return [...parts, token].join(' ');
+}
+
+export interface DslKey {
+	key: string;
+	hint: string;
+	values?: string[];
+	facet?: string;
+}
+
+export const DSL_KEYS: DslKey[] = [
+	{ key: 'status', hint: 'HTTP response class', values: ['2xx', '3xx', '4xx', '5xx', 'none'] },
+	{
+		key: 'is',
+		hint: 'Host property',
+		values: ['live', 'new', 'resolved', 'auth', 'cdn', 'waf', 'screenshot', 'important', 'wildcard']
+	},
+	{ key: 'tech', hint: 'Detected technology', facet: 'tech' },
+	{ key: 'service', hint: 'Open port service', facet: 'service' },
+	{ key: 'port', hint: 'Open port number' },
+	{
+		key: 'cert',
+		hint: 'TLS certificate state',
+		values: ['expired', 'expiring', 'self-signed', 'valid']
+	},
+	{ key: 'source', hint: 'Discovery source', facet: 'source' },
+	{ key: 'cdn', hint: 'Behind a CDN', values: ['yes', 'no'] },
+	{ key: 'waf', hint: 'WAF presence', values: ['any', 'none'] },
+	{ key: 'ip', hint: 'Resolves to IP' },
+	{ key: 'cname', hint: 'CNAME target contains' },
+	{ key: 'title', hint: 'Page title contains' },
+	{ key: 'name', hint: 'Host name contains' },
+	{ key: 'favicon', hint: 'Favicon hash' }
+];
 
 // mirror api/app/services/subdomain.py + ip_address.py
 export interface Facet {
@@ -93,8 +214,13 @@ export interface SubdomainFilter {
 	auth: boolean;
 	important: boolean;
 	wildcard: boolean;
+	new: boolean;
+	resolved: boolean;
 	ip: string | null;
+	cname: string | null;
+	favicon: string | null;
 	title: string | null;
+	title_exact: string | null;
 	sort: string;
 	order: 'asc' | 'desc';
 	limit: number;
@@ -119,6 +245,19 @@ export interface SubdomainRelation {
 	reason: string;
 	value: string;
 	hosts: string[];
+}
+
+export const RELATION_LABELS: Record<string, string> = {
+	ip: 'resolve to the same IP',
+	cname: 'share a CNAME target',
+	favicon: 'share a favicon',
+	asn: 'sit in the same network',
+	cert: 'share a TLS certificate'
+};
+
+export function relationLabel(r: SubdomainRelation): string {
+	const fallback = r.reason.replace(/\s*\(.*\)$/, '');
+	return RELATION_LABELS[r.kind] ?? fallback.charAt(0).toLowerCase() + fallback.slice(1);
 }
 
 export interface InsightStat {
@@ -158,9 +297,12 @@ export interface InsightCluster {
 export interface SubdomainInsights {
 	surface: InsightStat[];
 	attention: InsightAttention[];
+	sources: InsightTally[];
+	resolution: InsightBucket[];
 	status_reframe: InsightBucket[];
 	cert_buckets: InsightBucket[];
 	top_tech: InsightTally[];
+	tech_total: number;
 	top_asn: InsightTally[];
 	services: InsightTally[];
 	clusters: InsightCluster[];
@@ -188,6 +330,9 @@ export interface IpGroupRead {
 	ports: PortRead[];
 	host_count: number;
 	hosts: string[];
+	port_count: number;
+	has_sensitive: boolean;
+	asset_count: number;
 }
 
 export interface IpGroupPage {
@@ -221,22 +366,28 @@ export function compileQuery(
 		auth: false,
 		important: false,
 		wildcard: false,
+		new: q.newOnly,
+		resolved: false,
 		ip: null,
+		cname: null,
+		favicon: null,
 		title: null,
+		title_exact: null,
 		sort: sortKey,
 		order: dir === 1 ? 'asc' : 'desc',
 		limit,
 		offset
 	};
 	const words: string[] = [];
-	for (const part of q.search.trim().split(/\s+/).filter(Boolean)) {
+	for (const part of tokenize(q.search)) {
 		const i = part.indexOf(':');
 		if (i <= 0) {
-			words.push(part);
+			words.push(unquote(part));
 			continue;
 		}
 		const key = part.slice(0, i).toLowerCase();
-		const raw = part.slice(i + 1);
+		const quoted = isQuoted(part.slice(i + 1));
+		const raw = unquote(part.slice(i + 1));
 		const v = raw.toLowerCase();
 		switch (key) {
 			case 'status':
@@ -272,8 +423,15 @@ export function compileQuery(
 			case 'ip':
 				f.ip = raw;
 				break;
+			case 'cname':
+				f.cname = raw;
+				break;
+			case 'favicon':
+				f.favicon = raw;
+				break;
 			case 'title':
-				f.title = raw;
+				if (quoted) f.title_exact = raw;
+				else f.title = raw;
 				break;
 			case 'name':
 			case 'host':
@@ -287,6 +445,8 @@ export function compileQuery(
 				else if (v === 'screenshot') f.screenshot = true;
 				else if (v === 'important') f.important = true;
 				else if (v === 'wildcard') f.wildcard = true;
+				else if (v === 'new') f.new = true;
+				else if (v === 'resolved') f.resolved = true;
 				break;
 			default:
 				words.push(part);

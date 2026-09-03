@@ -123,6 +123,15 @@ export const ACTIVITY_STATUS_LABEL: Record<ScanActivityStatus, string> = {
 	aborted: 'Aborted'
 };
 
+const HIDDEN_RESULT_KEYS = new Set(['excluded', 'reason']);
+
+export function activitySummary(result: Record<string, number | string> | undefined): string {
+	return Object.entries(result ?? {})
+		.filter(([k, v]) => typeof v === 'number' && !HIDDEN_RESULT_KEYS.has(k))
+		.map(([k, v]) => `${v.toLocaleString()} ${k.replace(/_/g, ' ')}`)
+		.join(' · ');
+}
+
 export const SCAN_POLL_MS = 4000;
 export const RESULTS_PAGE_SIZE = 50;
 export const SEARCH_DEBOUNCE_MS = 220;

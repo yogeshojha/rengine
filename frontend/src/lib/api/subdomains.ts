@@ -1,6 +1,7 @@
 import { api } from './client';
 import type { SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
 import type {
+	Facet,
 	SubdomainFilter,
 	SubdomainSearchResult,
 	SubdomainFacetSet,
@@ -62,6 +63,16 @@ export const subdomainsApi = {
 		return api.get<SubdomainRelation[]>(
 			`/subdomains/related?project_id=${projectId}&scan_id=${scanId}&name=${encodeURIComponent(name)}`
 		);
+	},
+
+	async tech(projectId: string, scanId: string, search = '', limit = 100): Promise<Facet[]> {
+		const sp = new URLSearchParams({
+			project_id: projectId,
+			scan_id: scanId,
+			limit: String(limit)
+		});
+		if (search.trim()) sp.append('search', search.trim());
+		return api.get<Facet[]>(`/subdomains/tech?${sp.toString()}`);
 	},
 
 	async insights(projectId: string, scanId: string): Promise<SubdomainInsights> {

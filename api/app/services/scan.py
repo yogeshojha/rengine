@@ -964,7 +964,24 @@ class ScanService:
 
     async def get(self, id: UUID, project_id: UUID) -> ScanRead:
         scan = await self._get_scan(id, project_id)
-        return self._to_read(scan)
+        read = self._to_read(scan)
+        await self.attach_deltas([read])
+        return read
+
+    async def attach_deltas(self, items: list[ScanRead]) -> None:
+        if not items:
+            return
+        scan_ids = [i.id for i in items]
+        target_ids = list({i.target_id for i in items})
+        new_counts = await self.new_subdomain_counts(scan_ids, target_ids)
+        gone_counts = await self.gone_subdomain_counts(scan_ids, target_ids)
+        prev_counts = await self.prev_completed_counts(scan_ids, target_ids)
+        first_ids = await self.first_scan_ids(target_ids)
+        for i in items:
+            i.new_subdomains = new_counts.get(i.id, 0)
+            i.gone_subdomains = gone_counts.get(i.id, 0)
+            i.prev_subdomains_found = prev_counts.get(i.id)
+            i.is_first_scan = i.id in first_ids
 
     async def _get_scan(self, id: UUID, project_id: UUID) -> Scan:
         result = await self.session.execute(

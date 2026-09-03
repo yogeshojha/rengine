@@ -30,6 +30,8 @@ export interface SubdomainRead {
 	tls_self_signed: boolean | null;
 	screenshot_path: string | null;
 	ports?: number[];
+	title_count?: number;
+	favicon_count?: number;
 	discovered_at: string;
 }
 

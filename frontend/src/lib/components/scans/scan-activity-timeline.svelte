@@ -2,6 +2,7 @@
 	import {
 		activityStatusIcon,
 		activityStatusClass,
+		activitySummary,
 		ACTIVITY_STATUS_LABEL,
 		durationText
 	} from '$lib/utilities/scan-status';
@@ -12,21 +13,12 @@
 	}
 
 	let { activities }: Props = $props();
-
-	const HIDDEN_COUNT_KEYS = new Set(['excluded']);
-
-	function countSummary(result: Record<string, number | string>): string {
-		return Object.entries(result ?? {})
-			.filter(([k, v]) => typeof v === 'number' && !HIDDEN_COUNT_KEYS.has(k))
-			.map(([k, v]) => `${v} ${k}`)
-			.join(' · ');
-	}
 </script>
 
 <ol class="space-y-2">
 	{#each activities as a (a.id)}
 		{@const Icon = activityStatusIcon(a.status)}
-		{@const summary = countSummary(a.result)}
+		{@const summary = activitySummary(a.result)}
 		<li class="flex items-start gap-3 rounded-md border border-border p-3">
 			<Icon
 				class="mt-0.5 h-4 w-4 shrink-0 {activityStatusClass(a.status)} {a.status === 'running'

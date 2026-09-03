@@ -20,10 +20,12 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
+from shared.definitions.ports import SENSITIVE_PORTS
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
@@ -68,31 +70,7 @@ _STATUS_BUCKETS = {
     "4xx": (_HTTP_CLIENT, _HTTP_SERVER),
     "5xx": (_HTTP_SERVER, _HTTP_MAX),
 }
-_SENSITIVE_PORTS = [
-    21,
-    22,
-    23,
-    25,
-    53,
-    135,
-    139,
-    445,
-    1433,
-    1521,
-    2049,
-    2375,
-    3306,
-    3389,
-    5432,
-    5601,
-    5900,
-    6379,
-    8086,
-    9200,
-    11211,
-    15672,
-    27017,
-]
+_SENSITIVE_PORTS = SENSITIVE_PORTS
 _STATUS_LABELS = {
     "2xx": "2xx OK",
     "3xx": "3xx Redirect",
@@ -133,16 +111,29 @@ _CLUSTER_MIN = 3
 _CLUSTER_LIMIT = 8
 
 
-def _json_facet_sql(column: str):
+def _json_facet_sql(column: str, search: bool = False):
+    where = " AND v ILIKE :q" if search else ""
     return text(
         f"SELECT v AS value, count(*) AS c "  # noqa: S608
         f"FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.{column} AS jsonb)) v "
-        f"WHERE s.project_id = :pid AND s.scan_id = :sid "
-        f"GROUP BY v ORDER BY c DESC LIMIT :lim"
+        f"WHERE s.project_id = :pid AND s.scan_id = :sid{where} "
+        f"GROUP BY v ORDER BY c DESC, v ASC LIMIT :lim"
+    )
+
+
+def _json_distinct_sql(column: str):
+    return text(
+        f"SELECT count(DISTINCT v) "  # noqa: S608
+        f"FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.{column} AS jsonb)) v "
+        f"WHERE s.project_id = :pid AND s.scan_id = :sid"
     )
 
 
 _FACET_SQL = {"tech": _json_facet_sql("tech"), "sources": _json_facet_sql("sources")}
+_FACET_SEARCH_SQL = {"tech": _json_facet_sql("tech", search=True)}
+_DISTINCT_SQL = {"tech": _json_distinct_sql("tech")}
+_TECH_LIMIT = 200
+_TOP_TECH = 12
 
 
 class SubdomainService:
@@ -287,7 +278,7 @@ class SubdomainService:
             )
         )
 
-    def _apply_filter(self, query, f: SubdomainFilter, now: datetime):  # noqa: PLR0912
+    def _apply_filter(self, query, f: SubdomainFilter, now: datetime):  # noqa: PLR0912, PLR0915
         if f.text:
             for word in f.text.split():
                 like = f"%{word}%"
@@ -341,6 +332,12 @@ class SubdomainService:
             query = query.where(Subdomain.is_important.is_(True))
         if f.wildcard:
             query = query.where(Subdomain.is_wildcard.is_(True))
+        if f.new:
+            query = query.where(~self._seen_earlier())
+        if f.resolved:
+            query = query.where(
+                func.jsonb_array_length(cast(Subdomain.resolved_ips, JSONB)) > 0
+            )
         if f.auth:
             query = query.where(
                 or_(
@@ -350,8 +347,14 @@ class SubdomainService:
             )
         if f.ip:
             query = query.where(cast(Subdomain.resolved_ips, Text).ilike(f"%{f.ip}%"))
+        if f.cname:
+            query = query.where(Subdomain.cname.ilike(f"%{f.cname}%"))
+        if f.favicon:
+            query = query.where(Subdomain.favicon_hash == f.favicon)
         if f.title:
             query = query.where(Subdomain.page_title.ilike(f"%{f.title}%"))
+        if f.title_exact:
+            query = query.where(Subdomain.page_title == f.title_exact)
         if f.issues:
             query = query.where(
                 or_(
@@ -371,11 +374,27 @@ class SubdomainService:
         return query
 
     @staticmethod
+    def _seen_earlier():
+        earlier = aliased(Subdomain)
+        return exists(
+            select(1).where(
+                earlier.target_id == Subdomain.target_id,
+                earlier.name == Subdomain.name,
+                earlier.scan_id != Subdomain.scan_id,
+                earlier.discovered_at < Subdomain.discovered_at,
+            )
+        )
+
+    @staticmethod
     def _order(query, f: SubdomainFilter):
         col = {
             "status": Subdomain.http_status,
             "size": Subdomain.content_length,
             "time": Subdomain.response_time,
+            "title": Subdomain.page_title,
+            "cert": Subdomain.tls_not_after,
+            "discovered": Subdomain.discovered_at,
+            "ip": cast(Subdomain.resolved_ips, JSONB).op("->>")(0),
         }.get(f.sort, Subdomain.name)
         primary = col.desc() if f.order == "desc" else col.asc()
         return query.order_by(primary.nulls_last(), Subdomain.name.asc())
@@ -406,15 +425,38 @@ class SubdomainService:
             for ip, number in port_rows.all():
                 ports_by_ip.setdefault(ip, set()).add(number)
 
+        title_counts = await self._shared_counts(
+            scan_id, Subdomain.page_title, {s.page_title for s in rows if s.page_title}
+        )
+        favicon_counts = await self._shared_counts(
+            scan_id,
+            Subdomain.favicon_hash,
+            {s.favicon_hash for s in rows if s.favicon_hash},
+        )
         items = []
         for s in rows:
             nums: set[int] = set()
             for ip in s.resolved_ips or []:
                 nums |= ports_by_ip.get(ip, set())
             items.append(
-                SubdomainRow(**self._to_read(s).model_dump(), ports=sorted(nums))
+                SubdomainRow(
+                    **self._to_read(s).model_dump(),
+                    ports=sorted(nums),
+                    title_count=title_counts.get(s.page_title, 0),
+                    favicon_count=favicon_counts.get(s.favicon_hash, 0),
+                )
             )
         return SubdomainSearchResult(items=items, total=int(total or 0))
+
+    async def _shared_counts(self, scan_id: UUID, col, values: set) -> dict:
+        if not values:
+            return {}
+        rows = await self.session.execute(
+            select(col, func.count())
+            .where(Subdomain.scan_id == scan_id, col.in_(values))
+            .group_by(col)
+        )
+        return {value: int(n) for value, n in rows.all()}
 
     async def facets(self, project_id: UUID, scan_id: UUID) -> SubdomainFacets:
         now = utc_now()
@@ -499,13 +541,29 @@ class SubdomainService:
         )
 
     async def _json_facet(
-        self, column: str, project_id: UUID, scan_id: UUID
+        self,
+        column: str,
+        project_id: UUID,
+        scan_id: UUID,
+        *,
+        limit: int = _FACET_LIMIT,
+        search: str | None = None,
     ) -> list[Facet]:
-        stmt = _FACET_SQL[column].bindparams(
-            pid=project_id, sid=scan_id, lim=_FACET_LIMIT
-        )
+        if search:
+            stmt = _FACET_SEARCH_SQL[column].bindparams(
+                pid=project_id, sid=scan_id, lim=limit, q=f"%{search}%"
+            )
+        else:
+            stmt = _FACET_SQL[column].bindparams(pid=project_id, sid=scan_id, lim=limit)
         rows = await self.session.execute(stmt)
         return [Facet(value=v, label=v, count=c) for v, c in rows.all()]
+
+    async def tech(
+        self, project_id: UUID, scan_id: UUID, search: str | None, limit: int
+    ) -> list[Facet]:
+        return await self._json_facet(
+            "tech", project_id, scan_id, limit=min(limit, _TECH_LIMIT), search=search
+        )
 
     async def related(
         self, project_id: UUID, scan_id: UUID, name: str
@@ -648,6 +706,20 @@ class SubdomainService:
                     func.count().filter(live).label("live"),
                     func.count().filter(Subdomain.http_status.isnot(None)).label("web"),
                     func.count()
+                    .filter(
+                        func.jsonb_array_length(cast(Subdomain.resolved_ips, JSONB)) > 0
+                    )
+                    .label("resolved"),
+                    func.count()
+                    .filter(
+                        and_(
+                            Subdomain.cname.isnot(None),
+                            func.jsonb_array_length(cast(Subdomain.resolved_ips, JSONB))
+                            == 0,
+                        )
+                    )
+                    .label("cname_only"),
+                    func.count()
                     .filter(Subdomain.screenshot_path.isnot(None))
                     .label("shots"),
                     func.count().filter(Subdomain.is_cdn.is_(True)).label("cdn"),
@@ -693,6 +765,14 @@ class SubdomainService:
             .select_from(IpAddress)
             .where(IpAddress.project_id == project_id, IpAddress.scan_id == scan_id)
         )
+        if not ip_total:
+            ip_total = await self.session.scalar(
+                text(
+                    "SELECT count(DISTINCT ip) FROM subdomains s, "
+                    "LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip "
+                    "WHERE s.project_id = :pid AND s.scan_id = :sid"
+                ).bindparams(pid=project_id, sid=scan_id)
+            )
         asn_total = await self.session.scalar(
             select(func.count(distinct(IpAddress.asn))).where(
                 IpAddress.project_id == project_id,
@@ -708,6 +788,12 @@ class SubdomainService:
 
         surface = [
             SurfaceStat(key="subdomains", label="Subdomains", value=counts.total),
+            SurfaceStat(
+                key="resolved",
+                label="Resolved",
+                value=counts.resolved,
+                filter="is:resolved",
+            ),
             SurfaceStat(key="live", label="Live", value=counts.live, filter="is:live"),
             SurfaceStat(key="web", label="With web", value=counts.web, filter="is:web"),
             SurfaceStat(
@@ -772,6 +858,21 @@ class SubdomainService:
             if n > 0
         ]
 
+        sources = [
+            Tally(name=f.value, count=f.count)
+            for f in (await self._json_facet("sources", project_id, scan_id))[:8]
+        ]
+        unresolved = counts.total - counts.resolved - counts.cname_only
+        resolution = [
+            Bucket(key=k, label=lbl, count=n, klass=klass)
+            for k, lbl, n, klass in (
+                ("resolved", "Resolves to an IP", counts.resolved, "success"),
+                ("cname", "CNAME only", counts.cname_only, "info"),
+                ("unresolved", "No DNS answer", unresolved, "muted"),
+            )
+            if n > 0
+        ]
+
         reframe_key = case(
             (Subdomain.http_status.is_(None), "none"),
             (Subdomain.http_status < _HTTP_REDIRECT, "live"),
@@ -823,8 +924,16 @@ class SubdomainService:
 
         top_tech = [
             Tally(name=f.value, count=f.count)
-            for f in (await self._json_facet("tech", project_id, scan_id))[:8]
+            for f in await self._json_facet(
+                "tech", project_id, scan_id, limit=_TOP_TECH
+            )
         ]
+        tech_total = int(
+            await self.session.scalar(
+                _DISTINCT_SQL["tech"].bindparams(pid=project_id, sid=scan_id)
+            )
+            or 0
+        )
         asn_rows = await self.session.execute(
             select(IpAddress.asn_org, func.count())
             .where(
@@ -890,9 +999,12 @@ class SubdomainService:
         return SubdomainInsights(
             surface=surface,
             attention=attention,
+            sources=sources,
+            resolution=resolution,
             status_reframe=status_reframe,
             cert_buckets=cert_buckets,
             top_tech=top_tech,
+            tech_total=tech_total,
             top_asn=top_asn,
             services=services,
             clusters=clusters[:_CLUSTER_LIMIT],

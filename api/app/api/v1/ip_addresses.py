@@ -8,7 +8,7 @@ from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.ip_address import IpAddressService
 from shared.models.ip_address import IpAddressRead, IpAddressSummary
-from shared.models.scan_correlation import IpGroupPage
+from shared.models.scan_correlation import IpFacets, IpGroupFilter, IpGroupPage
 
 router = APIRouter(
     prefix="/ips",
@@ -62,6 +62,27 @@ async def ip_groups(
         limit=limit,
         offset=offset,
     )
+
+
+@router.post("/search", response_model=IpGroupPage)
+async def ip_search(
+    _current_user: CurrentUser,
+    service: Annotated[IpAddressService, Depends(get_service)],
+    _project_id: Annotated[UUID, Query(alias="project_id", description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    body: IpGroupFilter,
+):
+    return await service.search(scan_id=scan_id, f=body)
+
+
+@router.get("/facets", response_model=IpFacets)
+async def ip_facets(
+    _current_user: CurrentUser,
+    service: Annotated[IpAddressService, Depends(get_service)],
+    _project_id: Annotated[UUID, Query(alias="project_id", description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    return await service.facets(scan_id=scan_id)
 
 
 @router.get("/summary", response_model=IpAddressSummary)

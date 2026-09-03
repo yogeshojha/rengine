@@ -2,23 +2,38 @@
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Play from '@lucide/svelte/icons/play';
-	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
-	import ArrowDownRight from '@lucide/svelte/icons/arrow-down-right';
+	import Ban from '@lucide/svelte/icons/ban';
+	import Copy from '@lucide/svelte/icons/copy';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
+	import Globe from '@lucide/svelte/icons/globe';
+	import Server from '@lucide/svelte/icons/server';
+	import Workflow from '@lucide/svelte/icons/workflow';
 
 	import { scansApi } from '$lib/api/scans';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { SSEChannel, SSEEventType } from '$lib/types/sse';
 	import type { ScanEvent } from '$lib/types/sse';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { Kbd } from '$lib/components/ui/kbd';
 	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
+	import ConfirmDialog from '@/components/confirm-dialog.svelte';
 	import ScanActivityTimeline from '$lib/components/scans/scan-activity-timeline.svelte';
 	import ScanCommandLog from '$lib/components/scans/scan-command-log.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
@@ -26,28 +41,51 @@
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { writeClipboard } from '$lib/utilities/clipboard';
 	import {
-		scanCountPills,
 		durationLabel,
 		isLiveStatus,
+		scanStatusIcon,
+		SCAN_STATUS_LABEL,
 		SCAN_POLL_MS
 	} from '$lib/utilities/scan-status';
 	import { emptyQuery, type WebAssetQuery } from '$lib/utilities/scan-insights';
+	import { targetTypeLabel } from '$lib/types/scan-engine';
+	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
+	import type { TargetType } from '$lib/types/target';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
 	import { ROUTES } from '$lib/config/routes';
 	import { NOW_TICK_MS } from '$lib/constants';
 
 	const TABS = ['overview', 'web-assets', 'ips', 'pipeline'] as const;
 	type TabKey = (typeof TABS)[number];
+	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
+		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
+		{ key: 'web-assets', label: 'Web Assets', icon: Globe },
+		{ key: 'ips', label: 'IPs', icon: Server },
+		{ key: 'pipeline', label: 'Pipeline', icon: Workflow }
+	];
+	const HISTORY_SIZE = 12;
+	const STATUS_TEXT: Record<string, string> = {
+		running: 'text-info',
+		completed: 'text-success',
+		failed: 'text-destructive'
+	};
 
 	const scanId = $derived(page.params.id ?? '');
 
 	let scan = $state<ScanRead | null>(null);
 	let activities = $state<ScanActivityRead[]>([]);
 	let commands = $state<ScanCommandRead[]>([]);
+	let history = $state<ScanRead[]>([]);
+	let historyLoaded = $state(false);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let showRescan = $state(false);
+	let cancelOpen = $state(false);
+	let cancelling = $state(false);
+	let headerEl = $state<HTMLElement | null>(null);
+	let condensed = $state(false);
 	let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 	let now = $state(Date.now());
 	let webQuery = $state<WebAssetQuery>(emptyQuery());
@@ -62,7 +100,9 @@
 	function setTab(v: string) {
 		activeTab = v as TabKey;
 		try {
-			replaceState(`?tab=${v}`, page.state);
+			const sp = new SvelteURLSearchParams(location.search);
+			sp.set('tab', v);
+			replaceState(`?${sp.toString()}`, page.state);
 		} catch {
 			// ignore — URL state is best-effort
 		}
@@ -73,10 +113,23 @@
 		setTab('web-assets');
 	}
 
-	function pillTab(key: string): TabKey | null {
-		if (/sub|web|http|asset/.test(key)) return 'web-assets';
-		if (/ip|port/.test(key)) return 'ips';
-		return null;
+	function openTab(tab: string, filter?: string) {
+		if (filter) applyFilter(filter);
+		else setTab(tab);
+	}
+
+	function onKeydown(e: KeyboardEvent) {
+		if (e.metaKey || e.ctrlKey || e.altKey) return;
+		const t = e.target as HTMLElement | null;
+		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+		const n = Number(e.key);
+		if (n >= 1 && n <= TABS.length) setTab(TABS[n - 1]);
+	}
+
+	async function copyTarget() {
+		if (!scan) return;
+		const ok = await writeClipboard(scan.execution_config.target_value);
+		if (ok) toast.success('Copied');
 	}
 
 	$effect(() => {
@@ -85,20 +138,65 @@
 		return () => clearInterval(t);
 	});
 
-	let counters = $derived(scan ? scanCountPills(scan) : []);
-	let shouldPoll = $derived(!!scan && isLiveStatus(scan.status) && !sseStore.isConnected);
+	$effect(() => {
+		const el = headerEl;
+		if (!el) return;
+		const io = new IntersectionObserver(([entry]) => (condensed = !entry.isIntersecting), {
+			threshold: 0
+		});
+		io.observe(el);
+		return () => io.disconnect();
+	});
 
-	let delta = $derived(
-		scan && !scan.is_first_scan && (scan.new_subdomains || scan.gone_subdomains)
-			? { added: scan.new_subdomains ?? 0, removed: scan.gone_subdomains ?? 0 }
-			: null
+	let live = $derived(!!scan && isLiveStatus(scan.status));
+	let shouldPoll = $derived(live && !sseStore.isConnected);
+	let TargetIcon = $derived(
+		scan ? (TARGET_TYPE_ICONS[scan.execution_config.target_type as TargetType] ?? Globe) : Globe
 	);
+	let StatusIcon = $derived(scan ? scanStatusIcon(scan.status) : Globe);
+	let previous = $derived.by<ScanRead | null>(() => {
+		if (!scan) return null;
+		const at = new Date(scan.started_at ?? scan.created_at).getTime();
+		return (
+			history.find(
+				(s) =>
+					s.id !== scan!.id &&
+					s.status === 'completed' &&
+					new Date(s.started_at ?? s.created_at).getTime() < at
+			) ?? null
+		);
+	});
+	let previousDuration = $derived.by<number | null>(() => {
+		if (!scan) return null;
+		const done = history.filter(
+			(s) => s.id !== scan!.id && s.status === 'completed' && s.duration_seconds != null
+		);
+		return done.find((s) => s.engine_name === scan!.engine_name)?.duration_seconds ?? null;
+	});
+	let tabCounts = $derived<Record<TabKey, number | null>>({
+		overview: null,
+		'web-assets': scan?.subdomains_found ?? 0,
+		ips: scan?.ips_found ?? 0,
+		pipeline: null
+	});
+	let timing = $derived.by(() => {
+		if (!scan) return '';
+		if (scan.status === 'pending') return `created ${relativeTime(scan.created_at)}`;
+		if (live)
+			return `started ${relativeTime(scan.started_at)} · ${durationLabel(scan, now)} elapsed`;
+		const end = scan.completed_at ? relativeTime(scan.completed_at) : relativeTime(scan.started_at);
+		return `${end} · took ${durationLabel(scan, now)}`;
+	});
 
 	let lastScanId = '';
 	$effect(() => {
 		if (scanId && scanId !== lastScanId) {
 			lastScanId = scanId;
-			untrack(() => (webQuery = emptyQuery()));
+			untrack(() => {
+				webQuery = emptyQuery();
+				history = [];
+				historyLoaded = false;
+			});
 		}
 	});
 
@@ -113,6 +211,23 @@
 		}
 	}
 
+	async function loadHistory(projectId: string, targetId: string) {
+		try {
+			const res = await scansApi.list(projectId, {
+				target_id: targetId,
+				size: HISTORY_SIZE,
+				sort_by: 'started',
+				sort_dir: 'desc'
+			});
+			history = res.items;
+		} catch {
+			// history is supplementary
+		} finally {
+			historyLoaded = true;
+		}
+	}
+
+	let lastStatus: string | null = null;
 	async function load(silent = false) {
 		const project = projectsStore.activeProject;
 		if (!project || !scanId) return;
@@ -121,7 +236,12 @@
 		try {
 			scan = await scansApi.get(scanId, project.id);
 			if (!silent) breadcrumbStore.set(scanId, `${scan.execution_config.target_value} scan`);
-			await loadPipeline(project.id);
+			const statusChanged = scan.status !== lastStatus;
+			lastStatus = scan.status;
+			await Promise.all([
+				loadPipeline(project.id),
+				statusChanged || !historyLoaded ? loadHistory(project.id, scan.target_id) : null
+			]);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load scan';
 		} finally {
@@ -137,10 +257,26 @@
 		}, 600);
 	}
 
+	async function confirmCancel() {
+		if (!scan) return;
+		cancelling = true;
+		const ok = await liveScans.cancel(scan);
+		cancelling = false;
+		cancelOpen = false;
+		if (ok) {
+			toast.success('Scan cancelled');
+			load(true);
+		} else toast.error('Could not cancel the scan');
+	}
+
 	$effect(() => {
 		const project = projectsStore.activeProject;
 		const id = scanId;
 		if (project && id) untrack(() => load());
+	});
+
+	$effect(() => {
+		if (!engineCatalogStore.hasFetched) engineCatalogStore.fetch();
 	});
 
 	$effect(() => {
@@ -164,9 +300,12 @@
 	});
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
+	let targetHref = $derived(scan ? ROUTES.target(scan.target_id) : ROUTES.scans);
 </script>
 
-<div class="flex w-full flex-col gap-4 px-4 py-4 md:px-6">
+<svelte:window onkeydown={onKeydown} />
+
+<div class="flex w-full flex-col gap-5 px-4 py-4 md:px-6">
 	<a
 		href={ROUTES.scans}
 		class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -176,8 +315,8 @@
 	</a>
 
 	{#if loading && !scan}
-		<Skeleton class="h-28 w-full" />
-		<Skeleton class="h-9 w-80" />
+		<Skeleton class="h-16 w-2/3" />
+		<Skeleton class="h-10 w-96" />
 		<Skeleton class="h-96 w-full" />
 	{:else if error}
 		<Empty.Root class="rounded-lg border border-dashed py-20">
@@ -190,122 +329,155 @@
 			</Empty.Content>
 		</Empty.Root>
 	{:else if scan}
-		<div class="rounded-lg border border-border p-4">
-			<div class="flex flex-wrap items-start justify-between gap-3">
-				<div class="flex flex-col gap-1">
-					<div class="flex items-center gap-2">
-						<h1 class="font-mono text-lg">{scan.execution_config.target_value}</h1>
-						<ScanStatusBadge status={scan.status} />
+		<header bind:this={headerEl} class="flex flex-wrap items-start justify-between gap-4">
+			<div class="flex min-w-0 items-start gap-3">
+				<div
+					class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40"
+				>
+					<TargetIcon class="size-5 text-muted-foreground" />
+				</div>
+				<div class="min-w-0">
+					<div class="flex flex-wrap items-center gap-2">
+						<h1 class="truncate font-mono text-xl font-medium">
+							{scan.execution_config.target_value}
+						</h1>
+						<Badge variant="outline" class="font-normal text-muted-foreground">
+							{targetTypeLabel(scan.execution_config.target_type)}
+						</Badge>
 					</div>
-					<p class="text-sm text-muted-foreground">
-						{scan.engine_name} · {scan.context_name ?? 'engine defaults'}
+					<p
+						class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground"
+					>
+						<ScanStatusBadge status={scan.status} class="h-5" />
+						<span>{timing}</span>
+						<span aria-hidden="true">·</span>
+						<span>{scan.engine_name}</span>
+						<span aria-hidden="true">·</span>
+						<span>{scan.context_name ?? 'engine defaults'}</span>
 					</p>
 				</div>
-				<div class="flex items-center gap-2">
-					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => load()}>
-						<RefreshCw class="size-3.5 {loading ? 'animate-spin' : ''}" />
-						Refresh
+			</div>
+			<div class="flex items-center gap-2">
+				{#if live}
+					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (cancelOpen = true)}>
+						<Ban class="size-3.5" />
+						Cancel
 					</Button>
+				{:else}
 					<Button size="sm" class="gap-1.5" onclick={() => (showRescan = true)}>
 						<Play class="size-3.5" />
 						Re-scan
 					</Button>
-				</div>
+				{/if}
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button {...props} variant="outline" size="icon-sm" aria-label="More actions">
+								<Ellipsis class="size-4" />
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-48">
+						<DropdownMenu.Item onclick={() => load()}>
+							<RefreshCw class="size-4" />
+							Refresh
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={copyTarget}>
+							<Copy class="size-4" />
+							Copy target
+						</DropdownMenu.Item>
+						<DropdownMenu.Item>
+							{#snippet child({ props })}
+								<a {...props} href={targetHref}>
+									<ExternalLink class="size-4" />
+									Open target
+								</a>
+							{/snippet}
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
 			</div>
+		</header>
 
-			<div class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
-				<span>Started {scan.started_at ? relativeTime(scan.started_at) : '—'}</span>
-				<span>Duration {durationLabel(scan, now)}</span>
-				<span>Created {relativeTime(scan.created_at)}</span>
-				{#if scan.completed_at}<span>Finished {relativeTime(scan.completed_at)}</span>{/if}
-			</div>
-
-			{#if scan.error}
-				<p
-					class="mt-3 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive"
-				>
-					{scan.error}
-				</p>
-			{/if}
-
-			<div class="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
-				{#each counters as c (c.key)}
-					{@const PillIcon = c.icon}
-					{@const tab = pillTab(c.key)}
-					{#if tab}
-						<button
-							type="button"
-							class="rounded-md border bg-card/40 p-2.5 text-left hover:border-foreground/30 border-border"
-							onclick={() => setTab(tab)}
-						>
-							<div class="text-lg font-semibold tabular-nums">
-								{c.value.toLocaleString()}
-							</div>
-							<div class="flex items-center gap-1 text-xs text-muted-foreground">
-								<PillIcon class="size-3" />
-								{c.label}
-							</div>
-						</button>
-					{:else}
-						<div class="rounded-md border bg-card/40 p-2.5 border-border">
-							<div class="text-lg font-semibold tabular-nums">
-								{c.value.toLocaleString()}
-							</div>
-							<div class="flex items-center gap-1 text-xs text-muted-foreground">
-								<PillIcon class="size-3" />
-								{c.label}
-							</div>
-						</div>
-					{/if}
-				{/each}
-			</div>
-
-			{#if delta}
-				<div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
-					{#if delta.added > 0}
-						<span class="flex items-center gap-1 text-success">
-							<ArrowUpRight class="size-3.5" />
-							{delta.added} new subdomain{delta.added === 1 ? '' : 's'}
-						</span>
-					{/if}
-					{#if delta.removed > 0}
-						<span class="flex items-center gap-1 text-muted-foreground">
-							<ArrowDownRight class="size-3.5" />
-							{delta.removed} retired
-						</span>
-					{/if}
-					<span class="text-muted-foreground">since previous scan</span>
-				</div>
-			{/if}
-		</div>
+		{#if scan.error && scan.status === 'failed'}
+			<p
+				class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+			>
+				{scan.error}
+			</p>
+		{/if}
 
 		<Tabs.Root value={activeTab} onValueChange={setTab}>
-			<Tabs.List>
-				<Tabs.Trigger value="overview">Overview</Tabs.Trigger>
-				<Tabs.Trigger value="web-assets">
-					Web Assets <span class="ml-1 text-muted-foreground">{scan.subdomains_found}</span>
-				</Tabs.Trigger>
-				<Tabs.Trigger value="ips">
-					IPs <span class="ml-1 text-muted-foreground">{scan.ips_found}</span>
-				</Tabs.Trigger>
-				<Tabs.Trigger value="pipeline">
-					Pipeline <span class="ml-1 text-muted-foreground">{activities.length}</span>
-				</Tabs.Trigger>
-			</Tabs.List>
+			<div
+				class="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-6 md:px-6"
+			>
+				<div class="flex items-center gap-4">
+					{#if condensed}
+						<div
+							class="hidden shrink-0 items-center gap-2 border-r border-border py-2 pr-4 sm:flex"
+						>
+							<span class="font-mono text-sm">{scan.execution_config.target_value}</span>
+							<StatusIcon
+								class="size-3.5 {STATUS_TEXT[scan.status] ??
+									'text-muted-foreground'} {scan.status === 'running' ? 'animate-spin' : ''}"
+								aria-label={SCAN_STATUS_LABEL[scan.status]}
+							/>
+						</div>
+					{/if}
+					<Tabs.List class="h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0">
+						{#each TAB_DEFS as t, i (t.key)}
+							{@const n = tabCounts[t.key]}
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									{#snippet child({ props })}
+										<Tabs.Trigger
+											{...props}
+											value={t.key}
+											class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
+										>
+											<t.icon class="size-3.5" />
+											{t.label}
+											{#if n != null}
+												<span
+													class="text-xs tabular-nums {n === 0
+														? 'text-muted-foreground/50'
+														: 'text-muted-foreground'}">{n.toLocaleString()}</span
+												>
+											{/if}
+										</Tabs.Trigger>
+									{/snippet}
+								</Tooltip.Trigger>
+								<Tooltip.Content side="bottom" class="flex items-center gap-1.5">
+									{t.label}
+									<Kbd>{i + 1}</Kbd>
+								</Tooltip.Content>
+							</Tooltip.Root>
+						{/each}
+					</Tabs.List>
+				</div>
+			</div>
 
-			<Tabs.Content value="overview" class="mt-4">
+			<Tabs.Content value="overview" class="mt-6">
 				{#key scan.id}
 					<ScanOverview
 						{scan}
 						scanId={scan.id}
 						{projectId}
+						{activities}
+						{history}
+						{historyLoaded}
+						{previous}
+						{previousDuration}
+						{now}
 						active={activeTab === 'overview'}
 						onFilter={applyFilter}
+						onTab={openTab}
+						onRescan={() => (showRescan = true)}
 					/>
 				{/key}
 			</Tabs.Content>
 
-			<Tabs.Content value="web-assets" class="mt-4">
+			<Tabs.Content value="web-assets" class="mt-6">
 				{#key scan.id}
 					<WebAssetsTable
 						scanId={scan.id}
@@ -316,13 +488,13 @@
 				{/key}
 			</Tabs.Content>
 
-			<Tabs.Content value="ips" class="mt-4">
+			<Tabs.Content value="ips" class="mt-6">
 				{#key scan.id}
-					<IpsTable scanId={scan.id} {projectId} active={activeTab === 'ips'} />
+					<IpsTable scanId={scan.id} {projectId} active={activeTab === 'ips'} onTab={openTab} />
 				{/key}
 			</Tabs.Content>
 
-			<Tabs.Content value="pipeline" class="mt-4 space-y-4">
+			<Tabs.Content value="pipeline" class="mt-6 space-y-4">
 				{#if activities.length}
 					<ScanActivityTimeline {activities} />
 				{:else}
@@ -349,5 +521,16 @@
 		bind:open={showRescan}
 		targetId={scan.target_id}
 		onClose={() => (showRescan = false)}
+	/>
+	<ConfirmDialog
+		bind:open={cancelOpen}
+		title="Cancel this scan?"
+		description="The scan will stop queuing further work and be marked cancelled."
+		confirmLabel="Cancel scan"
+		destructive
+		loading={cancelling}
+		loadingLabel="Cancelling…"
+		onOpenChange={(o) => (cancelOpen = o)}
+		onConfirm={confirmCancel}
 	/>
 {/if}

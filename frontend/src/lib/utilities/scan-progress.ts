@@ -1,7 +1,7 @@
-import type { ScanRead } from '$lib/types/scan';
+import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 import type { StageCatalogEntry } from '$lib/types/scan-engine';
 import type { LiveRun } from '$lib/stores/live-scans.svelte';
-import { formatSeconds } from '$lib/utilities/scan-status';
+import { activitySummary, formatSeconds } from '$lib/utilities/scan-status';
 
 export function plannedStages(scan: ScanRead, catalog: StageCatalogEntry[]): StageCatalogEntry[] {
 	const cfg = scan.execution_config.stages ?? {};
@@ -72,4 +72,42 @@ export function stageProgress(
 	else if (total > 0 && done >= total) label = 'Publishing results';
 	else label = 'Starting';
 	return { done, total, percent, label, steps: stageSteps(run, planned) };
+}
+
+export interface StageRow extends StageStep {
+	phase: string;
+	summary: string;
+	duration: number | null;
+	error: string | null;
+}
+
+const ACTIVITY_STATE: Record<string, StageStepState | undefined> = {
+	success: 'done',
+	failed: 'failed',
+	aborted: 'failed',
+	running: 'running'
+};
+
+export function stageRows(
+	planned: StageCatalogEntry[],
+	activities: ScanActivityRead[],
+	run: LiveRun | undefined
+): StageRow[] {
+	const byName = new Map(activities.map((a) => [a.name, a]));
+	return planned.map((s) => {
+		const a = byName.get(s.name);
+		let state: StageStepState = (a && ACTIVITY_STATE[a.status]) ?? 'pending';
+		if (run?.failed.includes(s.name)) state = 'failed';
+		else if (run?.done.includes(s.name) && state === 'pending') state = 'done';
+		else if (run?.stage?.name === s.name) state = 'running';
+		return {
+			name: s.name,
+			title: s.title,
+			phase: s.phase,
+			state,
+			summary: a?.status === 'success' ? activitySummary(a.result) : '',
+			duration: a?.duration_seconds ?? null,
+			error: a?.error ?? null
+		};
+	});
 }

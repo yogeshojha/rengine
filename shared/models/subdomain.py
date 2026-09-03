@@ -93,6 +93,8 @@ class SubdomainRead(BaseModel):
 
 class SubdomainRow(SubdomainRead):
     ports: list[int] = Field(default_factory=list)
+    title_count: int = 0
+    favicon_count: int = 0
 
 
 class SubdomainSummary(BaseModel):
@@ -124,8 +126,13 @@ class SubdomainFilter(BaseModel):
     auth: bool = False
     important: bool = False
     wildcard: bool = False
+    new: bool = False
+    resolved: bool = False
     ip: str | None = Field(default=None, max_length=100)
+    cname: str | None = Field(default=None, max_length=500)
+    favicon: str | None = Field(default=None, max_length=64)
     title: str | None = Field(default=None, max_length=200)
+    title_exact: str | None = Field(default=None, max_length=500)
     sort: str = Field(default="name", max_length=20)
     order: str = Field(default="asc", max_length=4)
     limit: int = Field(default=50, ge=1, le=200)
