@@ -1121,8 +1121,8 @@ SERVICE_FLAGS: dict[str, str] = {
     "http": "Answered an HTTP request",
     "tls": "Negotiates TLS",
     "sensitive": "An administrative or datastore port",
-    "named": "The software behind it was identified",
-    "passive": "Reported by an internet-wide scanner, not confirmed here",
+    "named": "Software identified",
+    "passive": "Reported by an internet-wide scanner, not confirmed by this scan",
     "confirmed": "Observed directly by this scan",
     "cdn": "On a CDN-fronted address",
     "hosted": "A hostname resolves to the address",
@@ -1155,7 +1155,7 @@ SERVICE_FIELDS: tuple[QueryField, ...] = (
         name="class",
         type=FieldType.ENUM,
         group="Service",
-        description="Which kind of service this is.",
+        description="Service class.",
         example="class:database",
         aliases=("kind",),
         values=tuple(SERVICE_EXPOSURE),
@@ -1280,7 +1280,7 @@ SERVICE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     GroupDimension(
         key="class",
         label="Service class",
-        description="Ports grouped by what kind of service they run",
+        description="Services of the same class",
     ),
     GroupDimension(
         key="port",
@@ -1290,7 +1290,7 @@ SERVICE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     GroupDimension(
         key="product",
         label="Software",
-        description="Services running the same named software",
+        description="Services running the same software",
     ),
     GroupDimension(
         key="ip",
@@ -1305,7 +1305,7 @@ SERVICE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     GroupDimension(
         key="org",
         label="Network operator",
-        description="Services run on the same operator's network",
+        description="Services on the same operator's network",
     ),
     GroupDimension(
         key="country",
@@ -1315,7 +1315,7 @@ SERVICE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     GroupDimension(
         key="source",
         label="Evidence",
-        description="Services grouped by how they were observed",
+        description="Services with the same evidence",
     ),
 )
 
@@ -1337,7 +1337,7 @@ SERVICE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="service:[redis,memcached,mongodb,elasticsearch]",
-        description="Data stores that ship without authentication",
+        description="Data stores with no authentication by default",
         group="Critical exposure",
     ),
     QueryExample(
@@ -1369,7 +1369,7 @@ SERVICE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="service:ssh and not port:22",
-        description="SSH moved off its usual port",
+        description="SSH on a non-standard port",
         group="Remote access",
     ),
     QueryExample(
@@ -1390,12 +1390,12 @@ SERVICE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:http and not is:tls",
-        description="Web services answering without TLS",
+        description="Web services without TLS",
         group="Web surface",
     ),
     QueryExample(
         query="class:web and not is:http",
-        description="Web ports open with nothing answering",
+        description="Web ports with no HTTP response",
         group="Web surface",
     ),
     QueryExample(
@@ -1405,19 +1405,19 @@ SERVICE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:passive",
-        description="Ports reported by scanners but not confirmed here",
+        description="Ports reported by external scanners, not confirmed",
         group="Evidence",
         generic=True,
     ),
     QueryExample(
         query="is:named",
-        description="Services whose software was identified",
+        description="Services with identified software",
         group="Evidence",
         generic=True,
     ),
     QueryExample(
         query="is:confirmed and not is:named",
-        description="Open ports with no service identified yet",
+        description="Open ports with no service identified",
         group="Evidence",
     ),
     QueryExample(

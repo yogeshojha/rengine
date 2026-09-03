@@ -9,7 +9,7 @@ class ServiceFingerprintConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Fingerprint services",
-        description="Read the banner on every non-web port to name the software behind it.",
+        description="Identify the software behind every non-web port from its service banner.",
     )
     threads: int = threads(32, title="Concurrency")
     timeout: int = timeout(4, title="Timeout (s)")

@@ -63,16 +63,16 @@ export enum PortSource {
 
 export const PORT_SOURCE_LABELS: Record<string, string> = {
 	naabu: 'Port scan',
-	internetdb: 'Known exposure',
+	internetdb: 'External scanner',
 	http_probe: 'HTTP probe',
 	banner: 'Service banner'
 };
 
 export const PORT_SOURCE_HELP: Record<string, string> = {
-	naabu: 'This scan completed a TCP connection to the port',
-	internetdb: 'Reported by an internet-wide scanner, not confirmed here',
-	http_probe: 'The port answered an HTTP request from this scan',
-	banner: 'The port returned a service banner to this scan'
+	naabu: 'TCP connection completed by this scan',
+	internetdb: 'Reported by an internet-wide scanner, not confirmed by this scan',
+	http_probe: 'Answered an HTTP request from this scan',
+	banner: 'Returned a service banner to this scan'
 };
 
 // mirrors shared/definitions/ports.py SCAN_POLICY_LABELS

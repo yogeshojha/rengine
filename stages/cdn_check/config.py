@@ -9,5 +9,5 @@ class CdnCheckConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Attribute CDNs and cloud",
-        description="Identify which addresses sit behind a CDN, WAF or cloud provider.",
+        description="Identify which addresses are fronted by a CDN, WAF or cloud provider.",
     )

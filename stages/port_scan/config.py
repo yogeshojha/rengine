@@ -23,7 +23,7 @@ class PortScanConfig(StageConfig):
     profile: PortProfile = Field(
         default=PortProfile.EXPOSURE,
         title="Port set",
-        description="Which ports to probe. Web and sensitive covers the web surface plus admin and database ports.",
+        description="Ports to probe. Web and sensitive covers the web surface plus administrative and datastore ports.",
         json_schema_extra={"option_labels": _PROFILE_LABELS},
     )
     ports: str = Field(
@@ -48,7 +48,7 @@ class PortScanConfig(StageConfig):
     threads: int = threads(
         100,
         title="Concurrency",
-        description="Sockets in flight. The packet rate, not this, is what the target feels.",
+        description="Sockets in flight. The packet rate governs load on the target.",
     )
     timeout: int = timeout(3, title="Timeout (s)")
     retries: int = Field(
@@ -61,13 +61,13 @@ class PortScanConfig(StageConfig):
     cdn_policy: ScanPolicy = Field(
         default=ScanPolicy.WEB,
         title="CDN-fronted addresses",
-        description="A CDN edge answers for thousands of names, so a full scan there reports the CDN, not you.",
+        description="A CDN edge answers for many names. A full scan there profiles the CDN rather than the target.",
         json_schema_extra={"option_labels": SCAN_POLICY_LABELS},
     )
     scan_cloud: bool = Field(
         default=True,
         title="Scan cloud addresses in full",
-        description="Cloud ranges host your own machines, unlike a CDN edge. Scan them like any other address.",
+        description="Cloud ranges host customer machines, unlike a CDN edge. Scan them like any other address.",
     )
     skip_private: bool = Field(
         default=True,
@@ -79,7 +79,7 @@ class PortScanConfig(StageConfig):
         ge=0,
         le=65535,
         title="Open-port threshold",
-        description="Discard a host reporting more open ports than this. It is a tarpit, not a surface. 0 disables.",
+        description="Discard a host reporting more open ports than this. A host above the threshold is a tarpit, not a surface. 0 disables.",
     )
     max_addresses: int = Field(
         default=8192,

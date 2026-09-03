@@ -60,7 +60,7 @@
 		{ value: 'new', label: 'New' },
 		{ value: 'sensitive', label: 'Sensitive' },
 		{ value: 'nonweb', label: 'Non-web' },
-		{ value: 'named', label: 'Named' },
+		{ value: 'named', label: 'Identified' },
 		{ value: 'nocdn', label: 'No CDN' }
 	];
 

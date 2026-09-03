@@ -169,7 +169,7 @@
 							<span class="block">{s.description}</span>
 							{#if s.registered}
 								<span class="block text-muted-foreground">
-									IANA registration for port {s.port}, not observed
+									IANA registration for port {s.port}, not confirmed by this scan
 								</span>
 							{/if}
 						{:else}
@@ -252,7 +252,7 @@
 				title={PORT_SOURCE_HELP[PortSource.INTERNETDB]}
 			>
 				<span class="size-1 rounded-full bg-muted-foreground/50"></span>
-				Not confirmed by this scan
+				Not observed by this scan
 			</button>
 		{:else if s.banner && !software}
 			<span class="min-w-0 truncate font-mono text-xs text-muted-foreground" title={s.banner}>

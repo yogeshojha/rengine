@@ -80,21 +80,21 @@
 		if (exposure.sensitive > 0)
 			return {
 				value: exposure.sensitive,
-				text: `administrative or datastore ${exposure.sensitive === 1 ? 'port is' : 'ports are'} reachable`
+				text: `administrative or datastore ${exposure.sensitive === 1 ? 'port' : 'ports'} exposed`
 			};
 		if (exposure.non_web_services > 0)
 			return {
 				value: exposure.non_web_services,
-				text: `${exposure.non_web_services === 1 ? 'service is' : 'services are'} not a web server`
+				text: `${exposure.non_web_services === 1 ? 'service' : 'services'} outside the web surface`
 			};
 		if (exposure.nonstandard_web > 0)
 			return {
 				value: exposure.nonstandard_web,
-				text: `web ${exposure.nonstandard_web === 1 ? 'service answers' : 'services answer'} off port 80 and 443`
+				text: `web ${exposure.nonstandard_web === 1 ? 'service' : 'services'} on non-standard ports`
 			};
 		return {
 			value: exposure.services,
-			text: `${exposure.services === 1 ? 'service is' : 'services are'} listening across ${plural(exposure.addresses, 'address', 'addresses')}`
+			text: `${exposure.services === 1 ? 'service' : 'services'} listening across ${plural(exposure.addresses, 'address', 'addresses')}`
 		};
 	});
 	let coverageBase = $derived(
@@ -117,10 +117,7 @@
 	</Card.Root>
 {:else if hasData && exposure}
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead
-			title="Exposure"
-			description="Every listening port this scan can account for, and how it was observed."
-		>
+		<PanelHead title="Exposure" description="Listening services and the evidence for each">
 			<span class="tabular-nums">
 				{plural(exposure.services, 'service', 'services')} · {plural(
 					exposure.addresses,
@@ -170,7 +167,7 @@
 						class="h-8 gap-1.5"
 						onclick={() => pick(NONSTANDARD_FILTER)}
 					>
-						{plural(exposure.nonstandard_web, 'web service', 'web services')} off 80 and 443
+						{plural(exposure.nonstandard_web, 'web service', 'web services')} on non-standard ports
 						<ChevronRight class="size-3.5" />
 					</Button>
 				{/if}
@@ -182,7 +179,7 @@
 		>
 			<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
 				<div class="flex flex-col gap-0.5">
-					<h3 class="text-sm font-medium">What is listening</h3>
+					<h3 class="text-sm font-medium">Service classes</h3>
 					<p class="text-xs text-muted-foreground">
 						{exposure.answering_http.toLocaleString()} of {exposure.services.toLocaleString()} answered
 						an HTTP request
@@ -201,8 +198,8 @@
 						class="mt-auto h-auto gap-1 self-start px-0 text-xs"
 						onclick={() => pick(QUIET_FILTER)}
 					>
-						{plural(exposure.web_services - exposure.answering_http, 'web port', 'web ports')} open with
-						nothing answering
+						{plural(exposure.web_services - exposure.answering_http, 'web port', 'web ports')} with no
+						HTTP response
 						<ChevronRight class="size-3.5" />
 					</Button>
 				{/if}
@@ -214,7 +211,7 @@
 						<h3 class="text-sm font-medium">Top services</h3>
 						{#if exposure.named > 0}
 							<span class="shrink-0 text-xs text-muted-foreground tabular-nums">
-								{exposure.named.toLocaleString()} named
+								{exposure.named.toLocaleString()} identified
 							</span>
 						{/if}
 					</div>
@@ -239,9 +236,7 @@
 				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
 					<div class="flex flex-col gap-0.5">
 						<h3 class="text-sm font-medium">Scan coverage</h3>
-						<p class="text-xs text-muted-foreground">
-							How much of each address the port scan was allowed to reach
-						</p>
+						<p class="text-xs text-muted-foreground">Port scan reach per address</p>
 					</div>
 					<RankedList rows={coverage} base={coverageBase} onSelect={pick} />
 					{#if unconfirmed > 0}
@@ -251,7 +246,7 @@
 							class="mt-auto h-auto gap-1 self-start px-0 text-xs"
 							onclick={() => pick(PASSIVE_FILTER)}
 						>
-							{plural(unconfirmed, 'port', 'ports')} reported by scanners but not confirmed here
+							{plural(unconfirmed, 'port', 'ports')} reported by external scanners, not confirmed
 							<ChevronRight class="size-3.5" />
 						</Button>
 					{/if}

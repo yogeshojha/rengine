@@ -8,7 +8,7 @@ from stages.config import StageConfig
 class PassivePortsConfig(StageConfig):
     enabled: bool = Field(
         default=True,
-        title="Look up known exposure",
+        title="Look up indexed ports",
         description="Read ports already indexed for each address by internet-wide scanners.",
     )
     max_addresses: int = Field(

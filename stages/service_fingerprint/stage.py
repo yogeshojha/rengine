@@ -27,7 +27,7 @@ class ServiceFingerprintStage(Stage):
     name = "service_fingerprint"
     title = "Service Fingerprint"
     description = (
-        "Read the banner on every non-web port to name the software behind it."
+        "Identify the software behind every non-web port from its service banner."
     )
     phase = Phase.EXPANSION.value
     level = 4

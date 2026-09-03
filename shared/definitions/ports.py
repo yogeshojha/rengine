@@ -32,11 +32,11 @@ SERVICE_CLASS_LABELS: dict[str, str] = {
 
 SERVICE_CLASS_HELP: dict[str, str] = {
     ServiceClass.WEB.value: "Answered an HTTP request, or listens on a web port",
-    ServiceClass.REMOTE.value: "Interactive administration: SSH, RDP, VNC, Telnet",
+    ServiceClass.REMOTE.value: "Interactive administration such as SSH, RDP and VNC",
     ServiceClass.DATABASE.value: "Databases, caches and search clusters",
     ServiceClass.MAIL.value: "SMTP, IMAP and POP endpoints",
     ServiceClass.INFRA.value: "Directory, file, name and management services",
-    ServiceClass.OTHER.value: "Listening, not yet attributed to a known service",
+    ServiceClass.OTHER.value: "Listening, with no service identified",
 }
 
 # a service belongs to exactly one class; order is the tab order, not a precedence
@@ -58,7 +58,7 @@ class PortSource(StrEnum):
 
 PORT_SOURCE_LABELS: dict[str, str] = {
     PortSource.NAABU.value: "Port scan",
-    PortSource.INTERNETDB.value: "Known exposure",
+    PortSource.INTERNETDB.value: "External scanner",
     PortSource.HTTP_PROBE.value: "HTTP probe",
     PortSource.BANNER.value: "Service banner",
 }
@@ -190,7 +190,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "socks",
         "SOCKS proxy",
         ServiceClass.INFRA,
-        "SOCKS proxy; an open one relays traffic for anyone",
+        "SOCKS proxy. An open proxy relays traffic for any client.",
     ),
     1433: _s(
         "mssql", "Microsoft SQL Server", ServiceClass.DATABASE, "Microsoft SQL Server"

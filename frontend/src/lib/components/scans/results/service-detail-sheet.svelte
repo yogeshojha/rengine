@@ -183,10 +183,10 @@
 				<div class="flex flex-wrap gap-1">
 					<Badge variant="outline" class="font-normal">{s.protocol.toUpperCase()}</Badge>
 					{#if s.is_new}
-						<Badge variant="info" class="font-normal">New since the previous scan</Badge>
+						<Badge variant="info" class="font-normal">New this scan</Badge>
 					{/if}
 					{#if s.is_http}
-						<Badge variant="secondary" class="font-normal">Answers HTTP</Badge>
+						<Badge variant="secondary" class="font-normal">HTTP</Badge>
 					{/if}
 					{#if s.tls}
 						<Badge variant="secondary" class="font-normal">TLS</Badge>
@@ -198,7 +198,7 @@
 						<Badge variant="info" class="font-normal">{s.cdn_name ?? 'CDN'}</Badge>
 					{/if}
 					{#if s.source === PortSource.INTERNETDB}
-						<Badge variant="outline" class="font-normal text-muted-foreground">Not confirmed</Badge>
+						<Badge variant="outline" class="font-normal text-muted-foreground">Unconfirmed</Badge>
 					{/if}
 				</div>
 			</Sheet.Header>
@@ -231,12 +231,12 @@
 							</div>
 							{#if s.description}
 								<div class={ROW}>
-									<dt class={DT}>What this is</dt>
+									<dt class={DT}>Description</dt>
 									<dd class="flex flex-col gap-0.5">
 										<span class="text-sm">{s.description}</span>
 										{#if s.registered}
 											<span class="text-xs text-muted-foreground">
-												IANA registration for port {s.port}. This scan did not confirm it.
+												IANA registration for port {s.port}. Not confirmed by this scan.
 											</span>
 										{/if}
 									</dd>
@@ -335,7 +335,7 @@
 								{/if}
 								{#if s.web_count > 1}
 									<div class={ROW}>
-										<dt class={DT}>Names served</dt>
+										<dt class={DT}>Hostnames served</dt>
 										<dd class="text-sm tabular-nums">{s.web_count}</dd>
 									</div>
 								{/if}
@@ -432,7 +432,7 @@
 								</p>
 							{/if}
 						{:else}
-							<p class="text-xs text-muted-foreground">No host name resolves to this address.</p>
+							<p class="text-xs text-muted-foreground">No hostname resolves to this address.</p>
 						{/if}
 					</section>
 				</div>

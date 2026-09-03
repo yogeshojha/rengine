@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 class PassivePortsStage(Stage):
     name = "passive_ports"
-    title = "Known Exposure"
+    title = "Passive Port Discovery"
     description = (
         "Read ports already indexed for each address by internet-wide scanners."
     )
