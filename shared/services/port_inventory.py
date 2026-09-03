@@ -108,6 +108,8 @@ def upsert(
     seen: dict[tuple[str, int, str], ServiceObservation] = {}
     for obs in observations:
         seen[(obs.ip, obs.port, obs.protocol)] = obs
+    # a stable key order keeps concurrent overlapping upserts from deadlocking
+    ordered = [seen[key] for key in sorted(seen)]
     rows = [
         _row(
             obs,
@@ -117,7 +119,7 @@ def upsert(
             source=source,
             now=now,
         )
-        for obs in seen.values()
+        for obs in ordered
     ]
 
     for start in range(0, len(rows), batch):

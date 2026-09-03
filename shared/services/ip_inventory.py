@@ -62,6 +62,9 @@ def materialize(
     if not ips:
         return 0
     now = utc_now()
+    # cdn_check and passive_ports insert the same rows at the same level; a UNION has no
+    # guaranteed order, and two overlapping inserts taking locks in different orders deadlock
+    ips = sorted(set(ips))
     rows = [
         {
             "id": uuid.uuid4(),
