@@ -175,6 +175,9 @@
 				</Sheet.Description>
 				<div class="flex flex-wrap gap-1">
 					<Badge variant="outline" class="font-normal">{s.protocol.toUpperCase()}</Badge>
+					{#if s.is_new}
+						<Badge variant="info" class="font-normal">New since the previous scan</Badge>
+					{/if}
 					{#if s.is_http}
 						<Badge variant="secondary" class="font-normal">Answers HTTP</Badge>
 					{/if}

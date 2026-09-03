@@ -57,6 +57,7 @@
 	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
 
 	const QUICK = [
+		{ value: 'new', label: 'New' },
 		{ value: 'sensitive', label: 'Sensitive' },
 		{ value: 'nonweb', label: 'Non-web' },
 		{ value: 'named', label: 'Named' },
@@ -65,6 +66,7 @@
 
 	let quick = $derived(
 		[
+			query.newOnly && 'new',
 			query.sensitiveOnly && 'sensitive',
 			query.http === 'no' && 'nonweb',
 			query.namedOnly && 'named',
@@ -75,6 +77,7 @@
 	function setQuick(values: string[]) {
 		onQuery({
 			...query,
+			newOnly: values.includes('new'),
 			sensitiveOnly: values.includes('sensitive'),
 			namedOnly: values.includes('named'),
 			http: values.includes('nonweb') ? 'no' : query.http === 'no' ? 'any' : query.http,

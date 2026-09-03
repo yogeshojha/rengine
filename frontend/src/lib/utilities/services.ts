@@ -31,6 +31,7 @@ export interface ServiceRead {
 	url: string | null;
 	title: string | null;
 	is_sensitive: boolean;
+	is_new: boolean;
 }
 
 export interface ServiceQuery {
@@ -45,6 +46,7 @@ export interface ServiceQuery {
 	http: 'any' | 'yes' | 'no';
 	sensitiveOnly: boolean;
 	namedOnly: boolean;
+	newOnly: boolean;
 }
 
 export function emptyServiceQuery(): ServiceQuery {
@@ -59,7 +61,8 @@ export function emptyServiceQuery(): ServiceQuery {
 		cdn: 'any',
 		http: 'any',
 		sensitiveOnly: false,
-		namedOnly: false
+		namedOnly: false,
+		newOnly: false
 	};
 }
 
@@ -75,6 +78,7 @@ export interface ServiceFilter {
 	http: 'any' | 'yes' | 'no';
 	sensitive: boolean;
 	named: boolean;
+	new: boolean;
 	sort: string;
 	order: 'asc' | 'desc';
 	limit: number;
@@ -133,7 +137,8 @@ export function serviceActiveFacetCount(q: ServiceQuery): number {
 		(q.cdn !== 'any' ? 1 : 0) +
 		(q.http !== 'any' ? 1 : 0) +
 		(q.sensitiveOnly ? 1 : 0) +
-		(q.namedOnly ? 1 : 0)
+		(q.namedOnly ? 1 : 0) +
+		(q.newOnly ? 1 : 0)
 	);
 }
 
@@ -207,6 +212,7 @@ export function compileServiceQuery(
 		http: q.http,
 		sensitive: q.sensitiveOnly,
 		named: q.namedOnly,
+		new: q.newOnly,
 		sort: sortKey,
 		order: dir === 1 ? 'asc' : 'desc',
 		limit,

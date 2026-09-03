@@ -13,6 +13,7 @@ from shared.definitions.asset_query import SERVICE_FLAGS, SERVICE_QUERY, Op
 from shared.definitions.ports import PortSource
 from shared.models.subdomain import Subdomain
 
+from . import predicates as preds
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
 from .terms import int_coerce, negate, number_match, string_match, tri_state
 from .values import asn_number, like, network
@@ -88,6 +89,7 @@ def _flag(cmp: Compare, ctx: ServiceQueryContext):
 
 
 _FLAG_BUILDERS = {
+    "new": lambda ctx: preds.service_is_new(ctx.source, ctx.scan_id),
     "http": lambda ctx: ctx.source.c.is_http.is_(True),
     "tls": lambda ctx: ctx.source.c.tls.is_(True),
     "sensitive": lambda ctx: ctx.source.c.sensitive.is_(True),

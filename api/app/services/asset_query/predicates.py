@@ -97,6 +97,37 @@ def is_new():
     return and_(has_baseline(), not_(seen_earlier()))
 
 
+def service_seen_earlier(source, scan_id):
+    earlier = aliased(Port)
+    return exists(
+        select(1).where(
+            earlier.target_id == source.c.target_id,
+            earlier.ip == source.c.ip,
+            earlier.number == source.c.port,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < source.c.discovered_at,
+        )
+    )
+
+
+def service_has_baseline(source, scan_id):
+    earlier = aliased(Port)
+    return exists(
+        select(1).where(
+            earlier.target_id == source.c.target_id,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < source.c.discovered_at,
+        )
+    )
+
+
+def service_is_new(source, scan_id):
+    return and_(
+        service_has_baseline(source, scan_id),
+        not_(service_seen_earlier(source, scan_id)),
+    )
+
+
 def live():
     return and_(Subdomain.http_status >= HTTP_OK, Subdomain.http_status < HTTP_CLIENT)
 

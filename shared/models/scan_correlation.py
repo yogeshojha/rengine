@@ -164,6 +164,7 @@ class ServiceRead(BaseModel):
     url: str | None = None
     title: str | None = None
     is_sensitive: bool = False
+    is_new: bool = False
 
 
 class ServicePage(BaseModel):
@@ -185,6 +186,7 @@ class ServiceFilter(BaseModel):
     http: str = Field(default="any", max_length=10)
     sensitive: bool = False
     named: bool = False
+    new: bool = False
     sort: str = Field(default="exposure", max_length=20)
     order: str = Field(default="desc", max_length=4)
     limit: int = Field(default=50, ge=1, le=200)
@@ -202,6 +204,7 @@ class ServiceFilter(BaseModel):
             or self.http != "any"
             or self.sensitive
             or self.named
+            or self.new
         )
 
 

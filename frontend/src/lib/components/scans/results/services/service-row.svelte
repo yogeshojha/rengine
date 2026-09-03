@@ -153,6 +153,23 @@
 					</Badge>
 				</button>
 			{/if}
+			{#if s.is_new}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<button
+								{...props}
+								type="button"
+								class="flex h-5 shrink-0 items-center"
+								onclick={(e) => pivot(e, 'is:new')}
+							>
+								<Badge variant="info" class="px-1 text-[10px] font-normal">new</Badge>
+							</button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Not open in an earlier scan of this target</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
 			{#if s.is_sensitive}
 				<Tooltip.Root>
 					<Tooltip.Trigger>

@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    DateTime,
     Integer,
     String,
     bindparam,
@@ -29,6 +30,7 @@ from app.services.asset_query import (
     compile_service_query,
     parse_query,
     query_error_for,
+    service_is_new,
 )
 from shared.definitions.asset_query import COUNT_CAP, SERVICE_QUERY
 from shared.definitions.ports import (
@@ -79,6 +81,8 @@ WITH hosts AS (
     FROM http_assets WHERE scan_id = :sid AND ip IS NOT NULL GROUP BY ip, port
 )
 SELECT p.id AS id,
+       p.target_id AS target_id,
+       p.discovered_at AS discovered_at,
        p.ip AS ip,
        CASE WHEN p.ip LIKE '%:%' THEN 6 ELSE 4 END AS version,
        cast(CASE WHEN p.ip ~ '^[0-9a-fA-F:.]+$' THEN p.ip END AS inet) AS inet,
@@ -118,6 +122,24 @@ _HOSTS_SQL = """
 SELECT ip AS ip, s.name AS host
 FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip
 WHERE s.scan_id = :sid AND ip = ANY(:ips)
+"""
+
+# ports on this page an earlier scan of the same target already reported
+_SEEN_SQL = """
+SELECT DISTINCT e.ip AS ip, e.number AS number
+FROM ports e
+JOIN ports cur ON cur.scan_id = :sid AND cur.ip = e.ip AND cur.number = e.number
+WHERE e.target_id = cur.target_id AND e.scan_id <> :sid
+  AND e.discovered_at < cur.discovered_at AND e.ip = ANY(:ips)
+"""
+
+_BASELINE_SQL = """
+SELECT EXISTS (
+    SELECT 1 FROM ports e
+    WHERE e.scan_id <> :sid
+      AND e.target_id = (SELECT target_id FROM scans WHERE id = :sid)
+      AND e.discovered_at < (SELECT min(discovered_at) FROM ports WHERE scan_id = :sid)
+)
 """
 
 
@@ -196,6 +218,8 @@ class PortService:
             text(_DERIVED_SQL)
             .columns(
                 column("id", PG_UUID(as_uuid=True)),
+                column("target_id", PG_UUID(as_uuid=True)),
+                column("discovered_at", DateTime(timezone=True)),
                 column("ip", String),
                 column("version", Integer),
                 column("inet", INET),
@@ -232,7 +256,7 @@ class PortService:
         )
 
     @staticmethod
-    def _apply_filter(query, d, f: ServiceFilter):
+    def _apply_filter(query, d, f: ServiceFilter, scan_id: UUID):
         if f.classes:
             query = query.where(d.c.service_class.in_(f.classes))
         if f.ports:
@@ -257,6 +281,8 @@ class PortService:
             query = query.where(d.c.sensitive.is_(True))
         if f.named:
             query = query.where(d.c.product.isnot(None))
+        if f.new:
+            query = query.where(service_is_new(d, scan_id))
         return query
 
     @staticmethod
@@ -287,11 +313,24 @@ class PortService:
     def _scoped(self, scan_id: UUID, f: ServiceFilter, columns=None):
         d = self._derived(scan_id)
         base = select(d) if columns is None else select(*columns(d))
-        return d, self._apply_filter(base, d, f)
+        return d, self._apply_filter(base, d, f, scan_id)
 
     @staticmethod
     def _context(scan_id: UUID, d, now: datetime) -> ServiceQueryContext:
         return ServiceQueryContext(scan_id=scan_id, now=now, source=d)
+
+    async def _seen_before(
+        self, scan_id: UUID, ips: list[str]
+    ) -> tuple[bool, set[tuple[str, int]]]:
+        baseline = await self.session.scalar(
+            text(_BASELINE_SQL).bindparams(sid=scan_id)
+        )
+        if not baseline:
+            return False, set()
+        rows = (
+            await self.session.execute(text(_SEEN_SQL).bindparams(sid=scan_id, ips=ips))
+        ).all()
+        return True, {(ip, int(number)) for ip, number in rows}
 
     async def _hosts_for(self, scan_id: UUID, ips: list[str]) -> dict[str, set[str]]:
         rows = (
@@ -349,7 +388,9 @@ class PortService:
         )
         if not rows:
             return page
-        hosts = await self._hosts_for(scan_id, [r["ip"] for r in rows])
+        page_ips = [r["ip"] for r in rows]
+        hosts = await self._hosts_for(scan_id, page_ips)
+        baseline, seen = await self._seen_before(scan_id, page_ips)
         for r in rows:
             names = sorted(hosts.get(r["ip"], set()))
             page.items.append(
@@ -381,6 +422,7 @@ class PortService:
                     url=r["url"],
                     title=r["title"],
                     is_sensitive=bool(r["sensitive"]),
+                    is_new=baseline and (r["ip"], int(r["port"])) not in seen,
                 )
             )
         return page

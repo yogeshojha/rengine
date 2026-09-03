@@ -1117,6 +1117,7 @@ IP_QUERY = QueryRegistry(
 SERVICE_GROUPS: tuple[str, ...] = ("Service", "Software", "Address", "Hosts", "Flags")
 
 SERVICE_FLAGS: dict[str, str] = {
+    "new": "Not open in an earlier scan of this target",
     "http": "Answered an HTTP request",
     "tls": "Negotiates TLS",
     "sensitive": "An administrative or datastore port",
@@ -1320,6 +1321,7 @@ SERVICE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
 
 SERVICE_EXAMPLE_GROUPS: tuple[str, ...] = (
     "Critical exposure",
+    "Change",
     "Remote access",
     "Web surface",
     "Evidence",
@@ -1347,6 +1349,17 @@ SERVICE_EXAMPLES: tuple[QueryExample, ...] = (
         query="is:sensitive and not is:cdn",
         description="Administrative ports on an origin address",
         group="Critical exposure",
+    ),
+    QueryExample(
+        query="is:new",
+        description="Ports that were closed at the previous scan",
+        group="Change",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:new and is:sensitive",
+        description="Administrative ports opened since the previous scan",
+        group="Change",
     ),
     QueryExample(
         query="class:remote",
