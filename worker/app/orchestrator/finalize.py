@@ -1,6 +1,7 @@
 """Aggregate stage outcomes into the final scan status + terminal notification/event."""
 
-from sqlalchemy import func, select
+from sqlalchemy import Integer, bindparam, func, select, text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
 from shared.definitions.notifications import (
@@ -8,8 +9,10 @@ from shared.definitions.notifications import (
     scan_completed,
     scan_count_summary,
     scan_failed,
+    scan_new_services,
     scan_new_subdomains,
 )
+from shared.definitions.ports import SENSITIVE_PORTS
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.logging import get_logger
@@ -92,6 +95,59 @@ def _count_new_subdomains(session: Session, scan: Scan) -> int:
         ).scalar_one()
         or 0
     )
+
+
+_NEW_SERVICES_SQL = """
+SELECT count(*) AS total,
+       count(*) FILTER (WHERE p.number = ANY(:sensitive_ports)) AS sensitive
+FROM ports p
+WHERE p.scan_id = :sid
+  AND EXISTS (
+      SELECT 1 FROM ports b
+      WHERE b.target_id = p.target_id AND b.scan_id <> :sid
+        AND b.discovered_at < p.discovered_at
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM ports e
+      WHERE e.target_id = p.target_id AND e.ip = p.ip AND e.number = p.number
+        AND e.scan_id <> :sid AND e.discovered_at < p.discovered_at
+  )
+"""
+
+
+def _count_new_services(session: Session, scan: Scan) -> tuple[int, int]:
+    """Ports this scan is the first to see for its target, and how many are sensitive."""
+    row = session.execute(
+        text(_NEW_SERVICES_SQL).bindparams(
+            bindparam("sid", scan.id),
+            bindparam("sensitive_ports", SENSITIVE_PORTS, type_=ARRAY(Integer)),
+        )
+    ).one()
+    return int(row.total or 0), int(row.sensitive or 0)
+
+
+def _notify_deltas(
+    notifier: SyncNotificationPublisher, session: Session, scan: Scan, target: str
+) -> None:
+    """Announce what this scan found that the previous one did not."""
+    try:
+        new_subs = _count_new_subdomains(session, scan)
+        if new_subs > 0:
+            _notify(
+                notifier, session, scan_new_subdomains(str(scan.id), target, new_subs)
+            )
+    except Exception:
+        logger.warning("new-subdomain notification failed", exc_info=True)
+    try:
+        new_services, sensitive = _count_new_services(session, scan)
+        if new_services > 0:
+            _notify(
+                notifier,
+                session,
+                scan_new_services(str(scan.id), target, new_services, sensitive),
+            )
+    except Exception:
+        logger.warning("new-service notification failed", exc_info=True)
 
 
 def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
@@ -177,16 +233,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
                 str(scan.id), target_value, scan.engine_name, counts, duration
             ),
         )
-        try:
-            new_subs = _count_new_subdomains(session, scan)
-            if new_subs > 0:
-                _notify(
-                    notifier,
-                    session,
-                    scan_new_subdomains(str(scan.id), target_value, new_subs),
-                )
-        except Exception:
-            logger.warning("new-subdomain notification failed", exc_info=True)
+        _notify_deltas(notifier, session, scan, target_value)
         return
 
     activity_log.log(

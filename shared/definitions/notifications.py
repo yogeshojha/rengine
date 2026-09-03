@@ -166,6 +166,27 @@ def scan_new_subdomains(scan_id: str, target: str, count: int) -> dict:
     }
 
 
+def scan_new_services(scan_id: str, target: str, count: int, sensitive: int) -> dict:
+    detail = (
+        f" {sensitive} of them administrative or datastore "
+        f"{'port' if sensitive == 1 else 'ports'}."
+        if sensitive
+        else ""
+    )
+    return {
+        "type": NotificationType.SCAN,
+        "severity": NotificationSeverity.WARNING
+        if sensitive
+        else NotificationSeverity.INFO,
+        "title": "New Services Exposed",
+        "message": (
+            f"{count} {'service' if count == 1 else 'services'} on {target} "
+            f"{'was' if count == 1 else 'were'} not open at the previous scan.{detail}"
+        ),
+        "metadata": _scan_meta(scan_id),
+    }
+
+
 def scan_failed(scan_id: str, target: str, engine: str, error: str) -> dict:
     return {
         "type": NotificationType.SCAN,
