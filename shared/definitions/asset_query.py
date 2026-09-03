@@ -448,6 +448,59 @@ EVIDENCE_LABELS: dict[str, str] = {
 }
 
 
+@dataclass(frozen=True)
+class GroupDimension:
+    key: str
+    label: str
+    description: str
+
+
+GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
+    GroupDimension(
+        key="ip",
+        label="IP address",
+        description="Names sharing a resolved address",
+    ),
+    GroupDimension(
+        key="favicon",
+        label="Favicon",
+        description="Names serving the same favicon",
+    ),
+    GroupDimension(
+        key="title",
+        label="Page title",
+        description="Names serving the same page title",
+    ),
+    GroupDimension(
+        key="cname",
+        label="CNAME target",
+        description="Names pointing at the same alias",
+    ),
+    GroupDimension(
+        key="tech",
+        label="Technology",
+        description="Names running the same technology",
+    ),
+    GroupDimension(
+        key="server",
+        label="Server banner",
+        description="Names reporting the same server header",
+    ),
+    GroupDimension(
+        key="cdn",
+        label="CDN",
+        description="Names fronted by the same CDN",
+    ),
+    GroupDimension(
+        key="status",
+        label="Status class",
+        description="Names by HTTP response class",
+    ),
+)
+
+MAX_GROUPS = 50
+
+
 EXAMPLE_GROUPS: tuple[str, ...] = (
     "Takeover risk",
     "Exposed services",

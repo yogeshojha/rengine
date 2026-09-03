@@ -1,0 +1,123 @@
+from __future__ import annotations
+
+import re
+from collections.abc import Callable
+from typing import Any
+
+from sqlalchemy import case, cast, desc, func, select
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from shared.definitions.asset_query import MAX_GROUPS
+from shared.models.asset_query import QueryGroup, QueryGroups
+from shared.models.subdomain import Subdomain
+
+from . import predicates as preds
+
+_STATUS_LABELS = {
+    "2xx": "2xx OK",
+    "3xx": "3xx Redirect",
+    "4xx": "4xx Client",
+    "5xx": "5xx Server",
+}
+_NEEDS_QUOTE = re.compile(r'[\s()"\[\]:=><~]')
+
+
+def _token(field: str, op: str, value: str) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    quoted = f'"{escaped}"' if _NEEDS_QUOTE.search(value) or not value else value
+    return f"{field}{op}{quoted}"
+
+
+def _status_case():
+    return case(
+        *[
+            (
+                (Subdomain.http_status >= lo) & (Subdomain.http_status < hi),
+                bucket,
+            )
+            for bucket, (lo, hi) in preds.STATUS_BUCKETS.items()
+        ],
+        else_=None,
+    )
+
+
+_DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str]] = {
+    "ip": (
+        lambda: func.jsonb_array_elements_text(
+            cast(Subdomain.resolved_ips, JSONB)
+        ).column_valued("ip_value"),
+        "ip",
+        ":",
+    ),
+    "tech": (
+        lambda: func.jsonb_array_elements_text(
+            cast(Subdomain.tech, JSONB)
+        ).column_valued("tech_value"),
+        "tech",
+        "=",
+    ),
+    "favicon": (lambda: Subdomain.favicon_hash, "favicon", "="),
+    "title": (lambda: Subdomain.page_title, "title", "="),
+    "cname": (lambda: Subdomain.cname, "cname", "="),
+    "server": (lambda: Subdomain.webserver, "server", "="),
+    "cdn": (lambda: Subdomain.cdn_name, "cdn", "="),
+    "status": (_status_case, "status", ":"),
+}
+
+
+def _dimension(key: str):
+    found = _DIMENSIONS.get(key)
+    if found is None:
+        return None
+    build, field, op = found
+    return build(), field, op
+
+
+async def build_groups(session: AsyncSession, base, key: str) -> QueryGroups:
+    dimension = _dimension(key)
+    if dimension is None:
+        return QueryGroups(dimension=key)
+    column, field, op = dimension
+
+    scoped = base.subquery()
+    value = column.label("value")
+    joined = (
+        select(value, func.count().label("n"))
+        .select_from(Subdomain)
+        .join(scoped, Subdomain.id == scoped.c.id)
+        .where(value.isnot(None), value != "")
+    )
+    hosts = await session.scalar(select(func.count()).select_from(scoped))
+    covered, total = (
+        await session.execute(
+            joined.with_only_columns(
+                func.count(func.distinct(Subdomain.id)),
+                func.count(func.distinct(value)),
+            )
+        )
+    ).one()
+    rows = await session.execute(
+        joined.group_by(value).order_by(desc("n"), value).limit(MAX_GROUPS)
+    )
+
+    groups = [
+        QueryGroup(
+            value=str(raw),
+            label=_STATUS_LABELS.get(str(raw), str(raw))
+            if key == "status"
+            else str(raw),
+            count=int(n),
+            query=_token(field, op, str(raw)),
+        )
+        for raw, n in rows.all()
+    ]
+    counted = int(total or 0)
+    return QueryGroups(
+        dimension=key,
+        groups=groups,
+        total_groups=counted,
+        truncated=counted > len(groups),
+        hosts=int(hosts or 0),
+        covered=int(covered or 0),
+    )

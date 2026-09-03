@@ -20,4 +20,4 @@ export const WEB_ASSET_COLUMNS: WebAssetColumn[] = [
 	{ key: 'screenshot', label: 'Screenshot', width: 'w-24' }
 ];
 
-export const DEFAULT_VISIBLE_COLUMNS = ['tech', 'ip', 'ports'];
+export const DEFAULT_VISIBLE_COLUMNS = ['tech', 'ip', 'ports', 'screenshot'];

@@ -25,6 +25,7 @@
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
 	import ResultsPagination from './web-assets/results-pagination.svelte';
+	import GroupList from './web-assets/group-list.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
 	import { WEB_ASSET_COLUMNS, DEFAULT_VISIBLE_COLUMNS } from './web-assets/columns';
 
@@ -43,7 +44,7 @@
 		type WebAssetQuery,
 		type SubdomainFacetSet
 	} from '$lib/utilities/scan-insights';
-	import type { QueryError, QueryLeads } from '$lib/types/asset-query';
+	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 
 	interface Props {
@@ -115,6 +116,10 @@
 	let facets = $state<SubdomainFacetSet>(EMPTY_FACETS);
 	let facetsLoaded = $state(false);
 	let leadSet = $state<QueryLeads | null>(null);
+	let groupBy = $state<string>(initial.get('group') ?? '');
+	let groupSet = $state<QueryGroups | null>(null);
+	let groupLoading = $state(false);
+	let groupReq = 0;
 
 	let selected = $state<SubdomainRead | null>(null);
 	let drawerOpen = $state(false);
@@ -242,6 +247,8 @@
 		)
 	);
 	let leadSig = $derived(JSON.stringify(leadFilter));
+	let leadFilterWithQuery = $derived({ ...leadFilter, q: query.search.trim() || null });
+	let groupSig = $derived(groupBy ? JSON.stringify(leadFilterWithQuery) + groupBy : '');
 	let loadedLeadSig = '';
 
 	async function loadLeads() {
@@ -262,6 +269,23 @@
 		void loadLeads();
 	}
 
+	async function loadGroups() {
+		if (!groupBy || !scanId || !projectId) {
+			groupSet = null;
+			return;
+		}
+		const my = ++groupReq;
+		groupLoading = true;
+		try {
+			const res = await subdomainsApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
+			if (my === groupReq) groupSet = res;
+		} catch {
+			if (my === groupReq) groupSet = null;
+		} finally {
+			if (my === groupReq) groupLoading = false;
+		}
+	}
+
 	async function loadFacets() {
 		if (!scanId || !projectId) return;
 		try {
@@ -277,7 +301,7 @@
 		refreshing = true;
 		try {
 			loadedLeadSig = '';
-			await Promise.all([runSearch(), loadFacets()]);
+			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
 		} finally {
 			refreshing = false;
 		}
@@ -313,12 +337,23 @@
 		untrack(syncLeads);
 	});
 
+	$effect(() => {
+		void groupSig;
+		if (!groupBy) {
+			groupSet = null;
+			return;
+		}
+		const handle = setTimeout(() => untrack(loadGroups), SEARCH_DEBOUNCE_MS);
+		return () => clearTimeout(handle);
+	});
+
 	function syncUrl() {
 		try {
 			const sp = new SvelteURLSearchParams(location.search);
 			const set = (k: string, v: string | null) => (v ? sp.set(k, v) : sp.delete(k));
 			set('q', query.search || null);
 			set('view', view === 'gallery' ? 'gallery' : null);
+			set('group', groupBy || null);
 			set('page', pageIndex > 0 ? String(pageIndex + 1) : null);
 			set(
 				'sort',
@@ -336,6 +371,7 @@
 	$effect(() => {
 		void query.search;
 		void view;
+		void groupBy;
 		void pageIndex;
 		void sort.key;
 		void sort.dir;
@@ -419,6 +455,10 @@
 		if (key === '5xx') return 'text-destructive';
 		return 'text-muted-foreground';
 	}
+	function drillGroup(token: string) {
+		setQuery({ ...query, search: appendToken(query.search, token) });
+		groupBy = '';
+	}
 	function applyDsl(token: string) {
 		setQuery({ ...query, search: appendToken(query.search, token) });
 		drawerOpen = false;
@@ -500,6 +540,7 @@
 		onView={(v) => {
 			view = v;
 			pageIndex = 0;
+			if (v === 'gallery') groupBy = '';
 		}}
 		columns={WEB_ASSET_COLUMNS}
 		{visible}
@@ -516,6 +557,8 @@
 		onSort={toggleSort}
 		{refreshing}
 		onRefresh={refresh}
+		{groupBy}
+		onGroupBy={(key) => (groupBy = key)}
 	/>
 
 	{#if chips.length > 0}
@@ -546,7 +589,7 @@
 		</div>
 	{/if}
 
-	{#if loading && items.length === 0}
+	{#if loading && items.length === 0 && !groupBy}
 		<div class="divide-y divide-border/50">
 			{#each Array(8) as _, i (i)}
 				<div class="flex items-center gap-3 px-4 py-3">
@@ -567,6 +610,8 @@
 				<RefreshCw class="h-4 w-4" /> Retry
 			</Button>
 		</EmptyState>
+	{:else if groupBy}
+		<GroupList set={groupSet} loading={groupLoading} onPick={drillGroup} />
 	{:else if items.length === 0}
 		{#if queryError}
 			<EmptyState
@@ -634,7 +679,7 @@
 		</ScrollArea>
 	{/if}
 
-	{#if !errored && total > 0}
+	{#if !errored && total > 0 && !groupBy}
 		<ResultsPagination
 			{total}
 			capped={totalCapped}

@@ -6,6 +6,7 @@ from shared.definitions.asset_query import (
     EXAMPLES,
     FIELDS,
     FLAGS,
+    GROUP_DIMENSIONS,
     GROUPS,
     MAX_FREE_TERMS,
     MAX_QUERY_LENGTH,
@@ -16,6 +17,7 @@ from shared.models.asset_query import (
     QueryExampleSpec,
     QueryFieldSpec,
     QueryFlagSpec,
+    QueryGroupSpec,
     QueryOperatorSpec,
     QuerySchema,
 )
@@ -27,6 +29,10 @@ def build_schema() -> QuerySchema:
         max_terms=MAX_FREE_TERMS,
         groups=list(GROUPS),
         example_groups=list(EXAMPLE_GROUPS),
+        group_dimensions=[
+            QueryGroupSpec(key=d.key, label=d.label, description=d.description)
+            for d in GROUP_DIMENSIONS
+        ],
         fields=[
             QueryFieldSpec(
                 name=spec.name,

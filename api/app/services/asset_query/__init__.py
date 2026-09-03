@@ -2,6 +2,7 @@ from .ast import Node, QuerySyntaxError
 from .compiler import QueryContext, compile_query
 from .errors import QUERY_SQLSTATES, query_error_for
 from .evidence import collect as collect_evidence
+from .groups import build_groups
 from .leads import build_leads
 from .parser import parse_query
 from .schema import build_schema
@@ -11,6 +12,7 @@ __all__ = [
     "Node",
     "QueryContext",
     "QuerySyntaxError",
+    "build_groups",
     "build_leads",
     "build_schema",
     "collect_evidence",

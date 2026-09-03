@@ -1,6 +1,6 @@
 import { api } from './client';
 import type { SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
-import type { QueryLeads } from '$lib/types/asset-query';
+import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type {
 	Facet,
 	SubdomainFilter,
@@ -57,6 +57,18 @@ export const subdomainsApi = {
 	async leads(projectId: string, scanId: string, filter: SubdomainFilter): Promise<QueryLeads> {
 		return api.post<QueryLeads>(
 			`/subdomains/search/leads?project_id=${projectId}&scan_id=${scanId}`,
+			filter
+		);
+	},
+
+	async groups(
+		projectId: string,
+		scanId: string,
+		groupBy: string,
+		filter: SubdomainFilter
+	): Promise<QueryGroups> {
+		return api.post<QueryGroups>(
+			`/subdomains/search/groups?project_id=${projectId}&scan_id=${scanId}&group_by=${encodeURIComponent(groupBy)}`,
 			filter
 		);
 	},

@@ -41,6 +41,28 @@ class QueryLeads(BaseModel):
     computed: bool = False
 
 
+class QueryGroupSpec(BaseModel):
+    key: str
+    label: str
+    description: str
+
+
+class QueryGroup(BaseModel):
+    value: str
+    label: str
+    count: int
+    query: str
+
+
+class QueryGroups(BaseModel):
+    dimension: str = ""
+    groups: list[QueryGroup] = Field(default_factory=list)
+    total_groups: int = 0
+    truncated: bool = False
+    hosts: int = 0
+    covered: int = 0
+
+
 class QueryFlagSpec(BaseModel):
     value: str
     description: str
@@ -51,6 +73,7 @@ class QuerySchema(BaseModel):
     max_terms: int = 0
     groups: list[str] = Field(default_factory=list)
     example_groups: list[str] = Field(default_factory=list)
+    group_dimensions: list[QueryGroupSpec] = Field(default_factory=list)
     fields: list[QueryFieldSpec] = Field(default_factory=list)
     operators: list[QueryOperatorSpec] = Field(default_factory=list)
     connectors: list[QueryOperatorSpec] = Field(default_factory=list)

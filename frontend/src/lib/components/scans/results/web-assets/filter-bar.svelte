@@ -2,17 +2,21 @@
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import Columns3 from '@lucide/svelte/icons/columns-3';
+	import Layers from '@lucide/svelte/icons/layers';
+	import X from '@lucide/svelte/icons/x';
 	import Image from '@lucide/svelte/icons/image';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Toggle } from '$lib/components/ui/toggle';
+	import { ButtonGroup } from '$lib/components/ui/button-group';
 	import { Button } from '$lib/components/ui/button';
 	import FacetedFilter from '../faceted-filter.svelte';
 	import SortMenu from './sort-menu.svelte';
 	import type { WebAssetColumn } from './columns';
 	import type { SubdomainFacetSet, WebAssetQuery } from '$lib/utilities/scan-insights';
+	import { querySchema } from '$lib/stores/query-schema.svelte';
 
 	interface Props {
 		query: WebAssetQuery;
@@ -32,6 +36,8 @@
 		onSort: (key: string) => void;
 		refreshing: boolean;
 		onRefresh: () => void;
+		groupBy: string;
+		onGroupBy: (key: string) => void;
 	}
 
 	let {
@@ -51,8 +57,13 @@
 		sortDir,
 		onSort,
 		refreshing,
-		onRefresh
+		onRefresh,
+		groupBy,
+		onGroupBy
 	}: Props = $props();
+
+	let dimensions = $derived(querySchema.schema.group_dimensions);
+	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
 
 	const QUICK = [
 		{ value: 'new', label: 'New' },
@@ -171,9 +182,54 @@
 			</Toggle>
 		{/if}
 
-		<SortMenu {sortKey} {sortDir} {onSort} />
+		{#if dimensions.length}
+			<ButtonGroup>
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="outline"
+								size="sm"
+								class="h-9 gap-2 {groupBy ? 'border-primary/50 bg-primary/5' : ''}"
+							>
+								<Layers class="h-4 w-4" />
+								<span class="hidden sm:inline">{groupLabel}</span>
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-52">
+						<DropdownMenu.Label>Group by</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						<DropdownMenu.RadioGroup value={groupBy} onValueChange={onGroupBy}>
+							<DropdownMenu.RadioItem value="">No grouping</DropdownMenu.RadioItem>
+							{#each dimensions as dimension (dimension.key)}
+								<DropdownMenu.RadioItem value={dimension.key}
+									>{dimension.label}</DropdownMenu.RadioItem
+								>
+							{/each}
+						</DropdownMenu.RadioGroup>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+				{#if groupBy}
+					<Button
+						variant="outline"
+						size="icon"
+						class="h-9 w-9 border-primary/50 bg-primary/5 text-muted-foreground hover:text-foreground"
+						aria-label="Clear grouping"
+						onclick={() => onGroupBy('')}
+					>
+						<X class="h-4 w-4" />
+					</Button>
+				{/if}
+			</ButtonGroup>
+		{/if}
 
-		{#if view === 'table'}
+		{#if !groupBy}
+			<SortMenu {sortKey} {sortDir} {onSort} />
+		{/if}
+
+		{#if view === 'table' && !groupBy}
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}

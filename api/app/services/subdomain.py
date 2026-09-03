@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.asset_query import (
     QueryContext,
     QuerySyntaxError,
+    build_groups,
     build_leads,
     collect_evidence,
     compile_query,
@@ -35,7 +36,7 @@ from app.services.port import PortService
 from shared.definitions.asset_query import COUNT_CAP
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.logging import get_logger
-from shared.models.asset_query import QueryError, QueryLeads
+from shared.models.asset_query import QueryError, QueryGroups, QueryLeads
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
@@ -388,6 +389,29 @@ class SubdomainService:
             await self.session.rollback()
             logger.info("search leads failed", error=str(exc.orig))
             return QueryLeads()
+
+    async def groups(
+        self, project_id: UUID, scan_id: UUID, f: SubdomainFilter, key: str
+    ) -> QueryGroups:
+        now = utc_now()
+        base = select(Subdomain.id).where(
+            Subdomain.project_id == project_id, Subdomain.scan_id == scan_id
+        )
+        base = self._apply_filter(base, f, now)
+        try:
+            node = parse_query(f.q)
+            predicate = compile_query(node, QueryContext(scan_id=scan_id, now=now))
+        except QuerySyntaxError:
+            return QueryGroups(dimension=key)
+        if predicate is not None:
+            base = base.where(predicate)
+        await self.session.execute(text(_STATEMENT_TIMEOUT))
+        try:
+            return await build_groups(self.session, base, key)
+        except DBAPIError as exc:
+            await self.session.rollback()
+            logger.info("search groups failed", error=str(exc.orig))
+            return QueryGroups(dimension=key)
 
     async def _shared_counts(self, scan_id: UUID, col, values: set) -> dict:
         if not values:

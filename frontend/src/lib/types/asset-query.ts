@@ -56,11 +56,34 @@ export interface QueryLeads {
 	computed: boolean;
 }
 
+export interface QueryGroupSpec {
+	key: string;
+	label: string;
+	description: string;
+}
+
+export interface QueryGroup {
+	value: string;
+	label: string;
+	count: number;
+	query: string;
+}
+
+export interface QueryGroups {
+	dimension: string;
+	groups: QueryGroup[];
+	total_groups: number;
+	truncated: boolean;
+	hosts: number;
+	covered: number;
+}
+
 export interface QuerySchema {
 	max_length: number;
 	max_terms: number;
 	groups: string[];
 	example_groups: string[];
+	group_dimensions: QueryGroupSpec[];
 	fields: QueryFieldSpec[];
 	operators: QueryOperatorSpec[];
 	connectors: QueryOperatorSpec[];
@@ -87,6 +110,7 @@ export const EMPTY_QUERY_SCHEMA: QuerySchema = {
 	max_terms: 8,
 	groups: [],
 	example_groups: [],
+	group_dimensions: [],
 	fields: [],
 	operators: [],
 	connectors: [],
