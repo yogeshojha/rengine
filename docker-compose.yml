@@ -160,7 +160,6 @@ services:
       dockerfile: frontend/Dockerfile.dev
     volumes:
       - ./frontend/src:/app/src
-      - ./frontend/static:/app/static
       - ./frontend/vite.config.ts:/app/vite.config.ts
     ports:
       - "5173:5173"

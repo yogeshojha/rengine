@@ -10,6 +10,8 @@ RUN npm install
 
 COPY frontend/. .
 
+RUN node scripts/fetch-tech-icons.mjs
+
 EXPOSE 5173
 
 CMD ["npm", "run", "dev"]
