@@ -125,11 +125,13 @@
 			{#if targetId}
 				<span class="truncate">{scan.context_name ?? 'No context'}</span>
 			{:else}
-				<span class="truncate">{scan.engine_name}</span>
-				{#if scan.context_name}
-					<span class="text-muted-foreground/40">·</span>
-					<span class="truncate">{scan.context_name}</span>
-				{/if}
+				<span class="flex min-w-0 items-center gap-1.5 lg:hidden">
+					<span class="truncate">{scan.engine_name}</span>
+					{#if scan.context_name}
+						<span class="text-muted-foreground/40">·</span>
+						<span class="truncate">{scan.context_name}</span>
+					{/if}
+				</span>
 			{/if}
 
 			{#if scheduleLabel}
@@ -218,6 +220,15 @@
 			<span class="shrink-0 tabular-nums sm:hidden">{startedLabel}</span>
 		</div>
 	</div>
+
+	{#if !targetId}
+		<div class="hidden w-[150px] shrink-0 lg:block">
+			<div class="truncate text-sm" title={scan.engine_name}>{scan.engine_name}</div>
+			<div class="mt-0.5 truncate text-xs text-muted-foreground">
+				{scan.context_name ?? 'No context'}
+			</div>
+		</div>
+	{/if}
 
 	<div class="w-[120px] shrink-0">
 		<ScanStatusBadge status={scan.status} />

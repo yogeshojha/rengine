@@ -45,6 +45,10 @@
 
 	<div class="min-w-0 flex-1">{targetId ? 'Engine' : 'Target'}</div>
 
+	{#if !targetId}
+		<div class="hidden w-[150px] shrink-0 lg:block">Engine</div>
+	{/if}
+
 	<button
 		type="button"
 		class="flex w-[120px] shrink-0 items-center gap-1 uppercase tracking-wider hover:text-foreground"
