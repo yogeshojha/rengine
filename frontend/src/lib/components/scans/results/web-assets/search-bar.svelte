@@ -5,6 +5,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
+	import { cn } from '$lib/utils';
 	import type { DslKey, Facet } from '$lib/utilities/scan-insights';
 
 	interface Props {
@@ -14,9 +15,18 @@
 		placeholder: string;
 		onChange: (value: string) => void;
 		ref?: HTMLInputElement | null;
+		class?: string;
 	}
 
-	let { value, keys, values, placeholder, onChange, ref = $bindable(null) }: Props = $props();
+	let {
+		value,
+		keys,
+		values,
+		placeholder,
+		onChange,
+		ref = $bindable(null),
+		class: className
+	}: Props = $props();
 
 	interface Suggestion {
 		insert: string;
@@ -107,7 +117,7 @@
 </script>
 
 <div bind:this={anchor} class="w-full">
-	<InputGroup.Root class="h-10 bg-background">
+	<InputGroup.Root class={cn('h-9 bg-background', className)}>
 		<InputGroup.Addon>
 			<Search />
 		</InputGroup.Addon>

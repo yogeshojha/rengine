@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import DonutChart from './charts/donut-chart.svelte';
 	import HorizontalBarChart from './charts/horizontal-bar-chart.svelte';
 	import TechStackCard from './overview/tech-stack-card.svelte';
@@ -131,8 +132,10 @@
 
 	$effect(() => {
 		void revision;
+		void scanId;
+		void projectId;
 		if (!seen) return;
-		loadInsights();
+		untrack(loadInsights);
 	});
 
 	$effect(() => {

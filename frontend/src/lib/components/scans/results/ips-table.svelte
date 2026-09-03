@@ -27,7 +27,7 @@
 	import OverflowPopover from './web-assets/overflow-popover.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import ResultsPagination from './web-assets/results-pagination.svelte';
-	import type { ColumnDef } from './web-assets/filter-bar.svelte';
+	import type { ColumnDef } from './web-assets/columns';
 	import IpFilterBar from './ips/ip-filter-bar.svelte';
 	import IpHoverCard from './ips/ip-hover-card.svelte';
 	import IpDetailSheet from './ip-detail-sheet.svelte';

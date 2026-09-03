@@ -1,16 +1,30 @@
 <script lang="ts">
 	import * as Pagination from '$lib/components/ui/pagination';
+	import X from '@lucide/svelte/icons/x';
+	import { Button } from '$lib/components/ui/button';
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 
 	interface Props {
 		total: number;
 		page: number;
 		pageSize: number;
+		noun?: string;
+		selectedCount?: number;
+		onClearSelection?: () => void;
 		onPage: (page: number) => void;
 		onPageSize: (size: number) => void;
 	}
 
-	let { total, page, pageSize, onPage, onPageSize }: Props = $props();
+	let {
+		total,
+		page,
+		pageSize,
+		noun = 'host',
+		selectedCount = 0,
+		onClearSelection,
+		onPage,
+		onPageSize
+	}: Props = $props();
 
 	const SIZES = [25, 50, 100, 200];
 
@@ -18,12 +32,27 @@
 	let to = $derived(Math.min((page + 1) * pageSize, total));
 </script>
 
-<div class="flex flex-wrap items-center justify-between gap-3">
-	<div class="flex items-center gap-3 text-xs text-muted-foreground">
-		<span class="tabular-nums">
+<div class="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
+	<div class="flex flex-wrap items-center gap-4">
+		<span class="text-xs text-muted-foreground tabular-nums">
 			Showing {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}
+			{noun}{total !== 1 ? 's' : ''}
 		</span>
-		<PageSizeSelector {pageSize} options={SIZES} onPageSizeChange={onPageSize} class="h-8" />
+		<PageSizeSelector {pageSize} options={SIZES} onPageSizeChange={onPageSize} />
+		{#if selectedCount > 0}
+			<span class="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+				{selectedCount} selected
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					class="size-6"
+					aria-label="Clear selection"
+					onclick={onClearSelection}
+				>
+					<X class="size-3" />
+				</Button>
+			</span>
+		{/if}
 	</div>
 	{#if total > pageSize}
 		<Pagination.Root

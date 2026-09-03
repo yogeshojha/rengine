@@ -8,6 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { SCAN_TIME_RANGES, type ScanTimeRange } from '$lib/types/scan';
 	import type { ScanFacet } from '$lib/types/scan';
 	import type { ScheduleMode } from '$lib/stores/scans.svelte';
@@ -96,16 +97,18 @@
 					</Button>
 				{/snippet}
 			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="start" class="max-h-72 overflow-y-auto">
-				{#each engineOptions as e (e.name)}
-					<DropdownMenu.CheckboxItem
-						checked={engines.includes(e.name)}
-						onCheckedChange={() => onToggleEngine(e.name)}
-					>
-						<span class="flex-1 truncate">{e.name}</span>
-						<span class="ml-3 tabular-nums text-muted-foreground">{e.count}</span>
-					</DropdownMenu.CheckboxItem>
-				{/each}
+			<DropdownMenu.Content align="start" class="max-h-none overflow-visible">
+				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
+					{#each engineOptions as e (e.name)}
+						<DropdownMenu.CheckboxItem
+							checked={engines.includes(e.name)}
+							onCheckedChange={() => onToggleEngine(e.name)}
+						>
+							<span class="flex-1 truncate">{e.name}</span>
+							<span class="ml-3 tabular-nums text-muted-foreground">{e.count}</span>
+						</DropdownMenu.CheckboxItem>
+					{/each}
+				</ScrollArea>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 	{/if}
@@ -127,16 +130,18 @@
 					</Button>
 				{/snippet}
 			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="start" class="max-h-72 overflow-y-auto">
-				{#each contextOptions as c (c.name)}
-					<DropdownMenu.CheckboxItem
-						checked={contexts.includes(c.name)}
-						onCheckedChange={() => onToggleContext(c.name)}
-					>
-						<span class="flex-1 truncate">{c.name}</span>
-						<span class="ml-3 tabular-nums text-muted-foreground">{c.count}</span>
-					</DropdownMenu.CheckboxItem>
-				{/each}
+			<DropdownMenu.Content align="start" class="max-h-none overflow-visible">
+				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
+					{#each contextOptions as c (c.name)}
+						<DropdownMenu.CheckboxItem
+							checked={contexts.includes(c.name)}
+							onCheckedChange={() => onToggleContext(c.name)}
+						>
+							<span class="flex-1 truncate">{c.name}</span>
+							<span class="ml-3 tabular-nums text-muted-foreground">{c.count}</span>
+						</DropdownMenu.CheckboxItem>
+					{/each}
+				</ScrollArea>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 	{/if}

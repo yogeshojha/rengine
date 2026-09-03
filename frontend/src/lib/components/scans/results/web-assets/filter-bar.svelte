@@ -3,50 +3,41 @@
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import Columns3 from '@lucide/svelte/icons/columns-3';
 	import Image from '@lucide/svelte/icons/image';
-	import X from '@lucide/svelte/icons/x';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Separator } from '$lib/components/ui/separator';
 	import FacetedFilter from '../faceted-filter.svelte';
-	import {
-		activeFacetCount,
-		emptyQuery,
-		queryChips,
-		type SubdomainFacetSet,
-		type WebAssetQuery
-	} from '$lib/utilities/scan-insights';
-
-	export interface ColumnDef {
-		key: string;
-		label: string;
-	}
+	import SortMenu from './sort-menu.svelte';
+	import type { WebAssetColumn } from './columns';
+	import type { SubdomainFacetSet, WebAssetQuery } from '$lib/utilities/scan-insights';
 
 	interface Props {
 		query: WebAssetQuery;
 		facets: SubdomainFacetSet;
 		onQuery: (q: WebAssetQuery) => void;
-		total: number;
-		scanTotal: number;
 		view: string;
 		onView: (v: string) => void;
-		columns: ColumnDef[];
+		columns: WebAssetColumn[];
 		visible: string[];
 		onToggleColumn: (key: string) => void;
 		density: string;
 		onDensity: (d: string) => void;
 		onlyShots: boolean;
 		onOnlyShots: (v: boolean) => void;
+		sortKey: string;
+		sortDir: 1 | -1;
+		onSort: (key: string) => void;
+		refreshing: boolean;
+		onRefresh: () => void;
 	}
 
 	let {
 		query,
 		facets,
 		onQuery,
-		total,
-		scanTotal,
 		view,
 		onView,
 		columns,
@@ -55,64 +46,57 @@
 		density,
 		onDensity,
 		onlyShots,
-		onOnlyShots
+		onOnlyShots,
+		sortKey,
+		sortDir,
+		onSort,
+		refreshing,
+		onRefresh
 	}: Props = $props();
 
 	const QUICK = [
-		{ value: 'live', label: 'Live' },
 		{ value: 'new', label: 'New' },
 		{ value: 'issues', label: 'Issues' },
 		{ value: 'nowaf', label: 'No WAF' }
 	];
 
 	let quick = $derived(
-		[
-			query.liveOnly && 'live',
-			query.newOnly && 'new',
-			query.issuesOnly && 'issues',
-			query.waf === 'none' && 'nowaf'
-		].filter((v): v is string => !!v)
+		[query.newOnly && 'new', query.issuesOnly && 'issues', query.waf === 'none' && 'nowaf'].filter(
+			(v): v is string => !!v
+		)
 	);
-	let chips = $derived(queryChips(query));
-	let dirty = $derived(activeFacetCount(query) > 0 || !!query.search);
 
 	function setQuick(values: string[]) {
 		onQuery({
 			...query,
-			liveOnly: values.includes('live'),
 			newOnly: values.includes('new'),
 			issuesOnly: values.includes('issues'),
 			waf: values.includes('nowaf') ? 'none' : query.waf === 'none' ? 'any' : query.waf
 		});
 	}
-	function setList<K extends 'status' | 'tech' | 'service' | 'cert' | 'source'>(
-		key: K,
-		value: string[]
-	) {
+	function setList<K extends 'tech' | 'service' | 'cert' | 'source'>(key: K, value: string[]) {
 		onQuery({ ...query, [key]: value });
 	}
 </script>
 
-<div class="flex flex-col gap-2">
-	<div class="flex flex-wrap items-center gap-2">
-		<FacetedFilter
-			title="Status"
-			options={facets.status}
-			selected={query.status}
-			onChange={(v) => setList('status', v)}
-		/>
-		<FacetedFilter
-			title="Tech"
-			options={facets.tech}
-			selected={query.tech}
-			onChange={(v) => setList('tech', v)}
-		/>
-		<FacetedFilter
-			title="Service"
-			options={facets.service}
-			selected={query.service}
-			onChange={(v) => setList('service', v)}
-		/>
+<div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
+	<div class="flex min-w-0 flex-1 basis-72 flex-wrap items-center gap-2">
+		{#if facets.tech.length}
+			<FacetedFilter
+				title="Tech"
+				options={facets.tech}
+				selected={query.tech}
+				onChange={(v) => setList('tech', v)}
+			/>
+		{/if}
+		{#if facets.service.length}
+			<FacetedFilter
+				title="Service"
+				options={facets.service}
+				selected={query.service}
+				onChange={(v) => setList('service', v)}
+			/>
+		{/if}
 		{#if facets.cert.length}
 			<FacetedFilter
 				title="Cert"
@@ -121,122 +105,118 @@
 				onChange={(v) => setList('cert', v)}
 			/>
 		{/if}
-		<FacetedFilter
-			title="Source"
-			options={facets.source}
-			selected={query.source}
-			onChange={(v) => setList('source', v)}
-		/>
-
-		<Separator orientation="vertical" class="mx-0.5 h-5" />
-
+		{#if facets.source.length}
+			<FacetedFilter
+				title="Source"
+				options={facets.source}
+				selected={query.source}
+				onChange={(v) => setList('source', v)}
+			/>
+		{/if}
 		<ToggleGroup.Root
 			type="multiple"
 			value={quick}
 			onValueChange={setQuick}
 			variant="outline"
-			size="sm"
+			aria-label="Quick filters"
 		>
 			{#each QUICK as q (q.value)}
-				<ToggleGroup.Item value={q.value} class="px-2.5 text-xs">{q.label}</ToggleGroup.Item>
+				<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
+					{q.label}
+				</ToggleGroup.Item>
 			{/each}
 		</ToggleGroup.Root>
-
-		{#if dirty}
-			<Button
-				variant="ghost"
-				size="sm"
-				class="h-8 text-muted-foreground"
-				onclick={() => onQuery(emptyQuery())}
-			>
-				Reset <X data-icon="inline-end" />
-			</Button>
-		{/if}
-
-		<div class="ml-auto flex items-center gap-2">
-			<span class="text-xs text-muted-foreground tabular-nums">
-				{total.toLocaleString()}{scanTotal && scanTotal !== total
-					? ` of ${scanTotal.toLocaleString()}`
-					: ''} hosts
-			</span>
-			{#if view === 'gallery'}
-				<Toggle
-					pressed={onlyShots}
-					onPressedChange={onOnlyShots}
-					variant="outline"
-					size="sm"
-					class="h-8 gap-1.5 text-xs"
-					aria-label="Only hosts with a screenshot"
-				>
-					<Image class="size-3.5" />
-					With screenshot
-				</Toggle>
-			{/if}
-			<ToggleGroup.Root
-				type="single"
-				value={view}
-				onValueChange={(v) => v && onView(v)}
-				variant="outline"
-				size="sm"
-			>
-				<ToggleGroup.Item value="table" aria-label="Table view" title="Table view">
-					<Rows3 class="size-4" />
-				</ToggleGroup.Item>
-				<ToggleGroup.Item value="gallery" aria-label="Gallery view" title="Gallery view">
-					<LayoutGrid class="size-4" />
-				</ToggleGroup.Item>
-			</ToggleGroup.Root>
-			{#if view === 'table'}
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						{#snippet child({ props })}
-							<Button variant="outline" size="sm" class="h-8" {...props}>
-								<Columns3 data-icon="inline-start" /> Columns
-							</Button>
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-44">
-						<DropdownMenu.Group>
-							<DropdownMenu.Label>Columns</DropdownMenu.Label>
-							{#each columns as col (col.key)}
-								<DropdownMenu.CheckboxItem
-									checked={visible.includes(col.key)}
-									onCheckedChange={() => onToggleColumn(col.key)}
-									closeOnSelect={false}
-								>
-									{col.label}
-								</DropdownMenu.CheckboxItem>
-							{/each}
-						</DropdownMenu.Group>
-						<DropdownMenu.Separator />
-						<DropdownMenu.Group>
-							<DropdownMenu.Label>Density</DropdownMenu.Label>
-							<DropdownMenu.RadioGroup value={density} onValueChange={onDensity}>
-								<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
-								<DropdownMenu.RadioItem value="cozy">Cozy</DropdownMenu.RadioItem>
-							</DropdownMenu.RadioGroup>
-						</DropdownMenu.Group>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-			{/if}
-		</div>
 	</div>
 
-	{#if chips.length}
-		<div class="flex flex-wrap items-center gap-1.5">
-			{#each chips as chip (chip.id)}
-				<Badge variant="secondary" class="gap-1 pr-1 font-normal">
-					{chip.label}
-					<button
-						type="button"
-						class="rounded-sm text-muted-foreground hover:text-foreground"
-						aria-label="Remove filter {chip.label}"
-						onclick={() => onQuery(chip.remove(query))}
-					>
-						<X class="size-3" />
-					</button>
-				</Badge>
-			{/each}
-		</div>
-	{/if}
+	<div class="flex items-center gap-2">
+		<ToggleGroup.Root
+			type="single"
+			variant="outline"
+			value={view}
+			onValueChange={(v) => v && onView(v)}
+			aria-label="View"
+		>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					{#snippet child({ props })}
+						<ToggleGroup.Item {...props} value="table" aria-label="List view" class="h-9 px-3">
+							<Rows3 class="h-4 w-4" />
+						</ToggleGroup.Item>
+					{/snippet}
+				</Tooltip.Trigger>
+				<Tooltip.Content>List view</Tooltip.Content>
+			</Tooltip.Root>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					{#snippet child({ props })}
+						<ToggleGroup.Item {...props} value="gallery" aria-label="Gallery view" class="h-9 px-3">
+							<LayoutGrid class="h-4 w-4" />
+						</ToggleGroup.Item>
+					{/snippet}
+				</Tooltip.Trigger>
+				<Tooltip.Content>Gallery view</Tooltip.Content>
+			</Tooltip.Root>
+		</ToggleGroup.Root>
+
+		{#if view === 'gallery'}
+			<Toggle
+				pressed={onlyShots}
+				onPressedChange={onOnlyShots}
+				variant="outline"
+				class="h-9 gap-2 px-3 text-sm font-normal"
+				aria-label="Only hosts with a screenshot"
+			>
+				<Image class="h-4 w-4" />
+				<span class="hidden sm:inline">With screenshot</span>
+			</Toggle>
+		{/if}
+
+		<SortMenu {sortKey} {sortDir} {onSort} />
+
+		{#if view === 'table'}
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" size="sm" class="h-9 gap-2">
+							<Columns3 class="h-4 w-4" />
+							<span class="hidden sm:inline">Columns</span>
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-44">
+					<DropdownMenu.Group>
+						<DropdownMenu.Label>Columns</DropdownMenu.Label>
+						{#each columns as col (col.key)}
+							<DropdownMenu.CheckboxItem
+								checked={visible.includes(col.key)}
+								onCheckedChange={() => onToggleColumn(col.key)}
+								closeOnSelect={false}
+							>
+								{col.label}
+							</DropdownMenu.CheckboxItem>
+						{/each}
+					</DropdownMenu.Group>
+					<DropdownMenu.Separator />
+					<DropdownMenu.Group>
+						<DropdownMenu.Label>Density</DropdownMenu.Label>
+						<DropdownMenu.RadioGroup value={density} onValueChange={onDensity}>
+							<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="cozy">Cozy</DropdownMenu.RadioItem>
+						</DropdownMenu.RadioGroup>
+					</DropdownMenu.Group>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		{/if}
+
+		<Button
+			variant="outline"
+			size="icon"
+			class="h-9 w-9"
+			aria-label="Refresh"
+			onclick={onRefresh}
+			disabled={refreshing}
+		>
+			<RefreshCw class="h-4 w-4 {refreshing ? 'animate-spin' : ''}" />
+		</Button>
+	</div>
 </div>

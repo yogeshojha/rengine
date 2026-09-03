@@ -482,6 +482,7 @@
 					<WebAssetsTable
 						scanId={scan.id}
 						{projectId}
+						apex={scan.execution_config.target_value}
 						active={activeTab === 'web-assets'}
 						bind:query={webQuery}
 					/>

@@ -7,7 +7,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
 	import FacetedFilter from '../faceted-filter.svelte';
-	import type { ColumnDef } from '../web-assets/filter-bar.svelte';
+	import type { ColumnDef } from '../web-assets/columns';
 	import {
 		emptyIpQuery,
 		ipActiveFacetCount,

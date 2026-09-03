@@ -78,13 +78,27 @@ export interface FilterChip {
 	remove: (q: WebAssetQuery) => WebAssetQuery;
 }
 
-const STATUS_CHIP: Record<string, string> = {
-	'2xx': 'Status 2xx',
-	'3xx': 'Status 3xx',
-	'4xx': 'Status 4xx',
-	'5xx': 'Status 5xx',
-	none: 'No HTTP'
-};
+// mirrors api/app/services/subdomain.py _STATUS_LABELS
+export const STATUS_CLASS_TABS: { key: string; label: string }[] = [
+	{ key: 'all', label: 'All' },
+	{ key: '2xx', label: '2xx OK' },
+	{ key: '3xx', label: '3xx Redirect' },
+	{ key: '4xx', label: '4xx Client' },
+	{ key: '5xx', label: '5xx Server' },
+	{ key: 'none', label: 'No HTTP' }
+];
+
+export const WEB_ASSET_SORTS: { key: string; label: string }[] = [
+	{ key: 'status', label: 'Status' },
+	{ key: 'name', label: 'Host' },
+	{ key: 'title', label: 'Title' },
+	{ key: 'ip', label: 'IP' },
+	{ key: 'cert', label: 'Cert' },
+	{ key: 'discovered', label: 'Found' },
+	{ key: 'size', label: 'Size' },
+	{ key: 'time', label: 'Time' }
+];
+
 const CERT_CHIP: Record<string, string> = {
 	expired: 'Cert expired',
 	expiring: 'Cert expiring',
@@ -92,7 +106,7 @@ const CERT_CHIP: Record<string, string> = {
 	valid: 'Cert valid'
 };
 
-type ListKey = 'status' | 'tech' | 'service' | 'cert' | 'source';
+type ListKey = 'tech' | 'service' | 'cert' | 'source';
 
 export function queryChips(q: WebAssetQuery): FilterChip[] {
 	const chips: FilterChip[] = [];
@@ -104,7 +118,6 @@ export function queryChips(q: WebAssetQuery): FilterChip[] {
 				remove: (x) => ({ ...x, [key]: x[key].filter((o) => o !== v) })
 			});
 	};
-	list('status', (v) => STATUS_CHIP[v] ?? v);
 	list('tech', (v) => v);
 	list('service', (v) => `Service ${v}`);
 	list('cert', (v) => CERT_CHIP[v] ?? v);
