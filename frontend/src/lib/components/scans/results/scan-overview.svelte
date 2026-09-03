@@ -15,6 +15,7 @@
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { isLiveStatus } from '$lib/utilities/scan-status';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
+	import { filterToken } from '$lib/utilities/scan-insights';
 	import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 	import type { StatusClass } from '$lib/utilities/scan-correlation';
 	import type {
@@ -322,7 +323,9 @@
 									bars={bars.bars}
 									valueLabel={bars.valueLabel}
 									labelWidth={bars.labelWidth}
-									onSelect={bars.filterKey ? (n) => onFilter(`${bars.filterKey}:${n}`) : undefined}
+									onSelect={bars.filterKey
+										? (n) => onFilter(filterToken(bars.filterKey!, n))
+										: undefined}
 								/>
 							{/if}
 							{#snippet footer()}

@@ -1,3 +1,5 @@
+import type { MatchEvidence } from './asset-query';
+
 export interface SubdomainRead {
 	id: string;
 	scan_id: string;
@@ -32,6 +34,7 @@ export interface SubdomainRead {
 	ports?: number[];
 	title_count?: number;
 	favicon_count?: number;
+	matched_in?: MatchEvidence[];
 	discovered_at: string;
 }
 

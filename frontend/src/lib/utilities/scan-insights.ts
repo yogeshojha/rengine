@@ -2,6 +2,8 @@ import type { SubdomainRead } from '$lib/types/subdomain';
 import type { HttpAssetRead } from '$lib/types/http-asset';
 import type { IpAddressRead } from '$lib/types/ip-address';
 import type { PortRead } from '$lib/types/port';
+import { quoteValue } from '$lib/utilities/query-lexer';
+import type { QueryError } from '$lib/types/asset-query';
 import type { StatusClass } from './scan-correlation';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -153,16 +155,12 @@ export function tokenize(search: string): string[] {
 	return search.match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
 }
 
-export function isQuoted(value: string): boolean {
-	return value.length >= 2 && value.startsWith('"') && value.endsWith('"');
-}
-
-export function unquote(value: string): string {
-	return isQuoted(value) ? value.slice(1, -1) : value;
+export function filterToken(key: string, value: string): string {
+	return `${key}:${quoteValue(value)}`;
 }
 
 export function exactToken(key: string, value: string): string {
-	return `${key}:"${value.replace(/"/g, '')}"`;
+	return `${key}=${quoteValue(value)}`;
 }
 
 export function appendToken(search: string, token: string): string {
@@ -170,38 +168,6 @@ export function appendToken(search: string, token: string): string {
 	if (parts.includes(token)) return search;
 	return [...parts, token].join(' ');
 }
-
-export interface DslKey {
-	key: string;
-	hint: string;
-	values?: string[];
-	facet?: string;
-}
-
-export const DSL_KEYS: DslKey[] = [
-	{ key: 'status', hint: 'HTTP response class', values: ['2xx', '3xx', '4xx', '5xx', 'none'] },
-	{
-		key: 'is',
-		hint: 'Host property',
-		values: ['live', 'new', 'resolved', 'auth', 'cdn', 'waf', 'screenshot', 'important', 'wildcard']
-	},
-	{ key: 'tech', hint: 'Detected technology', facet: 'tech' },
-	{ key: 'service', hint: 'Open port service', facet: 'service' },
-	{ key: 'port', hint: 'Open port number' },
-	{
-		key: 'cert',
-		hint: 'TLS certificate state',
-		values: ['expired', 'expiring', 'self-signed', 'valid']
-	},
-	{ key: 'source', hint: 'Discovery source', facet: 'source' },
-	{ key: 'cdn', hint: 'Behind a CDN', values: ['yes', 'no'] },
-	{ key: 'waf', hint: 'WAF presence', values: ['any', 'none'] },
-	{ key: 'ip', hint: 'Resolves to IP' },
-	{ key: 'cname', hint: 'CNAME target contains' },
-	{ key: 'title', hint: 'Page title contains' },
-	{ key: 'name', hint: 'Host name contains' },
-	{ key: 'favicon', hint: 'Favicon hash' }
-];
 
 // mirror api/app/services/subdomain.py + ip_address.py
 export interface Facet {
@@ -211,11 +177,10 @@ export interface Facet {
 }
 
 export interface SubdomainFilter {
-	text: string | null;
+	q: string | null;
 	statuses: string[];
 	tech: string[];
 	services: string[];
-	ports: number[];
 	cert: string[];
 	sources: string[];
 	cdn: 'any' | 'yes' | 'no';
@@ -223,17 +188,7 @@ export interface SubdomainFilter {
 	live: boolean;
 	screenshot: boolean;
 	issues: boolean;
-	sensitive: boolean;
-	auth: boolean;
-	important: boolean;
-	wildcard: boolean;
 	new: boolean;
-	resolved: boolean;
-	ip: string | null;
-	cname: string | null;
-	favicon: string | null;
-	title: string | null;
-	title_exact: string | null;
 	sort: string;
 	order: 'asc' | 'desc';
 	limit: number;
@@ -243,6 +198,8 @@ export interface SubdomainFilter {
 export interface SubdomainSearchResult {
 	items: SubdomainRead[];
 	total: number;
+	total_capped: boolean;
+	error: QueryError | null;
 }
 
 export interface SubdomainFacetSet {
@@ -353,8 +310,6 @@ export interface IpGroupPage {
 	total: number;
 }
 
-const uniq = (a: string[]): string[] => a.filter((x, i) => a.indexOf(x) === i);
-
 export function compileQuery(
 	q: WebAssetQuery,
 	sortKey: string,
@@ -362,12 +317,11 @@ export function compileQuery(
 	offset: number,
 	limit: number
 ): SubdomainFilter {
-	const f: SubdomainFilter = {
-		text: null,
+	return {
+		q: q.search.trim() || null,
 		statuses: [...q.status],
 		tech: [...q.tech],
 		services: [...q.service],
-		ports: [],
 		cert: [...q.cert],
 		sources: [...q.source],
 		cdn: q.cdn,
@@ -375,102 +329,10 @@ export function compileQuery(
 		live: q.liveOnly,
 		screenshot: q.hasScreenshot,
 		issues: q.issuesOnly,
-		sensitive: false,
-		auth: false,
-		important: false,
-		wildcard: false,
 		new: q.newOnly,
-		resolved: false,
-		ip: null,
-		cname: null,
-		favicon: null,
-		title: null,
-		title_exact: null,
 		sort: sortKey,
 		order: dir === 1 ? 'asc' : 'desc',
 		limit,
 		offset
 	};
-	const words: string[] = [];
-	for (const part of tokenize(q.search)) {
-		const i = part.indexOf(':');
-		if (i <= 0) {
-			words.push(unquote(part));
-			continue;
-		}
-		const key = part.slice(0, i).toLowerCase();
-		const quoted = isQuoted(part.slice(i + 1));
-		const raw = unquote(part.slice(i + 1));
-		const v = raw.toLowerCase();
-		switch (key) {
-			case 'status':
-				if (/^[2-5]xx$/.test(v) || v === 'none') f.statuses.push(v);
-				else if (/^[1-5]\d\d$/.test(v)) f.statuses.push(`${v[0]}xx`);
-				break;
-			case 'tech':
-				f.tech.push(raw);
-				break;
-			case 'service':
-				f.services.push(raw);
-				break;
-			case 'port': {
-				const n = parseInt(v, 10);
-				if (!Number.isNaN(n)) f.ports.push(n);
-				break;
-			}
-			case 'cert':
-				if (['expired', 'expiring', 'self-signed', 'valid'].includes(v)) f.cert.push(v);
-				break;
-			case 'source':
-				f.sources.push(raw);
-				break;
-			case 'cdn':
-				f.cdn = /^(true|yes)$/.test(v) ? 'yes' : 'no';
-				break;
-			case 'waf':
-				f.waf = v === 'none' ? 'none' : 'present';
-				break;
-			case 'sensitive':
-				if (/^(true|yes)$/.test(v)) f.sensitive = true;
-				break;
-			case 'ip':
-				f.ip = raw;
-				break;
-			case 'cname':
-				f.cname = raw;
-				break;
-			case 'favicon':
-				f.favicon = raw;
-				break;
-			case 'title':
-				if (quoted) f.title_exact = raw;
-				else f.title = raw;
-				break;
-			case 'name':
-			case 'host':
-				words.push(raw);
-				break;
-			case 'is':
-				if (v === 'live') f.live = true;
-				else if (v === 'cdn') f.cdn = 'yes';
-				else if (v === 'waf') f.waf = 'present';
-				else if (v === 'auth') f.auth = true;
-				else if (v === 'screenshot') f.screenshot = true;
-				else if (v === 'important') f.important = true;
-				else if (v === 'wildcard') f.wildcard = true;
-				else if (v === 'new') f.new = true;
-				else if (v === 'resolved') f.resolved = true;
-				break;
-			default:
-				words.push(part);
-		}
-	}
-	f.text = words.length ? words.join(' ') : null;
-	f.statuses = uniq(f.statuses);
-	f.tech = uniq(f.tech);
-	f.services = uniq(f.services);
-	f.cert = uniq(f.cert);
-	f.sources = uniq(f.sources);
-	f.ports = f.ports.filter((x, i) => f.ports.indexOf(x) === i);
-	return f;
 }

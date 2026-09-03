@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
 	webAssetsColumns: 'rengine:webassets:columns',
 	webAssetsDensity: 'rengine:webassets:density',
 	webAssetsPageSize: 'rengine:webassets:pageSize',
+	webAssetsRecentQueries: 'rengine:webassets:recentQueries',
 	ipsColumns: 'rengine:ips:columns',
 	ipsDensity: 'rengine:ips:density',
 	ipsPageSize: 'rengine:ips:pageSize'

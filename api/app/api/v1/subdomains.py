@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.services.asset_query import build_schema
 from app.services.subdomain import SubdomainService
+from shared.models.asset_query import QuerySchema
 from shared.models.scan_correlation import SubdomainCorrelation, SubdomainInsights
 from shared.models.subdomain import (
     Facet,
@@ -54,6 +56,11 @@ async def list_subdomains(
         limit=limit,
         offset=offset,
     )
+
+
+@router.get("/search/schema", response_model=QuerySchema)
+async def subdomain_search_schema(_current_user: CurrentUser) -> QuerySchema:
+    return build_schema()
 
 
 @router.post("/search", response_model=SubdomainSearchResult)

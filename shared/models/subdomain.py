@@ -6,6 +6,8 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.asset_query import MAX_QUERY_LENGTH
+from shared.models.asset_query import MatchEvidence, QueryError
 from shared.utils.datetime import utc_now
 
 
@@ -95,6 +97,7 @@ class SubdomainRow(SubdomainRead):
     ports: list[int] = Field(default_factory=list)
     title_count: int = 0
     favicon_count: int = 0
+    matched_in: list[MatchEvidence] = Field(default_factory=list)
 
 
 class SubdomainSummary(BaseModel):
@@ -110,11 +113,10 @@ class Facet(BaseModel):
 
 
 class SubdomainFilter(BaseModel):
-    text: str | None = Field(default=None, max_length=500)
+    q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
     statuses: list[str] = Field(default_factory=list, max_length=10)
     tech: list[str] = Field(default_factory=list, max_length=200)
     services: list[str] = Field(default_factory=list, max_length=200)
-    ports: list[int] = Field(default_factory=list, max_length=200)
     cert: list[str] = Field(default_factory=list, max_length=10)
     sources: list[str] = Field(default_factory=list, max_length=200)
     cdn: str = Field(default="any", max_length=10)
@@ -122,17 +124,7 @@ class SubdomainFilter(BaseModel):
     live: bool = False
     screenshot: bool = False
     issues: bool = False
-    sensitive: bool = False
-    auth: bool = False
-    important: bool = False
-    wildcard: bool = False
     new: bool = False
-    resolved: bool = False
-    ip: str | None = Field(default=None, max_length=100)
-    cname: str | None = Field(default=None, max_length=500)
-    favicon: str | None = Field(default=None, max_length=64)
-    title: str | None = Field(default=None, max_length=200)
-    title_exact: str | None = Field(default=None, max_length=500)
     sort: str = Field(default="name", max_length=20)
     order: str = Field(default="asc", max_length=4)
     limit: int = Field(default=50, ge=1, le=200)
@@ -142,6 +134,8 @@ class SubdomainFilter(BaseModel):
 class SubdomainSearchResult(BaseModel):
     items: list[SubdomainRow] = Field(default_factory=list)
     total: int = 0
+    total_capped: bool = False
+    error: QueryError | None = None
 
 
 class SubdomainFacets(BaseModel):

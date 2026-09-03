@@ -19,7 +19,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 
-	import SearchBar from './web-assets/search-bar.svelte';
+	import QueryBar from './web-assets/query-bar/query-bar.svelte';
 	import FilterBar from './web-assets/filter-bar.svelte';
 	import ListHeader from './web-assets/list-header.svelte';
 	import AssetRow from './web-assets/asset-row.svelte';
@@ -38,11 +38,12 @@
 		emptyQuery,
 		compileQuery,
 		queryChips,
-		DSL_KEYS,
 		STATUS_CLASS_TABS,
+		type Facet,
 		type WebAssetQuery,
 		type SubdomainFacetSet
 	} from '$lib/utilities/scan-insights';
+	import type { QueryError } from '$lib/types/asset-query';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 
 	interface Props {
@@ -110,6 +111,9 @@
 
 	let items = $state<SubdomainRead[]>([]);
 	let total = $state(0);
+	let totalCapped = $state(false);
+	let queryError = $state<QueryError | null>(null);
+	let queryReady = $state(true);
 	let loading = $state(true);
 	let refreshing = $state(false);
 	let errored = $state(false);
@@ -118,8 +122,10 @@
 
 	let selected = $state<SubdomainRead | null>(null);
 	let drawerOpen = $state(false);
+	let sheetFocus = $state<{ tab: string; pane?: string } | null>(null);
 	let cursor = $state(-1);
 	let searchRef = $state<HTMLInputElement | null>(null);
+	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let pendingSelect: 'first' | 'last' | null = null;
 	const checkedIds = new SvelteSet<string>();
 
@@ -172,6 +178,7 @@
 	let lastSig = '';
 
 	async function runSearch() {
+		if (!queryReady) return;
 		const q = view === 'gallery' && onlyShots ? { ...query, hasScreenshot: true } : query;
 		const filter = compileQuery(q, sort.key, sort.dir, pageIndex * pageSize, pageSize);
 		const sig = JSON.stringify({ ...filter, offset: 0 });
@@ -188,7 +195,10 @@
 			if (my !== reqId) return;
 			items = res.items;
 			total = res.total;
+			totalCapped = res.total_capped;
+			queryError = res.error;
 			errored = false;
+			if (!res.error && filter.q) queryBar?.remember(filter.q);
 			if (pendingSelect) {
 				selected = pendingSelect === 'first' ? (items[0] ?? null) : (items.at(-1) ?? null);
 				pendingSelect = null;
@@ -203,6 +213,7 @@
 			if (my === reqId) {
 				items = [];
 				total = 0;
+				totalCapped = false;
 				errored = true;
 			}
 		} finally {
@@ -240,6 +251,7 @@
 		void onlyShots;
 		void scanId;
 		void projectId;
+		void queryReady;
 		if (!seen) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, SEARCH_DEBOUNCE_MS);
@@ -287,8 +299,21 @@
 		untrack(syncUrl);
 	});
 
+	const EVIDENCE_TARGET: Record<string, { tab: string; pane?: string }> = {
+		body: { tab: 'http', pane: 'response' },
+		header: { tab: 'http', pane: 'headers' },
+		redirect: { tab: 'http', pane: 'headers' },
+		path: { tab: 'http', pane: 'response' }
+	};
+
 	function open(s: SubdomainRead) {
 		selected = s;
+		sheetFocus = null;
+		drawerOpen = true;
+	}
+	function openEvidence(s: SubdomainRead, field: string) {
+		selected = s;
+		sheetFocus = EVIDENCE_TARGET[field] ?? { tab: 'overview' };
 		drawerOpen = true;
 	}
 	async function openHost(name: string) {
@@ -298,7 +323,7 @@
 			const res = await subdomainsApi.search(
 				projectId,
 				scanId,
-				compileQuery({ ...emptyQuery(), search: `name:${name}` }, 'name', 1, 0, 5)
+				compileQuery({ ...emptyQuery(), search: exactToken('host', name) }, 'name', 1, 0, 5)
 			);
 			const exact = res.items.find((s) => s.name === name);
 			if (exact) open(exact);
@@ -393,19 +418,18 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="mx-auto w-full max-w-2xl">
-	<SearchBar
-		bind:ref={searchRef}
-		value={query.search}
-		keys={DSL_KEYS}
-		values={facets}
-		placeholder="Search hosts, titles, IPs or filter with tech:nginx port:22 is:cdn"
-		onChange={(v) => setQuery({ ...query, search: v })}
-		class="h-11 rounded-full px-1.5 shadow-xs transition-shadow focus-within:shadow-md"
-	/>
-</div>
+<QueryBar
+	bind:this={queryBar}
+	bind:ref={searchRef}
+	value={query.search}
+	facets={facets as unknown as Record<string, Facet[]>}
+	busy={loading && !!query.search}
+	serverError={queryError}
+	onReady={(value) => (queryReady = value)}
+	onChange={(v) => setQuery({ ...query, search: v })}
+/>
 
-<Card.Root class="mt-4 gap-0 overflow-hidden py-0">
+<Card.Root class="mt-6 gap-0 overflow-hidden py-0">
 	<div class="border-b px-2">
 		<CountTabs
 			tabs={STATUS_CLASS_TABS}
@@ -492,7 +516,14 @@
 			</Button>
 		</EmptyState>
 	{:else if items.length === 0}
-		{#if filtered || (view === 'gallery' && onlyShots)}
+		{#if queryError}
+			<EmptyState
+				icon={SearchX}
+				title="That query could not run"
+				description={queryError.message}
+				class="rounded-none border-0 bg-transparent py-16"
+			/>
+		{:else if filtered || (view === 'gallery' && onlyShots)}
 			<EmptyState
 				icon={SearchX}
 				title="No hosts match"
@@ -543,6 +574,7 @@
 						onOpen={open}
 						onHost={openHost}
 						onFilter={applyDsl}
+						onEvidence={openEvidence}
 						{hostsWithTitle}
 					/>
 				{/each}
@@ -553,6 +585,7 @@
 	{#if !errored && total > 0}
 		<ResultsPagination
 			{total}
+			capped={totalCapped}
 			page={pageIndex}
 			{pageSize}
 			selectedCount={checkedCount}
@@ -569,6 +602,7 @@
 <WebAssetDetailSheet
 	sub={selected}
 	open={drawerOpen}
+	focus={sheetFocus}
 	onOpenChange={(o) => (drawerOpen = o)}
 	{projectId}
 	{scanId}

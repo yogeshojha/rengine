@@ -1,5 +1,13 @@
-import { tokenize, unquote } from './scan-insights';
-import type { DslKey, Facet } from './scan-insights';
+import { unquote } from './query-lexer';
+import { tokenize } from './scan-insights';
+import type { Facet } from './scan-insights';
+
+export interface DslKey {
+	key: string;
+	hint: string;
+	values?: string[];
+	facet?: string;
+}
 
 export interface IpQuery {
 	search: string;

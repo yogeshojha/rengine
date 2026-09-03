@@ -8,6 +8,7 @@
 		total: number;
 		page: number;
 		pageSize: number;
+		capped?: boolean;
 		noun?: string;
 		selectedCount?: number;
 		onClearSelection?: () => void;
@@ -19,6 +20,7 @@
 		total,
 		page,
 		pageSize,
+		capped = false,
 		noun = 'host',
 		selectedCount = 0,
 		onClearSelection,
@@ -35,7 +37,9 @@
 <div class="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
 	<div class="flex flex-wrap items-center gap-4">
 		<span class="text-xs text-muted-foreground tabular-nums">
-			Showing {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}
+			Showing {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}{capped
+				? '+'
+				: ''}
 			{noun}{total !== 1 ? 's' : ''}
 		</span>
 		<PageSizeSelector {pageSize} options={SIZES} onPageSizeChange={onPageSize} />

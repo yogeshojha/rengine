@@ -20,6 +20,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import MatchChips from './match-chips.svelte';
+	import HighlightText from './highlight-text.svelte';
 	import OverflowPopover from './overflow-popover.svelte';
 	import HostHoverCard from './host-hover-card.svelte';
 	import SamePagePopover from './same-page-popover.svelte';
@@ -43,7 +45,12 @@
 		isSensitivePort,
 		STATUS_DOT
 	} from '$lib/utilities/scan-correlation';
-	import { certState, daysUntilExpiry, exactToken } from '$lib/utilities/scan-insights';
+	import {
+		certState,
+		daysUntilExpiry,
+		exactToken,
+		filterToken
+	} from '$lib/utilities/scan-insights';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import type { WebAssetColumn } from './columns';
@@ -61,6 +68,7 @@
 		onOpen: (s: SubdomainRead) => void;
 		onHost: (name: string) => void;
 		onFilter: (token: string) => void;
+		onEvidence: (sub: SubdomainRead, field: string) => void;
 		hostsWithTitle: (title: string) => Promise<string[]>;
 	}
 
@@ -77,8 +85,16 @@
 		onOpen,
 		onHost,
 		onFilter,
+		onEvidence,
 		hostsWithTitle
 	}: Props = $props();
+
+	const ALWAYS_VISIBLE = ['host', 'title', 'cname'];
+	const COLUMN_EVIDENCE: Record<string, string> = {
+		tech: 'tech',
+		ip: 'ip',
+		sources: 'source'
+	};
 
 	const MAX_TECH = 3;
 	const MAX_IPS = 2;
@@ -99,6 +115,16 @@
 	let expiry = $derived(s.tls_not_after ? formatShortDate(s.tls_not_after) : null);
 	let certIssue = $derived(cert === 'expired' || cert === 'expiring' || cert === 'self-signed');
 	let signals = $derived(certIssue || !!s.waf || !!internalIp);
+	let cnameToken = $derived(s.cname ? filterToken('cname', s.cname) : '');
+	let faviconToken = $derived(s.favicon_hash ? filterToken('favicon', s.favicon_hash) : '');
+	let matches = $derived(s.matched_in ?? []);
+	let titleTerm = $derived(matches.find((m) => m.field === 'title')?.term ?? '');
+	let suppressed = $derived(
+		new Set([
+			...ALWAYS_VISIBLE,
+			...columns.map((c) => COLUMN_EVIDENCE[c.key]).filter((v): v is string => !!v)
+		])
+	);
 	let statusCls = $derived(httpStatusClass(s.http_status));
 	let tone = $derived(
 		selected || checked
@@ -139,7 +165,7 @@
 {#snippet title(clamp: string)}
 	{#if s.page_title}
 		<span class="min-w-0 wrap-anywhere text-foreground/80 {clamp}" title={s.page_title}>
-			{s.page_title}
+			<HighlightText text={s.page_title} term={titleTerm} />
 		</span>
 		{#if (s.title_count ?? 0) > 1}
 			{@const pageTitle = s.page_title}
@@ -249,7 +275,7 @@
 									{...props}
 									type="button"
 									class="inline-flex shrink-0 items-center gap-1 rounded border border-border px-1 text-[11px] hover:bg-accent hover:text-foreground"
-									onclick={(e) => pivot(e, `cname:${provider.suffix}`)}
+									onclick={(e) => pivot(e, filterToken('cname', provider.suffix))}
 								>
 									<TechIcon name={provider.label} class="size-3">
 										{#snippet fallback()}
@@ -269,7 +295,7 @@
 					type="button"
 					class="min-w-0 truncate font-mono text-[11px] hover:text-foreground"
 					title="Filter hosts pointing at {s.cname}"
-					onclick={(e) => pivot(e, `cname:${s.cname}`)}
+					onclick={(e) => pivot(e, cnameToken)}
 				>
 					{s.cname}
 				</button>
@@ -280,6 +306,10 @@
 				<span class="min-w-0 truncate font-mono text-[11px]" title={s.final_url}>{s.final_url}</span
 				>
 			</div>
+		{/if}
+
+		{#if matches.length}
+			<MatchChips {matches} suppress={suppressed} onOpen={(field) => onEvidence(s, field)} />
 		{/if}
 
 		{#if signals}
@@ -315,7 +345,7 @@
 					{@render signal(
 						'Internal IP',
 						`Resolves to private address ${internalIp} · filter hosts on it`,
-						`ip:${internalIp}`,
+						filterToken('ip', internalIp),
 						'border-warning/30 text-warning',
 						Network
 					)}
@@ -384,7 +414,7 @@
 											{...props}
 											type="button"
 											class="flex max-w-full min-w-0"
-											onclick={(e) => pivot(e, `tech:${t}`)}
+											onclick={(e) => pivot(e, filterToken('tech', t))}
 										>
 											<Badge
 												variant="outline"
@@ -407,7 +437,7 @@
 							shown={MAX_TECH}
 							label="technologies"
 							icons
-							onSelect={(t) => onFilter(`tech:${t}`)}
+							onSelect={(t) => onFilter(filterToken('tech', t))}
 						/>
 					</div>
 				{:else}
@@ -425,7 +455,7 @@
 									? 'text-warning'
 									: ''}"
 								title="Filter hosts on {ip}"
-								onclick={(e) => pivot(e, `ip:${ip}`)}
+								onclick={(e) => pivot(e, filterToken('ip', ip))}
 							>
 								{ip}
 							</button>
@@ -435,7 +465,7 @@
 							shown={MAX_IPS}
 							label="IP addresses"
 							mono
-							onSelect={(ip) => onFilter(`ip:${ip}`)}
+							onSelect={(ip) => onFilter(filterToken('ip', ip))}
 						/>
 					</div>
 				{:else}
@@ -469,7 +499,7 @@
 				{#if ports.length}
 					<div class="flex flex-wrap items-center gap-1">
 						{#each ports.slice(0, MAX_PORTS) as p (p)}
-							<button type="button" onclick={(e) => pivot(e, `port:${p}`)}>
+							<button type="button" onclick={(e) => pivot(e, filterToken('port', String(p)))}>
 								<Badge
 									variant="outline"
 									class="cursor-pointer px-1 font-mono text-[10px] font-normal hover:bg-accent {isSensitivePort(
@@ -487,7 +517,7 @@
 							shown={MAX_PORTS}
 							label="open ports"
 							mono
-							onSelect={(p) => onFilter(`port:${p}`)}
+							onSelect={(p) => onFilter(filterToken('port', String(p)))}
 						/>
 					</div>
 				{:else}
@@ -496,7 +526,7 @@
 			{:else if col.key === 'sources'}
 				<div class="flex flex-wrap items-center gap-1">
 					{#each (s.sources ?? []).slice(0, MAX_SOURCES) as src (src)}
-						<button type="button" onclick={(e) => pivot(e, `source:${src}`)}>
+						<button type="button" onclick={(e) => pivot(e, filterToken('source', src))}>
 							<Badge
 								variant="outline"
 								class="cursor-pointer px-1 text-[10px] font-normal text-muted-foreground hover:bg-accent"
@@ -509,7 +539,7 @@
 						items={s.sources ?? []}
 						shown={MAX_SOURCES}
 						label="sources"
-						onSelect={(src) => onFilter(`source:${src}`)}
+						onSelect={(src) => onFilter(filterToken('source', src))}
 					/>
 				</div>
 			{:else if col.key === 'discovered'}
@@ -595,20 +625,17 @@
 					<DropdownMenu.Group>
 						<DropdownMenu.Label>Pivot</DropdownMenu.Label>
 						{#if ips[0]}
-							<DropdownMenu.Item onclick={() => onFilter(`ip:${ips[0]}`)} class="gap-2">
+							<DropdownMenu.Item onclick={() => onFilter(filterToken('ip', ips[0]))} class="gap-2">
 								<Filter class="h-4 w-4" /> Same IP
 							</DropdownMenu.Item>
 						{/if}
 						{#if s.cname}
-							<DropdownMenu.Item onclick={() => onFilter(`cname:${s.cname}`)} class="gap-2">
+							<DropdownMenu.Item onclick={() => onFilter(cnameToken)} class="gap-2">
 								<Filter class="h-4 w-4" /> Same CNAME
 							</DropdownMenu.Item>
 						{/if}
 						{#if s.favicon_hash}
-							<DropdownMenu.Item
-								onclick={() => onFilter(`favicon:${s.favicon_hash}`)}
-								class="gap-2"
-							>
+							<DropdownMenu.Item onclick={() => onFilter(faviconToken)} class="gap-2">
 								<Filter class="h-4 w-4" /> Same favicon
 							</DropdownMenu.Item>
 						{/if}

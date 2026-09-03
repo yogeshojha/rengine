@@ -23,7 +23,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
 
-	import SearchBar from './web-assets/search-bar.svelte';
+	import SearchBar from './dsl-search-bar.svelte';
 	import OverflowPopover from './web-assets/overflow-popover.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import ResultsPagination from './web-assets/results-pagination.svelte';

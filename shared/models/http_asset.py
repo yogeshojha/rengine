@@ -1,12 +1,23 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Text
+from sqlalchemy import Column, Computed, Text
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.utils.datetime import utc_now
+
+HEADER_SEARCH_LIMIT = 20_000
+BODY_SEARCH_LIMIT = 100_000
+SEARCH_TSV_SQL = (
+    "setweight(to_tsvector('simple', "
+    f"left(coalesce(raw_response_header, ''), {HEADER_SEARCH_LIMIT})), 'A') || "
+    "setweight(to_tsvector('simple', "
+    f"left(coalesce(response_body, ''), {BODY_SEARCH_LIMIT})), 'B')"
+)
 
 
 def _json_list() -> Field:
@@ -98,6 +109,10 @@ class HttpAsset(SQLModel, table=True):
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )
     body_preview: str | None = Field(default=None, max_length=512)
+    search_tsv: Any | None = Field(
+        default=None,
+        sa_column=Column(TSVECTOR, Computed(SEARCH_TSV_SQL, persisted=True)),
+    )
 
     discovered_at: datetime = Field(default_factory=utc_now)
     created_at: datetime = Field(default_factory=utc_now)

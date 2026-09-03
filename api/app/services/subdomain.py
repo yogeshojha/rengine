@@ -5,13 +5,10 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import (
-    Text,
     and_,
     case,
     cast,
     distinct,
-    exists,
-    false,
     func,
     or_,
     select,
@@ -19,14 +16,25 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
 
+from app.services.asset_query import (
+    QueryContext,
+    QuerySyntaxError,
+    collect_evidence,
+    compile_query,
+    parse_query,
+    query_error_for,
+)
+from app.services.asset_query import predicates as preds
 from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
+from shared.definitions.asset_query import COUNT_CAP
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.logging import get_logger
+from shared.models.asset_query import QueryError
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
@@ -58,19 +66,15 @@ logger = get_logger(__name__)
 _TARGET_ROLLUP_CAP = 20000
 _FACET_LIMIT = 40
 _RELATION_CAP = 300
-_HTTP_OK = 200
-_HTTP_REDIRECT = 300
-_HTTP_CLIENT = 400
-_HTTP_SERVER = 500
-_HTTP_MAX = 600
-_AUTH_STATUS = (401, 403)
-_STATUS_BUCKETS = {
-    "2xx": (_HTTP_OK, _HTTP_REDIRECT),
-    "3xx": (_HTTP_REDIRECT, _HTTP_CLIENT),
-    "4xx": (_HTTP_CLIENT, _HTTP_SERVER),
-    "5xx": (_HTTP_SERVER, _HTTP_MAX),
-}
+_HTTP_OK = preds.HTTP_OK
+_HTTP_REDIRECT = preds.HTTP_REDIRECT
+_HTTP_CLIENT = preds.HTTP_CLIENT
+_HTTP_SERVER = preds.HTTP_SERVER
+_HTTP_MAX = preds.HTTP_MAX
+_AUTH_STATUS = preds.AUTH_STATUS
+_STATUS_BUCKETS = preds.STATUS_BUCKETS
 _SENSITIVE_PORTS = SENSITIVE_PORTS
+_STATEMENT_TIMEOUT = "SET LOCAL statement_timeout = '20s'"
 _STATUS_LABELS = {
     "2xx": "2xx OK",
     "3xx": "3xx Redirect",
@@ -84,7 +88,7 @@ _CERT_LABELS = {
     "self-signed": "Self-signed",
     "valid": "Valid",
 }
-_AUTH_RE = "login|sign ?in|log ?in|admin|dashboard|portal|console|authenticat"
+_AUTH_RE = preds.AUTH_RE
 _REFRAME = {
     "live": ("Live", "success"),
     "redirect": ("Redirect", "info"),
@@ -231,66 +235,12 @@ class SubdomainService:
 
     # ── server-side faceted search (Web Assets table) ──────────────────
 
-    @staticmethod
-    def _status_pred(s: str):
-        if s == "none":
-            return Subdomain.http_status.is_(None)
-        bucket = _STATUS_BUCKETS.get(s)
-        if bucket is None:
-            return false()
-        return and_(
-            Subdomain.http_status >= bucket[0], Subdomain.http_status < bucket[1]
-        )
+    _status_pred = staticmethod(preds.status_class)
+    _cert_pred = staticmethod(preds.cert_state)
+    _port_exists = staticmethod(preds.port_match)
+    _seen_earlier = staticmethod(preds.seen_earlier)
 
-    @staticmethod
-    def _cert_pred(c: str, now: datetime):
-        if c == "self-signed":
-            return Subdomain.tls_self_signed.is_(True)
-        if c == "expired":
-            return or_(
-                Subdomain.tls_expired.is_(True),
-                and_(
-                    Subdomain.tls_not_after.isnot(None), Subdomain.tls_not_after < now
-                ),
-            )
-        if c == "expiring":
-            return and_(
-                Subdomain.tls_not_after.isnot(None),
-                Subdomain.tls_expired.isnot(True),
-                Subdomain.tls_not_after >= now,
-                Subdomain.tls_not_after < now + timedelta(days=30),
-            )
-        if c == "valid":
-            return and_(
-                Subdomain.tls_not_after.isnot(None),
-                Subdomain.tls_not_after >= now + timedelta(days=30),
-                Subdomain.tls_self_signed.isnot(True),
-            )
-        return false()
-
-    @staticmethod
-    def _port_exists(cond):
-        return exists().where(
-            and_(
-                Port.scan_id == Subdomain.scan_id,
-                cond,
-                func.jsonb_exists(cast(Subdomain.resolved_ips, JSONB), Port.ip),
-            )
-        )
-
-    def _apply_filter(self, query, f: SubdomainFilter, now: datetime):  # noqa: PLR0912, PLR0915
-        if f.text:
-            for word in f.text.split():
-                like = f"%{word}%"
-                query = query.where(
-                    or_(
-                        Subdomain.name.ilike(like),
-                        Subdomain.page_title.ilike(like),
-                        Subdomain.webserver.ilike(like),
-                        cast(Subdomain.resolved_ips, Text).ilike(like),
-                        cast(Subdomain.tech, Text).ilike(like),
-                    )
-                )
+    def _apply_filter(self, query, f: SubdomainFilter, now: datetime):
         if f.statuses:
             query = query.where(or_(*[self._status_pred(s) for s in f.statuses]))
         if f.tech:
@@ -307,10 +257,6 @@ class SubdomainService:
             query = query.where(or_(*[self._cert_pred(c, now) for c in f.cert]))
         if f.services:
             query = query.where(self._port_exists(Port.service_name.in_(f.services)))
-        if f.ports:
-            query = query.where(self._port_exists(Port.number.in_(f.ports)))
-        if f.sensitive:
-            query = query.where(self._port_exists(Port.number.in_(_SENSITIVE_PORTS)))
         if f.cdn == "yes":
             query = query.where(Subdomain.is_cdn.is_(True))
         elif f.cdn == "no":
@@ -320,70 +266,14 @@ class SubdomainService:
         elif f.waf == "none":
             query = query.where(Subdomain.waf.is_(None))
         if f.live:
-            query = query.where(
-                and_(
-                    Subdomain.http_status >= _HTTP_OK,
-                    Subdomain.http_status < _HTTP_CLIENT,
-                )
-            )
+            query = query.where(preds.live())
         if f.screenshot:
             query = query.where(Subdomain.screenshot_path.isnot(None))
-        if f.important:
-            query = query.where(Subdomain.is_important.is_(True))
-        if f.wildcard:
-            query = query.where(Subdomain.is_wildcard.is_(True))
         if f.new:
             query = query.where(~self._seen_earlier())
-        if f.resolved:
-            query = query.where(
-                func.jsonb_array_length(cast(Subdomain.resolved_ips, JSONB)) > 0
-            )
-        if f.auth:
-            query = query.where(
-                or_(
-                    Subdomain.http_status.in_(_AUTH_STATUS),
-                    Subdomain.page_title.op("~*")(_AUTH_RE),
-                )
-            )
-        if f.ip:
-            query = query.where(cast(Subdomain.resolved_ips, Text).ilike(f"%{f.ip}%"))
-        if f.cname:
-            query = query.where(Subdomain.cname.ilike(f"%{f.cname}%"))
-        if f.favicon:
-            query = query.where(Subdomain.favicon_hash == f.favicon)
-        if f.title:
-            query = query.where(Subdomain.page_title.ilike(f"%{f.title}%"))
-        if f.title_exact:
-            query = query.where(Subdomain.page_title == f.title_exact)
         if f.issues:
-            query = query.where(
-                or_(
-                    self._cert_pred("expired", now),
-                    self._cert_pred("expiring", now),
-                    Subdomain.tls_self_signed.is_(True),
-                    Subdomain.http_status >= _HTTP_SERVER,
-                    and_(
-                        Subdomain.http_status >= _HTTP_OK,
-                        Subdomain.http_status < _HTTP_CLIENT,
-                        Subdomain.waf.is_(None),
-                        Subdomain.is_cdn.is_(False),
-                    ),
-                    self._port_exists(Port.number.in_(_SENSITIVE_PORTS)),
-                )
-            )
+            query = query.where(preds.issues(now))
         return query
-
-    @staticmethod
-    def _seen_earlier():
-        earlier = aliased(Subdomain)
-        return exists(
-            select(1).where(
-                earlier.target_id == Subdomain.target_id,
-                earlier.name == Subdomain.name,
-                earlier.scan_id != Subdomain.scan_id,
-                earlier.discovered_at < Subdomain.discovered_at,
-            )
-        )
 
     @staticmethod
     def _order(query, f: SubdomainFilter):
@@ -407,12 +297,35 @@ class SubdomainService:
             Subdomain.project_id == project_id, Subdomain.scan_id == scan_id
         )
         base = self._apply_filter(base, f, now)
-        total = await self.session.scalar(
-            select(func.count()).select_from(base.subquery())
-        )
-        page = self._order(base, f).limit(f.limit).offset(f.offset)
-        result = await self.session.execute(page)
-        rows = result.scalars().all()
+        try:
+            node = parse_query(f.q)
+            predicate = compile_query(node, QueryContext(scan_id=scan_id, now=now))
+        except QuerySyntaxError as exc:
+            return SubdomainSearchResult(
+                error=QueryError(
+                    message=exc.message, hint=exc.hint, start=exc.start, end=exc.end
+                )
+            )
+        if predicate is not None:
+            base = base.where(predicate)
+
+        await self.session.execute(text(_STATEMENT_TIMEOUT))
+        try:
+            counted = await self.session.scalar(
+                select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
+            )
+            page = self._order(base, f).limit(f.limit).offset(f.offset)
+            result = await self.session.execute(page)
+            rows = list(result.scalars().all())
+        except DBAPIError as exc:
+            await self.session.rollback()
+            rejected = query_error_for(exc)
+            if rejected is None:
+                raise
+            logger.info("asset query rejected by postgres", error=str(exc.orig))
+            return SubdomainSearchResult(error=rejected)
+        total = int(counted or 0)
+        capped = total > COUNT_CAP
 
         all_ips = {ip for s in rows for ip in (s.resolved_ips or [])}
         ports_by_ip: dict[str, set[int]] = {}
@@ -433,6 +346,7 @@ class SubdomainService:
             Subdomain.favicon_hash,
             {s.favicon_hash for s in rows if s.favicon_hash},
         )
+        evidence = await collect_evidence(self.session, scan_id, rows, node)
         items = []
         for s in rows:
             nums: set[int] = set()
@@ -444,9 +358,14 @@ class SubdomainService:
                     ports=sorted(nums),
                     title_count=title_counts.get(s.page_title, 0),
                     favicon_count=favicon_counts.get(s.favicon_hash, 0),
+                    matched_in=evidence.get(s.id, []),
                 )
             )
-        return SubdomainSearchResult(items=items, total=int(total or 0))
+        return SubdomainSearchResult(
+            items=items,
+            total=min(total, COUNT_CAP) if capped else total,
+            total_capped=capped,
+        )
 
     async def _shared_counts(self, scan_id: UUID, col, values: set) -> dict:
         if not values:

@@ -6,7 +6,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { cn } from '$lib/utils';
-	import type { DslKey, Facet } from '$lib/utilities/scan-insights';
+	import type { Facet } from '$lib/utilities/scan-insights';
+	import type { DslKey } from '$lib/utilities/ip-groups';
 
 	interface Props {
 		value: string;
@@ -53,7 +54,7 @@
 			if (!def) return [];
 			const lookup = values as Record<string, Facet[] | undefined>;
 			const options: Facet[] = def.values
-				? def.values.map((v) => ({ value: v, label: v, count: 0 }))
+				? def.values.map((v: string) => ({ value: v, label: v, count: 0 }))
 				: def.facet
 					? (lookup[def.facet] ?? [])
 					: [];

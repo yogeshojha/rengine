@@ -89,6 +89,7 @@
 		onStep?: (dir: -1 | 1) => void;
 		onFilter?: (dsl: string) => void;
 		onPivot?: (name: string) => void;
+		focus?: { tab: string; pane?: string } | null;
 	}
 
 	let {
@@ -102,7 +103,8 @@
 		total = 0,
 		onStep,
 		onFilter,
-		onPivot
+		onPivot,
+		focus = null
 	}: Props = $props();
 
 	const MAX_SANS = 4;
@@ -117,6 +119,12 @@
 	let corr = $state<SubdomainCorrelation | null>(null);
 	let corrLoading = $state(false);
 	let corrErrored = $state(false);
+
+	$effect(() => {
+		if (!open || !focus) return;
+		tab = focus.tab;
+		if (focus.pane) httpView = focus.pane;
+	});
 
 	let primaryAsset = $derived(corr?.primary_asset ?? null);
 	let hostAssets = $derived(corr?.services ?? []);
@@ -147,7 +155,7 @@
 		const name = sub.name;
 		if (loadedFor !== name) {
 			loadedFor = name;
-			httpView = 'response';
+			httpView = focus?.pane ?? 'response';
 			detail = null;
 			detailLoading = false;
 			loadCorrelation(name);
