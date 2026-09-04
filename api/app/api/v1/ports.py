@@ -7,11 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.asset_query import build_schema
+from app.services.origin_exposure import OriginExposureService
 from app.services.port import PortService
 from shared.definitions.asset_query import SERVICE_QUERY
 from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
 from shared.models.port import PortRead, PortSummary
 from shared.models.scan_correlation import (
+    OriginExposure,
     ScanExposure,
     ServiceFacets,
     ServiceFilter,
@@ -107,6 +109,15 @@ async def service_facets(
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
     return await service.facets(scan_id)
+
+
+@router.get("/origins", response_model=OriginExposure)
+async def origin_exposure(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    return await OriginExposureService(session).run(scan_id)
 
 
 @router.get("/exposure", response_model=ScanExposure)

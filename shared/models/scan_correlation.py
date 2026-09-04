@@ -249,3 +249,40 @@ class ScanExposure(BaseModel):
     top_services: list[ExposureLine] = Field(default_factory=list)
     coverage: list[ExposureLine] = Field(default_factory=list)
     scanned: int = 0
+
+
+class OriginEvidence(BaseModel):
+    kind: str
+    label: str
+    value: str
+
+
+class OriginSample(BaseModel):
+    host: str
+    url: str
+    ip: str | None = None
+    port: int = 0
+    status_code: int | None = None
+    title: str | None = None
+    webserver: str | None = None
+    cdn_name: str | None = None
+    asn_org: str | None = None
+    screenshot_path: str | None = None
+
+
+class OriginFinding(BaseModel):
+    kind: str
+    confidence: str
+    exposed: OriginSample
+    fronted: list[OriginSample] = Field(default_factory=list)
+    fronted_total: int = 0
+    evidence: list[OriginEvidence] = Field(default_factory=list)
+    open_ports: list[int] = Field(default_factory=list)
+    sensitive_ports: list[int] = Field(default_factory=list)
+    query: str = ""
+
+
+class OriginExposure(BaseModel):
+    findings: list[OriginFinding] = Field(default_factory=list)
+    probed_addresses: int = 0
+    fronted_assets: int = 0

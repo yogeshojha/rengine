@@ -2,6 +2,7 @@ import { api } from './client';
 import type { HttpAssetDetail } from '$lib/types/http-asset';
 import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type { IpFacetSet, IpGroupFilter, IpSearchResult } from '$lib/utilities/ip-groups';
+import type { OriginExposure } from '$lib/utilities/origins';
 import type {
 	ScanExposure,
 	ServiceFacetSet,
@@ -84,5 +85,9 @@ export const servicesApi = {
 
 	async exposure(projectId: string, scanId: string): Promise<ScanExposure> {
 		return api.get<ScanExposure>(`/ports/exposure?project_id=${projectId}&scan_id=${scanId}`);
+	},
+
+	async origins(projectId: string, scanId: string): Promise<OriginExposure> {
+		return api.get<OriginExposure>(`/ports/origins?project_id=${projectId}&scan_id=${scanId}`);
 	}
 };
