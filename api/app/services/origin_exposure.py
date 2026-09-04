@@ -38,6 +38,7 @@ BROAD_REACH = 12
 # an error or near-empty body hashes the same everywhere; it proves nothing
 MIN_BODY_BYTES = 512
 HTTP_OK = 200
+HTTP_REDIRECT = 300
 HTTP_CLIENT_ERROR = 400
 MAX_FINDINGS = 20
 MAX_FRONTED_SHOWN = 6
@@ -95,6 +96,13 @@ class _Asset:
         return (
             self.status_code is not None
             and HTTP_OK <= self.status_code < HTTP_CLIENT_ERROR
+        )
+
+    @property
+    def served(self) -> bool:
+        """Returned a page of its own. A redirect is the server asking for a hostname."""
+        return (
+            self.status_code is not None and HTTP_OK <= self.status_code < HTTP_REDIRECT
         )
 
     def sample(self) -> OriginSample:
@@ -255,14 +263,14 @@ class OriginExposureService:
                 by_endpoint[(asset.ip, asset.port)].append(asset)
         findings: list[OriginFinding] = []
         for group in by_endpoint.values():
-            direct = next((a for a in group if a.is_address and a.responded), None)
+            direct = next((a for a in group if a.is_address and a.served), None)
             if direct is None or not direct.prints.get("content_hash"):
                 continue
             named = [
                 a
                 for a in group
                 if not a.is_address
-                and a.responded
+                and a.served
                 and a.prints.get("content_hash")
                 and a.prints["content_hash"] != direct.prints["content_hash"]
             ]
