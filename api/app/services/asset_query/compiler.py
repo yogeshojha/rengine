@@ -23,6 +23,7 @@ from shared.definitions.asset_query import FLAGS, HOST_QUERY, FieldType, Op
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
+from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
@@ -187,6 +188,8 @@ _FLAG_BUILDERS = {
     "redirect": lambda _ctx: and_(
         Subdomain.final_url.isnot(None), Subdomain.final_url != Subdomain.http_url
     ),
+    "vulnerable": lambda ctx: preds.host_vuln(ctx.scan_id),
+    "kev": lambda ctx: preds.host_vuln(ctx.scan_id, Vulnerability.is_kev.is_(True)),
 }
 
 
@@ -250,6 +253,12 @@ _SUBDOMAIN_BUILDERS = {
     "cert": _cert,
     "cert.expires": lambda c, ctx: date_match(
         Subdomain.tls_not_after, c, ctx.now, future=True
+    ),
+    "vuln": lambda c, ctx: preds.host_vuln(
+        ctx.scan_id, string_match(Vulnerability.severity, c)
+    ),
+    "cve": lambda c, ctx: preds.host_vuln(
+        ctx.scan_id, json_array_match(Vulnerability.cve_ids, c)
     ),
     "is": _flag,
 }

@@ -223,6 +223,7 @@ class ScanService:
             target.target_value,
             target.target_type.value,
             proxy_url=proxy_url,
+            overrides=data.overrides,
         )
         return engine, context, target, resolved
 
@@ -364,6 +365,7 @@ class ScanService:
                 target.target_value,
                 target.target_type.value,
                 proxy_url=proxy_url,
+                overrides=data.overrides,
             )
             scan = build_scan_row(
                 resolved=resolved,

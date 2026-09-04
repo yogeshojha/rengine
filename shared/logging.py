@@ -51,5 +51,45 @@ def setup_logging(
     return logger
 
 
+_RESERVED = frozenset({"exc_info", "stack_info", "stacklevel", "extra"})
+
+
+class _FieldLogger(logging.LoggerAdapter):
+    """Accepts structured fields as keywords and appends them to the message.
+
+    Call sites throughout the codebase pass `logger.info("thing failed", error=...)`.
+    A bare stdlib logger raises TypeError on that — and only when the level is
+    enabled, so it hides in one environment and crashes in another.
+    """
+
+    def log(self, level, msg, *args, **kwargs):
+        fields = {k: v for k, v in kwargs.items() if k not in _RESERVED}
+        for key in fields:
+            kwargs.pop(key)
+        if fields:
+            rendered = " ".join(f"{k}={v}" for k, v in fields.items())
+            msg = f"{msg} | {rendered}"
+        super().log(level, msg, *args, **kwargs)
+
+    def debug(self, msg, *args, **kwargs):
+        self.log(logging.DEBUG, msg, *args, **kwargs)
+
+    def info(self, msg, *args, **kwargs):
+        self.log(logging.INFO, msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        self.log(logging.WARNING, msg, *args, **kwargs)
+
+    def error(self, msg, *args, **kwargs):
+        self.log(logging.ERROR, msg, *args, **kwargs)
+
+    def exception(self, msg, *args, **kwargs):
+        kwargs.setdefault("exc_info", True)
+        self.log(logging.ERROR, msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        self.log(logging.CRITICAL, msg, *args, **kwargs)
+
+
 def get_logger(name: str) -> logging.Logger:
-    return logging.getLogger(name)
+    return _FieldLogger(logging.getLogger(name), {})

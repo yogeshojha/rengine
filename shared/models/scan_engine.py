@@ -94,6 +94,8 @@ class StageField(BaseModel):
     minimum: int | None = None
     maximum: int | None = None
     scale: str | None = None
+    widget: str | None = None
+    launch: bool = False
 
 
 class StageCatalogEntry(BaseModel):
@@ -107,6 +109,7 @@ class StageCatalogEntry(BaseModel):
     api_keys: list[str]
     requires_api_keys: bool = False
     touches_target: bool = True
+    launch_fields: list[str] = PydanticField(default_factory=list)
     defaults: dict
     fields: list[StageField] = PydanticField(default_factory=list)
 

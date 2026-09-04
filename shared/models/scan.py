@@ -52,6 +52,7 @@ class ScanCreate(BaseModel):
     engine_id: uuid.UUID
     context_id: uuid.UUID | None = None
     target_id: uuid.UUID
+    overrides: dict[str, dict] = Field(default_factory=dict)
 
 
 class ScanBatchCreate(BaseModel):
@@ -60,6 +61,7 @@ class ScanBatchCreate(BaseModel):
     engine_id: uuid.UUID
     context_id: uuid.UUID | None = None
     target_ids: list[uuid.UUID] = Field(min_length=1, max_length=MAX_SCAN_BATCH)
+    overrides: dict[str, dict] = Field(default_factory=dict)
 
 
 class ScanRead(BaseModel):

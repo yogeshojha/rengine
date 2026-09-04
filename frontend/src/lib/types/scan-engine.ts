@@ -68,6 +68,8 @@ export interface StageField {
 	minimum: number | null;
 	maximum: number | null;
 	scale: FieldScale | null;
+	widget: string | null;
+	launch: boolean;
 }
 
 export interface StageCatalogEntry {
@@ -81,6 +83,7 @@ export interface StageCatalogEntry {
 	api_keys: string[];
 	requires_api_keys: boolean;
 	touches_target: boolean;
+	launch_fields: string[];
 	defaults: StageConfig;
 	fields: StageField[];
 }

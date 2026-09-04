@@ -9,6 +9,9 @@ export const routeLabels: Record<string, string> = {
 	contexts: 'Scan Contexts',
 	schedules: 'Scheduled Scans',
 
+	// Tools
+	arsenal: 'Tools Arsenal',
+
 	// Settings
 	settings: 'Settings',
 
@@ -17,6 +20,9 @@ export const routeLabels: Record<string, string> = {
 
 export const SETTINGS_TABS = ['general', 'api-keys', 'proxies', 'notifications'] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
+
+export const ARSENAL_TABS = ['nuclei'] as const;
+export type ArsenalTab = (typeof ARSENAL_TABS)[number];
 
 export const ROUTES = {
 	login: '/login',
@@ -40,6 +46,7 @@ export const ROUTES = {
 		return `/automation/contexts/new${query ? `?${query}` : ''}`;
 	},
 	schedules: '/schedules',
+	arsenal: (tab?: ArsenalTab) => (tab ? `/arsenal?tab=${tab}` : '/arsenal'),
 	settings: (tab?: SettingsTab) => (tab ? `/settings?tab=${tab}` : '/settings')
 } as const;
 

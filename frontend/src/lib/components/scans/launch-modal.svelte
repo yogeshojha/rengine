@@ -20,6 +20,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import ExecutionPreview from './execution-preview.svelte';
+	import VulnPlan from './vuln-plan.svelte';
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
 	import ContextSections from '$lib/components/contexts/context-sections.svelte';
 	import {
@@ -82,6 +83,7 @@
 	let previewLoading = $state(false);
 	let previewError = $state<string | null>(null);
 	let launching = $state(false);
+	let overrides = $state<Record<string, Record<string, unknown>>>({});
 
 	let engineTrigger = $state<HTMLButtonElement | null>(null);
 
@@ -114,9 +116,8 @@
 	);
 	let noTargets = $derived(!targetsLoading && !targetsError && targets.length === 0);
 
-	let engineLabel = $derived(
-		scanEnginesStore.engines.find((e) => e.id === engineId)?.name ?? 'Select engine'
-	);
+	let selectedEngine = $derived(scanEnginesStore.engines.find((e) => e.id === engineId) ?? null);
+	let engineLabel = $derived(selectedEngine?.name ?? 'Select engine');
 	let contextLabel = $derived(
 		contextId === SELECT_NONE
 			? NO_CONTEXT_LABEL
@@ -273,7 +274,8 @@
 				const result = await scansApi.preview(project.id, {
 					engine_id: eng,
 					context_id: ctx === SELECT_NONE ? null : ctx,
-					target_id: tgt
+					target_id: tgt,
+					overrides: runOverrides
 				});
 				if (seq === previewSeq) {
 					preview = result;
@@ -289,10 +291,12 @@
 		}, 350);
 	}
 
+	let runOverrides = $derived(overrides);
 	$effect(() => {
 		void engineId;
 		void contextId;
 		void previewTargetId;
+		void JSON.stringify(runOverrides);
 		void projectsStore.activeProject?.id;
 		runPreview();
 	});
@@ -311,7 +315,8 @@
 			const created = await scansStore.launchScans(project.id, {
 				engine_id: engineId,
 				context_id: contextId === SELECT_NONE ? null : contextId,
-				target_ids: selectedTargetIds
+				target_ids: selectedTargetIds,
+				overrides
 			});
 			if (created) {
 				rememberPreferences();
@@ -397,6 +402,7 @@
 		preview = null;
 		previewLoading = false;
 		previewError = null;
+		overrides = {};
 		targetsError = null;
 		unresolvedTargets = 0;
 		view = 'launch';
@@ -544,6 +550,14 @@
 								</Select.Root>
 							{/if}
 						</div>
+
+						{#if engineId}
+							<Separator />
+							<VulnPlan
+								engineStages={selectedEngine?.stages ?? null}
+								onChange={(next) => (overrides = next)}
+							/>
+						{/if}
 
 						<!-- Target -->
 						<div class="space-y-2">

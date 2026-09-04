@@ -11,10 +11,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.asset_query import MAX_GROUPS
 from shared.definitions.ports import PORT_SOURCE_LABELS, SERVICE_CLASS_LABELS
+from shared.definitions.vulnerabilities import (
+    PROTOCOL_LABELS,
+    SCANNER_LABELS,
+    SEVERITY_LABELS,
+    VULN_STATE_LABELS,
+)
 from shared.models.asset_query import QueryGroup, QueryGroups
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
+from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
 
@@ -253,6 +260,83 @@ async def build_service_groups(session: AsyncSession, base, key: str) -> QueryGr
         QueryGroup(
             value=str(raw),
             label=labels.get(str(raw)) or (f"AS{raw}" if key == "asn" else str(raw)),
+            count=int(n),
+            query=_token(field, op, str(raw)),
+        )
+        for raw, n in rows.all()
+    ]
+    counted = int(total or 0)
+    return QueryGroups(
+        dimension=key,
+        groups=groups,
+        total_groups=counted,
+        truncated=counted > len(groups),
+        rows=int(rows_in_scope or 0),
+        covered=int(covered or 0),
+    )
+
+
+_VULN_COLUMNS: dict[str, tuple[Any, str, str]] = {
+    "template": (Vulnerability.template_id, "template", "="),
+    "severity": (Vulnerability.severity, "severity", "="),
+    "host": (Vulnerability.host, "host", "="),
+    "type": (Vulnerability.protocol, "type", "="),
+    "port": (Vulnerability.port, "port", ":"),
+    "scanner": (Vulnerability.scanner, "scanner", "="),
+}
+_VULN_ARRAYS: dict[str, tuple[Any, str, str]] = {
+    "tag": (Vulnerability.tags, "tag", "="),
+    "cve": (Vulnerability.cve_ids, "cve", "="),
+}
+_VULN_LABELS: dict[str, dict[str, str]] = {
+    "severity": SEVERITY_LABELS,
+    "type": PROTOCOL_LABELS,
+    "state": VULN_STATE_LABELS,
+    "scanner": SCANNER_LABELS,
+}
+
+
+async def build_vuln_groups(
+    session: AsyncSession, base, key: str, scan_id: UUID
+) -> QueryGroups:
+    """One row per finding; a multi-valued dimension puts a finding in several groups."""
+    if key in _VULN_ARRAYS:
+        column, field, op = _VULN_ARRAYS[key]
+        value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued(
+            f"{key}_value"
+        )
+    elif key == "state":
+        value, field, op = preds.vuln_state(scan_id), "state", "="
+    elif key in _VULN_COLUMNS:
+        column, field, op = _VULN_COLUMNS[key]
+        value = column
+    else:
+        return QueryGroups(dimension=key)
+
+    scoped = base.subquery()
+    labelled = value.label("value")
+    findings = func.count(func.distinct(Vulnerability.id))
+    joined = (
+        select(labelled, findings.label("n"))
+        .select_from(Vulnerability)
+        .join(scoped, Vulnerability.id == scoped.c.id)
+        .where(labelled.isnot(None), cast(labelled, Text) != "")
+    )
+    rows_in_scope = await session.scalar(select(func.count()).select_from(scoped))
+    covered, total = (
+        await session.execute(
+            joined.with_only_columns(findings, func.count(func.distinct(labelled)))
+        )
+    ).one()
+    rows = await session.execute(
+        joined.group_by(labelled).order_by(desc("n"), labelled).limit(MAX_GROUPS)
+    )
+
+    labels = _VULN_LABELS.get(key, {})
+    groups = [
+        QueryGroup(
+            value=str(raw),
+            label=labels.get(str(raw)) or str(raw),
             count=int(n),
             query=_token(field, op, str(raw)),
         )

@@ -76,3 +76,13 @@ def revoke_scan_tasks(task_ids: list[str]) -> None:
         )
     except Exception:
         logger.warning("scan task revoke failed", exc_info=True)
+
+
+def dispatch_template_sync() -> bool:
+    """Kick off a library refresh. Returns whether the queue accepted it."""
+    try:
+        get_celery_client().send_task("app.tasks.vuln_templates.sync", queue="default")
+    except Exception:
+        logger.warning("template sync dispatch failed", exc_info=True)
+        return False
+    return True

@@ -53,3 +53,4 @@ export type { QuerySchemaStore };
 export const querySchema = new QuerySchemaStore('/subdomains/search/schema');
 export const ipQuerySchema = new QuerySchemaStore('/ips/search/schema');
 export const serviceQuerySchema = new QuerySchemaStore('/ports/search/schema');
+export const vulnQuerySchema = new QuerySchemaStore('/vulnerabilities/search/schema');

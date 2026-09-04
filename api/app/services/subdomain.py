@@ -10,6 +10,7 @@ from sqlalchemy import (
     cast,
     distinct,
     func,
+    not_,
     or_,
     select,
     text,
@@ -29,6 +30,7 @@ from app.services.asset_query import (
     compile_query,
     parse_query,
     query_error_for,
+    vuln_suppressed,
 )
 from app.services.asset_query import predicates as preds
 from app.services.http_asset import HttpAssetService
@@ -36,6 +38,7 @@ from app.services.ip_address import IpAddressService
 from app.services.port import PortService
 from shared.definitions.asset_query import COUNT_CAP, HOST_QUERY
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
+from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.logging import get_logger
 from shared.models.asset_query import QueryError, QueryGroups, QueryLeads
 from shared.models.http_asset import HttpAsset
@@ -62,9 +65,12 @@ from shared.models.subdomain import (
     SubdomainSummary,
     TargetSubdomainRead,
 )
+from shared.models.vulnerability import Vulnerability
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
+
+_NO_FINDINGS: tuple[int, str | None, bool] = (0, None, False)
 
 _TARGET_ROLLUP_CAP = 20000
 _FACET_LIMIT = 40
@@ -348,6 +354,7 @@ class SubdomainService:
             Subdomain.favicon_hash,
             {s.favicon_hash for s in rows if s.favicon_hash},
         )
+        findings = await self._findings_for(scan_id, [s.name for s in rows])
         evidence = await collect_evidence(self.session, scan_id, rows, node)
         items = []
         for s in rows:
@@ -360,6 +367,9 @@ class SubdomainService:
                     ports=sorted(nums, key=lambda n: (port_interest(n), n)),
                     title_count=title_counts.get(s.page_title, 0),
                     favicon_count=favicon_counts.get(s.favicon_hash, 0),
+                    vuln_count=findings.get(s.name, _NO_FINDINGS)[0],
+                    vuln_severity=findings.get(s.name, _NO_FINDINGS)[1],
+                    vuln_kev=findings.get(s.name, _NO_FINDINGS)[2],
                     matched_in=evidence.get(s.id, []),
                 )
             )
@@ -368,6 +378,37 @@ class SubdomainService:
             total=min(total, COUNT_CAP) if capped else total,
             total_capped=capped,
         )
+
+    async def _findings_for(
+        self, scan_id: UUID, hosts: list[str]
+    ) -> dict[str, tuple[int, str | None, bool]]:
+        """Worst finding per host on this page, so the asset table shows risk without a join."""
+        if not hosts:
+            return {}
+        rank = case(
+            {name: index for index, name in enumerate(SEVERITY_ORDER)},
+            value=Vulnerability.severity,
+            else_=len(SEVERITY_ORDER),
+        )
+        rows = await self.session.execute(
+            select(
+                Vulnerability.host,
+                func.count(),
+                func.min(rank),
+                func.bool_or(Vulnerability.is_kev),
+            )
+            .where(
+                Vulnerability.scan_id == scan_id,
+                Vulnerability.host.in_(hosts),
+                not_(vuln_suppressed(scan_id)),
+            )
+            .group_by(Vulnerability.host)
+        )
+        return {
+            host: (int(count), SEVERITY_ORDER[int(worst)], bool(kev))
+            for host, count, worst, kev in rows.all()
+            if worst is not None and int(worst) < len(SEVERITY_ORDER)
+        }
 
     async def leads(
         self, project_id: UUID, scan_id: UUID, f: SubdomainFilter

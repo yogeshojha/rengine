@@ -26,6 +26,7 @@ class StageSpec:
     api_keys: tuple[str, ...]
     requires_api_keys: bool
     touches_target: bool
+    launch_fields: tuple[str, ...]
     stage_cls: type[Stage]
     config_model: type[StageConfig]
 
@@ -95,6 +96,7 @@ def _spec(stage_cls: type[Stage]) -> StageSpec:
         api_keys=tuple(stage_cls.api_keys),
         requires_api_keys=stage_cls.requires_api_keys,
         touches_target=stage_cls.touches_target,
+        launch_fields=tuple(stage_cls.launch_fields),
         stage_cls=stage_cls,
         config_model=stage_cls.config_model,
     )

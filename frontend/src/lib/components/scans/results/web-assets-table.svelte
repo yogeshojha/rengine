@@ -477,6 +477,11 @@
 		syncUrl();
 		onTab?.('services', `${exactToken('host', host)} port:${port}`);
 	}
+	function showVulns(filter: string) {
+		drawerOpen = false;
+		syncUrl();
+		onTab?.('vulnerabilities', filter);
+	}
 	function hostsWithTitle(title: string): Promise<string[]> {
 		return subdomainsApi
 			.search(
@@ -702,6 +707,7 @@
 						{hostsWithTitle}
 						loadServices={(host) => servicesOn(projectId, scanId, 'host', host)}
 						onServices={onTab ? showServices : undefined}
+						onVulns={onTab ? showVulns : undefined}
 					/>
 				{/each}
 			</div>

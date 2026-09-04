@@ -29,6 +29,8 @@ from app.api.v1 import (
     totp,
     users,
     viewdns,
+    vuln_templates,
+    vulnerabilities,
     whois,
 )
 
@@ -55,6 +57,8 @@ router.include_router(subdomains.router)
 router.include_router(http_assets.router)
 router.include_router(ports.router)
 router.include_router(ip_addresses.router)
+router.include_router(vulnerabilities.router)
+router.include_router(vuln_templates.router)
 router.include_router(media.router)
 router.include_router(dashboard.router)
 router.include_router(celery_health.router)

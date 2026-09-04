@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 from shared.definitions.constants import MAX_COMMAND_OUTPUT
@@ -20,6 +20,9 @@ logger = get_logger(__name__)
 
 # go binaries, ahead of same-named venv console scripts on PATH
 _TOOL_BIN = os.environ.get("RENGINE_TOOL_BIN", "/root/go/bin")
+
+# how often a streaming run checks whether the caller has cancelled
+_STOP_POLL_SECONDS = 2.0
 
 
 class ToolNotFoundError(Exception):
@@ -230,6 +233,8 @@ class CLIToolRunner:
         recorder: CommandRecorder | None = None,
         tool: str | None = None,
         extra_args: list[str] | None = None,
+        stderr_sink: Callable[[str], None] | None = None,
+        should_stop: Callable[[], bool] | None = None,
     ) -> Iterator[Iterator[dict]]:
         """Stream-parse the tool's JSONL stdout one record at a time; a watchdog kills the process after timeout."""
         timeout = timeout or self.default_timeout
@@ -284,9 +289,25 @@ class CLIToolRunner:
                     if size < MAX_COMMAND_OUTPUT:
                         stderr_chunks.append(line)
                         size += len(line)
+                    if stderr_sink is not None:
+                        with contextlib.suppress(Exception):
+                            stderr_sink(line)
 
             stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
             stderr_thread.start()
+
+            # a cancelled scan must stop the tool even while it is producing nothing to read
+            if should_stop is not None:
+
+                def _watch_stop() -> None:
+                    while proc is not None and proc.poll() is None:
+                        if should_stop():
+                            with contextlib.suppress(Exception):
+                                proc.kill()
+                            return
+                        time.sleep(_STOP_POLL_SECONDS)
+
+                threading.Thread(target=_watch_stop, daemon=True).start()
 
             def _records() -> Iterator[dict]:
                 if stdout is None:

@@ -34,6 +34,9 @@ export interface SubdomainRead {
 	ports?: number[];
 	title_count?: number;
 	favicon_count?: number;
+	vuln_count?: number;
+	vuln_severity?: string | null;
+	vuln_kev?: boolean;
 	matched_in?: MatchEvidence[];
 	discovered_at: string;
 }

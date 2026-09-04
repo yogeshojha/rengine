@@ -12,10 +12,18 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from shared.definitions.asset_query import SERVICE_FLAGS, SERVICE_QUERY, Op
 from shared.definitions.ports import PortSource
 from shared.models.subdomain import Subdomain
+from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
-from .terms import int_coerce, negate, number_match, string_match, tri_state
+from .terms import (
+    int_coerce,
+    json_array_match,
+    negate,
+    number_match,
+    string_match,
+    tri_state,
+)
 from .values import asn_number, like, network
 
 _IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
@@ -101,6 +109,12 @@ _FLAG_BUILDERS = {
     "private": lambda ctx: or_(*[_within(ctx, n) for n in _PRIVATE_NETWORKS]),
     "v4": lambda ctx: ctx.source.c.version == _IPV4,
     "v6": lambda ctx: ctx.source.c.version == _IPV6,
+    "vulnerable": lambda ctx: preds.service_vuln(
+        ctx.scan_id, ctx.source.c.ip, ctx.source.c.port
+    ),
+    "kev": lambda ctx: preds.service_vuln(
+        ctx.scan_id, ctx.source.c.ip, ctx.source.c.port, Vulnerability.is_kev.is_(True)
+    ),
 }
 
 _SERVICE_BUILDERS = {
@@ -110,7 +124,8 @@ _SERVICE_BUILDERS = {
     "protocol": lambda c, ctx: string_match(ctx.source.c.protocol, c),
     "source": lambda c, ctx: string_match(ctx.source.c.source, c),
     "product": lambda c, ctx: string_match(ctx.source.c.product, c),
-    "version": lambda c, ctx: string_match(ctx.source.c.version, c),
+    # the derived query also has an integer `version` (IP family); software version is version_text
+    "version": lambda c, ctx: string_match(ctx.source.c.version_text, c),
     "banner": lambda c, ctx: string_match(ctx.source.c.banner, c),
     "ip": _address,
     "asn": lambda c, ctx: number_match(
@@ -121,6 +136,18 @@ _SERVICE_BUILDERS = {
     "cdn": _cdn,
     "host": lambda c, ctx: _host_exists(ctx, string_match(Subdomain.name, c)),
     "status": lambda c, ctx: number_match(ctx.source.c.status_code, c, int_coerce(c)),
+    "vuln": lambda c, ctx: preds.service_vuln(
+        ctx.scan_id,
+        ctx.source.c.ip,
+        ctx.source.c.port,
+        string_match(Vulnerability.severity, c),
+    ),
+    "cve": lambda c, ctx: preds.service_vuln(
+        ctx.scan_id,
+        ctx.source.c.ip,
+        ctx.source.c.port,
+        json_array_match(Vulnerability.cve_ids, c),
+    ),
     "is": _flag,
 }
 

@@ -24,5 +24,11 @@ export const STORAGE_KEYS = {
 	servicesColumns: 'rengine:services:columns',
 	servicesRecentQueries: 'rengine:services:recentQueries',
 	servicesDensity: 'rengine:services:density',
-	servicesPageSize: 'rengine:services:pageSize'
+	servicesPageSize: 'rengine:services:pageSize',
+	vulnsColumns: 'rengine:vulns:columns',
+	vulnsRecentQueries: 'rengine:vulns:recentQueries',
+	vulnsDensity: 'rengine:vulns:density',
+	vulnsPageSize: 'rengine:vulns:pageSize',
+	vulnsView: 'rengine:vulns:view',
+	launchVulnPlan: 'rengine:launch:vulnPlan'
 } as const;

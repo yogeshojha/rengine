@@ -97,6 +97,9 @@ class SubdomainRow(SubdomainRead):
     ports: list[int] = Field(default_factory=list)
     title_count: int = 0
     favicon_count: int = 0
+    vuln_count: int = 0
+    vuln_severity: str | None = None
+    vuln_kev: bool = False
     matched_in: list[MatchEvidence] = Field(default_factory=list)
 
 

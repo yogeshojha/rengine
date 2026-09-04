@@ -89,6 +89,7 @@ celery_app.conf.task_routes = {
     "app.tasks.ripestat.*": {"queue": "default"},
     "app.tasks.dns.*": {"queue": "default"},
     "app.tasks.schedule.*": {"queue": "default"},
+    "app.tasks.vuln_templates.*": {"queue": "default"},
 }
 
 # #############################################################
@@ -104,6 +105,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.scan",
         "app.tasks.schedule",
         "app.tasks.ip_asn",
+        "app.tasks.vuln_templates",
     ]
 )
 
@@ -113,6 +115,7 @@ celery_app.autodiscover_tasks(
 
 SCHEDULE_TICK_SECONDS = 60.0
 IP_RANGE_REFRESH_SECONDS = 7 * 24 * 60 * 60.0
+TEMPLATE_SYNC_SECONDS = 24 * 60 * 60.0
 
 celery_app.conf.beat_schedule = {
     "scan-schedule-tick": {
@@ -122,6 +125,10 @@ celery_app.conf.beat_schedule = {
     "ip-range-refresh": {
         "task": "app.tasks.ip_asn.refresh",
         "schedule": IP_RANGE_REFRESH_SECONDS,
+    },
+    "vuln-template-sync": {
+        "task": "app.tasks.vuln_templates.sync",
+        "schedule": TEMPLATE_SYNC_SECONDS,
     },
 }
 

@@ -1,3 +1,9 @@
+from shared.definitions.vulnerabilities import (
+    ALERT_SEVERITIES,
+    SEVERITY_LABELS,
+    SEVERITY_ORDER,
+    Severity,
+)
 from shared.enums.notification import NotificationSeverity, NotificationType
 
 
@@ -204,4 +210,61 @@ def scan_cancelled(scan_id: str, target: str, engine: str) -> dict:
         "title": "Scan Cancelled",
         "message": f"Scan of {target} ({engine}) was cancelled.",
         "metadata": _scan_meta(scan_id),
+    }
+
+
+def _severity_phrase(counts: dict) -> str:
+    parts = [
+        f"{counts[name]} {SEVERITY_LABELS[name].lower()}"
+        for name in SEVERITY_ORDER
+        if counts.get(name)
+    ]
+    return ", ".join(parts)
+
+
+def scan_new_vulnerabilities(
+    scan_id: str, target: str, counts: dict, kev: int, total: int
+) -> dict:
+    severe = sum(counts.get(name, 0) for name in ALERT_SEVERITIES)
+    if counts.get(Severity.CRITICAL.value) or kev:
+        severity = NotificationSeverity.ERROR
+    elif severe:
+        severity = NotificationSeverity.WARNING
+    else:
+        severity = NotificationSeverity.INFO
+    detail = _severity_phrase(counts)
+    kev_note = (
+        f" {kev} {'is' if kev == 1 else 'are'} known to be exploited in the wild."
+        if kev
+        else ""
+    )
+    return {
+        "type": NotificationType.VULNERABILITY,
+        "severity": severity,
+        "title": "New Vulnerabilities Found",
+        "message": (
+            f"{total} new {'finding' if total == 1 else 'findings'} on {target}"
+            f"{f' — {detail}' if detail else ''}.{kev_note}"
+        ),
+        "metadata": {
+            **_scan_meta(scan_id),
+            "url": f"/scans/{scan_id}?tab=vulnerabilities",
+        },
+    }
+
+
+def scan_vulnerability_coverage(scan_id: str, target: str, dropped: int) -> dict:
+    return {
+        "type": NotificationType.VULNERABILITY,
+        "severity": NotificationSeverity.WARNING,
+        "title": "Vulnerability Scan Incomplete",
+        "message": (
+            f"The scan of {target} stopped testing {dropped} "
+            f"{'host' if dropped == 1 else 'hosts'} after repeated errors. "
+            f"Coverage for {'that host' if dropped == 1 else 'those hosts'} is partial."
+        ),
+        "metadata": {
+            **_scan_meta(scan_id),
+            "url": f"/scans/{scan_id}?tab=vulnerabilities",
+        },
     }

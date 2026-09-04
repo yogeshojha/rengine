@@ -8,6 +8,12 @@ from shared.definitions.ports import (
     PORT_SOURCE_LABELS,
     SERVICE_CLASS_LABELS,
 )
+from shared.definitions.vulnerabilities import (
+    PROTOCOLS,
+    SCANNER_LABELS,
+    SEVERITY_ORDER,
+    VULN_STATES,
+)
 
 MAX_QUERY_LENGTH = 2000
 MAX_QUERY_NODES = 40
@@ -104,6 +110,7 @@ GROUPS: tuple[str, ...] = (
     "Response",
     "Network",
     "Certificates",
+    "Findings",
     "Flags",
 )
 
@@ -125,6 +132,8 @@ FLAGS: dict[str, str] = {
     "sensitive": "An admin or database port is open",
     "http2": "Negotiated HTTP/2",
     "redirect": "Final URL differs from the probed URL",
+    "vulnerable": "A vulnerability scan reported a finding on it",
+    "kev": "A known-exploited weakness was found on it",
 }
 
 FIELDS: tuple[QueryField, ...] = (
@@ -438,6 +447,23 @@ FIELDS: tuple[QueryField, ...] = (
         example="is:live",
         aliases=("has",),
         values=tuple(FLAGS),
+    ),
+    QueryField(
+        name="vuln",
+        type=FieldType.ENUM,
+        group="Findings",
+        description="Severity of a finding recorded on this host.",
+        example="vuln:critical",
+        aliases=("finding", "severity"),
+        values=SEVERITY_ORDER,
+        facet="vuln",
+    ),
+    QueryField(
+        name="cve",
+        type=FieldType.STRING,
+        group="Findings",
+        description="Published vulnerability identifier reported on this host.",
+        example="cve:CVE-2021-44228",
     ),
 )
 
@@ -834,7 +860,14 @@ HOST_QUERY = QueryRegistry(
     example_groups=EXAMPLE_GROUPS,
 )
 
-IP_GROUPS: tuple[str, ...] = ("Address", "Network", "Services", "Hosts", "Flags")
+IP_GROUPS: tuple[str, ...] = (
+    "Address",
+    "Network",
+    "Services",
+    "Hosts",
+    "Findings",
+    "Flags",
+)
 
 IP_FLAGS: dict[str, str] = {
     "alive": "Responded to a probe",
@@ -847,6 +880,8 @@ IP_FLAGS: dict[str, str] = {
     "private": "In a private address range",
     "v4": "IPv4 address",
     "v6": "IPv6 address",
+    "vulnerable": "A vulnerability scan reported a finding on it",
+    "kev": "A known-exploited weakness was found on it",
 }
 
 IP_EXPOSURE: dict[str, str] = {
@@ -972,6 +1007,22 @@ IP_FIELDS: tuple[QueryField, ...] = (
         example="is:sensitive",
         aliases=("has",),
         values=tuple(IP_FLAGS),
+    ),
+    QueryField(
+        name="vuln",
+        type=FieldType.ENUM,
+        group="Findings",
+        description="Severity of a finding recorded on this address.",
+        example="vuln:critical",
+        aliases=("finding",),
+        values=SEVERITY_ORDER,
+    ),
+    QueryField(
+        name="cve",
+        type=FieldType.STRING,
+        group="Findings",
+        description="Published vulnerability identifier reported on this address.",
+        example="cve:CVE-2021-44228",
     ),
 )
 
@@ -1114,7 +1165,14 @@ IP_QUERY = QueryRegistry(
     example_groups=IP_EXAMPLE_GROUPS,
 )
 
-SERVICE_GROUPS: tuple[str, ...] = ("Service", "Software", "Address", "Hosts", "Flags")
+SERVICE_GROUPS: tuple[str, ...] = (
+    "Service",
+    "Software",
+    "Address",
+    "Hosts",
+    "Findings",
+    "Flags",
+)
 
 SERVICE_FLAGS: dict[str, str] = {
     "new": "Not open in an earlier scan of this target",
@@ -1129,6 +1187,8 @@ SERVICE_FLAGS: dict[str, str] = {
     "private": "In a private address range",
     "v4": "IPv4 address",
     "v6": "IPv6 address",
+    "vulnerable": "A vulnerability scan reported a finding on it",
+    "kev": "A known-exploited weakness was found on it",
 }
 
 SERVICE_EXPOSURE: dict[str, str] = dict(SERVICE_CLASS_LABELS)
@@ -1268,6 +1328,22 @@ SERVICE_FIELDS: tuple[QueryField, ...] = (
         example="is:sensitive",
         aliases=("has",),
         values=tuple(SERVICE_FLAGS),
+    ),
+    QueryField(
+        name="vuln",
+        type=FieldType.ENUM,
+        group="Findings",
+        description="Severity of a finding recorded on this service.",
+        example="vuln:critical",
+        aliases=("finding",),
+        values=SEVERITY_ORDER,
+    ),
+    QueryField(
+        name="cve",
+        type=FieldType.STRING,
+        group="Findings",
+        description="Published vulnerability identifier reported on this service.",
+        example="cve:CVE-2021-44228",
     ),
 )
 
@@ -1448,4 +1524,417 @@ SERVICE_QUERY = QueryRegistry(
     dimensions=SERVICE_GROUP_DIMENSIONS,
     examples=SERVICE_EXAMPLES,
     example_groups=SERVICE_EXAMPLE_GROUPS,
+)
+
+
+VULN_GROUPS: tuple[str, ...] = (
+    "Finding",
+    "Classification",
+    "Asset",
+    "Review",
+    "Flags",
+)
+
+VULN_FLAGS: dict[str, str] = {
+    "new": "Not reported by an earlier scan of this target",
+    "kev": "Listed as exploited in the wild",
+    "cve": "Carries a published vulnerability identifier",
+    "exploitable": "Known exploited, or above the EPSS threshold",
+    "proven": "The request and response that produced it were stored",
+    "extracted": "The check pulled a value out of the response",
+    "web": "Found on an HTTP asset",
+    "cdn": "On an asset served through a CDN",
+    "triaged": "Reviewed by someone",
+    "open": "Not yet reviewed",
+    "suppressed": "Reviewed and set aside as a false positive or accepted risk",
+}
+
+VULN_FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="name",
+        type=FieldType.STRING,
+        group="Finding",
+        description="Title of the check that fired.",
+        example="name:log4j",
+        aliases=("title",),
+        free_text=True,
+        evidence="name",
+    ),
+    QueryField(
+        name="template",
+        type=FieldType.STRING,
+        group="Finding",
+        description="Identifier of the check that fired.",
+        example="template:CVE-2021-44228",
+        aliases=("check", "rule", "id"),
+        facet="template",
+        free_text=True,
+        evidence="template",
+    ),
+    QueryField(
+        name="severity",
+        type=FieldType.ENUM,
+        group="Finding",
+        description="Severity the check declares.",
+        example="severity:[critical,high]",
+        aliases=("sev",),
+        values=SEVERITY_ORDER,
+        facet="severity",
+    ),
+    QueryField(
+        name="type",
+        type=FieldType.ENUM,
+        group="Finding",
+        description="Protocol the check speaks.",
+        example="type:ssl",
+        aliases=("protocol",),
+        values=PROTOCOLS,
+        facet="protocol",
+    ),
+    QueryField(
+        name="scanner",
+        type=FieldType.ENUM,
+        group="Finding",
+        description="Tool that produced the finding.",
+        example="scanner:nuclei",
+        values=tuple(SCANNER_LABELS),
+        facet="scanner",
+    ),
+    QueryField(
+        name="tag",
+        type=FieldType.STRING,
+        group="Finding",
+        description="Tag carried by the check.",
+        example="tag:takeover",
+        aliases=("tags",),
+        facet="tag",
+    ),
+    QueryField(
+        name="matcher",
+        type=FieldType.STRING,
+        group="Finding",
+        description="Named matcher inside the check that fired.",
+        example="matcher:unauthenticated",
+    ),
+    QueryField(
+        name="extracted",
+        type=FieldType.STRING,
+        group="Finding",
+        description="Value the check pulled out of the response.",
+        example="extracted:admin",
+        free_text=True,
+        evidence="extracted",
+    ),
+    QueryField(
+        name="author",
+        type=FieldType.STRING,
+        group="Finding",
+        description="Author of the check.",
+        example="author:pdteam",
+    ),
+    QueryField(
+        name="cve",
+        type=FieldType.STRING,
+        group="Classification",
+        description="Published vulnerability identifier.",
+        example="cve:CVE-2021-44228",
+        facet="cve",
+        free_text=True,
+        evidence="cve",
+    ),
+    QueryField(
+        name="cwe",
+        type=FieldType.STRING,
+        group="Classification",
+        description="Weakness class.",
+        example="cwe:CWE-89",
+    ),
+    QueryField(
+        name="cvss",
+        type=FieldType.NUMBER,
+        group="Classification",
+        description="CVSS base score.",
+        example="cvss>=9",
+    ),
+    QueryField(
+        name="epss",
+        type=FieldType.NUMBER,
+        group="Classification",
+        description="Probability of exploitation in the next 30 days, 0 to 1.",
+        example="epss>=0.5",
+    ),
+    QueryField(
+        name="host",
+        type=FieldType.STRING,
+        group="Asset",
+        description="Hostname the finding sits on.",
+        example="host:api",
+        aliases=("name.host", "subdomain"),
+        facet="host",
+        free_text=True,
+        evidence="host",
+    ),
+    QueryField(
+        name="location",
+        type=FieldType.STRING,
+        group="Asset",
+        description="Exact place the check matched.",
+        example="location:/actuator",
+        aliases=("matched", "url", "path"),
+        free_text=True,
+        evidence="location",
+    ),
+    QueryField(
+        name="ip",
+        type=FieldType.IP,
+        group="Asset",
+        description="Address behind the finding. Accepts a CIDR range.",
+        example="ip:104.16.0.0/12",
+        aliases=("address", "addr"),
+    ),
+    QueryField(
+        name="port",
+        type=FieldType.NUMBER,
+        group="Asset",
+        description="Port the finding is on.",
+        example="port:8080",
+    ),
+    QueryField(
+        name="status",
+        type=FieldType.NUMBER,
+        group="Asset",
+        description="HTTP status the asset returned to this scan.",
+        example="status:200",
+    ),
+    QueryField(
+        name="tech",
+        type=FieldType.STRING,
+        group="Asset",
+        description="Technology fingerprinted on the asset.",
+        example="tech:nginx",
+    ),
+    QueryField(
+        name="asn",
+        type=FieldType.NUMBER,
+        group="Asset",
+        description="Autonomous system announcing the address.",
+        example="asn:13335",
+    ),
+    QueryField(
+        name="country",
+        type=FieldType.ENUM,
+        group="Asset",
+        description="Two-letter country of the address.",
+        example="country:DE",
+    ),
+    QueryField(
+        name="state",
+        type=FieldType.ENUM,
+        group="Review",
+        description="Review decision recorded for this finding.",
+        example="state:false_positive",
+        values=VULN_STATES,
+        facet="state",
+    ),
+    QueryField(
+        name="seen",
+        type=FieldType.DATE,
+        group="Review",
+        description="When this scan recorded the finding.",
+        example="seen:<24h",
+        aliases=("discovered", "age"),
+    ),
+    QueryField(
+        name="is",
+        type=FieldType.FLAG,
+        group="Flags",
+        description="Property of the finding.",
+        example="is:kev",
+        aliases=("has",),
+        values=tuple(VULN_FLAGS),
+    ),
+)
+
+VULN_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
+    GroupDimension(
+        key="template",
+        label="Check",
+        description="The same weakness across every asset it was found on",
+    ),
+    GroupDimension(
+        key="severity",
+        label="Severity",
+        description="Findings of the same severity",
+    ),
+    GroupDimension(
+        key="host",
+        label="Host",
+        description="Everything found on one hostname",
+    ),
+    GroupDimension(
+        key="tag",
+        label="Category",
+        description="Findings the checks categorise the same way",
+    ),
+    GroupDimension(
+        key="cve",
+        label="CVE",
+        description="Findings sharing a published identifier",
+    ),
+    GroupDimension(
+        key="type",
+        label="Protocol",
+        description="Findings on the same protocol",
+    ),
+    GroupDimension(
+        key="state",
+        label="Review state",
+        description="Findings at the same point in review",
+    ),
+    GroupDimension(
+        key="port",
+        label="Port",
+        description="Findings on the same port",
+    ),
+    GroupDimension(
+        key="scanner",
+        label="Scanner",
+        description="Findings from the same tool",
+    ),
+)
+
+VULN_EXAMPLE_GROUPS: tuple[str, ...] = (
+    "Act on this first",
+    "Change",
+    "Access control",
+    "Data exposure",
+    "Infrastructure",
+    "Review",
+)
+
+VULN_EXAMPLES: tuple[QueryExample, ...] = (
+    QueryExample(
+        query="is:kev",
+        description="Weaknesses with confirmed exploitation in the wild",
+        group="Act on this first",
+        generic=True,
+    ),
+    QueryExample(
+        query="severity:critical",
+        description="Findings rated critical",
+        group="Act on this first",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:exploitable and not is:suppressed",
+        description="Exploited or likely to be, and still open",
+        group="Act on this first",
+    ),
+    QueryExample(
+        query="severity:[critical,high] and not is:cdn",
+        description="Severe findings on origin infrastructure",
+        group="Act on this first",
+    ),
+    QueryExample(
+        query="cvss>=9",
+        description="Findings scored 9.0 or above",
+        group="Act on this first",
+    ),
+    QueryExample(
+        query="is:new",
+        description="Findings absent from the previous scan of this target",
+        group="Change",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:new and severity:[critical,high]",
+        description="Severe findings that appeared since the previous scan",
+        group="Change",
+    ),
+    QueryExample(
+        query="seen:<24h and is:cve",
+        description="Published vulnerabilities recorded in the last day",
+        group="Change",
+    ),
+    QueryExample(
+        query="tag:default-login",
+        description="Accounts still on the credentials they shipped with",
+        group="Access control",
+        generic=True,
+    ),
+    QueryExample(
+        query="tag:panel and severity:[critical,high,medium]",
+        description="Administrative interfaces reachable from the internet",
+        group="Access control",
+    ),
+    QueryExample(
+        query="tag:[unauth,auth-bypass]",
+        description="Protected functionality reachable without credentials",
+        group="Access control",
+    ),
+    QueryExample(
+        query="tag:[exposure,disclosure]",
+        description="Files and data served that were not meant to be public",
+        group="Data exposure",
+        generic=True,
+    ),
+    QueryExample(
+        query="tag:[backup,config,files]",
+        description="Source, configuration and backups reachable over HTTP",
+        group="Data exposure",
+    ),
+    QueryExample(
+        query="is:extracted",
+        description="Findings that pulled a concrete value out of the response",
+        group="Data exposure",
+    ),
+    QueryExample(
+        query="tag:takeover",
+        description="Names pointing at infrastructure someone else can claim",
+        group="Infrastructure",
+        generic=True,
+    ),
+    QueryExample(
+        query="type:ssl",
+        description="Transport security defects",
+        group="Infrastructure",
+    ),
+    QueryExample(
+        query="type:[network,dns]",
+        description="Findings outside the web surface",
+        group="Infrastructure",
+    ),
+    QueryExample(
+        query="tag:misconfig",
+        description="Services left in a state their operator did not intend",
+        group="Infrastructure",
+    ),
+    QueryExample(
+        query="is:open and severity:[critical,high]",
+        description="Severe findings nobody has reviewed yet",
+        group="Review",
+        generic=True,
+    ),
+    QueryExample(
+        query="state:false_positive",
+        description="Findings a reviewer rejected",
+        group="Review",
+    ),
+    QueryExample(
+        query="is:triaged",
+        description="Findings someone has already decided on",
+        group="Review",
+    ),
+)
+
+VULN_QUERY = QueryRegistry(
+    key="vulnerability",
+    noun="finding",
+    noun_plural="findings",
+    fields=VULN_FIELDS,
+    flags=VULN_FLAGS,
+    groups=VULN_GROUPS,
+    dimensions=VULN_GROUP_DIMENSIONS,
+    examples=VULN_EXAMPLES,
+    example_groups=VULN_EXAMPLE_GROUPS,
 )

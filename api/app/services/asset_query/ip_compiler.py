@@ -12,7 +12,9 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from shared.definitions.asset_query import IP_FLAGS, IP_QUERY, Op
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
+from shared.models.vulnerability import Vulnerability
 
+from . import predicates as preds
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
 from .terms import (
     int_coerce,
@@ -119,6 +121,10 @@ _FLAG_BUILDERS = {
     "private": lambda ctx: or_(*[_within(ctx, n) for n in _PRIVATE_NETWORKS]),
     "v4": lambda ctx: ctx.source.c.version == _IPV4,
     "v6": lambda ctx: ctx.source.c.version == _IPV6,
+    "vulnerable": lambda ctx: preds.address_vuln(ctx.scan_id, ctx.source.c.ip),
+    "kev": lambda ctx: preds.address_vuln(
+        ctx.scan_id, ctx.source.c.ip, Vulnerability.is_kev.is_(True)
+    ),
 }
 
 _IP_BUILDERS = {
@@ -139,6 +145,12 @@ _IP_BUILDERS = {
     "host": lambda c, ctx: _host_exists(ctx, string_match(Subdomain.name, c)),
     "hosts": lambda c, ctx: number_match(ctx.source.c.host_count, c, int_coerce(c)),
     "assets": lambda c, ctx: number_match(ctx.source.c.asset_count, c, int_coerce(c)),
+    "vuln": lambda c, ctx: preds.address_vuln(
+        ctx.scan_id, ctx.source.c.ip, string_match(Vulnerability.severity, c)
+    ),
+    "cve": lambda c, ctx: preds.address_vuln(
+        ctx.scan_id, ctx.source.c.ip, json_array_match(Vulnerability.cve_ids, c)
+    ),
     "is": _flag,
 }
 

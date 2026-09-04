@@ -5,6 +5,7 @@
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import LayersIcon from '@lucide/svelte/icons/layers';
+	import SwordsIcon from '@lucide/svelte/icons/swords';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
 	import NavUser from './nav-user.svelte';
@@ -51,6 +52,10 @@
 				{ title: routeLabels.engines, url: ROUTES.engines, icon: CogIcon },
 				{ title: routeLabels.contexts, url: ROUTES.contexts, icon: LayersIcon }
 			]
+		},
+		{
+			label: null,
+			items: [{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: SwordsIcon }]
 		},
 		{
 			label: null,

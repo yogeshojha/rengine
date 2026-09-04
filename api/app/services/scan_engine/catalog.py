@@ -26,6 +26,7 @@ def _field_specs(spec) -> list[StageField]:
     schema = spec.schema
     defs = schema.get("$defs") or {}
     defaults = spec.defaults
+    launch = set(spec.launch_fields)
     out: list[StageField] = []
     for name, raw in (schema.get("properties") or {}).items():
         prop = _resolve(raw, defs)
@@ -42,6 +43,8 @@ def _field_specs(spec) -> list[StageField]:
                 minimum=prop.get("minimum"),
                 maximum=prop.get("maximum"),
                 scale=prop.get("scale"),
+                widget=prop.get("widget"),
+                launch=name in launch,
             )
         )
     return out
@@ -62,6 +65,7 @@ def build_catalog() -> EngineCatalog:
                 api_keys=list(spec.api_keys),
                 requires_api_keys=spec.requires_api_keys,
                 touches_target=spec.touches_target,
+                launch_fields=list(spec.launch_fields),
                 defaults=spec.defaults,
                 fields=_field_specs(spec),
             )

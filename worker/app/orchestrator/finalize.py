@@ -1,6 +1,6 @@
 """Aggregate stage outcomes into the final scan status + terminal notification/event."""
 
-from sqlalchemy import Integer, bindparam, func, select, text
+from sqlalchemy import Integer, String, bindparam, func, select, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
@@ -11,14 +11,18 @@ from shared.definitions.notifications import (
     scan_failed,
     scan_new_services,
     scan_new_subdomains,
+    scan_new_vulnerabilities,
+    scan_vulnerability_coverage,
 )
 from shared.definitions.ports import SENSITIVE_PORTS
+from shared.definitions.vulnerabilities import SUPPRESSED_STATES, CoverageStatus
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.subdomain import Subdomain
+from shared.models.vulnerability import VulnerabilityCoverage
 from shared.services.activity_log import ActivityLogService
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator import (
@@ -126,6 +130,59 @@ def _count_new_services(session: Session, scan: Scan) -> tuple[int, int]:
     return int(row.total or 0), int(row.sensitive or 0)
 
 
+# findings this scan is the first to report for its target, by severity
+_NEW_VULNS_SQL = """
+SELECT v.severity AS severity,
+       count(*) AS total,
+       count(*) FILTER (WHERE v.is_kev) AS kev
+FROM vulnerabilities v
+WHERE v.scan_id = :sid
+  AND NOT EXISTS (
+      SELECT 1 FROM vulnerability_triage t
+      WHERE t.target_id = v.target_id AND t.fingerprint = v.fingerprint
+        AND t.state = ANY(:suppressed)
+  )
+  AND EXISTS (
+      SELECT 1 FROM vulnerabilities b
+      WHERE b.target_id = v.target_id AND b.scan_id <> :sid
+        AND b.discovered_at < v.discovered_at
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM vulnerabilities e
+      WHERE e.target_id = v.target_id AND e.fingerprint = v.fingerprint
+        AND e.scan_id <> :sid AND e.discovered_at < v.discovered_at
+  )
+GROUP BY v.severity
+"""
+
+
+def _count_new_vulnerabilities(session: Session, scan: Scan) -> tuple[dict, int, int]:
+    """New findings for this target, by severity, excluding anything a reviewer set aside."""
+    rows = session.execute(
+        text(_NEW_VULNS_SQL).bindparams(
+            bindparam("sid", scan.id),
+            bindparam("suppressed", list(SUPPRESSED_STATES), type_=ARRAY(String)),
+        )
+    ).all()
+    counts = {row.severity: int(row.total) for row in rows}
+    kev = sum(int(row.kev or 0) for row in rows)
+    return counts, kev, sum(counts.values())
+
+
+def _dropped_hosts(session: Session, scan: Scan) -> int:
+    rows = (
+        session.execute(
+            select(VulnerabilityCoverage.hosts_dropped).where(
+                VulnerabilityCoverage.scan_id == scan.id,
+                VulnerabilityCoverage.status == CoverageStatus.PARTIAL.value,
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return sum(len(entry or []) for entry in rows)
+
+
 def _notify_deltas(
     notifier: SyncNotificationPublisher, session: Session, scan: Scan, target: str
 ) -> None:
@@ -148,6 +205,23 @@ def _notify_deltas(
             )
     except Exception:
         logger.warning("new-service notification failed", exc_info=True)
+    try:
+        counts, kev, total = _count_new_vulnerabilities(session, scan)
+        if total > 0:
+            _notify(
+                notifier,
+                session,
+                scan_new_vulnerabilities(str(scan.id), target, counts, kev, total),
+            )
+        dropped = _dropped_hosts(session, scan)
+        if dropped > 0:
+            _notify(
+                notifier,
+                session,
+                scan_vulnerability_coverage(str(scan.id), target, dropped),
+            )
+    except Exception:
+        logger.warning("vulnerability notification failed", exc_info=True)
 
 
 def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:

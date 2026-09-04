@@ -10,6 +10,7 @@
 	import type { StageField } from '$lib/types/scan-engine';
 	import { SCALE_HELP } from '$lib/types/scan-engine';
 	import { parseCsv } from '$lib/utilities/parse';
+	import CustomTemplatesField from './custom-templates-field.svelte';
 
 	interface Props {
 		field: StageField;
@@ -80,6 +81,8 @@
 	<div class="shrink-0">
 		{#if field.type === 'boolean'}
 			<Switch {id} checked={boolValue} onCheckedChange={(v) => onChange(v)} />
+		{:else if field.widget === 'custom_templates'}
+			<CustomTemplatesField {id} value={listValue} onChange={(v) => onChange(v)} />
 		{:else if field.type === 'array' && field.options}
 			<ToggleGroup.Root
 				type="multiple"
@@ -94,9 +97,9 @@
 				{#each field.options as option (option)}
 					<ToggleGroup.Item
 						value={option}
-						class="h-6 px-2 font-mono text-[11px] font-normal aria-pressed:bg-foreground aria-pressed:text-background data-[state=on]:bg-foreground data-[state=on]:text-background"
+						class="h-6 px-2 text-[11px] font-normal aria-pressed:bg-foreground aria-pressed:text-background data-[state=on]:bg-foreground data-[state=on]:text-background"
 					>
-						{option}
+						{optionLabel(option)}
 					</ToggleGroup.Item>
 				{/each}
 			</ToggleGroup.Root>

@@ -9,9 +9,11 @@
 	import PosturePanel from './overview/posture-panel.svelte';
 	import CompositionPanel from './overview/composition-panel.svelte';
 	import ExposurePanel from './overview/exposure-panel.svelte';
+	import VulnerabilityPanel from './overview/vulnerability-panel.svelte';
 	import OriginPanel from './overview/origin-panel.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { servicesApi } from '$lib/api/scan-results';
+	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { isLiveStatus } from '$lib/utilities/scan-status';
@@ -21,6 +23,7 @@
 	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
 	import type { SubdomainInsights } from '$lib/utilities/scan-insights';
 	import type { ScanExposure } from '$lib/utilities/services';
+	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
 	import type { OriginExposure } from '$lib/utilities/origins';
 
 	interface Props {
@@ -67,6 +70,7 @@
 	let insights = $state<SubdomainInsights | null>(null);
 	let relatedDomains = $state<RelatedDomains | null>(null);
 	let exposure = $state<ScanExposure | null>(null);
+	let vulns = $state<ScanVulnerabilities | null>(null);
 	let origins = $state<OriginExposure | null>(null);
 	let loading = $state(true);
 	let errored = $state(false);
@@ -114,6 +118,14 @@
 			.catch(() => (exposure = null));
 	}
 
+	function loadVulns() {
+		if (!scanId) return;
+		vulnerabilitiesApi
+			.overview(scanId)
+			.then((d) => (vulns = d))
+			.catch(() => (vulns = null));
+	}
+
 	function loadOrigins() {
 		if (!scanId || !projectId) return;
 		servicesApi
@@ -139,6 +151,7 @@
 			loadInsights();
 			loadRelated();
 			loadExposure();
+			loadVulns();
 			loadOrigins();
 		});
 	});
@@ -215,6 +228,7 @@
 				<Button variant="outline" size="sm" onclick={loadInsights}>Retry</Button>
 			</EmptyState>
 		{:else}
+			<VulnerabilityPanel {vulns} {loading} {onTab} />
 			<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
 			<OriginPanel exposure={origins} {onTab} />
 			<ExposurePanel {exposure} {loading} {onTab} />

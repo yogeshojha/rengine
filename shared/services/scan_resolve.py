@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import re
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, Field, PrivateAttr
@@ -82,6 +83,24 @@ def redact_command(command: str) -> str:
     safe = PROXY_CREDS_RE.sub(rf"\1{MASK}@", safe)
     safe = _HEADER_VALUE.sub(rf"\1{MASK}", safe)
     return _CRED_FLAG.sub(rf"\1{MASK}", safe)
+
+
+MIN_SECRET_LENGTH = 8
+
+
+def redact_secrets(text: str | None, secrets: Iterable[str]) -> str | None:
+    """Mask credential values the scan itself injected, wherever a tool echoed them back.
+
+    Stored proof (a raw request, a curl command) carries whatever headers the scan
+    context supplied. nuclei masks the header names it knows; a custom one is its own
+    business, so we mask by value instead of by name.
+    """
+    if not text:
+        return text
+    for secret in secrets:
+        if secret and len(secret) >= MIN_SECRET_LENGTH:
+            text = text.replace(secret, MASK)
+    return text
 
 
 def _auth_summary(auth: dict, extra_headers: list) -> str:  # noqa: PLR0911
@@ -197,6 +216,7 @@ class ResolvedScanConfig(BaseModel):
     intensity: str = "normal"
     proxy_url: str | None = None
     tool_options: dict[str, str] = Field(default_factory=dict)
+    overrides: dict[str, dict] = Field(default_factory=dict)
 
     _auth_header_names: list[str] = PrivateAttr(default_factory=list)
 
@@ -284,8 +304,40 @@ def _assert_flags_preserved(stage: str, original: dict, scaled: dict) -> None:
             raise RuntimeError(msg)
 
 
+def validate_overrides(overrides: dict | None) -> dict[str, dict]:
+    """Keep only stage keys that exist and values their own config model accepts."""
+    from stages.registry import stage_by_name  # noqa: PLC0415
+
+    if not overrides:
+        return {}
+    specs = stage_by_name()
+    clean: dict[str, dict] = {}
+    for name, values in overrides.items():
+        spec = specs.get(name)
+        if spec is None or not isinstance(values, dict):
+            msg = f"Unknown stage {name!r} in run overrides."
+            raise _bad(msg)
+        allowed = set(spec.config_model.model_fields)
+        unknown = sorted(set(values) - allowed)
+        if unknown:
+            msg = f"{name} has no setting named {unknown[0]!r}."
+            raise _bad(msg)
+        try:
+            spec.config_model(**{**spec.defaults, **values})
+        except Exception as exc:
+            msg = f"{name}: {str(exc).splitlines()[0][:200]}"
+            raise _bad(msg) from exc
+        clean[name] = dict(values)
+    return clean
+
+
 def merge_engine_context(
-    engine, context, target_value: str, target_type: str, proxy_url: str | None = None
+    engine,
+    context,
+    target_value: str,
+    target_type: str,
+    proxy_url: str | None = None,
+    overrides: dict | None = None,
 ) -> ResolvedScanConfig:
     from shared.enums.scan import Intensity  # noqa: PLC0415
     from stages.config import Scale  # noqa: PLC0415
@@ -309,11 +361,14 @@ def merge_engine_context(
     global_threads = _clamp(round(engine.global_threads * thread_mult), 1, MAX_THREADS)
 
     stored = engine.stages or {}
+    run_overrides = validate_overrides(overrides)
     stages: dict[str, dict] = {}
     per_tool_rate_limits: dict[str, int] = {}
 
     for spec in stage_specs():
-        config = spec.config_model(**(stored.get(spec.name) or {}))
+        config = spec.config_model(
+            **{**(stored.get(spec.name) or {}), **(run_overrides.get(spec.name) or {})}
+        )
         values = config.model_dump()
         for name, (scale, tool) in spec.config_model.scaled_fields().items():
             base = values[name]
@@ -361,6 +416,7 @@ def merge_engine_context(
         global_http_crawl=engine.global_http_crawl,
         intensity=engine.intensity,
         tool_options=dict(getattr(engine, "tool_options", None) or {}),
+        overrides=run_overrides,
     )
     config._auth_header_names = auth_header_names
     config.proxy_url = proxy_url

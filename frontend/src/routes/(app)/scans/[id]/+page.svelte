@@ -15,6 +15,7 @@
 	import Globe from '@lucide/svelte/icons/globe';
 	import Server from '@lucide/svelte/icons/server';
 	import Plug from '@lucide/svelte/icons/plug';
+	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 
 	import { scansApi } from '$lib/api/scans';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -39,6 +40,7 @@
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
 	import ServicesTable from '$lib/components/scans/results/services-table.svelte';
+	import VulnerabilitiesTable from '$lib/components/scans/results/vulnerabilities-table.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import {
@@ -51,6 +53,7 @@
 	import { emptyQuery, type WebAssetQuery } from '$lib/utilities/scan-insights';
 	import { emptyIpQuery, type IpQuery } from '$lib/utilities/ip-groups';
 	import { emptyServiceQuery, type ServiceQuery } from '$lib/utilities/services';
+	import { emptyVulnQuery, type VulnQuery } from '$lib/utilities/vulns';
 	import { targetTypeLabel } from '$lib/types/scan-engine';
 	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
 	import type { TargetType } from '$lib/types/target';
@@ -58,13 +61,14 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { NOW_TICK_MS } from '$lib/constants';
 
-	const TABS = ['overview', 'web-assets', 'services', 'ips'] as const;
+	const TABS = ['overview', 'web-assets', 'services', 'ips', 'vulnerabilities'] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
 		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
 		{ key: 'web-assets', label: 'Web Assets', icon: Globe },
 		{ key: 'services', label: 'Services', icon: Plug },
-		{ key: 'ips', label: 'IPs', icon: Server }
+		{ key: 'ips', label: 'IPs', icon: Server },
+		{ key: 'vulnerabilities', label: 'Vulnerabilities', icon: ShieldAlert }
 	];
 	const HISTORY_SIZE = 12;
 	const STATUS_TEXT: Record<string, string> = {
@@ -97,6 +101,7 @@
 		...emptyServiceQuery(),
 		search: initialSearch('svc_q')
 	});
+	let vulnQuery = $state<VulnQuery>({ ...emptyVulnQuery(), search: initialSearch('vuln_q') });
 
 	const initialTab = page.url.searchParams.get('tab');
 	let activeTab = $state<TabKey>(
@@ -134,6 +139,11 @@
 		if (tab === 'services') {
 			serviceQuery = { ...emptyServiceQuery(), search: filter };
 			setTab('services');
+			return;
+		}
+		if (tab === 'vulnerabilities') {
+			vulnQuery = { ...emptyVulnQuery(), search: filter };
+			setTab('vulnerabilities');
 			return;
 		}
 		applyFilter(filter);
@@ -196,11 +206,13 @@
 	});
 	let ipsTotal = $state<number | null>(null);
 	let servicesTotal = $state<number | null>(null);
+	let vulnsTotal = $state<number | null>(null);
 	let tabCounts = $derived<Record<TabKey, number | null>>({
 		overview: null,
 		'web-assets': scan?.subdomains_found ?? 0,
 		services: servicesTotal ?? scan?.open_ports_found ?? 0,
-		ips: ipsTotal ?? scan?.ips_found ?? 0
+		ips: ipsTotal ?? scan?.ips_found ?? 0,
+		vulnerabilities: vulnsTotal ?? scan?.vulnerabilities_found ?? 0
 	});
 	let timing = $derived.by(() => {
 		if (!scan) return '';
@@ -220,6 +232,7 @@
 				webQuery = emptyQuery();
 				ipQuery = emptyIpQuery();
 				serviceQuery = emptyServiceQuery();
+				vulnQuery = emptyVulnQuery();
 				history = [];
 				historyLoaded = false;
 			});
@@ -540,6 +553,18 @@
 						onTab={openTab}
 						onScanTotal={(n) => (ipsTotal = n)}
 						bind:query={ipQuery}
+					/>
+				{/key}
+			</Tabs.Content>
+
+			<Tabs.Content value="vulnerabilities" class="mt-6">
+				{#key scan.id}
+					<VulnerabilitiesTable
+						scanId={scan.id}
+						active={activeTab === 'vulnerabilities'}
+						onTab={openTab}
+						onScanTotal={(n) => (vulnsTotal = n)}
+						bind:query={vulnQuery}
 					/>
 				{/key}
 			</Tabs.Content>

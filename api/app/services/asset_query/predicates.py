@@ -7,10 +7,12 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import aliased
 
 from shared.definitions.ports import SENSITIVE_PORTS
+from shared.definitions.vulnerabilities import SUPPRESSED_STATES, VulnState
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
+from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 
 HTTP_OK = 200
 HTTP_REDIRECT = 300
@@ -182,3 +184,90 @@ def asset_match(scan_id, condition):
 
 def ip_text():
     return cast(Subdomain.resolved_ips, Text)
+
+
+def vuln_on(scan_id, *conditions):
+    """A finding recorded by this scan, narrowed by the caller's asset join."""
+    return exists(select(1).where(Vulnerability.scan_id == scan_id, *conditions))
+
+
+def host_vuln(scan_id, condition=None):
+    clauses = [Vulnerability.host == Subdomain.name]
+    if condition is not None:
+        clauses.append(condition)
+    return vuln_on(scan_id, *clauses)
+
+
+def address_vuln(scan_id, column, condition=None):
+    clauses = [Vulnerability.ip == column]
+    if condition is not None:
+        clauses.append(condition)
+    return vuln_on(scan_id, *clauses)
+
+
+def service_vuln(scan_id, ip_column, port_column, condition=None):
+    clauses = [Vulnerability.ip == ip_column, Vulnerability.port == port_column]
+    if condition is not None:
+        clauses.append(condition)
+    return vuln_on(scan_id, *clauses)
+
+
+def vuln_seen_earlier():
+    earlier = aliased(Vulnerability)
+    return exists(
+        select(1).where(
+            earlier.target_id == Vulnerability.target_id,
+            earlier.fingerprint == Vulnerability.fingerprint,
+            earlier.scan_id != Vulnerability.scan_id,
+            earlier.discovered_at < Vulnerability.discovered_at,
+        )
+    )
+
+
+def vuln_has_baseline(scan_id):
+    """Whether an earlier scan of this target recorded any finding. Scan-level, never per row."""
+    earlier = aliased(Vulnerability)
+    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    cutoff = (
+        select(func.min(Vulnerability.discovered_at))
+        .where(Vulnerability.scan_id == scan_id)
+        .scalar_subquery()
+    )
+    return exists(
+        select(1).where(
+            earlier.target_id == target,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < cutoff,
+        )
+    )
+
+
+def vuln_is_new(scan_id):
+    return and_(vuln_has_baseline(scan_id), not_(vuln_seen_earlier()))
+
+
+def vuln_suppressed(scan_id):
+    """A reviewer set this finding aside. An EXISTS so Postgres can hash-join it, not probe per row."""
+    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    return exists(
+        select(1).where(
+            VulnerabilityTriage.target_id == target,
+            VulnerabilityTriage.fingerprint == Vulnerability.fingerprint,
+            VulnerabilityTriage.state.in_(SUPPRESSED_STATES),
+        )
+    )
+
+
+def vuln_state(scan_id):
+    """The review decision for this finding, defaulting to open when nobody has decided."""
+    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    return func.coalesce(
+        select(VulnerabilityTriage.state)
+        .where(
+            VulnerabilityTriage.target_id == target,
+            VulnerabilityTriage.fingerprint == Vulnerability.fingerprint,
+        )
+        .limit(1)
+        .scalar_subquery(),
+        VulnState.OPEN.value,
+    )

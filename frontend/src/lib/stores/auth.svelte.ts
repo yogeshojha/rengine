@@ -13,7 +13,12 @@ import { scansStore } from '$lib/stores/scans.svelte';
 import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
-import { ipQuerySchema, querySchema, serviceQuerySchema } from './query-schema.svelte';
+import {
+	ipQuerySchema,
+	querySchema,
+	serviceQuerySchema,
+	vulnQuerySchema
+} from './query-schema.svelte';
 import { dashboardStore } from '$lib/stores/dashboard.svelte';
 import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 import { activityScope } from '$lib/stores/activity-scope.svelte';
@@ -96,6 +101,7 @@ function createAuthStore() {
 		querySchema.reset();
 		ipQuerySchema.reset();
 		serviceQuerySchema.reset();
+		vulnQuerySchema.reset();
 		dashboardStore.clear();
 		breadcrumbStore.clear();
 		activityScope.clear();

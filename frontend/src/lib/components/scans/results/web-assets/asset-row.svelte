@@ -14,6 +14,7 @@
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import Flame from '@lucide/svelte/icons/flame';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
@@ -54,6 +55,7 @@
 		exactToken,
 		filterToken
 	} from '$lib/utilities/scan-insights';
+	import { SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import type { ServiceRead } from '$lib/utilities/services';
@@ -76,6 +78,7 @@
 		hostsWithTitle: (title: string) => Promise<string[]>;
 		loadServices: (host: string) => Promise<ServiceRead[]>;
 		onServices?: (host: string, port: number) => void;
+		onVulns?: (filter: string) => void;
 	}
 
 	let {
@@ -94,8 +97,11 @@
 		onEvidence,
 		hostsWithTitle,
 		loadServices,
-		onServices
+		onServices,
+		onVulns
 	}: Props = $props();
+
+	let worstSeverity = $derived((s.vuln_count ?? 0) > 0 ? (s.vuln_severity ?? null) : null);
 
 	const ALWAYS_VISIBLE = ['host', 'title', 'cname'];
 	const COLUMN_EVIDENCE: Record<string, string> = {
@@ -240,6 +246,35 @@
 					</span>
 				</HostHoverCard>
 			</span>
+			{#if worstSeverity}
+				<Hint
+					text="{s.vuln_count} {s.vuln_count === 1
+						? 'finding'
+						: 'findings'} on this host, worst is {severityLabel(
+						worstSeverity
+					).toLowerCase()}{s.vuln_kev ? ' and known exploited' : ''}"
+				>
+					{#snippet child(props)}
+						<button
+							{...props}
+							type="button"
+							class="flex h-5 shrink-0 items-center gap-1 rounded border px-1 text-[10px] hover:bg-accent"
+							style="border-color:color-mix(in oklch, {SEVERITY_FILL[
+								worstSeverity
+							]} 45%, transparent)"
+							onclick={(e) => {
+								stopProp(e);
+								onVulns?.(exactToken('host', s.name));
+							}}
+						>
+							<span class="size-1.5 rounded-full" style="background:{SEVERITY_FILL[worstSeverity]}"
+							></span>
+							{s.vuln_count}
+							{#if s.vuln_kev}<Flame class="size-2.5 text-destructive" />{/if}
+						</button>
+					{/snippet}
+				</Hint>
+			{/if}
 			{#if s.is_wildcard}
 				<span class="flex h-5 shrink-0 items-center">
 					<Badge variant="outline" class="px-1 text-[10px] font-normal text-muted-foreground">

@@ -43,6 +43,7 @@ services:
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
       - ./scan_media:/app/scan_media
+      - vuln_templates:/app/vuln-templates
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -71,6 +72,7 @@ services:
       - ./tools:/app/tools
       - ./stages:/app/stages
       - ./scan_media:/app/scan_media
+      - vuln_templates:/app/vuln-templates
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -108,6 +110,7 @@ services:
       - ./tools:/app/tools
       - ./stages:/app/stages
       - ./scan_media:/app/scan_media
+      - vuln_templates:/app/vuln-templates
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -135,6 +138,7 @@ services:
       - ./tools:/app/tools
       - ./stages:/app/stages
       - ./scan_media:/app/scan_media
+      - vuln_templates:/app/vuln-templates
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -172,3 +176,4 @@ volumes:
   postgres_data:
   redis_data:
   celery_beat_data:
+  vuln_templates:

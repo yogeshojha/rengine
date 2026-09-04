@@ -127,6 +127,26 @@ from shared.models.target import (
 )
 from shared.models.user import User, UserBase, UserCreate, UserRead
 from shared.models.viewdns import ViewDNSCache
+from shared.models.vuln_template import (
+    TemplateFilter,
+    TemplateLibraryStats,
+    TemplatePage,
+    TemplateSelection,
+    VulnTemplate,
+    VulnTemplateRead,
+    VulnTemplateUpdate,
+    VulnTemplateUploadRequest,
+)
+from shared.models.vulnerability import (
+    ScanVulnerabilities,
+    Vulnerability,
+    VulnerabilityCoverage,
+    VulnerabilityFacets,
+    VulnerabilityFilter,
+    VulnerabilityPage,
+    VulnerabilityRead,
+    VulnerabilityTriage,
+)
 
 TargetRead.model_rebuild()
 
@@ -212,6 +232,7 @@ __all__ = [
     "ScanScheduleCreate",
     "ScanScheduleRead",
     "ScanScheduleUpdate",
+    "ScanVulnerabilities",
     "ScheduleTargetRef",
     "Subdomain",
     "SubdomainRead",
@@ -236,9 +257,24 @@ __all__ = [
     "TargetUpdate",
     "TargetValidationRequest",
     "TargetValidationResponse",
+    "TemplateFilter",
+    "TemplateLibraryStats",
+    "TemplatePage",
+    "TemplateSelection",
     "User",
     "UserBase",
     "UserCreate",
     "UserRead",
     "ViewDNSCache",
+    "VulnTemplate",
+    "VulnTemplateRead",
+    "VulnTemplateUpdate",
+    "VulnTemplateUploadRequest",
+    "Vulnerability",
+    "VulnerabilityCoverage",
+    "VulnerabilityFacets",
+    "VulnerabilityFilter",
+    "VulnerabilityPage",
+    "VulnerabilityRead",
+    "VulnerabilityTriage",
 ]

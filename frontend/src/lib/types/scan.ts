@@ -142,6 +142,7 @@ export interface ScanCreate {
 	engine_id: string;
 	context_id?: string | null;
 	target_id: string;
+	overrides?: Record<string, Record<string, unknown>>;
 }
 
 export const MAX_SCAN_BATCH = 500;
@@ -150,6 +151,7 @@ export interface ScanBatchCreate {
 	engine_id: string;
 	context_id?: string | null;
 	target_ids: string[];
+	overrides?: Record<string, Record<string, unknown>>;
 }
 
 export const PREVIEW_TOOL_STATUSES = ['will_run', 'skipped_disabled', 'skipped_needs_key'] as const;
