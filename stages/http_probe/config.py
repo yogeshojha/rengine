@@ -9,7 +9,7 @@ class HttpProbeConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Probe HTTP services",
-        description="Fingerprint every host and port for live HTTP, tech and titles.",
+        description="Fingerprint every host and port for live HTTP, technologies and titles.",
     )
     threads: int = threads(30, title="Threads")
     timeout: int = timeout(10, title="Timeout (s)")

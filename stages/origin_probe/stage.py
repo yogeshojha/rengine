@@ -22,7 +22,9 @@ _HTTP_FIELDS = set(HttpAsset.model_fields)
 class OriginProbeStage(Stage):
     name = "origin_probe"
     title = "Origin Probe"
-    description = "Request each address by IP to see what it serves without a hostname."
+    description = (
+        "Request each address by IP and record what it serves without a hostname."
+    )
     phase = Phase.EXPANSION.value
     level = 4
     applies_to = ALL_TARGETS

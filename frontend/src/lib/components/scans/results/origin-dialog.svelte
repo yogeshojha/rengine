@@ -41,7 +41,7 @@
 			<Dialog.Header class="gap-2 border-b px-6 pt-6 pr-12 pb-4">
 				<div class="flex items-center gap-2">
 					<Badge variant={f.confidence === 'high' ? 'warning' : 'outline'} class="font-normal">
-						{f.confidence === 'high' ? 'High confidence' : 'Possible'}
+						{f.confidence === 'high' ? 'High confidence' : 'Medium confidence'}
 					</Badge>
 					<Dialog.Title class="text-base font-semibold">
 						{FINDING_TITLE[f.kind] ?? f.kind}
@@ -68,7 +68,7 @@
 							<span
 								class="hidden text-[11px] tracking-wide text-muted-foreground uppercase sm:block"
 							>
-								same app
+								Same application
 							</span>
 						</div>
 						{@render side(

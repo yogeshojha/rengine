@@ -38,7 +38,7 @@
 		<div class="flex min-w-0 flex-col gap-1">
 			<span class="flex items-center gap-2">
 				<Badge variant={f.confidence === 'high' ? 'warning' : 'outline'} class="font-normal">
-					{f.confidence === 'high' ? 'High confidence' : 'Possible'}
+					{f.confidence === 'high' ? 'High confidence' : 'Medium confidence'}
 				</Badge>
 				<span class="text-sm font-medium">{FINDING_TITLE[f.kind] ?? f.kind}</span>
 			</span>

@@ -44,7 +44,9 @@ def _rank(asset: HttpAsset) -> tuple:
 class HttpProbeStage(Stage):
     name = "http_probe"
     title = "HTTP Probe"
-    description = "Fingerprint every host/port for live HTTP, tech and titles."
+    description = (
+        "Fingerprint every host and port for live HTTP, technologies and titles."
+    )
     phase = Phase.EXPANSION.value
     level = 3
     tools = ("httpx",)

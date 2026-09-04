@@ -16,5 +16,5 @@ class PassivePortsConfig(StageConfig):
         ge=1,
         le=65536,
         title="Address budget",
-        description="Stop after this many address lookups.",
+        description="Stop after this many addresses.",
     )

@@ -18,7 +18,7 @@ class ServiceFingerprintConfig(StageConfig):
         ge=1,
         le=50000,
         title="Service budget",
-        description="Stop after this many ports in one scan.",
+        description="Stop after this many ports.",
     )
     include_unknown: bool = Field(
         default=True,

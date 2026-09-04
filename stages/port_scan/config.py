@@ -86,5 +86,5 @@ class PortScanConfig(StageConfig):
         ge=1,
         le=100000,
         title="Address budget",
-        description="Stop after this many addresses in one scan.",
+        description="Stop after this many addresses.",
     )

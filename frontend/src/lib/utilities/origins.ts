@@ -41,14 +41,13 @@ export const DEFAULT_VHOST = 'default_vhost';
 
 export const FINDING_TITLE: Record<string, string> = {
 	[ORIGIN_EXPOSED]: 'Origin reachable outside the CDN',
-	[DEFAULT_VHOST]: 'Address serves a different site than its hostname'
+	[DEFAULT_VHOST]: 'Address serving a different site'
 };
 
 export const FINDING_SUMMARY: Record<string, string> = {
 	[ORIGIN_EXPOSED]:
-		'The same application answers on an address the CDN does not front, so its protections can be bypassed by requesting the address directly.',
-	[DEFAULT_VHOST]:
-		'Requesting the address without a hostname returns different content, so another application is published on the same port.'
+		'The same application answers on an address the CDN does not front. Requests sent to the address are not filtered by the CDN.',
+	[DEFAULT_VHOST]: 'The address returns different content when requested without a hostname.'
 };
 
 export function frontedLabel(f: OriginFinding): string {

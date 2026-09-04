@@ -8,6 +8,6 @@ from stages.config import StageConfig
 class CdnCheckConfig(StageConfig):
     enabled: bool = Field(
         default=True,
-        title="Attribute CDNs and cloud",
+        title="Attribute CDN and cloud providers",
         description="Identify which addresses are fronted by a CDN, WAF or cloud provider.",
     )
