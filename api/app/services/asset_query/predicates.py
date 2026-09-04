@@ -1,13 +1,27 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from functools import lru_cache
 
-from sqlalchemy import Text, and_, cast, exists, false, func, not_, or_, select
+from sqlalchemy import (
+    Text,
+    and_,
+    cast,
+    distinct,
+    exists,
+    false,
+    func,
+    literal,
+    not_,
+    or_,
+    select,
+    union_all,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import aliased
 
 from shared.definitions.ports import SENSITIVE_PORTS
-from shared.definitions.vulnerabilities import SUPPRESSED_STATES, VulnState
+from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity, VulnState
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.scan import Scan
@@ -256,6 +270,68 @@ def vuln_suppressed(scan_id):
             VulnerabilityTriage.state.in_(SUPPRESSED_STATES),
         )
     )
+
+
+def _vuln_eligible(scan_id):
+    """Findings allowed to vouch: this scan, not informational, not set aside by a reviewer."""
+    return (
+        select(
+            Vulnerability.id.label("id"),
+            Vulnerability.matched_at.label("matched_at"),
+            Vulnerability.template_id.label("template_id"),
+            Vulnerability.cve_ids.label("cve_ids"),
+            Vulnerability.cwe_ids.label("cwe_ids"),
+        )
+        .where(
+            Vulnerability.scan_id == scan_id,
+            Vulnerability.severity != Severity.INFO.value,
+            not_(vuln_suppressed(scan_id)),
+        )
+        .cte("vuln_eligible")
+    )
+
+
+def _vuln_keys(source, column, prefix: str, name: str):
+    value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued(name)
+    return select(
+        source.c.id.label("id"),
+        source.c.matched_at.label("matched_at"),
+        source.c.template_id.label("template_id"),
+        (literal(prefix) + value).label("key"),
+    ).select_from(source)
+
+
+# cached so both the filter and the sort share one CTE object; two would collide by name
+@lru_cache(maxsize=128)
+def vuln_corroborated_ids(scan_id):
+    """Findings a different check confirms at the same location by naming the same CVE or CWE."""
+    eligible = _vuln_eligible(scan_id)
+    signals = union_all(
+        _vuln_keys(eligible, eligible.c.cve_ids, "cve:", "cve_key"),
+        _vuln_keys(eligible, eligible.c.cwe_ids, "cwe:", "cwe_key"),
+    ).cte("vuln_signal")
+    agreed = (
+        select(signals.c.matched_at, signals.c.key)
+        .group_by(signals.c.matched_at, signals.c.key)
+        .having(func.count(distinct(signals.c.template_id)) > 1)
+        .cte("vuln_agreed")
+    )
+    return (
+        select(signals.c.id)
+        .select_from(signals)
+        .join(
+            agreed,
+            and_(
+                signals.c.matched_at == agreed.c.matched_at,
+                signals.c.key == agreed.c.key,
+            ),
+        )
+        .distinct()
+    )
+
+
+def vuln_corroborated(scan_id):
+    return Vulnerability.id.in_(vuln_corroborated_ids(scan_id))
 
 
 def vuln_state(scan_id):

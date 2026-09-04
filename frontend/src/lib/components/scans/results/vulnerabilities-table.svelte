@@ -43,7 +43,7 @@
 	import { vulnQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { VULN_STATE_LABELS } from '$lib/config/vulnerabilities';
-	import { appendToken, type Facet } from '$lib/utilities/scan-insights';
+	import { appendToken, exactToken, type Facet } from '$lib/utilities/scan-insights';
 	import {
 		compileVulnQuery,
 		emptyVulnQuery,
@@ -533,6 +533,11 @@
 		syncUrl();
 		onTab?.('web-assets', filter);
 	}
+	function showLocation(matchedAt: string) {
+		drawerOpen = false;
+		setQuery({ ...emptyVulnQuery(), search: exactToken('location', matchedAt) });
+		setView('findings');
+	}
 
 	function applyState(fingerprints: Set<string>, state: string, note: string | null) {
 		items = items.map((item) =>
@@ -967,5 +972,6 @@
 	onStep={step}
 	onFilter={applyDsl}
 	onHost={showHost}
+	onLocation={showLocation}
 	onTriage={triage}
 />

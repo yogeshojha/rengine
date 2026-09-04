@@ -78,6 +78,17 @@ export const SEVERITY_TEXT: Record<string, string> = {
 
 export const ACTIONABLE_SEVERITIES: string[] = [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM];
 
+// mirrors shared/definitions/vulnerabilities.py CorroborationBasis
+export enum CorroborationBasis {
+	CVE = 'cve',
+	CWE = 'cwe'
+}
+
+export const CORROBORATION_BASIS_LABELS: Record<string, string> = {
+	[CorroborationBasis.CVE]: 'Names the same CVE',
+	[CorroborationBasis.CWE]: 'Names the same weakness class'
+};
+
 export function severityRank(value: string | null | undefined): number {
 	const index = SEVERITY_ORDER.indexOf(value ?? '');
 	return index === -1 ? SEVERITY_ORDER.length : index;

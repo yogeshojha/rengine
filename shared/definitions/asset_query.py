@@ -1540,6 +1540,7 @@ VULN_FLAGS: dict[str, str] = {
     "kev": "Listed as exploited in the wild",
     "cve": "Carries a published vulnerability identifier",
     "exploitable": "Known exploited, or above the EPSS threshold",
+    "corroborated": "A second check at the same location names the same CVE or weakness class",
     "proven": "The request and response that produced it were stored",
     "extracted": "The check pulled a value out of the response",
     "web": "Found on an HTTP asset",
@@ -1767,6 +1768,11 @@ VULN_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         description="Findings of the same severity",
     ),
     GroupDimension(
+        key="location",
+        label="Location",
+        description="Every check that fired at the same place",
+    ),
+    GroupDimension(
         key="host",
         label="Host",
         description="Everything found on one hostname",
@@ -1824,6 +1830,17 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
         description="Findings rated critical",
         group="Act on this first",
         generic=True,
+    ),
+    QueryExample(
+        query="is:corroborated",
+        description="Findings a second check confirms at the same location",
+        group="Act on this first",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:corroborated and severity:[critical,high]",
+        description="Severe findings that more than one check agrees on",
+        group="Act on this first",
     ),
     QueryExample(
         query="is:exploitable and not is:suppressed",

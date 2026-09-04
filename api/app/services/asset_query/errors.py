@@ -5,6 +5,8 @@ from sqlalchemy.exc import DBAPIError
 from shared.models.asset_query import QueryError
 
 STATEMENT_TIMEOUT = "SET LOCAL statement_timeout = '20s'"
+# a set-returning expansion is estimated at 100 rows a row, and the bogus cost buys 270ms of JIT
+NO_JIT = "SET LOCAL jit = off"
 
 QUERY_SQLSTATES = {
     "2201B": (

@@ -16,6 +16,7 @@
 	import HighlightText from '../table/highlight-text.svelte';
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import TechIcon from '../tech-icon.svelte';
+	import CorroborationBadge from './corroboration-badge.svelte';
 	import SeverityMark from './severity-mark.svelte';
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
@@ -170,6 +171,11 @@
 					{/snippet}
 				</Hint>
 			{/if}
+			<CorroborationBadge
+				peers={v.corroborated_by}
+				scanner={v.scanner}
+				onFilter={(token) => onFilter(token)}
+			/>
 		</div>
 
 		<div class="flex flex-wrap items-center gap-1.5">

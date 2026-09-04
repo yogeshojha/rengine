@@ -6,6 +6,7 @@
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Filter from '@lucide/svelte/icons/filter';
+	import CheckCheck from '@lucide/svelte/icons/check-check';
 	import Flame from '@lucide/svelte/icons/flame';
 	import Globe from '@lucide/svelte/icons/globe';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -198,6 +199,27 @@
 							>
 								<Badge variant="info" class="px-1 text-[10px] font-normal">
 									{it.new_count === it.findings ? 'new' : `${it.new_count} new`}
+								</Badge>
+							</button>
+						{/snippet}
+					</Hint>
+				{/if}
+				{#if it.corroborated > 0}
+					<Hint
+						text={it.corroborated === it.findings
+							? 'Another check confirms this weakness at the same location'
+							: `${it.corroborated} of ${it.findings} findings are confirmed by another check`}
+					>
+						{#snippet child(props)}
+							<button
+								{...props}
+								type="button"
+								class="flex h-5 shrink-0 items-center"
+								onclick={(e) => pivot(e, 'is:corroborated')}
+							>
+								<Badge variant="secondary" class="gap-1 px-1 text-[10px] font-normal">
+									<CheckCheck class="size-2.5" />
+									{it.corroborated === it.findings ? 'confirmed' : `${it.corroborated} confirmed`}
 								</Badge>
 							</button>
 						{/snippet}

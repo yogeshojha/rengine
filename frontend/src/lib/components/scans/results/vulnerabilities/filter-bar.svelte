@@ -61,6 +61,7 @@
 		{ value: 'new', label: 'New' },
 		{ value: 'kev', label: 'Known exploited' },
 		{ value: 'cve', label: 'Has a CVE' },
+		{ value: 'corroborated', label: 'Confirmed' },
 		{ value: 'noinfo', label: 'Hide info' },
 		{ value: 'reviewed', label: 'Show reviewed' }
 	];
@@ -72,6 +73,7 @@
 			query.newOnly && 'new',
 			query.kevOnly && 'kev',
 			query.cveOnly && 'cve',
+			query.corroboratedOnly && 'corroborated',
 			!query.includeInfo && 'noinfo',
 			query.includeSuppressed && 'reviewed'
 		].filter((v): v is string => !!v)
@@ -83,6 +85,7 @@
 			newOnly: values.includes('new'),
 			kevOnly: values.includes('kev'),
 			cveOnly: values.includes('cve'),
+			corroboratedOnly: values.includes('corroborated'),
 			includeInfo: !values.includes('noinfo'),
 			includeSuppressed: values.includes('reviewed')
 		});

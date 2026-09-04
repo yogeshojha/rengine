@@ -99,6 +99,7 @@ _FLAG_BUILDERS = {
     "exploitable": lambda _ctx: or_(
         Vulnerability.is_kev.is_(True), Vulnerability.epss_score >= EPSS_HIGH
     ),
+    "corroborated": lambda ctx: preds.vuln_corroborated(ctx.scan_id),
     "proven": lambda _ctx: and_(
         Vulnerability.request.isnot(None), Vulnerability.response.isnot(None)
     ),

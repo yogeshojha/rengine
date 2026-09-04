@@ -28,6 +28,15 @@ export interface AssetContext {
 	service_name: string | null;
 }
 
+export interface Corroboration {
+	template_id: string;
+	template_name: string;
+	severity: string;
+	scanner: string;
+	basis: string;
+	shared: string[];
+}
+
 export interface VulnerabilityRead {
 	id: string;
 	scan_id: string;
@@ -75,6 +84,8 @@ export interface VulnerabilityRead {
 	is_new: boolean;
 	host_count: number;
 	sets: string[];
+	corroborated_by: Corroboration[];
+	colocated: number;
 	asset: AssetContext | null;
 }
 
@@ -99,6 +110,7 @@ export interface IssueRead {
 	addresses: number;
 	locations: number;
 	sample_hosts: string[];
+	corroborated: number;
 	new_count: number;
 	states: Record<string, number>;
 	first_seen: string;
@@ -138,6 +150,7 @@ export interface VulnQuery {
 	kevOnly: boolean;
 	cveOnly: boolean;
 	newOnly: boolean;
+	corroboratedOnly: boolean;
 	includeInfo: boolean;
 	includeSuppressed: boolean;
 }
@@ -155,6 +168,7 @@ export function emptyVulnQuery(): VulnQuery {
 		kevOnly: false,
 		cveOnly: false,
 		newOnly: false,
+		corroboratedOnly: false,
 		includeInfo: true,
 		includeSuppressed: false
 	};
@@ -172,6 +186,7 @@ export interface VulnFilter {
 	kev: boolean;
 	cve: boolean;
 	new: boolean;
+	corroborated: boolean;
 	include_info: boolean;
 	include_suppressed: boolean;
 	sort: string;
@@ -339,6 +354,7 @@ export function vulnActiveFacetCount(q: VulnQuery): number {
 		(q.kevOnly ? 1 : 0) +
 		(q.cveOnly ? 1 : 0) +
 		(q.newOnly ? 1 : 0) +
+		(q.corroboratedOnly ? 1 : 0) +
 		(q.includeInfo ? 0 : 1) +
 		(q.includeSuppressed ? 1 : 0)
 	);
@@ -375,6 +391,12 @@ export function vulnQueryChips(q: VulnQuery, facets: VulnFacetSet): VulnFilterCh
 		chips.push({ id: 'cve', label: 'Has a CVE', remove: (x) => ({ ...x, cveOnly: false }) });
 	if (q.newOnly)
 		chips.push({ id: 'new', label: 'New this scan', remove: (x) => ({ ...x, newOnly: false }) });
+	if (q.corroboratedOnly)
+		chips.push({
+			id: 'corroborated',
+			label: 'Confirmed by another check',
+			remove: (x) => ({ ...x, corroboratedOnly: false })
+		});
 	if (!q.includeInfo)
 		chips.push({
 			id: 'info',
@@ -410,6 +432,7 @@ export function compileVulnQuery(
 		kev: q.kevOnly,
 		cve: q.cveOnly,
 		new: q.newOnly,
+		corroborated: q.corroboratedOnly,
 		include_info: q.includeInfo,
 		include_suppressed: q.includeSuppressed,
 		sort: sortKey,

@@ -4,6 +4,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Badge } from '$lib/components/ui/badge';
 	import Hint from '$lib/components/hint.svelte';
+	import CorroborationBadge from './corroboration-badge.svelte';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { locationLabel, originLabel, type VulnerabilityRead } from '$lib/utilities/vulns';
 	import { VULN_STATE_LABELS, VulnState } from '$lib/config/vulnerabilities';
@@ -87,6 +88,7 @@
 									>
 										{locationLabel(v)}
 									</span>
+									<CorroborationBadge peers={v.corroborated_by} scanner={v.scanner} />
 									{#if v.matcher_name}
 										<span class="shrink-0 font-mono text-[11px] text-muted-foreground">
 											{v.matcher_name}

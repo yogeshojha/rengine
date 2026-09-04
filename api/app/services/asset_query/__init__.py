@@ -1,6 +1,6 @@
 from .ast import Node, QuerySyntaxError
 from .compiler import QueryContext, compile_query
-from .errors import QUERY_SQLSTATES, STATEMENT_TIMEOUT, query_error_for
+from .errors import NO_JIT, QUERY_SQLSTATES, STATEMENT_TIMEOUT, query_error_for
 from .evidence import collect as collect_evidence
 from .groups import (
     build_groups,
@@ -14,6 +14,8 @@ from .parser import parse_query
 from .predicates import (
     service_has_baseline,
     service_is_new,
+    vuln_corroborated,
+    vuln_corroborated_ids,
     vuln_has_baseline,
     vuln_is_new,
     vuln_state,
@@ -24,6 +26,7 @@ from .service_compiler import ServiceQueryContext, compile_service_query
 from .vuln_compiler import VulnQueryContext, compile_vuln_query
 
 __all__ = [
+    "NO_JIT",
     "QUERY_SQLSTATES",
     "STATEMENT_TIMEOUT",
     "IpQueryContext",
@@ -47,6 +50,8 @@ __all__ = [
     "query_error_for",
     "service_has_baseline",
     "service_is_new",
+    "vuln_corroborated",
+    "vuln_corroborated_ids",
     "vuln_has_baseline",
     "vuln_is_new",
     "vuln_state",

@@ -101,6 +101,17 @@ SUPPRESSED_STATES: tuple[str, ...] = (
 )
 
 
+class CorroborationBasis(StrEnum):
+    CVE = "cve"
+    CWE = "cwe"
+
+
+CORROBORATION_BASIS_LABELS: dict[str, str] = {
+    CorroborationBasis.CVE.value: "Names the same CVE",
+    CorroborationBasis.CWE.value: "Names the same weakness class",
+}
+
+
 class Scanner(StrEnum):
     NUCLEI = "nuclei"
 
