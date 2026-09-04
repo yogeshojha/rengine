@@ -340,6 +340,20 @@ def _rank_fronted(
 
 def _merge(findings: list[OriginFinding]) -> list[OriginFinding]:
     """One origin per address and hostname; http and https are the same finding."""
+    # the origin probe stores the address as a host, so the same origin can surface
+    # twice: once by name and once by address. The name is the useful one.
+    named = {
+        f.exposed.ip
+        for f in findings
+        if f.kind == ORIGIN_EXPOSED and f.exposed.host != f.exposed.ip
+    }
+    findings = [
+        f
+        for f in findings
+        if f.kind != ORIGIN_EXPOSED
+        or f.exposed.host != f.exposed.ip
+        or f.exposed.ip not in named
+    ]
     best: dict[tuple[str, str, str], OriginFinding] = {}
     for finding in findings:
         key = (finding.kind, finding.exposed.ip or "", finding.exposed.host)
