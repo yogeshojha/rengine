@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import SearchX from '@lucide/svelte/icons/search-x';
 	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import HeroPanel from './overview/hero-panel.svelte';
@@ -16,6 +17,7 @@
 	import { isLiveStatus } from '$lib/utilities/scan-status';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
 	import type { RelatedDomains } from '$lib/types/asset-query';
+	import { scanFoundNothing } from '$lib/types/scan';
 	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
 	import type { SubdomainInsights } from '$lib/utilities/scan-insights';
 	import type { ScanExposure } from '$lib/utilities/services';
@@ -153,6 +155,17 @@
 		networks: stat('asns')
 	});
 	let insightsFailed = $derived(errored && !insights);
+	let empty = $derived(scanFoundNothing(scan));
+	let emptyReason = $derived.by(() => {
+		switch (scan.status) {
+			case 'failed':
+				return `The scan failed before it found anything for ${scan.execution_config.target_value}.`;
+			case 'cancelled':
+				return `The scan was stopped before it found anything for ${scan.execution_config.target_value}.`;
+			default:
+				return `This scan found no ${nounPlural} for ${scan.execution_config.target_value}.`;
+		}
+	});
 </script>
 
 <div class="flex flex-col gap-5">
@@ -176,28 +189,36 @@
 		{onTab}
 	/>
 
-	<AttentionPanel
-		{scan}
-		attention={insights?.attention ?? []}
-		clusters={insights?.clusters ?? []}
-		related={relatedDomains?.domains ?? []}
-		{assessed}
-		{live}
-		loading={loading && !insights}
-		errored={insightsFailed}
-		{onFilter}
-		{onRescan}
-		onRetry={loadInsights}
-	/>
-
-	{#if insightsFailed}
-		<EmptyState compact icon={TriangleAlert} title="Scan insights could not be loaded">
-			<Button variant="outline" size="sm" onclick={loadInsights}>Retry</Button>
-		</EmptyState>
+	{#if empty}
+		{#if !live}
+			<EmptyState compact icon={SearchX} title="No {nounPlural} found" description={emptyReason}>
+				<Button variant="outline" size="sm" onclick={onRescan}>Re-scan</Button>
+			</EmptyState>
+		{/if}
 	{:else}
-		<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
-		<OriginPanel exposure={origins} {onTab} />
-		<ExposurePanel {exposure} {loading} {onTab} />
-		<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} {onTab} />
+		<AttentionPanel
+			{scan}
+			attention={insights?.attention ?? []}
+			clusters={insights?.clusters ?? []}
+			related={relatedDomains?.domains ?? []}
+			{assessed}
+			{live}
+			loading={loading && !insights}
+			errored={insightsFailed}
+			{onFilter}
+			{onRescan}
+			onRetry={loadInsights}
+		/>
+
+		{#if insightsFailed}
+			<EmptyState compact icon={TriangleAlert} title="Scan insights could not be loaded">
+				<Button variant="outline" size="sm" onclick={loadInsights}>Retry</Button>
+			</EmptyState>
+		{:else}
+			<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
+			<OriginPanel exposure={origins} {onTab} />
+			<ExposurePanel {exposure} {loading} {onTab} />
+			<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} {onTab} />
+		{/if}
 	{/if}
 </div>

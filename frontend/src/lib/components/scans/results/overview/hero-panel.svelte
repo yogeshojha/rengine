@@ -11,6 +11,7 @@
 	import { elapsedSeconds, formatSeconds, isLiveStatus } from '$lib/utilities/scan-status';
 	import { etaLabel, plannedStages, stageProgress } from '$lib/utilities/scan-progress';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
+	import { scanFoundNothing } from '$lib/types/scan';
 	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
 	import type { StageCatalogEntry } from '$lib/types/scan-engine';
 	import type { LiveRun } from '$lib/stores/live-scans.svelte';
@@ -94,7 +95,8 @@
 	let noun = (n: number) => targetAssetNoun(type, n);
 	let nounPlural = $derived(targetAssetNoun(type));
 	let nounTitle = $derived(nounPlural.charAt(0).toUpperCase() + nounPlural.slice(1));
-	let showGeo = $derived(geography.length > 0 || live || !geoReady);
+	let showGeo = $derived(geography.length > 0 || (scan.ips_found > 0 && (live || !geoReady)));
+	let showKpis = $derived(live || !scanFoundNothing(scan));
 
 	let headline = $derived.by(() => {
 		switch (scan.status) {
@@ -336,54 +338,56 @@
 				class="px-5 pb-5"
 			/>
 
-			<div class="mt-auto -ml-px grid grid-cols-2 sm:grid-cols-3">
-				{#each kpis as k (k.key)}
-					<button
-						type="button"
-						class="group flex min-w-0 cursor-pointer items-end justify-between gap-3 border-t border-l px-5 py-4 text-left transition-colors hover:bg-muted/40"
-						onclick={() => onTab(k.tab, k.filter)}
-					>
-						<span class="flex min-w-0 flex-col gap-1.5">
-							<span class="truncate text-xs text-muted-foreground group-hover:text-foreground">
-								{k.label}
-							</span>
-							<span class="text-2xl leading-none font-semibold tracking-tight">
-								{k.value == null ? '—' : k.value.toLocaleString()}
-							</span>
-							<span class="flex h-4 items-center gap-2 text-xs tabular-nums">
-								{#if (k.added ?? 0) > 0 || (k.gone ?? 0) > 0}
-									{#if (k.added ?? 0) > 0}
-										<span class="inline-flex items-center text-success">
-											<ArrowUpRight class="size-3" />{k.added}
-										</span>
-									{/if}
-									{#if (k.gone ?? 0) > 0}
+			{#if showKpis}
+				<div class="mt-auto -ml-px grid grid-cols-2 sm:grid-cols-3">
+					{#each kpis as k (k.key)}
+						<button
+							type="button"
+							class="group flex min-w-0 cursor-pointer items-end justify-between gap-3 border-t border-l px-5 py-4 text-left transition-colors hover:bg-muted/40"
+							onclick={() => onTab(k.tab, k.filter)}
+						>
+							<span class="flex min-w-0 flex-col gap-1.5">
+								<span class="truncate text-xs text-muted-foreground group-hover:text-foreground">
+									{k.label}
+								</span>
+								<span class="text-2xl leading-none font-semibold tracking-tight">
+									{k.value == null ? '—' : k.value.toLocaleString()}
+								</span>
+								<span class="flex h-4 items-center gap-2 text-xs tabular-nums">
+									{#if (k.added ?? 0) > 0 || (k.gone ?? 0) > 0}
+										{#if (k.added ?? 0) > 0}
+											<span class="inline-flex items-center text-success">
+												<ArrowUpRight class="size-3" />{k.added}
+											</span>
+										{/if}
+										{#if (k.gone ?? 0) > 0}
+											<span class="inline-flex items-center text-muted-foreground">
+												<ArrowDownRight class="size-3" />{k.gone}
+											</span>
+										{/if}
+									{:else if k.diff != null}
 										<span class="inline-flex items-center text-muted-foreground">
-											<ArrowDownRight class="size-3" />{k.gone}
+											{#if k.diff > 0}<ArrowUpRight class="size-3" />{:else}<ArrowDownRight
+													class="size-3"
+												/>{/if}
+											{Math.abs(k.diff).toLocaleString()}
 										</span>
+									{:else if k.hint}
+										<span class="truncate text-muted-foreground">{k.hint}</span>
 									{/if}
-								{:else if k.diff != null}
-									<span class="inline-flex items-center text-muted-foreground">
-										{#if k.diff > 0}<ArrowUpRight class="size-3" />{:else}<ArrowDownRight
-												class="size-3"
-											/>{/if}
-										{Math.abs(k.diff).toLocaleString()}
-									</span>
-								{:else if k.hint}
-									<span class="truncate text-muted-foreground">{k.hint}</span>
-								{/if}
+								</span>
 							</span>
-						</span>
-						{#if k.trend}
-							<ScanTrendSparkline
-								values={k.trend}
-								label={k.label}
-								class="hidden h-9 w-20 shrink-0 xl:flex"
-							/>
-						{/if}
-					</button>
-				{/each}
-			</div>
+							{#if k.trend}
+								<ScanTrendSparkline
+									values={k.trend}
+									label={k.label}
+									class="hidden h-9 w-20 shrink-0 xl:flex"
+								/>
+							{/if}
+						</button>
+					{/each}
+				</div>
+			{/if}
 		</div>
 
 		{#if showGeo}

@@ -30,6 +30,9 @@ export const SCAN_COUNT_COLUMNS = {
 	endpoints: 'endpoints_found'
 } as const satisfies Record<string, keyof ScanRead>;
 
+export const scanFoundNothing = (scan: ScanRead) =>
+	Object.values(SCAN_COUNT_COLUMNS).every((c) => !scan[c]);
+
 export interface ScanActivityRead {
 	id: string;
 	scan_id: string;
