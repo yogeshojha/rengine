@@ -188,7 +188,7 @@
 {/snippet}
 
 <div
-	class="group flex cursor-pointer items-start gap-3 px-4 transition-colors {pad} {tone}"
+	class="group flex cursor-pointer items-center gap-3 px-4 transition-colors {pad} {tone}"
 	role="button"
 	tabindex={0}
 	data-row-index={index}
@@ -203,7 +203,7 @@
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="hidden shrink-0 self-center sm:flex" onclick={stopProp}>
+	<div class="hidden shrink-0 sm:flex" onclick={stopProp}>
 		<Checkbox
 			{checked}
 			onCheckedChange={() => onCheck(s.id)}
@@ -369,7 +369,7 @@
 		{/if}
 	</div>
 
-	<div class="w-12 shrink-0 pt-0.5 sm:w-16">
+	<div class="w-12 shrink-0 sm:w-16">
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}

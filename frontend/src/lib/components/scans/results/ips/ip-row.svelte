@@ -83,7 +83,7 @@
 </script>
 
 <div
-	class="group flex cursor-pointer items-start gap-3 px-4 transition-colors {pad} {tone}"
+	class="group flex cursor-pointer items-center gap-3 px-4 transition-colors {pad} {tone}"
 	role="button"
 	tabindex={0}
 	data-ip-row-index={index}
@@ -98,7 +98,7 @@
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="hidden shrink-0 self-center sm:flex" onclick={stopProp}>
+	<div class="hidden shrink-0 sm:flex" onclick={stopProp}>
 		<Checkbox
 			{checked}
 			onCheckedChange={() => onCheck(g.ip)}
@@ -227,9 +227,10 @@
 
 	{#each columns as col (col.key)}
 		<div
-			class="hidden self-center sm:flex {col.grow
-				? 'min-w-0 flex-1'
-				: 'shrink-0'} {col.width} {col.align === 'right' ? 'justify-end' : ''}"
+			class="hidden sm:flex {col.grow ? 'min-w-0 flex-1' : 'shrink-0'} {col.width} {col.align ===
+			'right'
+				? 'justify-end'
+				: ''}"
 		>
 			{#if col.key === 'ports'}
 				{#if ports.length}
@@ -268,11 +269,6 @@
 			{:else if col.key === 'hosts'}
 				{#if g.host_count}
 					<div class="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
-						{#if g.host_count > 1}
-							<span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-								{g.host_count}
-							</span>
-						{/if}
 						{#each hosts.slice(0, MAX_HOSTS) as h (h)}
 							<button
 								type="button"
