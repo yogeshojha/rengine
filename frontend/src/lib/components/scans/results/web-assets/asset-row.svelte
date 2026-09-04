@@ -642,7 +642,7 @@
 				<Button
 					variant="ghost"
 					size="icon"
-					class="hidden h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+					class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
 					href={s.http_url}
 					target="_blank"
 					rel="noreferrer noopener"
@@ -658,7 +658,7 @@
 							{...props}
 							variant="ghost"
 							size="icon"
-							class="h-8 w-8"
+							class="size-7"
 							aria-label="Actions for {s.name}"
 						>
 							<Ellipsis class="h-4 w-4" />
