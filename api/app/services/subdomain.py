@@ -35,7 +35,7 @@ from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
 from shared.definitions.asset_query import COUNT_CAP, HOST_QUERY
-from shared.definitions.ports import SENSITIVE_PORTS
+from shared.definitions.ports import SENSITIVE_PORTS, port_interest
 from shared.logging import get_logger
 from shared.models.asset_query import QueryError, QueryGroups, QueryLeads
 from shared.models.http_asset import HttpAsset
@@ -357,7 +357,7 @@ class SubdomainService:
             items.append(
                 SubdomainRow(
                     **self._to_read(s).model_dump(),
-                    ports=sorted(nums),
+                    ports=sorted(nums, key=lambda n: (port_interest(n), n)),
                     title_count=title_counts.get(s.page_title, 0),
                     favicon_count=favicon_counts.get(s.favicon_hash, 0),
                     matched_in=evidence.get(s.id, []),

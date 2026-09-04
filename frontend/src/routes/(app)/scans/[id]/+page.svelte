@@ -512,6 +512,7 @@
 						{projectId}
 						apex={scan.execution_config.target_value}
 						active={activeTab === 'web-assets'}
+						onTab={openTab}
 						bind:query={webQuery}
 					/>
 				{/key}

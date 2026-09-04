@@ -18,11 +18,14 @@
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
 	import IpHoverCard from './ip-hover-card.svelte';
+	import PortHoverCard from '../port-hover-card.svelte';
+	import PortOverflow from '../port-overflow.svelte';
 	import CountryFlag from '../country-flag.svelte';
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
+	import type { ServiceRead } from '$lib/utilities/services';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 	import { IP_LEAD_COLUMNS } from './columns';
 
@@ -40,6 +43,7 @@
 		onFilter: (token: string) => void;
 		onHosts: (filter: string) => void;
 		onServices: (filter: string) => void;
+		loadServices: (ip: string) => Promise<ServiceRead[]>;
 	}
 
 	let {
@@ -55,10 +59,11 @@
 		onOpen,
 		onFilter,
 		onHosts,
-		onServices
+		onServices,
+		loadServices
 	}: Props = $props();
 
-	const MAX_PORTS = 5;
+	const MAX_PORTS = 4;
 	const MAX_HOSTS = 2;
 
 	let ptr = $derived(g.ptr_hostnames ?? []);
@@ -230,28 +235,31 @@
 				{#if ports.length}
 					<div class="flex flex-nowrap items-center gap-0.5 overflow-hidden">
 						{#each ports.slice(0, MAX_PORTS) as p (p.id)}
-							<button type="button" onclick={(e) => pivot(e, `port:${p.number}`)}>
-								<Badge
-									variant="outline"
-									class="cursor-pointer px-1 font-mono text-[10px] font-normal hover:bg-accent {isSensitivePort(
-										p.number
-									)
-										? 'border-warning/40 text-warning'
-										: ''}"
-									title={p.service_name ? `${p.number}/${p.service_name}` : String(p.number)}
-								>
-									{p.number}
-								</Badge>
-							</button>
+							<PortHoverCard
+								port={p.number}
+								load={() => loadServices(g.ip)}
+								address={g.ip}
+								onServices={(n) => onServices(`${filterToken('ip', g.ip)} port:${n}`)}
+							>
+								<button type="button" onclick={(e) => pivot(e, `port:${p.number}`)}>
+									<Badge
+										variant="outline"
+										class="cursor-pointer px-1 font-mono text-[10px] font-normal hover:bg-accent {isSensitivePort(
+											p.number
+										)
+											? 'border-warning/40 text-warning'
+											: ''}"
+									>
+										{p.number}
+									</Badge>
+								</button>
+							</PortHoverCard>
 						{/each}
-						<OverflowPopover
-							items={ports.map((p) =>
-								p.service_name ? `${p.number}/${p.service_name}` : String(p.number)
-							)}
+						<PortOverflow
+							ports={ports.map((p) => p.number)}
 							shown={MAX_PORTS}
-							label="open ports"
-							mono
-							onSelect={(v) => onFilter(`port:${v.split('/')[0]}`)}
+							load={() => loadServices(g.ip)}
+							onSelect={(p) => onFilter(`port:${p}`)}
 						/>
 					</div>
 				{:else}

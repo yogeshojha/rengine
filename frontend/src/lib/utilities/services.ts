@@ -32,6 +32,7 @@ export interface ServiceRead {
 	status_code: number | null;
 	url: string | null;
 	title: string | null;
+	screenshot_path: string | null;
 	is_sensitive: boolean;
 	is_new: boolean;
 }

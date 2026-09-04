@@ -19,6 +19,7 @@ import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 import { activityScope } from '$lib/stores/activity-scope.svelte';
 import { activityFeed } from '$lib/stores/activity-feed.svelte';
 import { liveScans } from '$lib/stores/live-scans.svelte';
+import { clearServiceLookup } from '$lib/utilities/service-lookup';
 
 interface AuthState {
 	user: User | null;
@@ -100,6 +101,7 @@ function createAuthStore() {
 		activityScope.clear();
 		activityFeed.reset();
 		liveScans.clear();
+		clearServiceLookup();
 	}
 
 	async function register(

@@ -3,6 +3,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { screenshotUrl } from '$lib/utilities/media';
+	import { claimHover, releaseHover } from '$lib/utilities/hover-exclusive';
 
 	interface Props {
 		path: string | null | undefined;
@@ -27,6 +28,13 @@
 	});
 	let url = $derived(failed ? null : screenshotUrl(path));
 	const stop = (e: Event) => e.stopPropagation();
+
+	let hoverOpen = $state(false);
+	const closeSelf = () => (hoverOpen = false);
+	$effect(() => {
+		if (hoverOpen) claimHover(closeSelf);
+		else releaseHover(closeSelf);
+	});
 </script>
 
 {#snippet thumb(src: string, cls: string)}
@@ -53,7 +61,7 @@
 
 {#if url && interactive && preview}
 	<Dialog.Root>
-		<HoverCard.Root openDelay={220} closeDelay={80}>
+		<HoverCard.Root bind:open={hoverOpen} openDelay={220} closeDelay={80}>
 			<HoverCard.Trigger>
 				{#snippet child({ props })}
 					<span {...props} class="block {className}">

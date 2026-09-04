@@ -34,6 +34,7 @@
 	} from './web-assets/columns';
 
 	import { subdomainsApi } from '$lib/api/subdomains';
+	import { servicesOn } from '$lib/utilities/service-lookup';
 	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import type { SubdomainRead } from '$lib/types/subdomain';
@@ -59,6 +60,7 @@
 		apex?: string;
 		active?: boolean;
 		query?: WebAssetQuery;
+		onTab?: (tab: string, filter?: string) => void;
 	}
 
 	let {
@@ -66,7 +68,8 @@
 		projectId,
 		apex = '',
 		active = true,
-		query = $bindable(emptyQuery())
+		query = $bindable(emptyQuery()),
+		onTab
 	}: Props = $props();
 
 	const DEFAULT_SORT = { key: 'status', dir: 1 as const };
@@ -469,6 +472,11 @@
 		setQuery({ ...query, search: appendToken(query.search, token) });
 		drawerOpen = false;
 	}
+	function showServices(host: string, port: number) {
+		drawerOpen = false;
+		syncUrl();
+		onTab?.('services', `${exactToken('host', host)} port:${port}`);
+	}
 	function hostsWithTitle(title: string): Promise<string[]> {
 		return subdomainsApi
 			.search(
@@ -692,6 +700,8 @@
 						onFilter={applyDsl}
 						onEvidence={openEvidence}
 						{hostsWithTitle}
+						loadServices={(host) => servicesOn(projectId, scanId, 'host', host)}
+						onServices={onTab ? showServices : undefined}
 					/>
 				{/each}
 			</div>

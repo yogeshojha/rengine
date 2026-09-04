@@ -29,6 +29,7 @@
 	import { IP_COLUMNS, IP_LEAD_COLUMNS, DEFAULT_VISIBLE_IP_COLUMNS } from './ips/columns';
 
 	import { ipsApi } from '$lib/api/scan-results';
+	import { servicesOn } from '$lib/utilities/service-lookup';
 	import { ipQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import {
@@ -635,6 +636,7 @@
 						onFilter={applyDsl}
 						onHosts={showHosts}
 						onServices={showServices}
+						loadServices={(ip) => servicesOn(projectId, scanId, 'ip', ip)}
 					/>
 				{/each}
 			</div>

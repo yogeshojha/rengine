@@ -75,7 +75,7 @@ WITH hosts AS (
 ), web_top AS (
     -- the origin probe stores assets whose host is the address itself; a hostname
     -- describes the service, the default virtual host does not
-    SELECT DISTINCT ON (ip, port) ip, port, status_code, url, title
+    SELECT DISTINCT ON (ip, port) ip, port, status_code, url, title, screenshot_path
     FROM http_assets
     WHERE scan_id = :sid AND ip IS NOT NULL
     ORDER BY ip, port, (host = ip) ASC, (scheme = 'https') DESC,
@@ -114,7 +114,8 @@ SELECT p.id AS id,
        coalesce(c.web_count, 0) AS web_count,
        w.status_code AS status_code,
        w.url AS url,
-       w.title AS title
+       w.title AS title,
+       w.screenshot_path AS screenshot_path
 FROM ports p
 LEFT JOIN ip_addresses x ON x.scan_id = :sid AND x.ip = p.ip
 LEFT JOIN hosts h ON h.ip = p.ip
@@ -243,6 +244,7 @@ class PortService:
                 column("status_code", Integer),
                 column("url", String),
                 column("title", String),
+                column("screenshot_path", String),
             )
             .bindparams(
                 bindparam("sid", scan_id),
@@ -418,6 +420,7 @@ class PortService:
                     status_code=r["status_code"],
                     url=r["url"],
                     title=r["title"],
+                    screenshot_path=r["screenshot_path"],
                     is_sensitive=bool(r["sensitive"]),
                     is_new=baseline and (r["ip"], int(r["port"])) not in seen,
                 )

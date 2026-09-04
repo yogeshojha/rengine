@@ -165,6 +165,7 @@ class ServiceRead(BaseModel):
     status_code: int | None = None
     url: str | None = None
     title: str | None = None
+    screenshot_path: str | None = None
     is_sensitive: bool = False
     is_new: bool = False
 

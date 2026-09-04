@@ -25,6 +25,8 @@
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import HostHoverCard from './host-hover-card.svelte';
 	import SamePagePopover from './same-page-popover.svelte';
+	import PortHoverCard from '../port-hover-card.svelte';
+	import PortOverflow from '../port-overflow.svelte';
 	import ScreenshotThumb from '../screenshot-thumb.svelte';
 	import TechIcon from '../tech-icon.svelte';
 	import {
@@ -53,6 +55,7 @@
 	} from '$lib/utilities/scan-insights';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { SubdomainRead } from '$lib/types/subdomain';
+	import type { ServiceRead } from '$lib/utilities/services';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 
 	interface Props {
@@ -70,6 +73,8 @@
 		onFilter: (token: string) => void;
 		onEvidence: (sub: SubdomainRead, field: string) => void;
 		hostsWithTitle: (title: string) => Promise<string[]>;
+		loadServices: (host: string) => Promise<ServiceRead[]>;
+		onServices?: (host: string, port: number) => void;
 	}
 
 	let {
@@ -86,7 +91,9 @@
 		onHost,
 		onFilter,
 		onEvidence,
-		hostsWithTitle
+		hostsWithTitle,
+		loadServices,
+		onServices
 	}: Props = $props();
 
 	const ALWAYS_VISIBLE = ['host', 'title', 'cname'];
@@ -498,24 +505,29 @@
 				{#if ports.length}
 					<div class="flex flex-wrap items-center gap-1">
 						{#each ports.slice(0, MAX_PORTS) as p (p)}
-							<button type="button" onclick={(e) => pivot(e, filterToken('port', String(p)))}>
-								<Badge
-									variant="outline"
-									class="cursor-pointer px-1 font-mono text-[10px] font-normal hover:bg-accent {isSensitivePort(
-										p
-									)
-										? 'border-warning/40 text-warning'
-										: ''}"
-								>
-									{p}
-								</Badge>
-							</button>
+							<PortHoverCard
+								port={p}
+								load={() => loadServices(s.name)}
+								onServices={onServices ? (n) => onServices(s.name, n) : undefined}
+							>
+								<button type="button" onclick={(e) => pivot(e, filterToken('port', String(p)))}>
+									<Badge
+										variant="outline"
+										class="cursor-pointer px-1 font-mono text-[10px] font-normal hover:bg-accent {isSensitivePort(
+											p
+										)
+											? 'border-warning/40 text-warning'
+											: ''}"
+									>
+										{p}
+									</Badge>
+								</button>
+							</PortHoverCard>
 						{/each}
-						<OverflowPopover
-							items={ports.map(String)}
+						<PortOverflow
+							{ports}
 							shown={MAX_PORTS}
-							label="open ports"
-							mono
+							load={() => loadServices(s.name)}
 							onSelect={(p) => onFilter(filterToken('port', String(p)))}
 						/>
 					</div>

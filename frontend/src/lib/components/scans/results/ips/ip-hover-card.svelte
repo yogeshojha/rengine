@@ -6,6 +6,7 @@
 	import CountryFlag from '../country-flag.svelte';
 	import { isSensitivePort } from '$lib/utilities/scan-correlation';
 	import type { IpGroupRead } from '$lib/utilities/scan-insights';
+	import { claimHover, releaseHover } from '$lib/utilities/hover-exclusive';
 
 	interface Props {
 		group: IpGroupRead;
@@ -20,9 +21,16 @@
 	let network = $derived(
 		[group.asn ? `AS${group.asn}` : null, group.asn_org].filter(Boolean).join(' · ')
 	);
+
+	let hoverOpen = $state(false);
+	const closeSelf = () => (hoverOpen = false);
+	$effect(() => {
+		if (hoverOpen) claimHover(closeSelf);
+		else releaseHover(closeSelf);
+	});
 </script>
 
-<HoverCard.Root openDelay={320} closeDelay={80}>
+<HoverCard.Root bind:open={hoverOpen} openDelay={320} closeDelay={80}>
 	<HoverCard.Trigger>
 		{#snippet child({ props })}
 			<span {...props}>{@render children()}</span>

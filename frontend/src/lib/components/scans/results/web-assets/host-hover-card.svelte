@@ -7,6 +7,7 @@
 	import { providerFor, PROVIDER_KIND_ICONS } from '$lib/config/hosting-providers';
 	import { httpStatusClass, httpStatusReason, STATUS_DOT } from '$lib/utilities/scan-correlation';
 	import type { SubdomainRead } from '$lib/types/subdomain';
+	import { claimHover, releaseHover } from '$lib/utilities/hover-exclusive';
 
 	interface Props {
 		sub: SubdomainRead;
@@ -24,10 +25,17 @@
 	let redirected = $derived(!!sub.final_url && sub.final_url !== sub.http_url);
 	let provider = $derived(providerFor(sub.cname));
 	let ProviderIcon = $derived(provider ? PROVIDER_KIND_ICONS[provider.kind] : null);
+
+	let hoverOpen = $state(false);
+	const closeSelf = () => (hoverOpen = false);
+	$effect(() => {
+		if (hoverOpen) claimHover(closeSelf);
+		else releaseHover(closeSelf);
+	});
 </script>
 
 {#if rich}
-	<HoverCard.Root openDelay={320} closeDelay={80}>
+	<HoverCard.Root bind:open={hoverOpen} openDelay={320} closeDelay={80}>
 		<HoverCard.Trigger>
 			{#snippet child({ props })}
 				<span {...props}>{@render children()}</span>

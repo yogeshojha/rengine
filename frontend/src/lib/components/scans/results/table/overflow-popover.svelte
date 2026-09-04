@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import * as Popover from '$lib/components/ui/popover';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -12,7 +13,10 @@
 		mono?: boolean;
 		icons?: boolean;
 		onSelect?: (value: string) => void;
+		onOpenChange?: (open: boolean) => void;
+		item?: Snippet<[string]>;
 		class?: string;
+		contentClass?: string;
 	}
 
 	let {
@@ -22,7 +26,10 @@
 		mono = false,
 		icons = false,
 		onSelect,
-		class: className
+		onOpenChange,
+		item,
+		class: className,
+		contentClass = 'w-64'
 	}: Props = $props();
 
 	let open = $state(false);
@@ -36,7 +43,7 @@
 </script>
 
 {#if hidden > 0}
-	<Popover.Root bind:open>
+	<Popover.Root bind:open {onOpenChange}>
 		<Popover.Trigger
 			openOnHover
 			openDelay={160}
@@ -51,14 +58,14 @@
 		>
 			+{hidden}
 		</Popover.Trigger>
-		<Popover.Content class="w-64 p-0" align="start" onclick={stop}>
+		<Popover.Content class="{contentClass} p-0" align="start" onclick={stop}>
 			<div class="border-b border-border px-3 py-2 text-xs font-medium">
 				{items.length}
 				{label}
 			</div>
 			<ScrollArea class={items.length > 8 ? 'h-64' : ''}>
 				<ul class="flex flex-col p-1">
-					{#each items as item (item)}
+					{#each items as entry (entry)}
 						<li>
 							{#if onSelect}
 								<button
@@ -66,24 +73,32 @@
 									class="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-accent {mono
 										? 'font-mono'
 										: ''}"
-									onclick={() => pick(item)}
+									onclick={() => pick(entry)}
 								>
-									<span class="flex min-w-0 items-center gap-1.5">
-										{#if icons}<span class="flex w-3 shrink-0 justify-center">
-												<TechIcon name={item} />
-											</span>{/if}
-										<span class="truncate">{item}</span>
-									</span>
+									{#if item}
+										{@render item(entry)}
+									{:else}
+										<span class="flex min-w-0 items-center gap-1.5">
+											{#if icons}<span class="flex w-3 shrink-0 justify-center">
+													<TechIcon name={entry} />
+												</span>{/if}
+											<span class="truncate">{entry}</span>
+										</span>
+									{/if}
 									<ChevronRight class="size-3 shrink-0 text-muted-foreground" />
 								</button>
 							{:else}
 								<span
 									class="flex items-center gap-1.5 px-2 py-1.5 text-xs {mono ? 'font-mono' : ''}"
 								>
-									{#if icons}<span class="flex w-3 shrink-0 justify-center">
-											<TechIcon name={item} />
-										</span>{/if}
-									<span class="truncate">{item}</span>
+									{#if item}
+										{@render item(entry)}
+									{:else}
+										{#if icons}<span class="flex w-3 shrink-0 justify-center">
+												<TechIcon name={entry} />
+											</span>{/if}
+										<span class="truncate">{entry}</span>
+									{/if}
 								</span>
 							{/if}
 						</li>

@@ -407,6 +407,8 @@ CDN_EDGE_PORTS: tuple[int, ...] = (
 
 
 _WEB_PORT_SET: frozenset[int] = frozenset(WEB_PORTS)
+_SENSITIVE_SET: frozenset[int] = frozenset(SENSITIVE_PORTS)
+_STANDARD_WEB: frozenset[int] = frozenset({80, 443})
 _BY_NAME: dict[str, ServiceSpec] = {}
 for _spec in WELL_KNOWN.values():
     _BY_NAME.setdefault(_spec.name, _spec)
@@ -482,6 +484,15 @@ def service_class(service: str | None, port: int, *, is_http: bool = False) -> s
 def service_label(service: str | None) -> str:
     named = _BY_NAME.get(service or "")
     return named.label if named else (service or "Unknown")
+
+
+def port_interest(port: int) -> int:
+    """Display rank, mirroring the exposure panel: sensitive, non-web, off-port web, web."""
+    if port in _SENSITIVE_SET:
+        return 0
+    if port not in _WEB_PORT_SET:
+        return 1
+    return 3 if port in _STANDARD_WEB else 2
 
 
 def likely_tls(port: int) -> bool:

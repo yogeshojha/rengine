@@ -36,7 +36,7 @@ from app.services.asset_query import (
 )
 from app.services.port import PortService
 from shared.definitions.asset_query import COUNT_CAP, IP_EXPOSURE, IP_QUERY
-from shared.definitions.ports import SENSITIVE_PORTS
+from shared.definitions.ports import SENSITIVE_PORTS, port_interest
 from shared.logging import get_logger
 from shared.models.asset_query import QueryError, QueryGroups, QueryLeads
 from shared.models.http_asset import HttpAsset
@@ -186,7 +186,7 @@ class IpAddressService:
             .all()
         )
         ports_by_ip: dict[str, list] = {}
-        for p in port_rows:
+        for p in sorted(port_rows, key=lambda r: (port_interest(r.number), r.number)):
             ports_by_ip.setdefault(p.ip, []).append(ps._to_read(p))
 
         host_rows = (
