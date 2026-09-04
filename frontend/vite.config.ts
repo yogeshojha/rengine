@@ -1,10 +1,12 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { compile } from 'svelte/compiler';
 import { defineConfig, type Plugin } from 'vite';
 
 // vite-plugin-svelte 6.x can serve the raw .svelte source for a component's `?type=style&lang.css`
-// virtual module (compiled-CSS cache miss); recover the <style> body before @tailwindcss/vite parses
-// its <script> as CSS ("Invalid declaration"). Fixed upstream in vite-plugin-svelte 7.1.x (needs Vite 8).
+// virtual module (compiled-CSS cache miss); compile it so `:global()` is unwrapped and local rules stay
+// scoped, before @tailwindcss/vite parses its <script> as CSS ("Invalid declaration").
+// Fixed upstream in vite-plugin-svelte 7.1.x (needs Vite 8).
 function svelteStyleCssLeakGuard(): Plugin {
 	return {
 		name: 'svelte-style-css-leak-guard',
@@ -12,8 +14,12 @@ function svelteStyleCssLeakGuard(): Plugin {
 		transform(code, id) {
 			if (!/\.svelte\?.*\btype=style\b/.test(id)) return;
 			if (!/<\/?(?:script|style|template)\b/i.test(code)) return;
-			const style = code.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-			return { code: style ? style[1] : '', map: null };
+			const filename = id.split('?')[0];
+			try {
+				return { code: compile(code, { filename, generate: 'client' }).css?.code ?? '', map: null };
+			} catch {
+				return { code: '', map: null };
+			}
 		}
 	};
 }
