@@ -2,7 +2,7 @@
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import type { TableColumn } from './columns';
+	import { ACTIONS_BODY, ACTIONS_PIN, type TableColumn } from './columns';
 
 	interface Props {
 		lead: TableColumn[];
@@ -68,5 +68,7 @@
 			{@render cell(col)}
 		</div>
 	{/each}
-	<div class="w-8 shrink-0 sm:w-14"></div>
+	<div class={ACTIONS_PIN}>
+		<div class="{ACTIONS_BODY} bg-muted/30"></div>
+	</div>
 </div>

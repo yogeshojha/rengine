@@ -53,7 +53,7 @@
 	} from '$lib/utilities/scan-insights';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { SubdomainRead } from '$lib/types/subdomain';
-	import type { TableColumn } from '../table/columns';
+	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 
 	interface Props {
 		sub: SubdomainRead;
@@ -126,13 +126,8 @@
 		])
 	);
 	let statusCls = $derived(httpStatusClass(s.http_status));
-	let tone = $derived(
-		selected || checked
-			? 'bg-primary/5 hover:bg-primary/10'
-			: focused
-				? 'bg-muted/40 shadow-[inset_2px_0_0_0_var(--primary)]'
-				: 'hover:bg-muted/30'
-	);
+	let tone = $derived(rowTone(selected || checked, focused));
+	let pin = $derived(pinTone(selected || checked, focused));
 
 	function pivot(e: Event, token: string) {
 		stopProp(e);
@@ -571,81 +566,83 @@
 		</div>
 	{/each}
 
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div
-		class="flex w-8 shrink-0 items-center justify-end gap-0.5 self-center sm:w-14"
-		onclick={stopProp}
-	>
-		{#if s.http_url}
-			<Button
-				variant="ghost"
-				size="icon"
-				class="hidden h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
-				href={s.http_url}
-				target="_blank"
-				rel="noreferrer noopener"
-				aria-label="Open {s.name} in browser"
-			>
-				<ExternalLink class="h-4 w-4" />
-			</Button>
-		{/if}
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="ghost"
-						size="icon"
-						class="h-8 w-8"
-						aria-label="Actions for {s.name}"
-					>
-						<Ellipsis class="h-4 w-4" />
-					</Button>
-				{/snippet}
-			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end" class="w-48">
-				<DropdownMenu.Group>
-					{#if s.http_url}
-						<DropdownMenu.Item class="gap-2">
-							{#snippet child({ props })}
-								<a {...props} href={s.http_url} target="_blank" rel="noreferrer noopener">
-									<ExternalLink class="h-4 w-4" /> Open in browser
-								</a>
-							{/snippet}
-						</DropdownMenu.Item>
-					{/if}
-					<DropdownMenu.Item onclick={() => copy(s.name)} class="gap-2">
-						<Copy class="h-4 w-4" /> Copy host
-					</DropdownMenu.Item>
-					{#if s.http_url}
-						<DropdownMenu.Item onclick={() => copy(s.http_url ?? '')} class="gap-2">
-							<Link class="h-4 w-4" /> Copy URL
-						</DropdownMenu.Item>
-					{/if}
-				</DropdownMenu.Group>
-				{#if ips[0] || s.cname || s.favicon_hash}
-					<DropdownMenu.Separator />
+	<div class={ACTIONS_PIN}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="{ACTIONS_BODY} {pin}" onclick={stopProp}>
+			{#if s.http_url}
+				<Button
+					variant="ghost"
+					size="icon"
+					class="hidden h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+					href={s.http_url}
+					target="_blank"
+					rel="noreferrer noopener"
+					aria-label="Open {s.name} in browser"
+				>
+					<ExternalLink class="h-4 w-4" />
+				</Button>
+			{/if}
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon"
+							class="h-8 w-8"
+							aria-label="Actions for {s.name}"
+						>
+							<Ellipsis class="h-4 w-4" />
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-48">
 					<DropdownMenu.Group>
-						<DropdownMenu.Label>Pivot</DropdownMenu.Label>
-						{#if ips[0]}
-							<DropdownMenu.Item onclick={() => onFilter(filterToken('ip', ips[0]))} class="gap-2">
-								<Filter class="h-4 w-4" /> Same IP
+						{#if s.http_url}
+							<DropdownMenu.Item class="gap-2">
+								{#snippet child({ props })}
+									<a {...props} href={s.http_url} target="_blank" rel="noreferrer noopener">
+										<ExternalLink class="h-4 w-4" /> Open in browser
+									</a>
+								{/snippet}
 							</DropdownMenu.Item>
 						{/if}
-						{#if s.cname}
-							<DropdownMenu.Item onclick={() => onFilter(cnameToken)} class="gap-2">
-								<Filter class="h-4 w-4" /> Same CNAME
-							</DropdownMenu.Item>
-						{/if}
-						{#if s.favicon_hash}
-							<DropdownMenu.Item onclick={() => onFilter(faviconToken)} class="gap-2">
-								<Filter class="h-4 w-4" /> Same favicon
+						<DropdownMenu.Item onclick={() => copy(s.name)} class="gap-2">
+							<Copy class="h-4 w-4" /> Copy host
+						</DropdownMenu.Item>
+						{#if s.http_url}
+							<DropdownMenu.Item onclick={() => copy(s.http_url ?? '')} class="gap-2">
+								<Link class="h-4 w-4" /> Copy URL
 							</DropdownMenu.Item>
 						{/if}
 					</DropdownMenu.Group>
-				{/if}
-			</DropdownMenu.Content>
-		</DropdownMenu.Root>
+					{#if ips[0] || s.cname || s.favicon_hash}
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
+							<DropdownMenu.Label>Pivot</DropdownMenu.Label>
+							{#if ips[0]}
+								<DropdownMenu.Item
+									onclick={() => onFilter(filterToken('ip', ips[0]))}
+									class="gap-2"
+								>
+									<Filter class="h-4 w-4" /> Same IP
+								</DropdownMenu.Item>
+							{/if}
+							{#if s.cname}
+								<DropdownMenu.Item onclick={() => onFilter(cnameToken)} class="gap-2">
+									<Filter class="h-4 w-4" /> Same CNAME
+								</DropdownMenu.Item>
+							{/if}
+							{#if s.favicon_hash}
+								<DropdownMenu.Item onclick={() => onFilter(faviconToken)} class="gap-2">
+									<Filter class="h-4 w-4" /> Same favicon
+								</DropdownMenu.Item>
+							{/if}
+						</DropdownMenu.Group>
+					{/if}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</div>
 	</div>
 </div>

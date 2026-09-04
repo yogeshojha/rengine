@@ -13,15 +13,12 @@ export const IP_LEAD_COLUMNS: TableColumn[] = [
 		key: 'network',
 		label: 'Network',
 		sort: 'asn',
-		width: 'hidden min-w-0 shrink-0 sm:block sm:w-60'
+		width: 'hidden min-w-0 shrink-0 sm:block sm:w-48'
 	}
 ];
 
 export const IP_COLUMNS: TableColumn[] = [
-	// capped so the default column set still fits a ~1240px content area without
-	// horizontal scroll; the row sizes to content inside the ScrollArea, so an
-	// uncapped flex-1 pushes Country off screen
-	{ key: 'hosts', label: 'Hosts', sort: 'hosts', width: 'min-w-56 max-w-[29rem]', grow: true },
+	{ key: 'hosts', label: 'Hosts', sort: 'hosts', width: 'min-w-56 max-w-[20rem]', grow: true },
 	{ key: 'ports', label: 'Ports', sort: 'ports', width: 'w-44' },
 	{ key: 'country', label: 'Country', sort: 'country', width: 'w-20' },
 	{ key: 'prefix', label: 'Prefix', width: 'w-36' },

@@ -6,7 +6,6 @@
 	import Globe from '@lucide/svelte/icons/globe';
 	import Network from '@lucide/svelte/icons/network';
 	import Server from '@lucide/svelte/icons/server';
-	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Lock from '@lucide/svelte/icons/lock';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -33,7 +32,7 @@
 		serviceClassLabel
 	} from '$lib/config/service-classes';
 	import type { ServiceRead } from '$lib/utilities/services';
-	import type { TableColumn } from '../table/columns';
+	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 	import { SERVICE_LEAD_COLUMNS } from './columns';
 
 	interface Props {
@@ -74,12 +73,11 @@
 	let endpoint = $derived(`${s.ip}:${s.port}`);
 	let passive = $derived(s.source === PortSource.INTERNETDB);
 	let software = $derived(s.product ? (s.version ? `${s.product} ${s.version}` : s.product) : null);
-	let tone = $derived(
-		selected || checked
-			? 'bg-primary/5 hover:bg-primary/10'
-			: focused
-				? 'bg-muted/40 shadow-[inset_2px_0_0_0_var(--primary)]'
-				: 'hover:bg-muted/30'
+	let tone = $derived(rowTone(selected || checked, focused));
+	let pin = $derived(pinTone(selected || checked, focused));
+	let fill = $derived(SERVICE_CLASS_FILL[s.service_class]);
+	let tile = $derived(
+		`background:color-mix(in oklch, ${fill} 14%, transparent);box-shadow:inset 0 0 0 1px color-mix(in oklch, ${fill} 30%, transparent)`
 	);
 
 	function pivot(e: Event, token: string) {
@@ -120,32 +118,42 @@
 
 	<div class="flex flex-col gap-1 {SERVICE_LEAD_COLUMNS[0].width}">
 		<div class="flex flex-wrap items-start gap-x-1.5 gap-y-1">
-			<span class="flex min-w-0 items-start gap-1.5">
+			<span class="flex min-w-0 items-start gap-2">
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						{#snippet child({ props })}
-							<span {...props} class="flex h-5 shrink-0 items-center gap-1.5">
-								<span
-									class="size-1.5 rounded-full"
-									style="background:{SERVICE_CLASS_FILL[s.service_class]}"
-								></span>
-								<ServiceIcon
-									service={s.service_name}
-									serviceClass={s.service_class}
-									product={s.product}
-									class="size-3.5"
-								/>
+							<span {...props} class="flex h-5 shrink-0 items-center">
+								<span class="flex size-6 items-center justify-center rounded-md" style={tile}>
+									<ServiceIcon
+										service={s.service_name}
+										serviceClass={s.service_class}
+										product={s.product}
+										class="size-4"
+									/>
+								</span>
 							</span>
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content side="right">{serviceClassLabel(s.service_class)}</Tooltip.Content>
 				</Tooltip.Root>
-				<span class="min-w-0 leading-5 wrap-anywhere">
-					<span class="font-mono text-sm leading-5 font-medium">
-						<HighlightText text={s.ip} {term} /><span class="text-muted-foreground">:</span
-						><HighlightText text={String(s.port)} {term} />
-					</span>
-				</span>
+				<Tooltip.Root open={s.is_sensitive ? undefined : false}>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<span {...props} class="min-w-0 leading-5 wrap-anywhere">
+								<span
+									class="font-mono text-sm leading-5 font-medium {s.is_sensitive
+										? 'text-warning'
+										: ''}"
+								>
+									<HighlightText text={s.ip} {term} /><span
+										class={s.is_sensitive ? 'text-warning/60' : 'text-muted-foreground'}>:</span
+									><HighlightText text={String(s.port)} {term} />
+								</span>
+							</span>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>An administrative or datastore port</Tooltip.Content>
+				</Tooltip.Root>
 			</span>
 
 			{#if s.service_name}
@@ -193,23 +201,6 @@
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content>Not open in an earlier scan of this target</Tooltip.Content>
-				</Tooltip.Root>
-			{/if}
-			{#if s.is_sensitive}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<button
-								{...props}
-								type="button"
-								class="flex h-5 shrink-0 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 text-xs font-medium text-warning"
-								onclick={(e) => pivot(e, 'is:sensitive')}
-							>
-								<TriangleAlert class="size-3" /> sensitive
-							</button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content>An administrative or datastore port</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
 			{#if s.tls}
@@ -269,9 +260,11 @@
 				onclick={(e) => pivot(e, exactToken('product', s.product ?? ''))}
 				title={s.banner ?? software}
 			>
-				<span class="flex items-center gap-1.5">
-					<TechIcon name={productBrand(s.product)} class="size-3.5 shrink-0" />
-					<span class="truncate text-xs hover:underline">
+				<span class="flex items-start gap-1.5">
+					<span class="flex h-4 shrink-0 items-center">
+						<TechIcon name={productBrand(s.product)} class="size-3.5" />
+					</span>
+					<span class="min-w-0 text-xs leading-4 wrap-anywhere hover:underline">
 						<HighlightText text={software} {term} />
 					</span>
 				</span>
@@ -289,10 +282,12 @@
 		>
 			{#if col.key === 'hosts'}
 				{#if s.host_count}
-					<div class="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
-						<span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-							{s.host_count}
-						</span>
+					<div class="flex min-w-0 flex-wrap items-center gap-1">
+						{#if s.host_count > 1}
+							<span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+								{s.host_count}
+							</span>
+						{/if}
 						{#each hosts.slice(0, MAX_HOSTS) as h (h)}
 							<button
 								type="button"
@@ -304,7 +299,7 @@
 							>
 								<Badge
 									variant="outline"
-									class="max-w-32 cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
+									class="max-w-full cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
 								>
 									<span class="truncate">{h}</span>
 								</Badge>
@@ -396,85 +391,87 @@
 		</div>
 	{/each}
 
-	<div class="flex w-8 shrink-0 items-center justify-end gap-0.5 self-center sm:w-14">
-		{#if s.url}
-			<Tooltip.Root>
-				<Tooltip.Trigger>
+	<div class={ACTIONS_PIN}>
+		<div class="{ACTIONS_BODY} {pin}">
+			{#if s.url}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon-sm"
+								href={s.url}
+								target="_blank"
+								rel="noopener noreferrer"
+								aria-label="Open {s.url}"
+								class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+								onclick={stopProp}
+							>
+								<ExternalLink />
+							</Button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Open in a new tab</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger onclick={stopProp} onkeydown={stopProp}>
 					{#snippet child({ props })}
 						<Button
 							{...props}
 							variant="ghost"
 							size="icon-sm"
-							href={s.url}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="Open {s.url}"
-							class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
-							onclick={stopProp}
+							class="size-7 text-muted-foreground"
+							aria-label="More actions for {endpoint}"
 						>
-							<ExternalLink />
+							<Ellipsis />
 						</Button>
 					{/snippet}
-				</Tooltip.Trigger>
-				<Tooltip.Content>Open in a new tab</Tooltip.Content>
-			</Tooltip.Root>
-		{/if}
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger onclick={stopProp} onkeydown={stopProp}>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="ghost"
-						size="icon-sm"
-						class="size-7 text-muted-foreground"
-						aria-label="More actions for {endpoint}"
-					>
-						<Ellipsis />
-					</Button>
-				{/snippet}
-			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end" class="w-56" onclick={stopProp}>
-				<DropdownMenu.Group>
-					<DropdownMenu.Item onclick={() => copy(endpoint)}>
-						<Copy /> Copy address and port
-					</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={() => onAddress(filterToken('ip', s.ip))}>
-						<Server /> Address in IPs
-					</DropdownMenu.Item>
-					{#if s.host_count}
-						<DropdownMenu.Item onclick={() => onHosts(filterToken('ip', s.ip))}>
-							<Globe /> Hosts in Web Assets
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-56" onclick={stopProp}>
+					<DropdownMenu.Group>
+						<DropdownMenu.Item onclick={() => copy(endpoint)}>
+							<Copy /> Copy address and port
 						</DropdownMenu.Item>
-					{/if}
-				</DropdownMenu.Group>
-				<DropdownMenu.Separator />
-				<DropdownMenu.Group>
-					<DropdownMenu.Label>Pivot</DropdownMenu.Label>
-					<DropdownMenu.Item onclick={() => onFilter(`port:${s.port}`)}>
-						<Filter /> Same port
-					</DropdownMenu.Item>
-					{#if s.service_name}
-						<DropdownMenu.Item
-							onclick={() => onFilter(exactToken('service', s.service_name ?? ''))}
-						>
-							<Filter /> Same service
+						<DropdownMenu.Item onclick={() => onAddress(filterToken('ip', s.ip))}>
+							<Server /> Address in IPs
 						</DropdownMenu.Item>
-					{/if}
-					{#if s.product}
-						<DropdownMenu.Item onclick={() => onFilter(exactToken('product', s.product ?? ''))}>
-							<Filter /> Same software
+						{#if s.host_count}
+							<DropdownMenu.Item onclick={() => onHosts(filterToken('ip', s.ip))}>
+								<Globe /> Hosts in Web Assets
+							</DropdownMenu.Item>
+						{/if}
+					</DropdownMenu.Group>
+					<DropdownMenu.Separator />
+					<DropdownMenu.Group>
+						<DropdownMenu.Label>Pivot</DropdownMenu.Label>
+						<DropdownMenu.Item onclick={() => onFilter(`port:${s.port}`)}>
+							<Filter /> Same port
 						</DropdownMenu.Item>
-					{/if}
-					{#if s.asn}
-						<DropdownMenu.Item onclick={() => onFilter(`asn:${s.asn}`)}>
-							<Network /> Same network
+						{#if s.service_name}
+							<DropdownMenu.Item
+								onclick={() => onFilter(exactToken('service', s.service_name ?? ''))}
+							>
+								<Filter /> Same service
+							</DropdownMenu.Item>
+						{/if}
+						{#if s.product}
+							<DropdownMenu.Item onclick={() => onFilter(exactToken('product', s.product ?? ''))}>
+								<Filter /> Same software
+							</DropdownMenu.Item>
+						{/if}
+						{#if s.asn}
+							<DropdownMenu.Item onclick={() => onFilter(`asn:${s.asn}`)}>
+								<Network /> Same network
+							</DropdownMenu.Item>
+						{/if}
+						<DropdownMenu.Item onclick={() => onFilter(`class:${s.service_class}`)}>
+							<Filter /> Same service class
 						</DropdownMenu.Item>
-					{/if}
-					<DropdownMenu.Item onclick={() => onFilter(`class:${s.service_class}`)}>
-						<Filter /> Same service class
-					</DropdownMenu.Item>
-				</DropdownMenu.Group>
-			</DropdownMenu.Content>
-		</DropdownMenu.Root>
+					</DropdownMenu.Group>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</div>
 	</div>
 </div>

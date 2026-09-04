@@ -23,7 +23,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
-	import type { TableColumn } from '../table/columns';
+	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 	import { IP_LEAD_COLUMNS } from './columns';
 
 	interface Props {
@@ -59,19 +59,14 @@
 	}: Props = $props();
 
 	const MAX_PORTS = 5;
-	const MAX_HOSTS = 3;
+	const MAX_HOSTS = 2;
 
 	let ptr = $derived(g.ptr_hostnames ?? []);
 	let ports = $derived(g.ports ?? []);
 	let hosts = $derived(g.hosts ?? []);
 	let priv = $derived(isPrivateIp(g.ip));
-	let tone = $derived(
-		selected || checked
-			? 'bg-primary/5 hover:bg-primary/10'
-			: focused
-				? 'bg-muted/40 shadow-[inset_2px_0_0_0_var(--primary)]'
-				: 'hover:bg-muted/30'
-	);
+	let tone = $derived(rowTone(selected || checked, focused));
+	let pin = $derived(pinTone(selected || checked, focused));
 
 	function pivot(e: Event, token: string) {
 		stopProp(e);
@@ -265,9 +260,11 @@
 			{:else if col.key === 'hosts'}
 				{#if g.host_count}
 					<div class="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
-						<span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-							{g.host_count}
-						</span>
+						{#if g.host_count > 1}
+							<span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+								{g.host_count}
+							</span>
+						{/if}
 						{#each hosts.slice(0, MAX_HOSTS) as h (h)}
 							<button
 								type="button"
@@ -279,7 +276,7 @@
 							>
 								<Badge
 									variant="outline"
-									class="max-w-32 cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
+									class="max-w-44 cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
 								>
 									<span class="truncate">{h}</span>
 								</Badge>
@@ -336,89 +333,91 @@
 		</div>
 	{/each}
 
-	<div class="flex w-8 shrink-0 items-center justify-end gap-0.5 self-center sm:w-14">
-		{#if g.host_count}
-			<Tooltip.Root>
-				<Tooltip.Trigger>
+	<div class={ACTIONS_PIN}>
+		<div class="{ACTIONS_BODY} {pin}">
+			{#if g.host_count}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon-sm"
+								class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+								onclick={(e) => {
+									stopProp(e);
+									onHosts(filterToken('ip', g.ip));
+								}}
+								aria-label="Show hosts on {g.ip} in Web Assets"
+							>
+								<Globe />
+							</Button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Hosts in Web Assets</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger onclick={stopProp} onkeydown={stopProp}>
 					{#snippet child({ props })}
 						<Button
 							{...props}
 							variant="ghost"
 							size="icon-sm"
-							class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
-							onclick={(e) => {
-								stopProp(e);
-								onHosts(filterToken('ip', g.ip));
-							}}
-							aria-label="Show hosts on {g.ip} in Web Assets"
+							class="size-7 text-muted-foreground"
+							aria-label="More actions for {g.ip}"
 						>
-							<Globe />
+							<Ellipsis />
 						</Button>
 					{/snippet}
-				</Tooltip.Trigger>
-				<Tooltip.Content>Hosts in Web Assets</Tooltip.Content>
-			</Tooltip.Root>
-		{/if}
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger onclick={stopProp} onkeydown={stopProp}>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="ghost"
-						size="icon-sm"
-						class="size-7 text-muted-foreground"
-						aria-label="More actions for {g.ip}"
-					>
-						<Ellipsis />
-					</Button>
-				{/snippet}
-			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end" class="w-52" onclick={stopProp}>
-				<DropdownMenu.Group>
-					<DropdownMenu.Item onclick={() => copy(g.ip)}>
-						<Copy /> Copy address
-					</DropdownMenu.Item>
-					{#if g.host_count}
-						<DropdownMenu.Item onclick={() => onHosts(filterToken('ip', g.ip))}>
-							<Globe /> Hosts in Web Assets
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="w-52" onclick={stopProp}>
+					<DropdownMenu.Group>
+						<DropdownMenu.Item onclick={() => copy(g.ip)}>
+							<Copy /> Copy address
 						</DropdownMenu.Item>
-					{/if}
-					{#if g.port_count}
-						<DropdownMenu.Item onclick={() => onServices(filterToken('ip', g.ip))}>
-							<Plug /> Services on this address
-						</DropdownMenu.Item>
-					{/if}
-				</DropdownMenu.Group>
-				<DropdownMenu.Separator />
-				<DropdownMenu.Group>
-					<DropdownMenu.Label>Pivot</DropdownMenu.Label>
-					{#if g.asn}
-						<DropdownMenu.Item onclick={() => onFilter(`asn:${g.asn}`)}>
-							<Network /> Same network
-						</DropdownMenu.Item>
-					{/if}
-					{#if g.prefix}
-						<DropdownMenu.Item onclick={() => onFilter(exactToken('prefix', g.prefix ?? ''))}>
-							<Network /> Same prefix
-						</DropdownMenu.Item>
-					{/if}
-					{#if g.country}
-						<DropdownMenu.Item onclick={() => onFilter(exactToken('country', g.country ?? ''))}>
-							<Filter /> Same country
-						</DropdownMenu.Item>
-					{/if}
-					{#if priv}
-						<DropdownMenu.Item onclick={() => onFilter('is:private')}>
-							<Lock /> Private addresses
-						</DropdownMenu.Item>
-					{/if}
-					{#if g.cdn_name}
-						<DropdownMenu.Item onclick={() => onFilter(filterToken('cdn', g.cdn_name ?? ''))}>
-							<Filter /> Same CDN
-						</DropdownMenu.Item>
-					{/if}
-				</DropdownMenu.Group>
-			</DropdownMenu.Content>
-		</DropdownMenu.Root>
+						{#if g.host_count}
+							<DropdownMenu.Item onclick={() => onHosts(filterToken('ip', g.ip))}>
+								<Globe /> Hosts in Web Assets
+							</DropdownMenu.Item>
+						{/if}
+						{#if g.port_count}
+							<DropdownMenu.Item onclick={() => onServices(filterToken('ip', g.ip))}>
+								<Plug /> Services on this address
+							</DropdownMenu.Item>
+						{/if}
+					</DropdownMenu.Group>
+					<DropdownMenu.Separator />
+					<DropdownMenu.Group>
+						<DropdownMenu.Label>Pivot</DropdownMenu.Label>
+						{#if g.asn}
+							<DropdownMenu.Item onclick={() => onFilter(`asn:${g.asn}`)}>
+								<Network /> Same network
+							</DropdownMenu.Item>
+						{/if}
+						{#if g.prefix}
+							<DropdownMenu.Item onclick={() => onFilter(exactToken('prefix', g.prefix ?? ''))}>
+								<Network /> Same prefix
+							</DropdownMenu.Item>
+						{/if}
+						{#if g.country}
+							<DropdownMenu.Item onclick={() => onFilter(exactToken('country', g.country ?? ''))}>
+								<Filter /> Same country
+							</DropdownMenu.Item>
+						{/if}
+						{#if priv}
+							<DropdownMenu.Item onclick={() => onFilter('is:private')}>
+								<Lock /> Private addresses
+							</DropdownMenu.Item>
+						{/if}
+						{#if g.cdn_name}
+							<DropdownMenu.Item onclick={() => onFilter(filterToken('cdn', g.cdn_name ?? ''))}>
+								<Filter /> Same CDN
+							</DropdownMenu.Item>
+						{/if}
+					</DropdownMenu.Group>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</div>
 	</div>
 </div>
