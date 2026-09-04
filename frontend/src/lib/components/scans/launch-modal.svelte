@@ -34,7 +34,11 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansApi } from '$lib/api/scans';
 	import { targetsApi } from '$lib/api/targets';
-	import { DEFAULT_SCAN_CONTEXT, type ScanContextCreate } from '$lib/types/scan-context';
+	import {
+		DEFAULT_SCAN_CONTEXT,
+		NO_CONTEXT_LABEL,
+		type ScanContextCreate
+	} from '$lib/types/scan-context';
 	import { ROUTES } from '$lib/config/routes';
 	import { SELECT_NONE } from '$lib/constants';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
@@ -115,7 +119,7 @@
 	);
 	let contextLabel = $derived(
 		contextId === SELECT_NONE
-			? 'None — engine defaults'
+			? NO_CONTEXT_LABEL
 			: (scanContextsStore.contexts.find((c) => c.id === contextId)?.name ?? 'Select context')
 	);
 
@@ -528,8 +532,8 @@
 										>{contextLabel}</Select.Trigger
 									>
 									<Select.Content>
-										<Select.Item value={SELECT_NONE} label="None — engine defaults">
-											None — engine defaults
+										<Select.Item value={SELECT_NONE} label={NO_CONTEXT_LABEL}>
+											{NO_CONTEXT_LABEL}
 										</Select.Item>
 										{#each scanContextsStore.contexts as context (context.id)}
 											<Select.Item value={context.id} label={context.name}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import CircleX from '@lucide/svelte/icons/circle-x';
+	import Rocket from '@lucide/svelte/icons/rocket';
 	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
 	import { Spinner } from '$lib/components/ui/spinner';
@@ -10,15 +11,23 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import UnsavedChangesDialog from '@/components/unsaved-changes-dialog.svelte';
 	import { Separator } from '$lib/components/ui/separator';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
 	import TagMultiSelect from '$lib/components/tag-multi-select.svelte';
+	import QuickScanFields from '$lib/components/scans/quick-scan-fields.svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { scansStore } from '$lib/stores/scans.svelte';
 	import { targetsApi } from '$lib/api/targets';
 	import { organizationsApi } from '$lib/api/organizations';
 	import { tagsApi } from '$lib/api/tags';
 	import { TargetType, formatTargetType } from '$lib/types/target';
 	import { getTargetTypeIcon } from '$lib/config/icons';
+	import { ROUTES } from '$lib/config/routes';
+	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { SELECT_NONE } from '$lib/constants';
+	import { rememberQuickScanChoice } from '$lib/utilities/quick-scan';
+	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { tick } from 'svelte';
 
@@ -43,6 +52,12 @@
 
 	let selectedOrganizations = $state<Array<{ id: string; label: string }>>([]);
 	let selectedTags = $state<Array<{ id: string; label: string; color: string }>>([]);
+
+	let scanAfterAdd = $state(false);
+	let engineId = $state('');
+	let contextId = $state(SELECT_NONE);
+	let scanArmed = $state(false);
+	let scanPending = $state(false);
 
 	let validateTimeout: ReturnType<typeof setTimeout>;
 
@@ -139,8 +154,12 @@
 	async function handleSubmit(e?: Event) {
 		e?.preventDefault();
 
-		const projectSlug = projectsStore.activeProject?.slug;
-		if (!projectSlug || !canSubmit) return;
+		const project = projectsStore.activeProject;
+		if (!project || !canSubmit) return;
+
+		const wantsScan = scanArmed;
+		const engine = engineId;
+		const context = contextId;
 
 		isSubmitting = true;
 
@@ -148,17 +167,42 @@
 			const result = await targetsStore.createTarget({
 				target_value: targetValue.trim(),
 				display_name: displayName.trim() || undefined,
-				project_slug: projectSlug,
+				project_slug: project.slug,
 				organization_names: selectedOrganizations.map((o) => o.label),
 				tag_names: selectedTags.map((t) => t.label)
 			});
 
-			if (result) {
+			if (!result) {
+				toast.error(targetsStore.error || 'Failed to add target');
+				return;
+			}
+
+			if (!wantsScan) {
 				toast.success('Target added');
 				resetForm();
 				open = false;
+				return;
+			}
+
+			const scans = await scansStore.launchScans(project.id, {
+				engine_id: engine,
+				context_id: context === SELECT_NONE ? null : context,
+				target_ids: [result.id]
+			});
+
+			resetForm();
+			open = false;
+
+			if (scans && scans.length > 0) {
+				rememberQuickScanChoice(engine, context);
+				toast.success(`Target added. Scan queued against ${result.target_value}.`);
+				goto(ROUTES.scan(scans[0].id));
 			} else {
-				toast.error(targetsStore.error || 'Failed to add target');
+				toast.error(
+					scansStore.error
+						? `Target added, but the scan could not be queued. ${scansStore.error}`
+						: 'Target added, but the scan could not be queued.'
+				);
 			}
 		} catch {
 			toast.error('Failed to add target');
@@ -194,19 +238,32 @@
 		open = false;
 	}
 
+	let leavingToEngines = $state(false);
+
+	function closeAndLeave(leaving: boolean) {
+		leavingToEngines = false;
+		resetForm();
+		open = false;
+		if (leaving) goto(ROUTES.engines);
+	}
+
 	function requestClose() {
 		if (isDirty) {
 			showDiscardConfirm = true;
 			return;
 		}
-		resetForm();
-		open = false;
+		closeAndLeave(leavingToEngines);
 	}
 
 	function confirmDiscard() {
+		const leaving = leavingToEngines;
 		showDiscardConfirm = false;
-		resetForm();
-		open = false;
+		closeAndLeave(leaving);
+	}
+
+	function requestCreateEngine() {
+		leavingToEngines = true;
+		requestClose();
 	}
 
 	let prefilled = false;
@@ -223,7 +280,9 @@
 		}
 	});
 
-	let canSubmit = $derived(validationResult?.valid && !isSubmitting && !isValidating);
+	let canSubmit = $derived(
+		!!validationResult?.valid && !isSubmitting && !isValidating && !scanPending
+	);
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
@@ -231,7 +290,7 @@
 		showCloseButton={false}
 		interactOutsideBehavior={isDirty ? 'ignore' : 'close'}
 		escapeKeydownBehavior={isDirty ? 'ignore' : 'close'}
-		class="sm:max-w-[500px] gap-0 p-0"
+		class="grid max-h-[90vh] grid-rows-[auto_auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-[500px]"
 	>
 		<button
 			type="button"
@@ -248,87 +307,106 @@
 
 		<Separator />
 
-		<form onsubmit={handleSubmit}>
-			<div class="p-6 space-y-5">
-				<div class="space-y-2">
-					<Label for="target-value">Target Value <span class="text-destructive">*</span></Label>
-					<div class="relative">
-						<Input
-							id="target-value"
-							type="text"
-							bind:ref={targetInput}
-							placeholder="e.g., example.com, 192.168.1.0/24, AS12345"
-							value={targetValue}
-							oninput={handleTargetInput}
-							class="pr-10"
-						/>
-						<div class="absolute right-3 top-1/2 -translate-y-1/2">
-							{#if isValidating}
-								<Spinner class="h-4 w-4 text-muted-foreground" />
-							{:else if validationResult?.valid}
-								<CircleCheck class="h-4 w-4 text-success" />
-							{:else if validationResult && !validationResult.valid}
-								<CircleX class="h-4 w-4 text-destructive" />
-							{/if}
+		<form onsubmit={handleSubmit} class="grid min-h-0 grid-rows-[minmax(0,1fr)]">
+			<ScrollArea class="min-h-0">
+				<div class="space-y-5 p-6">
+					<div class="space-y-2">
+						<Label for="target-value">Target Value <span class="text-destructive">*</span></Label>
+						<div class="relative">
+							<Input
+								id="target-value"
+								type="text"
+								bind:ref={targetInput}
+								placeholder="e.g., example.com, 192.168.1.0/24, AS12345"
+								value={targetValue}
+								oninput={handleTargetInput}
+								class="pr-10"
+							/>
+							<div class="absolute right-3 top-1/2 -translate-y-1/2">
+								{#if isValidating}
+									<Spinner class="h-4 w-4 text-muted-foreground" />
+								{:else if validationResult?.valid}
+									<CircleCheck class="h-4 w-4 text-success" />
+								{:else if validationResult && !validationResult.valid}
+									<CircleX class="h-4 w-4 text-destructive" />
+								{/if}
+							</div>
 						</div>
+
+						{#if validationResult}
+							<div class="flex items-center gap-2 text-sm">
+								{#if validationResult.valid && validationResult.target_type}
+									<Badge variant="outline" class="gap-1.5 font-normal">
+										{#if TypeIcon}
+											<TypeIcon class="h-3 w-3" />
+										{/if}
+										{formatTargetType(validationResult.target_type)}
+									</Badge>
+								{:else if validationResult.error}
+									<span class="text-destructive">{validationResult.error}</span>
+								{/if}
+							</div>
+						{/if}
 					</div>
 
-					{#if validationResult}
-						<div class="flex items-center gap-2 text-sm">
-							{#if validationResult.valid && validationResult.target_type}
-								<Badge variant="outline" class="gap-1.5 font-normal">
-									{#if TypeIcon}
-										<TypeIcon class="h-3 w-3" />
-									{/if}
-									{formatTargetType(validationResult.target_type)}
-								</Badge>
-							{:else if validationResult.error}
-								<span class="text-destructive">{validationResult.error}</span>
-							{/if}
-						</div>
-					{/if}
-				</div>
+					<div class="space-y-2">
+						<Label for="display-name">Display Name (Optional)</Label>
+						<Input
+							id="display-name"
+							type="text"
+							placeholder="Optional friendly name"
+							bind:value={displayName}
+						/>
+						<p class="text-xs text-muted-foreground">
+							Descriptive label to help identify this target
+						</p>
+					</div>
 
-				<div class="space-y-2">
-					<Label for="display-name">Display Name (Optional)</Label>
-					<Input
-						id="display-name"
-						type="text"
-						placeholder="Optional friendly name"
-						bind:value={displayName}
-					/>
-					<p class="text-xs text-muted-foreground">
-						Descriptive label to help identify this target
-					</p>
-				</div>
+					<div class="space-y-2">
+						<Label>Organizations (Optional)</Label>
+						<MultiSelectCombobox
+							items={organizationItems}
+							selected={selectedOrganizations}
+							onSelect={handleSelectOrganization}
+							onRemove={handleRemoveOrganization}
+							onCreate={handleCreateOrganization}
+							placeholder="Search or create organizations…"
+							emptyText="No organizations found."
+						/>
+						<p class="text-xs text-muted-foreground">Group targets by organization</p>
+					</div>
 
-				<div class="space-y-2">
-					<Label>Organizations (Optional)</Label>
-					<MultiSelectCombobox
-						items={organizationItems}
-						selected={selectedOrganizations}
-						onSelect={handleSelectOrganization}
-						onRemove={handleRemoveOrganization}
-						onCreate={handleCreateOrganization}
-						placeholder="Search or create organizations…"
-						emptyText="No organizations found."
-					/>
-					<p class="text-xs text-muted-foreground">Group targets by organization</p>
+					<div class="space-y-2">
+						<Label>Tags (Optional)</Label>
+						<TagMultiSelect
+							items={tagItems}
+							selected={selectedTags}
+							onSelect={handleSelectTag}
+							onRemove={handleRemoveTag}
+							onCreate={handleCreateTag}
+							placeholder="Search or create tags…"
+						/>
+						<p class="text-xs text-muted-foreground">Add tags to categorize and filter targets</p>
+					</div>
 				</div>
+			</ScrollArea>
 
-				<div class="space-y-2">
-					<Label>Tags (Optional)</Label>
-					<TagMultiSelect
-						items={tagItems}
-						selected={selectedTags}
-						onSelect={handleSelectTag}
-						onRemove={handleRemoveTag}
-						onCreate={handleCreateTag}
-						placeholder="Search or create tags…"
-					/>
-					<p class="text-xs text-muted-foreground">Add tags to categorize and filter targets</p>
-				</div>
-			</div>
+			<Separator />
+
+			<QuickScanFields
+				id="add-target-scan"
+				title="Scan after adding"
+				description="Queues a scan as soon as the target is created."
+				fallbackNote="The target will be added without a scan."
+				storageKey={STORAGE_KEYS.addTargetScanAfter}
+				bind:enabled={scanAfterAdd}
+				bind:engineId
+				bind:contextId
+				bind:armed={scanArmed}
+				bind:pending={scanPending}
+				disabled={isSubmitting}
+				onCreateEngine={requestCreateEngine}
+			/>
 
 			<Separator />
 
@@ -339,7 +417,10 @@
 				<Button type="submit" disabled={!canSubmit}>
 					{#if isSubmitting}
 						<Spinner class="h-4 w-4 mr-2" />
-						Adding…
+						{scanArmed ? 'Queuing…' : 'Adding…'}
+					{:else if scanArmed}
+						<Rocket class="h-4 w-4 mr-2" />
+						Add & scan
 					{:else}
 						Add target
 					{/if}
@@ -353,6 +434,9 @@
 	bind:open={showDiscardConfirm}
 	title="Discard your changes?"
 	description="You have unsaved input for this target. Closing now will discard it."
-	onOpenChange={(o) => (showDiscardConfirm = o)}
+	onOpenChange={(o) => {
+		showDiscardConfirm = o;
+		if (!o) leavingToEngines = false;
+	}}
 	onConfirm={confirmDiscard}
 />

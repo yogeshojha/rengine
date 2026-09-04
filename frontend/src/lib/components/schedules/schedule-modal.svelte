@@ -18,6 +18,7 @@
 
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
+	import { NO_CONTEXT_LABEL } from '$lib/types/scan-context';
 	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -74,7 +75,7 @@
 	);
 	let contextLabel = $derived(
 		contextId === SELECT_NONE
-			? 'None — engine defaults'
+			? NO_CONTEXT_LABEL
 			: (scanContextsStore.contexts.find((c) => c.id === contextId)?.name ?? 'Select context')
 	);
 	let targetItems = $derived(targets.map((t) => ({ id: t.id, label: t.target_value })));
@@ -279,8 +280,8 @@
 							<Select.Root type="single" bind:value={contextId}>
 								<Select.Trigger id="schedule-context" class="w-full">{contextLabel}</Select.Trigger>
 								<Select.Content>
-									<Select.Item value={SELECT_NONE} label="None — engine defaults">
-										None — engine defaults
+									<Select.Item value={SELECT_NONE} label={NO_CONTEXT_LABEL}>
+										{NO_CONTEXT_LABEL}
 									</Select.Item>
 									{#each scanContextsStore.contexts as context (context.id)}
 										<Select.Item value={context.id} label={context.name}>{context.name}</Select.Item

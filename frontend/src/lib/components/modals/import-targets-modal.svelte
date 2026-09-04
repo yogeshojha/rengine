@@ -4,6 +4,7 @@
 	import List from '@lucide/svelte/icons/list';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import Eye from '@lucide/svelte/icons/eye';
+	import Rocket from '@lucide/svelte/icons/rocket';
 	import Upload from '@lucide/svelte/icons/upload';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Button } from '$lib/components/ui/button';
@@ -19,8 +20,17 @@
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
+	import { scansStore } from '$lib/stores/scans.svelte';
 	import { toast } from 'svelte-sonner';
 	import ImportHelpText from '$lib/components/targets/import-helper.svelte';
+	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import QuickScanFields from '$lib/components/scans/quick-scan-fields.svelte';
+	import { MAX_SCAN_BATCH } from '$lib/types/scan';
+	import { ROUTES } from '$lib/config/routes';
+	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { SELECT_NONE } from '$lib/constants';
+	import { rememberQuickScanChoice } from '$lib/utilities/quick-scan';
+	import { goto } from '$app/navigation';
 	import type {
 		TargetImportItem,
 		TargetPreviewItem,
@@ -56,6 +66,16 @@
 	let isProcessing = $state(false);
 	let isImporting = $state(false);
 
+	let showLaunch = $state(false);
+	let launchIds = $state<string[] | undefined>(undefined);
+
+	let scanAfterImport = $state(false);
+	let engineId = $state('');
+	let contextId = $state(SELECT_NONE);
+	let scanArmed = $state(false);
+	let scanPending = $state(false);
+	let queuedScans = $state(0);
+
 	let validateDone = $state(0);
 	let validateTotal = $state(0);
 	let validatePct = $derived(validateTotal > 0 ? (validateDone / validateTotal) * 100 : 0);
@@ -81,6 +101,7 @@
 		isImporting = false;
 		validateDone = 0;
 		validateTotal = 0;
+		queuedScans = 0;
 	}
 
 	function handleOpenChange(isOpen: boolean) {
@@ -323,6 +344,9 @@
 		const projectSlug = projectsStore.activeProject?.slug;
 		if (!projectSlug) return;
 
+		const wantsScan = scanArmed;
+		queuedScans = 0;
+
 		try {
 			let response;
 
@@ -349,6 +373,9 @@
 
 			if (response.imported > 0) {
 				toast.success(`Imported ${response.imported} target${response.imported !== 1 ? 's' : ''}`);
+				if (wantsScan) await launchImported();
+			} else if (wantsScan) {
+				toast.warning('No new targets were imported. No scan was queued.');
 			}
 
 			if (response.failed > 0) {
@@ -366,6 +393,51 @@
 		mode = 'input';
 	}
 
+	let importedIds = $derived(
+		(importResults?.results ?? [])
+			.filter((r) => r.success && r.target_id)
+			.map((r) => r.target_id as string)
+	);
+
+	function scanImported() {
+		const ids = importedIds.slice(0, MAX_SCAN_BATCH);
+		if (ids.length === 0) return;
+		launchIds = ids;
+		resetModal();
+		open = false;
+		showLaunch = true;
+	}
+
+	async function launchImported() {
+		const project = projectsStore.activeProject;
+		const ids = importedIds.slice(0, MAX_SCAN_BATCH);
+		if (!project || ids.length === 0) return;
+
+		const scans = await scansStore.launchScans(project.id, {
+			engine_id: engineId,
+			context_id: contextId === SELECT_NONE ? null : contextId,
+			target_ids: ids
+		});
+
+		if (scans && scans.length > 0) {
+			rememberQuickScanChoice(engineId, contextId);
+			queuedScans = scans.length;
+			toast.success(`${scans.length} scan${scans.length !== 1 ? 's' : ''} queued`);
+		} else {
+			toast.error(
+				scansStore.error
+					? `Targets imported, but the scans could not be queued. ${scansStore.error}`
+					: 'Targets imported, but the scans could not be queued.'
+			);
+		}
+	}
+
+	function viewScans() {
+		resetModal();
+		open = false;
+		goto(ROUTES.scans);
+	}
+
 	let hasInput = $derived(
 		(activeTab === 'manual' && (manualText.trim().length > 0 || manualFile !== null)) ||
 			(activeTab === 'json' && (jsonText.trim().length > 0 || jsonFile !== null)) ||
@@ -379,7 +451,7 @@
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
 	<Dialog.Content
-		class="sm:max-w-[700px] gap-0 p-0 max-h-[85vh] flex flex-col overflow-hidden"
+		class="grid max-h-[85vh] grid-rows-[auto_auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-[700px]"
 		onInteractOutside={(e) => {
 			if (busy) e.preventDefault();
 		}}
@@ -402,7 +474,7 @@
 
 		<Separator />
 
-		<ScrollArea class="flex-1">
+		<ScrollArea class="min-h-0">
 			{#if mode === 'input'}
 				<Tabs.Root bind:value={activeTab} class="w-full">
 					<div class="px-6 pt-4">
@@ -495,6 +567,29 @@ https://app.example.com"
 
 		<Separator />
 
+		{#if mode !== 'results'}
+			<QuickScanFields
+				id="import-targets-scan"
+				title="Scan after importing"
+				description="Queues one scan per imported target."
+				fallbackNote="Targets will be imported without a scan."
+				storageKey={STORAGE_KEYS.importTargetsScanAfter}
+				bind:enabled={scanAfterImport}
+				bind:engineId
+				bind:contextId
+				bind:armed={scanArmed}
+				bind:pending={scanPending}
+				disabled={busy}
+				onCreateEngine={() => {
+					resetModal();
+					open = false;
+					goto(ROUTES.engines);
+				}}
+			/>
+
+			<Separator />
+		{/if}
+
 		{#if isProcessing && validateTotal > 0}
 			<Progress value={validatePct} class="h-1 rounded-none" />
 		{/if}
@@ -515,10 +610,16 @@ https://app.example.com"
 							Preview
 						{/if}
 					</Button>
-					<Button onclick={handleDirectImport} disabled={!hasInput || isProcessing || isImporting}>
+					<Button
+						onclick={handleDirectImport}
+						disabled={!hasInput || isProcessing || isImporting || scanPending}
+					>
 						{#if isImporting}
 							<Spinner />
-							Importing…
+							{scanArmed ? 'Queuing…' : 'Importing…'}
+						{:else if scanArmed}
+							<Rocket class="h-4 w-4 mr-2" />
+							Import & scan
 						{:else}
 							<Upload class="h-4 w-4 mr-2" />
 							Import
@@ -527,24 +628,61 @@ https://app.example.com"
 				</div>
 			{:else if mode === 'preview'}
 				<Button variant="outline" onclick={() => (mode = 'input')}>Back</Button>
-				<Button onclick={handleImportFromPreview} disabled={!canImport || isImporting}>
+				<Button
+					onclick={handleImportFromPreview}
+					disabled={!canImport || isImporting || scanPending}
+				>
 					{#if isImporting}
 						<Spinner />
-						Importing…
+						{scanArmed ? 'Queuing…' : 'Importing…'}
+					{:else if scanArmed}
+						<Rocket class="h-4 w-4 mr-2" />
+						Import & scan {previewItems.filter((item) => !item.error).length}
 					{:else}
 						Import {previewItems.filter((item) => !item.error).length}
 					{/if}
 				</Button>
 			{:else}
-				<div></div>
-				<div class="flex gap-2">
-					<Button variant="outline" onclick={handleImportMore}>Import More</Button>
-					<Button onclick={() => (open = false)}>
+				<Button variant="outline" onclick={handleImportMore} disabled={isImporting}>
+					Import More
+				</Button>
+				<div class="flex items-center gap-2">
+					{#if isImporting}
+						<span class="flex items-center gap-2 text-xs text-muted-foreground">
+							<Spinner class="h-3.5 w-3.5" />
+							Queuing scans…
+						</span>
+					{:else if queuedScans > 0}
+						<span class="text-xs text-muted-foreground">
+							{queuedScans} scan{queuedScans !== 1 ? 's' : ''} queued
+						</span>
+					{/if}
+					<Button variant="outline" onclick={() => (open = false)} disabled={isImporting}>
 						<CircleCheck class="h-4 w-4 mr-2" />
 						Done
 					</Button>
+					{#if queuedScans > 0}
+						<Button onclick={viewScans} disabled={isImporting}>
+							<Rocket class="h-4 w-4 mr-2" />
+							View scans
+						</Button>
+					{:else if importedIds.length > 0}
+						<Button onclick={scanImported} disabled={isImporting}>
+							<Rocket class="h-4 w-4 mr-2" />
+							Scan {importedIds.length} target{importedIds.length !== 1 ? 's' : ''}
+						</Button>
+					{/if}
 				</div>
 			{/if}
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
+
+<LaunchModal
+	bind:open={showLaunch}
+	targetIds={launchIds}
+	onClose={() => {
+		showLaunch = false;
+		launchIds = undefined;
+	}}
+/>

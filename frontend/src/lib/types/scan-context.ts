@@ -7,6 +7,8 @@ export type HttpProtocol = (typeof HTTP_PROTOCOLS)[number];
 
 export { MASK } from '$lib/constants';
 
+export const NO_CONTEXT_LABEL = 'None — engine defaults';
+
 export interface AuthHeader {
 	name: string;
 	value: string;

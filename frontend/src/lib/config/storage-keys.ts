@@ -3,6 +3,8 @@ export const STORAGE_KEYS = {
 	launchLastEngine: 'rengine:launch:lastEngine',
 	launchLastContext: 'rengine:launch:lastContext',
 	targetViews: 'targets:views',
+	addTargetScanAfter: 'rengine:targets:scanAfterAdd',
+	importTargetsScanAfter: 'rengine:targets:scanAfterImport',
 	engineLensTargetType: 'rengine:engine:lensTargetType',
 	engineSidePane: 'rengine:engine:sidePane',
 	engineSplit: 'rengine:engine:split',
