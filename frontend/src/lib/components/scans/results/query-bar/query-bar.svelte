@@ -67,9 +67,38 @@
 	let anchor = $state<HTMLElement | null>(null);
 	let overlay = $state<HTMLElement | null>(null);
 	let recents = $state<string[]>(readRecents());
+	let stuck = $state(false);
 
 	$effect(() => {
 		void store.load();
+	});
+
+	$effect(() => {
+		const wrap = anchor?.parentElement;
+		const root = anchor?.closest('[data-slot=scroll-area-viewport]');
+		if (!wrap || !root) return;
+		let frame = 0;
+		const measure = () => {
+			frame = 0;
+			const style = getComputedStyle(wrap);
+			if (style.position !== 'sticky') {
+				stuck = false;
+				return;
+			}
+			const offset = parseFloat(style.top) || 0;
+			stuck = wrap.getBoundingClientRect().top - root.getBoundingClientRect().top <= offset + 0.5;
+		};
+		const schedule = () => {
+			if (!frame) frame = requestAnimationFrame(measure);
+		};
+		measure();
+		root.addEventListener('scroll', schedule, { passive: true });
+		window.addEventListener('resize', schedule);
+		return () => {
+			root.removeEventListener('scroll', schedule);
+			window.removeEventListener('resize', schedule);
+			if (frame) cancelAnimationFrame(frame);
+		};
 	});
 
 	let schema = $derived(store.schema);
@@ -231,7 +260,10 @@
 	}
 </script>
 
-<div bind:this={anchor} class="overflow-hidden rounded-t-xl border bg-card">
+<div
+	bind:this={anchor}
+	class="overflow-hidden border bg-card {stuck ? 'rounded-t-none' : 'rounded-t-xl'}"
+>
 	<div
 		class="flex h-14 items-center gap-3 px-3 transition-colors sm:px-4 {focused
 			? 'bg-card'
