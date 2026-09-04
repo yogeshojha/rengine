@@ -400,8 +400,8 @@
 
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="{ACTIONS_PIN} {pin}" onclick={stopProp}>
-		<div class={ACTIONS_BODY}>
+	<div class={ACTIONS_PIN} onclick={stopProp}>
+		<div class="{ACTIONS_BODY} {pin}">
 			{#if v.url}
 				<Hint text="Open in a new tab">
 					{#snippet child(props)}
