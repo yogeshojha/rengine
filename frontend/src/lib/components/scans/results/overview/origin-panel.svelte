@@ -25,7 +25,8 @@
 		const parts: string[] = [];
 		if (bypasses) parts.push(`${bypasses} reachable ${bypasses === 1 ? 'origin' : 'origins'}`);
 		const other = findings.length - bypasses;
-		if (other) parts.push(`${other} serving a different site`);
+		if (other)
+			parts.push(`${other} ${other === 1 ? 'address' : 'addresses'} serving a different site`);
 		return parts.join(' · ');
 	});
 

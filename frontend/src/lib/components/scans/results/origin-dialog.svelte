@@ -12,6 +12,7 @@
 	import TechIcon from './tech-icon.svelte';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import {
+		FINDING_RELATION,
 		FINDING_SUMMARY,
 		FINDING_TITLE,
 		frontedLabel,
@@ -68,7 +69,7 @@
 							<span
 								class="hidden text-[11px] tracking-wide text-muted-foreground uppercase sm:block"
 							>
-								Same application
+								{FINDING_RELATION[f.kind] ?? ''}
 							</span>
 						</div>
 						{@render side(

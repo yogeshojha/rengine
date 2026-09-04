@@ -50,6 +50,11 @@ export const FINDING_SUMMARY: Record<string, string> = {
 	[DEFAULT_VHOST]: 'The address returns different content when requested without a hostname.'
 };
 
+export const FINDING_RELATION: Record<string, string> = {
+	[ORIGIN_EXPOSED]: 'Same application',
+	[DEFAULT_VHOST]: 'Different content'
+};
+
 export function frontedLabel(f: OriginFinding): string {
 	const cdn = f.fronted.find((s) => s.cdn_name)?.cdn_name;
 	return cdn ?? 'a CDN';
