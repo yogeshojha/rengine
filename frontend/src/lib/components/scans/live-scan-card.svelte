@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import Hint from '$lib/components/hint.svelte';
 	import Clock from '@lucide/svelte/icons/clock';
 	import Ban from '@lucide/svelte/icons/ban';
 	import { ROUTES } from '$lib/config/routes';
@@ -74,8 +75,12 @@
 					aria-label="{progress.done} of {progress.total} stages done"
 				>
 					{#each progress.steps as step (step.name)}
-						<span title={step.title} class="h-1 flex-1 rounded-full {STAGE_STEP_CLASS[step.state]}"
-						></span>
+						<Hint text={step.title}>
+							{#snippet child(props)}
+								<span {...props} class="h-1 flex-1 rounded-full {STAGE_STEP_CLASS[step.state]}"
+								></span>
+							{/snippet}
+						</Hint>
 					{/each}
 				</div>
 				<span class="shrink-0 font-mono text-[10px] text-muted-foreground tabular-nums">
@@ -99,15 +104,19 @@
 		{#if pills.length > 0 || failed > 0}
 			<div class="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
 				{#each pills as p (p.key)}
-					<span
-						title={p.label}
-						class="inline-flex items-center gap-1 text-[10px] tabular-nums {p.emphasis
-							? 'font-medium text-warning'
-							: 'text-muted-foreground'}"
-					>
-						<p.icon class="size-3" />
-						{p.value}
-					</span>
+					<Hint text={p.label}>
+						{#snippet child(props)}
+							<span
+								{...props}
+								class="inline-flex items-center gap-1 text-[10px] tabular-nums {p.emphasis
+									? 'font-medium text-warning'
+									: 'text-muted-foreground'}"
+							>
+								<p.icon class="size-3" />
+								{p.value}
+							</span>
+						{/snippet}
+					</Hint>
 				{/each}
 				{#if failed > 0}
 					<span class="text-[10px] font-medium text-destructive">

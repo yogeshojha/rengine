@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { Badge } from '$lib/components/ui/badge';
+	import Hint from '$lib/components/hint.svelte';
 
 	export interface RankedRow {
 		key: string;
@@ -50,12 +51,16 @@
 						</span>
 					{/if}
 					<span class="flex min-w-0 flex-1 flex-col">
-						<span
-							class="truncate leading-5 {r.mono ? 'font-mono text-xs' : 'text-sm'}"
-							title={r.label}
-						>
-							{r.label}
-						</span>
+						<Hint text={r.label}>
+							{#snippet child(props)}
+								<span
+									{...props}
+									class="truncate leading-5 {r.mono ? 'font-mono text-xs' : 'text-sm'}"
+								>
+									{r.label}
+								</span>
+							{/snippet}
+						</Hint>
 						{#if r.sub}
 							<span class="truncate text-xs leading-4 text-muted-foreground">{r.sub}</span>
 						{/if}

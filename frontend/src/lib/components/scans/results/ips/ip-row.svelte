@@ -14,6 +14,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
@@ -130,7 +131,6 @@
 					{#if priv}
 						<span
 							class="inline-flex h-5 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 align-top text-warning"
-							title="Private address published in public DNS"
 						>
 							<Lock class="size-3 shrink-0" />
 							<span class="font-mono text-sm leading-5 font-medium">
@@ -190,14 +190,18 @@
 
 		{#if ptr.length}
 			<div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-				<button
-					type="button"
-					class="min-w-0 truncate font-mono hover:text-foreground hover:underline"
-					title={ptr.join(', ')}
-					onclick={(e) => pivot(e, filterToken('ptr', ptr[0]))}
-				>
-					<HighlightText text={ptr[0]} {term} />
-				</button>
+				<Hint text={ptr.join(', ')}>
+					{#snippet child(props)}
+						<button
+							{...props}
+							type="button"
+							class="min-w-0 truncate font-mono hover:text-foreground hover:underline"
+							onclick={(e) => pivot(e, filterToken('ptr', ptr[0]))}
+						>
+							<HighlightText text={ptr[0]} {term} />
+						</button>
+					{/snippet}
+				</Hint>
 				{#if ptr.length > 1}
 					<span class="shrink-0 text-muted-foreground/60">+{ptr.length - 1}</span>
 				{/if}
@@ -207,19 +211,23 @@
 
 	<div class={IP_LEAD_COLUMNS[1].width}>
 		{#if g.asn}
-			<button
-				type="button"
-				class="block min-w-0 max-w-full text-left"
-				onclick={(e) => pivot(e, `asn:${g.asn}`)}
-				title="Filter to AS{g.asn}"
-			>
-				<span class="block font-mono text-xs hover:underline">AS{g.asn}</span>
-				{#if g.asn_org}
-					<span class="block truncate text-xs text-muted-foreground">
-						<HighlightText text={g.asn_org} {term} />
-					</span>
-				{/if}
-			</button>
+			<Hint text="Filter to AS{g.asn}">
+				{#snippet child(props)}
+					<button
+						{...props}
+						type="button"
+						class="block min-w-0 max-w-full text-left"
+						onclick={(e) => pivot(e, `asn:${g.asn}`)}
+					>
+						<span class="block font-mono text-xs hover:underline">AS{g.asn}</span>
+						{#if g.asn_org}
+							<span class="block truncate text-xs text-muted-foreground">
+								<HighlightText text={g.asn_org} {term} />
+							</span>
+						{/if}
+					</button>
+				{/snippet}
+			</Hint>
 		{:else}
 			<span class="text-xs text-muted-foreground">—</span>
 		{/if}
@@ -270,21 +278,25 @@
 				{#if g.host_count}
 					<div class="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
 						{#each hosts.slice(0, MAX_HOSTS) as h (h)}
-							<button
-								type="button"
-								onclick={(e) => {
-									stopProp(e);
-									onHosts(exactToken('host', h));
-								}}
-								title="Open {h} in Web Assets"
-							>
-								<Badge
-									variant="outline"
-									class="max-w-44 cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
-								>
-									<span class="truncate">{h}</span>
-								</Badge>
-							</button>
+							<Hint text="Open {h} in Web Assets">
+								{#snippet child(props)}
+									<button
+										{...props}
+										type="button"
+										onclick={(e) => {
+											stopProp(e);
+											onHosts(exactToken('host', h));
+										}}
+									>
+										<Badge
+											variant="outline"
+											class="max-w-44 cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
+										>
+											<span class="truncate">{h}</span>
+										</Badge>
+									</button>
+								{/snippet}
+							</Hint>
 						{/each}
 						<OverflowPopover
 							class="shrink-0"
@@ -323,12 +335,13 @@
 					<span class="text-xs text-muted-foreground">—</span>
 				{/if}
 			{:else if col.key === 'ptr'}
-				<span
-					class="min-w-0 truncate font-mono text-xs text-muted-foreground"
-					title={ptr.join(', ')}
-				>
-					{ptr.join(', ') || '—'}
-				</span>
+				<Hint text={ptr.join(', ')}>
+					{#snippet child(props)}
+						<span {...props} class="min-w-0 truncate font-mono text-xs text-muted-foreground">
+							{ptr.join(', ') || '—'}
+						</span>
+					{/snippet}
+				</Hint>
 			{:else if col.key === 'assets'}
 				<span class="text-xs tabular-nums text-muted-foreground">
 					{g.asset_count || '—'}

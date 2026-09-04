@@ -18,6 +18,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import PanelHead from './panel-head.svelte';
 	import { targetsApi } from '$lib/api/targets';
@@ -219,9 +220,13 @@
 								</LoadingButton>
 							{/if}
 						</span>
-						<span class="truncate font-mono text-xl leading-none font-semibold" title={d.domain}>
-							{d.domain}
-						</span>
+						<Hint text={d.domain}>
+							{#snippet child(props)}
+								<span {...props} class="truncate font-mono text-xl leading-none font-semibold">
+									{d.domain}
+								</span>
+							{/snippet}
+						</Hint>
 						<span class="line-clamp-2 text-sm leading-5 text-muted-foreground"
 							>{relatedText(d)}</span
 						>

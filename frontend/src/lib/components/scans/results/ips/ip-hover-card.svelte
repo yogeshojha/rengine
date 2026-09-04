@@ -1,10 +1,11 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import Lock from '@lucide/svelte/icons/lock';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { Badge } from '$lib/components/ui/badge';
 	import TechIcon from '../tech-icon.svelte';
 	import CountryFlag from '../country-flag.svelte';
-	import { isSensitivePort } from '$lib/utilities/scan-correlation';
+	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
 	import type { IpGroupRead } from '$lib/utilities/scan-insights';
 	import { claimHover, releaseHover } from '$lib/utilities/hover-exclusive';
 
@@ -21,6 +22,8 @@
 	let network = $derived(
 		[group.asn ? `AS${group.asn}` : null, group.asn_org].filter(Boolean).join(' · ')
 	);
+
+	let priv = $derived(isPrivateIp(group.ip));
 
 	let hoverOpen = $state(false);
 	const closeSelf = () => (hoverOpen = false);
@@ -49,6 +52,12 @@
 				</Badge>
 			{/if}
 		</div>
+		{#if priv}
+			<p class="flex items-center gap-1.5 text-warning">
+				<Lock class="size-3 shrink-0" />
+				Private address published in public DNS
+			</p>
+		{/if}
 		{#if network || group.country}
 			<p class="flex flex-wrap items-center gap-1.5 text-muted-foreground">
 				{#if group.country}<CountryFlag code={group.country} />{/if}

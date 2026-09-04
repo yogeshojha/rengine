@@ -21,6 +21,7 @@
 	import LiveScanCard from '$lib/components/scans/live-scan-card.svelte';
 	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
@@ -374,24 +375,29 @@
 					</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
-			<button
-				type="button"
-				aria-pressed={activityFeed.errorsOnly}
-				title="Errors only"
-				onclick={() => activityFeed.toggleErrorsOnly()}
-				class="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[10px] font-medium transition-colors {activityFeed.errorsOnly
-					? 'bg-destructive/10 text-destructive ring-1 ring-destructive/40'
-					: activityFeed.errorCount > 0
-						? 'text-destructive/80 hover:bg-destructive/10 hover:text-destructive'
-						: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}"
-			>
-				<ShieldAlert class="size-3" />
-				Errors
-				{#if activityFeed.errorCount > 0}
-					<span class="font-mono text-[9px] tabular-nums opacity-80">{activityFeed.errorCount}</span
+			<Hint text="Errors only">
+				{#snippet child(props)}
+					<button
+						{...props}
+						type="button"
+						aria-pressed={activityFeed.errorsOnly}
+						onclick={() => activityFeed.toggleErrorsOnly()}
+						class="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[10px] font-medium transition-colors {activityFeed.errorsOnly
+							? 'bg-destructive/10 text-destructive ring-1 ring-destructive/40'
+							: activityFeed.errorCount > 0
+								? 'text-destructive/80 hover:bg-destructive/10 hover:text-destructive'
+								: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}"
 					>
-				{/if}
-			</button>
+						<ShieldAlert class="size-3" />
+						Errors
+						{#if activityFeed.errorCount > 0}
+							<span class="font-mono text-[9px] tabular-nums opacity-80">
+								{activityFeed.errorCount}
+							</span>
+						{/if}
+					</button>
+				{/snippet}
+			</Hint>
 		</div>
 	</div>
 

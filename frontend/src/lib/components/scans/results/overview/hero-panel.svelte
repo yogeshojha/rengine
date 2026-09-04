@@ -4,6 +4,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import Hint from '$lib/components/hint.svelte';
 	import ScanTrendSparkline from '$lib/components/scans/scan-trend-sparkline.svelte';
 	import GeoPanel from './geo-panel.svelte';
 	import RunRibbon from './run-ribbon.svelte';
@@ -309,14 +310,18 @@
 							</button>
 						{/if}
 						{#if compared && gone > 0}
-							<span
-								class="inline-flex h-6 items-center gap-1 rounded-md border border-dashed px-2 text-xs text-muted-foreground"
-								title="Present in the previous scan, absent in this one"
-							>
-								<ArrowDownRight class="size-3.5" />
-								<span class="font-medium tabular-nums">{gone.toLocaleString()}</span>
-								not seen
-							</span>
+							<Hint text="Present in the previous scan, absent in this one">
+								{#snippet child(props)}
+									<span
+										{...props}
+										class="inline-flex h-6 items-center gap-1 rounded-md border border-dashed px-2 text-xs text-muted-foreground"
+									>
+										<ArrowDownRight class="size-3.5" />
+										<span class="font-medium tabular-nums">{gone.toLocaleString()}</span>
+										not seen
+									</span>
+								{/snippet}
+							</Hint>
 						{/if}
 						{#if history.length > 1}
 							<HistoryPopover {history} current={scan} {nounPlural} />

@@ -7,6 +7,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import Hint from '$lib/components/hint.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { SCAN_TIME_RANGES, type ScanTimeRange } from '$lib/types/scan';
@@ -79,38 +80,45 @@
 	</div>
 
 	{#if engineOptions.length > 0}
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="outline"
-						size="sm"
-						class="h-9 gap-2 {engines.length > 0 ? 'border-primary/50 bg-primary/5' : ''}"
-						disabled={engineOptions.length < 2}
-						title={engineOptions.length < 2 ? 'Only one engine in use' : undefined}
-					>
-						<ListFilter class="h-4 w-4" /> Engine
-						{#if engines.length}
-							<Badge variant="secondary" class="h-5 px-1.5 text-xs">{engines.length}</Badge>
-						{/if}
-					</Button>
-				{/snippet}
-			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="start" class="max-h-none overflow-visible">
-				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-					{#each engineOptions as e (e.name)}
-						<DropdownMenu.CheckboxItem
-							checked={engines.includes(e.name)}
-							onCheckedChange={() => onToggleEngine(e.name)}
-						>
-							<span class="flex-1 truncate">{e.name}</span>
-							<span class="ml-3 tabular-nums text-muted-foreground">{e.count}</span>
-						</DropdownMenu.CheckboxItem>
-					{/each}
-				</ScrollArea>
-			</DropdownMenu.Content>
-		</DropdownMenu.Root>
+		<Hint text={engineOptions.length < 2 ? 'Only one engine in use' : null}>
+			{#snippet child(hintProps)}
+				<span {...hintProps} class="inline-flex">
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									variant="outline"
+									size="sm"
+									class="h-9 gap-2 {engines.length > 0 ? 'border-primary/50 bg-primary/5' : ''}"
+									disabled={engineOptions.length < 2}
+								>
+									<ListFilter class="h-4 w-4" /> Engine
+									{#if engines.length}
+										<Badge variant="secondary" class="h-5 px-1.5 text-xs">
+											{engines.length}
+										</Badge>
+									{/if}
+								</Button>
+							{/snippet}
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="start" class="max-h-none overflow-visible">
+							<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
+								{#each engineOptions as e (e.name)}
+									<DropdownMenu.CheckboxItem
+										checked={engines.includes(e.name)}
+										onCheckedChange={() => onToggleEngine(e.name)}
+									>
+										<span class="flex-1 truncate">{e.name}</span>
+										<span class="ml-3 tabular-nums text-muted-foreground">{e.count}</span>
+									</DropdownMenu.CheckboxItem>
+								{/each}
+							</ScrollArea>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				</span>
+			{/snippet}
+		</Hint>
 	{/if}
 
 	{#if contextOptions.length > 0}

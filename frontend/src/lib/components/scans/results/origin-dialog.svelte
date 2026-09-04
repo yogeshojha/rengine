@@ -5,6 +5,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Badge } from '$lib/components/ui/badge';
+	import Hint from '$lib/components/hint.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CopyButton from '$lib/components/copy-button.svelte';
@@ -86,7 +87,11 @@
 							{#each f.evidence as e (e.kind)}
 								<div class="grid grid-cols-[10rem_1fr] items-baseline gap-3 px-3 py-2">
 									<dt class="text-xs text-muted-foreground">{e.label}</dt>
-									<dd class="min-w-0 truncate font-mono text-xs" title={e.value}>{e.value}</dd>
+									<Hint text={e.value}>
+										{#snippet child(props)}
+											<dd {...props} class="min-w-0 truncate font-mono text-xs">{e.value}</dd>
+										{/snippet}
+									</Hint>
 								</div>
 							{/each}
 						</dl>

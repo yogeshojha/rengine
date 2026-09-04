@@ -9,6 +9,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
+	import Hint from '$lib/components/hint.svelte';
 	import type { QueryStarter } from '$lib/types/asset-query';
 	import type { Suggestion } from './suggest';
 	import QueryExample from './query-example.svelte';
@@ -88,14 +89,18 @@
 							class="group/recent flex min-w-0 items-center gap-2 rounded-md pr-1 pl-2 transition-colors hover:bg-accent"
 						>
 							<Clock class="size-3.5 shrink-0 text-muted-foreground/70" />
-							<button
-								type="button"
-								class="min-w-0 flex-1 truncate py-1.5 text-left font-mono text-xs"
-								title={recent}
-								onclick={() => onQuery(recent)}
-							>
-								{recent}
-							</button>
+							<Hint text={recent}>
+								{#snippet child(props)}
+									<button
+										{...props}
+										type="button"
+										class="min-w-0 flex-1 truncate py-1.5 text-left font-mono text-xs"
+										onclick={() => onQuery(recent)}
+									>
+										{recent}
+									</button>
+								{/snippet}
+							</Hint>
 							<button
 								type="button"
 								class="shrink-0 rounded-sm p-1 text-muted-foreground/50 opacity-0 group-hover/recent:opacity-100 hover:text-foreground focus-visible:opacity-100"

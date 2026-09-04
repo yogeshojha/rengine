@@ -14,6 +14,7 @@
 	import Plug from '@lucide/svelte/icons/plug';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import TechIcon from '../tech-icon.svelte';
 	import CountryFlag from '../country-flag.svelte';
 	import {
@@ -202,10 +203,16 @@
 						{/if}
 					</span>
 					<span class="min-w-0 flex-1">
-						<span
-							class="block truncate text-sm font-medium {mono ? 'font-mono' : ''}"
-							title={group.label}>{group.label}</span
-						>
+						<Hint text={group.label}>
+							{#snippet child(props)}
+								<span
+									{...props}
+									class="block truncate text-sm font-medium {mono ? 'font-mono' : ''}"
+								>
+									{group.label}
+								</span>
+							{/snippet}
+						</Hint>
 						{#if id.note}
 							<span class="block truncate text-xs text-muted-foreground">{id.note}</span>
 						{/if}

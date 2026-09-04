@@ -14,6 +14,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
@@ -236,39 +237,51 @@
 		</div>
 
 		{#if passive}
-			<button
-				type="button"
-				class="flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-				onclick={(e) => pivot(e, 'is:passive')}
-				title={PORT_SOURCE_HELP[PortSource.INTERNETDB]}
-			>
-				<span class="size-1 rounded-full bg-muted-foreground/50"></span>
-				Not observed by this scan
-			</button>
+			<Hint text={PORT_SOURCE_HELP[PortSource.INTERNETDB]}>
+				{#snippet child(props)}
+					<button
+						{...props}
+						type="button"
+						class="flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+						onclick={(e) => pivot(e, 'is:passive')}
+					>
+						<span class="size-1 rounded-full bg-muted-foreground/50"></span>
+						Not observed by this scan
+					</button>
+				{/snippet}
+			</Hint>
 		{:else if s.banner && !software}
-			<span class="min-w-0 truncate font-mono text-xs text-muted-foreground" title={s.banner}>
-				<HighlightText text={s.banner} {term} />
-			</span>
+			<Hint text={s.banner}>
+				{#snippet child(props)}
+					<span {...props} class="min-w-0 truncate font-mono text-xs text-muted-foreground">
+						<HighlightText text={s.banner ?? ''} {term} />
+					</span>
+				{/snippet}
+			</Hint>
 		{/if}
 	</div>
 
 	<div class={SERVICE_LEAD_COLUMNS[1].width}>
 		{#if software}
-			<button
-				type="button"
-				class="block min-w-0 max-w-full text-left"
-				onclick={(e) => pivot(e, exactToken('product', s.product ?? ''))}
-				title={s.banner ?? software}
-			>
-				<span class="flex items-start gap-1.5">
-					<span class="flex h-4 shrink-0 items-center">
-						<TechIcon name={productBrand(s.product)} class="size-3.5" />
-					</span>
-					<span class="min-w-0 text-xs leading-4 wrap-anywhere hover:underline">
-						<HighlightText text={software} {term} />
-					</span>
-				</span>
-			</button>
+			<Hint text={s.banner ?? software}>
+				{#snippet child(props)}
+					<button
+						{...props}
+						type="button"
+						class="block min-w-0 max-w-full text-left"
+						onclick={(e) => pivot(e, exactToken('product', s.product ?? ''))}
+					>
+						<span class="flex items-start gap-1.5">
+							<span class="flex h-4 shrink-0 items-center">
+								<TechIcon name={productBrand(s.product)} class="size-3.5" />
+							</span>
+							<span class="min-w-0 text-xs leading-4 wrap-anywhere hover:underline">
+								<HighlightText text={software} {term} />
+							</span>
+						</span>
+					</button>
+				{/snippet}
+			</Hint>
 		{:else}
 			<span class="text-xs text-muted-foreground">—</span>
 		{/if}
@@ -285,21 +298,25 @@
 				{#if s.host_count}
 					<div class="flex min-w-0 flex-wrap items-center gap-1">
 						{#each hosts.slice(0, MAX_HOSTS) as h (h)}
-							<button
-								type="button"
-								onclick={(e) => {
-									stopProp(e);
-									onHosts(exactToken('host', h));
-								}}
-								title="Open {h} in Web Assets"
-							>
-								<Badge
-									variant="outline"
-									class="max-w-full cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
-								>
-									<span class="truncate">{h}</span>
-								</Badge>
-							</button>
+							<Hint text="Open {h} in Web Assets">
+								{#snippet child(props)}
+									<button
+										{...props}
+										type="button"
+										onclick={(e) => {
+											stopProp(e);
+											onHosts(exactToken('host', h));
+										}}
+									>
+										<Badge
+											variant="outline"
+											class="max-w-full cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
+										>
+											<span class="truncate">{h}</span>
+										</Badge>
+									</button>
+								{/snippet}
+							</Hint>
 						{/each}
 						<OverflowPopover
 							class="shrink-0"
@@ -327,9 +344,13 @@
 								{s.status_code}
 							</button>
 						{/if}
-						<span class="min-w-0 truncate text-xs text-muted-foreground" title={s.title ?? ''}>
-							{s.title ?? '—'}
-						</span>
+						<Hint text={s.title}>
+							{#snippet child(props)}
+								<span {...props} class="min-w-0 truncate text-xs text-muted-foreground">
+									{s.title ?? '—'}
+								</span>
+							{/snippet}
+						</Hint>
 						{#if s.web_count > 1}
 							<span class="shrink-0 text-xs text-muted-foreground/60">+{s.web_count - 1}</span>
 						{/if}
@@ -339,19 +360,23 @@
 				{/if}
 			{:else if col.key === 'network'}
 				{#if s.asn}
-					<button
-						type="button"
-						class="block min-w-0 max-w-full text-left"
-						onclick={(e) => pivot(e, `asn:${s.asn}`)}
-						title="Filter to AS{s.asn}"
-					>
-						<span class="block font-mono text-xs hover:underline">AS{s.asn}</span>
-						{#if s.asn_org}
-							<span class="block truncate text-xs text-muted-foreground">
-								<HighlightText text={s.asn_org} {term} />
-							</span>
-						{/if}
-					</button>
+					<Hint text="Filter to AS{s.asn}">
+						{#snippet child(props)}
+							<button
+								{...props}
+								type="button"
+								class="block min-w-0 max-w-full text-left"
+								onclick={(e) => pivot(e, `asn:${s.asn}`)}
+							>
+								<span class="block font-mono text-xs hover:underline">AS{s.asn}</span>
+								{#if s.asn_org}
+									<span class="block truncate text-xs text-muted-foreground">
+										<HighlightText text={s.asn_org} {term} />
+									</span>
+								{/if}
+							</button>
+						{/snippet}
+					</Hint>
 				{:else}
 					<span class="text-xs text-muted-foreground">—</span>
 				{/if}

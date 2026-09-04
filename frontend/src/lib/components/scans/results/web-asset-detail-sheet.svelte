@@ -50,6 +50,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Progress } from '$lib/components/ui/progress';
 	import { Kbd } from '$lib/components/ui/kbd';
+	import Hint from '$lib/components/hint.svelte';
 	import ScreenshotThumb from './screenshot-thumb.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import OverflowPopover from './table/overflow-popover.svelte';
@@ -475,10 +476,16 @@
 								</div>
 								<div class={ROW}>
 									<dt class={DT}>First seen</dt>
-									<dd class="text-sm" title={sub.discovered_at}>
-										{formatShortDate(sub.discovered_at)}
-										<span class="text-muted-foreground">· {relativeTime(sub.discovered_at)}</span>
-									</dd>
+									<Hint text={sub.discovered_at}>
+										{#snippet child(props)}
+											<dd {...props} class="text-sm">
+												{formatShortDate(sub.discovered_at)}
+												<span class="text-muted-foreground">
+													· {relativeTime(sub.discovered_at)}
+												</span>
+											</dd>
+										{/snippet}
+									</Hint>
 								</div>
 								{#if sub.favicon_hash}
 									<div class={ROW}>
@@ -862,12 +869,16 @@
 												{r.hosts.length === 1 ? 'host' : 'hosts'}
 												{relationLabel(r)}
 											</p>
-											<p
-												class="truncate font-mono text-[11px] text-muted-foreground"
-												title={r.value}
-											>
-												{r.value}
-											</p>
+											<Hint text={r.value}>
+												{#snippet child(props)}
+													<p
+														{...props}
+														class="truncate font-mono text-[11px] text-muted-foreground"
+													>
+														{r.value}
+													</p>
+												{/snippet}
+											</Hint>
 										</div>
 										{#if dsl}
 											<Button
@@ -882,14 +893,18 @@
 									</div>
 									<div class="flex flex-wrap items-center gap-1">
 										{#each r.hosts.slice(0, MAX_HOSTS) as h (h)}
-											<button type="button" onclick={() => onPivot?.(h)} title="Open {h}">
-												<Badge
-													variant="outline"
-													class="cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
-												>
-													{h}
-												</Badge>
-											</button>
+											<Hint text="Open {h}">
+												{#snippet child(props)}
+													<button {...props} type="button" onclick={() => onPivot?.(h)}>
+														<Badge
+															variant="outline"
+															class="cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
+														>
+															{h}
+														</Badge>
+													</button>
+												{/snippet}
+											</Hint>
 										{/each}
 										<OverflowPopover
 											items={r.hosts}

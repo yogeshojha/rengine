@@ -17,6 +17,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import Hint from '@/components/hint.svelte';
 	import CopyButton from '@/components/copy-button.svelte';
 	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -223,7 +224,11 @@
 
 	{#if !targetId}
 		<div class="hidden w-[150px] shrink-0 lg:block">
-			<div class="truncate text-sm" title={scan.engine_name}>{scan.engine_name}</div>
+			<Hint text={scan.engine_name}>
+				{#snippet child(props)}
+					<div {...props} class="truncate text-sm">{scan.engine_name}</div>
+				{/snippet}
+			</Hint>
 			<div class="mt-0.5 truncate text-xs text-muted-foreground">
 				{scan.context_name ?? 'No context'}
 			</div>
@@ -244,10 +249,12 @@
 						aria-label="{progress.done} of {progress.total} stages done"
 					>
 						{#each progress.steps as step (step.name)}
-							<span
-								title={step.title}
-								class="h-1 flex-1 rounded-full {STAGE_STEP_CLASS[step.state]}"
-							></span>
+							<Hint text={step.title}>
+								{#snippet child(props)}
+									<span {...props} class="h-1 flex-1 rounded-full {STAGE_STEP_CLASS[step.state]}"
+									></span>
+								{/snippet}
+							</Hint>
 						{/each}
 					</div>
 				{/if}
@@ -260,16 +267,20 @@
 			<div class="flex flex-wrap gap-1">
 				{#each scanCountPills(scan) as pill (pill.key)}
 					{@const PillIcon = pill.icon}
-					<Badge
-						variant="outline"
-						title={pill.label}
-						class="gap-1 font-normal tabular-nums {pill.emphasis
-							? 'text-destructive border-destructive/40'
-							: 'text-muted-foreground'}"
-					>
-						<PillIcon class="h-3 w-3" />
-						{pill.value}
-					</Badge>
+					<Hint text={pill.label}>
+						{#snippet child(props)}
+							<Badge
+								{...props}
+								variant="outline"
+								class="gap-1 font-normal tabular-nums {pill.emphasis
+									? 'text-destructive border-destructive/40'
+									: 'text-muted-foreground'}"
+							>
+								<PillIcon class="h-3 w-3" />
+								{pill.value}
+							</Badge>
+						{/snippet}
+					</Hint>
 				{/each}
 			</div>
 		{/if}

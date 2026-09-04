@@ -20,6 +20,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import MatchChips from './match-chips.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import OverflowPopover from '../table/overflow-popover.svelte';
@@ -166,9 +167,13 @@
 
 {#snippet title(clamp: string)}
 	{#if s.page_title}
-		<span class="min-w-0 wrap-anywhere text-foreground/80 {clamp}" title={s.page_title}>
-			<HighlightText text={s.page_title} term={titleTerm} />
-		</span>
+		<Hint text={s.page_title}>
+			{#snippet child(props)}
+				<span {...props} class="min-w-0 wrap-anywhere text-foreground/80 {clamp}">
+					<HighlightText text={s.page_title ?? ''} term={titleTerm} />
+				</span>
+			{/snippet}
+		</Hint>
 		{#if (s.title_count ?? 0) > 1}
 			{@const pageTitle = s.page_title}
 			<SamePagePopover
@@ -297,20 +302,27 @@
 						</Tooltip.Content>
 					</Tooltip.Root>
 				{/if}
-				<button
-					type="button"
-					class="min-w-0 truncate font-mono text-[11px] hover:text-foreground"
-					title="Filter hosts pointing at {s.cname}"
-					onclick={(e) => pivot(e, cnameToken)}
-				>
-					{s.cname}
-				</button>
+				<Hint text="Filter hosts pointing at {s.cname}">
+					{#snippet child(props)}
+						<button
+							{...props}
+							type="button"
+							class="min-w-0 truncate font-mono text-[11px] hover:text-foreground"
+							onclick={(e) => pivot(e, cnameToken)}
+						>
+							{s.cname}
+						</button>
+					{/snippet}
+				</Hint>
 			</div>
 		{:else if redirected}
 			<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
 				<CornerDownRight class="size-3 shrink-0" />
-				<span class="min-w-0 truncate font-mono text-[11px]" title={s.final_url}>{s.final_url}</span
-				>
+				<Hint text={s.final_url}>
+					{#snippet child(props)}
+						<span {...props} class="min-w-0 truncate font-mono text-[11px]">{s.final_url}</span>
+					{/snippet}
+				</Hint>
 			</div>
 		{/if}
 
@@ -453,18 +465,22 @@
 				{#if ips.length}
 					<div class="flex flex-col items-start gap-0.5">
 						{#each ips.slice(0, MAX_IPS) as ip (ip)}
-							<button
-								type="button"
-								class="max-w-full truncate text-left font-mono text-xs hover:underline {isPrivateIp(
-									ip
-								)
-									? 'text-warning'
-									: ''}"
-								title="Filter hosts on {ip}"
-								onclick={(e) => pivot(e, filterToken('ip', ip))}
-							>
-								{ip}
-							</button>
+							<Hint text="Filter hosts on {ip}">
+								{#snippet child(props)}
+									<button
+										{...props}
+										type="button"
+										class="max-w-full truncate text-left font-mono text-xs hover:underline {isPrivateIp(
+											ip
+										)
+											? 'text-warning'
+											: ''}"
+										onclick={(e) => pivot(e, filterToken('ip', ip))}
+									>
+										{ip}
+									</button>
+								{/snippet}
+							</Hint>
 						{/each}
 						<OverflowPopover
 							items={ips}
@@ -478,13 +494,14 @@
 					<span class="text-xs text-muted-foreground">—</span>
 				{/if}
 				{#if s.asn}
-					<div
-						class="mt-0.5 truncate text-[11px] text-muted-foreground"
-						title={s.asn_org ? `AS${s.asn} · ${s.asn_org}` : `AS${s.asn}`}
-					>
-						<span class="font-mono">AS{s.asn}</span>{#if s.asn_org}
-							· {s.asn_org}{/if}
-					</div>
+					<Hint text={s.asn_org ? `AS${s.asn} · ${s.asn_org}` : `AS${s.asn}`}>
+						{#snippet child(props)}
+							<div {...props} class="mt-0.5 truncate text-[11px] text-muted-foreground">
+								<span class="font-mono">AS{s.asn}</span>{#if s.asn_org}
+									· {s.asn_org}{/if}
+							</div>
+						{/snippet}
+					</Hint>
 				{/if}
 				{#if s.is_cdn}
 					<Tooltip.Root>
@@ -554,9 +571,13 @@
 					/>
 				</div>
 			{:else if col.key === 'discovered'}
-				<div class="text-xs text-muted-foreground" title={s.discovered_at}>
-					{relativeTime(s.discovered_at)}
-				</div>
+				<Hint text={s.discovered_at}>
+					{#snippet child(props)}
+						<div {...props} class="text-xs text-muted-foreground">
+							{relativeTime(s.discovered_at)}
+						</div>
+					{/snippet}
+				</Hint>
 				{#if s.discovered_at}
 					<div class="text-[11px] text-muted-foreground/70">{formatShortDate(s.discovered_at)}</div>
 				{/if}
