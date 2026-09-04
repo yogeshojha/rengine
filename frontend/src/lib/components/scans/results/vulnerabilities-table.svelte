@@ -660,7 +660,7 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)]">
+<div class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2">
 	<QueryBar
 		bind:this={queryBar}
 		bind:ref={searchRef}
