@@ -273,7 +273,7 @@ class OriginExposureService:
                     DEFAULT_VHOST,
                     "medium",
                     direct,
-                    named,
+                    _rank_fronted(named),
                     [
                         OriginEvidence(
                             kind="content_hash",
