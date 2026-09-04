@@ -6,6 +6,7 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy import Select, case, exists, func, nullslast, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -86,6 +87,17 @@ _STATUS_RANK = case(
     (Scan.status == ScanStatus.FAILED.value, 3),
     else_=4,
 )
+
+
+def _resolved_config(scan_id: UUID, masked: dict) -> ResolvedScanConfig:
+    try:
+        return ResolvedScanConfig(**masked)
+    except ValidationError as exc:
+        bad = {str(e["loc"][0]) for e in exc.errors() if e["loc"]}
+        logger.warning("scan %s has an unusable execution_config: %s", scan_id, bad)
+        safe = {"target_value": "", "target_type": ""}
+        safe.update({k: v for k, v in masked.items() if k not in bad})
+        return ResolvedScanConfig(**safe)
 
 
 def _mask_config_headers(config: dict) -> dict:
@@ -1129,7 +1141,7 @@ class ScanService:
         cfg.pop("_auth_header_names", None)
         auth = cfg.pop("_auth", None) or {"auth_type": "none"}
         masked = _mask_config_headers(cfg)
-        resolved = ResolvedScanConfig(**masked)
+        resolved = _resolved_config(scan.id, masked)
         return ScanRead(
             id=scan.id,
             project_id=scan.project_id,
