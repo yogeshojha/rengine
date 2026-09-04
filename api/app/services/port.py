@@ -73,14 +73,17 @@ WITH hosts AS (
     FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip
     WHERE s.scan_id = :sid GROUP BY ip
 ), web_top AS (
+    -- the origin probe stores assets whose host is the address itself; a hostname
+    -- describes the service, the default virtual host does not
     SELECT DISTINCT ON (ip, port) ip, port, status_code, url, title
     FROM http_assets
     WHERE scan_id = :sid AND ip IS NOT NULL
-    ORDER BY ip, port, (scheme = 'https') DESC,
+    ORDER BY ip, port, (host = ip) ASC, (scheme = 'https') DESC,
              (status_code BETWEEN 200 AND 399) DESC, url
 ), web_count AS (
     SELECT ip, port, count(DISTINCT host) AS web_count
-    FROM http_assets WHERE scan_id = :sid AND ip IS NOT NULL GROUP BY ip, port
+    FROM http_assets
+    WHERE scan_id = :sid AND ip IS NOT NULL AND host <> ip GROUP BY ip, port
 )
 SELECT p.id AS id,
        p.target_id AS target_id,
