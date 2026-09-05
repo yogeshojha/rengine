@@ -44,6 +44,9 @@
 		onTreeMode: (m: string) => void;
 		expandedCount?: number;
 		onCollapseAll?: () => void;
+		goneCount?: number;
+		goneLens?: boolean;
+		onGoneLens?: (on: boolean) => void;
 	}
 
 	let {
@@ -71,7 +74,10 @@
 		treeMode,
 		onTreeMode,
 		expandedCount = 0,
-		onCollapseAll
+		onCollapseAll,
+		goneCount = 0,
+		goneLens = false,
+		onGoneLens
 	}: Props = $props();
 
 	const QUICK = [
@@ -207,6 +213,29 @@
 				</ToggleGroup.Item>
 			{/each}
 		</ToggleGroup.Root>
+
+		{#if goneCount > 0 && onGoneLens}
+			<Hint text="Endpoints the previous scan of this target recorded and this scan did not">
+				{#snippet child(props)}
+					<span {...props} class="inline-flex">
+						<ToggleGroup.Root
+							type="single"
+							value={goneLens ? 'gone' : ''}
+							onValueChange={(v) => onGoneLens(v === 'gone')}
+							variant="outline"
+							aria-label="Gone since the previous scan"
+						>
+							<ToggleGroup.Item value="gone" class="h-9 gap-1.5 px-3 text-sm font-normal">
+								Gone
+								<span class="text-xs tabular-nums text-muted-foreground">
+									{goneCount.toLocaleString()}
+								</span>
+							</ToggleGroup.Item>
+						</ToggleGroup.Root>
+					</span>
+				{/snippet}
+			</Hint>
+		{/if}
 	</div>
 
 	<div class="flex flex-wrap items-center gap-2">

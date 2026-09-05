@@ -5,6 +5,7 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import Globe from '@lucide/svelte/icons/globe';
+	import ListTree from '@lucide/svelte/icons/list-tree';
 
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Badge } from '$lib/components/ui/badge';
@@ -40,6 +41,7 @@
 		onStep: (dir: -1 | 1) => void;
 		onFilter?: (token: string) => void;
 		onHost?: (filter: string) => void;
+		onReveal?: (e: EndpointRead) => void;
 	}
 
 	let {
@@ -53,7 +55,8 @@
 		total,
 		onStep,
 		onFilter,
-		onHost
+		onHost,
+		onReveal
 	}: Props = $props();
 
 	let detail = $state<EndpointDetail | null>(null);
@@ -159,6 +162,16 @@
 					>
 						<Globe class="size-3" /> View host
 					</Button>
+					{#if onReveal}
+						<Button
+							variant="outline"
+							size="sm"
+							class="h-7 gap-1.5 text-xs"
+							onclick={() => onReveal(endpoint)}
+						>
+							<ListTree class="size-3" /> Show in structure
+						</Button>
+					{/if}
 				</div>
 			</Sheet.Header>
 

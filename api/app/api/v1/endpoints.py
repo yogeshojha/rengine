@@ -19,9 +19,12 @@ from shared.models.endpoint import (
     EndpointPage,
     EndpointSummary,
     EndpointTree,
+    GonePage,
     HostPage,
     MergedLeafPage,
     ScanStructure,
+    VerifyBranchRequest,
+    VerifyBranchResponse,
 )
 
 router = APIRouter(prefix="/endpoints", tags=["endpoints"])
@@ -101,6 +104,26 @@ async def endpoint_tree_leaves(
     body: EndpointFilter,
 ):
     return await service.merged_leaves(scan_id, body)
+
+
+@router.post("/verify", response_model=VerifyBranchResponse)
+async def endpoint_verify_branch(
+    _current_user: CurrentUser,
+    service: Annotated[EndpointService, Depends(get_service)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    body: VerifyBranchRequest,
+):
+    return await service.verify_branch(scan_id, body)
+
+
+@router.post("/gone", response_model=GonePage)
+async def endpoint_gone(
+    _current_user: CurrentUser,
+    service: Annotated[EndpointService, Depends(get_service)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    body: EndpointFilter,
+):
+    return await service.gone(scan_id, body)
 
 
 @router.get("/facets", response_model=EndpointFacets)

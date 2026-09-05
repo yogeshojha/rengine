@@ -34,6 +34,7 @@
 		pad?: string;
 		focused?: boolean;
 		active?: boolean;
+		parentKey?: string;
 		onOpen: (leaf: MergedLeaf) => void;
 		onFilter: (token: string) => void;
 		onHost: (host: string) => void;
@@ -47,6 +48,7 @@
 		pad = 'py-3',
 		focused = false,
 		active = false,
+		parentKey = '',
 		onOpen,
 		onFilter,
 		onHost
@@ -62,7 +64,12 @@
 	let verifiedMix = $derived(
 		Object.fromEntries(Object.entries(leaf.status_mix).filter(([k]) => k !== 'none'))
 	);
-	let attrs = $derived({ [OUTLINE_ROW_ATTR]: leaf.key, 'data-outline-kind': 'leaf' });
+	let attrs = $derived({
+		[OUTLINE_ROW_ATTR]: leaf.key,
+		'data-outline-kind': 'leaf',
+		'data-outline-name': leaf.name,
+		'data-outline-parent': parentKey
+	});
 </script>
 
 <div
@@ -165,6 +172,11 @@
 					>
 						{leaf.host_names[0]}
 					</button>
+				{/if}
+				{#if leaf.new_count}
+					<Badge variant="info" class="h-4 px-1 text-[10px]">
+						{leaf.new_count === leaf.endpoints ? 'New' : `+${leaf.new_count} new`}
+					</Badge>
 				{/if}
 				{#if sensitive.length || testable.length}
 					<span class="flex flex-wrap items-center gap-1">

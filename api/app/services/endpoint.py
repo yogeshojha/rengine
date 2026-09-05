@@ -3,10 +3,11 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Text, cast, desc, func, or_, select, text
+from sqlalchemy import Text, cast, desc, exists, func, select, text
 from sqlalchemy.dialects.postgresql import JSONB, array
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.services.asset_query import (
     NO_JIT,
@@ -21,7 +22,12 @@ from app.services.asset_query import (
     parse_query,
     query_error_for,
 )
-from app.services.endpoint_tree import build_tree
+from app.services.endpoint_tree import (
+    anomaly_for,
+    archive_only_for,
+    build_tree,
+    static_clause,
+)
 from shared.definitions.asset_query import COUNT_CAP, ENDPOINT_QUERY
 from shared.definitions.endpoints import (
     ADMIN_INTERESTS,
@@ -34,7 +40,6 @@ from shared.definitions.endpoints import (
     SOURCE_KIND,
     SOURCE_LABELS,
     STATIC_CLASSES,
-    STATIC_EXTENSIONS,
     EndpointClass,
     PathInterest,
     folder_glyph,
@@ -53,12 +58,17 @@ from shared.models.endpoint import (
     EndpointRead,
     EndpointSummary,
     EndpointTree,
+    GonePage,
     HostPage,
     MergedLeaf,
     MergedLeafPage,
     SourceEvidence,
     TreeNode,
+    VerifyBranchRequest,
+    VerifyBranchResponse,
 )
+from shared.models.scan import Scan
+from shared.services.celery_dispatch import dispatch_endpoint_verify
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -67,14 +77,24 @@ _FACET_LIMIT = 30
 _MERGED_HOST_SAMPLE = 12
 _TOP_FOLDERS = 3
 _HOST_PAGE_MAX = 200
+_AUTH_WALL = (401, 403)
 _STATUS_CLASSES = ("2xx", "3xx", "4xx", "5xx", "none")
 
 
 def _is_static():
-    # coalesce keeps the predicate two-valued, or NOT drops every extension-less path
-    return or_(
-        Endpoint.endpoint_class.in_(tuple(STATIC_CLASSES)),
-        func.coalesce(Endpoint.extension, "").in_(tuple(STATIC_EXTENSIONS)),
+    return static_clause()
+
+
+def _gone_from(previous_scan_id: UUID, scan_id: UUID):
+    """Rows of the previous scan whose signature this scan never recorded."""
+    current = aliased(Endpoint)
+    return (
+        Endpoint.scan_id == previous_scan_id,
+        ~exists(
+            select(1).where(
+                current.scan_id == scan_id, current.signature == Endpoint.signature
+            )
+        ),
     )
 
 
@@ -461,7 +481,59 @@ class EndpointService:
         if predicate is not None:
             base = base.where(predicate)
         await self.session.execute(text(STATEMENT_TIMEOUT))
-        return await build_tree(self.session, base, mode=mode)
+        previous, _at = await self._previous_scan(scan_id)
+        return await build_tree(
+            self.session,
+            base,
+            scan_id=scan_id,
+            mode=mode,
+            previous_scan_id=previous,
+            hide_static=f.hide_static,
+        )
+
+    async def _previous_scan(
+        self, scan_id: UUID
+    ) -> tuple[UUID | None, datetime | None]:
+        """The latest earlier scan of the same target that recorded endpoints."""
+        target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+        cutoff = (
+            select(func.min(Endpoint.discovered_at))
+            .where(Endpoint.scan_id == scan_id)
+            .scalar_subquery()
+        )
+        row = (
+            await self.session.execute(
+                select(Endpoint.scan_id, func.max(Endpoint.discovered_at).label("at"))
+                .where(
+                    Endpoint.target_id == target,
+                    Endpoint.scan_id != scan_id,
+                    Endpoint.discovered_at < cutoff,
+                )
+                .group_by(Endpoint.scan_id)
+                .order_by(desc("at"))
+                .limit(1)
+            )
+        ).first()
+        return (row.scan_id, row.at) if row else (None, None)
+
+    async def _gone_by_host(
+        self,
+        scan_id: UUID,
+        previous_scan_id: UUID | None,
+        hosts: list[str],
+        hide_static: bool,
+    ) -> dict[str, int]:
+        if previous_scan_id is None or not hosts:
+            return {}
+        query = (
+            select(Endpoint.host, func.count())
+            .where(*_gone_from(previous_scan_id, scan_id), Endpoint.host.in_(hosts))
+            .group_by(Endpoint.host)
+        )
+        if hide_static:
+            query = query.where(~static_clause())
+        rows = await self.session.execute(query)
+        return {host: int(n) for host, n in rows.all()}
 
     async def hosts(self, scan_id: UUID, f: EndpointFilter) -> HostPage:
         """The hosts of the outline, rolled up in SQL so ten thousand of them page cheaply."""
@@ -504,6 +576,10 @@ class EndpointService:
                 func.count()
                 .filter(Endpoint.endpoint_class == EndpointClass.API.value)
                 .label("api"),
+                func.count().filter(endpoint_is_new(scan_id)).label("fresh"),
+                func.count()
+                .filter(Endpoint.status_code.in_(_AUTH_WALL))
+                .label("walled"),
                 sensitive.label("sensitive"),
                 admin.label("admin"),
                 func.min(Endpoint.url).label("sample"),
@@ -530,6 +606,8 @@ class EndpointService:
         sources = await self._host_values(scoped, names, Endpoint.sources)
         classes = await self._host_classes(scoped, names)
         folders = await self._host_top_folders(scoped, names)
+        previous, _at = await self._previous_scan(scan_id)
+        gone = await self._gone_by_host(scan_id, previous, names, f.hide_static)
         items = []
         for r in rows:
             n = int(r.n)
@@ -542,6 +620,7 @@ class EndpointService:
             if n - verified:
                 mix["none"] = n - verified
             flags = set(interests.get(r.host, []))
+            host_sources = set(sources.get(r.host, []))
             items.append(
                 TreeNode(
                     key=f"{r.host}/",
@@ -562,6 +641,12 @@ class EndpointService:
                     params=int(r.params),
                     verified=verified,
                     unprobed=n - verified,
+                    new_count=int(r.fresh),
+                    gone_count=gone.get(r.host, 0),
+                    anomaly=anomaly_for(
+                        int(r.walled), mix.get("2xx", 0), mix.get("5xx", 0), verified
+                    ),
+                    archive_only=archive_only_for(host_sources, mix),
                     glyph=folder_glyph(flags, int(r.api), n),
                     sample_url=r.sample,
                     query=_token("host", ":", r.host),
@@ -670,6 +755,7 @@ class EndpointService:
                 Endpoint.status_code,
                 Endpoint.interest,
                 Endpoint.sources,
+                endpoint_is_new(scan_id).label("is_new"),
             ),
         )
         try:
@@ -707,6 +793,8 @@ class EndpointService:
                 folded[key] = leaf
                 hosts[key] = set()
             leaf.endpoints += 1
+            if r.is_new:
+                leaf.new_count += 1
             hosts[key].add(r.host)
             bucket = _status_bucket(r.status_code) if r.is_probed else "none"
             leaf.status_mix[bucket] = leaf.status_mix.get(bucket, 0) + 1
@@ -728,6 +816,80 @@ class EndpointService:
             )
         )
         return MergedLeafPage(items=items, total=len(items), truncated=truncated)
+
+    async def gone(self, scan_id: UUID, f: EndpointFilter) -> GonePage:
+        """Endpoints the previous scan of this target recorded and this scan never did."""
+        previous, previous_at = await self._previous_scan(scan_id)
+        if previous is None:
+            return GonePage()
+        now = utc_now()
+        base = select(Endpoint).where(*_gone_from(previous, scan_id))
+        base = self._apply_filter(base, f.model_copy(update={"new": False}), previous)
+        try:
+            predicate = self._compiled(previous, f, now)
+        except QuerySyntaxError as exc:
+            return GonePage(
+                error=QueryError(
+                    message=exc.message, hint=exc.hint, start=exc.start, end=exc.end
+                )
+            )
+        if predicate is not None:
+            base = base.where(predicate)
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        size = max(1, min(f.size, 200))
+        offset = max(0, (max(f.page, 1) - 1) * size)
+        counted = await self.session.scalar(
+            select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
+        )
+        rows = (
+            (
+                await self.session.execute(
+                    self._order(base, f).limit(size).offset(offset)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        total = int(counted or 0)
+        capped = total > COUNT_CAP
+        return GonePage(
+            items=[self._to_read(row) for row in rows],
+            total=min(total, COUNT_CAP) if capped else total,
+            total_capped=capped,
+            page=max(f.page, 1),
+            size=size,
+            previous_scan_id=previous,
+            previous_scan_at=previous_at,
+        )
+
+    async def verify_branch(
+        self, scan_id: UUID, body: VerifyBranchRequest
+    ) -> VerifyBranchResponse:
+        """Queue verification of the unchecked, non-static endpoints under one folder."""
+        query = select(func.count()).where(
+            Endpoint.scan_id == scan_id,
+            Endpoint.host == body.host,
+            Endpoint.is_probed.is_(False),
+            Endpoint.endpoint_class.notin_(tuple(STATIC_CLASSES)),
+        )
+        if body.dir_path and body.dir_path != "/":
+            prefix = (
+                body.dir_path if body.dir_path.endswith("/") else f"{body.dir_path}/"
+            )
+            escaped = (
+                prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            )
+            query = query.where(Endpoint.dir_path.like(f"{escaped}%", escape="\\"))
+        unverified = int(await self.session.scalar(query) or 0)
+        if not unverified:
+            return VerifyBranchResponse(queued=0, unverified=0, accepted=False)
+        queued = min(unverified, body.limit)
+        accepted = dispatch_endpoint_verify(
+            str(scan_id), body.host, body.dir_path, queued
+        )
+        return VerifyBranchResponse(
+            queued=queued if accepted else 0, unverified=unverified, accepted=accepted
+        )
 
     async def coverage(self, scan_id: UUID) -> list[CoverageRead]:
         rows = (
@@ -783,6 +945,22 @@ class EndpointService:
         out = EndpointSummary(total=total, hosts=int(row.hosts))
         if not total:
             return out
+        previous, previous_at = await self._previous_scan(scan_id)
+        out.previous_scan_id = previous
+        out.previous_scan_at = previous_at
+        if previous is not None:
+            gone_scope = [*_gone_from(previous, scan_id)]
+            if host:
+                gone_scope.append(Endpoint.host == host)
+            out.gone = int(
+                await self.session.scalar(select(func.count()).where(*gone_scope)) or 0
+            )
+        out.new = int(
+            await self.session.scalar(
+                select(func.count()).where(*scope, endpoint_is_new(scan_id))
+            )
+            or 0
+        )
         out.probed = int(
             await self.session.scalar(
                 select(func.count()).where(*scope, Endpoint.is_probed.is_(True))

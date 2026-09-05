@@ -17,6 +17,7 @@
 		ENDPOINT_CLASS_ICONS,
 		ENDPOINT_CLASS_LABELS,
 		ENDPOINT_CLASS_TONE,
+		EndpointSource,
 		INTEREST_LABELS,
 		SENSITIVE_INTEREST,
 		STATIC_CLASSES
@@ -36,6 +37,8 @@
 		depth?: number;
 		label?: string;
 		rowKey?: string;
+		gone?: boolean;
+		parentKey?: string;
 		onOpen?: (e: EndpointRead) => void;
 		onFilter?: (token: string) => void;
 	}
@@ -51,6 +54,8 @@
 		depth = 0,
 		label,
 		rowKey,
+		gone = false,
+		parentKey = '',
 		onOpen,
 		onFilter
 	}: Props = $props();
@@ -72,7 +77,16 @@
 		const scheme = endpoint.scheme && endpoint.scheme !== 'https' ? endpoint.scheme : '';
 		return scheme || port ? `${scheme || 'https'}${port}` : '';
 	});
-	let attrs = $derived(rowKey ? { [OUTLINE_ROW_ATTR]: rowKey, 'data-outline-kind': 'leaf' } : {});
+	let attrs = $derived(
+		rowKey
+			? {
+					[OUTLINE_ROW_ATTR]: rowKey,
+					'data-outline-kind': 'leaf',
+					'data-outline-name': leaf,
+					'data-outline-parent': parentKey
+				}
+			: {}
+	);
 
 	function size(bytes: number | null): string {
 		if (bytes == null) return '—';
@@ -83,7 +97,7 @@
 </script>
 
 {#snippet badges(compact: boolean)}
-	{#if sensitive.length || testable.length || endpoint.is_new}
+	{#if sensitive.length || testable.length || endpoint.is_new || gone || endpoint.sources.includes(EndpointSource.ROBOTS)}
 		<div class="flex flex-wrap items-center gap-1 {compact ? '' : 'mt-1'}">
 			{#each sensitive as key (key)}
 				<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-[10px]">
@@ -98,6 +112,22 @@
 			{/each}
 			{#if compact && endpoint.is_new}
 				<Badge variant="info" class="h-4 px-1 text-[10px]">New</Badge>
+			{/if}
+			{#if endpoint.sources.includes(EndpointSource.ROBOTS)}
+				<Hint
+					text="Listed in the site's own robots.txt. What the owner asks crawlers to skip is worth a look."
+				>
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<Badge variant="outline" class="h-4 px-1.5 text-[10px] font-normal">robots.txt</Badge>
+						</span>
+					{/snippet}
+				</Hint>
+			{/if}
+			{#if gone}
+				<Badge variant="outline" class="h-4 px-1.5 text-[10px] font-normal text-muted-foreground">
+					Not found this scan
+				</Badge>
 			{/if}
 		</div>
 	{/if}

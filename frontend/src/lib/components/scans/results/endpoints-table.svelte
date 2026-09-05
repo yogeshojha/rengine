@@ -2,12 +2,14 @@
 	import { page as appPage } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { untrack } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import X from '@lucide/svelte/icons/x';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Waypoints from '@lucide/svelte/icons/waypoints';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import History from '@lucide/svelte/icons/history';
 
 	import * as Card from '$lib/components/ui/card';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -46,6 +48,7 @@
 		endpointActiveFacetCount,
 		endpointQueryChips,
 		highlightTerms,
+		locationTokens,
 		EMPTY_ENDPOINT_FACETS,
 		ENDPOINT_CLASS_TABS,
 		ENDPOINT_SORTS,
@@ -56,10 +59,14 @@
 		type EndpointRead as Endpoint,
 		type EndpointSummary,
 		type EndpointTree,
-		type HostPage
+		type HostPage,
+		type GonePage,
+		type TreeNode
 	} from '$lib/utilities/endpoints';
+	import type { Crumb } from './endpoints/outline-context';
 	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { formatShortDate } from '$lib/utilities/dates';
 
 	interface Props {
 		scanId: string;
@@ -153,6 +160,14 @@
 	let treeReq = 0;
 	let outline = $state<ReturnType<typeof Outline> | null>(null);
 	let expandedCount = $state(0);
+	let goneLens = $state(false);
+	let gonePage = $state<GonePage | null>(null);
+	let goneLoading = $state(false);
+	let goneIndex = $state(0);
+	let goneReq = 0;
+	let selectedScanId = $state('');
+	let headEl = $state<HTMLElement | null>(null);
+	let crumbs = $state<Crumb[]>([]);
 	let coverage = $state<EndpointCoverageRead[]>([]);
 	let summary = $state<EndpointSummary | null>(null);
 
@@ -498,8 +513,40 @@
 	});
 
 	function open(e: Endpoint) {
+		selectedScanId = scanId;
 		selected = e;
 		drawerOpen = true;
+	}
+	async function verifyBranch(node: TreeNode) {
+		if (!node.host) return;
+		const where = node.kind === 'host' ? node.host : `${node.path} on ${node.host}`;
+		try {
+			const res = await endpointsApi.verify(projectId, scanId, {
+				host: node.host,
+				dir_path: node.kind === 'host' ? null : node.path,
+				limit: 500
+			});
+			if (!res.accepted) {
+				toast.error(
+					res.unverified
+						? 'The worker did not accept the job.'
+						: `Nothing under ${where} is unchecked.`
+				);
+				return;
+			}
+			toast.success(
+				`Verifying ${res.queued.toLocaleString()} ${res.queued === 1 ? 'endpoint' : 'endpoints'} under ${where}. Refresh in a minute to see the statuses.`
+			);
+		} catch {
+			toast.error('Verification could not be queued.');
+		}
+	}
+	function reveal(e: Endpoint) {
+		drawerOpen = false;
+		goneLens = false;
+		view = 'outline';
+		treeMode = 'host';
+		setQuery({ ...query, search: locationTokens(e.host, e.path) });
 	}
 	function step(dir: -1 | 1) {
 		const next = selectedIndex + dir;
@@ -524,6 +571,48 @@
 		if (isOutline) outlineColumnsPref = next;
 		else listColumnsPref = next;
 	}
+	let goneFilter = $derived(compiled(query, sort.key, sort.dir, goneIndex + 1, pageSize));
+	let goneSig = $derived(JSON.stringify(goneFilter));
+	let loadedGoneSig = '';
+
+	async function loadGone() {
+		if (!scanId || !projectId) return;
+		const my = ++goneReq;
+		loadedGoneSig = goneSig;
+		goneLoading = true;
+		try {
+			const res = await endpointsApi.gone(projectId, scanId, goneFilter);
+			if (my === goneReq) gonePage = res;
+		} catch {
+			if (my === goneReq) {
+				gonePage = null;
+				loadedGoneSig = '';
+			}
+		} finally {
+			if (my === goneReq) goneLoading = false;
+		}
+	}
+
+	$effect(() => {
+		void goneSig;
+		if (!seen || !goneLens) return;
+		if (goneSig === loadedGoneSig) return;
+		const handle = setTimeout(() => untrack(loadGone), SEARCH_DEBOUNCE_MS);
+		return () => clearTimeout(handle);
+	});
+
+	$effect(() => {
+		void query;
+		void sort.key;
+		untrack(() => (goneIndex = 0));
+	});
+
+	function openGone(e: Endpoint) {
+		selectedScanId = gonePage?.previous_scan_id ?? scanId;
+		selected = e;
+		drawerOpen = true;
+	}
+
 	function setHideStatic(value: boolean) {
 		hideStaticPref = { ...hideStaticPref, [view]: value };
 		pageIndex = 0;
@@ -589,7 +678,10 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2">
+<div
+	class="relative z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2"
+	bind:this={headEl}
+>
 	<QueryBar
 		bind:this={queryBar}
 		bind:ref={searchRef}
@@ -607,6 +699,22 @@
 		onChange={(v) => setQuery({ ...query, search: v })}
 		onSubmit={flushSearch}
 	/>
+	{#if isOutline && !goneLens && crumbs.length}
+		<div
+			class="absolute inset-x-0 top-full flex h-8 items-center gap-1 overflow-hidden border-x border-b bg-card/95 px-4 text-xs shadow-sm backdrop-blur"
+		>
+			{#each crumbs as crumb, i (crumb.key)}
+				{#if i > 0}<span class="text-muted-foreground/60">›</span>{/if}
+				<button
+					type="button"
+					class="max-w-64 truncate font-mono text-muted-foreground hover:text-foreground hover:underline"
+					onclick={() => outline?.jumpTo(crumb.key)}
+				>
+					{crumb.name}
+				</button>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 {#snippet emptyStates()}
@@ -673,6 +781,8 @@
 		{summary}
 		hidden={hideStatic ? staticTotal : 0}
 		onShowStatic={() => setHideStatic(false)}
+		onShowNew={() => setQuery({ ...query, newOnly: true })}
+		onShowGone={() => (goneLens = true)}
 	/>
 
 	<FilterBar
@@ -701,6 +811,9 @@
 		onTreeMode={(m) => (treeMode = m)}
 		{expandedCount}
 		onCollapseAll={() => outline?.collapseAll()}
+		goneCount={summary?.gone ?? 0}
+		{goneLens}
+		onGoneLens={(on) => (goneLens = on)}
 	/>
 
 	{#if chips.length > 0}
@@ -731,7 +844,87 @@
 		</div>
 	{/if}
 
-	{#if isOutline}
+	{#if goneLens}
+		<div
+			class="flex flex-wrap items-center gap-2 border-b bg-muted/10 px-4 py-2 text-xs text-muted-foreground"
+		>
+			<History class="size-3.5 shrink-0" />
+			{#if gonePage}
+				<span>
+					{gonePage.total.toLocaleString()}
+					{gonePage.total === 1 ? 'endpoint' : 'endpoints'} from the scan on
+					{gonePage.previous_scan_at
+						? formatShortDate(gonePage.previous_scan_at)
+						: 'the previous run'}
+					{gonePage.total === 1 ? 'was' : 'were'} not found in this scan. Filters and the query apply
+					to them too.
+				</span>
+			{:else}
+				<span>Comparing with the previous scan of this target…</span>
+			{/if}
+			<button
+				type="button"
+				class="ml-auto rounded-sm text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+				onclick={() => (goneLens = false)}
+			>
+				Back to this scan
+			</button>
+		</div>
+		{#if goneLoading && !gonePage}
+			<div class="divide-y divide-border/50">
+				{#each Array(5) as _, i (i)}
+					<div class="flex items-center gap-3 px-4 py-3">
+						<Skeleton class="h-9 flex-1" />
+						<Skeleton class="hidden h-5 w-40 sm:block" />
+					</div>
+				{/each}
+			</div>
+		{:else if gonePage && gonePage.items.length === 0}
+			<EmptyState
+				icon={History}
+				title="Nothing is gone"
+				description="Every endpoint the previous scan recorded is still here, within the current filters."
+				class="rounded-none border-0 bg-transparent py-16"
+			/>
+		{:else if gonePage}
+			<ScrollArea orientation="horizontal">
+				<ListHeader
+					lead={ENDPOINT_LEAD_COLUMNS}
+					columns={ENDPOINT_COLUMNS.filter((c) =>
+						(listColumnsPref ?? DEFAULT_VISIBLE_ENDPOINT_COLUMNS).includes(c.key)
+					)}
+					sortKey={sort.key}
+					sortDir={sort.dir}
+					onSort={toggleSort}
+				/>
+				<div class="divide-y divide-border/50 transition-opacity {goneLoading ? 'opacity-60' : ''}">
+					{#each gonePage.items as e (e.id)}
+						<EndpointRow
+							endpoint={e}
+							{terms}
+							columns={listColumnsPref ?? DEFAULT_VISIBLE_ENDPOINT_COLUMNS}
+							gone
+							active={drawerOpen && selected?.id === e.id}
+							pad={rowPad}
+							onOpen={openGone}
+							onFilter={applyDsl}
+						/>
+					{/each}
+				</div>
+			</ScrollArea>
+			{#if gonePage.total > pageSize}
+				<ResultsPagination
+					total={gonePage.total}
+					capped={gonePage.total_capped}
+					page={goneIndex}
+					{pageSize}
+					noun="endpoint"
+					plural="endpoints"
+					onPage={(p) => (goneIndex = p)}
+				/>
+			{/if}
+		{/if}
+	{:else if isOutline}
 		{#if errored && !tree && !hosts}
 			{@render retryState()}
 		{:else if !treeLoading && ((tree && tree.nodes.length === 0) || (hosts && hosts.items.length === 0))}
@@ -762,6 +955,9 @@
 				onHost={pivotHost}
 				onHostPage={(p) => (hostPage = p)}
 				onExpandedChange={(n) => (expandedCount = n)}
+				onVerify={verifyBranch}
+				edgeEl={headEl}
+				onCrumbs={(c) => (crumbs = c)}
 			/>
 		{/if}
 	{:else}
@@ -839,7 +1035,7 @@
 <EndpointDetailSheet
 	endpoint={selected}
 	{projectId}
-	{scanId}
+	scanId={selectedScanId || scanId}
 	open={drawerOpen}
 	onOpenChange={(o) => (drawerOpen = o)}
 	index={isOutline ? -1 : selectedIndex}
@@ -848,4 +1044,5 @@
 	onStep={step}
 	onFilter={applyDsl}
 	onHost={showHost}
+	onReveal={reveal}
 />

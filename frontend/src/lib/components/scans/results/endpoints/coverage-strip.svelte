@@ -16,9 +16,19 @@
 		compact?: boolean;
 		hidden?: number;
 		onShowStatic?: () => void;
+		onShowNew?: () => void;
+		onShowGone?: () => void;
 	}
 
-	let { coverage, summary, compact = false, hidden = 0, onShowStatic }: Props = $props();
+	let {
+		coverage,
+		summary,
+		compact = false,
+		hidden = 0,
+		onShowStatic,
+		onShowNew,
+		onShowGone
+	}: Props = $props();
 
 	const n = (value: number | null | undefined) =>
 		value === null || value === undefined ? null : value.toLocaleString();
@@ -69,6 +79,26 @@
 			onclick={onShowStatic}
 		>
 			{n(hidden)} static hidden
+		</button>
+	{/if}
+	{#if summary?.new && onShowNew}
+		<span>·</span>
+		<button
+			type="button"
+			class="rounded-sm text-info hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			onclick={onShowNew}
+		>
+			{n(summary.new)} new since the previous scan
+		</button>
+	{/if}
+	{#if summary?.gone && onShowGone}
+		<span>·</span>
+		<button
+			type="button"
+			class="rounded-sm text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			onclick={onShowGone}
+		>
+			{n(summary.gone)} gone
 		</button>
 	{/if}
 	{#if coverage.length}

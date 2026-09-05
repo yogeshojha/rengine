@@ -7,6 +7,13 @@ export const LEAF_PAGE = 25;
 // a search opens branches only while the result still fits on one screen
 export const AUTO_OPEN_ROWS = 40;
 
+export interface Crumb {
+	key: string;
+	name: string;
+}
+
+export const CRUMB_HEIGHT = 32;
+
 export interface OpenBudget {
 	enabled: boolean;
 	used: number;
@@ -34,6 +41,8 @@ export interface OutlineContext {
 	onShowInList: (token: string) => void;
 	onHost: (host: string) => void;
 	copyBranch: (node: TreeNode) => void;
+	copyWordlist: (node: TreeNode) => void;
+	verifyBranch?: (node: TreeNode) => void;
 }
 
 export function nodeCost(node: TreeNode, children: TreeNode[]): number {

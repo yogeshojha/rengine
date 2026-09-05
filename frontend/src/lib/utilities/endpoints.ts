@@ -1,5 +1,6 @@
 import type { QueryError } from '$lib/types/asset-query';
 import { lex, unquote } from './query-lexer';
+import { exactToken } from './scan-insights';
 import type { SortOption } from '$lib/components/scans/results/table/columns';
 import {
 	ENDPOINT_CLASS_LABELS,
@@ -101,6 +102,10 @@ export interface TreeNode {
 	params: number;
 	verified: number;
 	unprobed: number;
+	new_count: number;
+	gone_count: number;
+	anomaly: string | null;
+	archive_only: boolean;
 	glyph: string;
 	sample_url: string | null;
 	leaf: TreeLeaf | null;
@@ -134,6 +139,7 @@ export interface MergedLeaf {
 	interest: string[];
 	sources: string[];
 	host_names: string[];
+	new_count: number;
 	sample_id: string;
 	sample_url: string;
 	sample_status: number | null;
@@ -261,8 +267,17 @@ export interface EndpointSummary {
 	with_params: number;
 	interesting: number;
 	hosts: number;
+	new: number;
+	gone: number;
+	previous_scan_id: string | null;
+	previous_scan_at: string | null;
 	by_class: Record<string, number>;
 	by_source: Record<string, number>;
+}
+
+export interface GonePage extends EndpointPage {
+	previous_scan_id: string | null;
+	previous_scan_at: string | null;
 }
 
 export interface EndpointQuery {
@@ -450,6 +465,25 @@ export function highlightTerms(search: string, known: (name: string) => boolean)
 }
 
 const CONNECTOR_WORDS = new Set(['and', 'or', 'not']);
+
+// the two exact tokens that make the outline open to one endpoint
+export function locationTokens(host: string, path: string): string {
+	return `${exactToken('host', host)} ${exactToken('path', path)}`;
+}
+
+// a finding's location may be a bare host:port; without a scheme the URL parser reads the host as one
+export function locationTokensFromUrl(url: string): string | null {
+	const raw = url.trim();
+	if (!raw) return null;
+	try {
+		const u = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+		if (!u.hostname) return null;
+		const hasPath = /^[^/]*\/\/[^/]+\//.test(u.href) && u.pathname !== '/';
+		return hasPath ? locationTokens(u.hostname, u.pathname) : exactToken('host', u.hostname);
+	} catch {
+		return null;
+	}
+}
 
 export function endpointLabel(e: EndpointRead): string {
 	if (e.path === '/') return '/';

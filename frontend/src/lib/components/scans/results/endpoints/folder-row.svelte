@@ -4,8 +4,11 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Filter from '@lucide/svelte/icons/filter';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
+	import ListOrdered from '@lucide/svelte/icons/list-ordered';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -38,10 +41,14 @@
 		pad?: string;
 		hint?: string;
 		focused?: boolean;
+		unverified?: number;
+		parentKey?: string;
 		onToggle: () => void;
 		onCopy: () => void;
+		onWordlist: () => void;
 		onOnly: () => void;
 		onList: () => void;
+		onVerify?: () => void;
 	}
 
 	let {
@@ -54,15 +61,20 @@
 		pad = 'py-3',
 		hint = '',
 		focused = false,
+		unverified = 0,
+		parentKey = '',
 		onToggle,
 		onCopy,
+		onWordlist,
 		onOnly,
-		onList
+		onList,
+		onVerify
 	}: Props = $props();
 
 	const MAX_BADGES = 2;
 
 	let isHost = $derived(node.kind === 'host');
+	let isGroup = $derived(node.kind === 'group');
 	let glyph = $derived(node.glyph in FOLDER_GLYPH_ICONS ? node.glyph : FolderGlyph.FOLDER);
 	let Icon = $derived(
 		open && glyph === FolderGlyph.FOLDER ? FOLDER_OPEN_ICON : FOLDER_GLYPH_ICONS[glyph]
@@ -75,8 +87,16 @@
 	let verifiedMix = $derived(
 		Object.fromEntries(Object.entries(node.status_mix).filter(([k]) => k !== 'none'))
 	);
-	let hostNote = $derived(merged && !isHost && node.hosts > 1 ? `on ${node.hosts} hosts` : '');
-	let attrs = $derived({ [OUTLINE_ROW_ATTR]: node.key, 'data-outline-kind': 'folder' });
+	let hostNote = $derived(
+		merged && !isHost && !isGroup && node.hosts > 1 ? `on ${node.hosts} hosts` : ''
+	);
+	let noun = $derived(isHost ? 'host' : isGroup ? 'group' : 'folder');
+	let attrs = $derived({
+		[OUTLINE_ROW_ATTR]: node.key,
+		'data-outline-kind': 'folder',
+		'data-outline-name': node.name,
+		'data-outline-parent': parentKey
+	});
 </script>
 
 <div
@@ -122,14 +142,34 @@
 				class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-left"
 				onclick={onToggle}
 			>
-				<span class="font-mono {isHost ? 'text-sm' : 'text-sm'} font-medium break-all">
+				<span
+					class="text-sm font-medium break-all {isGroup ? '' : 'font-mono'} {node.archive_only
+						? 'text-muted-foreground'
+						: ''}"
+				>
 					<HighlightText text={node.name} {terms} />
 				</span>
 				{#if hostNote}
 					<span class="text-[11px] text-muted-foreground">{hostNote}</span>
 				{/if}
 				{#if hint}
-					<span class="font-mono text-[11px] text-muted-foreground">in {hint}</span>
+					<span class="font-mono text-[11px] text-muted-foreground">{hint}</span>
+				{/if}
+				{#if node.archive_only}
+					<Hint
+						text="Every path here came from an archive and none answered. It may be a decommissioned app."
+					>
+						{#snippet child(props)}
+							<span {...props} class="inline-flex">
+								<Badge
+									variant="outline"
+									class="h-4 px-1.5 text-[10px] font-normal text-muted-foreground"
+								>
+									archive only
+								</Badge>
+							</span>
+						{/snippet}
+					</Hint>
 				{/if}
 				{#if shownBadges.length}
 					<span class="flex flex-wrap items-center gap-1">
@@ -147,11 +187,47 @@
 						{/if}
 					</span>
 				{/if}
+				{#if node.anomaly}
+					<span class="flex items-center gap-1 text-[11px] text-warning">
+						<TriangleAlert class="size-3" />
+						{node.anomaly}
+					</span>
+				{/if}
 			</button>
-			<span class="ml-auto shrink-0 pl-3 text-xs tabular-nums text-muted-foreground">
+			<span
+				class="ml-auto flex shrink-0 items-center gap-1.5 pl-3 text-xs tabular-nums text-muted-foreground"
+			>
 				<span class="font-medium text-foreground">{node.subtree_count.toLocaleString()}</span>
 				{#if isHost && node.verified}
-					· {node.verified.toLocaleString()} verified
+					<span>· {node.verified.toLocaleString()} verified</span>
+				{/if}
+				{#if node.new_count}
+					<Hint
+						text="{node.new_count.toLocaleString()} {node.new_count === 1
+							? 'endpoint'
+							: 'endpoints'} first seen in this scan"
+					>
+						{#snippet child(props)}
+							<span {...props} class="font-medium text-info"
+								>+{node.new_count.toLocaleString()}</span
+							>
+						{/snippet}
+					</Hint>
+				{/if}
+				{#if node.gone_count}
+					<Hint
+						text="{node.gone_count.toLocaleString()} {node.gone_count === 1
+							? 'endpoint'
+							: 'endpoints'} from the previous scan {node.gone_count === 1
+							? 'was'
+							: 'were'} not found here"
+					>
+						{#snippet child(props)}
+							<span {...props} class="font-medium text-muted-foreground"
+								>−{node.gone_count.toLocaleString()}</span
+							>
+						{/snippet}
+					</Hint>
 				{/if}
 			</span>
 		</div>
@@ -194,15 +270,29 @@
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end" class="w-52">
+				<DropdownMenu.Content align="end" class="w-60">
 					<DropdownMenu.Item onclick={onOnly}>
-						<Filter class="size-3.5" /> Only this {isHost ? 'host' : 'folder'}
+						<Filter class="size-3.5" /> Only this {noun}
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={onList}>
 						<Rows3 class="size-3.5" /> Show in list
 					</DropdownMenu.Item>
+					{#if onVerify && unverified > 0}
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item onclick={onVerify}>
+							<ShieldCheck class="size-3.5" />
+							Verify this {noun}
+							<span class="ml-auto text-xs tabular-nums text-muted-foreground">
+								{unverified.toLocaleString()} unchecked
+							</span>
+						</DropdownMenu.Item>
+					{/if}
+					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={onCopy}>
 						<Copy class="size-3.5" /> Copy URLs in branch
+					</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={onWordlist}>
+						<ListOrdered class="size-3.5" /> Copy paths as wordlist
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>

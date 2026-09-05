@@ -26,9 +26,11 @@
 		depth: number;
 		ctx: OutlineContext;
 		headless?: boolean;
+		parentKey?: string;
 	}
 
-	let { node, depth, ctx, headless = false }: Props = $props();
+	let { node, depth, ctx, headless = false, parentKey = '' }: Props = $props();
+	let childParent = $derived(headless ? parentKey : node.key);
 
 	let open = $derived(headless || ctx.expanded.has(node.key));
 	let childDepth = $derived(headless ? depth : depth + 1);
@@ -208,12 +210,13 @@
 
 	// a closed row says what is inside it while a search is on, so nothing has to be opened to see why it matched
 	let hint = $derived.by(() => {
+		if (node.kind === 'group') return `each has ${node.top_folders.join(', ')}`;
 		if (!ctx.searching || open) return '';
 		const names = node.lazy ? node.top_folders : node.children.map((c) => c.name);
 		const count = node.lazy ? node.folders : node.children.length;
 		if (!names.length) return '';
 		const shown = names.slice(0, 3).join(', ');
-		return count > 3 ? `${shown} +${count - 3}` : shown;
+		return count > 3 ? `in ${shown} +${count - 3}` : `in ${shown}`;
 	});
 
 	let skeletonRows = $derived(Math.min(Math.max(node.direct_count, node.folders, 1), 3));
@@ -230,10 +233,16 @@
 		pad={ctx.pad}
 		{hint}
 		focused={ctx.focusedKey === node.key}
+		unverified={node.unprobed}
+		{parentKey}
 		onToggle={() => ctx.toggle(node.key)}
 		onCopy={() => ctx.copyBranch(node)}
+		onWordlist={() => ctx.copyWordlist(node)}
 		onOnly={() => ctx.onFilter(node.query)}
 		onList={() => ctx.onShowInList(node.query)}
+		onVerify={ctx.verifyBranch && node.kind !== 'group' && !ctx.merged
+			? () => ctx.verifyBranch?.(node)
+			: undefined}
 	/>
 {/if}
 
@@ -251,7 +260,7 @@
 		{/each}
 	{:else}
 		{#each ordered.folders as child (child.key)}
-			<Self node={child} depth={childDepth} {ctx} />
+			<Self node={child} depth={childDepth} {ctx} parentKey={childParent} />
 		{/each}
 
 		{#if ctx.merged}
@@ -265,6 +274,7 @@
 						depth={childDepth}
 						label={child.name}
 						rowKey={child.key}
+						parentKey={childParent}
 						pad={ctx.pad}
 						active={ctx.selectedId === child.leaf.id}
 						focused={ctx.focusedKey === child.key}
@@ -283,6 +293,7 @@
 					depth={childDepth}
 					label={row.kind === 'node' ? row.node.name : leafLabel(row.endpoint)}
 					rowKey={row.key}
+					parentKey={childParent}
 					pad={ctx.pad}
 					active={ctx.selectedId === row.endpoint.id}
 					focused={ctx.focusedKey === row.key}
@@ -312,6 +323,7 @@
 						columns={ctx.columns}
 						terms={ctx.terms}
 						pad={ctx.pad}
+						parentKey={childParent}
 						active={ctx.selectedId === leaf.sample_id}
 						focused={ctx.focusedKey === leaf.key}
 						onOpen={ctx.openMerged}

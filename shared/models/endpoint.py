@@ -294,6 +294,10 @@ class TreeNode(BaseModel):
     params: int = 0
     verified: int = 0
     unprobed: int = 0
+    new_count: int = 0
+    gone_count: int = 0
+    anomaly: str | None = None
+    archive_only: bool = False
     glyph: str = "folder"
     sample_url: str | None = None
     leaf: TreeLeaf | None = None
@@ -331,6 +335,7 @@ class MergedLeaf(BaseModel):
     interest: list[str] = PydanticField(default_factory=list)
     sources: list[str] = PydanticField(default_factory=list)
     host_names: list[str] = PydanticField(default_factory=list)
+    new_count: int = 0
     sample_id: uuid.UUID
     sample_url: str
     sample_status: int | None = None
@@ -382,8 +387,19 @@ class EndpointSummary(BaseModel):
     with_params: int = 0
     interesting: int = 0
     hosts: int = 0
+    new: int = 0
+    gone: int = 0
+    previous_scan_id: uuid.UUID | None = None
+    previous_scan_at: datetime | None = None
     by_class: dict[str, int] = PydanticField(default_factory=dict)
     by_source: dict[str, int] = PydanticField(default_factory=dict)
+
+
+class GonePage(EndpointPage):
+    """Endpoints the previous scan of this target recorded and this scan did not."""
+
+    previous_scan_id: uuid.UUID | None = None
+    previous_scan_at: datetime | None = None
 
 
 class StructureFinding(BaseModel):
@@ -426,3 +442,15 @@ class ScanStructure(BaseModel):
     interest: list[StructureLine] = PydanticField(default_factory=list)
     by_class: list[StructureLine] = PydanticField(default_factory=list)
     by_source: list[StructureLine] = PydanticField(default_factory=list)
+
+
+class VerifyBranchRequest(BaseModel):
+    host: str = PydanticField(max_length=500)
+    dir_path: str | None = PydanticField(default=None, max_length=1500)
+    limit: int = PydanticField(default=500, ge=1, le=2000)
+
+
+class VerifyBranchResponse(BaseModel):
+    queued: int = 0
+    unverified: int = 0
+    accepted: bool = False

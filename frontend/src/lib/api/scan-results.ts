@@ -7,6 +7,7 @@ import type {
 	EndpointPage,
 	EndpointSummary,
 	EndpointTree,
+	GonePage,
 	HostPage,
 	MergedLeafPage,
 	ScanStructure
@@ -155,6 +156,18 @@ export const endpointsApi = {
 		return api.get<EndpointSummary>(
 			`/endpoints/summary?project_id=${projectId}&scan_id=${scanId}${scope}`
 		);
+	},
+
+	async gone(projectId: string, scanId: string, filter: EndpointFilter): Promise<GonePage> {
+		return api.post<GonePage>(`/endpoints/gone?project_id=${projectId}&scan_id=${scanId}`, filter);
+	},
+
+	async verify(
+		projectId: string,
+		scanId: string,
+		body: { host: string; dir_path: string | null; limit: number }
+	): Promise<{ queued: number; unverified: number; accepted: boolean }> {
+		return api.post(`/endpoints/verify?project_id=${projectId}&scan_id=${scanId}`, body);
 	},
 
 	async treeHosts(projectId: string, scanId: string, filter: EndpointFilter): Promise<HostPage> {

@@ -24,6 +24,7 @@ import FolderCog from '@lucide/svelte/icons/folder-cog';
 import FolderLock from '@lucide/svelte/icons/folder-lock';
 import FolderCode from '@lucide/svelte/icons/folder-code';
 import FolderKey from '@lucide/svelte/icons/folder-key';
+import Folders from '@lucide/svelte/icons/folders';
 import type { IconComponent } from './icons';
 
 // mirrors shared/definitions/endpoints.py EndpointClass
@@ -113,7 +114,8 @@ export const FOLDER_GLYPH_ICONS: Record<string, IconComponent> = {
 	[FolderGlyph.ADMIN]: FolderCog,
 	[FolderGlyph.SENSITIVE]: FolderLock,
 	[FolderGlyph.API]: FolderCode,
-	[FolderGlyph.AUTH]: FolderKey
+	[FolderGlyph.AUTH]: FolderKey,
+	group: Folders
 };
 
 export const FOLDER_OPEN_ICON: IconComponent = FolderOpen;
@@ -123,7 +125,8 @@ export const FOLDER_GLYPH_TONE: Record<string, string> = {
 	[FolderGlyph.ADMIN]: 'text-warning',
 	[FolderGlyph.SENSITIVE]: 'text-destructive',
 	[FolderGlyph.API]: 'text-chart-2',
-	[FolderGlyph.AUTH]: 'text-warning'
+	[FolderGlyph.AUTH]: 'text-warning',
+	group: 'text-muted-foreground'
 };
 
 export const FOLDER_GLYPH_LABELS: Record<string, string> = {
@@ -131,7 +134,8 @@ export const FOLDER_GLYPH_LABELS: Record<string, string> = {
 	[FolderGlyph.ADMIN]: 'Holds an administrative or diagnostic interface',
 	[FolderGlyph.SENSITIVE]: 'Holds a credential, backup or version control file',
 	[FolderGlyph.API]: 'Mostly API routes',
-	[FolderGlyph.AUTH]: 'Holds an authentication boundary'
+	[FolderGlyph.AUTH]: 'Holds an authentication boundary',
+	group: 'Folders that share one layout'
 };
 
 export const ENDPOINT_CLASS_TONE: Record<string, string> = {
