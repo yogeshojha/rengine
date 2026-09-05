@@ -85,7 +85,6 @@ class SubdomainStage(Stage):
         "Enumerate subdomains from passive sources, certificates and bruteforce."
     )
     phase = Phase.EXPANSION.value
-    level = 0
     group = StageGroup.HOSTS.value
     role = StageRole.CAPABILITY.value
     produces = frozenset({AssetKind.HOSTS.value, AssetKind.ADDRESSES.value})
@@ -307,18 +306,36 @@ class SubdomainStage(Stage):
         ]
         state.batches = len(batches)
 
-        for index, batch in enumerate(batches, start=1):
-            records, stalled = self._run_batch(client, batch.names, cfg)
+        for done, (batch, (records, stalled)) in enumerate(
+            self._resolve_batches(client, batches, cfg), start=1
+        ):
             state.records.update(records)
             batch.answered = len(records)
             batch.stalled = stalled
             self.emit_progress(
                 f"resolved {state.answered:,}/{len(names):,} names "
-                f"(batch {index}/{len(batches)})"
+                f"(batch {done}/{len(batches)})"
             )
 
         self._retry_degraded(client, batches, state, cfg)
         return state
+
+    def _resolve_batches(
+        self, client: DnsxClient, batches: list[_Batch], cfg: SubdomainConfig
+    ):
+        """Batches are independent, so several resolver invocations run at once."""
+        workers = min(max(1, cfg.dns_batch_concurrency), len(batches))
+        if workers == 1:
+            for batch in batches:
+                yield batch, self._run_batch(client, batch.names, cfg)
+            return
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(self._run_batch, client, batch.names, cfg): batch
+                for batch in batches
+            }
+            for future in as_completed(futures):
+                yield futures[future], future.result()
 
     def _retry_degraded(
         self,
@@ -338,12 +355,14 @@ class SubdomainStage(Stage):
         if not suspect:
             return
         self.emit_progress(f"re-resolving {len(suspect)} degraded batch(es)")
-        for batch in suspect:
-            pending = [n for n in batch.names if n not in state.records]
-            if not pending:
-                continue
-            state.retried += 1
-            records, batch.stalled = self._run_batch(client, pending, cfg)
+        retries = [
+            (batch, [n for n in batch.names if n not in state.records])
+            for batch in suspect
+        ]
+        retries = [(batch, pending) for batch, pending in retries if pending]
+        state.retried += len(retries)
+        for batch, (records, stalled) in self._retry_batches(client, retries, cfg):
+            batch.stalled = stalled
             state.records.update(records)
             batch.answered += len(records)
         # count what is still bad after the retry — a recovered batch lost nothing
@@ -351,6 +370,25 @@ class SubdomainStage(Stage):
         state.degraded = sum(
             1 for b in batches if not b.stalled and floor and b.rate < floor
         )
+
+    def _retry_batches(
+        self,
+        client: DnsxClient,
+        retries: list[tuple[_Batch, list[str]]],
+        cfg: SubdomainConfig,
+    ):
+        workers = min(max(1, cfg.dns_batch_concurrency), len(retries) or 1)
+        if workers == 1:
+            for batch, pending in retries:
+                yield batch, self._run_batch(client, pending, cfg)
+            return
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(self._run_batch, client, pending, cfg): batch
+                for batch, pending in retries
+            }
+            for future in as_completed(futures):
+                yield futures[future], future.result()
 
     def _persist(
         self,

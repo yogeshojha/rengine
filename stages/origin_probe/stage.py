@@ -26,7 +26,7 @@ class OriginProbeStage(Stage):
         "Request each address by IP and record what it serves without a hostname."
     )
     phase = Phase.EXPANSION.value
-    level = 4
+    depends_on = frozenset({"http_probe"})
     group = StageGroup.SERVICES.value
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.PORTS.value})
@@ -58,10 +58,18 @@ class OriginProbeStage(Stage):
             return StageResult(counts={"probed": 0, "answered": 0})
 
         self.emit_progress(f"requesting {len(targets)} addresses without a hostname")
-        with client.stream_probe(targets) as records:
-            answered = self._persist(records)
+        with client.stream_probe(targets) as stream:
+            answered = self._persist(stream.records)
         self.emit_progress(f"{answered} of {len(targets)} answered by address alone")
-        return StageResult(counts={"probed": len(targets), "answered": answered})
+        return StageResult(
+            counts={"probed": len(targets), "answered": answered},
+            warnings=[
+                f"httpx stalled and was stopped — {len(targets):,} addresses queued"
+            ]
+            if stream.timed_out
+            else [],
+            partial=stream.timed_out,
+        )
 
     def _targets(self, cfg: OriginProbeConfig) -> list[str]:
         rows = self.session.execute(

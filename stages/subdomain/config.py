@@ -7,12 +7,13 @@ from stages.config import StageConfig, threads, timeout
 from stages.subdomain.providers import PASSIVE_PROVIDERS
 
 PASSIVE_TOOLS: tuple[str, ...] = tuple(sorted(PASSIVE_PROVIDERS))
+# amass is deliberately not here: it never exits early, so it costs the whole
+# tool timeout on every scan for hosts the other sources already return
 DEFAULT_PASSIVE_TOOLS: list[str] = [
     "subfinder",
     "ctfr",
     "crtname",
     "assetfinder",
-    "amass",
 ]
 
 _TOOL_TIMEOUTS = {
@@ -41,6 +42,13 @@ class SubdomainConfig(StageConfig):
         le=20000,
         title="Resolver batch size",
         description="Names sent to the resolver per invocation.",
+    )
+    dns_batch_concurrency: int = Field(
+        default=3,
+        ge=1,
+        le=8,
+        title="Resolver batches in parallel",
+        description="Resolver invocations in flight at once. Raising it resolves faster but asks more of the upstream resolvers.",
     )
     dns_idle_timeout: int = timeout(
         90,

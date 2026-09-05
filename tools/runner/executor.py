@@ -150,6 +150,9 @@ class CLIToolRunner:
                 input=stdin_data,
                 capture_output=True,
                 text=True,
+                # a tool reporting bytes it read off the wire is not always utf-8,
+                # and one bad byte must not discard the whole run
+                errors="replace",
                 timeout=timeout,
                 check=False,
                 env=self._build_env(env),
@@ -294,6 +297,7 @@ class CLIToolRunner:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                errors="replace",
                 env=self._build_env(env),
                 cwd=tempfile.gettempdir(),
             )

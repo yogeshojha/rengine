@@ -4,13 +4,16 @@ import contextlib
 from collections.abc import Iterator
 
 from shared.logging import get_logger
-from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
+from tools.runner import CLIToolRunner, OutputFormat, StreamOutcome, ToolNotFoundError
 from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
 
 HTTPX_BINARY = "httpx"
 DEFAULT_TIMEOUT = 900
+# a probe that keeps answering keeps running; only a stalled one is killed
+_IDLE_FLOOR = 120
+_IDLE_TIMEOUT_FACTOR = 6
 
 # cap response-body read to bound DB growth + worker memory (per-record, times N hosts)
 _RESPONSE_SIZE_CAP = 131072  # 128 KiB
@@ -75,10 +78,10 @@ class HttpxClient:
             raise HttpxError(str(e)) from e
 
     @contextlib.contextmanager
-    def stream_probe(self, targets: list[str]) -> Iterator[Iterator[dict]]:
+    def stream_probe(self, targets: list[str]) -> Iterator[StreamOutcome]:
         """Probe targets, streaming parsed httpx records one at a time (memory-bounded)."""
         if not targets:
-            yield iter(())
+            yield StreamOutcome(records=iter(()), return_code=0)
             return
         args = list(_ENRICH_FLAGS)
         if self.follow_redirects:
@@ -98,15 +101,18 @@ class HttpxClient:
             json_flag="-json",
             silent=True,
             silent_flag="-silent",
+            timeout=0,
+            idle_timeout=max(_IDLE_FLOOR, self.timeout * _IDLE_TIMEOUT_FACTOR),
             recorder=self.recorder,
             tool=HTTPX_BINARY,
             extra_args=self.extra_args,
         ) as stream:
-            yield stream.records
+            yield stream
 
-    def capture(self, targets: list[str]) -> list[dict]:
+    def capture(self, targets: list[str]) -> tuple[list[dict], bool]:
+        """Render each target to an image. Returns the records and whether it was cut short."""
         if not targets:
-            return []
+            return [], False
         args = [
             "-status-code",
             "-screenshot",
@@ -137,4 +143,4 @@ class HttpxClient:
             tool=HTTPX_BINARY,
             extra_args=self.extra_args,
         )
-        return result.json_records
+        return result.json_records, result.timed_out

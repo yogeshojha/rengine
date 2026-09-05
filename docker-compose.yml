@@ -82,7 +82,7 @@ services:
     command: >
       uv run celery -A app.celery worker
       --loglevel=DEBUG
-      --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
+      --concurrency=${CELERY_SCAN_CONCURRENCY:-8}
       --queues=critical,default,scans
       --hostname=worker-default@%h
       --max-tasks-per-child=100

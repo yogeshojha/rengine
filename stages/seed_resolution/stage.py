@@ -32,7 +32,6 @@ class SeedResolutionStage(Stage):
     title = "Seed Resolution"
     description = "Expand an IP, netblock or ASN seed into individual hosts."
     phase = Phase.DISCOVERY.value
-    level = 0
     group = StageGroup.ADDRESSES.value
     role = StageRole.SUPPORT.value
     produces = frozenset({AssetKind.ADDRESSES.value})

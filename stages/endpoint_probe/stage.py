@@ -30,7 +30,7 @@ class EndpointProbeStage(Stage):
         "Request the discovered URLs so a status is an observation, not a guess."
     )
     phase = Phase.DEPTH.value
-    level = 1
+    depends_on = frozenset({"url_discovery"})
     group = StageGroup.ENDPOINTS.value
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.ENDPOINTS.value})
@@ -79,8 +79,8 @@ class EndpointProbeStage(Stage):
             return StageResult(counts={"endpoints_probed": 0})
 
         observations: list[EndpointObservation] = []
-        with client.stream_probe(selected) as records:
-            for record in records:
+        with client.stream_probe(selected) as stream:
+            for record in stream.records:
                 self._check_abort()
                 fields = parse_httpx_record(record)
                 url = fields.get("url")

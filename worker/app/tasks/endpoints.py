@@ -103,8 +103,8 @@ def verify_branch(
             return {"verified": 0, "answered": 0, "error": str(e)[:200]}
 
         observations: list[EndpointObservation] = []
-        with client.stream_probe(selected) as records:
-            for record in records:
+        with client.stream_probe(selected) as stream:
+            for record in stream.records:
                 fields = parse_httpx_record(record)
                 url = fields.get("url")
                 if not url:

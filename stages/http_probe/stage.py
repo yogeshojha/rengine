@@ -48,7 +48,7 @@ class HttpProbeStage(Stage):
         "Fingerprint every host and port for live HTTP, technologies and titles."
     )
     phase = Phase.EXPANSION.value
-    level = 3
+    depends_on = frozenset({"port_scan", "vhost"})
     group = StageGroup.WEB.value
     role = StageRole.CAPABILITY.value
     consumes = frozenset({AssetKind.HOSTS.value, AssetKind.ADDRESSES.value})
@@ -79,16 +79,26 @@ class HttpProbeStage(Stage):
             logger.warning("httpx unavailable, skipping HTTP probe")
             return StageResult(counts={"http_assets": 0})
 
-        with client.stream_probe(targets) as records:
+        with client.stream_probe(targets) as stream:
             self._check_abort()
-            count = self._persist(records)
+            count = self._persist(stream.records)
         services = self._record_services()
         if self.ctx.target_type == TargetType.DOMAIN.value:
             self._denormalize_to_subdomains()
         self.emit_progress(
             f"probed {len(targets)} host and port pairs, {count} answered HTTP"
         )
-        return StageResult(counts={"http_assets": count, "web_services": services})
+        stalled = stream.timed_out
+        return StageResult(
+            counts={"http_assets": count, "web_services": services},
+            warnings=[
+                f"httpx stalled and was stopped — {len(targets):,} host and port "
+                f"pairs were queued, {count:,} answered"
+            ]
+            if stalled
+            else [],
+            partial=stalled,
+        )
 
     def _port_map(self) -> dict[str, set[int]]:
         """Open ports per address, filtered to what can plausibly answer HTTP."""

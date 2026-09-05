@@ -91,6 +91,8 @@ class UrlProvider(ABC):
     requires_key: ClassVar[APIProvider | None] = None
     # a provider that sends no request to the target survives a passive-intensity scan
     touches_target: ClassVar[bool] = True
+    # reads the scan's own rows, so it runs on the stage thread rather than in the pool
+    uses_session: ClassVar[bool] = False
 
     def __init__(self, ctx: ProviderContext) -> None:
         self.ctx = ctx

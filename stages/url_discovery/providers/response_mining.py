@@ -38,6 +38,7 @@ class ResponseMiningProvider(UrlProvider):
     tool = None
     binary = None
     touches_target = False
+    uses_session = True
 
     def discover(self, result: ProviderResult) -> None:
         offsite = 0

@@ -23,7 +23,7 @@ class CdnCheckStage(Stage):
         "Identify which addresses are fronted by a CDN, WAF or cloud provider."
     )
     phase = Phase.EXPANSION.value
-    level = 1
+    depends_on = frozenset({"host_discovery", "seed_resolution", "subdomain_discovery"})
     group = StageGroup.ADDRESSES.value
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.ADDRESSES.value})

@@ -36,7 +36,6 @@ class TargetEnrichmentStage(Stage):
     title = "Target Enrichment"
     description = "Resolve the target and attach DNS, WHOIS and BGP context."
     phase = Phase.DISCOVERY.value
-    level = 0
     group = StageGroup.HOSTS.value
     role = StageRole.SUPPORT.value
     tools = ("dnsx", "whois")

@@ -21,13 +21,11 @@ class UrlfinderClient:
         self,
         *,
         timeout: int = 30,
-        threads: int = 10,
         proxy_url: str | None = None,
         recorder: CommandRecorder | None = None,
         extra_args: list[str] | None = None,
     ) -> None:
         self.timeout = timeout
-        self.threads = threads
         self.proxy_url = proxy_url
         self.recorder = recorder
         self.extra_args = extra_args or []
@@ -40,16 +38,8 @@ class UrlfinderClient:
             raise UrlfinderError(str(e)) from e
 
     def collect(self, domain: str) -> list[str]:
-        args = [
-            "-d",
-            domain,
-            "-all",
-            "-no-color",
-            "-timeout",
-            str(self.timeout),
-            "-t",
-            str(self.threads),
-        ]
+        # urlfinder has no -t: passing one makes it exit 2 before querying anything
+        args = ["-d", domain, "-all", "-no-color", "-timeout", str(self.timeout)]
         if self.proxy_url:
             args += ["-proxy", self.proxy_url]
         result = self._runner.run(

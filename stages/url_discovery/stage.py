@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+
 from sqlalchemy import func, select
 
 from shared.definitions.domains import registrable_domain
@@ -21,6 +23,7 @@ from stages.url_discovery.providers import URL_PROVIDERS, Host, ProviderContext
 logger = get_logger(__name__)
 
 _LIVE_MAX = 400
+_MAX_PROVIDER_WORKERS = 4
 
 
 def _unavailable(source: str, reason: str) -> EndpointCoverage:
@@ -37,7 +40,7 @@ class UrlDiscoveryStage(Stage):
     title = "URL Discovery"
     description = "Collect the URLs and paths that exist on every live web asset."
     phase = Phase.DEPTH.value
-    level = 0
+    depends_on = frozenset({"http_probe"})
     group = StageGroup.ENDPOINTS.value
     role = StageRole.CAPABILITY.value
     consumes = frozenset({AssetKind.HTTP_ASSETS.value})
@@ -88,24 +91,9 @@ class UrlDiscoveryStage(Stage):
         passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
         created = seeded.created
         coverage: list[EndpointCoverage] = []
-        for source in cfg.providers:
+        results = self._collect(cfg.providers, context, passive, coverage)
+        for result in results:
             self._check_abort()
-            provider_cls = URL_PROVIDERS.get(source)
-            if provider_cls is None:
-                coverage.append(
-                    _unavailable(source, f"{source} is not a known URL source.")
-                )
-                continue
-            if passive and provider_cls.touches_target:
-                coverage.append(
-                    _unavailable(
-                        source,
-                        "This source sends requests to the target, which a passive scan does not allow.",
-                    )
-                )
-                continue
-
-            result = provider_cls(context).run()
             result.observations = self._in_scope(result.observations)
             written = endpoint_inventory.upsert(
                 self.session,
@@ -123,6 +111,40 @@ class UrlDiscoveryStage(Stage):
         total = self._total()
         self.emit_progress(f"{total} endpoints across {len(hosts)} web assets")
         return StageResult(counts={"endpoints": total, "endpoints_new": created})
+
+    def _collect(self, sources, context, passive: bool, coverage: list):
+        """Sources are independent, so the ones that only talk to the network run together."""
+        pooled = []
+        results = []
+        for source in sources:
+            self._check_abort()
+            provider_cls = URL_PROVIDERS.get(source)
+            if provider_cls is None:
+                coverage.append(
+                    _unavailable(source, f"{source} is not a known URL source.")
+                )
+                continue
+            if passive and provider_cls.touches_target:
+                coverage.append(
+                    _unavailable(
+                        source,
+                        "This source sends requests to the target, which a passive scan does not allow.",
+                    )
+                )
+                continue
+            if provider_cls.uses_session:
+                results.append(provider_cls(context).run())
+            else:
+                pooled.append(provider_cls)
+        if not pooled:
+            return results
+        if len(pooled) == 1:
+            results.append(pooled[0](context).run())
+            return results
+        workers = min(_MAX_PROVIDER_WORKERS, len(pooled))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            results.extend(pool.map(lambda cls: cls(context).run(), pooled))
+        return results
 
     def _in_scope(self, observations: list) -> list:
         """Drop anything the scan context excluded by path."""

@@ -19,7 +19,7 @@ class HostDiscoveryStage(Stage):
     title = "Host Discovery"
     description = "Sweep a netblock for responsive hosts before port scanning."
     phase = Phase.EXPANSION.value
-    level = 0
+    depends_on = frozenset({"seed_resolution"})
     group = StageGroup.ADDRESSES.value
     role = StageRole.CAPABILITY.value
     produces = frozenset({AssetKind.ADDRESSES.value})

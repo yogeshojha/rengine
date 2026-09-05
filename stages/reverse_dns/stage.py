@@ -20,7 +20,7 @@ class ReverseDnsStage(Stage):
     title = "Reverse DNS"
     description = "Resolve PTR records for every discovered IP."
     phase = Phase.DISCOVERY.value
-    level = 1
+    depends_on = frozenset({"host_discovery", "seed_resolution"})
     group = StageGroup.ADDRESSES.value
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.ADDRESSES.value})

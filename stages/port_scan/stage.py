@@ -38,7 +38,7 @@ class PortScanStage(Stage):
     title = "Port Scan"
     description = "Find listening TCP services on every address in scope."
     phase = Phase.EXPANSION.value
-    level = 2
+    depends_on = frozenset({"cdn_check", "passive_ports"})
     group = StageGroup.SERVICES.value
     role = StageRole.CAPABILITY.value
     consumes = frozenset({AssetKind.ADDRESSES.value})

@@ -25,7 +25,7 @@ class PassivePortsStage(Stage):
         "Read ports already indexed for each address by internet-wide scanners."
     )
     phase = Phase.EXPANSION.value
-    level = 1
+    depends_on = frozenset({"host_discovery", "seed_resolution", "subdomain_discovery"})
     group = StageGroup.SERVICES.value
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.ADDRESSES.value})

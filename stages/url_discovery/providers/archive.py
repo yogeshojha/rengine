@@ -22,7 +22,6 @@ class ArchiveProvider(UrlProvider):
         try:
             client = UrlfinderClient(
                 timeout=cfg.timeout,
-                threads=cfg.threads,
                 proxy_url=self.ctx.net.proxy_url,
                 recorder=self.ctx.recorder,
                 extra_args=self.extra_args,

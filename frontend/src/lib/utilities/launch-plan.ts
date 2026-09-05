@@ -72,20 +72,12 @@ export function stageApplies(stage: StageCatalogEntry, targetTypes: string[]): b
 }
 
 function levelsOf(catalog: EngineCatalog, targetType: string | null): StageCatalogEntry[][] {
-	const phaseIndex = new Map(catalog.phases.map((p, i) => [p, i]));
-	const groups = new Map<string, StageCatalogEntry[]>();
+	const groups = new Map<number, StageCatalogEntry[]>();
 	for (const stage of catalog.stages) {
 		if (targetType && !stage.applies_to.includes(targetType)) continue;
-		const key = `${phaseIndex.get(stage.phase) ?? 99}:${stage.level}`;
-		groups.set(key, [...(groups.get(key) ?? []), stage]);
+		groups.set(stage.level, [...(groups.get(stage.level) ?? []), stage]);
 	}
-	return [...groups.entries()]
-		.sort(([a], [b]) => {
-			const [pa, la] = a.split(':').map(Number);
-			const [pb, lb] = b.split(':').map(Number);
-			return pa - pb || la - lb;
-		})
-		.map(([, stages]) => stages);
+	return [...groups.entries()].sort(([a], [b]) => a - b).map(([, stages]) => stages);
 }
 
 function producerRank(stage: StageCatalogEntry): [number, number, number, number] {

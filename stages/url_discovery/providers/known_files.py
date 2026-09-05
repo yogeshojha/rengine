@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin, urlsplit
 from xml.etree import ElementTree as ET
 
@@ -19,6 +20,8 @@ _SITEMAP_RE = re.compile(r"^sitemap\s*:\s*(\S+)", re.IGNORECASE)
 _MAX_BYTES = 5 * 1024 * 1024
 _MAX_SITEMAPS = 20
 _MAX_URL = 2000
+# each root is 5+ blocking fetches and they are independent of one another
+_MAX_WORKERS = 12
 _CLIENT_ERROR = 400
 _WILDCARD = ("*", "$")
 _ALLOWED_SCHEMES = ("http", "https")
@@ -36,15 +39,18 @@ class KnownFilesProvider(UrlProvider):
         if not roots:
             return
         limit = self.ctx.cfg.max_known_file_hosts
+        selected = roots[:limit]
         state = _State()
         client = self._client()
         try:
-            for root in roots[:limit]:
-                if self.aborted():
-                    result.capped = True
-                    result.cap_reason = "The scan was cancelled."
-                    break
-                self._mine(client, root, state)
+            workers = min(_MAX_WORKERS, len(selected))
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                for found in pool.map(lambda root: self._mine(client, root), selected):
+                    if found is None:
+                        result.capped = True
+                        result.cap_reason = "The scan was cancelled."
+                        continue
+                    state.merge(found)
         finally:
             client.close()
 
@@ -72,7 +78,10 @@ class KnownFilesProvider(UrlProvider):
             headers=headers,
         )
 
-    def _mine(self, client: httpx.Client, root: str, state: _State) -> None:
+    def _mine(self, client: httpx.Client, root: str) -> _State | None:
+        if self.aborted():
+            return None
+        state = _State()
         queue: list[str] = []
 
         body = self._get(client, urljoin(root, _ROBOTS), state)
@@ -105,6 +114,7 @@ class KnownFilesProvider(UrlProvider):
             state.found += len(locations)
             for location in locations:
                 state.add(location, url, self.source)
+        return state
 
     def _get(self, client: httpx.Client, url: str, state: _State) -> str | None:
         state.fetched += 1
@@ -126,6 +136,17 @@ class _State:
         self.fetched = 0
         self.errors = 0
         self.refused = 0
+
+    def merge(self, other: _State) -> None:
+        self.found += other.found
+        self.fetched += other.fetched
+        self.errors += other.errors
+        self.refused += other.refused
+        for obs in other.observations:
+            if obs.url in self.seen:
+                continue
+            self.seen.add(obs.url)
+            self.observations.append(obs)
 
     def add(self, url: str, found_on: str, source: str) -> None:
         if url in self.seen or len(url) > _MAX_URL:

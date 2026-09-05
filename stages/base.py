@@ -74,7 +74,8 @@ class Stage(ABC):
     title: ClassVar[str]
     description: ClassVar[str] = ""
     phase: ClassVar[str] = Phase.EXPANSION.value
-    level: ClassVar[int] = 0
+    # stages this one must wait for; the registry derives the execution level from it
+    depends_on: ClassVar[frozenset[str]] = frozenset()
     applies_to: ClassVar[frozenset[str]] = ALL_TARGETS
     tools: ClassVar[tuple[str, ...]] = ()
     api_keys: ClassVar[tuple[str, ...]] = ()

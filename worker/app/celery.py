@@ -22,9 +22,16 @@ celery_app = Celery("rengine")
 # Celery Configuration
 # #############################################################
 
+# redis re-delivers a task still unacked after visibility_timeout — at celery's 1h
+# default a stage that runs longer is dispatched a second time and the whole rest of
+# the scan runs twice, so it must sit above the hard time limit, not below it.
+_VISIBILITY_TIMEOUT = settings.TASK_HARD_TIME_LIMIT + 3600
+
 celery_app.conf.update(
     broker_url=settings.celery_broker_url,
     broker_connection_retry_on_startup=True,
+    broker_transport_options={"visibility_timeout": _VISIBILITY_TIMEOUT},
+    result_backend_transport_options={"visibility_timeout": _VISIBILITY_TIMEOUT},
     result_backend=settings.celery_result_backend,
     task_serializer="json",
     result_serializer="json",

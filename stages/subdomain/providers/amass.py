@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import math
+import re
 
 from shared.enums.subdomain import SubdomainSource
 from stages.subdomain.providers.base import SubdomainProvider, proxy_env
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
+
+# amass v4 prints a relationship graph, not a host list: "a (FQDN) --> rel --> b (FQDN)"
+_FQDN_RE = re.compile(r"([A-Za-z0-9_.-]+) \(FQDN\)")
 
 
 class AmassProvider(SubdomainProvider):
@@ -38,4 +42,7 @@ class AmassProvider(SubdomainProvider):
             )
         except ToolNotFoundError:
             return set()
-        return {line.strip() for line in result.output_lines if line.strip()}
+        names: set[str] = set()
+        for line in result.output_lines:
+            names.update(_FQDN_RE.findall(line))
+        return names

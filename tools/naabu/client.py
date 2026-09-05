@@ -79,8 +79,10 @@ class NaabuClient:
             str(opt.rate),
             "-c",
             str(opt.concurrency),
+            # naabu parses -timeout as a go duration: a bare number is not
+            # milliseconds, and costs a fixed ~135s per run for the same results
             "-timeout",
-            str(opt.timeout * 1000),
+            f"{opt.timeout}s",
             "-retries",
             str(opt.retries),
         ]

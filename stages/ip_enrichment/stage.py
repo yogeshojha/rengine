@@ -73,7 +73,14 @@ class IpEnrichmentStage(Stage):
     title = "IP Enrichment"
     description = "Resolve ASN, network operator and country for every IP address."
     phase = Phase.DEPTH.value
-    level = 0
+    depends_on = frozenset(
+        {
+            "origin_probe",
+            "passive_ports",
+            "reverse_dns",
+            "service_fingerprint",
+        }
+    )
     group = StageGroup.ADDRESSES.value
     role = StageRole.SUPPORT.value
     applies_to = ALL_TARGETS

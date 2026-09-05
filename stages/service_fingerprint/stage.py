@@ -30,7 +30,7 @@ class ServiceFingerprintStage(Stage):
         "Identify the software behind every non-web port from its service banner."
     )
     phase = Phase.EXPANSION.value
-    level = 4
+    depends_on = frozenset({"http_probe"})
     group = StageGroup.SERVICES.value
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.PORTS.value})

@@ -23,7 +23,7 @@ class VhostStage(Stage):
     title = "Virtual Host Discovery"
     description = "Host-header fuzzing to surface vhosts not resolvable via DNS."
     phase = Phase.EXPANSION.value
-    level = 1
+    depends_on = frozenset({"reverse_dns", "subdomain_discovery"})
     group = StageGroup.HOSTS.value
     role = StageRole.CAPABILITY.value
     consumes = frozenset({AssetKind.HOSTS.value})

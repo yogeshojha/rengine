@@ -21,6 +21,7 @@ class StageSpec:
     description: str
     phase: str
     level: int
+    depends_on: frozenset[str]
     applies_to: frozenset[str]
     tools: tuple[str, ...]
     api_keys: tuple[str, ...]
@@ -93,7 +94,7 @@ def _stage_classes() -> list[type[Stage]]:
     return list(found.values())
 
 
-def _spec(stage_cls: type[Stage]) -> StageSpec:
+def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
     phase = stage_cls.phase
     if phase not in PHASE_ORDER:
         msg = f"{stage_cls.name}: unknown phase {phase!r}."
@@ -114,7 +115,8 @@ def _spec(stage_cls: type[Stage]) -> StageSpec:
         or stage_cls.name.replace("_", " ").title(),
         description=stage_cls.description,
         phase=phase,
-        level=stage_cls.level,
+        level=level,
+        depends_on=frozenset(stage_cls.depends_on),
         applies_to=frozenset(stage_cls.applies_to),
         tools=tuple(stage_cls.tools),
         api_keys=tuple(stage_cls.api_keys),
@@ -130,9 +132,39 @@ def _spec(stage_cls: type[Stage]) -> StageSpec:
     )
 
 
+def _levels(classes: list[type[Stage]]) -> dict[str, int]:
+    """Longest-path depth per stage — the barrier a stage may not start before."""
+    by_name = {cls.name: cls for cls in classes}
+    depth: dict[str, int] = {}
+    resolving: set[str] = set()
+
+    def _depth(name: str) -> int:
+        if name in depth:
+            return depth[name]
+        if name in resolving:
+            msg = f"Stage dependency cycle through {name!r}."
+            raise StageRegistrationError(msg)
+        resolving.add(name)
+        value = 0
+        for dep in by_name[name].depends_on:
+            if dep not in by_name:
+                msg = f"{name}: depends_on names unknown stage {dep!r}."
+                raise StageRegistrationError(msg)
+            value = max(value, _depth(dep) + 1)
+        resolving.discard(name)
+        depth[name] = value
+        return value
+
+    for name in by_name:
+        _depth(name)
+    return depth
+
+
 @lru_cache(maxsize=1)
 def stages() -> tuple[StageSpec, ...]:
-    specs = [_spec(cls) for cls in _stage_classes()]
+    classes = _stage_classes()
+    depth = _levels(classes)
+    specs = [_spec(cls, depth[cls.name]) for cls in classes]
     specs.sort(key=lambda s: (PHASE_ORDER.get(s.phase, 99), s.level, s.name))
     return tuple(specs)
 
@@ -146,12 +178,10 @@ def get_stage(name: str) -> StageSpec | None:
 
 
 def ordered_levels() -> list[list[StageSpec]]:
-    """Stages grouped by (phase, level), ascending — the canvas execution order."""
-    groups: dict[tuple[int, int], list[StageSpec]] = {}
+    """Stages grouped by dependency depth, ascending — the canvas execution order."""
+    groups: dict[int, list[StageSpec]] = {}
     for spec in stages():
-        groups.setdefault((PHASE_ORDER.get(spec.phase, 99), spec.level), []).append(
-            spec
-        )
+        groups.setdefault(spec.level, []).append(spec)
     return [groups[key] for key in sorted(groups)]
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
@@ -34,7 +34,7 @@ class ScreenshotStage(Stage):
     title = "Screenshots"
     description = "Render every live HTTP service to an image."
     phase = Phase.EXPANSION.value
-    level = 5
+    depends_on = frozenset({"origin_probe"})
     group = StageGroup.WEB.value
     role = StageRole.CAPABILITY.value
     consumes = frozenset({AssetKind.HTTP_ASSETS.value})
@@ -45,14 +45,13 @@ class ScreenshotStage(Stage):
         self._check_abort()
         cfg = self.cfg
         net = self.net_options()
-        rows = list(
-            self.session.execute(
-                select(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
+        # id + url only: the full row carries the stored response body
+        live = self.session.execute(
+            select(HttpAsset.id, HttpAsset.url).where(
+                HttpAsset.scan_id == self.ctx.scan_id,
+                HttpAsset.status_code.isnot(None),
             )
-            .scalars()
-            .all()
-        )
-        live = [row for row in rows if row.status_code]
+        ).all()
         if not live:
             return StageResult(counts={"screenshots": 0})
 
@@ -71,48 +70,62 @@ class ScreenshotStage(Stage):
             logger.warning("httpx unavailable, skipping screenshots")
             return StageResult(counts={"screenshots": 0})
 
-        by_url = {row.url: row for row in rows}
-        records = client.capture([row.url for row in live][:_MAX_TARGETS])
-        captured = 0
+        by_url = {url: asset_id for asset_id, url in live}
+        selected = [url for _, url in live][:_MAX_TARGETS]
+        records, cut_short = client.capture(selected)
+        updates = []
         for rec in records:
             path = rec.get("screenshot_path")
-            row = by_url.get(rec.get("input")) or by_url.get(rec.get("url"))
-            if row is not None and path:
-                row.screenshot_path = _relpath(path)[:500]
-                self.session.add(row)
-                captured += 1
-        self.session.commit()
+            asset_id = by_url.get(rec.get("input")) or by_url.get(rec.get("url"))
+            if asset_id is not None and path:
+                updates.append(
+                    {"id": asset_id, "screenshot_path": _relpath(path)[:500]}
+                )
+        if updates:
+            self.session.execute(update(HttpAsset), updates)
+            self.session.commit()
         if self.ctx.target_type == TargetType.DOMAIN.value:
             self._denormalize_to_subdomains()
-        self.emit_progress(f"captured {captured} screenshots")
-        return StageResult(counts={"screenshots": captured})
+        self.emit_progress(f"captured {len(updates)} screenshots")
+        skipped = max(0, len(live) - len(selected))
+        warnings = []
+        if cut_short:
+            warnings.append(
+                f"the renderer ran out of time — {len(updates):,} of "
+                f"{len(selected):,} services were captured"
+            )
+        if skipped:
+            warnings.append(
+                f"{skipped:,} services beyond the {_MAX_TARGETS:,} budget were not captured"
+            )
+        return StageResult(
+            counts={"screenshots": len(updates)},
+            warnings=warnings,
+            partial=bool(warnings),
+        )
 
     def _denormalize_to_subdomains(self) -> None:
-        shots = {
-            asset.url: asset.screenshot_path
-            for asset in self.session.execute(
-                select(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
-            )
-            .scalars()
-            .all()
-            if asset.screenshot_path
-        }
-        subs = (
+        shots = dict(
             self.session.execute(
-                select(Subdomain).where(
-                    Subdomain.scan_id == self.ctx.scan_id,
-                    Subdomain.http_url.isnot(None),
+                select(HttpAsset.url, HttpAsset.screenshot_path).where(
+                    HttpAsset.scan_id == self.ctx.scan_id,
+                    HttpAsset.screenshot_path.isnot(None),
                 )
-            )
-            .scalars()
-            .all()
+            ).all()
         )
-        changed = 0
-        for sub in subs:
-            path = shots.get(sub.http_url)
-            if path:
-                sub.screenshot_path = path
-                self.session.add(sub)
-                changed += 1
-        if changed:
+        if not shots:
+            return
+        rows = self.session.execute(
+            select(Subdomain.id, Subdomain.http_url).where(
+                Subdomain.scan_id == self.ctx.scan_id,
+                Subdomain.http_url.isnot(None),
+            )
+        ).all()
+        updates = [
+            {"id": sub_id, "screenshot_path": shots[url]}
+            for sub_id, url in rows
+            if url in shots
+        ]
+        if updates:
+            self.session.execute(update(Subdomain), updates)
             self.session.commit()

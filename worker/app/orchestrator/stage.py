@@ -1,5 +1,7 @@
 """Run one engine stage, fully tracked (activity timeline, command registration, events, abort)."""
 
+import threading
+import time
 import traceback as tb_mod
 import uuid
 from collections.abc import Callable
@@ -28,6 +30,30 @@ from stages.base import StageAbortedError, StageContext
 from stages.registry import StageSpec
 
 logger = get_logger(__name__)
+
+# stages call _check_abort() in tight loops (once per resolved name, per finding, per
+# root), so the cancel flag is polled at most this often instead of once per call
+_ABORT_POLL_SECONDS = 2.0
+
+
+def _throttled_abort(
+    session_factory: Callable[[], Session], scan_id: uuid.UUID
+) -> Callable[[], bool]:
+    lock = threading.Lock()
+    state = {"at": 0.0, "cancelled": False}
+
+    def _is_aborted() -> bool:
+        with lock:
+            if state["cancelled"]:
+                return True
+            now = time.monotonic()
+            if now - state["at"] < _ABORT_POLL_SECONDS:
+                return False
+            state["at"] = now
+            state["cancelled"] = _scan_is_cancelled(session_factory, scan_id)
+            return state["cancelled"]
+
+    return _is_aborted
 
 
 def load_resolved(execution_config: dict) -> ResolvedScanConfig:
@@ -153,7 +179,7 @@ def run_stage(
         stage_name=spec.name,
         recorder=recorder,
         events=events,
-        is_aborted=lambda: _scan_is_cancelled(session_factory, scan.id),
+        is_aborted=_throttled_abort(session_factory, scan.id),
     )
     engine = spec.stage_cls(session, ctx)
 
