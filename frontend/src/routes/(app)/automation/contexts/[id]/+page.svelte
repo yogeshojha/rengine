@@ -31,7 +31,7 @@
 	import LoadingButton from '@/components/loading-button.svelte';
 	import UnsavedChangesDialog from '@/components/unsaved-changes-dialog.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -575,7 +575,7 @@
 		{/if}
 
 		{#if !isNew && contextId}
-			<LaunchModal bind:open={showLaunch} presetContextId={contextId} />
+			<LaunchDialog bind:open={showLaunch} presetContextId={contextId} />
 		{/if}
 	{/if}
 </div>

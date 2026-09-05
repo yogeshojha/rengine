@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from shared.services import ip_inventory
@@ -24,6 +24,9 @@ class CdnCheckStage(Stage):
     )
     phase = Phase.EXPANSION.value
     level = 1
+    group = StageGroup.ADDRESSES.value
+    role = StageRole.SUPPORT.value
+    consumes = frozenset({AssetKind.ADDRESSES.value})
     applies_to = ALL_TARGETS
     tools = ("cdncheck",)
     touches_target = False

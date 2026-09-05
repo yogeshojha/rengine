@@ -34,9 +34,10 @@
 	interface Props {
 		engineStages: Record<string, StageConfig> | null;
 		onChange: (overrides: Record<string, Record<string, unknown>>) => void;
+		showEnabled?: boolean;
 	}
 
-	let { engineStages, onChange }: Props = $props();
+	let { engineStages, onChange, showEnabled = true }: Props = $props();
 
 	let stats = $state<TemplateLibraryStats | null>(null);
 	let statsLoading = $state(true);
@@ -207,7 +208,10 @@
 
 {#if catalogEntry}
 	<div class="space-y-2">
-		<div class="flex min-h-9 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+		<div
+			class="flex min-h-9 flex-wrap items-center justify-between gap-x-2 gap-y-1"
+			class:hidden={!showEnabled}
+		>
 			<Label class="flex shrink-0 items-center gap-1.5" for="vuln-plan-switch">
 				<ShieldAlert class="size-3.5 text-muted-foreground" />
 				Vulnerability scan

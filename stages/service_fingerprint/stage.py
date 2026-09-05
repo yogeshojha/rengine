@@ -9,7 +9,7 @@ from shared.definitions.ports import (
     ServiceClass,
     likely_tls,
 )
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
@@ -31,6 +31,9 @@ class ServiceFingerprintStage(Stage):
     )
     phase = Phase.EXPANSION.value
     level = 4
+    group = StageGroup.SERVICES.value
+    role = StageRole.SUPPORT.value
+    consumes = frozenset({AssetKind.PORTS.value})
     applies_to = ALL_TARGETS
     tools = ()
     config_model = ServiceFingerprintConfig

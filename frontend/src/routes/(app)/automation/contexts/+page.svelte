@@ -25,7 +25,7 @@
 	import EmptyState from '@/components/empty-state.svelte';
 	import ContextListCard from '$lib/components/contexts/context-list-card.svelte';
 	import ContextFacets from '$lib/components/contexts/context-facets.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import SelectionActionBar from '@/components/selection-action-bar.svelte';
 	import { contextFacets, facetLine } from '$lib/components/contexts/context-summary';
@@ -396,4 +396,4 @@
 	onConfirm={confirmDelete}
 />
 
-<LaunchModal bind:open={showLaunch} presetContextId={launchContextId} />
+<LaunchDialog bind:open={showLaunch} presetContextId={launchContextId} />

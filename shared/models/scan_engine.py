@@ -7,6 +7,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON, Text
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.constants import DEFAULT_GLOBAL_THREADS
 from shared.models.scan_context import ScanContextCreate
 from shared.utils.datetime import utc_now
 
@@ -20,7 +21,7 @@ class ScanEngine(SQLModel, table=True):
     name: str = Field(max_length=200)
     description: str | None = Field(default=None, max_length=1000)
     intensity: str = Field(default="normal")
-    global_threads: int = Field(default=30)
+    global_threads: int = Field(default=DEFAULT_GLOBAL_THREADS)
     global_http_crawl: bool = Field(default=True)
     global_headers: list = Field(
         default_factory=list, sa_column=Column(JSON, nullable=False)
@@ -39,7 +40,7 @@ class ScanEngineCreate(BaseModel):
     name: str
     description: str | None = None
     intensity: str = "normal"
-    global_threads: int = 30
+    global_threads: int = DEFAULT_GLOBAL_THREADS
     global_http_crawl: bool = True
     global_headers: list[str] = PydanticField(default_factory=list)
     stages: dict[str, dict] = PydanticField(default_factory=dict)
@@ -110,8 +111,17 @@ class StageCatalogEntry(BaseModel):
     requires_api_keys: bool = False
     touches_target: bool = True
     launch_fields: list[str] = PydanticField(default_factory=list)
+    group: str
+    role: str
+    consumes: list[str] = PydanticField(default_factory=list)
+    produces: list[str] = PydanticField(default_factory=list)
     defaults: dict
     fields: list[StageField] = PydanticField(default_factory=list)
+
+
+class StageGroupEntry(BaseModel):
+    key: str
+    label: str
 
 
 class ToolOption(BaseModel):
@@ -135,11 +145,13 @@ class EngineCatalog(BaseModel):
     tool_options: list[ToolOption]
     presets: list[EnginePreset]
     target_types: list[str]
+    groups: list[StageGroupEntry] = PydanticField(default_factory=list)
+    seed_produces: dict[str, list[str]] = PydanticField(default_factory=dict)
 
 
 class PreviewResolved(BaseModel):
     header_names: list[str] = PydanticField(default_factory=list)
-    global_threads: int = 30
+    global_threads: int = DEFAULT_GLOBAL_THREADS
     global_rate_limit_ceiling: int | None = None
     per_tool_rate_limits: dict[str, int] = PydanticField(default_factory=dict)
     excluded_subdomains: list[str] = PydanticField(default_factory=list)
@@ -162,5 +174,5 @@ class EnginePreviewRequest(BaseModel):
     context_id: uuid.UUID | None = None
     context: ScanContextCreate | None = None
     intensity: str = "normal"
-    global_threads: int = 30
+    global_threads: int = DEFAULT_GLOBAL_THREADS
     stages: dict[str, dict] = PydanticField(default_factory=dict)

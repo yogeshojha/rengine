@@ -1,29 +1,60 @@
-import { STORAGE_KEYS } from '$lib/config/storage-keys';
-import { SELECT_NONE } from '$lib/constants';
-import type { ScanEngine } from '$lib/types/scan-engine';
+import type { EnginePreset } from '$lib/types/scan-engine';
+import type { StageOverrides } from '$lib/types/scan';
+import { cloneStages, readLastPlan, rememberLastPlan } from '$lib/utilities/launch-plan';
+
+export type QuickScanSelection =
+	| { kind: 'recipe'; preset: string }
+	| { kind: 'engine'; engineId: string };
 
 export interface QuickScanPrefs {
 	enabled: boolean;
-	engineId: string;
-	contextId: string;
+	selection: QuickScanSelection | null;
+	contextId: string | null;
 }
 
-export function pickDefaultEngine(engines: ScanEngine[]): string {
-	if (engines.length === 0) return '';
-	const used = engines.filter((e) => e.last_used_at);
-	if (used.length === 0) return engines[0].id;
-	return used.reduce((a, b) =>
-		new Date(a.last_used_at as string) >= new Date(b.last_used_at as string) ? a : b
-	).id;
+export const encodeSelection = (s: QuickScanSelection) =>
+	s.kind === 'recipe' ? `recipe:${s.preset}` : `engine:${s.engineId}`;
+
+export function decodeSelection(value: string): QuickScanSelection | null {
+	const [kind, ...rest] = value.split(':');
+	const id = rest.join(':');
+	if (!id) return null;
+	if (kind === 'recipe') return { kind: 'recipe', preset: id };
+	if (kind === 'engine') return { kind: 'engine', engineId: id };
+	return null;
 }
 
-export function readQuickScanPrefs(storageKey: string): QuickScanPrefs {
+export function defaultSelection(presets: EnginePreset[]): QuickScanSelection | null {
+	return presets.length ? { kind: 'recipe', preset: presets[0].name } : null;
+}
+
+export function quickScanPlan(
+	selection: QuickScanSelection,
+	presets: EnginePreset[]
+): { engine_id: string | null; overrides: StageOverrides } {
+	if (selection.kind === 'engine') return { engine_id: selection.engineId, overrides: {} };
+	const preset = presets.find((p) => p.name === selection.preset);
+	return { engine_id: null, overrides: cloneStages(preset?.stages ?? {}) };
+}
+
+function selectionFromStored(
+	stored: { engineId: string | null; stages: StageOverrides },
+	presets: EnginePreset[]
+): QuickScanSelection | null {
+	if (stored.engineId) return { kind: 'engine', engineId: stored.engineId };
+	const signature = JSON.stringify(stored.stages);
+	const preset = presets.find((p) => JSON.stringify(p.stages) === signature);
+	return preset ? { kind: 'recipe', preset: preset.name } : null;
+}
+
+export function readQuickScanPrefs(storageKey: string, presets: EnginePreset[]): QuickScanPrefs {
 	if (typeof localStorage === 'undefined')
-		return { enabled: false, engineId: '', contextId: SELECT_NONE };
+		return { enabled: false, selection: null, contextId: null };
+	const stored = readLastPlan();
 	return {
 		enabled: localStorage.getItem(storageKey) === '1',
-		engineId: localStorage.getItem(STORAGE_KEYS.launchLastEngine) ?? '',
-		contextId: localStorage.getItem(STORAGE_KEYS.launchLastContext) ?? SELECT_NONE
+		selection: stored ? selectionFromStored(stored, presets) : null,
+		contextId: stored?.contextId ?? null
 	};
 }
 
@@ -32,8 +63,17 @@ export function rememberQuickScanToggle(storageKey: string, enabled: boolean) {
 	localStorage.setItem(storageKey, enabled ? '1' : '0');
 }
 
-export function rememberQuickScanChoice(engineId: string, contextId: string) {
-	if (typeof localStorage === 'undefined') return;
-	localStorage.setItem(STORAGE_KEYS.launchLastEngine, engineId);
-	localStorage.setItem(STORAGE_KEYS.launchLastContext, contextId);
+export function rememberQuickScanChoice(
+	selection: QuickScanSelection,
+	contextId: string | null,
+	presets: EnginePreset[]
+) {
+	const plan = quickScanPlan(selection, presets);
+	rememberLastPlan({
+		mode: plan.engine_id ? 'engine' : 'quick',
+		engineId: plan.engine_id,
+		stages: plan.overrides,
+		intensity: null,
+		contextId
+	});
 }

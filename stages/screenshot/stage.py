@@ -4,7 +4,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
@@ -35,6 +35,9 @@ class ScreenshotStage(Stage):
     description = "Render every live HTTP service to an image."
     phase = Phase.EXPANSION.value
     level = 5
+    group = StageGroup.WEB.value
+    role = StageRole.CAPABILITY.value
+    consumes = frozenset({AssetKind.HTTP_ASSETS.value})
     tools = ("httpx",)
     config_model = ScreenshotConfig
 

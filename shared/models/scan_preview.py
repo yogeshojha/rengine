@@ -9,6 +9,7 @@ class PreviewToolStatus(StrEnum):
     SKIPPED_DISABLED = "skipped_disabled"
     SKIPPED_NEEDS_KEY = "skipped_needs_key"
     SKIPPED_NOT_APPLICABLE = "skipped_not_applicable"
+    SKIPPED_NO_INPUT = "skipped_no_input"
 
 
 class PreviewTool(BaseModel):
@@ -48,10 +49,10 @@ class PreviewSummary(BaseModel):
 
 
 class ScanPreview(BaseModel):
-    target_id: uuid.UUID
+    target_id: uuid.UUID | None = None
     target_value: str
     target_type: str
-    engine_id: uuid.UUID
+    engine_id: uuid.UUID | None = None
     engine_name: str
     context_id: uuid.UUID | None = None
     context_name: str | None = None

@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from shared.definitions.domains import registrable_domain
 from shared.definitions.endpoints import parse_url
 from shared.definitions.vulnerabilities import CoverageStatus
-from shared.enums.scan import Intensity, Phase
+from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.endpoint import Endpoint, EndpointCoverage
@@ -38,6 +38,10 @@ class UrlDiscoveryStage(Stage):
     description = "Collect the URLs and paths that exist on every live web asset."
     phase = Phase.DEPTH.value
     level = 0
+    group = StageGroup.ENDPOINTS.value
+    role = StageRole.CAPABILITY.value
+    consumes = frozenset({AssetKind.HTTP_ASSETS.value})
+    produces = frozenset({AssetKind.ENDPOINTS.value})
     applies_to = ALL_TARGETS
     tools = ("katana", "urlfinder")
     # the stage survives a passive scan; the providers that touch the target are gated below

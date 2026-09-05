@@ -38,7 +38,7 @@
 	import ScanHistoryModal from '$lib/components/targets/scan-history-modal.svelte';
 	import BulkActionBar from '$lib/components/targets/bulk-action-bar.svelte';
 	import ImportTargetsModal from '$lib/components/modals/import-targets-modal.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import WhoisDetailDialog from '$lib/components/whois/whois-detail-dialog.svelte';
 	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
@@ -757,7 +757,7 @@
 <AddTargetModal bind:open={showAddModal} initialValue={prefillValue} />
 <ImportTargetsModal bind:open={showImportModal} />
 
-<LaunchModal
+<LaunchDialog
 	bind:open={showLaunchModal}
 	targetId={launchTargetId}
 	targetIds={launchTargetIds}

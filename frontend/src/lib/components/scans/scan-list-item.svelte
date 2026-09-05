@@ -320,7 +320,7 @@
 					<ExternalLink class="h-4 w-4" /> Open
 				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={() => onRescan(scan)} class="gap-2">
-					<Play class="h-4 w-4" /> Re-scan
+					<Play class="h-4 w-4" /> Run again
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
 				{#if live}

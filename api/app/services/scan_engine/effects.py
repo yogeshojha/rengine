@@ -7,6 +7,7 @@ from app.services.scan_engine.validation import (
     _validate_intensity,
     _validate_stages,
 )
+from shared.definitions.launch import ASSET_KIND_LABELS, seed_produces
 from shared.enums.scan import Intensity
 from shared.enums.target import TargetType
 from shared.models.scan_context import ScanContext
@@ -14,85 +15,93 @@ from shared.models.scan_engine import EnginePreviewResult, PreviewResolved
 from shared.models.scan_preview import PreviewPhase, PreviewTool, PreviewToolStatus
 from shared.services.scan_resolve import merge_engine_context
 from stages.config import Scale
-from stages.registry import phases
+from stages.registry import ordered_levels, phases
 
 
 def stage_effects(
     resolved, configured: set[str]
 ) -> tuple[list[PreviewPhase], list[str]]:
     warnings: list[str] = []
-    out: list[PreviewPhase] = []
-
-    for phase_name, specs in phases():
-        tools: list[PreviewTool] = []
-        for spec in specs:
-            values = resolved.stage(spec.name)
-            scaled = spec.config_model.scaled_fields()
-
-            def _scaled(kind: Scale, values=values, scaled=scaled):
-                return next(
-                    (values[f] for f, (s, _) in scaled.items() if s is kind), None
-                )
-
-            def _skip(status, reason, spec=spec, tools=tools):
-                tools.append(
-                    PreviewTool(
-                        capability=spec.name,
-                        label=spec.title,
-                        status=status,
-                        reason=reason,
-                    )
-                )
-
-            if not values.get("enabled", True):
-                reason = (
-                    "Skipped at passive intensity. This stage sends traffic to the target."
-                    if resolved.intensity == Intensity.PASSIVE.value
-                    and spec.touches_target
-                    else "Disabled in engine."
-                )
-                _skip(PreviewToolStatus.SKIPPED_DISABLED, reason)
-                continue
-            if resolved.target_type not in spec.applies_to:
-                _skip(
-                    PreviewToolStatus.SKIPPED_NOT_APPLICABLE,
-                    f"Not applicable to {resolved.target_type} targets.",
-                )
-                continue
-
-            missing = [k for k in spec.api_keys if k not in configured]
-            if (
-                missing
-                and len(missing) == len(spec.api_keys)
-                and spec.requires_api_keys
-            ):
-                reason = f"{spec.title} skipped — API key not configured."
-                _skip(PreviewToolStatus.SKIPPED_NEEDS_KEY, reason)
-                warnings.append(reason)
-                continue
-            if missing:
-                warnings.append(
-                    f"{spec.title}: no API key for {', '.join(missing)} — reduced coverage."
-                )
-
-            tools.append(
-                PreviewTool(
-                    capability=spec.name,
-                    label=spec.title,
-                    status=PreviewToolStatus.WILL_RUN,
-                    rate=_scaled(Scale.RATE),
-                    threads=_scaled(Scale.THREADS),
-                    timeout=_scaled(Scale.TIMEOUT),
-                )
-            )
-        out.append(
-            PreviewPhase(
-                phase=phase_name,
-                label=phase_name.replace("_", " ").title(),
-                tools=tools,
-            )
+    statuses = _stage_statuses(resolved, configured, warnings)
+    out = [
+        PreviewPhase(
+            phase=phase_name,
+            label=phase_name.replace("_", " ").title(),
+            tools=[statuses[spec.name] for spec in specs],
         )
+        for phase_name, specs in phases()
+    ]
     return out, warnings
+
+
+def _stage_statuses(
+    resolved, configured: set[str], warnings: list[str]
+) -> dict[str, PreviewTool]:
+    """One status per stage, walking levels so a producer only feeds later levels."""
+    available = set(seed_produces(resolved.target_type))
+    out: dict[str, PreviewTool] = {}
+    for level in ordered_levels():
+        produced: set[str] = set()
+        for spec in level:
+            tool = _stage_status(spec, resolved, configured, available, warnings)
+            out[spec.name] = tool
+            if tool.status is PreviewToolStatus.WILL_RUN:
+                produced |= spec.produces
+        available |= produced
+    return out
+
+
+def _stage_status(
+    spec, resolved, configured: set[str], available: set[str], warnings: list[str]
+) -> PreviewTool:
+    values = resolved.stage(spec.name)
+
+    def _skip(status: PreviewToolStatus, reason: str) -> PreviewTool:
+        return PreviewTool(
+            capability=spec.name, label=spec.title, status=status, reason=reason
+        )
+
+    if not values.get("enabled", True):
+        reason = (
+            "Skipped at passive intensity. This stage sends traffic to the target."
+            if resolved.intensity == Intensity.PASSIVE.value and spec.touches_target
+            else "Disabled in engine."
+        )
+        return _skip(PreviewToolStatus.SKIPPED_DISABLED, reason)
+    if resolved.target_type not in spec.applies_to:
+        return _skip(
+            PreviewToolStatus.SKIPPED_NOT_APPLICABLE,
+            f"Not applicable to {resolved.target_type} targets.",
+        )
+    if spec.consumes and not (spec.consumes & available):
+        kinds = " or ".join(ASSET_KIND_LABELS[k] for k in sorted(spec.consumes))
+        reason = f"No earlier stage produces the {kinds} this stage reads."
+        warnings.append(f"{spec.title}: {reason}")
+        return _skip(PreviewToolStatus.SKIPPED_NO_INPUT, reason)
+
+    missing = [k for k in spec.api_keys if k not in configured]
+    if missing and len(missing) == len(spec.api_keys) and spec.requires_api_keys:
+        reason = f"{spec.title} skipped — API key not configured."
+        warnings.append(reason)
+        return _skip(PreviewToolStatus.SKIPPED_NEEDS_KEY, reason)
+    if missing:
+        warnings.append(
+            f"{spec.title}: no API key for {', '.join(missing)} — reduced coverage."
+        )
+
+    scaled = spec.config_model.scaled_fields()
+
+    def _scaled(kind: Scale):
+        return next((values[f] for f, (s, _) in scaled.items() if s is kind), None)
+
+    return PreviewTool(
+        capability=spec.name,
+        label=spec.title,
+        status=PreviewToolStatus.WILL_RUN,
+        rate=_scaled(Scale.RATE),
+        threads=_scaled(Scale.THREADS),
+        timeout=_scaled(Scale.TIMEOUT),
+    )
 
 
 class _DraftEngine:

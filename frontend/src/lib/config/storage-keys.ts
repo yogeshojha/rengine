@@ -36,5 +36,5 @@ export const STORAGE_KEYS = {
 	vulnsDensity: 'rengine:vulns:density',
 	vulnsPageSize: 'rengine:vulns:pageSize',
 	vulnsView: 'rengine:vulns:view',
-	launchVulnPlan: 'rengine:launch:vulnPlan'
+	launchLastPlan: 'rengine:launch:lastPlan'
 } as const;

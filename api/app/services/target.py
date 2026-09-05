@@ -397,6 +397,74 @@ class TargetService:
 
         return self._to_target_read(target)
 
+    async def ensure_targets(
+        self, values: list[str], project_id: UUID, user_id
+    ) -> list[Target]:
+        """The project's targets for these values, creating any that do not exist yet."""
+        wanted: dict[str, TargetType] = {}
+        for raw in values:
+            value = raw.strip()
+            if not value or value in wanted:
+                continue
+            target_type = validate_target(value)
+            if not target_type:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid target: {value}",
+                )
+            wanted[value] = target_type
+        if not wanted:
+            return []
+        if await self.session.get(Project, project_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        rows = await self.session.execute(
+            select(Target).where(
+                Target.project_id == project_id,
+                col(Target.target_value).in_(list(wanted)),
+            )
+        )
+        found = {t.target_value: t for t in rows.scalars().all()}
+        created: list[Target] = []
+        for value, target_type in wanted.items():
+            if value in found:
+                continue
+            target = Target(
+                target_value=value,
+                target_type=target_type,
+                display_name=value,
+                project_id=project_id,
+                created_by=user_id,
+            )
+            try:
+                async with self.session.begin_nested():
+                    self.session.add(target)
+                    await self.session.flush()
+            except IntegrityError:
+                existing = await self.session.execute(
+                    select(Target).where(
+                        Target.project_id == project_id, Target.target_value == value
+                    )
+                )
+                found[value] = existing.scalar_one()
+                continue
+            found[value] = target
+            created.append(target)
+
+        for target in created:
+            await self._activity.log_async(
+                event=ActivityEvent.TARGET_CREATED,
+                title="Target created.",
+                target_id=target.id,
+                project_id=project_id,
+                user_id=user_id,
+            )
+        await self.session.commit()
+        self._dispatch_post_target_creation(created)
+        return [found[value] for value in wanted]
+
     async def bulk_create_targets(
         self, bulk_in: TargetBulkCreate, user_id: str
     ) -> TargetBulkCreateResponse:

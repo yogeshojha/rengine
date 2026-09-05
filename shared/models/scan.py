@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
@@ -22,7 +22,7 @@ class Scan(SQLModel, table=True):
     target_id: uuid.UUID = Field(
         foreign_key="targets.id", index=True, ondelete="CASCADE"
     )
-    engine_id: uuid.UUID = Field(index=True)
+    engine_id: uuid.UUID | None = Field(default=None, index=True)
     engine_name: str = Field(max_length=200)
     context_id: uuid.UUID | None = Field(default=None)
     context_name: str | None = Field(default=None, max_length=200)
@@ -47,28 +47,52 @@ class Scan(SQLModel, table=True):
 
 
 class ScanCreate(BaseModel):
+    """A launch names a saved engine, or runs an ad hoc plan carried in `overrides`."""
+
     model_config = ConfigDict(extra="forbid")
 
-    engine_id: uuid.UUID
+    engine_id: uuid.UUID | None = None
     context_id: uuid.UUID | None = None
-    target_id: uuid.UUID
+    target_id: uuid.UUID | None = None
+    target_value: str | None = Field(default=None, max_length=500)
     overrides: dict[str, dict] = Field(default_factory=dict)
+    intensity: str | None = None
+
+    @model_validator(mode="after")
+    def _require_target(self):
+        if (self.target_id is None) == (not self.target_value):
+            msg = "Provide either target_id or target_value."
+            raise ValueError(msg)
+        return self
 
 
 class ScanBatchCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    engine_id: uuid.UUID
+    engine_id: uuid.UUID | None = None
     context_id: uuid.UUID | None = None
-    target_ids: list[uuid.UUID] = Field(min_length=1, max_length=MAX_SCAN_BATCH)
+    target_ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_SCAN_BATCH)
+    target_values: list[str] = Field(default_factory=list, max_length=MAX_SCAN_BATCH)
     overrides: dict[str, dict] = Field(default_factory=dict)
+    intensity: str | None = None
+
+    @model_validator(mode="after")
+    def _require_targets(self):
+        total = len(self.target_ids) + len(self.target_values)
+        if total == 0:
+            msg = "Select at least one target."
+            raise ValueError(msg)
+        if total > MAX_SCAN_BATCH:
+            msg = f"Select at most {MAX_SCAN_BATCH} targets."
+            raise ValueError(msg)
+        return self
 
 
 class ScanRead(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
     target_id: uuid.UUID
-    engine_id: uuid.UUID
+    engine_id: uuid.UUID | None
     engine_name: str
     context_id: uuid.UUID | None
     context_name: str | None

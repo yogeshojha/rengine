@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 
 from shared.definitions.ports import DEFAULT_WEB_PORTS, ServiceClass
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
@@ -27,6 +27,9 @@ class OriginProbeStage(Stage):
     )
     phase = Phase.EXPANSION.value
     level = 4
+    group = StageGroup.SERVICES.value
+    role = StageRole.SUPPORT.value
+    consumes = frozenset({AssetKind.PORTS.value})
     applies_to = ALL_TARGETS
     tools = ("httpx",)
     config_model = OriginProbeConfig

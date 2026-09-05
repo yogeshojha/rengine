@@ -105,13 +105,14 @@ export interface ResolvedScanConfig {
 	http_protocol: HttpProtocol;
 	global_http_crawl: boolean;
 	intensity: string;
+	overrides?: StageOverrides;
 }
 
 export interface ScanRead {
 	id: string;
 	project_id: string;
 	target_id: string;
-	engine_id: string;
+	engine_id: string | null;
 	engine_name: string;
 	context_id: string | null;
 	context_name: string | null;
@@ -138,23 +139,35 @@ export interface ScanRead {
 	is_first_scan: boolean | null;
 }
 
+export type StageOverrides = Record<string, Record<string, unknown>>;
+
 export interface ScanCreate {
-	engine_id: string;
+	engine_id?: string | null;
 	context_id?: string | null;
-	target_id: string;
-	overrides?: Record<string, Record<string, unknown>>;
+	target_id?: string | null;
+	target_value?: string | null;
+	overrides?: StageOverrides;
+	intensity?: string | null;
 }
 
 export const MAX_SCAN_BATCH = 500;
 
 export interface ScanBatchCreate {
-	engine_id: string;
+	engine_id?: string | null;
 	context_id?: string | null;
-	target_ids: string[];
-	overrides?: Record<string, Record<string, unknown>>;
+	target_ids?: string[];
+	target_values?: string[];
+	overrides?: StageOverrides;
+	intensity?: string | null;
 }
 
-export const PREVIEW_TOOL_STATUSES = ['will_run', 'skipped_disabled', 'skipped_needs_key'] as const;
+export const PREVIEW_TOOL_STATUSES = [
+	'will_run',
+	'skipped_disabled',
+	'skipped_needs_key',
+	'skipped_not_applicable',
+	'skipped_no_input'
+] as const;
 export type PreviewToolStatus = (typeof PREVIEW_TOOL_STATUSES)[number];
 
 export interface PreviewTool {
@@ -278,7 +291,7 @@ export interface ScanPreview {
 	target_id: string;
 	target_value: string;
 	target_type: string;
-	engine_id: string;
+	engine_id: string | null;
 	engine_name: string;
 	context_id: string | null;
 	context_name: string | null;

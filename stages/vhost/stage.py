@@ -4,7 +4,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
@@ -24,6 +24,10 @@ class VhostStage(Stage):
     description = "Host-header fuzzing to surface vhosts not resolvable via DNS."
     phase = Phase.EXPANSION.value
     level = 1
+    group = StageGroup.HOSTS.value
+    role = StageRole.CAPABILITY.value
+    consumes = frozenset({AssetKind.HOSTS.value})
+    produces = frozenset({AssetKind.HOSTS.value})
     applies_to = DOMAIN_TARGETS
     tools = ("ffuf",)
     config_model = VhostConfig

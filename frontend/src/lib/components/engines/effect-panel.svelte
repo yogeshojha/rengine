@@ -5,17 +5,16 @@
 	import Minus from '@lucide/svelte/icons/minus';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import type { PreviewPhase, PreviewTool } from '$lib/types/scan';
-	import { phaseLabel, targetTypeLabel, type StageCatalogEntry } from '$lib/types/scan-engine';
+	import { phaseLabel, type StageCatalogEntry } from '$lib/types/scan-engine';
 
 	interface Props {
 		phases: PreviewPhase[];
 		stages: StageCatalogEntry[];
-		targetType: string;
 		isLoading: boolean;
 		error: string | null;
 	}
 
-	let { phases, stages, targetType, isLoading, error }: Props = $props();
+	let { phases, stages, isLoading, error }: Props = $props();
 
 	function levelOf(tool: PreviewTool): number {
 		return stages.find((s) => s.name === tool.capability)?.level ?? 0;
@@ -41,10 +40,6 @@
 </script>
 
 <div class="wrap">
-	<div class="head">
-		Execution order for a {targetTypeLabel(targetType)} target. Stages on the same row run in parallel.
-		A dotted link marks a stage that waits for the row above to complete.
-	</div>
 	<ScrollArea class="min-h-0 flex-1">
 		<div class="body">
 			{#if error}
@@ -107,14 +102,6 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
-	}
-	.head {
-		flex-shrink: 0;
-		padding: 9px 14px;
-		border-bottom: 1px solid var(--border);
-		font-size: 11px;
-		line-height: 1.5;
-		color: var(--muted-foreground);
 	}
 	.body {
 		padding: 14px 14px 20px;

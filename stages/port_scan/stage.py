@@ -12,7 +12,7 @@ from shared.definitions.ports import (
     ScanPolicy,
     profile_ports,
 )
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from shared.services import ip_inventory, port_inventory
@@ -39,6 +39,10 @@ class PortScanStage(Stage):
     description = "Find listening TCP services on every address in scope."
     phase = Phase.EXPANSION.value
     level = 2
+    group = StageGroup.SERVICES.value
+    role = StageRole.CAPABILITY.value
+    consumes = frozenset({AssetKind.ADDRESSES.value})
+    produces = frozenset({AssetKind.PORTS.value})
     applies_to = ALL_TARGETS
     tools = ("naabu",)
     config_model = PortScanConfig

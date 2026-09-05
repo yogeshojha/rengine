@@ -36,7 +36,7 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
@@ -609,9 +609,10 @@
 </div>
 
 {#if scan}
-	<LaunchModal
+	<LaunchDialog
 		bind:open={showRescan}
 		targetId={scan.target_id}
+		rerun={scan}
 		onClose={() => (showRescan = false)}
 	/>
 	<ConfirmDialog

@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import logging
+from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import Literal
 from uuid import UUID
@@ -14,6 +15,7 @@ from sqlalchemy.orm import aliased
 from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService, stage_effects
+from app.services.target import TargetService
 from shared.config import BaseAppSettings
 from shared.definitions.notifications import scan_cancelled
 from shared.enums.api_key import APIProvider
@@ -48,6 +50,7 @@ from shared.models.scan_preview import (
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.services.celery_dispatch import revoke_scan_tasks
+from shared.services.launch_plan import AdHocEngine, plan_label
 from shared.services.notification import NotificationManager
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.scan_factory import build_scan_row
@@ -61,6 +64,7 @@ from shared.services.scan_resolve import (
     redact_command,
 )
 from shared.utils.datetime import utc_now
+from shared.utils.validation import validate_target
 
 logger = logging.getLogger(__name__)
 
@@ -207,9 +211,13 @@ class ScanService:
         return target
 
     async def _resolve_scope(
-        self, engine_id: UUID, context_id: UUID | None, project_id: UUID
+        self, engine_id: UUID | None, context_id: UUID | None, project_id: UUID
     ):
-        engine = await self._get_engine(engine_id, project_id)
+        engine = (
+            await self._get_engine(engine_id, project_id)
+            if engine_id is not None
+            else AdHocEngine()
+        )
         context = None
         if context_id is not None:
             context = await self._get_context(context_id, project_id)
@@ -224,11 +232,14 @@ class ScanService:
             )
         return engine, context, proxy_url
 
-    async def _resolve_and_validate(self, data: ScanCreate, project_id: UUID):
-        engine, context, proxy_url = await self._resolve_scope(
-            data.engine_id, data.context_id, project_id
-        )
-        target = await self._get_target(data.target_id, project_id)
+    @staticmethod
+    def _resolve_for(
+        engine,
+        context,
+        target: Target,
+        proxy_url: str | None,
+        data: ScanCreate | ScanBatchCreate,
+    ):
         resolved = merge_engine_context(
             engine,
             context,
@@ -236,8 +247,59 @@ class ScanService:
             target.target_type.value,
             proxy_url=proxy_url,
             overrides=data.overrides,
+            intensity=data.intensity,
         )
+        if engine.id is None:
+            engine = replace(engine, name=plan_label(resolved))
+        return engine, resolved
+
+    async def _launch_target(
+        self, data: ScanCreate, project_id: UUID, created_by: UUID | None
+    ) -> Target:
+        """The saved target, created from `target_value` when launching; transient when previewing."""
+        if data.target_id is not None:
+            return await self._get_target(data.target_id, project_id)
+        value = (data.target_value or "").strip()
+        if created_by is not None:
+            ensured = await TargetService(self.session).ensure_targets(
+                [value], project_id, created_by
+            )
+            return ensured[0]
+        target_type = validate_target(value)
+        if target_type is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid target: {value}",
+            )
+        return Target(
+            target_value=value, target_type=target_type, project_id=project_id
+        )
+
+    async def _resolve_and_validate(
+        self, data: ScanCreate, project_id: UUID, created_by: UUID | None = None
+    ):
+        engine, context, proxy_url = await self._resolve_scope(
+            data.engine_id, data.context_id, project_id
+        )
+        target = await self._launch_target(data, project_id, created_by)
+        engine, resolved = self._resolve_for(engine, context, target, proxy_url, data)
         return engine, context, target, resolved
+
+    async def _batch_targets(
+        self, data: ScanBatchCreate, project_id: UUID, created_by: UUID
+    ) -> list[Target]:
+        targets: list[Target] = []
+        if data.target_ids:
+            targets = await self._get_targets(
+                list(dict.fromkeys(data.target_ids)), project_id
+            )
+        if data.target_values:
+            seen = {t.id for t in targets}
+            ensured = await TargetService(self.session).ensure_targets(
+                data.target_values, project_id, created_by
+            )
+            targets.extend(t for t in ensured if t.id not in seen)
+        return targets
 
     async def _configured_providers(self) -> set[str]:
         result = await self.session.execute(
@@ -306,7 +368,7 @@ class ScanService:
         )
 
         return ScanPreview(
-            target_id=target.id,
+            target_id=target.id if data.target_id is not None else None,
             target_value=target.target_value,
             target_type=target.target_type.value,
             engine_id=engine.id,
@@ -327,7 +389,7 @@ class ScanService:
         schedule_type: str | None = None,
     ) -> ScanRead:
         engine, context, target, resolved = await self._resolve_and_validate(
-            data, project_id
+            data, project_id, created_by
         )
         logger.info(
             "Creating scan for target=%s engine=%s header_names=%s",
@@ -350,7 +412,8 @@ class ScanService:
         await self.session.commit()
         await self.session.refresh(scan)
 
-        await self.engine_service.touch(engine.id, project_id)
+        if engine.id is not None:
+            await self.engine_service.touch(engine.id, project_id)
         if context is not None:
             await self.context_service.touch(context.id, project_id, scan_id=scan.id)
 
@@ -366,22 +429,16 @@ class ScanService:
         engine, context, proxy_url = await self._resolve_scope(
             data.engine_id, data.context_id, project_id
         )
-        target_ids = list(dict.fromkeys(data.target_ids))
-        targets = await self._get_targets(target_ids, project_id)
+        targets = await self._batch_targets(data, project_id, created_by)
 
         scans: list[Scan] = []
         for target in targets:
-            resolved = merge_engine_context(
-                engine,
-                context,
-                target.target_value,
-                target.target_type.value,
-                proxy_url=proxy_url,
-                overrides=data.overrides,
+            run_engine, resolved = self._resolve_for(
+                engine, context, target, proxy_url, data
             )
             scan = build_scan_row(
                 resolved=resolved,
-                engine=engine,
+                engine=run_engine,
                 context=context,
                 target=target,
                 project_id=project_id,
@@ -393,7 +450,8 @@ class ScanService:
         logger.info("Creating %d scans for engine=%s", len(scans), engine.id)
         await self.session.commit()
 
-        await self.engine_service.touch(engine.id, project_id)
+        if engine.id is not None:
+            await self.engine_service.touch(engine.id, project_id)
         if context is not None:
             await self.context_service.touch(
                 context.id, project_id, scan_id=scans[-1].id

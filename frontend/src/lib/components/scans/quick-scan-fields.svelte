@@ -1,20 +1,22 @@
 <script lang="ts">
-	import Plus from '@lucide/svelte/icons/plus';
 	import { untrack } from 'svelte';
-	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Select from '$lib/components/ui/select';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
+	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { NO_CONTEXT_LABEL } from '$lib/types/scan-context';
 	import { SELECT_NONE } from '$lib/constants';
 	import {
-		pickDefaultEngine,
+		decodeSelection,
+		defaultSelection,
+		encodeSelection,
 		readQuickScanPrefs,
-		rememberQuickScanToggle
+		rememberQuickScanToggle,
+		type QuickScanSelection
 	} from '$lib/utilities/quick-scan';
 
 	interface Props {
@@ -24,12 +26,11 @@
 		fallbackNote: string;
 		storageKey: string;
 		enabled: boolean;
-		engineId: string;
+		selection: QuickScanSelection | null;
 		contextId: string;
 		armed?: boolean;
 		pending?: boolean;
 		disabled?: boolean;
-		onCreateEngine?: () => void;
 	}
 
 	let {
@@ -39,15 +40,17 @@
 		fallbackNote,
 		storageKey,
 		enabled = $bindable(),
-		engineId = $bindable(),
+		selection = $bindable(),
 		contextId = $bindable(),
 		armed = $bindable(false),
 		pending = $bindable(false),
-		disabled = false,
-		onCreateEngine
+		disabled = false
 	}: Props = $props();
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? null);
+	let presets = $derived(engineCatalogStore.presets);
+	let engines = $derived(scanEnginesStore.engines);
+	let catalogReady = $derived(engineCatalogStore.hasFetched || !!engineCatalogStore.error);
 	let enginesReady = $derived(
 		(scanEnginesStore.fetchedProjectId === projectId || !!scanEnginesStore.error) &&
 			!scanEnginesStore.isLoading
@@ -56,16 +59,26 @@
 		(scanContextsStore.fetchedProjectId === projectId || !!scanContextsStore.error) &&
 			!scanContextsStore.isLoading
 	);
-	let engineError = $derived(scanEnginesStore.error);
-	let noEngines = $derived(enginesReady && !engineError && scanEnginesStore.engines.length === 0);
-	let ready = $derived(enginesReady && contextsReady);
+	let error = $derived(engineCatalogStore.error);
+	let ready = $derived(catalogReady && enginesReady && contextsReady);
 
-	let armedNow = $derived(enabled && !engineError && !noEngines && ready && !!engineId);
-	let pendingNow = $derived(enabled && !engineError && !noEngines && !armedNow);
+	let selectionValid = $derived.by(() => {
+		const s = selection;
+		if (!s) return false;
+		return s.kind === 'recipe'
+			? presets.some((p) => p.name === s.preset)
+			: engines.some((e) => e.id === s.engineId);
+	});
+	let armedNow = $derived(enabled && !error && ready && selectionValid);
+	let pendingNow = $derived(enabled && !error && !armedNow);
 
-	let engineLabel = $derived(
-		scanEnginesStore.engines.find((e) => e.id === engineId)?.name ?? 'Select engine'
-	);
+	let selectionLabel = $derived.by(() => {
+		const s = selection;
+		if (!s) return 'Select configuration';
+		if (s.kind === 'recipe')
+			return presets.find((p) => p.name === s.preset)?.title ?? 'Select configuration';
+		return engines.find((e) => e.id === s.engineId)?.name ?? 'Select configuration';
+	});
 	let contextLabel = $derived(
 		contextId === SELECT_NONE
 			? NO_CONTEXT_LABEL
@@ -80,39 +93,50 @@
 		pending = pendingNow;
 	});
 
-	let restored = false;
-	$effect(() => {
-		if (restored) return;
-		restored = true;
-		const prefs = readQuickScanPrefs(storageKey);
-		untrack(() => {
-			enabled = prefs.enabled;
-			if (!engineId) engineId = prefs.engineId;
-			if (contextId === SELECT_NONE) contextId = prefs.contextId;
-		});
-	});
-
 	let attempted: string | null = null;
 	$effect(() => {
 		if (!enabled || !projectId) return;
 		const pid = projectId;
-		const busy = scanEnginesStore.isLoading || scanContextsStore.isLoading;
 		untrack(() => {
-			if (busy || attempted === pid) return;
+			if (attempted === pid) return;
 			attempted = pid;
+			if (!engineCatalogStore.hasFetched) engineCatalogStore.fetch();
 			if (scanEnginesStore.fetchedProjectId !== pid) scanEnginesStore.fetchEngines(pid);
 			if (scanContextsStore.fetchedProjectId !== pid) scanContextsStore.fetchContexts(pid);
 		});
 	});
 
+	let restored = false;
 	$effect(() => {
-		if (!enabled) return;
-		const engines = enginesReady ? scanEnginesStore.engines : null;
-		const contexts = contextsReady ? scanContextsStore.contexts : null;
+		if (restored) return;
+		restored = true;
 		untrack(() => {
-			if (engines && !engines.some((e) => e.id === engineId)) engineId = pickDefaultEngine(engines);
-			if (contexts && contextId !== SELECT_NONE && !contexts.some((c) => c.id === contextId))
+			enabled = readQuickScanPrefs(storageKey, []).enabled;
+		});
+	});
+
+	$effect(() => {
+		if (!enabled || !ready) return;
+		const currentPresets = presets;
+		const currentEngines = engines;
+		const contexts = scanContextsStore.contexts;
+		untrack(() => {
+			if (!selectionValid) {
+				const prefs = readQuickScanPrefs(storageKey, currentPresets);
+				const stored = prefs.selection;
+				const storedValid =
+					!!stored &&
+					(stored.kind === 'recipe'
+						? currentPresets.some((p) => p.name === stored.preset)
+						: currentEngines.some((e) => e.id === stored.engineId));
+				selection = storedValid ? stored : defaultSelection(currentPresets);
+				if (prefs.contextId && contexts.some((c) => c.id === prefs.contextId)) {
+					contextId = prefs.contextId;
+				}
+			}
+			if (contextId !== SELECT_NONE && !contexts.some((c) => c.id === contextId)) {
 				contextId = SELECT_NONE;
+			}
 		});
 	});
 
@@ -134,38 +158,43 @@
 	</div>
 
 	{#if enabled}
-		{#if engineError}
-			<p class="text-xs text-destructive">{engineError} {fallbackNote}</p>
+		{#if error}
+			<p class="text-xs text-destructive">{error} {fallbackNote}</p>
 		{:else if !ready}
 			<div class="grid gap-3 sm:grid-cols-2">
 				<Skeleton class="h-9 w-full rounded-md" />
 				<Skeleton class="h-9 w-full rounded-md" />
 			</div>
-		{:else if noEngines}
-			<div class="space-y-2 rounded-md border border-border bg-muted/20 px-3 py-3">
-				<p class="text-xs text-muted-foreground">
-					No scan engines yet. An engine defines what a scan runs.
-				</p>
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					class="h-7 gap-1 text-xs"
-					onclick={() => onCreateEngine?.()}
-				>
-					<Plus class="h-3 w-3" /> Create a scan engine
-				</Button>
-			</div>
 		{:else}
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div class="space-y-1.5">
-					<Label for="{id}-engine" class="text-xs text-muted-foreground">Engine</Label>
-					<Select.Root type="single" bind:value={engineId} {disabled}>
-						<Select.Trigger id="{id}-engine" class="w-full">{engineLabel}</Select.Trigger>
+					<Label for="{id}-plan" class="text-xs text-muted-foreground">Configuration</Label>
+					<Select.Root
+						type="single"
+						value={selection ? encodeSelection(selection) : ''}
+						onValueChange={(v) => (selection = decodeSelection(v))}
+						{disabled}
+					>
+						<Select.Trigger id="{id}-plan" class="w-full">{selectionLabel}</Select.Trigger>
 						<Select.Content>
-							{#each scanEnginesStore.engines as engine (engine.id)}
-								<Select.Item value={engine.id} label={engine.name}>{engine.name}</Select.Item>
-							{/each}
+							<Select.Group>
+								<Select.Label>Presets</Select.Label>
+								{#each presets as preset (preset.name)}
+									<Select.Item value="recipe:{preset.name}" label={preset.title}>
+										{preset.title}
+									</Select.Item>
+								{/each}
+							</Select.Group>
+							{#if engines.length}
+								<Select.Group>
+									<Select.Label>Scan engines</Select.Label>
+									{#each engines as engine (engine.id)}
+										<Select.Item value="engine:{engine.id}" label={engine.name}>
+											{engine.name}
+										</Select.Item>
+									{/each}
+								</Select.Group>
+							{/if}
 						</Select.Content>
 					</Select.Root>
 				</div>

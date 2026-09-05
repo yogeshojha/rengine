@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from stages.base import RANGE_TARGETS, Stage, StageResult
@@ -20,6 +20,9 @@ class HostDiscoveryStage(Stage):
     description = "Sweep a netblock for responsive hosts before port scanning."
     phase = Phase.EXPANSION.value
     level = 0
+    group = StageGroup.ADDRESSES.value
+    role = StageRole.CAPABILITY.value
+    produces = frozenset({AssetKind.ADDRESSES.value})
     applies_to = RANGE_TARGETS
     tools = ("naabu",)
     config_model = HostDiscoveryConfig

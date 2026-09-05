@@ -32,7 +32,7 @@
 
 	import EngineTopbar from '$lib/components/engines/engine-topbar.svelte';
 	import EngineSummaryBar from '$lib/components/engines/engine-summary-bar.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import StageRow from '$lib/components/engines/stage-row.svelte';
 	import YamlPane from '$lib/components/engines/yaml-pane.svelte';
 	import EffectPanel from '$lib/components/engines/effect-panel.svelte';
@@ -719,7 +719,6 @@
 				<EffectPanel
 					phases={previewPhases}
 					stages={catalogStages}
-					targetType={lensTargetType}
 					isLoading={previewLoading}
 					error={previewError}
 				/>
@@ -850,7 +849,7 @@
 			</Resizable.PaneGroup>
 		{/if}
 
-		<LaunchModal bind:open={showLaunch} presetEngineId={engine.id} />
+		<LaunchDialog bind:open={showLaunch} presetEngineId={engine.id} />
 
 		<ToolOptionsPanel
 			open={showToolOptions}

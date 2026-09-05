@@ -11,7 +11,7 @@ from shared.definitions.ports import (
     ServiceClass,
     service_class,
 )
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
@@ -49,6 +49,10 @@ class HttpProbeStage(Stage):
     )
     phase = Phase.EXPANSION.value
     level = 3
+    group = StageGroup.WEB.value
+    role = StageRole.CAPABILITY.value
+    consumes = frozenset({AssetKind.HOSTS.value, AssetKind.ADDRESSES.value})
+    produces = frozenset({AssetKind.HTTP_ASSETS.value})
     tools = ("httpx",)
     config_model = HttpProbeConfig
 

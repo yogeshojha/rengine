@@ -29,7 +29,7 @@
 	import FootprintMeter from '$lib/components/engines/footprint-meter.svelte';
 	import NewEngineDialog from '$lib/components/engines/new-engine-dialog.svelte';
 	import ImportEngineDialog from '$lib/components/engines/import-engine-dialog.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import SelectionActionBar from '@/components/selection-action-bar.svelte';
 	import { summarize } from '$lib/utilities/engine-summary';
@@ -463,7 +463,7 @@
 	onImport={handleImport}
 />
 
-<LaunchModal bind:open={showLaunch} presetEngineId={launchEngineId} />
+<LaunchDialog bind:open={showLaunch} presetEngineId={launchEngineId} />
 
 <NewEngineDialog
 	open={showNewDialog}

@@ -9,7 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import stages as stages_pkg
-from shared.enums.scan import PHASE_ORDER
+from shared.enums.scan import PHASE_ORDER, AssetKind, StageGroup, StageRole
 from stages.base import Stage
 from stages.config import StageConfig
 
@@ -27,6 +27,10 @@ class StageSpec:
     requires_api_keys: bool
     touches_target: bool
     launch_fields: tuple[str, ...]
+    consumes: frozenset[str]
+    produces: frozenset[str]
+    group: str
+    role: str
     stage_cls: type[Stage]
     config_model: type[StageConfig]
 
@@ -41,6 +45,11 @@ class StageSpec:
 
 class StageRegistrationError(RuntimeError):
     """An engine module declares an invalid or duplicate stage."""
+
+
+_GROUPS = frozenset(g.value for g in StageGroup)
+_ROLES = frozenset(r.value for r in StageRole)
+_KINDS = frozenset(k.value for k in AssetKind)
 
 
 def _stage_dirs() -> list[str]:
@@ -89,6 +98,16 @@ def _spec(stage_cls: type[Stage]) -> StageSpec:
     if phase not in PHASE_ORDER:
         msg = f"{stage_cls.name}: unknown phase {phase!r}."
         raise StageRegistrationError(msg)
+    if stage_cls.group not in _GROUPS:
+        msg = f"{stage_cls.name}: group must be one of {sorted(_GROUPS)}."
+        raise StageRegistrationError(msg)
+    if stage_cls.role not in _ROLES:
+        msg = f"{stage_cls.name}: role must be one of {sorted(_ROLES)}."
+        raise StageRegistrationError(msg)
+    unknown = (set(stage_cls.consumes) | set(stage_cls.produces)) - _KINDS
+    if unknown:
+        msg = f"{stage_cls.name}: unknown asset kind {sorted(unknown)[0]!r}."
+        raise StageRegistrationError(msg)
     return StageSpec(
         name=stage_cls.name,
         title=getattr(stage_cls, "title", None)
@@ -102,6 +121,10 @@ def _spec(stage_cls: type[Stage]) -> StageSpec:
         requires_api_keys=stage_cls.requires_api_keys,
         touches_target=stage_cls.touches_target,
         launch_fields=tuple(stage_cls.launch_fields),
+        consumes=frozenset(stage_cls.consumes),
+        produces=frozenset(stage_cls.produces),
+        group=stage_cls.group,
+        role=stage_cls.role,
         stage_cls=stage_cls,
         config_model=stage_cls.config_model,
     )

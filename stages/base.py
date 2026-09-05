@@ -79,6 +79,12 @@ class Stage(ABC):
     touches_target: ClassVar[bool] = True
     # config fields a launch may override for one run; the rest belong to the engine
     launch_fields: ClassVar[tuple[str, ...]] = ()
+    # asset kinds this stage reads (any one suffices) and writes; a launch implies producers from these
+    consumes: ClassVar[frozenset[str]] = frozenset()
+    produces: ClassVar[frozenset[str]] = frozenset()
+    group: ClassVar[str] = ""
+    # capability = a result a user asks for; support = runs when its inputs exist
+    role: ClassVar[str] = ""
     config_model: ClassVar[type[StageConfig]] = StageConfig
 
     def __init__(self, session: Session, context: StageContext) -> None:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from stages.base import IP_TARGETS, Stage, StageResult
@@ -21,6 +21,10 @@ class ReverseDnsStage(Stage):
     description = "Resolve PTR records for every discovered IP."
     phase = Phase.DISCOVERY.value
     level = 1
+    group = StageGroup.ADDRESSES.value
+    role = StageRole.SUPPORT.value
+    consumes = frozenset({AssetKind.ADDRESSES.value})
+    produces = frozenset({AssetKind.HOSTS.value})
     applies_to = IP_TARGETS
     tools = ("dnsx",)
     touches_target = False

@@ -1,10 +1,13 @@
+from shared.definitions.launch import STAGE_GROUP_LABELS, seed_produces
 from shared.definitions.tools import SCAN_TOOLS
+from shared.enums.scan import StageGroup
 from shared.enums.target import TargetType
 from shared.models.scan_engine import (
     EngineCatalog,
     EnginePreset,
     StageCatalogEntry,
     StageField,
+    StageGroupEntry,
     ToolOption,
 )
 from stages.presets import PRESETS, preset_stages
@@ -66,6 +69,10 @@ def build_catalog() -> EngineCatalog:
                 requires_api_keys=spec.requires_api_keys,
                 touches_target=spec.touches_target,
                 launch_fields=list(spec.launch_fields),
+                group=spec.group,
+                role=spec.role,
+                consumes=sorted(spec.consumes),
+                produces=sorted(spec.produces),
                 defaults=spec.defaults,
                 fields=_field_specs(spec),
             )
@@ -83,6 +90,11 @@ def build_catalog() -> EngineCatalog:
             for p in PRESETS
         ],
         target_types=[t.value for t in TargetType],
+        groups=[
+            StageGroupEntry(key=g.value, label=STAGE_GROUP_LABELS[g.value])
+            for g in StageGroup
+        ],
+        seed_produces={t.value: sorted(seed_produces(t.value)) for t in TargetType},
     )
 
 

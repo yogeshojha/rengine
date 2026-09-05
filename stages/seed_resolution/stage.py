@@ -5,7 +5,7 @@ import ipaddress
 from sqlalchemy import delete
 
 from shared.enums.ip import IpSource
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
@@ -33,6 +33,9 @@ class SeedResolutionStage(Stage):
     description = "Expand an IP, netblock or ASN seed into individual hosts."
     phase = Phase.DISCOVERY.value
     level = 0
+    group = StageGroup.ADDRESSES.value
+    role = StageRole.SUPPORT.value
+    produces = frozenset({AssetKind.ADDRESSES.value})
     applies_to = IP_TARGETS
     touches_target = False
     config_model = SeedResolutionConfig

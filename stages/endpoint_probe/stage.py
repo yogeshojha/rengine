@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.definitions.endpoints import PROBE_COVERAGE_SOURCE, STATIC_CLASSES
 from shared.definitions.vulnerabilities import CoverageStatus
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.endpoint import Endpoint, EndpointCoverage
 from shared.services import endpoint_inventory
@@ -31,6 +31,9 @@ class EndpointProbeStage(Stage):
     )
     phase = Phase.DEPTH.value
     level = 1
+    group = StageGroup.ENDPOINTS.value
+    role = StageRole.SUPPORT.value
+    consumes = frozenset({AssetKind.ENDPOINTS.value})
     applies_to = ALL_TARGETS
     tools = ("httpx",)
     config_model = EndpointProbeConfig

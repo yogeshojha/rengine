@@ -26,7 +26,12 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { SELECT_NONE } from '$lib/constants';
-	import { rememberQuickScanChoice } from '$lib/utilities/quick-scan';
+	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
+	import {
+		quickScanPlan,
+		rememberQuickScanChoice,
+		type QuickScanSelection
+	} from '$lib/utilities/quick-scan';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { tick } from 'svelte';
@@ -54,7 +59,7 @@
 	let selectedTags = $state<Array<{ id: string; label: string; color: string }>>([]);
 
 	let scanAfterAdd = $state(false);
-	let engineId = $state('');
+	let selection = $state<QuickScanSelection | null>(null);
 	let contextId = $state(SELECT_NONE);
 	let scanArmed = $state(false);
 	let scanPending = $state(false);
@@ -158,7 +163,7 @@
 		if (!project || !canSubmit) return;
 
 		const wantsScan = scanArmed;
-		const engine = engineId;
+		const plan = selection;
 		const context = contextId;
 
 		isSubmitting = true;
@@ -184,17 +189,20 @@
 				return;
 			}
 
-			const scans = await scansStore.launchScans(project.id, {
-				engine_id: engine,
-				context_id: context === SELECT_NONE ? null : context,
-				target_ids: [result.id]
-			});
+			const presets = engineCatalogStore.presets;
+			const scans = plan
+				? await scansStore.launchScans(project.id, {
+						...quickScanPlan(plan, presets),
+						context_id: context === SELECT_NONE ? null : context,
+						target_ids: [result.id]
+					})
+				: null;
 
 			resetForm();
 			open = false;
 
 			if (scans && scans.length > 0) {
-				rememberQuickScanChoice(engine, context);
+				if (plan) rememberQuickScanChoice(plan, context === SELECT_NONE ? null : context, presets);
 				toast.success(`Target added. Scan queued against ${result.target_value}.`);
 				goto(ROUTES.scan(scans[0].id));
 			} else {
@@ -238,32 +246,19 @@
 		open = false;
 	}
 
-	let leavingToEngines = $state(false);
-
-	function closeAndLeave(leaving: boolean) {
-		leavingToEngines = false;
-		resetForm();
-		open = false;
-		if (leaving) goto(ROUTES.engines);
-	}
-
 	function requestClose() {
 		if (isDirty) {
 			showDiscardConfirm = true;
 			return;
 		}
-		closeAndLeave(leavingToEngines);
+		resetForm();
+		open = false;
 	}
 
 	function confirmDiscard() {
-		const leaving = leavingToEngines;
 		showDiscardConfirm = false;
-		closeAndLeave(leaving);
-	}
-
-	function requestCreateEngine() {
-		leavingToEngines = true;
-		requestClose();
+		resetForm();
+		open = false;
 	}
 
 	let prefilled = false;
@@ -400,12 +395,11 @@
 				fallbackNote="The target will be added without a scan."
 				storageKey={STORAGE_KEYS.addTargetScanAfter}
 				bind:enabled={scanAfterAdd}
-				bind:engineId
+				bind:selection
 				bind:contextId
 				bind:armed={scanArmed}
 				bind:pending={scanPending}
 				disabled={isSubmitting}
-				onCreateEngine={requestCreateEngine}
 			/>
 
 			<Separator />
@@ -434,9 +428,6 @@
 	bind:open={showDiscardConfirm}
 	title="Discard your changes?"
 	description="You have unsaved input for this target. Closing now will discard it."
-	onOpenChange={(o) => {
-		showDiscardConfirm = o;
-		if (!o) leavingToEngines = false;
-	}}
+	onOpenChange={(o) => (showDiscardConfirm = o)}
 	onConfirm={confirmDiscard}
 />

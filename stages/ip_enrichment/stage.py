@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select, text
 
-from shared.enums.scan import Phase
+from shared.enums.scan import Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.bgp_summary import TargetBgpSummary
@@ -74,6 +74,8 @@ class IpEnrichmentStage(Stage):
     description = "Resolve ASN, network operator and country for every IP address."
     phase = Phase.DEPTH.value
     level = 0
+    group = StageGroup.ADDRESSES.value
+    role = StageRole.SUPPORT.value
     applies_to = ALL_TARGETS
     touches_target = False
     config_model = IpEnrichmentConfig

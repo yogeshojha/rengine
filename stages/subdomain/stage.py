@@ -7,7 +7,7 @@ from sqlalchemy import delete
 
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
@@ -45,6 +45,9 @@ class SubdomainStage(Stage):
     )
     phase = Phase.EXPANSION.value
     level = 0
+    group = StageGroup.HOSTS.value
+    role = StageRole.CAPABILITY.value
+    produces = frozenset({AssetKind.HOSTS.value, AssetKind.ADDRESSES.value})
     applies_to = DOMAIN_TARGETS
     tools = PASSIVE_TOOLS
     api_keys = tuple(p.value for p in _PREFETCH_KEYS)

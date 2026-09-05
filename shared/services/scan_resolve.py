@@ -7,7 +7,12 @@ from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, Field, PrivateAttr
 
-from shared.definitions.constants import MAX_RATE, MAX_THREADS, MAX_TIMEOUT
+from shared.definitions.constants import (
+    DEFAULT_GLOBAL_THREADS,
+    MAX_RATE,
+    MAX_THREADS,
+    MAX_TIMEOUT,
+)
 from shared.definitions.tools import parse_tool_args
 
 if TYPE_CHECKING:
@@ -202,7 +207,7 @@ class ResolvedScanConfig(BaseModel):
     headers: dict[str, str] = Field(default_factory=dict)
     per_tool_rate_limits: dict[str, int] = Field(default_factory=dict)
     global_rate_limit_ceiling: int | None = None
-    global_threads: int = 30
+    global_threads: int = DEFAULT_GLOBAL_THREADS
     thread_multiplier: float = 1.0
     timeout_multiplier: float = 1.0
     stages: dict[str, dict] = Field(default_factory=dict)
@@ -338,12 +343,17 @@ def merge_engine_context(
     target_type: str,
     proxy_url: str | None = None,
     overrides: dict | None = None,
+    intensity: str | None = None,
 ) -> ResolvedScanConfig:
-    from shared.enums.scan import Intensity  # noqa: PLC0415
+    from shared.enums.scan import INTENSITIES, Intensity  # noqa: PLC0415
     from stages.config import Scale  # noqa: PLC0415
     from stages.registry import stages as stage_specs  # noqa: PLC0415
 
-    passive = engine.intensity == Intensity.PASSIVE.value
+    run_intensity = intensity or engine.intensity
+    if run_intensity not in INTENSITIES:
+        msg = f"intensity must be one of {sorted(INTENSITIES)}."
+        raise _bad(msg)
+    passive = run_intensity == Intensity.PASSIVE.value
 
     ctx = context if context is not None else _NeutralContext()
 
@@ -414,7 +424,7 @@ def merge_engine_context(
         follow_redirects=follow_redirects,
         http_protocol=http_protocol,
         global_http_crawl=engine.global_http_crawl,
-        intensity=engine.intensity,
+        intensity=run_intensity,
         tool_options=dict(getattr(engine, "tool_options", None) or {}),
         overrides=run_overrides,
     )

@@ -23,13 +23,18 @@
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { toast } from 'svelte-sonner';
 	import ImportHelpText from '$lib/components/targets/import-helper.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import QuickScanFields from '$lib/components/scans/quick-scan-fields.svelte';
 	import { MAX_SCAN_BATCH } from '$lib/types/scan';
 	import { ROUTES } from '$lib/config/routes';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { SELECT_NONE } from '$lib/constants';
-	import { rememberQuickScanChoice } from '$lib/utilities/quick-scan';
+	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
+	import {
+		quickScanPlan,
+		rememberQuickScanChoice,
+		type QuickScanSelection
+	} from '$lib/utilities/quick-scan';
 	import { goto } from '$app/navigation';
 	import type {
 		TargetImportItem,
@@ -70,7 +75,7 @@
 	let launchIds = $state<string[] | undefined>(undefined);
 
 	let scanAfterImport = $state(false);
-	let engineId = $state('');
+	let selection = $state<QuickScanSelection | null>(null);
 	let contextId = $state(SELECT_NONE);
 	let scanArmed = $state(false);
 	let scanPending = $state(false);
@@ -413,14 +418,16 @@
 		const ids = importedIds.slice(0, MAX_SCAN_BATCH);
 		if (!project || ids.length === 0) return;
 
+		if (!selection) return;
+		const presets = engineCatalogStore.presets;
 		const scans = await scansStore.launchScans(project.id, {
-			engine_id: engineId,
+			...quickScanPlan(selection, presets),
 			context_id: contextId === SELECT_NONE ? null : contextId,
 			target_ids: ids
 		});
 
 		if (scans && scans.length > 0) {
-			rememberQuickScanChoice(engineId, contextId);
+			rememberQuickScanChoice(selection, contextId === SELECT_NONE ? null : contextId, presets);
 			queuedScans = scans.length;
 			toast.success(`${scans.length} scan${scans.length !== 1 ? 's' : ''} queued`);
 		} else {
@@ -575,16 +582,11 @@ https://app.example.com"
 				fallbackNote="Targets will be imported without a scan."
 				storageKey={STORAGE_KEYS.importTargetsScanAfter}
 				bind:enabled={scanAfterImport}
-				bind:engineId
+				bind:selection
 				bind:contextId
 				bind:armed={scanArmed}
 				bind:pending={scanPending}
 				disabled={busy}
-				onCreateEngine={() => {
-					resetModal();
-					open = false;
-					goto(ROUTES.engines);
-				}}
 			/>
 
 			<Separator />
@@ -678,7 +680,7 @@ https://app.example.com"
 	</Dialog.Content>
 </Dialog.Root>
 
-<LaunchModal
+<LaunchDialog
 	bind:open={showLaunch}
 	targetIds={launchIds}
 	onClose={() => {

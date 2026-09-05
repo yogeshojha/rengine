@@ -1,6 +1,7 @@
 export type Intensity = 'passive' | 'normal' | 'aggressive';
 
 export const INTENSITIES: readonly Intensity[] = ['passive', 'normal', 'aggressive'] as const;
+export const DEFAULT_INTENSITY: Intensity = 'normal';
 
 export const INTENSITY_LABELS: Record<Intensity, string> = {
 	passive: 'Passive',
@@ -84,8 +85,17 @@ export interface StageCatalogEntry {
 	requires_api_keys: boolean;
 	touches_target: boolean;
 	launch_fields: string[];
+	group: string;
+	role: string;
+	consumes: string[];
+	produces: string[];
 	defaults: StageConfig;
 	fields: StageField[];
+}
+
+export interface StageGroupEntry {
+	key: string;
+	label: string;
 }
 
 export interface ToolOption {
@@ -109,6 +119,8 @@ export interface EngineCatalog {
 	tool_options: ToolOption[];
 	presets: EnginePreset[];
 	target_types: string[];
+	groups: StageGroupEntry[];
+	seed_produces: Record<string, string[]>;
 }
 
 export interface PreviewResolved {

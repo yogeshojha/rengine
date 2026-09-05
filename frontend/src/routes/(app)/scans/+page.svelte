@@ -5,12 +5,13 @@
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import ScanActivityChart from '$lib/components/scans/scan-activity-chart.svelte';
 	import ScanHistoryTable from '$lib/components/scans/scan-history-table.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import type { ScanRead } from '$lib/types/scan';
 
 	let showLaunch = $state(false);
 	let launchTargetId = $state<string | undefined>(undefined);
 	let launchTargetIds = $state<string[] | undefined>(undefined);
+	let rerunScan = $state<ScanRead | null>(null);
 
 	function newScan() {
 		if (!projectsStore.activeProject) {
@@ -19,12 +20,14 @@
 		}
 		launchTargetId = undefined;
 		launchTargetIds = undefined;
+		rerunScan = null;
 		showLaunch = true;
 	}
 
 	function rescan(scan: ScanRead) {
 		launchTargetIds = undefined;
 		launchTargetId = scan.target_id;
+		rerunScan = scan;
 		showLaunch = true;
 	}
 
@@ -32,6 +35,7 @@
 		if (targetIds.length === 0) return;
 		launchTargetId = undefined;
 		launchTargetIds = targetIds;
+		rerunScan = null;
 		showLaunch = true;
 	}
 
@@ -39,6 +43,7 @@
 		showLaunch = false;
 		launchTargetId = undefined;
 		launchTargetIds = undefined;
+		rerunScan = null;
 		scansStore.refresh();
 	}
 </script>
@@ -49,9 +54,10 @@
 	<ScanHistoryTable onLaunch={newScan} onRescan={rescan} onRescanMany={rescanMany} />
 </div>
 
-<LaunchModal
+<LaunchDialog
 	bind:open={showLaunch}
 	targetId={launchTargetId}
 	targetIds={launchTargetIds}
+	rerun={rerunScan}
 	onClose={onModalClose}
 />

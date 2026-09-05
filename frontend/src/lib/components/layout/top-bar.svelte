@@ -5,6 +5,7 @@
 	import ActivityGlance from '$lib/components/activity/activity-glance.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 	import CommandSearch from '$lib/components/layout/command-search.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import NotificationsMenu from '$lib/components/layout/notifications-menu.svelte';
 	import QuickActionsMenu from '$lib/components/layout/quick-actions-menu.svelte';
 	import ThemeToggle from '$lib/components/layout/theme-toggle.svelte';
@@ -18,6 +19,12 @@
 
 	let addTargetOpen = $state(false);
 	const handleAddTarget = () => (addTargetOpen = true);
+	let launchOpen = $state(false);
+	let scanValue = $state<string | undefined>(undefined);
+	const handleScan = (value: string) => {
+		scanValue = value;
+		launchOpen = true;
+	};
 </script>
 
 <header class="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
@@ -51,10 +58,15 @@
 
 	<div class="flex-1"></div>
 
-	<CommandSearch onAddTarget={handleAddTarget} />
+	<CommandSearch onAddTarget={handleAddTarget} onScan={handleScan} />
 	<NotificationsMenu />
 	<QuickActionsMenu onAddTarget={handleAddTarget} />
 	<ThemeToggle />
 </header>
 
 <AddTargetModal bind:open={addTargetOpen} />
+<LaunchDialog
+	bind:open={launchOpen}
+	targetValues={scanValue ? [scanValue] : undefined}
+	onClose={() => (scanValue = undefined)}
+/>

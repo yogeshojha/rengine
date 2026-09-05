@@ -25,7 +25,7 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import TargetHeader from '$lib/components/targets/target-detail/target-header.svelte';
 	import TargetHeaderSkeleton from '$lib/components/targets/target-detail/target-header-skeleton.svelte';
 	import EnrichmentWidget from '$lib/components/targets/target-detail/enrichment/enrichment-widget.svelte';
@@ -510,7 +510,7 @@
 		<TargetMeta {target} />
 	</div>
 
-	<LaunchModal
+	<LaunchDialog
 		bind:open={showLaunchModal}
 		targetId={target.id}
 		onClose={() => (showLaunchModal = false)}

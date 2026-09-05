@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
-from shared.enums.scan import Phase
+from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
 from stages.base import Stage, StageResult
@@ -20,6 +20,9 @@ class WafDetectStage(Stage):
     description = "Fingerprint web application firewalls in front of live services."
     phase = Phase.EXPANSION.value
     level = 4
+    group = StageGroup.WEB.value
+    role = StageRole.SUPPORT.value
+    consumes = frozenset({AssetKind.HTTP_ASSETS.value})
     tools = ("wafw00f",)
     config_model = WafDetectConfig
 

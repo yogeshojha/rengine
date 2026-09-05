@@ -19,7 +19,7 @@
 	import type { ScanRead } from '$lib/types/scan';
 	import ActivityTimeline from './activity-timeline.svelte';
 	import LiveScanCard from '$lib/components/scans/live-scan-card.svelte';
-	import LaunchModal from '$lib/components/scans/launch-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
@@ -447,7 +447,7 @@
 	</div>
 </aside>
 
-<LaunchModal bind:open={rescanOpen} targetId={rescanTargetId} onClose={onRescanClose} />
+<LaunchDialog bind:open={rescanOpen} targetId={rescanTargetId} onClose={onRescanClose} />
 
 <ConfirmDialog
 	open={!!cancelTarget}

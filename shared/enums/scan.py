@@ -56,6 +56,29 @@ PHASE_ORDER: dict[str, int] = {
 }
 
 
+class AssetKind(Enum):
+    HOSTS = "hosts"
+    ADDRESSES = "addresses"
+    PORTS = "ports"
+    HTTP_ASSETS = "http_assets"
+    ENDPOINTS = "endpoints"
+    VULNERABILITIES = "vulnerabilities"
+
+
+class StageRole(Enum):
+    CAPABILITY = "capability"
+    SUPPORT = "support"
+
+
+class StageGroup(Enum):
+    HOSTS = "hosts"
+    ADDRESSES = "addresses"
+    SERVICES = "services"
+    WEB = "web"
+    ENDPOINTS = "endpoints"
+    VULNERABILITIES = "vulnerabilities"
+
+
 class ScanEventKind(Enum):
     SCAN_STARTED = "scan_started"
     SCAN_COMPLETED = "scan_completed"

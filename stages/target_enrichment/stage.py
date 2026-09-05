@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import select
 
-from shared.enums.scan import Phase
+from shared.enums.scan import Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
@@ -37,6 +37,8 @@ class TargetEnrichmentStage(Stage):
     description = "Resolve the target and attach DNS, WHOIS and BGP context."
     phase = Phase.DISCOVERY.value
     level = 0
+    group = StageGroup.HOSTS.value
+    role = StageRole.SUPPORT.value
     tools = ("dnsx", "whois")
     touches_target = False
     config_model = TargetEnrichmentConfig

@@ -8,18 +8,21 @@
 	import Building from '@lucide/svelte/icons/building';
 	import Cog from '@lucide/svelte/icons/cog';
 	import Layers from '@lucide/svelte/icons/layers';
+	import Play from '@lucide/svelte/icons/play';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
 	import { targetsApi } from '$lib/api/targets';
 	import type { Target as TargetEntity } from '$lib/types/target';
 
-	let { onAddTarget }: { onAddTarget: () => void } = $props();
+	let { onAddTarget, onScan }: { onAddTarget: () => void; onScan: (value: string) => void } =
+		$props();
 
 	let commandOpen = $state(false);
 	let searchQuery = $state('');
 	let searchResults = $state<TargetEntity[]>([]);
 	let searching = $state(false);
+	let scanCandidate = $state<string | null>(null);
 
 	const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 	const searchShortcut = isMac ? '⌘K' : 'Ctrl+K';
@@ -28,15 +31,24 @@
 		const q = searchQuery.trim();
 		if (q.length < 2) {
 			searchResults = [];
+			scanCandidate = null;
 			searching = false;
 			return;
 		}
 		searching = true;
 		const t = setTimeout(async () => {
 			try {
-				searchResults = await targetsApi.searchByValue(q);
+				const [results, check] = await Promise.all([
+					targetsApi.searchByValue(q),
+					/\s/.test(q)
+						? Promise.resolve(null)
+						: targetsApi.validate({ target_value: q }).catch(() => null)
+				]);
+				searchResults = results;
+				scanCandidate = check?.valid ? check.target_value || q : null;
 			} catch {
 				searchResults = [];
+				scanCandidate = null;
 			} finally {
 				searching = false;
 			}
@@ -48,6 +60,7 @@
 		if (!commandOpen) {
 			searchQuery = '';
 			searchResults = [];
+			scanCandidate = null;
 		}
 	});
 
@@ -87,23 +100,44 @@
 						<div class="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
 							<Spinner class="size-4" /> Searching…
 						</div>
-					{:else if searchResults.length === 0}
-						<div class="py-6 text-center text-sm text-muted-foreground">No targets found.</div>
 					{:else}
-						<Command.Group heading="Targets">
-							{#each searchResults as t (t.id)}
+						{#if scanCandidate}
+							{@const candidate = scanCandidate}
+							<Command.Group heading="Scan">
 								<Command.Item
-									value={t.id}
+									value="scan:{candidate}"
 									onSelect={() => {
 										commandOpen = false;
-										goto(ROUTES.target(t.id));
+										onScan(candidate);
 									}}
 								>
-									<Crosshair class="mr-2 h-4 w-4 shrink-0" />
-									<span class="truncate">{t.target_value}</span>
+									<Play class="mr-2 h-4 w-4 shrink-0" />
+									<span class="truncate">
+										Scan <span class="font-mono text-xs">{candidate}</span>
+									</span>
 								</Command.Item>
-							{/each}
-						</Command.Group>
+							</Command.Group>
+						{/if}
+						{#if searchResults.length === 0}
+							{#if !scanCandidate}
+								<div class="py-6 text-center text-sm text-muted-foreground">No targets found.</div>
+							{/if}
+						{:else}
+							<Command.Group heading="Targets">
+								{#each searchResults as t (t.id)}
+									<Command.Item
+										value={t.id}
+										onSelect={() => {
+											commandOpen = false;
+											goto(ROUTES.target(t.id));
+										}}
+									>
+										<Crosshair class="mr-2 h-4 w-4 shrink-0" />
+										<span class="truncate">{t.target_value}</span>
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						{/if}
 					{/if}
 				{:else}
 					<Command.Group heading="Quick actions">
