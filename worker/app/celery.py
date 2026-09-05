@@ -90,6 +90,7 @@ celery_app.conf.task_routes = {
     "app.tasks.dns.*": {"queue": "default"},
     "app.tasks.schedule.*": {"queue": "default"},
     "app.tasks.vuln_templates.*": {"queue": "default"},
+    "app.tasks.endpoints.*": {"queue": "default"},
 }
 
 # #############################################################
@@ -106,6 +107,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.schedule",
         "app.tasks.ip_asn",
         "app.tasks.vuln_templates",
+        "app.tasks.endpoints",
     ]
 )
 

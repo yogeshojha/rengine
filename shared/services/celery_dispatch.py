@@ -86,3 +86,24 @@ def dispatch_template_sync() -> bool:
         logger.warning("template sync dispatch failed", exc_info=True)
         return False
     return True
+
+
+def dispatch_endpoint_verify(
+    scan_id: str, host: str, dir_path: str | None, limit: int
+) -> bool:
+    """Verify one branch of a scan's endpoints on demand. Returns whether the queue took it."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.endpoints.verify_branch",
+            kwargs={
+                "scan_id": scan_id,
+                "host": host,
+                "dir_path": dir_path,
+                "limit": limit,
+            },
+            queue="default",
+        )
+    except Exception:
+        logger.warning("endpoint verify dispatch failed", exc_info=True)
+        return False
+    return True
