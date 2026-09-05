@@ -89,6 +89,7 @@ export interface WhoisRecordRead {
 
 export interface WhoisRecordSummary {
 	id: string;
+	target_id: string | null;
 	query_value: string;
 	lookup_type: string;
 	name: string;
@@ -170,3 +171,37 @@ export const CORRELATION_REASON_LABELS: Record<
 	network: { full: 'Network Block', match: 'network block', short: 'Network' },
 	network_cidr: { full: 'Network Block', match: 'network block', short: 'Network' }
 };
+
+export type DomainStatusTone = 'pass' | 'warn' | 'fail' | 'info';
+
+export interface DomainStatusInfo {
+	label: string;
+	tone: DomainStatusTone;
+}
+
+const DOMAIN_STATUS_RULES: ReadonlyArray<readonly [RegExp, DomainStatusInfo]> = [
+	[/pending ?delete/i, { label: 'Pending delete', tone: 'fail' }],
+	[/redemption/i, { label: 'Redemption period', tone: 'fail' }],
+	[/hold/i, { label: 'On hold', tone: 'warn' }],
+	[/inactive/i, { label: 'Inactive', tone: 'warn' }],
+	[/transfer ?prohibited/i, { label: 'Transfer locked', tone: 'pass' }],
+	[/delete ?prohibited/i, { label: 'Delete locked', tone: 'pass' }],
+	[/update ?prohibited/i, { label: 'Update locked', tone: 'pass' }],
+	[/renew ?prohibited/i, { label: 'Renew locked', tone: 'pass' }],
+	[/auto ?renew/i, { label: 'Auto-renew period', tone: 'info' }],
+	[/pending/i, { label: 'Pending change', tone: 'info' }],
+	[/^(ok|active)$/i, { label: 'Active', tone: 'pass' }]
+];
+
+export function describeDomainStatus(code: string): DomainStatusInfo {
+	const bare = code.replace(/\s+https?:\/\/\S+$/i, '').trim();
+	for (const [re, info] of DOMAIN_STATUS_RULES) if (re.test(bare)) return info;
+	return { label: bare, tone: 'info' };
+}
+
+export function isRedactedName(name: string | null | undefined): boolean {
+	if (!name) return false;
+	return /(redacted|privacy|proxy|withheld|not disclosed|data protected|gdpr|whoisguard|contact privacy)/i.test(
+		name
+	);
+}

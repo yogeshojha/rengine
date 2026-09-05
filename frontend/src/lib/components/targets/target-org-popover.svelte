@@ -18,9 +18,15 @@
 		targetId: string;
 		currentOrgs: OrganizationSummary[];
 		maxVisible?: number;
+		onChange?: (patch: { organizations: OrganizationSummary[] }) => void;
 	}
 
-	let { targetId, currentOrgs, maxVisible = 2 }: Props = $props();
+	let { targetId, currentOrgs, maxVisible = 2, onChange }: Props = $props();
+
+	function applyPatch(patch: { organizations: OrganizationSummary[] }) {
+		targetsStore.optimisticUpdateTarget(targetId, patch);
+		onChange?.(patch);
+	}
 
 	let open = $state(false);
 	let searchValue = $state('');
@@ -56,12 +62,12 @@
 		const newOrgs = isApplied ? currentOrgs.filter((o) => o.id !== org.id) : [...currentOrgs, org];
 		const newOrgNames = newOrgs.map((o) => o.name);
 
-		targetsStore.optimisticUpdateTarget(targetId, { organizations: newOrgs });
+		applyPatch({ organizations: newOrgs });
 
 		try {
 			await targetsApi.update(targetId, { organization_names: newOrgNames });
 		} catch {
-			targetsStore.optimisticUpdateTarget(targetId, { organizations: currentOrgs });
+			applyPatch({ organizations: currentOrgs });
 			toast.error('Failed to update organizations');
 		}
 	}
@@ -77,7 +83,7 @@
 			const newOrg = await organizationsApi.create({ name: orgName, project_slug: projectSlug });
 
 			const newOrgSummary = { id: newOrg.id, name: newOrg.name, slug: newOrg.slug };
-			targetsStore.optimisticUpdateTarget(targetId, {
+			applyPatch({
 				organizations: [...currentOrgs, newOrgSummary]
 			});
 

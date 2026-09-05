@@ -112,6 +112,7 @@ class WhoisRecordRead(BaseModel):
 
 class WhoisRecordSummary(BaseModel):
     id: uuid.UUID
+    target_id: uuid.UUID | None = None
     query_value: str
     lookup_type: str
     name: str

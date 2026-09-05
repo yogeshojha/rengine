@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -12,6 +13,7 @@
 	let launchTargetId = $state<string | undefined>(undefined);
 	let launchTargetIds = $state<string[] | undefined>(undefined);
 	let rerunScan = $state<ScanRead | null>(null);
+	let targetFilter = $derived(page.url.searchParams.get('target') ?? undefined);
 
 	function newScan() {
 		if (!projectsStore.activeProject) {
@@ -51,7 +53,12 @@
 <div class="flex flex-col gap-4">
 	<h1 class="sr-only">Scans</h1>
 	<ScanActivityChart stats={scansStore.stats} />
-	<ScanHistoryTable onLaunch={newScan} onRescan={rescan} onRescanMany={rescanMany} />
+	<ScanHistoryTable
+		targetId={targetFilter}
+		onLaunch={newScan}
+		onRescan={rescan}
+		onRescanMany={rescanMany}
+	/>
 </div>
 
 <LaunchDialog

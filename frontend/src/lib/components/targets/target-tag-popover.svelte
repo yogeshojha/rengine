@@ -19,9 +19,15 @@
 		targetId: string;
 		currentTags: TagSummary[];
 		maxVisible?: number;
+		onChange?: (patch: { tags: TagSummary[] }) => void;
 	}
 
-	let { targetId, currentTags, maxVisible = 3 }: Props = $props();
+	let { targetId, currentTags, maxVisible = 3, onChange }: Props = $props();
+
+	function applyPatch(patch: { tags: TagSummary[] }) {
+		targetsStore.optimisticUpdateTarget(targetId, patch);
+		onChange?.(patch);
+	}
 
 	let open = $state(false);
 	let searchValue = $state('');
@@ -73,12 +79,12 @@
 		const newTags = isApplied ? currentTags.filter((t) => t.id !== tag.id) : [...currentTags, tag];
 		const newTagNames = newTags.map((t) => t.name);
 
-		targetsStore.optimisticUpdateTarget(targetId, { tags: newTags });
+		applyPatch({ tags: newTags });
 
 		try {
 			await targetsApi.update(targetId, { tag_names: newTagNames });
 		} catch {
-			targetsStore.optimisticUpdateTarget(targetId, { tags: currentTags });
+			applyPatch({ tags: currentTags });
 			toast.error('Failed to update tags');
 		}
 	}
@@ -107,7 +113,7 @@
 				slug: newTag.slug,
 				color: newTag.color
 			};
-			targetsStore.optimisticUpdateTarget(targetId, {
+			applyPatch({
 				tags: [...currentTags, newTagSummary]
 			});
 

@@ -1,5 +1,5 @@
 import type { TaskStatus } from './task-status';
-import type { TargetType, OrganizationSummary, TagSummary } from './target';
+import type { TargetType, OrganizationSummary, TagSummary, BgpSummaryData } from './target';
 import type { WhoisRecordRead } from './whois';
 import type { PeerRelationship, PrefixRelationship } from './ripestat';
 
@@ -78,7 +78,7 @@ export interface TargetBgpDetailResponse {
 	target_id: string;
 	target_type: TargetType;
 	status: TaskStatus;
-	summary: unknown;
+	summary: BgpSummaryData | null;
 	as_overview: ASOverviewDetail | null;
 	announced_prefixes: AnnouncedPrefixDetail[];
 	neighbours: ASNNeighbourDetail[];

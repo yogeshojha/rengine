@@ -4,6 +4,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { cn } from '$lib/utils';
 
 	interface Props {
 		value: string;
@@ -59,7 +60,7 @@
 				{...props}
 				variant="ghost"
 				size="icon"
-				class="h-7 w-7 shrink-0 {className}"
+				class={cn('size-7 shrink-0', className)}
 				onclick={(e) => copy(e)}
 			>
 				{#if copied}

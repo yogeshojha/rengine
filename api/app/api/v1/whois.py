@@ -395,6 +395,15 @@ async def get_target_correlations(
     )
     target_record = target_record_result.scalar_one_or_none()
 
+    record_ids = {r.id for records in correlations.values() for r in records}
+    linked = await session.execute(
+        select(Target.whois_record_id, Target.id).where(
+            Target.project_id == target.project_id,
+            Target.whois_record_id.in_(record_ids),
+        )
+    )
+    target_by_record = dict(linked.all())
+
     results = []
     value_field_map = {
         "registrant_name": "registrant_name",
@@ -413,7 +422,9 @@ async def get_target_correlations(
         else:
             corr_value = corr_type
 
-        summaries = [_to_summary(r) for r in records]
+        summaries = [
+            _to_summary(r, target_id=target_by_record.get(r.id)) for r in records
+        ]
 
         results.append(
             WhoisCorrelationResult(
@@ -526,9 +537,12 @@ async def correlate_by_nameserver(
     return _correlation_results("nameserver", ns, records)
 
 
-def _to_summary(record: WhoisRecord) -> WhoisRecordSummary:
+def _to_summary(
+    record: WhoisRecord, target_id: _uuid.UUID | None = None
+) -> WhoisRecordSummary:
     return WhoisRecordSummary(
         id=record.id,
+        target_id=target_id,
         query_value=record.query_value,
         lookup_type=record.lookup_type,
         name=record.name,

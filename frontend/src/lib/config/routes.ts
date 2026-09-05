@@ -32,6 +32,7 @@ export const ROUTES = {
 	targets: '/targets',
 	target: (id: string, tab?: string) => (tab ? `/targets/${id}?tab=${tab}` : `/targets/${id}`),
 	scans: '/scans',
+	scansForTarget: (id: string) => `/scans?target=${id}`,
 	scan: (id: string) => `/scans/${id}`,
 	scanTab: (id: string, tab: string, query?: Record<string, string>) => {
 		const params = new URLSearchParams({ tab, ...(query ?? {}) });

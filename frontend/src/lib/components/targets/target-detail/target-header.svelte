@@ -1,245 +1,227 @@
 <script lang="ts">
-	import type { Target } from '$lib/types/target';
-	import { TargetType, formatTargetType } from '$lib/types/target';
-	import { TaskStatus } from '$lib/types/task-status';
-	import { getFreshnessLevel, relativeTime, formatShortDate } from '$lib/utilities/dates';
-	import { getExternalLinksTargetDropdown } from '$lib/utilities/target-detail-external-links';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-	import CopyButton from '$lib/components/copy-button.svelte';
-	import EnrichmentPill from './enrichment-pill.svelte';
 	import Play from '@lucide/svelte/icons/play';
+	import Ban from '@lucide/svelte/icons/ban';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import Copy from '@lucide/svelte/icons/copy';
 	import Globe from '@lucide/svelte/icons/globe';
-	import Building2 from '@lucide/svelte/icons/building-2';
-	import Tag from '@lucide/svelte/icons/tag';
 	import FileBracesCorner from '@lucide/svelte/icons/file-braces-corner';
 	import FileSpreadsheet from '@lucide/svelte/icons/file-spreadsheet';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import { toast } from 'svelte-sonner';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
+	import { Spinner } from '$lib/components/ui/spinner';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import CopyButton from '$lib/components/copy-button.svelte';
+	import TargetOrgPopover from '$lib/components/targets/target-org-popover.svelte';
+	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
 	import { TARGET_TYPE_ICONS } from '$lib/config/icons';
+	import { targetTypeLabel } from '$lib/types/scan-engine';
+	import { TargetType, type Target } from '$lib/types/target';
+	import { TaskStatus } from '$lib/types/task-status';
+	import { getFreshnessLevel, formatShortDate } from '$lib/utilities/dates';
+	import { getExternalLinksTargetDropdown } from '$lib/utilities/target-detail-external-links';
+	import { writeClipboard } from '$lib/utilities/clipboard';
 
 	interface Props {
 		target: Target;
-		onScan?: () => void;
-		onRefreshEnrichment?: () => void;
-		onExportJson?: () => void;
-		onExportCsv?: () => void;
-		onDelete?: () => void;
+		creator: string | null;
+		live?: boolean;
+		onScan: () => void;
+		onCancel?: () => void;
+		onRefreshEnrichment: () => void;
+		onExportJson: () => void;
+		onExportCsv: () => void;
+		onDelete: () => void;
+		onChange: (patch: Partial<Target>) => void;
 	}
 
-	let { target, onScan, onRefreshEnrichment, onExportJson, onExportCsv, onDelete }: Props =
-		$props();
+	let {
+		target,
+		creator,
+		live = false,
+		onScan,
+		onCancel,
+		onRefreshEnrichment,
+		onExportJson,
+		onExportCsv,
+		onDelete,
+		onChange
+	}: Props = $props();
 
-	const TargetIcon = $derived(TARGET_TYPE_ICONS[target.target_type] || Globe);
-
-	const enrichmentSources = $derived(
-		[
-			{
-				label: 'DNS',
-				status: target.dns_status,
-				queriedAt: target.dns?.queried_at ?? null,
-				applicable: [TargetType.DOMAIN, TargetType.URL].includes(target.target_type)
-			},
-			{
-				label: 'WHOIS',
-				status: target.whois_status,
-				queriedAt: target.whois?.queried_at ?? null,
-				applicable: true
-			},
-			{
-				label: 'BGP',
-				status: target.bgp_status,
-				queriedAt: target.bgp?.queried_at ?? null,
-				applicable: [TargetType.IP, TargetType.IP_RANGE, TargetType.ASN].includes(
-					target.target_type
-				)
-			}
-		].filter((e) => e.applicable)
-	);
-
+	const TargetIcon = $derived(TARGET_TYPE_ICONS[target.target_type] ?? Globe);
 	const externalLinks = $derived(
 		getExternalLinksTargetDropdown(target.target_value, target.target_type)
 	);
 
-	const lastEnrichedAt = $derived.by(() => {
-		const timestamps = enrichmentSources
-			.filter((e) => e.status === TaskStatus.SUCCESS && e.queriedAt)
-			.map((e) => new Date(e.queriedAt!).getTime());
-		if (timestamps.length === 0) return null;
-		return new Date(Math.max(...timestamps)).toISOString();
+	interface Source {
+		label: string;
+		status: TaskStatus;
+		queriedAt: string | null;
+	}
+	const sources = $derived.by<Source[]>(() => {
+		const t = target.target_type;
+		const out: Source[] = [];
+		if (t === TargetType.DOMAIN || t === TargetType.URL)
+			out.push({
+				label: 'DNS',
+				status: target.dns_status,
+				queriedAt: target.dns?.queried_at ?? null
+			});
+		out.push({
+			label: 'WHOIS',
+			status: target.whois_status,
+			queriedAt: target.whois?.queried_at ?? null
+		});
+		if (t === TargetType.IP || t === TargetType.IP_RANGE || t === TargetType.ASN)
+			out.push({
+				label: 'BGP',
+				status: target.bgp_status,
+				queriedAt: target.bgp?.queried_at ?? null
+			});
+		return out;
 	});
+	const pendingSources = $derived(
+		sources.filter((s) => s.status === TaskStatus.PENDING || s.status === TaskStatus.QUERYING)
+	);
+	const failedSources = $derived(sources.filter((s) => s.status === TaskStatus.FAILED));
+	const lastEnrichedAt = $derived.by(() => {
+		const times = sources
+			.filter((s) => s.status === TaskStatus.SUCCESS && s.queriedAt)
+			.map((s) => new Date(s.queriedAt!).getTime());
+		return times.length ? new Date(Math.max(...times)).toISOString() : null;
+	});
+	const stale = $derived(getFreshnessLevel(lastEnrichedAt) === 'stale');
 
-	const lastEnrichedFreshness = $derived(getFreshnessLevel(lastEnrichedAt));
+	async function copyValue() {
+		if (await writeClipboard(target.target_value)) toast.success('Copied');
+	}
+	async function copyId() {
+		if (await writeClipboard(target.id)) toast.success('Target ID copied');
+	}
 </script>
 
-<div class="space-y-4">
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-		<div class="space-y-3 min-w-0 flex-1">
-			<div class="flex items-center gap-3">
-				<div class="h-10 w-10 rounded-lg border bg-muted flex items-center justify-center shrink-0">
-					<TargetIcon class="h-5 w-5 text-muted-foreground" />
-				</div>
-				<div class="min-w-0">
-					<div class="flex items-center gap-2">
-						<h1 class="text-xl font-semibold tracking-tight font-mono truncate">
-							{target.target_value}
-						</h1>
-						<CopyButton value={target.target_value} />
-					</div>
-					{#if target.display_name}
-						<p class="text-sm text-muted-foreground">{target.display_name}</p>
-					{/if}
-				</div>
-			</div>
-
-			<div class="flex items-center gap-1.5 flex-wrap">
-				<Badge variant="outline" class="gap-1 text-muted-foreground border-border/60">
-					<TargetIcon class="h-3 w-3" />
-					{formatTargetType(target.target_type)}
-				</Badge>
-
-				{#if target.organizations.length > 0 || target.tags.length > 0}
-					<Separator orientation="vertical" class="h-4 mx-0.5" />
-				{/if}
-
-				{#each target.organizations as org (org.id ?? org.name)}
-					<Badge variant="outline" class="gap-1">
-						<Building2 class="h-3 w-3" />
-						{org.name}
-					</Badge>
-				{/each}
-
-				{#each target.tags as tag (tag.id ?? tag.name)}
-					<Badge
-						variant="outline"
-						class="gap-1"
-						style="border-color: {tag.color}40; color: {tag.color}"
-					>
-						<Tag class="h-3 w-3" />
-						{tag.name}
-					</Badge>
-				{/each}
-			</div>
-
-			<div class="flex items-center gap-2 flex-wrap">
-				{#each enrichmentSources as enrichment (enrichment.label)}
-					<EnrichmentPill
-						label={enrichment.label}
-						status={enrichment.status}
-						queriedAt={enrichment.queriedAt}
-					/>
-				{/each}
-
-				<Separator orientation="vertical" class="h-4 mx-0.5" />
-
-				<span class="text-xs text-muted-foreground">
-					Added {formatShortDate(target.created_at)}
-				</span>
-
-				<span class="text-xs text-muted-foreground">·</span>
-
-				{#if lastEnrichedAt}
-					<span class="text-xs text-muted-foreground">
-						Last enriched {relativeTime(lastEnrichedAt)}
-					</span>
-					{#if lastEnrichedFreshness === 'stale'}
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								{#snippet child({ props })}
-									<Badge
-										{...props}
-										variant="outline"
-										aria-label="Enrichment is stale — consider refreshing"
-										class="text-[10px] h-4 px-1.5 border-warning/30 text-warning"
-									>
-										Stale
-									</Badge>
-								{/snippet}
-							</Tooltip.Trigger>
-							<Tooltip.Content>Enrichment is stale — consider refreshing</Tooltip.Content>
-						</Tooltip.Root>
-					{/if}
-				{:else}
-					<span class="text-xs text-muted-foreground italic">Never enriched</span>
-				{/if}
-
-				{#if target.updated_at !== target.created_at}
-					<span class="text-xs text-muted-foreground">·</span>
-					<span class="text-xs text-muted-foreground">
-						Updated {relativeTime(target.updated_at)}
-					</span>
-				{/if}
-			</div>
+<header class="flex flex-wrap items-start justify-between gap-4">
+	<div class="flex min-w-0 items-start gap-3">
+		<div
+			class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40"
+		>
+			<TargetIcon class="size-5 text-muted-foreground" />
 		</div>
-
-		<div class="flex items-center gap-2 flex-wrap sm:shrink-0">
-			<Button size="sm" class="gap-2" onclick={onScan}>
-				<Play class="h-3.5 w-3.5" />
-				Scan
-			</Button>
-
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					{#snippet child({ props })}
-						<Button
-							{...props}
-							variant="outline"
-							size="icon"
-							class="h-9 w-9"
-							aria-label="Refresh all enrichments"
-							onclick={onRefreshEnrichment}
-						>
-							<RefreshCw class="h-4 w-4" />
-						</Button>
-					{/snippet}
-				</Tooltip.Trigger>
-				<Tooltip.Content>Refresh all enrichments</Tooltip.Content>
-			</Tooltip.Root>
-
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
-						<Button {...props} variant="outline" size="icon" class="h-9 w-9">
-							<Ellipsis class="h-4 w-4" />
-						</Button>
-					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end" class="w-52">
-					<DropdownMenu.Label>Export</DropdownMenu.Label>
-					<DropdownMenu.Item onclick={onExportJson}>
-						<FileBracesCorner class="h-4 w-4 mr-2" />
-						Export as JSON
-					</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={onExportCsv}>
-						<FileSpreadsheet class="h-4 w-4 mr-2" />
-						Export as CSV
-					</DropdownMenu.Item>
-
-					{#if externalLinks.length > 0}
-						<DropdownMenu.Separator />
-						<DropdownMenu.Label>External Lookup</DropdownMenu.Label>
-						{#each externalLinks as link (link.url)}
-							<DropdownMenu.Item
-								onclick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
-							>
-								<ExternalLink class="h-4 w-4 mr-2" />
-								{link.label}
-							</DropdownMenu.Item>
-						{/each}
-					{/if}
-
-					<DropdownMenu.Separator />
-					<DropdownMenu.Item class="text-destructive focus:text-destructive" onclick={onDelete}>
-						<Trash2 class="h-4 w-4 mr-2" />
-						Delete Target
-					</DropdownMenu.Item>
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
+		<div class="flex min-w-0 flex-col gap-1.5">
+			<div class="flex flex-wrap items-center gap-2">
+				<h1 class="truncate font-mono text-xl font-medium">{target.target_value}</h1>
+				<Badge variant="outline" class="font-normal text-muted-foreground">
+					{targetTypeLabel(target.target_type)}
+				</Badge>
+				<CopyButton value={target.target_value} />
+			</div>
+			<div class="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-muted-foreground">
+				{#if target.display_name && target.display_name !== target.target_value}
+					<span class="text-foreground">{target.display_name}</span>
+					<span aria-hidden="true">·</span>
+				{/if}
+				<span>Added {formatShortDate(target.created_at)}{creator ? ` by ${creator}` : ''}</span>
+				<span aria-hidden="true">·</span>
+				<TargetOrgPopover
+					targetId={target.id}
+					currentOrgs={target.organizations}
+					maxVisible={3}
+					{onChange}
+				/>
+				<TargetTagPopover
+					targetId={target.id}
+					currentTags={target.tags}
+					maxVisible={4}
+					{onChange}
+				/>
+				{#if pendingSources.length || failedSources.length}
+					<span aria-hidden="true">·</span>
+				{/if}
+				{#if pendingSources.length}
+					<span class="flex items-center gap-1.5 text-info">
+						<Spinner class="size-3" />
+						Collecting {pendingSources.map((s) => s.label).join(', ')}
+					</span>
+				{:else if stale}
+					<Badge variant="warning" class="h-5 px-1.5 text-[11px]">Enrichment stale</Badge>
+				{/if}
+				{#each failedSources as s (s.label)}
+					<Badge variant="destructive" class="h-5 gap-1 px-1.5 text-[11px]">
+						<TriangleAlert class="size-3" />
+						{s.label} failed
+					</Badge>
+				{/each}
+			</div>
 		</div>
 	</div>
-</div>
+
+	<div class="flex items-center gap-2">
+		{#if live && onCancel}
+			<Button variant="outline" size="sm" class="gap-1.5" onclick={onCancel}>
+				<Ban class="size-3.5" />
+				Cancel
+			</Button>
+		{:else}
+			<Button size="sm" class="gap-1.5" onclick={onScan}>
+				<Play class="size-3.5" />
+				Scan
+			</Button>
+		{/if}
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="outline" size="icon-sm" aria-label="More actions">
+						<Ellipsis class="size-4" />
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end" class="w-56">
+				<DropdownMenu.Item onclick={onRefreshEnrichment} disabled={pendingSources.length > 0}>
+					<RefreshCw class="size-4" />
+					Refresh enrichment
+				</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={copyValue}>
+					<Copy class="size-4" />
+					Copy target
+				</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={copyId}>
+					<Copy class="size-4" />
+					Copy target ID
+				</DropdownMenu.Item>
+				<DropdownMenu.Separator />
+				<DropdownMenu.Label>Export</DropdownMenu.Label>
+				<DropdownMenu.Item onclick={onExportJson}>
+					<FileBracesCorner class="size-4" />
+					Export as JSON
+				</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={onExportCsv}>
+					<FileSpreadsheet class="size-4" />
+					Export as CSV
+				</DropdownMenu.Item>
+				{#if externalLinks.length > 0}
+					<DropdownMenu.Separator />
+					<DropdownMenu.Label>External lookup</DropdownMenu.Label>
+					{#each externalLinks as link (link.url)}
+						<DropdownMenu.Item>
+							{#snippet child({ props })}
+								<a {...props} href={link.url} target="_blank" rel="noopener noreferrer">
+									<ExternalLink class="size-4" />
+									{link.label}
+								</a>
+							{/snippet}
+						</DropdownMenu.Item>
+					{/each}
+				{/if}
+				<DropdownMenu.Separator />
+				<DropdownMenu.Item class="text-destructive focus:text-destructive" onclick={onDelete}>
+					<Trash2 class="size-4" />
+					Delete target
+				</DropdownMenu.Item>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+	</div>
+</header>
