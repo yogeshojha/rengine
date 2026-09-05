@@ -30,6 +30,7 @@ export interface SurfaceSpec {
 	icon: IconComponent;
 	tab: ResultTab;
 	queryParam: string;
+	kinds: string[];
 }
 
 export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
@@ -40,7 +41,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		nounPlural: 'web assets',
 		icon: Globe,
 		tab: 'web-assets',
-		queryParam: 'q'
+		queryParam: 'q',
+		kinds: ['hosts', 'http_assets']
 	},
 	[SurfaceDimension.ENDPOINTS]: {
 		key: SurfaceDimension.ENDPOINTS,
@@ -49,7 +51,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		nounPlural: 'endpoints',
 		icon: Waypoints,
 		tab: 'endpoints',
-		queryParam: 'ep_q'
+		queryParam: 'ep_q',
+		kinds: ['endpoints']
 	},
 	[SurfaceDimension.SERVICES]: {
 		key: SurfaceDimension.SERVICES,
@@ -58,7 +61,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		nounPlural: 'services',
 		icon: Plug,
 		tab: 'services',
-		queryParam: 'svc_q'
+		queryParam: 'svc_q',
+		kinds: ['ports']
 	},
 	[SurfaceDimension.IPS]: {
 		key: SurfaceDimension.IPS,
@@ -67,7 +71,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		nounPlural: 'addresses',
 		icon: Server,
 		tab: 'ips',
-		queryParam: 'ip_q'
+		queryParam: 'ip_q',
+		kinds: ['addresses']
 	},
 	[SurfaceDimension.VULNERABILITIES]: {
 		key: SurfaceDimension.VULNERABILITIES,
@@ -76,7 +81,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		nounPlural: 'findings',
 		icon: ShieldAlert,
 		tab: 'vulnerabilities',
-		queryParam: 'vuln_q'
+		queryParam: 'vuln_q',
+		kinds: ['vulnerabilities']
 	}
 };
 

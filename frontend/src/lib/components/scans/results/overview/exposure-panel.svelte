@@ -117,7 +117,7 @@
 	</Card.Root>
 {:else if hasData && exposure}
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Exposure" description="Listening services and the evidence for each">
+		<PanelHead title="Exposure">
 			<span class="tabular-nums">
 				{plural(exposure.services, 'service', 'services')} · {plural(
 					exposure.addresses,

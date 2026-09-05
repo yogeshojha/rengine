@@ -1,5 +1,7 @@
 <script lang="ts">
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Server from '@lucide/svelte/icons/server';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -28,9 +30,20 @@
 		open: boolean;
 		onOpenChange: (open: boolean) => void;
 		onServices: (filter: string) => void;
+		index?: number;
+		total?: number;
+		onStep?: (index: number) => void;
 	}
 
-	let { finding: f, open, onOpenChange, onServices }: Props = $props();
+	let {
+		finding: f,
+		open,
+		onOpenChange,
+		onServices,
+		index = 0,
+		total = 1,
+		onStep
+	}: Props = $props();
 
 	let bypass = $derived(f?.kind === ORIGIN_EXPOSED);
 	let cdn = $derived(f ? frontedLabel(f) : '');
@@ -162,6 +175,31 @@
 					<ExternalLink class="size-4" /> Open the address
 				</Button>
 				<CopyButton value={f.exposed.ip ?? ''} class="size-8" />
+				{#if total > 1 && onStep}
+					<div class="ml-auto flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+						<Button
+							variant="ghost"
+							size="icon"
+							class="size-7"
+							disabled={index <= 0}
+							aria-label="Previous finding"
+							onclick={() => onStep(index - 1)}
+						>
+							<ChevronLeft class="size-4" />
+						</Button>
+						<span>{index + 1} of {total}</span>
+						<Button
+							variant="ghost"
+							size="icon"
+							class="size-7"
+							disabled={index >= total - 1}
+							aria-label="Next finding"
+							onclick={() => onStep(index + 1)}
+						>
+							<ChevronRight class="size-4" />
+						</Button>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</Dialog.Content>

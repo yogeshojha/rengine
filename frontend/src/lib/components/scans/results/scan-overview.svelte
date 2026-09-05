@@ -11,7 +11,6 @@
 	import ExposurePanel from './overview/exposure-panel.svelte';
 	import StructurePanel from './overview/structure-panel.svelte';
 	import VulnerabilityPanel from './overview/vulnerability-panel.svelte';
-	import OriginPanel from './overview/origin-panel.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { endpointsApi, servicesApi } from '$lib/api/scan-results';
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
@@ -62,8 +61,6 @@
 		onRescan
 	}: Props = $props();
 
-	const ASSESSING_STAGE = 'http_probe';
-
 	let seen = $state(false);
 	$effect(() => {
 		if (active) seen = true;
@@ -84,9 +81,6 @@
 	let type = $derived(scan.execution_config.target_type);
 	let nounPlural = $derived(targetAssetNoun(type));
 	let isDomain = $derived(type === TargetType.DOMAIN);
-	let assessed = $derived(
-		activities.some((a) => a.name === ASSESSING_STAGE && a.status === 'success')
-	);
 	let revision = $derived(
 		[
 			scan.status,
@@ -222,17 +216,14 @@
 		{/if}
 	{:else}
 		<AttentionPanel
-			{scan}
 			attention={insights?.attention ?? []}
 			clusters={insights?.clusters ?? []}
 			related={relatedDomains?.domains ?? []}
-			{assessed}
-			{live}
+			{origins}
 			loading={loading && !insights}
 			errored={insightsFailed}
 			{onFilter}
-			{onRescan}
-			onRetry={loadInsights}
+			{onTab}
 		/>
 
 		{#if insightsFailed}
@@ -240,9 +231,8 @@
 				<Button variant="outline" size="sm" onclick={loadInsights}>Retry</Button>
 			</EmptyState>
 		{:else}
-			<VulnerabilityPanel {vulns} {loading} {onTab} />
+			<VulnerabilityPanel {vulns} {onTab} />
 			<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
-			<OriginPanel exposure={origins} {onTab} />
 			<ExposurePanel {exposure} {loading} {onTab} />
 			<StructurePanel {structure} {loading} {onTab} />
 			<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} {onTab} />

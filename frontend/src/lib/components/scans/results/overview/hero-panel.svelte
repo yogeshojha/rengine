@@ -276,6 +276,33 @@
 		return list;
 	});
 
+	const GRID_COLS: Record<number, string> = {
+		3: 'sm:grid-cols-3',
+		4: 'sm:grid-cols-4',
+		5: 'sm:grid-cols-5'
+	};
+	const LAST_SPAN: Record<number, string> = {
+		1: 'sm:col-span-1',
+		2: 'sm:col-span-2',
+		3: 'sm:col-span-3'
+	};
+	// the last row must be full: pick the column count with the fewest empty slots, 4 on a tie
+	let cols = $derived.by(() => {
+		const n = kpis.length;
+		let best = 3;
+		let bestEmpty = Infinity;
+		for (const c of [4, 3, 5]) {
+			const empty = n % c === 0 ? 0 : c - (n % c);
+			if (empty < bestEmpty) {
+				best = c;
+				bestEmpty = empty;
+			}
+		}
+		return best;
+	});
+	let lastSpan = $derived(kpis.length % cols === 0 ? 1 : cols - (kpis.length % cols) + 1);
+	let lastSpanMobile = $derived(kpis.length % 2 === 1 ? 'col-span-2' : '');
+
 	function pickCountry(code: string) {
 		onTab('ips', code ? `country:${code}` : '');
 	}
@@ -349,11 +376,14 @@
 			/>
 
 			{#if showKpis}
-				<div class="mt-auto -ml-px grid grid-cols-2 sm:grid-cols-3">
-					{#each kpis as k (k.key)}
+				<div class="mt-auto -ml-px grid grid-cols-2 {GRID_COLS[cols]}">
+					{#each kpis as k, i (k.key)}
 						<button
 							type="button"
-							class="group flex min-w-0 cursor-pointer items-end justify-between gap-3 border-t border-l px-5 py-4 text-left transition-colors hover:bg-muted/40"
+							class="group flex min-w-0 cursor-pointer items-end justify-between gap-3 border-t border-l px-5 py-4 text-left transition-colors hover:bg-muted/40 {i ===
+							kpis.length - 1
+								? `${lastSpanMobile} ${LAST_SPAN[lastSpan]}`
+								: ''}"
 							onclick={() => onTab(k.tab, k.filter)}
 						>
 							<span class="flex min-w-0 flex-col gap-1.5">

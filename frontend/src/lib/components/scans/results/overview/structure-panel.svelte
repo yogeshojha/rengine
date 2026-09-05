@@ -93,7 +93,7 @@
 	</Card.Root>
 {:else if hasData && structure}
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Site structure" description="What the discovered paths say about the surface">
+		<PanelHead title="Site structure">
 			<span class="tabular-nums">
 				{plural(structure.endpoints, 'endpoint', 'endpoints')} · {plural(
 					structure.directories,
@@ -108,7 +108,7 @@
 				<p class="min-w-0 text-sm">{structure.headline}</p>
 			{/if}
 			<div class="ml-auto flex flex-wrap items-center gap-2">
-				{#if structure.with_params}
+				{#if structure.with_params && !structure.headline?.endsWith('accept input')}
 					<Button
 						variant="outline"
 						size="sm"
@@ -131,10 +131,10 @@
 			</div>
 		</div>
 
-		<div class="-mt-px -ml-px grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-			<div class="flex flex-col gap-3 border-t border-l p-5">
-				<h3 class="text-xs font-medium text-muted-foreground uppercase">Worth a look</h3>
-				{#if findings.length}
+		<div class="-mt-px -ml-px grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
+			{#if findings.length}
+				<div class="flex flex-col gap-3 border-t border-l p-5">
+					<h3 class="text-xs font-medium text-muted-foreground uppercase">Worth a look</h3>
 					<ul class="space-y-2.5">
 						{#each findings as f (f.kind + f.label)}
 							{@const Icon = FINDING_ICON[f.kind as keyof typeof FINDING_ICON] ?? ShieldAlert}
@@ -164,37 +164,35 @@
 							</li>
 						{/each}
 					</ul>
-				{:else}
-					<p class="text-xs text-muted-foreground">
-						Nothing in the path structure stands out on this scan.
-					</p>
-				{/if}
-			</div>
+				</div>
+			{/if}
 
-			<div class="flex flex-col gap-3 border-t border-l p-5">
-				<h3 class="text-xs font-medium text-muted-foreground uppercase">Shared across hosts</h3>
-				{#if shared.length}
+			{#if shared.length}
+				<div class="flex flex-col gap-3 border-t border-l p-5">
+					<h3 class="text-xs font-medium text-muted-foreground uppercase">Shared across hosts</h3>
 					<p class="text-xs text-muted-foreground">
 						The same route on many hosts is one piece of software. Fixing it once closes every copy.
 					</p>
 					<RankedList rows={shared} base={sharedBase} onSelect={pick} />
-				{:else}
-					<p class="text-xs text-muted-foreground">No route appears on three or more hosts.</p>
-				{/if}
-			</div>
+				</div>
+			{/if}
 
 			<div class="flex flex-col gap-3 border-t border-l p-5">
-				<h3 class="text-xs font-medium text-muted-foreground uppercase">What was found</h3>
+				<h3 class="text-xs font-medium text-muted-foreground uppercase">Endpoint kinds</h3>
 				<CompositionBar
 					segments={classes}
 					total={structure.endpoints}
 					label="endpoints by kind"
 					onSelect={pick}
 				/>
-				{#if interest.length}
-					<RankedList rows={interest} base={interestBase} onSelect={pick} />
-				{/if}
 			</div>
+
+			{#if interest.length}
+				<div class="flex flex-col gap-3 border-t border-l p-5">
+					<h3 class="text-xs font-medium text-muted-foreground uppercase">Of interest</h3>
+					<RankedList rows={interest} base={interestBase} onSelect={pick} />
+				</div>
+			{/if}
 		</div>
 	</Card.Root>
 {/if}

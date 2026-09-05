@@ -56,6 +56,7 @@
 	import { targetTypeLabel } from '$lib/types/scan-engine';
 	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
 	import { RESULT_TABS, SURFACE_ORDER } from '$lib/config/surface';
+	import { plannedStages } from '$lib/utilities/scan-progress';
 	import type { TargetType } from '$lib/types/target';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
 	import { ROUTES } from '$lib/config/routes';
@@ -160,7 +161,7 @@
 		const t = e.target as HTMLElement | null;
 		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
 		const n = Number(e.key);
-		if (n >= 1 && n <= TABS.length) setTab(TABS[n - 1]);
+		if (n >= 1 && n <= visibleTabs.length) setTab(visibleTabs[n - 1].key);
 	}
 
 	async function copyTarget() {
@@ -221,6 +222,21 @@
 		services: servicesTotal ?? scan?.open_ports_found ?? 0,
 		ips: ipsTotal ?? scan?.ips_found ?? 0,
 		vulnerabilities: vulnsTotal ?? scan?.vulnerabilities_found ?? 0
+	});
+	let plannedKinds = $derived(
+		new Set(scan ? plannedStages(scan, engineCatalogStore.stages).flatMap((st) => st.produces) : [])
+	);
+	// a result tab earns its place with rows, or with a planned producer while the scan is live
+	let visibleTabs = $derived(
+		TAB_DEFS.filter((t) => {
+			if (t.key === 'overview') return true;
+			if ((tabCounts[t.key] ?? 0) > 0) return true;
+			const spec = SURFACE_ORDER.find((sp) => sp.tab === t.key);
+			return live && !!spec && spec.kinds.some((k) => plannedKinds.has(k));
+		})
+	);
+	$effect(() => {
+		if (scan && !loading && !visibleTabs.some((t) => t.key === activeTab)) setTab('overview');
 	});
 	let timing = $derived.by(() => {
 		if (!scan) return '';
@@ -474,7 +490,7 @@
 						</div>
 					{/if}
 					<Tabs.List class="h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0">
-						{#each TAB_DEFS as t, i (t.key)}
+						{#each visibleTabs as t, i (t.key)}
 							{@const n = tabCounts[t.key]}
 							<Tooltip.Root>
 								<Tooltip.Trigger>
