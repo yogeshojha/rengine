@@ -41,6 +41,9 @@ class StageContext:
 @dataclass
 class StageResult:
     counts: dict[str, int] = field(default_factory=dict)
+    # a stage that ran but got less than it asked for: reported, never silently accepted
+    warnings: list[str] = field(default_factory=list)
+    partial: bool = False
 
 
 @dataclass

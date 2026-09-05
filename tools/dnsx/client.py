@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
+import contextlib
+from collections.abc import Iterator
+
 from shared.logging import get_logger
-from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError, ToolResult
+from tools.runner import (
+    CLIToolRunner,
+    OutputFormat,
+    StreamOutcome,
+    ToolNotFoundError,
+    ToolResult,
+)
 from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
@@ -88,6 +97,34 @@ class DnsxClient:
             args.append("-cdn")
 
         return self._run(targets, args)
+
+    @contextlib.contextmanager
+    def stream_query(
+        self,
+        targets: list[str],
+        record_types: list[str] | None = None,
+        *,
+        idle_timeout: int | None = None,
+    ) -> Iterator[StreamOutcome]:
+        """Resolve in bulk, streaming records as they land so a stall never zeroes the run."""
+        args = self._build_base_args()
+        for rt in record_types or ["a"]:
+            args.append(f"-{rt.lower()}")
+        args.append("-resp")
+        with self._runner.stream_json(
+            args=args,
+            input_data=targets,
+            input_flag="-l",
+            json_flag="-json",
+            silent=True,
+            silent_flag="-silent",
+            timeout=0,
+            idle_timeout=idle_timeout,
+            recorder=self.recorder,
+            tool=DNSX_BINARY,
+            extra_args=self.extra_args,
+        ) as stream:
+            yield stream
 
     def resolve(
         self,

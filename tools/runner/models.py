@@ -1,5 +1,7 @@
 """Tool-agnostic models for CLI tool execution results."""
 
+from collections.abc import Iterator
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Protocol, runtime_checkable
 
@@ -42,7 +44,23 @@ class ToolResult(BaseModel):
     duration_seconds: float = 0.0
     command: str = ""
     error: str | None = None
+    timed_out: bool = False
 
     @property
     def has_output(self) -> bool:
         return bool(self.json_records or self.output_lines)
+
+
+@dataclass
+class StreamOutcome:
+    """How a stream_json run ended; populated once the caller's block exits."""
+
+    records: Iterator[dict]
+    return_code: int = -1
+    timed_out: bool = False
+    record_count: int = 0
+    stderr: str = ""
+
+    @property
+    def ok(self) -> bool:
+        return self.return_code == 0 and not self.timed_out

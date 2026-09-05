@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import random
+import statistics
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
 
 from sqlalchemy import delete
 
@@ -34,7 +37,45 @@ _PREFETCH_KEYS = (
     APIProvider.NETLAS,
 )
 _MAX_CONCURRENCY = 8
-_RESOLVE_BATCH_THREADS = 50
+# above ~50 the resolver silently drops answers rather than going faster (measured)
+_MAX_RESOLVE_THREADS = 50
+_MIN_RESOLVE_THREADS = 10
+# a batch answering far below its peers was throttled, not resolved — retry it
+_MIN_BATCHES_FOR_MEDIAN = 3
+_DEGRADED_RATIO = 0.5
+_SHUFFLE_SEED = 1
+
+
+@dataclass
+class _Resolution:
+    """What the resolver actually managed, so the stage can report instead of assume."""
+
+    records: dict[str, dict] = field(default_factory=dict)
+    submitted: int = 0
+    batches: int = 0
+    retried: int = 0
+    stalled: int = 0
+    degraded: int = 0
+    unavailable: bool = False
+
+    @property
+    def answered(self) -> int:
+        return len(self.records)
+
+    @property
+    def lost(self) -> bool:
+        return self.unavailable or bool(self.stalled or self.degraded)
+
+
+@dataclass
+class _Batch:
+    names: list[str]
+    answered: int = 0
+    stalled: bool = False
+
+    @property
+    def rate(self) -> float:
+        return self.answered / len(self.names) if self.names else 0.0
 
 
 class SubdomainStage(Stage):
@@ -94,15 +135,11 @@ class SubdomainStage(Stage):
 
         # excluded subdomains are stored but not resolved or processed further
         to_resolve = [n for n in merged if n not in excluded]
-        probe = f"{uuid.uuid4().hex[:12]}.{domain}"
-        resolution = self._resolve([*to_resolve, probe], cfg)
-        probe_info = resolution.pop(probe, None)
-        wildcard_ips = (
-            set(probe_info["ips"]) if probe_info and probe_info.get("ips") else set()
-        )
+        wildcard_ips = self._wildcard_ips(domain, cfg)
+        state = self._resolve(to_resolve, cfg)
 
-        active, ips_seen = self._persist(merged, resolution, wildcard_ips, excluded)
-
+        active, ips_seen = self._persist(merged, state.records, wildcard_ips, excluded)
+        # the stage runner logs the warning + flips the activity to PARTIAL
         return StageResult(
             counts={
                 "subdomains": len(merged),
@@ -110,7 +147,34 @@ class SubdomainStage(Stage):
                 "ips": len(ips_seen),
                 "excluded": len(excluded),
             },
+            warnings=self._resolution_warnings(state),
+            partial=state.lost,
         )
+
+    def _wildcard_ips(self, domain: str, cfg: SubdomainConfig) -> set[str]:
+        probe = f"{uuid.uuid4().hex[:12]}.{domain}"
+        info = self._resolve([probe], cfg).records.get(probe)
+        return set(info["ips"]) if info and info.get("ips") else set()
+
+    @staticmethod
+    def _resolution_warnings(state: _Resolution) -> list[str]:
+        if state.unavailable:
+            return [
+                f"dnsx unavailable — {state.submitted:,} names stored unresolved, "
+                "so no host reached the rest of the scan"
+            ]
+        notes: list[str] = []
+        if state.stalled:
+            notes.append(
+                f"{state.stalled} of {state.batches} resolver batches stalled and were "
+                f"abandoned — {state.submitted - state.answered:,} names unresolved"
+            )
+        if state.degraded:
+            notes.append(
+                f"{state.degraded} of {state.batches} resolver batches answered far "
+                "below the others after a retry; some live hosts are likely missing"
+            )
+        return notes
 
     def _check_abort(self) -> None:
         if self.ctx.is_aborted is not None and self.ctx.is_aborted():
@@ -178,37 +242,115 @@ class SubdomainStage(Stage):
         self.session.commit()
         self.emit_progress(message, source=source)
 
-    def _resolve(self, names: list[str], cfg: SubdomainConfig) -> dict[str, dict]:
-        if not names:
-            return {}
+    def _client(self, cfg: SubdomainConfig) -> DnsxClient | None:
+        threads = min(
+            max(cfg.dns_threads, _MIN_RESOLVE_THREADS), _MAX_RESOLVE_THREADS
+        )
         try:
-            client = DnsxClient(
+            return DnsxClient(
                 timeout=max(120, cfg.tool_timeout(self.ctx.resolved.intensity)),
-                threads=max(cfg.dns_threads, _RESOLVE_BATCH_THREADS),
+                threads=threads,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("dnsx"),
             )
         except DnsxError:
             logger.warning("dnsx unavailable, storing subdomains without resolution")
-            return {}
+            return None
 
-        result = client.query(names, record_types=["a", "aaaa", "cname"])
+    @staticmethod
+    def _record(rec: dict) -> tuple[str, dict] | None:
+        host = (rec.get("host") or "").strip().lower().rstrip(".")
+        if not host:
+            return None
+        ips = [str(x) for x in [*(rec.get("a") or []), *(rec.get("aaaa") or [])]]
+        cname_list = rec.get("cname") or []
+        cname = str(cname_list[0]) if cname_list else None
+        return host, {
+            "ips": ips,
+            "cname": cname,
+            "active": bool(ips) or bool(cname),
+        }
+
+    def _run_batch(
+        self, client: DnsxClient, names: list[str], cfg: SubdomainConfig
+    ) -> tuple[dict[str, dict], bool]:
+        """Resolve one batch, keeping every record that landed even if the run is killed."""
         out: dict[str, dict] = {}
-        for rec in result.json_records:
-            host = (rec.get("host") or "").strip().lower().rstrip(".")
-            if not host:
+        with client.stream_query(
+            names,
+            record_types=["a", "aaaa", "cname"],
+            idle_timeout=cfg.dns_idle_timeout,
+        ) as stream:
+            for rec in stream.records:
+                parsed = self._record(rec)
+                if parsed is not None:
+                    out[parsed[0]] = parsed[1]
+                self._check_abort()
+        return out, stream.timed_out
+
+    def _resolve(self, names: list[str], cfg: SubdomainConfig) -> _Resolution:
+        state = _Resolution(submitted=len(names))
+        if not names:
+            return state
+        client = self._client(cfg)
+        if client is None:
+            state.unavailable = True
+            return state
+
+        # shuffled so every batch is a random sample — otherwise clustered dead
+        # names look like a throttled batch and the peer comparison is meaningless
+        shuffled = list(names)
+        random.Random(_SHUFFLE_SEED).shuffle(shuffled)  # noqa: S311
+        size = max(1, cfg.dns_batch_size)
+        batches = [
+            _Batch(names=shuffled[i : i + size]) for i in range(0, len(shuffled), size)
+        ]
+        state.batches = len(batches)
+
+        for index, batch in enumerate(batches, start=1):
+            records, stalled = self._run_batch(client, batch.names, cfg)
+            state.records.update(records)
+            batch.answered = len(records)
+            batch.stalled = stalled
+            self.emit_progress(
+                f"resolved {state.answered:,}/{len(names):,} names "
+                f"(batch {index}/{len(batches)})"
+            )
+
+        self._retry_degraded(client, batches, state, cfg)
+        return state
+
+    def _retry_degraded(
+        self,
+        client: DnsxClient,
+        batches: list[_Batch],
+        state: _Resolution,
+        cfg: SubdomainConfig,
+    ) -> None:
+        """A batch far below its peers was throttled, not answered — resolve it again."""
+        healthy = [b.rate for b in batches if not b.stalled]
+        floor = (
+            statistics.median(healthy) * _DEGRADED_RATIO
+            if len(healthy) >= _MIN_BATCHES_FOR_MEDIAN
+            else 0.0
+        )
+        suspect = [b for b in batches if b.stalled or b.rate < floor]
+        if not suspect:
+            return
+        self.emit_progress(f"re-resolving {len(suspect)} degraded batch(es)")
+        for batch in suspect:
+            pending = [n for n in batch.names if n not in state.records]
+            if not pending:
                 continue
-            a = rec.get("a") or []
-            aaaa = rec.get("aaaa") or []
-            cname_list = rec.get("cname") or []
-            ips = [str(x) for x in [*a, *aaaa]]
-            cname = str(cname_list[0]) if cname_list else None
-            out[host] = {
-                "ips": ips,
-                "cname": cname,
-                "active": bool(ips) or bool(cname),
-            }
-        return out
+            state.retried += 1
+            records, batch.stalled = self._run_batch(client, pending, cfg)
+            state.records.update(records)
+            batch.answered += len(records)
+        # count what is still bad after the retry — a recovered batch lost nothing
+        state.stalled = sum(1 for b in batches if b.stalled)
+        state.degraded = sum(
+            1 for b in batches if not b.stalled and floor and b.rate < floor
+        )
 
     def _persist(
         self,

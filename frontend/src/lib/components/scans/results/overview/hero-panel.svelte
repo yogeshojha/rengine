@@ -9,7 +9,12 @@
 	import GeoPanel from './geo-panel.svelte';
 	import RunRibbon from './run-ribbon.svelte';
 	import HistoryPopover from './history-popover.svelte';
-	import { elapsedSeconds, formatSeconds, isLiveStatus } from '$lib/utilities/scan-status';
+	import {
+		activityRan,
+		elapsedSeconds,
+		formatSeconds,
+		isLiveStatus
+	} from '$lib/utilities/scan-status';
 	import { etaLabel, plannedStages, stageProgress } from '$lib/utilities/scan-progress';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
 	import { scanFoundNothing } from '$lib/types/scan';
@@ -84,7 +89,7 @@
 	let doneCount = $derived(
 		live
 			? progress.done
-			: planned.filter((s) => activities.some((a) => a.name === s.name && a.status === 'success'))
+			: planned.filter((s) => activities.some((a) => a.name === s.name && activityRan(a.status)))
 					.length
 	);
 	let elapsedSec = $derived(elapsedSeconds(scan, now));

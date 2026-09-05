@@ -1,7 +1,7 @@
 import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 import type { StageCatalogEntry } from '$lib/types/scan-engine';
 import type { LiveRun } from '$lib/stores/live-scans.svelte';
-import { activitySummary, formatSeconds } from '$lib/utilities/scan-status';
+import { activityRan, activitySummary, formatSeconds } from '$lib/utilities/scan-status';
 
 export function plannedStages(scan: ScanRead, catalog: StageCatalogEntry[]): StageCatalogEntry[] {
 	const cfg = scan.execution_config.stages ?? {};
@@ -83,6 +83,7 @@ export interface StageRow extends StageStep {
 
 const ACTIVITY_STATE: Record<string, StageStepState | undefined> = {
 	success: 'done',
+	partial: 'done',
 	failed: 'failed',
 	aborted: 'failed',
 	running: 'running'
@@ -105,7 +106,7 @@ export function stageRows(
 			title: s.title,
 			phase: s.phase,
 			state,
-			summary: a?.status === 'success' ? activitySummary(a.result) : '',
+			summary: a && activityRan(a.status) ? activitySummary(a.result) : '',
 			duration: a?.duration_seconds ?? null,
 			error: a?.error ?? null
 		};

@@ -8,6 +8,7 @@ export const SCAN_ACTIVITY_STATUSES = [
 	'pending',
 	'running',
 	'success',
+	'partial',
 	'failed',
 	'skipped',
 	'aborted'
@@ -16,6 +17,7 @@ export type ScanActivityStatus = (typeof SCAN_ACTIVITY_STATUSES)[number];
 
 export const ACTIVITY_TERMINAL_STATUSES: readonly ScanActivityStatus[] = [
 	'success',
+	'partial',
 	'failed',
 	'skipped',
 	'aborted'

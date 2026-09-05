@@ -3,7 +3,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from shared.enums.scan import Intensity
-from stages.config import StageConfig, threads
+from stages.config import StageConfig, threads, timeout
 from stages.subdomain.providers import PASSIVE_PROVIDERS
 
 PASSIVE_TOOLS: tuple[str, ...] = tuple(sorted(PASSIVE_PROVIDERS))
@@ -35,6 +35,22 @@ class SubdomainConfig(StageConfig):
         description="Pull subject alternative names from the target's certificates.",
     )
     dns_threads: int = threads(30, title="Resolver threads")
+    dns_batch_size: int = Field(
+        default=1000,
+        ge=100,
+        le=20000,
+        title="Resolver batch size",
+        description="Names sent to the resolver per invocation.",
+    )
+    dns_idle_timeout: int = timeout(
+        90,
+        title="Resolver stall timeout",
+        description=(
+            "Abandon a resolver batch after this many seconds with no answer. "
+            "Resolution is not capped by total runtime — a resolver that keeps "
+            "answering keeps running, however many names there are."
+        ),
+    )
 
     @property
     def enabled_sources(self) -> list[str]:

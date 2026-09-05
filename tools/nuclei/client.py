@@ -214,8 +214,8 @@ class NucleiClient:
         started = time.monotonic()
         run.started = True
         try:
-            with self._stream(targets, _stderr, timeout, should_stop) as records:
-                for record in records:
+            with self._stream(targets, _stderr, timeout, should_stop) as stream:
+                for record in stream.records:
                     finding = parse_finding(record)
                     if finding is None:
                         continue

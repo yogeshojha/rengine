@@ -14,7 +14,12 @@ from pathlib import Path
 from shared.definitions.constants import MAX_COMMAND_OUTPUT
 from shared.logging import get_logger
 from shared.services.scan_resolve import redact_command
-from tools.runner.models import CommandRecorder, OutputFormat, ToolResult
+from tools.runner.models import (
+    CommandRecorder,
+    OutputFormat,
+    StreamOutcome,
+    ToolResult,
+)
 
 logger = get_logger(__name__)
 
@@ -200,13 +205,26 @@ class CLIToolRunner:
             duration = time.monotonic() - start_time
             logger.error(f"{self.binary} timed out after {timeout}s")
             timeout_error = f"{self.binary} timed out after {timeout} seconds"
+            # the tool wrote as it went — keep what landed instead of discarding the run
+            raw_output = self._read_output(
+                output_file=output_file, stdout="", use_output_file=use_output_file
+            )
+            partial_lines: list[str] = []
+            partial_records: list[dict] = []
+            if output_format == OutputFormat.JSONL:
+                partial_records = self._parse_jsonl(raw_output)
+            else:
+                partial_lines = self._parse_lines(raw_output)
             _finish(-1, "", timeout_error)
             return ToolResult(
                 success=False,
                 exit_code=-1,
+                output_lines=partial_lines,
+                json_records=partial_records,
                 duration_seconds=round(duration, 3),
                 command=cmd_str,
                 error=timeout_error,
+                timed_out=True,
             )
 
         except Exception as e:
@@ -229,15 +247,16 @@ class CLIToolRunner:
         silent: bool = True,
         silent_flag: str = "-silent",
         timeout: int | None = None,
+        idle_timeout: int | None = None,
         env: dict[str, str] | None = None,
         recorder: CommandRecorder | None = None,
         tool: str | None = None,
         extra_args: list[str] | None = None,
         stderr_sink: Callable[[str], None] | None = None,
         should_stop: Callable[[], bool] | None = None,
-    ) -> Iterator[Iterator[dict]]:
-        """Stream-parse the tool's JSONL stdout one record at a time; a watchdog kills the process after timeout."""
-        timeout = timeout or self.default_timeout
+    ) -> Iterator[StreamOutcome]:
+        """Stream-parse the tool's JSONL stdout; killed when it stalls past idle_timeout, or exceeds timeout (0 = no ceiling)."""
+        timeout = self.default_timeout if timeout is None else timeout
         args = list(args) if args else []
         recorder = recorder if recorder is not None else self._recorder
         tool = tool if tool is not None else self._tool
@@ -250,6 +269,8 @@ class CLIToolRunner:
         timer: threading.Timer | None = None
         stderr_thread: threading.Thread | None = None
         stderr_chunks: list[str] = []
+        killed_for: list[str] = [""]
+        outcome = StreamOutcome(records=iter(()))
         try:
             # go's flag parser stops at the first non-flag arg, so these lead —
             # a malformed later flag must not be able to strip our input/output
@@ -276,9 +297,28 @@ class CLIToolRunner:
                 env=self._build_env(env),
                 cwd=tempfile.gettempdir(),
             )
-            timer = threading.Timer(timeout, proc.kill)
-            timer.start()
             stdout = proc.stdout
+            last_seen = [time.monotonic()]
+
+            def _kill(reason: str) -> None:
+                killed_for[0] = reason
+                with contextlib.suppress(Exception):
+                    if proc is not None:
+                        proc.kill()
+
+            if idle_timeout:
+                # progress, not volume, decides liveness — a slow-but-producing tool is healthy
+                def _watch_idle() -> None:
+                    while proc is not None and proc.poll() is None:
+                        if time.monotonic() - last_seen[0] > idle_timeout:
+                            _kill(f"no output for {idle_timeout}s")
+                            return
+                        time.sleep(_STOP_POLL_SECONDS)
+
+                threading.Thread(target=_watch_idle, daemon=True).start()
+            if timeout:
+                timer = threading.Timer(timeout, lambda: _kill(f"exceeded {timeout}s"))
+                timer.start()
 
             # drain stderr concurrently — else a full 64KB stderr pipe deadlocks our stdout read
             def _drain_stderr() -> None:
@@ -286,6 +326,7 @@ class CLIToolRunner:
                     return
                 size = 0
                 for line in proc.stderr:
+                    last_seen[0] = time.monotonic()
                     if size < MAX_COMMAND_OUTPUT:
                         stderr_chunks.append(line)
                         size += len(line)
@@ -313,6 +354,7 @@ class CLIToolRunner:
                 if stdout is None:
                     return
                 for line in stdout:
+                    last_seen[0] = time.monotonic()
                     stripped = line.strip()
                     if not stripped:
                         continue
@@ -321,9 +363,11 @@ class CLIToolRunner:
                     except json.JSONDecodeError:
                         continue
                     if isinstance(obj, dict):
+                        outcome.record_count += 1
                         yield obj
 
-            yield _records()
+            outcome.records = _records()
+            yield outcome
         finally:
             if timer is not None:
                 timer.cancel()
@@ -339,11 +383,20 @@ class CLIToolRunner:
             if stderr_thread is not None:
                 stderr_thread.join(timeout=5)
             stderr = "".join(stderr_chunks)
+            outcome.return_code = return_code
+            outcome.timed_out = bool(killed_for[0])
+            outcome.stderr = stderr
+            if killed_for[0]:
+                logger.warning("%s killed: %s", self.binary, killed_for[0])
             if recorder is not None and handle is not None:
                 err = (
                     None
-                    if return_code == 0
-                    else f"{self.binary} exited with code {return_code}"
+                    if return_code == 0 and not killed_for[0]
+                    else (
+                        f"{self.binary} killed: {killed_for[0]}"
+                        if killed_for[0]
+                        else f"{self.binary} exited with code {return_code}"
+                    )
                     + (f": {stderr.strip()[:500]}" if stderr.strip() else "")
                 )
                 with contextlib.suppress(Exception):

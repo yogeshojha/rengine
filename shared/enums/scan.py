@@ -13,6 +13,7 @@ class ScanActivityStatus(Enum):
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
+    PARTIAL = "partial"
     FAILED = "failed"
     SKIPPED = "skipped"
     ABORTED = "aborted"
@@ -26,6 +27,7 @@ SCAN_TERMINAL_STATUSES = (
 )
 ACTIVITY_TERMINAL_STATUSES = (
     ScanActivityStatus.SUCCESS.value,
+    ScanActivityStatus.PARTIAL.value,
     ScanActivityStatus.FAILED.value,
     ScanActivityStatus.SKIPPED.value,
     ScanActivityStatus.ABORTED.value,

@@ -85,6 +85,8 @@ export function activityStatusIcon(s: ScanActivityStatus): IconComponent {
 			return Clock;
 		case 'success':
 			return CircleCheck;
+		case 'partial':
+			return TriangleAlert;
 		case 'failed':
 			return CircleX;
 		case 'aborted':
@@ -98,6 +100,7 @@ export function activityStatusClass(s: ScanActivityStatus): string {
 	switch (s) {
 		case 'failed':
 			return 'text-destructive';
+		case 'partial':
 		case 'aborted':
 		case 'skipped':
 			return 'text-warning';
@@ -110,10 +113,14 @@ export function activityStatusClass(s: ScanActivityStatus): string {
 	}
 }
 
+export const activityRan = (s: ScanActivityStatus | undefined): boolean =>
+	s === 'success' || s === 'partial';
+
 export const ACTIVITY_STATUS_LABEL: Record<ScanActivityStatus, string> = {
 	pending: 'Queued',
 	running: 'Running',
 	success: 'Success',
+	partial: 'Partial',
 	failed: 'Failed',
 	skipped: 'Skipped',
 	aborted: 'Aborted'

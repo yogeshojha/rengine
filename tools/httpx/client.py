@@ -101,8 +101,8 @@ class HttpxClient:
             recorder=self.recorder,
             tool=HTTPX_BINARY,
             extra_args=self.extra_args,
-        ) as records:
-            yield records
+        ) as stream:
+            yield stream.records
 
     def capture(self, targets: list[str]) -> list[dict]:
         if not targets:

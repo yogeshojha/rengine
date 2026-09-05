@@ -109,5 +109,5 @@ class KatanaClient:
             extra_args=self.extra_args,
             should_stop=should_stop,
             stderr_sink=stderr_sink,
-        ) as records:
-            yield records
+        ) as stream:
+            yield stream.records

@@ -5,6 +5,7 @@
 	import Circle from '@lucide/svelte/icons/circle';
 	import CircleSlash from '@lucide/svelte/icons/circle-slash';
 	import Ban from '@lucide/svelte/icons/ban';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -54,11 +55,12 @@
 	const FALLBACK_SECONDS = 30;
 	const INSIGHT_SHARE = 0.5;
 	const MIN_METER = 4;
-	const FILL: Record<'done' | 'running' | 'failed' | 'stopped' | 'pending', string> = {
+	const FILL: Record<'done' | 'running' | 'failed' | 'stopped' | 'partial' | 'pending', string> = {
 		done: 'var(--chart-1)',
 		running: 'var(--info)',
 		failed: 'var(--destructive)',
 		stopped: 'var(--warning)',
+		partial: 'var(--warning)',
 		pending: 'color-mix(in oklch, var(--muted-foreground) 25%, transparent)'
 	};
 	const fmtTime = (iso: string) =>
@@ -69,6 +71,7 @@
 		title: string;
 		state: StageStepState;
 		stopped: boolean;
+		degraded: boolean;
 		seconds: number | null;
 		weight: number;
 		fill: string;
@@ -84,6 +87,7 @@
 	let rows = $derived(stageRows(planned, activities, run));
 	let done = $derived(rows.filter((r) => r.state === 'done').length);
 	let skipped = $derived(activities.filter((a) => a.status === 'skipped'));
+	let degradedStages = $derived(activities.filter((a) => a.status === 'partial'));
 	let typeLabel = $derived(targetTypeLabel(scan.execution_config.target_type).toLowerCase());
 
 	let segments = $derived.by<Segment[]>(() => {
@@ -105,12 +109,21 @@
 		const floor = total > 0 ? total * FLOOR_SHARE : 1;
 		return measured.map(({ r, a, seconds }) => {
 			const stopped = a?.status === 'aborted';
-			const fill = r.state === 'failed' ? (stopped ? FILL.stopped : FILL.failed) : FILL[r.state];
+			const degraded = a?.status === 'partial';
+			const fill =
+				r.state === 'failed'
+					? stopped
+						? FILL.stopped
+						: FILL.failed
+					: degraded
+						? FILL.partial
+						: FILL[r.state];
 			return {
 				name: r.name,
 				title: r.title,
 				state: r.state,
 				stopped,
+				degraded,
 				seconds,
 				weight: Math.max(floor, seconds ?? estimate),
 				fill,
@@ -164,6 +177,10 @@
 					);
 			}
 		}
+		if (degradedStages.length > 0)
+			parts.push(
+				`${degradedStages.length} ${degradedStages.length === 1 ? 'stage' : 'stages'} finished with less than the full result`
+			);
 		if (skipped.length > 0)
 			parts.push(
 				`${skipped.length} ${skipped.length === 1 ? 'stage does' : 'stages do'} not apply to a ${typeLabel} target`
@@ -177,6 +194,7 @@
 		if (s.state === 'running') parts.push(`running ${formatSeconds(s.seconds ?? 0)}`);
 		else if (s.state === 'pending') parts.push(live ? 'queued' : 'did not run');
 		else if (s.state === 'failed') parts.push(s.stopped ? 'stopped' : 'failed');
+		else if (s.degraded) parts.push(`${durationText(s.seconds)} · partial`);
 		else parts.push(durationText(s.seconds));
 		return parts.join(' · ');
 	}
@@ -260,7 +278,9 @@
 									onpointerleave={() => (hovered = null)}
 								>
 									<span class="flex h-5 shrink-0 items-center">
-										{#if s.state === 'done'}
+										{#if s.degraded}
+											<TriangleAlert class="size-3.5 text-warning" />
+										{:else if s.state === 'done'}
 											<CircleCheck class="size-3.5 text-success" />
 										{:else if s.state === 'failed' && s.stopped}
 											<Ban class="size-3.5 text-warning" />

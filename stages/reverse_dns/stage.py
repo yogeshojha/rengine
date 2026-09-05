@@ -45,7 +45,7 @@ class ReverseDnsStage(Stage):
 
         by_ip = {row.ip: row for row in rows}
         ips = list(by_ip.keys())[:_MAX_PTR]
-        ptr_map = self._lookup_ptr(ips, cfg)
+        ptr_map, note = self._lookup_ptr(ips, cfg)
 
         resolved = 0
         for ip, names in ptr_map.items():
@@ -56,11 +56,17 @@ class ReverseDnsStage(Stage):
                 resolved += 1
         self.session.commit()
         self.emit_progress(f"reverse-DNS resolved {resolved}/{len(ips)} IPs")
-        return StageResult(counts={"ptr": resolved})
+        return StageResult(
+            counts={"ptr": resolved},
+            warnings=[note] if note else [],
+            partial=bool(note),
+        )
 
-    def _lookup_ptr(self, ips: list[str], cfg: ReverseDnsConfig) -> dict[str, list]:
+    def _lookup_ptr(
+        self, ips: list[str], cfg: ReverseDnsConfig
+    ) -> tuple[dict[str, list], str | None]:
         if not ips:
-            return {}
+            return {}, None
         try:
             client = DnsxClient(
                 timeout=max(120, cfg.dns_timeout),
@@ -70,11 +76,17 @@ class ReverseDnsStage(Stage):
             )
         except DnsxError:
             logger.warning("dnsx unavailable, skipping reverse DNS")
-            return {}
+            return {}, f"dnsx unavailable — no PTR lookup for {len(ips):,} addresses"
 
         result = client.ptr(ips)
         out: dict[str, list] = {}
         for rec in parse_dnsx_jsonl(result.json_records):
             if rec.ptr:
                 out[rec.host] = list(rec.ptr)
-        return out
+        note = None
+        if not result.success:
+            kind = "timed out" if result.timed_out else "failed"
+            note = (
+                f"dnsx {kind} — PTR resolved for {len(out):,} of {len(ips):,} addresses"
+            )
+        return out, note

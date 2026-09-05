@@ -187,26 +187,24 @@ def run_stage(
         )
         return
 
-    activity_svc.finish(
-        activity, status=ScanActivityStatus.SUCCESS, result=result.counts
+    # a stage that ran but came up short reports PARTIAL — never a silent success
+    status = (
+        ScanActivityStatus.PARTIAL if result.partial else ScanActivityStatus.SUCCESS
     )
+    notes = "; ".join(result.warnings) or None
+    activity_svc.finish(activity, status=status, result=result.counts, error=notes)
     _log_stage(
         session,
         spec,
         ids,
         ActivityEvent.SCAN_STAGE_COMPLETED,
         summary=stage_count_summary(result.counts),
+        warning=notes if result.partial else None,
     )
     scan = session.get(Scan, scan.id)
     if scan is not None:
         _apply_counts(session, scan)
-    _emit_stage_done(
-        events,
-        spec,
-        activity,
-        ScanActivityStatus.SUCCESS.value,
-        counts=result.counts,
-    )
+    _emit_stage_done(events, spec, activity, status.value, counts=result.counts)
 
 
 def _fail_stage(
@@ -249,13 +247,20 @@ def _log_stage(
     *,
     summary: str | None = None,
     error: str | None = None,
+    warning: str | None = None,
 ) -> None:
     failed = event == ActivityEvent.SCAN_STAGE_FAILED
+    if failed:
+        description, level = error or "stage failed", ActivityLevel.ERROR
+    elif warning:
+        description, level = warning, ActivityLevel.WARNING
+    else:
+        description, level = summary, ActivityLevel.INFO
     ActivityLogService(session).log(
         event=event,
         title=spec.title,
-        description=(error or "stage failed") if failed else summary,
-        level=ActivityLevel.ERROR if failed else ActivityLevel.INFO,
+        description=description,
+        level=level,
         project_id=ids.project_id,
         target_id=ids.target_id,
         scan_id=ids.scan_id,

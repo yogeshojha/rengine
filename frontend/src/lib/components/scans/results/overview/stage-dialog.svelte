@@ -45,6 +45,7 @@
 		pending: 'secondary',
 		running: 'info',
 		success: 'success',
+		partial: 'warning',
 		failed: 'destructive',
 		skipped: 'outline',
 		aborted: 'warning'
@@ -143,7 +144,10 @@
 					{/each}
 					{#if activity.error}
 						<p
-							class="rounded-md border border-destructive/40 bg-destructive/5 p-3 font-mono text-xs break-words text-destructive"
+							class="rounded-md border p-3 font-mono text-xs break-words {activity.status ===
+							'partial'
+								? 'border-warning/40 bg-warning/5 text-warning'
+								: 'border-destructive/40 bg-destructive/5 text-destructive'}"
 						>
 							{activity.error}
 						</p>
