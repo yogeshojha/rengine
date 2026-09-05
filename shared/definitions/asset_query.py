@@ -260,6 +260,14 @@ FIELDS: tuple[QueryField, ...] = (
         example="words:<20",
     ),
     QueryField(
+        name="paths",
+        type=FieldType.NUMBER,
+        group="HTTP",
+        description="Number of endpoints discovered on the host.",
+        example="paths:>50",
+        aliases=("endpoints",),
+    ),
+    QueryField(
         name="lines",
         type=FieldType.NUMBER,
         group="HTTP",

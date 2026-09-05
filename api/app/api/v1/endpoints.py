@@ -19,6 +19,8 @@ from shared.models.endpoint import (
     EndpointPage,
     EndpointSummary,
     EndpointTree,
+    HostPage,
+    MergedLeafPage,
     ScanStructure,
 )
 
@@ -81,6 +83,26 @@ async def endpoint_tree(
     return await service.tree(scan_id, body, resolved)
 
 
+@router.post("/tree/hosts", response_model=HostPage)
+async def endpoint_tree_hosts(
+    _current_user: CurrentUser,
+    service: Annotated[EndpointService, Depends(get_service)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    body: EndpointFilter,
+):
+    return await service.hosts(scan_id, body)
+
+
+@router.post("/tree/leaves", response_model=MergedLeafPage)
+async def endpoint_tree_leaves(
+    _current_user: CurrentUser,
+    service: Annotated[EndpointService, Depends(get_service)],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    body: EndpointFilter,
+):
+    return await service.merged_leaves(scan_id, body)
+
+
 @router.get("/facets", response_model=EndpointFacets)
 async def endpoint_facets(
     _current_user: CurrentUser,
@@ -96,8 +118,9 @@ async def endpoint_summary(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
     scan_id: Annotated[UUID, Query(description="Scan ID")],
+    host: Annotated[str | None, Query(description="Scope to one host")] = None,
 ):
-    return await service.summary(scan_id)
+    return await service.summary(scan_id, host)
 
 
 @router.get("/coverage", response_model=list[CoverageRead])

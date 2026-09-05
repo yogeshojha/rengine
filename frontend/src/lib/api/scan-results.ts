@@ -7,6 +7,8 @@ import type {
 	EndpointPage,
 	EndpointSummary,
 	EndpointTree,
+	HostPage,
+	MergedLeafPage,
 	ScanStructure
 } from '$lib/utilities/endpoints';
 import type { HttpAssetDetail } from '$lib/types/http-asset';
@@ -148,8 +150,29 @@ export const endpointsApi = {
 		);
 	},
 
-	async summary(projectId: string, scanId: string): Promise<EndpointSummary> {
-		return api.get<EndpointSummary>(`/endpoints/summary?project_id=${projectId}&scan_id=${scanId}`);
+	async summary(projectId: string, scanId: string, host?: string | null): Promise<EndpointSummary> {
+		const scope = host ? `&host=${encodeURIComponent(host)}` : '';
+		return api.get<EndpointSummary>(
+			`/endpoints/summary?project_id=${projectId}&scan_id=${scanId}${scope}`
+		);
+	},
+
+	async treeHosts(projectId: string, scanId: string, filter: EndpointFilter): Promise<HostPage> {
+		return api.post<HostPage>(
+			`/endpoints/tree/hosts?project_id=${projectId}&scan_id=${scanId}`,
+			filter
+		);
+	},
+
+	async mergedLeaves(
+		projectId: string,
+		scanId: string,
+		filter: EndpointFilter
+	): Promise<MergedLeafPage> {
+		return api.post<MergedLeafPage>(
+			`/endpoints/tree/leaves?project_id=${projectId}&scan_id=${scanId}`,
+			filter
+		);
 	},
 
 	async coverage(projectId: string, scanId: string): Promise<EndpointCoverageRead[]> {

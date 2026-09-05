@@ -1,4 +1,5 @@
 import type { QueryError } from '$lib/types/asset-query';
+import { lex, unquote } from './query-lexer';
 import type { SortOption } from '$lib/components/scans/results/table/columns';
 import {
 	ENDPOINT_CLASS_LABELS,
@@ -66,6 +67,21 @@ export interface EndpointDetail extends EndpointRead {
 	siblings: number;
 }
 
+export interface TreeLeaf {
+	id: string;
+	url: string;
+	host: string;
+	path: string;
+	params: string[];
+	param_count: number;
+	endpoint_class: string;
+	is_probed: boolean;
+	status_code: number | null;
+	content_length: number | null;
+	sources: string[];
+	interest: string[];
+}
+
 export interface TreeNode {
 	key: string;
 	name: string;
@@ -78,13 +94,104 @@ export interface TreeNode {
 	child_count: number;
 	hosts: number;
 	status_mix: Record<string, number>;
+	class_mix: Record<string, number>;
 	sources: string[];
 	interest: string[];
 	has_params: boolean;
+	params: number;
+	verified: number;
 	unprobed: number;
+	glyph: string;
 	sample_url: string | null;
+	leaf: TreeLeaf | null;
 	query: string;
 	children: TreeNode[];
+	lazy: boolean;
+	folders: number;
+	top_folders: string[];
+}
+
+export interface HostPage {
+	items: TreeNode[];
+	total: number;
+	total_endpoints: number;
+	page: number;
+	size: number;
+	error: QueryError | null;
+}
+
+export interface MergedLeaf {
+	key: string;
+	path: string;
+	name: string;
+	params: string[];
+	param_count: number;
+	endpoint_class: string;
+	hosts: number;
+	endpoints: number;
+	status_mix: Record<string, number>;
+	unprobed: number;
+	interest: string[];
+	sources: string[];
+	host_names: string[];
+	sample_id: string;
+	sample_url: string;
+	sample_status: number | null;
+	query: string;
+}
+
+export interface MergedLeafPage {
+	items: MergedLeaf[];
+	total: number;
+	truncated: boolean;
+}
+
+// a folder that is only its own index arrives as a leaf; the row needs the endpoint shape
+export function leafToEndpoint(leaf: TreeLeaf, scanId: string): EndpointRead {
+	const dir = leaf.path.endsWith('/')
+		? leaf.path
+		: leaf.path.slice(0, leaf.path.lastIndexOf('/') + 1);
+	return {
+		id: leaf.id,
+		scan_id: scanId,
+		target_id: '',
+		signature: '',
+		url: leaf.url,
+		host: leaf.host,
+		port: 0,
+		scheme: '',
+		path: leaf.path,
+		dir_path: dir,
+		filename: null,
+		extension: null,
+		depth: 0,
+		params: leaf.params,
+		param_count: leaf.param_count,
+		variants: 1,
+		more_variants: false,
+		methods: [],
+		sources: leaf.sources,
+		primary_source: leaf.sources[0] ?? '',
+		evidence: [],
+		found_on: null,
+		is_probed: leaf.is_probed,
+		status_code: leaf.status_code,
+		content_type: null,
+		content_length: leaf.content_length,
+		title: null,
+		words: null,
+		lines: null,
+		response_time: null,
+		redirect_location: null,
+		tech: [],
+		endpoint_class: leaf.endpoint_class,
+		interest: leaf.interest,
+		http_asset_id: null,
+		subdomain_id: null,
+		archive_last_seen: null,
+		discovered_at: '',
+		is_new: false
+	};
 }
 
 export interface EndpointTree {
@@ -110,6 +217,7 @@ export interface EndpointFacetSet {
 	extension: EndpointFacet[];
 	host: EndpointFacet[];
 	total: number;
+	static_total: number;
 }
 
 export const EMPTY_ENDPOINT_FACETS: EndpointFacetSet = {
@@ -119,7 +227,8 @@ export const EMPTY_ENDPOINT_FACETS: EndpointFacetSet = {
 	status_class: [],
 	extension: [],
 	host: [],
-	total: 0
+	total: 0,
+	static_total: 0
 };
 
 export interface EndpointCoverageRead {
@@ -195,6 +304,7 @@ export interface EndpointFilter {
 	status_class: string | null;
 	probed: boolean | null;
 	new: boolean;
+	hide_static?: boolean;
 	sort: string;
 	direction: 'asc' | 'desc';
 	page: number;
@@ -313,6 +423,33 @@ export function compileEndpointQuery(
 		size
 	};
 }
+
+const LOCATION_FIELDS = new Set(['dir', 'directory', 'folder', 'path', 'file', 'filename', 'url']);
+
+// what to mark on folder and file names: free text plus the values of location fields
+export function highlightTerms(search: string, known: (name: string) => boolean): string[] {
+	const out: string[] = [];
+	const { tokens } = lex(search, known);
+	for (let i = 0; i < tokens.length; i++) {
+		const t = tokens[i];
+		if (t.kind === 'term') {
+			const word = unquote(t.text).trim();
+			if (word && !CONNECTOR_WORDS.has(word.toLowerCase())) out.push(word);
+		} else if (t.kind === 'field' && LOCATION_FIELDS.has(t.text.toLowerCase())) {
+			const value = tokens.slice(i + 1, i + 3).find((n) => n.kind === 'value');
+			if (value) {
+				const raw = unquote(value.text).trim();
+				for (const part of raw.startsWith('[') ? raw.slice(1, -1).split(',') : [raw]) {
+					const v = part.trim().replace(/\*/g, '');
+					if (v && v !== '/') out.push(v);
+				}
+			}
+		}
+	}
+	return [...new Set(out)];
+}
+
+const CONNECTOR_WORDS = new Set(['and', 'or', 'not']);
 
 export function endpointLabel(e: EndpointRead): string {
 	if (e.path === '/') return '/';

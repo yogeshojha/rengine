@@ -103,31 +103,33 @@
 					{#if endpoint.is_new}
 						<Badge variant="info" class="text-[10px]">New</Badge>
 					{/if}
-					<div class="ml-auto flex items-center gap-1">
-						<span class="text-xs tabular-nums text-muted-foreground">
-							{position} of {total.toLocaleString()}
-						</span>
-						<Button
-							variant="ghost"
-							size="icon"
-							class="size-7"
-							aria-label="Previous endpoint"
-							disabled={position <= 1}
-							onclick={() => onStep(-1)}
-						>
-							<ChevronLeft class="size-4" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							class="size-7"
-							aria-label="Next endpoint"
-							disabled={position >= total}
-							onclick={() => onStep(1)}
-						>
-							<ChevronRight class="size-4" />
-						</Button>
-					</div>
+					{#if total > 0 && position > 0}
+						<div class="ml-auto flex items-center gap-1">
+							<span class="text-xs tabular-nums text-muted-foreground">
+								{position} of {total.toLocaleString()}
+							</span>
+							<Button
+								variant="ghost"
+								size="icon"
+								class="size-7"
+								aria-label="Previous endpoint"
+								disabled={position <= 1}
+								onclick={() => onStep(-1)}
+							>
+								<ChevronLeft class="size-4" />
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								class="size-7"
+								aria-label="Next endpoint"
+								disabled={position >= total}
+								onclick={() => onStep(1)}
+							>
+								<ChevronRight class="size-4" />
+							</Button>
+						</div>
+					{/if}
 				</div>
 				<Sheet.Title class="font-mono text-sm break-all">{endpoint.url}</Sheet.Title>
 				<div class="flex items-center gap-2">

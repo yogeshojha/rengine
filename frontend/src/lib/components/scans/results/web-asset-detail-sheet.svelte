@@ -54,6 +54,7 @@
 	import ScreenshotThumb from './screenshot-thumb.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import OverflowPopover from './table/overflow-popover.svelte';
+	import HostStructure from './web-assets/host-structure.svelte';
 	import { httpAssetsApi } from '$lib/api/scan-results';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import type { SubdomainRead } from '$lib/types/subdomain';
@@ -90,6 +91,7 @@
 		onStep?: (dir: -1 | 1) => void;
 		onFilter?: (dsl: string) => void;
 		onPivot?: (name: string) => void;
+		onOpenEndpoints?: (host: string) => void;
 		focus?: { tab: string; pane?: string } | null;
 	}
 
@@ -105,6 +107,7 @@
 		onStep,
 		onFilter,
 		onPivot,
+		onOpenEndpoints,
 		focus = null
 	}: Props = $props();
 
@@ -369,6 +372,7 @@
 					{@render tabTrigger('http', 'HTTP', null)}
 					{@render tabTrigger('services', 'Services', hostAssets.length + ports.length || null)}
 					{@render tabTrigger('related', 'Related', relatedHosts || null)}
+					{@render tabTrigger('structure', 'Structure', sub.endpoint_count || null)}
 				</Tabs.List>
 
 				<ScrollArea class="min-h-0 flex-1">
@@ -921,6 +925,12 @@
 								'No correlated assets',
 								'This host shares no IP, certificate, favicon or CNAME with other hosts in the scan.'
 							)}
+						{/if}
+					</Tabs.Content>
+
+					<Tabs.Content value="structure" class="m-0 p-0">
+						{#if tab === 'structure'}
+							<HostStructure host={sub.name} {projectId} {scanId} compact {onOpenEndpoints} />
 						{/if}
 					</Tabs.Content>
 				</ScrollArea>

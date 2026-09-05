@@ -20,6 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import INET, JSONB
 
 from shared.definitions.asset_query import FLAGS, HOST_QUERY, FieldType, Op
+from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
@@ -219,6 +220,16 @@ def _url():
     return func.coalesce(Subdomain.final_url, Subdomain.http_url)
 
 
+def _endpoint_count(scan_id):
+    return (
+        select(func.count())
+        .select_from(Endpoint)
+        .where(Endpoint.scan_id == scan_id, Endpoint.host == Subdomain.name)
+        .correlate(Subdomain)
+        .scalar_subquery()
+    )
+
+
 _SUBDOMAIN_BUILDERS = {
     "host": lambda c, _ctx: string_match(Subdomain.name, c),
     "url": lambda c, _ctx: string_match(_url(), c),
@@ -237,6 +248,9 @@ _SUBDOMAIN_BUILDERS = {
     ),
     "time": lambda c, _ctx: number_match(
         Subdomain.response_time, c, scaled_coerce(c, FieldType.DURATION)
+    ),
+    "paths": lambda c, ctx: number_match(
+        _endpoint_count(ctx.scan_id), c, int_coerce(c)
     ),
     "favicon": lambda c, _ctx: string_match(Subdomain.favicon_hash, c),
     "ip": lambda c, _ctx: _ip(c),

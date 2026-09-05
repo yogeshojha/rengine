@@ -14,6 +14,7 @@
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import FolderTree from '@lucide/svelte/icons/folder-tree';
 	import Flame from '@lucide/svelte/icons/flame';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -78,6 +79,7 @@
 		hostsWithTitle: (title: string) => Promise<string[]>;
 		loadServices: (host: string) => Promise<ServiceRead[]>;
 		onServices?: (host: string, port: number) => void;
+		onStructure?: (s: SubdomainRead) => void;
 		onVulns?: (filter: string) => void;
 	}
 
@@ -98,7 +100,8 @@
 		hostsWithTitle,
 		loadServices,
 		onServices,
-		onVulns
+		onVulns,
+		onStructure
 	}: Props = $props();
 
 	let worstSeverity = $derived((s.vuln_count ?? 0) > 0 ? (s.vuln_severity ?? null) : null);
@@ -246,6 +249,29 @@
 					</span>
 				</HostHoverCard>
 			</span>
+			{#if onStructure && (s.endpoint_count ?? 0) > 0}
+				<Hint
+					text="{s.endpoint_count?.toLocaleString()} {s.endpoint_count === 1
+						? 'endpoint'
+						: 'endpoints'} discovered on this host. Open its structure."
+				>
+					{#snippet child(props)}
+						<button
+							{...props}
+							type="button"
+							class="flex h-5 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-[11px] tabular-nums text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+							aria-label="Open the structure of {s.name}"
+							onclick={(e) => {
+								e.stopPropagation();
+								onStructure(s);
+							}}
+						>
+							<FolderTree class="size-3" />
+							{s.endpoint_count?.toLocaleString()}
+						</button>
+					{/snippet}
+				</Hint>
+			{/if}
 			{#if worstSeverity}
 				<Hint
 					text="{s.vuln_count} {s.vuln_count === 1

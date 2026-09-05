@@ -11,12 +11,15 @@
 	import SourceMarks from './source-marks.svelte';
 	import StatusMark from './status-mark.svelte';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone } from '../table/columns';
-	import { ENDPOINT_COLUMNS, ENDPOINT_LEAD_COLUMNS } from './columns';
+	import { ENDPOINT_COLUMNS, ENDPOINT_LEAD_COLUMNS, OUTLINE_LEAD_COLUMNS } from './columns';
+	import { GUIDE_WIDTH, OUTLINE_ROW_ATTR } from './outline-context';
 	import {
 		ENDPOINT_CLASS_ICONS,
 		ENDPOINT_CLASS_LABELS,
+		ENDPOINT_CLASS_TONE,
 		INTEREST_LABELS,
-		SENSITIVE_INTEREST
+		SENSITIVE_INTEREST,
+		STATIC_CLASSES
 	} from '$lib/config/endpoints';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatShortDate } from '$lib/utilities/dates';
@@ -25,10 +28,14 @@
 	interface Props {
 		endpoint: EndpointRead;
 		columns: string[];
-		term?: string;
+		terms?: string[];
 		active?: boolean;
 		focused?: boolean;
 		pad?: string;
+		outline?: boolean;
+		depth?: number;
+		label?: string;
+		rowKey?: string;
 		onOpen?: (e: EndpointRead) => void;
 		onFilter?: (token: string) => void;
 	}
@@ -36,21 +43,36 @@
 	let {
 		endpoint,
 		columns,
-		term = '',
+		terms = [],
 		active = false,
 		focused = false,
 		pad = 'py-3',
+		outline = false,
+		depth = 0,
+		label,
+		rowKey,
 		onOpen,
 		onFilter
 	}: Props = $props();
 
 	let shown = $derived(ENDPOINT_COLUMNS.filter((c) => columns.includes(c.key)));
 	let ClassIcon = $derived(ENDPOINT_CLASS_ICONS[endpoint.endpoint_class]);
+	let classTone = $derived(ENDPOINT_CLASS_TONE[endpoint.endpoint_class] ?? 'text-muted-foreground');
 	let sensitive = $derived(endpoint.interest.filter((i) => SENSITIVE_INTEREST.has(i)));
 	let testable = $derived(endpoint.interest.filter((i) => !SENSITIVE_INTEREST.has(i)));
 	let isRoot = $derived(endpoint.path === '/');
+	let isIndex = $derived(endpoint.filename === null && !label);
 	let dirLabel = $derived(isRoot ? '' : endpoint.dir_path);
-	let leaf = $derived(endpoint.filename ?? (isRoot ? '/' : ''));
+	let leaf = $derived(label ?? endpoint.filename ?? '/');
+	let dim = $derived(STATIC_CLASSES.has(endpoint.endpoint_class));
+	// several origins can share one path; only the index rows of a folder need to tell them apart
+	let origin = $derived.by(() => {
+		if (!isIndex) return '';
+		const port = endpoint.port && ![80, 443].includes(endpoint.port) ? `:${endpoint.port}` : '';
+		const scheme = endpoint.scheme && endpoint.scheme !== 'https' ? endpoint.scheme : '';
+		return scheme || port ? `${scheme || 'https'}${port}` : '';
+	});
+	let attrs = $derived(rowKey ? { [OUTLINE_ROW_ATTR]: rowKey, 'data-outline-kind': 'leaf' } : {});
 
 	function size(bytes: number | null): string {
 		if (bytes == null) return '—';
@@ -60,6 +82,31 @@
 	}
 </script>
 
+{#snippet badges(compact: boolean)}
+	{#if sensitive.length || testable.length || endpoint.is_new}
+		<div class="flex flex-wrap items-center gap-1 {compact ? '' : 'mt-1'}">
+			{#each sensitive as key (key)}
+				<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-[10px]">
+					<ShieldAlert class="size-2.5" />
+					{INTEREST_LABELS[key] ?? key}
+				</Badge>
+			{/each}
+			{#each testable as key (key)}
+				<Badge variant="warning" class="h-4 px-1.5 text-[10px]">
+					{INTEREST_LABELS[key] ?? key}
+				</Badge>
+			{/each}
+			{#if compact && endpoint.is_new}
+				<Badge variant="info" class="h-4 px-1 text-[10px]">New</Badge>
+			{/if}
+		</div>
+	{/if}
+{/snippet}
+
+{#snippet statusCell()}
+	<StatusMark status={endpoint.status_code} probed={endpoint.is_probed} />
+{/snippet}
+
 <div
 	class="group flex items-start gap-3 border-b px-4 text-sm transition-colors {pad} {rowTone(
 		active,
@@ -67,6 +114,7 @@
 	)}"
 	role="button"
 	tabindex="0"
+	{...attrs}
 	onclick={() => onOpen?.(endpoint)}
 	onkeydown={(e) => {
 		if (e.key === 'Enter' || e.key === ' ') {
@@ -75,43 +123,62 @@
 		}
 	}}
 >
-	<div class="{ENDPOINT_LEAD_COLUMNS[0].width} shrink-0">
-		<StatusMark status={endpoint.status_code} probed={endpoint.is_probed} />
-	</div>
-
-	<div class="min-w-0 flex-1 {ENDPOINT_LEAD_COLUMNS[1].width}">
-		<div class="flex flex-wrap items-baseline gap-x-1 leading-5">
-			<span class="font-mono text-xs text-muted-foreground">{dirLabel}</span>
-			{#if leaf}
-				<span class="font-mono text-sm font-medium break-all">
-					<HighlightText text={leaf} {term} />
-				</span>
-			{/if}
-			{#if endpoint.param_count > 0}
-				<span class="font-mono text-xs text-primary">
-					?{endpoint.params.join('&')}
-				</span>
-			{/if}
-			{#if endpoint.is_new}
-				<Badge variant="info" class="h-4 px-1 text-[10px]">New</Badge>
-			{/if}
-		</div>
-		{#if sensitive.length || testable.length}
-			<div class="mt-1 flex flex-wrap items-center gap-1">
-				{#each sensitive as key (key)}
-					<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-[10px]">
-						<ShieldAlert class="size-2.5" />
-						{INTEREST_LABELS[key] ?? key}
-					</Badge>
+	{#if outline}
+		<div class="min-w-0 flex-1 {OUTLINE_LEAD_COLUMNS[0].width}">
+			<div class="flex items-start gap-x-1.5 leading-5">
+				{#each Array(depth) as _, i (i)}
+					<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"
+					></span>
 				{/each}
-				{#each testable as key (key)}
-					<Badge variant="warning" class="h-4 px-1.5 text-[10px]">
-						{INTEREST_LABELS[key] ?? key}
-					</Badge>
-				{/each}
+				<span class="size-4 shrink-0"></span>
+				<span class="flex h-5 shrink-0 items-center {dim ? 'text-muted-foreground/70' : classTone}">
+					<ClassIcon class="size-4" />
+				</span>
+				<span class="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-1">
+					<span class="font-mono text-sm break-all {dim ? 'text-muted-foreground' : 'font-medium'}">
+						<HighlightText text={leaf} {terms} />
+					</span>
+					{#if isIndex}
+						<span class="text-[11px] text-muted-foreground italic">index</span>
+					{/if}
+					{#if origin}
+						<span class="font-mono text-[11px] text-muted-foreground">{origin}</span>
+					{/if}
+					{#if endpoint.param_count > 0}
+						<span class="font-mono text-xs text-primary">?{endpoint.params.join('&')}</span>
+					{/if}
+					{@render badges(true)}
+				</span>
 			</div>
-		{/if}
-	</div>
+		</div>
+		<div class="{OUTLINE_LEAD_COLUMNS[1].width} shrink-0">
+			{@render statusCell()}
+		</div>
+	{:else}
+		<div class="{ENDPOINT_LEAD_COLUMNS[0].width} shrink-0">
+			{@render statusCell()}
+		</div>
+
+		<div class="min-w-0 flex-1 {ENDPOINT_LEAD_COLUMNS[1].width}">
+			<div class="flex flex-wrap items-baseline gap-x-1 leading-5">
+				<span class="font-mono text-xs text-muted-foreground">{dirLabel}</span>
+				{#if leaf}
+					<span class="font-mono text-sm font-medium break-all">
+						<HighlightText text={leaf} {terms} />
+					</span>
+				{/if}
+				{#if endpoint.param_count > 0}
+					<span class="font-mono text-xs text-primary">
+						?{endpoint.params.join('&')}
+					</span>
+				{/if}
+				{#if endpoint.is_new}
+					<Badge variant="info" class="h-4 px-1 text-[10px]">New</Badge>
+				{/if}
+			</div>
+			{@render badges(false)}
+		</div>
+	{/if}
 
 	{#each shown as column (column.key)}
 		<div class="{column.width} min-w-0 shrink-0 {column.align === 'right' ? 'text-right' : ''}">
@@ -124,7 +191,7 @@
 						onFilter?.(`host:${endpoint.host}`);
 					}}
 				>
-					<HighlightText text={endpoint.host} {term} />
+					<HighlightText text={endpoint.host} {terms} />
 				</button>
 			{:else if column.key === 'kind'}
 				<span class="flex h-5 items-center gap-1.5 text-xs text-muted-foreground">
@@ -171,7 +238,7 @@
 			{:else if column.key === 'title'}
 				<span class="line-clamp-2 text-xs text-muted-foreground">
 					{#if endpoint.title}
-						<HighlightText text={endpoint.title} {term} />
+						<HighlightText text={endpoint.title} {terms} />
 					{:else}
 						—
 					{/if}
@@ -193,7 +260,7 @@
 				<SourceMarks sources={endpoint.sources} evidence={endpoint.evidence} />
 			{:else if column.key === 'seen'}
 				<span class="text-xs text-muted-foreground">
-					{formatShortDate(endpoint.discovered_at)}
+					{endpoint.discovered_at ? formatShortDate(endpoint.discovered_at) : '—'}
 				</span>
 			{/if}
 		</div>

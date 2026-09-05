@@ -207,7 +207,13 @@ def _row(
     index: AssetIndex,
     now: datetime,
 ) -> dict:
-    interest = interests_for(merged.path, merged.params)
+    endpoint_class = classify(merged.path, merged.extension, merged.content_type)
+    interest = interests_for(
+        merged.path,
+        merged.params,
+        endpoint_class=endpoint_class,
+        extension=merged.extension,
+    )
     return {
         "id": uuid.uuid4(),
         "scan_id": scan_id,
@@ -244,7 +250,7 @@ def _row(
         "redirect_location": merged.redirect_location,
         "content_hash": merged.content_hash,
         "tech": merged.tech,
-        "endpoint_class": classify(merged.path, merged.extension, merged.content_type),
+        "endpoint_class": endpoint_class,
         "interest": interest,
         "http_asset_id": index.assets.get((merged.host, merged.port)),
         "subdomain_id": index.subdomains.get(merged.host),
@@ -324,6 +330,12 @@ def _changes(row: Endpoint, merged: _Merged, source: str, now: datetime) -> dict
         content_type = merged.content_type or row.content_type
         changed["endpoint_class"] = classify(
             merged.path, merged.extension, content_type
+        )
+        changed["interest"] = interests_for(
+            merged.path,
+            merged.params,
+            endpoint_class=changed["endpoint_class"],
+            extension=merged.extension,
         )
         if merged.tech:
             changed["tech"] = merged.tech
@@ -476,6 +488,14 @@ def verify(
                     tech=merged.tech or list(row.tech or []),
                     endpoint_class=classify(
                         merged.path, merged.extension, merged.content_type
+                    ),
+                    interest=interests_for(
+                        merged.path,
+                        list(row.params or []),
+                        endpoint_class=classify(
+                            merged.path, merged.extension, merged.content_type
+                        ),
+                        extension=merged.extension,
                     ),
                     methods=sorted(set(row.methods or []) | merged.methods),
                 )

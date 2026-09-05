@@ -1,10 +1,12 @@
 <script lang="ts">
 	import Columns3 from '@lucide/svelte/icons/columns-3';
 	import Layers from '@lucide/svelte/icons/layers';
+	import Network from '@lucide/svelte/icons/network';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import X from '@lucide/svelte/icons/x';
 	import ListTree from '@lucide/svelte/icons/list-tree';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
+	import ChevronsDownUp from '@lucide/svelte/icons/chevrons-down-up';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
@@ -36,6 +38,12 @@
 		onGroupBy: (key: string) => void;
 		view: string;
 		onView: (v: string) => void;
+		hideStatic: boolean;
+		onHideStatic: (v: boolean) => void;
+		treeMode: string;
+		onTreeMode: (m: string) => void;
+		expandedCount?: number;
+		onCollapseAll?: () => void;
 	}
 
 	let {
@@ -57,17 +65,26 @@
 		groupBy,
 		onGroupBy,
 		view,
-		onView
+		onView,
+		hideStatic,
+		onHideStatic,
+		treeMode,
+		onTreeMode,
+		expandedCount = 0,
+		onCollapseAll
 	}: Props = $props();
 
 	const QUICK = [
 		{ value: 'new', label: 'New' },
-		{ value: 'unverified', label: 'Not checked' }
+		{ value: 'unverified', label: 'Not checked' },
+		{ value: 'static', label: 'Hide static' }
 	];
 
 	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
 	let quick = $derived(
-		[query.newOnly && 'new', query.probed === 'no' && 'unverified'].filter((v): v is string => !!v)
+		[query.newOnly && 'new', query.probed === 'no' && 'unverified', hideStatic && 'static'].filter(
+			(v): v is string => !!v
+		)
 	);
 
 	function setQuick(values: string[]) {
@@ -76,6 +93,7 @@
 			newOnly: values.includes('new'),
 			probed: values.includes('unverified') ? 'no' : 'any'
 		});
+		onHideStatic(values.includes('static'));
 	}
 
 	function pick(key: 'source' | 'interest' | 'statusClass', value: string) {
@@ -191,7 +209,7 @@
 		</ToggleGroup.Root>
 	</div>
 
-	<div class="flex items-center gap-2">
+	<div class="flex flex-wrap items-center gap-2">
 		<ToggleGroup.Root
 			type="single"
 			value={view}
@@ -199,10 +217,10 @@
 			variant="outline"
 			aria-label="View"
 		>
-			<Hint text="Browse the site structure">
+			<Hint text="Hosts, folders and endpoints in one outline">
 				{#snippet child(props)}
 					<span {...props} class="inline-flex">
-						<ToggleGroup.Item value="tree" class="h-9 px-3" aria-label="Tree">
+						<ToggleGroup.Item value="outline" class="h-9 px-3" aria-label="Outline">
 							<ListTree class="size-4" />
 						</ToggleGroup.Item>
 					</span>
@@ -218,6 +236,54 @@
 				{/snippet}
 			</Hint>
 		</ToggleGroup.Root>
+
+		{#if view === 'outline'}
+			<ToggleGroup.Root
+				type="single"
+				value={treeMode}
+				onValueChange={(v) => v && onTreeMode(v)}
+				variant="outline"
+				aria-label="Tree mode"
+			>
+				<Hint text="One tree per host">
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<ToggleGroup.Item value="host" class="h-9 gap-1.5 px-3" aria-label="By host">
+								<Network class="size-4" />
+								<span class="hidden text-sm font-normal lg:inline">By host</span>
+							</ToggleGroup.Item>
+						</span>
+					{/snippet}
+				</Hint>
+				<Hint text="Paths merged across every host, so a shared route appears once">
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<ToggleGroup.Item value="merged" class="h-9 gap-1.5 px-3" aria-label="Across hosts">
+								<Layers class="size-4" />
+								<span class="hidden text-sm font-normal lg:inline">Across hosts</span>
+							</ToggleGroup.Item>
+						</span>
+					{/snippet}
+				</Hint>
+			</ToggleGroup.Root>
+		{/if}
+
+		{#if view === 'outline' && expandedCount > 0 && onCollapseAll}
+			<Hint text="Collapse every open host and folder">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="outline"
+						size="icon"
+						class="h-9 w-9"
+						aria-label="Collapse all"
+						onclick={onCollapseAll}
+					>
+						<ChevronsDownUp class="h-4 w-4" />
+					</Button>
+				{/snippet}
+			</Hint>
+		{/if}
 
 		{#if dimensions.length && view === 'list'}
 			<ButtonGroup>

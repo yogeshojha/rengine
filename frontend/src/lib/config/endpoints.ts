@@ -18,6 +18,12 @@ import Braces2 from '@lucide/svelte/icons/file-json';
 import Crosshair from '@lucide/svelte/icons/crosshair';
 import Upload from '@lucide/svelte/icons/upload';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+import Folder from '@lucide/svelte/icons/folder';
+import FolderOpen from '@lucide/svelte/icons/folder-open';
+import FolderCog from '@lucide/svelte/icons/folder-cog';
+import FolderLock from '@lucide/svelte/icons/folder-lock';
+import FolderCode from '@lucide/svelte/icons/folder-code';
+import FolderKey from '@lucide/svelte/icons/folder-key';
 import type { IconComponent } from './icons';
 
 // mirrors shared/definitions/endpoints.py EndpointClass
@@ -84,6 +90,52 @@ export const ENDPOINT_CLASS_FILL: Record<string, string> = {
 	[EndpointClass.IMAGE]: 'color-mix(in oklch, var(--muted-foreground) 45%, transparent)',
 	[EndpointClass.MEDIA]: 'color-mix(in oklch, var(--muted-foreground) 35%, transparent)',
 	[EndpointClass.OTHER]: 'color-mix(in oklch, var(--muted-foreground) 25%, transparent)'
+};
+
+// mirrors shared/definitions/endpoints.py STATIC_CLASSES + STATIC_EXTENSIONS
+export const STATIC_CLASSES: ReadonlySet<string> = new Set([
+	EndpointClass.STYLE,
+	EndpointClass.IMAGE,
+	EndpointClass.MEDIA
+]);
+
+// mirrors shared/definitions/endpoints.py FolderGlyph
+export enum FolderGlyph {
+	FOLDER = 'folder',
+	ADMIN = 'admin',
+	SENSITIVE = 'sensitive',
+	API = 'api',
+	AUTH = 'auth'
+}
+
+export const FOLDER_GLYPH_ICONS: Record<string, IconComponent> = {
+	[FolderGlyph.FOLDER]: Folder,
+	[FolderGlyph.ADMIN]: FolderCog,
+	[FolderGlyph.SENSITIVE]: FolderLock,
+	[FolderGlyph.API]: FolderCode,
+	[FolderGlyph.AUTH]: FolderKey
+};
+
+export const FOLDER_OPEN_ICON: IconComponent = FolderOpen;
+
+export const FOLDER_GLYPH_TONE: Record<string, string> = {
+	[FolderGlyph.FOLDER]: 'text-muted-foreground',
+	[FolderGlyph.ADMIN]: 'text-warning',
+	[FolderGlyph.SENSITIVE]: 'text-destructive',
+	[FolderGlyph.API]: 'text-chart-2',
+	[FolderGlyph.AUTH]: 'text-warning'
+};
+
+export const FOLDER_GLYPH_LABELS: Record<string, string> = {
+	[FolderGlyph.FOLDER]: 'Folder',
+	[FolderGlyph.ADMIN]: 'Holds an administrative or diagnostic interface',
+	[FolderGlyph.SENSITIVE]: 'Holds a credential, backup or version control file',
+	[FolderGlyph.API]: 'Mostly API routes',
+	[FolderGlyph.AUTH]: 'Holds an authentication boundary'
+};
+
+export const ENDPOINT_CLASS_TONE: Record<string, string> = {
+	[EndpointClass.API]: 'text-chart-2'
 };
 
 // mirrors shared/definitions/endpoints.py EndpointSource

@@ -95,6 +95,7 @@ class SubdomainRead(BaseModel):
 
 class SubdomainRow(SubdomainRead):
     ports: list[int] = Field(default_factory=list)
+    endpoint_count: int = 0
     title_count: int = 0
     favicon_count: int = 0
     vuln_count: int = 0

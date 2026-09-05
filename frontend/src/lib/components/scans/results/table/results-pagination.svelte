@@ -14,7 +14,7 @@
 		selectedCount?: number;
 		onClearSelection?: () => void;
 		onPage: (page: number) => void;
-		onPageSize: (size: number) => void;
+		onPageSize?: (size: number) => void;
 	}
 
 	let {
@@ -44,7 +44,9 @@
 				: ''}
 			{total === 1 ? noun : plural || `${noun}s`}
 		</span>
-		<PageSizeSelector {pageSize} options={SIZES} onPageSizeChange={onPageSize} />
+		{#if onPageSize}
+			<PageSizeSelector {pageSize} options={SIZES} onPageSizeChange={onPageSize} />
+		{/if}
 		{#if selectedCount > 0}
 			<span class="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
 				{selectedCount} selected

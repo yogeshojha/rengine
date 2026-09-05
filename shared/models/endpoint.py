@@ -208,6 +208,7 @@ class EndpointFilter(BaseModel):
     status_class: str | None = None
     probed: bool | None = None
     new: bool = False
+    hide_static: bool = False
     sort: str = "path"
     direction: str = "asc"
     page: int = 1
@@ -224,6 +225,7 @@ class EndpointFilter(BaseModel):
                 self.status_class,
                 self.probed is not None,
                 self.new,
+                self.hide_static,
             )
         )
 
@@ -251,6 +253,24 @@ class EndpointFacets(BaseModel):
     extension: list[EndpointFacet] = PydanticField(default_factory=list)
     host: list[EndpointFacet] = PydanticField(default_factory=list)
     total: int = 0
+    static_total: int = 0
+
+
+class TreeLeaf(BaseModel):
+    """The one endpoint a folder holds when that folder is only its own index."""
+
+    id: uuid.UUID
+    url: str
+    host: str
+    path: str
+    params: list[str] = PydanticField(default_factory=list)
+    param_count: int = 0
+    endpoint_class: str
+    is_probed: bool = False
+    status_code: int | None = None
+    content_length: int | None = None
+    sources: list[str] = PydanticField(default_factory=list)
+    interest: list[str] = PydanticField(default_factory=list)
 
 
 class TreeNode(BaseModel):
@@ -267,13 +287,60 @@ class TreeNode(BaseModel):
     child_count: int = 0
     hosts: int = 1
     status_mix: dict[str, int] = PydanticField(default_factory=dict)
+    class_mix: dict[str, int] = PydanticField(default_factory=dict)
     sources: list[str] = PydanticField(default_factory=list)
     interest: list[str] = PydanticField(default_factory=list)
     has_params: bool = False
+    params: int = 0
+    verified: int = 0
     unprobed: int = 0
+    glyph: str = "folder"
     sample_url: str | None = None
+    leaf: TreeLeaf | None = None
     query: str
     children: list["TreeNode"] = PydanticField(default_factory=list)
+    lazy: bool = False
+    folders: int = 0
+    top_folders: list[str] = PydanticField(default_factory=list)
+
+
+class HostPage(BaseModel):
+    """One page of hosts with their rollups; a host's folders load when it is opened."""
+
+    items: list[TreeNode] = PydanticField(default_factory=list)
+    total: int = 0
+    total_endpoints: int = 0
+    page: int = 1
+    size: int = 50
+    error: QueryError | None = None
+
+
+class MergedLeaf(BaseModel):
+    """One path inside a folder, folded across every host that serves it."""
+
+    key: str
+    path: str
+    name: str
+    params: list[str] = PydanticField(default_factory=list)
+    param_count: int = 0
+    endpoint_class: str
+    hosts: int = 0
+    endpoints: int = 0
+    status_mix: dict[str, int] = PydanticField(default_factory=dict)
+    unprobed: int = 0
+    interest: list[str] = PydanticField(default_factory=list)
+    sources: list[str] = PydanticField(default_factory=list)
+    host_names: list[str] = PydanticField(default_factory=list)
+    sample_id: uuid.UUID
+    sample_url: str
+    sample_status: int | None = None
+    query: str
+
+
+class MergedLeafPage(BaseModel):
+    items: list[MergedLeaf] = PydanticField(default_factory=list)
+    total: int = 0
+    truncated: bool = False
 
 
 class EndpointTree(BaseModel):

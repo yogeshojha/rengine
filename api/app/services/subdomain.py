@@ -41,6 +41,7 @@ from shared.definitions.ports import SENSITIVE_PORTS, port_interest
 from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.logging import get_logger
 from shared.models.asset_query import QueryError, QueryGroups, QueryLeads
+from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
@@ -355,6 +356,7 @@ class SubdomainService:
             {s.favicon_hash for s in rows if s.favicon_hash},
         )
         findings = await self._findings_for(scan_id, [s.name for s in rows])
+        endpoint_counts = await self._endpoint_counts(scan_id, [s.name for s in rows])
         evidence = await collect_evidence(self.session, scan_id, rows, node)
         items = []
         for s in rows:
@@ -365,6 +367,7 @@ class SubdomainService:
                 SubdomainRow(
                     **self._to_read(s).model_dump(),
                     ports=sorted(nums, key=lambda n: (port_interest(n), n)),
+                    endpoint_count=endpoint_counts.get(s.name, 0),
                     title_count=title_counts.get(s.page_title, 0),
                     favicon_count=favicon_counts.get(s.favicon_hash, 0),
                     vuln_count=findings.get(s.name, _NO_FINDINGS)[0],
@@ -455,6 +458,16 @@ class SubdomainService:
             await self.session.rollback()
             logger.info("search groups failed", error=str(exc.orig))
             return QueryGroups(dimension=key)
+
+    async def _endpoint_counts(self, scan_id: UUID, hosts: list[str]) -> dict[str, int]:
+        if not hosts:
+            return {}
+        rows = await self.session.execute(
+            select(Endpoint.host, func.count())
+            .where(Endpoint.scan_id == scan_id, Endpoint.host.in_(hosts))
+            .group_by(Endpoint.host)
+        )
+        return {host: int(n) for host, n in rows.all()}
 
     async def _shared_counts(self, scan_id: UUID, col, values: set) -> dict:
         if not values:

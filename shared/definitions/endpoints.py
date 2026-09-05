@@ -206,6 +206,27 @@ STATIC_CLASSES: frozenset[str] = frozenset(
     }
 )
 
+# font files classify as OTHER but are static content all the same
+STATIC_EXTENSIONS: frozenset[str] = frozenset({"woff", "woff2", "ttf", "eot", "otf"})
+
+
+def is_static(endpoint_class: str | None, extension: str | None) -> bool:
+    return (
+        endpoint_class in STATIC_CLASSES
+        or (extension or "").lower() in STATIC_EXTENSIONS
+    )
+
+
+class FolderGlyph(StrEnum):
+    FOLDER = "folder"
+    ADMIN = "admin"
+    SENSITIVE = "sensitive"
+    API = "api"
+    AUTH = "auth"
+
+
+_API_DOMINANT = 0.5
+
 _EXTENSION_CLASS: dict[str, str] = {
     "html": EndpointClass.PAGE.value,
     "htm": EndpointClass.PAGE.value,
@@ -664,6 +685,18 @@ INTEREST_LABELS: dict[str, str] = {**PARAM_INTEREST_LABELS, **PATH_INTEREST_LABE
 INTEREST_HELP: dict[str, str] = {**PARAM_INTEREST_HELP, **PATH_INTEREST_HELP}
 INTEREST_KEYS: tuple[str, ...] = tuple(INTEREST_LABELS)
 
+# an exposed file is a finding whatever serves it; an admin path is not when it is a logo
+SENSITIVE_INTERESTS: frozenset[str] = frozenset(
+    {PathInterest.VCS.value, PathInterest.SECRETS.value, PathInterest.BACKUP.value}
+)
+ADMIN_INTERESTS: frozenset[str] = frozenset(
+    {
+        PathInterest.ADMIN.value,
+        PathInterest.DEBUG_ENDPOINT.value,
+        PathInterest.INFRA.value,
+    }
+)
+
 _DEFAULT_PORTS: dict[str, int] = {"http": 80, "https": 443}
 _EXT_RE = re.compile(r"^[A-Za-z0-9]{1,10}$")
 _HOST_RE = re.compile(r"^[a-z0-9._\-]+$|^[0-9a-f:.]+$")
@@ -815,14 +848,42 @@ def param_interests(params: tuple[str, ...] | list[str] | None) -> list[str]:
     return sorted(found)
 
 
+def _path_has(lowered: str, needle: str) -> bool:
+    # an editor backup ends in ~; a ~ inside a bundle name is just a hash separator
+    if needle == "~":
+        return lowered.endswith("~") or "~/" in lowered
+    return needle in lowered
+
+
 def path_interests(path: str) -> list[str]:
     lowered = (path or "").lower()
     return sorted(
         key
         for key, needles in PATH_INTEREST.items()
-        if any(needle in lowered for needle in needles)
+        if any(_path_has(lowered, needle) for needle in needles)
     )
 
 
-def interests_for(path: str, params: tuple[str, ...] | list[str] | None) -> list[str]:
-    return sorted({*path_interests(path), *param_interests(params)})
+def interests_for(
+    path: str,
+    params: tuple[str, ...] | list[str] | None,
+    *,
+    endpoint_class: str | None = None,
+    extension: str | None = None,
+) -> list[str]:
+    by_path = path_interests(path)
+    if is_static(endpoint_class, extension):
+        by_path = [key for key in by_path if key in SENSITIVE_INTERESTS]
+    return sorted({*by_path, *param_interests(params)})
+
+
+def folder_glyph(interest: set[str] | frozenset[str], api: int, total: int) -> str:
+    if interest & SENSITIVE_INTERESTS:
+        return FolderGlyph.SENSITIVE.value
+    if interest & ADMIN_INTERESTS:
+        return FolderGlyph.ADMIN.value
+    if total and api / total >= _API_DOMINANT:
+        return FolderGlyph.API.value
+    if PathInterest.AUTH.value in interest:
+        return FolderGlyph.AUTH.value
+    return FolderGlyph.FOLDER.value

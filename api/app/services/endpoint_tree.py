@@ -11,11 +11,20 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.definitions.endpoints import MAX_TREE_NODES, MAX_TREE_ROWS
-from shared.models.endpoint import Endpoint, EndpointTree, TreeNode
+from shared.definitions.endpoints import (
+    ADMIN_INTERESTS,
+    MAX_TREE_NODES,
+    MAX_TREE_ROWS,
+    SENSITIVE_INTERESTS,
+    EndpointClass,
+    PathInterest,
+    folder_glyph,
+)
+from shared.models.endpoint import Endpoint, EndpointTree, TreeLeaf, TreeNode
 
 _MERGED = "merged"
 _HOST = "host"
+_LEAF = "leaf"
 _STATUS_BUCKETS = (
     ("2xx", 200, 300),
     ("3xx", 300, 400),
@@ -45,15 +54,26 @@ def _bucket(status: int | None) -> str:
 
 @dataclass
 class _Row:
+    id: object
     host: str
     dir_path: str
     path: str
     url: str
     status: int | None
     probed: bool
-    params: int
+    params: list
+    content_length: int | None
+    endpoint_class: str
     sources: list
     interest: list
+
+    @property
+    def is_index(self) -> bool:
+        return self.path == self.dir_path
+
+    @property
+    def shape(self) -> tuple:
+        return (self.path, tuple(self.params))
 
 
 @dataclass
@@ -67,12 +87,16 @@ class _Node:
     direct: int = 0
     subtree: int = 0
     unprobed: int = 0
-    has_params: bool = False
+    verified: int = 0
+    params: int = 0
+    api: int = 0
     hosts: set = field(default_factory=set)
     status_mix: dict = field(default_factory=dict)
+    class_mix: dict = field(default_factory=dict)
     sources: set = field(default_factory=set)
     interest: set = field(default_factory=set)
     sample_url: str | None = None
+    index_rows: list = field(default_factory=list)
     children: dict = field(default_factory=dict)
 
     def absorb(self, row: _Row) -> None:
@@ -80,10 +104,17 @@ class _Node:
         self.hosts.add(row.host)
         bucket = _bucket(row.status)
         self.status_mix[bucket] = self.status_mix.get(bucket, 0) + 1
-        if not row.probed:
+        self.class_mix[row.endpoint_class] = (
+            self.class_mix.get(row.endpoint_class, 0) + 1
+        )
+        if row.probed:
+            self.verified += 1
+        else:
             self.unprobed += 1
         if row.params:
-            self.has_params = True
+            self.params += 1
+        if row.endpoint_class == EndpointClass.API.value:
+            self.api += 1
         self.sources.update(row.sources or ())
         self.interest.update(row.interest or ())
         if self.sample_url is None:
@@ -99,13 +130,16 @@ async def build_tree(session: AsyncSession, base, *, mode: str = _HOST) -> Endpo
     scoped = base.subquery()
     result = await session.execute(
         select(
+            Endpoint.id,
             Endpoint.host,
             Endpoint.dir_path,
             Endpoint.path,
             Endpoint.url,
             Endpoint.status_code,
             Endpoint.is_probed,
-            Endpoint.param_count,
+            Endpoint.params,
+            Endpoint.content_length,
+            Endpoint.endpoint_class,
             Endpoint.sources,
             Endpoint.interest,
         )
@@ -116,13 +150,16 @@ async def build_tree(session: AsyncSession, base, *, mode: str = _HOST) -> Endpo
     )
     rows = [
         _Row(
+            id=r.id,
             host=r.host,
             dir_path=r.dir_path,
             path=r.path,
             url=r.url,
             status=r.status_code,
             probed=r.is_probed,
-            params=r.param_count,
+            params=list(r.params or []),
+            content_length=r.content_length,
+            endpoint_class=r.endpoint_class,
             sources=list(r.sources or []),
             interest=list(r.interest or []),
         )
@@ -183,6 +220,8 @@ async def build_tree(session: AsyncSession, base, *, mode: str = _HOST) -> Endpo
         # only count it as living here if the walk actually reached its folder
         if complete:
             cursor.direct += 1
+            if row.is_index:
+                cursor.index_rows.append(row)
 
     nodes = [_emit(root, merged) for _, root in sorted(roots.items(), key=_root_order)]
     return EndpointTree(
@@ -199,6 +238,44 @@ def _root_order(item):
     return (-node.subtree, node.name)
 
 
+def _rank(node: _Node) -> tuple:
+    """Folders that matter sort first: exposed files, admin surfaces, API, then answering."""
+    return (
+        0 if node.interest & SENSITIVE_INTERESTS else 1,
+        0 if node.interest & (ADMIN_INTERESTS | {PathInterest.AUTH.value}) else 1,
+        0 if node.api else 1,
+        0 if node.status_mix.get("2xx") else 1,
+        -node.subtree,
+        node.name,
+    )
+
+
+def _index_only(node: _Node) -> bool:
+    """A folder whose only content is its own index reads as a leaf, the way Burp shows it."""
+    if node.kind == _HOST or node.children or not node.index_rows:
+        return False
+    if len(node.index_rows) != node.direct:
+        return False
+    return len({row.shape for row in node.index_rows}) == 1
+
+
+def _leaf(row: _Row) -> TreeLeaf:
+    return TreeLeaf(
+        id=row.id,
+        url=row.url,
+        host=row.host,
+        path=row.path,
+        params=list(row.params),
+        param_count=len(row.params),
+        endpoint_class=row.endpoint_class,
+        is_probed=row.probed,
+        status_code=row.status,
+        content_length=row.content_length,
+        sources=list(row.sources),
+        interest=list(row.interest),
+    )
+
+
 def _emit(node: _Node, merged: bool) -> TreeNode:
     """Collapse single-child chains the way a file tree does, so a deep path is one row."""
     collapsed = node
@@ -213,30 +290,39 @@ def _emit(node: _Node, merged: bool) -> TreeNode:
         collapsed = only
 
     children = [
-        _emit(child, merged)
-        for child in sorted(
-            collapsed.children.values(), key=lambda c: (-c.subtree, c.name)
-        )
+        _emit(child, merged) for child in sorted(collapsed.children.values(), key=_rank)
     ]
     field_name = "host" if collapsed.kind == _HOST else "dir"
     value = collapsed.host if collapsed.kind == _HOST else collapsed.path
+    kind = collapsed.kind
+    leaf = None
+    name = "/".join(name_parts)
+    if _index_only(collapsed):
+        kind = _LEAF
+        leaf = _leaf(collapsed.index_rows[0])
+        name = f"{name}/"
     return TreeNode(
         key=collapsed.key,
-        name="/".join(name_parts),
+        name=name,
         path=collapsed.path,
         host=collapsed.host,
-        kind=collapsed.kind,
+        kind=kind,
         depth=node.depth,
         direct_count=collapsed.direct,
         subtree_count=collapsed.subtree,
         child_count=len(children),
         hosts=len(collapsed.hosts),
         status_mix=dict(sorted(collapsed.status_mix.items())),
+        class_mix=dict(sorted(collapsed.class_mix.items())),
         sources=sorted(collapsed.sources),
         interest=sorted(collapsed.interest),
-        has_params=collapsed.has_params,
+        has_params=collapsed.params > 0,
+        params=collapsed.params,
+        verified=collapsed.verified,
         unprobed=collapsed.unprobed,
+        glyph=folder_glyph(collapsed.interest, collapsed.api, collapsed.subtree),
         sample_url=collapsed.sample_url,
+        leaf=leaf,
         query=_token(field_name, value or "/"),
         children=children,
     )

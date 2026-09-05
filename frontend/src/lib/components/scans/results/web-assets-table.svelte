@@ -27,6 +27,7 @@
 	import ResultsPagination from './table/results-pagination.svelte';
 	import GroupList from './table/group-list.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
+	import HostStructureDialog from './web-assets/host-structure-dialog.svelte';
 	import {
 		WEB_ASSET_COLUMNS,
 		WEB_ASSET_LEAD_COLUMNS,
@@ -133,6 +134,7 @@
 	let selected = $state<SubdomainRead | null>(null);
 	let drawerOpen = $state(false);
 	let sheetFocus = $state<{ tab: string; pane?: string } | null>(null);
+	let structureHost = $state<string | null>(null);
 	let cursor = $state(-1);
 	let searchRef = $state<HTMLInputElement | null>(null);
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
@@ -708,6 +710,7 @@
 						loadServices={(host) => servicesOn(projectId, scanId, 'host', host)}
 						onServices={onTab ? showServices : undefined}
 						onVulns={onTab ? showVulns : undefined}
+						onStructure={(sub) => (structureHost = sub.name)}
 					/>
 				{/each}
 			</div>
@@ -744,4 +747,16 @@
 	onStep={step}
 	onFilter={applyDsl}
 	onPivot={openHost}
+	onOpenEndpoints={onTab ? (h) => onTab('endpoints', exactToken('host', h)) : undefined}
+/>
+
+<HostStructureDialog
+	host={structureHost}
+	open={structureHost !== null}
+	onOpenChange={(o) => {
+		if (!o) structureHost = null;
+	}}
+	{projectId}
+	{scanId}
+	onOpenEndpoints={onTab ? (h) => onTab('endpoints', exactToken('host', h)) : undefined}
 />

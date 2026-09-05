@@ -14,9 +14,11 @@
 		coverage: EndpointCoverageRead[];
 		summary: EndpointSummary | null;
 		compact?: boolean;
+		hidden?: number;
+		onShowStatic?: () => void;
 	}
 
-	let { coverage, summary, compact = false }: Props = $props();
+	let { coverage, summary, compact = false, hidden = 0, onShowStatic }: Props = $props();
 
 	const n = (value: number | null | undefined) =>
 		value === null || value === undefined ? null : value.toLocaleString();
@@ -59,6 +61,16 @@
 >
 	<Icon class="size-3.5 shrink-0" />
 	<span>{line}</span>
+	{#if hidden > 0}
+		<span>·</span>
+		<button
+			type="button"
+			class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			onclick={onShowStatic}
+		>
+			{n(hidden)} static hidden
+		</button>
+	{/if}
 	{#if coverage.length}
 		<Popover.Root>
 			<Popover.Trigger>
