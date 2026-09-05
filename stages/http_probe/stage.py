@@ -274,23 +274,25 @@ class HttpProbeStage(Stage):
         """Flush inside a savepoint; on a row postgres refuses, keep the rest of the batch."""
         pending = list(batch)
         for obj in batch:
-            self.session.expunge(obj)  # free the row (incl. body) from RAM
+            self.session.expunge(obj)
+        rejected = 0
         try:
             with self.session.begin_nested():
                 self.session.add_all(pending)
                 self.session.flush()
         except DatabaseError:
             logger.warning("http asset batch rejected, retrying row by row")
-        else:
-            return 0
-        rejected = 0
+            for obj in pending:
+                try:
+                    with self.session.begin_nested():
+                        self.session.add(obj)
+                        self.session.flush()
+                except DatabaseError:
+                    rejected += 1
+        # detach again: the row is written, and its body must not stay in RAM
         for obj in pending:
-            try:
-                with self.session.begin_nested():
-                    self.session.add(obj)
-                    self.session.flush()
-            except DatabaseError:
-                rejected += 1
+            if obj in self.session:
+                self.session.expunge(obj)
         return rejected
 
     def _denormalize_to_subdomains(self) -> None:
