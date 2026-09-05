@@ -67,5 +67,7 @@ class StageConfig(BaseModel):
     @classmethod
     def rate_tools(cls) -> set[str]:
         return {
-            tool for scale, tool in cls.scaled_fields().values() if scale is Scale.RATE and tool
+            tool
+            for scale, tool in cls.scaled_fields().values()
+            if scale is Scale.RATE and tool
         }

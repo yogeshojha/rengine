@@ -22,7 +22,6 @@ COUNT_TO_COLUMN = {
     "open_ports": "open_ports_found",
     "http_assets": "http_assets_found",
     "vulnerabilities": "vulnerabilities_found",
-    "endpoints": "endpoints_found",
 }
 
 
@@ -30,6 +29,7 @@ COUNT_TO_COLUMN = {
 # so these are measured from the table instead
 DERIVED_COUNTS: dict[str, str] = {
     "open_ports_found": "SELECT count(*) FROM ports WHERE scan_id = :sid",
+    "endpoints_found": "SELECT count(*) FROM endpoints WHERE scan_id = :sid",
 }
 
 

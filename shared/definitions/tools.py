@@ -61,6 +61,18 @@ SCAN_TOOLS: tuple[ToolSpec, ...] = (
         example="-cn -san",
     ),
     ToolSpec(
+        name="katana",
+        label="Katana",
+        phase="URL Discovery",
+        example="-jc -kf all -aff",
+    ),
+    ToolSpec(
+        name="urlfinder",
+        label="URLFinder",
+        phase="URL Discovery",
+        example="-all",
+    ),
+    ToolSpec(
         name="dnsx",
         label="DNSX",
         phase="DNS Resolution",

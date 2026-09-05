@@ -78,9 +78,7 @@ class SubdomainProvider(ABC):
     def run(self) -> ProviderResult:
         ok, reason = self.availability()
         if not ok:
-            return ProviderResult(
-                source=self.source, skipped=True, skip_reason=reason
-            )
+            return ProviderResult(source=self.source, skipped=True, skip_reason=reason)
         start = time.monotonic()
         try:
             subs = self.discover()

@@ -15,6 +15,7 @@
 	import Globe from '@lucide/svelte/icons/globe';
 	import Server from '@lucide/svelte/icons/server';
 	import Plug from '@lucide/svelte/icons/plug';
+	import Waypoints from '@lucide/svelte/icons/waypoints';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 
 	import { scansApi } from '$lib/api/scans';
@@ -40,6 +41,7 @@
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
 	import ServicesTable from '$lib/components/scans/results/services-table.svelte';
+	import EndpointsTable from '$lib/components/scans/results/endpoints-table.svelte';
 	import VulnerabilitiesTable from '$lib/components/scans/results/vulnerabilities-table.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
@@ -53,6 +55,7 @@
 	import { emptyQuery, type WebAssetQuery } from '$lib/utilities/scan-insights';
 	import { emptyIpQuery, type IpQuery } from '$lib/utilities/ip-groups';
 	import { emptyServiceQuery, type ServiceQuery } from '$lib/utilities/services';
+	import { emptyEndpointQuery, type EndpointQuery } from '$lib/utilities/endpoints';
 	import { emptyVulnQuery, type VulnQuery } from '$lib/utilities/vulns';
 	import { targetTypeLabel } from '$lib/types/scan-engine';
 	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
@@ -61,11 +64,19 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { NOW_TICK_MS } from '$lib/constants';
 
-	const TABS = ['overview', 'web-assets', 'services', 'ips', 'vulnerabilities'] as const;
+	const TABS = [
+		'overview',
+		'web-assets',
+		'endpoints',
+		'services',
+		'ips',
+		'vulnerabilities'
+	] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
 		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
 		{ key: 'web-assets', label: 'Web Assets', icon: Globe },
+		{ key: 'endpoints', label: 'Endpoints', icon: Waypoints },
 		{ key: 'services', label: 'Services', icon: Plug },
 		{ key: 'ips', label: 'IPs', icon: Server },
 		{ key: 'vulnerabilities', label: 'Vulnerabilities', icon: ShieldAlert }
@@ -102,6 +113,10 @@
 		search: initialSearch('svc_q')
 	});
 	let vulnQuery = $state<VulnQuery>({ ...emptyVulnQuery(), search: initialSearch('vuln_q') });
+	let endpointQuery = $state<EndpointQuery>({
+		...emptyEndpointQuery(),
+		search: initialSearch('ep_q')
+	});
 
 	const initialTab = page.url.searchParams.get('tab');
 	let activeTab = $state<TabKey>(
@@ -134,6 +149,11 @@
 		if (tab === 'ips') {
 			ipQuery = { ...emptyIpQuery(), search: filter };
 			setTab('ips');
+			return;
+		}
+		if (tab === 'endpoints') {
+			endpointQuery = { ...emptyEndpointQuery(), search: filter };
+			setTab('endpoints');
 			return;
 		}
 		if (tab === 'services') {
@@ -206,10 +226,12 @@
 	});
 	let ipsTotal = $state<number | null>(null);
 	let servicesTotal = $state<number | null>(null);
+	let endpointsTotal = $state<number | null>(null);
 	let vulnsTotal = $state<number | null>(null);
 	let tabCounts = $derived<Record<TabKey, number | null>>({
 		overview: null,
 		'web-assets': scan?.subdomains_found ?? 0,
+		endpoints: endpointsTotal ?? scan?.endpoints_found ?? 0,
 		services: servicesTotal ?? scan?.open_ports_found ?? 0,
 		ips: ipsTotal ?? scan?.ips_found ?? 0,
 		vulnerabilities: vulnsTotal ?? scan?.vulnerabilities_found ?? 0
@@ -232,6 +254,7 @@
 				webQuery = emptyQuery();
 				ipQuery = emptyIpQuery();
 				serviceQuery = emptyServiceQuery();
+				endpointQuery = emptyEndpointQuery();
 				vulnQuery = emptyVulnQuery();
 				history = [];
 				historyLoaded = false;
@@ -527,6 +550,19 @@
 						active={activeTab === 'web-assets'}
 						onTab={openTab}
 						bind:query={webQuery}
+					/>
+				{/key}
+			</Tabs.Content>
+
+			<Tabs.Content value="endpoints" class="mt-6">
+				{#key scan.id}
+					<EndpointsTable
+						scanId={scan.id}
+						{projectId}
+						active={activeTab === 'endpoints'}
+						onTab={openTab}
+						onScanTotal={(n) => (endpointsTotal = n)}
+						bind:query={endpointQuery}
 					/>
 				{/key}
 			</Tabs.Content>

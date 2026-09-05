@@ -40,7 +40,9 @@ _RESOLVE_BATCH_THREADS = 50
 class SubdomainStage(Stage):
     name = "subdomain_discovery"
     title = "Subdomain Discovery"
-    description = "Enumerate subdomains from passive sources, certificates and bruteforce."
+    description = (
+        "Enumerate subdomains from passive sources, certificates and bruteforce."
+    )
     phase = Phase.EXPANSION.value
     level = 0
     applies_to = DOMAIN_TARGETS
@@ -50,7 +52,9 @@ class SubdomainStage(Stage):
     config_model = SubdomainConfig
 
     def should_run(self) -> bool:
-        return self.cfg.enabled and bool(self.cfg.enabled_sources or self.cfg.tls_discovery)
+        return self.cfg.enabled and bool(
+            self.cfg.enabled_sources or self.cfg.tls_discovery
+        )
 
     def run(self) -> StageResult:
         self._check_abort()
@@ -113,9 +117,7 @@ class SubdomainStage(Stage):
         svc = SyncAPIKeyService(self.session)
         return {p.value: svc.get_key_for_provider(p) for p in _PREFETCH_KEYS}
 
-    def _select_providers(
-        self, cfg: SubdomainConfig
-    ) -> list[type[SubdomainProvider]]:
+    def _select_providers(self, cfg: SubdomainConfig) -> list[type[SubdomainProvider]]:
         names = list(dict.fromkeys(cfg.enabled_sources))
         if cfg.tls_discovery and "tlsx" not in names:
             names.append("tlsx")
@@ -140,9 +142,7 @@ class SubdomainStage(Stage):
         results: list[ProviderResult] = []
         workers = min(_MAX_CONCURRENCY, len(provider_classes))
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures = {
-                pool.submit(cls(pctx).run): cls for cls in provider_classes
-            }
+            futures = {pool.submit(cls(pctx).run): cls for cls in provider_classes}
             for future in as_completed(futures):
                 result = future.result()
                 results.append(result)

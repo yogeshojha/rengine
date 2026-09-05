@@ -12,4 +12,6 @@ class ScreenshotConfig(StageConfig):
         description="Render every live HTTP service to an image.",
     )
     threads: int = threads(40, title="Threads")
-    timeout: int = timeout(10, title="Timeout (s)", description="Per-page render budget.")
+    timeout: int = timeout(
+        10, title="Timeout (s)", description="Per-page render budget."
+    )

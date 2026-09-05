@@ -7,9 +7,9 @@
 	interface Props {
 		lead: TableColumn[];
 		columns: TableColumn[];
-		selectAllChecked: boolean | 'indeterminate';
-		selectAllLabel: string;
-		onSelectAll: () => void;
+		selectAllChecked?: boolean | 'indeterminate';
+		selectAllLabel?: string;
+		onSelectAll?: () => void;
 		sortKey: string;
 		sortDir: 1 | -1;
 		onSort: (key: string) => void;
@@ -19,7 +19,7 @@
 		lead,
 		columns,
 		selectAllChecked,
-		selectAllLabel,
+		selectAllLabel = '',
 		onSelectAll,
 		sortKey,
 		sortDir,
@@ -47,16 +47,22 @@
 <div
 	class="flex items-center gap-3 border-b bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
 >
-	<div class="hidden shrink-0 sm:flex">
-		<Checkbox
-			checked={selectAllChecked === true}
-			indeterminate={selectAllChecked === 'indeterminate'}
-			onCheckedChange={onSelectAll}
-			aria-label={selectAllLabel}
-		/>
-	</div>
+	{#if onSelectAll}
+		<div class="hidden shrink-0 sm:flex">
+			<Checkbox
+				checked={selectAllChecked === true}
+				indeterminate={selectAllChecked === 'indeterminate'}
+				onCheckedChange={onSelectAll}
+				aria-label={selectAllLabel}
+			/>
+		</div>
+	{/if}
 	{#each lead as col (col.key)}
-		<div class={col.width}>{@render cell(col)}</div>
+		<div
+			class="{col.grow === undefined ? '' : col.grow ? 'min-w-0 flex-1' : 'shrink-0'} {col.width}"
+		>
+			{@render cell(col)}
+		</div>
 	{/each}
 	{#each columns as col (col.key)}
 		<div

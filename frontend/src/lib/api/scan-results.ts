@@ -1,4 +1,14 @@
 import { api } from './client';
+import type {
+	EndpointCoverageRead,
+	EndpointDetail,
+	EndpointFacetSet,
+	EndpointFilter,
+	EndpointPage,
+	EndpointSummary,
+	EndpointTree,
+	ScanStructure
+} from '$lib/utilities/endpoints';
 import type { HttpAssetDetail } from '$lib/types/http-asset';
 import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type { IpFacetSet, IpGroupFilter, IpSearchResult } from '$lib/utilities/ip-groups';
@@ -89,5 +99,70 @@ export const servicesApi = {
 
 	async origins(projectId: string, scanId: string): Promise<OriginExposure> {
 		return api.get<OriginExposure>(`/ports/origins?project_id=${projectId}&scan_id=${scanId}`);
+	}
+};
+
+export const endpointsApi = {
+	async search(projectId: string, scanId: string, filter: EndpointFilter): Promise<EndpointPage> {
+		return api.post<EndpointPage>(
+			`/endpoints/search?project_id=${projectId}&scan_id=${scanId}`,
+			filter
+		);
+	},
+
+	async leads(projectId: string, scanId: string, filter: EndpointFilter): Promise<QueryLeads> {
+		return api.post<QueryLeads>(
+			`/endpoints/search/leads?project_id=${projectId}&scan_id=${scanId}`,
+			filter
+		);
+	},
+
+	async groups(
+		projectId: string,
+		scanId: string,
+		groupBy: string,
+		filter: EndpointFilter
+	): Promise<QueryGroups> {
+		return api.post<QueryGroups>(
+			`/endpoints/search/groups?project_id=${projectId}&scan_id=${scanId}&group_by=${encodeURIComponent(groupBy)}`,
+			filter
+		);
+	},
+
+	async tree(
+		projectId: string,
+		scanId: string,
+		mode: string,
+		filter: EndpointFilter
+	): Promise<EndpointTree> {
+		return api.post<EndpointTree>(
+			`/endpoints/tree?project_id=${projectId}&scan_id=${scanId}&mode=${encodeURIComponent(mode)}`,
+			filter
+		);
+	},
+
+	async facets(projectId: string, scanId: string, q?: string | null): Promise<EndpointFacetSet> {
+		const search = q ? `&q=${encodeURIComponent(q)}` : '';
+		return api.get<EndpointFacetSet>(
+			`/endpoints/facets?project_id=${projectId}&scan_id=${scanId}${search}`
+		);
+	},
+
+	async summary(projectId: string, scanId: string): Promise<EndpointSummary> {
+		return api.get<EndpointSummary>(`/endpoints/summary?project_id=${projectId}&scan_id=${scanId}`);
+	},
+
+	async coverage(projectId: string, scanId: string): Promise<EndpointCoverageRead[]> {
+		return api.get<EndpointCoverageRead[]>(
+			`/endpoints/coverage?project_id=${projectId}&scan_id=${scanId}`
+		);
+	},
+
+	async structure(projectId: string, scanId: string): Promise<ScanStructure> {
+		return api.get<ScanStructure>(`/endpoints/structure?project_id=${projectId}&scan_id=${scanId}`);
+	},
+
+	async detail(projectId: string, scanId: string, id: string): Promise<EndpointDetail> {
+		return api.get<EndpointDetail>(`/endpoints/${id}?project_id=${projectId}&scan_id=${scanId}`);
 	}
 };

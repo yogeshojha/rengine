@@ -10,6 +10,11 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.asset_query import MAX_GROUPS
+from shared.definitions.endpoints import (
+    CLASS_LABELS,
+    INTEREST_LABELS,
+    SOURCE_LABELS,
+)
 from shared.definitions.ports import PORT_SOURCE_LABELS, SERVICE_CLASS_LABELS
 from shared.definitions.vulnerabilities import (
     PROTOCOL_LABELS,
@@ -18,6 +23,7 @@ from shared.definitions.vulnerabilities import (
     VULN_STATE_LABELS,
 )
 from shared.models.asset_query import QueryGroup, QueryGroups
+from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
@@ -334,6 +340,79 @@ async def build_vuln_groups(
     )
 
     labels = _VULN_LABELS.get(key, {})
+    groups = [
+        QueryGroup(
+            value=str(raw),
+            label=labels.get(str(raw)) or str(raw),
+            count=int(n),
+            query=_token(field, op, str(raw)),
+        )
+        for raw, n in rows.all()
+    ]
+    counted = int(total or 0)
+    return QueryGroups(
+        dimension=key,
+        groups=groups,
+        total_groups=counted,
+        truncated=counted > len(groups),
+        rows=int(rows_in_scope or 0),
+        covered=int(covered or 0),
+    )
+
+
+_ENDPOINT_COLUMNS: dict[str, tuple[Any, str, str]] = {
+    "dir": (Endpoint.dir_path, "dir", "="),
+    "host": (Endpoint.host, "host", "="),
+    "class": (Endpoint.endpoint_class, "class", "="),
+    "ext": (Endpoint.extension, "ext", "="),
+    "status": (Endpoint.status_code, "status", ":"),
+}
+_ENDPOINT_ARRAYS: dict[str, tuple[Any, str, str]] = {
+    "source": (Endpoint.sources, "source", "="),
+    "param": (Endpoint.params, "param", "="),
+    "interest": (Endpoint.interest, "interest", "="),
+    "tech": (Endpoint.tech, "tech", "="),
+}
+_ENDPOINT_LABELS: dict[str, dict[str, str]] = {
+    "class": CLASS_LABELS,
+    "source": SOURCE_LABELS,
+    "interest": INTEREST_LABELS,
+}
+
+
+async def build_endpoint_groups(session: AsyncSession, base, key: str) -> QueryGroups:
+    """One row per endpoint; a multi-valued dimension puts an endpoint in several groups."""
+    if key in _ENDPOINT_ARRAYS:
+        column, field, op = _ENDPOINT_ARRAYS[key]
+        value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued(
+            f"{key}_value"
+        )
+    elif key in _ENDPOINT_COLUMNS:
+        column, field, op = _ENDPOINT_COLUMNS[key]
+        value = column
+    else:
+        return QueryGroups(dimension=key)
+
+    scoped = base.subquery()
+    labelled = value.label("value")
+    endpoints = func.count(func.distinct(Endpoint.id))
+    joined = (
+        select(labelled, endpoints.label("n"))
+        .select_from(Endpoint)
+        .join(scoped, Endpoint.id == scoped.c.id)
+        .where(labelled.isnot(None), cast(labelled, Text) != "")
+    )
+    rows_in_scope = await session.scalar(select(func.count()).select_from(scoped))
+    covered, total = (
+        await session.execute(
+            joined.with_only_columns(endpoints, func.count(func.distinct(labelled)))
+        )
+    ).one()
+    rows = await session.execute(
+        joined.group_by(labelled).order_by(desc("n"), labelled).limit(MAX_GROUPS)
+    )
+
+    labels = _ENDPOINT_LABELS.get(key, {})
     groups = [
         QueryGroup(
             value=str(raw),

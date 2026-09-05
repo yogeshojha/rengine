@@ -9,10 +9,11 @@
 	import PosturePanel from './overview/posture-panel.svelte';
 	import CompositionPanel from './overview/composition-panel.svelte';
 	import ExposurePanel from './overview/exposure-panel.svelte';
+	import StructurePanel from './overview/structure-panel.svelte';
 	import VulnerabilityPanel from './overview/vulnerability-panel.svelte';
 	import OriginPanel from './overview/origin-panel.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
-	import { servicesApi } from '$lib/api/scan-results';
+	import { endpointsApi, servicesApi } from '$lib/api/scan-results';
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
@@ -23,6 +24,7 @@
 	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
 	import type { SubdomainInsights } from '$lib/utilities/scan-insights';
 	import type { ScanExposure } from '$lib/utilities/services';
+	import type { ScanStructure } from '$lib/utilities/endpoints';
 	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
 	import type { OriginExposure } from '$lib/utilities/origins';
 
@@ -70,6 +72,7 @@
 	let insights = $state<SubdomainInsights | null>(null);
 	let relatedDomains = $state<RelatedDomains | null>(null);
 	let exposure = $state<ScanExposure | null>(null);
+	let structure = $state<ScanStructure | null>(null);
 	let vulns = $state<ScanVulnerabilities | null>(null);
 	let origins = $state<OriginExposure | null>(null);
 	let loading = $state(true);
@@ -118,6 +121,14 @@
 			.catch(() => (exposure = null));
 	}
 
+	function loadStructure() {
+		if (!scanId || !projectId) return;
+		endpointsApi
+			.structure(projectId, scanId)
+			.then((d) => (structure = d))
+			.catch(() => (structure = null));
+	}
+
 	function loadVulns() {
 		if (!scanId) return;
 		vulnerabilitiesApi
@@ -151,6 +162,7 @@
 			loadInsights();
 			loadRelated();
 			loadExposure();
+			loadStructure();
 			loadVulns();
 			loadOrigins();
 		});
@@ -232,6 +244,7 @@
 			<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
 			<OriginPanel exposure={origins} {onTab} />
 			<ExposurePanel {exposure} {loading} {onTab} />
+			<StructurePanel {structure} {loading} {onTab} />
 			<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} {onTab} />
 		{/if}
 	{/if}

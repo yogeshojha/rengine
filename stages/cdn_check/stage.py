@@ -19,7 +19,9 @@ _CDN_KINDS = ("cdn", "waf")
 class CdnCheckStage(Stage):
     name = "cdn_check"
     title = "CDN and Cloud Attribution"
-    description = "Identify which addresses are fronted by a CDN, WAF or cloud provider."
+    description = (
+        "Identify which addresses are fronted by a CDN, WAF or cloud provider."
+    )
     phase = Phase.EXPANSION.value
     level = 1
     applies_to = ALL_TARGETS

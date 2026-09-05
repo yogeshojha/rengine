@@ -46,6 +46,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends chromium \
     && go install -v github.com/ffuf/ffuf/v2@latest \
     && python3 -m pip install --no-cache-dir --break-system-packages wafw00f
 
+# Depth-phase: URL discovery (katana crawls, urlfinder reads public archives)
+RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest \
+    && go install -v github.com/projectdiscovery/urlfinder/cmd/urlfinder@latest
+
 # Depth-phase: nuclei (vulnerability scanning). Templates live on the shared
 # vuln-templates volume and are synced at runtime, not baked into the image.
 RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest

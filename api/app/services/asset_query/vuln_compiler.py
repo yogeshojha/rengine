@@ -103,10 +103,9 @@ _FLAG_BUILDERS = {
     "proven": lambda _ctx: and_(
         Vulnerability.request.isnot(None), Vulnerability.response.isnot(None)
     ),
-    "extracted": lambda _ctx: func.jsonb_array_length(
-        cast(Vulnerability.extracted_results, JSONB)
-    )
-    > 0,
+    "extracted": lambda _ctx: (
+        func.jsonb_array_length(cast(Vulnerability.extracted_results, JSONB)) > 0
+    ),
     "web": lambda _ctx: Vulnerability.http_asset_id.isnot(None),
     "cdn": lambda ctx: _asset(
         and_(HttpAsset.scan_id == ctx.scan_id, HttpAsset.is_cdn.is_(True))

@@ -17,7 +17,8 @@ import {
 	ipQuerySchema,
 	querySchema,
 	serviceQuerySchema,
-	vulnQuerySchema
+	vulnQuerySchema,
+	endpointQuerySchema
 } from './query-schema.svelte';
 import { dashboardStore } from '$lib/stores/dashboard.svelte';
 import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
@@ -102,6 +103,7 @@ function createAuthStore() {
 		ipQuerySchema.reset();
 		serviceQuerySchema.reset();
 		vulnQuerySchema.reset();
+		endpointQuerySchema.reset();
 		dashboardStore.clear();
 		breadcrumbStore.clear();
 		activityScope.clear();

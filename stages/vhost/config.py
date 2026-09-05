@@ -14,7 +14,9 @@ class VhostConfig(StageConfig):
         description="Host-header fuzzing to surface vhosts not resolvable via DNS.",
     )
     wordlist: str = Field(
-        default=DEFAULT_WORDLIST, title="Wordlist", description="Path to a vhost wordlist."
+        default=DEFAULT_WORDLIST,
+        title="Wordlist",
+        description="Path to a vhost wordlist.",
     )
     threads: int = threads(30, title="Threads")
     rate: int = rate(150, tool="ffuf", title="Requests/s")

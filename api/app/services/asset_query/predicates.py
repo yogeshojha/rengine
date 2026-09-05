@@ -18,10 +18,13 @@ from sqlalchemy import (
     union_all,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import aliased
 
+from shared.definitions.endpoints import ARCHIVE_SOURCES, LINKED_SOURCES
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity, VulnState
+from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.scan import Scan
@@ -347,3 +350,86 @@ def vuln_state(scan_id):
         .scalar_subquery(),
         VulnState.OPEN.value,
     )
+
+
+def endpoint_seen_earlier():
+    earlier = aliased(Endpoint)
+    return exists(
+        select(1).where(
+            earlier.target_id == Endpoint.target_id,
+            earlier.signature == Endpoint.signature,
+            earlier.scan_id != Endpoint.scan_id,
+            earlier.discovered_at < Endpoint.discovered_at,
+        )
+    )
+
+
+def endpoint_has_baseline(scan_id):
+    """Whether an earlier scan of this target recorded any endpoint. Scan-level, never per row."""
+    earlier = aliased(Endpoint)
+    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    cutoff = (
+        select(func.min(Endpoint.discovered_at))
+        .where(Endpoint.scan_id == scan_id)
+        .scalar_subquery()
+    )
+    return exists(
+        select(1).where(
+            earlier.target_id == target,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < cutoff,
+        )
+    )
+
+
+def endpoint_is_new(scan_id):
+    return and_(endpoint_has_baseline(scan_id), not_(endpoint_seen_earlier()))
+
+
+def endpoint_vuln(scan_id, condition=None):
+    """A finding this scan reported at this endpoint's location or on its host."""
+    clauses = [
+        or_(
+            Vulnerability.http_asset_id == Endpoint.http_asset_id,
+            Vulnerability.host == Endpoint.host,
+        )
+    ]
+    if condition is not None:
+        clauses.append(condition)
+    return vuln_on(scan_id, *clauses)
+
+
+def endpoint_source(*names: str):
+    """The endpoint carries at least one of these discovery sources."""
+    return func.jsonb_exists_any(cast(Endpoint.sources, JSONB), pg_array(list(names)))
+
+
+def endpoint_linked():
+    return endpoint_source(*LINKED_SOURCES)
+
+
+def endpoint_orphan():
+    """Discovered, but nothing on the live site points at it."""
+    return and_(not_(endpoint_linked()), Endpoint.found_on.is_(None))
+
+
+def endpoint_archive_only():
+    """An archive recorded it and this scan could not reach it."""
+    return and_(
+        endpoint_source(*ARCHIVE_SOURCES),
+        not_(endpoint_linked()),
+        or_(
+            Endpoint.is_probed.is_(False),
+            Endpoint.status_code.is_(None),
+            Endpoint.status_code >= HTTP_CLIENT,
+        ),
+    )
+
+
+def endpoint_status_class(name: str):
+    if name == "none":
+        return Endpoint.status_code.is_(None)
+    bucket = STATUS_BUCKETS.get(name)
+    if bucket is None:
+        return false()
+    return and_(Endpoint.status_code >= bucket[0], Endpoint.status_code < bucket[1])

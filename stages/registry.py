@@ -57,7 +57,11 @@ def _stage_classes() -> list[type[Stage]]:
     found: dict[str, type[Stage]] = {}
     for package in _stage_dirs():
         namespaces = []
-        for module in (f"stages.{package}", f"stages.{package}.stage", f"stages.{package}.engine"):
+        for module in (
+            f"stages.{package}",
+            f"stages.{package}.stage",
+            f"stages.{package}.engine",
+        ):
             with contextlib.suppress(ModuleNotFoundError):
                 namespaces.append(importlib.import_module(module))
 
@@ -87,7 +91,8 @@ def _spec(stage_cls: type[Stage]) -> StageSpec:
         raise StageRegistrationError(msg)
     return StageSpec(
         name=stage_cls.name,
-        title=getattr(stage_cls, "title", None) or stage_cls.name.replace("_", " ").title(),
+        title=getattr(stage_cls, "title", None)
+        or stage_cls.name.replace("_", " ").title(),
         description=stage_cls.description,
         phase=phase,
         level=stage_cls.level,
@@ -121,7 +126,9 @@ def ordered_levels() -> list[list[StageSpec]]:
     """Stages grouped by (phase, level), ascending — the canvas execution order."""
     groups: dict[tuple[int, int], list[StageSpec]] = {}
     for spec in stages():
-        groups.setdefault((PHASE_ORDER.get(spec.phase, 99), spec.level), []).append(spec)
+        groups.setdefault((PHASE_ORDER.get(spec.phase, 99), spec.level), []).append(
+            spec
+        )
     return [groups[key] for key in sorted(groups)]
 
 
