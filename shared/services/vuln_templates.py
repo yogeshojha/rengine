@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import re
 import shutil
 import tempfile
 import urllib.request
@@ -36,6 +35,7 @@ from shared.definitions.vulnerabilities import (
 from shared.logging import get_logger
 from shared.models.vuln_template import TemplateSelection, VulnTemplate
 from shared.utils.datetime import utc_now
+from shared.utils.text import strip_control
 
 logger = get_logger(__name__)
 
@@ -62,12 +62,7 @@ _PROTOCOL_KEYS: tuple[tuple[str, str], ...] = (
 
 # directories in the upstream archive that hold no runnable check
 _SKIP_DIRS = frozenset({".github", ".git", "helpers", "profiles", "workflows"})
-_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
-
-
-def _clean(value: str) -> str:
-    """Postgres rejects NUL in text; a template author can and does leave one behind."""
-    return _CTRL.sub("", value)
+_clean = strip_control
 
 
 class TemplateError(ValueError):

@@ -13,6 +13,7 @@ from shared.models.scan_command import ScanCommand
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.scan_resolve import redact_command
 from shared.utils.datetime import utc_now
+from shared.utils.text import strip_control
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +66,10 @@ class ScanActivityService:
             .values(
                 status=status.value,
                 result=result or {},
-                error=redact_command(error)[:2000] if error else None,
-                traceback=redact_command(traceback) if traceback else None,
+                error=strip_control(redact_command(error))[:2000] if error else None,
+                traceback=strip_control(redact_command(traceback))
+                if traceback
+                else None,
                 completed_at=utc_now(),
             )
         )
@@ -141,8 +144,12 @@ class ScanCommandRecorder:
                     return
                 cmd.status = status.value
                 cmd.return_code = return_code
-                cmd.output = redact_command(output or "")[:MAX_COMMAND_OUTPUT]
-                cmd.error = redact_command(error)[:2000] if error else None
+                cmd.output = strip_control(redact_command(output or ""))[
+                    :MAX_COMMAND_OUTPUT
+                ]
+                cmd.error = (
+                    strip_control(redact_command(error))[:2000] if error else None
+                )
                 cmd.duration_seconds = duration_seconds
                 cmd.completed_at = utc_now()
                 session.add(cmd)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from sqlalchemy import delete, select
+from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import defer
 
 from shared.definitions.ports import (
@@ -81,23 +82,25 @@ class HttpProbeStage(Stage):
 
         with client.stream_probe(targets) as stream:
             self._check_abort()
-            count = self._persist(stream.records)
+            count, rejected = self._persist(stream.records)
         services = self._record_services()
         if self.ctx.target_type == TargetType.DOMAIN.value:
             self._denormalize_to_subdomains()
         self.emit_progress(
             f"probed {len(targets)} host and port pairs, {count} answered HTTP"
         )
-        stalled = stream.timed_out
-        return StageResult(
-            counts={"http_assets": count, "web_services": services},
-            warnings=[
+        warnings = []
+        if stream.timed_out:
+            warnings.append(
                 f"httpx stalled and was stopped — {len(targets):,} host and port "
                 f"pairs were queued, {count:,} answered"
-            ]
-            if stalled
-            else [],
-            partial=stalled,
+            )
+        if rejected:
+            warnings.append(f"{rejected:,} responses could not be stored")
+        return StageResult(
+            counts={"http_assets": count, "web_services": services},
+            warnings=warnings,
+            partial=bool(warnings),
         )
 
     def _port_map(self) -> dict[str, set[int]]:
@@ -217,7 +220,8 @@ class HttpProbeStage(Stage):
         ).all()
         return {name: list(ips or []) for name, ips in rows}
 
-    def _persist(self, records: Iterable[dict]) -> int:
+    def _persist(self, records: Iterable[dict]) -> tuple[int, int]:
+        """Store every answer. Returns (stored, rejected) — one bad row never costs the run."""
         self.session.execute(
             delete(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
         )
@@ -232,13 +236,13 @@ class HttpProbeStage(Stage):
         }
         seen: set[str] = set()
         batch: list[HttpAsset] = []
+        rejected = 0
 
         def _flush() -> None:
+            nonlocal rejected
             if not batch:
                 return
-            self.session.flush()
-            for obj in batch:
-                self.session.expunge(obj)  # free the row (incl. body) from RAM
+            rejected += self._flush_batch(batch)
             batch.clear()
 
         for record in records:
@@ -264,7 +268,30 @@ class HttpProbeStage(Stage):
                 self._check_abort()
         _flush()
         self.session.commit()
-        return len(seen)
+        return len(seen) - rejected, rejected
+
+    def _flush_batch(self, batch: list[HttpAsset]) -> int:
+        """Flush inside a savepoint; on a row postgres refuses, keep the rest of the batch."""
+        pending = list(batch)
+        for obj in batch:
+            self.session.expunge(obj)  # free the row (incl. body) from RAM
+        try:
+            with self.session.begin_nested():
+                self.session.add_all(pending)
+                self.session.flush()
+        except DatabaseError:
+            logger.warning("http asset batch rejected, retrying row by row")
+        else:
+            return 0
+        rejected = 0
+        for obj in pending:
+            try:
+                with self.session.begin_nested():
+                    self.session.add(obj)
+                    self.session.flush()
+            except DatabaseError:
+                rejected += 1
+        return rejected
 
     def _denormalize_to_subdomains(self) -> None:
         # defer heavy raw-capture columns — denormalize only reads small summary fields

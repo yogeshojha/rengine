@@ -4,6 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from shared.utils.text import scrub
+
 
 @dataclass(frozen=True)
 class F:
@@ -20,6 +22,7 @@ class F:
                 value = value.get(part) if isinstance(value, dict) else None
         if value is not None and self.cast is not None:
             value = self.cast(value)
+        value = scrub(value)
         if self.max_len is not None and isinstance(value, str):
             value = value[: self.max_len]
         return value

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -17,8 +16,7 @@ from shared.definitions.vulnerabilities import (
     coerce_severity,
     is_kev,
 )
-
-_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+from shared.utils.text import strip_control
 
 _PROTOCOL_ALIASES = {
     "tcp": Protocol.NETWORK.value,
@@ -31,7 +29,7 @@ def _as_list(value: Any) -> list[str]:
     if value is None:
         return []
     if isinstance(value, str):
-        parts = [_CTRL.sub("", p).strip() for p in value.replace("\n", ",").split(",")]
+        parts = [strip_control(p).strip() for p in value.replace("\n", ",").split(",")]
         return [p for p in parts if p]
     if isinstance(value, (list, tuple, set)):
         out: list[str] = []
@@ -44,7 +42,7 @@ def _as_list(value: Any) -> list[str]:
 def _as_text(value: Any, limit: int = 0) -> str | None:
     if value is None:
         return None
-    text = _CTRL.sub("", str(value)).strip()
+    text = strip_control(str(value)).strip()
     if not text:
         return None
     return text[:limit] if limit else text

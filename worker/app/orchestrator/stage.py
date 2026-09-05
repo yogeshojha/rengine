@@ -246,15 +246,21 @@ def _fail_stage(
 ) -> None:
     activity_svc.session.rollback()
     activity = activity_svc.session.get(ScanActivity, activity_id)
-    activity_svc.finish(activity, status=status, error=error, traceback=traceback)
-    if status == ScanActivityStatus.FAILED:
-        _log_stage(
-            activity_svc.session,
-            spec,
-            ids,
-            ActivityEvent.SCAN_STAGE_FAILED,
-            error=error,
-        )
+    try:
+        activity_svc.finish(activity, status=status, error=error, traceback=traceback)
+        if status == ScanActivityStatus.FAILED:
+            _log_stage(
+                activity_svc.session,
+                spec,
+                ids,
+                ActivityEvent.SCAN_STAGE_FAILED,
+                error=error,
+            )
+    except Exception:
+        # recording the failure must never be what leaves the scan running forever
+        logger.warning("stage failure could not be recorded in full", exc_info=True)
+        activity_svc.session.rollback()
+        activity_svc.finish(activity, status=status, error="stage failed")
     _emit_stage_done(events, spec, activity, status.value)
 
 

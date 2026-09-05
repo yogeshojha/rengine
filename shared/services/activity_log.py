@@ -11,6 +11,7 @@ from shared.models.target import Target
 from shared.services.event_publisher import SyncEventPublisher
 from shared.sse import sse_manager
 from shared.utils.coerce import safe_uuid
+from shared.utils.text import strip_control
 
 logger = get_logger(__name__)
 
@@ -178,8 +179,8 @@ class ActivityLogService:
         return ActivityLog(
             level=level,
             event_type=event,
-            title=title[:200],
-            description=description[:2000] if description else None,
+            title=strip_control(title)[:200],
+            description=strip_control(description)[:2000] if description else None,
             project_id=safe_uuid(project_id),
             target_id=safe_uuid(target_id),
             user_id=safe_uuid(user_id),
