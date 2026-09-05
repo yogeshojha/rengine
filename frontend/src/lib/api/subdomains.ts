@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { HostingFlow } from '$lib/types/hosting-flow';
 import type { SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
 import type { QueryGroups, QueryLeads, RelatedDomains } from '$lib/types/asset-query';
 import type {
@@ -76,6 +77,12 @@ export const subdomainsApi = {
 	async relatedDomains(projectId: string, scanId: string): Promise<RelatedDomains> {
 		return api.get<RelatedDomains>(
 			`/subdomains/related-domains?project_id=${projectId}&scan_id=${scanId}`
+		);
+	},
+
+	async hostingFlow(projectId: string, scanId: string): Promise<HostingFlow> {
+		return api.get<HostingFlow>(
+			`/subdomains/hosting-flow?project_id=${projectId}&scan_id=${scanId}`
 		);
 	},
 

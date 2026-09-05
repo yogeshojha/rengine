@@ -32,6 +32,7 @@
 	import type { ScanRead, ScanStatus } from '$lib/types/scan';
 	import type { WhoisCorrelationResult } from '$lib/types/whois';
 	import type { RelatedDomain } from '$lib/types/asset-query';
+	import type { HostingFlow } from '$lib/types/hosting-flow';
 	import type { InsightTally } from '$lib/utilities/scan-insights';
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
@@ -46,6 +47,7 @@
 	import TargetHeaderSkeleton from '$lib/components/targets/target-detail/target-header-skeleton.svelte';
 	import SurfaceStrip from '$lib/components/targets/target-detail/overview/surface-strip.svelte';
 	import AttentionPanel from '$lib/components/targets/target-detail/overview/attention-panel.svelte';
+	import HostingSection from '$lib/components/targets/target-detail/overview/hosting-section.svelte';
 	import ActivityTimeline from '$lib/components/targets/target-detail/overview/activity-timeline.svelte';
 	import RelatedPanel from '$lib/components/targets/target-detail/overview/related-panel.svelte';
 	import Rail from '$lib/components/targets/target-detail/overview/rail.svelte';
@@ -289,6 +291,24 @@
 		}
 	}
 
+	let hostingFlow = $state<HostingFlow | null>(null);
+	let hostingFor: string | null = null;
+	async function fetchHostingFlow(scanId: string) {
+		const project = projectsStore.activeProject;
+		if (!project || hostingFor === scanId) return;
+		hostingFor = scanId;
+		try {
+			hostingFlow = await subdomainsApi.hostingFlow(project.id, scanId);
+		} catch {
+			hostingFlow = null;
+		}
+	}
+	function pickHosting(query: string) {
+		if (!webScanId) return;
+		const spec = SURFACE[SurfaceDimension.WEB_ASSETS];
+		goto(ROUTES.scanTab(webScanId, spec.tab, { [spec.queryParam]: query }));
+	}
+
 	let geoFor: string | null = null;
 	async function fetchGeography(scanId: string) {
 		const project = projectsStore.activeProject;
@@ -387,7 +407,11 @@
 
 	$effect(() => {
 		const scanId = webScanId;
-		if (scanId) untrack(() => fetchRelated(scanId));
+		if (scanId)
+			untrack(() => {
+				fetchRelated(scanId);
+				fetchHostingFlow(scanId);
+			});
 		else if (!summaryLoading) relatedLoading = false;
 	});
 
@@ -660,6 +684,7 @@
 							loading={detailLoading || summaryLoading}
 							onTab={setTab}
 						/>
+						<HostingSection flow={hostingFlow} onPick={pickHosting} />
 						<ActivityTimeline
 							{target}
 							{creator}

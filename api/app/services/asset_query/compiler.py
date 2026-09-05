@@ -177,6 +177,7 @@ _FLAG_BUILDERS = {
     "resolved": lambda _ctx: preds.resolved(),
     "auth": lambda _ctx: preds.auth(),
     "cdn": lambda _ctx: Subdomain.is_cdn.is_(True),
+    "cloud": lambda ctx: preds.asset_match(ctx.scan_id, HttpAsset.cdn_type == "cloud"),
     "waf": lambda _ctx: Subdomain.waf.isnot(None),
     "screenshot": lambda _ctx: Subdomain.screenshot_path.isnot(None),
     "important": lambda _ctx: Subdomain.is_important.is_(True),

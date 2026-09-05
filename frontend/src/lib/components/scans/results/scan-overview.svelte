@@ -11,6 +11,7 @@
 	import ExposurePanel from './overview/exposure-panel.svelte';
 	import StructurePanel from './overview/structure-panel.svelte';
 	import VulnerabilityPanel from './overview/vulnerability-panel.svelte';
+	import HostingPanel from './overview/hosting-panel.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { endpointsApi, servicesApi } from '$lib/api/scan-results';
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
@@ -26,6 +27,7 @@
 	import type { ScanStructure } from '$lib/utilities/endpoints';
 	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
 	import type { OriginExposure } from '$lib/utilities/origins';
+	import type { HostingFlow } from '$lib/types/hosting-flow';
 
 	interface Props {
 		scan: ScanRead;
@@ -139,6 +141,15 @@
 			.catch(() => (origins = null));
 	}
 
+	let hostingFlow = $state<HostingFlow | null>(null);
+	function loadHostingFlow() {
+		if (!scanId || !projectId) return;
+		subdomainsApi
+			.hostingFlow(projectId, scanId)
+			.then((d) => (hostingFlow = d))
+			.catch(() => (hostingFlow = null));
+	}
+
 	function loadRelated() {
 		if (!scanId || !projectId) return;
 		subdomainsApi
@@ -155,6 +166,7 @@
 		untrack(() => {
 			loadInsights();
 			loadRelated();
+			loadHostingFlow();
 			loadExposure();
 			loadStructure();
 			loadVulns();
@@ -232,10 +244,11 @@
 			</EmptyState>
 		{:else}
 			<VulnerabilityPanel {vulns} {onTab} />
+			<HostingPanel flow={hostingFlow} onPick={(q) => onTab('web-assets', q)} />
 			<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
 			<ExposurePanel {exposure} {loading} {onTab} />
 			<StructurePanel {structure} {loading} {onTab} />
-			<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} {onTab} />
+			<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} />
 		{/if}
 	{/if}
 </div>

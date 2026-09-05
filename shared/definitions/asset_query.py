@@ -129,6 +129,7 @@ FLAGS: dict[str, str] = {
     "resolved": "Resolves to at least one IP",
     "auth": "Login wall or 401/403",
     "cdn": "Served through a CDN",
+    "cloud": "Hosted on a cloud provider's address",
     "waf": "A WAF was fingerprinted",
     "screenshot": "A screenshot was captured",
     "important": "Flagged important",

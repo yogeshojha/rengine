@@ -26,10 +26,9 @@
 		scanId: string;
 		projectId: string;
 		onFilter: (search: string) => void;
-		onTab: (tab: string, filter?: string) => void;
 	}
 
-	let { insights, loading, scan, scanId, projectId, onFilter, onTab }: Props = $props();
+	let { insights, loading, scan, scanId, projectId, onFilter }: Props = $props();
 
 	const TOP = 5;
 	const SEED_SOURCE = 'target';
@@ -78,17 +77,6 @@
 	let cells = $derived.by<Cell[]>(() => {
 		if (!insights) return [];
 		const out: Cell[] = [];
-
-		if (insights.top_asn.length)
-			out.push({
-				key: 'networks',
-				title: 'Hosting networks',
-				total: plural(stat('asns'), 'network', 'networks'),
-				base: stat('ips'),
-				rows: tallies(insights.top_asn, 'org'),
-				pick: (f) => onTab('ips', f),
-				more: { label: 'View all addresses', action: () => onTab('ips') }
-			});
 
 		const sources = insights.sources.filter((s) => s.name !== SEED_SOURCE);
 		if (sources.length)
