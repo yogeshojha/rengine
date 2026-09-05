@@ -2,6 +2,7 @@
 	import ImageOff from '@lucide/svelte/icons/image-off';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as HoverCard from '$lib/components/ui/hover-card';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { claimHover, releaseHover } from '$lib/utilities/hover-exclusive';
 
@@ -53,9 +54,15 @@
 {/snippet}
 
 {#snippet lightbox(src: string)}
-	<Dialog.Content class="max-w-5xl">
-		<Dialog.Title class="sr-only">Screenshot of {alt}</Dialog.Title>
-		<img {src} {alt} class="max-h-[80vh] w-full rounded object-contain" />
+	<Dialog.Content class="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-3xl md:max-w-5xl">
+		<Dialog.Header class="border-b px-4 py-3">
+			<Dialog.Title class="text-sm font-medium">{alt}</Dialog.Title>
+		</Dialog.Header>
+		<ScrollArea
+			class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(90vh-3.5rem)]"
+		>
+			<img {src} {alt} class="block w-full" />
+		</ScrollArea>
 	</Dialog.Content>
 {/snippet}
 
