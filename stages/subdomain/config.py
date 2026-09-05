@@ -44,11 +44,16 @@ class SubdomainConfig(StageConfig):
         description="Names sent to the resolver per invocation.",
     )
     dns_batch_concurrency: int = Field(
-        default=3,
+        default=1,
         ge=1,
         le=8,
         title="Resolver batches in parallel",
-        description="Resolver invocations in flight at once. Raising it resolves faster but asks more of the upstream resolvers.",
+        description=(
+            "Resolver invocations in flight at once. Leave this at 1 unless you run your "
+            "own resolvers: on public resolvers three batches at once answered 446 of the "
+            "same 1,000 names that one batch answered 838 of. The loss is uniform across "
+            "batches, so the stall and peer-median checks cannot see it."
+        ),
     )
     dns_idle_timeout: int = timeout(
         90,
