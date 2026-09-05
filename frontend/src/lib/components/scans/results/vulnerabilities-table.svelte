@@ -64,6 +64,7 @@
 		type VulnerabilityRead
 	} from '$lib/utilities/vulns';
 	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
+	import { locationTokensFromUrl } from '$lib/utilities/endpoints';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 
 	interface Props {
@@ -973,5 +974,14 @@
 	onFilter={applyDsl}
 	onHost={showHost}
 	onLocation={showLocation}
+	onStructure={onTab
+		? (u) => {
+				const tokens = locationTokensFromUrl(u);
+				if (tokens) {
+					drawerOpen = false;
+					onTab('endpoints', tokens);
+				}
+			}
+		: undefined}
 	onTriage={triage}
 />
