@@ -30,9 +30,13 @@ export const ROUTES = {
 	onboarding: '/onboarding',
 	profile: '/profile',
 	targets: '/targets',
-	target: (id: string) => `/targets/${id}`,
+	target: (id: string, tab?: string) => (tab ? `/targets/${id}?tab=${tab}` : `/targets/${id}`),
 	scans: '/scans',
 	scan: (id: string) => `/scans/${id}`,
+	scanTab: (id: string, tab: string, query?: Record<string, string>) => {
+		const params = new URLSearchParams({ tab, ...(query ?? {}) });
+		return `/scans/${id}?${params.toString()}`;
+	},
 	automation: '/automation',
 	engines: '/automation/engines',
 	engine: (id: string) => `/automation/engines/${id}`,

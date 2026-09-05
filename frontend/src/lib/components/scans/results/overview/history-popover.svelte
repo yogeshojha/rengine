@@ -6,7 +6,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import PanelHead from './panel-head.svelte';
+	import PanelHead from '$lib/components/panel-head.svelte';
 	import { durationText, isLiveStatus, SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
 	import { ROUTES } from '$lib/config/routes';
 	import type { ScanRead } from '$lib/types/scan';

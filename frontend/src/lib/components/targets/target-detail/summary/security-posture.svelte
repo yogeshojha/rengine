@@ -2,7 +2,10 @@
 	import type { Target } from '$lib/types/target';
 	import type { TargetDetailRead } from '$lib/types/target-detail';
 	import { buildTargetSummary, type PostureStatus } from './derive';
+	import * as Card from '$lib/components/ui/card';
+	import PanelHead from '$lib/components/panel-head.svelte';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import CircleX from '@lucide/svelte/icons/circle-x';
@@ -27,56 +30,59 @@
 		pending: Info
 	};
 	const COLOR: Record<PostureStatus, string> = {
-		pass: 'text-muted-foreground/45',
+		pass: 'text-success',
 		warn: 'text-warning',
 		fail: 'text-destructive',
-		info: 'text-muted-foreground/35',
-		pending: 'text-chart-1/70'
+		info: 'text-muted-foreground',
+		pending: 'text-info'
 	};
 
 	const ORDER: Record<PostureStatus, number> = { fail: 0, warn: 1, pending: 2, pass: 3, info: 4 };
 	const items = $derived([...summary.posture].sort((a, b) => ORDER[a.status] - ORDER[b.status]));
+	const toReview = $derived(items.filter((i) => i.status === 'fail' || i.status === 'warn').length);
 </script>
 
-<div class="rounded-lg border bg-card overflow-hidden">
-	<div class="flex items-center justify-between px-4 py-2.5 border-b border-border/50">
-		<h3 class="text-xs font-semibold tracking-tight text-foreground/90">Security posture</h3>
+<Card.Root class="gap-0 overflow-hidden py-0">
+	<PanelHead title="Posture" description="Signals derived from registration and DNS records">
 		{#if items.length > 0}
-			<span class="text-[10px] font-mono tabular-nums text-muted-foreground/40">
-				{items.filter((i) => i.status === 'fail' || i.status === 'warn').length} to review
+			<span class="tabular-nums">
+				{toReview === 0 ? 'Nothing to review' : `${toReview} to review`}
 			</span>
 		{/if}
-	</div>
+	</PanelHead>
 
-	<div class="divide-y divide-border/40">
-		{#if loading && items.length === 0}
-			<div class="flex items-center gap-2 px-4 py-6 text-muted-foreground/50">
-				<Spinner class="h-3.5 w-3.5" />
-				<span class="text-[11px]">Evaluating signals…</span>
-			</div>
-		{:else if items.length === 0}
-			<p class="px-4 py-6 text-center text-[11px] text-muted-foreground/50">
-				No passive signals available yet.
-			</p>
-		{:else}
+	{#if loading && items.length === 0}
+		<div class="flex flex-col gap-3 px-5 py-4">
+			{#each Array(4) as _, i (i)}
+				<Skeleton class="h-5 w-full" />
+			{/each}
+		</div>
+	{:else if items.length === 0}
+		<p class="px-5 py-8 text-center text-sm text-muted-foreground">
+			No passive signals available yet.
+		</p>
+	{:else}
+		<ul class="divide-y">
 			{#each items as item (item.key)}
 				{@const Icon = ICON[item.status]}
-				<div class="flex items-start gap-2.5 px-4 py-2">
-					{#if item.status === 'pending'}
-						<Spinner class="h-3.5 w-3.5 mt-px shrink-0 text-chart-1/70" />
-					{:else}
-						<Icon class="h-3.5 w-3.5 mt-px shrink-0 {COLOR[item.status]}" />
-					{/if}
-					<div class="min-w-0">
-						<p class="text-[11px] leading-snug text-foreground">{item.label}</p>
-						{#if item.detail}
-							<p class="text-[10px] leading-snug text-muted-foreground/50 break-words">
-								{item.detail}
-							</p>
+				<li class="flex items-start gap-2.5 px-5 py-2.5">
+					<span class="flex h-5 shrink-0 items-center">
+						{#if item.status === 'pending'}
+							<Spinner class="size-3.5 text-info" />
+						{:else}
+							<Icon class="size-3.5 {COLOR[item.status]}" />
 						{/if}
-					</div>
-				</div>
+					</span>
+					<span class="flex min-w-0 flex-col">
+						<span class="text-sm leading-5">{item.label}</span>
+						{#if item.detail}
+							<span class="text-xs leading-4 text-muted-foreground wrap-anywhere">
+								{item.detail}
+							</span>
+						{/if}
+					</span>
+				</li>
 			{/each}
-		{/if}
-	</div>
-</div>
+		</ul>
+	{/if}
+</Card.Root>

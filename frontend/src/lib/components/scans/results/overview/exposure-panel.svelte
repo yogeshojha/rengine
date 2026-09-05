@@ -3,7 +3,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import PanelHead from './panel-head.svelte';
+	import PanelHead from '$lib/components/panel-head.svelte';
 	import CompositionBar from './composition-bar.svelte';
 	import type { Segment } from './composition-bar.svelte';
 	import RankedList from './ranked-list.svelte';

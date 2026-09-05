@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
@@ -23,7 +24,7 @@
 		started: 'Started',
 		duration: 'Duration',
 		status: 'Status',
-		subdomains: 'Subdomains',
+		subdomains: SURFACE[SurfaceDimension.WEB_ASSETS].label,
 		vulnerabilities: 'Vulnerabilities'
 	};
 

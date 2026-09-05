@@ -7,7 +7,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import PanelHead from './panel-head.svelte';
+	import PanelHead from '$lib/components/panel-head.svelte';
 	import RankedList from './ranked-list.svelte';
 	import type { RankedRow } from './ranked-list.svelte';
 	import TechSheet from './tech-sheet.svelte';

@@ -32,25 +32,23 @@
 	});
 </script>
 
-<div
-	class="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1 text-[11px] text-muted-foreground/55"
->
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1 text-xs text-muted-foreground">
 	<span>
-		Added <span class="text-foreground/65">{formatShortDate(target.created_at)}</span
+		Added <span class="text-foreground">{formatShortDate(target.created_at)}</span
 		>{#if creator}&nbsp;by
-			<span class="text-foreground/65">{creator}</span>{/if}
+			<span class="text-foreground">{creator}</span>{/if}
 	</span>
 	{#if target.updated_at !== target.created_at}
-		<span class="text-muted-foreground/25">·</span>
-		<span>Updated <span class="text-foreground/65">{relativeTime(target.updated_at)}</span></span>
+		<span class="text-muted-foreground/50">·</span>
+		<span>Updated <span class="text-foreground">{relativeTime(target.updated_at)}</span></span>
 	{/if}
-	<span class="text-muted-foreground/25">·</span>
+	<span class="text-muted-foreground/50">·</span>
 	<span>
 		Last enriched
-		<span class="text-foreground/65">{lastEnriched ? relativeTime(lastEnriched) : 'never'}</span>
+		<span class="text-foreground">{lastEnriched ? relativeTime(lastEnriched) : 'never'}</span>
 	</span>
 	<span class="ml-auto flex items-center gap-1 group/id">
-		<span class="font-mono text-[10px] text-muted-foreground/40">{target.id}</span>
+		<span class="font-mono text-xs text-muted-foreground/70">{target.id}</span>
 		<span
 			class="opacity-100 sm:opacity-0 sm:group-hover/id:opacity-100 group-focus-within/id:opacity-100 transition-opacity"
 		>

@@ -2,7 +2,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import PanelHead from './panel-head.svelte';
+	import PanelHead from '$lib/components/panel-head.svelte';
 	import OriginFindingRow from './origin-finding.svelte';
 	import OriginDialog from '../origin-dialog.svelte';
 	import { ORIGIN_EXPOSED, type OriginExposure, type OriginFinding } from '$lib/utilities/origins';

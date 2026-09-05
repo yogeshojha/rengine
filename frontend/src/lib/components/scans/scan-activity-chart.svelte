@@ -9,6 +9,7 @@
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { ScanDailyCount, ScanStats } from '$lib/types/scan';
 
 	interface Props {
@@ -19,14 +20,16 @@
 
 	type Metric = 'scans' | 'new_subdomains';
 
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+
 	const chartConfig = {
 		scans: { label: 'Scans', color: 'var(--chart-1)' },
-		new_subdomains: { label: 'New subdomains', color: 'var(--chart-1)' }
+		new_subdomains: { label: `New ${WEB.nounPlural}`, color: 'var(--chart-1)' }
 	} satisfies Chart.ChartConfig;
 
 	const METRICS: { value: Metric; label: string; unit: string }[] = [
 		{ value: 'scans', label: 'Scans', unit: 'scans' },
-		{ value: 'new_subdomains', label: 'Subdomains', unit: 'new subdomains' }
+		{ value: 'new_subdomains', label: WEB.label, unit: `new ${WEB.nounPlural}` }
 	];
 	const RANGES = [
 		{ value: '7', label: '7d', full: 'last 7 days' },
@@ -144,10 +147,12 @@
 			<EmptyState
 				compact
 				icon={ChartSpline}
-				title={metric === 'scans' ? 'No scans in this window' : 'No new subdomains in this window'}
+				title={metric === 'scans'
+					? 'No scans in this window'
+					: `No new ${WEB.nounPlural} in this window`}
 				description={metric === 'scans'
 					? `Nothing has run in the ${rangeLabel}. Launch a scan to start building history.`
-					: `No first-time subdomains were discovered in the ${rangeLabel}.`}
+					: `No first-time ${WEB.nounPlural} were discovered in the ${rangeLabel}.`}
 				class="h-[180px] justify-center border-0 bg-transparent"
 			/>
 		{:else}

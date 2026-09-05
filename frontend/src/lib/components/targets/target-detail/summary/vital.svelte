@@ -15,10 +15,11 @@
 	import Radio from '@lucide/svelte/icons/radio';
 	import Lock from '@lucide/svelte/icons/lock';
 	import Flag from '@lucide/svelte/icons/flag';
+	import type { IconComponent } from '$lib/config/icons';
 
 	let { vital }: { vital: Vital } = $props();
 
-	const ICONS: Record<VitalIcon, typeof Route> = {
+	const ICONS: Record<VitalIcon, IconComponent> = {
 		route: Route,
 		server: Server,
 		globe: Globe,
@@ -40,35 +41,37 @@
 		good: 'text-foreground',
 		warn: 'text-warning',
 		bad: 'text-destructive',
-		info: 'text-chart-1'
+		info: 'text-foreground'
 	};
 
 	const Icon = $derived(vital.icon ? ICONS[vital.icon] : null);
 	const toneCls = $derived(TONE_TEXT[vital.tone ?? 'neutral']);
 </script>
 
-<div class="group/vital rounded-lg border bg-card px-3 py-2.5 min-w-0">
-	<div
-		class="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70"
-	>
-		{#if Icon}<Icon class="h-3 w-3 shrink-0 text-muted-foreground/50" />{/if}
+<div class="group/vital flex min-w-0 flex-col gap-1.5 border-t border-l px-5 py-4">
+	<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
+		{#if Icon}
+			<span class="flex h-4 shrink-0 items-center">
+				<Icon class="size-3.5" />
+			</span>
+		{/if}
 		<span class="truncate">{vital.label}</span>
-	</div>
-	<div class="mt-1 flex items-center gap-1">
-		<span
-			class="text-sm font-semibold leading-tight truncate {toneCls} {vital.mono
-				? 'font-mono text-[13px]'
-				: ''}"
-		>
+	</span>
+	<span class="flex min-w-0 items-center gap-1">
+		<span class="truncate text-sm leading-5 font-medium {toneCls} {vital.mono ? 'font-mono' : ''}">
 			{vital.value}
 		</span>
 		{#if vital.copy}
-			<div class="opacity-0 group-hover/vital:opacity-100 transition-opacity shrink-0">
+			<span
+				class="flex h-5 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover/vital:opacity-100"
+			>
 				<CopyButton value={vital.copy} />
-			</div>
+			</span>
 		{/if}
-	</div>
-	{#if vital.sub}
-		<p class="mt-0.5 text-[10px] text-muted-foreground/50 truncate">{vital.sub}</p>
-	{/if}
+	</span>
+	<span class="flex h-4 items-center">
+		{#if vital.sub}
+			<span class="truncate text-xs text-muted-foreground">{vital.sub}</span>
+		{/if}
+	</span>
 </div>

@@ -48,17 +48,17 @@
 	const TitleIcon = $derived(TITLE_ICON[title] ?? FileText);
 </script>
 
-<div class="rounded-lg border border-border bg-card flex flex-col overflow-hidden {className}">
-	<div class="flex items-center justify-between px-4 py-2.5 border-b border-border/50 shrink-0">
+<div class="flex flex-col overflow-hidden rounded-xl border bg-card {className}">
+	<div class="flex shrink-0 items-center justify-between gap-3 border-b px-5 py-4">
 		<div class="flex items-center gap-2">
-			<TitleIcon class="h-3.5 w-3.5 text-muted-foreground/40" />
-			<h3 class="text-xs font-semibold tracking-tight text-foreground">{title}</h3>
+			<span class="flex h-6 shrink-0 items-center">
+				<TitleIcon class="size-4 text-muted-foreground" />
+			</span>
+			<h2 class="text-base leading-6 font-semibold">{title}</h2>
 		</div>
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-2 text-xs text-muted-foreground">
 			{#if queriedAt && isLoaded}
-				<span class="text-[9px] font-mono tabular-nums text-muted-foreground/50">
-					{relativeTime(queriedAt)}
-				</span>
+				<span class="tabular-nums">{relativeTime(queriedAt)}</span>
 			{/if}
 			{#if onRefresh}
 				<Tooltip.Root>
@@ -68,7 +68,7 @@
 								{...props}
 								variant="ghost"
 								size="icon"
-								class="h-6 w-6 text-muted-foreground/40 hover:text-foreground"
+								class="size-7 text-muted-foreground hover:text-foreground"
 								disabled={isRefreshing || isPending}
 								aria-label={isRefreshing ? `Refreshing ${title}` : `Refresh ${title}`}
 								onclick={(e) => {
@@ -77,9 +77,9 @@
 								}}
 							>
 								{#if isRefreshing || isPending}
-									<Spinner class="h-3 w-3" />
+									<Spinner class="size-3.5" />
 								{:else}
-									<RefreshCw class="h-3 w-3" />
+									<RefreshCw class="size-3.5" />
 								{/if}
 							</Button>
 						{/snippet}
@@ -92,7 +92,7 @@
 
 	<div class="min-h-0">
 		{#if loading}
-			<div class="p-4 space-y-3">
+			<div class="space-y-3 p-5">
 				<div class="flex items-center justify-between">
 					<Skeleton class="h-3 w-20" />
 					<Skeleton class="h-3 w-28" />
@@ -113,20 +113,22 @@
 				<Skeleton class="h-3 w-3/4" />
 			</div>
 		{:else if isFailed}
-			<div class="p-4">
+			<div class="p-5">
 				<div
 					class="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2.5"
 				>
-					<XCircle class="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
-					<p class="text-[11px] text-destructive/90 leading-relaxed">
-						{error || `${title} enrichment failed — try refreshing.`}
+					<span class="flex h-5 shrink-0 items-center">
+						<XCircle class="size-3.5 text-destructive" />
+					</span>
+					<p class="text-sm leading-5 text-destructive">
+						{error || `${title} lookup failed. Refresh to try again.`}
 					</p>
 				</div>
 			</div>
 		{:else if isPending}
-			<div class="flex flex-col items-center justify-center py-10 gap-1.5">
-				<Spinner class="h-4 w-4 text-muted-foreground" />
-				<p class="text-[10px] text-muted-foreground/60">Collecting…</p>
+			<div class="flex flex-col items-center justify-center gap-2 py-12">
+				<Spinner class="size-4 text-muted-foreground" />
+				<p class="text-sm text-muted-foreground">Collecting…</p>
 			</div>
 		{:else}
 			{@render children()}

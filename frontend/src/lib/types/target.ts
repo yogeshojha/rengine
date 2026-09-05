@@ -1,3 +1,4 @@
+import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 import { TaskStatus } from './task-status';
 import type { WhoisLookupType } from './whois';
 
@@ -168,15 +169,7 @@ export function formatTargetType(type: TargetType): string {
 	return type.replace('_', ' ').toUpperCase();
 }
 
-export const TARGET_ASSET_NOUN: Record<TargetType, string> = {
-	[TargetType.DOMAIN]: 'subdomain',
-	[TargetType.IP]: 'host',
-	[TargetType.IP_RANGE]: 'host',
-	[TargetType.ASN]: 'host',
-	[TargetType.URL]: 'host'
-};
-
-export function targetAssetNoun(type: string, count = 2): string {
-	const noun = TARGET_ASSET_NOUN[type as TargetType] ?? 'host';
-	return count === 1 ? noun : `${noun}s`;
+export function targetAssetNoun(_type: string, count = 2): string {
+	const spec = SURFACE[SurfaceDimension.WEB_ASSETS];
+	return count === 1 ? spec.noun : spec.nounPlural;
 }

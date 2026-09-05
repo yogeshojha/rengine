@@ -5,6 +5,7 @@
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import Globe from '@lucide/svelte/icons/globe';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Play from '@lucide/svelte/icons/play';
 	import Ban from '@lucide/svelte/icons/ban';
@@ -12,11 +13,6 @@
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
-	import Globe from '@lucide/svelte/icons/globe';
-	import Server from '@lucide/svelte/icons/server';
-	import Plug from '@lucide/svelte/icons/plug';
-	import Waypoints from '@lucide/svelte/icons/waypoints';
-	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 
 	import { scansApi } from '$lib/api/scans';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -59,27 +55,17 @@
 	import { emptyVulnQuery, type VulnQuery } from '$lib/utilities/vulns';
 	import { targetTypeLabel } from '$lib/types/scan-engine';
 	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
+	import { RESULT_TABS, SURFACE_ORDER } from '$lib/config/surface';
 	import type { TargetType } from '$lib/types/target';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
 	import { ROUTES } from '$lib/config/routes';
 	import { NOW_TICK_MS } from '$lib/constants';
 
-	const TABS = [
-		'overview',
-		'web-assets',
-		'endpoints',
-		'services',
-		'ips',
-		'vulnerabilities'
-	] as const;
+	const TABS = ['overview', ...RESULT_TABS] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
 		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
-		{ key: 'web-assets', label: 'Web Assets', icon: Globe },
-		{ key: 'endpoints', label: 'Endpoints', icon: Waypoints },
-		{ key: 'services', label: 'Services', icon: Plug },
-		{ key: 'ips', label: 'IPs', icon: Server },
-		{ key: 'vulnerabilities', label: 'Vulnerabilities', icon: ShieldAlert }
+		...SURFACE_ORDER.map((s) => ({ key: s.tab as TabKey, label: s.label, icon: s.icon }))
 	];
 	const HISTORY_SIZE = 12;
 	const STATUS_TEXT: Record<string, string> = {

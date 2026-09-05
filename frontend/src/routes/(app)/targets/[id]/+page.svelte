@@ -3,46 +3,69 @@
 	import { goto, replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { onDestroy, untrack } from 'svelte';
-	import { targetsApi } from '$lib/api/targets';
-	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
-	import type { Target } from '$lib/types/target';
-	import { TargetType } from '$lib/types/target';
-	import { TaskStatus } from '$lib/types/task-status';
-	import type { TargetDetailRead } from '$lib/types/target-detail';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Empty from '$lib/components/ui/empty';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
-	import FileText from '@lucide/svelte/icons/file-text';
-	import Network from '@lucide/svelte/icons/network';
-	import Link2 from '@lucide/svelte/icons/link-2';
-	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
-	import EthernetPort from '@lucide/svelte/icons/ethernet-port';
-	import Cpu from '@lucide/svelte/icons/cpu';
+	import FileSearch from '@lucide/svelte/icons/file-search';
 	import History from '@lucide/svelte/icons/history';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+
+	import { targetsApi } from '$lib/api/targets';
+	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
+	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { scansStore } from '$lib/stores/scans.svelte';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import { activityScope } from '$lib/stores/activity-scope.svelte';
+	import { TargetType } from '$lib/types/target';
+	import type { Target } from '$lib/types/target';
+	import { TaskStatus } from '$lib/types/task-status';
+	import type { TargetDetailRead } from '$lib/types/target-detail';
+	import type { TargetSummaryRead } from '$lib/types/target-summary';
+	import type { ScanRead } from '$lib/types/scan';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Empty from '$lib/components/ui/empty';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { Kbd } from '$lib/components/ui/kbd';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
+	import ScanActivityChart from '$lib/components/scans/scan-activity-chart.svelte';
+	import ScanHistoryTable from '$lib/components/scans/scan-history-table.svelte';
 	import TargetHeader from '$lib/components/targets/target-detail/target-header.svelte';
 	import TargetHeaderSkeleton from '$lib/components/targets/target-detail/target-header-skeleton.svelte';
 	import EnrichmentWidget from '$lib/components/targets/target-detail/enrichment/enrichment-widget.svelte';
 	import WhoisSection from '$lib/components/targets/target-detail/enrichment/whois-section.svelte';
 	import DnsSection from '$lib/components/targets/target-detail/enrichment/dns-section.svelte';
 	import BgpSection from '$lib/components/targets/target-detail/enrichment/bgp-section.svelte';
+	import SurfacePanel from '$lib/components/targets/target-detail/summary/surface-panel.svelte';
+	import RiskPanel from '$lib/components/targets/target-detail/summary/risk-panel.svelte';
 	import TargetVitals from '$lib/components/targets/target-detail/summary/target-vitals.svelte';
 	import SecurityPosture from '$lib/components/targets/target-detail/summary/security-posture.svelte';
 	import TargetInfra from '$lib/components/targets/target-detail/summary/target-infra.svelte';
 	import TargetMeta from '$lib/components/targets/target-detail/summary/target-meta.svelte';
-	import ScanTabEmpty from '$lib/components/targets/target-detail/summary/scan-tab-empty.svelte';
-	import ScanHistory from '$lib/components/targets/target-detail/scan-history.svelte';
-	import TargetSubdomains from '$lib/components/targets/target-detail/target-subdomains.svelte';
+	import TargetWebAssets from '$lib/components/targets/target-detail/target-web-assets.svelte';
 	import { buildTargetSummary } from '$lib/components/targets/target-detail/summary/derive';
-	import { activityScope } from '$lib/stores/activity-scope.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
+	import { downloadBlob } from '$lib/utilities/download';
 	import type { IconComponent } from '$lib/config/icons';
+
+	const TABS = ['summary', 'web-assets', 'intelligence', 'scans'] as const;
+	type TabKey = (typeof TABS)[number];
+	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
+		{ key: 'summary', label: 'Summary', icon: LayoutDashboard },
+		{
+			key: 'web-assets',
+			label: SURFACE[SurfaceDimension.WEB_ASSETS].label,
+			icon: SURFACE[SurfaceDimension.WEB_ASSETS].icon
+		},
+		{ key: 'intelligence', label: 'Intelligence', icon: FileSearch },
+		{ key: 'scans', label: 'Scans', icon: History }
+	];
+	const ENRICHMENT_POLL_MS = 2500;
+	const MAX_ENRICHMENT_POLLS = 30;
 
 	const targetId = $derived(page.params.id ?? '');
 
@@ -56,10 +79,13 @@
 	let detail = $state<TargetDetailRead | null>(null);
 	let detailLoading = $state(true);
 	let detailError = $state<string | null>(null);
+	let summary = $state<TargetSummaryRead | null>(null);
+	let summaryLoading = $state(true);
 	let refreshingDns = $state(false);
 	let refreshingWhois = $state(false);
 	let refreshingBgp = $state(false);
 	let pollTimer: ReturnType<typeof setInterval> | null = null;
+	let tabsHeight = $state(0);
 
 	let showDns = $derived(
 		target?.target_type === TargetType.DOMAIN || target?.target_type === TargetType.URL
@@ -74,84 +100,31 @@
 	let dnsStatus = $derived(detail?.dns_status ?? target?.dns_status ?? TaskStatus.PENDING);
 	let bgpStatus = $derived(detail?.bgp_status ?? target?.bgp_status ?? TaskStatus.PENDING);
 
-	let activeTab = $state(page.url.searchParams.get('tab') ?? 'overview');
+	const initialTab = page.url.searchParams.get('tab');
+	let activeTab = $state<TabKey>(
+		TABS.includes(initialTab as TabKey) ? (initialTab as TabKey) : 'summary'
+	);
 
 	let hasInfra = $derived(target ? buildTargetSummary(target, detail).infra.length > 0 : false);
+	let riskCovered = $derived(!!summary?.risk.scan_id);
+	let tabCounts = $derived<Partial<Record<TabKey, number>>>(
+		summary ? { 'web-assets': summary.inventory_total, scans: summary.scans_total } : {}
+	);
 
-	let scanTabs = $derived.by(() => {
-		const tabs: Array<{
-			value: string;
-			label: string;
-			icon: IconComponent;
-			title: string;
-			description: string;
-		}> = [];
-		if (showDns) {
-			tabs.push({
-				value: 'subdomains',
-				label: 'Subdomains',
-				icon: Network,
-				title: 'No subdomains discovered yet',
-				description: 'Run a reconnaissance scan to enumerate subdomains for this target.'
-			});
-			tabs.push({
-				value: 'endpoints',
-				label: 'Endpoints',
-				icon: Link2,
-				title: 'No endpoints discovered yet',
-				description: 'Run a scan to crawl and discover URLs and API endpoints.'
-			});
-		}
-		tabs.push({
-			value: 'vulnerabilities',
-			label: 'Vulnerabilities',
-			icon: ShieldAlert,
-			title: 'No vulnerabilities found yet',
-			description: 'Run a vulnerability scan to surface findings for this target.'
-		});
-		tabs.push({
-			value: 'ports',
-			label: 'Ports',
-			icon: EthernetPort,
-			title: 'No open ports discovered yet',
-			description: 'Run a port scan to map the exposed services on this target.'
-		});
-		tabs.push({
-			value: 'technologies',
-			label: 'Technologies',
-			icon: Cpu,
-			title: 'No technologies detected yet',
-			description: 'Run a scan to fingerprint the technology stack of this target.'
-		});
-		tabs.push({
-			value: 'scan-history',
-			label: 'Scan History',
-			icon: History,
-			title: 'No scans yet',
-			description: 'Launch a scan to start building scan history for this target.'
-		});
-		return tabs;
-	});
-
-	let validTabs = $derived(new Set(['overview', 'details', ...scanTabs.map((t) => t.value)]));
-
-	$effect(() => {
-		if (target && !validTabs.has(activeTab)) activeTab = 'overview';
-	});
-
-	$effect(() => {
-		const tab = activeTab;
+	function setTab(value: string) {
+		if (!value) return;
+		activeTab = value as TabKey;
 		if (!browser) return;
-		const params = untrack(() => new URLSearchParams(page.url.searchParams));
-		if (tab === 'overview') params.delete('tab');
-		else params.set('tab', tab);
-		const qs = params.toString();
+		const params = new SvelteURLSearchParams(untrack(() => page.url.searchParams));
+		if (value === 'summary') params.delete('tab');
+		else params.set('tab', value);
+		const query = params.toString();
 		try {
-			replaceState(qs ? `?${qs}` : location.pathname, {});
+			replaceState(query ? `?${query}` : location.pathname, {});
 		} catch {
-			// ignore
+			// history is unavailable during hydration
 		}
-	});
+	}
 
 	async function fetchTarget() {
 		isLoading = true;
@@ -178,6 +151,19 @@
 		}
 	}
 
+	async function fetchSummary(silent = false) {
+		const project = projectsStore.activeProject;
+		if (!project) return;
+		if (!silent) summaryLoading = true;
+		try {
+			summary = await targetsApi.getSummary(targetId, project.id);
+		} catch {
+			summary = null;
+		} finally {
+			if (!silent) summaryLoading = false;
+		}
+	}
+
 	function hasPendingEnrichment(): boolean {
 		const inFlight = (s: TaskStatus) => s === TaskStatus.PENDING || s === TaskStatus.QUERYING;
 		if (inFlight(whoisStatus)) return true;
@@ -196,12 +182,11 @@
 	function startPolling() {
 		stopPolling();
 		let attempts = 0;
-		const maxAttempts = 30;
 		pollTimer = setInterval(async () => {
 			attempts += 1;
 			await fetchDetail(true);
-			if (!hasPendingEnrichment() || attempts >= maxAttempts) stopPolling();
-		}, 2500);
+			if (!hasPendingEnrichment() || attempts >= MAX_ENRICHMENT_POLLS) stopPolling();
+		}, ENRICHMENT_POLL_MS);
 	}
 
 	$effect(() => {
@@ -211,6 +196,16 @@
 		}
 		activityScope.targetId = targetId;
 		return () => activityScope.clear();
+	});
+
+	$effect(() => {
+		const project = projectsStore.activeProject;
+		const id = targetId;
+		if (project && id) untrack(() => fetchSummary());
+	});
+
+	$effect(() => {
+		if (liveScans.completedTick > 0) untrack(() => fetchSummary(true));
 	});
 
 	onDestroy(() => {
@@ -225,79 +220,50 @@
 
 	async function handleRefreshEnrichment() {
 		if (!target) return;
-		toast.info('Enrichment refresh initiated…');
-		const promises: Promise<unknown>[] = [];
-		if (showDns) promises.push(targetsApi.refreshDns(target.id));
-		promises.push(targetsApi.refreshWhois(target.id));
-		if (showBgp) promises.push(targetsApi.refreshBgp(target.id));
-		const results = await Promise.allSettled(promises);
+		toast.info('Enrichment refresh started');
+		const requests: Promise<unknown>[] = [targetsApi.refreshWhois(target.id)];
+		if (showDns) requests.push(targetsApi.refreshDns(target.id));
+		if (showBgp) requests.push(targetsApi.refreshBgp(target.id));
+		const results = await Promise.allSettled(requests);
 		const failed = results.filter((r) => r.status === 'rejected').length;
 		if (failed > 0) {
 			toast.error(
 				failed === results.length
-					? 'Failed to refresh enrichment'
-					: `${failed} of ${results.length} enrichments failed to refresh`
+					? 'Enrichment refresh failed'
+					: `${failed} of ${results.length} lookups failed to start`
 			);
 		}
 		startPolling();
 	}
 
-	async function handleRefreshDns() {
+	async function refreshOne(
+		kind: 'DNS' | 'WHOIS' | 'BGP',
+		call: (id: string) => Promise<unknown>,
+		set: (value: boolean) => void
+	) {
 		if (!target) return;
-		refreshingDns = true;
+		set(true);
 		try {
-			await targetsApi.refreshDns(target.id);
-			toast.success('DNS refresh initiated');
+			await call(target.id);
+			toast.success(`${kind} refresh started`);
 			startPolling();
 		} catch {
-			toast.error('Failed to refresh DNS');
+			toast.error(`${kind} refresh failed`);
 		} finally {
-			refreshingDns = false;
+			set(false);
 		}
 	}
 
-	async function handleRefreshWhois() {
-		if (!target) return;
-		refreshingWhois = true;
-		try {
-			await targetsApi.refreshWhois(target.id);
-			toast.success('WHOIS refresh initiated');
-			startPolling();
-		} catch {
-			toast.error('Failed to refresh WHOIS');
-		} finally {
-			refreshingWhois = false;
-		}
-	}
-
-	async function handleRefreshBgp() {
-		if (!target) return;
-		refreshingBgp = true;
-		try {
-			await targetsApi.refreshBgp(target.id);
-			toast.success('BGP refresh initiated');
-			startPolling();
-		} catch {
-			toast.error('Failed to refresh BGP');
-		} finally {
-			refreshingBgp = false;
-		}
-	}
-
-	function downloadBlob(content: string, mime: string, ext: string) {
-		if (!target) return;
-		const blob = new Blob([content], { type: mime });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `${target.target_value.replace(/[^a-z0-9.-]+/gi, '_')}.${ext}`;
-		a.click();
-		URL.revokeObjectURL(url);
-	}
+	const fileName = (ext: string) =>
+		`${(target?.target_value ?? 'target').replace(/[^a-z0-9.-]+/gi, '_')}.${ext}`;
 
 	function handleExportJson() {
 		if (!target) return;
-		downloadBlob(JSON.stringify({ target, detail }, null, 2), 'application/json', 'json');
+		downloadBlob(
+			fileName('json'),
+			JSON.stringify({ target, detail, summary }, null, 2),
+			'application/json'
+		);
 		toast.success('Exported target as JSON');
 	}
 
@@ -312,12 +278,17 @@
 			['bgp_status', target.bgp_status],
 			['organizations', target.organizations.map((o) => o.name).join('; ')],
 			['tags', target.tags.map((t) => t.name).join('; ')],
+			['scans', String(summary?.scans_total ?? 0)],
+			...(summary?.surface ?? []).map(
+				(m) =>
+					[m.label.toLowerCase().replace(/\s+/g, '_'), String(m.value ?? '')] as [string, string]
+			),
 			['created_at', target.created_at],
 			['updated_at', target.updated_at]
 		];
 		const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
 		const csv = ['field,value', ...rows.map(([k, v]) => `${esc(k)},${esc(v)}`)].join('\n');
-		downloadBlob(csv, 'text/csv', 'csv');
+		downloadBlob(fileName('csv'), csv, 'text/csv');
 		toast.success('Exported target as CSV');
 	}
 
@@ -335,7 +306,31 @@
 			isDeleting = false;
 		}
 	}
+
+	function rescan(_scan: ScanRead) {
+		handleScan();
+	}
 </script>
+
+{#snippet enrichmentError()}
+	{#if detailError && !detailLoading}
+		<div
+			class="flex items-center justify-between gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3"
+		>
+			<div class="flex items-center gap-2">
+				<span class="flex h-5 shrink-0 items-center">
+					<TriangleAlert class="size-4 text-destructive" />
+				</span>
+				<p class="text-sm text-destructive">
+					Enrichment details could not be loaded. {detailError}
+				</p>
+			</div>
+			<Button variant="outline" size="sm" class="gap-2" onclick={() => fetchDetail()}>
+				<RefreshCw class="size-3.5" /> Retry
+			</Button>
+		</div>
+	{/if}
+{/snippet}
 
 {#if isLoading}
 	<TargetHeaderSkeleton />
@@ -344,7 +339,7 @@
 		<Empty.Header>
 			<Empty.Media
 				variant="icon"
-				class="h-16 w-16 rounded-full bg-destructive/10 text-destructive [&_svg:not([class*='size-'])]:size-8"
+				class="size-16 rounded-full bg-destructive/10 text-destructive [&_svg:not([class*='size-'])]:size-8"
 			>
 				<TriangleAlert />
 			</Empty.Media>
@@ -352,14 +347,14 @@
 			<Empty.Description class="max-w-md">{error}</Empty.Description>
 		</Empty.Header>
 		<Empty.Content>
-			<Button variant="outline" onclick={() => goto(ROUTES.targets)}>
-				<ChevronLeft class="h-4 w-4 mr-2" />
+			<Button variant="outline" class="gap-2" onclick={() => goto(ROUTES.targets)}>
+				<ChevronLeft class="size-4" />
 				Back to targets
 			</Button>
 		</Empty.Content>
 	</Empty.Root>
 {:else if target}
-	<div class="space-y-5">
+	<div class="flex flex-col gap-5">
 		<TargetHeader
 			{target}
 			onScan={handleScan}
@@ -369,99 +364,79 @@
 			onDelete={() => (showDeleteDialog = true)}
 		/>
 
-		{#snippet whoisWidget(t: Target)}
-			<EnrichmentWidget
-				title="WHOIS"
-				status={whoisStatus}
-				error={detail?.whois_error}
-				queriedAt={detail?.whois?.queried_at}
-				onRefresh={handleRefreshWhois}
-				isRefreshing={refreshingWhois}
-				loading={detailLoading}
+		<Tabs.Root value={activeTab} onValueChange={setTab} style="--target-tabs-h: {tabsHeight}px">
+			<div
+				bind:clientHeight={tabsHeight}
+				class="sticky top-0 z-30 -mx-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-6 md:px-6"
 			>
-				{#if detail?.whois}
-					<WhoisSection record={detail.whois} targetType={t.target_type} />
-				{/if}
-			</EnrichmentWidget>
-		{/snippet}
+				<Tabs.List class="h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0">
+					{#each TAB_DEFS as t, i (t.key)}
+						{@const n = tabCounts[t.key]}
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								{#snippet child({ props })}
+									<Tabs.Trigger
+										{...props}
+										value={t.key}
+										class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
+									>
+										<t.icon class="size-3.5" />
+										{t.label}
+										{#if n != null}
+											<span
+												class="text-xs tabular-nums {n === 0
+													? 'text-muted-foreground/50'
+													: 'text-muted-foreground'}"
+											>
+												{n.toLocaleString()}
+											</span>
+										{/if}
+									</Tabs.Trigger>
+								{/snippet}
+							</Tooltip.Trigger>
+							<Tooltip.Content side="bottom" class="flex items-center gap-1.5">
+								{t.label}
+								<Kbd>{i + 1}</Kbd>
+							</Tooltip.Content>
+						</Tooltip.Root>
+					{/each}
+				</Tabs.List>
+			</div>
 
-		<Tabs.Root
-			value={activeTab}
-			onValueChange={(v) => {
-				if (v) activeTab = v;
-			}}
-		>
-			<Tabs.List class="h-auto w-full flex-wrap justify-start gap-1">
-				<Tabs.Trigger value="overview" class="gap-1.5">
-					<LayoutDashboard class="h-3.5 w-3.5" />
-					Overview
-				</Tabs.Trigger>
-				<Tabs.Trigger value="details" class="gap-1.5">
-					<FileText class="h-3.5 w-3.5" />
-					Details
-				</Tabs.Trigger>
-				{#each scanTabs as t (t.value)}
-					{@const TabIcon = t.icon}
-					<Tabs.Trigger value={t.value} class="gap-1.5">
-						<TabIcon class="h-3.5 w-3.5" />
-						{t.label}
-					</Tabs.Trigger>
-				{/each}
-			</Tabs.List>
-
-			<Tabs.Content value="overview" class="mt-4 space-y-3">
-				{#if detailError && !detailLoading}
-					<div
-						class="flex items-center justify-between gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3"
-					>
-						<div class="flex items-center gap-2">
-							<TriangleAlert class="h-4 w-4 shrink-0 text-destructive" />
-							<p class="text-xs text-destructive/90">
-								Couldn't load enrichment details — {detailError}
-							</p>
-						</div>
-						<Button variant="outline" size="sm" onclick={() => fetchDetail()}>
-							<RefreshCw class="h-3.5 w-3.5 mr-1.5" />
-							Retry
-						</Button>
-					</div>
+			<Tabs.Content value="summary" class="mt-5 flex flex-col gap-4">
+				{@render enrichmentError()}
+				<SurfacePanel
+					{summary}
+					loading={summaryLoading}
+					onScan={handleScan}
+					onTab={(tab) => setTab(tab)}
+				/>
+				{#if riskCovered && summary}
+					<RiskPanel risk={summary.risk} />
 				{/if}
 				<TargetVitals {target} {detail} loading={detailLoading} />
-				{#if hasInfra}
-					<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-						<SecurityPosture {target} {detail} loading={detailLoading} />
-						<TargetInfra {target} {detail} />
-					</div>
-				{:else}
+				<div class="grid grid-cols-1 items-start gap-4 {hasInfra ? 'lg:grid-cols-2' : ''}">
 					<SecurityPosture {target} {detail} loading={detailLoading} />
-				{/if}
+					{#if hasInfra}
+						<TargetInfra {target} {detail} />
+					{/if}
+				</div>
 			</Tabs.Content>
 
-			<Tabs.Content value="details" class="mt-4 space-y-3">
-				{#if detailError && !detailLoading}
-					<div
-						class="flex items-center justify-between gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3"
-					>
-						<div class="flex items-center gap-2">
-							<TriangleAlert class="h-4 w-4 shrink-0 text-destructive" />
-							<p class="text-xs text-destructive/90">
-								Couldn't load enrichment details — {detailError}
-							</p>
-						</div>
-						<Button variant="outline" size="sm" onclick={() => fetchDetail()}>
-							<RefreshCw class="h-3.5 w-3.5 mr-1.5" />
-							Retry
-						</Button>
-					</div>
-				{/if}
-				{#if showDns}
-					<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+			<Tabs.Content value="web-assets" class="mt-5">
+				<TargetWebAssets targetId={target.id} onScan={handleScan} />
+			</Tabs.Content>
+
+			<Tabs.Content value="intelligence" class="mt-5 flex flex-col gap-4">
+				{@render enrichmentError()}
+				<div class="grid grid-cols-1 items-start gap-4 {showDns ? 'lg:grid-cols-2' : ''}">
+					{#if showDns}
 						<EnrichmentWidget
 							title="DNS"
 							status={dnsStatus}
 							error={detail?.dns_error}
 							queriedAt={detail?.dns?.queried_at}
-							onRefresh={handleRefreshDns}
+							onRefresh={() => refreshOne('DNS', targetsApi.refreshDns, (v) => (refreshingDns = v))}
 							isRefreshing={refreshingDns}
 							loading={detailLoading}
 						>
@@ -469,42 +444,41 @@
 								<DnsSection lookup={detail.dns} />
 							{/if}
 						</EnrichmentWidget>
-						{@render whoisWidget(target)}
-					</div>
-				{:else}
-					{@render whoisWidget(target)}
-					{#if showBgp}
-						<EnrichmentWidget
-							title="BGP"
-							status={bgpStatus}
-							onRefresh={handleRefreshBgp}
-							isRefreshing={refreshingBgp}
-							loading={detailLoading}
-						>
-							{#if detail?.bgp}
-								<BgpSection bgp={detail.bgp} />
-							{/if}
-						</EnrichmentWidget>
 					{/if}
+					<EnrichmentWidget
+						title="WHOIS"
+						status={whoisStatus}
+						error={detail?.whois_error}
+						queriedAt={detail?.whois?.queried_at}
+						onRefresh={() =>
+							refreshOne('WHOIS', targetsApi.refreshWhois, (v) => (refreshingWhois = v))}
+						isRefreshing={refreshingWhois}
+						loading={detailLoading}
+					>
+						{#if detail?.whois}
+							<WhoisSection record={detail.whois} targetType={target.target_type} />
+						{/if}
+					</EnrichmentWidget>
+				</div>
+				{#if showBgp}
+					<EnrichmentWidget
+						title="BGP"
+						status={bgpStatus}
+						onRefresh={() => refreshOne('BGP', targetsApi.refreshBgp, (v) => (refreshingBgp = v))}
+						isRefreshing={refreshingBgp}
+						loading={detailLoading}
+					>
+						{#if detail?.bgp}
+							<BgpSection bgp={detail.bgp} />
+						{/if}
+					</EnrichmentWidget>
 				{/if}
 			</Tabs.Content>
 
-			{#each scanTabs as t (t.value)}
-				<Tabs.Content value={t.value} class="mt-4">
-					{#if t.value === 'scan-history'}
-						<ScanHistory targetId={target.id} onLaunch={handleScan} />
-					{:else if t.value === 'subdomains'}
-						<TargetSubdomains targetId={target.id} onScan={handleScan} />
-					{:else}
-						<ScanTabEmpty
-							icon={t.icon}
-							title={t.title}
-							description={t.description}
-							onScan={handleScan}
-						/>
-					{/if}
-				</Tabs.Content>
-			{/each}
+			<Tabs.Content value="scans" class="mt-5 flex flex-col gap-4">
+				<ScanActivityChart stats={scansStore.stats} />
+				<ScanHistoryTable targetId={target.id} onLaunch={handleScan} onRescan={rescan} />
+			</Tabs.Content>
 		</Tabs.Root>
 
 		<TargetMeta {target} />
@@ -513,7 +487,11 @@
 	<LaunchDialog
 		bind:open={showLaunchModal}
 		targetId={target.id}
-		onClose={() => (showLaunchModal = false)}
+		onClose={() => {
+			showLaunchModal = false;
+			fetchSummary(true);
+			scansStore.refresh();
+		}}
 	/>
 
 	<DeleteConfirmationDialog

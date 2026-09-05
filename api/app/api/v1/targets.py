@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.target import TargetService
+from app.services.target_assets import TargetAssetService
 from app.services.target_filters import SignalName, SortDir, SortKey
+from app.services.target_summary import TargetSummaryService
 from shared.definitions.constants import MAX_TARGET_IMPORT
 from shared.models import (
     TargetBulkCreate,
@@ -23,6 +25,8 @@ from shared.models import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
+from shared.models.target_asset import TargetAssetFilter, TargetAssetPage
+from shared.models.target_summary import TargetSummaryRead
 from shared.schemas.target_detail import (
     EnrichmentRefreshResponse,
     TargetBgpDetailResponse,
@@ -41,6 +45,18 @@ def get_target_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TargetService:
     return TargetService(session)
+
+
+def get_summary_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TargetSummaryService:
+    return TargetSummaryService(session)
+
+
+def get_asset_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TargetAssetService:
+    return TargetAssetService(session)
 
 
 @router.post("/validate", response_model=TargetValidationResponse)
@@ -353,6 +369,27 @@ async def get_target_detail(
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
     return await service.get_target_detail(target_id)
+
+
+@router.get("/{target_id}/summary", response_model=TargetSummaryRead)
+async def get_target_summary(
+    target_id: UUID,
+    _current_user: CurrentUser,
+    service: Annotated[TargetSummaryService, Depends(get_summary_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.summary(target_id=target_id, project_id=project_id)
+
+
+@router.post("/{target_id}/assets", response_model=TargetAssetPage)
+async def search_target_assets(
+    target_id: UUID,
+    body: TargetAssetFilter,
+    _current_user: CurrentUser,
+    service: Annotated[TargetAssetService, Depends(get_asset_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.page(project_id=project_id, target_id=target_id, f=body)
 
 
 @router.get("/{target_id}/dns", response_model=TargetDnsDetailResponse)

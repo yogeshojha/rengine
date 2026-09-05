@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { scalePoint } from 'd3-scale';
 	import { curveMonotoneX } from 'd3-shape';
 	import { Area, AreaChart, LinearGradient } from 'layerchart';
@@ -7,7 +8,7 @@
 
 	let {
 		values,
-		label = 'Subdomains',
+		label = SURFACE[SurfaceDimension.WEB_ASSETS].label,
 		class: className
 	}: { values: number[]; label?: string; class?: string } = $props();
 

@@ -2,6 +2,8 @@
 	import type { Target } from '$lib/types/target';
 	import type { TargetDetailRead } from '$lib/types/target-detail';
 	import { buildTargetSummary, type InfraEntry } from './derive';
+	import * as Card from '$lib/components/ui/card';
+	import PanelHead from '$lib/components/panel-head.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import * as ScrollArea from '$lib/components/ui/scroll-area/index.js';
 
@@ -14,76 +16,67 @@
 
 	const summary = $derived(buildTargetSummary(target, detail));
 
-	type Group = { key: string; label: string; badge: string; entries: InfraEntry[] };
-	const GROUP_META: Record<InfraEntry['kind'], { label: string; badge: string }> = {
-		ipv4: { label: 'Addresses', badge: 'A' },
-		ipv6: { label: 'Addresses', badge: 'AAAA' },
-		ns: { label: 'Nameservers', badge: 'NS' },
-		mx: { label: 'Mail exchangers', badge: 'MX' }
+	type Group = { key: string; badge: string; entries: InfraEntry[] };
+	const BADGE: Record<InfraEntry['kind'], string> = {
+		ipv4: 'A',
+		ipv6: 'AAAA',
+		ns: 'NS',
+		mx: 'MX'
 	};
+	const SCROLL_AFTER = 10;
 
 	const groups = $derived.by<Group[]>(() => {
 		const order: InfraEntry['kind'][] = ['ipv4', 'ipv6', 'ns', 'mx'];
-		const out: Group[] = [];
-		for (const kind of order) {
-			const entries = summary.infra.filter((e) => e.kind === kind);
-			if (entries.length)
-				out.push({
-					key: kind,
-					label: GROUP_META[kind].label,
-					badge: GROUP_META[kind].badge,
-					entries
-				});
-		}
-		return out;
+		return order
+			.map((kind) => ({
+				key: kind,
+				badge: BADGE[kind],
+				entries: summary.infra.filter((e) => e.kind === kind)
+			}))
+			.filter((g) => g.entries.length > 0);
 	});
 
 	const total = $derived(summary.infra.length);
 </script>
 
 {#snippet rows()}
-	<div class="divide-y divide-border/40">
+	<ul class="divide-y">
 		{#each groups as group (group.key)}
 			{#each group.entries as entry (entry.value)}
-				<div
-					class="flex items-center gap-2 px-4 py-1.5 group/infra hover:bg-muted/40 transition-colors"
+				<li
+					class="group/infra flex items-center gap-3 px-5 py-2 transition-colors hover:bg-muted/30"
 				>
 					<span
-						class="text-[10px] font-mono font-semibold uppercase tracking-wide text-muted-foreground/60 w-10 shrink-0"
+						class="w-10 shrink-0 font-mono text-xs font-medium tracking-wide text-muted-foreground uppercase"
 					>
 						{group.badge}
 					</span>
-					<code class="text-[11px] font-mono text-foreground/80 truncate flex-1">{entry.value}</code
-					>
+					<code class="min-w-0 flex-1 truncate font-mono text-xs">{entry.value}</code>
 					{#if entry.note}
-						<span class="text-[10px] font-mono text-muted-foreground/60 shrink-0">{entry.note}</span
-						>
+						<span class="shrink-0 text-xs text-muted-foreground">{entry.note}</span>
 					{/if}
-					<div
-						class="opacity-100 sm:opacity-0 sm:group-hover/infra:opacity-100 sm:group-focus-within/infra:opacity-100 transition-opacity shrink-0"
+					<span
+						class="flex h-5 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover/infra:opacity-100 sm:group-focus-within/infra:opacity-100"
 					>
 						<CopyButton value={entry.value} />
-					</div>
-				</div>
+					</span>
+				</li>
 			{/each}
 		{/each}
-	</div>
+	</ul>
 {/snippet}
 
 {#if total > 0}
-	<div class="rounded-lg border bg-card overflow-hidden">
-		<div class="flex items-center justify-between px-4 py-2.5 border-b border-border/50">
-			<h3 class="text-xs font-semibold tracking-tight text-foreground">Infrastructure</h3>
-			<span class="text-[10px] font-mono tabular-nums text-muted-foreground/60">{total} assets</span
-			>
-		</div>
-
-		{#if total > 10}
-			<ScrollArea.Root class="h-[260px]" scrollbarYClasses="w-1.5">
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<PanelHead title="Infrastructure" description="Records this target resolves through">
+			<span class="tabular-nums">{total} {total === 1 ? 'record' : 'records'}</span>
+		</PanelHead>
+		{#if total > SCROLL_AFTER}
+			<ScrollArea.Root class="h-[17rem]" scrollbarYClasses="w-1.5">
 				{@render rows()}
 			</ScrollArea.Root>
 		{:else}
 			{@render rows()}
 		{/if}
-	</div>
+	</Card.Root>
 {/if}

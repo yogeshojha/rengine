@@ -13,6 +13,8 @@ import type {
 } from '$lib/types/target';
 
 import type { TargetDetailRead, TargetBgpDetailResponse } from '@/types/target-detail';
+import type { TargetSummaryRead } from '$lib/types/target-summary';
+import type { TargetAssetFilter, TargetAssetPage } from '$lib/types/target-asset';
 
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
@@ -171,5 +173,17 @@ export const targetsApi = {
 
 	async getBgp(targetId: string): Promise<TargetBgpDetailResponse> {
 		return api.get<TargetBgpDetailResponse>(`/targets/${targetId}/bgp`);
+	},
+
+	async getSummary(targetId: string, projectId: string): Promise<TargetSummaryRead> {
+		return api.get<TargetSummaryRead>(`/targets/${targetId}/summary?project_id=${projectId}`);
+	},
+
+	async searchAssets(
+		targetId: string,
+		projectId: string,
+		filter: TargetAssetFilter
+	): Promise<TargetAssetPage> {
+		return api.post<TargetAssetPage>(`/targets/${targetId}/assets?project_id=${projectId}`, filter);
 	}
 };

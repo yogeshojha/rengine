@@ -5,15 +5,11 @@ import CircleX from '@lucide/svelte/icons/circle-x';
 import CircleMinus from '@lucide/svelte/icons/circle-minus';
 import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 import Ban from '@lucide/svelte/icons/ban';
-import Network from '@lucide/svelte/icons/network';
-import Server from '@lucide/svelte/icons/server';
-import Plug from '@lucide/svelte/icons/plug';
-import Globe from '@lucide/svelte/icons/globe';
-import Bug from '@lucide/svelte/icons/bug';
-import Link2 from '@lucide/svelte/icons/link-2';
+import Radio from '@lucide/svelte/icons/radio';
 import type { ScanActivityStatus, ScanRead, ScanStatus, ScanStatusCounts } from '$lib/types/scan';
 import type { BadgeVariant } from '$lib/components/ui/badge';
 import type { IconComponent } from '$lib/config/icons';
+import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 
 export const SCAN_STATUS_LABEL: Record<ScanStatus, string> = {
 	pending: 'Queued',
@@ -153,9 +149,14 @@ export function elapsedSeconds(scan: ScanRead, now: number = Date.now()): number
 export function formatSeconds(total: number): string {
 	const t = Math.round(total);
 	if (t < 60) return `${t}s`;
-	const m = Math.floor(t / 60);
-	const s = t % 60;
-	return s ? `${m}m ${s}s` : `${m}m`;
+	const minutes = Math.floor(t / 60);
+	if (minutes < 60) {
+		const s = t % 60;
+		return s ? `${minutes}m ${s}s` : `${minutes}m`;
+	}
+	const h = Math.floor(minutes / 60);
+	const m = minutes % 60;
+	return m ? `${h}h ${m}m` : `${h}h`;
 }
 
 export function durationText(seconds: number | null, fractional = false): string {
@@ -182,39 +183,45 @@ export interface CountPill {
 export function scanCountPills(scan: ScanRead): CountPill[] {
 	return [
 		{
-			key: 'subs',
-			icon: Network,
-			label: 'Subdomains',
+			key: 'web',
+			icon: SURFACE[SurfaceDimension.WEB_ASSETS].icon,
+			label: SURFACE[SurfaceDimension.WEB_ASSETS].label,
 			value: scan.subdomains_found,
 			emphasis: false
 		},
-		{ key: 'ips', icon: Server, label: 'IPs', value: scan.ips_found, emphasis: false },
 		{
-			key: 'ports',
-			icon: Plug,
-			label: 'Open ports',
+			key: 'endpoints',
+			icon: SURFACE[SurfaceDimension.ENDPOINTS].icon,
+			label: SURFACE[SurfaceDimension.ENDPOINTS].label,
+			value: scan.endpoints_found,
+			emphasis: false
+		},
+		{
+			key: 'services',
+			icon: SURFACE[SurfaceDimension.SERVICES].icon,
+			label: SURFACE[SurfaceDimension.SERVICES].label,
 			value: scan.open_ports_found,
 			emphasis: false
 		},
 		{
-			key: 'http',
-			icon: Globe,
-			label: 'HTTP services',
-			value: scan.http_assets_found,
+			key: 'ips',
+			icon: SURFACE[SurfaceDimension.IPS].icon,
+			label: SURFACE[SurfaceDimension.IPS].label,
+			value: scan.ips_found,
 			emphasis: false
 		},
 		{
 			key: 'vulns',
-			icon: Bug,
-			label: 'Vulnerabilities',
+			icon: SURFACE[SurfaceDimension.VULNERABILITIES].icon,
+			label: SURFACE[SurfaceDimension.VULNERABILITIES].label,
 			value: scan.vulnerabilities_found,
 			emphasis: scan.vulnerabilities_found > 0
 		},
 		{
-			key: 'endpoints',
-			icon: Link2,
-			label: 'Endpoints',
-			value: scan.endpoints_found,
+			key: 'http',
+			icon: Radio,
+			label: 'HTTP responses',
+			value: scan.http_assets_found,
 			emphasis: false
 		}
 	];

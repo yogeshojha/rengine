@@ -20,7 +20,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
-	import PanelHead from './panel-head.svelte';
+	import PanelHead from '$lib/components/panel-head.svelte';
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { isPrivateIp } from '$lib/utilities/scan-correlation';
