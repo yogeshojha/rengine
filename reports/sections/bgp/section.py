@@ -12,7 +12,7 @@ class BgpConfig(SectionConfig):
 class BgpSection(Section):
     name = "bgp"
     title = "Routing"
-    description = "How the subject is announced on the global routing table."
+    description = "The subject's announcement on the global routing table."
     group = SectionGroup.INTELLIGENCE.value
     order = 30
     default_enabled = False

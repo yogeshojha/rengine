@@ -154,7 +154,7 @@
 					{#each textFonts as font (font.slug)}
 						<Select.Item value={font.slug}>
 							{font.name}{#if font.origin === 'custom'}<span
-									class="ml-1.5 text-xs text-muted-foreground">yours</span
+									class="ml-1.5 text-xs text-muted-foreground">custom</span
 								>{/if}
 						</Select.Item>
 					{/each}
@@ -174,7 +174,7 @@
 					{#each textFonts as font (font.slug)}
 						<Select.Item value={font.slug}>
 							{font.name}{#if font.origin === 'custom'}<span
-									class="ml-1.5 text-xs text-muted-foreground">yours</span
+									class="ml-1.5 text-xs text-muted-foreground">custom</span
 								>{/if}
 						</Select.Item>
 					{/each}
@@ -194,7 +194,7 @@
 					{#each monoFonts as font (font.slug)}
 						<Select.Item value={font.slug}>
 							{font.name}{#if font.origin === 'custom'}<span
-									class="ml-1.5 text-xs text-muted-foreground">yours</span
+									class="ml-1.5 text-xs text-muted-foreground">custom</span
 								>{/if}
 						</Select.Item>
 					{/each}

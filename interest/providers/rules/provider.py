@@ -52,7 +52,7 @@ class RulesProvider(InterestProvider):
     name = "rules"
     source = InterestSource.RULE.value
     title = "Rules"
-    description = "Your keyword lists and saved queries, evaluated against the scan."
+    description = "Keyword lists and saved queries, evaluated against the scan."
     order = 10
 
     def evaluate(self, ctx: InterestContext) -> Iterable[RawSignal]:

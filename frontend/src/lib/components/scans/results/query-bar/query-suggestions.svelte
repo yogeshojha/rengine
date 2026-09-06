@@ -196,7 +196,7 @@
 	{#if showStarters}
 		<span class="flex items-center gap-1 max-sm:hidden"><Kbd>↵</Kbd> search</span>
 		<span class="flex items-center gap-1 max-sm:hidden"
-			><Kbd>Tab</Kbd> completes fields and values as you type</span
+			><Kbd>Tab</Kbd> completes fields and values</span
 		>
 	{:else}
 		<span class="flex items-center gap-1 max-sm:hidden"><Kbd>Tab</Kbd> complete</span>

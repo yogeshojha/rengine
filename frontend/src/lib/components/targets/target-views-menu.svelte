@@ -138,7 +138,7 @@
 	<Dialog.Content class="w-[calc(100%-2rem)] sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Save view</Dialog.Title>
-			<Dialog.Description>Name this filter so you can reapply it later.</Dialog.Description>
+			<Dialog.Description>Saved views are listed in this menu.</Dialog.Description>
 		</Dialog.Header>
 		<form onsubmit={confirmSave} class="space-y-4">
 			<div class="space-y-2">

@@ -207,7 +207,7 @@
 						{summary.judged_at ? 'Judge again' : 'Judge with AI'}
 					</LoadingButton>
 				{:else if summary?.ai_available}
-					<Hint text="Turn on Asset judgement on the AI page to add AI to this list">
+					<Hint text="Enable Asset judgement on the AI page to include AI signals">
 						{#snippet child(props)}
 							<Button {...props} variant="outline" size="sm" href={ROUTES.ai('features')}>
 								<Sparkle class="size-3.5" />
@@ -216,7 +216,7 @@
 						{/snippet}
 					</Hint>
 				{/if}
-				<Hint text="Rules, keywords and what notifies you">
+				<Hint text="Rules, keywords and notifications">
 					{#snippet child(props)}
 						<Button {...props} variant="ghost" size="sm" href={ROUTES.interest('rules')}>
 							Manage rules

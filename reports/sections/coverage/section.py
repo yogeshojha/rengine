@@ -15,7 +15,7 @@ class CoverageConfig(SectionConfig):
 class CoverageSection(Section):
     name = "coverage"
     title = "Coverage and limitations"
-    description = "What ran, what did not, and what this report therefore cannot say."
+    description = "The stages and scanners that ran, and what they did not cover."
     group = SectionGroup.APPENDIX.value
     order = 20
     role = SectionRole.FURNITURE.value

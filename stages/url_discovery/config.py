@@ -29,7 +29,7 @@ class UrlDiscoveryConfig(StageConfig):
     providers: list[str] = Field(
         default_factory=lambda: list(DEFAULT_PROVIDERS),
         title="Sources",
-        description="Where URLs are collected from. Response mining reads bodies this scan already stored and sends no request.",
+        description="Sources URLs are collected from. Response mining reads bodies this scan already stored and sends no request.",
         json_schema_extra={"options": list(_PROVIDER_LABELS)},
     )
     threads: int = threads(10, title="Threads")
@@ -40,7 +40,7 @@ class UrlDiscoveryConfig(StageConfig):
         ge=1,
         le=10,
         title="Crawl depth",
-        description="How many links deep to follow from each site root.",
+        description="Link depth followed from each site root.",
     )
     crawl_scope: str = Field(
         default=CrawlScope.RDN.value,

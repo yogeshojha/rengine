@@ -116,8 +116,7 @@
 				{routeLabels.ai}
 			</h1>
 			<p class="mt-1 max-w-2xl text-sm text-muted-foreground">
-				Connect a language model to draft report narratives. Everything reNgine computes works
-				without it; a model only changes how the findings are written up.
+				Model connection, feature opt-ins and usage for report narratives
 			</p>
 		</div>
 		{#if status}
@@ -137,18 +136,17 @@
 	{:else if status}
 		<Alert.Root variant="destructive">
 			<ShieldAlertIcon />
-			<Alert.Title>Scan data leaves your instance when this is on</Alert.Title>
+			<Alert.Title>Scan data is sent to the configured provider</Alert.Title>
 			<Alert.Description>
-				Report narration sends a computed summary of a scan to your chosen provider: counts,
-				severity totals, check names and the conditions reNgine detected. It never sends request or
-				response bodies, credentials, or the headers a scan context injects. Leave this off on
-				air-gapped or restricted deployments.
+				Report narration sends a computed summary of the scan: counts, severity totals, check names
+				and detected conditions. Request and response bodies, credentials and scan context headers
+				are never sent. Disable on air-gapped or restricted deployments.
 			</Alert.Description>
 		</Alert.Root>
 
 		<div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
 			<Card.Root class="gap-0 py-0">
-				<PanelHead title="Connection" description="Which provider writes, and with which model" />
+				<PanelHead title="Connection" description="Provider and model used for narratives" />
 				<div class="space-y-5 px-5 py-5">
 					<div class="space-y-2">
 						<Label class="text-xs">Provider</Label>
@@ -250,7 +248,7 @@
 								</Select.Content>
 							</Select.Root>
 							<p class="text-xs text-muted-foreground">
-								Written once per check and cached, so a cheap model is enough.
+								Written once per check and cached. A lower-cost model is sufficient.
 							</p>
 						</div>
 					</div>
@@ -281,7 +279,7 @@
 
 				<Separator />
 
-				<PanelHead title="What AI is used for" description="Each of these is opt in per report" />
+				<PanelHead title="Features" description="Each is opt in per report" />
 				<div class="space-y-4 px-5 py-5">
 					{#each catalog?.features ?? [] as feature (feature.key)}
 						<div class="flex items-start justify-between gap-4">
@@ -336,7 +334,7 @@
 				<Card.Root class="gap-0 py-0">
 					<PanelHead
 						title="Written passages"
-						description="Kept so the same input is never paid for twice"
+						description="Cached narratives, keyed by the input they were written from"
 					/>
 					<div class="space-y-3 px-5 py-4">
 						<div class="flex items-baseline justify-between">
@@ -344,8 +342,7 @@
 							<Badge variant="secondary">{status.cached_narratives.toLocaleString()}</Badge>
 						</div>
 						<p class="text-xs text-muted-foreground">
-							A passage is keyed by exactly what it was written from. Clearing the cache means the
-							next report is charged for its narrative again.
+							Clearing the cache means the next report is charged for its narrative again.
 						</p>
 						<Button
 							variant="outline"

@@ -231,7 +231,7 @@
 							<Input bind:value={name} class="h-9" />
 						</div>
 						<div class="space-y-1.5">
-							<Label class="text-xs">What this template is for</Label>
+							<Label class="text-xs">Description</Label>
 							<Input bind:value={description} class="h-9" />
 						</div>
 						<div class="space-y-1.5">

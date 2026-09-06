@@ -129,7 +129,7 @@
 								>{@render key('field:')} narrows to one property</span
 							>
 							<span class="flex items-center gap-1.5"
-								><span class="font-mono text-foreground">value</span> what it must match</span
+								><span class="font-mono text-foreground">value</span> the value it must match</span
 							>
 							<span class="flex items-center gap-1.5"
 								><span class="font-mono font-semibold text-info">and</span> joins terms</span

@@ -55,7 +55,7 @@
 <Card.Root class="gap-0 overflow-hidden py-0">
 	<PanelHead
 		title="Dismissed"
-		description="Assets you marked as not interesting. They stay out of the list on every later scan."
+		description="Dismissed assets. Excluded from the list on every later scan"
 	>
 		<span class="tabular-nums">{rows.length}</span>
 	</PanelHead>
@@ -72,7 +72,7 @@
 		<EmptyState
 			icon={EyeOff}
 			title="Nothing dismissed"
-			description="Dismiss an asset from the Worth a look tab of a scan and it appears here."
+			description="Assets dismissed from the Worth a look tab of a scan appear here."
 			class="py-12"
 		/>
 	{:else}

@@ -338,10 +338,10 @@
 	{:else if total === 0}
 		<section class="rounded-xl border border-border bg-muted/20 p-6 sm:p-8">
 			<div class="max-w-xl">
-				<h2 class="text-lg font-semibold tracking-tight">Create your first engine</h2>
+				<h2 class="text-lg font-semibold tracking-tight">No scan engines</h2>
 				<p class="mt-1 text-sm text-muted-foreground">
 					An engine defines which stages run against a target and how each is tuned. Start from a
-					preset, or build one up field by field.
+					preset, or configure one field by field.
 				</p>
 			</div>
 			{#if engineCatalogStore.presets.length}

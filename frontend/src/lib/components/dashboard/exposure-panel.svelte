@@ -121,7 +121,7 @@
 		<div class="-mt-px -ml-px grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
 			<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
 				<div class="flex flex-col gap-0.5">
-					<h3 class="text-sm font-medium">What is listening</h3>
+					<h3 class="text-sm font-medium">Service classes</h3>
 					<p class="text-xs text-muted-foreground">
 						Every open port on the latest service scan of each target, by class
 					</p>
@@ -130,7 +130,7 @@
 				{#if concentration.length}
 					<div class="mt-auto flex flex-col gap-3 border-t pt-4">
 						<div class="flex flex-col gap-0.5">
-							<h3 class="text-sm font-medium">Where it concentrates</h3>
+							<h3 class="text-sm font-medium">Sensitive services by target</h3>
 							<p class="text-xs text-muted-foreground">
 								Sensitive ports per target, from its latest service scan
 							</p>
@@ -191,7 +191,7 @@
 		open={sheetOpen}
 		onOpenChange={(v) => (sheetOpen = v)}
 		title="{picked.label} by target"
-		description="Where {picked.label} is listening, from each target's latest service scan"
+		description="Targets listening on {picked.label}, from each latest service scan"
 		rows={sheetRows}
 	/>
 {/if}

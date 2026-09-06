@@ -937,7 +937,7 @@
 			<EmptyState
 				icon={ShieldCheck}
 				title="No vulnerability scan ran"
-				description="Enable it on the scan engine, or add it when you launch the next scan."
+				description="Enable it on the scan engine, or add it at launch."
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{/if}

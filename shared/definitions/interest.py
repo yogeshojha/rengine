@@ -28,14 +28,14 @@ class InterestSource(StrEnum):
 
 
 SOURCE_LABELS: dict[str, str] = {
-    InterestSource.KEYWORD.value: "Your keywords",
+    InterestSource.KEYWORD.value: "Keywords",
     InterestSource.RULE.value: "Rule",
     InterestSource.CORRELATION.value: "Correlation",
     InterestSource.AI.value: "AI",
 }
 
 SOURCE_HELP: dict[str, str] = {
-    InterestSource.KEYWORD.value: "Matched a keyword you added.",
+    InterestSource.KEYWORD.value: "Matched a configured keyword.",
     InterestSource.RULE.value: "Matched a saved query.",
     InterestSource.CORRELATION.value: "Stands out from the rest of this estate.",
     InterestSource.AI.value: "A judgement written by a model, not an observation.",
@@ -98,7 +98,7 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.REMOTE_ACCESS.value,
         "Remote access",
-        "A VPN, gateway or remote desktop portal, routinely targeted.",
+        "A VPN, gateway or remote desktop portal.",
         28,
         TONE_WARNING,
     ),
@@ -133,7 +133,7 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.NO_AUTHENTICATION.value,
         "No authentication",
-        "Answered without a login wall where one would be expected.",
+        "Answered without authentication where authentication is expected.",
         26,
         TONE_WARNING,
     ),
@@ -189,7 +189,7 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.RARE_IDENTITY.value,
         "Distinct application",
-        "Serves an icon or page shared by almost nothing else here, so it is its own application.",
+        "Serves an icon or page shared by almost nothing else in this estate.",
         14,
         TONE_INFO,
     ),

@@ -31,9 +31,9 @@ class Preset:
 
 PRESETS: tuple[Preset, ...] = (
     Preset(
-        name="Your keywords",
+        name="Keywords",
         kind=InterestKind.OTHER.value,
-        description="Anything you name, matched in the hostname or the page title.",
+        description="Named terms, matched in the hostname or the page title.",
         mode=RuleMode.KEYWORD.value,
         keywords=("admin", "ftp", "cpanel", "dashboard"),
         keyword_fields=("host", "title"),
@@ -41,7 +41,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         name="Admin interfaces",
         kind=InterestKind.ADMIN_INTERFACE.value,
-        description="An administrative surface answering without a login wall.",
+        description="An administrative surface answering without authentication.",
         query=_hosts("admin", "portal", "console", "manage", "adminer")
         + " and is:live and not is:auth",
         notify=True,

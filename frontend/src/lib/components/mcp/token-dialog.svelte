@@ -149,11 +149,11 @@
 						{:else}
 							It does not expire.
 						{/if}
-						You can revoke it at any time.
+						It can be revoked at any time.
 					</div>
 
 					<div class="flex min-w-0 flex-col gap-1.5">
-						<span class="text-xs font-medium">Paste this into your agent</span>
+						<span class="text-xs font-medium">Agent configuration</span>
 						<CodeBlock code={created.client_config} lang="json" label="Client configuration" />
 					</div>
 				</div>
@@ -166,7 +166,7 @@
 			<Dialog.Header class="px-6 pt-6 pb-0">
 				<Dialog.Title>New service token</Dialog.Title>
 				<Dialog.Description>
-					Give an agent access with the smallest capability set that lets it do its job.
+					Grant the smallest capability set the agent requires.
 				</Dialog.Description>
 			</Dialog.Header>
 
@@ -174,13 +174,13 @@
 				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-11rem)]"
 			>
 				<div class="flex min-w-0 flex-col gap-4 px-6 pt-5 pb-4">
-					<FormField label="Name" description="Shown in the session list and the activity trail.">
+					<FormField label="Name" description="Shown in the session list and the activity trail">
 						{#snippet children({ id })}
 							<Input {id} bind:value={name} placeholder="claude-desktop" maxlength={80} />
 						{/snippet}
 					</FormField>
 
-					<FormField label="Project" description="What this agent is allowed to see.">
+					<FormField label="Project" description="Projects this token can read">
 						{#snippet children({ id })}
 							<Select.Root type="single" bind:value={projectId}>
 								<Select.Trigger {id} class="w-full">{projectLabel}</Select.Trigger>

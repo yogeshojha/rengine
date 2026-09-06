@@ -56,7 +56,7 @@
 				<div class="flex flex-col gap-5 px-5 py-4">
 					<section class="flex flex-col gap-3">
 						<h3 class="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-							Why this is interesting
+							Signals
 						</h3>
 						{#each ordered as signal (signal.source + signal.kind)}
 							{@const Icon = kindIcon(signal.kind)}
@@ -109,7 +109,7 @@
 							<h3
 								class="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase"
 							>
-								What the scan saw
+								Observed
 							</h3>
 							{#if row.page_title}
 								<p class="text-[12.5px]">{row.page_title}</p>

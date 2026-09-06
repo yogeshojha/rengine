@@ -126,7 +126,7 @@
 						{/each}
 					</Select.Content>
 				</Select.Root>
-				<p class="text-xs text-muted-foreground">How long completed scans are retained.</p>
+				<p class="text-xs text-muted-foreground">Retention period for completed scans.</p>
 			</div>
 			<div class="space-y-1.5">
 				<Label class="text-xs">Screenshots</Label>

@@ -196,5 +196,5 @@ async def delete_template(
     if not await service.delete(template_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Only templates you uploaded can be deleted.",
+            detail="Only custom templates can be deleted.",
         )

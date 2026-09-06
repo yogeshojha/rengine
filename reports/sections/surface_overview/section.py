@@ -19,7 +19,7 @@ class SurfaceOverviewConfig(SectionConfig):
 class SurfaceOverviewSection(Section):
     name = "surface_overview"
     title = "Attack surface"
-    description = "What the run found in each dimension, and what it did not look at."
+    description = "Results in each dimension, and the dimensions not covered."
     group = SectionGroup.SUMMARY.value
     order = 40
     config_model = SurfaceOverviewConfig

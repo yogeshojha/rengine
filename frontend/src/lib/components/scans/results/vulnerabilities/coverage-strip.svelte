@@ -75,8 +75,8 @@
 				<div class="border-b px-3 py-2">
 					<p class="text-sm font-medium">Scanner coverage</p>
 					<p class="text-xs text-muted-foreground">
-						What the scanner selected, loaded and sent. A blank number means the scanner did not
-						report it.
+						Checks selected, loaded and sent by each scanner. A blank number means the scanner did
+						not report it.
 					</p>
 				</div>
 				<div class="divide-y">

@@ -43,7 +43,7 @@
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.arsenal}</h1>
 		<p class="mt-1 text-sm text-muted-foreground">
-			Scanners, their checks, and the wordlists a scan runs with.
+			Scanners, checks and wordlists available to scan engines
 		</p>
 	</div>
 

@@ -357,7 +357,7 @@ PARAM_INTEREST_LABELS: dict[str, str] = {
 PARAM_INTEREST_HELP: dict[str, str] = {
     ParamInterest.IDOR.value: "Names an object directly. Worth testing for access control.",
     ParamInterest.OPEN_REDIRECT.value: "Carries a destination the application redirects to.",
-    ParamInterest.SSRF.value: "Carries a location the server fetches on your behalf.",
+    ParamInterest.SSRF.value: "Carries a location the server fetches server-side.",
     ParamInterest.TRAVERSAL.value: "Carries a file or path the server reads.",
     ParamInterest.SQLI.value: "Commonly reaches a query directly.",
     ParamInterest.XSS.value: "Commonly reflected into the page.",

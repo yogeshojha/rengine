@@ -18,7 +18,7 @@ class HostingSection(Section):
     name = "hosting"
     title = "Hosting and infrastructure"
     description = (
-        "How the surface is fronted, which networks carry it and where it resolves."
+        "The fronting, the networks carrying the surface and where it resolves."
     )
     group = SectionGroup.SURFACE.value
     order = 60

@@ -222,7 +222,7 @@
 			<Card.Title>Check library</Card.Title>
 			<Card.Description>
 				Checks available to a vulnerability scan. Project templates come from the nuclei-templates
-				repository. Templates you upload run alongside them.
+				repository. Uploaded templates run alongside them.
 			</Card.Description>
 			<Card.Action class="flex items-center gap-2">
 				<Button variant="outline" size="sm" class="gap-2" onclick={() => (creating = true)}>

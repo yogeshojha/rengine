@@ -216,8 +216,7 @@
 		<div class="max-w-2xl">
 			<h1 class="text-2xl font-semibold tracking-tight">Scan contexts</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
-				Credentials, rate limits, scope rules and proxy settings applied when a scan runs. Contexts
-				are optional and reusable across engines and targets.
+				Credentials, rate limits, scope rules and proxy settings applied when a scan runs
 			</p>
 		</div>
 		<div class="flex items-center gap-2">
@@ -272,10 +271,10 @@
 	{:else if total === 0}
 		<section class="rounded-xl border border-border bg-muted/20 p-6 sm:p-8">
 			<div class="max-w-xl">
-				<h2 class="text-lg font-semibold tracking-tight">Create your first context</h2>
+				<h2 class="text-lg font-semibold tracking-tight">No scan contexts</h2>
 				<p class="mt-1 text-sm text-muted-foreground">
 					A context controls how a scan reaches its target: credentials, headers, rate limits, scope
-					and proxy. Start from a template, or build one up field by field.
+					and proxy. Start from a template, or configure one field by field.
 				</p>
 			</div>
 			<div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

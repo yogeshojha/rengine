@@ -24,7 +24,7 @@ class ScreenshotsConfig(SectionConfig):
 class ScreenshotsSection(Section):
     name = "screenshots"
     title = "Screenshots"
-    description = "What the assets look like. Images are embedded in the document."
+    description = "Screenshots of the assets. Images are embedded in the document."
     group = SectionGroup.SURFACE.value
     order = 70
     launch_fields = frozenset({"max_images"})

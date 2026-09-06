@@ -9,6 +9,7 @@
 	import Play from '@lucide/svelte/icons/play';
 	import Rocket from '@lucide/svelte/icons/rocket';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Hint from '$lib/components/hint.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { SCHEDULE_STATUS_LABELS, type ScanScheduleRead } from '$lib/types/scan-schedule';
 
@@ -100,12 +101,18 @@
 		<span class="text-muted-foreground/40">·</span>
 		<span class="shrink-0">{schedule.timezone}</span>
 		{#if schedule.timezone_stale}
-			<span
-				class="shrink-0 rounded border border-warning/30 px-1 text-[10px] font-medium text-warning"
-				title="The instance timezone changed after this schedule was created; it still fires in {schedule.timezone}."
+			<Hint
+				text="The instance timezone changed after this schedule was created. It still fires in {schedule.timezone}."
 			>
-				tz changed
-			</span>
+				{#snippet child(props)}
+					<span
+						{...props}
+						class="shrink-0 rounded border border-warning/30 px-1 text-[10px] font-medium text-warning"
+					>
+						tz changed
+					</span>
+				{/snippet}
+			</Hint>
 		{/if}
 	</div>
 

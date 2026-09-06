@@ -209,7 +209,7 @@ AI_FEATURES: tuple[AIFeature, ...] = (
     AIFeature(
         "rule_suggestions",
         "Rule suggestions",
-        "Proposes an interest rule that would have caught what judgement found, for you to approve.",
+        "Proposes an interest rule that would have caught what judgement found, for review.",
         False,
     ),
     AIFeature(

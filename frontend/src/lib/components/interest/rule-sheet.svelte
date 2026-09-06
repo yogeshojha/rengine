@@ -113,7 +113,7 @@
 					{/snippet}
 				</FormField>
 
-				<FormField label="Reason" description="What this rule says about an asset it matches.">
+				<FormField label="Reason" description="Reason recorded on a flagged asset">
 					{#snippet children(props)}
 						<Select.Root type="single" bind:value={kind} disabled={locked}>
 							<Select.Trigger {...props}>{kindLabel}</Select.Trigger>
@@ -126,10 +126,7 @@
 					{/snippet}
 				</FormField>
 
-				<FormField
-					label="Query"
-					description="The same search language as the Web Assets tab. Try host:admin and is:live"
-				>
+				<FormField label="Query" description="The Web Assets search language">
 					{#snippet children(props)}
 						<Textarea
 							{...props}
@@ -151,7 +148,7 @@
 					<p class="text-xs text-muted-foreground">The query is valid.</p>
 				{/if}
 
-				<FormField label="Description" description="Shown as the reason on a flagged asset.">
+				<FormField label="Description" description="Shown as the reason on a flagged asset">
 					{#snippet children(props)}
 						<Textarea {...props} bind:value={description} disabled={locked} rows={2} />
 					{/snippet}
@@ -161,7 +158,7 @@
 					<span class="flex flex-col gap-0.5">
 						Notify me
 						<span class="text-xs text-muted-foreground">
-							Sends to your channels when this rule flags an asset for the first time.
+							Sends a notification the first time this rule flags an asset.
 						</span>
 					</span>
 					<Switch bind:checked={notify} />

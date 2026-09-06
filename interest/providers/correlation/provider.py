@@ -106,8 +106,8 @@ class CorrelationProvider(InterestProvider):
     source = InterestSource.CORRELATION.value
     title = "Correlation"
     description = (
-        "Hosts that stand out from the estate around them: a lone network, "
-        "rare software, the one asset outside the edge."
+        "Hosts that stand out from the rest of the estate: a lone network, "
+        "rare software, an asset outside the edge."
     )
     order = 20
 
@@ -209,7 +209,7 @@ class CorrelationProvider(InterestProvider):
         for row in rows:
             reason = (
                 f"Serves an icon shared by {_plural(row.matches, 'host')} of {row.estate}, "
-                "so it is its own application rather than the estate's standard one."
+                "distinct from the estate's standard application."
             )
             yield self._signal(
                 row,

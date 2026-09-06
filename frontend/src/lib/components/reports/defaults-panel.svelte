@@ -67,11 +67,10 @@
 	<div class="space-y-5">
 		<Alert.Root>
 			<InfoIcon />
-			<Alert.Title>These fill in what a template leaves blank</Alert.Title>
+			<Alert.Title>Defaults fill what a template leaves blank</Alert.Title>
 			<Alert.Description>
-				Set the logo, company and classification once here and every template starts from them. A
-				template that sets its own value takes precedence, so a per-client deliverable can override
-				anything.
+				The logo, company and classification set here apply to every template. A template that sets
+				its own value takes precedence.
 			</Alert.Description>
 		</Alert.Root>
 

@@ -17,7 +17,7 @@ class RiskSummaryConfig(SectionConfig):
     show_signals: bool = flag(
         True,
         title="Show ranking signals",
-        description="Why a finding outranks another of the same severity.",
+        description="The signals that rank one finding above another of the same severity.",
     )
 
 

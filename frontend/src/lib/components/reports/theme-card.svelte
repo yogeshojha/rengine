@@ -44,7 +44,7 @@
 			<div class="flex items-center gap-2">
 				<span class="truncate font-medium">{theme.name}</span>
 				{#if theme.origin === 'custom'}
-					<Badge variant="outline" class="text-[10px]">Yours</Badge>
+					<Badge variant="outline" class="text-[10px]">Custom</Badge>
 				{/if}
 			</div>
 			<p class="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{theme.description}</p>

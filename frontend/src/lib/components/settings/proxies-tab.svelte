@@ -479,7 +479,7 @@
 						<Input
 							{id}
 							bind:value={formDescription}
-							placeholder="What this proxy is for"
+							placeholder="Description"
 							class="h-9"
 							disabled={saving}
 						/>

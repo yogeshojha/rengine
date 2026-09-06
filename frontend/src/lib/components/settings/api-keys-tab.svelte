@@ -410,9 +410,9 @@
 <Dialog.Root bind:open={testDialogOpen}>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Test API Key</Dialog.Title>
+			<Dialog.Title>Test API key</Dialog.Title>
 			<Dialog.Description>
-				This will make a live API call to verify the key works. It will consume 1 API call from your
+				Verification makes one live API call and consumes one call from the
 				{providers.find((p) => p.provider === testDialogProvider)?.name ?? 'provider'} quota.
 			</Dialog.Description>
 		</Dialog.Header>

@@ -70,7 +70,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="executive",
         name="Executive brief",
-        description="Four pages for a decision maker: posture, the chains that matter and what to do first.",
+        description="Four pages for a decision maker: posture, attack paths and remediation priority.",
         scope=ReportScope.SCAN.value,
         theme="editorial",
         title="Security Posture Brief",
@@ -90,7 +90,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="attack_surface",
         name="Attack surface report",
-        description="What exists and how it is hosted. For a recon run with no vulnerability scanning.",
+        description="The discovered surface and how it is hosted. For a recon run with no vulnerability scanning.",
         scope=ReportScope.SCAN.value,
         theme="midnight",
         title="External Attack Surface Report",
@@ -114,7 +114,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="change",
         name="Change report",
-        description="What appeared, what went away and what is newly at risk since the previous run.",
+        description="Assets and findings added, removed and newly at risk since the previous run.",
         scope=ReportScope.SCAN.value,
         theme="blueprint",
         title="Attack Surface Change Report",

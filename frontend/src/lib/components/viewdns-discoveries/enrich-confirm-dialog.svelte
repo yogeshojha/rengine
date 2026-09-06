@@ -37,7 +37,7 @@
 					This will query ViewDNS.info for
 					<span class="font-mono text-foreground">{queryValue}</span>
 					and use <span class="font-semibold text-foreground">1 API credit</span>
-					from your quota.
+					from the ViewDNS quota.
 				</span>
 				<span class="block text-xs text-muted-foreground">
 					Results will be cached for 7 days. Subsequent views are free.

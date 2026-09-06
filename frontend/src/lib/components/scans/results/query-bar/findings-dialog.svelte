@@ -66,7 +66,7 @@
 					<EmptyState
 						icon={SearchX}
 						title="No queries matched"
-						description="Widen the filters in view, or show the queries with no matches to browse the full library."
+						description="Widen the filters, or show queries with no matches."
 						class="border-0 bg-transparent"
 					/>
 				{/if}

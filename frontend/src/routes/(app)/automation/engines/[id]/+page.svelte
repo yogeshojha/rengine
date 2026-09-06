@@ -875,7 +875,7 @@
 
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}
-	title="Discard your changes?"
+	title="Discard changes?"
 	description="Edits to this engine have not been saved. Leaving now discards them."
 	confirmLabel="Discard"
 	cancelLabel="Keep editing"

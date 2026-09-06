@@ -25,7 +25,7 @@ class ServicesConfig(SectionConfig):
 class ServicesSection(Section):
     name = "services"
     title = "Network services"
-    description = "What is listening, on which address, and which of it is web."
+    description = "The services listening on each address, and which of them are web."
     group = SectionGroup.SURFACE.value
     order = 20
     launch_fields = frozenset({"max_rows"})

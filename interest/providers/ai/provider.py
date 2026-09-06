@@ -79,7 +79,7 @@ class AIProvider(InterestProvider):
     title = "AI"
     description = (
         "Reads the hostname, status, page title and technology of every responding host "
-        "and says which are worth opening. A judgement, not an observation."
+        "and identifies the ones that merit review. A judgement, not an observation."
     )
     requires_ai = True
     order = 30

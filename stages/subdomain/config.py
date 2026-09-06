@@ -44,7 +44,7 @@ class SubdomainConfig(StageConfig):
     wordlist: str = wordlist(
         WordlistKind.SUBDOMAIN.value,
         title="Wordlist",
-        description="Which list to guess from. Upload your own in the Tools Arsenal.",
+        description="Which list to guess from. Custom lists are uploaded in the Tools Arsenal.",
     )
     wordlist_limit: int = Field(
         default=1000,
@@ -63,7 +63,7 @@ class SubdomainConfig(StageConfig):
         ge=1,
         le=10_000,
         title="Names to permute",
-        description="How many discovered names to build variants from. Variants grow with the square of this.",
+        description="Number of discovered names to build variants from. Variants grow with the square of this.",
     )
     permutation_limit: int = Field(
         default=20_000,
@@ -86,8 +86,8 @@ class SubdomainConfig(StageConfig):
         le=8,
         title="Resolver batches in parallel",
         description=(
-            "Resolver invocations in flight at once. Leave this at 1 unless you run your "
-            "own resolvers: on public resolvers three batches at once answered 446 of the "
+            "Resolver invocations in flight at once. Leave at 1 unless the scan uses "
+            "dedicated resolvers: on public resolvers three batches at once answered 446 of the "
             "same 1,000 names that one batch answered 838 of. The loss is uniform across "
             "batches, so the stall and peer-median checks cannot see it."
         ),

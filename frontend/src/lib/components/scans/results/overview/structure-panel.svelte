@@ -171,8 +171,7 @@
 				<div class="flex flex-col gap-3 border-t border-l p-5">
 					<h3 class="text-xs font-medium text-muted-foreground uppercase">Shared across hosts</h3>
 					<p class="text-xs text-muted-foreground">
-						The same route on many hosts is one piece of software. A single change resolves every
-						instance.
+						A route present on many hosts is one application. A single fix resolves every instance.
 					</p>
 					<RankedList rows={shared} base={sharedBase} onSelect={pick} />
 				</div>
@@ -190,7 +189,7 @@
 
 			{#if interest.length}
 				<div class="flex flex-col gap-3 border-t border-l p-5">
-					<h3 class="text-xs font-medium text-muted-foreground uppercase">Of interest</h3>
+					<h3 class="text-xs font-medium text-muted-foreground uppercase">Path interests</h3>
 					<RankedList rows={interest} base={interestBase} onSelect={pick} />
 				</div>
 			{/if}

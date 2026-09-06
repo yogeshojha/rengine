@@ -19,7 +19,7 @@ class ChangesConfig(SectionConfig):
 
 class ChangesSection(Section):
     name = "changes"
-    title = "What changed"
+    title = "Changes"
     description = "The difference against the previous run. Nothing is reported as new on a first run."
     group = SectionGroup.SUMMARY.value
     order = 50

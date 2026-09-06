@@ -193,8 +193,8 @@
 				</Empty.Media>
 				<Empty.Title>Settings could not be loaded</Empty.Title>
 				<Empty.Description class="max-w-md">
-					Instance settings failed to load. Editing now could overwrite the stored configuration
-					with defaults, so the form stays hidden until the load succeeds.
+					Instance settings failed to load. The form stays hidden until the load succeeds, because
+					editing now could overwrite the stored configuration with defaults.
 				</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -258,7 +258,7 @@
 			<Card.Header>
 				<Card.Title class="text-base">Data retention</Card.Title>
 				<Card.Description
-					>How long scan history and screenshots are kept before pruning.</Card.Description
+					>Retention period for scan history and screenshots before pruning.</Card.Description
 				>
 			</Card.Header>
 			<Card.Content>

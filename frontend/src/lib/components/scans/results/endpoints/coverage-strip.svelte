@@ -117,7 +117,7 @@
 			</Popover.Trigger>
 			<Popover.Content class="w-[26rem] p-0" align="start">
 				<div class="border-b px-3 py-2">
-					<p class="text-sm font-medium">What ran</p>
+					<p class="text-sm font-medium">Source coverage</p>
 					<p class="text-xs text-muted-foreground">
 						Each source's own account. A blank count means it was not reported, not zero.
 					</p>

@@ -102,7 +102,7 @@
 	{#if keywordRule}
 		{@const kr = keywordRule}
 		<Card.Root class="gap-0 overflow-hidden py-0">
-			<PanelHead title="Keywords" description="Anything here marks an asset as worth a look.">
+			<PanelHead title="Keywords" description="Terms that flag a matching asset">
 				{#if kr.matches != null}
 					<span class="tabular-nums">{kr.matches.toLocaleString()} flagged so far</span>
 				{/if}
@@ -141,19 +141,18 @@
 					</label>
 					<label class="ml-auto flex items-center gap-2">
 						<Switch checked={kr.notify} onCheckedChange={(v) => patch(kr, { notify: v })} />
-						Notify me
+						Notify
 					</label>
 				</div>
 				<p class="text-xs text-muted-foreground">
-					Matched in the hostname or the page title, the same way reNgine 2 did it. Editing this
-					re-labels every past scan.
+					Matched against the hostname and the page title. An edit re-labels every past scan.
 				</p>
 			</div>
 		</Card.Root>
 	{/if}
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Rules" description="Saved queries that flag an asset when they match.">
+		<PanelHead title="Rules" description="Saved queries that flag a matching asset">
 			<span class="tabular-nums">{queryRules.length} of {rules.length - (keywordRule ? 1 : 0)}</span
 			>
 		</PanelHead>
@@ -268,6 +267,6 @@
 		if (!v) removing = null;
 	}}
 	title="Delete {removing?.name ?? 'this rule'}?"
-	description="The rule is removed and assets it flagged stop being labelled by it."
+	description="The rule is removed and assets it flagged are no longer labelled by it. This action cannot be undone."
 	onConfirm={remove}
 />

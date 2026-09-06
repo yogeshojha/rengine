@@ -64,7 +64,7 @@
 				<div class="flex size-10 items-center justify-center rounded-full bg-primary/10">
 					<FolderPlusIcon class="size-5 text-primary" />
 				</div>
-				<Dialog.Title class="leading-none">Create your first project</Dialog.Title>
+				<Dialog.Title class="leading-none">Create a project</Dialog.Title>
 			</div>
 			<Dialog.Description>
 				A project keeps its targets, scans and findings separate.

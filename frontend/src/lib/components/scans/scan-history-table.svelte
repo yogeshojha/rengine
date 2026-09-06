@@ -303,9 +303,7 @@
 			/>
 		</div>
 		<div class="flex items-center gap-2">
-			<Hint
-				text="Rescans of individual assets. Hidden by default because they do not represent a full run."
-			>
+			<Hint text="Rescans of individual assets. Hidden by default. They are not full runs.">
 				{#snippet child(props)}
 					<label
 						{...props}

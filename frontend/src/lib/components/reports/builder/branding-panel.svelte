@@ -84,7 +84,7 @@
 
 	<div class="grid gap-4 sm:grid-cols-2">
 		<div class="space-y-1.5">
-			<Label class="text-xs">Your company</Label>
+			<Label class="text-xs">Company</Label>
 			<Input bind:value={branding.company_name} class="h-9" />
 		</div>
 		<div class="space-y-1.5">
@@ -171,7 +171,7 @@
 				<Input bind:value={revision.version} placeholder="1.0" class="h-9 w-20" />
 				<Input bind:value={revision.date} placeholder="2026-09-06" class="h-9 w-32" />
 				<Input bind:value={revision.author} placeholder="Author" class="h-9 w-36" />
-				<Input bind:value={revision.note} placeholder="What changed" class="h-9 flex-1" />
+				<Input bind:value={revision.note} placeholder="Revision note" class="h-9 flex-1" />
 				<Button
 					variant="ghost"
 					size="icon"

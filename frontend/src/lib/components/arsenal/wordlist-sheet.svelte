@@ -101,7 +101,7 @@
 						{#if wordlist.words > words.length}
 							<p class="px-6 py-3 text-xs text-muted-foreground">
 								First {words.length} of {wordlist.words.toLocaleString()}. A scan reads from the
-								top, so the word budget takes this order.
+								top. The word budget follows this order.
 							</p>
 						{/if}
 					</ScrollArea>

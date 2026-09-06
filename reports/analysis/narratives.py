@@ -85,7 +85,7 @@ def _takeover(_source: ReportSource, issues: list[Issue]) -> AttackPath | None:
         detail=(
             f"{total} name{'s' if total != 1 else ''} resolve to a provider where the "
             "backing resource no longer exists. Anyone who registers it serves content "
-            "on your domain, which defeats cookie scoping and certificate trust."
+            "on the subject's domain, which defeats cookie scoping and certificate trust."
         ),
         severity=Severity.HIGH.value,
         evidence=[i.name for i in hits[:5]],

@@ -18,7 +18,7 @@ class ThemeOrigin(StrEnum):
 
 THEME_ORIGIN_LABELS: dict[str, str] = {
     ThemeOrigin.BUILTIN.value: "Shipped themes",
-    ThemeOrigin.CUSTOM.value: "Your themes",
+    ThemeOrigin.CUSTOM.value: "Custom themes",
 }
 
 

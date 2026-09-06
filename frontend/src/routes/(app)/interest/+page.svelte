@@ -43,7 +43,7 @@
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.interest}</h1>
 		<p class="mt-1 text-sm text-muted-foreground">
-			What makes an asset worth opening first, and what you have told reNgine to stop showing you.
+			Rules that flag an asset as worth a look, and assets dismissed from the list
 		</p>
 	</div>
 

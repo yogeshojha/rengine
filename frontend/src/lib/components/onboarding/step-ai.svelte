@@ -122,10 +122,10 @@
 	{#if enabled}
 		<Alert.Root variant="destructive">
 			<TriangleAlertIcon />
-			<Alert.Title>Scan data leaves your instance</Alert.Title>
+			<Alert.Title>Scan data is sent to the configured provider</Alert.Title>
 			<Alert.Description>
-				Enabling AI sends scan data (targets, findings, and context) to your chosen external
-				provider for processing. Do not enable this on air-gapped or sensitive deployments.
+				A computed summary of the scan is sent to the selected provider: targets, findings and
+				context. Disable on air-gapped or restricted deployments.
 			</Alert.Description>
 		</Alert.Root>
 

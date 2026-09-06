@@ -281,7 +281,7 @@ class ReportService:
         if existing is not None and existing.origin == ThemeOrigin.BUILTIN.value:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                f"'{tokens.key}' is a shipped theme. Give yours a different key.",
+                f"'{tokens.key}' is a shipped theme. Choose a different key.",
             )
         values = {
             "name": tokens.name,
@@ -387,7 +387,7 @@ class ReportService:
         if slug in {f.slug for f in vendored()}:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                f"'{slug}' is a shipped typeface. Give yours a different name.",
+                f"'{slug}' is a shipped typeface. Choose a different name.",
             )
 
         faces: list[dict] = []

@@ -62,9 +62,10 @@
 			<SparklesIcon />
 			<Alert.Title>AI is not connected</Alert.Title>
 			<Alert.Description>
-				Reports are written without a model. Every section still carries the same computed findings.
-				Connect a provider on the <a href={ROUTES.ai()} class="underline">AI page</a> to have the narrative
-				drafted.
+				Every section carries the same computed findings without a model. Connect a provider on the <a
+					href={ROUTES.ai()}
+					class="underline">AI page</a
+				> to have the narrative drafted.
 			</Alert.Description>
 		</Alert.Root>
 	{/if}
@@ -90,7 +91,7 @@
 				<div class="space-y-0.5">
 					<span class="text-sm">Explain each finding</span>
 					<p class="text-xs text-muted-foreground">
-						Written once per check and cached, so the same check costs nothing on later reports.
+						Written once per check and cached. Later reports reuse the same passage.
 					</p>
 				</div>
 				<Switch

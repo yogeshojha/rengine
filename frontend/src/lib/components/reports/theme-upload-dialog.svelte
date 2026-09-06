@@ -14,7 +14,7 @@
 
 	const SAMPLE = `key: house-style
 name: House style
-description: Our own look for client deliverables.
+description: House style for client deliverables.
 author: Security team
 color:
   page: "#ffffff"

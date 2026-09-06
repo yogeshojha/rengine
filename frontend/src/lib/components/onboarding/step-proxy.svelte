@@ -59,7 +59,7 @@
 		{
 			value: 'list',
 			label: 'Multiple static proxies',
-			hint: 'A pool of fixed endpoints you maintain yourself.',
+			hint: 'A fixed pool of self-hosted endpoints.',
 			icon: ListIcon
 		}
 	];
@@ -368,7 +368,7 @@
 			<InfoIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 			<p class="text-xs text-muted-foreground">
 				Commonly used providers. reNgine has no affiliation with them and receives nothing from
-				these links. Credentials are your own.
+				these links.
 			</p>
 		</div>
 		<div class="grid gap-2.5 sm:grid-cols-3">

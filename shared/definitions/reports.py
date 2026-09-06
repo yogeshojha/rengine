@@ -268,7 +268,7 @@ SLOT_TOKENS: tuple[SlotToken, ...] = (
     SlotToken("{subtitle}", "Subtitle"),
     SlotToken("{target}", "Target"),
     SlotToken("{client}", "Client name"),
-    SlotToken("{company}", "Your company"),
+    SlotToken("{company}", "Company"),
     SlotToken("{classification}", "Classification"),
     SlotToken("{date}", "Report date"),
     SlotToken("{scan_date}", "Scan date"),

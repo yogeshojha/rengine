@@ -71,7 +71,7 @@
 			key: 'ai',
 			title: 'AI analysis',
 			description:
-				'Use a language model to summarize findings and draft remediation. Scan data is sent to the provider you choose.',
+				'Use a language model to summarize findings and draft remediation. A computed summary of each scan is sent to the selected provider.',
 			icon: SparklesIcon,
 			component: StepAi
 		},
@@ -85,7 +85,7 @@
 		},
 		{
 			key: 'finish',
-			title: 'Create your first project',
+			title: 'Create a project',
 			description:
 				'A project keeps targets, scans and findings separate. Set data retention and name the first one.',
 			icon: FolderPlusIcon,
@@ -147,7 +147,7 @@
 		const resumeAt = Math.max(0, Math.min(status.current_step ?? 0, lastStep));
 		if (resumeAt > 0) {
 			currentIndex = resumeAt;
-			toast.info('Restoring your progress');
+			toast.info('Restoring saved progress');
 		}
 		ready = true;
 	}

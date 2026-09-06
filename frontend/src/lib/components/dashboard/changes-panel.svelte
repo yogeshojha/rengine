@@ -159,7 +159,7 @@
 </script>
 
 <Card.Root class="gap-0 overflow-hidden py-0">
-	<PanelHead title="What changed">
+	<PanelHead title="Changes">
 		<span class="tabular-nums">
 			{plural(overview.runs_in_window, 'run', 'runs')} in the {windowText(window)}
 			{#if overview.failed_in_window > 0}

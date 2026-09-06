@@ -27,7 +27,7 @@ class MethodologyConfig(SectionConfig):
 class MethodologySection(Section):
     name = "methodology"
     title = "Scope and methodology"
-    description = "What was in scope, what ran against it, and with which tools."
+    description = "Scope, the stages that ran against it and the tools they used."
     group = SectionGroup.APPENDIX.value
     order = 10
     role = SectionRole.FURNITURE.value

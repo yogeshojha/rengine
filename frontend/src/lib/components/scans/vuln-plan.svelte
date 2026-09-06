@@ -244,8 +244,8 @@
 			</div>
 		{:else if !current?.enabled}
 			<p class="text-[11px] text-muted-foreground">
-				Off for this run. Turn it on to test everything this scan finds against
-				{stats?.total.toLocaleString()} checks.
+				Off for this run. Enable it to test every asset this scan finds against {stats?.total.toLocaleString()}
+				checks.
 			</p>
 		{:else}
 			<div class="space-y-3 rounded-md border bg-muted/20 p-3">
@@ -261,7 +261,7 @@
 						</span>
 					{/if}
 					{#if dirty}
-						<Hint text="Return to what this engine runs by default">
+						<Hint text="Reset to the engine default">
 							{#snippet child(props)}
 								<Button
 									{...props}

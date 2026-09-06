@@ -15,7 +15,7 @@ class VhostConfig(StageConfig):
     wordlist: str = wordlist(
         WordlistKind.VHOST.value,
         title="Wordlist",
-        description="Which list of host names to try. Upload your own in the Tools Arsenal.",
+        description="Which list of host names to try. Custom lists are uploaded in the Tools Arsenal.",
     )
     threads: int = threads(30, title="Threads")
     rate: int = rate(150, tool="ffuf", title="Requests/s")

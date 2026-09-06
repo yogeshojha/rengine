@@ -156,7 +156,7 @@
 		<EmptyState
 			icon={CalendarClock}
 			title="No scheduled scans yet"
-			description="Run a scan once at a set time, or repeat it hourly, daily or on a cron expression. Each run reports through the notification channels you have configured."
+			description="Run a scan once at a set time, or repeat it hourly, daily or on a cron expression."
 		>
 			<Button onclick={handleNew} class="gap-2">
 				<Plus size={15} />
@@ -190,7 +190,7 @@
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
 		title="Delete this schedule?"
-		description="It stops running. Scans it already launched are kept."
+		description="The schedule stops running. Scans it already launched are kept. This action cannot be undone."
 		{isDeleting}
 		onOpenChange={(open) => {
 			showDeleteDialog = open;
