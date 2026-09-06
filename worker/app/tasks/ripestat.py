@@ -28,6 +28,7 @@ from shared.services.notification_sync import (
     SyncNotificationPublisher,
     single_project,
 )
+from shared.utils.net import is_registry_routable
 from tools.ripestat.client import RIPEStatRateLimitError
 from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
 
@@ -135,6 +136,15 @@ def _enrich_target(
     """Run target-type-specific lookups. Returns number of lookups performed."""
     target.bgp_status = TaskStatus.QUERYING
     session.commit()
+
+    if target.target_type in (
+        TargetType.IP,
+        TargetType.IP_RANGE,
+    ) and not is_registry_routable(target.target_value):
+        # private and reserved space is not announced, so there is nothing to look up
+        target.bgp_status = TaskStatus.NOT_APPLICABLE
+        session.commit()
+        return 0
 
     try:
         match target.target_type:
