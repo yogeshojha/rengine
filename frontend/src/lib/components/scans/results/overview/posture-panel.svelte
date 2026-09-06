@@ -168,11 +168,11 @@
 									<Button
 										variant="link"
 										size="sm"
-										class="h-auto gap-1 px-0 text-xs"
+										class="h-auto gap-1 px-0 text-left text-xs whitespace-normal"
 										onclick={() => onFilter(note.filter!)}
 									>
 										{note.text}
-										<ChevronRight class="size-3.5" />
+										<ChevronRight class="size-3.5 shrink-0" />
 									</Button>
 								{:else}
 									<span>{note.text}</span>

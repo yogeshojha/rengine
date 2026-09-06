@@ -10,27 +10,30 @@
 	}
 
 	let { flow, onPick }: Props = $props();
+	const uid = $props.id();
 
-	const NODE_W = 10;
+	const NODE_W = 12;
 	const PAD = 8;
 	const MIN_NODE = 12;
 	const TOP = 24;
 	const BOTTOM = 4;
-	const LABEL_L = 110;
-	const LABEL_R = 250;
-	const MIN_H = 240;
-	const MAX_H = 340;
-	const LABEL_MAX = 30;
+	const MIN_H = 280;
+	const MAX_H = 420;
+	const MAX_REACH = 720;
 	const HIT_MIN = 12;
 	const TIP_W = 288;
+	const GAP = 1.5;
+	const CHAR_W = 6.4;
 	const COLUMNS = ['Web assets', 'Fronting', 'Network'];
-	const FILL: Record<string, string> = {
-		edge: 'var(--chart-1)',
-		cloud: 'var(--chart-3)',
-		direct: 'var(--chart-2)',
-		muted: 'color-mix(in oklch, var(--muted-foreground) 45%, transparent)'
-	};
+	const TONES = new Set(['edge', 'cloud', 'direct']);
+	const SURFACE = 'var(--flow-halo, var(--card))';
+	const solid = (tone: string) => `var(--flow-${TONES.has(tone) ? tone : 'other'})`;
 
+	interface Segment {
+		y0: number;
+		y1: number;
+		tone: string;
+	}
 	interface Laid extends FlowNode {
 		x0: number;
 		x1: number;
@@ -38,10 +41,14 @@
 		y1: number;
 		outY: number;
 		inY: number;
+		segments: Segment[];
 	}
 	interface LaidLink extends FlowLink {
 		path: string;
 		width: number;
+		draw: number;
+		fromTone: string;
+		toTone: string;
 		from: Laid;
 		to: Laid;
 		length: number;
@@ -65,15 +72,27 @@
 	let reduce = $state(false);
 	let el = $state<HTMLDivElement | null>(null);
 
-	let height = $derived(Math.max(MIN_H, Math.min(MAX_H, 40 + flow.nodes.length * 22)));
+	let tight = $derived(width < 560);
+	let narrow = $derived(width < 780);
+	let labelL = $derived(tight ? 80 : narrow ? 96 : 110);
+	let labelR = $derived(tight ? 140 : narrow ? 178 : 250);
+	let midGap = $derived(tight ? 116 : 158);
+	let height = $derived(Math.max(MIN_H, Math.min(MAX_H, 48 + flow.nodes.length * 24)));
 
-	const clip = (s: string) =>
-		s.length > LABEL_MAX ? `${s.slice(0, LABEL_MAX - 1).trimEnd()}…` : s;
 	const share = (n: number, of: number) => (of > 0 ? `${Math.round((n / of) * 100)}%` : '');
 
 	let layout = $derived.by(() => {
-		const inner = { x0: LABEL_L, x1: width - LABEL_R, y0: TOP, y1: height - BOTTOM };
+		const inner = { y0: TOP, y1: height - BOTTOM };
 		const span = inner.y1 - inner.y0;
+		const xa = labelL;
+		const xc = Math.max(xa + 96, Math.min(width - labelR - NODE_W, xa + MAX_REACH));
+		const reach = xc - xa;
+		const gap = Math.min(reach - 24, Math.max(midGap, reach / 2));
+		const xs = [xa, xc - gap, xc];
+		const room = width - xc - NODE_W - 8;
+		const labelMax = Math.max(15, Math.min(48, Math.floor(room / CHAR_W)));
+		const clip = (s: string) =>
+			s.length > labelMax ? `${s.slice(0, labelMax - 1).trimEnd()}…` : s;
 		const cols: Laid[][] = [[], [], []];
 		const nodes: Laid[] = flow.nodes.map((n) => ({
 			...n,
@@ -82,10 +101,10 @@
 			y0: 0,
 			y1: 0,
 			outY: 0,
-			inY: 0
+			inY: 0,
+			segments: []
 		}));
 		for (const n of nodes) cols[n.column].push(n);
-		const colX = (i: number) => inner.x0 + ((inner.x1 - inner.x0 - NODE_W) * i) / 2;
 		let scale = Infinity;
 		for (const col of cols) {
 			if (!col.length) continue;
@@ -111,7 +130,7 @@
 			const used = col.reduce((t, n) => t + size(n), 0) + (col.length - 1) * PAD;
 			let y = inner.y0 + Math.max(0, (span - used) / 2);
 			for (const n of col) {
-				n.x0 = colX(i);
+				n.x0 = xs[i];
 				n.x1 = n.x0 + NODE_W;
 				n.y0 = y;
 				n.y1 = y + size(n);
@@ -145,16 +164,32 @@
 			const w = Math.max(1.5, l.count * scale);
 			const ya = from.outY + w / 2;
 			const yb = to.inY + w / 2;
+			const fromTone = from.column === 0 ? to.tone : from.tone;
+			if (from.column === 0)
+				from.segments.push({ y0: from.outY, y1: from.outY + w, tone: fromTone });
 			from.outY += w;
 			to.inY += w;
 			const xa = from.x1;
 			const xb = to.x0;
 			const xm = (xa + xb) / 2;
-			const path = `M${xa},${ya} C${xm},${ya} ${xm},${yb} ${xb},${yb}`;
-			const length = Math.hypot(xb - xa, yb - ya) * 1.15;
-			links.push({ ...l, path, width: w, from, to, length });
+			links.push({
+				...l,
+				path: `M${xa},${ya} C${xm},${ya} ${xm},${yb} ${xb},${yb}`,
+				width: w,
+				draw: Math.max(1, w - GAP),
+				fromTone,
+				toTone: to.tone,
+				from,
+				to,
+				length: Math.hypot(xb - xa, yb - ya) * 1.15
+			});
 		}
-		return { nodes, links, colX };
+		for (const n of cols[0]) {
+			if (!n.segments.length) n.segments.push({ y0: n.y0, y1: n.y1, tone: n.tone });
+			n.segments[0].y0 = n.y0;
+			n.segments[n.segments.length - 1].y1 = n.y1;
+		}
+		return { nodes, links, xs, clip };
 	});
 
 	function connected(id: string): Hover {
@@ -189,7 +224,7 @@
 		return clampTip(e.clientX - r.left + 12, e.clientY - r.top + 12);
 	}
 	function anchor(n: Laid) {
-		const x = n.column === 0 ? n.x0 - LABEL_L + 8 : n.x1 + 16;
+		const x = n.column === 0 ? n.x0 - labelL + 8 : n.x1 + 16;
 		return clampTip(x, n.y1 + 6);
 	}
 	const assets = (n: number) => `${n.toLocaleString()} ${n === 1 ? 'web asset' : 'web assets'}`;
@@ -261,18 +296,34 @@
 	});
 </script>
 
-<div bind:this={el} class="relative w-full">
+<div bind:this={el} class="flow relative w-full">
 	<svg
 		viewBox="0 0 {width} {height}"
 		{width}
 		{height}
-		class="block h-auto w-full overflow-visible"
+		class="block w-full overflow-visible"
 		onmouseleave={leave}
 		role="presentation"
 	>
+		<defs>
+			{#each layout.links as l, i (`g${l.source}-${l.target}`)}
+				<linearGradient
+					id="{uid}-{i}"
+					gradientUnits="userSpaceOnUse"
+					x1={l.from.x1}
+					x2={l.to.x0}
+					y1="0"
+					y2="0"
+				>
+					<stop offset="0" style="stop-color:{solid(l.fromTone)}" />
+					<stop offset="1" style="stop-color:{solid(l.toTone)}" />
+				</linearGradient>
+			{/each}
+		</defs>
+
 		{#each COLUMNS as c, i (c)}
 			<text
-				x={i === 0 ? layout.colX(0) + NODE_W : layout.colX(i)}
+				x={i === 0 ? layout.xs[0] + NODE_W : layout.xs[i]}
 				y="11"
 				text-anchor={i === 0 ? 'end' : 'start'}
 				class="fill-muted-foreground text-[11px] font-semibold tracking-[0.08em] uppercase"
@@ -294,28 +345,20 @@
 				onkeydown={(e) => key(e, l.query)}
 			>
 				<path
+					class="ribbon"
 					d={l.path}
 					fill="none"
-					stroke={FILL[l.from.tone] ?? FILL.muted}
-					stroke-width={l.width}
+					stroke="url(#{uid}-{i})"
+					stroke-width={l.draw}
 					style="opacity:{hovered
 						? on
-							? 0.7
-							: 0.08
-						: 0.32};stroke-dasharray:{l.length} {l.length};stroke-dashoffset:{drawn
+							? 0.8
+							: 0.06
+						: 'var(--flow-ribbon)'};stroke-dasharray:{l.length} {l.length};stroke-dashoffset:{drawn
 						? 0
 						: l.length};transition:stroke-dashoffset 650ms cubic-bezier(.33,1,.68,1) {120 +
 						l.from.column * 360}ms,opacity 150ms"
 				/>
-				{#if hovered && on && !reduce}
-					<path
-						d={l.path}
-						fill="none"
-						stroke="var(--background)"
-						stroke-width={l.width}
-						class="flowing pointer-events-none"
-					/>
-				{/if}
 				<path
 					d={l.path}
 					fill="none"
@@ -328,12 +371,15 @@
 		{#each layout.nodes as n (n.id)}
 			{@const on = hovered ? hovered.nodes.has(n.id) : true}
 			{@const left = n.column === 0}
+			{@const label = layout.clip(n.label)}
+			{@const count = n.count.toLocaleString()}
+			{@const hitR = n.column === 1 ? (label.length + count.length + 2) * CHAR_W + 24 : labelR}
 			<g
-				class="node {n.query ? 'cursor-pointer' : ''}"
+				class="node {n.query ? 'cursor-pointer' : ''} {hovered && on ? 'lit' : ''}"
 				role="button"
 				tabindex={n.query ? 0 : -1}
 				aria-label="{n.label}, {assets(n.count)}"
-				style="opacity:{drawn ? (on ? 1 : 0.3) : 0};transition:opacity 300ms {60 +
+				style="opacity:{drawn ? (on ? 1 : 0.25) : 0};transition:opacity 300ms {60 +
 					n.column * 360}ms"
 				onmouseenter={(e) => hoverNode(e, n)}
 				onmousemove={move}
@@ -343,21 +389,37 @@
 				onkeydown={(e) => key(e, n.query)}
 			>
 				<rect
-					x={left ? n.x0 - LABEL_L : n.x0}
+					x={left ? n.x0 - labelL : n.x0}
 					y={Math.min(n.y0, (n.y0 + n.y1) / 2 - 10)}
-					width={left ? LABEL_L + NODE_W : NODE_W + LABEL_R}
+					width={left ? labelL + NODE_W : NODE_W + hitR}
 					height={Math.max(n.y1 - n.y0, 20)}
 					fill="transparent"
 				/>
-				<rect
-					class="bar"
-					x={n.x0}
-					y={n.y0}
-					width={NODE_W}
-					height={n.y1 - n.y0}
-					rx="2"
-					fill={FILL[n.tone] ?? FILL.muted}
-				/>
+				{#if left}
+					{#each n.segments as s, j (j)}
+						<rect
+							class="bar"
+							x={n.x0}
+							y={s.y0}
+							width={NODE_W}
+							height={s.y1 - s.y0}
+							rx="2"
+							fill={solid(s.tone)}
+							style="color:{solid(s.tone)}"
+						/>
+					{/each}
+				{:else}
+					<rect
+						class="bar"
+						x={n.x0}
+						y={n.y0}
+						width={NODE_W}
+						height={n.y1 - n.y0}
+						rx="2"
+						fill={solid(n.tone)}
+						style="color:{solid(n.tone)}"
+					/>
+				{/if}
 				<text
 					x={left ? n.x0 - 8 : n.x1 + 8}
 					y={(n.y0 + n.y1) / 2}
@@ -366,11 +428,10 @@
 					class="pointer-events-none text-[12px] {n.tone === 'muted'
 						? 'fill-muted-foreground'
 						: 'fill-foreground'} {on && hovered ? 'font-medium' : ''}"
-					style="paint-order:stroke;stroke:var(--flow-halo, var(--card));stroke-width:3px;stroke-linejoin:round"
+					style="paint-order:stroke;stroke:{SURFACE};stroke-width:3px;stroke-linejoin:round"
 				>
-					{clip(n.label)}
-					<tspan dx="6" class="fill-muted-foreground tabular-nums">{n.count.toLocaleString()}</tspan
-					>
+					{label}
+					<tspan dx="6" class="fill-muted-foreground tabular-nums">{count}</tspan>
 				</text>
 			</g>
 		{/each}
@@ -378,15 +439,17 @@
 
 	{#if tip}
 		<div
-			class="pointer-events-none absolute z-10 w-72 max-w-full rounded-md border bg-popover px-2.5 py-2 text-xs text-popover-foreground shadow-md"
+			class="pointer-events-none absolute z-10 w-72 max-w-full rounded-md bg-foreground px-3 py-2 text-xs text-background shadow-lg"
 			style="left:{tip.x}px;top:{tip.y}px"
 		>
 			<div class="font-medium">{tip.title}</div>
-			<div class="text-muted-foreground">{tip.sub}</div>
+			<div class="opacity-70">{tip.sub}</div>
 			{#if tip.query}
-				<div class="mt-1.5 flex items-center justify-between gap-3 border-t pt-1.5">
-					<code class="truncate font-mono text-[11px] text-primary">{tip.query}</code>
-					<span class="flex shrink-0 items-center gap-0.5 text-muted-foreground">
+				<div
+					class="mt-1.5 flex items-center justify-between gap-3 border-t border-background/15 pt-1.5"
+				>
+					<code class="truncate font-mono text-[11px] opacity-80">{tip.query}</code>
+					<span class="flex shrink-0 items-center gap-0.5 opacity-60">
 						Web Assets <ArrowUpRight class="size-3" />
 					</span>
 				</div>
@@ -396,6 +459,23 @@
 </div>
 
 <style>
+	.flow {
+		--flow-edge: oklch(0.62 0.17 245);
+		--flow-cloud: oklch(0.6 0.21 300);
+		--flow-direct: oklch(0.66 0.16 160);
+		--flow-other: oklch(0.68 0.02 265);
+		--flow-ribbon: 0.45;
+	}
+	:global(.dark) .flow {
+		--flow-edge: oklch(0.74 0.15 240);
+		--flow-cloud: oklch(0.72 0.17 300);
+		--flow-direct: oklch(0.76 0.15 160);
+		--flow-other: oklch(0.6 0.02 265);
+		--flow-ribbon: 0.5;
+	}
+	:global(.dark) .flow .ribbon {
+		mix-blend-mode: screen;
+	}
 	.node:focus,
 	.link:focus {
 		outline: none;
@@ -404,22 +484,7 @@
 		stroke: var(--ring);
 		stroke-width: 2px;
 	}
-	.node:hover .bar {
-		stroke: var(--foreground);
-		stroke-opacity: 0.35;
-		stroke-width: 1.5px;
-	}
-	.flowing {
-		opacity: 0.18;
-		stroke-dasharray: 6 30;
-		animation: flow 1.1s linear infinite;
-	}
-	@keyframes flow {
-		from {
-			stroke-dashoffset: 36;
-		}
-		to {
-			stroke-dashoffset: 0;
-		}
+	.lit .bar {
+		filter: drop-shadow(0 0 6px currentColor);
 	}
 </style>
