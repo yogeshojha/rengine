@@ -1,14 +1,18 @@
 import uuid
 from datetime import datetime
+from functools import partial
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlmodel import Field, SQLModel
 
 from shared.utils.datetime import utc_now
+from shared.utils.validation import clean_name
 
 
 class ProjectBase(SQLModel):
     name: str = Field(max_length=50)
+
+    _validate_name = field_validator("name")(partial(clean_name, max_len=50))
 
 
 class Project(ProjectBase, table=True):

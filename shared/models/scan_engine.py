@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from functools import partial
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from pydantic import Field as PydanticField
 from sqlalchemy import Column
 from sqlalchemy.types import JSON, Text
@@ -10,6 +11,7 @@ from sqlmodel import Field, SQLModel
 from shared.definitions.constants import DEFAULT_GLOBAL_THREADS
 from shared.models.scan_context import ScanContextCreate
 from shared.utils.datetime import utc_now
+from shared.utils.validation import clean_name, clean_optional_name
 
 
 class ScanEngine(SQLModel, table=True):
@@ -47,6 +49,8 @@ class ScanEngineCreate(BaseModel):
     yaml_source: str | None = None
     tool_options: dict[str, str] = PydanticField(default_factory=dict)
 
+    _validate_name = field_validator("name")(partial(clean_name, max_len=200))
+
 
 class ScanEngineUpdate(BaseModel):
     name: str | None = None
@@ -58,6 +62,8 @@ class ScanEngineUpdate(BaseModel):
     stages: dict[str, dict] | None = None
     yaml_source: str | None = None
     tool_options: dict[str, str] | None = None
+
+    _validate_name = field_validator("name")(partial(clean_optional_name, max_len=200))
 
 
 class EngineUsage(BaseModel):

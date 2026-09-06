@@ -1,13 +1,15 @@
 import uuid
 from datetime import datetime
+from functools import partial
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 from shared.models.types import EncryptedJSON
 from shared.utils.datetime import utc_now
+from shared.utils.validation import clean_name, clean_optional_name
 
 AUTH_TYPES = ("none", "header", "bearer", "basic", "cookie", "api_key")
 HTTP_PROTOCOLS = ("both", "http_only", "https_only")
@@ -103,6 +105,8 @@ class ScanContextCreate(BaseModel):
     compare_baseline_scan_id: uuid.UUID | None = None
     scan_only_new_assets: bool = False
 
+    _validate_name = field_validator("name")(partial(clean_name, max_len=200))
+
 
 class ScanContextUpdate(BaseModel):
     name: str | None = None
@@ -123,6 +127,8 @@ class ScanContextUpdate(BaseModel):
     proxy_id: uuid.UUID | None = None
     compare_baseline_scan_id: uuid.UUID | None = None
     scan_only_new_assets: bool | None = None
+
+    _validate_name = field_validator("name")(partial(clean_optional_name, max_len=200))
 
 
 class ContextUsage(BaseModel):

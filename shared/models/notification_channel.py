@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from functools import partial
 
 from pydantic import BaseModel, field_validator
 from sqlalchemy import Column
@@ -9,7 +10,7 @@ from sqlmodel import Field, SQLModel
 from shared.enums.notification import NotificationType
 from shared.enums.notification_channel import NotificationProvider
 from shared.utils.datetime import utc_now
-from shared.utils.validation import clean_name
+from shared.utils.validation import clean_name, clean_optional_name
 
 PROVIDERS = tuple(p.value for p in NotificationProvider)
 
@@ -59,6 +60,8 @@ class NotificationChannelUpdate(BaseModel):
     is_active: bool | None = None
     config: dict | None = None
     events: NotificationPreference | None = None
+
+    _validate_name = field_validator("name")(partial(clean_optional_name, max_len=120))
 
 
 class NotificationChannelRead(BaseModel):

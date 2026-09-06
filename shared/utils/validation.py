@@ -20,6 +20,11 @@ def clean_name(v: str, *, max_len: int = MAX_NAME_LEN) -> str:
     return v
 
 
+def clean_optional_name(v: str | None, *, max_len: int = MAX_NAME_LEN) -> str | None:
+    """An update that omits the name leaves it alone; one that sends it must send a real one."""
+    return None if v is None else clean_name(v, max_len=max_len)
+
+
 def validate_domain(value: str) -> bool:
     return validators.domain(value) is True
 

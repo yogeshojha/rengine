@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
+from functools import partial
 
 from pydantic import BaseModel, field_validator
 from sqlmodel import Field, SQLModel
 
 from shared.enums.proxy import ProxyMode, ProxyProtocol
 from shared.utils.datetime import utc_now
-from shared.utils.validation import clean_name
+from shared.utils.validation import clean_name, clean_optional_name
 
 PROXY_MODES = tuple(m.value for m in ProxyMode)
 PROXY_SCHEMES = tuple(p.value for p in ProxyProtocol)
@@ -66,6 +67,8 @@ class ProxyUpdate(BaseModel):
     is_active: bool | None = None
     is_default: bool | None = None
     endpoints: list[ProxyEndpoint] | None = None
+
+    _validate_name = field_validator("name")(partial(clean_optional_name, max_len=120))
 
 
 class ProxyRead(BaseModel):

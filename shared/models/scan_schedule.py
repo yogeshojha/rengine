@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from functools import partial
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
@@ -9,6 +10,7 @@ from sqlmodel import Field, SQLModel
 from shared.definitions.schedule_constants import MAX_SCHEDULE_TARGETS
 from shared.enums.scan_schedule import ScheduleStatus
 from shared.utils.datetime import utc_now
+from shared.utils.validation import clean_name, clean_optional_name
 
 
 class ScanSchedule(SQLModel, table=True):
@@ -62,6 +64,8 @@ class ScanScheduleCreate(BaseModel):
     daily_at_time: str | None = None
     cron_expression: str | None = None
 
+    _validate_name = field_validator("name")(partial(clean_name, max_len=200))
+
 
 class ScanScheduleUpdate(BaseModel):
     name: str | None = None
@@ -76,6 +80,8 @@ class ScanScheduleUpdate(BaseModel):
     interval_unit: str | None = None
     daily_at_time: str | None = None
     cron_expression: str | None = None
+
+    _validate_name = field_validator("name")(partial(clean_optional_name, max_len=200))
 
 
 class ScanScheduleRead(BaseModel):
