@@ -659,6 +659,21 @@ class ReportService:
             )
         return scan, target
 
+    async def _require_known_theme(self, slug: str | None) -> None:
+        """A theme that does not exist would render as the default without saying so."""
+        if not slug:
+            return
+        known = set(builtin_themes())
+        rows = await self.session.execute(select(ReportTheme.slug))
+        known |= set(rows.scalars().all())
+        if slug not in known:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"No theme named '{slug}'. Available: {', '.join(sorted(known))}."
+                ),
+            )
+
     async def build_spec(
         self, data: ReportCreate, project_id: UUID
     ) -> tuple[ReportSpec, ReportTemplate | None]:
@@ -689,6 +704,7 @@ class ReportService:
         branding = _fill_empty(branding, defaults.branding)
         if not style.theme and defaults.theme:
             style.theme = defaults.theme
+        await self._require_known_theme(style.theme)
         narrative = data.narrative or NarrativeOptions.model_validate(
             (template.narrative if template else {}) or {}
         )
