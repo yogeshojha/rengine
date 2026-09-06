@@ -56,9 +56,15 @@ RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest \
 RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
 
 
+# WeasyPrint renders the PDF reports; pango does the text layout
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fontconfig \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY shared /app/shared
 COPY tools /app/tools
 COPY stages /app/stages
+COPY reports /app/reports
 
 COPY worker/pyproject.toml worker/uv.lock* ./
 
@@ -69,6 +75,6 @@ CMD ["uv", "run", "celery", "-A", "app.celery", "worker", "--loglevel=INFO"]
 
 ###################################################################
 # TODO: Production
-# NOTE: stages/ resolves via PYTHONPATH=/app (not a packaged dep) —
-# the prod stage MUST `COPY stages /app/stages` and keep PYTHONPATH=/app.
+# NOTE: stages/ and reports/ resolve via PYTHONPATH=/app (not packaged deps) —
+# the prod stage MUST COPY both and keep PYTHONPATH=/app.
 ###################################################################

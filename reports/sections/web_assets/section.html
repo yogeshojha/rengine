@@ -1,0 +1,30 @@
+{% import 'macros.html' as m with context %}
+<p class="block muted small">{{ total|num }} of {{ all_hosts|num }} web assets{% if only_live %} answered an HTTP request and{% endif %} are listed here.</p>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Host</th>
+      {% for field in fields %}<th class="{{ 'num' if field in ('status', 'findings') }}" style="width:{{ {'status':14,'ip':26,'tech':32,'server':24,'cdn':22,'asn':34,'tls':22,'findings':16,'title':36}[field] }}mm">{{ labels[field] }}</th>{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for host in rows %}
+    <tr>
+      <td class="wrap mono-break micro">{{ host.name }}{% if show_new and host.is_new %} <span class="chip chip--accent">new</span>{% endif %}</td>
+      {% for field in fields %}
+      {% if field == 'status' %}<td class="num">{{ host.status or '—' }}</td>
+      {% elif field == 'title' %}<td class="wrap micro muted">{{ host.title|clip(56) or '—' }}</td>
+      {% elif field == 'ip' %}<td class="micro mono-break">{{ host.ips[:2]|join(', ') or '—' }}</td>
+      {% elif field == 'tech' %}<td class="micro muted wrap">{{ host.tech[:4]|join(', ') or '—' }}</td>
+      {% elif field == 'server' %}<td class="micro muted wrap">{{ host.webserver|clip(34) or '—' }}</td>
+      {% elif field == 'cdn' %}<td class="micro">{{ host.cdn_name or host.waf or ('CDN' if host.is_cdn else '—') }}</td>
+      {% elif field == 'asn' %}<td class="micro muted wrap">{{ host.asn_org|clip(40) or '—' }}</td>
+      {% elif field == 'tls' %}<td class="micro {{ 'faint' if not host.tls_not_after }}">{{ host.tls_not_after|date('%d %b %Y') if host.tls_not_after else '—' }}</td>
+      {% elif field == 'findings' %}<td class="num">{% if host.findings %}{{ host.findings|num }}{% else %}<span class="faint">0</span>{% endif %}</td>
+      {% endif %}
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further assets are not listed. Raise the row limit for this section to include them.</p>{% endif %}

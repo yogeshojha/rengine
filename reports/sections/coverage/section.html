@@ -1,0 +1,43 @@
+<p class="block muted small">A count of zero means the check ran and found nothing. A dimension marked as not assessed means no check ran, and nothing in this report should be read as a statement about it.</p>
+
+<table class="table block">
+  <thead><tr><th>Dimension</th><th style="width:34mm">Assessed</th><th class="num" style="width:24mm">Observed</th></tr></thead>
+  <tbody>
+    {% for row in dimensions %}
+    <tr>
+      <td>{{ row.label }}</td>
+      <td>{% if row.covered %}Yes{% else %}<span class="faint">Not assessed</span>{% endif %}</td>
+      <td class="num">{% if row.covered %}{{ row.count|num }}{% else %}<span class="faint">—</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if runs %}
+<div class="sub">
+  <div class="label block">Scanner account</div>
+  <table class="table">
+    <thead><tr><th>Run</th><th>Outcome</th><th class="num">Checks</th><th class="num">Hosts</th><th class="num">Requests</th><th class="num">Errors</th></tr></thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <td>{{ run.group }}</td>
+        <td class="small">{{ run.status|capitalize }}</td>
+        <td class="num">{{ run.templates_loaded|num if run.templates_loaded is not none else (run.templates_selected|num if run.templates_selected is not none else '—') }}</td>
+        <td class="num">{{ run.hosts_scanned|num if run.hosts_scanned is not none else '—' }} / {{ run.hosts_total|num }}</td>
+        <td class="num">{{ run.requests_sent|num if run.requests_sent is not none else '—' }}</td>
+        <td class="num">{{ run.errors|num if run.errors is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="micro faint" style="margin-top:1.4mm">A dash means the scanner did not report that figure. It never means zero.</p>
+</div>
+{% endif %}
+
+{% if caveats %}
+<div class="sub">
+  <div class="label block">Limitations</div>
+  <ul class="small">{% for caveat in caveats %}<li>{{ caveat.text }}</li>{% endfor %}</ul>
+</div>
+{% endif %}

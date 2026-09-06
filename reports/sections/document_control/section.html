@@ -1,0 +1,31 @@
+<table class="table block">
+  <tbody>
+    {% for label, value in facts %}
+    <tr><td style="width:34mm"><span class="label">{{ label }}</span></td><td>{{ value }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if revisions %}
+<div class="sub avoid">
+  <div class="label block">Revision history</div>
+  <table class="table">
+    <thead><tr><th style="width:20mm">Version</th><th style="width:28mm">Date</th><th style="width:38mm">Author</th><th>Change</th></tr></thead>
+    <tbody>{% for row in revisions %}<tr><td>{{ row.version }}</td><td>{{ row.date }}</td><td>{{ row.author }}</td><td class="wrap">{{ row.note }}</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if distribution %}
+<div class="sub avoid">
+  <div class="label block">Distribution</div>
+  <ul class="small">{% for name in distribution %}<li>{{ name }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if confidentiality %}
+<div class="sub avoid"><div class="callout callout--quiet"><div class="callout__title">Handling</div><div class="md">{{ confidentiality|md|safe }}</div></div></div>
+{% endif %}
+{% if disclaimer %}
+<div class="sub avoid"><div class="label block">Disclaimer</div><div class="md small">{{ disclaimer|md|safe }}</div></div>
+{% endif %}

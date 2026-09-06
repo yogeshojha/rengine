@@ -1,0 +1,49 @@
+key: editorial
+name: Editorial
+description: Display type and generous space, for a board-facing document.
+author: reNgine
+version: "1"
+color:
+  page: "#fffefb"
+  ink: "#1c1917"
+  ink_soft: "#4c4642"
+  ink_faint: "#8a827b"
+  rule: "#e8e3dc"
+  rule_strong: "#cec7bd"
+  surface: "#f8f5f0"
+  surface_soft: "#fcfaf7"
+  accent: "#6d28d9"
+  accent_soft: "#f2ecff"
+  accent_ink: "#ffffff"
+  severity:
+    critical: "#be123c"
+    high: "#c2410c"
+    medium: "#b45309"
+    low: "#4338ca"
+    info: "#78716c"
+    unknown: "#78716c"
+  chart: ["#6d28d9", "#0d9488", "#be123c", "#d97706", "#0369a1"]
+type:
+  heading: space-grotesk
+  body: inter
+  mono: ibm-plex-mono
+  base_size: 10.0
+  scale: 1.3
+  line_height: 1.62
+  heading_weight: 700
+  heading_tracking: -0.025
+  label_tracking: 0.14
+  uppercase_labels: true
+layout:
+  rule_width: 0.5
+  radius: 8
+  block_gap: 1.3
+  table: open
+  finding: plain
+  heading: kicker
+cover:
+  layout: split
+  art: rings
+  ink: light
+  background: "#2e1065"
+  accent_bar: false

@@ -1,0 +1,26 @@
+{% import 'macros.html' as m with context %}
+<table class="table block">
+  <thead><tr><th style="width:22mm">Severity</th><th>Meaning</th></tr></thead>
+  <tbody>
+    {% for row in severities %}
+    <tr><td>{{ m.sev(row.key, row.label) }}</td><td class="wrap">{{ row.help }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if show_scoring %}
+<div class="sub avoid">
+  <div class="label block">How findings are ranked</div>
+  <p class="small">Severity alone does not decide order. A finding is weighted upward when exploitation is confirmed, when the modelled probability of exploitation is high, when it appears on many hosts, and when it is new since the previous run. That is why two findings of the same severity can sit far apart in this report.</p>
+  <p class="small">The posture score starts at 100 and deducts for each observed condition up to a fixed ceiling per condition. It is a summary of the same evidence, not a separate judgement.</p>
+</div>
+{% endif %}
+
+{% if glossary %}
+<div class="sub">
+  <div class="label block">Terms</div>
+  <table class="table">
+    <tbody>{% for term, meaning in glossary %}<tr><td style="width:26mm"><strong>{{ term }}</strong></td><td class="wrap">{{ meaning }}</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+{% endif %}

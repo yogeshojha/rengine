@@ -1,0 +1,45 @@
+{% import 'macros.html' as m with context %}
+{% if first_run %}
+<div class="callout callout--quiet">This is the first run recorded for {{ ctx.data.subject }}. Nothing is reported as new, because there is nothing to compare against. The next run will report its difference from this one.</div>
+{% else %}
+<p class="block muted small">Compared against the run of {{ previous.completed_at|date('%d %b %Y') }}. A dimension the previous run did not produce is left out, because a change cannot be measured against an absence.</p>
+
+<table class="table block">
+  <thead><tr><th>Dimension</th><th class="num" style="width:24mm">Appeared</th><th class="num" style="width:26mm">Went away</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr><td>{{ row.label }}</td><td class="num">{{ row.added|num }}</td><td class="num">{{ row.gone|num }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% for row in rows %}
+{% if row.added_sample or row.gone_sample %}
+<div class="sub avoid">
+  <div class="label block">{{ row.label }}</div>
+  {% if row.added_sample %}
+  <p class="small"><strong>New</strong></p>
+  <div class="chips block">{% for item in row.added_sample %}<span class="chip">{{ item|clip(48) }}</span>{% endfor %}{% if row.added > row.added_sample|length %}<span class="chip chip--solid">+{{ (row.added - row.added_sample|length)|num }} more</span>{% endif %}</div>
+  {% endif %}
+  {% if row.gone_sample %}
+  <p class="small"><strong>No longer present</strong></p>
+  <div class="chips">{% for item in row.gone_sample %}<span class="chip">{{ item|clip(48) }}</span>{% endfor %}{% if row.gone > row.gone_sample|length %}<span class="chip chip--solid">+{{ (row.gone - row.gone_sample|length)|num }} more</span>{% endif %}</div>
+  {% endif %}
+</div>
+{% endif %}
+{% endfor %}
+
+{% if new_findings %}
+<div class="sub">
+  <div class="label block">Findings this run reported first</div>
+  <table class="table table--fixed">
+    <thead><tr><th style="width:18mm">Severity</th><th>Weakness</th><th style="width:56mm">Location</th></tr></thead>
+    <tbody>
+      {% for finding in new_findings %}
+      <tr><td>{{ m.sev(finding.severity) }}</td><td class="wrap">{{ finding.name }}</td><td class="micro mono-break wrap">{{ finding.matched_at|clip(70) }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endif %}

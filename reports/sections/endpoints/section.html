@@ -1,0 +1,16 @@
+<p class="block muted small">{{ total|num }} of {{ all_endpoints|num }} endpoints{% if notable_only %} carry an administrative, authentication, API or debug marker{% endif %}.</p>
+<table class="table table--fixed">
+  <thead><tr><th style="width:44mm">Host</th><th>Path</th><th class="num" style="width:14mm">Status</th><th style="width:30mm">Marker</th>{% if show_params %}<th style="width:34mm">Parameters</th>{% endif %}</tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="micro mono-break wrap">{{ row.host }}</td>
+      <td class="micro mono-break wrap">{{ row.path|clip(80) }}{% if row.is_new %} <span class="chip chip--accent">new</span>{% endif %}</td>
+      <td class="num micro">{{ row.status or '—' }}</td>
+      <td class="micro muted wrap">{{ row.interest[:2]|join(', ')|replace('_', ' ') or '—' }}</td>
+      {% if show_params %}<td class="micro muted wrap">{{ row.params[:4]|join(', ')|clip(38) or '—' }}</td>{% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further endpoints are not listed.</p>{% endif %}

@@ -1,0 +1,4 @@
+<p class="block muted small">Queried {{ queried_at|at }}.</p>
+<table class="table">
+  <tbody>{% for label, value in facts %}<tr><td style="width:44mm"><span class="label">{{ label }}</span></td><td>{{ value }}</td></tr>{% endfor %}</tbody>
+</table>

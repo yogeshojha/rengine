@@ -4,7 +4,9 @@ const ACCENTS: Record<string, string> = {
 	'/scans': 'var(--chart-2)',
 	'/schedules': 'var(--chart-5)',
 	'/automation': 'var(--chart-4)',
-	'/arsenal': 'var(--chart-1)'
+	'/arsenal': 'var(--chart-1)',
+	'/reports': 'var(--chart-3)',
+	'/ai': 'var(--chart-4)'
 };
 
 export function navAccent(url: string): string | null {

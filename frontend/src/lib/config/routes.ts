@@ -12,6 +12,10 @@ export const routeLabels: Record<string, string> = {
 	// Tools
 	arsenal: 'Tools Arsenal',
 
+	// Reporting
+	reports: 'Reports',
+	ai: 'AI',
+
 	// Settings
 	settings: 'Settings',
 
@@ -22,6 +26,11 @@ export const SETTINGS_TABS = ['general', 'api-keys', 'proxies', 'notifications']
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 export const ARSENAL_TABS = ['nuclei', 'wordlists'] as const;
+export const REPORT_TABS = ['reports', 'templates', 'themes'] as const;
+export type ReportTab = (typeof REPORT_TABS)[number];
+
+export const AI_TABS = ['connection', 'features', 'usage'] as const;
+export type AiTab = (typeof AI_TABS)[number];
 export type ArsenalTab = (typeof ARSENAL_TABS)[number];
 
 export const ROUTES = {
@@ -52,6 +61,12 @@ export const ROUTES = {
 	},
 	schedules: '/schedules',
 	arsenal: (tab?: ArsenalTab) => (tab ? `/arsenal?tab=${tab}` : '/arsenal'),
+	reports: (tab?: ReportTab) => (tab ? `/reports?tab=${tab}` : '/reports'),
+	report: (id: string) => `/reports/${id}`,
+	reportTemplate: (id: string) => `/reports/templates/${id}`,
+	reportsForScan: (scanId: string) => `/reports?scan=${scanId}`,
+	reportsForTarget: (targetId: string) => `/reports?target=${targetId}`,
+	ai: (tab?: AiTab) => (tab ? `/ai?tab=${tab}` : '/ai'),
 	settings: (tab?: SettingsTab) => (tab ? `/settings?tab=${tab}` : '/settings')
 } as const;
 

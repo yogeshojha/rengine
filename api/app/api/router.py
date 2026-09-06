@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     activity_logs,
+    ai,
     api_keys,
     auth,
     celery_health,
@@ -19,6 +20,7 @@ from app.api.v1 import (
     ports,
     projects,
     proxies,
+    reports,
     ripestat,
     scan_contexts,
     scan_engines,
@@ -64,6 +66,8 @@ router.include_router(vulnerabilities.router)
 router.include_router(vuln_templates.router)
 router.include_router(wordlists.router)
 router.include_router(media.router)
+router.include_router(reports.router)
+router.include_router(ai.router)
 router.include_router(dashboard.router)
 router.include_router(celery_health.router)
 router.include_router(instance_settings.router)

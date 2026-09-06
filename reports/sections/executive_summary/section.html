@@ -1,0 +1,53 @@
+{% import 'macros.html' as m with context %}
+{% if preamble %}<div class="md block">{{ preamble|md|safe }}</div>{% endif %}
+
+{% if posture or severity %}
+<div class="grid block">
+  {% if posture %}
+  <div style="flex:0 0 38mm">
+    <div class="score">
+      <div class="score__dial">{{ dial(posture.score, grade=posture.grade, label='Posture', arc=score_arc, palette=ctx.palette)|safe }}</div>
+    </div>
+  </div>
+  {% endif %}
+  <div>
+    <div class="md">{{ narrative|md|safe }}</div>
+    {% if ai and disclose %}<p class="ai-note">This summary was drafted by a language model from the computed findings, then included without editing.</p>{% endif %}
+  </div>
+</div>
+{% else %}
+<div class="md block">{{ narrative|md|safe }}</div>
+{% endif %}
+
+{% if kpis %}
+<div class="sub">
+  <div class="label block">Surface</div>
+  <div class="grid grid--3">
+    {% for item in kpis %}
+      {{ m.kpi(item.value, item.label, item.note, dash=item.dash) }}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if severity %}
+<div class="sub">
+  <div class="label block">Findings by severity</div>
+  {{ m.severity_bar(severity) }}
+</div>
+{% endif %}
+
+{% if deductions %}
+<div class="sub avoid">
+  <div class="label block">What the score reflects</div>
+  <table class="table">
+    <thead><tr><th>Condition</th><th class="num">Observed</th><th class="num">Points</th></tr></thead>
+    <tbody>
+      {% for row in deductions %}
+      <tr><td>{{ row.label }}</td><td class="num">{{ row.count|num }}</td><td class="num">-{{ row.points|round|int }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="micro faint" style="margin-top:1.4mm">The score starts at 100. Each condition deducts up to a fixed ceiling, so no single class of finding can take the score to zero on its own.</p>
+</div>
+{% endif %}

@@ -1,0 +1,13 @@
+<p class="block muted small">Certificates served by this estate name {{ total|num }} other registrable domains. A certificate you serve is a claim of ownership, so these are candidates for the next assessment rather than confirmed assets.</p>
+<table class="table table--fixed">
+  <thead><tr><th style="width:52mm">Domain</th><th>Named on</th><th style="width:52mm">Served by</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="mono-break micro">{{ row.domain }}</td>
+      <td class="micro muted wrap">{{ row.names|join(', ')|clip(76) }}</td>
+      <td class="micro mono-break wrap">{{ row.seen_on[0]|clip(44) }}{% if row.count > 1 %} <span class="faint">and {{ row.count - 1 }} more</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

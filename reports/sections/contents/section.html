@@ -1,0 +1,14 @@
+<section class="section" id="contents">
+  <div class="section__head"><h1 class="section__title">{{ heading|default('Contents') }}</h1></div>
+  <nav class="toc">
+    <ol>
+      {% for entry in entries %}
+      {% if entry.level == 1 or show_subs|default(true) %}
+      <li class="{{ 'toc--sub' if entry.level > 1 }}">
+        <a href="#{{ entry.anchor }}">{% if entry.number %}<span class="toc__n">{{ entry.number }}</span>{% endif %}{{ entry.title }}</a>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ol>
+  </nav>
+</section>

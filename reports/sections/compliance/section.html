@@ -1,0 +1,19 @@
+<p class="block muted small">Each finding is mapped from the weakness class it declares. A mapping is evidence an auditor can follow, not a statement that a control passes or fails.</p>
+{% for block in blocks %}
+<div class="sub">
+  <div class="sub__title">{{ block.name }} {{ block.version }}</div>
+  {% if block.scope_note %}<p class="micro faint block">{{ block.scope_note }}</p>{% endif %}
+  <table class="table table--fixed">
+    <thead><tr><th style="width:20mm">Control</th><th>Outcome</th><th class="num" style="width:24mm">Findings</th></tr></thead>
+    <tbody>
+      {% for row in block.rows %}
+      <tr>
+        <td class="mono">{{ row.id }}</td>
+        <td class="wrap">{{ row.title }}{% if row.note %}<br><span class="micro faint">{{ row.note }}</span>{% endif %}</td>
+        <td class="num">{% if row.count %}{{ row.count|num }}{% elif row.evidence %}<span class="faint micro">covered</span>{% else %}<span class="faint">0</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}

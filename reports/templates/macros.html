@@ -1,0 +1,58 @@
+{% macro sev(severity, label=None) %}<span class="badge badge--{{ severity }}">{{ label or severity|sev }}</span>{% endmacro %}
+
+{% macro chip(text, kind='') %}<span class="chip {{ 'chip--' ~ kind if kind }}">{{ text }}</span>{% endmacro %}
+
+{% macro kpi(value, label, note='', dash=false) %}
+<div class="kpi {{ 'kpi--dash' if dash }}">
+  <div class="kpi__value">{{ value }}</div>
+  <div class="kpi__label">{{ label }}</div>
+  {% if note %}<div class="kpi__note">{{ note }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro figure(svg, caption='', number=None) %}
+{% if svg %}
+<figure class="figure">
+  {{ svg|safe }}
+  {% if caption %}<figcaption class="figcaption">{% if number %}Figure {{ number }}. {% endif %}{{ caption }}</figcaption>{% endif %}
+</figure>
+{% endif %}
+{% endmacro %}
+
+{% macro meter(label, value, total, suffix='') %}
+<div class="meter">
+  <div class="meter__label">{{ label }}</div>
+  <div class="meter__track"><div class="meter__fill" style="width:{{ ((value / total * 100) if total else 0)|round(1) }}%"></div></div>
+  <div class="meter__value">{{ value|num }}{{ suffix }}</div>
+</div>
+{% endmacro %}
+
+{% macro callout(title, body, kind='') %}
+<div class="callout {{ 'callout--' ~ kind if kind }}">
+  {% if title %}<div class="callout__title">{{ title }}</div>{% endif %}
+  <div>{{ body }}</div>
+</div>
+{% endmacro %}
+
+{% macro legend(items) %}
+<div class="chips">
+  {% for item in items %}
+  <span class="chip"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:{{ item.fill }}"></span>&nbsp;{{ item.label }} {{ item.value|num }}</span>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro severity_bar(counts) %}
+{% set items = [] %}
+{% for row in counts %}{% if row.count %}{% set _ = items.append(Slice(row.label, row.count, ctx.sev(row.severity))) %}{% endif %}{% endfor %}
+{% if items %}
+<div class="block">
+  {{ stack_bar(items)|safe }}
+  <div class="chips" style="margin-top:1.6mm">
+    {% for row in counts %}{% if row.count %}
+    <span class="chip"><span style="display:inline-block;width:6px;height:6px;border-radius:2px;background:{{ ctx.sev(row.severity) }}"></span>&nbsp;{{ row.label }} {{ row.count|num }}</span>
+    {% endif %}{% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endmacro %}

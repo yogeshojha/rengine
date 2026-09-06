@@ -25,6 +25,8 @@
 	import { getFreshnessLevel, formatShortDate } from '$lib/utilities/dates';
 	import { getExternalLinksTargetDropdown } from '$lib/utilities/target-detail-external-links';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import { ROUTES } from '$lib/config/routes';
 
 	interface Props {
 		target: Target;
@@ -36,6 +38,7 @@
 		onExportJson: () => void;
 		onExportCsv: () => void;
 		onDelete: () => void;
+		onReport: () => void;
 		onChange: (patch: Partial<Target>) => void;
 	}
 
@@ -49,6 +52,7 @@
 		onExportJson,
 		onExportCsv,
 		onDelete,
+		onReport,
 		onChange
 	}: Props = $props();
 
@@ -166,6 +170,10 @@
 				Cancel
 			</Button>
 		{:else}
+			<Button variant="outline" size="sm" class="gap-1.5" onclick={onReport}>
+				<FileText class="size-3.5" />
+				Report
+			</Button>
 			<Button size="sm" class="gap-1.5" onclick={onScan}>
 				<Play class="size-3.5" />
 				Scan
@@ -191,6 +199,14 @@
 				<DropdownMenu.Item onclick={copyId}>
 					<Copy class="size-4" />
 					Copy target ID
+				</DropdownMenu.Item>
+				<DropdownMenu.Item>
+					{#snippet child({ props })}
+						<a {...props} href={ROUTES.reportsForTarget(target.id)}>
+							<FileText class="size-4" />
+							Reports for this target
+						</a>
+					{/snippet}
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Label>Export</DropdownMenu.Label>

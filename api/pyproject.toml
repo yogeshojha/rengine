@@ -5,6 +5,7 @@ description = "reNgine: FastAPI backend"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.3",
+    "anthropic>=0.69.0",
     "apprise>=1.9.0",
     "argon2-cffi>=25.1.0",
     "asyncpg>=0.31.0",

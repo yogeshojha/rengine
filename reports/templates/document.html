@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+{% if spec.branding.author %}<meta name="author" content="{{ spec.branding.author }}">{% endif %}
+{% if spec.subtitle %}<meta name="description" content="{{ spec.subtitle }}">{% endif %}
+<title>{{ spec.title }}</title>
+<style>{{ stylesheet|safe }}</style>
+</head>
+<body>
+{% if spec.style.watermark_text %}<div class="watermark">{{ spec.style.watermark_text }}</div>{% endif %}
+{% for block in blocks %}
+{{ block|safe }}
+{% endfor %}
+</body>
+</html>

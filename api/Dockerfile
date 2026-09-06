@@ -19,6 +19,7 @@ FROM base AS development
 COPY shared /app/shared
 COPY tools /app/tools
 COPY stages /app/stages
+COPY reports /app/reports
 
 COPY api/pyproject.toml api/uv.lock* ./
 
@@ -35,6 +36,7 @@ CMD ["uv", "run", "uvicorn", "app.main:app", \
      "--reload-dir", "/app/shared", \
      "--reload-dir", "/app/tools", \
      "--reload-dir", "/app/stages", \
+     "--reload-dir", "/app/reports", \
      "--timeout-graceful-shutdown", "2"]
 
 ##################################################################

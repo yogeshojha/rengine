@@ -1,10 +1,9 @@
 <script lang="ts">
+	import { ROUTES } from '$lib/config/routes';
 	import { onMount } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
-	import { MASK } from '$lib/constants';
-	import { AI_PROVIDERS, AI_FEATURES, DEFAULT_AI_PROVIDER } from '$lib/config/ai';
 	import {
 		INSTANCE_MODES,
 		MODE_LABELS,
@@ -13,23 +12,15 @@
 	} from '$lib/config/capabilities';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
-	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Empty from '$lib/components/ui/empty/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Switch } from '$lib/components/ui/switch/index.js';
-	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { toast } from 'svelte-sonner';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
-	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
-	import EyeIcon from '@lucide/svelte/icons/eye';
-	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
 
@@ -71,27 +62,12 @@
 	let isLoading = $state(true);
 	let loadFailed = $state(false);
 	let saving = $state(false);
-	let testing = $state(false);
 
 	let instanceName = $state('reNgine');
 	let timezone = $state('UTC');
 	let mode = $state<string>(DEFAULT_INSTANCE_MODE);
 	let scanRetention = $state('90');
 	let screenshotRetention = $state('30');
-
-	let aiEnabled = $state(false);
-	let aiProvider = $state<string>(DEFAULT_AI_PROVIDER);
-	let aiModel = $state('');
-	let aiKey = $state('');
-	let aiKeyMasked = $state<string | null>(null);
-	let aiConfigured = $state(false);
-	let showKey = $state(false);
-	let aiFeatures = $state<Record<string, boolean>>({
-		vuln_descriptions: true,
-		impact_assessment: true,
-		remediation: true,
-		auto_report: false
-	});
 
 	let zoneOptions = $derived.by(() => {
 		const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -102,10 +78,6 @@
 	let modePlaceholder = $derived(
 		INSTANCE_MODES.find((m) => m.value === mode)?.label ?? MODE_LABELS[DEFAULT_INSTANCE_MODE]
 	);
-	let aiModelPlaceholder = $derived(
-		AI_PROVIDERS.find((p) => p.value === aiProvider)?.model ?? 'model name'
-	);
-
 	let snapshot = $state<string | null>(null);
 
 	function currentState() {
@@ -114,12 +86,7 @@
 			timezone,
 			mode,
 			scanRetention,
-			screenshotRetention,
-			aiEnabled,
-			aiProvider,
-			aiModel: aiModel.trim(),
-			aiKey: aiKey.trim(),
-			aiFeatures
+			screenshotRetention
 		});
 	}
 
@@ -133,30 +100,8 @@
 		mode = coerceInstanceMode(s.mode);
 		scanRetention = String(s.scan_history_retention_days);
 		screenshotRetention = String(s.screenshot_retention_days);
-		aiEnabled = s.ai_enabled;
-		aiProvider = s.ai_provider ?? DEFAULT_AI_PROVIDER;
-		aiModel = s.ai_model ?? '';
-		aiConfigured = s.ai_configured;
-		aiKeyMasked = s.ai_api_key_masked;
-		aiKey = '';
-		if (s.ai_features && Object.keys(s.ai_features).length > 0) {
-			aiFeatures = { ...aiFeatures, ...s.ai_features };
-		}
 		snapshot = currentState();
 	}
-
-	function selectProvider(v: string) {
-		const prev = AI_PROVIDERS.find((p) => p.value === aiProvider);
-		aiProvider = v;
-		const meta = AI_PROVIDERS.find((p) => p.value === v);
-		if (!meta) return;
-		if (!aiModel.trim() || (prev && aiModel.trim() === prev.model)) aiModel = meta.model;
-	}
-
-	let modelMismatch = $derived.by(() => {
-		const meta = AI_PROVIDERS.find((p) => p.value === aiProvider);
-		return Boolean(meta && aiModel.trim() && aiModel.trim() !== meta.model);
-	});
 
 	async function handleSave() {
 		if (!instanceSettingsStore.settings) {
@@ -167,32 +112,14 @@
 			toast.error('Instance name is required');
 			return;
 		}
-		if (aiEnabled && !aiConfigured && !aiKey.trim()) {
-			toast.error('An API key is required to enable AI analysis');
-			return;
-		}
-
 		saving = true;
 		try {
-			const aiKeyPayload = aiEnabled
-				? aiKey.trim()
-					? aiKey.trim()
-					: aiConfigured
-						? MASK
-						: ''
-				: undefined;
-
 			const updated = await instanceSettingsStore.update({
 				instance_name: instanceName.trim(),
 				timezone,
 				mode,
 				scan_history_retention_days: Number(scanRetention),
-				screenshot_retention_days: Number(screenshotRetention),
-				ai_enabled: aiEnabled,
-				ai_provider: aiEnabled ? aiProvider : undefined,
-				ai_model: aiEnabled ? aiModel.trim() || null : undefined,
-				...(aiKeyPayload !== undefined ? { ai_api_key: aiKeyPayload } : {}),
-				...(aiEnabled ? { ai_features: aiFeatures } : {})
+				screenshot_retention_days: Number(screenshotRetention)
 			});
 			if (updated) {
 				hydrate();
@@ -200,26 +127,6 @@
 			}
 		} finally {
 			saving = false;
-		}
-	}
-
-	async function handleTestAi() {
-		if (!aiKey.trim() && !aiConfigured) {
-			toast.error('Enter an API key to test the connection');
-			return;
-		}
-		testing = true;
-		try {
-			const result = await instanceSettingsStore.testAi({
-				provider: aiProvider,
-				model: aiModel.trim() || undefined,
-				api_key: aiKey.trim() || undefined
-			});
-			if (!result) return;
-			if (result.success) toast.success(result.message);
-			else toast.error(result.message);
-		} finally {
-			testing = false;
 		}
 	}
 
@@ -391,143 +298,18 @@
 			<Card.Header>
 				<div class="flex items-center gap-2">
 					<SparklesIcon class="size-4 text-foreground" />
-					<Card.Title class="text-base">AI-powered analysis</Card.Title>
+					<Card.Title class="text-base">AI</Card.Title>
 				</div>
-				<Card.Description
-					>Enrich findings with descriptions, impact, and remediation via an external LLM.</Card.Description
-				>
+				<Card.Description>
+					Connecting a language model, choosing what it is used for and what it has cost now live on
+					their own page.
+				</Card.Description>
 			</Card.Header>
-			<Card.Content class="space-y-5">
-				<div class="flex items-center justify-between rounded-lg border px-4 py-3">
-					<div class="space-y-0.5">
-						<Label class="text-sm font-medium">Enable AI-powered analysis</Label>
-						<p class="text-xs text-muted-foreground">Connect an external LLM provider.</p>
-					</div>
-					<Switch checked={aiEnabled} onCheckedChange={(v) => (aiEnabled = v)} disabled={saving} />
-				</div>
-
-				{#if aiEnabled}
-					<Alert.Root variant="destructive">
-						<TriangleAlertIcon />
-						<Alert.Title>Scan data leaves your instance</Alert.Title>
-						<Alert.Description>
-							Enabling AI sends scan data (targets, findings, and context) to your chosen external
-							provider for processing. Do not enable this on air-gapped or sensitive deployments.
-						</Alert.Description>
-					</Alert.Root>
-
-					<div class="space-y-2">
-						<Label class="text-xs">Provider</Label>
-						<RadioGroup.Root
-							value={aiProvider}
-							onValueChange={selectProvider}
-							class="grid grid-cols-2 gap-2 sm:grid-cols-4"
-						>
-							{#each AI_PROVIDERS as p (p.value)}
-								<Label
-									class="flex cursor-pointer items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm data-[active=true]:border-primary data-[active=true]:bg-muted"
-									data-active={aiProvider === p.value}
-								>
-									<RadioGroup.Item value={p.value} />
-									<span class="truncate">{p.name}</span>
-								</Label>
-							{/each}
-						</RadioGroup.Root>
-					</div>
-
-					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-						<div class="space-y-1.5">
-							<Label class="text-xs" for="ai-key">API key</Label>
-							<div class="relative">
-								<Input
-									id="ai-key"
-									type={showKey ? 'text' : 'password'}
-									bind:value={aiKey}
-									placeholder={aiConfigured
-										? (aiKeyMasked ?? 'Leave blank to keep current key')
-										: 'Paste your API key'}
-									autocomplete="off"
-									class="h-9 pr-9 font-mono text-xs"
-									disabled={saving}
-								/>
-								<button
-									type="button"
-									class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-									onclick={() => (showKey = !showKey)}
-									aria-label={showKey ? 'Hide key' : 'Show key'}
-								>
-									{#if showKey}<EyeOffIcon class="size-3.5" />{:else}<EyeIcon
-											class="size-3.5"
-										/>{/if}
-								</button>
-							</div>
-							{#if aiConfigured}
-								<p class="text-xs text-muted-foreground">
-									Key set — leave blank to keep, or type to replace.
-								</p>
-							{/if}
-						</div>
-						<div class="space-y-1.5">
-							<Label class="text-xs" for="ai-model">Model</Label>
-							<Input
-								id="ai-model"
-								bind:value={aiModel}
-								placeholder={aiModelPlaceholder}
-								autocomplete="off"
-								class="h-9 font-mono text-xs"
-								disabled={saving}
-							/>
-							{#if modelMismatch}
-								<p class="text-xs text-muted-foreground">
-									Custom model — may not match {AI_PROVIDERS.find((p) => p.value === aiProvider)
-										?.name}.
-								</p>
-							{/if}
-						</div>
-					</div>
-
-					<div>
-						<Button
-							variant="outline"
-							size="sm"
-							class="h-8 text-xs"
-							disabled={testing || saving || (!aiKey.trim() && !aiConfigured)}
-							onclick={handleTestAi}
-						>
-							{#if testing}
-								<Spinner class="mr-1.5 size-3" />
-								Testing…
-							{:else}
-								<FlaskConicalIcon class="mr-1.5 size-3" />
-								Test connection
-							{/if}
-						</Button>
-					</div>
-
-					<Separator />
-
-					<div class="space-y-3">
-						<Label class="text-xs">Features</Label>
-						<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-							{#each AI_FEATURES as f (f.key)}
-								<Label
-									class="flex cursor-pointer items-start gap-3 rounded-md border border-input px-3 py-2.5 data-[active=true]:border-primary data-[active=true]:bg-muted"
-									data-active={aiFeatures[f.key]}
-								>
-									<Checkbox
-										checked={aiFeatures[f.key]}
-										onCheckedChange={(v) => (aiFeatures = { ...aiFeatures, [f.key]: v === true })}
-										class="mt-0.5"
-									/>
-									<span class="space-y-0.5">
-										<span class="block text-sm font-medium">{f.label}</span>
-										<span class="block text-xs text-muted-foreground">{f.hint}</span>
-									</span>
-								</Label>
-							{/each}
-						</div>
-					</div>
-				{/if}
+			<Card.Content>
+				<Button variant="outline" size="sm" href={ROUTES.ai()}>
+					<SparklesIcon class="mr-1.5 size-3.5" />
+					Open the AI page
+				</Button>
 			</Card.Content>
 		</Card.Root>
 

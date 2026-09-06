@@ -10,6 +10,7 @@
 	import Play from '@lucide/svelte/icons/play';
 	import Ban from '@lucide/svelte/icons/ban';
 	import Copy from '@lucide/svelte/icons/copy';
+	import FileText from '@lucide/svelte/icons/file-text';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
@@ -60,6 +61,7 @@
 	import type { TargetType } from '$lib/types/target';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
 	import { ROUTES } from '$lib/config/routes';
+	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { NOW_TICK_MS } from '$lib/constants';
 
 	const TABS = ['overview', ...RESULT_TABS] as const;
@@ -86,6 +88,7 @@
 	let error = $state<string | null>(null);
 	let showRescan = $state(false);
 	let cancelOpen = $state(false);
+	let reportOpen = $state(false);
 	let cancelling = $state(false);
 	let headerEl = $state<HTMLElement | null>(null);
 	let condensed = $state(false);
@@ -369,6 +372,7 @@
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let targetHref = $derived(scan ? ROUTES.target(scan.target_id) : ROUTES.scans);
+	let reportsHref = $derived(scan ? ROUTES.reportsForScan(scan.id) : ROUTES.reports());
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -435,6 +439,10 @@
 						Cancel
 					</Button>
 				{:else}
+					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (reportOpen = true)}>
+						<FileText class="size-3.5" />
+						Report
+					</Button>
 					<Button size="sm" class="gap-1.5" onclick={() => (showRescan = true)}>
 						<Play class="size-3.5" />
 						Re-scan
@@ -456,6 +464,14 @@
 						<DropdownMenu.Item onclick={copyTarget}>
 							<Copy class="size-4" />
 							Copy target
+						</DropdownMenu.Item>
+						<DropdownMenu.Item>
+							{#snippet child({ props })}
+								<a {...props} href={reportsHref}>
+									<FileText class="size-4" />
+									Reports for this run
+								</a>
+							{/snippet}
 						</DropdownMenu.Item>
 						<DropdownMenu.Item>
 							{#snippet child({ props })}
@@ -636,6 +652,12 @@
 </div>
 
 {#if scan}
+	<GenerateReportDialog
+		bind:open={reportOpen}
+		projectId={scan.project_id}
+		scanId={scan.id}
+		subject={scan.execution_config.target_value}
+	/>
 	<LaunchDialog
 		bind:open={showRescan}
 		targetId={scan.target_id}

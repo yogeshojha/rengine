@@ -1,0 +1,48 @@
+{% import 'macros.html' as m with context %}
+<p class="block muted small">{{ ctx.data.service_rows|length|num }} services answered on {{ addresses|num }} addresses. {{ web|num }} of them speak HTTP.{% if sensitive %} {{ sensitive|num }} are of a kind that normally belongs on a private network.{% endif %}</p>
+
+{% if classes %}
+<div class="sub avoid">
+  <div class="label block">What is listening</div>
+  {% set items = [] %}
+  {% for row in classes %}{% set _ = items.append(Slice(row.label, row.count, ctx.hue(loop.index0))) %}{% endfor %}
+  {{ stack_bar(items)|safe }}
+  <div class="chips" style="margin-top:1.6mm">
+    {% for row in classes %}<span class="chip"><span style="display:inline-block;width:6px;height:6px;border-radius:2px;background:{{ ctx.hue(loop.index0) }}"></span>&nbsp;{{ row.label }} {{ row.count|num }}</span>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if policies %}
+<div class="sub avoid">
+  <div class="label block">Scan coverage</div>
+  <table class="table">
+    <tbody>
+      {% for key, count in policies.items() %}
+      <tr><td style="width:44mm">{{ {'full':'Scanned in full','web':'Web ports only, CDN edge','skip':'Not scanned'}.get(key, key) }}</td><td class="num">{{ count|num }} addresses</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="micro faint" style="margin-top:1.4mm">A CDN edge address is scanned on web ports only, because the rest of its ports belong to the provider and not to this estate.</p>
+</div>
+{% endif %}
+
+<div class="sub">
+  <div class="label block">Services</div>
+  <table class="table table--fixed">
+    <thead><tr><th style="width:32mm">Address</th><th class="num" style="width:14mm">Port</th><th style="width:26mm">Service</th><th style="width:20mm">Class</th>{% if show_banner %}<th>Software</th>{% endif %}<th style="width:38mm">Hostnames</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="micro mono-break">{{ row.ip }}</td>
+        <td class="num micro">{{ row.port }}{% if row.tls %} <span class="faint">tls</span>{% endif %}</td>
+        <td class="micro">{{ row.service_name or '—' }}{% if row.sensitive %} <span class="badge badge--high">sensitive</span>{% endif %}</td>
+        <td class="micro muted">{{ row.service_class|svc }}</td>
+        {% if show_banner %}<td class="micro muted wrap">{{ ((row.product ~ ' ' ~ (row.version or '')) if row.product else (row.banner or ''))|clip(48) or '—' }}</td>{% endif %}
+        <td class="micro mono-break wrap">{{ row.hosts[:2]|join(', ')|clip(46) or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further services are not listed.</p>{% endif %}
+</div>

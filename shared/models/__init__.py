@@ -1,5 +1,6 @@
 import shared.models._tztypes  # patch datetime->timestamptz first
 from shared.models.activity_log import ActivityLog, ActivityLogRead
+from shared.models.ai import AiNarrative
 from shared.models.api_key import (
     APIKey,
     APIKeyCreate,
@@ -74,6 +75,7 @@ from shared.models.proxy import (
     ProxyTestResult,
     ProxyUpdate,
 )
+from shared.models.report import Report, ReportTemplate, ReportTheme
 from shared.models.ripestat import (
     RIPEStatAbuseContact,
     RIPEStatAnnouncedPrefix,
@@ -177,6 +179,7 @@ __all__ = [
     "APIKeyUpdate",
     "ActivityLog",
     "ActivityLogRead",
+    "AiNarrative",
     "AuthConfig",
     "AuthHeader",
     "DnsLookup",
@@ -241,6 +244,9 @@ __all__ = [
     "RIPEStatNetworkInfo",
     "RIPEStatPrefixOverview",
     "RIPEStatRelatedPrefix",
+    "Report",
+    "ReportTemplate",
+    "ReportTheme",
     "Scan",
     "ScanActivity",
     "ScanActivityRead",

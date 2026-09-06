@@ -1,0 +1,96 @@
+{% import 'macros.html' as m with context %}
+{% for row in rows %}
+{% set issue = row.issue %}
+{% set sample = row.sample %}
+<div class="finding finding--{{ ctx.theme.layout.finding }} sev-{{ issue.severity }}" id="{{ row.anchor }}">
+  <div class="finding__head">
+    <div class="finding__meta">
+      {{ m.sev(issue.severity) }}
+      {% if issue.is_kev %}<span class="badge badge--critical">Known exploited</span>{% endif %}
+      <span class="chip">{{ issue.count|num }} observed</span>
+      <span class="chip">{{ issue.hosts|length|num }} {{ issue.hosts|length|plural('host') }}</span>
+      {% if issue.new_count %}<span class="chip chip--accent">{{ issue.new_count|num }} new</span>{% endif %}
+    </div>
+    <h3 class="finding__title">{{ issue.name }}</h3>
+    <div class="finding__where">{{ sample.matched_at|clip(120) }}</div>
+  </div>
+  <div class="finding__body">
+    {% if cfg.show_classification and (issue.cve_ids or issue.cwe_ids or issue.cvss_score or issue.epss_score) %}
+    <table class="table" style="margin-bottom:2mm">
+      <tbody>
+        <tr>
+          {% if issue.cvss_score %}<td><span class="label">CVSS</span><br>{{ issue.cvss_score }}</td>{% endif %}
+          {% if issue.epss_score %}<td><span class="label">EPSS</span><br>{{ (issue.epss_score * 100)|round(1) }}%</td>{% endif %}
+          {% if issue.cve_ids %}<td><span class="label">CVE</span><br>{{ issue.cve_ids[:4]|join(', ') }}</td>{% endif %}
+          {% if issue.cwe_ids %}<td><span class="label">CWE</span><br>{{ issue.cwe_ids[:4]|join(', ') }}{% if issue.cwe_rank %} <span class="faint">Top 25 #{{ issue.cwe_rank }}</span>{% endif %}</td>{% endif %}
+          <td><span class="label">Check</span><br><span class="micro mono-break">{{ issue.template_id }}</span></td>
+        </tr>
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if row.explainer %}
+    <h5>What this means here</h5>
+    <p>{{ row.explainer }}</p>
+    {% endif %}
+
+    {% if cfg.show_description and issue.description %}
+    <h5>Description</h5>
+    <div class="md">{{ issue.description|md|safe }}</div>
+    {% endif %}
+
+    {% if cfg.show_impact and issue.impact %}
+    <h5>Impact</h5>
+    <div class="md">{{ issue.impact|md|safe }}</div>
+    {% endif %}
+
+    <h5>Affected</h5>
+    <table class="table table--fixed">
+      <thead><tr><th style="width:60%">Location</th><th style="width:22mm">Status</th><th>Detail</th></tr></thead>
+      <tbody>
+        {% for finding in row.assets %}
+        <tr>
+          <td class="wrap mono-break micro">{{ finding.matched_at|clip(140) }}{% if finding.is_new %} <span class="chip chip--accent">new</span>{% endif %}</td>
+          <td class="micro">{{ finding.asset_status if finding.asset_status else '—' }}</td>
+          <td class="micro muted wrap">{{ (finding.extracted[:2]|join(', ') if finding.extracted else finding.asset_title)|clip(70) or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if row.more %}<p class="micro faint">{{ row.more|num }} further locations are listed in the asset appendix.</p>{% endif %}
+
+    {% if cfg.show_remediation and issue.remediation %}
+    <h5>Remediation</h5>
+    <div class="md">{{ issue.remediation|md|safe }}</div>
+    {% endif %}
+
+    {% if row.curl %}
+    <h5>Reproduce</h5>
+    <pre class="evidence">{{ row.curl }}</pre>
+    {% endif %}
+
+    {% if row.request %}
+    <h5>Request</h5>
+    <pre class="evidence evidence--tall">{{ row.request }}</pre>
+    {% endif %}
+    {% if row.response %}
+    <h5>Response</h5>
+    <pre class="evidence evidence--tall">{{ row.response }}</pre>
+    {% endif %}
+
+    {% if cfg.show_screenshot and sample.screenshot %}
+    <figure class="figure"><img class="shot" src="{{ sample.screenshot }}" alt=""><figcaption class="figcaption">{{ sample.host }}</figcaption></figure>
+    {% endif %}
+
+    {% if row.controls %}
+    <h5>Control mapping</h5>
+    <div class="chips">{% for control in row.controls %}<span class="chip">{{ control }}</span>{% endfor %}</div>
+    {% endif %}
+
+    {% if cfg.show_references and issue.references %}
+    <h5>References</h5>
+    <ul class="micro">{% for ref in issue.references[:6] %}<li class="mono-break">{{ ref }}</li>{% endfor %}</ul>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}

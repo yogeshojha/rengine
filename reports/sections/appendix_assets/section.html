@@ -1,0 +1,9 @@
+{% for block in blocks %}
+<div class="sub">
+  <div class="label block">{{ block.label }} <span class="faint">({{ block.total|num }})</span></div>
+  <div style="column-count:3;column-gap:5mm;font-family:var(--r-font-mono);font-size:var(--r-micro);line-height:1.5">
+    {% for value in block.entries %}<div style="break-inside:avoid;word-break:break-all">{{ value|clip(52) }}</div>{% endfor %}
+  </div>
+  {% if block.hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ block.hidden|num }} further entries are not listed.</p>{% endif %}
+</div>
+{% endfor %}

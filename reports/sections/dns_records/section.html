@@ -1,0 +1,13 @@
+<p class="block muted small">Queried {{ queried_at|at }}.</p>
+{% for group in groups %}
+<div class="sub avoid">
+  <div class="label block">{{ group.type }}{% if group.total > group.records|length %} <span class="faint">({{ group.records|length }} of {{ group.total }})</span>{% endif %}</div>
+  <table class="table">
+    <tbody>
+      {% for record in group.records %}
+      <tr><td class="micro mono-break wrap">{{ record.value|clip(110) }}</td>{% if record.priority is not none %}<td class="num micro" style="width:18mm">{{ record.priority }}</td>{% endif %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}

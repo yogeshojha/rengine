@@ -1,0 +1,34 @@
+{% import 'macros.html' as m with context %}
+{% if narrative %}<div class="md block">{{ narrative|md|safe }}</div>{% endif %}
+
+<table class="table block">
+  <thead><tr><th>Dimension</th><th class="num">Observed</th><th class="num">Change</th><th>Trend</th><th>As of</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.label }}</td>
+      <td class="num">{% if row.covered %}{{ row.count|num }}{% else %}<span class="faint">Not scanned</span>{% endif %}</td>
+      <td class="num">
+        {% if row.delta is not none and row.delta != 0 %}{{ '+' if row.delta > 0 }}{{ row.delta|num }}
+        {% elif row.covered and row.previous is not none %}<span class="faint">0</span>
+        {% else %}<span class="faint">—</span>{% endif %}
+      </td>
+      <td>{% if row.trend|length > 1 %}<span style="display:inline-block;width:26mm">{{ sparkline(row.trend, width=110, height=18, palette=ctx.palette)|safe }}</span>{% endif %}</td>
+      <td class="small faint nowrap">{{ row.observed|date('%d %b %Y') if row.observed else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if status %}
+<div class="sub avoid">
+  <div class="label block">How hosts answered</div>
+  {% set items = [] %}
+  {% for row in status %}{% set _ = items.append(Slice(row.name, row.count, ctx.hue(loop.index0))) %}{% endfor %}
+  {{ stack_bar(items)|safe }}
+  <div class="chips" style="margin-top:1.6mm">
+    {% for row in status %}<span class="chip"><span style="display:inline-block;width:6px;height:6px;border-radius:2px;background:{{ ctx.hue(loop.index0) }}"></span>&nbsp;{{ row.name }} {{ row.count|num }}</span>{% endfor %}
+  </div>
+  {% if no_response %}<p class="micro faint" style="margin-top:1.4mm">{{ no_response|num }} hosts did not answer an HTTP request and are not shown above.</p>{% endif %}
+</div>
+{% endif %}

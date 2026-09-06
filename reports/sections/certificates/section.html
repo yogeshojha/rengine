@@ -1,0 +1,34 @@
+<p class="block muted small">{{ total|num }} certificates were observed. {{ expired|num }} have expired, {{ expiring|num }} expire within {{ window }} days and {{ self_signed|num }} are self signed.</p>
+{% if clean %}
+<div class="callout callout--quiet">No certificate has expired, is expiring within {{ window }} days, or is self signed.</div>
+{% else %}
+<table class="table table--fixed">
+  <thead><tr><th>Host</th><th style="width:26mm">Expires</th><th class="num" style="width:20mm">Days</th><th style="width:44mm">Issuer</th><th style="width:22mm">State</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="micro mono-break wrap">{{ row.host }}</td>
+      <td class="micro">{{ row.not_after|date('%d %b %Y') }}</td>
+      <td class="num micro">{{ row.days_left if row.days_left is not none else '—' }}</td>
+      <td class="micro muted wrap">{{ row.issuer|clip(40) or '—' }}</td>
+      <td class="micro">
+        {% if row.expired %}<span class="badge badge--high">expired</span>
+        {% elif row.self_signed %}<span class="badge badge--medium">self signed</span>
+        {% elif row.days_left is not none and row.days_left <= window %}<span class="badge badge--medium">expiring</span>
+        {% else %}<span class="faint">valid</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further certificates are not listed.</p>{% endif %}
+{% endif %}
+
+{% if issuers %}
+<div class="sub avoid">
+  <div class="label block">Issuers</div>
+  <table class="table">
+    <tbody>{% for name, count in issuers %}<tr><td class="wrap">{{ name }}</td><td class="num" style="width:22mm">{{ count|num }}</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+{% endif %}

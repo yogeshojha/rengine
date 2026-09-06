@@ -44,6 +44,7 @@
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import TargetHeader from '$lib/components/targets/target-detail/target-header.svelte';
+	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import TargetHeaderSkeleton from '$lib/components/targets/target-detail/target-header-skeleton.svelte';
 	import SurfaceStrip from '$lib/components/targets/target-detail/overview/surface-strip.svelte';
 	import AttentionPanel from '$lib/components/targets/target-detail/overview/attention-panel.svelte';
@@ -92,6 +93,7 @@
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
 	let showDeleteDialog = $state(false);
+	let reportOpen = $state(false);
 	let isDeleting = $state(false);
 	let showLaunchModal = $state(false);
 	let cancelOpen = $state(false);
@@ -608,6 +610,7 @@
 				onExportJson={handleExportJson}
 				onExportCsv={handleExportCsv}
 				onDelete={() => (showDeleteDialog = true)}
+				onReport={() => (reportOpen = true)}
 				onChange={patchTarget}
 			/>
 		</div>
@@ -770,6 +773,14 @@
 </div>
 
 {#if target}
+	{#if target}
+		<GenerateReportDialog
+			bind:open={reportOpen}
+			projectId={target.project_id}
+			targetId={target.id}
+			subject={target.target_value}
+		/>
+	{/if}
 	<LaunchDialog
 		bind:open={showLaunchModal}
 		targetId={target.id}

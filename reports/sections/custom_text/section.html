@@ -1,0 +1,5 @@
+{% if callout %}
+<div class="callout {{ 'callout--' ~ kind if kind }}"><div class="md">{{ body|md|safe }}</div></div>
+{% else %}
+<div class="md">{{ body|md|safe }}</div>
+{% endif %}

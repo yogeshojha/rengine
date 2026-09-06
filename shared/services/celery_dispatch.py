@@ -107,3 +107,15 @@ def dispatch_endpoint_verify(
         logger.warning("endpoint verify dispatch failed", exc_info=True)
         return False
     return True
+
+
+def dispatch_report(report_id: str) -> bool:
+    """Queue a report render. Returns whether the queue took it."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.reports.generate", args=[report_id], queue="default"
+        )
+    except Exception:
+        logger.warning("report dispatch failed", exc_info=True)
+        return False
+    return True

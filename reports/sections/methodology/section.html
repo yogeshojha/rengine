@@ -1,0 +1,51 @@
+<table class="table block">
+  <tbody>
+    <tr><td style="width:34mm"><span class="label">Subject</span></td><td class="mono-break">{{ ctx.data.subject }} <span class="faint">({{ ctx.data.subject_type }})</span></td></tr>
+    {% if scan %}
+    <tr><td><span class="label">Configuration</span></td><td>{{ scan.engine_name }}{% if context %} with the {{ context }} context{% endif %}</td></tr>
+    {% if intensity %}<tr><td><span class="label">Intensity</span></td><td>{{ intensity }}</td></tr>{% endif %}
+    {% if timing %}
+    <tr><td><span class="label">Started</span></td><td>{{ scan.started_at|at }}</td></tr>
+    <tr><td><span class="label">Finished</span></td><td>{{ scan.completed_at|at }}</td></tr>
+    <tr><td><span class="label">Outcome</span></td><td>{{ scan.status|capitalize }}</td></tr>
+    {% endif %}
+    {% endif %}
+    {% if standard %}<tr><td><span class="label">Reference</span></td><td>{{ standard }}</td></tr>{% endif %}
+  </tbody>
+</table>
+
+{% if excluded and (excluded.hosts or excluded.addresses or excluded.paths) %}
+<div class="sub avoid">
+  <div class="label block">Excluded from scope</div>
+  <table class="table">
+    <tbody>
+      {% if excluded.hosts %}<tr><td style="width:34mm">Hosts</td><td class="micro mono-break">{{ excluded.hosts|join(', ') }}</td></tr>{% endif %}
+      {% if excluded.addresses %}<tr><td>Addresses</td><td class="micro mono-break">{{ excluded.addresses|join(', ') }}</td></tr>{% endif %}
+      {% if excluded.paths %}<tr><td>Paths</td><td class="micro mono-break">{{ excluded.paths|join(', ') }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if stages %}
+<div class="sub">
+  <div class="label block">What ran</div>
+  <table class="table">
+    <thead><tr><th style="width:52mm">Capability</th><th>What it does</th></tr></thead>
+    <tbody>
+      {% for stage in stages %}
+      <tr><td>{{ stage.title }}</td><td class="small muted wrap">{{ stage.description|clip(160) }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if tools %}
+<div class="sub avoid">
+  <div class="label block">Tools</div>
+  <div class="chips">{% for tool in tools %}<span class="chip chip--solid">{{ tool }}</span>{% endfor %}</div>
+</div>
+{% endif %}
+
+{% if note %}<div class="sub md">{{ note|md|safe }}</div>{% endif %}

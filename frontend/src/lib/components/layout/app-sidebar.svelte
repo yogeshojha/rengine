@@ -6,6 +6,8 @@
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import LayersIcon from '@lucide/svelte/icons/layers';
 	import SwordsIcon from '@lucide/svelte/icons/swords';
+	import FileTextIcon from '@lucide/svelte/icons/file-text';
+	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
 	import NavUser from './nav-user.svelte';
@@ -14,6 +16,7 @@
 	import type { ComponentProps } from 'svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import { reports } from '$lib/stores/reports.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 
 	let {
@@ -55,7 +58,16 @@
 		},
 		{
 			label: null,
-			items: [{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: SwordsIcon }]
+			items: [
+				{
+					title: routeLabels.reports,
+					url: ROUTES.reports(),
+					icon: FileTextIcon,
+					badge: reports.liveCount ? { count: reports.liveCount, live: true } : null
+				},
+				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: SwordsIcon },
+				{ title: routeLabels.ai, url: ROUTES.ai(), icon: SparklesIcon }
+			]
 		},
 		{
 			label: null,

@@ -27,6 +27,9 @@ import { activityFeed } from '$lib/stores/activity-feed.svelte';
 import { liveScans } from '$lib/stores/live-scans.svelte';
 import { rechecks } from './rechecks.svelte';
 import { wordlists } from '$lib/stores/wordlists.svelte';
+import { reports } from '$lib/stores/reports.svelte';
+import { reportCatalog } from '$lib/stores/report-catalog.svelte';
+import { ai } from '$lib/stores/ai.svelte';
 import { clearServiceLookup } from '$lib/utilities/service-lookup';
 
 interface AuthState {
@@ -113,6 +116,9 @@ function createAuthStore() {
 		liveScans.clear();
 		rechecks.reset();
 		wordlists.reset();
+		reports.reset();
+		reportCatalog.reset();
+		ai.reset();
 		clearServiceLookup();
 	}
 

@@ -1,0 +1,24 @@
+<p class="block muted small">{{ total|num }} addresses across {{ networks|num }} networks and {{ countries|num }} countries.</p>
+<table class="table table--fixed">
+  <thead>
+    <tr>
+      <th style="width:32mm">Address</th><th class="num" style="width:14mm">Ports</th>
+      <th style="width:44mm">Network</th><th style="width:14mm">Country</th>
+      {% if show_ptr %}<th>Reverse DNS</th>{% endif %}
+      {% if show_hosts %}<th>Hostnames</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="micro mono-break">{{ row.ip }}{% if row.is_cdn %} <span class="chip">{{ row.cdn_name or 'CDN' }}</span>{% endif %}</td>
+      <td class="num micro">{% if row.open_ports %}{{ row.open_ports|num }}{% else %}<span class="faint">0</span>{% endif %}</td>
+      <td class="micro muted wrap">{% if row.asn %}AS{{ row.asn }} {% endif %}{{ row.asn_org|clip(38) or '—' }}</td>
+      <td class="micro">{{ row.country or '—' }}</td>
+      {% if show_ptr %}<td class="micro mono-break wrap">{{ row.ptr[:2]|join(', ')|clip(46) or '—' }}</td>{% endif %}
+      {% if show_hosts %}<td class="micro mono-break wrap">{{ row.hosts[:2]|join(', ')|clip(46) or '—' }}</td>{% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further addresses are not listed.</p>{% endif %}

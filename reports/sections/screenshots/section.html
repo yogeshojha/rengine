@@ -1,0 +1,12 @@
+<p class="block muted small">{{ total|num }} assets were captured. The {{ hosts|length }} shown here are embedded in this document.</p>
+<div class="grid grid--{{ columns }}" style="flex-wrap:wrap">
+  {% for host in hosts %}
+  {% set src = host.screenshot|shot %}
+  {% if src %}
+  <figure class="figure" style="flex-basis:{{ (100 / columns) - 4 }}%">
+    <img class="shot" src="{{ src }}" alt="">
+    <figcaption class="figcaption"><span class="mono-break">{{ host.name }}</span>{% if show_title and host.title %}<br>{{ host.title|clip(60) }}{% endif %}{% if host.status %} · {{ host.status }}{% endif %}</figcaption>
+  </figure>
+  {% endif %}
+  {% endfor %}
+</div>

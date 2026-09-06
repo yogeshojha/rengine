@@ -1,0 +1,22 @@
+{% import 'macros.html' as m with context %}
+<p class="block muted small">Each entry below is a condition that leads somewhere, rather than a single observation. They are ordered by what they lead to.</p>
+{% for item in paths %}
+{% set path = item.path %}
+<div class="finding finding--{{ ctx.theme.layout.finding }} sev-{{ path.severity }}">
+  <div class="finding__head">
+    <div class="finding__meta">{{ m.sev(path.severity) }}{% if path.count %}<span class="chip">{{ path.count|num }} observed</span>{% endif %}</div>
+    <h3 class="finding__title">{{ path.title }}</h3>
+  </div>
+  <div class="finding__body">
+    <p>{{ item.detail }}</p>
+    {% if show_evidence and path.evidence %}
+    <h5>Observed</h5>
+    <ul class="small">{% for line in path.evidence %}<li class="mono-break">{{ line }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if show_assets and path.assets %}
+    <h5>Affected</h5>
+    <div class="chips">{% for asset in path.assets %}<span class="chip">{{ asset }}</span>{% endfor %}</div>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}

@@ -1,0 +1,31 @@
+{% import 'macros.html' as m with context %}
+{% if narrative %}<div class="md block">{{ narrative|md|safe }}</div>{% endif %}
+<table class="table table--fixed">
+  <thead>
+    <tr>
+      <th style="width:8mm">#</th>
+      <th>Action</th>
+      <th style="width:18mm">Severity</th>
+      {% if cfg.show_effort %}<th style="width:26mm">Change</th>{% endif %}
+      <th class="num" style="width:16mm">Clears</th>
+      <th class="num" style="width:14mm">Assets</th>
+      {% if cfg.show_owner %}<th style="width:24mm">{{ cfg.owner_label }}</th>{% endif %}
+      {% if cfg.show_due %}<th style="width:20mm">Target</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for action in actions %}
+    <tr>
+      <td class="faint num">{{ loop.index }}</td>
+      <td class="wrap"><strong>{{ action.title }}</strong><br><span class="micro muted">{{ action.detail|clip(180) }}</span></td>
+      <td>{{ m.sev(action.severity) }}</td>
+      {% if cfg.show_effort %}<td class="small">{{ action.effort }}</td>{% endif %}
+      <td class="num">{{ action.clears|num }}</td>
+      <td class="num">{{ action.assets|num }}</td>
+      {% if cfg.show_owner %}<td></td>{% endif %}
+      {% if cfg.show_due %}<td></td>{% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="micro faint" style="margin-top:1.6mm">Completing this list clears {{ total_clears|num }} of the observations in this report.</p>

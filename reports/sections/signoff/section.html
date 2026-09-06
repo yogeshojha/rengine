@@ -1,0 +1,14 @@
+{% if body %}<div class="md block">{{ body|md|safe }}</div>{% endif %}
+{% if contact %}
+<table class="table block">
+  <tbody>{% for label, value in contact %}<tr><td style="width:38mm"><span class="label">{{ label }}</span></td><td>{{ value }}</td></tr>{% endfor %}</tbody>
+</table>
+{% endif %}
+{% if signature %}
+<div class="sub" style="margin-top:18mm">
+  <div class="grid grid--2">
+    <div><div style="border-bottom:0.6pt solid var(--r-rule-strong);height:14mm"></div><div class="label" style="margin-top:2mm">{{ signature_label }}</div></div>
+    <div><div style="border-bottom:0.6pt solid var(--r-rule-strong);height:14mm"></div><div class="label" style="margin-top:2mm">Date</div></div>
+  </div>
+</div>
+{% endif %}

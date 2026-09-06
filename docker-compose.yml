@@ -40,11 +40,13 @@ services:
       - ./shared:/app/shared
       - ./tools:/app/tools
       - ./stages:/app/stages
+      - ./reports:/app/reports
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
+      - reports_out:/app/reports-out
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -72,9 +74,11 @@ services:
       - ./shared:/app/shared
       - ./tools:/app/tools
       - ./stages:/app/stages
+      - ./reports:/app/reports
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
+      - reports_out:/app/reports-out
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -111,9 +115,11 @@ services:
       - ./shared:/app/shared
       - ./tools:/app/tools
       - ./stages:/app/stages
+      - ./reports:/app/reports
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
+      - reports_out:/app/reports-out
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -140,9 +146,11 @@ services:
       - ./shared:/app/shared
       - ./tools:/app/tools
       - ./stages:/app/stages
+      - ./reports:/app/reports
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
+      - reports_out:/app/reports-out
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -182,3 +190,4 @@ volumes:
   celery_beat_data:
   vuln_templates:
   wordlists:
+  reports_out:
