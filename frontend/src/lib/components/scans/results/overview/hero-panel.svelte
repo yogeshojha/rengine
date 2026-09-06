@@ -227,8 +227,10 @@
 				key: 'http',
 				label: 'HTTP services',
 				value: scan.http_assets_found,
-				tab: 'web-assets',
-				filter: 'is:web',
+				// an address target names no hosts, so its web services live under Services
+				...(scan.subdomains_found
+					? { tab: 'web-assets', filter: 'is:web' }
+					: { tab: 'services', filter: 'is:http' }),
 				diff: diffVs(scan.http_assets_found, cmp?.http_assets_found),
 				trend: trendOf('http_assets_found')
 			},

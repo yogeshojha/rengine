@@ -5,7 +5,7 @@ import re
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, ClassVar
 
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 
 from shared.definitions.constants import (
     DEFAULT_GLOBAL_THREADS,
@@ -330,6 +330,13 @@ def validate_overrides(overrides: dict | None) -> dict[str, dict]:
             raise _bad(msg)
         try:
             spec.config_model(**{**spec.defaults, **values})
+        except ValidationError as exc:
+            # pydantic's first line only counts the errors; the reason is in the entries
+            first = exc.errors()[0]
+            field = ".".join(str(part) for part in first.get("loc") or ())
+            reason = str(first.get("msg", "")).removeprefix("Value error, ")
+            where = f"{name}.{field}" if field else name
+            raise _bad(f"{where}: {reason}"[:300]) from exc
         except Exception as exc:
             msg = f"{name}: {str(exc).splitlines()[0][:200]}"
             raise _bad(msg) from exc

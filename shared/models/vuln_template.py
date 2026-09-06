@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from pydantic import Field as PydanticField
 from sqlalchemy import Column, Text
 from sqlalchemy.types import JSON
@@ -11,9 +11,12 @@ from shared.definitions.vulnerabilities import (
     MAX_SELECTED_TEMPLATES,
     MAX_TEMPLATE_BYTES,
     MAX_TEMPLATE_UPLOAD,
+    SEVERITY_ORDER,
+    TEMPLATE_SET_KEYS,
     Protocol,
     Severity,
     TemplateOrigin,
+    reject_unknown,
 )
 from shared.utils.datetime import utc_now
 
@@ -160,6 +163,16 @@ class TemplateSelection(BaseModel):
     exclude_tags: list[str] = PydanticField(default_factory=list, max_length=40)
     exclude_templates: list[str] = PydanticField(default_factory=list, max_length=200)
     headless: bool = False
+
+    @field_validator("severities")
+    @classmethod
+    def _known_severities(cls, value: list[str]) -> list[str]:
+        return reject_unknown(value, SEVERITY_ORDER, "severity")
+
+    @field_validator("template_sets")
+    @classmethod
+    def _known_sets(cls, value: list[str]) -> list[str]:
+        return reject_unknown(value, TEMPLATE_SET_KEYS, "check set")
 
 
 class SelectionBreakdown(BaseModel):

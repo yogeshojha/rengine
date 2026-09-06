@@ -318,6 +318,16 @@ TEMPLATE_SET_BY_KEY: dict[str, TemplateSet] = {s.key: s for s in TEMPLATE_SETS}
 DEFAULT_TEMPLATE_SETS: list[str] = [s.key for s in TEMPLATE_SETS if s.default]
 HEADLESS_SETS: frozenset[str] = frozenset(s.key for s in TEMPLATE_SETS if s.headless)
 
+
+def reject_unknown(values: list[str], known, axis: str) -> list[str]:
+    """A plan's count is a promise, so a value the library cannot honour is refused here."""
+    unknown = [v for v in values if v not in known]
+    if unknown:
+        msg = f"Unknown {axis}: {', '.join(sorted(unknown))}. Choose from: {', '.join(known)}."
+        raise ValueError(msg)
+    return values
+
+
 # nuclei's code protocol runs shell on the scanner host; an uploaded template may never use it
 FORBIDDEN_TEMPLATE_KEYS: frozenset[str] = frozenset({"code"})
 
