@@ -7,7 +7,7 @@ import uuid
 from collections.abc import Callable
 from typing import NamedTuple
 
-from sqlalchemy import select, update
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.database import get_sync_session
@@ -18,7 +18,7 @@ from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.services.activity_log import ActivityLogService
-from shared.services.orchestrator.aggregate import aggregate_counts, derived_counts
+from shared.services.orchestrator.aggregate import derived_counts
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.orchestrator.tracking import (
     ScanActivityService,
@@ -104,14 +104,7 @@ def _supersede_orphan_activities(session: Session, scan: Scan, name: str) -> Non
 
 
 def _apply_counts(session: Session, scan: Scan) -> None:
-    # roll up across every finished stage so a later stage's 0 never clobbers an earlier total
-    activities = (
-        session.execute(select(ScanActivity).where(ScanActivity.scan_id == scan.id))
-        .scalars()
-        .all()
-    )
-    totals = {**aggregate_counts(activities), **derived_counts(session, scan.id)}
-    for column, value in totals.items():
+    for column, value in derived_counts(session, scan.id).items():
         setattr(scan, column, value)
     session.add(scan)
     session.commit()

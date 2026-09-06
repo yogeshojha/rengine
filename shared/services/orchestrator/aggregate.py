@@ -16,20 +16,15 @@ if TYPE_CHECKING:
 
 # rollup SSOT — a new headline metric needs an entry here + a scans column (migration)
 # + shared.definitions.notifications._SCAN_COUNT_LABELS; other count keys stay stage-only.
-COUNT_TO_COLUMN = {
-    "subdomains": "subdomains_found",
-    "ips": "ips_found",
-    "open_ports": "open_ports_found",
-    "http_assets": "http_assets_found",
-    "vulnerabilities": "vulnerabilities_found",
-}
-
-
-# counts several stages write into the same rows; summing their results double-counts,
-# so these are measured from the table instead
+# every headline is measured from its table: several stages write the same rows, so
+# summing per-stage results both double-counts and misses the stages that report no key.
 DERIVED_COUNTS: dict[str, str] = {
+    "subdomains_found": "SELECT count(*) FROM subdomains WHERE scan_id = :sid",
+    "ips_found": "SELECT count(*) FROM ip_addresses WHERE scan_id = :sid",
     "open_ports_found": "SELECT count(*) FROM ports WHERE scan_id = :sid",
+    "http_assets_found": "SELECT count(*) FROM http_assets WHERE scan_id = :sid",
     "endpoints_found": "SELECT count(*) FROM endpoints WHERE scan_id = :sid",
+    "vulnerabilities_found": "SELECT count(*) FROM vulnerabilities WHERE scan_id = :sid",
 }
 
 
@@ -52,14 +47,3 @@ def aggregate_status(activities: Iterable[ScanActivity]) -> str:
     if any(s == ScanActivityStatus.FAILED.value for s in statuses):
         return ScanStatus.FAILED.value
     return ScanStatus.COMPLETED.value
-
-
-def aggregate_counts(activities: Iterable[ScanActivity]) -> dict[str, int]:
-    """Sum per-stage result counts into the scan rollup columns."""
-    totals: dict[str, int] = dict.fromkeys(COUNT_TO_COLUMN.values(), 0)
-    for activity in activities:
-        for key, column in COUNT_TO_COLUMN.items():
-            value = (activity.result or {}).get(key)
-            if isinstance(value, int):
-                totals[column] += value
-    return totals
