@@ -8,6 +8,7 @@
 	import SwordsIcon from '@lucide/svelte/icons/swords';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import NetworkIcon from '@lucide/svelte/icons/network';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
 	import NavUser from './nav-user.svelte';
@@ -26,7 +27,7 @@
 	}: ComponentProps<typeof Sidebar.Root> = $props();
 
 	const userData = $derived({
-		name: auth.user?.username ?? 'Unknown User',
+		name: auth.user?.username ?? 'Unknown user',
 		email: auth.user?.email ?? 'admin@rengine.local',
 		is_superuser: auth.user?.is_superuser ?? false
 	});
@@ -66,7 +67,8 @@
 					badge: reports.liveCount ? { count: reports.liveCount, live: true } : null
 				},
 				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: SwordsIcon },
-				{ title: routeLabels.ai, url: ROUTES.ai(), icon: SparklesIcon }
+				{ title: routeLabels.ai, url: ROUTES.ai(), icon: SparklesIcon },
+				{ title: routeLabels.mcp, url: ROUTES.mcp(), icon: NetworkIcon }
 			]
 		},
 		{

@@ -30,6 +30,7 @@ import { wordlists } from '$lib/stores/wordlists.svelte';
 import { reports } from '$lib/stores/reports.svelte';
 import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 import { ai } from '$lib/stores/ai.svelte';
+import { mcp } from '$lib/stores/mcp.svelte';
 import { clearServiceLookup } from '$lib/utilities/service-lookup';
 
 interface AuthState {
@@ -119,6 +120,7 @@ function createAuthStore() {
 		reports.reset();
 		reportCatalog.reset();
 		ai.reset();
+		mcp.reset();
 		clearServiceLookup();
 	}
 

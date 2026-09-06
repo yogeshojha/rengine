@@ -40,6 +40,10 @@ class InstanceSettings(SQLModel, table=True):
     report_defaults: dict = Field(
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )
+    mcp_enabled: bool = Field(default=False)
+    mcp_settings: dict = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False)
+    )
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 

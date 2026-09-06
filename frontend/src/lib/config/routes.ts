@@ -5,16 +5,17 @@ export const routeLabels: Record<string, string> = {
 	targets: 'Targets',
 	scans: 'Scans',
 	automation: 'Automation',
-	engines: 'Scan Engines',
-	contexts: 'Scan Contexts',
-	schedules: 'Scheduled Scans',
+	engines: 'Scan engines',
+	contexts: 'Scan contexts',
+	schedules: 'Schedules',
 
 	// Tools
-	arsenal: 'Tools Arsenal',
+	arsenal: 'Arsenal',
 
 	// Reporting
 	reports: 'Reports',
 	ai: 'AI',
+	mcp: 'MCP',
 
 	// Settings
 	settings: 'Settings',
@@ -30,6 +31,8 @@ export const REPORT_TABS = ['reports', 'templates', 'themes', 'defaults'] as con
 export type ReportTab = (typeof REPORT_TABS)[number];
 
 export const AI_TABS = ['connection', 'features', 'usage'] as const;
+export const MCP_TABS = ['server', 'tools', 'access', 'activity'] as const;
+export type McpTab = (typeof MCP_TABS)[number];
 export type AiTab = (typeof AI_TABS)[number];
 export type ArsenalTab = (typeof ARSENAL_TABS)[number];
 
@@ -67,6 +70,7 @@ export const ROUTES = {
 	reportsForScan: (scanId: string) => `/reports?scan=${scanId}`,
 	reportsForTarget: (targetId: string) => `/reports?target=${targetId}`,
 	ai: (tab?: AiTab) => (tab ? `/ai?tab=${tab}` : '/ai'),
+	mcp: (tab?: McpTab) => (tab ? `/mcp?tab=${tab}` : '/mcp'),
 	settings: (tab?: SettingsTab) => (tab ? `/settings?tab=${tab}` : '/settings')
 } as const;
 

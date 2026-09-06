@@ -41,6 +41,8 @@ services:
       - ./tools:/app/tools
       - ./stages:/app/stages
       - ./reports:/app/reports
+      - ./interest:/app/interest
+      - ./mcp:/app/mcp
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
       - ./scan_media:/app/scan_media
@@ -76,6 +78,7 @@ services:
       - ./tools:/app/tools
       - ./stages:/app/stages
       - ./reports:/app/reports
+      - ./interest:/app/interest
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
@@ -118,6 +121,7 @@ services:
       - ./tools:/app/tools
       - ./stages:/app/stages
       - ./reports:/app/reports
+      - ./interest:/app/interest
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
@@ -150,6 +154,7 @@ services:
       - ./tools:/app/tools
       - ./stages:/app/stages
       - ./reports:/app/reports
+      - ./interest:/app/interest
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists

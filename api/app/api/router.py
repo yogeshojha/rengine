@@ -11,7 +11,9 @@ from app.api.v1 import (
     events,
     http_assets,
     instance_settings,
+    interest,
     ip_addresses,
+    mcp,
     media,
     notification_channels,
     notifications,
@@ -58,12 +60,14 @@ router.include_router(scan_contexts.router)
 router.include_router(scan_schedules.router)
 router.include_router(scans.router)
 router.include_router(subdomains.router)
+router.include_router(mcp.router)
 router.include_router(http_assets.router)
 router.include_router(ports.router)
 router.include_router(ip_addresses.router)
 router.include_router(endpoints.router)
 router.include_router(vulnerabilities.router)
 router.include_router(vuln_templates.router)
+router.include_router(interest.router)
 router.include_router(wordlists.router)
 router.include_router(media.router)
 router.include_router(reports.router)
