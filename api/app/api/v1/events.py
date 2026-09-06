@@ -1,17 +1,26 @@
 import asyncio
 import logging
 import re
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
-from app.api.deps import CurrentUser
+from app.api.deps import (
+    CurrentUser,
+    StreamUser,
+    get_token_from_request,
+    token_still_valid,
+)
+from app.core.database import pool_stats
 from shared.enums.sse import SSEChannel
 from shared.sse import sse_manager
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/events", tags=["events"])
+
+HEARTBEAT_SECONDS = 30.0
 
 CHANNEL_PATTERN = re.compile(
     rf"^({SSEChannel.PROJECT}:[a-f0-9\-]+"
@@ -35,7 +44,8 @@ def validate_channels(requested: list[str]) -> list[str]:
 @router.get("/stream")
 async def event_stream(
     request: Request,
-    _current_user: CurrentUser,
+    _current_user: StreamUser,
+    token: Annotated[str, Depends(get_token_from_request)],
     channels: str = Query(
         ...,
         description="Comma-separated list of channels to subscribe to",
@@ -58,6 +68,12 @@ async def event_stream(
             detail="No authorized channels in request",
         )
 
+    if sse_manager.at_capacity():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Too many event streams",
+        )
+
     async def generate():
         async with sse_manager.stream(validated) as queue:
             try:
@@ -66,9 +82,14 @@ async def event_stream(
                         break
 
                     try:
-                        message = await asyncio.wait_for(queue.get(), timeout=30.0)
+                        message = await asyncio.wait_for(
+                            queue.get(), timeout=HEARTBEAT_SECONDS
+                        )
                         yield message
                     except TimeoutError:
+                        if not await token_still_valid(token):
+                            yield "event: unauthorized\ndata: {}\n\n"
+                            break
                         yield ": heartbeat\n\n"
 
             except asyncio.CancelledError:
@@ -93,4 +114,5 @@ async def sse_health(
         "status": "healthy",
         "active_connections": sse_manager.get_active_connections(),
         "channels": sse_manager.get_channel_stats(),
+        "db_pool": pool_stats(),
     }

@@ -11,6 +11,13 @@ class Settings(BaseAppSettings):
     TASK_HARD_TIME_LIMIT: int = 3600 * 8  # 8 hours
 
     ###############################################################
+    # Database pool (per prefork child, not per worker process)
+    ###############################################################
+    WORKER_DB_POOL_SIZE: int = 2
+    WORKER_DB_MAX_OVERFLOW: int = 3
+    WORKER_DB_POOL_TIMEOUT: int = 30
+
+    ###############################################################
     # Convenience Properties
     ###############################################################
     @property

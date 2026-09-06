@@ -4,6 +4,7 @@ from celery.signals import (
     task_failure,
     task_postrun,
     task_prerun,
+    worker_process_init,
     worker_ready,
     worker_shutdown,
 )
@@ -155,6 +156,14 @@ def configure_logging(loglevel: int, **kwargs) -> None:  # noqa: ARG001
         level=settings.LOG_LEVEL,
         colored=True,
     )
+
+
+@worker_process_init.connect
+def on_process_init(**_) -> None:
+    """Drop pooled sockets inherited from the parent; a fork must not share them."""
+    from app.database import engine  # noqa: PLC0415
+
+    engine.dispose(close=False)
 
 
 @worker_ready.connect

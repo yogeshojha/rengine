@@ -138,6 +138,12 @@ export class SSEClient {
 			this.handleMessage(event);
 		});
 
+		es.addEventListener('unauthorized', () => {
+			this.closeEventSource();
+			this.reconnectAttempts = 0;
+			void this.refreshAndReconnect();
+		});
+
 		es.onopen = () => {
 			this.reconnectAttempts = 0;
 			this.setState('connected');

@@ -30,6 +30,9 @@ class SSEManager:
         self._max_connections = 1000
         self._initialized = True
 
+    def at_capacity(self) -> bool:
+        return len(self._queue_channels) >= self._max_connections
+
     async def subscribe(self, queue: asyncio.Queue, channels: list[str]) -> None:
         async with self._lock:
             queue_id = id(queue)
@@ -97,7 +100,7 @@ class SSEManager:
 
     @asynccontextmanager
     async def stream(self, channels: list[str]) -> AsyncIterator[asyncio.Queue]:
-        if len(self._queue_channels) >= self._max_connections:
+        if self.at_capacity():
             msg = "Maximum SSE connections reached"
             raise ConnectionError(msg)
 

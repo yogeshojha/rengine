@@ -14,6 +14,12 @@ class BaseAppSettings(BaseSettings):
     POSTGRES_PASSWORD: str = "rengine"  # noqa: S105
     POSTGRES_DB: str = "rengine"
 
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_TIMEOUT: int = 10
+    DB_POOL_RECYCLE: int = 1800
+    DB_IDLE_TX_TIMEOUT: int = 120
+
     @property
     def database_url_async(self) -> str:
         return (
