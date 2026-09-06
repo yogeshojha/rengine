@@ -16,10 +16,8 @@
 
 <div class="container max-w-5xl mx-auto space-y-6">
 	<div>
-		<h1 class="text-2xl font-semibold tracking-tight">Account &amp; Security</h1>
-		<p class="text-sm text-muted-foreground">
-			Manage your credentials and two-factor authentication.
-		</p>
+		<h1 class="text-2xl font-semibold tracking-tight">Account and security</h1>
+		<p class="text-sm text-muted-foreground">Credentials and two-factor authentication</p>
 	</div>
 
 	<Card.Root class="overflow-hidden">
@@ -68,8 +66,8 @@
 
 	<Card.Root>
 		<Card.Header>
-			<Card.Title>Account Information</Card.Title>
-			<Card.Description>Your account details and status</Card.Description>
+			<Card.Title>Account information</Card.Title>
+			<Card.Description>Account details and status</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			<div class="grid gap-4 sm:grid-cols-2">
@@ -84,19 +82,19 @@
 				</div>
 
 				<div class="space-y-1">
-					<p class="text-sm font-medium text-muted-foreground">Account Type</p>
+					<p class="text-sm font-medium text-muted-foreground">Account type</p>
 					<p class="text-sm">
-						{auth.user?.is_superuser ? 'Administrator' : 'Standard User'}
+						{auth.user?.is_superuser ? 'Administrator' : 'Standard user'}
 					</p>
 				</div>
 
 				<div class="space-y-1">
-					<p class="text-sm font-medium text-muted-foreground">Email Address</p>
+					<p class="text-sm font-medium text-muted-foreground">Email address</p>
 					<p class="text-sm">{auth.user?.email}</p>
 				</div>
 
 				<div class="space-y-1">
-					<p class="text-sm font-medium text-muted-foreground">Account Status</p>
+					<p class="text-sm font-medium text-muted-foreground">Account status</p>
 					<p class="text-sm">
 						{auth.user?.is_active ? 'Active' : 'Inactive'}
 					</p>
@@ -104,14 +102,14 @@
 
 				{#if auth.user?.created_at}
 					<div class="space-y-1">
-						<p class="text-sm font-medium text-muted-foreground">Member Since</p>
+						<p class="text-sm font-medium text-muted-foreground">Member since</p>
 						<p class="text-sm">{formatDate(auth.user.created_at)}</p>
 					</div>
 				{/if}
 
 				{#if auth.user?.updated_at}
 					<div class="space-y-1">
-						<p class="text-sm font-medium text-muted-foreground">Last Updated</p>
+						<p class="text-sm font-medium text-muted-foreground">Last updated</p>
 						<p class="text-sm">{formatDate(auth.user.updated_at)}</p>
 					</div>
 				{/if}

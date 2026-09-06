@@ -152,7 +152,7 @@
 			if (res.started) toast.success('Library sync started', { description: res.message });
 			else toast.error(res.message);
 		} catch {
-			toast.error('Could not start the library sync');
+			toast.error('Library sync could not be started');
 		} finally {
 			syncing = false;
 		}
@@ -194,7 +194,7 @@
 			const updated = await vulnTemplatesApi.update(template.id, enabled);
 			items = items.map((t) => (t.id === updated.id ? updated : t));
 		} catch {
-			toast.error('Could not update the check');
+			toast.error('Check could not be updated');
 		}
 	}
 
@@ -207,7 +207,7 @@
 			removing = null;
 			await Promise.all([loadStats(), loadList()]);
 		} catch {
-			toast.error('Could not remove the check');
+			toast.error('Check could not be removed');
 		}
 	}
 
@@ -624,7 +624,7 @@
 		if (!value) removing = null;
 	}}
 	title="Remove this check?"
-	description="Removes this check from the library and deletes it from disk. Scan engines that selected it continue to run their remaining checks. This action cannot be undone."
+	description="The check is removed from the library and deleted from disk. Scan engines that selected it run their remaining checks."
 	confirmLabel="Remove"
 	onConfirm={remove}
 />

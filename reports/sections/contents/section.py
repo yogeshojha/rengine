@@ -9,15 +9,15 @@ class ContentsConfig(SectionConfig):
     heading: str = text("Contents", title="Heading")
     show_subsections: bool = flag(
         False,
-        title="List findings too",
-        description="Off by default: the findings chapter is already their index.",
+        title="List findings in the contents",
+        description="Off by default. The findings chapter already indexes them.",
     )
 
 
 class ContentsSection(Section):
     name = "contents"
     title = "Contents"
-    description = "A table of contents with real page numbers, resolved at layout time."
+    description = "A table of contents with real page numbers."
     group = SectionGroup.FRONT_MATTER.value
     order = 30
     role = SectionRole.FURNITURE.value

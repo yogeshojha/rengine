@@ -314,7 +314,7 @@
 				statusChanged || !historyLoaded ? loadHistory(project.id, scan.target_id) : null
 			]);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load scan';
+			error = e instanceof Error ? e.message : 'Scan could not be loaded';
 		} finally {
 			if (!silent) loading = false;
 		}
@@ -337,7 +337,7 @@
 		if (ok) {
 			toast.success('Scan cancelled');
 			load(true);
-		} else toast.error('Could not cancel the scan');
+		} else toast.error('Scan could not be cancelled');
 	}
 
 	$effect(() => {
@@ -393,7 +393,7 @@
 	{:else if error}
 		<Empty.Root class="rounded-lg border border-dashed py-20">
 			<Empty.Header>
-				<Empty.Title class="text-sm">Could not load scan</Empty.Title>
+				<Empty.Title class="text-sm">Scan could not be loaded</Empty.Title>
 				<Empty.Description>{error}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -490,7 +490,7 @@
 			<p class="rounded-md border border-info/30 bg-info/5 p-3 text-sm">
 				<span class="font-medium">A focused scan.</span>
 				<span class="text-muted-foreground">
-					Its counts describe the {seedNoun} it was given, not this target's surface — the target summary
+					Its counts describe the {seedNoun} it was given, not this target's surface. The target summary
 					and dashboard read from full runs.
 				</span>
 			</p>

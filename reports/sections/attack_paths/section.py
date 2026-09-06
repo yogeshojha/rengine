@@ -14,7 +14,7 @@ class AttackPathsConfig(SectionConfig):
 class AttackPathsSection(Section):
     name = "attack_paths"
     title = "Attack paths"
-    description = "Conditions that chain into a route an attacker can take. Not a list of findings."
+    description = "Conditions that chain into a route an attacker can take, rather than a list of findings."
     group = SectionGroup.SUMMARY.value
     order = 30
     config_model = AttackPathsConfig

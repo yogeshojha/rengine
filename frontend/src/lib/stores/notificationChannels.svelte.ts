@@ -29,7 +29,7 @@ function createNotificationChannelsStore() {
 				channels = await notificationChannelsApi.list();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to fetch notification channels');
+				toast.error(e instanceof Error ? e.message : 'Notification channels could not be loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -41,7 +41,7 @@ function createNotificationChannelsStore() {
 				channels = [...channels, created];
 				return created;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to create notification channel');
+				toast.error(e instanceof Error ? e.message : 'Notification channel could not be created');
 				return null;
 			}
 		},
@@ -55,7 +55,7 @@ function createNotificationChannelsStore() {
 				channels = channels.map((c) => (c.id === id ? updated : c));
 				return updated;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to update notification channel');
+				toast.error(e instanceof Error ? e.message : 'Notification channel could not be updated');
 				return null;
 			}
 		},
@@ -66,7 +66,7 @@ function createNotificationChannelsStore() {
 				channels = channels.filter((c) => c.id !== id);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to delete notification channel');
+				toast.error(e instanceof Error ? e.message : 'Notification channel could not be deleted');
 				return false;
 			}
 		},
@@ -86,7 +86,7 @@ function createNotificationChannelsStore() {
 				);
 				return result;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to test notification channel');
+				toast.error(e instanceof Error ? e.message : 'Notification channel test failed');
 				return null;
 			}
 		},

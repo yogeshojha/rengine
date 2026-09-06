@@ -255,7 +255,7 @@
 								>
 							{/if}
 							{#if v.host}
-								<Hint text="Open {v.host} in Web Assets">
+								<Hint text="Open {v.host} in Web assets">
 									{#snippet child(props)}
 										<button
 											{...props}
@@ -445,7 +445,7 @@
 					</DropdownMenu.Item>
 					{#if v.host}
 						<DropdownMenu.Item onclick={() => onHost(exactToken('host', v.host ?? ''))}>
-							<Globe class="mr-2 size-3.5" /> Open host in Web Assets
+							<Globe class="mr-2 size-3.5" /> Open host in Web assets
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Separator />

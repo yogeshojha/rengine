@@ -24,9 +24,14 @@ async def too_many_attempts(key: str, *, limit: int) -> None:
         logger.warning("rate limiter read unavailable for %s: %s", key, exc)
         return
     if raw is not None and int(raw) >= limit:
+        try:
+            ttl = await _client().ttl(key)
+        except Exception:
+            ttl = -1
+        wait = f" Try again in {ttl} seconds." if ttl and ttl > 0 else ""
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many attempts. Please wait a moment and try again.",
+            detail=f"Too many attempts.{wait}",
         )
 
 

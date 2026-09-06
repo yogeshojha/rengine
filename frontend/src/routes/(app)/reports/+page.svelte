@@ -100,12 +100,12 @@
 
 	const deleteDescription = $derived(
 		pendingDelete?.kind === 'template'
-			? `${pendingDelete.name} is removed. Reports already generated from it are unaffected. This action cannot be undone.`
+			? `${pendingDelete.name} is removed. Reports already generated from it are unaffected.`
 			: pendingDelete?.kind === 'theme'
-				? `${pendingDelete.name} is removed. Reports already generated with it are unaffected. This action cannot be undone.`
+				? `${pendingDelete.name} is removed. Reports already generated with it are unaffected.`
 				: pendingDelete?.kind === 'typeface'
-					? `${pendingDelete.name} and its font files are removed. A theme that names it falls back to a system face. This action cannot be undone.`
-					: `${pendingDelete?.name ?? 'This report'} and its downloaded files are removed. This action cannot be undone.`
+					? `${pendingDelete.name} and its font files are removed. A theme that names it falls back to a system face.`
+					: `${pendingDelete?.name ?? 'This report'} and its downloaded files are removed.`
 	);
 
 	async function confirmDelete() {
@@ -119,7 +119,7 @@
 				else await reportsApi.deleteFont(id);
 				await reportCatalog.fetch(true);
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : `Could not delete that ${kind}`);
+				toast.error(e instanceof Error ? e.message : `That ${kind} could not be deleted`);
 			}
 		}
 		pendingDelete = null;
@@ -133,7 +133,7 @@
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.reports}</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
-				Documents built from what your scans observed. Generation runs in the background.
+				Documents built from what a scan observed. Generation runs in the background.
 			</p>
 		</div>
 		<Button onclick={() => (generateOpen = true)} disabled={!projectId}>
@@ -171,7 +171,7 @@
 					<SearchIcon
 						class="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
 					/>
-					<Input bind:value={search} placeholder="Search reports" class="h-9 pl-8" />
+					<Input bind:value={search} placeholder="Search reports…" class="h-9 pl-8" />
 				</div>
 			{:else if activeTab === 'themes'}
 				<div class="flex gap-2">

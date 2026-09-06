@@ -97,8 +97,8 @@
 		<Card.Header class="border-b py-5">
 			<Card.Title>Wordlists</Card.Title>
 			<Card.Description>
-				Lists a scan guesses from. Shipped lists come with reNgine; lists you upload sit beside them
-				and are picked by name in a scan engine.
+				Wordlists a scan draws from. Shipped lists come with reNgine; uploaded lists sit beside them
+				and are selected by name in a scan engine.
 			</Card.Description>
 			<Card.Action class="flex items-center gap-2">
 				<Select.Root type="single" bind:value={uploadKind}>
@@ -162,8 +162,8 @@
 				<div class="p-6">
 					<EmptyState
 						icon={Upload}
-						title="No wordlist here yet"
-						description="Upload a text file with one word per line. It becomes selectable in every scan engine that guesses names."
+						title="No wordlists yet"
+						description="Upload a text file with one word per line. It becomes selectable in every scan engine."
 					/>
 				</div>
 			{:else}
@@ -248,7 +248,7 @@
 		if (!value) removing = null;
 	}}
 	title="Remove this wordlist?"
-	description="Removes it from the library and deletes the file. A scan engine still pointing at it will report that the list is missing rather than guessing from a different one."
+	description="The list is removed from the library and its file deleted. A scan engine still referencing it reports the list as missing."
 	confirmLabel="Remove"
 	onConfirm={remove}
 />

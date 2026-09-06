@@ -34,7 +34,7 @@
 		<Sheet.Header class="border-b px-5 py-4">
 			<Sheet.Title class="flex items-center gap-2 text-base">
 				<Terminal size={16} class="text-muted-foreground" />
-				Tool Arguments
+				Tool arguments
 			</Sheet.Title>
 			<Sheet.Description>Extra CLI flags appended to each tool when a scan runs.</Sheet.Description>
 		</Sheet.Header>

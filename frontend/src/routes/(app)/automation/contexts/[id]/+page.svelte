@@ -237,7 +237,7 @@
 				seedKey++;
 			}
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'Failed to load context';
+			loadError = e instanceof Error ? e.message : 'Context could not be loaded';
 		} finally {
 			isLoading = false;
 		}
@@ -285,7 +285,7 @@
 					bypassGuard = true;
 					goto(ROUTES.context(created.id), { replaceState: true });
 				} else {
-					toast.error(scanContextsStore.error ?? 'Failed to create context');
+					toast.error(scanContextsStore.error ?? 'Context could not be created');
 				}
 			} else {
 				const update: ScanContextUpdate = buildContextPayload(draft!, touchedSecrets);
@@ -300,7 +300,7 @@
 					seedKey++;
 					toast.success('Context saved');
 				} else {
-					toast.error(scanContextsStore.error ?? 'Failed to save context');
+					toast.error(scanContextsStore.error ?? 'Context could not be saved');
 				}
 			}
 		} finally {
@@ -399,7 +399,7 @@
 				<Empty.Media class="size-[52px] rounded-xl bg-destructive/10">
 					<AlertTriangle size={22} class="text-destructive" />
 				</Empty.Media>
-				<Empty.Title>Failed to load context</Empty.Title>
+				<Empty.Title>Context could not be loaded</Empty.Title>
 				<Empty.Description>{loadError}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -585,8 +585,8 @@
 		bind:open={showDeleteDialog}
 		title="Delete this context?"
 		description={loaded?.usage?.schedules
-			? `'${draft?.name ?? 'This context'}' is used by ${loaded.usage.schedules} scheduled scan${loaded.usage.schedules === 1 ? '' : 's'}. Those schedules will fail to launch without it. Completed scans and their results are unaffected. This action cannot be undone.`
-			: `Removes '${draft?.name ?? 'this context'}' from the project. Completed scans and their results are unaffected. This action cannot be undone.`}
+			? `'${draft?.name ?? 'This context'}' is used by ${loaded.usage.schedules} scheduled scan${loaded.usage.schedules === 1 ? '' : 's'}. Those schedules will fail to launch without it. Completed scans and their results are unaffected.`
+			: `Removes '${draft?.name ?? 'this context'}' from the project. Completed scans and their results are unaffected.`}
 		{isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={handleDelete}
@@ -595,7 +595,7 @@
 
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}
-	description="Your edits to this context have not been saved."
+	description="Edits to this context have not been saved. Leaving now discards them."
 	onOpenChange={(o) => {
 		if (!o) cancelLeave();
 	}}

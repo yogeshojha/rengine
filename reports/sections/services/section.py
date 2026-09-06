@@ -12,7 +12,7 @@ class ServicesConfig(SectionConfig):
     sensitive_first: bool = flag(True, title="List sensitive services first")
     hide_web: bool = flag(
         False,
-        title="Hide services that speak HTTP",
+        title="Hide services that answer HTTP",
         description="Web services already appear under web assets.",
     )
     show_composition: bool = flag(True, title="Show the class composition")

@@ -260,7 +260,7 @@ class ScanEngineService:
         if not isinstance(data, dict):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="YAML must represent a mapping/object",
+                detail="YAML must be a mapping",
             )
 
         if "name" not in data:

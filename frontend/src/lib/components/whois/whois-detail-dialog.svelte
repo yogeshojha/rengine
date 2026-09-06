@@ -126,7 +126,7 @@
 		try {
 			correlations = await whoisApi.getTargetCorrelations(targetId);
 		} catch (e) {
-			correlationsError = e instanceof Error ? e.message : 'Failed to load correlations';
+			correlationsError = e instanceof Error ? e.message : 'Correlations could not be loaded';
 		} finally {
 			isLoadingCorrelations = false;
 		}
@@ -139,7 +139,7 @@
 			try {
 				internalRecord = await whoisApi.getRecord(recordId);
 			} catch (e) {
-				recordError = e instanceof Error ? e.message : 'Failed to load WHOIS record';
+				recordError = e instanceof Error ? e.message : 'WHOIS record could not be loaded';
 			} finally {
 				isLoadingRecord = false;
 			}
@@ -159,7 +159,7 @@
 			await loadCorrelations();
 			toast.success('WHOIS record refreshed');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to refresh WHOIS record');
+			toast.error(e instanceof Error ? e.message : 'WHOIS record could not be refreshed');
 		} finally {
 			isRefreshing = false;
 		}
@@ -238,7 +238,7 @@
 					<Empty.Media variant="icon">
 						<TriangleAlert />
 					</Empty.Media>
-					<Empty.Title>Failed to load record</Empty.Title>
+					<Empty.Title>Record could not be loaded</Empty.Title>
 					<Empty.Description>{recordError}</Empty.Description>
 				</Empty.Header>
 			</Empty.Root>

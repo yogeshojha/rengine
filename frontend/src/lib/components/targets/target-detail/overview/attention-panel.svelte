@@ -82,7 +82,7 @@
 					icon: Flame,
 					count: risk.kev.toLocaleString(),
 					label: 'Known exploited',
-					detail: 'Listed in CISA KEV, fix first',
+					detail: 'Listed in CISA KEV',
 					href: vuln('is:kev')
 				});
 			if (!critical && !high && risk.actionable)

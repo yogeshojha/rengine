@@ -450,7 +450,7 @@
 				>
 					<code class="truncate font-mono text-[11px] opacity-80">{tip.query}</code>
 					<span class="flex shrink-0 items-center gap-0.5 opacity-60">
-						Web Assets <ArrowUpRight class="size-3" />
+						Web assets <ArrowUpRight class="size-3" />
 					</span>
 				</div>
 			{/if}

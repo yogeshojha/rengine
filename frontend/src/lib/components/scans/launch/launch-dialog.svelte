@@ -270,7 +270,7 @@
 				else toast.error(`${INVALID_TARGET_MESSAGE}: ${value}. ${TARGET_FORMATS}`);
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to load targets');
+			toast.error(e instanceof Error ? e.message : 'Targets could not be loaded');
 		} finally {
 			targetsLoading = false;
 		}
@@ -287,7 +287,7 @@
 			}
 			const created = await scansStore.launchScans(p.id, launch.body());
 			if (!created) {
-				toast.error(scansStore.error ?? 'Failed to launch scan');
+				toast.error(scansStore.error ?? 'Scan could not be started');
 				return;
 			}
 			const previous = readLastPlan();
@@ -317,7 +317,7 @@
 			await rechecks.rescan(projectId, body);
 			const n = body.assets.length;
 			toast.success(`Rechecking ${n} ${n === 1 ? 'asset' : 'assets'}`, {
-				description: 'Results land on the rows as they arrive.'
+				description: 'Results appear as the scan produces them.'
 			});
 			close();
 		} catch (e) {

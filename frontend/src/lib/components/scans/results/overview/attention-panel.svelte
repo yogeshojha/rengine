@@ -146,7 +146,7 @@
 			added.add(domain.domain);
 			toast.success(`${domain.domain} added as a target`);
 		} catch {
-			toast.error(`Could not add ${domain.domain}`);
+			toast.error(`${domain.domain} could not be added`);
 		} finally {
 			pending = null;
 		}

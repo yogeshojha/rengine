@@ -115,7 +115,7 @@
 		if (!project || !context.id) return;
 		const dup = await scanContextsStore.duplicateContext(context.id, project.id);
 		if (dup) toast.success(`Duplicated "${context.name}"`);
-		else toast.error(scanContextsStore.error ?? 'Failed to duplicate context');
+		else toast.error(scanContextsStore.error ?? 'Context could not be duplicated');
 	}
 
 	function toggleSelect(id: string) {
@@ -154,7 +154,7 @@
 					showDeleteDialog = false;
 					contextToDelete = null;
 				} else {
-					toast.error(scanContextsStore.error ?? 'Failed to delete context');
+					toast.error(scanContextsStore.error ?? 'Context could not be deleted');
 				}
 				return;
 			}
@@ -175,7 +175,7 @@
 			if (deleted) toast.success(`${deleted} context${deleted !== 1 ? 's' : ''} deleted`);
 			if (failed) {
 				toast.error(
-					`${failed} context${failed !== 1 ? 's' : ''} kept${lastError ? ` — ${lastError}` : ''}`
+					`${failed} context${failed !== 1 ? 's' : ''} kept${lastError ? `. ${lastError}` : ''}`
 				);
 			}
 			showDeleteDialog = false;
@@ -191,8 +191,8 @@
 	);
 	const deleteDescription = $derived(
 		deleteMode === 'single'
-			? 'Removes this context from the project. Completed scans and their results are unaffected. This action cannot be undone.'
-			: 'Removes the selected contexts from the project. Contexts referenced by a schedule or a running scan are skipped. Completed scans and their results are unaffected. This action cannot be undone.'
+			? 'Removes this context from the project. Completed scans and their results are unaffected.'
+			: 'Removes the selected contexts from the project. Contexts referenced by a schedule or a running scan are skipped. Completed scans and their results are unaffected.'
 	);
 
 	async function handleRefresh() {
@@ -214,7 +214,7 @@
 <div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-4">
 		<div class="max-w-2xl">
-			<h1 class="text-2xl font-semibold tracking-tight">Scan Contexts</h1>
+			<h1 class="text-2xl font-semibold tracking-tight">Scan contexts</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
 				Credentials, rate limits, scope rules and proxy settings applied when a scan runs. Contexts
 				are optional and reusable across engines and targets.
@@ -241,7 +241,7 @@
 	{#if scanContextsStore.error && !scanContextsStore.isLoading}
 		<Alert.Root variant="destructive">
 			<AlertCircle />
-			<Alert.Title>Couldn't load scan contexts</Alert.Title>
+			<Alert.Title>Scan contexts could not be loaded</Alert.Title>
 			<Alert.Description class="flex flex-wrap items-center justify-between gap-3">
 				<span>{scanContextsStore.error}</span>
 				<Button
@@ -275,7 +275,7 @@
 				<h2 class="text-lg font-semibold tracking-tight">Create your first context</h2>
 				<p class="mt-1 text-sm text-muted-foreground">
 					A context controls how a scan reaches its target: credentials, headers, rate limits, scope
-					and proxy. Start from a template or build one from scratch.
+					and proxy. Start from a template, or build one up field by field.
 				</p>
 			</div>
 			<div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -337,7 +337,7 @@
 			<EmptyState
 				icon={SearchX}
 				title="No contexts match"
-				description="Adjust your search or clear it to see all contexts."
+				description="Widen the search or remove a filter."
 				compact
 			>
 				<Button variant="outline" size="sm" onclick={() => (query = '')}>Clear search</Button>

@@ -80,7 +80,7 @@
 			return;
 		}
 		if (newPassword && !currentPassword) {
-			toast.error('Enter your current password to change it');
+			toast.error('Enter the current password to change it');
 			return;
 		}
 
@@ -97,7 +97,7 @@
 			data.instanceName = instanceName.trim();
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save settings');
+			toast.error(e instanceof Error ? e.message : 'Settings could not be saved');
 		} finally {
 			busy = false;
 		}
@@ -152,7 +152,8 @@
 		</Collapsible.Trigger>
 		<Collapsible.Content class="space-y-4 pt-4">
 			<p class="text-xs text-muted-foreground">
-				reNgine ships with a default admin password. Rotating it now keeps your instance secure.
+				reNgine ships with a default administrator password. Change it before this instance is
+				reachable.
 			</p>
 			<div class="space-y-1.5">
 				<Label for="current-pw" class="text-xs">Current password</Label>
@@ -177,7 +178,7 @@
 					</button>
 				</div>
 				{#if currentPwMissing}
-					<p class="text-xs text-destructive">Enter your current password to change it.</p>
+					<p class="text-xs text-destructive">Enter the current password to change it.</p>
 				{/if}
 			</div>
 
@@ -228,7 +229,7 @@
 					{/if}
 				</div>
 			</div>
-			<p class="text-xs text-muted-foreground">Leave blank to keep your current password.</p>
+			<p class="text-xs text-muted-foreground">Leave blank to keep the current password.</p>
 		</Collapsible.Content>
 	</Collapsible.Root>
 </div>

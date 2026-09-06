@@ -179,7 +179,7 @@
 
 	let deleteDialogTitle = $derived(
 		deleteMode === 'single'
-			? 'Delete Target'
+			? 'Delete target'
 			: `Delete ${selectedTargetIds.size} Target${selectedTargetIds.size !== 1 ? 's' : ''}`
 	);
 
@@ -332,7 +332,7 @@
 			const n = await targetsStore.bulkEnrich(ids, kind);
 			toast.success(`Queued ${kind.toUpperCase()} for ${n} target${n !== 1 ? 's' : ''}`);
 		} catch {
-			toast.error(`Failed to queue ${kind.toUpperCase()} enrichment`);
+			toast.error(`${kind.toUpperCase()} enrichment could not be queued`);
 		}
 	}
 
@@ -353,7 +353,7 @@
 			const n = await targetsStore.bulkAddTags(ids, [name]);
 			toast.success(`Tagged ${n} target${n !== 1 ? 's' : ''} with "${name}"`);
 		} catch {
-			toast.error('Failed to add tag');
+			toast.error('Tag could not be added');
 		}
 	}
 
@@ -364,7 +364,7 @@
 			const n = await targetsStore.bulkAddOrganizations(ids, [name]);
 			toast.success(`Added ${n} target${n !== 1 ? 's' : ''} to "${name}"`);
 		} catch {
-			toast.error('Failed to add organization');
+			toast.error('Organization could not be added');
 		}
 	}
 
@@ -428,7 +428,7 @@
 			targetsStore.optimisticUpdateTarget(target.id, patch);
 			toast.success(`Re-running ${kind.toUpperCase()} for ${target.target_value}`);
 		} catch {
-			toast.error(`Failed to queue ${kind.toUpperCase()} enrichment`);
+			toast.error(`${kind.toUpperCase()} enrichment could not be queued`);
 		}
 	}
 
@@ -456,7 +456,7 @@
 				showDetailDialog = false;
 				targetToDelete = null;
 			} else {
-				toast.error('Failed to delete target');
+				toast.error('Target could not be deleted');
 			}
 		} else {
 			const ids = Array.from(selectedTargetIds);
@@ -466,7 +466,7 @@
 			const ok = results.filter(Boolean).length;
 			const fail = ids.length - ok;
 			if (ok) toast.success(`${ok} target${ok !== 1 ? 's' : ''} deleted`);
-			if (fail) toast.error(`Failed to delete ${fail} target${fail !== 1 ? 's' : ''}`);
+			if (fail) toast.error(`${fail} target${fail !== 1 ? 's' : ''} could not be deleted`);
 
 			showDeleteDialog = false;
 			setSelection();
@@ -477,7 +477,7 @@
 		isRefreshing = true;
 		await targetsStore.refresh();
 		isRefreshing = false;
-		if (targetsStore.error) toast.error(`Refresh failed — ${targetsStore.error}`);
+		if (targetsStore.error) toast.error(`Refresh failed. ${targetsStore.error}`);
 		else toast.success('Data refreshed');
 	}
 
@@ -538,7 +538,7 @@
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Targets</h1>
 			<p class="text-sm text-muted-foreground mt-1">
-				Manage your attack surface assets across domains, IPs, and networks
+				Domains, addresses, ranges, URLs and ASNs in this project
 			</p>
 		</div>
 		<div class="flex items-center gap-2">
@@ -651,7 +651,7 @@
 					<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
 						<TriangleAlert class="size-6 text-destructive" />
 					</Empty.Media>
-					<Empty.Title>Couldn't load targets</Empty.Title>
+					<Empty.Title>Targets could not be loaded</Empty.Title>
 					<Empty.Description class="max-w-md">{targetsStore.error}</Empty.Description>
 				</Empty.Header>
 				<Empty.Content>

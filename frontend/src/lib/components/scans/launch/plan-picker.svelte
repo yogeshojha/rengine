@@ -40,12 +40,12 @@
 	const MODES: { value: LaunchMode; label: string; caption: string }[] = [
 		{
 			value: 'engine',
-			label: 'Scan Engine',
+			label: 'Scan engine',
 			caption: 'Runs a saved scan engine exactly as configured.'
 		},
 		{
 			value: 'quick',
-			label: 'Custom Scan',
+			label: 'Custom scan',
 			caption: 'Dependent stages are included automatically.'
 		}
 	];

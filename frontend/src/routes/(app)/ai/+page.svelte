@@ -175,7 +175,7 @@
 									id="ai-key"
 									type={showKey ? 'text' : 'password'}
 									bind:value={apiKey}
-									placeholder={status.key_masked ?? providerSpec?.key_hint ?? 'Paste your API key'}
+									placeholder={status.key_masked ?? providerSpec?.key_hint ?? 'Paste the API key'}
 									autocomplete="off"
 									disabled={!isAdmin}
 									class="h-9 pr-9 font-mono text-xs"
@@ -250,7 +250,7 @@
 								</Select.Content>
 							</Select.Root>
 							<p class="text-xs text-muted-foreground">
-								Written once per check and cached forever, so a cheap model is enough.
+								Written once per check and cached, so a cheap model is enough.
 							</p>
 						</div>
 					</div>
@@ -344,8 +344,8 @@
 							<Badge variant="secondary">{status.cached_narratives.toLocaleString()}</Badge>
 						</div>
 						<p class="text-xs text-muted-foreground">
-							A passage is keyed by exactly what it was written from. Clearing the cache makes the
-							next report pay for its narrative again.
+							A passage is keyed by exactly what it was written from. Clearing the cache means the
+							next report is charged for its narrative again.
 						</p>
 						<Button
 							variant="outline"

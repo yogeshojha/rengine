@@ -14,7 +14,7 @@
 	let {
 		open = $bindable(),
 		title = 'Delete this item?',
-		description = 'This action cannot be undone.',
+		description = 'The item and everything stored with it are removed.',
 		confirmLabel = 'Delete',
 		isDeleting = false,
 		onOpenChange,

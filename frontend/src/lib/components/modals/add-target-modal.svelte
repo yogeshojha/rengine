@@ -130,7 +130,7 @@
 			await targetsStore.refresh();
 			toast.success(`Organization "${name}" created`);
 		} catch {
-			toast.error('Failed to create organization');
+			toast.error('Organization could not be created');
 		}
 	}
 
@@ -152,7 +152,7 @@
 			await targetsStore.refresh();
 			toast.success(`Tag "${name}" created`);
 		} catch {
-			toast.error('Failed to create tag');
+			toast.error('Tag could not be created');
 		}
 	}
 
@@ -178,7 +178,7 @@
 			});
 
 			if (!result) {
-				toast.error(targetsStore.error || 'Failed to add target');
+				toast.error(targetsStore.error || 'Target could not be added');
 				return;
 			}
 
@@ -213,7 +213,7 @@
 				);
 			}
 		} catch {
-			toast.error('Failed to add target');
+			toast.error('Target could not be added');
 		} finally {
 			isSubmitting = false;
 		}
@@ -306,13 +306,13 @@
 			<ScrollArea class="min-h-0">
 				<div class="space-y-5 p-6">
 					<div class="space-y-2">
-						<Label for="target-value">Target Value <span class="text-destructive">*</span></Label>
+						<Label for="target-value">Target value <span class="text-destructive">*</span></Label>
 						<div class="relative">
 							<Input
 								id="target-value"
 								type="text"
 								bind:ref={targetInput}
-								placeholder="e.g., example.com, 192.168.1.0/24, AS12345"
+								placeholder="e.g. example.com, 192.168.1.0/24, AS12345"
 								value={targetValue}
 								oninput={handleTargetInput}
 								class="pr-10"
@@ -352,9 +352,7 @@
 							placeholder="Optional friendly name"
 							bind:value={displayName}
 						/>
-						<p class="text-xs text-muted-foreground">
-							Descriptive label to help identify this target
-						</p>
+						<p class="text-xs text-muted-foreground">Optional label for this target</p>
 					</div>
 
 					<div class="space-y-2">
@@ -381,7 +379,7 @@
 							onCreate={handleCreateTag}
 							placeholder="Search or create tags…"
 						/>
-						<p class="text-xs text-muted-foreground">Add tags to categorize and filter targets</p>
+						<p class="text-xs text-muted-foreground">Tags group and filter targets</p>
 					</div>
 				</div>
 			</ScrollArea>
@@ -426,8 +424,8 @@
 
 <UnsavedChangesDialog
 	bind:open={showDiscardConfirm}
-	title="Discard your changes?"
-	description="You have unsaved input for this target. Closing now will discard it."
+	title="Discard changes?"
+	description="This target has unsaved input. Closing now discards it."
 	onOpenChange={(o) => (showDiscardConfirm = o)}
 	onConfirm={confirmDiscard}
 />

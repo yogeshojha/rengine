@@ -56,7 +56,7 @@
 			onSelect={(item) => onChange(value.includes(item.id) ? value : [...value, item.id])}
 			onRemove={(item) => onChange(value.filter((v) => v !== item.id))}
 			allowCreate={false}
-			placeholder="Search your templates…"
+			placeholder="Search templates…"
 			emptyText="No uploaded templates match."
 		/>
 		{#if value.length}

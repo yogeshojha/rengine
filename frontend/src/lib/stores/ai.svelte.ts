@@ -38,7 +38,7 @@ function createAiStore() {
 				catalog = c;
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Could not load AI settings');
+				toast.error(e instanceof Error ? e.message : 'AI settings could not be loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -50,7 +50,7 @@ function createAiStore() {
 				status = await aiApi.update(body);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Could not save AI settings');
+				toast.error(e instanceof Error ? e.message : 'AI settings could not be saved');
 				return false;
 			} finally {
 				isSaving = false;
@@ -72,7 +72,7 @@ function createAiStore() {
 				if (status) status = { ...status, cached_narratives: 0 };
 				return result.removed;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Could not clear the cache');
+				toast.error(e instanceof Error ? e.message : 'Cache could not be cleared');
 				return 0;
 			}
 		},

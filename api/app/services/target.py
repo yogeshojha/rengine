@@ -347,7 +347,7 @@ class TargetService:
         if not target_type:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid target format",
+                detail="Invalid target ID",
             )
 
         project = await self._get_project_by_slug(target_in.project_slug)
@@ -892,7 +892,7 @@ class TargetService:
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid target ID format",
+                detail="Invalid target ID",
             ) from e
         result = await self.session.execute(
             select(Target).where(Target.id == target_id)
@@ -994,7 +994,7 @@ class TargetService:
                 import_result=TargetImportResult(
                     target_value=_target_value,
                     success=False,
-                    error="Invalid target format",
+                    error="Invalid target ID",
                 )
             )
 
@@ -1065,7 +1065,7 @@ class TargetService:
                 import_result=TargetImportResult(
                     target_value=target_value,
                     success=False,
-                    error="Invalid target format",
+                    error="Invalid target ID",
                 )
             )
 

@@ -90,7 +90,7 @@ stages:
 			<Alert.Root variant="destructive">
 				<AlertTriangle />
 				<Alert.Title>
-					{errors.length} problem{errors.length === 1 ? '' : 's'} — nothing will be imported
+					{errors.length} problem{errors.length === 1 ? '' : 's'}. Nothing is imported.
 				</Alert.Title>
 				<Alert.Description>
 					<ul class="list-inside list-disc space-y-0.5 text-xs">

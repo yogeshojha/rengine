@@ -29,7 +29,7 @@ function createWordlistsStore() {
 				wordlists = await wordlistsApi.list();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to load wordlists');
+				toast.error(e instanceof Error ? e.message : 'Wordlists could not be loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -52,7 +52,7 @@ function createWordlistsStore() {
 				wordlists = wordlists.filter((w) => w.id !== id);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to delete wordlist');
+				toast.error(e instanceof Error ? e.message : 'Wordlist could not be deleted');
 				return false;
 			}
 		},

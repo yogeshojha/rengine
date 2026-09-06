@@ -50,7 +50,7 @@ async def get_user(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user ID format",
+            detail="Invalid user ID",
         ) from e
 
     result = await session.execute(select(User).where(User.id == uuid_id))
@@ -76,13 +76,13 @@ async def delete_user(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user ID format",
+            detail="Invalid user ID",
         ) from e
 
     if uuid_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete yourself",
+            detail="You cannot delete your own account",
         )
 
     result = await session.execute(select(User).where(User.id == uuid_id))

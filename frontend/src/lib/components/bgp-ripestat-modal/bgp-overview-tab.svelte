@@ -145,7 +145,7 @@
 							class="text-xs gap-1 border bg-destructive/10 text-destructive border-destructive/40"
 						>
 							<CircleX class="h-3 w-3" />
-							Not Announced
+							Not announced
 						</Badge>
 					{/if}
 				{/if}
@@ -284,7 +284,7 @@
 						class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
 					>
 						<Network class="h-3 w-3" />
-						Announced Prefixes
+						Announced prefixes
 					</div>
 					<p class="text-sm font-medium">{bgpSummary.prefix_count.toLocaleString()}</p>
 				</div>
@@ -336,7 +336,7 @@
 				class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider mb-3"
 			>
 				<Cable class="h-3 w-3" />
-				Related Prefixes
+				Related prefixes
 				<Badge variant="outline" class="text-[10px] h-5 min-w-5 px-1.5 ml-0.5">
 					{relatedCount}
 				</Badge>

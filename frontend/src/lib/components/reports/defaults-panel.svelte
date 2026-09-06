@@ -37,7 +37,7 @@
 				theme = value.theme;
 				snapshot = JSON.stringify({ branding, theme });
 			})
-			.catch((e) => toast.error(e instanceof Error ? e.message : 'Could not load the defaults'))
+			.catch((e) => toast.error(e instanceof Error ? e.message : 'Defaults could not be loaded'))
 			.finally(() => (loading = false));
 	});
 
@@ -54,7 +54,7 @@
 			snapshot = JSON.stringify({ branding, theme });
 			toast.success('Saved. New reports start from this.');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Could not save the defaults');
+			toast.error(e instanceof Error ? e.message : 'Defaults could not be saved');
 		} finally {
 			saving = false;
 		}
@@ -69,8 +69,8 @@
 			<InfoIcon />
 			<Alert.Title>These fill in what a template leaves blank</Alert.Title>
 			<Alert.Description>
-				Set your logo, company and classification once here and every template starts from them. A
-				template that sets its own value always wins, so a per-client deliverable can still override
+				Set the logo, company and classification once here and every template starts from them. A
+				template that sets its own value takes precedence, so a per-client deliverable can override
 				anything.
 			</Alert.Description>
 		</Alert.Root>

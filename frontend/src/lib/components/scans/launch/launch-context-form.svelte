@@ -78,7 +78,7 @@
 				buildContextPayload(draft, touched)
 			);
 			if (created) onCreated(created.id, created.name);
-			else toast.error(scanContextsStore.error ?? 'Failed to create context');
+			else toast.error(scanContextsStore.error ?? 'Context could not be created');
 		} finally {
 			saving = false;
 		}

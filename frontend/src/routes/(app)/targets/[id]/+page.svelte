@@ -221,7 +221,7 @@
 			target = await targetsApi.get(targetId);
 			breadcrumbStore.set(targetId, target.target_value);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load target';
+			error = e instanceof Error ? e.message : 'Target could not be loaded';
 		} finally {
 			isLoading = false;
 		}
@@ -233,7 +233,7 @@
 			detail = await targetsApi.getDetail(targetId);
 			detailError = null;
 		} catch (e) {
-			detailError = e instanceof Error ? e.message : 'Failed to load enrichment details';
+			detailError = e instanceof Error ? e.message : 'Enrichment details could not be loaded';
 		} finally {
 			if (!silent) detailLoading = false;
 		}
@@ -465,7 +465,7 @@
 		if (ok) {
 			toast.success('Scan cancelled');
 			refreshAll();
-		} else toast.error('Could not cancel the scan');
+		} else toast.error('Scan could not be cancelled');
 	}
 
 	async function handleRefreshEnrichment() {
@@ -559,7 +559,7 @@
 			showDeleteDialog = false;
 			goto(ROUTES.targets);
 		} catch {
-			toast.error('Failed to delete target');
+			toast.error('Target could not be deleted');
 		} finally {
 			isDeleting = false;
 		}
@@ -804,7 +804,7 @@
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
 		title="Delete this target?"
-		description="This also deletes every scan and finding for {target.target_value}. This action cannot be undone."
+		description="Every scan and finding for {target.target_value} is deleted with it."
 		{isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={confirmDelete}

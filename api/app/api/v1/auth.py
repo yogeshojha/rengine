@@ -116,7 +116,7 @@ async def login(
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive",
+            detail="This account is inactive",
         )
 
     await clear_failures(rl_key)
@@ -203,7 +203,7 @@ async def refresh_access_token(
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive",
+            detail="This account is inactive",
         )
 
     new_access_token = create_access_token(str(user.id))

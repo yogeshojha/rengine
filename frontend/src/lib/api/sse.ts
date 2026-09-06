@@ -147,7 +147,7 @@ export class SSEClient {
 		es.onopen = () => {
 			this.reconnectAttempts = 0;
 			this.setState('connected');
-			console.log(`[SSE] Connected — channels: ${Array.from(this.channels).join(', ')}`);
+			console.log(`[SSE] Connected, channels: ${Array.from(this.channels).join(', ')}`);
 		};
 
 		es.onerror = () => {
@@ -216,7 +216,7 @@ export class SSEClient {
 			});
 
 			if (!response.ok) {
-				console.error('[SSE] Token refresh failed — session expired');
+				console.error('[SSE] Token refresh failed, session expired');
 				window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
 				this.setState('disconnected');
 				return;

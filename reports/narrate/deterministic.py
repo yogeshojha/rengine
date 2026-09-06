@@ -71,7 +71,7 @@ class PlainNarrator(Narrator):
                 )
             return (
                 "No findings were recorded by the checks that ran. That is a statement "
-                "about the checks selected, not a guarantee about the estate."
+                "about the checks selected. It is not a guarantee about the estate."
             )
         ordered = [
             f"{severity[key]:,} {SEVERITY_LABELS[key].lower()}"
@@ -90,8 +90,8 @@ class PlainNarrator(Narrator):
         kev = brief.kev_count
         if kev:
             detail += (
-                f" {_count(kev, 'weakness', 'weaknesses')} appear on the Known Exploited "
-                "Vulnerabilities catalogue, which means working exploit code is public."
+                f" {_count(kev, 'weakness', 'weaknesses')} appear on the CISA Known Exploited "
+                "Vulnerabilities catalog, which means exploitation has been observed in the wild."
             )
         return lead + detail
 
@@ -138,7 +138,7 @@ class PlainNarrator(Narrator):
         return (
             f"The first action addresses {first.title}. It clears "
             f"{_count(first.clears, 'observation')} across {_count(first.assets, 'asset')} "
-            f"and is classed as {first.effort.lower()}.{tail}"
+            f"and is rated {first.effort.lower()} effort.{tail}"
         )
 
     def _caveat(self, brief: ReportBrief) -> str:
@@ -190,7 +190,7 @@ class PlainNarrator(Narrator):
         if not hosting.get("hosts"):
             return ""
         parts = [
-            f"{_count(hosting['hosts'], 'web asset')} were catalogued, of which "
+            f"{_count(hosting['hosts'], 'web asset')} were catalogued. "
             f"{hosting['resolving']:,} resolve and {hosting['live']:,} answered a request."
         ]
         edge, cloud, direct = hosting["edge"], hosting["cloud"], hosting["direct"]
@@ -208,7 +208,7 @@ class PlainNarrator(Narrator):
             parts.append(
                 f"{_count(exposure['total'], 'service')} answered on "
                 f"{_count(exposure['addresses'], 'address', 'addresses')}, "
-                f"{exposure['web']:,} of them speaking HTTP."
+                f"{exposure['web']:,} of them answering HTTP."
             )
             if exposure.get("sensitive"):
                 parts.append(

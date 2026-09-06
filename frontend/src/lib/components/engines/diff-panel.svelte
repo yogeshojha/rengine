@@ -66,7 +66,7 @@
 		<div class="body">
 			{#if !changes.length}
 				<p class="empty">
-					Every setting in this engine matches its stage default. Changed settings are listed here.
+					Every setting in this engine matches its stage default. Anything changed is listed here.
 				</p>
 			{/if}
 			{#each byStage as [stage, items] (stage)}

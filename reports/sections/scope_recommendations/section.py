@@ -29,7 +29,7 @@ class ScopeRecommendationsConfig(SectionConfig):
 
 class ScopeRecommendationsSection(Section):
     name = "scope_recommendations"
-    title = "Domains worth adding to scope"
+    title = "Scope recommendations"
     description = "Other registrable domains named on certificates this estate serves."
     group = SectionGroup.INTELLIGENCE.value
     order = 40

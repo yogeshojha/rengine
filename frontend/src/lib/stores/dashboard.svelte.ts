@@ -30,7 +30,7 @@ function createDashboardStore() {
 			hasFetched = true;
 		} catch (e) {
 			if (mySeq !== seq) return;
-			error = e instanceof Error ? e.message : 'Failed to load the dashboard';
+			error = e instanceof Error ? e.message : 'Dashboard could not be loaded';
 		} finally {
 			if (mySeq === seq) loading = false;
 		}

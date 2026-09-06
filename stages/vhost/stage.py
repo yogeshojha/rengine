@@ -20,7 +20,7 @@ _MAX_IPS = 8
 class VhostStage(Stage):
     name = "vhost"
     title = "Virtual Host Discovery"
-    description = "Host-header fuzzing to surface vhosts not resolvable via DNS."
+    description = "Find virtual hosts that DNS does not resolve, by varying the Host header."
     phase = Phase.EXPANSION.value
     depends_on = frozenset({"reverse_dns", "subdomain_discovery"})
     group = StageGroup.HOSTS.value

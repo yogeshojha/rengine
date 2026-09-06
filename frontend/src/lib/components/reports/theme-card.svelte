@@ -28,7 +28,7 @@
 			const source = await reportsApi.themeSource(theme.slug);
 			downloadBlob(`${theme.slug}.yaml`, source, 'text/yaml');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Could not read that theme');
+			toast.error(e instanceof Error ? e.message : 'That theme could not be read');
 		}
 	}
 </script>

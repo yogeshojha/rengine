@@ -79,7 +79,7 @@ css: |
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Upload a theme</Dialog.Title>
 			<Dialog.Description>
-				A theme is a YAML file of design tokens. Anything you leave out keeps its default.
+				A theme is a YAML file of design tokens. Any token left out keeps its default.
 			</Dialog.Description>
 		</Dialog.Header>
 		<ScrollArea

@@ -160,7 +160,7 @@
 			const res = await targetsApi.list({ project_slug: projectSlug, size: 100 });
 			targets = res.items;
 		} catch (e) {
-			targetsError = e instanceof Error ? e.message : 'Failed to load targets';
+			targetsError = e instanceof Error ? e.message : 'Targets could not be loaded';
 		} finally {
 			targetsLoading = false;
 		}
@@ -196,7 +196,7 @@
 				toast.success(isEdit ? 'Schedule updated' : 'Schedule created');
 				handleOpenChange(false);
 			} else {
-				toast.error(scanSchedulesStore.error ?? 'Failed to save schedule');
+				toast.error(scanSchedulesStore.error ?? 'Schedule could not be saved');
 			}
 		} finally {
 			saving = false;
@@ -214,8 +214,8 @@
 		<Dialog.Header class="p-6 pb-4">
 			<Dialog.Title>{isEdit ? 'Edit scheduled scan' : 'New scheduled scan'}</Dialog.Title>
 			<Dialog.Description>
-				Keep these targets under continuous watch. reNgine re-runs the scan on your schedule and
-				notifies you the moment new assets or vulnerabilities surface.
+				Each selected target is re-scanned on this schedule. New assets and findings are reported
+				through the configured notification channels.
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -353,7 +353,7 @@
 								class="mt-1.5 font-mono"
 							/>
 							<p class="mt-1 text-[11px] text-muted-foreground">
-								Standard 5-field cron — minute, hour, day-of-month, month, day-of-week.
+								Standard 5-field cron: minute, hour, day of month, month, day of week.
 							</p>
 						</Tabs.Content>
 					</Tabs.Root>
@@ -361,9 +361,8 @@
 					<div class="flex items-start gap-1.5 text-[11px] text-muted-foreground">
 						<CalendarClock class="mt-px h-3.5 w-3.5 shrink-0" />
 						<span>
-							Scheduled times use your timezone
-							<span class="font-medium text-foreground">{timezone}</span>
-							— change it in
+							Scheduled times use the instance timezone
+							<span class="font-medium text-foreground">{timezone}</span>. Change it in
 							<a href={ROUTES.settings()} class="underline underline-offset-2 hover:text-foreground"
 								>Settings</a
 							>.

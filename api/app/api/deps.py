@@ -96,7 +96,7 @@ def ensure_active(user: User) -> User:
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user",
+            detail="This account is inactive",
         )
     return user
 
@@ -128,7 +128,7 @@ async def get_current_superuser(
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough privileges. Admin access required.",
+            detail="Administrator access is required",
         )
     return current_user
 

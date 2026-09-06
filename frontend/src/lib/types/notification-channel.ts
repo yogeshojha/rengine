@@ -13,16 +13,16 @@ export type NotifProvider = (typeof NOTIF_PROVIDERS)[number];
 export const NOTIF_CATEGORIES = [
 	{ value: 'scan', label: 'Scans', hint: 'Started, completed, failed' },
 	{ value: 'vulnerability', label: 'Vulnerabilities', hint: 'New findings by severity' },
-	{ value: 'target', label: 'Targets & assets', hint: 'Imports, new subdomains/endpoints' },
+	{ value: 'target', label: 'Targets and assets', hint: 'Imports, new assets and endpoints' },
 	{ value: 'security', label: 'Security alerts', hint: 'Logins, account changes' },
 	{ value: 'system', label: 'System', hint: 'Updates and platform health' },
-	{ value: 'integration', label: 'Integrations', hint: 'API key / webhook failures' },
+	{ value: 'integration', label: 'Integrations', hint: 'API key and webhook failures' },
 	{ value: 'resource', label: 'Resources', hint: 'Storage and quota limits' }
 ] as const;
 
 export const NOTIF_SEVERITIES = [
-	{ value: 'info', label: 'Everything (info & up)' },
-	{ value: 'warning', label: 'Warnings & errors only' },
+	{ value: 'info', label: 'Info and above' },
+	{ value: 'warning', label: 'Warning and above' },
 	{ value: 'error', label: 'Errors only' }
 ] as const;
 

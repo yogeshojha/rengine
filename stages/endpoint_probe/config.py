@@ -9,7 +9,7 @@ class EndpointProbeConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Verify endpoints",
-        description="Request the discovered URLs so a status is an observation, not a guess.",
+        description="Request the discovered URLs so every status is observed rather than inferred.",
     )
     threads: int = threads(40, title="Threads")
     timeout: int = timeout(10, title="Timeout (s)")

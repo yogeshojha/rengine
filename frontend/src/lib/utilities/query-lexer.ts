@@ -185,7 +185,7 @@ export function lex(source: string, known: FieldLookup): LexResult {
 			problems.push({
 				start: i,
 				end: i + text.indexOf(':'),
-				message: `"${text.slice(0, text.indexOf(':'))}" is not a field — searched as text`,
+				message: `"${text.slice(0, text.indexOf(':'))}" is not a field, searched as text`,
 				level: 'warning'
 			});
 		}

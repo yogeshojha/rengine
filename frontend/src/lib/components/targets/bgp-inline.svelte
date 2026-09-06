@@ -142,7 +142,7 @@
 									? 'text-warning'
 									: 'text-foreground'}"
 							>
-								{bgp.announced === false ? 'Not Announced' : 'Announced'}
+								{bgp.announced === false ? 'Not announced' : 'Announced'}
 							</p>
 						</div>
 					</div>
@@ -154,7 +154,7 @@
 								<p
 									class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
 								>
-									Announced Prefixes
+									Announced prefixes
 								</p>
 								<p class="text-sm font-medium font-mono">{formatNumber(bgp.prefix_count)}</p>
 							</div>
@@ -222,7 +222,7 @@
 								<p
 									class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
 								>
-									Containing Prefix
+									Containing prefix
 								</p>
 								<p class="text-sm font-mono">{bgp.prefix}</p>
 							</div>

@@ -25,7 +25,7 @@ function createInstanceSettingsStore() {
 				settings = await instanceSettingsApi.get();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to load instance settings');
+				toast.error(e instanceof Error ? e.message : 'Instance settings could not be loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -36,7 +36,7 @@ function createInstanceSettingsStore() {
 				settings = await instanceSettingsApi.update(data);
 				return settings;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to update instance settings');
+				toast.error(e instanceof Error ? e.message : 'Instance settings could not be updated');
 				return null;
 			}
 		},
@@ -49,7 +49,7 @@ function createInstanceSettingsStore() {
 			try {
 				return await instanceSettingsApi.testAi(data);
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to test AI connection');
+				toast.error(e instanceof Error ? e.message : 'AI connection test failed');
 				return null;
 			}
 		},

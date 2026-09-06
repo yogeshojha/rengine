@@ -131,7 +131,7 @@
 				toast.success(`Created "${created.name}"`);
 				goto(ROUTES.engine(created.id));
 			} else {
-				toast.error(scanEnginesStore.error ?? 'Failed to create engine');
+				toast.error(scanEnginesStore.error ?? 'Engine could not be created');
 			}
 		} finally {
 			isCreating = false;
@@ -152,7 +152,7 @@
 				toast.success(`Imported "${imported.name}"`);
 				goto(ROUTES.engine(imported.id));
 			} else {
-				toast.error(scanEnginesStore.error ?? 'Failed to import engine');
+				toast.error(scanEnginesStore.error ?? 'Engine could not be imported');
 			}
 		} finally {
 			isImporting = false;
@@ -164,7 +164,7 @@
 		if (!project) return;
 		const copy = await scanEnginesStore.duplicateEngine(engine.id, project.id);
 		if (copy) toast.success(`Duplicated "${engine.name}"`);
-		else toast.error(scanEnginesStore.error ?? 'Failed to duplicate engine');
+		else toast.error(scanEnginesStore.error ?? 'Engine could not be duplicated');
 	}
 
 	async function handleExport(engine: ScanEngine) {
@@ -175,7 +175,7 @@
 			downloadBlob(`${engine.name}.yaml`, yaml, 'text/yaml');
 			toast.success('YAML exported');
 		} else {
-			toast.error(scanEnginesStore.error ?? 'Failed to export engine');
+			toast.error(scanEnginesStore.error ?? 'Engine could not be exported');
 		}
 	}
 
@@ -212,7 +212,7 @@
 					showDeleteDialog = false;
 					engineToDelete = null;
 				} else {
-					toast.error(scanEnginesStore.error ?? 'Failed to delete engine');
+					toast.error(scanEnginesStore.error ?? 'Engine could not be deleted');
 				}
 				return;
 			}
@@ -232,7 +232,7 @@
 			if (deleted) toast.success(`${deleted} engine${deleted !== 1 ? 's' : ''} deleted`);
 			if (failed) {
 				toast.error(
-					`${failed} engine${failed !== 1 ? 's' : ''} kept${lastError ? ` — ${lastError}` : ''}`
+					`${failed} engine${failed !== 1 ? 's' : ''} kept${lastError ? `. ${lastError}` : ''}`
 				);
 			}
 			showDeleteDialog = false;
@@ -248,8 +248,8 @@
 	);
 	const deleteDescription = $derived(
 		deleteMode === 'single'
-			? 'Removes this engine from the project. Completed scans and their results are unaffected. This action cannot be undone.'
-			: 'Removes the selected engines from the project. Engines referenced by a schedule or a running scan are skipped. Completed scans and their results are unaffected. This action cannot be undone.'
+			? 'Removes this engine from the project. Completed scans and their results are unaffected.'
+			: 'Removes the selected engines from the project. Engines referenced by a schedule or a running scan are skipped. Completed scans and their results are unaffected.'
 	);
 
 	async function handleRefresh() {
@@ -275,7 +275,7 @@
 <div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-4">
 		<div class="max-w-2xl">
-			<h1 class="text-2xl font-semibold tracking-tight">Scan Engines</h1>
+			<h1 class="text-2xl font-semibold tracking-tight">Scan engines</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
 				An engine defines which stages run against a target and how each is tuned. {#if stageCount}{stageCount}
 					stages are available on this instance.{/if}
@@ -306,7 +306,7 @@
 	{#if scanEnginesStore.error && !scanEnginesStore.isLoading}
 		<Alert.Root variant="destructive">
 			<AlertCircle />
-			<Alert.Title>Couldn't load scan engines</Alert.Title>
+			<Alert.Title>Scan engines could not be loaded</Alert.Title>
 			<Alert.Description class="flex flex-wrap items-center justify-between gap-3">
 				<span>{scanEnginesStore.error}</span>
 				<Button
@@ -341,7 +341,7 @@
 				<h2 class="text-lg font-semibold tracking-tight">Create your first engine</h2>
 				<p class="mt-1 text-sm text-muted-foreground">
 					An engine defines which stages run against a target and how each is tuned. Start from a
-					preset or build one from scratch.
+					preset, or build one up field by field.
 				</p>
 			</div>
 			{#if engineCatalogStore.presets.length}
@@ -423,7 +423,7 @@
 			<EmptyState
 				icon={SearchX}
 				title="No engines match"
-				description="Adjust your search or clear it to see all engines."
+				description="Widen the search or remove a filter."
 				compact
 			>
 				<Button variant="outline" size="sm" onclick={() => (query = '')}>Clear search</Button>

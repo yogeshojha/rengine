@@ -99,7 +99,7 @@
 			</Empty.Media>
 			<Empty.Title>Correlating infrastructure…</Empty.Title>
 			<Empty.Description>
-				Searching for related targets across your attack surface.
+				Matching this record against every target in the project.
 			</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
@@ -121,8 +121,8 @@
 			</Empty.Media>
 			<Empty.Title>No related targets found</Empty.Title>
 			<Empty.Description>
-				Correlations surface automatically as your attack surface grows. Shared registrants,
-				nameservers, networks, and registrars are tracked across all targets.
+				Shared registrants, nameservers, networks and registrars are matched across every target in
+				this project.
 			</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>

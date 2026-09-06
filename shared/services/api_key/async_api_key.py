@@ -88,7 +88,7 @@ class APIKeyService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=(
                     f"The {data.provider.value} integration is only available in "
-                    "Bug Bounty mode."
+                    "Bug bounty mode."
                 ),
             )
 
@@ -193,7 +193,7 @@ class APIKeyService:
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid key ID format",
+                detail="Invalid key ID",
             ) from e
 
         result = await self.session.execute(select(APIKey).where(APIKey.id == uuid_id))

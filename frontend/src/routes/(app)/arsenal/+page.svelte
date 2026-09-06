@@ -43,7 +43,7 @@
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.arsenal}</h1>
 		<p class="mt-1 text-sm text-muted-foreground">
-			What your scans run with: the scanners and their checks, and the lists they guess from.
+			Scanners, their checks, and the wordlists a scan runs with.
 		</p>
 	</div>
 

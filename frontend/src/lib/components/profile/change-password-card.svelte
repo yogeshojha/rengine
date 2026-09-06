@@ -50,7 +50,7 @@
 			return;
 		}
 		if (newPassword.length < 8) {
-			toast.error('Password must be at least 8 characters long');
+			toast.error('Password must be at least 8 characters');
 			return;
 		}
 
@@ -67,7 +67,7 @@
 			confirmPassword = '';
 			passwordDirty = { current: false, next: false, confirm: false };
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to change password');
+			toast.error(error instanceof Error ? error.message : 'Password could not be changed');
 		} finally {
 			isChangingPassword = false;
 		}
@@ -81,7 +81,7 @@
 				<LockIcon class="w-5 h-5 text-primary" />
 			</div>
 			<div>
-				<Card.Title>Change Password</Card.Title>
+				<Card.Title>Change password</Card.Title>
 				<Card.Description>Update your password</Card.Description>
 			</div>
 		</div>
@@ -94,7 +94,7 @@
 	>
 		<Card.Content class="space-y-4">
 			<div class="space-y-2">
-				<Label for="current-password">Current Password</Label>
+				<Label for="current-password">Current password</Label>
 				<div class="relative">
 					<Input
 						id="current-password"
@@ -122,7 +122,7 @@
 			<Separator />
 
 			<div class="space-y-2">
-				<Label for="new-password">New Password</Label>
+				<Label for="new-password">New password</Label>
 				<div class="relative">
 					<Input
 						id="new-password"
@@ -155,7 +155,7 @@
 			</div>
 
 			<div class="space-y-2">
-				<Label for="confirm-password">Confirm New Password</Label>
+				<Label for="confirm-password">Confirm new password</Label>
 				<div class="relative">
 					<Input
 						id="confirm-password"
@@ -200,7 +200,7 @@
 				loadingLabel="Updating…"
 				disabled={!passwordValid}
 			>
-				Update Password
+				Update password
 			</LoadingButton>
 		</Card.Footer>
 	</form>

@@ -151,7 +151,7 @@
 					? 'No scans in this window'
 					: `No new ${WEB.nounPlural} in this window`}
 				description={metric === 'scans'
-					? `Nothing has run in the ${rangeLabel}. Launch a scan to start building history.`
+					? `Nothing has run in the ${rangeLabel}.`
 					: `No first-time ${WEB.nounPlural} were discovered in the ${rangeLabel}.`}
 				class="h-[180px] justify-center border-0 bg-transparent"
 			/>

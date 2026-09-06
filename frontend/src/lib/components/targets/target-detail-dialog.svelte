@@ -67,7 +67,7 @@
 			<div class="p-6 pb-4">
 				<div class="flex items-start justify-between gap-4">
 					<div class="space-y-1 min-w-0">
-						<Dialog.Title class="text-xl font-semibold">Target Details</Dialog.Title>
+						<Dialog.Title class="text-xl font-semibold">Target details</Dialog.Title>
 					</div>
 				</div>
 			</div>
@@ -85,7 +85,7 @@
 				<div class="space-y-2">
 					<div class="flex items-center justify-between">
 						<span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-							Target Value
+							Target value
 						</span>
 						<Button
 							variant="outline"
@@ -106,7 +106,7 @@
 				{#if target.display_name}
 					<div class="space-y-2">
 						<span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-							Display Name
+							Display name
 						</span>
 						<p class="text-sm">{target.display_name}</p>
 					</div>
@@ -170,7 +170,7 @@
 					<div class="space-y-1">
 						<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
 							<Clock class="h-3 w-3" />
-							<span>Last Updated</span>
+							<span>Last updated</span>
 						</div>
 						<p class="text-sm font-medium">{formatDate(target.updated_at)}</p>
 						<p class="text-xs text-muted-foreground">

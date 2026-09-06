@@ -275,7 +275,7 @@
 
 				<DropdownMenu.Item onclick={() => onView(target)} class="gap-2">
 					<Eye class="h-4 w-4" />
-					View Summary
+					View summary
 				</DropdownMenu.Item>
 
 				<DropdownMenu.Item onclick={startRename} class="gap-2">

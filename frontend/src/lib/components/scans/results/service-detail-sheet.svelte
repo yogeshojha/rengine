@@ -428,7 +428,7 @@
 							</Item.Group>
 							{#if s.host_count > s.hosts.length}
 								<p class="px-3 text-xs text-muted-foreground">
-									Showing {s.hosts.length} of {s.host_count}. Open Web Assets for the full list.
+									Showing {s.hosts.length} of {s.host_count}. Open Web assets for the full list.
 								</p>
 							{/if}
 						{:else}

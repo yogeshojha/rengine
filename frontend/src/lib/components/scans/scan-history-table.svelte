@@ -141,7 +141,7 @@
 		const { ok, failed } = await scansStore.removeMany(ids);
 		selectedScanIds.clear();
 		if (ok > 0) toast.success(`Deleted ${ok} scan${ok !== 1 ? 's' : ''}.`);
-		if (failed > 0) toast.error(`Failed to delete ${failed} scan${failed !== 1 ? 's' : ''}.`);
+		if (failed > 0) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} could not be deleted`);
 	}
 
 	async function confirmBulkCancel() {
@@ -150,7 +150,7 @@
 		if (ids.length === 0) return;
 		const { ok, failed } = await scansStore.cancelMany(ids);
 		if (ok > 0) toast.success(`Cancelled ${ok} scan${ok !== 1 ? 's' : ''}.`);
-		if (failed > 0) toast.error(`Failed to cancel ${failed} scan${failed !== 1 ? 's' : ''}.`);
+		if (failed > 0) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} could not be cancelled`);
 	}
 
 	let activeChips = $derived.by(() => {
@@ -208,7 +208,7 @@
 					: `Exported ${rows.length} scan${rows.length !== 1 ? 's' : ''} as ${format.toUpperCase()}`
 			);
 		} catch {
-			toast.error('Failed to export scans');
+			toast.error('Scans could not be exported');
 		} finally {
 			exporting = false;
 		}
@@ -218,14 +218,14 @@
 		const s = cancelTarget;
 		cancelTarget = null;
 		if (s && (await scansStore.cancel(s))) toast.success('Scan cancelled.');
-		else if (s) toast.error(scansStore.error ?? 'Failed to cancel scan');
+		else if (s) toast.error(scansStore.error ?? 'Scan could not be cancelled');
 	}
 
 	async function confirmDelete() {
 		const s = deleteTarget;
 		deleteTarget = null;
 		if (s && (await scansStore.remove(s))) toast.success('Scan deleted.');
-		else if (s) toast.error(scansStore.error ?? 'Failed to delete scan');
+		else if (s) toast.error(scansStore.error ?? 'Scan could not be deleted');
 	}
 </script>
 
@@ -304,7 +304,7 @@
 		</div>
 		<div class="flex items-center gap-2">
 			<Hint
-				text="Rescans of chosen assets. They are evidence, not a census, so the ledger hides them by default."
+				text="Rescans of individual assets. Hidden by default because they do not represent a full run."
 			>
 				{#snippet child(props)}
 					<label
@@ -425,7 +425,7 @@
 				<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
 					<TriangleAlert class="size-6 text-destructive" />
 				</Empty.Media>
-				<Empty.Title>Couldn't load scans</Empty.Title>
+				<Empty.Title>Scans could not be loaded</Empty.Title>
 				<Empty.Description class="max-w-md">{scansStore.error}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -437,8 +437,8 @@
 	{:else if rowCount === 0 && scansStore.hasActiveFilters}
 		<Empty.Root class="py-16">
 			<Empty.Header>
-				<Empty.Title>No scans match your filters</Empty.Title>
-				<Empty.Description>Try widening the search or clearing filters.</Empty.Description>
+				<Empty.Title>No scans match</Empty.Title>
+				<Empty.Description>Widen the search or remove a filter.</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
 				<Button size="sm" variant="outline" class="gap-2" onclick={() => scansStore.clearFilters()}>
@@ -457,7 +457,7 @@
 				</Empty.Media>
 				<Empty.Title>No scans yet</Empty.Title>
 				<Empty.Description class="max-w-sm">
-					Launch a scan to start building scan history.
+					Start a scan to build the run history.
 				</Empty.Description>
 			</Empty.Header>
 			{#if onLaunch}
@@ -525,7 +525,7 @@
 <ConfirmDialog
 	open={!!deleteTarget}
 	title="Delete this scan?"
-	description="This removes the scan and all of its results. This cannot be undone."
+	description="The scan and all of its results are removed."
 	confirmLabel="Delete"
 	cancelLabel="Keep"
 	destructive
@@ -551,7 +551,7 @@
 <ConfirmDialog
 	open={bulkDeleteOpen}
 	title="Delete {selectedScans.length} scan{selectedScans.length !== 1 ? 's' : ''}?"
-	description="This removes the selected scans and all of their results. This cannot be undone."
+	description="The selected scans and all of their results are removed."
 	confirmLabel="Delete {selectedScans.length}"
 	cancelLabel="Keep"
 	destructive

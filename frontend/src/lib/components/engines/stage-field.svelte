@@ -116,7 +116,7 @@
 				{id}
 				class="h-8 w-[240px] text-sm"
 				value={listValue.join(', ')}
-				placeholder="comma separated"
+				placeholder="Comma separated"
 				onchange={(e) => onChange(parseCsv(e.currentTarget.value))}
 				autocomplete="off"
 				spellcheck={false}

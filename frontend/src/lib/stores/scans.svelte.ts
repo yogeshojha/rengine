@@ -136,7 +136,7 @@ function createScansStore() {
 			hasFetched = true;
 		} catch (e) {
 			if (seq === loadSeq && !silent) {
-				error = e instanceof Error ? e.message : 'Failed to load scans';
+				error = e instanceof Error ? e.message : 'Scans could not be loaded';
 			}
 		} finally {
 			if (seq === loadSeq) {
@@ -344,7 +344,7 @@ function createScansStore() {
 				this.refresh();
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to cancel scan';
+				error = e instanceof Error ? e.message : 'Scan could not be cancelled';
 				return false;
 			}
 		},
@@ -357,7 +357,7 @@ function createScansStore() {
 				this.refresh();
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to delete scan';
+				error = e instanceof Error ? e.message : 'Scan could not be deleted';
 				return false;
 			}
 		},
@@ -403,7 +403,7 @@ function createScansStore() {
 				if (projectId === filters.projectId) this.refresh();
 				return created;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to launch scans';
+				error = e instanceof Error ? e.message : 'Scans could not be started';
 				return null;
 			}
 		},

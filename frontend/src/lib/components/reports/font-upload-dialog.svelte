@@ -116,8 +116,8 @@
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Upload a typeface</Dialog.Title>
 			<Dialog.Description>
-				Files are read from your machine and stored on this instance. A report never fetches a font
-				from the internet.
+				Files are read from disk and stored on this instance. A report never fetches a font from the
+				internet.
 			</Dialog.Description>
 		</Dialog.Header>
 

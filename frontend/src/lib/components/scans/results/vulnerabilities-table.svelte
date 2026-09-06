@@ -586,7 +586,7 @@
 			});
 			afterTriage();
 		} catch {
-			toast.error(`Could not mark this finding ${VULN_STATE_LABELS[state].toLowerCase()}`);
+			toast.error(`This finding could not be marked ${VULN_STATE_LABELS[state].toLowerCase()}`);
 			applyState(new Set([v.fingerprint]), previous, v.note);
 		}
 	}
@@ -608,7 +608,7 @@
 			checkedIds.clear();
 			afterTriage();
 		} catch {
-			toast.error(`Could not mark ${what} ${VULN_STATE_LABELS[state].toLowerCase()}`);
+			toast.error(`${what} could not be marked ${VULN_STATE_LABELS[state].toLowerCase()}`);
 		} finally {
 			bulkBusy = false;
 		}
@@ -930,7 +930,7 @@
 			<EmptyState
 				icon={ShieldCheck}
 				title="No findings"
-				description="Every selected check ran and matched nothing. Coverage is above."
+				description="Every selected check ran and matched nothing. Coverage is reported above."
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else}

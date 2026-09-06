@@ -308,7 +308,7 @@
 				{#if s.host_count}
 					<div class="flex min-w-0 flex-wrap items-center gap-1">
 						{#each hosts.slice(0, MAX_HOSTS) as h (h)}
-							<Hint text="Open {h} in Web Assets">
+							<Hint text="Open {h} in Web assets">
 								{#snippet child(props)}
 									<button
 										{...props}
@@ -470,7 +470,7 @@
 						</DropdownMenu.Item>
 						{#if s.host_count}
 							<DropdownMenu.Item onclick={() => onHosts(filterToken('ip', s.ip))}>
-								<Globe /> Hosts in Web Assets
+								<Globe /> Hosts in Web assets
 							</DropdownMenu.Item>
 						{/if}
 					</DropdownMenu.Group>

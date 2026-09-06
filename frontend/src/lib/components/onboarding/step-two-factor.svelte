@@ -64,7 +64,7 @@
 			code = '';
 			phase = 'enroll';
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to start 2FA setup');
+			toast.error(e instanceof Error ? e.message : 'Two-factor setup could not be started');
 		} finally {
 			setupLoading = false;
 		}
@@ -86,7 +86,8 @@
 			toast.success('Two-factor authentication enabled');
 		} catch (e) {
 			failCount += 1;
-			errorMsg = e instanceof Error ? e.message : 'That code didn’t match. Try the latest one.';
+			errorMsg =
+				e instanceof Error ? e.message : 'That code was not accepted. Enter the current code.';
 			code = '';
 		} finally {
 			verifying = false;
@@ -121,7 +122,7 @@
 			copiedCodes = true;
 			setTimeout(() => (copiedCodes = false), 2000);
 		} else {
-			toast.error('Failed to copy');
+			toast.error('Copy failed');
 		}
 	}
 
@@ -153,8 +154,8 @@
 			<div class="flex-1 space-y-1">
 				<h3 class="text-sm font-medium">Authenticator app</h3>
 				<p class="text-sm text-muted-foreground">
-					Works with Google Authenticator, 1Password, Authy, and similar apps. You'll scan a QR code
-					and confirm with a 6-digit code.
+					Works with Google Authenticator, 1Password, Authy and similar apps. Scan a QR code, then
+					confirm with a 6-digit code.
 				</p>
 			</div>
 		</div>
@@ -170,14 +171,14 @@
 				<div
 					class="flex size-56 flex-col items-center justify-center gap-1.5 rounded-xl border bg-muted p-4 text-center"
 				>
-					<p class="text-sm font-medium">Can't display the QR</p>
+					<p class="text-sm font-medium">QR code unavailable</p>
 					<p class="text-xs text-muted-foreground">Use the manual key instead.</p>
 				</div>
 			{:else}
 				<div class="rounded-xl border bg-white p-4 shadow-sm">
 					<img
 						src={qr}
-						alt="QR code to enroll this account in your authenticator app"
+						alt="QR code for enrolling this account in an authenticator app"
 						class="size-56"
 						onerror={() => (qrFailed = true)}
 					/>
@@ -201,7 +202,10 @@
 			{#if showClockHint}
 				<p class="flex items-start gap-1.5 text-xs text-warning">
 					<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
-					<span>Still failing? Make sure your phone's clock is set to update automatically.</span>
+					<span
+						>If codes are repeatedly rejected, check that the device clock is set to update
+						automatically.</span
+					>
 				</p>
 			{/if}
 
@@ -214,7 +218,7 @@
 				<Collapsible.Trigger
 					class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
 				>
-					Can't scan? Enter the key manually
+					Enter the key manually
 					<ChevronDownIcon class="size-3.5 transition-transform {manualOpen ? 'rotate-180' : ''}" />
 				</Collapsible.Trigger>
 				<Collapsible.Content class="pt-2.5">
@@ -236,7 +240,7 @@
 			<ShieldCheckIcon class="size-4" />
 			<Alert.Title>Two-factor authentication is on</Alert.Title>
 			<Alert.Description>
-				You'll be asked for a code from your authenticator app the next time you sign in.
+				A code from the authenticator app is required at the next sign-in.
 			</Alert.Description>
 		</Alert.Root>
 
@@ -269,8 +273,8 @@
 					</div>
 				</div>
 				<p class="mt-1 text-xs text-muted-foreground">
-					Save these somewhere safe — each code works once if you lose access to your authenticator.
-					This is the only time they'll be shown.
+					Store these securely. Each code can be used once if the authenticator is unavailable. They
+					are shown only now.
 				</p>
 				<div class="mt-4 grid grid-cols-2 gap-2.5">
 					{#each backupCodes as bc (bc)}
@@ -285,7 +289,7 @@
 					class="mt-4 flex cursor-pointer items-center gap-2 text-xs font-normal text-muted-foreground"
 				>
 					<Checkbox bind:checked={backupCodesAck} />
-					I've saved my backup codes
+					Backup codes saved
 				</Label>
 			</div>
 		{/if}

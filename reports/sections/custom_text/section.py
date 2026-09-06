@@ -28,7 +28,7 @@ class CustomTextConfig(SectionConfig):
 class CustomTextSection(Section):
     name = "custom_text"
     title = "Custom text"
-    description = "Anything you want to say, in Markdown. Add as many as you need."
+    description = "Free text in Markdown. Repeatable."
     group = SectionGroup.SUMMARY.value
     order = 60
     repeatable = True

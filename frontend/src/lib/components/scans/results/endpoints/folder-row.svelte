@@ -156,9 +156,7 @@
 					<span class="font-mono text-[11px] text-muted-foreground">{hint}</span>
 				{/if}
 				{#if node.archive_only}
-					<Hint
-						text="Every path here came from an archive and none answered. It may be a decommissioned app."
-					>
+					<Hint text="Every path here came from an archive and none answered in this scan.">
 						{#snippet child(props)}
 							<span {...props} class="inline-flex">
 								<Badge

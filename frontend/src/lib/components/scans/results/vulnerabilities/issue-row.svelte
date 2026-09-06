@@ -402,7 +402,7 @@
 					</DropdownMenu.Item>
 					{#if it.sample_hosts.length}
 						<DropdownMenu.Item onclick={() => onHosts(hostFilter)}>
-							<Globe class="mr-2 size-3.5" /> Affected hosts in Web Assets
+							<Globe class="mr-2 size-3.5" /> Affected hosts in Web assets
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Separator />

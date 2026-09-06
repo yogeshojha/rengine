@@ -24,7 +24,7 @@
 		selected
 			? `${selected.name} · ${selected.words.toLocaleString()} words`
 			: value
-				? `${value} — not in the library`
+				? `${value} · not in the library`
 				: 'Select a wordlist'
 	);
 </script>

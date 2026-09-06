@@ -42,7 +42,7 @@
 			if (newProject) {
 				projectsStore.setActiveProject(newProject);
 			} else {
-				error = projectsStore.error || 'Failed to create project';
+				error = projectsStore.error || 'Project could not be created';
 			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'An unexpected error occurred';
@@ -67,24 +67,24 @@
 				<Dialog.Title class="leading-none">Create your first project</Dialog.Title>
 			</div>
 			<Dialog.Description>
-				A project keeps its targets, scans, and findings separate from your other work.
+				A project keeps its targets, scans and findings separate.
 			</Dialog.Description>
 		</Dialog.Header>
 
 		<Alert.Root>
 			<AlertCircleIcon class="size-4" />
-			<Alert.Title>Project Required</Alert.Title>
-			<Alert.Description>You need at least one project to start using reNgine.</Alert.Description>
+			<Alert.Title>Project required</Alert.Title>
+			<Alert.Description>At least one project is required.</Alert.Description>
 		</Alert.Root>
 
 		<form onsubmit={handleSubmit} class="space-y-4">
 			<div class="space-y-2">
-				<Label for="project-name">Project Name</Label>
+				<Label for="project-name">Project name</Label>
 				<Input
 					id="project-name"
 					bind:ref={nameInput}
 					bind:value={name}
-					placeholder="e.g., Example Corp Pentest"
+					placeholder="e.g. Example Corp Pentest"
 					disabled={isSubmitting}
 					class={isOverLimit ? 'border-destructive focus-visible:ring-destructive' : ''}
 				/>
@@ -94,7 +94,7 @@
 					{:else if isOverLimit}
 						<span class="text-destructive">Name is too long</span>
 					{:else}
-						<span class="text-muted-foreground">Choose a descriptive name for your engagement</span>
+						<span class="text-muted-foreground">Name this engagement</span>
 					{/if}
 					<span class={nameLength > MAX_LENGTH ? 'text-destructive' : 'text-muted-foreground'}>
 						{nameLength}/{MAX_LENGTH}

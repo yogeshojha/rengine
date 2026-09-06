@@ -25,7 +25,7 @@ class EndpointsSection(Section):
     name = "endpoints"
     title = "Endpoints"
     description = (
-        "The paths worth looking at, rather than every URL the crawl produced."
+        "Administrative, authentication, API and debug paths, rather than every URL the crawl produced."
     )
     group = SectionGroup.SURFACE.value
     order = 30

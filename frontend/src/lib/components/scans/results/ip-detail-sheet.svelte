@@ -315,7 +315,7 @@
 									onclick={() => onHosts?.(filterToken('ip', group.ip))}
 								>
 									<Globe data-icon="inline-start" />
-									{group.host_count} in Web Assets
+									{group.host_count} in Web assets
 								</Button>
 							{/if}
 						</div>
@@ -342,7 +342,7 @@
 							</Item.Group>
 							{#if group.host_count > group.hosts.length}
 								<p class="px-3 text-xs text-muted-foreground">
-									Showing {group.hosts.length} of {group.host_count}. Open Web Assets for the full
+									Showing {group.hosts.length} of {group.host_count}. Open Web assets for the full
 									list.
 								</p>
 							{/if}

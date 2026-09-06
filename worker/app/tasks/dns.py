@@ -89,8 +89,8 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                 # log
                 activity.log(
                     event=ActivityEvent.TARGET_ENRICHMENT_DNS_COMPLETED,
-                    title="DNS Query completed.",
-                    description=f"{record_count} records stored",
+                    title=f"DNS lookup completed · {target.target_value}",
+                    description=f"{record_count} {'record' if record_count == 1 else 'records'} stored",
                     level=ActivityLevel.SUCCESS,
                     target_id=target.id,
                     project_id=target.project_id,
@@ -117,7 +117,7 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                 results["failed"] += 1
                 activity.log(
                     event=ActivityEvent.TARGET_ENRICHMENT_DNS_FAILED,
-                    title="DNS Query failed.",
+                    title=f"DNS lookup failed · {target.target_value}",
                     description=str(e)[:1000],
                     level=ActivityLevel.ERROR,
                     target_id=target.id,

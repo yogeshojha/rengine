@@ -234,7 +234,7 @@
 		<div>
 			<h3 class="text-lg font-semibold">Proxies</h3>
 			<p class="text-sm text-muted-foreground">
-				Route scan traffic through proxies. The default applies to scan contexts that don't pick
+				Route scan traffic through proxies. The default applies to scan contexts that do not choose
 				one.
 			</p>
 		</div>
@@ -599,7 +599,9 @@
 				<div class="flex items-center justify-between rounded-lg border px-4 py-3">
 					<div class="space-y-0.5">
 						<Label class="text-sm font-medium">Set as default</Label>
-						<p class="text-xs text-muted-foreground">Used by contexts that don't pick a proxy.</p>
+						<p class="text-xs text-muted-foreground">
+							Used by contexts that do not choose a proxy.
+						</p>
 					</div>
 					<Switch
 						checked={formDefault}

@@ -17,7 +17,7 @@
 	import StepNotifications from '$lib/components/onboarding/step-notifications.svelte';
 	import StepFinish from '$lib/components/onboarding/step-finish.svelte';
 	import StepCelebration from '$lib/components/onboarding/step-celebration.svelte';
-	import RocketIcon from '@lucide/svelte/icons/rocket';
+	import ServerCogIcon from '@lucide/svelte/icons/server-cog';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import CompassIcon from '@lucide/svelte/icons/compass';
 	import PlugIcon from '@lucide/svelte/icons/plug';
@@ -25,30 +25,29 @@
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
-	import PartyPopperIcon from '@lucide/svelte/icons/party-popper';
+	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 
 	const STEPS = [
 		{
 			key: 'welcome-security',
 			title: 'Welcome to reNgine',
-			description:
-				"Let's get your instance set up. It takes a couple of minutes, and you can change everything later in Settings.",
-			icon: RocketIcon,
+			description: 'Configure this instance. Every setting here can be changed later in Settings.',
+			icon: ServerCogIcon,
 			component: StepWelcomeSecurity
 		},
 		{
 			key: 'two-factor',
-			title: 'Secure your account',
+			title: 'Secure this account',
 			description:
-				'Add a second factor with an authenticator app. You can also set this up later from your profile.',
+				'Add a second factor with an authenticator app. This can also be set up later from the profile page.',
 			icon: ShieldCheckIcon,
 			component: StepTwoFactor
 		},
 		{
 			key: 'mode',
-			title: 'How will you use reNgine?',
+			title: 'Operating mode',
 			description:
-				'Pick one — it tailors which features appear. Corporate hides bug-bounty tooling entirely. You can switch anytime in Settings.',
+				'One mode is active at a time. Corporate hides bug bounty tooling; bug bounty adds the HackerOne integration. The mode can be changed in Settings.',
 			icon: CompassIcon,
 			component: StepMode
 		},
@@ -56,7 +55,7 @@
 			key: 'integrations',
 			title: 'Connect data sources',
 			description:
-				'Optional API keys that expand passive recon. Add any now, or later in Settings → API Keys.',
+				'Optional API keys that expand passive recon. These can also be added in Settings, under API keys.',
 			icon: PlugIcon,
 			component: StepIntegrations
 		},
@@ -64,15 +63,15 @@
 			key: 'proxy',
 			title: 'Route scans through a proxy',
 			description:
-				'Keep your source IP off WAF blocklists and distribute load across exit IPs. Optional, but recommended beyond light use.',
+				'Keeps the source IP off WAF blocklists and distributes load across exit addresses. Optional, and recommended for sustained scanning.',
 			icon: ShieldIcon,
 			component: StepProxy
 		},
 		{
 			key: 'ai',
-			title: 'AI-powered analysis',
+			title: 'AI analysis',
 			description:
-				'Use an LLM to summarize findings and draft remediation. Scan data is sent to the provider you choose.',
+				'Use a language model to summarize findings and draft remediation. Scan data is sent to the provider you choose.',
 			icon: SparklesIcon,
 			component: StepAi
 		},
@@ -80,7 +79,7 @@
 			key: 'notifications',
 			title: 'Connect notifications',
 			description:
-				'Route scan and recon events to Slack, Discord, Telegram, or a generic webhook. Add email, Teams, and more later in Settings.',
+				'Route scan and recon events to Slack, Discord, Telegram or a webhook. Email, Teams and other destinations can be added in Settings.',
 			icon: BellIcon,
 			component: StepNotifications
 		},
@@ -88,15 +87,15 @@
 			key: 'finish',
 			title: 'Create your first project',
 			description:
-				'Projects organize targets, scans, and findings. Set data retention and name your first one.',
+				'A project keeps targets, scans and findings separate. Set data retention and name the first one.',
 			icon: FolderPlusIcon,
 			component: StepFinish
 		},
 		{
 			key: 'celebration',
-			title: "You're all set",
-			description: 'reNgine is configured and ready.',
-			icon: PartyPopperIcon,
+			title: 'Setup complete',
+			description: 'This instance is configured.',
+			icon: CircleCheckIcon,
 			component: StepCelebration
 		}
 	];
@@ -148,7 +147,7 @@
 		const resumeAt = Math.max(0, Math.min(status.current_step ?? 0, lastStep));
 		if (resumeAt > 0) {
 			currentIndex = resumeAt;
-			toast.info('Resuming where you left off');
+			toast.info('Restoring your progress');
 		}
 		ready = true;
 	}

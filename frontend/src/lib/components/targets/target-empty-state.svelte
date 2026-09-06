@@ -34,10 +34,9 @@
 				{/if}
 			{:else}
 				<p>
-					Get started by adding your first target. Targets are the domains, IPs, and other assets
-					you want to monitor.
+					Add a target to begin. A target is a domain, IP address, IP range, URL or ASN this project
+					monitors.
 				</p>
-				<p>Currently supported targets are domain, IP Addresses, IP Range, ASN and URL.</p>
 			{/if}
 		</Empty.Description>
 	</Empty.Header>

@@ -33,7 +33,7 @@
 				resetForm();
 				open = false;
 			} else {
-				error = projectsStore.error || 'Failed to create project';
+				error = projectsStore.error || 'Project could not be created';
 			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'An unexpected error occurred';
@@ -57,19 +57,19 @@
 <Dialog.Root bind:open>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Create New Project</Dialog.Title>
+			<Dialog.Title>Create project</Dialog.Title>
 			<Dialog.Description>
-				A project keeps its targets, scans, and findings separate from your other work.
+				A project keeps its targets, scans and findings separate.
 			</Dialog.Description>
 		</Dialog.Header>
 
 		<form onsubmit={handleSubmit} class="space-y-4">
 			<div class="space-y-2">
-				<Label for="project-name">Project Name</Label>
+				<Label for="project-name">Project name</Label>
 				<Input
 					id="project-name"
 					bind:value={name}
-					placeholder="e.g., Example Corp Pentest"
+					placeholder="e.g. Example Corp Pentest"
 					disabled={isSubmitting}
 					class={isOverLimit ? 'border-destructive focus-visible:ring-destructive' : ''}
 				/>
@@ -79,7 +79,8 @@
 					{:else if isOverLimit}
 						<span class="text-destructive">Name is too long</span>
 					{:else}
-						<span class="text-muted-foreground">A URL-friendly slug will be auto-generated</span>
+						<span class="text-muted-foreground">A URL-friendly slug is generated from the name</span
+						>
 					{/if}
 					<span class={nameLength > MAX_LENGTH ? 'text-destructive' : 'text-muted-foreground'}>
 						{nameLength}/{MAX_LENGTH}

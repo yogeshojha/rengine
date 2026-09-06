@@ -107,7 +107,7 @@ class SubdomainStage(Stage):
     name = "subdomain_discovery"
     title = "Subdomain Discovery"
     description = (
-        "Enumerate subdomains from passive sources, certificates and bruteforce."
+        "Enumerate subdomains from passive sources, certificates, wordlists and permutations."
     )
     phase = Phase.EXPANSION.value
     group = StageGroup.HOSTS.value

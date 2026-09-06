@@ -25,7 +25,7 @@ function createProxiesStore() {
 				proxies = await proxiesApi.list();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to fetch proxies');
+				toast.error(e instanceof Error ? e.message : 'Proxies could not be loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -37,7 +37,7 @@ function createProxiesStore() {
 				proxies = [...proxies, created];
 				return created;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to create proxy');
+				toast.error(e instanceof Error ? e.message : 'Proxy could not be created');
 				return null;
 			}
 		},
@@ -48,7 +48,7 @@ function createProxiesStore() {
 				proxies = proxies.map((p) => (p.id === id ? updated : p));
 				return updated;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to update proxy');
+				toast.error(e instanceof Error ? e.message : 'Proxy could not be updated');
 				return null;
 			}
 		},
@@ -59,7 +59,7 @@ function createProxiesStore() {
 				proxies = proxies.filter((p) => p.id !== id);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to delete proxy');
+				toast.error(e instanceof Error ? e.message : 'Proxy could not be deleted');
 				return false;
 			}
 		},
@@ -79,7 +79,7 @@ function createProxiesStore() {
 				);
 				return result;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to test proxy');
+				toast.error(e instanceof Error ? e.message : 'Proxy test failed');
 				return null;
 			}
 		},
@@ -90,7 +90,7 @@ function createProxiesStore() {
 				proxies = proxies.map((p) => ({ ...p, is_default: p.id === id }));
 				return updated;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to set default proxy');
+				toast.error(e instanceof Error ? e.message : 'Default proxy could not be set');
 				return null;
 			}
 		},

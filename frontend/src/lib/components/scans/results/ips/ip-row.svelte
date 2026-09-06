@@ -288,7 +288,7 @@
 				{#if g.host_count}
 					<div class="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
 						{#each hosts.slice(0, MAX_HOSTS) as h (h)}
-							<Hint text="Open {h} in Web Assets">
+							<Hint text="Open {h} in Web assets">
 								{#snippet child(props)}
 									<button
 										{...props}
@@ -375,13 +375,13 @@
 									stopProp(e);
 									onHosts(filterToken('ip', g.ip));
 								}}
-								aria-label="Show hosts on {g.ip} in Web Assets"
+								aria-label="Show hosts on {g.ip} in Web assets"
 							>
 								<Globe />
 							</Button>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content>Hosts in Web Assets</Tooltip.Content>
+					<Tooltip.Content>Hosts in Web assets</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
 			<DropdownMenu.Root>
@@ -405,7 +405,7 @@
 						</DropdownMenu.Item>
 						{#if g.host_count}
 							<DropdownMenu.Item onclick={() => onHosts(filterToken('ip', g.ip))}>
-								<Globe /> Hosts in Web Assets
+								<Globe /> Hosts in Web assets
 							</DropdownMenu.Item>
 						{/if}
 						{#if g.port_count}

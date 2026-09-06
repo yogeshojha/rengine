@@ -59,11 +59,11 @@
 	let alertMessage = $derived.by(() => {
 		switch (urgency) {
 			case 'expired':
-				return 'Expired, high risk of takeover. Verify ownership status immediately.';
+				return 'Expired. High risk of takeover.';
 			case 'critical':
-				return `Expires ${expirationLabel.toLowerCase()}. Verify renewal is scheduled.`;
+				return `Expires ${expirationLabel.toLowerCase()}.`;
 			case 'warning':
-				return `Expires ${expirationLabel.toLowerCase()}. Add to renewal watchlist.`;
+				return `Expires ${expirationLabel.toLowerCase()}.`;
 			default:
 				return '';
 		}
@@ -92,7 +92,7 @@
 			{/if}
 			<Alert.Title>
 				{#if urgency === 'expired'}
-					Domain Expired
+					Domain expired
 				{:else if urgency === 'critical'}
 					Expiration Imminent
 				{:else}
@@ -259,7 +259,7 @@
 					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
 				>
 					<CalendarCheck class="h-3 w-3" />
-					Last Updated
+					Last updated
 				</div>
 				<p class="text-sm font-medium">{formatShortDate(record.last_changed_date)}</p>
 			</div>
@@ -348,7 +348,7 @@
 	{#if hasStatuses}
 		<Separator />
 		<div>
-			<p class="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Domain Status</p>
+			<p class="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Domain status</p>
 			<div class="flex flex-wrap gap-1.5">
 				{#each record.domain_status as status (status)}
 					<Badge

@@ -176,7 +176,7 @@
 					<EmptyState
 						icon={SearchX}
 						title="No fields match"
-						description="Try a shorter word."
+						description="Try a shorter search term."
 						class="border-0 bg-transparent"
 					/>
 				{/if}

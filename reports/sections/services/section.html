@@ -1,5 +1,5 @@
 {% import 'macros.html' as m with context %}
-<p class="block muted small">{{ ctx.data.service_rows|length|num }} services answered on {{ addresses|num }} addresses. {{ web|num }} of them speak HTTP.{% if sensitive %} {{ sensitive|num }} are of a kind that normally belongs on a private network.{% endif %}</p>
+<p class="block muted small">{{ ctx.data.service_rows|length|num }} services answered on {{ addresses|num }} addresses. {{ web|num }} of them answer HTTP.{% if sensitive %} {{ sensitive|num }} are of a kind that normally belongs on a private network.{% endif %}</p>
 
 {% if classes %}
 <div class="sub">

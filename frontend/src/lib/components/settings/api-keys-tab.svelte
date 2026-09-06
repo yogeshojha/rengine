@@ -75,7 +75,7 @@
 			configuredKeys.clear();
 			for (const k of keyList) configuredKeys.set(k.provider, k);
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'Failed to load API keys';
+			loadError = e instanceof Error ? e.message : 'API keys could not be loaded';
 			toast.error(loadError);
 		} finally {
 			isLoading = false;
@@ -115,7 +115,7 @@
 			await refreshProviders();
 			addDialogOpen = false;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to add API key');
+			toast.error(e instanceof Error ? e.message : 'API key could not be added');
 		} finally {
 			addDialogSaving = false;
 		}
@@ -147,7 +147,7 @@
 			toast.success('API key updated');
 			return true;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to update API key');
+			toast.error(e instanceof Error ? e.message : 'API key could not be updated');
 			return false;
 		}
 	}
@@ -162,7 +162,7 @@
 			await refreshProviders();
 			toast.success(`${key.meta.name} ${enabled ? 'enabled' : 'disabled'}`);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to update');
+			toast.error(e instanceof Error ? e.message : 'API key could not be updated');
 		}
 	}
 
@@ -185,7 +185,7 @@
 			toast.success('API key removed');
 			deleteDialogOpen = false;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to delete');
+			toast.error(e instanceof Error ? e.message : 'API key could not be removed');
 		} finally {
 			isDeleting = false;
 		}
@@ -272,7 +272,8 @@
 				<Empty.Media class="mb-3">
 					<TriangleAlertIcon class="size-6 text-muted-foreground" />
 				</Empty.Media>
-				<Empty.Title class="text-sm font-medium text-foreground">Couldn't load API keys</Empty.Title
+				<Empty.Title class="text-sm font-medium text-foreground"
+					>API keys could not be loaded</Empty.Title
 				>
 				<Empty.Description class="mt-1 text-xs text-muted-foreground">{loadError}</Empty.Description
 				>
@@ -311,7 +312,7 @@
 				{#if addDialogProvider}
 					{@const meta = providers.find((p) => p.provider === addDialogProvider)}
 					{#if meta}
-						Configure your {meta.name} API key.
+						Configure the {meta.name} API key.
 						<a
 							href={meta.docs_url}
 							target="_blank"
@@ -354,7 +355,7 @@
 								type={addShowKey ? 'text' : 'password'}
 								bind:ref={addKeyInput}
 								bind:value={addDialogKeyValue}
-								placeholder="Paste your API key here"
+								placeholder="Paste the API key"
 								disabled={addDialogSaving}
 								class="pr-10"
 							/>
@@ -387,7 +388,7 @@
 					loadingLabel="Saving…"
 					disabled={!addCanSave}
 				>
-					Add Key
+					Add key
 				</LoadingButton>
 			</Dialog.Footer>
 		</form>

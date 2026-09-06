@@ -92,7 +92,7 @@ http:
 			draft = res.content;
 			original = res.content;
 		} catch {
-			error = 'Could not read this check from the library.';
+			error = 'This check could not be read from the library.';
 		} finally {
 			loading = false;
 		}

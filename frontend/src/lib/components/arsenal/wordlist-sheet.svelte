@@ -37,7 +37,7 @@
 		try {
 			words = await wordlistsApi.preview(id, PREVIEW);
 		} catch (e) {
-			failed = e instanceof Error ? e.message : 'Could not read this wordlist';
+			failed = e instanceof Error ? e.message : 'This wordlist could not be read';
 		} finally {
 			loading = false;
 		}

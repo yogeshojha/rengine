@@ -70,8 +70,8 @@
 		[DnsRecordType.A]: { label: 'A (IPv4)', icon: Globe },
 		[DnsRecordType.AAAA]: { label: 'AAAA (IPv6)', icon: Globe },
 		[DnsRecordType.NS]: { label: 'Nameservers', icon: Server },
-		[DnsRecordType.MX]: { label: 'Mail Exchange', icon: Mail },
-		[DnsRecordType.TXT]: { label: 'TXT Records', icon: FileText },
+		[DnsRecordType.MX]: { label: 'Mail exchange', icon: Mail },
+		[DnsRecordType.TXT]: { label: 'TXT records', icon: FileText },
 		[DnsRecordType.SOA]: { label: 'SOA', icon: Shield },
 		[DnsRecordType.CNAME]: { label: 'CNAME', icon: Network },
 		[DnsRecordType.CAA]: { label: 'CAA', icon: ShieldCheck },
@@ -157,7 +157,7 @@
 								<span class="text-xs font-medium text-foreground/80">
 									Behind {cdnInfo.label}
 								</span>
-								<span class="text-[11px] text-muted-foreground">— WAF / Proxy detected</span>
+								<span class="text-[11px] text-muted-foreground">WAF or proxy detected</span>
 							</div>
 						</div>
 					{/if}
@@ -186,7 +186,7 @@
 								class="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
 								onclick={() => goto(ROUTES.target(targetId))}
 							>
-								See Details
+								See details
 								<ExternalLink class="h-2.5 w-2.5" />
 							</button>
 						</div>

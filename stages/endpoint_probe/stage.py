@@ -27,7 +27,7 @@ class EndpointProbeStage(Stage):
     name = "endpoint_probe"
     title = "Endpoint Verification"
     description = (
-        "Request the discovered URLs so a status is an observation, not a guess."
+        "Request the discovered URLs so every status is observed rather than inferred."
     )
     phase = Phase.DEPTH.value
     depends_on = frozenset({"url_discovery"})

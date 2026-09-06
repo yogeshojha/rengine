@@ -173,7 +173,7 @@
 	let copiedPrefixes = $state(false);
 	async function copyPrefixes() {
 		if (!(await writeClipboard(prefixRows.map((p) => p.prefix).join('\n')))) {
-			toast.error('Could not copy');
+			toast.error('Copy failed');
 			return;
 		}
 		copiedPrefixes = true;

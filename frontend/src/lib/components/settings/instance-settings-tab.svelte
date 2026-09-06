@@ -105,7 +105,7 @@
 
 	async function handleSave() {
 		if (!instanceSettingsStore.settings) {
-			toast.error('Settings did not load — retry before saving');
+			toast.error('Settings did not load. Retry before saving.');
 			return;
 		}
 		if (!instanceName.trim()) {
@@ -174,7 +174,7 @@
 	<div>
 		<h3 class="text-lg font-semibold">General</h3>
 		<p class="text-sm text-muted-foreground">
-			Instance identity, retention windows, and AI-powered analysis. Applies across all projects.
+			Instance identity, retention windows and AI analysis. Applies across all projects.
 		</p>
 	</div>
 
@@ -191,10 +191,10 @@
 				<Empty.Media class="size-14 rounded-2xl bg-destructive/10">
 					<CircleAlertIcon class="size-7 text-destructive" />
 				</Empty.Media>
-				<Empty.Title>Couldn't load settings</Empty.Title>
+				<Empty.Title>Settings could not be loaded</Empty.Title>
 				<Empty.Description class="max-w-md">
-					Instance settings failed to load. Editing now could overwrite your real configuration with
-					defaults, so the form stays hidden until the load succeeds.
+					Instance settings failed to load. Editing now could overwrite the stored configuration
+					with defaults, so the form stays hidden until the load succeeds.
 				</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -248,7 +248,7 @@
 						</Select.Content>
 					</Select.Root>
 					<p class="text-xs text-muted-foreground">
-						Tunes available integrations and scoping. Bug Bounty unlocks HackerOne.
+						Sets which integrations and scoping options appear. Bug bounty adds HackerOne.
 					</p>
 				</div>
 			</Card.Content>
@@ -301,8 +301,7 @@
 					<Card.Title class="text-base">AI</Card.Title>
 				</div>
 				<Card.Description>
-					Connecting a language model, choosing what it is used for and what it has cost now live on
-					their own page.
+					Model connection, feature opt-ins and cost are configured on the AI page.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>

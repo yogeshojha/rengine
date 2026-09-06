@@ -36,7 +36,7 @@ export interface SurfaceSpec {
 export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 	[SurfaceDimension.WEB_ASSETS]: {
 		key: SurfaceDimension.WEB_ASSETS,
-		label: 'Web Assets',
+		label: 'Web assets',
 		noun: 'web asset',
 		nounPlural: 'web assets',
 		icon: Globe,

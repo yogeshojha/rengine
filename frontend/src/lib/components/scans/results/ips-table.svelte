@@ -394,7 +394,7 @@
 			if (exact) open(exact);
 			else toast.error('Address not found in this scan');
 		} catch {
-			toast.error('Could not load address');
+			toast.error('Address could not be loaded');
 		}
 	}
 	function step(dir: -1 | 1) {

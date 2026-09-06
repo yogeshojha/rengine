@@ -46,7 +46,7 @@ function createReportCatalogStore() {
 				catalog = await reportsApi.catalog();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Could not load the report catalog');
+				toast.error(e instanceof Error ? e.message : 'Report catalog could not be loaded');
 			} finally {
 				isLoading = false;
 			}

@@ -201,11 +201,11 @@
 
 					resolve(items.filter((item) => item.target_value));
 				} catch {
-					reject(new Error('Failed to parse CSV file'));
+					reject(new Error('CSV file could not be read'));
 				}
 			};
 
-			reader.onerror = () => reject(new Error('Failed to read file'));
+			reader.onerror = () => reject(new Error('File could not be read'));
 			reader.readAsText(file);
 		});
 	}
@@ -214,7 +214,7 @@
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
 			reader.onload = (e) => resolve(e.target?.result as string);
-			reader.onerror = () => reject(new Error('Failed to read file'));
+			reader.onerror = () => reject(new Error('File could not be read'));
 			reader.readAsText(file);
 		});
 	}
@@ -225,7 +225,7 @@
 		if (activeTab === 'manual') {
 			const source = manualMode === 'text' ? manualText : manualFile;
 			if (!source) {
-				toast.error('Please enter targets or upload a file');
+				toast.error('Enter at least one target, or upload a file');
 				return [];
 			}
 
@@ -238,7 +238,7 @@
 		} else if (activeTab === 'json') {
 			const source = jsonMode === 'text' ? jsonText : jsonFile;
 			if (!source) {
-				toast.error('Please enter JSON data or upload a file');
+				toast.error('Enter JSON, or upload a file');
 				return [];
 			}
 
@@ -250,7 +250,7 @@
 			}
 		} else if (activeTab === 'csv') {
 			if (!csvFile) {
-				toast.error('Please select a CSV file');
+				toast.error('Select a CSV file');
 				return [];
 			}
 			items = await parseCsvFile(csvFile);
@@ -308,7 +308,7 @@
 			previewItems = validated;
 			mode = 'preview';
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to process input');
+			toast.error(e instanceof Error ? e.message : 'Input could not be processed');
 		} finally {
 			isProcessing = false;
 			validateDone = 0;
@@ -467,7 +467,7 @@
 		}}
 	>
 		<Dialog.Header class="p-6 pb-4">
-			<Dialog.Title>Import Targets</Dialog.Title>
+			<Dialog.Title>Import targets</Dialog.Title>
 			<Dialog.Description>
 				{#if mode === 'input'}
 					Paste a list, upload a file, or pull from a connected source
@@ -504,7 +504,7 @@
 					<div class="p-6 pt-4">
 						<Tabs.Content value="manual" class="mt-0 space-y-4">
 							<div class="space-y-2">
-								<Label>Target Values</Label>
+								<Label>Target values</Label>
 								<FileUpload
 									accept=".txt"
 									bind:file={manualFile}
@@ -646,7 +646,7 @@ https://app.example.com"
 				</Button>
 			{:else}
 				<Button variant="outline" onclick={handleImportMore} disabled={isImporting}>
-					Import More
+					Import more
 				</Button>
 				<div class="flex items-center gap-2">
 					{#if isImporting}

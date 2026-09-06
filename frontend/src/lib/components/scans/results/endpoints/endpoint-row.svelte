@@ -114,9 +114,7 @@
 				<Badge variant="info" class="h-4 px-1 text-[10px]">New</Badge>
 			{/if}
 			{#if endpoint.sources.includes(EndpointSource.ROBOTS)}
-				<Hint
-					text="Listed in the site's own robots.txt. What the owner asks crawlers to skip is worth a look."
-				>
+				<Hint text="Listed in the site's own robots.txt. Paths the site asks crawlers to skip.">
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
 							<Badge variant="outline" class="h-4 px-1.5 text-[10px] font-normal">robots.txt</Badge>

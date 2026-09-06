@@ -29,11 +29,11 @@
 	];
 
 	const LABELS = [
-		'Bug Bounty',
-		'Client Engagement',
-		'Personal Research',
-		'Internal Assessment',
-		'Red Team Exercise',
+		'Bug bounty',
+		'Client engagement',
+		'Personal research',
+		'Internal assessment',
+		'Red team exercise',
 		'Other'
 	];
 
@@ -75,8 +75,8 @@
 				} catch (e) {
 					toast.error(
 						e instanceof Error
-							? `Couldn't save retention: ${e.message}`
-							: "Couldn't save retention settings. You can retry."
+							? `Retention settings could not be saved. ${e.message}`
+							: 'Retention settings could not be saved.'
 					);
 					return;
 				}
@@ -93,8 +93,8 @@
 			} catch (e) {
 				toast.error(
 					e instanceof Error
-						? `Couldn't create project: ${e.message}`
-						: "Couldn't create your project. Retention is saved — retry to finish."
+						? `Project could not be created. ${e.message}`
+						: 'Project could not be created. Retention settings are saved.'
 				);
 				return;
 			}
@@ -164,7 +164,7 @@
 			<Textarea
 				id="project-description"
 				bind:value={projectDescription}
-				placeholder="What is the scope or goal of this project?"
+				placeholder="Scope or goal of this project"
 				disabled={busy}
 				rows={3}
 				class="text-sm"

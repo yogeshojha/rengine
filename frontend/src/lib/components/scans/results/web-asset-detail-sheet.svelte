@@ -763,7 +763,7 @@
 								{/if}
 							</div>
 						{:else}
-							{@render emptyNote('Could not load the HTTP capture', null)}
+							{@render emptyNote('HTTP capture could not be loaded', null)}
 						{/if}
 					</Tabs.Content>
 

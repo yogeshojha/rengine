@@ -431,7 +431,7 @@
 			if (exact) open(exact);
 			else toast.error('Host not found in this scan');
 		} catch {
-			toast.error('Could not load host');
+			toast.error('Host could not be loaded');
 		}
 	}
 	function step(dir: -1 | 1) {
@@ -521,7 +521,7 @@
 			});
 			checkedIds.clear();
 			toast.success(`Rechecking ${hosts.length} ${hosts.length === 1 ? 'host' : 'hosts'}`, {
-				description: 'Results land on the rows as they arrive.'
+				description: 'Results appear as the scan produces them.'
 			});
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Rescan could not start');

@@ -42,8 +42,8 @@ class ApiClient {
 				}
 				throw new Error(
 					result === 'expired'
-						? 'Session expired. Please log in again.'
-						: 'Could not refresh your session. Please retry.'
+						? 'Session expired. Sign in again.'
+						: 'Session could not be refreshed. Sign in again.'
 				);
 			}
 

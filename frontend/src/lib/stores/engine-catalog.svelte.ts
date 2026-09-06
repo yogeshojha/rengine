@@ -53,7 +53,7 @@ function createEngineCatalogStore() {
 				catalog = await scanEnginesApi.catalog();
 				hasFetched = true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to load engine catalog';
+				error = e instanceof Error ? e.message : 'Engine catalog could not be loaded';
 			} finally {
 				isLoading = false;
 			}

@@ -97,7 +97,7 @@
 			});
 			error = null;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load web assets';
+			error = e instanceof Error ? e.message : 'Web assets could not be loaded';
 		} finally {
 			loading = false;
 		}
@@ -141,7 +141,7 @@
 			/>
 			<Input
 				bind:value={search}
-				placeholder="Search host, title or address"
+				placeholder="Search host, title or address…"
 				class="h-9 pl-9"
 				aria-label="Search web assets"
 			/>
@@ -210,7 +210,7 @@
 		<Empty.Root class="py-16">
 			<Empty.Header>
 				<Empty.Title>No web assets match this filter</Empty.Title>
-				<Empty.Description>Widen the search or clear the filters.</Empty.Description>
+				<Empty.Description>Widen the search or remove a filter.</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
 				<Button size="sm" variant="outline" class="gap-2" onclick={reset}>

@@ -6,7 +6,7 @@ export enum InstanceMode {
 }
 
 export const MODE_LABELS: Record<InstanceMode, string> = {
-	[InstanceMode.BugBounty]: 'Bug Bounty',
+	[InstanceMode.BugBounty]: 'Bug bounty',
 	[InstanceMode.Corporate]: 'Corporate'
 };
 

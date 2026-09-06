@@ -53,7 +53,7 @@
 			<Empty.Media variant="icon">
 				<SearchX />
 			</Empty.Media>
-			<Empty.Title>Failed to load prefixes</Empty.Title>
+			<Empty.Title>Prefixes could not be loaded</Empty.Title>
 			<Empty.Description>{error}</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>

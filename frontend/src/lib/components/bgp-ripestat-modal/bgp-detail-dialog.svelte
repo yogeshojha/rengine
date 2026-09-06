@@ -164,7 +164,7 @@
 			prefixOverview = (d.prefix_overview as PrefixOverviewRead[]) ?? null;
 			relatedPrefixes = (d.related_prefixes as RelatedPrefixRead[]) ?? null;
 		} catch (e) {
-			overviewError = e instanceof Error ? e.message : 'Failed to load BGP data';
+			overviewError = e instanceof Error ? e.message : 'BGP data could not be loaded';
 		} finally {
 			isLoadingOverview = false;
 			isLoadingPrefixes = false;
@@ -203,7 +203,7 @@
 					<Empty.Media variant="icon">
 						<TriangleAlert />
 					</Empty.Media>
-					<Empty.Title>Failed to load BGP data</Empty.Title>
+					<Empty.Title>BGP data could not be loaded</Empty.Title>
 					<Empty.Description>{overviewError}</Empty.Description>
 				</Empty.Header>
 			</Empty.Root>

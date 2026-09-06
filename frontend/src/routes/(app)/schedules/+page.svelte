@@ -59,7 +59,7 @@
 		if (count !== null) {
 			toast.success(`Launched ${count} scan${count === 1 ? '' : 's'}`);
 		} else {
-			toast.error(scanSchedulesStore.error ?? 'Failed to run schedule');
+			toast.error(scanSchedulesStore.error ?? 'Schedule could not be started');
 		}
 	}
 
@@ -71,7 +71,7 @@
 		if (updated) {
 			toast.success(paused ? 'Schedule paused' : 'Schedule resumed');
 		} else {
-			toast.error(scanSchedulesStore.error ?? 'Failed to update schedule');
+			toast.error(scanSchedulesStore.error ?? 'Schedule could not be updated');
 		}
 	}
 
@@ -91,7 +91,7 @@
 				showDeleteDialog = false;
 				scheduleToDelete = null;
 			} else {
-				toast.error(scanSchedulesStore.error ?? 'Failed to delete schedule');
+				toast.error(scanSchedulesStore.error ?? 'Schedule could not be deleted');
 			}
 		} finally {
 			isDeleting = false;
@@ -118,10 +118,8 @@
 <div class="space-y-6">
 	<div class="flex items-start justify-between">
 		<div>
-			<h1 class="text-2xl font-semibold tracking-tight">Scheduled Scans</h1>
-			<p class="mt-1 text-sm text-muted-foreground">
-				Recurring and one-off scans that keep your attack surface under continuous watch
-			</p>
+			<h1 class="text-2xl font-semibold tracking-tight">Schedules</h1>
+			<p class="mt-1 text-sm text-muted-foreground">Recurring and one-off scans in this project</p>
 		</div>
 		<div class="flex items-center gap-2">
 			<Button
@@ -158,7 +156,7 @@
 		<EmptyState
 			icon={CalendarClock}
 			title="No scheduled scans yet"
-			description="Put recon on autopilot — run a scan once at a set time, or repeat it hourly, daily, or on a custom cron, and get notified the moment your attack surface changes."
+			description="Run a scan once at a set time, or repeat it hourly, daily or on a cron expression. Each run reports through the notification channels you have configured."
 		>
 			<Button onclick={handleNew} class="gap-2">
 				<Plus size={15} />

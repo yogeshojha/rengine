@@ -17,7 +17,7 @@
 
 	function validatePattern(v: string): string | null {
 		if (v.includes('.') && !PATTERN_METACHARS.test(v)) {
-			return 'Use a keyword, wildcard (*admin*) or regex — not a domain name';
+			return 'Use a keyword, wildcard (*admin*) or regex, not a domain name';
 		}
 		return null;
 	}

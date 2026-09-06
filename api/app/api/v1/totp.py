@@ -66,7 +66,7 @@ async def verify_2fa(
         await record_failure(rl_key, window_seconds=300)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA secret is unreadable. Disable and re-enroll.",
+            detail="The stored two-factor secret is unreadable. Disable two-factor and enroll again.",
         ) from e
     await clear_failures(rl_key)
     return {"enabled": True, "backup_codes": backup_codes}
@@ -89,7 +89,7 @@ async def disable_2fa(
         await record_failure(rl_key, window_seconds=300)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA secret is unreadable. Disable and re-enroll.",
+            detail="The stored two-factor secret is unreadable. Disable two-factor and enroll again.",
         ) from e
     await clear_failures(rl_key)
     return {"enabled": False}

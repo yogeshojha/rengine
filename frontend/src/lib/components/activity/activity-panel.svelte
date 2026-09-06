@@ -171,7 +171,7 @@
 		cancelling = false;
 		cancelTarget = null;
 		if (ok) toast.success(`Cancelling scan of ${scan.execution_config.target_value}`);
-		else toast.error("Couldn't cancel scan — try again");
+		else toast.error('Scan could not be cancelled');
 	}
 </script>
 

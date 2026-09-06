@@ -22,7 +22,7 @@
 		if (live) return 'Rechecking now';
 		const stages = recheck.stage_titles.join(' · ');
 		const changed = recheck.changes.map((c) => c.label).join(', ');
-		return [stages, changed && `changed: ${changed}`].filter(Boolean).join(' — ');
+		return [stages, changed && `changed: ${changed}`].filter(Boolean).join(' · ');
 	});
 
 	const TONES = {

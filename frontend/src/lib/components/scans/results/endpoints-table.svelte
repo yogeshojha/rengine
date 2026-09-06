@@ -535,7 +535,7 @@
 				return;
 			}
 			toast.success(
-				`Verifying ${res.queued.toLocaleString()} ${res.queued === 1 ? 'endpoint' : 'endpoints'} under ${where}. Refresh in a minute to see the statuses.`
+				`Verifying ${res.queued.toLocaleString()} ${res.queued === 1 ? 'endpoint' : 'endpoints'} under ${where}. Refresh to see the results.`
 			);
 		} catch {
 			toast.error('Verification could not be queued.');
@@ -882,8 +882,8 @@
 		{:else if gonePage && gonePage.items.length === 0}
 			<EmptyState
 				icon={History}
-				title="Nothing is gone"
-				description="Every endpoint the previous scan recorded is still here, within the current filters."
+				title="Nothing retired"
+				description="Every endpoint the previous scan recorded is still present under the current filters."
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else if gonePage}

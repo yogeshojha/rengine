@@ -91,8 +91,8 @@
 {#if showTextInput}
 	<Tabs.Root bind:value={mode} class="w-full">
 		<Tabs.List class="grid w-full grid-cols-2">
-			<Tabs.Trigger value="text">Text Input</Tabs.Trigger>
-			<Tabs.Trigger value="file">File Upload</Tabs.Trigger>
+			<Tabs.Trigger value="text">Text input</Tabs.Trigger>
+			<Tabs.Trigger value="file">File upload</Tabs.Trigger>
 		</Tabs.List>
 
 		<Tabs.Content value="text" class="mt-3">
@@ -138,7 +138,7 @@
 
 						<div class="space-y-1">
 							<p class="text-sm font-medium">
-								Drop your file here, or <span class="text-primary">browse</span>
+								Drop a file here, or <span class="text-primary">browse</span>
 							</p>
 							<p class="text-xs text-muted-foreground">
 								Supports {accept.replace(/\./g, '').replace(/,/g, ', ').toUpperCase()} files
@@ -206,7 +206,7 @@
 
 			<div class="space-y-1">
 				<p class="text-sm font-medium">
-					Drop your file here, or <span class="text-primary">browse</span>
+					Drop a file here, or <span class="text-primary">browse</span>
 				</p>
 				<p class="text-xs text-muted-foreground">
 					Supports {accept.replace(/\./g, '').replace(/,/g, ', ').toUpperCase()} files

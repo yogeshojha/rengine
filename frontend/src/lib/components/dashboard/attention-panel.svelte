@@ -120,7 +120,7 @@
 			added.add(domain);
 			toast.success(`${domain} added as a target`);
 		} catch {
-			toast.error(`Could not add ${domain}`);
+			toast.error(`${domain} could not be added`);
 		} finally {
 			pending = null;
 		}
@@ -414,13 +414,13 @@
 				icon: Compass,
 				count: leads,
 				label: leads === 1 ? 'Untracked domain' : 'Untracked domains',
-				detail: 'Named on your certificates, not yet a target',
+				detail: 'Named on certificates this estate serves, not yet a target',
 				open: () =>
 					show({
 						kind: 'discovery',
 						title: 'Untracked domains',
 						description:
-							'Registrable domains your own certificates vouch for that no target covers',
+							"Registrable domains the estate's own certificates vouch for that no target covers",
 						rows: []
 					})
 			});

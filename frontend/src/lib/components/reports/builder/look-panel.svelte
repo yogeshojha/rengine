@@ -275,13 +275,13 @@
 				<Popover.Trigger>
 					{#snippet child({ props })}
 						<Button variant="ghost" size="sm" class="h-7 text-xs" {...props}>
-							What can go in a slot?
+							Available tokens
 						</Button>
 					{/snippet}
 				</Popover.Trigger>
 				<Popover.Content class="w-72">
 					<p class="mb-2 text-xs text-muted-foreground">
-						Type any text. These tokens are replaced when the document is laid out.
+						Any text. These tokens are replaced when the document is laid out.
 					</p>
 					<div class="grid grid-cols-2 gap-1 text-xs">
 						{#each catalog?.slot_tokens ?? [] as token (token.token)}
@@ -302,7 +302,7 @@
 				<Input bind:value={style.header_left} placeholder="Left" class="h-9 font-mono text-xs" />
 				<Input
 					bind:value={style.header_center}
-					placeholder="Centre"
+					placeholder="Center"
 					class="h-9 font-mono text-xs"
 				/>
 				<Input bind:value={style.header_right} placeholder="Right" class="h-9 font-mono text-xs" />
@@ -318,7 +318,7 @@
 				<Input bind:value={style.footer_left} placeholder="Left" class="h-9 font-mono text-xs" />
 				<Input
 					bind:value={style.footer_center}
-					placeholder="Centre"
+					placeholder="Center"
 					class="h-9 font-mono text-xs"
 				/>
 				<Input bind:value={style.footer_right} placeholder="Right" class="h-9 font-mono text-xs" />

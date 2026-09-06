@@ -202,7 +202,7 @@ function createTargetsStore() {
 
 				hasFetched = true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to fetch data';
+				error = e instanceof Error ? e.message : 'Data could not be loaded';
 			} finally {
 				isLoading = false;
 			}
@@ -355,7 +355,7 @@ function createTargetsStore() {
 				await this.refresh();
 				return newTarget;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to create target';
+				error = e instanceof Error ? e.message : 'Target could not be created';
 				return null;
 			}
 		},
@@ -374,7 +374,7 @@ function createTargetsStore() {
 				targets = targets.map((t) => (t.id === targetId ? updatedTarget : t));
 				return updatedTarget;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to update target';
+				error = e instanceof Error ? e.message : 'Target could not be updated';
 				return null;
 			}
 		},
@@ -431,7 +431,7 @@ function createTargetsStore() {
 				dashboardStore.markStale();
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to delete target';
+				error = e instanceof Error ? e.message : 'Target could not be deleted';
 				return false;
 			}
 		},

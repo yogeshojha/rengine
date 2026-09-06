@@ -131,7 +131,9 @@ async def triage_many(
 ):
     if body.state not in VULN_STATES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unknown state"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown review state '{body.state}'. Expected one of "
+            f"{', '.join(sorted(VULN_STATES))}.",
         )
     return await service.triage_many(scan_id, body, current_user.id)
 

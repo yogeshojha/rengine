@@ -38,7 +38,7 @@ function createScanEnginesStore() {
 				hasFetched = true;
 				fetchedProjectId = projectId;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to fetch scan engines';
+				error = e instanceof Error ? e.message : 'Scan engines could not be loaded';
 			} finally {
 				isLoading = false;
 			}
@@ -51,7 +51,7 @@ function createScanEnginesStore() {
 				engines = [...engines, created];
 				return created;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to create scan engine';
+				error = e instanceof Error ? e.message : 'Scan engine could not be created';
 				return null;
 			}
 		},
@@ -70,7 +70,7 @@ function createScanEnginesStore() {
 				}
 				return updated;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to update scan engine';
+				error = e instanceof Error ? e.message : 'Scan engine could not be updated';
 				return null;
 			}
 		},
@@ -86,7 +86,7 @@ function createScanEnginesStore() {
 				}
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to delete scan engine';
+				error = e instanceof Error ? e.message : 'Scan engine could not be deleted';
 				return false;
 			}
 		},
@@ -98,7 +98,7 @@ function createScanEnginesStore() {
 				engines = [...engines, duplicate];
 				return duplicate;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to duplicate scan engine';
+				error = e instanceof Error ? e.message : 'Scan engine could not be duplicated';
 				return null;
 			}
 		},
@@ -113,7 +113,7 @@ function createScanEnginesStore() {
 				const res = await scanEnginesApi.exportYaml(id, projectId);
 				return res.yaml;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to export scan engine';
+				error = e instanceof Error ? e.message : 'Scan engine could not be exported';
 				return null;
 			}
 		},
@@ -125,7 +125,7 @@ function createScanEnginesStore() {
 				engines = [...engines, imported];
 				return imported;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to import scan engine';
+				error = e instanceof Error ? e.message : 'Scan engine could not be imported';
 				return null;
 			}
 		},

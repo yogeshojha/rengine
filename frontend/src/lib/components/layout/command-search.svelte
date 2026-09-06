@@ -153,7 +153,7 @@
 						<Command.Item disabled class="justify-between">
 							<span class="flex items-center">
 								<Building class="mr-2 h-4 w-4" />
-								Add Organization
+								Add organization
 							</span>
 							<Badge variant="secondary" class="text-[10px]">Soon</Badge>
 						</Command.Item>
@@ -164,7 +164,7 @@
 							}}
 						>
 							<Cog class="mr-2 h-4 w-4" />
-							<span>New Scan Engine</span>
+							<span>New scan engine</span>
 						</Command.Item>
 						<Command.Item
 							onSelect={() => {
@@ -173,7 +173,7 @@
 							}}
 						>
 							<Layers class="mr-2 h-4 w-4" />
-							<span>New Scan Context</span>
+							<span>New scan context</span>
 						</Command.Item>
 					</Command.Group>
 				{/if}

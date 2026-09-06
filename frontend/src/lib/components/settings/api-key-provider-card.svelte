@@ -106,7 +106,7 @@
 			copied = true;
 			setTimeout(() => (copied = false), 2000);
 		} else {
-			toast.error('Failed to copy');
+			toast.error('Copy failed');
 		}
 	}
 
@@ -233,7 +233,7 @@
 									</code>
 								{:else if revealError}
 									<div class="flex items-center justify-between gap-2">
-										<p class="text-xs text-muted-foreground">Failed to load key</p>
+										<p class="text-xs text-muted-foreground">Key could not be loaded</p>
 										<Button
 											variant="outline"
 											size="sm"
@@ -332,7 +332,7 @@
 												{id}
 												type={editShowKey ? 'text' : 'password'}
 												bind:value={editKeyValue}
-												placeholder="Paste new API key"
+												placeholder="Paste the API key"
 												disabled={editSaving}
 												class="h-8 text-xs pr-8"
 											/>
@@ -356,7 +356,7 @@
 										(provider.requires_username && !editUsername.trim())}
 									onclick={saveEdit}
 								>
-									Update Key
+									Update key
 								</LoadingButton>
 							</div>
 						</Popover.Content>

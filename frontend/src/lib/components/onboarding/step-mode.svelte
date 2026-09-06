@@ -18,22 +18,21 @@
 		title: string;
 		icon: Component;
 		desc: string;
-		unlocks: string;
+		adds: string;
 	}[] = [
 		{
 			value: InstanceMode.BugBounty,
-			title: 'Bug Bounty',
+			title: 'Bug bounty',
 			icon: TargetIcon,
 			desc: 'Researching public and private bug bounty programs.',
-			unlocks: 'Adds the HackerOne integration, program import, and breadth-first recon presets.'
+			adds: 'Adds the HackerOne integration, program import and breadth-first recon presets.'
 		},
 		{
 			value: InstanceMode.Corporate,
 			title: 'Corporate',
 			icon: Building2Icon,
-			desc: "Continuously managing your organization's own attack surface.",
-			unlocks:
-				'Asset inventory, scope governance, and internal monitoring workflows. Bug-bounty tooling such as HackerOne stays hidden.'
+			desc: "Continuously managing an organization's own attack surface.",
+			adds: 'Asset inventory, scope governance and internal monitoring workflows. Bug bounty tooling such as HackerOne is hidden.'
 		}
 	];
 
@@ -53,7 +52,7 @@
 			toast.success(`Mode set to ${MODES.find((m) => m.value === selected)?.title ?? selected}`);
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save mode');
+			toast.error(e instanceof Error ? e.message : 'Mode could not be saved');
 		} finally {
 			busy = false;
 		}
@@ -80,7 +79,7 @@
 						<RadioGroup.Item value={mode.value} />
 					</div>
 					<p class="text-sm text-muted-foreground">{mode.desc}</p>
-					<p class="text-xs text-muted-foreground">{mode.unlocks}</p>
+					<p class="text-xs text-muted-foreground">{mode.adds}</p>
 				</div>
 			</Label>
 		{/each}
@@ -89,8 +88,8 @@
 	<p class="flex items-start gap-2 text-xs text-muted-foreground">
 		<InfoIcon class="mt-px size-4 shrink-0" />
 		<span
-			>reNgine operates in a single mode at a time. Corporate mode tailors the workspace to internal
-			attack surface management and hides bug-bounty-specific tooling such as the HackerOne
+			>reNgine operates in a single mode at a time. Corporate mode presents the workspace for
+			internal attack surface management and hides bug bounty tooling such as the HackerOne
 			integration.</span
 		>
 	</p>

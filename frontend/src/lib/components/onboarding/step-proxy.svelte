@@ -179,7 +179,7 @@
 				toast.error(result.message || 'Proxy test failed');
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to test proxy');
+			toast.error(e instanceof Error ? e.message : 'Proxy test failed');
 		} finally {
 			busy = false;
 		}
@@ -200,7 +200,7 @@
 			toast.success('Proxy saved as the default');
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save proxy');
+			toast.error(e instanceof Error ? e.message : 'Proxy could not be saved');
 		} finally {
 			busy = false;
 		}
@@ -313,7 +313,7 @@
 		</div>
 	{:else if choice === 'list'}
 		<div class="space-y-2.5 rounded-lg border bg-muted/30 p-4">
-			<Label class="text-xs">Proxy endpoints — one URL per line</Label>
+			<Label class="text-xs">Proxy endpoints, one URL per line</Label>
 			<Textarea
 				value={listText}
 				placeholder={LIST_PLACEHOLDER}
@@ -356,8 +356,7 @@
 				Test connection
 			</Button>
 			<p class="mt-1.5 text-[11px] text-muted-foreground">
-				Saves the proxy and runs a live reachability check. It becomes the default only when you
-				continue.
+				Saves the proxy and runs a reachability check. It becomes the default only on continue.
 			</p>
 		</div>
 	{/if}
@@ -368,8 +367,8 @@
 		<div class="flex items-start gap-2">
 			<InfoIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 			<p class="text-xs text-muted-foreground">
-				Need a proxy provider? These are widely used for recon. We have no affiliation and earn
-				nothing from these links — bring your own credentials.
+				Commonly used providers. reNgine has no affiliation with them and receives nothing from
+				these links. Credentials are your own.
 			</p>
 		</div>
 		<div class="grid gap-2.5 sm:grid-cols-3">

@@ -12,8 +12,8 @@ export type PrefixRelationship = (typeof PREFIX_RELATIONSHIPS)[number];
 
 export const PREFIX_RELATIONSHIP_LABELS: Record<PrefixRelationship, string> = {
 	overlap: 'Overlapping',
-	more_specific: 'More Specific',
-	less_specific: 'Less Specific'
+	more_specific: 'More specific',
+	less_specific: 'Less specific'
 };
 
 export interface AnnouncedPrefixRead {

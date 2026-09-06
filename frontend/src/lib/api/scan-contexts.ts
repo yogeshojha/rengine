@@ -18,11 +18,7 @@ export const scanContextsApi = {
 		return api.post<ScanContextRead>(`/contexts?project_id=${projectId}`, data);
 	},
 
-	async update(
-		id: string,
-		projectId: string,
-		data: ScanContextUpdate
-	): Promise<ScanContextRead> {
+	async update(id: string, projectId: string, data: ScanContextUpdate): Promise<ScanContextRead> {
 		return api.patch<ScanContextRead>(`/contexts/${id}?project_id=${projectId}`, data);
 	},
 

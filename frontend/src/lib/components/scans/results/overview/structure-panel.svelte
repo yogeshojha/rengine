@@ -171,7 +171,8 @@
 				<div class="flex flex-col gap-3 border-t border-l p-5">
 					<h3 class="text-xs font-medium text-muted-foreground uppercase">Shared across hosts</h3>
 					<p class="text-xs text-muted-foreground">
-						The same route on many hosts is one piece of software. Fixing it once closes every copy.
+						The same route on many hosts is one piece of software. A single change resolves every
+						instance.
 					</p>
 					<RankedList rows={shared} base={sharedBase} onSelect={pick} />
 				</div>

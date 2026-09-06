@@ -168,7 +168,7 @@
 								{step.title}
 								{#if step.description}
 									<span class="text-muted-foreground">
-										{stage ? ' · ' : ' — '}{step.description}
+										{stage ? ' · ' : ' · '}{step.description}
 									</span>
 								{/if}
 							</p>

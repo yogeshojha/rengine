@@ -28,7 +28,7 @@
 						<History class="h-4 w-4 text-muted-foreground" />
 					</div>
 					<div class="min-w-0 flex-1">
-						<Dialog.Title class="text-lg font-semibold">Scan History</Dialog.Title>
+						<Dialog.Title class="text-lg font-semibold">Scan history</Dialog.Title>
 						<div class="flex items-center gap-1.5 mt-0.5">
 							<code class="text-xs font-mono text-muted-foreground truncate"
 								>{target.target_value}</code
@@ -49,7 +49,7 @@
 					</Empty.Media>
 					<Empty.Title>No scans yet</Empty.Title>
 					<Empty.Description>
-						{target.target_value} hasn't been scanned. Run a scan to start discovering its attack surface.
+						{target.target_value} has not been scanned yet.
 					</Empty.Description>
 				</Empty.Header>
 			</Empty.Root>

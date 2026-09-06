@@ -18,7 +18,7 @@ class SurfaceDimension(StrEnum):
 SURFACE_ORDER: tuple[str, ...] = tuple(d.value for d in SurfaceDimension)
 
 SURFACE_LABELS: dict[str, str] = {
-    SurfaceDimension.WEB_ASSETS.value: "Web Assets",
+    SurfaceDimension.WEB_ASSETS.value: "Web assets",
     SurfaceDimension.ENDPOINTS.value: "Endpoints",
     SurfaceDimension.SERVICES.value: "Services",
     SurfaceDimension.IPS.value: "IPs",

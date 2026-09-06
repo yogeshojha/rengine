@@ -201,7 +201,7 @@
 
 			sourceResults = results;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load discoveries';
+			error = e instanceof Error ? e.message : 'Discoveries could not be loaded';
 		} finally {
 			isLoading = false;
 		}
@@ -282,7 +282,7 @@
 				toast.success(`Added ${domain} as target`);
 			}
 		} catch {
-			toast.error(`Failed to add ${domain}`);
+			toast.error(`${domain} could not be added`);
 		} finally {
 			const next = new SvelteSet(addingDomains);
 			next.delete(domain);
@@ -336,7 +336,7 @@
 			toast.warning(`Added ${added} of ${total}; ${failed} failed`);
 		} else {
 			toast.error(
-				'Could not add domains — they may already exist or your ViewDNS quota is exhausted'
+				'Domains could not be added. They may already exist, or the ViewDNS quota is exhausted.'
 			);
 		}
 	}
@@ -363,7 +363,7 @@
 			<Empty.Media variant="icon">
 				<SearchX />
 			</Empty.Media>
-			<Empty.Title>Failed to load discoveries</Empty.Title>
+			<Empty.Title>Discoveries could not be loaded</Empty.Title>
 			<Empty.Description>{error}</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>

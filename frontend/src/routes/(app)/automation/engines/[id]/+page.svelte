@@ -334,7 +334,7 @@
 				yamlSource = fresh.yaml_source ?? engineToYaml(fresh, engineCatalogStore.catalog);
 			}
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'Failed to load engine';
+			loadError = e instanceof Error ? e.message : 'Engine could not be loaded';
 		} finally {
 			isLoading = false;
 		}
@@ -375,7 +375,7 @@
 				pendingToolOptions = null;
 				toast.success('Engine saved');
 			} else {
-				saveError = scanEnginesStore.error ?? 'Failed to save engine';
+				saveError = scanEnginesStore.error ?? 'Engine could not be saved';
 				toast.error(saveError);
 			}
 		} finally {
@@ -404,7 +404,7 @@
 	async function handleCopyYaml() {
 		const ok = await writeClipboard(yamlSource);
 		if (ok) toast.success('YAML copied');
-		else toast.error('Could not copy to clipboard');
+		else toast.error('Copy failed');
 	}
 
 	function handleFormatYaml() {
@@ -753,7 +753,7 @@
 				<Empty.Media class="size-[52px] rounded-xl bg-destructive/10">
 					<AlertTriangle size={22} class="text-destructive" />
 				</Empty.Media>
-				<Empty.Title>Failed to load engine</Empty.Title>
+				<Empty.Title>Engine could not be loaded</Empty.Title>
 				<Empty.Description>{loadError}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -865,8 +865,8 @@
 	bind:open={showDeleteDialog}
 	title="Delete this engine?"
 	description={engine?.usage?.schedules
-		? `'${draft?.name ?? 'This engine'}' is used by ${engine.usage.schedules} scheduled scan${engine.usage.schedules === 1 ? '' : 's'}. Those schedules will fail to launch without it. Completed scans and their results are unaffected. This action cannot be undone.`
-		: `Removes '${draft?.name ?? 'this engine'}' from the project. Completed scans and their results are unaffected. This action cannot be undone.`}
+		? `'${draft?.name ?? 'This engine'}' is used by ${engine.usage.schedules} scheduled scan${engine.usage.schedules === 1 ? '' : 's'}. Those schedules will fail to launch without it. Completed scans and their results are unaffected.`
+		: `Removes '${draft?.name ?? 'this engine'}' from the project. Completed scans and their results are unaffected.`}
 	{isDeleting}
 	onOpenChange={(open) => (showDeleteDialog = open)}
 	onConfirm={confirmDelete}
@@ -875,7 +875,7 @@
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}
 	title="Discard your changes?"
-	description="Your edits to this engine have not been saved."
+	description="Edits to this engine have not been saved. Leaving now discards them."
 	confirmLabel="Discard"
 	cancelLabel="Keep editing"
 	onOpenChange={(o) => {

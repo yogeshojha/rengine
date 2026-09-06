@@ -128,7 +128,7 @@
 			}
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save notification channels');
+			toast.error(e instanceof Error ? e.message : 'Notification channels could not be saved');
 		} finally {
 			busy = false;
 		}
@@ -206,8 +206,8 @@
 		<p class="flex items-start gap-2 pt-1 text-xs text-muted-foreground">
 			<InfoIcon class="mt-px size-3.5 shrink-0" />
 			<span
-				>Don't see your channel? Email, Microsoft Teams, custom Apprise URLs, and 100+ more are
-				available anytime in Settings → Notifications.</span
+				>Email, Microsoft Teams and custom Apprise URLs can be added in Settings, under
+				Notifications.</span
 			>
 		</p>
 	</div>
@@ -216,7 +216,7 @@
 		<Card.Root>
 			<Card.Content class="space-y-4 p-5">
 				<div class="space-y-2">
-					<Label class="text-xs">Notify me about</Label>
+					<Label class="text-xs">Event categories</Label>
 					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 						{#each NOTIF_CATEGORIES as cat (cat.value)}
 							<Label
@@ -251,7 +251,7 @@
 						</Select.Content>
 					</Select.Root>
 					<p class="text-xs text-muted-foreground">
-						Applies to every channel you connect here. Fine-tune per channel in Settings.
+						Applies to every channel connected here. Adjust per channel in Settings.
 					</p>
 				</div>
 			</Card.Content>

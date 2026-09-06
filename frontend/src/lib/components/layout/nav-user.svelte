@@ -100,7 +100,7 @@
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>About reNgine</Dialog.Title>
-			<Dialog.Description>Open Source Attack Surface Management Platform</Dialog.Description>
+			<Dialog.Description>Open-source attack surface management</Dialog.Description>
 		</Dialog.Header>
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">

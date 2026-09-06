@@ -80,7 +80,7 @@
 				await instanceSettingsApi.update({ ai_enabled: false });
 				next();
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Failed to save AI settings');
+				toast.error(e instanceof Error ? e.message : 'AI settings could not be saved');
 			} finally {
 				busy = false;
 			}
@@ -103,7 +103,7 @@
 			});
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save AI settings');
+			toast.error(e instanceof Error ? e.message : 'AI settings could not be saved');
 		} finally {
 			busy = false;
 		}
@@ -113,7 +113,7 @@
 <div class="space-y-6">
 	<div class="flex items-center justify-between rounded-lg border px-4 py-3">
 		<div class="space-y-0.5">
-			<Label class="text-sm font-medium">Enable AI-powered analysis</Label>
+			<Label class="text-sm font-medium">Enable AI analysis</Label>
 			<p class="text-xs text-muted-foreground">Connect an external LLM provider.</p>
 		</div>
 		<Switch checked={enabled} onCheckedChange={(v) => (enabled = v)} disabled={busy} />
@@ -156,7 +156,7 @@
 						id="ai-key"
 						type={showKey ? 'text' : 'password'}
 						bind:value={apiKey}
-						placeholder="Paste your API key"
+						placeholder="Paste the API key"
 						autocomplete="off"
 						class="h-9 pr-9 font-mono text-xs"
 						disabled={busy}

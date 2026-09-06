@@ -53,7 +53,7 @@
 		auth: { title: 'Authentication', subtitle: 'Credentials and headers sent with every request' },
 		rate: { title: 'Rate limiting', subtitle: 'Request rate caps and concurrency multipliers' },
 		scope: { title: 'Scope', subtitle: 'Assets to include in or exclude from scanning' },
-		runtime: { title: 'Runtime', subtitle: 'Protocol and redirect behaviour' },
+		runtime: { title: 'Runtime', subtitle: 'Protocol and redirect behavior' },
 		proxy: { title: 'Proxy', subtitle: 'Route scan traffic through a proxy' }
 	};
 

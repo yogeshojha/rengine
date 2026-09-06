@@ -183,7 +183,7 @@ class RescanService:
         if scan.status in SCAN_LIVE_STATUSES:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This run is still going. Wait for it to finish before rescanning its assets.",
+                detail="This run has not finished. Wait for it to complete before rescanning its assets.",
             )
         return scan
 

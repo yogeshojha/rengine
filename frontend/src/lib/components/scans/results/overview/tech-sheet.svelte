@@ -85,7 +85,7 @@
 			<InputGroup.Root>
 				<InputGroup.Addon><Search class="size-4" /></InputGroup.Addon>
 				<InputGroup.Input
-					placeholder="Search technologies"
+					placeholder="Search technologies…"
 					bind:value={query}
 					aria-label="Search technologies"
 				/>

@@ -85,7 +85,7 @@
 			await targetsApi.update(targetId, { tag_names: newTagNames });
 		} catch {
 			applyPatch({ tags: currentTags });
-			toast.error('Failed to update tags');
+			toast.error('Tags could not be updated');
 		}
 	}
 
@@ -127,7 +127,7 @@
 			selectedColor = '#6366f1';
 			toast.success('Tag created and applied');
 		} catch {
-			toast.error('Failed to create tag');
+			toast.error('Tag could not be created');
 		} finally {
 			isUpdating = false;
 		}

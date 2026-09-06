@@ -64,7 +64,7 @@
 			<Alert.Description>
 				Reports are written without a model. Every section still carries the same computed findings.
 				Connect a provider on the <a href={ROUTES.ai()} class="underline">AI page</a> to have the narrative
-				drafted for you.
+				drafted.
 			</Alert.Description>
 		</Alert.Root>
 	{/if}

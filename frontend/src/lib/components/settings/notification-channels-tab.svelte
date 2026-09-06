@@ -226,7 +226,7 @@
 		}
 		const config = buildConfig();
 		if (config === null || invalid) {
-			toast.error('Please fix the highlighted fields');
+			toast.error('Correct the highlighted fields');
 			return;
 		}
 
@@ -308,8 +308,8 @@
 		<div>
 			<h3 class="text-lg font-semibold">Notifications</h3>
 			<p class="text-sm text-muted-foreground">
-				Route recon &amp; scan events to your team. Powered by Apprise — Slack, Discord, Telegram,
-				Teams, email, webhooks, and 100+ more via a custom URL.
+				Route scan and recon events to Slack, Discord, Telegram, Teams, email or a webhook. Any
+				other Apprise-supported service can be added as a custom URL.
 			</p>
 		</div>
 		<Button size="sm" onclick={openAdd}>
@@ -343,7 +343,7 @@
 				<div class="space-y-1">
 					<p class="text-sm font-medium">No notification channels</p>
 					<p class="text-xs text-muted-foreground">
-						Connect Slack, Discord, Telegram, Teams, email, or any Apprise target to get alerts.
+						Connect Slack, Discord, Telegram, Teams, email or any Apprise destination.
 					</p>
 				</div>
 				<Button size="sm" variant="outline" onclick={openAdd}>

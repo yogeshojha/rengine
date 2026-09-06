@@ -194,7 +194,7 @@
 							{scan.subdomains_found} of {prev}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							Found far fewer than the previous scan ({prev}) — possible incomplete run.
+							Found far fewer than the previous scan ({prev}). The run may be incomplete.
 						</Tooltip.Content>
 					</Tooltip.Root>
 				{:else if noResults && !isFirst}
@@ -246,7 +246,7 @@
 					<div
 						class="flex w-16 shrink-0 gap-[2px]"
 						role="img"
-						aria-label="{progress.done} of {progress.total} stages done"
+						aria-label="{progress.done} of {progress.total} stages complete"
 					>
 						{#each progress.steps as step (step.name)}
 							<Hint text={step.title}>

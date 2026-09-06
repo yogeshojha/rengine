@@ -90,7 +90,7 @@
 			const res = await twoFactorApi.status();
 			twoFactorEnabled = res.enabled;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to load 2FA status');
+			toast.error(error instanceof Error ? error.message : 'Two-factor status could not be loaded');
 		} finally {
 			twoFactorLoading = false;
 		}
@@ -107,7 +107,7 @@
 			backupCodesSaved = false;
 			setupOpen = true;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to start 2FA setup');
+			toast.error(error instanceof Error ? error.message : 'Two-factor setup could not be started');
 		} finally {
 			isSettingUp = false;
 		}
@@ -177,7 +177,7 @@
 			backupCodesSaved = true;
 			setTimeout(() => (copiedBackup = false), 2000);
 		} else {
-			toast.error('Failed to copy');
+			toast.error('Copy failed');
 		}
 	}
 
@@ -211,9 +211,7 @@
 						{/if}
 					{/if}
 				</div>
-				<Card.Description>
-					Add an extra layer of security with a time-based one-time code.
-				</Card.Description>
+				<Card.Description>Require a time-based one-time code at sign-in.</Card.Description>
 			</div>
 		</div>
 	</Card.Header>
@@ -226,7 +224,7 @@
 		{:else if twoFactorEnabled && !setupOpen}
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
 				<ShieldCheckIcon class="w-4 h-4 text-foreground shrink-0" />
-				Your account is protected by an authenticator app.
+				This account is protected by an authenticator app.
 			</div>
 
 			{#if disableOpen}
@@ -236,8 +234,8 @@
 						<TriangleAlertIcon class="size-4" />
 						<Alert.Title>Disable two-factor authentication?</Alert.Title>
 						<Alert.Description>
-							This removes your second factor and invalidates all backup codes. Anyone with your
-							password will be able to sign in.
+							This removes the second factor and invalidates all backup codes. The password alone
+							will grant access.
 						</Alert.Description>
 					</Alert.Root>
 					<p class="text-xs text-muted-foreground">
@@ -290,8 +288,8 @@
 					<TriangleAlertIcon class="size-4" />
 					<Alert.Title>Save your backup codes</Alert.Title>
 					<Alert.Description>
-						These are shown only once. Store them somewhere safe — each code can be used once if you
-						lose access to your authenticator.
+						Shown only once. Store them securely. Each code can be used once if the authenticator is
+						unavailable.
 					</Alert.Description>
 				</Alert.Root>
 				<div class="rounded-md border-l-2 border-warning bg-muted p-3">
@@ -328,8 +326,8 @@
 						<div class="space-y-1">
 							<p class="text-sm font-medium">Scan the QR code</p>
 							<p class="text-xs text-muted-foreground">
-								Use an authenticator app (1Password, Authy, Google Authenticator) to scan the code,
-								or enter the secret manually.
+								Scan the code with an authenticator app such as 1Password, Authy or Google
+								Authenticator, or enter the secret manually.
 							</p>
 						</div>
 						<div class="space-y-1.5">
@@ -370,7 +368,7 @@
 		{:else}
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
 				<TriangleAlertIcon class="w-4 h-4 text-muted-foreground shrink-0" />
-				Two-factor authentication is not enabled on your account.
+				Two-factor authentication is not enabled on this account.
 			</div>
 			<LoadingButton onclick={handleStartSetup} loading={isSettingUp} loadingLabel="Preparing…">
 				Enable 2FA
@@ -382,7 +380,7 @@
 <AlertDialog.Root bind:open={confirmCloseCodes}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>You haven't saved your backup codes</AlertDialog.Title>
+			<AlertDialog.Title>Backup codes not saved</AlertDialog.Title>
 			<AlertDialog.Description>
 				These codes are shown only once and cannot be retrieved later. Continue without saving them?
 			</AlertDialog.Description>
@@ -397,7 +395,7 @@
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}
 	title="Discard two-factor setup?"
-	description="Your two-factor enrolment is unfinished. Leaving now discards it and 2FA stays off."
+	description="Two-factor enrollment is unfinished. Leaving now discards it and two-factor stays off."
 	confirmLabel="Discard setup"
 	cancelLabel="Keep setting up"
 	onOpenChange={(o) => {

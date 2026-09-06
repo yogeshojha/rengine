@@ -255,7 +255,7 @@
 						class="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
 						onclick={() => goto(ROUTES.target(targetId))}
 					>
-						See Details
+						See details
 						<ExternalLink class="h-2.5 w-2.5" />
 					</button>
 				</div>

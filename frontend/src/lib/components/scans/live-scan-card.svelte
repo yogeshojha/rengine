@@ -72,7 +72,7 @@
 				<div
 					class="flex flex-1 gap-[3px]"
 					role="img"
-					aria-label="{progress.done} of {progress.total} stages done"
+					aria-label="{progress.done} of {progress.total} stages complete"
 				>
 					{#each progress.steps as step (step.name)}
 						<Hint text={step.title}>

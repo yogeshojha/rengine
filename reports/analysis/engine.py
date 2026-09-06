@@ -214,7 +214,7 @@ def _caveats(source: ReportSource) -> list[Caveat]:
         out.append(
             Caveat(
                 kind="cancelled",
-                text="This run was cancelled. It reports what had been written when it stopped, not a complete pass.",
+                text="This run was cancelled. It reports what had been written when it stopped, and is not a complete pass.",
             )
         )
     if source.suppressed_count:

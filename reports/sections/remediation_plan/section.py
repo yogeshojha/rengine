@@ -12,7 +12,7 @@ class RemediationPlanConfig(SectionConfig):
     show_owner: bool = flag(
         True,
         title="Add an owner column",
-        description="Left blank for the team to fill in.",
+        description="Printed blank for completion.",
     )
     show_due: bool = flag(True, title="Add a target date column")
     owner_label: str = text("Owner", title="Owner column heading")

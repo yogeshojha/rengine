@@ -20,7 +20,7 @@ class SignoffSection(Section):
     name = "signoff"
     title = "Contact"
     description = (
-        "The closing page: who to contact and, if you need them, signature lines."
+        "Contact details and optional signature lines."
     )
     page_break = "flow"
     group = SectionGroup.APPENDIX.value

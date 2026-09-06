@@ -39,7 +39,7 @@ class WebAssetsConfig(SectionConfig):
 class WebAssetsSection(Section):
     name = "web_assets"
     title = "Web assets"
-    description = "The hostname inventory, with the columns you choose."
+    description = "The hostname inventory, with the selected columns."
     group = SectionGroup.SURFACE.value
     order = 10
     launch_fields = frozenset({"max_rows"})

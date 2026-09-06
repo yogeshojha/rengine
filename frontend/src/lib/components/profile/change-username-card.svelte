@@ -32,11 +32,11 @@
 			return;
 		}
 		if (newUsername === auth.user?.username) {
-			toast.error('New username is the same as current username');
+			toast.error('New username matches the current username');
 			return;
 		}
 		if (newUsername.length < 3) {
-			toast.error('Username must be at least 3 characters long');
+			toast.error('Username must be at least 3 characters');
 			return;
 		}
 
@@ -49,7 +49,7 @@
 			newUsername = '';
 			usernameDirty = false;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to change username');
+			toast.error(error instanceof Error ? error.message : 'Username could not be changed');
 		} finally {
 			isChangingUsername = false;
 		}
@@ -63,7 +63,7 @@
 				<UserIcon class="w-5 h-5 text-primary" />
 			</div>
 			<div>
-				<Card.Title>Change Username</Card.Title>
+				<Card.Title>Change username</Card.Title>
 				<Card.Description>Update your username</Card.Description>
 			</div>
 		</div>
@@ -76,7 +76,7 @@
 	>
 		<Card.Content class="space-y-4">
 			<div class="space-y-2">
-				<Label for="current-username">Current Username</Label>
+				<Label for="current-username">Current username</Label>
 				<Input
 					id="current-username"
 					type="text"
@@ -87,7 +87,7 @@
 			</div>
 
 			<div class="space-y-2">
-				<Label for="new-username">New Username</Label>
+				<Label for="new-username">New username</Label>
 				<Input
 					id="new-username"
 					type="text"
@@ -119,7 +119,7 @@
 				loadingLabel="Updating…"
 				disabled={!usernameValid}
 			>
-				Update Username
+				Update username
 			</LoadingButton>
 		</Card.Footer>
 	</form>

@@ -27,7 +27,7 @@
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-56">
-					<DropdownMenu.Label>Create New</DropdownMenu.Label>
+					<DropdownMenu.Label>Create</DropdownMenu.Label>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={onAddTarget}>
 						<Crosshair class="mr-2 h-4 w-4" />
@@ -36,7 +36,7 @@
 					<DropdownMenu.Item disabled class="justify-between">
 						<span class="flex items-center">
 							<Building class="mr-2 h-4 w-4" />
-							Add Organization
+							Add organization
 						</span>
 						<Badge variant="secondary" class="text-[10px]">Soon</Badge>
 					</DropdownMenu.Item>
@@ -44,11 +44,11 @@
 					<DropdownMenu.Label class="text-xs text-muted-foreground">Automation</DropdownMenu.Label>
 					<DropdownMenu.Item onclick={() => goto(ROUTES.engines)}>
 						<Cog class="mr-2 h-4 w-4" />
-						New Scan Engine
+						New scan engine
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => goto(ROUTES.contexts)}>
 						<Layers class="mr-2 h-4 w-4" />
-						New Scan Context
+						New scan context
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>

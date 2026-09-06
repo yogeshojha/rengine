@@ -20,7 +20,7 @@ class ComplianceConfig(SectionConfig):
     show_empty: bool = flag(
         True,
         title="Show controls with no findings",
-        description="An empty control is evidence too.",
+        description="Controls with no matching finding are listed as well.",
     )
     show_scope_note: bool = flag(True, title="Show what the mapping does not cover")
 

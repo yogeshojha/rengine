@@ -79,7 +79,7 @@ class PortScanConfig(StageConfig):
         ge=0,
         le=65535,
         title="Open-port threshold",
-        description="Discard a host reporting more open ports than this. A host above the threshold is a tarpit, not a surface. 0 disables.",
+        description="Discard a host reporting more open ports than this; above the threshold the host is answering on every port. 0 disables.",
     )
     max_addresses: int = Field(
         default=8192,

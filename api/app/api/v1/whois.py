@@ -374,7 +374,7 @@ async def get_target_correlations(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid target_id format",
+            detail="Invalid target ID",
         ) from e
 
     target_result = await session.execute(select(Target).where(Target.id == tid))

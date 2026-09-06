@@ -28,7 +28,7 @@
 		{
 			provider: APIProvider.CHAOS,
 			name: 'Chaos',
-			desc: 'ProjectDiscovery subdomain dataset for fast passive enumeration.',
+			desc: 'The ProjectDiscovery passive subdomain dataset.',
 			docs: 'https://cloud.projectdiscovery.io',
 			icon: RadarIcon
 		},
@@ -42,7 +42,7 @@
 		{
 			provider: APIProvider.SECURITYTRAILS,
 			name: 'SecurityTrails',
-			desc: 'Historical DNS and domain records for deeper recon.',
+			desc: 'Historical DNS and domain registration records.',
 			docs: 'https://securitytrails.com',
 			icon: RouteIcon
 		}
@@ -82,7 +82,7 @@
 			return true;
 		} catch (e) {
 			if (isAlreadyExists(e)) return true;
-			toast.error(e instanceof Error ? e.message : `Failed to save ${provider} key`);
+			toast.error(e instanceof Error ? e.message : `${provider} key could not be saved`);
 			return false;
 		}
 	}
@@ -146,7 +146,7 @@
 								<Input
 									type={reveal[p.provider] ? 'text' : 'password'}
 									bind:value={keys[p.provider]}
-									placeholder="Paste API key (optional)"
+									placeholder="Paste the API key"
 									disabled={busy}
 									class="h-9 pr-9 text-xs"
 									autocomplete="off"
@@ -191,7 +191,7 @@
 									</a>
 								</div>
 								<p class="text-xs text-muted-foreground">
-									Pull your programs and scope directly from HackerOne.
+									Import programs and their scope from HackerOne.
 								</p>
 							</div>
 							<div class="space-y-2">
@@ -211,7 +211,7 @@
 										<Input
 											type={h1Reveal ? 'text' : 'password'}
 											bind:value={h1Token}
-											placeholder="Paste API token (optional)"
+											placeholder="Paste the API token"
 											disabled={busy}
 											class="h-9 pr-9 text-xs"
 											autocomplete="off"

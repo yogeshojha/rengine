@@ -43,7 +43,7 @@ function createScanSchedulesStore() {
 				hasFetched = true;
 				fetchedProjectId = projectId;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to fetch schedules';
+				error = e instanceof Error ? e.message : 'Schedules could not be loaded';
 			} finally {
 				isLoading = false;
 			}
@@ -59,7 +59,7 @@ function createScanSchedulesStore() {
 				schedules = [created, ...schedules];
 				return created;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to create schedule';
+				error = e instanceof Error ? e.message : 'Schedule could not be created';
 				return null;
 			}
 		},
@@ -75,7 +75,7 @@ function createScanSchedulesStore() {
 				replace(updated);
 				return updated;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to update schedule';
+				error = e instanceof Error ? e.message : 'Schedule could not be updated';
 				return null;
 			}
 		},
@@ -93,7 +93,7 @@ function createScanSchedulesStore() {
 				replace(updated);
 				return updated;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to update schedule';
+				error = e instanceof Error ? e.message : 'Schedule could not be updated';
 				return null;
 			}
 		},
@@ -105,7 +105,7 @@ function createScanSchedulesStore() {
 				scansStore.markStale();
 				return scans.length;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to run schedule';
+				error = e instanceof Error ? e.message : 'Schedule could not be started';
 				return null;
 			}
 		},
@@ -117,7 +117,7 @@ function createScanSchedulesStore() {
 				schedules = schedules.filter((s) => s.id !== id);
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Failed to delete schedule';
+				error = e instanceof Error ? e.message : 'Schedule could not be deleted';
 				return false;
 			}
 		},
