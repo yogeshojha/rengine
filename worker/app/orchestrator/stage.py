@@ -24,7 +24,7 @@ from shared.services.orchestrator.tracking import (
     ScanActivityService,
     ScanCommandRecorder,
 )
-from shared.services.scan_resolve import ResolvedScanConfig
+from shared.services.scan_resolve import ResolvedScanConfig, unseal_headers
 from shared.utils.datetime import utc_now
 from stages.base import StageAbortedError, StageContext
 from stages.registry import StageSpec
@@ -58,6 +58,7 @@ def _throttled_abort(
 
 def load_resolved(execution_config: dict) -> ResolvedScanConfig:
     clean = {k: v for k, v in (execution_config or {}).items() if not k.startswith("_")}
+    clean["headers"] = unseal_headers(clean.get("headers"))
     return ResolvedScanConfig(**clean)
 
 

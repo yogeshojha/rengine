@@ -7,6 +7,7 @@ from shared.services.scan_resolve import (
     ResolvedScanConfig,
     _mask_auth,
     merge_engine_context,
+    seal_headers,
 )
 
 
@@ -29,6 +30,8 @@ def build_scan_row(
 ) -> Scan:
     """Assemble an unsaved PENDING Scan from an already-resolved config."""
     execution_config = resolved.model_dump()
+    # a credential must not sit in the clear on every run that used it
+    execution_config["headers"] = seal_headers(execution_config.get("headers"))
     if dimension:
         execution_config["_dimension"] = dimension
     execution_config["_auth_header_names"] = list(resolved._auth_header_names)

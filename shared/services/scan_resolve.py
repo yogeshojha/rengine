@@ -90,6 +90,26 @@ def redact_command(command: str) -> str:
     return _CRED_FLAG.sub(rf"\1{MASK}", safe)
 
 
+def seal_headers(headers: dict[str, str] | None) -> dict[str, str]:
+    """Encrypt header values before they are persisted with a scan."""
+    from shared.utils.crypto import encrypt_secret  # noqa: PLC0415
+
+    return {
+        name: encrypt_secret(value or "") for name, value in (headers or {}).items()
+    }
+
+
+def unseal_headers(headers: dict[str, str] | None) -> dict[str, str]:
+    """Read them back, tolerating rows written before they were sealed."""
+    from shared.utils.crypto import try_decrypt  # noqa: PLC0415
+
+    out: dict[str, str] = {}
+    for name, value in (headers or {}).items():
+        plain = try_decrypt(value) if value else ""
+        out[name] = plain if plain is not None else value
+    return out
+
+
 MIN_SECRET_LENGTH = 8
 
 
