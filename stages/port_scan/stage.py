@@ -13,11 +13,13 @@ from shared.definitions.ports import (
     profile_ports,
 )
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
+from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from shared.services import ip_inventory, port_inventory
 from shared.services.port_inventory import ServiceObservation
 from shared.services.scope_filter import ip_excluded
+from shared.utils.net import is_registry_routable
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.port_scan.config import PortScanConfig
 from tools.naabu.client import NaabuClient, NaabuError, NaabuOptions, port_args
@@ -25,6 +27,8 @@ from tools.naabu.client import NaabuClient, NaabuError, NaabuOptions, port_args
 logger = get_logger(__name__)
 
 CDN_KINDS = ("cdn", "waf")
+
+_NAMED_SEED_TYPES = frozenset({TargetType.IP.value, TargetType.IP_RANGE.value})
 
 
 @dataclass(frozen=True)
@@ -157,11 +161,19 @@ class PortScanStage(Stage):
             .all()
         )
 
+    def _named_private_seed(self) -> bool:
+        """The address or netblock the user typed is scope, however it is registered."""
+        return self.ctx.target_type in _NAMED_SEED_TYPES and not is_registry_routable(
+            self.ctx.target_value
+        )
+
     def _plan(self, rows: list[IpAddress], cfg: PortScanConfig) -> dict[str, Decision]:
         excluded = self.ctx.resolved.excluded_ips or []
+        # skip_private is for addresses a scan merely came across, never for its own target
+        skip_private = cfg.skip_private and not self._named_private_seed()
         plan: dict[str, Decision] = {}
         for row in rows:
-            decision = self._decide(row, cfg, excluded)
+            decision = self._decide(row, cfg, excluded, skip_private=skip_private)
             plan[row.ip] = decision
             row.scan_policy = decision.policy
             row.scan_policy_reason = decision.reason
@@ -169,10 +181,16 @@ class PortScanStage(Stage):
         return plan
 
     @staticmethod
-    def _decide(row: IpAddress, cfg: PortScanConfig, excluded: list[str]) -> Decision:
+    def _decide(
+        row: IpAddress,
+        cfg: PortScanConfig,
+        excluded: list[str],
+        *,
+        skip_private: bool,
+    ) -> Decision:
         if excluded and ip_excluded(row.ip, excluded):
             return Decision(ScanPolicy.SKIP.value, "scope")
-        if cfg.skip_private and _is_private(row.ip):
+        if skip_private and _is_private(row.ip):
             return Decision(ScanPolicy.SKIP.value, "private")
         if row.is_alive is False:
             return Decision(ScanPolicy.SKIP.value, "unreachable")

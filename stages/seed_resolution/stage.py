@@ -57,6 +57,11 @@ class SeedResolutionStage(Stage):
             self.emit_progress(
                 f"large seed sampled to {count} hosts ({cfg.asn_scan_mode} mode)"
             )
+        if not count:
+            # a seed that expands to nothing leaves every later stage empty; say so here
+            reason = f"{value} expanded to no addresses, so this scan has nothing to examine."
+            self.emit_progress(reason)
+            return StageResult(counts={"ips": 0}, warnings=[reason], partial=True)
         self.emit_progress(f"discovered {count} IP assets")
         return StageResult(counts={"ips": count})
 
@@ -83,10 +88,12 @@ class SeedResolutionStage(Stage):
         if net is None:
             logger.warning("invalid CIDR seed: %s", value)
             return [], False
+        # the netblock the user named is the scope; cidr_skip_rfc1918 filters the
+        # prefixes an ASN announces, not the seed itself
         ips, truncated = expand_network(
             value,
             max_hosts=cfg.max_expansion_hosts,
-            skip_private=cfg.cidr_skip_rfc1918,
+            skip_private=False,
         )
         prefix = str(net)
         records = [

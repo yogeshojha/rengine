@@ -72,7 +72,7 @@ class PortScanConfig(StageConfig):
     skip_private: bool = Field(
         default=True,
         title="Skip private addresses",
-        description="Never probe loopback, link-local or RFC1918 addresses.",
+        description="Never probe loopback, link-local or RFC1918 addresses a scan came across. An address or netblock named as the target is always scanned.",
     )
     port_threshold: int = Field(
         default=500,

@@ -17,8 +17,8 @@ class SeedResolutionConfig(StageConfig):
     )
     cidr_skip_rfc1918: bool = Field(
         default=True,
-        title="Skip private ranges",
-        description="Drop RFC1918 addresses while expanding a netblock.",
+        title="Skip private ranges in ASN prefixes",
+        description="Drop RFC1918 addresses while expanding the prefixes an ASN announces. A netblock target is always expanded in full.",
     )
 
     @property
