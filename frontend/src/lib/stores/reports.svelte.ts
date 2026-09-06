@@ -123,6 +123,13 @@ function createReportsStore() {
 			}
 		},
 
+		async removeMany(projectId: string, ids: string[]): Promise<{ ok: number; failed: number }> {
+			const results = await Promise.allSettled(ids.map((id) => reportsApi.remove(projectId, id)));
+			const gone = new Set(ids.filter((_, i) => results[i].status === 'fulfilled'));
+			reports = reports.filter((r) => !gone.has(r.id));
+			return { ok: gone.size, failed: ids.length - gone.size };
+		},
+
 		async saveTemplate(projectId: string, id: string, body: unknown): Promise<boolean> {
 			try {
 				const updated = await reportsApi.updateTemplate(projectId, id, body);

@@ -3,9 +3,11 @@
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
@@ -14,6 +16,8 @@
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ReportRow from '$lib/components/reports/report-row.svelte';
 	import TemplateCard from '$lib/components/reports/template-card.svelte';
 	import ThemeCard from '$lib/components/reports/theme-card.svelte';
@@ -44,6 +48,10 @@
 		id: string;
 		name: string;
 	} | null>(null);
+	let bulkDeleteOpen = $state(false);
+	let bulkDeleting = $state(false);
+
+	const selectedIds = new SvelteSet<string>();
 
 	const projectId = $derived(projectsStore.activeProject?.id ?? '');
 	const scanFilter = $derived(page.url.searchParams.get('scan') ?? undefined);
@@ -61,6 +69,48 @@
 				return !q || r.title.toLowerCase().includes(q) || r.subject.toLowerCase().includes(q);
 			})
 	);
+
+	const filtered = $derived(visibleReports.length !== reportsStore.reports.length);
+	const selectedCount = $derived(selectedIds.size);
+	const selectableIds = $derived(visibleReports.map((r) => r.id));
+	const selectAllChecked = $derived<boolean | 'indeterminate'>(
+		selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id))
+			? true
+			: selectedCount > 0
+				? 'indeterminate'
+				: false
+	);
+
+	$effect(() => {
+		const ids = new Set(reportsStore.reports.map((r) => r.id));
+		for (const id of selectedIds) if (!ids.has(id)) selectedIds.delete(id);
+	});
+
+	function toggleReport(id: string) {
+		if (selectedIds.has(id)) selectedIds.delete(id);
+		else selectedIds.add(id);
+	}
+
+	function toggleSelectAll() {
+		if (selectableIds.every((id) => selectedIds.has(id))) selectedIds.clear();
+		else for (const id of selectableIds) selectedIds.add(id);
+	}
+
+	function clearSelection() {
+		selectedIds.clear();
+	}
+
+	async function confirmBulkDelete() {
+		const ids = [...selectedIds];
+		if (!ids.length) return;
+		bulkDeleting = true;
+		const { ok, failed } = await reportsStore.removeMany(projectId, ids);
+		bulkDeleting = false;
+		bulkDeleteOpen = false;
+		selectedIds.clear();
+		if (ok > 0) toast.success(`Deleted ${ok} report${ok !== 1 ? 's' : ''}.`);
+		if (failed > 0) toast.error(`${failed} report${failed !== 1 ? 's' : ''} could not be deleted`);
+	}
 
 	$effect(() => {
 		const id = projectId;
@@ -200,10 +250,28 @@
 				/>
 			{:else}
 				<Card.Root class="gap-0 py-0">
+					<div
+						class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
+					>
+						<Checkbox
+							checked={selectAllChecked === true}
+							indeterminate={selectAllChecked === 'indeterminate'}
+							onCheckedChange={toggleSelectAll}
+							aria-label="Select all reports"
+						/>
+						<span>
+							{filtered
+								? `${visibleReports.length} of ${reportsStore.reports.length} reports`
+								: 'Report'}
+						</span>
+					</div>
 					{#each visibleReports as report (report.id)}
 						<ReportRow
 							{report}
 							{projectId}
+							selectable
+							isSelected={selectedIds.has(report.id)}
+							onSelect={toggleReport}
 							onRetry={(id) => reportsStore.retry(projectId, id)}
 							onDelete={(id) => (pendingDelete = { kind: 'report', id, name: report.title })}
 						/>
@@ -262,6 +330,30 @@
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
+
+{#if activeTab === 'reports'}
+	<SelectionActionBar {selectedCount} noun="report" onClear={clearSelection}>
+		<Button
+			variant="ghost"
+			size="sm"
+			class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+			onclick={() => (bulkDeleteOpen = true)}
+		>
+			<Trash2Icon class="h-3.5 w-3.5" />
+			Delete
+		</Button>
+	</SelectionActionBar>
+{/if}
+
+<DeleteConfirmationDialog
+	open={bulkDeleteOpen}
+	onOpenChange={(v) => (bulkDeleteOpen = v)}
+	title="Delete {selectedCount} report{selectedCount !== 1 ? 's' : ''}?"
+	description="The selected reports and their downloaded files are removed."
+	confirmLabel="Delete {selectedCount}"
+	isDeleting={bulkDeleting}
+	onConfirm={confirmBulkDelete}
+/>
 
 <GenerateDialog bind:open={generateOpen} {projectId} />
 <ThemeUploadDialog bind:open={uploadOpen} />
