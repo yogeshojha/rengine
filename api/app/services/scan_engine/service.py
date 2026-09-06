@@ -37,6 +37,7 @@ _ENGINE_KEYS = frozenset(
         "description",
         "intensity",
         "global_threads",
+        "global_http_crawl",
         "global_headers",
         "stages",
         "tool_options",

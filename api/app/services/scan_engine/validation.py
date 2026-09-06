@@ -1,4 +1,3 @@
-import re
 import shlex
 
 import yaml
@@ -12,6 +11,7 @@ from shared.services.scan_resolve import (
     MASK,
     _reject_ctrl,
     redact_command,
+    secret_runs,
 )
 from stages.registry import stage_by_name, stages
 
@@ -20,10 +20,6 @@ _MAX_HEADER_LEN = 4096
 _MAX_YAML_LEN = 512 * 1024
 _INTENSITIES = set(INTENSITIES)
 _MAX_ENGINE_THREADS = 1000
-_MASKED_RUN = re.compile(
-    r"(?:-{1,2}(?:api[-_]?key|key|token|password|passwd|pass|secret)[ =])(\S+)",
-    re.IGNORECASE,
-)
 
 
 def _mask_tool_options(options: dict | None) -> dict[str, str]:
@@ -38,25 +34,19 @@ def _unmask_tool_options(submitted: dict | None, stored: dict | None) -> dict[st
         if not value or MASK not in value or tool not in stored:
             out[tool] = value
             continue
-        secrets = _MASKED_RUN.findall(redact_command(stored[tool]) or "")
-        originals = _MASKED_RUN.findall(stored[tool])
+        originals = secret_runs(stored[tool])
         restored = value
-        if len(secrets) == len(originals):
-            for original in originals:
-                restored = restored.replace(MASK, original, 1)
-        else:
-            restored = stored[tool]
-        out[tool] = restored
+        for original in originals:
+            restored = restored.replace(MASK, original, 1)
+        # a mask left over means the edit and the stored value disagree about the
+        # secrets; keep what is stored rather than write the mask over a credential
+        out[tool] = stored[tool] if MASK in restored else restored
     return out
 
 
 _MAX_HEADERS = 1000
 _MAX_HEADER_LEN = 4096
 _MAX_YAML_LEN = 512 * 1024
-_MASKED_RUN = re.compile(
-    r"(?:-{1,2}(?:api[-_]?key|key|token|password|passwd|pass|secret)[ =])(\S+)",
-    re.IGNORECASE,
-)
 
 
 def _validate_yaml_source(source: str | None) -> str | None:
@@ -230,9 +220,14 @@ def _validate_stages(submitted: dict | None) -> dict[str, dict]:
 
 def _full_stages(stored: dict | None) -> dict[str, dict]:
     stored = stored or {}
+    # only the stages a user may author: a hidden one would be refused on import.
+    # json mode: an enum setting must come out as its value, not as the member
     return {
-        spec.name: spec.config_model(**(stored.get(spec.name) or {})).model_dump()
+        spec.name: spec.config_model(**(stored.get(spec.name) or {})).model_dump(
+            mode="json"
+        )
         for spec in stages()
+        if not spec.catalog_hidden
     }
 
 

@@ -82,6 +82,21 @@ def mask_proxy_url(value: str | None) -> str | None:
     return PROXY_CREDS_RE.sub(rf"\1{MASK}@", value) if value else value
 
 
+def secret_runs(text: str | None) -> list[str]:
+    """The values redact_command would mask, in the order they appear.
+
+    Masking and restoring must agree on what a secret is, so both read this.
+    """
+    if not text:
+        return []
+    found: list[tuple[int, str]] = []
+    for pattern, group in ((_CRED_FLAG, 2), (_HEADER_VALUE, 2), (PROXY_CREDS_RE, 0)):
+        for match in pattern.finditer(text):
+            if group and match.group(group):
+                found.append((match.start(group), match.group(group)))
+    return [value for _, value in sorted(found)]
+
+
 def redact_command(command: str) -> str:
     """Strip NUL/control bytes + proxy creds + sensitive header/flag values for safe storage."""
     safe = _UNSAFE_CTRL.sub("", command or "")
