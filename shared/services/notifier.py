@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from shared.enums.notification import NotificationSeverity, NotificationType
+from shared.enums.notification_channel import DIRECT_POST_PROVIDERS
 from shared.http import get_sync_client
 from shared.models.notification_channel import NotificationChannel
 from shared.utils.crypto import try_decrypt
@@ -96,7 +97,11 @@ def send_one(
                 notify_type=_NOTIFY_TYPE.get(severity, apprise.NotifyType.INFO),
             )
             return (True, "Sent.") if ok else (False, "Delivery failed.")
-        return _send_direct(provider, config, title, body, severity)
+        if provider in DIRECT_POST_PROVIDERS:
+            return _send_direct(provider, config, title, body, severity)
+        # the URL did not look like this provider's own; posting to it anyway
+        # would send the message wherever it points
+        return False, f"That does not look like a {provider} webhook URL."
     except Exception as exc:
         logger.warning("notifier send error (%s): %s", provider, exc)
         return False, str(exc)

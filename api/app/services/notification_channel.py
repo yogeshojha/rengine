@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import encrypt_secret, try_decrypt
-from shared.enums.notification_channel import NotificationProvider
+from shared.enums.notification_channel import URL_PROVIDERS, NotificationProvider
 from shared.models.notification_channel import (
     PROVIDERS,
     NotificationChannel,
@@ -53,10 +53,6 @@ _DISALLOWED_CUSTOM_SCHEMES = frozenset(
     {"http", "https", "json", "jsons", "xml", "xmls", "form", "forms"}
 )
 
-_DIRECT_POST_PROVIDERS = frozenset(
-    {NotificationProvider.WEBHOOK.value, NotificationProvider.TEAMS.value}
-)
-
 
 def _bad(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
@@ -85,7 +81,7 @@ def _validate_config(provider: str, config: dict) -> None:
                 "Use the 'Webhook' channel type for raw HTTP endpoints."
             )
             raise _bad(msg)
-    if provider in _DIRECT_POST_PROVIDERS:
+    if provider in URL_PROVIDERS:
         _validate_public_https_url(str(config.get("webhook_url", "")))
 
 
