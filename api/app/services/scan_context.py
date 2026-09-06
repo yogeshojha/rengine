@@ -30,7 +30,7 @@ from shared.services.scan_resolve import (
     _mask_headers,
     _reject_ctrl,
 )
-from shared.services.scope_filter import looks_like_domain
+from shared.services.scope_filter import backtracks_badly, looks_like_domain
 from shared.utils.datetime import utc_now
 
 _AUTH_KEEP = {
@@ -161,6 +161,14 @@ def _validate_paths(paths: list) -> None:
             msg = f"Excluded path '{p}' must start with '/'."
             raise _bad(msg)
         _reject_ctrl("Excluded path", p)
+        # an excluded path is matched as a pattern too, so it carries the same risk
+        if backtracks_badly(p):
+            msg = (
+                f"'{p}' repeats a group that already repeats, which can take "
+                "unbounded time to match. Simplify it — a prefix (/admin) or a "
+                "wildcard (/admin/*) is enough."
+            )
+            raise _bad(msg)
 
 
 def _validate_ips(ips: list) -> None:
@@ -189,6 +197,13 @@ def _validate_exclusion_patterns(name: str, patterns: list) -> None:
             msg = f"{name} entries must be strings."
             raise _bad(msg)
         _reject_ctrl(name, p)
+        if backtracks_badly(p):
+            msg = (
+                f"'{p}' repeats a group that already repeats, which can take "
+                "unbounded time to match. Simplify it — a keyword (admin) or a "
+                "wildcard (*admin*) is enough for an exclusion."
+            )
+            raise _bad(msg)
         if looks_like_domain(p):
             msg = (
                 f"'{p}' looks like a domain name. Use a keyword (admin), "
