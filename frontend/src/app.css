@@ -28,6 +28,24 @@
 	--success-foreground: oklch(0.985 0 0);
 	--warning: oklch(0.5 0.12 75);
 	--warning-foreground: oklch(0.985 0 0);
+	/* severity — the same ramp the report prints, mirrors shared/definitions/reports.py.
+	   Lightness carries the rank so it survives deuteranopia; never colour alone. */
+	--sev-critical: #d02f43;
+	--sev-critical-wash: #ffebea;
+	--sev-critical-ink: #991129;
+	--sev-high: #f07c21;
+	--sev-high-wash: #ffefe0;
+	--sev-high-ink: #8c3200;
+	--sev-medium: #e7c65c;
+	--sev-medium-wash: #fbf4e1;
+	--sev-medium-ink: #684f00;
+	--sev-low: #3c8edf;
+	--sev-low-wash: #e7f6ff;
+	--sev-low-ink: #075494;
+	--sev-info: #a8bacb;
+	--sev-info-wash: #f1f5f8;
+	--sev-info-ink: #475461;
+
 	--info: oklch(0.52 0.16 252);
 	--info-foreground: oklch(0.985 0 0);
 	--border: oklch(0.922 0.01 265);
@@ -91,6 +109,23 @@
 	--success-foreground: oklch(0.205 0 0);
 	--warning: oklch(0.8 0.14 80);
 	--warning-foreground: oklch(0.205 0 0);
+	/* severity, restepped for the dark surface */
+	--sev-critical: #ed566f;
+	--sev-critical-wash: #331b22;
+	--sev-critical-ink: #ed566f;
+	--sev-high: #f3963e;
+	--sev-high-wash: #34241e;
+	--sev-high-ink: #f3963e;
+	--sev-medium: #efda79;
+	--sev-medium-wash: #333023;
+	--sev-medium-ink: #efda79;
+	--sev-low: #69bbff;
+	--sev-low-wash: #1c2a39;
+	--sev-low-ink: #69bbff;
+	--sev-info: #858f9a;
+	--sev-info-wash: #202328;
+	--sev-info-ink: #858f9a;
+
 	--info: oklch(0.72 0.14 252);
 	--info-foreground: oklch(0.205 0 0);
 	--border: oklch(0.275 0.012 265);
@@ -152,6 +187,22 @@
 	--color-success-foreground: var(--success-foreground);
 	--color-warning: var(--warning);
 	--color-warning-foreground: var(--warning-foreground);
+	--color-sev-critical: var(--sev-critical);
+	--color-sev-critical-wash: var(--sev-critical-wash);
+	--color-sev-critical-ink: var(--sev-critical-ink);
+	--color-sev-high: var(--sev-high);
+	--color-sev-high-wash: var(--sev-high-wash);
+	--color-sev-high-ink: var(--sev-high-ink);
+	--color-sev-medium: var(--sev-medium);
+	--color-sev-medium-wash: var(--sev-medium-wash);
+	--color-sev-medium-ink: var(--sev-medium-ink);
+	--color-sev-low: var(--sev-low);
+	--color-sev-low-wash: var(--sev-low-wash);
+	--color-sev-low-ink: var(--sev-low-ink);
+	--color-sev-info: var(--sev-info);
+	--color-sev-info-wash: var(--sev-info-wash);
+	--color-sev-info-ink: var(--sev-info-ink);
+
 	--color-info: var(--info);
 	--color-info-foreground: var(--info-foreground);
 	--color-border: var(--border);

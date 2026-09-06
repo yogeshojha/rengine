@@ -57,23 +57,25 @@ export const SEVERITY_HELP: Record<string, string> = {
 	[Severity.UNKNOWN]: 'The check did not state a severity.'
 };
 
-// an ordinal risk ramp: danger reads as danger, and rank is carried by order and label too
+// the ramp the report prints, mirroring shared/definitions/reports.py: one severity vocabulary
+// for the screen and the page. Rank is carried by lightness, order and label, never colour alone.
 export const SEVERITY_FILL: Record<string, string> = {
-	[Severity.CRITICAL]: 'var(--destructive)',
-	[Severity.HIGH]: 'var(--chart-4)',
-	[Severity.MEDIUM]: 'var(--warning)',
-	[Severity.LOW]: 'var(--chart-1)',
-	[Severity.INFO]: 'color-mix(in oklch, var(--muted-foreground) 45%, transparent)',
-	[Severity.UNKNOWN]: 'color-mix(in oklch, var(--muted-foreground) 30%, transparent)'
+	[Severity.CRITICAL]: 'var(--sev-critical)',
+	[Severity.HIGH]: 'var(--sev-high)',
+	[Severity.MEDIUM]: 'var(--sev-medium)',
+	[Severity.LOW]: 'var(--sev-low)',
+	[Severity.INFO]: 'var(--sev-info)',
+	[Severity.UNKNOWN]: 'var(--sev-info)'
 };
 
+// the mark is too light to carry text at its own step, so a label takes the ink variant
 export const SEVERITY_TEXT: Record<string, string> = {
-	[Severity.CRITICAL]: 'text-destructive',
-	[Severity.HIGH]: 'text-[var(--chart-4)]',
-	[Severity.MEDIUM]: 'text-warning',
-	[Severity.LOW]: 'text-[var(--chart-1)]',
-	[Severity.INFO]: 'text-muted-foreground',
-	[Severity.UNKNOWN]: 'text-muted-foreground'
+	[Severity.CRITICAL]: 'text-[var(--sev-critical-ink)]',
+	[Severity.HIGH]: 'text-[var(--sev-high-ink)]',
+	[Severity.MEDIUM]: 'text-[var(--sev-medium-ink)]',
+	[Severity.LOW]: 'text-[var(--sev-low-ink)]',
+	[Severity.INFO]: 'text-[var(--sev-info-ink)]',
+	[Severity.UNKNOWN]: 'text-[var(--sev-info-ink)]'
 };
 
 export const ACTIONABLE_SEVERITIES: string[] = [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM];
