@@ -106,6 +106,24 @@ class ApiClient {
 		return this.request<T>(endpoint);
 	}
 
+	async bytes(endpoint: string, isRetry = false): Promise<ArrayBuffer> {
+		const response = await fetch(`${this.baseUrl}${endpoint}`, { credentials: 'include' });
+		if (response.ok) return response.arrayBuffer();
+
+		if (response.status === 401 && !isRetry) {
+			const result = await this.tryRefresh();
+			if (result === 'ok') return this.bytes(endpoint, true);
+			throw new Error(
+				result === 'expired'
+					? 'Session expired. Sign in again.'
+					: 'Session could not be refreshed. Sign in again.'
+			);
+		}
+
+		const errorData = await response.json().catch(() => ({}));
+		throw new Error(extractErrorMessage(errorData?.detail, response.status));
+	}
+
 	post<T>(endpoint: string, data?: unknown): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'POST',

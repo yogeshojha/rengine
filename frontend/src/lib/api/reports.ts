@@ -72,6 +72,14 @@ export const reportsApi = {
 		return `${API_PREFIX}/reports/${id}/download${q({ project_id: projectId, format })}`;
 	},
 
+	previewUrl(projectId: string, id: string): string {
+		return `${API_PREFIX}/reports/${id}/preview${q({ project_id: projectId })}`;
+	},
+
+	pdf(projectId: string, id: string): Promise<ArrayBuffer> {
+		return api.bytes(`/reports/${id}/preview${q({ project_id: projectId })}`);
+	},
+
 	fonts(): Promise<ReportFont[]> {
 		return api.get<ReportFont[]>('/reports/fonts');
 	},

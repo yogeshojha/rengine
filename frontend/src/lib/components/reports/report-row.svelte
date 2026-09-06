@@ -10,6 +10,7 @@
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import EyeIcon from '@lucide/svelte/icons/eye';
 	import {
 		FORMAT_ICONS,
 		FORMAT_LABELS,
@@ -23,6 +24,7 @@
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import ThemePreview from './theme-preview.svelte';
+	import ReportPreviewDialog from './preview/report-preview-dialog.svelte';
 	import type { Report } from '$lib/types/report';
 
 	let {
@@ -47,6 +49,9 @@
 	const failed = $derived(report.status === ReportStatus.FAILED);
 	const pdf = $derived(report.files.find((f) => f.format === 'pdf') ?? report.files[0]);
 	const theme = $derived(reportCatalog.theme(report.theme));
+	const previewable = $derived(report.files.some((f) => f.format === 'pdf'));
+
+	let previewOpen = $state(false);
 </script>
 
 <div
@@ -69,12 +74,33 @@
 	<div class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
 		{#if theme}
 			<div class="hidden w-9 shrink-0 self-start sm:block">
-				<ThemePreview {theme} variant="cover" class="shadow-sm" />
+				{#if previewable}
+					<button
+						type="button"
+						onclick={() => (previewOpen = true)}
+						class="focus-visible:ring-ring block w-full rounded-[3px] focus-visible:ring-2 focus-visible:outline-none"
+						aria-label="Preview {report.title}"
+					>
+						<ThemePreview {theme} variant="cover" class="shadow-sm" />
+					</button>
+				{:else}
+					<ThemePreview {theme} variant="cover" class="shadow-sm" />
+				{/if}
 			</div>
 		{/if}
 		<div class="min-w-0 flex-1 space-y-1">
 			<div class="flex flex-wrap items-center gap-2">
-				<span class="truncate font-medium">{report.title}</span>
+				{#if previewable}
+					<button
+						type="button"
+						onclick={() => (previewOpen = true)}
+						class="hover:text-primary truncate font-medium"
+					>
+						{report.title}
+					</button>
+				{:else}
+					<span class="truncate font-medium">{report.title}</span>
+				{/if}
 				<Badge variant="outline" class="font-mono text-[10px]">{report.subject}</Badge>
 				{#if report.ai_used}
 					<Badge variant="info" class="gap-1">
@@ -108,7 +134,12 @@
 		</div>
 
 		<div class="flex shrink-0 items-center gap-1.5">
-			{#if report.files.length}
+			{#if previewable}
+				<Button variant="outline" size="sm" class="h-8" onclick={() => (previewOpen = true)}>
+					<EyeIcon class="mr-1.5 size-3.5" />
+					Preview
+				</Button>
+			{:else if report.files.length}
 				{@const Icon = FORMAT_ICONS[pdf.format]}
 				<Button
 					variant="outline"
@@ -119,7 +150,7 @@
 				>
 					<Icon class="mr-1.5 size-3.5" />
 					{FORMAT_LABELS[pdf.format]}
-					<span class="ml-1.5 text-muted-foreground">{formatBytes(pdf.bytes)}</span>
+					<span class="text-muted-foreground ml-1.5">{formatBytes(pdf.bytes)}</span>
 				</Button>
 			{/if}
 			<DropdownMenu.Root>
@@ -163,3 +194,7 @@
 		</div>
 	</div>
 </div>
+
+{#if previewable}
+	<ReportPreviewDialog bind:open={previewOpen} {report} {projectId} />
+{/if}

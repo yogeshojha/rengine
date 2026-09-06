@@ -1,4 +1,5 @@
 from typing import Annotated
+from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Query, status
@@ -224,6 +225,26 @@ async def download_report(
         path,
         media_type=FORMAT_MEDIA_TYPES.get(format, "application/octet-stream"),
         filename=filename,
+    )
+
+
+@router.get("/{report_id}/preview")
+async def preview_report(
+    _current_user: CurrentUser,
+    session: Session,
+    report_id: Annotated[UUID, Path(description="Report")],
+    project_id: Annotated[UUID, Query(description="Project")],
+):
+    service = ReportService(session)
+    report = await service.get(report_id, project_id)
+    path, filename = service.file_path(report, ReportFormat.PDF.value)
+    return FileResponse(
+        path,
+        media_type=FORMAT_MEDIA_TYPES[ReportFormat.PDF.value],
+        headers={
+            "Content-Disposition": f'inline; filename="{quote(filename)}"',
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 
