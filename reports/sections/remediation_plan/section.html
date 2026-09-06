@@ -1,31 +1,37 @@
 {% import 'macros.html' as m with context %}
-{% if narrative %}<div class="md block">{{ narrative|md|safe }}</div>{% endif %}
-<table class="table table--fixed">
+{% if narrative %}<div class="md prose block">{{ narrative|md|safe }}</div>{% endif %}
+<table class="table table--fixed table--plan">
   <thead>
     <tr>
-      <th style="width:8mm">#</th>
+      <th style="width:7mm">#</th>
       <th>Action</th>
-      <th style="width:18mm">Severity</th>
-      {% if cfg.show_effort %}<th style="width:26mm">Change</th>{% endif %}
-      <th class="num" style="width:16mm">Clears</th>
-      <th class="num" style="width:14mm">Assets</th>
-      {% if cfg.show_owner %}<th style="width:24mm">{{ cfg.owner_label }}</th>{% endif %}
-      {% if cfg.show_due %}<th style="width:20mm">Target</th>{% endif %}
+      <th style="width:17mm">Severity</th>
+      {% if cfg.show_effort %}<th style="width:17mm">Change</th>{% endif %}
+      <th class="num" style="width:13mm">Clears</th>
+      <th class="num" style="width:13mm">Assets</th>
+      {% if cfg.show_owner %}<th style="width:20mm">{{ cfg.owner_label }}</th>{% endif %}
+      {% if cfg.show_due %}<th style="width:18mm">Target</th>{% endif %}
     </tr>
   </thead>
-  <tbody>
-    {% for action in actions %}
+  {% for action in actions %}
+  <tbody class="avoid">
     <tr>
       <td class="faint num">{{ loop.index }}</td>
-      <td class="wrap"><strong>{{ action.title }}</strong><br><span class="micro muted">{{ action.detail|clip(180) }}</span></td>
+      <td class="wrap"><strong>{{ action.title }}</strong></td>
       <td>{{ m.sev(action.severity) }}</td>
       {% if cfg.show_effort %}<td class="small">{{ action.effort }}</td>{% endif %}
       <td class="num">{{ action.clears|num }}</td>
       <td class="num">{{ action.assets|num }}</td>
-      {% if cfg.show_owner %}<td></td>{% endif %}
-      {% if cfg.show_due %}<td></td>{% endif %}
+      {% if cfg.show_owner %}<td class="fill"></td>{% endif %}
+      {% if cfg.show_due %}<td class="fill"></td>{% endif %}
     </tr>
-    {% endfor %}
+    {% if action.detail %}
+    <tr class="detail">
+      <td></td>
+      <td class="micro muted wrap" colspan="{{ 5 + (1 if cfg.show_effort else 0) + (1 if cfg.show_owner else 0) + (1 if cfg.show_due else 0) }}">{{ action.detail|clip(220) }}</td>
+    </tr>
+    {% endif %}
   </tbody>
+  {% endfor %}
 </table>
-<p class="micro faint" style="margin-top:1.6mm">Completing this list clears {{ total_clears|num }} of the observations in this report.</p>
+<p class="micro faint" style="margin-top:2mm">Completing this list clears {{ total_clears|num }} of the observations in this report.</p>

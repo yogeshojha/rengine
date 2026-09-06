@@ -42,8 +42,12 @@ class RiskSummarySection(Section):
             for key in SEVERITY_ORDER
             if brief.severity.get(key)
         ]
+        actionable_rows = [row for row in severity if row["severity"] not in QUIET]
         return {
             "severity": severity,
+            "actionable_rows": actionable_rows,
+            "actionable_total": sum(row["count"] for row in actionable_rows),
+            "quiet": sum(row["count"] for row in severity if row["severity"] in QUIET),
             "show_donut": cfg.show_donut,
             "risks": brief.risks[: cfg.top],
             "show_signals": cfg.show_signals,

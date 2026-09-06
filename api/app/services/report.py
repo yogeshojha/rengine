@@ -795,7 +795,12 @@ class ReportService:
             sections=len(enabled),
             findings=findings,
             assets=assets,
-            pages_estimated=_pages(enabled, issues=issues, assets=assets),
+            pages_estimated=_pages(
+                enabled,
+                issues=issues,
+                assets=assets,
+                chapter_breaks=spec.style.chapter_breaks,
+            ),
         )
         if spec.narrative.ai_enabled and cfg is not None:
             calls = len(
@@ -940,9 +945,17 @@ _ROWS_PER_PAGE = 42
 # a weakness, with and without its request and response
 _PAGES_PER_ISSUE = 0.9
 _PAGES_PER_ISSUE_EVIDENCE = 1.8
+# a chapter that runs on reclaims most of the page its predecessor left unfilled
+_PAGE_SAVED_PER_RUN_ON = 0.4
 
 
-def _pages(sections: list[SectionEntry], *, issues: int, assets: int) -> int:
+def _pages(
+    sections: list[SectionEntry],
+    *,
+    issues: int,
+    assets: int,
+    chapter_breaks: bool = True,
+) -> int:
     """Estimated length, read from each section's own limits rather than the raw totals."""
     total = 0.0
     for entry in sections:
@@ -969,6 +982,8 @@ def _pages(sections: list[SectionEntry], *, issues: int, assets: int) -> int:
             total += 1
         else:
             total += 1
+    if not chapter_breaks:
+        total -= _PAGE_SAVED_PER_RUN_ON * max(0, len(sections) - 2)
     return max(2, round(total))
 
 

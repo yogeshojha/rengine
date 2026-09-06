@@ -7,7 +7,7 @@
 </table>
 
 {% if revisions %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">Revision history</div>
   <table class="table">
     <thead><tr><th style="width:20mm">Version</th><th style="width:28mm">Date</th><th style="width:38mm">Author</th><th>Change</th></tr></thead>
@@ -17,15 +17,15 @@
 {% endif %}
 
 {% if distribution %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">Distribution</div>
   <ul class="small">{% for name in distribution %}<li>{{ name }}</li>{% endfor %}</ul>
 </div>
 {% endif %}
 
 {% if confidentiality %}
-<div class="sub avoid"><div class="callout callout--quiet"><div class="callout__title">Handling</div><div class="md">{{ confidentiality|md|safe }}</div></div></div>
+<div class="sub"><div class="callout callout--quiet"><div class="callout__title">Handling</div><div class="md">{{ confidentiality|md|safe }}</div></div></div>
 {% endif %}
 {% if disclaimer %}
-<div class="sub avoid"><div class="label block">Disclaimer</div><div class="md small">{{ disclaimer|md|safe }}</div></div>
+<div class="sub"><div class="label block">Disclaimer</div><div class="md small">{{ disclaimer|md|safe }}</div></div>
 {% endif %}

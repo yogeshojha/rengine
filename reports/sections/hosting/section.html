@@ -1,6 +1,6 @@
 {% import 'macros.html' as m with context %}
 {% if fronting %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">How assets are fronted</div>
   {% set items = [] %}
   {% for row in fronting %}{% if row.count %}{% set _ = items.append(Slice(row.label, row.count, ctx.hue(row.hue))) %}{% endif %}{% endfor %}
@@ -13,21 +13,21 @@
 {% endif %}
 
 {% if networks %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">Hosting networks</div>
   {{ bars(networks|pairs, width=470, label_width=200, palette=ctx.palette)|safe }}
 </div>
 {% endif %}
 
 {% if countries %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">Where addresses resolve</div>
   {{ bars(countries|pairs, width=470, label_width=120, palette=ctx.palette)|safe }}
 </div>
 {% endif %}
 
 {% if tech %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">Technology stack</div>
   {{ bars(tech|pairs, width=470, label_width=200, palette=ctx.palette)|safe }}
   <p class="micro faint" style="margin-top:1.4mm">Counted by the number of hosts each technology was detected on.</p>

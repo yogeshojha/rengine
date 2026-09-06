@@ -1,5 +1,5 @@
 {% import 'macros.html' as m with context %}
-{% if preamble %}<div class="md block">{{ preamble|md|safe }}</div>{% endif %}
+{% if preamble %}<div class="md prose block">{{ preamble|md|safe }}</div>{% endif %}
 
 {% if posture and assessed %}
 <div class="verdict">
@@ -25,7 +25,7 @@
 {% if ai and disclose %}<p class="ai-note">This summary was drafted by a language model from the computed findings, then included without editing.</p>{% endif %}
 
 {% if deductions %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">What the score reflects</div>
   <table class="table table--tight">
     <thead><tr><th>Condition</th><th class="num">Observed</th><th class="num">Points</th></tr></thead>

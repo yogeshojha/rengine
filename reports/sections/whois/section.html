@@ -3,12 +3,12 @@
   <tbody>{% for label, value in facts %}<tr><td style="width:38mm"><span class="label">{{ label }}</span></td><td class="wrap">{{ value }}</td></tr>{% endfor %}</tbody>
 </table>
 {% if contacts %}
-<div class="sub avoid"><div class="label block">Contacts</div>
+<div class="sub"><div class="label block">Contacts</div>
 <table class="table"><tbody>{% for label, value in contacts %}<tr><td style="width:38mm"><span class="label">{{ label }}</span></td><td class="mono-break micro">{{ value }}</td></tr>{% endfor %}</tbody></table></div>
 {% endif %}
 {% if nameservers %}
-<div class="sub avoid"><div class="label block">Nameservers</div><div class="chips">{% for ns in nameservers %}<span class="chip">{{ ns }}</span>{% endfor %}</div></div>
+<div class="sub"><div class="label block">Nameservers</div><div class="chips">{% for ns in nameservers %}<span class="chip">{{ ns }}</span>{% endfor %}</div></div>
 {% endif %}
 {% if status %}
-<div class="sub avoid"><div class="label block">Status</div><div class="chips">{% for code in status %}<span class="chip">{{ code }}</span>{% endfor %}</div></div>
+<div class="sub"><div class="label block">Status</div><div class="chips">{% for code in status %}<span class="chip">{{ code }}</span>{% endfor %}</div></div>
 {% endif %}

@@ -142,7 +142,8 @@ class LayoutTokens(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     rule_width: float = Field(default=0.5, ge=0.2, le=2.0)
-    radius: float = Field(default=2.0, ge=0, le=12)
+    radius: float = Field(default=3.0, ge=0, le=12)
+    pill: bool = True
     block_gap: float = Field(default=1.0, ge=0.4, le=2.5)
     table: str = TableStyle.HAIRLINE.value
     finding: str = FindingStyle.RAIL.value

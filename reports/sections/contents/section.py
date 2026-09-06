@@ -7,7 +7,11 @@ from shared.definitions.reports import SectionGroup
 
 class ContentsConfig(SectionConfig):
     heading: str = text("Contents", title="Heading")
-    show_subsections: bool = flag(True, title="Show subsections")
+    show_subsections: bool = flag(
+        False,
+        title="List findings too",
+        description="Off by default: the findings chapter is already their index.",
+    )
 
 
 class ContentsSection(Section):

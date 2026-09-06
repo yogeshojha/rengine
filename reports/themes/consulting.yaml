@@ -1,43 +1,36 @@
 key: consulting
 name: Consulting
-description: A formal deliverable. Navy band, serif headings, boxed tables.
+description: A formal deliverable. A blue band, serif headings and ruled tables.
 author: reNgine
-version: "1"
+version: "3"
 color:
   page: "#ffffff"
-  ink: "#1a1d21"
-  ink_soft: "#454b54"
-  ink_faint: "#7d838d"
-  rule: "#dfe3e8"
-  rule_strong: "#b9c0c9"
-  surface: "#f4f6f8"
-  surface_soft: "#fafbfc"
-  accent: "#1e3a5f"
-  accent_soft: "#e8eef5"
+  ink: "#242b34"
+  ink_soft: "#6a717a"
+  ink_faint: "#8e949c"
+  rule: "#eaedf1"
+  rule_strong: "#d9dde3"
+  surface: "#f5f8fb"
+  surface_soft: "#fafcfd"
+  accent: "#266a9c"
+  accent_soft: "#eef7fd"
   accent_ink: "#ffffff"
-  severity:
-    critical: "#9f1239"
-    high: "#b45309"
-    medium: "#a16207"
-    low: "#1e40af"
-    info: "#6b7280"
-    unknown: "#6b7280"
-  chart: ["#1e3a5f", "#0f766e", "#7e22ce", "#b45309", "#0e7490"]
 type:
   heading: source-serif
   body: inter
   mono: ibm-plex-mono
-  base_size: 9.5
-  scale: 1.2
-  line_height: 1.6
+  base_size: 10.5
+  scale: 1.24
+  line_height: 1.62
   heading_weight: 600
-  heading_tracking: 0.0
-  label_tracking: 0.1
-  uppercase_labels: true
+  heading_tracking: -0.004
+  label_tracking: 0.02
+  uppercase_labels: false
 layout:
-  rule_width: 0.6
-  radius: 0
-  block_gap: 1.05
+  rule_width: 0.5
+  radius: 3
+  pill: true
+  block_gap: 1.15
   table: boxed
   finding: card
   heading: numbered
@@ -45,5 +38,5 @@ cover:
   layout: band
   art: none
   ink: light
-  background: "#16273d"
+  background: "#1d4f74"
   accent_bar: true

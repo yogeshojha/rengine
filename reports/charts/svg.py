@@ -66,8 +66,12 @@ def donut(
     radius = (size - thickness) / 2
     centre = size / 2
     angle = -math.pi / 2
-    parts = [_open(size, size)]
-    gap = 0.035 if len(live) > 1 else 0.0
+    parts = [
+        _open(size, size * 1.14),
+        f'<circle cx="{_fmt(centre)}" cy="{_fmt(centre)}" r="{_fmt(radius)}" fill="none" '
+        f'stroke="{tone["rule"]}" stroke-width="{_fmt(thickness)}"/>',
+    ]
+    gap = 0.045 if len(live) > 1 else 0.0
 
     for item in live:
         sweep = _TAU * (item.value / total)
@@ -100,13 +104,13 @@ def donut(
         parts.append(
             f'<text x="{_fmt(centre)}" y="{_fmt(centre - 1)}" text-anchor="middle" '
             f'dominant-baseline="middle" font-size="{_fmt(size * 0.22)}" '
-            f'font-weight="650" fill="{tone["ink"]}">{escape(centre_value)}</text>'
+            f'font-weight="600" fill="{tone["ink"]}">{escape(centre_value)}</text>'
         )
     if centre_label:
         parts.append(
             f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.15)}" text-anchor="middle" '
             f'font-size="{_fmt(size * 0.085)}" letter-spacing="0.08em" '
-            f'fill="{tone["ink_faint"]}">{escape(centre_label.upper())}</text>'
+            f'fill="{tone["ink_faint"]}">{escape(centre_label)}</text>'
         )
     parts.append("</svg>")
     return "".join(parts)
@@ -184,7 +188,7 @@ def dial(
     value: float,
     *,
     size: float = 120,
-    thickness: float = 12,
+    thickness: float = 8,
     label: str = "",
     grade: str = "",
     arc: str = "",
@@ -196,51 +200,49 @@ def dial(
     ratio = max(0.0, min(1.0, value / 100))
     radius = (size - thickness) / 2 - 2
     centre = size / 2
-    start = math.pi * 5 / 6
-    sweep = math.pi * 4 / 3
+    # a ring that closes, read from twelve o'clock: a speedometer's detached stub of an
+    # arc reads as a stray mark when the score is low
+    start = -math.pi / 2
+    sweep = _TAU
 
     def point(fraction: float, r: float = radius) -> tuple[float, float]:
         angle = start + sweep * fraction
         return centre + r * math.cos(angle), centre + r * math.sin(angle)
 
     x0, y0 = point(0)
-    x1, y1 = point(1)
-    xv, yv = point(ratio)
+    xv, yv = point(min(ratio, 0.999))
     parts = [
-        _open(size, size * 0.9),
-        f'<path d="M {_fmt(x0)} {_fmt(y0)} A {_fmt(radius)} {_fmt(radius)} 0 1 1 {_fmt(x1)} {_fmt(y1)}" '
-        f'fill="none" stroke="{tone["surface"]}" stroke-width="{_fmt(thickness)}" stroke-linecap="round"/>',
+        _open(size, size * 1.14),
+        f'<circle cx="{_fmt(centre)}" cy="{_fmt(centre)}" r="{_fmt(radius)}" fill="none" '
+        f'stroke="{tone["rule"]}" stroke-width="{_fmt(thickness)}"/>',
     ]
-    if ratio > _ARC_EPSILON:
+    if ratio >= 1:
+        parts.append(
+            f'<circle cx="{_fmt(centre)}" cy="{_fmt(centre)}" r="{_fmt(radius)}" fill="none" '
+            f'stroke="{arc}" stroke-width="{_fmt(thickness)}"/>'
+        )
+    elif ratio > _ARC_EPSILON:
         large = 1 if sweep * ratio > math.pi else 0
         parts.append(
             f'<path d="M {_fmt(x0)} {_fmt(y0)} A {_fmt(radius)} {_fmt(radius)} 0 {large} 1 '
             f'{_fmt(xv)} {_fmt(yv)}" fill="none" stroke="{arc}" '
             f'stroke-width="{_fmt(thickness)}" stroke-linecap="round"/>'
         )
-    # tick marks at the quartiles keep the scale honest without an axis
-    for fraction in (0.25, 0.5, 0.75):
-        ax, ay = point(fraction, radius - thickness / 2 - 3)
-        bx, by = point(fraction, radius - thickness / 2 - 6)
-        parts.append(
-            f'<line x1="{_fmt(ax)}" y1="{_fmt(ay)}" x2="{_fmt(bx)}" y2="{_fmt(by)}" '
-            f'stroke="{tone["rule"]}" stroke-width="1"/>'
-        )
     parts.append(
-        f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.02)}" text-anchor="middle" '
-        f'dominant-baseline="middle" font-size="{_fmt(size * 0.36)}" font-weight="700" '
+        f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.055)}" text-anchor="middle" '
+        f'dominant-baseline="middle" font-size="{_fmt(size * 0.34)}" font-weight="600" '
         f'letter-spacing="-0.02em" fill="{tone["ink"]}">{escape(grade or str(round(value)))}</text>'
     )
     parts.append(
-        f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.24)}" text-anchor="middle" '
-        f'font-size="{_fmt(size * 0.085)}" fill="{tone["ink_soft"]}">'
+        f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.26)}" text-anchor="middle" '
+        f'font-size="{_fmt(size * 0.088)}" fill="{tone["ink_soft"]}">'
         f"{round(value)} / 100</text>"
     )
     if label:
         parts.append(
-            f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.4)}" text-anchor="middle" '
+            f'<text x="{_fmt(centre)}" y="{_fmt(size * 1.09)}" text-anchor="middle" '
             f'font-size="{_fmt(size * 0.075)}" letter-spacing="0.1em" '
-            f'fill="{tone["ink_faint"]}">{escape(label.upper())}</text>'
+            f'fill="{tone["ink_faint"]}">{escape(label)}</text>'
         )
     parts.append("</svg>")
     return "".join(parts)

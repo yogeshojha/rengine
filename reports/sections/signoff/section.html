@@ -1,4 +1,4 @@
-{% if body %}<div class="md block">{{ body|md|safe }}</div>{% endif %}
+{% if body %}<div class="md prose block">{{ body|md|safe }}</div>{% endif %}
 {% if contact %}
 <table class="table block">
   <tbody>{% for label, value in contact %}<tr><td style="width:38mm"><span class="label">{{ label }}</span></td><td>{{ value }}</td></tr>{% endfor %}</tbody>

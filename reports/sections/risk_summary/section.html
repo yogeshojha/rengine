@@ -1,12 +1,13 @@
 {% import 'macros.html' as m with context %}
-{% if narrative %}<div class="md block">{{ narrative|md|safe }}</div>{% endif %}
+{% if narrative %}<div class="md prose block">{{ narrative|md|safe }}</div>{% endif %}
 
+{% if actionable_rows or quiet %}
 <div class="grid block">
   {% if show_donut and actionable_rows|length > 1 %}
   {% set items = [] %}
   {% for row in actionable_rows %}{% set _ = items.append(Slice(row.label, row.count, ctx.sev(row.severity))) %}{% endfor %}
-  <div style="flex:0 0 40mm">
-    {{ donut(items, size=120, thickness=16, centre_value=actionable_total|num, centre_label='actionable', palette=ctx.palette)|safe }}
+  <div style="flex:0 0 38mm">
+    {{ donut(items, size=112, thickness=10, centre_value=actionable_total|num, centre_label='actionable', palette=ctx.palette)|safe }}
   </div>
   {% endif %}
   <div>
@@ -25,9 +26,10 @@
         {% endif %}
       </tbody>
     </table>
-    {% if kev %}<p class="small" style="margin-top:2mm">{{ kev }} of the actionable findings are listed as exploited in the wild.</p>{% endif %}
   </div>
 </div>
+{% endif %}
+{% if kev %}<p class="small block">{{ kev|num }} of the actionable findings are listed as exploited in the wild.</p>{% endif %}
 
 {% if risks %}
 <div class="sub">
@@ -51,7 +53,7 @@
 {% endif %}
 
 {% if concentration %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">Where risk concentrates</div>
   <table class="table">
     <thead><tr><th>Asset</th><th class="num">Findings</th><th>Worst</th></tr></thead>

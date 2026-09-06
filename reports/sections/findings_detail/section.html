@@ -41,8 +41,10 @@
     {% endif %}
 
     <h5>Affected</h5>
+    {% set detailed = row.assets | selectattr('asset_status') | list or row.assets | selectattr('extracted') | list or row.assets | selectattr('asset_title') | list %}
+    {% if detailed %}
     <table class="table table--fixed">
-      <thead><tr><th style="width:60%">Location</th><th style="width:22mm">Status</th><th>Detail</th></tr></thead>
+      <thead><tr><th style="width:58%">Location</th><th style="width:20mm">Status</th><th>Detail</th></tr></thead>
       <tbody>
         {% for finding in row.assets %}
         <tr>
@@ -53,6 +55,13 @@
         {% endfor %}
       </tbody>
     </table>
+    {% else %}
+    <ul class="locations">
+      {% for finding in row.assets %}
+      <li class="mono-break micro">{{ finding.matched_at|clip(140) }}{% if finding.is_new %} <span class="chip chip--accent">new</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
     {% if row.more %}<p class="micro faint">{{ row.more|num }} further locations are listed in the asset appendix.</p>{% endif %}
 
     {% if cfg.show_remediation and issue.remediation %}

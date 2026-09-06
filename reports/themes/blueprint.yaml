@@ -1,46 +1,39 @@
 key: blueprint
 name: Blueprint
-description: Engineering register. Light cover, ruled grid, ink efficient.
+description: An engineering register. A drawn cover, a teal accent and ink-efficient tables.
 author: reNgine
-version: "1"
+version: "3"
 color:
   page: "#ffffff"
-  ink: "#0f172a"
-  ink_soft: "#44506a"
-  ink_faint: "#7c8aa3"
-  rule: "#dbe2ea"
-  rule_strong: "#b6c2d1"
-  surface: "#f3f6f9"
-  surface_soft: "#f9fbfc"
-  accent: "#155e75"
-  accent_soft: "#e2f1f6"
+  ink: "#212a30"
+  ink_soft: "#687075"
+  ink_faint: "#8d9399"
+  rule: "#eaeef0"
+  rule_strong: "#d8dee1"
+  surface: "#f5f9fa"
+  surface_soft: "#fafcfd"
+  accent: "#00899d"
+  accent_soft: "#ecfafd"
   accent_ink: "#ffffff"
-  severity:
-    critical: "#9f1239"
-    high: "#b45309"
-    medium: "#856404"
-    low: "#1d4ed8"
-    info: "#64748b"
-    unknown: "#64748b"
-  chart: ["#155e75", "#0f766e", "#4f46e5", "#b45309", "#7e22ce"]
 type:
   heading: ibm-plex-sans
   body: ibm-plex-sans
   mono: ibm-plex-mono
-  base_size: 9.0
-  scale: 1.16
-  line_height: 1.48
+  base_size: 10.0
+  scale: 1.22
+  line_height: 1.56
   heading_weight: 600
-  heading_tracking: -0.005
-  label_tracking: 0.1
-  uppercase_labels: true
+  heading_tracking: -0.012
+  label_tracking: 0.02
+  uppercase_labels: false
 layout:
-  rule_width: 0.6
+  rule_width: 0.5
   radius: 0
-  block_gap: 0.8
+  pill: false
+  block_gap: 1.0
   table: zebra
   finding: rail
-  heading: numbered
+  heading: rule
 cover:
   layout: rule
   art: grid

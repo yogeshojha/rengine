@@ -22,6 +22,7 @@ class SignoffSection(Section):
     description = (
         "The closing page: who to contact and, if you need them, signature lines."
     )
+    page_break = "flow"
     group = SectionGroup.APPENDIX.value
     default_enabled = False
     config_model = SignoffConfig

@@ -2,7 +2,7 @@
 <p class="block muted small">{{ ctx.data.service_rows|length|num }} services answered on {{ addresses|num }} addresses. {{ web|num }} of them speak HTTP.{% if sensitive %} {{ sensitive|num }} are of a kind that normally belongs on a private network.{% endif %}</p>
 
 {% if classes %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">What is listening</div>
   {% set items = [] %}
   {% for row in classes %}{% set _ = items.append(Slice(row.label, row.count, ctx.hue(loop.index0))) %}{% endfor %}
@@ -14,7 +14,7 @@
 {% endif %}
 
 {% if policies %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">Scan coverage</div>
   <table class="table">
     <tbody>

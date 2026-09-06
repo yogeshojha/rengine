@@ -1,5 +1,5 @@
 {% import 'macros.html' as m with context %}
-{% if narrative %}<div class="md block">{{ narrative|md|safe }}</div>{% endif %}
+{% if narrative %}<div class="md prose block">{{ narrative|md|safe }}</div>{% endif %}
 
 <table class="table block">
   <thead><tr><th>Dimension</th><th class="num">Observed</th><th class="num">Change</th><th>Trend</th><th>As of</th></tr></thead>
@@ -21,7 +21,7 @@
 </table>
 
 {% if status %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">How hosts answered</div>
   {% set items = [] %}
   {% for row in status %}{% set _ = items.append(Slice(row.name, row.count, ctx.hue(loop.index0))) %}{% endfor %}

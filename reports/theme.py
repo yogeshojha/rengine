@@ -10,23 +10,29 @@ import yaml
 
 from shared.definitions.report_theme import ColorTokens, ThemeTokens
 from shared.definitions.reports import (
+    DARK_CHART_PALETTE,
+    DARK_SEVERITY_COLORS,
+    DEFAULT_CHART_PALETTE,
     DEFAULT_SEVERITY_COLORS,
     DENSITY_SCALE,
     FONT_BY_KEY,
     ReportStyle,
 )
+from shared.utils.color import ink as ink_of
+from shared.utils.color import is_dark, mix
+from shared.utils.color import tint as tint_of
 
 THEME_DIR = Path(__file__).resolve().parent / "themes"
 
-_FALLBACK_CHART = ["#4f46e5", "#0d9488", "#7c3aed", "#d97706", "#0891b2"]
-_MONO_CHART = ["#2c2f36", "#4d525c", "#6f7581", "#9aa0ab", "#c2c7d0"]
+_FALLBACK_CHART = list(DEFAULT_CHART_PALETTE)
+_MONO_CHART = ["#22262e", "#474d58", "#6d7481", "#9aa1ad", "#c6ccd5"]
 _MONO_SEVERITY = {
-    "critical": "#16181d",
-    "high": "#3a3e46",
-    "medium": "#6b707b",
-    "low": "#9aa0ab",
-    "info": "#c2c7d0",
-    "unknown": "#c2c7d0",
+    "critical": "#14181f",
+    "high": "#3b414c",
+    "medium": "#666d79",
+    "low": "#98a0ac",
+    "info": "#c3c9d2",
+    "unknown": "#c3c9d2",
 }
 
 
@@ -127,12 +133,26 @@ def resolve(tokens: ThemeTokens, style: ReportStyle) -> ThemeTokens:
         colour.accent_soft = "#eeeff2"
         merged.cover.art = "none"
 
-    colour.severity = {**DEFAULT_SEVERITY_COLORS, **colour.severity}
+    paper_is_dark = is_dark(colour.page)
+    base_severity = DARK_SEVERITY_COLORS if paper_is_dark else DEFAULT_SEVERITY_COLORS
+    colour.severity = {**base_severity, **colour.severity}
     if not colour.chart:
-        colour.chart = list(_FALLBACK_CHART)
+        colour.chart = list(
+            DARK_CHART_PALETTE if paper_is_dark else DEFAULT_CHART_PALETTE
+        )
     if not colour.link:
         colour.link = colour.accent
     return merged
+
+
+def _wash(value: str, page: str) -> str:
+    """A badge ground: a tint on light paper, the colour dropped into dark paper."""
+    return mix(page, value, 0.20) if is_dark(page) else tint_of(value)
+
+
+def _label_ink(value: str, page: str) -> str:
+    """Text that sits on that ground."""
+    return value if is_dark(page) else ink_of(value)
 
 
 def _snap_weight(value: int) -> int:
@@ -154,9 +174,9 @@ def _scale_sizes(base: float, ratio: float, density: str) -> dict[str, float]:
         "h2": round(base * ratio**2, 2),
         "h3": round(base * ratio, 2),
         "h4": round(base * 1.06, 2),
-        "small": round(base * 0.86, 2),
-        "micro": round(base * 0.74, 2),
-        "gap": round(0.9 * tighten, 3),
+        "small": round(base * 0.87, 2),
+        "micro": round(base * 0.775, 2),
+        "gap": round(0.92 * tighten, 3),
     }
 
 
@@ -198,34 +218,63 @@ def css_variables(
         f"--r-h-weight:{_snap_weight(typography.heading_weight)}",
         f"--r-h-track:{typography.heading_tracking}em",
         f"--r-label-track:{typography.label_tracking}em",
+        f"--r-label-case:{'uppercase' if typography.uppercase_labels else 'none'}",
+        f"--r-run-track:{round(typography.label_tracking * 0.35, 4)}em",
+        f"--r-align:{'justify' if style.justify else 'left'}",
+        f"--r-hyphens:{'auto' if style.hyphenate else 'manual'}",
+        f"--r-chapter-break:{'page' if style.chapter_breaks else 'auto'}",
+        f"--r-chapter-rule:{'0' if style.chapter_breaks else 'var(--r-rule-w) solid var(--r-rule)'}",
+        f"--r-chapter-pad:{'0' if style.chapter_breaks else 'calc(var(--r-block-gap) * 1.6)'}",
         f"--r-rule-w:{layout.rule_width}pt",
         f"--r-radius:{layout.radius}px",
+        f"--r-pill:{'999px' if layout.pill else f'{layout.radius}px'}",
         f"--r-block-gap:{round(layout.block_gap, 3)}rem",
         f"--r-chart-stroke:{layout.chart_stroke}",
         f"--r-watermark-opacity:{style.watermark_opacity}",
     ]
     for key, value in colour.severity.items():
         lines.append(f"--r-sev-{key}:{value}")
+        lines.append(f"--r-sev-{key}-wash:{_wash(value, colour.page)}")
+        lines.append(f"--r-sev-{key}-ink:{_label_ink(value, colour.page)}")
     for index, value in enumerate(colour.chart[:8], start=1):
         lines.append(f"--r-chart-{index}:{value}")
+    lines.append(f"--r-accent-wash:{_wash(colour.accent, colour.page)}")
+    lines.append(f"--r-accent-ink-on-wash:{_label_ink(colour.accent, colour.page)}")
 
     body = ";".join(lines)
     return f":root{{{body}}}"
 
 
 def theme_summary(tokens: ThemeTokens, origin: str) -> dict:
+    colour = tokens.color
+    dark_paper = is_dark(colour.page)
+    severity = DARK_SEVERITY_COLORS if dark_paper else DEFAULT_SEVERITY_COLORS
+    chart = DARK_CHART_PALETTE if dark_paper else DEFAULT_CHART_PALETTE
     return {
         "slug": tokens.key,
         "name": tokens.name,
         "description": tokens.description,
         "author": tokens.author,
         "origin": origin,
-        "accent": tokens.color.accent,
-        "page": tokens.color.page,
-        "ink": tokens.color.ink,
+        "accent": colour.accent,
+        "page": colour.page,
+        "ink": colour.ink,
+        "ink_soft": colour.ink_soft,
+        "ink_faint": colour.ink_faint,
+        "rule": colour.rule,
+        "surface": colour.surface,
+        "cover_background": tokens.cover.background or colour.accent,
+        "cover_ink": "#ffffff" if tokens.cover.ink == "light" else colour.ink,
         "cover_layout": tokens.cover.layout,
+        "cover_art": tokens.cover.art,
         "heading_font": tokens.type.heading,
         "body_font": tokens.type.body,
-        "severity": {**DEFAULT_SEVERITY_COLORS, **tokens.color.severity},
-        "chart": list(tokens.color.chart or _FALLBACK_CHART),
+        "mono_font": tokens.type.mono,
+        "heading_style": tokens.layout.heading,
+        "table_style": tokens.layout.table,
+        "finding_style": tokens.layout.finding,
+        "radius": tokens.layout.radius,
+        "uppercase_labels": tokens.type.uppercase_labels,
+        "severity": {**severity, **colour.severity},
+        "chart": list(colour.chart or chart),
     }

@@ -9,8 +9,10 @@
 </head>
 <body>
 {% if spec.style.watermark_text %}<div class="watermark">{{ spec.style.watermark_text }}</div>{% endif %}
+<main class="doc">
 {% for block in blocks %}
 {{ block|safe }}
 {% endfor %}
+</main>
 </body>
 </html>

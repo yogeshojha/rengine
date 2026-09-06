@@ -48,6 +48,7 @@ class SeverityDefinitionsSection(Section):
     name = "severity_definitions"
     title = "How to read this report"
     description = "What each severity means, and how findings were ranked."
+    page_break = "flow"
     group = SectionGroup.APPENDIX.value
     config_model = SeverityDefinitionsConfig
 

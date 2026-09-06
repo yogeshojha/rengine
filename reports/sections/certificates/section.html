@@ -25,7 +25,7 @@
 {% endif %}
 
 {% if issuers %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">Issuers</div>
   <table class="table">
     <tbody>{% for name, count in issuers %}<tr><td class="wrap">{{ name }}</td><td class="num" style="width:22mm">{{ count|num }}</td></tr>{% endfor %}</tbody>

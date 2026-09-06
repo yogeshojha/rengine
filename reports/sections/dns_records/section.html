@@ -1,6 +1,6 @@
 <p class="block muted small">Queried {{ queried_at|at }}.</p>
 {% for group in groups %}
-<div class="sub avoid">
+<div class="sub">
   <div class="label block">{{ group.type }}{% if group.total > group.records|length %} <span class="faint">({{ group.records|length }} of {{ group.total }})</span>{% endif %}</div>
   <table class="table">
     <tbody>

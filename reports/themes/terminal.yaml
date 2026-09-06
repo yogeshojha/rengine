@@ -2,42 +2,35 @@ key: terminal
 name: Terminal
 description: Dense and technical. Monospaced headings on a near-black cover.
 author: reNgine
-version: "1"
+version: "3"
 color:
   page: "#ffffff"
-  ink: "#101418"
-  ink_soft: "#434b54"
-  ink_faint: "#7b848f"
-  rule: "#e2e6ea"
-  rule_strong: "#c4cad1"
-  surface: "#f5f7f8"
-  surface_soft: "#fafbfb"
-  accent: "#047857"
-  accent_soft: "#e6f5ef"
+  ink: "#1f272b"
+  ink_soft: "#676f74"
+  ink_faint: "#8c9298"
+  rule: "#eaeef0"
+  rule_strong: "#d8dde0"
+  surface: "#f5f9f9"
+  surface_soft: "#fafcfc"
+  accent: "#21895d"
+  accent_soft: "#eefaf3"
   accent_ink: "#ffffff"
-  severity:
-    critical: "#b91c1c"
-    high: "#c2410c"
-    medium: "#a16207"
-    low: "#0369a1"
-    info: "#64748b"
-    unknown: "#64748b"
-  chart: ["#047857", "#0369a1", "#7c3aed", "#c2410c", "#0e7490"]
 type:
   heading: jetbrains-mono
   body: ibm-plex-sans
   mono: jetbrains-mono
-  base_size: 9.0
+  base_size: 10.0
   scale: 1.18
-  line_height: 1.5
+  line_height: 1.56
   heading_weight: 700
-  heading_tracking: -0.02
-  label_tracking: 0.12
-  uppercase_labels: true
+  heading_tracking: -0.035
+  label_tracking: 0.02
+  uppercase_labels: false
 layout:
   rule_width: 0.5
   radius: 0
-  block_gap: 0.85
+  pill: false
+  block_gap: 0.95
   table: open
   finding: banner
   heading: kicker
@@ -45,5 +38,5 @@ cover:
   layout: full
   art: scan
   ink: light
-  background: "#0a0f14"
-  accent_bar: false
+  background: "#101a1e"
+  accent_bar: true

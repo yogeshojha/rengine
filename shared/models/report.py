@@ -389,9 +389,22 @@ class ThemeSummary(BaseModel):
     accent: str = ""
     page: str = ""
     ink: str = ""
+    ink_soft: str = ""
+    ink_faint: str = ""
+    rule: str = ""
+    surface: str = ""
+    cover_background: str = ""
+    cover_ink: str = ""
     cover_layout: str = ""
+    cover_art: str = ""
     heading_font: str = ""
     body_font: str = ""
+    mono_font: str = ""
+    heading_style: str = ""
+    table_style: str = ""
+    finding_style: str = ""
+    radius: float = 3.0
+    uppercase_labels: bool = True
     severity: dict[str, str] = PydanticField(default_factory=dict)
     chart: list[str] = PydanticField(default_factory=list)
 

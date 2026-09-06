@@ -20,6 +20,9 @@ TEMPLATES = Path(__file__).resolve().parent.parent / "templates"
 
 _TOKEN_RE = re.compile("(" + "|".join(re.escape(t) for t in SLOT_TOKEN_VALUES) + ")")
 
+# how much air sits between a running head and the text block
+RUNNING_CLEAR = 8.0
+
 _COUNTER_SLOTS = {
     "{page}": "counter(page)",
     "{pages}": "counter(pages)",
@@ -74,17 +77,19 @@ def page_css(style: ReportStyle, values: dict[str, str]) -> str:
         ("bottom-center", style.footer_center if style.show_footer else ""),
         ("bottom-right", style.footer_right if style.show_footer else ""),
     )
+    # A running head belongs against the text block, not against the paper's edge: the
+    # top boxes sit on the bottom of their margin, the bottom boxes on the top of theirs.
     for box, template in slots:
         content = slot_content(template, values)
         if content == "none":
             continue
-        edge = "top" if box.startswith("top") else "bottom"
+        at_top = box.startswith("top")
         boxes.append(
-            f"@{box}{{content:{content};font-family:var(--r-font-mono);"
-            f"font-size:var(--r-micro);letter-spacing:var(--r-label-track);"
-            f"color:var(--r-ink-faint);"
-            f"padding-{'bottom' if edge == 'top' else 'top'}:3mm;"
-            f"vertical-align:{edge}}}"
+            f"@{box}{{content:{content};font-family:var(--r-font-body);"
+            f"font-size:var(--r-micro);letter-spacing:var(--r-run-track);"
+            f"color:var(--r-ink-faint);white-space:nowrap;"
+            f"padding-{'bottom' if at_top else 'top'}:{RUNNING_CLEAR}mm;"
+            f"vertical-align:{'bottom' if at_top else 'top'}}}"
         )
 
     blank = "".join(

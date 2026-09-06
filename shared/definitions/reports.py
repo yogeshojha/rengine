@@ -307,15 +307,43 @@ def validate_embedded_image(value: str, field: str) -> str:
     return text
 
 
-# severity fills the themes ship; a style may override any of them
+# Severity is a reserved ramp, not a theme decision: it means the same thing in every
+# document. Lightness carries the rank so it survives deuteranopia, and each level is
+# always printed beside its own label. Validated all-pairs on white paper.
 DEFAULT_SEVERITY_COLORS: dict[str, str] = {
-    "critical": "#c2334d",
-    "high": "#dd6b20",
-    "medium": "#d4a017",
-    "low": "#3b82c4",
-    "info": "#8a8f9c",
-    "unknown": "#8a8f9c",
+    "critical": "#d02f43",
+    "high": "#f07c21",
+    "medium": "#e7c65c",
+    "low": "#3c8edf",
+    "info": "#a8bacb",
+    "unknown": "#a8bacb",
 }
+
+# the same ramp restepped for dark paper
+DARK_SEVERITY_COLORS: dict[str, str] = {
+    "critical": "#ed566f",
+    "high": "#f3963e",
+    "medium": "#efda79",
+    "low": "#69bbff",
+    "info": "#858f9a",
+    "unknown": "#858f9a",
+}
+
+# a categorical scale that clears the CVD and contrast gates on both papers
+DEFAULT_CHART_PALETTE: tuple[str, ...] = (
+    "#2a78d6",
+    "#eb6834",
+    "#1baf7a",
+    "#eda100",
+    "#e87ba4",
+)
+DARK_CHART_PALETTE: tuple[str, ...] = (
+    "#3987e5",
+    "#d95926",
+    "#199e70",
+    "#c98500",
+    "#d55181",
+)
 
 
 class ReportStyle(BaseModel):
@@ -326,13 +354,13 @@ class ReportStyle(BaseModel):
     theme: str = Field(default=DEFAULT_THEME, max_length=40)
     page_size: str = Field(default=PageSize.A4.value, max_length=10)
     orientation: str = Field(default=Orientation.PORTRAIT.value, max_length=10)
-    margin_top: float = Field(default=20.0, ge=5, le=60)
-    margin_right: float = Field(default=18.0, ge=5, le=60)
-    margin_bottom: float = Field(default=20.0, ge=5, le=60)
-    margin_left: float = Field(default=18.0, ge=5, le=60)
+    margin_top: float = Field(default=26.0, ge=5, le=60)
+    margin_right: float = Field(default=24.0, ge=5, le=60)
+    margin_bottom: float = Field(default=23.0, ge=5, le=60)
+    margin_left: float = Field(default=24.0, ge=5, le=60)
     density: str = Field(default=Density.NORMAL.value, max_length=10)
-    base_font_size: float = Field(default=9.5, ge=6, le=16)
-    line_height: float = Field(default=1.5, ge=1.0, le=2.4)
+    base_font_size: float = Field(default=10.5, ge=6, le=16)
+    line_height: float = Field(default=1.6, ge=1.0, le=2.4)
     heading_font: str = Field(default="", max_length=40)
     body_font: str = Field(default="", max_length=40)
     mono_font: str = Field(default="", max_length=40)
@@ -343,6 +371,7 @@ class ReportStyle(BaseModel):
     mono_safe: bool = False
     table_zebra: bool = True
     section_numbering: bool = True
+    chapter_breaks: bool = True
     figure_numbering: bool = True
     page_numbers: bool = True
     show_header: bool = True
@@ -358,7 +387,8 @@ class ReportStyle(BaseModel):
     watermark_text: str = Field(default="", max_length=40)
     watermark_opacity: float = Field(default=0.05, ge=0.01, le=0.4)
     link_urls: bool = True
-    hyphenate: bool = False
+    justify: bool = True
+    hyphenate: bool = True
 
     @field_validator("cover_image")
     @classmethod

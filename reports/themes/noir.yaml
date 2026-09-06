@@ -2,42 +2,35 @@ key: noir
 name: Noir
 description: Dark paper throughout, for a document that is read on screen.
 author: reNgine
-version: "1"
+version: "3"
 color:
-  page: "#0e1014"
-  ink: "#e8eaef"
-  ink_soft: "#a3aab8"
-  ink_faint: "#6d7585"
-  rule: "#242832"
-  rule_strong: "#39404e"
-  surface: "#171a21"
-  surface_soft: "#12151b"
-  accent: "#818cf8"
-  accent_soft: "#1e2033"
-  accent_ink: "#0e1014"
-  severity:
-    critical: "#fb7185"
-    high: "#fb923c"
-    medium: "#fbbf24"
-    low: "#60a5fa"
-    info: "#94a3b8"
-    unknown: "#94a3b8"
-  chart: ["#818cf8", "#2dd4bf", "#c084fc", "#fbbf24", "#38bdf8"]
+  page: "#12161e"
+  ink: "#e8ecf3"
+  ink_soft: "#a7aebb"
+  ink_faint: "#7d8593"
+  rule: "#242b37"
+  rule_strong: "#343d4c"
+  surface: "#1a2029"
+  surface_soft: "#161c25"
+  accent: "#8da5ff"
+  accent_soft: "#1e2745"
+  accent_ink: "#12161e"
 type:
   heading: inter
   body: inter
   mono: jetbrains-mono
-  base_size: 9.5
+  base_size: 10.5
   scale: 1.24
-  line_height: 1.58
-  heading_weight: 650
-  heading_tracking: -0.015
-  label_tracking: 0.09
-  uppercase_labels: true
+  line_height: 1.62
+  heading_weight: 600
+  heading_tracking: -0.02
+  label_tracking: 0.02
+  uppercase_labels: false
 layout:
   rule_width: 0.5
-  radius: 4
-  block_gap: 1.0
+  radius: 5
+  pill: true
+  block_gap: 1.1
   table: hairline
   finding: rail
   heading: numbered
@@ -45,5 +38,5 @@ cover:
   layout: full
   art: mesh
   ink: light
-  background: "#0a0c10"
+  background: "#0b0e15"
   accent_bar: true
