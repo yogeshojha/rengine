@@ -34,6 +34,7 @@ from shared.schemas.target_detail import (
     TargetDnsDetailResponse,
     TargetWhoisDetailResponse,
 )
+from shared.utils.validation import normalize_target_value, unrecognised_target
 
 router = APIRouter(
     prefix="/targets",
@@ -59,28 +60,25 @@ def get_asset_service(
     return TargetAssetService(session)
 
 
+async def _validated(raw: str, service: TargetService) -> TargetValidationResponse:
+    """Report the value as it would be stored, so a preview matches the import."""
+    value = normalize_target_value(raw)
+    target_type = await service.validate_target_value(value)
+    return TargetValidationResponse(
+        valid=bool(target_type),
+        target_type=target_type,
+        error=None if target_type else unrecognised_target(raw),
+        target_value=value if target_type else raw,
+    )
+
+
 @router.post("/validate", response_model=TargetValidationResponse)
 async def validate_target_endpoint(
     request: TargetValidationRequest,
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    target_type = await service.validate_target_value(request.target_value)
-
-    if target_type:
-        return TargetValidationResponse(
-            valid=True,
-            target_type=target_type,
-            error=None,
-            target_value=request.target_value,
-        )
-
-    return TargetValidationResponse(
-        valid=False,
-        target_type=None,
-        error="Invalid target format. Accepted formats: domain/subdomain, IP, IP range (CIDR), ASN (AS followed by numbers), or URL",
-        target_value=request.target_value,
-    )
+    return await _validated(request.target_value, service)
 
 
 @router.post("/validate/bulk", response_model=list[TargetValidationResponse])
@@ -95,35 +93,15 @@ async def validate_bulk_target(
             detail=f"Maximum {MAX_TARGET_IMPORT} targets allowed per request",
         )
 
-    seen = set()
-    unique_requests = []
-    for req in request:
-        if req.target_value not in seen:
-            seen.add(req.target_value)
-            unique_requests.append(req)
-
+    # two spellings of one target are one target, so dedupe on the stored form
+    seen: set[str] = set()
     results = []
-    for req in unique_requests:
-        target_type = await service.validate_target_value(req.target_value)
-
-        if target_type:
-            results.append(
-                TargetValidationResponse(
-                    valid=True,
-                    target_type=target_type,
-                    error=None,
-                    target_value=req.target_value,
-                )
-            )
-        else:
-            results.append(
-                TargetValidationResponse(
-                    valid=False,
-                    target_type=None,
-                    error="Invalid target format. Accepted formats: domain/subdomain, IP, IP range (CIDR), ASN (AS followed by numbers), or URL",
-                    target_value=req.target_value,
-                )
-            )
+    for req in request:
+        key = normalize_target_value(req.target_value) or req.target_value
+        if key in seen:
+            continue
+        seen.add(key)
+        results.append(await _validated(req.target_value, service))
 
     return results
 
