@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +22,7 @@ class NotificationManager:
         title: str,
         message: str,
         metadata: NotificationMetadata | dict | None = None,
+        project_id: uuid.UUID | str | None = None,
         commit: bool = True,
     ) -> Notification:
         if isinstance(metadata, NotificationMetadata):
@@ -36,6 +39,7 @@ class NotificationManager:
             title=title[:200],
             message=message,
             notification_metadata=metadata_dict,
+            project_id=uuid.UUID(str(project_id)) if project_id else None,
         )
 
         session.add(notification)
@@ -51,6 +55,9 @@ class NotificationManager:
             event_type=SSEEventType.NOTIFICATION,
             data={
                 "id": notification.id,
+                "project_id": str(notification.project_id)
+                if notification.project_id
+                else None,
                 "type": notification.type.value,
                 "severity": notification.severity.value,
                 "title": notification.title,
@@ -92,13 +99,16 @@ class NotificationManager:
     @staticmethod
     async def mark_all_as_read(
         session: AsyncSession,
+        project_id: uuid.UUID | None = None,
         commit: bool = True,
     ) -> int:
-        result = await session.execute(
-            update(Notification)
-            .where(Notification.is_read.is_(False))
-            .values(is_read=True)
-        )
+        stmt = update(Notification).where(Notification.is_read.is_(False))
+        if project_id is not None:
+            stmt = stmt.where(
+                (Notification.project_id == project_id)
+                | Notification.project_id.is_(None)
+            )
+        result = await session.execute(stmt.values(is_read=True))
 
         if commit:
             await session.commit()
@@ -123,9 +133,16 @@ class NotificationManager:
     @staticmethod
     async def clear_all(
         session: AsyncSession,
+        project_id: uuid.UUID | None = None,
         commit: bool = True,
     ) -> int:
-        result = await session.execute(delete(Notification))
+        stmt = delete(Notification)
+        if project_id is not None:
+            stmt = stmt.where(
+                (Notification.project_id == project_id)
+                | Notification.project_id.is_(None)
+            )
+        result = await session.execute(stmt)
 
         if commit:
             await session.commit()

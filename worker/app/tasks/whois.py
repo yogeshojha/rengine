@@ -4,15 +4,18 @@ from app.celery import celery_app
 from app.config import settings
 from app.database import get_sync_session
 from shared.definitions.notifications import (
-    whois_enrichment_complete,
     whois_enrichment_failed,
+    whois_enrichment_incomplete,
 )
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services.activity_log import ActivityLogService
-from shared.services.notification_sync import SyncNotificationPublisher
+from shared.services.notification_sync import (
+    SyncNotificationPublisher,
+    single_project,
+)
 from shared.utils.datetime import utc_now
 from shared.utils.validation import normalize_query
 from tools.whois.service import WhoisService
@@ -79,7 +82,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                     success_count += 1
                     activity.log(
                         event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_COMPLETED,
-                        title="WHOIS query completed.",
+                        title=f"WHOIS lookup completed · {target.target_value}",
                         level=ActivityLevel.SUCCESS,
                         target_id=target.id,
                         project_id=target.project_id,
@@ -99,7 +102,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                     failed_count += 1
                     activity.log(
                         event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
-                        title="WHOIS query failed.",
+                        title=f"WHOIS lookup failed · {target.target_value}",
                         description=error_msg,
                         level=ActivityLevel.ERROR,
                         target_id=target.id,
@@ -108,16 +111,18 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                 session.commit()
 
         total = success_count + failed_count
-        template = whois_enrichment_complete(
+        template = whois_enrichment_incomplete(
             success=success_count, failed=failed_count, total=total
         )
-        notifier.publish(
-            session=session,
-            type=template["type"],
-            severity=template["severity"],
-            title=template["title"],
-            message=template["message"],
-        )
+        if template:
+            notifier.publish(
+                session=session,
+                type=template["type"],
+                severity=template["severity"],
+                title=template["title"],
+                message=template["message"],
+                project_id=single_project(targets),
+            )
 
         return {"success": success_count, "failed": failed_count, "total": total}
 
@@ -141,7 +146,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
                 target.updated_at = utc_now()
                 activity.log(
                     event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
-                    title=f"WHOIS failed for {target.target_value}",
+                    title=f"WHOIS lookup failed · {target.target_value}",
                     description=str(e)[:1000],
                     level=ActivityLevel.ERROR,
                     target_id=target.id,

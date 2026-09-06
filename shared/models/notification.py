@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta
 
 from pydantic import BaseModel, Field, field_validator
@@ -48,6 +49,7 @@ class Notification(NotificationBase, table=True):
     __tablename__ = "notifications"
 
     id: int = SQLField(default=None, primary_key=True, index=True)
+    project_id: uuid.UUID | None = SQLField(default=None, index=True)
     notification_metadata: dict = SQLField(
         default_factory=dict, sa_column=Column(JSONB)
     )
@@ -65,6 +67,7 @@ class NotificationCreate(NotificationBase):
 
 class NotificationRead(NotificationBase):
     id: int
+    project_id: uuid.UUID | None = None
     notification_metadata: dict
     is_read: bool
     created_at: datetime

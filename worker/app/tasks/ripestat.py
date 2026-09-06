@@ -14,8 +14,8 @@ from app.celery import celery_app
 from app.config import settings
 from app.database import get_sync_session
 from shared.definitions.notifications import (
-    ripestat_enrichment_complete,
     ripestat_enrichment_failed,
+    ripestat_enrichment_incomplete,
 )
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.target import TargetType
@@ -24,7 +24,10 @@ from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services.activity_log import ActivityLogService
 from shared.services.bgp_summary import write_bgp_summary_for_target
-from shared.services.notification_sync import SyncNotificationPublisher
+from shared.services.notification_sync import (
+    SyncNotificationPublisher,
+    single_project,
+)
 from tools.ripestat.client import RIPEStatRateLimitError
 from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
 
@@ -81,19 +84,21 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
                 failed += 1
 
         total = success + failed + skipped
-        template = ripestat_enrichment_complete(
+        template = ripestat_enrichment_incomplete(
             success=success,
             failed=failed,
             skipped=skipped,
             total=total,
         )
-        notifier.publish(
-            session=session,
-            type=template["type"],
-            severity=template["severity"],
-            title=template["title"],
-            message=template["message"],
-        )
+        if template:
+            notifier.publish(
+                session=session,
+                type=template["type"],
+                severity=template["severity"],
+                title=template["title"],
+                message=template["message"],
+                project_id=single_project(targets),
+            )
 
         logger.info(
             "RIPEstat enrichment complete: %d success, %d failed, %d skipped",
@@ -149,8 +154,8 @@ def _enrich_target(
             target.bgp_status = TaskStatus.SUCCESS
             activity.log(
                 event=ActivityEvent.TARGET_ENRICHMENT_BGP_COMPLETED,
-                title="BGP enrichment completed.",
-                description=f"{count} lookups performed",
+                title=f"BGP enrichment completed · {target.target_value}",
+                description=f"{count} {'lookup' if count == 1 else 'lookups'} performed",
                 level=ActivityLevel.SUCCESS,
                 target_id=target.id,
                 project_id=target.project_id,
@@ -159,7 +164,7 @@ def _enrich_target(
             target.bgp_status = TaskStatus.FAILED
             activity.log(
                 event=ActivityEvent.TARGET_ENRICHMENT_BGP_FAILED,
-                title="BGP enrichment failed.",
+                title=f"BGP enrichment failed · {target.target_value}",
                 level=ActivityLevel.ERROR,
                 target_id=target.id,
                 project_id=target.project_id,

@@ -8,7 +8,7 @@
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import AppSidebar from '$lib/components/layout/app-sidebar.svelte';
 	import TopBar from '$lib/components/layout/top-bar.svelte';
 	import NotificationToasts from '$lib/components/notifications/notification-toasts.svelte';
@@ -71,11 +71,13 @@
 	});
 
 	$effect(() => {
-		if (auth.isAuthenticated && !auth.isLoading) {
-			if (!notificationStore.hasLoaded && !notificationStore.isLoading) {
-				notificationStore.loadNotifications();
-			}
-		}
+		const projectId = projectsStore.activeProject?.id;
+		if (!auth.isAuthenticated || auth.isLoading || !projectId) return;
+		untrack(() => {
+			if (notificationStore.isLoading) return;
+			if (notificationStore.hasLoaded && notificationStore.projectId === projectId) return;
+			notificationStore.loadNotifications(projectId);
+		});
 	});
 
 	$effect(() => {

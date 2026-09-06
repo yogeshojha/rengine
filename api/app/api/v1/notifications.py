@@ -1,6 +1,7 @@
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import func, select
@@ -23,17 +24,36 @@ router = APIRouter(
     tags=["notifications"],
 )
 
+ProjectScope = Annotated[
+    UUID | None,
+    Query(description="Only this project's notifications, plus global ones"),
+]
+
+
+def _in_scope(query, project_id: UUID | None):
+    if project_id is None:
+        return query
+    return query.where(
+        (Notification.project_id == project_id) | Notification.project_id.is_(None)
+    )
+
 
 @router.get("/stats", response_model=NotificationStats)
 async def get_notification_stats(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: ProjectScope = None,
 ):
-    total_result = await session.execute(select(func.count(Notification.id)))
+    total_result = await session.execute(
+        _in_scope(select(func.count(Notification.id)), project_id)
+    )
     total = total_result.scalar_one()
 
     unread_result = await session.execute(
-        select(func.count(Notification.id)).where(Notification.is_read.is_(False))
+        _in_scope(
+            select(func.count(Notification.id)).where(Notification.is_read.is_(False)),
+            project_id,
+        )
     )
 
     unread = unread_result.scalar_one()
@@ -45,8 +65,11 @@ async def get_notification_stats(
 async def list_notifications(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: ProjectScope = None,
 ):
-    query = select(Notification).order_by(Notification.created_at.desc())
+    query = _in_scope(select(Notification), project_id).order_by(
+        Notification.created_at.desc()
+    )
     return await paginate(session, query)
 
 
@@ -54,12 +77,11 @@ async def list_notifications(
 async def list_unread_notifications(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: ProjectScope = None,
 ):
-    query = (
-        select(Notification)
-        .where(Notification.is_read.is_(False))
-        .order_by(Notification.created_at.desc())
-    )
+    query = _in_scope(
+        select(Notification).where(Notification.is_read.is_(False)), project_id
+    ).order_by(Notification.created_at.desc())
     return await paginate(session, query)
 
 
@@ -105,8 +127,11 @@ async def mark_notification_as_read(
 async def mark_all_notifications_as_read(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: ProjectScope = None,
 ):
-    count = await NotificationManager.mark_all_as_read(session=session)
+    count = await NotificationManager.mark_all_as_read(
+        session=session, project_id=project_id
+    )
 
     return {
         "success": True,
@@ -137,8 +162,9 @@ async def delete_notification(
 async def clear_all_notifications(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: ProjectScope = None,
 ):
-    await NotificationManager.clear_all(session=session)
+    await NotificationManager.clear_all(session=session, project_id=project_id)
 
 
 if settings.DEBUG:

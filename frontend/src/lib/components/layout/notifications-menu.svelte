@@ -65,6 +65,14 @@
 		return counts;
 	});
 
+	const presentTypes = $derived(NOTIFICATION_TYPES.filter((t) => typeCounts[t] > 0));
+
+	$effect(() => {
+		if (selectedFilter !== 'all' && !presentTypes.includes(selectedFilter)) {
+			selectedFilter = 'all';
+		}
+	});
+
 	function onPopoverChange(open: boolean) {
 		popoverOpen = open;
 		if (open) tab = notificationStore.unreadCount > 0 ? 'unread' : 'all';
@@ -116,7 +124,7 @@
 		try {
 			await notificationStore.deleteNotification(id);
 		} catch {
-			toast.error("Couldn't delete notification — try again");
+			toast.error('Notification could not be deleted');
 		}
 	};
 
@@ -124,7 +132,7 @@
 		try {
 			await notificationStore.markAllAsRead();
 		} catch {
-			toast.error("Couldn't mark notifications as read — try again");
+			toast.error('Notifications could not be marked read');
 		}
 	};
 
@@ -134,7 +142,7 @@
 			await notificationStore.clearAll();
 			clearAllOpen = false;
 		} catch {
-			toast.error("Couldn't clear notifications — try again");
+			toast.error('Notifications could not be cleared');
 		} finally {
 			clearing = false;
 		}
@@ -156,7 +164,7 @@
 		goto(ROUTES.settings('notifications'));
 	};
 
-	const retryLoad = () => notificationStore.loadNotifications();
+	const retryLoad = () => notificationStore.loadNotifications(notificationStore.projectId);
 </script>
 
 {#snippet skeletonRows(count: number)}
@@ -271,7 +279,7 @@
 						<Empty.Media variant="icon">
 							<TriangleAlert class="text-destructive" />
 						</Empty.Media>
-						<Empty.Title class="text-sm">Couldn't load notifications</Empty.Title>
+						<Empty.Title class="text-sm">Notifications could not be loaded</Empty.Title>
 					</Empty.Header>
 					<Empty.Content>
 						<Button variant="outline" size="sm" onclick={retryLoad}>Retry</Button>
@@ -288,12 +296,12 @@
 							{/if}
 						</Empty.Media>
 						<Empty.Title class="text-sm">
-							{tab === 'unread' ? "You're all caught up" : 'No notifications yet'}
+							{tab === 'unread' ? 'Nothing unread' : 'No notifications yet'}
 						</Empty.Title>
 						<Empty.Description class="text-xs">
 							{tab === 'unread'
-								? 'New alerts and scan results land here.'
-								: 'Scan results, findings and system events will appear here.'}
+								? 'Every notification has been read.'
+								: 'Scan results, findings and system events appear here.'}
 						</Empty.Description>
 					</Empty.Header>
 				</Empty.Root>
@@ -397,16 +405,14 @@
 						{typeCounts.all}
 					</span>
 				</Tabs.Trigger>
-				{#each NOTIFICATION_TYPES as type (type)}
+				{#each presentTypes as type (type)}
 					{@const TypeIcon = getTypeIcon(type)}
 					<Tabs.Trigger value={type} class="flex-none text-xs">
 						<TypeIcon class="size-3" />
 						{NOTIFICATION_TYPE_LABELS[type]}
-						{#if typeCounts[type] > 0}
-							<span class="font-mono text-[10px] text-muted-foreground tabular-nums">
-								{typeCounts[type]}
-							</span>
-						{/if}
+						<span class="font-mono text-[10px] text-muted-foreground tabular-nums">
+							{typeCounts[type]}
+						</span>
 					</Tabs.Trigger>
 				{/each}
 			</Tabs.List>
@@ -431,10 +437,8 @@
 							<Empty.Media variant="icon">
 								<TriangleAlert class="text-destructive" />
 							</Empty.Media>
-							<Empty.Title>Couldn't load notifications</Empty.Title>
-							<Empty.Description
-								>Something went wrong fetching your notifications.</Empty.Description
-							>
+							<Empty.Title>Notifications could not be loaded</Empty.Title>
+							<Empty.Description>The request did not complete. Retry below.</Empty.Description>
 						</Empty.Header>
 						<Empty.Content>
 							<Button
@@ -479,7 +483,7 @@
 <DeleteConfirmationDialog
 	bind:open={clearAllOpen}
 	title="Clear all notifications?"
-	description={`This permanently deletes all ${notificationStore.totalCount} notifications, including any you haven't triaged. This can't be undone.`}
+	description={`All ${notificationStore.totalCount} notifications in this project are deleted, including unread ones.`}
 	confirmLabel="Clear all"
 	isDeleting={clearing}
 	onOpenChange={(o) => (clearAllOpen = o)}

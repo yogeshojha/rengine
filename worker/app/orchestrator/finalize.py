@@ -1,18 +1,14 @@
 """Aggregate stage outcomes into the final scan status + terminal notification/event."""
 
-from sqlalchemy import Integer, String, bindparam, func, select, text
+from sqlalchemy import Integer, String, bindparam, select, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
 from shared.definitions.notifications import (
-    scan_cancelled,
-    scan_completed,
+    ScanDeltas,
     scan_count_summary,
+    scan_digest,
     scan_failed,
-    scan_new_services,
-    scan_new_subdomains,
-    scan_new_vulnerabilities,
-    scan_vulnerability_coverage,
 )
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, CoverageStatus
@@ -21,7 +17,6 @@ from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanScope, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
-from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import VulnerabilityCoverage
 from shared.services.activity_log import ActivityLogService
 from shared.services.notification_sync import SyncNotificationPublisher
@@ -38,8 +33,13 @@ logger = get_logger(__name__)
 
 
 def _notify(
-    notifier: SyncNotificationPublisher, session: Session, payload: dict
+    notifier: SyncNotificationPublisher,
+    session: Session,
+    scan: Scan,
+    payload: dict | None,
 ) -> None:
+    if payload is None:
+        return
     try:
         notifier.publish(
             session=session,
@@ -48,6 +48,7 @@ def _notify(
             title=payload["title"],
             message=payload["message"],
             metadata=payload.get("metadata"),
+            project_id=scan.project_id,
         )
     except Exception:
         logger.warning("scan notification dispatch failed", exc_info=True)
@@ -79,60 +80,70 @@ def _log_cancelled(activity_log: ActivityLogService, scan: Scan) -> None:
     )
 
 
-def _count_new_subdomains(session: Session, scan: Scan) -> int:
-    """Subdomain names this scan was the first to discover for its target."""
-    rn = (
-        func.row_number()
-        .over(
-            partition_by=[Subdomain.target_id, Subdomain.name],
-            order_by=[Subdomain.discovered_at.asc(), Subdomain.scan_id.asc()],
-        )
-        .label("rn")
-    )
-    firsts = (
-        select(Subdomain.scan_id.label("scan_id"), rn)
-        .where(Subdomain.target_id == scan.target_id)
-        .subquery()
-    )
-    return (
-        session.execute(
-            select(func.count()).where(firsts.c.rn == 1, firsts.c.scan_id == scan.id)
-        ).scalar_one()
-        or 0
-    )
+# an earlier census run of this target; a focused rescan is never a baseline
+_HOST_BASELINE_SQL = """
+SELECT EXISTS (
+    SELECT 1 FROM subdomains b
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+                 AND bs.id <> :sid AND bs.started_at < :started
+    WHERE b.target_id = :tid
+)
+"""
 
+_SERVICE_BASELINE_SQL = """
+SELECT EXISTS (
+    SELECT 1 FROM ports b
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+                 AND bs.id <> :sid AND bs.started_at < :started
+    WHERE b.target_id = :tid
+)
+"""
+
+_VULN_BASELINE_SQL = """
+SELECT EXISTS (
+    SELECT 1 FROM vulnerabilities b
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+                 AND bs.id <> :sid AND bs.started_at < :started
+    WHERE b.target_id = :tid
+)
+"""
+
+_NEW_SUBDOMAINS_SQL = """
+WITH seen AS (
+    SELECT DISTINCT b.name FROM subdomains b
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+                 AND bs.id <> :sid AND bs.started_at < :started
+    WHERE b.target_id = :tid
+)
+SELECT count(*) AS total
+FROM subdomains p
+WHERE p.scan_id = :sid
+  AND NOT EXISTS (SELECT 1 FROM seen s WHERE s.name = p.name)
+"""
 
 _NEW_SERVICES_SQL = """
+WITH seen AS (
+    SELECT DISTINCT b.ip, b.number FROM ports b
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+                 AND bs.id <> :sid AND bs.started_at < :started
+    WHERE b.target_id = :tid
+)
 SELECT count(*) AS total,
        count(*) FILTER (WHERE p.number = ANY(:sensitive_ports)) AS sensitive
 FROM ports p
 WHERE p.scan_id = :sid
-  AND EXISTS (
-      SELECT 1 FROM ports b
-      WHERE b.target_id = p.target_id AND b.scan_id <> :sid
-        AND b.discovered_at < p.discovered_at
-  )
   AND NOT EXISTS (
-      SELECT 1 FROM ports e
-      WHERE e.target_id = p.target_id AND e.ip = p.ip AND e.number = p.number
-        AND e.scan_id <> :sid AND e.discovered_at < p.discovered_at
+      SELECT 1 FROM seen s WHERE s.ip = p.ip AND s.number = p.number
   )
 """
 
-
-def _count_new_services(session: Session, scan: Scan) -> tuple[int, int]:
-    """Ports this scan is the first to see for its target, and how many are sensitive."""
-    row = session.execute(
-        text(_NEW_SERVICES_SQL).bindparams(
-            bindparam("sid", scan.id),
-            bindparam("sensitive_ports", SENSITIVE_PORTS, type_=ARRAY(Integer)),
-        )
-    ).one()
-    return int(row.total or 0), int(row.sensitive or 0)
-
-
-# findings this scan is the first to report for its target, by severity
 _NEW_VULNS_SQL = """
+WITH seen AS (
+    SELECT DISTINCT b.fingerprint FROM vulnerabilities b
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+                 AND bs.id <> :sid AND bs.started_at < :started
+    WHERE b.target_id = :tid
+)
 SELECT v.severity AS severity,
        count(*) AS total,
        count(*) FILTER (WHERE v.is_kev) AS kev
@@ -143,25 +154,46 @@ WHERE v.scan_id = :sid
       WHERE t.target_id = v.target_id AND t.fingerprint = v.fingerprint
         AND t.state = ANY(:suppressed)
   )
-  AND EXISTS (
-      SELECT 1 FROM vulnerabilities b
-      WHERE b.target_id = v.target_id AND b.scan_id <> :sid
-        AND b.discovered_at < v.discovered_at
-  )
-  AND NOT EXISTS (
-      SELECT 1 FROM vulnerabilities e
-      WHERE e.target_id = v.target_id AND e.fingerprint = v.fingerprint
-        AND e.scan_id <> :sid AND e.discovered_at < v.discovered_at
-  )
+  AND NOT EXISTS (SELECT 1 FROM seen s WHERE s.fingerprint = v.fingerprint)
 GROUP BY v.severity
 """
 
 
+def _has_baseline(session: Session, scan: Scan, sql: str) -> bool:
+    return bool(session.execute(text(sql).bindparams(*_scope(scan))).scalar_one())
+
+
+def _scope(scan: Scan) -> list:
+    return [
+        bindparam("sid", scan.id),
+        bindparam("tid", scan.target_id),
+        bindparam("started", scan.started_at or utc_now()),
+    ]
+
+
+def _count_new_subdomains(session: Session, scan: Scan) -> int:
+    return int(
+        session.execute(
+            text(_NEW_SUBDOMAINS_SQL).bindparams(*_scope(scan))
+        ).scalar_one()
+        or 0
+    )
+
+
+def _count_new_services(session: Session, scan: Scan) -> tuple[int, int]:
+    row = session.execute(
+        text(_NEW_SERVICES_SQL).bindparams(
+            *_scope(scan),
+            bindparam("sensitive_ports", SENSITIVE_PORTS, type_=ARRAY(Integer)),
+        )
+    ).one()
+    return int(row.total or 0), int(row.sensitive or 0)
+
+
 def _count_new_vulnerabilities(session: Session, scan: Scan) -> tuple[dict, int, int]:
-    """New findings for this target, by severity, excluding anything a reviewer set aside."""
     rows = session.execute(
         text(_NEW_VULNS_SQL).bindparams(
-            bindparam("sid", scan.id),
+            *_scope(scan),
             bindparam("suppressed", list(SUPPRESSED_STATES), type_=ARRAY(String)),
         )
     ).all()
@@ -184,45 +216,42 @@ def _dropped_hosts(session: Session, scan: Scan) -> int:
     return sum(len(entry or []) for entry in rows)
 
 
-def _notify_deltas(
-    notifier: SyncNotificationPublisher, session: Session, scan: Scan, target: str
-) -> None:
-    """Announce what this scan found that the previous one did not."""
+def _guard(fn, fallback):
     try:
-        new_subs = _count_new_subdomains(session, scan)
-        if new_subs > 0:
-            _notify(
-                notifier, session, scan_new_subdomains(str(scan.id), target, new_subs)
-            )
+        return fn()
     except Exception:
-        logger.warning("new-subdomain notification failed", exc_info=True)
-    try:
-        new_services, sensitive = _count_new_services(session, scan)
-        if new_services > 0:
-            _notify(
-                notifier,
-                session,
-                scan_new_services(str(scan.id), target, new_services, sensitive),
-            )
-    except Exception:
-        logger.warning("new-service notification failed", exc_info=True)
-    try:
-        counts, kev, total = _count_new_vulnerabilities(session, scan)
-        if total > 0:
-            _notify(
-                notifier,
-                session,
-                scan_new_vulnerabilities(str(scan.id), target, counts, kev, total),
-            )
-        dropped = _dropped_hosts(session, scan)
-        if dropped > 0:
-            _notify(
-                notifier,
-                session,
-                scan_vulnerability_coverage(str(scan.id), target, dropped),
-            )
-    except Exception:
-        logger.warning("vulnerability notification failed", exc_info=True)
+        logger.warning("scan delta measurement failed", exc_info=True)
+        return fallback
+
+
+def _measure(session: Session, scan: Scan) -> ScanDeltas:
+    """Each dimension is only compared where an earlier census run covered it."""
+    hosts, services, vulns = (
+        _guard(lambda sql=sql: _has_baseline(session, scan, sql), False)
+        for sql in (_HOST_BASELINE_SQL, _SERVICE_BASELINE_SQL, _VULN_BASELINE_SQL)
+    )
+    new_services, sensitive = (
+        _guard(lambda: _count_new_services(session, scan), (0, 0))
+        if services
+        else (0, 0)
+    )
+    vuln_counts, kev, new_vulns = (
+        _guard(lambda: _count_new_vulnerabilities(session, scan), ({}, 0, 0))
+        if vulns
+        else ({}, 0, 0)
+    )
+    return ScanDeltas(
+        baseline=hosts or services or vulns,
+        new_hosts=_guard(lambda: _count_new_subdomains(session, scan), 0)
+        if hosts
+        else 0,
+        new_services=new_services,
+        sensitive_services=sensitive,
+        new_vulnerabilities=new_vulns,
+        vulnerability_counts=vuln_counts,
+        kev=kev,
+        dropped_hosts=_guard(lambda: _dropped_hosts(session, scan), 0),
+    )
 
 
 def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
@@ -287,11 +316,6 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
         _log_cancelled(activity_log, scan)
         session.commit()
         events.scan_cancelled(status=status)
-        _notify(
-            notifier,
-            session,
-            scan_cancelled(str(scan.id), target_value, scan.engine_name),
-        )
         return
 
     if status == ScanStatus.COMPLETED.value:
@@ -311,11 +335,11 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
             _notify(
                 notifier,
                 session,
-                scan_completed(
-                    str(scan.id), target_value, scan.engine_name, counts, duration
+                scan,
+                scan_digest(
+                    str(scan.id), target_value, counts, _measure(session, scan)
                 ),
             )
-        _notify_deltas(notifier, session, scan, target_value)
         return
 
     activity_log.log(
@@ -333,6 +357,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     _notify(
         notifier,
         session,
+        scan,
         scan_failed(
             str(scan.id), target_value, scan.engine_name, scan.error or "unknown error"
         ),

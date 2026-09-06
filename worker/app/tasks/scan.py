@@ -7,13 +7,11 @@ from celery import shared_task
 from app.config import settings
 from app.database import get_sync_session
 from app.orchestrator import build_canvas, finalize_scan_run, run_stage
-from shared.definitions.notifications import scan_started
 from shared.enums.activity import ActivityEvent, ActivityLevel
-from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanScope, ScanStatus
+from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.services.activity_log import ActivityLogService
-from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.utils.datetime import utc_now
 from stages.registry import get_stage
@@ -22,20 +20,6 @@ logger = get_logger(__name__)
 
 # run_scan id + canvas root id — a RUNNING scan with fewer was claimed but not dispatched.
 _DISPATCHED_TASK_IDS = 2
-
-
-def _send_notif(redis_url: str, session, payload: dict) -> None:
-    try:
-        SyncNotificationPublisher(redis_url).publish(
-            session=session,
-            type=payload["type"],
-            severity=payload["severity"],
-            title=payload["title"],
-            message=payload["message"],
-            metadata=payload.get("metadata"),
-        )
-    except Exception:
-        logger.warning("scan notification dispatch failed", exc_info=True)
 
 
 @shared_task(bind=True, name="app.tasks.scan.run_scan", max_retries=0)
@@ -88,12 +72,6 @@ def run_scan(self, scan_id: str) -> dict:
             )
             session.commit()
             events.scan_started(status=scan.status, engine=scan.engine_name)
-            if scan.scope != ScanScope.FOCUSED.value:
-                _send_notif(
-                    redis_url,
-                    session,
-                    scan_started(scan_id, target_value, scan.engine_name),
-                )
         return {"dispatched": True, "task_id": result.id}
 
 

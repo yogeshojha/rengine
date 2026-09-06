@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import timedelta
 
 from sqlalchemy.orm import Session
@@ -14,6 +15,11 @@ logger = logging.getLogger(__name__)
 NOTIFICATION_EXPIRY_DAYS = 7
 
 
+def single_project(rows) -> uuid.UUID | None:
+    ids = {r.project_id for r in rows if getattr(r, "project_id", None)}
+    return next(iter(ids)) if len(ids) == 1 else None
+
+
 class SyncNotificationPublisher:
     def __init__(self, redis_url: str) -> None:
         self._event_publisher = SyncEventPublisher(redis_url)
@@ -26,6 +32,7 @@ class SyncNotificationPublisher:
         title: str,
         message: str,
         metadata: NotificationMetadata | dict | None = None,
+        project_id: uuid.UUID | str | None = None,
     ) -> Notification:
         if isinstance(metadata, NotificationMetadata):
             metadata_dict = metadata.model_dump(exclude_none=True)
@@ -43,10 +50,9 @@ class SyncNotificationPublisher:
             title=title[:200],
             message=message,
             notification_metadata=metadata_dict,
+            project_id=uuid.UUID(str(project_id)) if project_id else None,
             created_at=now,
-            expires_at=(now + timedelta(days=NOTIFICATION_EXPIRY_DAYS)).replace(
-                tzinfo=None
-            ),
+            expires_at=now + timedelta(days=NOTIFICATION_EXPIRY_DAYS),
         )
 
         session.add(notification)
@@ -58,6 +64,9 @@ class SyncNotificationPublisher:
             event_type=SSEEventType.NOTIFICATION,
             data={
                 "id": notification.id,
+                "project_id": str(notification.project_id)
+                if notification.project_id
+                else None,
                 "type": notification.type.value,
                 "severity": notification.severity.value,
                 "title": notification.title,

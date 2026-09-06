@@ -1,3 +1,7 @@
+"""Notification templates: one interrupt per event, never a copy of the activity log."""
+
+from dataclasses import dataclass, field
+
 from shared.definitions.vulnerabilities import (
     ALERT_SEVERITIES,
     SEVERITY_LABELS,
@@ -7,28 +11,21 @@ from shared.definitions.vulnerabilities import (
 from shared.enums.notification import NotificationSeverity, NotificationType
 
 
-def whois_enrichment_complete(
-    success: int,
-    failed: int,
-    total: int,
-) -> dict:
-    if failed == 0:
-        return {
-            "type": NotificationType.TARGET,
-            "severity": NotificationSeverity.SUCCESS,
-            "title": "WHOIS Enrichment Complete",
-            "message": (
-                f"WHOIS lookup completed for {success} "
-                f"{'target' if success == 1 else 'targets'}."
-            ),
-        }
+def _count(n: int, singular: str, plural: str) -> str:
+    return f"{n:,} {singular if n == 1 else plural}"
+
+
+def whois_enrichment_incomplete(success: int, failed: int, total: int) -> dict | None:
+    if not failed:
+        return None
     return {
         "type": NotificationType.TARGET,
         "severity": NotificationSeverity.WARNING,
-        "title": "WHOIS Enrichment Complete",
+        "title": "WHOIS lookup failed",
         "message": (
-            f"WHOIS lookup completed: {success} succeeded, "
-            f"{failed} failed out of {total} targets."
+            f"WHOIS could not be resolved for {failed} of {total} "
+            f"{'target' if total == 1 else 'targets'}"
+            f"{f'; {success} succeeded' if success else ''}."
         ),
     }
 
@@ -37,38 +34,26 @@ def whois_enrichment_failed(error: str) -> dict:
     return {
         "type": NotificationType.TARGET,
         "severity": NotificationSeverity.ERROR,
-        "title": "WHOIS Enrichment Failed",
-        "message": f"WHOIS enrichment task failed: {error}",
+        "title": "WHOIS enrichment failed",
+        "message": f"WHOIS enrichment failed. {error}",
     }
 
 
-def ripestat_enrichment_complete(
+def ripestat_enrichment_incomplete(
     success: int, failed: int, skipped: int, total: int
-) -> dict:
-    if failed == 0 and skipped == 0:
-        severity = NotificationSeverity.SUCCESS
-        title = "BGP Enrichment Complete"
-        message = f"Successfully enriched {success} targets with BGP data."
-    elif success > 0:
-        severity = NotificationSeverity.WARNING
-        title = "BGP Enrichment Partially Complete"
-        message = (
-            f"BGP enrichment finished: {success} succeeded, "
-            f"{failed} failed, {skipped} skipped out of {total} targets."
-        )
-    else:
-        severity = NotificationSeverity.ERROR
-        title = "BGP Enrichment Failed"
-        message = (
-            f"BGP enrichment could not complete: "
-            f"{failed} failed, {skipped} skipped out of {total} targets."
-        )
-
+) -> dict | None:
+    if not failed:
+        return None
     return {
         "type": NotificationType.TARGET,
-        "severity": severity,
-        "title": title,
-        "message": message,
+        "severity": NotificationSeverity.WARNING,
+        "title": "BGP enrichment failed",
+        "message": (
+            f"BGP data could not be resolved for {failed} of {total} "
+            f"{'target' if total == 1 else 'targets'}"
+            f"{f'; {success} succeeded' if success else ''}"
+            f"{f', {skipped} had nothing to look up' if skipped else ''}."
+        ),
     }
 
 
@@ -76,195 +61,220 @@ def ripestat_enrichment_failed(error: str) -> dict:
     return {
         "type": NotificationType.TARGET,
         "severity": NotificationSeverity.ERROR,
-        "title": "BGP Enrichment Failed",
-        "message": f"BGP enrichment task failed: {error}",
+        "title": "BGP enrichment failed",
+        "message": f"BGP enrichment failed. {error}",
     }
 
 
-_SECONDS_PER_MINUTE = 60
-_MINUTES_PER_HOUR = 60
-
-
-def _scan_meta(scan_id: str) -> dict:
-    return {"scan_id": str(scan_id), "url": f"/scans/{scan_id}"}
-
-
-def _scan_duration(seconds: float | None) -> str:
-    if not seconds or seconds < 0:
-        return ""
-    seconds = int(seconds)
-    if seconds < _SECONDS_PER_MINUTE:
-        return f" in {seconds}s"
-    minutes, rem = divmod(seconds, _SECONDS_PER_MINUTE)
-    if minutes < _MINUTES_PER_HOUR:
-        return f" in {minutes}m {rem}s" if rem else f" in {minutes}m"
-    hours, minutes = divmod(minutes, _MINUTES_PER_HOUR)
-    return f" in {hours}h {minutes}m"
-
-
-def scan_started(scan_id: str, target: str, engine: str) -> dict:
-    return {
-        "type": NotificationType.SCAN,
-        "severity": NotificationSeverity.INFO,
-        "title": "Scan Started",
-        "message": f"Scan of {target} started with engine {engine}.",
-        "metadata": _scan_meta(scan_id),
-    }
+def _scan_meta(scan_id: str, tab: str | None = None) -> dict:
+    url = f"/scans/{scan_id}" + (f"?tab={tab}" if tab else "")
+    return {"scan_id": str(scan_id), "url": url}
 
 
 _SCAN_COUNT_LABELS = {
-    "subdomains_found": ("subdomain", "subdomains"),
-    "ips_found": ("IP", "IPs"),
-    "open_ports_found": ("open port", "open ports"),
+    "subdomains_found": ("host", "hosts"),
+    "ips_found": ("address", "addresses"),
+    "open_ports_found": ("service", "services"),
     "http_assets_found": ("HTTP service", "HTTP services"),
-    "vulnerabilities_found": ("vulnerability", "vulnerabilities"),
+    "vulnerabilities_found": ("finding", "findings"),
     "endpoints_found": ("endpoint", "endpoints"),
 }
 
 
 def scan_count_summary(counts: dict) -> str:
     parts = [
-        f"{n} {singular if n == 1 else plural}"
+        _count(n, singular, plural)
         for col, (singular, plural) in _SCAN_COUNT_LABELS.items()
         if (n := counts.get(col, 0))
-    ]
-    return ", ".join(parts) if parts else "no assets"
-
-
-def stage_count_summary(counts: dict) -> str:
-    parts = [
-        f"{n} {key.replace('_', ' ')}"
-        for key, n in counts.items()
-        if isinstance(n, int) and n and key != "excluded"
     ]
     return ", ".join(parts) if parts else "no results"
 
 
-def scan_completed(
-    scan_id: str,
-    target: str,
-    engine: str,
-    counts: dict,
-    duration_seconds: float | None,
-) -> dict:
-    return {
-        "type": NotificationType.SCAN,
-        "severity": NotificationSeverity.SUCCESS,
-        "title": "Scan Completed",
-        "message": (
-            f"Scan of {target} ({engine}) completed"
-            f"{_scan_duration(duration_seconds)} — {scan_count_summary(counts)}."
-        ),
-        "metadata": _scan_meta(scan_id),
-    }
+_STAGE_COUNT_LABELS: dict[str, tuple[str, str]] = {
+    "active": ("resolving host", "resolving hosts"),
+    "addresses": ("address", "addresses"),
+    "alive": ("responsive host", "responsive hosts"),
+    "answered": ("answered", "answered"),
+    "bgp": ("BGP record", "BGP records"),
+    "cdn": ("CDN-fronted address", "CDN-fronted addresses"),
+    "checked": ("service checked", "services checked"),
+    "checks": ("check run", "checks run"),
+    "cloud": ("cloud-hosted address", "cloud-hosted addresses"),
+    "dns_records": ("DNS record", "DNS records"),
+    "edge_only": ("CDN edge address", "CDN edge addresses"),
+    "endpoints": ("endpoint", "endpoints"),
+    "endpoints_new": ("new endpoint", "new endpoints"),
+    "endpoints_probed": ("endpoint requested", "endpoints requested"),
+    "enriched": ("address enriched", "addresses enriched"),
+    "fingerprinted": ("service identified", "services identified"),
+    "http_assets": ("web service", "web services"),
+    "ips": ("address", "addresses"),
+    "known_ports": ("known service", "known services"),
+    "new": ("new", "new"),
+    "open_ports": ("open service", "open services"),
+    "probed": ("host probed", "hosts probed"),
+    "ptr": ("PTR record", "PTR records"),
+    "scanned": ("address scanned", "addresses scanned"),
+    "screenshots": ("screenshot", "screenshots"),
+    "skipped": ("skipped", "skipped"),
+    "subdomains": ("host", "hosts"),
+    "targets": ("target", "targets"),
+    "vulnerabilities": ("finding", "findings"),
+    "waf": ("firewall identified", "firewalls identified"),
+    "web_services": ("web service", "web services"),
+    "whois": ("WHOIS record", "WHOIS records"),
+}
 
 
-def scan_new_subdomains(scan_id: str, target: str, count: int) -> dict:
-    return {
-        "type": NotificationType.SCAN,
-        "severity": NotificationSeverity.INFO,
-        "title": "New Subdomains Discovered",
-        "message": (
-            f"{count} new {'subdomain' if count == 1 else 'subdomains'} "
-            f"discovered on {target}."
-        ),
-        "metadata": _scan_meta(scan_id),
-    }
+def stage_count_summary(counts: dict) -> str:
+    """Label every figure a stage reports. An unlabelled key is omitted, never printed raw."""
+    parts = [
+        _count(n, *_STAGE_COUNT_LABELS[key])
+        for key, n in counts.items()
+        if isinstance(n, int) and n and key in _STAGE_COUNT_LABELS
+    ]
+    return ", ".join(parts) if parts else "no results"
 
 
-def scan_new_services(scan_id: str, target: str, count: int, sensitive: int) -> dict:
-    detail = (
-        f" {sensitive} of them administrative or datastore "
-        f"{'port' if sensitive == 1 else 'ports'}."
-        if sensitive
-        else ""
+@dataclass(frozen=True)
+class ScanDeltas:
+    baseline: bool = False
+    new_hosts: int = 0
+    new_services: int = 0
+    sensitive_services: int = 0
+    new_vulnerabilities: int = 0
+    vulnerability_counts: dict[str, int] = field(default_factory=dict)
+    kev: int = 0
+    dropped_hosts: int = 0
+
+    @property
+    def critical(self) -> int:
+        return self.vulnerability_counts.get(Severity.CRITICAL.value, 0)
+
+    @property
+    def severe(self) -> int:
+        return sum(self.vulnerability_counts.get(s, 0) for s in ALERT_SEVERITIES)
+
+    def worth_reporting(self, counts: dict) -> bool:
+        if not self.baseline:
+            return any(counts.get(col) for col in _SCAN_COUNT_LABELS)
+        return bool(
+            self.new_hosts
+            or self.new_services
+            or self.new_vulnerabilities
+            or self.dropped_hosts
+        )
+
+
+def _severity_phrase(counts: dict) -> str:
+    return ", ".join(
+        f"{counts[name]} {SEVERITY_LABELS[name].lower()}"
+        for name in SEVERITY_ORDER
+        if counts.get(name)
     )
+
+
+def _digest_title(target: str, deltas: ScanDeltas) -> str:
+    if deltas.critical:
+        head = _count(deltas.critical, "critical finding", "critical findings")
+    elif deltas.kev:
+        head = _count(
+            deltas.kev, "exploited vulnerability", "exploited vulnerabilities"
+        )
+    elif deltas.severe or deltas.sensitive_services:
+        head = "New exposure"
+    elif not deltas.baseline:
+        return f"First scan of {target}"
+    elif deltas.new_vulnerabilities:
+        head = _count(deltas.new_vulnerabilities, "new finding", "new findings")
+    elif deltas.new_hosts or deltas.new_services:
+        head = "New assets"
+    else:
+        head = "Partial coverage"
+    return f"{head} on {target}"
+
+
+def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
+    if not deltas.baseline:
+        body = f"No earlier run to compare against. This run found {scan_count_summary(counts)}."
+    else:
+        detail = _severity_phrase(deltas.vulnerability_counts)
+        parts = [
+            text
+            for text, n in (
+                (_count(deltas.new_hosts, "new host", "new hosts"), deltas.new_hosts),
+                (
+                    _count(deltas.new_services, "new service", "new services"),
+                    deltas.new_services,
+                ),
+                (
+                    _count(deltas.new_vulnerabilities, "new finding", "new findings")
+                    + (f" ({detail})" if detail else ""),
+                    deltas.new_vulnerabilities,
+                ),
+            )
+            if n
+        ]
+        if parts:
+            body = ", ".join(parts) + "."
+        else:
+            body = "Nothing new since the previous run."
+
+    if deltas.sensitive_services:
+        n = deltas.sensitive_services
+        body += (
+            f" {n} {'is' if n == 1 else 'are'} on an administrative or datastore port."
+        )
+    if deltas.kev:
+        body += (
+            f" {deltas.kev} {'is' if deltas.kev == 1 else 'are'} "
+            f"known to be exploited in the wild."
+        )
+    if deltas.dropped_hosts:
+        body += (
+            f" Testing stopped on {_count(deltas.dropped_hosts, 'host', 'hosts')} "
+            f"after repeated errors, so coverage there is partial."
+        )
+    return body
+
+
+def scan_digest(
+    scan_id: str, target: str, counts: dict, deltas: ScanDeltas
+) -> dict | None:
+    """One row per run; None when there is nothing to say."""
+    if not deltas.worth_reporting(counts):
+        return None
+
+    if deltas.critical or deltas.kev:
+        severity = NotificationSeverity.ERROR
+    elif deltas.severe or deltas.sensitive_services or deltas.dropped_hosts:
+        severity = NotificationSeverity.WARNING
+    else:
+        severity = NotificationSeverity.SUCCESS
+
+    if deltas.new_vulnerabilities or deltas.dropped_hosts:
+        tab = "vulnerabilities"
+    elif deltas.sensitive_services or deltas.new_services:
+        tab = "services"
+    else:
+        tab = None
+
     return {
-        "type": NotificationType.SCAN,
-        "severity": NotificationSeverity.WARNING
-        if sensitive
-        else NotificationSeverity.INFO,
-        "title": "New Services Exposed",
-        "message": (
-            f"{count} {'service' if count == 1 else 'services'} on {target} "
-            f"{'was' if count == 1 else 'were'} not open at the previous scan.{detail}"
-        ),
-        "metadata": _scan_meta(scan_id),
+        "type": NotificationType.VULNERABILITY
+        if deltas.new_vulnerabilities
+        else NotificationType.SCAN,
+        "severity": severity,
+        "title": _digest_title(target, deltas),
+        "message": _digest_body(counts, deltas),
+        "metadata": _scan_meta(scan_id, tab),
     }
 
 
 def scan_failed(scan_id: str, target: str, engine: str, error: str) -> dict:
     return {
         "type": NotificationType.SCAN,
-        "severity": NotificationSeverity.ERROR,
-        "title": "Scan Failed",
-        "message": f"Scan of {target} ({engine}) failed: {error[:300]}",
-        "metadata": _scan_meta(scan_id),
-    }
-
-
-def scan_cancelled(scan_id: str, target: str, engine: str) -> dict:
-    return {
-        "type": NotificationType.SCAN,
         "severity": NotificationSeverity.WARNING,
-        "title": "Scan Cancelled",
-        "message": f"Scan of {target} ({engine}) was cancelled.",
+        "title": f"Scan failed on {target}",
+        "message": f"The {engine} run did not finish: {error[:300]}",
         "metadata": _scan_meta(scan_id),
-    }
-
-
-def _severity_phrase(counts: dict) -> str:
-    parts = [
-        f"{counts[name]} {SEVERITY_LABELS[name].lower()}"
-        for name in SEVERITY_ORDER
-        if counts.get(name)
-    ]
-    return ", ".join(parts)
-
-
-def scan_new_vulnerabilities(
-    scan_id: str, target: str, counts: dict, kev: int, total: int
-) -> dict:
-    severe = sum(counts.get(name, 0) for name in ALERT_SEVERITIES)
-    if counts.get(Severity.CRITICAL.value) or kev:
-        severity = NotificationSeverity.ERROR
-    elif severe:
-        severity = NotificationSeverity.WARNING
-    else:
-        severity = NotificationSeverity.INFO
-    detail = _severity_phrase(counts)
-    kev_note = (
-        f" {kev} {'is' if kev == 1 else 'are'} known to be exploited in the wild."
-        if kev
-        else ""
-    )
-    return {
-        "type": NotificationType.VULNERABILITY,
-        "severity": severity,
-        "title": "New Vulnerabilities Found",
-        "message": (
-            f"{total} new {'finding' if total == 1 else 'findings'} on {target}"
-            f"{f' — {detail}' if detail else ''}.{kev_note}"
-        ),
-        "metadata": {
-            **_scan_meta(scan_id),
-            "url": f"/scans/{scan_id}?tab=vulnerabilities",
-        },
-    }
-
-
-def scan_vulnerability_coverage(scan_id: str, target: str, dropped: int) -> dict:
-    return {
-        "type": NotificationType.VULNERABILITY,
-        "severity": NotificationSeverity.WARNING,
-        "title": "Vulnerability Scan Incomplete",
-        "message": (
-            f"The scan of {target} stopped testing {dropped} "
-            f"{'host' if dropped == 1 else 'hosts'} after repeated errors. "
-            f"Coverage for {'that host' if dropped == 1 else 'those hosts'} is partial."
-        ),
-        "metadata": {
-            **_scan_meta(scan_id),
-            "url": f"/scans/{scan_id}?tab=vulnerabilities",
-        },
     }

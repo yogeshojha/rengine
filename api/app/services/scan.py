@@ -17,7 +17,6 @@ from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService, stage_effects
 from app.services.target import TargetService
 from shared.config import BaseAppSettings
-from shared.definitions.notifications import scan_cancelled
 from shared.definitions.rescan import ASSET_SEED_STAGE, rescan_label
 from shared.enums.api_key import APIProvider
 from shared.enums.scan import SCAN_LIVE_STATUSES, ScanActivityStatus, ScanStatus
@@ -52,7 +51,6 @@ from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.services.celery_dispatch import revoke_scan_tasks
 from shared.services.launch_plan import AdHocEngine, plan_label
-from shared.services.notification import NotificationManager
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.scan_factory import build_scan_row
 from shared.services.scan_resolve import (
@@ -1122,19 +1120,6 @@ class ScanService:
         return self._to_read(scan)
 
     async def _announce_cancelled(self, scan: Scan) -> None:
-        target_value = (scan.execution_config or {}).get("target_value", "")
-        payload = scan_cancelled(str(scan.id), target_value, scan.engine_name)
-        try:
-            await NotificationManager.publish(
-                session=self.session,
-                type=payload["type"],
-                severity=payload["severity"],
-                title=payload["title"],
-                message=payload["message"],
-                metadata=payload.get("metadata"),
-            )
-        except Exception:
-            logger.warning("cancel notification dispatch failed", exc_info=True)
         try:
             ScanEventPublisher(
                 BaseAppSettings().redis_url,

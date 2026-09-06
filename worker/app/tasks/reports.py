@@ -211,6 +211,7 @@ def _notify(session, report: Report, *, ok: bool) -> None:
             NotificationSeverity.SUCCESS if ok else NotificationSeverity.ERROR,
             "Report ready" if ok else "Report failed",
             body,
+            project_id=report.project_id,
         )
     except Exception:
         logger.debug("report notification skipped", exc_info=True)

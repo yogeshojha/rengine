@@ -118,6 +118,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.vuln_templates",
         "app.tasks.endpoints",
         "app.tasks.reports",
+        "app.tasks.notifications",
     ]
 )
 
@@ -129,6 +130,7 @@ SCHEDULE_TICK_SECONDS = 60.0
 IP_RANGE_REFRESH_SECONDS = 7 * 24 * 60 * 60.0
 TEMPLATE_SYNC_SECONDS = 24 * 60 * 60.0
 REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
+NOTIFICATION_CLEANUP_SECONDS = 6 * 60 * 60.0
 
 celery_app.conf.beat_schedule = {
     "scan-schedule-tick": {
@@ -146,6 +148,10 @@ celery_app.conf.beat_schedule = {
     "report-cleanup": {
         "task": "app.tasks.reports.cleanup",
         "schedule": REPORT_CLEANUP_SECONDS,
+    },
+    "notification-cleanup": {
+        "task": "app.tasks.notifications.cleanup",
+        "schedule": NOTIFICATION_CLEANUP_SECONDS,
     },
 }
 

@@ -10,8 +10,11 @@ interface NotificationState {
 	totalCount: number;
 	isLoading: boolean;
 	hasLoaded: boolean;
+	projectId: string | undefined;
 	error: Error | null;
 }
+
+const MAX_INBOX = 200;
 
 const state = $state<NotificationState>({
 	notifications: [],
@@ -19,6 +22,7 @@ const state = $state<NotificationState>({
 	totalCount: 0,
 	isLoading: false,
 	hasLoaded: false,
+	projectId: undefined,
 	error: null
 });
 
@@ -46,6 +50,10 @@ export const notificationStore = {
 		return state.hasLoaded;
 	},
 
+	get projectId() {
+		return state.projectId;
+	},
+
 	get error() {
 		return state.error;
 	},
@@ -55,15 +63,16 @@ export const notificationStore = {
 		return () => toastCallbacks.delete(callback);
 	},
 
-	async loadNotifications(page = 1, size = 50) {
+	async loadNotifications(projectId?: string, page = 1, size = 50) {
 		state.isLoading = true;
 		state.error = null;
+		state.projectId = projectId;
 
 		try {
-			const response = await notificationsApi.list(page, size);
+			const response = await notificationsApi.list(page, size, projectId);
 			state.notifications = response.items;
 
-			const stats = await notificationsApi.stats();
+			const stats = await notificationsApi.stats(projectId);
 			state.unreadCount = stats.unread;
 			state.totalCount = stats.total;
 
@@ -81,8 +90,12 @@ export const notificationStore = {
 		state.error = null;
 
 		try {
-			const stats = await notificationsApi.stats();
-			const response = await notificationsApi.list(1, stats.total);
+			const stats = await notificationsApi.stats(state.projectId);
+			const response = await notificationsApi.list(
+				1,
+				Math.min(Math.max(stats.total, 1), MAX_INBOX),
+				state.projectId
+			);
 			state.notifications = response.items;
 			state.unreadCount = stats.unread;
 			state.totalCount = stats.total;
@@ -96,7 +109,7 @@ export const notificationStore = {
 
 	async updateStats() {
 		try {
-			const stats = await notificationsApi.stats();
+			const stats = await notificationsApi.stats(state.projectId);
 			state.unreadCount = stats.unread;
 		} catch (error) {
 			console.error('[Notifications] Failed to update stats:', error);
@@ -119,7 +132,7 @@ export const notificationStore = {
 
 	async markAllAsRead() {
 		try {
-			const result = await notificationsApi.markAllAsRead();
+			const result = await notificationsApi.markAllAsRead(state.projectId);
 
 			state.notifications.forEach((n) => (n.is_read = true));
 			state.unreadCount = 0;
@@ -153,7 +166,7 @@ export const notificationStore = {
 
 	async clearAll() {
 		try {
-			await notificationsApi.clearAll();
+			await notificationsApi.clearAll(state.projectId);
 			state.notifications = [];
 			state.unreadCount = 0;
 			state.totalCount = 0;
@@ -188,11 +201,15 @@ export const notificationStore = {
 		state.totalCount = 0;
 		state.isLoading = false;
 		state.hasLoaded = false;
+		state.projectId = undefined;
 		state.error = null;
 	},
 
 	handleNewNotification(notification: Notification, fromSSE: boolean = true) {
-		state.notifications = [notification, ...state.notifications];
+		if (notification.project_id && notification.project_id !== state.projectId) return;
+		if (state.notifications.some((n) => n.id === notification.id)) return;
+
+		state.notifications = [notification, ...state.notifications].slice(0, MAX_INBOX);
 
 		if (!notification.is_read) {
 			state.unreadCount++;

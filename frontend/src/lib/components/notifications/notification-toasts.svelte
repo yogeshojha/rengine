@@ -3,6 +3,10 @@
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
+	import type { MessageLevel } from '$lib/types/message-level';
+
+	const INTERRUPTS: MessageLevel[] = ['warning', 'error'];
+	const DURATION: Partial<Record<MessageLevel, number>> = { warning: 6000, error: 10000 };
 
 	function isSameOrigin(url: string): boolean {
 		try {
@@ -14,34 +18,28 @@
 
 	onMount(() => {
 		const unsubscribe = notificationStore.subscribeToToasts((notification) => {
+			if (!INTERRUPTS.includes(notification.severity)) return;
+
 			const metadata = notification.notification_metadata;
+			const show = notification.severity === 'error' ? toast.error : toast.warning;
 
-			const toastFunction =
-				{
-					success: toast.success,
-					error: toast.error,
-					warning: toast.warning,
-					info: toast.info
-				}[notification.severity] || toast;
-
-			toastFunction(notification.title, {
+			show(notification.title, {
 				description: notification.message,
-				action: metadata?.action_label
+				action: metadata?.url
 					? {
-							label: metadata.action_label,
+							label: metadata.action_label ?? 'View',
 							onClick: () => {
 								void notificationStore.markAsRead(notification.id);
-								if (metadata.url) {
-									if (metadata.open_new_tab || !isSameOrigin(metadata.url)) {
-										window.open(metadata.url, '_blank', 'noopener,noreferrer');
-									} else {
-										void goto(metadata.url);
-									}
+								const url = metadata.url as string;
+								if (metadata.open_new_tab || !isSameOrigin(url)) {
+									window.open(url, '_blank', 'noopener,noreferrer');
+								} else {
+									void goto(url);
 								}
 							}
 						}
 					: undefined,
-				duration: 5000
+				duration: DURATION[notification.severity] ?? 5000
 			});
 		});
 
