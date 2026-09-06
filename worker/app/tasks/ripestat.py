@@ -68,6 +68,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
         success = 0
         failed = 0
         skipped = 0
+        failed_names: list[str] = []
 
         for target in targets:
             try:
@@ -83,6 +84,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
                     target.target_type,
                 )
                 failed += 1
+                failed_names.append(target.target_value)
 
         total = success + failed + skipped
         template = ripestat_enrichment_incomplete(
@@ -90,6 +92,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
             failed=failed,
             skipped=skipped,
             total=total,
+            names=failed_names,
         )
         if template:
             notifier.publish(

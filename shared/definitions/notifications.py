@@ -1,5 +1,6 @@
 """Notification templates: one interrupt per event, never a copy of the activity log."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from shared.definitions.interest import InterestBand, kind_label
@@ -16,7 +17,20 @@ def _count(n: int, singular: str, plural: str) -> str:
     return f"{n:,} {singular if n == 1 else plural}"
 
 
-def whois_enrichment_incomplete(success: int, failed: int, total: int) -> dict | None:
+MAX_NAMED_TARGETS = 3
+
+
+def _subject(names: Sequence[str], failed: int, total: int) -> str:
+    """Name the targets when there are few enough to read, else count them."""
+    listed = [n for n in names if n][:MAX_NAMED_TARGETS]
+    if listed and failed <= MAX_NAMED_TARGETS:
+        return ", ".join(listed)
+    return f"{failed} of {total} {'target' if total == 1 else 'targets'}"
+
+
+def whois_enrichment_incomplete(
+    success: int, failed: int, total: int, names: Sequence[str] = ()
+) -> dict | None:
     if not failed:
         return None
     return {
@@ -24,8 +38,7 @@ def whois_enrichment_incomplete(success: int, failed: int, total: int) -> dict |
         "severity": NotificationSeverity.WARNING,
         "title": "WHOIS lookup failed",
         "message": (
-            f"WHOIS could not be resolved for {failed} of {total} "
-            f"{'target' if total == 1 else 'targets'}"
+            f"WHOIS could not be resolved for {_subject(names, failed, total)}"
             f"{f'; {success} succeeded' if success else ''}."
         ),
     }
@@ -41,7 +54,7 @@ def whois_enrichment_failed(error: str) -> dict:
 
 
 def ripestat_enrichment_incomplete(
-    success: int, failed: int, skipped: int, total: int
+    success: int, failed: int, skipped: int, total: int, names: Sequence[str] = ()
 ) -> dict | None:
     if not failed:
         return None
@@ -50,8 +63,7 @@ def ripestat_enrichment_incomplete(
         "severity": NotificationSeverity.WARNING,
         "title": "BGP enrichment failed",
         "message": (
-            f"BGP data could not be resolved for {failed} of {total} "
-            f"{'target' if total == 1 else 'targets'}"
+            f"BGP data could not be resolved for {_subject(names, failed, total)}"
             f"{f'; {success} succeeded' if success else ''}"
             f"{f', {skipped} had nothing to look up' if skipped else ''}."
         ),

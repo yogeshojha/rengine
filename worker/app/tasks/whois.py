@@ -120,6 +120,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
 
         success_count = 0
         failed_count = 0
+        failed_names: list[str] = []
 
         for normalized_query, group_targets in query_groups.items():
             ok, failed = _resolve_group(
@@ -127,10 +128,15 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
             )
             success_count += ok
             failed_count += failed
+            if failed:
+                failed_names.extend(t.target_value for t in group_targets)
 
         total = success_count + failed_count
         template = whois_enrichment_incomplete(
-            success=success_count, failed=failed_count, total=total
+            success=success_count,
+            failed=failed_count,
+            total=total,
+            names=failed_names,
         )
         if template:
             notifier.publish(
