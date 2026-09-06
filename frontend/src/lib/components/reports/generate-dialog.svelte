@@ -69,7 +69,7 @@
 	let pickedTarget = $state('');
 	let scanOptions = $state<ScanRead[]>([]);
 	let targetOptions = $state<Target[]>([]);
-	let loadingSubjects = $state(false);
+	let subjectsFor = '';
 
 	const fixed = $derived(Boolean(scanId || targetId));
 	const activeScan = $derived(scanId ?? (subjectKind === 'scan' ? pickedScan || null : null));
@@ -99,21 +99,29 @@
 		void reportsStore.fetchTemplates(projectId);
 	});
 
+	// latch on the inputs, never on the response: an empty or failed load must not re-arm this effect
 	$effect(() => {
-		if (!open || fixed || !projectId || scanOptions.length || loadingSubjects) return;
-		loadingSubjects = true;
-		const slug = projectsStore.activeProject?.slug;
+		if (!open) {
+			subjectsFor = '';
+			return;
+		}
+		const slug = projectsStore.activeProject?.slug ?? '';
+		const key = `${projectId}:${slug}`;
+		if (fixed || !projectId || subjectsFor === key) return;
+		subjectsFor = key;
 		Promise.all([
 			scansApi.list(projectId, { size: 50, sort_by: 'started', sort_dir: 'desc' }),
 			slug ? targetsApi.list({ project_slug: slug, size: 100 }) : Promise.resolve(null)
 		])
 			.then(([scans, targets]) => {
+				if (subjectsFor !== key) return;
 				scanOptions = scans.items;
 				targetOptions = targets?.items ?? [];
 				if (!pickedScan && scans.items.length) pickedScan = scans.items[0].id;
 			})
-			.catch(() => undefined)
-			.finally(() => (loadingSubjects = false));
+			.catch(() => {
+				if (subjectsFor === key) subjectsFor = '';
+			});
 	});
 
 	$effect(() => {
