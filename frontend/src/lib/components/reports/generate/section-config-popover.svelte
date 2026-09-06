@@ -3,6 +3,7 @@
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import SectionField from '$lib/components/reports/builder/section-field.svelte';
 	import type { SectionCatalogEntry } from '$lib/types/report';
 	import type { ReportPlan } from './report-plan.svelte';
@@ -34,8 +35,12 @@
 			</button>
 		{/snippet}
 	</Popover.Trigger>
-	<Popover.Content class="w-[26rem] max-w-[calc(100vw-2rem)] p-3" align="start">
-		<div class="mb-2 flex items-start justify-between gap-3">
+	<Popover.Content
+		class="max-h-(--bits-popover-content-available-height) w-[26rem] max-w-[calc(100vw-2rem)] p-3.5"
+		align="start"
+		collisionPadding={12}
+	>
+		<div class="flex items-start justify-between gap-3 border-b pb-2.5">
 			<div class="min-w-0">
 				<p class="text-sm font-medium">{section.title}</p>
 				<p class="text-[11px] text-muted-foreground">Applies to this report only.</p>
@@ -52,17 +57,21 @@
 			{/if}
 		</div>
 		{#if fields.length}
-			<div class="divide-y divide-border">
-				{#each fields as field (field.name)}
-					<SectionField
-						{field}
-						value={values[field.name] ?? field.default}
-						onChange={(value) => plan.setField(section.name, field.name, value)}
-					/>
-				{/each}
-			</div>
+			<ScrollArea
+				class="[&_[data-slot=scroll-area-viewport]]:max-h-[calc(var(--bits-popover-content-available-height,55vh)_-_5rem)]"
+			>
+				<div class="divide-y divide-border pr-1">
+					{#each fields as field (field.name)}
+						<SectionField
+							{field}
+							value={values[field.name] ?? field.default}
+							onChange={(value) => plan.setField(section.name, field.name, value)}
+						/>
+					{/each}
+				</div>
+			</ScrollArea>
 		{:else}
-			<p class="text-xs text-muted-foreground">This section has nothing to configure.</p>
+			<p class="pt-3 text-xs text-muted-foreground">This section has nothing to configure.</p>
 		{/if}
 	</Popover.Content>
 </Popover.Root>

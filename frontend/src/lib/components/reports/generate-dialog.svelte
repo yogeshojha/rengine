@@ -218,7 +218,7 @@
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<div class="grid min-h-0 flex-1 md:grid-cols-[1fr_16rem]">
+		<div class="grid min-h-0 flex-1 md:grid-cols-[minmax(0,1fr)_16rem]">
 			<ScrollArea class="min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-13rem)]">
 				<div class="space-y-5 px-6 py-5">
 					{#if !fixed}
@@ -350,11 +350,11 @@
 					{#each promoted as section (section.name)}
 						{@const values = plan.config(section.name)}
 						{@const changed = plan.changedFields(section.name)}
-						<div class="rounded-lg border">
-							<div class="flex items-center justify-between gap-3 border-b px-3.5 py-2.5">
+						<div class="overflow-hidden rounded-lg border">
+							<div class="flex items-center justify-between gap-3 border-b bg-muted/25 px-4 py-2.5">
 								<span class="text-sm font-medium">{section.title}</span>
 								{#if changed.length}
-									<span class="flex items-center gap-1">
+									<span class="flex shrink-0 items-center gap-1">
 										<span
 											class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
 										>
@@ -371,7 +371,7 @@
 									</span>
 								{/if}
 							</div>
-							<div class="divide-y divide-border px-3.5">
+							<div class="divide-y divide-border px-4">
 								{#each plan.launchFields(section.name) as field (field.name)}
 									<SectionField
 										{field}
@@ -387,30 +387,34 @@
 
 					<div class="space-y-2">
 						<Label class="text-xs">Theme</Label>
-						<div class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-							{#each reportCatalog.themes as option (option.slug)}
-								<button
-									type="button"
-									class={cn(
-										'w-[4.75rem] shrink-0 rounded-md p-1 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-										theme === option.slug ? 'bg-muted' : 'hover:bg-muted/60'
-									)}
-									aria-pressed={theme === option.slug}
-									onclick={() => (theme = option.slug)}
-								>
-									<ThemePreview
-										theme={option}
-										variant="cover"
+						<ScrollArea orientation="horizontal" class="-mx-1" scrollbarXClasses="h-1.5">
+							<div class="flex gap-2 px-1 pb-2">
+								{#each reportCatalog.themes as option (option.slug)}
+									<button
+										type="button"
 										class={cn(
-											theme === option.slug
-												? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
-												: ''
+											'w-[4.75rem] shrink-0 rounded-md p-1 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+											theme === option.slug ? 'bg-muted' : 'hover:bg-muted/60'
 										)}
-									/>
-									<span class="mt-1.5 block truncate text-[11px] leading-tight">{option.name}</span>
-								</button>
-							{/each}
-						</div>
+										aria-pressed={theme === option.slug}
+										onclick={() => (theme = option.slug)}
+									>
+										<ThemePreview
+											theme={option}
+											variant="cover"
+											class={cn(
+												theme === option.slug
+													? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+													: ''
+											)}
+										/>
+										<span class="mt-1.5 block truncate text-[11px] leading-tight"
+											>{option.name}</span
+										>
+									</button>
+								{/each}
+							</div>
+						</ScrollArea>
 					</div>
 
 					<div class="space-y-2">

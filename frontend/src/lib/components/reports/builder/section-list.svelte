@@ -177,13 +177,13 @@
 				</div>
 
 				<Collapsible.Content>
-					<div class="space-y-4 border-t bg-muted/30 px-4 py-4">
-						<div class="space-y-1.5">
-							<span class="text-xs text-muted-foreground">Heading in the document</span>
+					<div class="divide-y divide-border border-t bg-muted/30 px-4">
+						<div class="space-y-2 py-3">
+							<span class="text-sm">Heading in the document</span>
 							<Input
 								value={entry.title}
 								placeholder={spec?.title ?? ''}
-								class="h-9"
+								class="h-9 max-w-md"
 								oninput={(e) => setEntry(index, { title: e.currentTarget.value })}
 							/>
 						</div>
@@ -195,7 +195,9 @@
 							/>
 						{/each}
 						{#if !spec?.fields.length}
-							<p class="text-xs text-muted-foreground">This section has nothing to configure.</p>
+							<p class="py-3 text-xs text-muted-foreground">
+								This section has nothing to configure.
+							</p>
 						{/if}
 					</div>
 				</Collapsible.Content>
