@@ -3,7 +3,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { stringify } from 'yaml';
 	import YamlPane from '$lib/components/yaml-editor.svelte';
-	import { targetTypeLabel, type StageConfig } from '$lib/types/scan-engine';
+	import { targetTypePhrase, type StageConfig } from '$lib/types/scan-engine';
 
 	interface Props {
 		resolved: Record<string, StageConfig>;
@@ -27,7 +27,7 @@
 
 <div class="wrap">
 	<div class="head">
-		The final configuration for a {targetTypeLabel(targetType)} target, with defaults applied, scan context
+		The final configuration for {targetTypePhrase(targetType)} target, with defaults applied, scan context
 		multipliers resolved and passive intensity enforced.
 	</div>
 

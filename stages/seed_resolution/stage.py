@@ -76,12 +76,12 @@ class SeedResolutionStage(Stage):
 
     def _sample_note(self, value: str, count: int, cfg: SeedResolutionConfig) -> str:
         note = (
-            f"{value} is larger than one scan can enumerate, so {count} addresses "
+            f"{value} is larger than one scan can enumerate, so {count:,} addresses "
             f"were sampled across it ({cfg.asn_scan_mode} mode). Results describe the "
             "sample, not the whole range."
         )
         if self._dropped:
-            note += f" {self._dropped} announced prefixes were left out."
+            note += f" {self._dropped:,} announced prefixes were left out."
         return note
 
     def _from_ip(self, value: str) -> list[dict]:

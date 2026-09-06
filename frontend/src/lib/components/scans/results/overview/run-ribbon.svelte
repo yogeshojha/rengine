@@ -19,7 +19,7 @@
 	} from '$lib/utilities/scan-status';
 	import { plannedStages, stageRows } from '$lib/utilities/scan-progress';
 	import type { StageStepState } from '$lib/utilities/scan-progress';
-	import { targetTypeLabel } from '$lib/types/scan-engine';
+	import { targetTypePhrase } from '$lib/types/scan-engine';
 	import { cn } from '$lib/utils';
 	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
 	import type { StageCatalogEntry } from '$lib/types/scan-engine';
@@ -88,7 +88,7 @@
 	let done = $derived(rows.filter((r) => r.state === 'done').length);
 	let skipped = $derived(activities.filter((a) => a.status === 'skipped'));
 	let degradedStages = $derived(activities.filter((a) => a.status === 'partial'));
-	let typeLabel = $derived(targetTypeLabel(scan.execution_config.target_type).toLowerCase());
+	let typePhrase = $derived(targetTypePhrase(scan.execution_config.target_type));
 
 	let segments = $derived.by<Segment[]>(() => {
 		const measured = rows.map((r) => {
@@ -183,7 +183,7 @@
 			);
 		if (skipped.length > 0)
 			parts.push(
-				`${skipped.length} ${skipped.length === 1 ? 'stage does' : 'stages do'} not apply to a ${typeLabel} target`
+				`${skipped.length} ${skipped.length === 1 ? 'stage does' : 'stages do'} not apply to ${typePhrase} target`
 			);
 		return parts.join(' · ');
 	});

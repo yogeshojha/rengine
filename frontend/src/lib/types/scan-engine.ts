@@ -181,3 +181,17 @@ export function phaseLabel(phase: string): string {
 export function targetTypeLabel(type: string): string {
 	return TARGET_TYPE_LABELS[type] ?? type;
 }
+
+// URL takes "a" despite the vowel, so the article is stated rather than derived
+const TARGET_TYPE_ARTICLES: Record<string, string> = {
+	domain: 'a',
+	ip: 'an',
+	ip_range: 'a',
+	asn: 'an',
+	url: 'a'
+};
+
+export function targetTypePhrase(type: string): string {
+	const label = type === 'domain' ? 'domain' : targetTypeLabel(type);
+	return `${TARGET_TYPE_ARTICLES[type] ?? 'a'} ${label}`;
+}
