@@ -44,6 +44,8 @@ class ProviderResult:
     source: SubdomainSource
     subdomains: set[str] = field(default_factory=set)
     raw_count: int = 0
+    # what the source wants said about the run when it did not fail
+    note: str | None = None
     error: str | None = None
     skipped: bool = False
     skip_reason: str | None = None

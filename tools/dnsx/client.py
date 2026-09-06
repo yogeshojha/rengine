@@ -105,6 +105,7 @@ class DnsxClient:
         record_types: list[str] | None = None,
         *,
         idle_timeout: int | None = None,
+        timeout: int = 0,
     ) -> Iterator[StreamOutcome]:
         """Resolve in bulk, streaming records as they land so a stall never zeroes the run."""
         args = self._build_base_args()
@@ -118,8 +119,35 @@ class DnsxClient:
             json_flag="-json",
             silent=True,
             silent_flag="-silent",
-            timeout=0,
+            timeout=timeout,
             idle_timeout=idle_timeout,
+            recorder=self.recorder,
+            tool=DNSX_BINARY,
+            extra_args=self.extra_args,
+        ) as stream:
+            yield stream
+
+    @contextlib.contextmanager
+    def stream_brute(
+        self,
+        domain: str,
+        wordlist: str,
+        *,
+        timeout: int,
+    ) -> Iterator[StreamOutcome]:
+        """Bruteforce one apex from a wordlist, streaming only the names that answer.
+
+        Bounded by a total budget, never an idle watchdog: a guessed name that does not
+        exist produces no output, so silence here is the normal case, not a stall.
+        """
+        args = self._build_base_args()
+        args += ["-d", domain, "-w", wordlist, "-a", "-aaaa", "-resp"]
+        with self._runner.stream_json(
+            args=args,
+            json_flag="-json",
+            silent=True,
+            silent_flag="-silent",
+            timeout=timeout,
             recorder=self.recorder,
             tool=DNSX_BINARY,
             extra_args=self.extra_args,

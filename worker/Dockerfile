@@ -30,6 +30,7 @@ ENV PATH="/usr/local/go/bin:/root/go/bin:${PATH}"
 RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest \
     && go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest \
     && go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest \
+    && go install -v github.com/projectdiscovery/alterx/cmd/alterx@latest \
     && go install -v github.com/tomnomnom/assetfinder@latest \
     && go install -v github.com/owasp-amass/amass/v4/...@master
 

@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+import contextlib
+import os
 import random
 import statistics
+import tempfile
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from sqlalchemy import delete
 
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
-from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
+from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
@@ -27,6 +32,7 @@ from stages.subdomain.providers import (
     ProviderResult,
     SubdomainProvider,
 )
+from tools.alterx import AlterxClient, AlterxError
 from tools.dnsx.client import DnsxClient, DnsxError
 
 logger = get_logger(__name__)
@@ -44,6 +50,25 @@ _MIN_RESOLVE_THREADS = 10
 _MIN_BATCHES_FOR_MEDIAN = 3
 _DEGRADED_RATIO = 0.5
 _SHUFFLE_SEED = 1
+# measured: dnsx -t 30 clears ~9 guessed names a second, so 5/s is the floor a
+# budget may assume. Guessing is bounded by total time, never by an idle watchdog.
+_GUESS_FLOOR_RATE = 5
+_GUESS_MIN_BUDGET = 300
+_MAX_LABEL = 63
+
+
+# a name close to the apex has more siblings worth guessing than a five-label one
+def _seed_rank(name: str) -> tuple[int, int, str]:
+    return (name.count("."), len(name), name)
+
+
+def _guess_budget(count: int) -> int:
+    return max(_GUESS_MIN_BUDGET, -(-count // _GUESS_FLOOR_RATE))
+
+
+def _is_wildcard(info: dict, wildcard_ips: set[str]) -> bool:
+    ips = set(info.get("ips") or ())
+    return bool(ips) and bool(wildcard_ips) and ips <= wildcard_ips
 
 
 @dataclass
@@ -95,8 +120,12 @@ class SubdomainStage(Stage):
     config_model = SubdomainConfig
 
     def should_run(self) -> bool:
-        return self.cfg.enabled and bool(
-            self.cfg.enabled_sources or self.cfg.tls_discovery
+        cfg = self.cfg
+        return cfg.enabled and bool(
+            cfg.enabled_sources
+            or cfg.tls_discovery
+            or cfg.bruteforce
+            or cfg.permutations
         )
 
     def run(self) -> StageResult:
@@ -122,6 +151,17 @@ class SubdomainStage(Stage):
         self._check_abort()
 
         merged = merge_and_filter(results, domain, resolved.included_subdomains)
+        # a guessed name that lands on the wildcard address is not a discovery, so the
+        # probe that decides that has to run before any name is guessed
+        wildcard_ips = self._wildcard_ips(domain, cfg)
+        extra = self._expand(
+            domain, cfg, sorted(merged, key=_seed_rank), wildcard_ips, activity
+        )
+        if extra:
+            merged = merge_and_filter(
+                [*results, *extra], domain, resolved.included_subdomains
+            )
+
         # the target itself is in scope — nothing downstream runs without it
         merged.setdefault(domain, set()).add(SubdomainSource.TARGET.value)
         excluded = {n for n in merged if matches_any(n, resolved.excluded_subdomains)}
@@ -134,7 +174,6 @@ class SubdomainStage(Stage):
 
         # excluded subdomains are stored but not resolved or processed further
         to_resolve = [n for n in merged if n not in excluded]
-        wildcard_ips = self._wildcard_ips(domain, cfg)
         state = self._resolve(to_resolve, cfg)
 
         active, ips_seen = self._persist(merged, state.records, wildcard_ips, excluded)
@@ -145,9 +184,179 @@ class SubdomainStage(Stage):
                 "active": active,
                 "ips": len(ips_seen),
                 "excluded": len(excluded),
+                **{r.source.value: len(r.subdomains) for r in extra if r.subdomains},
             },
             warnings=self._resolution_warnings(state),
             partial=state.lost,
+        )
+
+    def _expand(
+        self,
+        domain: str,
+        cfg: SubdomainConfig,
+        seeds: list[str],
+        wildcard_ips: set[str],
+        activity: ActivityLogService,
+    ) -> list[ProviderResult]:
+        """Names no public source listed: guessed from a wordlist, then built from what was found."""
+        passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
+        out: list[ProviderResult] = []
+        if cfg.bruteforce:
+            out.append(self._bruteforce(domain, cfg, wildcard_ips, passive=passive))
+        if cfg.permutations:
+            out.append(self._permute(cfg, seeds, wildcard_ips, passive=passive))
+        for result in out:
+            self._check_abort()
+            self._log_provider(activity, result)
+        return out
+
+    @staticmethod
+    def _skipped(source: SubdomainSource, reason: str) -> ProviderResult:
+        return ProviderResult(source=source, skipped=True, skip_reason=reason)
+
+    @contextlib.contextmanager
+    def _wordlist(self, cfg: SubdomainConfig):
+        """The word budget is the first N lines, because the file is ranked best first."""
+        path = Path(cfg.wordlist)
+        if not path.is_file():
+            yield None
+            return
+        words: list[str] = []
+        with path.open(encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                word = line.strip().lower()
+                # a DNS label is 63 characters; anything longer is not a word list
+                if word and not word.startswith("#") and len(word) <= _MAX_LABEL:
+                    words.append(word)
+                if len(words) >= cfg.wordlist_limit:
+                    break
+        if not words:
+            yield None
+            return
+        fd, name = tempfile.mkstemp(prefix="wordlist_", suffix=".txt")
+        try:
+            with os.fdopen(fd, "w") as handle:
+                handle.write("\n".join(words) + "\n")
+            yield name, len(words)
+        finally:
+            with contextlib.suppress(OSError):
+                Path(name).unlink(missing_ok=True)
+
+    def _bruteforce(
+        self,
+        domain: str,
+        cfg: SubdomainConfig,
+        wildcard_ips: set[str],
+        *,
+        passive: bool,
+    ) -> ProviderResult:
+        source = SubdomainSource.BRUTEFORCE
+        if passive:
+            return self._skipped(
+                source, "a passive scan does not query the target's nameservers"
+            )
+        client = self._client(cfg)
+        if client is None:
+            return self._skipped(source, "dnsx is not installed on this instance")
+
+        with self._wordlist(cfg) as prepared:
+            if prepared is None:
+                return self._skipped(source, f"no wordlist at {cfg.wordlist}")
+            path, tried = prepared
+            self.emit_progress(f"trying {tried:,} names against {domain}")
+            start = time.monotonic()
+            found: set[str] = set()
+            wildcards = 0
+            with client.stream_brute(
+                domain, path, timeout=_guess_budget(tried)
+            ) as stream:
+                for record in stream.records:
+                    parsed = self._record(record)
+                    if parsed is None:
+                        continue
+                    name, info = parsed
+                    if _is_wildcard(info, wildcard_ips):
+                        wildcards += 1
+                        continue
+                    found.add(name)
+                    self._check_abort()
+
+            cut_short = stream.timed_out
+
+        notes = []
+        if wildcards:
+            notes.append(
+                f"{wildcards:,} of {wildcards + len(found):,} answers were the "
+                "wildcard address and were dropped"
+            )
+        if cut_short:
+            notes.append(f"stopped at the {_guess_budget(tried):,}s budget")
+        return ProviderResult(
+            source=source,
+            subdomains=found,
+            raw_count=len(found),
+            note="; ".join(notes) or None,
+            duration_seconds=round(time.monotonic() - start, 2),
+        )
+
+    def _permute(
+        self,
+        cfg: SubdomainConfig,
+        seeds: list[str],
+        wildcard_ips: set[str],
+        *,
+        passive: bool,
+    ) -> ProviderResult:
+        source = SubdomainSource.PERMUTATION
+        if passive:
+            return self._skipped(
+                source, "a passive scan does not query the target's nameservers"
+            )
+        if not seeds:
+            return self._skipped(
+                source, "nothing was discovered to build variants from"
+            )
+        try:
+            client = AlterxClient(
+                limit=cfg.permutation_limit,
+                recorder=self.ctx.recorder,
+                extra_args=self.ctx.resolved.tool_args("alterx"),
+            )
+        except AlterxError:
+            return self._skipped(source, "alterx is not installed on this instance")
+
+        start = time.monotonic()
+        candidates = client.permute(seeds[: cfg.permutation_seeds])
+        if not candidates:
+            return ProviderResult(source=source, duration_seconds=0.0)
+        self.emit_progress(f"resolving {len(candidates):,} name variants")
+        client = self._client(cfg)
+        if client is None:
+            return self._skipped(source, "dnsx is not installed on this instance")
+        found: set[str] = set()
+        # same contract as bruteforce: a variant that does not exist says nothing back
+        with client.stream_query(
+            candidates,
+            record_types=["a", "aaaa", "cname"],
+            timeout=_guess_budget(len(candidates)),
+        ) as stream:
+            for record in stream.records:
+                parsed = self._record(record)
+                if parsed is None:
+                    continue
+                name, info = parsed
+                if info.get("active") and not _is_wildcard(info, wildcard_ips):
+                    found.add(name)
+                self._check_abort()
+        notes = [f"{len(candidates):,} variants resolved"]
+        if stream.timed_out:
+            notes.append("stopped at the budget")
+        return ProviderResult(
+            source=source,
+            subdomains=found,
+            raw_count=len(found),
+            note="; ".join(notes),
+            duration_seconds=round(time.monotonic() - start, 2),
         )
 
     def _wildcard_ips(self, domain: str, cfg: SubdomainConfig) -> set[str]:
@@ -242,9 +451,7 @@ class SubdomainStage(Stage):
         self.emit_progress(message, source=source)
 
     def _client(self, cfg: SubdomainConfig) -> DnsxClient | None:
-        threads = min(
-            max(cfg.dns_threads, _MIN_RESOLVE_THREADS), _MAX_RESOLVE_THREADS
-        )
+        threads = min(max(cfg.dns_threads, _MIN_RESOLVE_THREADS), _MAX_RESOLVE_THREADS)
         try:
             return DnsxClient(
                 timeout=max(120, cfg.tool_timeout(self.ctx.resolved.intensity)),

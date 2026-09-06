@@ -7,6 +7,8 @@ from stages.config import StageConfig, threads, timeout
 from stages.subdomain.providers import PASSIVE_PROVIDERS
 
 PASSIVE_TOOLS: tuple[str, ...] = tuple(sorted(PASSIVE_PROVIDERS))
+# ranked by real-world frequency, so a smaller budget is simply the first N lines
+DEFAULT_WORDLIST = "/app/tools/data/subdomains.txt"
 # amass is deliberately not here: it never exits early, so it costs the whole
 # tool timeout on every scan for hosts the other sources already return
 DEFAULT_PASSIVE_TOOLS: list[str] = [
@@ -34,6 +36,43 @@ class SubdomainConfig(StageConfig):
         default=True,
         title="TLS certificate discovery",
         description="Pull subject alternative names from the target's certificates.",
+    )
+    bruteforce: bool = Field(
+        default=True,
+        title="Bruteforce names",
+        description="Ask the target's nameservers for common names the public sources never listed.",
+    )
+    wordlist: str = Field(
+        default=DEFAULT_WORDLIST,
+        max_length=500,
+        title="Wordlist",
+        description="One label per line, ranked best first. The word budget below reads from the top.",
+    )
+    wordlist_limit: int = Field(
+        default=1000,
+        ge=100,
+        le=1_000_000,
+        title="Words to try",
+        description="Names tried per apex, from the top of the list. This is a time budget: the resolver clears about 9 a second.",
+    )
+    permutations: bool = Field(
+        default=False,
+        title="Permute discovered names",
+        description="Build variants of the names already found (api → api-dev, api2, api-staging) and resolve those too.",
+    )
+    permutation_seeds: int = Field(
+        default=250,
+        ge=1,
+        le=10_000,
+        title="Names to permute",
+        description="How many discovered names to build variants from. Variants grow with the square of this.",
+    )
+    permutation_limit: int = Field(
+        default=20_000,
+        ge=100,
+        le=500_000,
+        title="Variants to resolve",
+        description="Cap on generated variants. Each one is a DNS query, on top of the word budget.",
     )
     dns_threads: int = threads(30, title="Resolver threads")
     dns_batch_size: int = Field(
