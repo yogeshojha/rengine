@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import ipaddress
+from collections.abc import Callable, Iterable
 
 from reports.analysis.brief import AttackPath
 from reports.data.models import Issue
@@ -11,6 +12,17 @@ from shared.definitions.ports import ServiceClass
 from shared.definitions.vulnerabilities import Severity
 
 _OK = 2
+
+
+def _internal(values: Iterable[str]) -> bool:
+    """Every value is a private address, so this was reached from inside the network."""
+    seen = [v for v in values if v]
+    if not seen:
+        return False
+    try:
+        return all(not ipaddress.ip_address(v).is_global for v in seen)
+    except ValueError:
+        return False
 
 
 def _tagged(issues: list[Issue], *tags: str) -> list[Issue]:
@@ -147,9 +159,14 @@ def _admin_open(source: ReportSource, issues: list[Issue]) -> AttackPath | None:
         return None
     total = sum(i.count for i in panels) + len(endpoints)
     assets = _assets(panels, 5) + [e.host for e in endpoints[:5]]
+    internal = _internal(assets)
     return AttackPath(
         key="admin_open",
-        title="Management interfaces answer from the public internet",
+        title=(
+            "Management interfaces answer across the internal network"
+            if internal
+            else "Management interfaces answer from the public internet"
+        ),
         detail=(
             f"{total} administrative interface{'s' if total != 1 else ''} responded "
             "without a gateway in front. Each one is a credential-stuffing target and a "
@@ -192,14 +209,20 @@ def _sensitive_services(
     if not exposed:
         return None
     names = sorted({s.service_name or str(s.port) for s in exposed})
+    internal = source.internal_estate
+    where = "on the internal network" if internal else "from the internet"
+    kind = (
+        "that should answer only to named administrators"
+        if internal
+        else "of a kind that normally sits on a private network"
+    )
     return AttackPath(
         key="sensitive_services",
-        title="Administrative and data services are reachable from the internet",
+        title=f"Administrative and data services are reachable {where}",
         detail=(
-            f"{len(exposed)} service{'s' if len(exposed) != 1 else ''} of a kind that "
-            "normally sits on a private network answered a connection: "
-            f"{', '.join(names[:6])}. Each is an authentication surface with no web "
-            "application firewall in front of it."
+            f"{len(exposed)} service{'s' if len(exposed) != 1 else ''} {kind} "
+            f"answered a connection: {', '.join(names[:6])}. Each is an authentication "
+            "surface with no web application firewall in front of it."
         ),
         severity=Severity.HIGH.value,
         evidence=[
@@ -216,13 +239,19 @@ def _database_exposed(source: ReportSource, _issues: list[Issue]) -> AttackPath 
     ]
     if not rows:
         return None
+    internal = source.internal_estate
     return AttackPath(
         key="database_exposed",
-        title="Database ports answer from outside the network",
+        title=(
+            "Database ports answer across the internal network"
+            if internal
+            else "Database ports answer from outside the network"
+        ),
         detail=(
             f"{len(rows)} database service{'s' if len(rows) != 1 else ''} accepted a "
-            "connection from the internet. A database should not be addressable outside "
-            "its own subnet even when authentication is enabled."
+            f"connection {'from anything on the same network' if internal else 'from the internet'}. "
+            "A database should not be addressable outside its own subnet even when "
+            "authentication is enabled."
         ),
         severity=Severity.HIGH.value,
         evidence=[f"{s.ip}:{s.port} {s.service_name or ''}".strip() for s in rows[:5]],

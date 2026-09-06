@@ -60,6 +60,7 @@ class ServicesSection(Section):
             if cfg.show_composition
             else [],
             "sensitive": len(ctx.data.sensitive_services),
+            "internal": ctx.data.internal_estate,
             "web": sum(1 for s in ctx.data.service_rows if s.is_http),
             "addresses": len({s.ip for s in ctx.data.service_rows}),
             "show_banner": cfg.show_banner,

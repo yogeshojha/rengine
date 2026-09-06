@@ -49,8 +49,12 @@ class PlainNarrator(Narrator):
             if brief.observed_at
             else "an earlier date"
         )
-        covered = [c["label"] for c in brief.coverage if c["covered"]]
-        scope = _join(covered).lower() if covered else "no result dimensions"
+        covered = [
+            SURFACE_NOUN[c["dimension"]][1]
+            for c in brief.coverage
+            if c["covered"] and c["dimension"] in SURFACE_NOUN
+        ]
+        scope = _join(covered) if covered else "no result dimensions"
         return (
             f"This report covers {brief.subject}, assessed on {observed}. "
             f"The run produced {scope}. {brief.headline}"
@@ -211,8 +215,13 @@ class PlainNarrator(Narrator):
                 f"{exposure['web']:,} of them answering HTTP."
             )
             if exposure.get("sensitive"):
+                where = (
+                    "should answer only to named administrators"
+                    if exposure.get("internal")
+                    else "normally belongs on a private network"
+                )
                 parts.append(
                     f"{_count(exposure['sensitive'], 'service')} are of a kind that "
-                    "normally belongs on a private network."
+                    f"{where}."
                 )
         return " ".join(parts)

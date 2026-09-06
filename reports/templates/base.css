@@ -431,7 +431,7 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   margin-top: 1.8mm;
 }
 .strip__note { font-size: var(--r-micro); color: var(--r-ink-soft); margin-top: 1mm; }
-.strip__cell--dash .strip__n { font-size: var(--r-h3); color: var(--r-ink-faint); font-weight: 400; padding-top: 1.8mm; }
+.strip__cell--dash .strip__n { font-size: var(--r-h3); color: var(--r-ink-faint); font-weight: 400; padding-top: 1.8mm; line-height: 1.12; }
 
 /* ---------- prose measure ---------- */
 

@@ -403,6 +403,7 @@ def _exposure(source: ReportSource) -> dict:
         "top": [f.name for f in source.top_services[:6]],
         "database": classes.get(ServiceClass.DATABASE.value, 0),
         "remote": classes.get(ServiceClass.REMOTE.value, 0),
+        "internal": source.internal_estate,
     }
 
 

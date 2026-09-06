@@ -44,6 +44,7 @@ from shared.models.vulnerability import (
     VulnerabilityTriage,
 )
 from shared.utils.datetime import utc_now
+from shared.utils.net import is_registry_routable
 
 _DIM = SurfaceDimension
 _MAX_HOSTS_PER_IP = 6
@@ -647,6 +648,12 @@ class ReportSource:
     @cached_property
     def sensitive_services(self) -> list[Service]:
         return [s for s in self.service_rows if s.sensitive]
+
+    @cached_property
+    def internal_estate(self) -> bool:
+        """Every address answered is private, so this surface was reached from inside."""
+        addresses = {s.ip for s in self.service_rows if s.ip}
+        return bool(addresses) and not any(is_registry_routable(ip) for ip in addresses)
 
     # ---------- endpoints ----------
 

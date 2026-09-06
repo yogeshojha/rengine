@@ -99,7 +99,8 @@ def _mysql(data: bytes) -> tuple[str, str | None] | None:
 
 def readable(data: bytes) -> str | None:
     text = _PRINTABLE.sub(b".", data[:BANNER_LIMIT]).decode("ascii", "ignore").strip()
-    return text or None
+    # every byte was unprintable, so the substitution dots are all that is left: not a banner
+    return text if text.strip(".") else None
 
 
 def identify(data: bytes, port_service: str | None) -> dict:
