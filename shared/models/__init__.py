@@ -75,7 +75,7 @@ from shared.models.proxy import (
     ProxyTestResult,
     ProxyUpdate,
 )
-from shared.models.report import Report, ReportTemplate, ReportTheme
+from shared.models.report import Report, ReportFont, ReportTemplate, ReportTheme
 from shared.models.ripestat import (
     RIPEStatAbuseContact,
     RIPEStatAnnouncedPrefix,
@@ -245,6 +245,7 @@ __all__ = [
     "RIPEStatPrefixOverview",
     "RIPEStatRelatedPrefix",
     "Report",
+    "ReportFont",
     "ReportTemplate",
     "ReportTheme",
     "Scan",

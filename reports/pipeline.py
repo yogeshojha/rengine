@@ -12,6 +12,7 @@ from reports import theme_store
 from reports.analysis.engine import build_brief
 from reports.base import RenderContext
 from reports.data.source import ReportSource
+from reports.fonts import font_faces
 from reports.narrate import build_narrator
 from reports.render.document import render_html
 from reports.render.text import to_json, to_markdown
@@ -122,7 +123,16 @@ def generate(
 
     formats = spec.formats or [ReportFormat.PDF.value]
     if ReportFormat.HTML.value in formats:
-        out.files[ReportFormat.HTML.value] = document.html.encode("utf-8")
+        used = frozenset(
+            {ctx.theme.type.heading, ctx.theme.type.body, ctx.theme.type.mono}
+        )
+        embedded = font_faces(session, embed=True, only=used)
+        standalone = (
+            document.html.replace(document.faces, embedded)
+            if document.faces
+            else document.html
+        )
+        out.files[ReportFormat.HTML.value] = standalone.encode("utf-8")
     if ReportFormat.MARKDOWN.value in formats:
         out.files[ReportFormat.MARKDOWN.value] = to_markdown(ctx).encode("utf-8")
     if ReportFormat.JSON.value in formats:

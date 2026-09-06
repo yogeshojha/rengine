@@ -13,7 +13,7 @@
 	let { style = $bindable() }: { style: ReportStyle } = $props();
 
 	const catalog = $derived(reportCatalog.catalog);
-	const sansFonts = $derived((catalog?.fonts ?? []).filter((f) => f.role !== 'mono'));
+	const textFonts = $derived((catalog?.fonts ?? []).filter((f) => f.role !== 'mono'));
 	const monoFonts = $derived((catalog?.fonts ?? []).filter((f) => f.role === 'mono'));
 	const activeTheme = $derived(reportCatalog.theme(style.theme));
 
@@ -124,13 +124,37 @@
 			<Select.Root type="single" bind:value={style.heading_font}>
 				<Select.Trigger class="h-9 w-full">
 					{style.heading_font
-						? (sansFonts.find((f) => f.key === style.heading_font)?.label ?? style.heading_font)
+						? (textFonts.find((f) => f.slug === style.heading_font)?.name ?? style.heading_font)
 						: 'From the theme'}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Item value="">From the theme</Select.Item>
-					{#each sansFonts as font (font.key)}
-						<Select.Item value={font.key}>{font.label}</Select.Item>
+					{#each textFonts as font (font.slug)}
+						<Select.Item value={font.slug}>
+							{font.name}{#if font.origin === 'custom'}<span
+									class="ml-1.5 text-xs text-muted-foreground">yours</span
+								>{/if}
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		</div>
+		<div class="space-y-1.5">
+			<Label class="text-xs">Body font</Label>
+			<Select.Root type="single" bind:value={style.body_font}>
+				<Select.Trigger class="h-9 w-full">
+					{style.body_font
+						? (textFonts.find((f) => f.slug === style.body_font)?.name ?? style.body_font)
+						: 'From the theme'}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value="">From the theme</Select.Item>
+					{#each textFonts as font (font.slug)}
+						<Select.Item value={font.slug}>
+							{font.name}{#if font.origin === 'custom'}<span
+									class="ml-1.5 text-xs text-muted-foreground">yours</span
+								>{/if}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>
@@ -140,13 +164,17 @@
 			<Select.Root type="single" bind:value={style.mono_font}>
 				<Select.Trigger class="h-9 w-full">
 					{style.mono_font
-						? (monoFonts.find((f) => f.key === style.mono_font)?.label ?? style.mono_font)
+						? (monoFonts.find((f) => f.slug === style.mono_font)?.name ?? style.mono_font)
 						: 'From the theme'}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Item value="">From the theme</Select.Item>
-					{#each monoFonts as font (font.key)}
-						<Select.Item value={font.key}>{font.label}</Select.Item>
+					{#each monoFonts as font (font.slug)}
+						<Select.Item value={font.slug}>
+							{font.name}{#if font.origin === 'custom'}<span
+									class="ml-1.5 text-xs text-muted-foreground">yours</span
+								>{/if}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>

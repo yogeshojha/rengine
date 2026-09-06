@@ -18,7 +18,6 @@ from shared.definitions.reports import (
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 TEMPLATES = Path(__file__).resolve().parent.parent / "templates"
 
-_URL_RE = re.compile(r"url\('fonts/([^']+)'\)")
 _TOKEN_RE = re.compile("(" + "|".join(re.escape(t) for t in SLOT_TOKEN_VALUES) + ")")
 
 _COUNTER_SLOTS = {
@@ -26,17 +25,6 @@ _COUNTER_SLOTS = {
     "{pages}": "counter(pages)",
     "{section}": "string(section)",
 }
-
-
-@lru_cache(maxsize=1)
-def font_faces() -> str:
-    path = ASSETS / "fonts.css"
-    if not path.is_file():
-        return ""
-    css = path.read_text(encoding="utf-8")
-    return _URL_RE.sub(
-        lambda m: f"url('{(ASSETS / 'fonts' / m.group(1)).as_uri()}')", css
-    )
 
 
 @lru_cache(maxsize=1)
@@ -123,11 +111,18 @@ def page_css(style: ReportStyle, values: dict[str, str]) -> str:
     )
 
 
-def stylesheet(tokens: ThemeTokens, style: ReportStyle, values: dict[str, str]) -> str:
+def stylesheet(
+    tokens: ThemeTokens,
+    style: ReportStyle,
+    values: dict[str, str],
+    *,
+    faces: str = "",
+    families: dict[str, str] | None = None,
+) -> str:
     return "\n".join(
         (
-            font_faces(),
-            css_variables(tokens, style),
+            faces,
+            css_variables(tokens, style, families=families),
             base_css(),
             page_css(style, values),
             tokens.css or "",

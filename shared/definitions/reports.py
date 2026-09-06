@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 MAX_SECTIONS = 60
 MAX_CUSTOM_BLOCKS = 20
@@ -276,6 +277,34 @@ DEFAULT_FOOTER_RIGHT = "{page} / {pages}"
 
 DEFAULT_THEME = "midnight"
 
+# an uploaded image is embedded, never referenced, so the renderer can never be made to fetch
+ALLOWED_IMAGE_TYPES: frozenset[str] = frozenset(
+    {"image/png", "image/jpeg", "image/svg+xml", "image/webp", "image/gif"}
+)
+_DATA_IMAGE = re.compile(r"^data:(image/[a-z0-9.+-]+);base64,[A-Za-z0-9+/=\s]+$", re.I)
+
+
+def validate_embedded_image(value: str, field: str) -> str:
+    """An image must be embedded data of a known type. A URL is refused, not fetched."""
+    text = (value or "").strip()
+    if not text:
+        return ""
+    match = _DATA_IMAGE.match(text)
+    if match is None:
+        msg = (
+            f"{field} must be an uploaded image. "
+            "A link is not accepted, because a report never fetches from the network."
+        )
+        raise ValueError(msg)
+    if match.group(1).lower() not in ALLOWED_IMAGE_TYPES:
+        msg = f"{field} must be a PNG, JPEG, SVG, WebP or GIF."
+        raise ValueError(msg)
+    if len(text) > MAX_LOGO_BYTES:
+        msg = f"{field} is larger than the {MAX_LOGO_BYTES // 1024} KB limit."
+        raise ValueError(msg)
+    return text
+
+
 # severity fills the themes ship; a style may override any of them
 DEFAULT_SEVERITY_COLORS: dict[str, str] = {
     "critical": "#c2334d",
@@ -329,6 +358,11 @@ class ReportStyle(BaseModel):
     link_urls: bool = True
     hyphenate: bool = False
 
+    @field_validator("cover_image")
+    @classmethod
+    def _cover_is_embedded(cls, value: str) -> str:
+        return validate_embedded_image(value, "The cover image")
+
 
 class Revision(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -359,6 +393,11 @@ class ReportBranding(BaseModel):
     revisions: list[Revision] = Field(default_factory=list, max_length=20)
     confidentiality_statement: str = Field(default="", max_length=2000)
     disclaimer: str = Field(default="", max_length=2000)
+
+    @field_validator("company_logo")
+    @classmethod
+    def _logo_is_embedded(cls, value: str) -> str:
+        return validate_embedded_image(value, "The logo")
 
 
 class NarrativeOptions(BaseModel):

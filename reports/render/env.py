@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -22,12 +23,15 @@ _MD = MarkdownIt("commonmark", {"html": False, "linkify": False, "typographer": 
 _MD.enable("table")
 _MD.enable("strikethrough")
 
+_REMOTE_IMG = re.compile(r"<img\b[^>]*?src=[\"\']((?!data:)[^\"\']*)[\"\'][^>]*>", re.I)
+
 _MINUTE = 60
 _HOUR = 3600
 
 
 def markdown(value: str | None) -> str:
-    return _MD.render(value or "").strip()
+    """Authored text may embed an image, never link one, so nothing here can be fetched."""
+    return _REMOTE_IMG.sub("", _MD.render(value or "")).strip()
 
 
 def number(value: float | int | None) -> str:

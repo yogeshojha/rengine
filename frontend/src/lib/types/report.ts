@@ -243,12 +243,54 @@ export interface ReportPreset {
 	sections: { section: string; config: Record<string, unknown> }[];
 }
 
+export interface FontFace {
+	weight: number;
+	italic: boolean;
+	filename: string;
+	format: string;
+	bytes: number;
+}
+
+export interface ReportFont {
+	id: string | null;
+	slug: string;
+	name: string;
+	role: 'sans' | 'serif' | 'mono';
+	origin: string;
+	note: string;
+	faces: FontFace[];
+	weights: number[];
+	bytes: number;
+	created_at: string | null;
+}
+
+export interface FontFaceUpload {
+	filename: string;
+	content: string;
+	weight: number;
+	italic: boolean;
+}
+
+export interface ReportFontUpload {
+	name: string;
+	role: string;
+	note: string;
+	faces: FontFaceUpload[];
+}
+
+export interface ReportDefaults {
+	branding: ReportBranding;
+	theme: string;
+	footer_note: string;
+}
+
 export interface ReportCatalog {
 	sections: SectionCatalogEntry[];
 	groups: KeyLabel[];
 	themes: ThemeSummary[];
 	presets: ReportPreset[];
-	fonts: { key: string; label: string; role: string; note: string }[];
+	fonts: ReportFont[];
+	font_roles: KeyLabel[];
 	page_sizes: KeyLabel[];
 	formats: KeyLabel[];
 	scopes: KeyLabel[];

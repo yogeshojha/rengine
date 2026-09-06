@@ -26,7 +26,7 @@ export const SETTINGS_TABS = ['general', 'api-keys', 'proxies', 'notifications']
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 export const ARSENAL_TABS = ['nuclei', 'wordlists'] as const;
-export const REPORT_TABS = ['reports', 'templates', 'themes'] as const;
+export const REPORT_TABS = ['reports', 'templates', 'themes', 'defaults'] as const;
 export type ReportTab = (typeof REPORT_TABS)[number];
 
 export const AI_TABS = ['connection', 'features', 'usage'] as const;

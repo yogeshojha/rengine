@@ -18,6 +18,9 @@
 	import TemplateCard from '$lib/components/reports/template-card.svelte';
 	import ThemeCard from '$lib/components/reports/theme-card.svelte';
 	import ThemeUploadDialog from '$lib/components/reports/theme-upload-dialog.svelte';
+	import FontUploadDialog from '$lib/components/reports/font-upload-dialog.svelte';
+	import FontRow from '$lib/components/reports/font-row.svelte';
+	import DefaultsPanel from '$lib/components/reports/defaults-panel.svelte';
 	import GenerateDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { reports as reportsStore } from '$lib/stores/reports.svelte';
@@ -35,8 +38,9 @@
 	let search = $state('');
 	let generateOpen = $state(false);
 	let uploadOpen = $state(false);
+	let fontUploadOpen = $state(false);
 	let pendingDelete = $state<{
-		kind: 'report' | 'template' | 'theme';
+		kind: 'report' | 'template' | 'theme' | 'typeface';
 		id: string;
 		name: string;
 	} | null>(null);
@@ -99,7 +103,9 @@
 			? `${pendingDelete.name} is removed. Reports already generated from it are unaffected. This action cannot be undone.`
 			: pendingDelete?.kind === 'theme'
 				? `${pendingDelete.name} is removed. Reports already generated with it are unaffected. This action cannot be undone.`
-				: `${pendingDelete?.name ?? 'This report'} and its downloaded files are removed. This action cannot be undone.`
+				: pendingDelete?.kind === 'typeface'
+					? `${pendingDelete.name} and its font files are removed. A theme that names it falls back to a system face. This action cannot be undone.`
+					: `${pendingDelete?.name ?? 'This report'} and its downloaded files are removed. This action cannot be undone.`
 	);
 
 	async function confirmDelete() {
@@ -107,12 +113,13 @@
 		const { kind, id } = pendingDelete;
 		if (kind === 'report') await reportsStore.remove(projectId, id);
 		else if (kind === 'template') await reportsStore.removeTemplate(projectId, id);
-		else {
+		else if (kind === 'theme' || kind === 'typeface') {
 			try {
-				await reportsApi.deleteTheme(id);
+				if (kind === 'theme') await reportsApi.deleteTheme(id);
+				else await reportsApi.deleteFont(id);
 				await reportCatalog.fetch(true);
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Could not delete that theme');
+				toast.error(e instanceof Error ? e.message : `Could not delete that ${kind}`);
 			}
 		}
 		pendingDelete = null;
@@ -156,6 +163,7 @@
 						<span class="ml-1.5 text-muted-foreground">{reportCatalog.themes.length}</span>
 					{/if}
 				</Tabs.Trigger>
+				<Tabs.Trigger value="defaults">Defaults</Tabs.Trigger>
 			</Tabs.List>
 
 			{#if activeTab === 'reports'}
@@ -166,10 +174,16 @@
 					<Input bind:value={search} placeholder="Search reports" class="h-9 pl-8" />
 				</div>
 			{:else if activeTab === 'themes'}
-				<Button variant="outline" size="sm" onclick={() => (uploadOpen = true)}>
-					<UploadIcon class="mr-1.5 size-3.5" />
-					Upload a theme
-				</Button>
+				<div class="flex gap-2">
+					<Button variant="outline" size="sm" onclick={() => (fontUploadOpen = true)}>
+						<UploadIcon class="mr-1.5 size-3.5" />
+						Upload a typeface
+					</Button>
+					<Button variant="outline" size="sm" onclick={() => (uploadOpen = true)}>
+						<UploadIcon class="mr-1.5 size-3.5" />
+						Upload a theme
+					</Button>
+				</div>
 			{/if}
 		</div>
 
@@ -212,20 +226,46 @@
 		</Tabs.Content>
 
 		<Tabs.Content value="themes" class="mt-5">
-			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				{#each reportCatalog.themes as theme (theme.slug)}
-					<ThemeCard
-						{theme}
-						onDelete={(slug) => (pendingDelete = { kind: 'theme', id: slug, name: theme.name })}
-					/>
-				{/each}
+			<div class="space-y-6">
+				<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					{#each reportCatalog.themes as theme (theme.slug)}
+						<ThemeCard
+							{theme}
+							onDelete={(slug) => (pendingDelete = { kind: 'theme', id: slug, name: theme.name })}
+						/>
+					{/each}
+				</div>
+
+				<div class="space-y-2">
+					<div>
+						<h2 class="text-base font-semibold">Typefaces</h2>
+						<p class="text-xs text-muted-foreground">
+							What a theme can name for its headings, body and code. Files are stored on this
+							instance; a report never fetches a font.
+						</p>
+					</div>
+					<Card.Root class="gap-0 py-0">
+						{#each reportCatalog.catalog?.fonts ?? [] as font (font.slug)}
+							<FontRow
+								{font}
+								onDelete={(slug) =>
+									(pendingDelete = { kind: 'typeface', id: slug, name: font.name })}
+							/>
+						{/each}
+					</Card.Root>
+				</div>
 			</div>
+		</Tabs.Content>
+
+		<Tabs.Content value="defaults" class="mt-5">
+			<DefaultsPanel />
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
 
 <GenerateDialog bind:open={generateOpen} {projectId} />
 <ThemeUploadDialog bind:open={uploadOpen} />
+<FontUploadDialog bind:open={fontUploadOpen} />
 <DeleteConfirmationDialog
 	open={pendingDelete !== null}
 	onOpenChange={(v) => {

@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from reports.fonts import vendored
 from reports.presets import PRESETS, Preset
 from reports.registry import catalog as section_catalog
 from reports.registry import section as lookup_section
@@ -21,6 +22,14 @@ from shared.definitions.ai import (
     price,
 )
 from shared.definitions.compliance import FRAMEWORKS
+from shared.definitions.report_fonts import (
+    FONT_ROLE_HELP,
+    FONT_ROLE_LABELS,
+    MAX_FACES,
+    MAX_FAMILIES,
+    FontOrigin,
+    FontRole,
+)
 from shared.definitions.report_theme import (
     COVER_ART_LABELS,
     COVER_LAYOUT_LABELS,
@@ -36,7 +45,6 @@ from shared.definitions.reports import (
     AUDIENCE_LABELS,
     DENSITY_LABELS,
     DEPTH_LABELS,
-    FONT_FAMILIES,
     FORMAT_LABELS,
     MAX_SECTIONS,
     PAGE_SIZE_LABELS,
@@ -55,13 +63,19 @@ from shared.definitions.reports import (
     SectionEntry,
     coerce_scope,
 )
+from shared.models.instance_settings import InstanceSettings
 from shared.models.report import (
+    FontFace,
     FrameworkSummary,
     Report,
     ReportCatalog,
     ReportCreate,
+    ReportDefaults,
     ReportEstimate,
     ReportFile,
+    ReportFont,
+    ReportFontRead,
+    ReportFontUpload,
     ReportRead,
     ReportTemplate,
     ReportTemplateCreate,
@@ -75,6 +89,14 @@ from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.services.ai.config import load_config_async
 from shared.services.celery_dispatch import dispatch_report
+from shared.services.report_fonts import (
+    FontError,
+    clean_name,
+    decode,
+    delete_family,
+    slugify,
+    store_face,
+)
 from shared.utils.datetime import utc_now
 from shared.utils.slug import generate_slug
 
@@ -98,9 +120,10 @@ class ReportService:
             ],
             themes=themes,
             presets=[_preset_payload(p) for p in PRESETS],
-            fonts=[
-                {"key": f.key, "label": f.label, "role": f.role, "note": f.note}
-                for f in FONT_FAMILIES
+            fonts=await self.fonts(),
+            font_roles=[
+                {"key": k, "label": v, "help": FONT_ROLE_HELP.get(k, "")}
+                for k, v in FONT_ROLE_LABELS.items()
             ],
             page_sizes=[{"key": k, "label": v} for k, v in PAGE_SIZE_LABELS.items()],
             formats=[{"key": k, "label": v} for k, v in FORMAT_LABELS.items()],
@@ -300,6 +323,164 @@ class ReportService:
             )
         await self.session.delete(row)
         await self.session.commit()
+
+    # ---------- fonts ----------
+
+    async def fonts(self) -> list[ReportFontRead]:
+        rows = (
+            (await self.session.execute(select(ReportFont).order_by(ReportFont.name)))
+            .scalars()
+            .all()
+        )
+        custom = [
+            ReportFontRead(
+                id=row.id,
+                slug=row.slug,
+                name=row.name,
+                role=row.role,
+                origin=row.origin,
+                note=row.note,
+                faces=[FontFace.model_validate(f) for f in (row.faces or [])],
+                weights=sorted({int(f.get("weight", 400)) for f in (row.faces or [])}),
+                bytes=row.bytes,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
+        return [*vendored(), *custom]
+
+    async def upload_font(
+        self, data: ReportFontUpload, user_id: UUID
+    ) -> ReportFontRead:
+        if data.role not in tuple(r.value for r in FontRole):
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "Choose a sans, serif or monospaced role."
+            )
+        if len(data.faces) > MAX_FACES:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"A family may hold at most {MAX_FACES} faces.",
+            )
+        count = int(await self.session.scalar(select(func.count(ReportFont.id))) or 0)
+
+        try:
+            name = clean_name(data.name)
+            slug = slugify(name)
+        except FontError as exc:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+        existing = (
+            (
+                await self.session.execute(
+                    select(ReportFont).where(ReportFont.slug == slug)
+                )
+            )
+            .scalars()
+            .first()
+        )
+        if existing is None and count >= MAX_FAMILIES:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"This instance already holds {MAX_FAMILIES} typefaces. Delete one first.",
+            )
+        if slug in {f.slug for f in vendored()}:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"'{slug}' is a shipped typeface. Give yours a different name.",
+            )
+
+        faces: list[dict] = []
+        try:
+            for face in data.faces:
+                faces.append(
+                    store_face(
+                        slug,
+                        decode(face.content),
+                        weight=face.weight,
+                        italic=face.italic,
+                    )
+                )
+        except FontError as exc:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+        values = {
+            "name": name,
+            "role": data.role,
+            "origin": FontOrigin.CUSTOM.value,
+            "note": data.note.strip(),
+            "faces": faces,
+            "bytes": sum(f["bytes"] for f in faces),
+            "uploaded_by": user_id,
+            "updated_at": utc_now(),
+        }
+        if existing is None:
+            row = ReportFont(slug=slug, **values)
+            self.session.add(row)
+        else:
+            row = existing
+            for key, value in values.items():
+                setattr(row, key, value)
+            self.session.add(row)
+        await self.session.commit()
+        await self.session.refresh(row)
+        return ReportFontRead(
+            id=row.id,
+            slug=row.slug,
+            name=row.name,
+            role=row.role,
+            origin=row.origin,
+            note=row.note,
+            faces=[FontFace.model_validate(f) for f in row.faces],
+            weights=sorted({int(f["weight"]) for f in row.faces}),
+            bytes=row.bytes,
+            created_at=row.created_at,
+        )
+
+    async def delete_font(self, slug: str) -> None:
+        row = (
+            (
+                await self.session.execute(
+                    select(ReportFont).where(ReportFont.slug == slug)
+                )
+            )
+            .scalars()
+            .first()
+        )
+        if row is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Typeface not found")
+        try:
+            delete_family(row.slug, row.origin)
+        except FontError as exc:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+        await self.session.delete(row)
+        await self.session.commit()
+
+    # ---------- instance defaults ----------
+
+    async def _settings(self) -> InstanceSettings:
+        row = (
+            (await self.session.execute(select(InstanceSettings).limit(1)))
+            .scalars()
+            .first()
+        )
+        if row is None:
+            row = InstanceSettings()
+            self.session.add(row)
+            await self.session.commit()
+            await self.session.refresh(row)
+        return row
+
+    async def defaults(self) -> ReportDefaults:
+        row = await self._settings()
+        return ReportDefaults.model_validate(row.report_defaults or {})
+
+    async def set_defaults(self, data: ReportDefaults) -> ReportDefaults:
+        row = await self._settings()
+        row.report_defaults = data.model_dump()
+        row.updated_at = utc_now()
+        self.session.add(row)
+        await self.session.commit()
+        return data
 
     # ---------- templates ----------
 
@@ -503,6 +684,10 @@ class ReportService:
         branding = data.branding or ReportBranding.model_validate(
             (template.branding if template else {}) or {}
         )
+        defaults = await self.defaults()
+        branding = _fill_empty(branding, defaults.branding)
+        if not style.theme and defaults.theme:
+            style.theme = defaults.theme
         narrative = data.narrative or NarrativeOptions.model_validate(
             (template.narrative if template else {}) or {}
         )
@@ -785,6 +970,15 @@ def _pages(sections: list[SectionEntry], *, issues: int, assets: int) -> int:
         else:
             total += 1
     return max(2, round(total))
+
+
+def _fill_empty(branding: ReportBranding, defaults: ReportBranding) -> ReportBranding:
+    """Instance defaults fill what a template left blank; they never overwrite a choice."""
+    merged = branding.model_dump()
+    for key, fallback in defaults.model_dump().items():
+        if not merged.get(key) and fallback:
+            merged[key] = fallback
+    return ReportBranding.model_validate(merged)
 
 
 def _validate_sections(sections: list[SectionEntry]) -> None:

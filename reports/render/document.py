@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass, field
 
 from reports.base import RenderContext, Section
+from reports.fonts import families, font_faces
 from reports.registry import SectionSpec
 from reports.registry import section as lookup_section
 from reports.render.css import stylesheet
@@ -30,6 +31,7 @@ class TocEntry:
 @dataclass
 class RenderedDocument:
     html: str
+    faces: str = ""
     entries: list[TocEntry] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     rendered: list[str] = field(default_factory=list)
@@ -178,10 +180,17 @@ def render_html(ctx: RenderContext) -> RenderedDocument:
     _fill_contents(env, ctx, doc, blocks, toc_slots)
 
     doc.warnings.extend(ctx.warnings)
+    doc.faces = font_faces(ctx.data.session)
     doc.html = env.get_template("document.html").render(
         spec=ctx.spec,
         blocks=blocks,
-        stylesheet=stylesheet(ctx.theme, ctx.style, slot_values(ctx)),
+        stylesheet=stylesheet(
+            ctx.theme,
+            ctx.style,
+            slot_values(ctx),
+            faces=doc.faces,
+            families={f.slug: f.name for f in families(ctx.data.session)},
+        ),
     )
     return doc
 

@@ -5,14 +5,17 @@ from fastapi import APIRouter, Depends, Path, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.services.report import ReportService
 from shared.definitions.reports import FORMAT_MEDIA_TYPES, ReportFormat
 from shared.models.report import (
     ReportCatalog,
     ReportCreate,
+    ReportDefaults,
     ReportEstimate,
+    ReportFontRead,
+    ReportFontUpload,
     ReportRead,
     ReportTemplateCreate,
     ReportTemplateRead,
@@ -61,6 +64,41 @@ async def delete_theme(
     slug: Annotated[str, Path(description="Theme key")],
 ):
     await ReportService(session).delete_theme(slug)
+
+
+@router.get("/fonts", response_model=list[ReportFontRead])
+async def list_fonts(_current_user: CurrentUser, session: Session):
+    return await ReportService(session).fonts()
+
+
+@router.post(
+    "/fonts", response_model=ReportFontRead, status_code=status.HTTP_201_CREATED
+)
+async def upload_font(
+    _admin: CurrentSuperuser, session: Session, body: ReportFontUpload
+):
+    return await ReportService(session).upload_font(body, _admin.id)
+
+
+@router.delete("/fonts/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_font(
+    _admin: CurrentSuperuser,
+    session: Session,
+    slug: Annotated[str, Path(description="Typeface key")],
+):
+    await ReportService(session).delete_font(slug)
+
+
+@router.get("/defaults", response_model=ReportDefaults)
+async def report_defaults(_current_user: CurrentUser, session: Session):
+    return await ReportService(session).defaults()
+
+
+@router.put("/defaults", response_model=ReportDefaults)
+async def set_report_defaults(
+    _admin: CurrentSuperuser, session: Session, body: ReportDefaults
+):
+    return await ReportService(session).set_defaults(body)
 
 
 @router.get("/templates", response_model=list[ReportTemplateRead])

@@ -7,6 +7,12 @@ from sqlalchemy import Column, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.report_fonts import (
+    MAX_FACES,
+    MAX_FAMILY_NAME,
+    FontOrigin,
+    FontRole,
+)
 from shared.definitions.report_theme import ThemeOrigin, ThemeTokens
 from shared.definitions.reports import (
     MAX_SECTIONS,
@@ -121,6 +127,74 @@ class ReportTheme(SQLModel, table=True):
     uploaded_by: uuid.UUID | None = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+class ReportFont(SQLModel, table=True):
+    """One typeface family. Its faces live on the report-fonts volume, named by us."""
+
+    __tablename__ = "report_fonts"
+    __table_args__ = (UniqueConstraint("slug", name="uq_report_font_slug"),)
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    slug: str = Field(max_length=64, index=True)
+    name: str = Field(max_length=MAX_FAMILY_NAME)
+    role: str = Field(default=FontRole.SANS.value, max_length=8, index=True)
+    origin: str = Field(default=FontOrigin.CUSTOM.value, max_length=16, index=True)
+    note: str = Field(default="", max_length=300)
+    faces: list = _json_list()
+    bytes: int = Field(default=0)
+    uploaded_by: uuid.UUID | None = Field(default=None)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class FontFace(BaseModel):
+    weight: int = 400
+    italic: bool = False
+    filename: str = ""
+    format: str = "woff2"
+    bytes: int = 0
+
+
+class FontFaceUpload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    filename: str = PydanticField(default="", max_length=200)
+    content: str = PydanticField(max_length=3_000_000)
+    weight: int = PydanticField(default=400, ge=100, le=900)
+    italic: bool = False
+
+
+class ReportFontUpload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = PydanticField(max_length=MAX_FAMILY_NAME)
+    role: str = PydanticField(default=FontRole.SANS.value, max_length=8)
+    note: str = PydanticField(default="", max_length=300)
+    faces: list[FontFaceUpload] = PydanticField(min_length=1, max_length=MAX_FACES)
+
+
+class ReportFontRead(BaseModel):
+    id: uuid.UUID | None = None
+    slug: str
+    name: str
+    role: str
+    origin: str
+    note: str = ""
+    faces: list[FontFace] = PydanticField(default_factory=list)
+    weights: list[int] = PydanticField(default_factory=list)
+    bytes: int = 0
+    created_at: datetime | None = None
+
+
+class ReportDefaults(BaseModel):
+    """Instance-wide starting point, so a logo and a classification are set once."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    branding: ReportBranding = PydanticField(default_factory=ReportBranding)
+    theme: str = PydanticField(default="", max_length=64)
+    footer_note: str = PydanticField(default="", max_length=300)
 
 
 class ReportFile(BaseModel):
@@ -339,7 +413,8 @@ class ReportCatalog(BaseModel):
     groups: list[dict] = PydanticField(default_factory=list)
     themes: list[ThemeSummary] = PydanticField(default_factory=list)
     presets: list[dict] = PydanticField(default_factory=list)
-    fonts: list[dict] = PydanticField(default_factory=list)
+    fonts: list[ReportFontRead] = PydanticField(default_factory=list)
+    font_roles: list[dict] = PydanticField(default_factory=list)
     page_sizes: list[dict] = PydanticField(default_factory=list)
     formats: list[dict] = PydanticField(default_factory=list)
     scopes: list[dict] = PydanticField(default_factory=list)

@@ -143,8 +143,41 @@ def upgrade() -> None:
     op.create_index("ix_ai_narratives_cache_key", "ai_narratives", ["cache_key"])
     op.create_index("ix_ai_narratives_created_at", "ai_narratives", ["created_at"])
 
+    op.create_table(
+        "report_fonts",
+        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("slug", sa.String(length=64), nullable=False),
+        sa.Column("name", sa.String(length=80), nullable=False),
+        sa.Column("role", sa.String(length=8), nullable=False),
+        sa.Column("origin", sa.String(length=16), nullable=False),
+        sa.Column("note", sa.String(length=300), nullable=False),
+        sa.Column("faces", sa.JSON(), nullable=False),
+        sa.Column("bytes", sa.Integer(), nullable=False),
+        sa.Column("uploaded_by", sa.Uuid(), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("slug", name="uq_report_font_slug"),
+    )
+    op.create_index("ix_report_fonts_id", "report_fonts", ["id"])
+    op.create_index("ix_report_fonts_slug", "report_fonts", ["slug"])
+    op.create_index("ix_report_fonts_role", "report_fonts", ["role"])
+    op.create_index("ix_report_fonts_origin", "report_fonts", ["origin"])
+
+    op.add_column(
+        "instance_settings",
+        sa.Column(
+            "report_defaults",
+            sa.JSON(),
+            nullable=False,
+            server_default=sa.text("'{}'::json"),
+        ),
+    )
+
 
 def downgrade() -> None:
+    op.drop_column("instance_settings", "report_defaults")
+    op.drop_table("report_fonts")
     op.drop_table("ai_narratives")
     op.drop_table("report_themes")
     op.drop_table("reports")

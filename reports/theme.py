@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -33,6 +34,26 @@ class ThemeError(ValueError):
     """A theme file could not be read."""
 
 
+_IMPORT_RE = re.compile(r"@import\b", re.I)
+_URL_RE = re.compile(r"url\(\s*['\"]?([^)'\"]*)", re.I)
+
+
+def check_css(css: str) -> None:
+    """A theme may style, never fetch. Anything that could pull bytes is refused."""
+    if not css:
+        return
+    if _IMPORT_RE.search(css):
+        msg = "A theme may not use @import. Put the rules in the css block itself."
+        raise ThemeError(msg)
+    for target in _URL_RE.findall(css):
+        if not target.strip().lower().startswith("data:"):
+            msg = (
+                "A theme may only reference embedded data in url(). "
+                f"Refused: {target.strip()[:80] or '(empty)'}"
+            )
+            raise ThemeError(msg)
+
+
 def parse(source: str, *, slug: str = "") -> ThemeTokens:
     try:
         raw = yaml.safe_load(source)
@@ -54,6 +75,7 @@ def parse(source: str, *, slug: str = "") -> ThemeTokens:
         raise ThemeError(msg)
     if not tokens.name:
         tokens.name = tokens.key.replace("-", " ").title()
+    check_css(tokens.css)
     return tokens
 
 
@@ -113,9 +135,10 @@ def resolve(tokens: ThemeTokens, style: ReportStyle) -> ThemeTokens:
     return merged
 
 
-def font_stack(key: str, fallback: str) -> str:
-    spec = FONT_BY_KEY.get(key)
-    family = spec.stack if spec else key
+def font_stack(key: str, fallback: str, families: dict[str, str] | None = None) -> str:
+    family = (families or {}).get(key) or (
+        FONT_BY_KEY[key].stack if key in FONT_BY_KEY else key
+    )
     return f"'{family}', {fallback}" if family else fallback
 
 
@@ -132,7 +155,9 @@ def _scale_sizes(base: float, ratio: float, density: str) -> dict[str, float]:
     }
 
 
-def css_variables(tokens: ThemeTokens, style: ReportStyle) -> str:
+def css_variables(
+    tokens: ThemeTokens, style: ReportStyle, *, families: dict[str, str] | None = None
+) -> str:
     colour: ColorTokens = tokens.color
     typography = tokens.type
     layout = tokens.layout
@@ -153,9 +178,9 @@ def css_variables(tokens: ThemeTokens, style: ReportStyle) -> str:
         f"--r-link:{colour.link}",
         f"--r-cover-bg:{tokens.cover.background or colour.accent}",
         f"--r-cover-ink:{'#ffffff' if tokens.cover.ink == 'light' else colour.ink}",
-        f"--r-font-heading:{font_stack(typography.heading, 'sans-serif')}",
-        f"--r-font-body:{font_stack(typography.body, 'sans-serif')}",
-        f"--r-font-mono:{font_stack(typography.mono, 'monospace')}",
+        f"--r-font-heading:{font_stack(typography.heading, 'sans-serif', families)}",
+        f"--r-font-body:{font_stack(typography.body, 'sans-serif', families)}",
+        f"--r-font-mono:{font_stack(typography.mono, 'monospace', families)}",
         f"--r-size:{typography.base_size}pt",
         f"--r-lh:{typography.line_height}",
         f"--r-h1:{sizes['h1']}pt",

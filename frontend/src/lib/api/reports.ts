@@ -2,6 +2,9 @@ import { api, API_PREFIX } from './client';
 import type {
 	Report,
 	ReportCatalog,
+	ReportDefaults,
+	ReportFont,
+	ReportFontUpload,
 	ReportCreate,
 	ReportEstimate,
 	ReportTemplate,
@@ -67,6 +70,26 @@ export const reportsApi = {
 
 	downloadUrl(projectId: string, id: string, format: string): string {
 		return `${API_PREFIX}/reports/${id}/download${q({ project_id: projectId, format })}`;
+	},
+
+	fonts(): Promise<ReportFont[]> {
+		return api.get<ReportFont[]>('/reports/fonts');
+	},
+
+	uploadFont(body: ReportFontUpload): Promise<ReportFont> {
+		return api.post<ReportFont>('/reports/fonts', body);
+	},
+
+	deleteFont(slug: string): Promise<void> {
+		return api.delete<void>(`/reports/fonts/${slug}`);
+	},
+
+	defaults(): Promise<ReportDefaults> {
+		return api.get<ReportDefaults>('/reports/defaults');
+	},
+
+	saveDefaults(body: ReportDefaults): Promise<ReportDefaults> {
+		return api.put<ReportDefaults>('/reports/defaults', body);
 	},
 
 	themes(): Promise<ReportTheme[]> {

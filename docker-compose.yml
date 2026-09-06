@@ -47,6 +47,7 @@ services:
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
       - reports_out:/app/reports-out
+      - report_fonts:/app/report-fonts
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -79,6 +80,7 @@ services:
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
       - reports_out:/app/reports-out
+      - report_fonts:/app/report-fonts
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -120,6 +122,7 @@ services:
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
       - reports_out:/app/reports-out
+      - report_fonts:/app/report-fonts
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -151,6 +154,7 @@ services:
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
       - reports_out:/app/reports-out
+      - report_fonts:/app/report-fonts
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
@@ -191,3 +195,4 @@ volumes:
   vuln_templates:
   wordlists:
   reports_out:
+  report_fonts:

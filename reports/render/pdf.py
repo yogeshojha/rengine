@@ -14,5 +14,9 @@ class PdfResult:
 def to_pdf(html: str, *, base_url: str) -> PdfResult:
     from weasyprint import HTML  # noqa: PLC0415
 
-    document = HTML(string=html, base_url=base_url).render()
+    from reports.render.fetcher import safe_url_fetcher  # noqa: PLC0415
+
+    document = HTML(
+        string=html, base_url=base_url, url_fetcher=safe_url_fetcher
+    ).render()
     return PdfResult(data=document.write_pdf(), pages=len(document.pages))
