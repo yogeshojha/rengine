@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import DatabaseError
 
 from shared.definitions.endpoints import (
     MAX_PARAM_SAMPLES,
@@ -342,6 +343,36 @@ def _changes(row: Endpoint, merged: _Merged, source: str, now: datetime) -> dict
     return changed
 
 
+def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
+    """Insert inside a savepoint; a row postgres refuses costs that row, not the stage."""
+    try:
+        with session.begin_nested():
+            written = session.execute(
+                insert(Endpoint)
+                .values(rows)
+                .on_conflict_do_nothing(constraint=_CONSTRAINT)
+                .returning(Endpoint.signature)
+            )
+            return set(written.scalars().all()), 0
+    except DatabaseError:
+        logger.warning("endpoint batch rejected, retrying row by row")
+    created: set[str] = set()
+    refused = 0
+    for row in rows:
+        try:
+            with session.begin_nested():
+                written = session.execute(
+                    insert(Endpoint)
+                    .values([row])
+                    .on_conflict_do_nothing(constraint=_CONSTRAINT)
+                    .returning(Endpoint.signature)
+                )
+                created.update(written.scalars().all())
+        except DatabaseError:
+            refused += 1
+    return created, refused
+
+
 def upsert(
     session: Session,
     *,
@@ -399,14 +430,9 @@ def upsert(
         ]
         merge: list[Endpoint] = list(existing.values())
         if fresh:
-            written = session.execute(
-                insert(Endpoint)
-                .values(fresh)
-                .on_conflict_do_nothing(constraint=_CONSTRAINT)
-                .returning(Endpoint.signature)
-            )
-            created = set(written.scalars().all())
+            created, refused = _insert_rows(session, fresh)
             result.created += len(created)
+            result.rejected += refused
             # another writer won the race: merge into its row instead of dropping ours
             lost = [sig for sig in missing if sig not in created]
             if lost:

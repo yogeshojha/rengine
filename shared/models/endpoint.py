@@ -9,6 +9,10 @@ from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.definitions.endpoints import (
+    MAX_FILENAME_LENGTH,
+    MAX_HOST_LENGTH,
+    MAX_PATH_LENGTH,
+    MAX_URL_LENGTH,
     EndpointClass,
     EndpointSource,
 )
@@ -46,13 +50,13 @@ class Endpoint(SQLModel, table=True):
     signature: str = Field(max_length=64, index=True)
 
     # where it is
-    url: str = Field(max_length=2000)
-    host: str = Field(max_length=500, index=True)
+    url: str = Field(max_length=MAX_URL_LENGTH)
+    host: str = Field(max_length=MAX_HOST_LENGTH, index=True)
     port: int = Field(default=443)
     scheme: str = Field(default="https", max_length=8)
-    path: str = Field(max_length=1500)
-    dir_path: str = Field(max_length=1500, index=True)
-    filename: str | None = Field(default=None, max_length=300)
+    path: str = Field(max_length=MAX_PATH_LENGTH)
+    dir_path: str = Field(max_length=MAX_PATH_LENGTH, index=True)
+    filename: str | None = Field(default=None, max_length=MAX_FILENAME_LENGTH)
     extension: str | None = Field(default=None, max_length=10, index=True)
     depth: int = Field(default=0, index=True)
 

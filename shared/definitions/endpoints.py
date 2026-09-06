@@ -9,6 +9,8 @@ from urllib.parse import parse_qsl, urlsplit
 MAX_ENDPOINTS_PER_SCAN = 200_000
 MAX_URL_LENGTH = 2000
 MAX_PATH_LENGTH = 1500
+MAX_HOST_LENGTH = 500
+MAX_FILENAME_LENGTH = 300
 MAX_PARAMS = 40
 MAX_PARAM_SAMPLES = 10
 MAX_DEPTH = 30
@@ -754,6 +756,9 @@ def split_path(path: str) -> tuple[str, str | None, str | None, int]:
     else:
         cut = path.rfind("/")
         dir_path, filename = path[: cut + 1], path[cut + 1 :] or None
+        # a path is capped, a single segment inside it is not — the column is
+        if filename:
+            filename = filename[:MAX_FILENAME_LENGTH]
     extension = None
     if filename and "." in filename:
         candidate = filename.rsplit(".", 1)[1]
@@ -777,7 +782,7 @@ def parse_url(raw: str, *, default_scheme: str = "https") -> ParsedUrl | None:
     if scheme not in _DEFAULT_PORTS:
         return None
     host = (parts.hostname or "").lower().strip(".")
-    if not host or not _HOST_RE.match(host):
+    if not host or len(host) > MAX_HOST_LENGTH or not _HOST_RE.match(host):
         return None
     try:
         port = parts.port or _DEFAULT_PORTS[scheme]
