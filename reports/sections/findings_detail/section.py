@@ -37,6 +37,19 @@ class FindingsDetailConfig(SectionConfig):
     evidence_chars: int = limit(
         1200, title="Evidence characters kept", minimum=200, maximum=MAX_EVIDENCE_CHARS
     )
+    detail_from: str = choice(
+        Severity.MEDIUM.value,
+        title="Full detail down to",
+        description="Weaknesses at or above this severity get evidence and impact. "
+        "Below it they are written short, and informational observations roll up into one table.",
+        options={s: s.title() for s in SEVERITY_ORDER if s != Severity.UNKNOWN.value},
+    )
+    roll_up_info: bool = flag(
+        True,
+        title="Roll informational observations into a table",
+        description="One row per check instead of an entry each. A long tail of observations "
+        "should not outweigh the weaknesses above it.",
+    )
     order: str = choice(
         "risk",
         title="Order",
@@ -63,9 +76,19 @@ class FindingsDetailSection(Section):
             return None
         issues = _ordered(issues, cfg.order)[: cfg.max_issues]
 
+        rank = {s: i for i, s in enumerate(SEVERITY_ORDER)}
+        cut = rank.get(cfg.detail_from, len(SEVERITY_ORDER))
+        quiet = {Severity.INFO.value, Severity.UNKNOWN.value}
+
+        rolled = []
+        if cfg.roll_up_info:
+            rolled = [i for i in issues if i.severity in quiet]
+            issues = [i for i in issues if i.severity not in quiet]
+
         rows = []
         subs: list[tuple[str, str]] = []
         for index, issue in enumerate(issues):
+            full = rank.get(issue.severity, len(SEVERITY_ORDER)) <= cut
             anchor = f"f-{index}-{issue.template_id.replace('/', '-')[:48]}"
             subs.append((issue.name, anchor))
             sample = issue.findings[0]
@@ -73,21 +96,33 @@ class FindingsDetailSection(Section):
                 {
                     "issue": issue,
                     "anchor": anchor,
+                    "full": full,
                     "sample": sample,
                     "assets": issue.findings[: cfg.max_assets],
                     "more": max(0, issue.count - cfg.max_assets),
-                    "explainer": ctx.narrator.issue_explainer(issue),
-                    "controls": _controls(issue) if cfg.show_controls else [],
+                    "explainer": ctx.narrator.issue_explainer(issue) if full else "",
+                    "controls": _controls(issue) if cfg.show_controls and full else [],
                     "request": _clip(sample.request, cfg.evidence_chars)
-                    if cfg.show_evidence
+                    if cfg.show_evidence and full
                     else "",
                     "response": _clip(sample.response, cfg.evidence_chars)
-                    if cfg.show_evidence
+                    if cfg.show_evidence and full
                     else "",
-                    "curl": _clip(sample.curl, 600) if cfg.show_curl else "",
+                    "curl": _clip(sample.curl, 600) if cfg.show_curl and full else "",
                 }
             )
-        return {"rows": rows, "toc_subs": subs}
+        return {
+            "rows": rows,
+            "toc_subs": subs,
+            "rolled": [
+                {
+                    "issue": i,
+                    "sample": i.findings[0],
+                    "hosts": len({f.host for f in i.findings if f.host}),
+                }
+                for i in rolled
+            ],
+        }
 
 
 def _ordered(issues, key: str):

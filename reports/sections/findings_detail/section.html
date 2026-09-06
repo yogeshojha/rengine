@@ -35,7 +35,7 @@
     <div class="md">{{ issue.description|md|safe }}</div>
     {% endif %}
 
-    {% if cfg.show_impact and issue.impact %}
+    {% if cfg.show_impact and issue.impact and row.full %}
     <h5>Impact</h5>
     <div class="md">{{ issue.impact|md|safe }}</div>
     {% endif %}
@@ -92,10 +92,31 @@
     <div class="controls">{% for line in row.controls %}<div>{{ line|safe }}</div>{% endfor %}</div>
     {% endif %}
 
-    {% if cfg.show_references and issue.references %}
+    {% if cfg.show_references and issue.references and row.full %}
     <h5>References</h5>
     <ul class="micro">{% for ref in issue.references[:6] %}<li class="mono-break">{{ ref }}</li>{% endfor %}</ul>
     {% endif %}
   </div>
 </div>
 {% endfor %}
+
+{% if rolled %}
+<div class="sub">
+  <h3 class="sub__title">Observations</h3>
+  <p class="micro faint block">Informational checks that fired. They describe the asset rather than a weakness, so they are listed rather than written up.</p>
+  <table class="table table--fixed">
+    <thead><tr><th style="width:17mm">Severity</th><th>Check</th><th class="num" style="width:16mm">Seen</th><th class="num" style="width:16mm">Hosts</th><th style="width:58mm">First location</th></tr></thead>
+    <tbody>
+      {% for row in rolled %}
+      <tr>
+        <td>{{ m.sev(row.issue.severity) }}</td>
+        <td class="wrap">{{ row.issue.name }}</td>
+        <td class="num">{{ row.issue.count|num }}</td>
+        <td class="num">{{ row.hosts|num }}</td>
+        <td class="mono-break micro muted">{{ row.sample.matched_at|clip(70) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
