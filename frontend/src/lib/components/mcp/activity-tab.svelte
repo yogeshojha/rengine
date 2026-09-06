@@ -10,6 +10,9 @@
 
 	const calls = $derived(mcp.calls);
 
+	const failed = $derived(calls.filter((c) => !c.ok).length);
+	const slowest = $derived(calls.reduce((n, c) => Math.max(n, c.duration_ms), 0));
+
 	const byTool = $derived(
 		Object.entries(
 			calls.reduce<Record<string, number>>((acc, call) => {
@@ -25,7 +28,11 @@
 <div class="space-y-6">
 	{#if byTool.length}
 		<Card.Root class="gap-0 py-0">
-			<PanelHead title="Most called" description="Across the calls kept in the trail" />
+			<PanelHead title="Most called">
+				<span class="tabular-nums"
+					>{byTool.length} of {new Set(calls.map((c) => c.tool)).size} tools</span
+				>
+			</PanelHead>
 			<div class="divide-y">
 				{#each byTool as [tool, count] (tool)}
 					{@const share = Math.round((count / calls.length) * 100)}
@@ -44,10 +51,20 @@
 	{/if}
 
 	<Card.Root class="gap-0 py-0">
-		<PanelHead title="Recent calls" description="The last 100 calls, newest first">
-			<Button variant="ghost" size="sm" onclick={() => mcp.loadCalls()}>
+		<PanelHead title="Recent calls">
+			<span class="tabular-nums">{calls.length}</span>
+			{#if failed}
+				<span class="flex items-center gap-1.5 tabular-nums text-destructive">
+					<span class="size-1.5 rounded-full bg-destructive" aria-hidden="true"></span>
+					{failed} failed
+				</span>
+			{/if}
+			{#if slowest}
+				<span class="tabular-nums">{slowest}ms slowest</span>
+			{/if}
+			<Button variant="ghost" size="icon" class="size-7" onclick={() => mcp.loadCalls()}>
 				<RefreshCwIcon class="size-4" />
-				Refresh
+				<span class="sr-only">Refresh</span>
 			</Button>
 		</PanelHead>
 
@@ -57,7 +74,7 @@
 					compact
 					icon={ActivityIcon}
 					title="No calls yet"
-					description="Once an agent connects and calls a tool, its activity shows here."
+					description="Tool calls appear here once an agent connects."
 				/>
 			</div>
 		{:else}
@@ -82,9 +99,4 @@
 			</div>
 		{/if}
 	</Card.Root>
-
-	<p class="text-xs text-muted-foreground">
-		Calls and sessions are kept in Redis for seven days, not in the database. Restarting Redis
-		clears this trail; it does not affect tokens or the server state.
-	</p>
 </div>

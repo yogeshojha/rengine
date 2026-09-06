@@ -8,6 +8,7 @@
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import PanelHead from '$lib/components/panel-head.svelte';
+	import CodeBlock from '$lib/components/code-block.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import CopyIcon from '@lucide/svelte/icons/copy';
@@ -18,7 +19,12 @@
 	import { mcp } from '$lib/stores/mcp.svelte';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { TOUCHES_TARGETS, type McpCapability } from '$lib/types/mcp';
+	import {
+		MCP_STATE_DOT,
+		MCP_STATE_LABEL,
+		TOUCHES_TARGETS,
+		type McpCapability
+	} from '$lib/types/mcp';
 
 	interface Props {
 		canAdmin: boolean;
@@ -36,6 +42,10 @@
 	const running = $derived(status?.enabled ?? false);
 	const sessions = $derived(status?.sessions ?? []);
 	const rate = $derived(rateLimit ?? status?.rate_limit_per_minute ?? 120);
+	const serverState = $derived(running ? 'running' : ('stopped' as const));
+	const grantable = $derived(
+		(status?.capabilities ?? []).filter((c) => c.always || status?.ceiling[c.key]).length
+	);
 
 	const stdioSnippet = $derived(
 		JSON.stringify(
@@ -91,26 +101,12 @@
 	<div class="space-y-6">
 		<Card.Root class="gap-0 py-0">
 			<div class="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-				<div class="flex items-center gap-3">
+				<div class="flex items-center gap-2.5">
 					<span
-						class="size-2.5 shrink-0 rounded-full {running
-							? 'bg-success shadow-[0_0_0_3px] shadow-success/20'
-							: 'bg-muted-foreground/50'}"
+						class="size-2 shrink-0 rounded-full border {MCP_STATE_DOT[serverState]}"
+						aria-hidden="true"
 					></span>
-					<div class="flex flex-col gap-0.5">
-						<span class="text-base leading-6 font-semibold">
-							{running ? 'Accepting connections' : 'Stopped'}
-						</span>
-						<span class="text-xs text-muted-foreground">
-							{#if running}
-								Started {relativeTime(status.started_at)} &middot;
-								{sessions.length} agent{sessions.length === 1 ? '' : 's'} connected &middot;
-								{status.calls_today} call{status.calls_today === 1 ? '' : 's'} today
-							{:else}
-								No agent can reach this instance.
-							{/if}
-						</span>
-					</div>
+					<span class="text-base leading-6 font-semibold">{MCP_STATE_LABEL[serverState]}</span>
 				</div>
 
 				<div class="flex items-center gap-2">
@@ -160,7 +156,7 @@
 				</div>
 			</div>
 
-			<div class="grid grid-cols-2 border-t sm:grid-cols-3 lg:grid-cols-5">
+			<div class="grid grid-cols-2 border-t sm:grid-cols-3 lg:grid-cols-6">
 				{#snippet cell(label: string, value: string, mono = false)}
 					<div class="flex min-w-0 flex-col gap-0.5 border-r px-5 py-3 last:border-r-0">
 						<span class="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
@@ -171,14 +167,18 @@
 				{/snippet}
 				{@render cell('Endpoint', status.endpoint.replace(/^https?:\/\//, ''), true)}
 				{@render cell('Protocol', status.protocol_version, true)}
-				{@render cell('Tools exposed', `${status.tools_available} of ${status.tools_total}`)}
-				{@render cell('Tokens', `${status.tokens_active} active`)}
-				{@render cell('Rate limit', `${status.rate_limit_per_minute} / min`)}
+				{@render cell(
+					'Uptime',
+					running ? relativeTime(status.started_at).replace(' ago', '') : '—'
+				)}
+				{@render cell('Sessions', running ? String(sessions.length) : '—')}
+				{@render cell('Calls today', String(status.calls_today))}
+				{@render cell('Rate limit', `${status.rate_limit_per_minute}/min`)}
 			</div>
 		</Card.Root>
 
 		<Card.Root class="gap-0 py-0">
-			<PanelHead title="Transport" description="How an agent reaches the server">
+			<PanelHead title="Transport">
 				<div class="flex rounded-md bg-muted p-0.5">
 					{#each ['http', 'stdio'] as const as option (option)}
 						<button
@@ -198,13 +198,9 @@
 				<div class="divide-y">
 					<div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
 						<div class="min-w-0">
-							<div class="flex items-center gap-2 text-sm font-medium">
-								Endpoint
-								<Badge variant="secondary" class="text-[10px]">Same origin as reNgine</Badge>
-							</div>
+							<div class="text-sm font-medium">Endpoint</div>
 							<p class="mt-0.5 text-xs text-muted-foreground">
-								Agents connect over the API you already run. Put a reverse proxy in front if one
-								must reach it from another machine.
+								Served by the API. A reverse proxy owns TLS and any external access.
 							</p>
 						</div>
 						<div class="flex items-center gap-1.5 rounded-md border bg-muted px-2.5 py-1">
@@ -215,23 +211,19 @@
 
 					<div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
 						<div class="min-w-0">
-							<div class="flex items-center gap-2 text-sm font-medium">
-								Service token required
-								<Badge variant="success" class="text-[10px]">Enforced</Badge>
-							</div>
+							<div class="text-sm font-medium">Service token</div>
 							<p class="mt-0.5 text-xs text-muted-foreground">
-								Every request carries <span class="font-mono">Authorization: Bearer</span>. There is
-								no anonymous mode.
+								Required on every request. There is no anonymous access.
 							</p>
 						</div>
-						<Switch checked disabled />
+						<Badge variant="success">Enforced</Badge>
 					</div>
 
 					<div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
 						<div class="min-w-0">
-							<div class="text-sm font-medium">Rate limit per token</div>
+							<div class="text-sm font-medium">Rate limit</div>
 							<p class="mt-0.5 text-xs text-muted-foreground">
-								Calls one agent may make each minute, on top of the instance-wide throttle.
+								Calls one token may make each minute.
 							</p>
 						</div>
 						<div class="flex items-center gap-2">
@@ -239,53 +231,32 @@
 								type="number"
 								min="1"
 								max="10000"
-								class="h-8 w-24"
+								class="h-8 w-24 text-right tabular-nums"
 								disabled={!canAdmin}
 								value={rate}
 								oninput={(e) => (rateLimit = Number(e.currentTarget.value))}
 								onblur={commitRate}
 							/>
-							<span class="text-xs text-muted-foreground">/ min</span>
+							<span class="text-xs text-muted-foreground">/min</span>
 						</div>
 					</div>
 				</div>
 			{:else}
 				<div class="space-y-3 px-5 py-4">
-					<div
-						class="flex gap-2.5 rounded-md border border-warning/30 bg-warning/8 px-3 py-2.5 text-xs"
-					>
-						<TriangleAlertIcon class="mt-0.5 size-4 shrink-0 text-warning" />
-						<span>
-							Your agent starts a stdio server itself, so Start and Stop do not apply to it. Revoke
-							the token to cut that access.
-						</span>
-					</div>
-					<div class="space-y-1.5">
-						<div class="flex items-center justify-between gap-2">
-							<span class="text-xs font-medium">Agent configuration</span>
-							<Button variant="outline" size="sm" onclick={() => copy(stdioSnippet, 'stdio')}>
-								{#if copied === 'stdio'}
-									<CheckIcon class="size-4" />Copied
-								{:else}
-									<CopyIcon class="size-4" />Copy config
-								{/if}
-							</Button>
-						</div>
-						<pre
-							class="overflow-x-auto rounded-md border bg-muted px-3 py-2.5 font-mono text-xs">{stdioSnippet}</pre>
-						<p class="text-xs text-muted-foreground">
-							Issue a token on the Access tab and paste it in place of the placeholder.
-						</p>
-					</div>
+					<p class="text-xs text-muted-foreground">
+						The agent starts this process, so Start and Stop do not apply. Revoke the token to cut
+						access.
+					</p>
+					<span class="text-xs font-medium">Agent configuration</span>
+					<CodeBlock code={stdioSnippet} lang="json" label="claude_desktop_config.json" />
 				</div>
 			{/if}
 		</Card.Root>
 
 		<Card.Root class="gap-0 py-0">
-			<PanelHead
-				title="What agents may do"
-				description="The instance ceiling. No token can be granted more than this allows."
-			/>
+			<PanelHead title="Capabilities">
+				<span class="tabular-nums">{grantable} of {status.capabilities.length} grantable</span>
+			</PanelHead>
 			<div class="divide-y">
 				{#each status.capabilities as capability (capability.key)}
 					{@const touches = TOUCHES_TARGETS.includes(capability.key)}
@@ -316,8 +287,14 @@
 
 		{#if running}
 			<Card.Root class="gap-0 py-0">
-				<PanelHead title="Connected agents" description="Live sessions and what each has called">
-					<span>{sessions.length} connected</span>
+				<PanelHead title="Connected agents">
+					{#if sessions.length}
+						<span class="tabular-nums">
+							{sessions.reduce((n, s) => n + s.calls, 0)} calls this session
+						</span>
+					{:else}
+						<span>None connected</span>
+					{/if}
 				</PanelHead>
 				{#if sessions.length}
 					<div class="divide-y">
@@ -332,10 +309,10 @@
 									</div>
 									<p class="mt-0.5 truncate text-xs text-muted-foreground">
 										<span class="font-mono">{session.token_name}</span>
-										&middot; connected {relativeTime(session.first_seen)}
-										&middot; {session.calls} call{session.calls === 1 ? '' : 's'}
+										&middot; {relativeTime(session.first_seen)}
+										&middot; <span class="tabular-nums">{session.calls}</span> calls
 										{#if session.last_tool}
-											&middot; last <span class="font-mono">{session.last_tool}</span>
+											&middot; <span class="font-mono">{session.last_tool}</span>
 											{relativeTime(session.last_seen)}
 										{/if}
 									</p>
@@ -356,8 +333,8 @@
 					<div class="px-5 py-8">
 						<EmptyState
 							compact
-							title="No agent has connected yet"
-							description="Issue a service token and paste it into your agent to see it here."
+							title="No agent has connected"
+							description="Issue a service token to connect an agent."
 						>
 							{#if canAdmin}
 								<Button size="sm" onclick={onIssueToken}>New token</Button>
@@ -374,7 +351,7 @@
 		title="Stop the MCP server?"
 		description="{sessions.length} agent{sessions.length === 1
 			? ' is'
-			: 's are'} connected and will be disconnected immediately. A scan an agent started keeps running; the agent cannot read the result. Tokens stay valid, so the same agents reconnect when you start it again."
+			: 's are'} connected and will be disconnected immediately. A scan an agent started keeps running — the agent just cannot read the result. Tokens stay valid, so the same agents reconnect when you start it again."
 		confirmLabel="Stop server"
 		destructive
 		loading={mcp.isSaving}

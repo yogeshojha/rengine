@@ -114,6 +114,17 @@ export interface McpSettingsUpdate {
 	ceiling?: Record<string, boolean>;
 }
 
+// running is info, never success — success is reserved for a finished scan
+export const MCP_STATE_DOT: Record<'running' | 'stopped', string> = {
+	running: 'border-info bg-info shadow-[0_0_0_4px_color-mix(in_oklch,var(--info)_18%,transparent)]',
+	stopped: 'border-muted-foreground/40 bg-muted-foreground/40'
+};
+
+export const MCP_STATE_LABEL: Record<'running' | 'stopped', string> = {
+	running: 'Accepting connections',
+	stopped: 'Stopped'
+};
+
 export function tokenState(token: McpToken): 'revoked' | 'expired' | 'active' {
 	if (token.revoked) return 'revoked';
 	if (token.expired) return 'expired';

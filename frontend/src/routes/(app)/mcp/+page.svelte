@@ -79,24 +79,17 @@
 				{routeLabels.mcp}
 			</h1>
 			<p class="mt-1 max-w-2xl text-sm text-muted-foreground">
-				Let language-model agents query this instance over the Model Context Protocol. Reading is
-				always scoped to a token; launching scans is off unless you turn it on.
+				Model Context Protocol access for agents, scoped by service token
 			</p>
 		</div>
 		{#if status}
-			<div class="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
-				{#if status.enabled}
-					<Badge variant="success" class="gap-1.5">
-						<span class="size-1.5 rounded-full bg-current"></span>
-						Running
-					</Badge>
-					<span class="text-muted-foreground">
-						{status.sessions.length} agent{status.sessions.length === 1 ? '' : 's'}
-					</span>
-				{:else}
-					<Badge variant="outline">Stopped</Badge>
-				{/if}
-			</div>
+			<Badge variant={status.enabled ? 'info' : 'outline'} class="gap-1.5">
+				<span
+					class="size-1.5 rounded-full {status.enabled ? 'bg-current' : 'bg-muted-foreground'}"
+					aria-hidden="true"
+				></span>
+				{status.enabled ? 'Running' : 'Stopped'}
+			</Badge>
 		{/if}
 	</div>
 

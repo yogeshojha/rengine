@@ -23,6 +23,10 @@
 	let pending = $state<{ token: McpToken; action: 'revoke' | 'delete' } | null>(null);
 
 	const tokens = $derived(mcp.tokens);
+	const active = $derived(tokens.filter((t) => tokenState(t) === 'active').length);
+	const launching = $derived(
+		tokens.filter((t) => tokenState(t) === 'active' && t.capabilities.includes('launch')).length
+	);
 
 	async function confirm() {
 		if (!pending) return;
@@ -34,10 +38,14 @@
 </script>
 
 <Card.Root class="gap-0 py-0">
-	<PanelHead
-		title="Service tokens"
-		description="A token is bound to one project and one capability set. Revoking takes effect on the next call."
-	>
+	<PanelHead title="Service tokens">
+		<span class="tabular-nums">{active} active</span>
+		{#if launching}
+			<span class="flex items-center gap-1.5 tabular-nums text-warning">
+				<span class="size-1.5 rounded-full bg-warning" aria-hidden="true"></span>
+				{launching} can launch
+			</span>
+		{/if}
 		{#if canAdmin}
 			<Button size="sm" onclick={onIssueToken}>
 				<PlusIcon class="size-4" />
@@ -52,7 +60,7 @@
 				compact
 				icon={KeyRoundIcon}
 				title="No tokens yet"
-				description="An agent needs a token to reach this instance. Nothing connects without one."
+				description="No agent can reach this instance without a service token."
 			>
 				{#if canAdmin}
 					<Button size="sm" onclick={onIssueToken}>New token</Button>
