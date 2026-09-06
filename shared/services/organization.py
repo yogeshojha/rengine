@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import Organization
 from shared.utils.slug import generate_slug
+from shared.utils.validation import clean_name
 
 
 async def get_or_create_organization(
@@ -14,7 +15,7 @@ async def get_or_create_organization(
     session: AsyncSession,
     description: str | None = None,
 ) -> Organization:
-    normalized_name = name.lower()
+    normalized_name = clean_name(name, max_len=100).lower()
 
     result = await session.execute(
         select(Organization).where(

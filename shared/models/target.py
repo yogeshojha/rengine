@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 from shared.enums.target import TargetType
@@ -13,9 +13,21 @@ from shared.models.organization import Organization, OrganizationSummary
 from shared.models.tag import TagSummary, TargetTag
 from shared.models.whois import WhoisRecord, WhoisRecordSummary
 from shared.utils.datetime import utc_now
+from shared.utils.validation import clean_name
 
 if TYPE_CHECKING:
     from shared.models.tag import Tag
+
+
+MAX_TAG_LEN = 50
+MAX_ORG_LEN = 100
+
+
+def _clean_labels(values: list[str] | None, max_len: int) -> list[str] | None:
+    """Drop the blanks a pasted list carries, and bound what the column can hold."""
+    if values is None:
+        return None
+    return [clean_name(v, max_len=max_len) for v in values if (v or "").strip()]
 
 
 class TargetValidationRequest(BaseModel):
@@ -101,6 +113,16 @@ class TargetCreate(TargetBase):
     organization_names: list[str] = Field(default_factory=list)
     tag_names: list[str] = Field(default_factory=list)
 
+    @field_validator("tag_names", check_fields=False)
+    @classmethod
+    def _clean_tags(cls, v):
+        return _clean_labels(v, MAX_TAG_LEN)
+
+    @field_validator("organization_names", check_fields=False)
+    @classmethod
+    def _clean_orgs(cls, v):
+        return _clean_labels(v, MAX_ORG_LEN)
+
 
 # bulk targets create/request/response models
 class TargetBulkCreate(BaseModel):
@@ -113,6 +135,16 @@ class TargetBulkCreate(BaseModel):
     )
     organization_names: list[str] = Field(default_factory=list)
     tag_names: list[str] = Field(default_factory=list)
+
+    @field_validator("tag_names", "tags", check_fields=False)
+    @classmethod
+    def _clean_tags(cls, v):
+        return _clean_labels(v, MAX_TAG_LEN)
+
+    @field_validator("organization_names", "organizations", check_fields=False)
+    @classmethod
+    def _clean_orgs(cls, v):
+        return _clean_labels(v, MAX_ORG_LEN)
 
 
 class TargetImportResult(BaseModel):
@@ -136,6 +168,16 @@ class TargetUpdate(SQLModel):
     display_name: str | None = Field(default=None, max_length=200)
     organization_names: list[str] | None = None
     tag_names: list[str] | None = None
+
+    @field_validator("tag_names", "tags", check_fields=False)
+    @classmethod
+    def _clean_tags(cls, v):
+        return _clean_labels(v, MAX_TAG_LEN)
+
+    @field_validator("organization_names", "organizations", check_fields=False)
+    @classmethod
+    def _clean_orgs(cls, v):
+        return _clean_labels(v, MAX_ORG_LEN)
 
 
 class TargetRead(TargetBase):
@@ -165,6 +207,16 @@ class TargetImportItem(BaseModel):
     tags: list[str] = Field(default_factory=list)
     organizations: list[str] = Field(default_factory=list)
     display_name: str | None = None
+
+    @field_validator("tag_names", "tags", check_fields=False)
+    @classmethod
+    def _clean_tags(cls, v):
+        return _clean_labels(v, MAX_TAG_LEN)
+
+    @field_validator("organization_names", "organizations", check_fields=False)
+    @classmethod
+    def _clean_orgs(cls, v):
+        return _clean_labels(v, MAX_ORG_LEN)
 
 
 class TargetImportRequest(BaseModel):

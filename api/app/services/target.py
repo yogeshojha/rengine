@@ -964,7 +964,7 @@ class TargetService:
         existing_target_values: set[str],
         seen_in_batch: set[str],
     ) -> "BulkTargetResult":
-        _target_value = target_value.strip()
+        _target_value = normalize_target_value(target_value)
 
         if not _target_value:
             return BulkTargetResult(
@@ -1035,7 +1035,7 @@ class TargetService:
         existing_target_values: set[str],
         seen_in_batch: set[str],
     ) -> "BulkTargetResult":
-        target_value = item.target_value.strip()
+        target_value = normalize_target_value(item.target_value)
 
         if not target_value:
             return BulkTargetResult(
@@ -1417,7 +1417,7 @@ class TargetService:
                     if key in fieldnames:
                         idx = fieldnames.index(key)
                         orig_key = csv_reader.fieldnames[idx]
-                        target_value = row.get(orig_key, "").strip()
+                        target_value = normalize_target_value(row.get(orig_key, ""))
                         break
 
                 if not target_value:
