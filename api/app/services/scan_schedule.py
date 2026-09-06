@@ -39,7 +39,7 @@ def _validate_tz(tz: str) -> None:
     try:
         ZoneInfo(tz)
     except Exception as exc:
-        msg = f"Instance timezone '{tz}' is invalid; set a valid timezone in Settings."
+        msg = f"Instance timezone '{tz}' is invalid. Set a valid timezone in Settings."
         raise _bad(msg) from exc
 
 

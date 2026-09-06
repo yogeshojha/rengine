@@ -292,7 +292,7 @@ class InterestLead:
 
 def _lead_line(lead: InterestLead) -> str:
     reasons = ", ".join(kind_label(k) for k in lead.kinds[:3])
-    return f"• {lead.host}" + (f" — {reasons}" if reasons else "")
+    return f"• {lead.host}" + (f" · {reasons}" if reasons else "")
 
 
 def scan_interesting(

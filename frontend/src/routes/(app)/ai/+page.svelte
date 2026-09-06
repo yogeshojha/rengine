@@ -83,7 +83,7 @@
 		});
 		if (ok) {
 			apiKey = '';
-			toast.success('Saved.');
+			toast.success('Saved');
 		}
 	}
 
@@ -98,7 +98,7 @@
 
 	async function clearCache() {
 		const removed = await ai.clearCache();
-		toast.success(`${removed} cached passages removed.`);
+		toast.success(`${removed} cached narratives removed`);
 	}
 
 	function money(value: number | null): string {
@@ -333,8 +333,8 @@
 
 				<Card.Root class="gap-0 py-0">
 					<PanelHead
-						title="Written passages"
-						description="Cached narratives, keyed by the input they were written from"
+						title="Cached narratives"
+						description="Keyed by the input they were written from"
 					/>
 					<div class="space-y-3 px-5 py-4">
 						<div class="flex items-baseline justify-between">

@@ -27,7 +27,7 @@
 				query: suggestion.query,
 				kind: suggestion.kind
 			});
-			toast.success(`${suggestion.name} added. It runs on every scan from now on.`);
+			toast.success(`${suggestion.name} added. It runs on every scan.`);
 			onDone(suggestion);
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Could not add the rule');

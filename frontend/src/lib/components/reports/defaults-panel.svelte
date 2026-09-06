@@ -52,7 +52,7 @@
 			});
 			defaults = saved;
 			snapshot = JSON.stringify({ branding, theme });
-			toast.success('Saved. New reports start from this.');
+			toast.success('Defaults saved. New reports start from them.');
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Defaults could not be saved');
 		} finally {

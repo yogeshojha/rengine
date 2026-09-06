@@ -192,8 +192,8 @@ def _validate_exclusion_patterns(name: str, patterns: list) -> None:
         if looks_like_domain(p):
             msg = (
                 f"'{p}' looks like a domain name. Use a keyword (admin), "
-                "wildcard (*admin*) or regex — exclusion patterns match any "
-                "subdomain so the context stays reusable across scans."
+                "wildcard (*admin*) or regex. Exclusion patterns match any "
+                "subdomain, so the context stays reusable across scans."
             )
             raise _bad(msg)
 

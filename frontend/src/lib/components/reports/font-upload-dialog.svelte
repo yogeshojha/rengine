@@ -97,7 +97,7 @@
 					italic
 				}))
 			});
-			toast.success(`${family.name} is available to every theme.`);
+			toast.success(`${family.name} is available to every theme`);
 			await reportCatalog.fetch(true);
 			open = false;
 			name = '';

@@ -91,8 +91,8 @@ class ScreenshotStage(Stage):
         warnings = []
         if cut_short:
             warnings.append(
-                f"the renderer ran out of time — {len(updates):,} of "
-                f"{len(selected):,} services were captured"
+                f"the renderer ran out of time. {len(updates):,} of "
+                f"{len(selected):,} services were captured."
             )
         if skipped:
             warnings.append(

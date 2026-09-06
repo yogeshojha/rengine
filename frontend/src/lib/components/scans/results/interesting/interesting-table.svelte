@@ -144,7 +144,7 @@
 		judging = true;
 		try {
 			await interestApi.judge(scanId);
-			toast.success('Judging this scan. Refresh in a moment to see what it found.');
+			toast.success('Judging this scan. Refresh to see the result.');
 		} catch {
 			toast.error('Could not start judging');
 		} finally {

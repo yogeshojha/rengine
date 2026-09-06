@@ -12,7 +12,7 @@ class SudomyProvider(SubdomainProvider):
     binary = "sudomy"
 
     def availability(self) -> tuple[bool, str | None]:
-        return False, "sudomy provider scaffolded — not yet enabled"
+        return False, "sudomy provider scaffolded. Not yet enabled."
 
     def discover(self) -> set[str]:
         return set()

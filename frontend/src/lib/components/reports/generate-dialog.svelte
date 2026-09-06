@@ -191,7 +191,7 @@
 		busy = false;
 		if (!report) return;
 		open = false;
-		toast.success('Report queued. It will appear in Reports when generation completes.');
+		toast.success('Report queued. It appears in Reports when generation completes.');
 		void goto(ROUTES.reports());
 	}
 </script>

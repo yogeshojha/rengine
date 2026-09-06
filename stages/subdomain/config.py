@@ -97,7 +97,7 @@ class SubdomainConfig(StageConfig):
         title="Resolver stall timeout",
         description=(
             "Abandon a resolver batch after this many seconds with no answer. "
-            "Resolution is not capped by total runtime — a resolver that keeps "
+            "Resolution is not capped by total runtime. A resolver that keeps "
             "answering keeps running, however many names there are."
         ),
     )

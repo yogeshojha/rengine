@@ -134,7 +134,7 @@ function createMcpStore() {
 				await mcpApi.revokeToken(id);
 				await this.loadTokens();
 				await refreshStatus();
-				toast.success('Token revoked.');
+				toast.success('Token revoked');
 				return true;
 			} catch (e) {
 				toast.error(message(e, 'Token could not be revoked'));
@@ -147,7 +147,7 @@ function createMcpStore() {
 				await mcpApi.deleteToken(id);
 				await this.loadTokens();
 				await refreshStatus();
-				toast.success('Token deleted.');
+				toast.success('Token deleted');
 				return true;
 			} catch (e) {
 				toast.error(message(e, 'Token could not be deleted'));

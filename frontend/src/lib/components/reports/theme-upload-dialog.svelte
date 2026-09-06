@@ -62,7 +62,7 @@ css: |
 		busy = true;
 		try {
 			const theme = await reportsApi.uploadTheme(content);
-			toast.success(`${theme.name} is available to every report.`);
+			toast.success(`${theme.name} is available to every report`);
 			await reportCatalog.fetch(true);
 			open = false;
 			content = '';

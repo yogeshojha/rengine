@@ -54,7 +54,7 @@ class TargetEnrichmentStage(Stage):
         bgp_present = self._read_bgp()
 
         self.emit_progress(
-            f"enrichment — dns:{dns_records} "
+            f"enrichment · dns:{dns_records} "
             f"whois:{int(whois_present)} bgp:{int(bgp_present)}"
         )
         return StageResult(

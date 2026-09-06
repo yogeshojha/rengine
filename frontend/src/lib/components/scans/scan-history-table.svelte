@@ -140,7 +140,7 @@
 		if (ids.length === 0) return;
 		const { ok, failed } = await scansStore.removeMany(ids);
 		selectedScanIds.clear();
-		if (ok > 0) toast.success(`Deleted ${ok} scan${ok !== 1 ? 's' : ''}.`);
+		if (ok > 0) toast.success(`Deleted ${ok} scan${ok !== 1 ? 's' : ''}`);
 		if (failed > 0) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} could not be deleted`);
 	}
 
@@ -149,7 +149,7 @@
 		bulkCancelOpen = false;
 		if (ids.length === 0) return;
 		const { ok, failed } = await scansStore.cancelMany(ids);
-		if (ok > 0) toast.success(`Cancelled ${ok} scan${ok !== 1 ? 's' : ''}.`);
+		if (ok > 0) toast.success(`Cancelled ${ok} scan${ok !== 1 ? 's' : ''}`);
 		if (failed > 0) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} could not be cancelled`);
 	}
 
@@ -217,14 +217,14 @@
 	async function confirmCancel() {
 		const s = cancelTarget;
 		cancelTarget = null;
-		if (s && (await scansStore.cancel(s))) toast.success('Scan cancelled.');
+		if (s && (await scansStore.cancel(s))) toast.success('Scan cancelled');
 		else if (s) toast.error(scansStore.error ?? 'Scan could not be cancelled');
 	}
 
 	async function confirmDelete() {
 		const s = deleteTarget;
 		deleteTarget = null;
-		if (s && (await scansStore.remove(s))) toast.success('Scan deleted.');
+		if (s && (await scansStore.remove(s))) toast.success('Scan deleted');
 		else if (s) toast.error(scansStore.error ?? 'Scan could not be deleted');
 	}
 </script>

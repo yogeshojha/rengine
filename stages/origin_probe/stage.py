@@ -64,7 +64,7 @@ class OriginProbeStage(Stage):
         return StageResult(
             counts={"probed": len(targets), "answered": answered},
             warnings=[
-                f"httpx stalled and was stopped — {len(targets):,} addresses queued"
+                f"httpx stalled and was stopped. {len(targets):,} addresses queued."
             ]
             if stream.timed_out
             else [],

@@ -469,7 +469,7 @@
 				onCreated={(id, name) => {
 					launch.contextId = id;
 					view = 'launch';
-					toast.success(`Context "${name}" created and applied to this scan.`);
+					toast.success(`Context "${name}" created and applied to this scan`);
 				}}
 			/>
 		{/if}
@@ -482,6 +482,6 @@
 	suggestedName={preview?.engine_name ?? ''}
 	onSaved={(engine) => {
 		launch.applyEngine(engine.id);
-		toast.success(`Engine "${engine.name}" saved.`);
+		toast.success(`Engine "${engine.name}" saved`);
 	}}
 />

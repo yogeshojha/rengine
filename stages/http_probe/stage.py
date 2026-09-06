@@ -92,8 +92,8 @@ class HttpProbeStage(Stage):
         warnings = []
         if stream.timed_out:
             warnings.append(
-                f"httpx stalled and was stopped — {len(targets):,} host and port "
-                f"pairs were queued, {count:,} answered"
+                f"httpx stalled and was stopped. {len(targets):,} host and port "
+                f"pairs were queued, {count:,} answered."
             )
         if rejected:
             warnings.append(f"{rejected:,} responses could not be stored")

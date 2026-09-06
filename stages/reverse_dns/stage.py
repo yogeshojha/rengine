@@ -76,7 +76,7 @@ class ReverseDnsStage(Stage):
             )
         except DnsxError:
             logger.warning("dnsx unavailable, skipping reverse DNS")
-            return {}, f"dnsx unavailable — no PTR lookup for {len(ips):,} addresses"
+            return {}, f"dnsx unavailable. No PTR lookup for {len(ips):,} addresses."
 
         result = client.ptr(ips)
         out: dict[str, list] = {}
@@ -87,6 +87,6 @@ class ReverseDnsStage(Stage):
         if not result.success:
             kind = "timed out" if result.timed_out else "failed"
             note = (
-                f"dnsx {kind} — PTR resolved for {len(out):,} of {len(ips):,} addresses"
+                f"dnsx {kind}. PTR resolved for {len(out):,} of {len(ips):,} addresses."
             )
         return out, note

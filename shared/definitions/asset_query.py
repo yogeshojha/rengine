@@ -317,7 +317,7 @@ FIELDS: tuple[QueryField, ...] = (
         group="Response",
         description=(
             "Words in the captured response body. Matches whole words and "
-            "prefixes; quote a value to match a phrase."
+            "prefixes. Quote a value to match a phrase."
         ),
         example='body:"internal server"',
         aliases=("response",),

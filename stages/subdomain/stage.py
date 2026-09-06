@@ -106,9 +106,7 @@ class _Batch:
 class SubdomainStage(Stage):
     name = "subdomain_discovery"
     title = "Subdomain Discovery"
-    description = (
-        "Enumerate subdomains from passive sources, certificates, wordlists and permutations."
-    )
+    description = "Enumerate subdomains from passive sources, certificates, wordlists and permutations."
     phase = Phase.EXPANSION.value
     group = StageGroup.HOSTS.value
     role = StageRole.CAPABILITY.value
@@ -360,19 +358,19 @@ class SubdomainStage(Stage):
     def _resolution_warnings(state: _Resolution) -> list[str]:
         if state.unavailable:
             return [
-                f"dnsx unavailable — {state.submitted:,} names stored unresolved, "
-                "so no host reached the rest of the scan"
+                f"dnsx unavailable. {state.submitted:,} names stored unresolved, "
+                "so no host reached the rest of the scan."
             ]
         notes: list[str] = []
         if state.stalled:
             notes.append(
                 f"{state.stalled} of {state.batches} resolver batches stalled and were "
-                f"abandoned — {state.submitted - state.answered:,} names unresolved"
+                f"abandoned. {state.submitted - state.answered:,} names unresolved."
             )
         if state.degraded:
             notes.append(
                 f"{state.degraded} of {state.batches} resolver batches answered far "
-                "below the others after a retry; some live hosts are likely missing"
+                "below the others after a retry. Some live hosts are likely missing."
             )
         return notes
 
@@ -421,10 +419,10 @@ class SubdomainStage(Stage):
     ) -> None:
         source = result.source.value
         if result.skipped:
-            message = f"{source} skipped — {result.skip_reason}"
+            message = f"{source} skipped. {result.skip_reason}"
             level = ActivityLevel.WARNING
         elif result.error:
-            message = f"{source} failed — {result.error}"
+            message = f"{source} failed. {result.error}"
             level = ActivityLevel.WARNING
         else:
             message = f"{source} found {result.raw_count} hosts"

@@ -13,7 +13,7 @@ class SeedResolutionConfig(StageConfig):
     asn_scan_mode: Literal["smart", "full"] = Field(
         default="smart",
         title="ASN / CIDR expansion",
-        description="Smart samples large netblocks; full enumerates every host.",
+        description="Smart samples large netblocks. Full enumerates every host.",
     )
     cidr_skip_rfc1918: bool = Field(
         default=True,

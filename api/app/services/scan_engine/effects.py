@@ -81,12 +81,12 @@ def _stage_status(
 
     missing = [k for k in spec.api_keys if k not in configured]
     if missing and len(missing) == len(spec.api_keys) and spec.requires_api_keys:
-        reason = f"{spec.title} skipped — API key not configured."
+        reason = f"{spec.title} skipped. API key not configured."
         warnings.append(reason)
         return _skip(PreviewToolStatus.SKIPPED_NEEDS_KEY, reason)
     if missing:
         warnings.append(
-            f"{spec.title}: no API key for {', '.join(missing)} — reduced coverage."
+            f"{spec.title}: no API key for {', '.join(missing)}. Reduced coverage."
         )
 
     scaled = spec.config_model.scaled_fields()
