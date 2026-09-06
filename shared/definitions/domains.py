@@ -258,6 +258,10 @@ def registrable_domain(hostname: str) -> str:
     labels = [part for part in host.split(".") if part]
     if len(labels) < _MIN_LABELS:
         return ""
+    # an address is not a name: 192.168.0.2 has no registrable domain, and reading one
+    # off its last two labels yields "0.2", which then gets queried and matched as a domain
+    if labels[-1].isdigit():
+        return ""
     if len(labels) >= _SUFFIX_LABELS and ".".join(labels[-2:]) in PUBLIC_SECOND_LEVEL:
         return ".".join(labels[-3:])
     return ".".join(labels[-2:])

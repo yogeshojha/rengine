@@ -262,7 +262,7 @@
 				key: 'vulns',
 				label: 'Vulnerabilities',
 				value: scan.vulnerabilities_found,
-				tab: 'web-assets',
+				tab: 'vulnerabilities',
 				trend: trendOf('vulnerabilities_found')
 			});
 		if (scan.endpoints_found > 0)
@@ -270,10 +270,12 @@
 				key: 'endpoints',
 				label: 'Endpoints',
 				value: scan.endpoints_found,
-				tab: 'web-assets',
+				tab: 'endpoints',
 				trend: trendOf('endpoints_found')
 			});
-		return list;
+		// a cell earns its place the way a result tab does: with a number, or with a run
+		// still in flight that may yet produce one
+		return live ? list : list.filter((k) => k.value !== 0);
 	});
 
 	const GRID_COLS: Record<number, string> = {

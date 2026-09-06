@@ -23,6 +23,7 @@ from shared.utils.validation import (
     extract_asn_number,
     normalize_domain,
     normalize_query,
+    validate_ip,
     validate_target,
 )
 from tools.whois.models import (
@@ -89,8 +90,13 @@ class WhoisService:
                 asn_number = extract_asn_number(query)
                 return self.lookup_asn(asn_number, query)
             case TargetType.URL:
-                domain = normalize_domain(query)
-                return self.lookup_domain(domain)
+                host = normalize_domain(query)
+                # a URL may name an address rather than a name; ask the right registry
+                return (
+                    self.lookup_ip(host)
+                    if validate_ip(host)
+                    else self.lookup_domain(host)
+                )
             case _:
                 msg = f"Unsupported target type for WHOIS: {target_type}"
                 raise WhoisValidationError(msg)
