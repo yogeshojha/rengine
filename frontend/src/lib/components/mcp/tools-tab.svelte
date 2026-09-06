@@ -49,6 +49,9 @@
 									<Badge variant={touches ? 'warning' : 'info'} class="text-[10px] capitalize">
 										{tool.capability}
 									</Badge>
+									{#if tool.destructive}
+										<Badge variant="destructive" class="text-[10px]">Destructive</Badge>
+									{/if}
 									{#if !available}
 										<Badge variant="outline" class="gap-1 text-[10px]">
 											<TriangleAlertIcon class="size-3" />

@@ -73,7 +73,7 @@ agent never sees a tool it cannot use.
 |---|---|---|
 | `read` | Query assets, services, endpoints, findings, coverage | No |
 | `plan` | Resolve a scan plan without running it | No |
-| `write` | Record triage decisions | No |
+| `write` | Add, label and delete targets; record triage decisions | No |
 | `launch` | Start scans and focused rescans | **Yes** |
 
 `read` is always granted. `launch` is off by default at the instance ceiling.
@@ -82,7 +82,7 @@ agent never sees a tool it cannot use.
 
 ## The default tools
 
-Fourteen tools, roughly 2,900 tokens of definitions for a full-capability token.
+Seventeen tools, roughly 3,600 tokens of definitions for a full-capability token.
 Arguments in **bold** are required.
 
 ### Orient — turn a name into something you can query
@@ -162,6 +162,9 @@ scanner did not report that number — never that it was zero. This is what keep
 | `start_scan` | launch | **target**, engine_id, stages, intensity, context_id |
 | `focused_rescan` | launch | **target**, **dimension**, **assets**, stages |
 | `record_triage` | write | **target**, **fingerprint**, **state**, note |
+| `add_target` | write | **targets**, project_id, tags, organizations |
+| `update_target` | write | **target**, display_name, tags, organizations |
+| `delete_target` | write | **target**, confirm |
 
 **`plan_scan`** resolves which stages would run, which are skipped and why, the
 footprint and the estimated duration, without contacting the target at all.
@@ -173,6 +176,17 @@ is recorded separately and does not disturb the parent scan's totals.
 **`record_triage`** makes an agent's judgement durable. The decision is keyed to
 the finding's fingerprint, so a false positive stays suppressed on every later
 scan of that target.
+
+**`add_target`** records a target and queues its WHOIS, DNS and routing
+enrichment. It sends no traffic — a target reNgine knows about is not a target
+reNgine has scanned, and every dimension reads as never scanned until a scan
+runs. A value already in the project is reused, so an agent that re-adds its
+working set does not duplicate it.
+
+**`delete_target`** is the one tool that destroys data, and it is the only one
+whose `destructiveHint` is true. Called without `confirm` it refuses, and
+answers with what would be lost — the number of scans and what they hold — so
+the agent has something to put in front of a person before asking again.
 
 ---
 

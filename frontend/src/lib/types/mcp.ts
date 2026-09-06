@@ -93,6 +93,7 @@ export interface McpTool {
 	description: string;
 	capability: McpCapability;
 	group: string;
+	destructive: boolean;
 	examples: string[];
 	schema: Record<string, unknown>;
 }

@@ -105,6 +105,7 @@ class McpToolRead(BaseModel):
     description: str
     capability: str
     group: str
+    destructive: bool = False
     examples: list[str]
     schema_: dict = PydanticField(default_factory=dict, alias="schema")
 

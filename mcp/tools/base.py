@@ -54,6 +54,8 @@ class Tool(ABC):
     description: ClassVar[str]
     capability: ClassVar[str] = Capability.READ.value
     group: ClassVar[str] = ToolGroup.INTERROGATE.value
+    # the call destroys data a user cannot get back
+    destructive: ClassVar[bool] = False
     Input: ClassVar[type[ToolInput]] = NoInput
     # shown in the UI and the docs, never sent to the model
     examples: ClassVar[tuple[str, ...]] = ()

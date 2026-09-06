@@ -40,6 +40,7 @@ class MyTool(Tool):
     description: str  # what the MODEL reads — write it for the model
     capability = Capability.READ  # read | plan | write | launch
     group = ToolGroup.INTERROGATE  # Orient | Interrogate | Explain | Act
+    destructive = False  # True if the call destroys data; sets destructiveHint
     Input: type[ToolInput]  # pydantic model; becomes the JSON Schema
     examples: tuple[str, ...]  # shown in the UI and docs, never to the model
 
@@ -151,6 +152,7 @@ nobody ever scanned. Use it rather than reaching for a scan id yourself.
 - [ ] `description` is written for the model, and says when to call it
 - [ ] every `Input` field has a `description`
 - [ ] `capability` is `launch` if it touches a target, `write` if it writes
+- [ ] `destructive` is set if the call destroys data, and `run` refuses without an explicit confirm
 - [ ] `pivot` is set wherever a count is reported
 - [ ] `untrusted=True` wherever target-written text is returned
 - [ ] `ruff check mcp` passes

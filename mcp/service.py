@@ -127,6 +127,7 @@ class McpService:
                 description=spec.description,
                 capability=spec.capability,
                 group=spec.group,
+                destructive=spec.destructive,
                 examples=list(spec.examples),
                 schema=spec.schema,
             )

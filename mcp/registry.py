@@ -20,6 +20,7 @@ class ToolSpec:
     description: str
     capability: str
     group: str
+    destructive: bool
     examples: tuple[str, ...]
     tool_cls: type[Tool]
 
@@ -36,7 +37,7 @@ class ToolSpec:
             "inputSchema": self.schema,
             "annotations": {
                 "readOnlyHint": self.capability == CAPABILITY_ORDER[0],
-                "destructiveHint": False,
+                "destructiveHint": self.destructive,
             },
         }
 
@@ -62,6 +63,7 @@ def registry() -> dict[str, ToolSpec]:
             description=cls.description.strip(),
             capability=cls.capability,
             group=cls.group,
+            destructive=bool(cls.destructive),
             examples=tuple(cls.examples),
             tool_cls=cls,
         )
