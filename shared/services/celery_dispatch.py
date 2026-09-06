@@ -13,7 +13,11 @@ def get_celery_client() -> Celery:
     global _celery_client  # noqa: PLW0603
     if _celery_client is None:
         _settings = BaseAppSettings()
-        _celery_client = Celery(broker=_settings.celery_broker_url)
+        # never set_as_current: this client carries no result backend, and adopting it as
+        # the ambient app leaves every later chord in the process unable to start
+        _celery_client = Celery(
+            broker=_settings.celery_broker_url, set_as_current=False
+        )
         _celery_client.conf.update(
             task_serializer="json",
             accept_content=["json"],
