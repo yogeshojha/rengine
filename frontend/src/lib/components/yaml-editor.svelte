@@ -38,6 +38,7 @@
 	} from '@codemirror/language';
 	import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Kbd from '$lib/components/ui/kbd';
 	import { Button } from '$lib/components/ui/button';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
@@ -318,14 +319,18 @@
 					}),
 					EditorView.theme({
 						'&': {
-							height: '100%',
+							height: 'auto',
+							flex: '1 0 auto',
 							fontSize: '13px',
 							backgroundColor: 'transparent',
 							color: 'var(--code-fg)'
 						},
 						'.cm-scroller': {
 							fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-							lineHeight: '1.7'
+							lineHeight: '1.7',
+							height: 'auto',
+							flex: '1 0 auto',
+							overflow: 'visible'
 						},
 						'.cm-content': { caretColor: 'var(--foreground)', padding: '10px 0 32px' },
 						'.cm-line': { padding: '0 14px 0 6px' },
@@ -508,7 +513,9 @@
 		</div>
 	{/if}
 
-	<div class="host" data-readonly={readonly} bind:this={host}></div>
+	<ScrollArea class="min-h-0 flex-1" scrollbarYClasses="w-1.5" scrollbarXClasses="h-1.5">
+		<div class="host" data-readonly={readonly} bind:this={host}></div>
+	</ScrollArea>
 
 	{#if chrome}
 		<div class="status">
@@ -573,13 +580,26 @@
 		min-height: 0;
 		overflow: hidden;
 	}
-	.host {
-		flex: 1;
-		min-height: 0;
-		overflow: hidden;
+	.yaml-editor :global([data-scroll-area-content]) {
+		display: flex;
+		flex-direction: column;
+		min-height: 100%;
 	}
-	.host :global(.cm-editor) {
-		height: 100%;
+	.host {
+		display: flex;
+		flex-direction: column;
+		flex: 1 0 auto;
+		min-width: 0;
+	}
+	.host :global(.cm-panels.cm-panels-top) {
+		position: sticky;
+		top: 0;
+		z-index: 3;
+	}
+	.host :global(.cm-panels.cm-panels-bottom) {
+		position: sticky;
+		bottom: 0;
+		z-index: 3;
 	}
 	.crumbs {
 		display: flex;
