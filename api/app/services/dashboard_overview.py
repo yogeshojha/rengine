@@ -181,6 +181,7 @@ class DashboardOverviewService:
                 expiring=DashboardCertSignal(query=EXPIRING_CERT_QUERY),
             ),
         )
+        out.first_run = await self._first_run()
         out.targets_total = len(targets)
         out.targets_scanned = sum(1 for t in targets if runs_by_target.get(t.id))
         by_type: dict[str, int] = defaultdict(int)
@@ -374,6 +375,13 @@ class DashboardOverviewService:
             targets.append(target)
             expires[target.id] = expires_at
         return targets, expires
+
+    async def _first_run(self) -> bool:
+        return not await self.session.scalar(
+            select(
+                exists().where(Scan.status == ScanStatus.COMPLETED.value, census_only())
+            )
+        )
 
     async def _runs(
         self, project_id: UUID, series_cutoff: datetime

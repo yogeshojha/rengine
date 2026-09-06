@@ -3,6 +3,7 @@ import {
 	DEFAULT_DASHBOARD_WINDOW,
 	type DashboardDiscovery,
 	type DashboardOverview,
+	type DashboardReadiness,
 	type DashboardWindow
 } from '$lib/types/dashboard';
 
@@ -10,6 +11,7 @@ function createDashboardStore() {
 	let projectId = $state<string | undefined>(undefined);
 	let overview = $state<DashboardOverview | null>(null);
 	let discovery = $state<DashboardDiscovery | null>(null);
+	let readiness = $state<DashboardReadiness | null>(null);
 	let changeWindow = $state<DashboardWindow>(DEFAULT_DASHBOARD_WINDOW);
 	let loading = $state(false);
 	let error = $state<string | null>(null);
@@ -35,6 +37,17 @@ function createDashboardStore() {
 			if (mySeq === seq) loading = false;
 		}
 		void loadDiscovery(pid, mySeq);
+		if (overview?.first_run) void loadReadiness(mySeq);
+	}
+
+	// a worker ping is a broker round trip, so only a first run asks for it
+	async function loadReadiness(mySeq: number) {
+		try {
+			const data = await dashboardApi.readiness();
+			if (mySeq === seq) readiness = data;
+		} catch {
+			if (mySeq === seq) readiness = null;
+		}
 	}
 
 	// the certificate walk is the one slow rollup, so it lands after the page has painted
@@ -53,6 +66,9 @@ function createDashboardStore() {
 		},
 		get discovery() {
 			return discovery;
+		},
+		get readiness() {
+			return readiness;
 		},
 		get window() {
 			return changeWindow;
@@ -75,6 +91,7 @@ function createDashboardStore() {
 			projectId = pid;
 			overview = null;
 			discovery = null;
+			readiness = null;
 			error = null;
 			hasFetched = false;
 			void load();
@@ -99,6 +116,7 @@ function createDashboardStore() {
 			projectId = undefined;
 			overview = null;
 			discovery = null;
+			readiness = null;
 			changeWindow = DEFAULT_DASHBOARD_WINDOW;
 			loading = false;
 			error = null;

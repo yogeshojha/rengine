@@ -1,5 +1,10 @@
 import { api } from './client';
-import type { DashboardDiscovery, DashboardOverview, DashboardWindow } from '$lib/types/dashboard';
+import type {
+	DashboardDiscovery,
+	DashboardOverview,
+	DashboardReadiness,
+	DashboardWindow
+} from '$lib/types/dashboard';
 
 export const dashboardApi = {
 	async overview(projectId: string, window: DashboardWindow): Promise<DashboardOverview> {
@@ -9,5 +14,8 @@ export const dashboardApi = {
 	},
 	async discovery(projectId: string): Promise<DashboardDiscovery> {
 		return api.get<DashboardDiscovery>(`/dashboard/discovery?project_id=${projectId}`);
+	},
+	async readiness(): Promise<DashboardReadiness> {
+		return api.get<DashboardReadiness>('/dashboard/readiness');
 	}
 };

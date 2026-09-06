@@ -207,9 +207,17 @@ class DashboardTargetRow(BaseModel):
     monitored: bool = False
 
 
+class DashboardReadiness(BaseModel):
+    worker_online: bool = False
+    worker_concurrency: int | None = None
+    checks_ready: bool = False
+    checks_total: int = 0
+
+
 class DashboardOverview(BaseModel):
     generated_at: datetime
     window: str
+    first_run: bool = False
     targets_total: int = 0
     targets_scanned: int = 0
     targets_never_scanned: int = 0

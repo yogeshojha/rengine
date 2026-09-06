@@ -8,10 +8,12 @@ from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.dashboard import DashboardService
 from app.services.dashboard_overview import DashboardOverviewService
+from app.services.readiness import ReadinessService
 from shared.definitions.dashboard import DEFAULT_WINDOW
 from shared.models.dashboard import (
     DashboardDiscovery,
     DashboardOverview,
+    DashboardReadiness,
     DashboardSignals,
 )
 
@@ -59,3 +61,11 @@ async def dashboard_discovery(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     return await service.discovery(project_id=project_id)
+
+
+@router.get("/readiness", response_model=DashboardReadiness)
+async def dashboard_readiness(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    return await ReadinessService(session).readiness()

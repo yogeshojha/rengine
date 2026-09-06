@@ -212,9 +212,17 @@ export interface DashboardTargetRow {
 	monitored: boolean;
 }
 
+export interface DashboardReadiness {
+	worker_online: boolean;
+	worker_concurrency: number | null;
+	checks_ready: boolean;
+	checks_total: number;
+}
+
 export interface DashboardOverview {
 	generated_at: string;
 	window: DashboardWindow;
+	first_run: boolean;
 	targets_total: number;
 	targets_scanned: number;
 	targets_never_scanned: number;

@@ -6,6 +6,7 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
 	import * as Empty from '$lib/components/ui/empty';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { dashboardStore } from '$lib/stores/dashboard.svelte';
@@ -14,6 +15,8 @@
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import HeroPanel from '$lib/components/dashboard/hero-panel.svelte';
+	import FirstRunPanel from '$lib/components/dashboard/first-run/first-run-panel.svelte';
+	import Launcher from '$lib/components/dashboard/first-run/launcher.svelte';
 	import AttentionPanel, {
 		type QueueFilter
 	} from '$lib/components/dashboard/attention-panel.svelte';
@@ -31,6 +34,9 @@
 
 	let activeProject = $derived(projectsStore.activeProject);
 	let overview = $derived(dashboardStore.overview);
+	// the first run keeps its own surface until a scan of its own has finished
+	let firstRun = $derived(!!overview?.first_run && !overview.last_completed_at);
+	let emptyProject = $derived(!!overview && overview.targets_total === 0 && !liveScans.hasLive);
 	let addTargetOpen = $state(false);
 	let launchOpen = $state(false);
 	let launchTargetIds = $state<string[] | undefined>(undefined);
@@ -100,7 +106,7 @@
 			<h1 class="text-lg font-semibold">Dashboard</h1>
 			<span class="text-sm text-muted-foreground">{activeProject?.name ?? 'Select a project'}</span>
 		</div>
-		{#if activeProject}
+		{#if activeProject && !firstRun && !emptyProject}
 			<div class="flex items-center gap-2">
 				<Button
 					variant="outline"
@@ -153,6 +159,17 @@
 				</Button>
 			</Empty.Content>
 		</Empty.Root>
+	{:else if firstRun}
+		<FirstRunPanel {overview} readiness={dashboardStore.readiness} {now} />
+	{:else if emptyProject}
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<div class="px-5 py-5">
+				<Launcher
+					heading="No targets in this project"
+					sub="Scanning a target adds it to this project."
+				/>
+			</div>
+		</Card.Root>
 	{:else}
 		<HeroPanel
 			{overview}
