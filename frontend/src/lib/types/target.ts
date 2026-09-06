@@ -169,6 +169,19 @@ export function formatTargetType(type: TargetType): string {
 	return type.replace('_', ' ').toUpperCase();
 }
 
+// acronyms take a lowercase s; the rest are ordinary words
+const TARGET_TYPE_PLURALS: Record<string, string> = {
+	[TargetType.DOMAIN]: 'Domains',
+	[TargetType.IP]: 'IPs',
+	[TargetType.IP_RANGE]: 'IP ranges',
+	[TargetType.ASN]: 'ASNs',
+	[TargetType.URL]: 'URLs'
+};
+
+export function formatTargetTypePlural(type: TargetType): string {
+	return TARGET_TYPE_PLURALS[type] ?? `${formatTargetType(type)}s`;
+}
+
 export function targetAssetNoun(_type: string, count = 2): string {
 	const spec = SURFACE[SurfaceDimension.WEB_ASSETS];
 	return count === 1 ? spec.noun : spec.nounPlural;

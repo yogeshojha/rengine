@@ -106,13 +106,23 @@
 	let enrichment = $derived.by(() => {
 		const parts: string[] = [];
 		const t = target.target_type;
+		// a lookup that cannot apply is not pending: the rail says why, so it is left out
 		const state = (st: TaskStatus) =>
-			st === TaskStatus.FAILED ? 'failed' : st === TaskStatus.SUCCESS ? 'enriched' : 'pending';
-		if (t === TargetType.DOMAIN || t === TargetType.URL)
-			parts.push(`DNS ${state(target.dns_status)}`);
-		parts.push(`WHOIS ${state(target.whois_status)}`);
+			st === TaskStatus.NOT_APPLICABLE || st === TaskStatus.SKIPPED
+				? ''
+				: st === TaskStatus.FAILED
+					? 'failed'
+					: st === TaskStatus.SUCCESS
+						? 'enriched'
+						: 'pending';
+		const add = (label: string, st: TaskStatus) => {
+			const word = state(st);
+			if (word) parts.push(`${label} ${word}`);
+		};
+		if (t === TargetType.DOMAIN || t === TargetType.URL) add('DNS', target.dns_status);
+		add('WHOIS', target.whois_status);
 		if (t === TargetType.IP || t === TargetType.IP_RANGE || t === TargetType.ASN)
-			parts.push(`BGP ${state(target.bgp_status)}`);
+			add('BGP', target.bgp_status);
 		return parts.join(' · ');
 	});
 </script>

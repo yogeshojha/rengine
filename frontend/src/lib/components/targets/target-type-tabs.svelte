@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { TargetType, formatTargetType } from '$lib/types/target';
+	import { TargetType, formatTargetTypePlural } from '$lib/types/target';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as ScrollArea from '$lib/components/ui/scroll-area/index.js';
 	import Layers from '@lucide/svelte/icons/layers';
@@ -24,7 +24,7 @@
 		{ value: 'all', label: 'All', icon: Layers },
 		...Object.entries(TARGET_TYPE_ICONS_COMPACT).map(([value, icon]) => ({
 			value,
-			label: formatTargetType(value as TargetType) + 's',
+			label: formatTargetTypePlural(value as TargetType),
 			icon
 		}))
 	];
