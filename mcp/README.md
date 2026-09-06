@@ -74,7 +74,7 @@ agent never sees a tool it cannot use.
 | `read` | Query assets, services, endpoints, findings, coverage | No |
 | `plan` | Resolve a scan plan without running it | No |
 | `write` | Add, label and delete targets; record triage decisions | No |
-| `launch` | Start scans and focused rescans | **Yes** |
+| `launch` | Start and stop scans, and focused rescans | **Yes** |
 
 `read` is always granted. `launch` is off by default at the instance ceiling.
 
@@ -82,7 +82,7 @@ agent never sees a tool it cannot use.
 
 ## The default tools
 
-Seventeen tools, roughly 3,600 tokens of definitions for a full-capability token.
+Twenty-one tools, roughly 4,400 tokens of definitions for a full-capability token.
 Arguments in **bold** are required.
 
 ### Orient — turn a name into something you can query
@@ -94,6 +94,9 @@ Arguments in **bold** are required.
 | `describe_query_language` | read | dimension, fields_only |
 | `list_targets` | read | contains, limit |
 | `list_projects` | read | — |
+| `list_engines` | read | contains, project_id, limit |
+| `list_contexts` | read | project_id, limit |
+| `scan_status` | read | scan, target, limit |
 
 **`resolve_target`** is the keystone. Every result endpoint in reNgine is
 scan-scoped, and picking the newest scan is wrong. This resolves, per dimension,
@@ -165,9 +168,28 @@ scanner did not report that number — never that it was zero. This is what keep
 | `add_target` | write | **targets**, project_id, tags, organizations |
 | `update_target` | write | **target**, display_name, tags, organizations |
 | `delete_target` | write | **target**, confirm |
+| `cancel_scan` | launch | scan, target |
 
 **`plan_scan`** resolves which stages would run, which are skipped and why, the
 footprint and the estimated duration, without contacting the target at all.
+
+**`list_engines`** and **`list_contexts`** are what make `engine_id` and
+`context_id` usable — nothing else in the server can produce one, so without them
+an agent can only ever assemble stages itself and never run the configuration a
+person saved. Neither returns a credential: a context reports what it holds
+(`Basic (admin)`, three excluded ranges, a proxy) and never the secret.
+
+**`scan_status`** is the other half of `start_scan`, which returns a scan id no
+other tool used to accept. It reports the stages done, running and failed, and
+what the run has found so far — poll it rather than waiting. Its counts are the
+run's own rollup, which is not the same figure `resolve_target` gives for a
+cancelled run; the caveat says so.
+
+**`cancel_scan`** is the brake. Launch without one is an asymmetry, not a missing
+feature: an agent that starts a scan against the wrong host has to be able to
+stop it, so this needs no confirmation and takes effect immediately. What the run
+already found is kept; the dimensions its remaining stages would have covered
+were never scanned, which is not the same as finding nothing.
 
 **`focused_rescan`** is the loop that makes an agent useful: query, pick the
 interesting rows, re-probe just those as their own run, read the result. The run

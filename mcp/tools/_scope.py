@@ -81,9 +81,18 @@ class Scope:
 
 
 async def resolve(ctx: ToolContext, value: str) -> Scope:
-    """Find one target by value, id, or unique suffix, inside the token's scope."""
+    """A target and what every dimension's most recent covering scan found."""
     from app.services.target_summary import TargetSummaryService  # noqa: PLC0415
 
+    match = await find_target(ctx, value)
+    summary = await TargetSummaryService(ctx.session).summary(
+        match.id, match.project_id
+    )
+    return Scope(target=match, summary=summary)
+
+
+async def find_target(ctx: ToolContext, value: str) -> Target:
+    """Find one target by value, id, or unique suffix, inside the token's scope."""
     needle = (value or "").strip().lower()
     if not needle:
         msg = "Name a target: a domain, IP address, CIDR range, URL or ASN."
@@ -106,10 +115,7 @@ async def resolve(ctx: ToolContext, value: str) -> Scope:
         raise ToolError(msg)
 
     ctx.check_project(match.project_id)
-    summary = await TargetSummaryService(ctx.session).summary(
-        match.id, match.project_id
-    )
-    return Scope(target=match, summary=summary)
+    return match
 
 
 def _pick(rows: list[Target], needle: str) -> Target | None:

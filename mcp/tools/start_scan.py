@@ -13,6 +13,7 @@ from mcp.errors import ToolError
 from mcp.result import ToolResult
 from mcp.tools._scope import project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
+from shared.enums.scan import Intensity
 
 
 class Input(ToolInput):
@@ -80,24 +81,34 @@ class StartScan(Tool):
             msg = f"The scan could not be started: {exc}"
             raise ToolError(msg) from exc
 
+        target = args.target.strip()
         return ToolResult(
-            summary=(
-                f"Scan started on {scan.target_value or args.target} "
-                f"with {scan.engine_name}"
-            ),
+            summary=f"Scan started on {target} with {scan.engine_name}",
             data={
                 "scan_id": str(scan.id),
                 "status": scan.status,
                 "engine": scan.engine_name,
-                "target": scan.target_value,
+                "target": target,
+                "target_id": str(scan.target_id),
                 "started_at": scan.started_at,
             },
             pivot=links.scan(ctx.ui_base_url, scan.id),
             caveats=[
-                "Traffic is now being sent to this target.",
+                _traffic_note(scan),
+                "Follow the run with scan_status, and stop it with cancel_scan.",
                 f"Started by agent token '{ctx.token.name}' via MCP.",
             ],
         )
+
+
+def _traffic_note(scan) -> str:
+    passive = getattr(scan.execution_config, "intensity", "") == Intensity.PASSIVE.value
+    return (
+        "Passive intensity: every stage that would touch the target is off, so no "
+        "traffic reaches it."
+        if passive
+        else "Traffic is now being sent to this target."
+    )
 
 
 def _uuid(value: str, field: str) -> uuid.UUID:
