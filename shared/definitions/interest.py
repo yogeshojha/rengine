@@ -209,7 +209,7 @@ KINDS: tuple[KindSpec, ...] = (
     ),
     KindSpec(
         InterestKind.OTHER.value,
-        "Worth a look",
+        "Other reason",
         "Flagged without a more specific reason.",
         12,
         TONE_NEUTRAL,

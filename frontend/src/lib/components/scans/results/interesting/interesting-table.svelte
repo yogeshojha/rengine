@@ -400,11 +400,11 @@
 			<div class="border-t px-4 py-2">
 				<ResultsPagination
 					total={data.total}
-					{page}
+					page={page - 1}
 					pageSize={PAGE_SIZE}
 					noun="asset"
 					plural="assets"
-					onPage={(p) => (page = p)}
+					onPage={(p) => (page = p + 1)}
 				/>
 			</div>
 		{/if}
