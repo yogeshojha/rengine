@@ -1,12 +1,12 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
-	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Alert from '$lib/components/ui/alert';
 	import LoadingButton from '@/components/loading-button.svelte';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import Upload from '@lucide/svelte/icons/upload';
+	import YamlEditor from '$lib/components/yaml-editor.svelte';
 	import StageList from './stage-list.svelte';
 	import FootprintMeter from './footprint-meter.svelte';
 	import { parse, validate, draftFromDoc } from '$lib/utilities/engine-yaml';
@@ -72,11 +72,12 @@ stages:
 			ondragleave={() => (dragging = false)}
 			ondrop={handleDrop}
 		>
-			<Textarea
-				bind:value={source}
+			<YamlEditor
+				value={source}
+				{issues}
+				filename="engine.yaml"
 				placeholder={PLACEHOLDER}
-				class="min-h-[220px] resize-none border-0 bg-transparent font-mono text-xs shadow-none focus-visible:ring-0"
-				spellcheck={false}
+				onChange={(next) => (source = next)}
 			/>
 			{#if !source.trim()}
 				<div class="hint">
@@ -139,6 +140,8 @@ stages:
 <style>
 	.drop {
 		position: relative;
+		height: 17rem;
+		overflow: hidden;
 		border: 1px dashed var(--border);
 		border-radius: 0.6rem;
 		transition:

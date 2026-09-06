@@ -7,9 +7,8 @@
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { Textarea } from '$lib/components/ui/textarea';
+	import YamlEditor from '$lib/components/yaml-editor.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
@@ -55,7 +54,6 @@ http:
 	let error = $state<string | null>(null);
 	let confirming = $state(false);
 	let contentEl = $state<HTMLElement | null>(null);
-	let editorEl = $state<HTMLTextAreaElement | null>(null);
 
 	let open = $derived(creating || !!template);
 	let editable = $derived(creating || source?.editable === true);
@@ -77,11 +75,6 @@ http:
 			original = '';
 			void load(row.id);
 		});
-	});
-
-	$effect(() => {
-		const el = editorEl;
-		if (el && !loading) untrack(() => el.focus({ preventScroll: true }));
 	});
 
 	async function load(id: string) {
@@ -213,19 +206,16 @@ http:
 
 			{#if loading}
 				<Skeleton class="min-h-0 flex-1" />
-			{:else if editable}
-				<Textarea
-					bind:ref={editorEl}
-					bind:value={draft}
-					spellcheck={false}
-					aria-label="Check source"
-					class="min-h-0 flex-1 resize-none font-mono text-xs leading-5"
-				/>
 			{:else}
-				<ScrollArea class="min-h-0 flex-1 rounded-md border">
-					<pre
-						class="p-3 font-mono text-xs leading-5 whitespace-pre-wrap wrap-anywhere">{draft}</pre>
-				</ScrollArea>
+				<div class="min-h-0 flex-1 overflow-hidden rounded-md border">
+					<YamlEditor
+						value={draft}
+						readonly={!editable}
+						completions={false}
+						filename={filenameOf(draft) + '.yaml'}
+						onChange={(next) => (draft = next)}
+					/>
+				</div>
 			{/if}
 		</div>
 

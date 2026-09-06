@@ -6,6 +6,7 @@
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import PanelHead from '$lib/components/panel-head.svelte';
+	import CodeBlock from '$lib/components/code-block.svelte';
 	import { mcp } from '$lib/stores/mcp.svelte';
 	import { MCP_TOOL_GROUPS, TOUCHES_TARGETS, type McpCapability } from '$lib/types/mcp';
 
@@ -103,8 +104,14 @@
 											Example
 										</span>
 										{#each tool.examples as example (example)}
-											<pre
-												class="mt-1 overflow-x-auto rounded border bg-background px-2 py-1.5 font-mono text-[11px]">{example}</pre>
+											<CodeBlock
+												code={example}
+												lang="shell"
+												toolbar={false}
+												numbers={false}
+												maxLines={0}
+												class="mt-1"
+											/>
 										{/each}
 									</div>
 								{/if}

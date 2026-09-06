@@ -2,9 +2,9 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import YamlEditor from '$lib/components/yaml-editor.svelte';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { toast } from 'svelte-sonner';
 	import { reportsApi } from '$lib/api/reports';
@@ -103,15 +103,16 @@ css: |
 					/>
 				</div>
 				<div class="space-y-1.5">
-					<Label class="text-xs" for="theme-source">Theme file</Label>
-					<Textarea
-						id="theme-source"
-						bind:value={content}
-						rows={20}
-						spellcheck={false}
-						class="font-mono text-xs"
-						placeholder="key: my-theme"
-					/>
+					<Label class="text-xs">Theme file</Label>
+					<div class="h-[26rem] overflow-hidden rounded-md border">
+						<YamlEditor
+							value={content}
+							completions={false}
+							filename="theme.yaml"
+							placeholder="key: my-theme"
+							onChange={(next) => (content = next)}
+						/>
+					</div>
 				</div>
 			</div>
 		</ScrollArea>

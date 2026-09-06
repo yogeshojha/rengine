@@ -34,7 +34,7 @@
 	import EngineSummaryBar from '$lib/components/engines/engine-summary-bar.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import StageRow from '$lib/components/engines/stage-row.svelte';
-	import YamlPane from '$lib/components/engines/yaml-pane.svelte';
+	import YamlPane from '$lib/components/yaml-editor.svelte';
 	import EffectPanel from '$lib/components/engines/effect-panel.svelte';
 	import ResolvedPanel from '$lib/components/engines/resolved-panel.svelte';
 	import DiffPanel from '$lib/components/engines/diff-panel.svelte';
@@ -705,6 +705,7 @@
 			<Tabs.Content value="yaml" class="side-body">
 				<YamlPane
 					value={yamlSource}
+					saveHint
 					{issues}
 					{activeStage}
 					{stageStates}

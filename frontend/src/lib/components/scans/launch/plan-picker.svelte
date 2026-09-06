@@ -7,7 +7,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import EffectPanel from '$lib/components/engines/effect-panel.svelte';
-	import YamlPane from '$lib/components/engines/yaml-pane.svelte';
+	import YamlPane from '$lib/components/yaml-editor.svelte';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';

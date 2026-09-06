@@ -11,6 +11,7 @@
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import CodeBlock from '$lib/components/code-block.svelte';
 	import { mcp } from '$lib/stores/mcp.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { writeClipboard } from '$lib/utilities/clipboard';
@@ -153,8 +154,7 @@
 
 					<div class="flex min-w-0 flex-col gap-1.5">
 						<span class="text-xs font-medium">Paste this into your agent</span>
-						<pre
-							class="min-w-0 overflow-x-auto rounded-md border bg-muted px-3 py-2.5 font-mono text-xs">{created.client_config}</pre>
+						<CodeBlock code={created.client_config} lang="json" label="Client configuration" />
 					</div>
 				</div>
 			</ScrollArea>

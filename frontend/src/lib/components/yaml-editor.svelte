@@ -8,6 +8,7 @@
 		highlightActiveLineGutter,
 		drawSelection,
 		gutter,
+		placeholder,
 		GutterMarker,
 		Decoration,
 		MatchDecorator,
@@ -29,7 +30,6 @@
 	import { autocompletion, completionKeymap, closeBrackets } from '@codemirror/autocomplete';
 	import {
 		syntaxHighlighting,
-		HighlightStyle,
 		indentUnit,
 		foldGutter,
 		foldKeymap,
@@ -37,7 +37,6 @@
 		indentOnInput
 	} from '@codemirror/language';
 	import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
-	import { tags as t } from '@lezer/highlight';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import * as Kbd from '$lib/components/ui/kbd';
 	import { Button } from '$lib/components/ui/button';
@@ -48,6 +47,7 @@
 	import { parse, pathAtOffset, stageBlocks, type YamlIssue } from '$lib/utilities/engine-yaml';
 	import { engineCompletion } from '$lib/utilities/engine-completion';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
+	import { codeHighlightStyle } from '$lib/utilities/code-theme';
 
 	interface Props {
 		value: string;
@@ -57,6 +57,10 @@
 		reveal?: number;
 		readonly?: boolean;
 		chrome?: boolean;
+		filename?: string;
+		completions?: boolean;
+		saveHint?: boolean;
+		placeholder?: string;
 		onChange?: (next: string) => void;
 		onCursorMove?: (offset: number) => void;
 		onToggleStage?: (name: string) => void;
@@ -70,32 +74,14 @@
 		reveal = 0,
 		readonly = false,
 		chrome = true,
+		filename = 'engine.yaml',
+		completions = true,
+		saveHint = false,
+		placeholder: hint = '',
 		onChange,
 		onCursorMove,
 		onToggleStage
 	}: Props = $props();
-
-	const engineHighlight = HighlightStyle.define([
-		{
-			tag: [t.comment, t.lineComment, t.blockComment],
-			color: 'var(--muted-foreground)',
-			fontStyle: 'italic'
-		},
-		{
-			tag: [t.propertyName, t.definition(t.propertyName), t.labelName],
-			color: 'var(--foreground)',
-			fontWeight: '500'
-		},
-		{ tag: [t.content, t.string, t.special(t.string)], color: 'var(--chart-1)' },
-		{ tag: [t.number, t.integer, t.float], color: 'var(--chart-4)' },
-		{ tag: [t.bool, t.null, t.atom, t.keyword], color: 'var(--chart-3)' },
-		{
-			tag: [t.punctuation, t.separator, t.bracket, t.brace, t.squareBracket],
-			color: 'var(--muted-foreground)'
-		},
-		{ tag: [t.meta, t.typeName], color: 'var(--muted-foreground)' },
-		{ tag: t.invalid, color: 'var(--destructive)' }
-	]);
 
 	const scalarKinds = new MatchDecorator({
 		regexp: /^(\s*(?:[\w-]+:\s+|-\s+))(true|false|null|~|-?\d+(?:\.\d+)?)\s*$/g,
@@ -291,18 +277,19 @@
 					bracketMatching(),
 					indentOnInput(),
 					yamlLang(),
-					syntaxHighlighting(engineHighlight, { fallback: true }),
+					syntaxHighlighting(codeHighlightStyle, { fallback: true }),
 					scalarPlugin,
 					indentUnit.of('  '),
 					lintGutter(),
 					linter(diagnostics, { delay: 200 }),
 					closeBrackets(),
 					autocompletion({
-						override: [engineCompletion(() => engineCatalogStore.catalog)],
-						activateOnTyping: true,
+						override: completions ? [engineCompletion(() => engineCatalogStore.catalog)] : [],
+						activateOnTyping: completions,
 						icons: false,
 						defaultKeymap: false
 					}),
+					placeholder(hint),
 					stageMarkers,
 					blockDecorations,
 					readOnlyCompartment.of([
@@ -334,7 +321,7 @@
 							height: '100%',
 							fontSize: '13px',
 							backgroundColor: 'transparent',
-							color: 'var(--foreground)'
+							color: 'var(--code-fg)'
 						},
 						'.cm-scroller': {
 							fontFamily: 'var(--font-mono, ui-monospace, monospace)',
@@ -497,14 +484,14 @@
 	});
 </script>
 
-<div class="yaml-pane">
+<div class="yaml-editor">
 	{#if chrome}
 		<div class="crumbs">
 			<Breadcrumb.Root>
 				<Breadcrumb.List class="gap-1 text-[11px] sm:gap-1">
 					<Breadcrumb.Item class="gap-1 text-muted-foreground">
 						<FileCode2 size={12} />
-						engine.yaml
+						{filename}
 					</Breadcrumb.Item>
 					{#each cursorPath as segment, i (i)}
 						<Breadcrumb.Separator class="[&>svg]:size-3" />
@@ -548,13 +535,15 @@
 			</div>
 			<div class="status-right">
 				<span class="dim">YAML · 2 spaces</span>
-				<span class="hint">
-					<Kbd.Group>
-						<Kbd.Root>Ctrl</Kbd.Root>
-						<Kbd.Root>Space</Kbd.Root>
-					</Kbd.Group>
-					complete
-				</span>
+				{#if completions}
+					<span class="hint">
+						<Kbd.Group>
+							<Kbd.Root>Ctrl</Kbd.Root>
+							<Kbd.Root>Space</Kbd.Root>
+						</Kbd.Group>
+						complete
+					</span>
+				{/if}
 				<span class="hint">
 					<Kbd.Group>
 						<Kbd.Root>{mod}</Kbd.Root>
@@ -562,7 +551,7 @@
 					</Kbd.Group>
 					find
 				</span>
-				{#if !readonly}
+				{#if saveHint && !readonly}
 					<span class="hint">
 						<Kbd.Group>
 							<Kbd.Root>{mod}</Kbd.Root>
@@ -577,7 +566,7 @@
 </div>
 
 <style>
-	.yaml-pane {
+	.yaml-editor {
 		display: flex;
 		flex-direction: column;
 		height: 100%;
@@ -644,10 +633,10 @@
 	}
 
 	.host :global(.cm-yaml-num) {
-		color: var(--chart-4);
+		color: var(--code-number);
 	}
 	.host :global(.cm-yaml-bool) {
-		color: var(--chart-3);
+		color: var(--code-atom);
 	}
 	.host :global(.cm-stage-key) {
 		color: var(--primary);

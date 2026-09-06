@@ -5,8 +5,8 @@
 	import CircleX from '@lucide/svelte/icons/circle-x';
 	import Info from '@lucide/svelte/icons/info';
 	import * as Collapsible from '$lib/components/ui/collapsible';
-	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import CodeBlock from '$lib/components/code-block.svelte';
 	import CountryFlag from '$lib/components/scans/results/country-flag.svelte';
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
 	import RecordShell from '../record-shell.svelte';
@@ -370,13 +370,15 @@
 					Parsed record
 				</Collapsible.Trigger>
 				<Collapsible.Content>
-					<ScrollArea.Root
-						class="mb-3 rounded-md border bg-muted/30 [&_[data-slot=scroll-area-viewport]]:max-h-[32rem]"
-						scrollbarYClasses="w-1.5"
-					>
-						<pre
-							class="px-4 py-3 font-mono text-xs leading-5 whitespace-pre-wrap">{recordJson}</pre>
-					</ScrollArea.Root>
+					<CodeBlock
+						code={recordJson}
+						lang="json"
+						label="whois.json"
+						download="whois.json"
+						maxHeight="32rem"
+						maxLines={0}
+						class="mb-3"
+					/>
 				</Collapsible.Content>
 			</Collapsible.Root>
 		{/if}

@@ -53,6 +53,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import ScreenshotThumb from './screenshot-thumb.svelte';
 	import TechIcon from './tech-icon.svelte';
+	import CodeBlock from '$lib/components/code-block.svelte';
 	import OverflowPopover from './table/overflow-popover.svelte';
 	import HostStructure from './web-assets/host-structure.svelte';
 	import RecheckHistory from './recheck-history.svelte';
@@ -203,6 +204,7 @@
 		detail ? [detail.raw_response_header, detail.response_body].filter(Boolean).join('\n\n') : ''
 	);
 	let headerEntries = $derived(detail ? Object.entries(detail.response_headers ?? {}) : []);
+	let headerText = $derived(headerEntries.map(([k, v]) => `${k}: ${fmtHeader(v)}`).join('\n'));
 	let position = $derived(pageOffset + index + 1);
 	let privateIps = $derived((sub?.resolved_ips ?? []).filter(isPrivateIp));
 	let provider = $derived(providerFor(sub?.cname));
@@ -725,15 +727,16 @@
 										</ToggleGroup.Item>
 										<ToggleGroup.Item value="request" class="text-xs">Request</ToggleGroup.Item>
 									</ToggleGroup.Root>
-									<Button
-										variant="ghost"
-										size="sm"
-										class="h-7 text-xs"
-										onclick={() =>
-											copy(httpView === 'request' ? (detail?.raw_request ?? '') : rawResponse)}
-									>
-										<Copy data-icon="inline-start" /> Copy
-									</Button>
+									{#if httpView === 'headers'}
+										<Button
+											variant="ghost"
+											size="sm"
+											class="h-7 text-xs"
+											onclick={() => copy(headerText)}
+										>
+											<Copy data-icon="inline-start" /> Copy
+										</Button>
+									{/if}
 								</div>
 								{#if httpView === 'headers'}
 									{#if headerEntries.length}
@@ -753,10 +756,13 @@
 								{:else}
 									{@const body = httpView === 'request' ? detail.raw_request : rawResponse}
 									{#if body}
-										<ScrollArea class="max-h-[60vh] rounded-md border border-border bg-muted/30">
-											<pre
-												class="p-3 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap">{body}</pre>
-										</ScrollArea>
+										<CodeBlock
+											code={body}
+											lang="http"
+											label={httpView === 'request' ? 'Request' : 'Response'}
+											maxHeight="60vh"
+											maxLines={0}
+										/>
 									{:else}
 										{@render emptyNote(`No raw ${httpView} captured`, null)}
 									{/if}

@@ -5,6 +5,7 @@
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import CodeBlock from '$lib/components/code-block.svelte';
 	import { scansApi } from '$lib/api/scans';
 	import {
 		activityStatusIcon,
@@ -208,12 +209,14 @@
 												{:else if outputs[c.id] === null}
 													<p class="p-3 text-xs text-destructive">Output could not be loaded.</p>
 												{:else if outputs[c.id]}
-													<ScrollArea class="h-64">
-														<pre
-															class="p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap">{outputs[
-																c.id
-															]}</pre>
-													</ScrollArea>
+													{@const out = outputs[c.id] ?? ''}
+													<CodeBlock
+														code={out}
+														label="{c.tool} output"
+														maxHeight="16rem"
+														maxLines={0}
+														class="rounded-none border-0"
+													/>
 												{:else}
 													<p class="p-3 text-xs text-muted-foreground">No output captured.</p>
 												{/if}

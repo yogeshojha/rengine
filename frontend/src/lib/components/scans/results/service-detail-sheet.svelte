@@ -22,6 +22,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
+	import CodeBlock from '$lib/components/code-block.svelte';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { productBrand, serviceLabel, type ServiceRead } from '$lib/utilities/services';
@@ -283,8 +284,7 @@
 								<div class={ROW}>
 									<dt class={DT}>Banner</dt>
 									<dd>
-										<pre
-											class="max-h-40 overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed break-all whitespace-pre-wrap">{s.banner}</pre>
+										<CodeBlock code={s.banner} label="Banner" maxHeight="10rem" maxLines={0} />
 									</dd>
 								</div>
 							{/if}

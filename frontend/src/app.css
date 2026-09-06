@@ -46,6 +46,21 @@
 	--sev-info-wash: #f1f5f8;
 	--sev-info-ink: #475461;
 
+	/* code — a reserved syntax ramp, hue-matched to the chart scale and re-lightened
+	   so every kind clears 4.5:1 as text on --code-surface. Validated in both themes. */
+	--code-surface: oklch(0.979 0.005 265);
+	--code-fg: oklch(0.38 0.014 265);
+	--code-key: oklch(0.19 0.02 265);
+	--code-string: oklch(0.52 0.165 258);
+	--code-keyword: oklch(0.52 0.138 152);
+	--code-atom: oklch(0.52 0.17 330);
+	--code-number: oklch(0.52 0.13 55);
+	--code-link: oklch(0.52 0.09 210);
+	--code-comment: oklch(0.545 0.022 265);
+	--code-punct: oklch(0.595 0.016 265);
+	--code-meta: oklch(0.55 0.03 300);
+	--code-gutter: oklch(0.63 0.014 265);
+	--code-mark: oklch(0.86 0.09 95);
 	--info: oklch(0.52 0.16 252);
 	--info-foreground: oklch(0.985 0 0);
 	--border: oklch(0.922 0.01 265);
@@ -126,6 +141,20 @@
 	--sev-info-wash: #202328;
 	--sev-info-ink: #858f9a;
 
+	/* code, restepped for the dark well */
+	--code-surface: oklch(0.175 0.009 265);
+	--code-fg: oklch(0.82 0.008 265);
+	--code-key: oklch(0.97 0.005 265);
+	--code-string: oklch(0.72 0.146 258);
+	--code-keyword: oklch(0.72 0.15 152);
+	--code-atom: oklch(0.72 0.15 330);
+	--code-number: oklch(0.72 0.15 55);
+	--code-link: oklch(0.72 0.124 210);
+	--code-comment: oklch(0.6 0.022 265);
+	--code-punct: oklch(0.63 0.016 265);
+	--code-meta: oklch(0.68 0.04 300);
+	--code-gutter: oklch(0.5 0.014 265);
+	--code-mark: oklch(0.4 0.1 95);
 	--info: oklch(0.72 0.14 252);
 	--info-foreground: oklch(0.205 0 0);
 	--border: oklch(0.275 0.012 265);
@@ -213,6 +242,9 @@
 	--color-chart-3: var(--chart-3);
 	--color-chart-4: var(--chart-4);
 	--color-chart-5: var(--chart-5);
+	--color-code-surface: var(--code-surface);
+	--color-code-fg: var(--code-fg);
+	--color-code-gutter: var(--code-gutter);
 	--color-sidebar: var(--sidebar);
 	--color-sidebar-foreground: var(--sidebar-foreground);
 	--color-sidebar-primary: var(--sidebar-primary);

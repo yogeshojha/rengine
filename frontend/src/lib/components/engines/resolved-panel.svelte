@@ -2,7 +2,7 @@
 	import { Spinner } from '$lib/components/ui/spinner';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { stringify } from 'yaml';
-	import YamlPane from './yaml-pane.svelte';
+	import YamlPane from '$lib/components/yaml-editor.svelte';
 	import { targetTypeLabel, type StageConfig } from '$lib/types/scan-engine';
 
 	interface Props {
