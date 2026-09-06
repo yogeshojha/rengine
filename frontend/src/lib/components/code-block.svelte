@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { tick, type Snippet } from 'svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button';
 	import CopyButton from '$lib/components/copy-button.svelte';
@@ -17,10 +17,13 @@
 	import CodeXml from '@lucide/svelte/icons/code-xml';
 	import Code from '@lucide/svelte/icons/code';
 	import Palette from '@lucide/svelte/icons/palette';
+	import Search from '@lucide/svelte/icons/search';
+	import X from '@lucide/svelte/icons/x';
 	import { downloadBlob } from '$lib/utilities/download';
 	import {
 		highlight,
 		applyMarks,
+		applySearch,
 		prettify,
 		LANG_LABELS,
 		type CodeLang
@@ -86,12 +89,19 @@
 	};
 	const AUTO_NUMBERS = 6;
 	const MAX_RENDER = 4000;
+	const FIND_FROM = 4;
+	const PULSE_MS = 420;
 
 	let expanded = $state(false);
 	let wrapOverride = $state<boolean | null>(null);
 	let pretty = $state(false);
 	let viewport = $state<HTMLElement | null>(null);
 	let scrollable = $state(false);
+	let root = $state<HTMLElement | null>(null);
+	let finding = $state(false);
+	let query = $state('');
+	let active = $state(0);
+	let findInput = $state<HTMLInputElement | null>(null);
 
 	const raw = $derived(code ?? '');
 	const formatted = $derived(prettify(raw, lang));
@@ -100,15 +110,21 @@
 		marks.length ? applyMarks(highlight(source, lang), marks) : highlight(source, lang)
 	);
 	const total = $derived(lines.length);
-	const collapsible = $derived(maxLines > 0 && total > maxLines);
-	const shown = $derived(
+	const needle = $derived(finding ? query.trim() : '');
+	const searching = $derived(needle.length > 0);
+	const collapsible = $derived(maxLines > 0 && total > maxLines && !searching);
+	const visible = $derived(
 		collapsible && !expanded ? lines.slice(0, maxLines) : lines.slice(0, MAX_RENDER)
 	);
+	const result = $derived(searching ? applySearch(visible, needle) : null);
+	const shown = $derived(result?.lines ?? visible);
+	const hits = $derived(result?.hits ?? 0);
 	const hidden = $derived(total - shown.length);
 	const wrapped = $derived(wrapOverride ?? wrap ?? WRAPS[lang]);
 	const gutter = $derived(numbers ?? total > AUTO_NUMBERS);
 	const width = $derived(`${String(total).length + 1}ch`);
 	const Icon = $derived(LANG_ICONS[lang]);
+	const findable = $derived(toolbar && total >= FIND_FROM);
 
 	$effect(() => {
 		void shown;
@@ -123,10 +139,86 @@
 		observer.observe(el);
 		return () => observer.disconnect();
 	});
+
+	$effect(() => {
+		const el = root;
+		if (!el || !findable) return;
+		const onKey = (event: KeyboardEvent) => {
+			if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'f') return;
+			event.preventDefault();
+			openFind();
+		};
+		el.addEventListener('keydown', onKey);
+		return () => el.removeEventListener('keydown', onKey);
+	});
+
+	$effect(() => {
+		void needle;
+		active = 0;
+	});
+
+	$effect(() => {
+		void active;
+		if (!hits) return;
+		void tick().then(reveal);
+	});
+
+	function calm() {
+		return (
+			typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+		);
+	}
+
+	function reveal() {
+		const port = viewport;
+		const el = port?.querySelector<HTMLElement>(`[data-hit='${active}']`);
+		if (!port || !el) return;
+		const box = el.getBoundingClientRect();
+		const frame = port.getBoundingClientRect();
+		const behavior = calm() ? 'auto' : 'smooth';
+		port.scrollTo({
+			top: Math.max(0, port.scrollTop + box.top - frame.top - (frame.height - box.height) / 2),
+			left: wrapped
+				? 0
+				: Math.max(0, port.scrollLeft + box.left - frame.left - (frame.width - box.width) / 2),
+			behavior
+		});
+		if (calm()) return;
+		const style = getComputedStyle(el);
+		const rest = style.backgroundColor;
+		const flash = style.getPropertyValue('--primary').trim() || rest;
+		el.animate([{ backgroundColor: rest }, { backgroundColor: flash }, { backgroundColor: rest }], {
+			duration: PULSE_MS,
+			easing: 'ease-out'
+		});
+	}
+
+	function openFind() {
+		finding = true;
+		void tick().then(() => findInput?.select());
+	}
+
+	function closeFind() {
+		finding = false;
+		query = '';
+	}
+
+	function step(delta: number) {
+		if (!hits) return;
+		active = (active + delta + hits) % hits;
+	}
+
+	function onFindKey(event: KeyboardEvent) {
+		if (event.key === 'Escape') return closeFind();
+		if (event.key !== 'Enter') return;
+		event.preventDefault();
+		step(event.shiftKey ? -1 : 1);
+	}
 </script>
 
 {#if source}
 	<div
+		bind:this={root}
 		class={cn('code-block flex min-w-0 flex-col overflow-hidden rounded-lg border', className)}
 		style="--cb-max:{maxHeight};--cb-gutter:{width}"
 	>
@@ -134,15 +226,81 @@
 			<div class="cb-bar">
 				<Icon class="size-3.5 shrink-0 text-muted-foreground" />
 				<span class="truncate font-medium">{label ?? LANG_LABELS[lang]}</span>
-				{#if total > 1}
+				{#if total > 1 && !finding}
 					<span class="shrink-0 text-muted-foreground tabular-nums">
 						{total.toLocaleString()} lines
 					</span>
 				{/if}
-				{#if pretty}
+				{#if pretty && !finding}
 					<span class="shrink-0 text-muted-foreground">formatted</span>
 				{/if}
-				<div class="ml-auto flex shrink-0 items-center gap-0.5">
+				{#if findable}
+					<div class="cb-find ml-auto" class:open={finding}>
+						<Search class="size-3 shrink-0 text-muted-foreground" />
+						<input
+							bind:this={findInput}
+							bind:value={query}
+							class="cb-find-input"
+							placeholder="Find"
+							spellcheck="false"
+							autocomplete="off"
+							aria-label="Find in {label ?? LANG_LABELS[lang]}"
+							tabindex={finding ? 0 : -1}
+							onkeydown={onFindKey}
+						/>
+						{#if searching}
+							<span class="cb-find-count">{hits ? active + 1 : 0}/{hits}</span>
+						{/if}
+						<Button
+							variant="ghost"
+							size="icon"
+							class="size-6 shrink-0 text-muted-foreground"
+							disabled={!hits}
+							tabindex={finding ? 0 : -1}
+							aria-label="Previous match"
+							onclick={() => step(-1)}
+						>
+							<ChevronUp class="size-3.5" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							class="size-6 shrink-0 text-muted-foreground"
+							disabled={!hits}
+							tabindex={finding ? 0 : -1}
+							aria-label="Next match"
+							onclick={() => step(1)}
+						>
+							<ChevronDown class="size-3.5" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							class="size-6 shrink-0 text-muted-foreground"
+							tabindex={finding ? 0 : -1}
+							aria-label="Close find"
+							onclick={closeFind}
+						>
+							<X class="size-3.5" />
+						</Button>
+					</div>
+				{/if}
+				<div class="flex shrink-0 items-center gap-0.5" class:ml-auto={!findable}>
+					{#if findable && !finding}
+						<Hint text="Find in this block">
+							{#snippet child(props)}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon"
+									class="size-7 text-muted-foreground"
+									onclick={openFind}
+								>
+									<Search class="size-3.5" />
+								</Button>
+							{/snippet}
+						</Hint>
+					{/if}
 					{@render actions?.()}
 					{#if formatted}
 						<Hint text={pretty ? 'Show it as it was received' : 'Format for reading'}>
@@ -214,7 +372,7 @@
 				>
 					{#each shown as line, index (index)}
 						<!-- prettier-ignore -->
-						<div class="cb-line">{#if gutter}<span class="cb-ln" aria-hidden="true">{index + 1}</span>{/if}<span class="cb-lc">{#each line as token, at (at)}<span class="t-{token.kind}" class:mark={token.mark}>{token.text}</span>{/each}</span></div>
+						<div class="cb-line">{#if gutter}<span class="cb-ln" aria-hidden="true">{index + 1}</span>{/if}<span class="cb-lc">{#each line as token, at (at)}<span class="t-{token.kind}" class:mark={token.mark} class:hit={token.hit !== undefined} class:on={token.hit === active} data-hit={token.hit}>{token.text}</span>{/each}</span></div>
 					{/each}
 				</div>
 			</ScrollArea>
@@ -265,6 +423,50 @@
 		border-bottom: 1px solid var(--border);
 		font-size: 11px;
 		line-height: 1;
+	}
+	.cb-find {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		width: 0;
+		min-width: 0;
+		padding: 0;
+		opacity: 0;
+		overflow: hidden;
+		border-radius: 6px;
+		transition:
+			width 0.18s ease,
+			padding 0.18s ease,
+			opacity 0.14s ease;
+	}
+	.cb-find.open {
+		width: 15rem;
+		padding: 0 0.125rem 0 0.5rem;
+		opacity: 1;
+		background: color-mix(in oklch, var(--muted) 85%, transparent);
+		box-shadow: inset 0 0 0 1px var(--border);
+	}
+	.cb-find-input {
+		flex: 1;
+		min-width: 0;
+		background: transparent;
+		border: 0;
+		outline: none;
+		font-size: 11px;
+		color: var(--foreground);
+	}
+	.cb-find-input::placeholder {
+		color: var(--muted-foreground);
+	}
+	.cb-find-count {
+		flex-shrink: 0;
+		color: var(--muted-foreground);
+		font-variant-numeric: tabular-nums;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.cb-find {
+			transition: none;
+		}
 	}
 	.cb-body {
 		position: relative;
@@ -425,5 +627,14 @@
 		border-radius: 2px;
 		background: var(--code-mark);
 		box-shadow: 0 0 0 1.5px var(--code-mark);
+	}
+	.cb-code :global(.hit) {
+		border-radius: 2px;
+		background: color-mix(in oklch, var(--code-mark) 70%, transparent);
+		box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--code-mark) 70%, transparent);
+	}
+	.cb-code :global(.hit.on) {
+		background: color-mix(in oklch, var(--primary) 32%, transparent);
+		box-shadow: 0 0 0 1.5px var(--primary);
 	}
 </style>

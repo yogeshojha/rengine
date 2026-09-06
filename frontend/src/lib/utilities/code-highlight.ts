@@ -29,6 +29,7 @@ export interface CodeToken {
 	text: string;
 	kind: TokenKind;
 	mark?: boolean;
+	hit?: number;
 }
 
 export type CodeLine = CodeToken[];
@@ -656,6 +657,37 @@ export function applyMarks(lines: CodeLine[], terms: string[]): CodeLine[] {
 		}
 		return out;
 	});
+}
+
+export interface CodeSearch {
+	lines: CodeLine[];
+	hits: number;
+}
+
+export function applySearch(lines: CodeLine[], term: string): CodeSearch {
+	const needle = term.toLowerCase();
+	if (!needle) return { lines, hits: 0 };
+
+	let hits = 0;
+	const marked = lines.map((line) => {
+		const out: CodeLine = [];
+		for (const token of line) {
+			const lower = token.text.toLowerCase();
+			let cursor = 0;
+			for (;;) {
+				const at = lower.indexOf(needle, cursor);
+				if (at < 0) {
+					if (cursor < token.text.length) out.push({ ...token, text: token.text.slice(cursor) });
+					break;
+				}
+				if (at > cursor) out.push({ ...token, text: token.text.slice(cursor, at) });
+				out.push({ ...token, text: token.text.slice(at, at + needle.length), hit: hits++ });
+				cursor = at + needle.length;
+			}
+		}
+		return out;
+	});
+	return { lines: marked, hits };
 }
 
 export function guessLang(code: string, fallback: CodeLang = 'text'): CodeLang {
