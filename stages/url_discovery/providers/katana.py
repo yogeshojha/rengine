@@ -23,6 +23,26 @@ class KatanaProvider(UrlProvider):
     tool = "katana"
     binary = "katana"
 
+    def _client(self) -> KatanaClient:
+        cfg = self.ctx.cfg
+        try:
+            return KatanaClient(
+                depth=cfg.crawl_depth,
+                threads=cfg.threads,
+                timeout=cfg.timeout,
+                max_duration_minutes=cfg.max_crawl_minutes,
+                rate_limit=cfg.rate,
+                crawl_scope=cfg.crawl_scope,
+                include_js=cfg.crawl_javascript,
+                headless=cfg.headless,
+                proxy_url=self.ctx.net.proxy_url,
+                headers=self.ctx.net.headers,
+                recorder=self.ctx.recorder,
+                extra_args=self.extra_args,
+            )
+        except KatanaError as e:
+            raise RuntimeError(str(e)) from e
+
     def discover(self, result: ProviderResult) -> None:
         targets = [h.url for h in self.ctx.hosts]
         if not targets:
@@ -40,25 +60,10 @@ class KatanaProvider(UrlProvider):
             elif any(token in lowered for token in _UNRESPONSIVE):
                 errors += 1
 
-        try:
-            client = KatanaClient(
-                depth=cfg.crawl_depth,
-                threads=cfg.threads,
-                timeout=cfg.timeout,
-                max_duration_minutes=cfg.max_crawl_minutes,
-                rate_limit=cfg.rate,
-                crawl_scope=cfg.crawl_scope,
-                include_js=cfg.crawl_javascript,
-                headless=cfg.headless,
-                proxy_url=self.ctx.net.proxy_url,
-                headers=self.ctx.net.headers,
-                recorder=self.ctx.recorder,
-                extra_args=self.extra_args,
-            )
-        except KatanaError as e:
-            raise RuntimeError(str(e)) from e
+        client = self._client()
 
         found = 0
+        out_of_scope = 0
         deepest = 0
         seen: set[str] = set()
         observations: list[EndpointObservation] = []
@@ -76,25 +81,18 @@ class KatanaProvider(UrlProvider):
                 if url in seen:
                     continue
                 seen.add(url)
+                # katana's -field-scope bounds what it follows, not what it prints, so a
+                # link to any third party arrives here; scope before the budget
+                if not self.in_scope(url):
+                    out_of_scope += 1
+                    continue
                 if len(observations) >= cap:
                     result.capped = True
                     result.cap_reason = (
                         f"Stopped at the {cap} URL limit for this provider."
                     )
                     break
-                observations.append(
-                    EndpointObservation(
-                        url=url,
-                        found_on=parsed["found_on"],
-                        detail=_detail(parsed),
-                        methods=[parsed["method"]] if parsed["method"] else [],
-                        is_probed=parsed["status_code"] is not None,
-                        status_code=parsed["status_code"],
-                        content_type=parsed["content_type"],
-                        content_length=parsed["content_length"],
-                        title=parsed["title"],
-                    )
-                )
+                observations.append(_observation(parsed))
                 deepest = max(deepest, url.count("/") - 2)
 
         if fatal:
@@ -107,7 +105,24 @@ class KatanaProvider(UrlProvider):
         result.hosts_scanned = len(targets)
         result.depth_reached = min(deepest, cfg.crawl_depth)
         result.errors = errors
-        self.progress(f"crawled {len(targets)} sites, {len(observations)} urls")
+        note = f"crawled {len(targets)} sites, {len(observations)} urls"
+        if out_of_scope:
+            note += f" ({out_of_scope} off-site links not in scope)"
+        self.progress(note)
+
+
+def _observation(parsed: dict) -> EndpointObservation:
+    return EndpointObservation(
+        url=parsed["url"],
+        found_on=parsed["found_on"],
+        detail=_detail(parsed),
+        methods=[parsed["method"]] if parsed["method"] else [],
+        is_probed=parsed["status_code"] is not None,
+        status_code=parsed["status_code"],
+        content_type=parsed["content_type"],
+        content_length=parsed["content_length"],
+        title=parsed["title"],
+    )
 
 
 def _detail(parsed: dict) -> str:

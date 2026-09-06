@@ -16,6 +16,7 @@ from shared.models.subdomain import Subdomain
 from shared.services import endpoint_inventory
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
+from shared.utils.validation import normalize_domain
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.url_discovery.config import UrlDiscoveryConfig
 from stages.url_discovery.providers import URL_PROVIDERS, Host, ProviderContext
@@ -33,6 +34,13 @@ def _unavailable(source: str, reason: str) -> EndpointCoverage:
         error=reason,
         ended_at=utc_now(),
     )
+
+
+def _named_host(target_type: str, target_value: str) -> str:
+    """The hostname a domain or URL target names, which is that scan's scope."""
+    if target_type not in (TargetType.DOMAIN.value, TargetType.URL.value):
+        return ""
+    return normalize_domain(target_value)
 
 
 class UrlDiscoveryStage(Stage):
@@ -184,10 +192,13 @@ class UrlDiscoveryStage(Stage):
         return live[: self.cfg.max_hosts]
 
     def _apex_domains(self, hosts: list[Host]) -> list[str]:
-        if self.ctx.target_type == TargetType.DOMAIN.value:
-            apex = registrable_domain(self.ctx.target_value)
+        named = _named_host(self.ctx.target_type, self.ctx.target_value)
+        if named:
+            # a subdomain target is scanned as itself — no other stage enumerates its
+            # parent, so this one may not claim the parent's URLs either
+            apex = registrable_domain(named)
             if apex:
-                return [apex]
+                return [apex] if named == apex else [named]
         names = (
             self.session.execute(
                 select(Subdomain.name).where(Subdomain.scan_id == self.ctx.scan_id)
