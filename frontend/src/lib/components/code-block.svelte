@@ -8,13 +8,23 @@
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import Download from '@lucide/svelte/icons/download';
 	import TextWrap from '@lucide/svelte/icons/text-wrap';
+	import WandSparkles from '@lucide/svelte/icons/wand-sparkles';
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import Braces from '@lucide/svelte/icons/braces';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 	import Terminal from '@lucide/svelte/icons/terminal';
 	import FileText from '@lucide/svelte/icons/file-text';
+	import CodeXml from '@lucide/svelte/icons/code-xml';
+	import Code from '@lucide/svelte/icons/code';
+	import Palette from '@lucide/svelte/icons/palette';
 	import { downloadBlob } from '$lib/utilities/download';
-	import { highlight, applyMarks, LANG_LABELS, type CodeLang } from '$lib/utilities/code-highlight';
+	import {
+		highlight,
+		applyMarks,
+		prettify,
+		LANG_LABELS,
+		type CodeLang
+	} from '$lib/utilities/code-highlight';
 	import type { IconComponent } from '$lib/config/icons';
 	import { cn } from '$lib/utils';
 
@@ -57,6 +67,10 @@
 		json: Braces,
 		http: ArrowLeftRight,
 		shell: Terminal,
+		html: CodeXml,
+		xml: CodeXml,
+		css: Palette,
+		js: Code,
 		text: FileText
 	};
 	const WRAPS: Record<CodeLang, boolean> = {
@@ -64,6 +78,10 @@
 		json: false,
 		http: true,
 		shell: true,
+		html: true,
+		xml: true,
+		css: false,
+		js: true,
 		text: true
 	};
 	const AUTO_NUMBERS = 6;
@@ -71,10 +89,13 @@
 
 	let expanded = $state(false);
 	let wrapOverride = $state<boolean | null>(null);
+	let pretty = $state(false);
 	let viewport = $state<HTMLElement | null>(null);
 	let scrollable = $state(false);
 
-	const source = $derived(code ?? '');
+	const raw = $derived(code ?? '');
+	const formatted = $derived(prettify(raw, lang));
+	const source = $derived(pretty && formatted ? formatted : raw);
 	const lines = $derived(
 		marks.length ? applyMarks(highlight(source, lang), marks) : highlight(source, lang)
 	);
@@ -118,8 +139,27 @@
 						{total.toLocaleString()} lines
 					</span>
 				{/if}
+				{#if pretty}
+					<span class="shrink-0 text-muted-foreground">formatted</span>
+				{/if}
 				<div class="ml-auto flex shrink-0 items-center gap-0.5">
 					{@render actions?.()}
+					{#if formatted}
+						<Hint text={pretty ? 'Show it as it was received' : 'Format for reading'}>
+							{#snippet child(props)}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon"
+									class={pretty ? 'size-7 text-foreground' : 'size-7 text-muted-foreground'}
+									aria-pressed={pretty}
+									onclick={() => (pretty = !pretty)}
+								>
+									<WandSparkles class="size-3.5" />
+								</Button>
+							{/snippet}
+						</Hint>
+					{/if}
 					<Hint text={wrapped ? 'Do not wrap lines' : 'Wrap lines'}>
 						{#snippet child(props)}
 							<Button
@@ -173,11 +213,8 @@
 					aria-label={scrollable ? `${label ?? LANG_LABELS[lang]}, scrollable` : undefined}
 				>
 					{#each shown as line, index (index)}
-						<div class="cb-line">
-							{#if gutter}<span class="cb-ln" aria-hidden="true">{index + 1}</span>{/if}
-							<!-- prettier-ignore -->
-							<span class="cb-lc">{#each line as token, at (at)}<span class="t-{token.kind}" class:mark={token.mark}>{token.text}</span>{/each}</span>
-						</div>
+						<!-- prettier-ignore -->
+						<div class="cb-line">{#if gutter}<span class="cb-ln" aria-hidden="true">{index + 1}</span>{/if}<span class="cb-lc">{#each line as token, at (at)}<span class="t-{token.kind}" class:mark={token.mark}>{token.text}</span>{/each}</span></div>
 					{/each}
 				</div>
 			</ScrollArea>
@@ -351,6 +388,19 @@
 		text-decoration: underline;
 		text-decoration-color: color-mix(in oklch, var(--code-link) 40%, transparent);
 		text-underline-offset: 2px;
+	}
+	.cb-code :global(.t-tag) {
+		color: var(--code-tag);
+		font-weight: 500;
+	}
+	.cb-code :global(.t-attr) {
+		color: var(--code-attr);
+	}
+	.cb-code :global(.t-fn) {
+		color: var(--code-fn);
+	}
+	.cb-code :global(.t-op) {
+		color: var(--code-op);
 	}
 	.cb-code :global(.t-invalid) {
 		color: var(--destructive);
