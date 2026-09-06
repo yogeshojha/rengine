@@ -72,7 +72,8 @@ def duration(seconds: float | None) -> str:
 
 
 def clip(value: str | None, length: int = 80) -> str:
-    text = value or ""
+    """Trim, and drop the replacement character a bad byte upstream leaves behind."""
+    text = (value or "").replace("\ufffd", "")
     return text if len(text) <= length else text[: length - 1] + "…"
 
 

@@ -16,17 +16,13 @@
   </div>
   <div class="finding__body">
     {% if cfg.show_classification and (issue.cve_ids or issue.cwe_ids or issue.cvss_score or issue.epss_score) %}
-    <table class="table" style="margin-bottom:2mm">
-      <tbody>
-        <tr>
-          {% if issue.cvss_score %}<td><span class="label">CVSS</span><br>{{ issue.cvss_score }}</td>{% endif %}
-          {% if issue.epss_score %}<td><span class="label">EPSS</span><br>{{ (issue.epss_score * 100)|round(1) }}%</td>{% endif %}
-          {% if issue.cve_ids %}<td><span class="label">CVE</span><br>{{ issue.cve_ids[:4]|join(', ') }}</td>{% endif %}
-          {% if issue.cwe_ids %}<td><span class="label">CWE</span><br>{{ issue.cwe_ids[:4]|join(', ') }}{% if issue.cwe_rank %} <span class="faint">Top 25 #{{ issue.cwe_rank }}</span>{% endif %}</td>{% endif %}
-          <td><span class="label">Check</span><br><span class="micro mono-break">{{ issue.template_id }}</span></td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="facts">
+      {% if issue.cvss_score %}<span><span class="facts__k">CVSS</span><span class="facts__v">{{ issue.cvss_score }}</span></span>{% endif %}
+      {% if issue.epss_score %}<span><span class="facts__k">EPSS</span><span class="facts__v">{{ (issue.epss_score * 100)|round(1) }}%</span></span>{% endif %}
+      {% if issue.cve_ids %}<span><span class="facts__k">CVE</span><span class="facts__v mono">{{ issue.cve_ids[:3]|join(', ') }}</span></span>{% endif %}
+      {% if issue.cwe_ids %}<span><span class="facts__k">CWE</span><span class="facts__v mono">{{ issue.cwe_ids[:3]|join(', ') }}{% if issue.cwe_rank %} <span class="faint">Top 25 #{{ issue.cwe_rank }}</span>{% endif %}</span></span>{% endif %}
+      <span><span class="facts__k">Check</span><span class="facts__v mono">{{ issue.template_id }}</span></span>
+    </div>
     {% endif %}
 
     {% if row.explainer %}
@@ -84,7 +80,7 @@
 
     {% if row.controls %}
     <h5>Control mapping</h5>
-    <div class="chips">{% for control in row.controls %}<span class="chip">{{ control }}</span>{% endfor %}</div>
+    <div class="controls">{% for line in row.controls %}<div>{{ line|safe }}</div>{% endfor %}</div>
     {% endif %}
 
     {% if cfg.show_references and issue.references %}

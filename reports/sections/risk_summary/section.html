@@ -2,27 +2,30 @@
 {% if narrative %}<div class="md block">{{ narrative|md|safe }}</div>{% endif %}
 
 <div class="grid block">
-  {% if show_donut and severity|length > 1 %}
+  {% if show_donut and actionable_rows|length > 1 %}
   {% set items = [] %}
-  {% for row in severity %}{% set _ = items.append(Slice(row.label, row.count, ctx.sev(row.severity))) %}{% endfor %}
+  {% for row in actionable_rows %}{% set _ = items.append(Slice(row.label, row.count, ctx.sev(row.severity))) %}{% endfor %}
   <div style="flex:0 0 40mm">
-    {{ donut(items, size=120, thickness=18, centre_value=total|num, centre_label='findings', palette=ctx.palette)|safe }}
+    {{ donut(items, size=120, thickness=16, centre_value=actionable_total|num, centre_label='actionable', palette=ctx.palette)|safe }}
   </div>
   {% endif %}
   <div>
-    <table class="table">
-      <thead><tr><th>Severity</th><th class="num">Findings</th><th>Share</th></tr></thead>
+    <table class="table table--tight">
+      <thead><tr><th>Severity</th><th class="num">Findings</th><th style="width:44%">Share of actionable</th></tr></thead>
       <tbody>
-        {% for row in severity %}
+        {% for row in actionable_rows %}
         <tr>
           <td>{{ m.sev(row.severity, row.label) }}</td>
           <td class="num">{{ row.count|num }}</td>
-          <td style="width:40%"><div class="meter__track"><div class="meter__fill" style="width:{{ (row.count / total * 100)|round(1) }}%;background:{{ ctx.sev(row.severity) }}"></div></div></td>
+          <td><div class="meter__track"><div class="meter__fill" style="width:{{ (row.count / actionable_total * 100)|round(1) if actionable_total else 0 }}%;background:{{ ctx.sev(row.severity) }}"></div></div></td>
         </tr>
         {% endfor %}
+        {% if quiet %}
+        <tr class="faint"><td>{{ m.sev('info', 'Info') }}</td><td class="num">{{ quiet|num }}</td><td class="micro">Observations about the asset. Not drawn, not counted as actionable.</td></tr>
+        {% endif %}
       </tbody>
     </table>
-    {% if kev %}<p class="small" style="margin-top:2mm">{{ kev }} of these are listed as exploited in the wild.</p>{% endif %}
+    {% if kev %}<p class="small" style="margin-top:2mm">{{ kev }} of the actionable findings are listed as exploited in the wild.</p>{% endif %}
   </div>
 </div>
 

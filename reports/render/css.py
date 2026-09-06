@@ -100,12 +100,11 @@ def page_css(style: ReportStyle, values: dict[str, str]) -> str:
     )
 
     return (
-        f"@page{{size:{size} {orientation};margin:{margins};{''.join(boxes)}}}"
-        f"@page cover{{margin:0;{blank}}}"
+        f"@page{{size:{size} {orientation};margin:{margins};background:var(--r-page);{''.join(boxes)}}}"
+        f"@page cover{{margin:0;background:var(--r-page);{blank}}}"
         f"@page appendix{{{''.join(boxes)}}}"
-        ".section__title{string-set:section content(text)}"
         "h1{bookmark-level:1;bookmark-label:content(text)}"
-        ".section__title{bookmark-level:1;bookmark-label:content(text)}"
+        ".section__title{string-set:section attr(data-run);bookmark-level:1;bookmark-label:attr(data-run)}"
         ".sub__title{bookmark-level:2;bookmark-label:content(text)}"
         ".finding__title{bookmark-level:3;bookmark-label:content(text)}"
     )

@@ -4,18 +4,33 @@
   {% if layout == 'split' %}<div class="cover__panel"></div>{% endif %}
   {% if layout == 'band' %}
   <div class="cover__band">
-    {% if logo %}<img class="cover__logo" src="{{ logo }}" alt="">{% elif ctx.branding.company_name %}<div class="cover__org">{{ ctx.branding.company_name }}</div>{% endif %}
+    <div class="cover__band-top">
+      {% if logo %}<img class="cover__logo" src="{{ logo }}" alt="">{% elif ctx.branding.company_name %}<div class="cover__org">{{ ctx.branding.company_name }}</div>{% endif %}
+    </div>
+    <div class="cover__band-body">
+      {% if kicker %}<div class="cover__kicker">{{ kicker }}</div>{% endif %}
+      <h1 class="cover__title">{{ ctx.spec.title }}</h1>
+      <div class="cover__subject">{{ ctx.data.subject }}</div>
+    </div>
   </div>
   {% endif %}
+
+  {% if grade %}
+  <div class="cover__grade">
+    <div class="cover__grade-ring"><span class="cover__grade-letter">{{ grade.letter }}</span></div>
+    <div class="cover__grade-label">Posture {{ grade.score }} / 100</div>
+  </div>
+  {% endif %}
+
   <div class="cover__body">
     {% if layout != 'band' %}
       {% if logo %}<div class="cover__mark"><img class="cover__logo" src="{{ logo }}" alt=""></div>
       {% elif ctx.branding.company_name %}<div class="cover__mark"><span class="cover__org">{{ ctx.branding.company_name }}</span></div>{% endif %}
+      {% if kicker %}<div class="cover__kicker">{{ kicker }}</div>{% endif %}
+      {% if accent_bar %}<div class="cover__accent"></div>{% endif %}
+      <h1 class="cover__title">{{ ctx.spec.title }}</h1>
+      <div class="cover__subject">{{ ctx.data.subject }}</div>
     {% endif %}
-    {% if kicker %}<div class="cover__kicker">{{ kicker }}</div>{% endif %}
-    {% if accent_bar %}<div class="cover__accent"></div>{% endif %}
-    <h1 class="cover__title">{{ ctx.spec.title }}</h1>
-    <div class="cover__subject">{{ ctx.data.subject }}</div>
     {% if ctx.spec.subtitle %}<div class="cover__subtitle">{{ ctx.spec.subtitle }}</div>{% endif %}
     {% if meta %}
     <dl class="cover__meta">

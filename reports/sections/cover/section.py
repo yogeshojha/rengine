@@ -15,6 +15,11 @@ class CoverConfig(SectionConfig):
         description="Client, author, date and document reference.",
     )
     show_classification: bool = flag(True, title="Show classification banner")
+    show_grade: bool = flag(
+        True,
+        title="Show the posture grade",
+        description="The letter grade and score on the cover, when vulnerabilities were assessed.",
+    )
     kicker: str = text(
         "Attack surface report",
         title="Kicker",
@@ -30,6 +35,16 @@ class CoverConfig(SectionConfig):
             "none": "No date",
         },
     )
+
+
+def _grade(ctx: RenderContext) -> dict | None:
+    assessed = any(
+        c["covered"] for c in ctx.brief.coverage if c["dimension"] == "vulnerabilities"
+    )
+    if not assessed:
+        return None
+    posture = ctx.brief.posture
+    return {"letter": posture.grade, "score": posture.score}
 
 
 class CoverSection(Section):
@@ -66,6 +81,7 @@ class CoverSection(Section):
             else "",
             "art": ctx.theme.cover.art,
             "background": ctx.style.cover_image,
+            "grade": _grade(ctx) if cfg.show_grade else None,
             "layout": ctx.theme.cover.layout,
             "accent_bar": ctx.theme.cover.accent_bar,
         }

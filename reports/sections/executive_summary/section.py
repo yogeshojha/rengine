@@ -3,8 +3,8 @@ from __future__ import annotations
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, paragraph
 from shared.definitions.reports import SectionGroup
-from shared.definitions.surface import SURFACE_LABELS, SURFACE_ORDER
-from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER
+from shared.definitions.surface import SURFACE_LABELS, SURFACE_ORDER, SurfaceDimension
+from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER, Severity
 
 
 class ExecutiveSummaryConfig(SectionConfig):
@@ -37,8 +37,13 @@ class ExecutiveSummarySection(Section):
                 "count": brief.severity.get(key, 0),
             }
             for key in SEVERITY_ORDER
-            if brief.severity.get(key)
+            if key != Severity.UNKNOWN.value
         ]
+        assessed = any(
+            c["covered"]
+            for c in brief.coverage
+            if c["dimension"] == SurfaceDimension.VULNERABILITIES.value
+        )
         kpis = [
             {
                 "dimension": key,
@@ -58,7 +63,11 @@ class ExecutiveSummarySection(Section):
             "score_arc": _arc(ctx, brief.posture.score),
             "deductions": brief.posture.deductions[:5] if cfg.show_deductions else [],
             "kpis": kpis if cfg.show_kpis else [],
-            "severity": severity if cfg.show_severity else [],
+            "severity": severity if cfg.show_severity and assessed else [],
+            "assessed": assessed,
+            "headline": brief.headline,
+            "actionable": brief.actionable,
+            "kev": brief.kev_count,
             "ai": ctx.narrator.ai_used and getattr(ctx.narrator, "used_model", False),
             "disclose": ctx.spec.narrative.disclose_ai,
         }

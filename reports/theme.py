@@ -135,6 +135,11 @@ def resolve(tokens: ThemeTokens, style: ReportStyle) -> ThemeTokens:
     return merged
 
 
+def _snap_weight(value: int) -> int:
+    """WeasyPrint accepts only the hundreds, so 650 must become 700 rather than nothing."""
+    return max(100, min(900, round(value / 100) * 100))
+
+
 def font_stack(key: str, fallback: str, families: dict[str, str] | None = None) -> str:
     family = (families or {}).get(key) or (
         FONT_BY_KEY[key].stack if key in FONT_BY_KEY else key
@@ -190,7 +195,7 @@ def css_variables(
         f"--r-small:{sizes['small']}pt",
         f"--r-micro:{sizes['micro']}pt",
         f"--r-gap:{sizes['gap']}rem",
-        f"--r-h-weight:{typography.heading_weight}",
+        f"--r-h-weight:{_snap_weight(typography.heading_weight)}",
         f"--r-h-track:{typography.heading_tracking}em",
         f"--r-label-track:{typography.label_tracking}em",
         f"--r-rule-w:{layout.rule_width}pt",

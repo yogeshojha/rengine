@@ -67,13 +67,22 @@ def donut(
     centre = size / 2
     angle = -math.pi / 2
     parts = [_open(size, size)]
+    gap = 0.035 if len(live) > 1 else 0.0
 
     for item in live:
         sweep = _TAU * (item.value / total)
         end = angle + sweep
-        large = 1 if sweep > math.pi else 0
-        x1, y1 = centre + radius * math.cos(angle), centre + radius * math.sin(angle)
-        x2, y2 = centre + radius * math.cos(end), centre + radius * math.sin(end)
+        inner_start = angle + gap / 2
+        inner_end = max(inner_start + 0.01, end - gap / 2)
+        large = 1 if (inner_end - inner_start) > math.pi else 0
+        x1, y1 = (
+            centre + radius * math.cos(inner_start),
+            centre + radius * math.sin(inner_start),
+        )
+        x2, y2 = (
+            centre + radius * math.cos(inner_end),
+            centre + radius * math.sin(inner_end),
+        )
         if sweep >= _TAU - 1e-6:
             parts.append(
                 f'<circle cx="{_fmt(centre)}" cy="{_fmt(centre)}" r="{_fmt(radius)}" '
@@ -175,30 +184,30 @@ def dial(
     value: float,
     *,
     size: float = 120,
-    thickness: float = 11,
+    thickness: float = 12,
     label: str = "",
     grade: str = "",
     arc: str = "",
     palette: dict[str, str] | None = None,
 ) -> str:
-    """A single arc for a score. The number is the message; the arc is the scale."""
+    """A 240 degree gauge. The grade is the message; the arc is the scale."""
     tone = _p(palette)
     arc = arc or tone["accent"]
     ratio = max(0.0, min(1.0, value / 100))
-    radius = (size - thickness) / 2
+    radius = (size - thickness) / 2 - 2
     centre = size / 2
-    start = math.pi * 0.75
-    sweep = math.pi * 1.5
+    start = math.pi * 5 / 6
+    sweep = math.pi * 4 / 3
 
-    def point(fraction: float) -> tuple[float, float]:
+    def point(fraction: float, r: float = radius) -> tuple[float, float]:
         angle = start + sweep * fraction
-        return centre + radius * math.cos(angle), centre + radius * math.sin(angle)
+        return centre + r * math.cos(angle), centre + r * math.sin(angle)
 
     x0, y0 = point(0)
     x1, y1 = point(1)
     xv, yv = point(ratio)
     parts = [
-        _open(size, size * 0.86),
+        _open(size, size * 0.9),
         f'<path d="M {_fmt(x0)} {_fmt(y0)} A {_fmt(radius)} {_fmt(radius)} 0 1 1 {_fmt(x1)} {_fmt(y1)}" '
         f'fill="none" stroke="{tone["surface"]}" stroke-width="{_fmt(thickness)}" stroke-linecap="round"/>',
     ]
@@ -209,15 +218,28 @@ def dial(
             f'{_fmt(xv)} {_fmt(yv)}" fill="none" stroke="{arc}" '
             f'stroke-width="{_fmt(thickness)}" stroke-linecap="round"/>'
         )
+    # tick marks at the quartiles keep the scale honest without an axis
+    for fraction in (0.25, 0.5, 0.75):
+        ax, ay = point(fraction, radius - thickness / 2 - 3)
+        bx, by = point(fraction, radius - thickness / 2 - 6)
+        parts.append(
+            f'<line x1="{_fmt(ax)}" y1="{_fmt(ay)}" x2="{_fmt(bx)}" y2="{_fmt(by)}" '
+            f'stroke="{tone["rule"]}" stroke-width="1"/>'
+        )
     parts.append(
-        f'<text x="{_fmt(centre)}" y="{_fmt(centre + 2)}" text-anchor="middle" '
-        f'dominant-baseline="middle" font-size="{_fmt(size * 0.3)}" font-weight="650" '
-        f'fill="{tone["ink"]}">{escape(grade or str(round(value)))}</text>'
+        f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.02)}" text-anchor="middle" '
+        f'dominant-baseline="middle" font-size="{_fmt(size * 0.36)}" font-weight="700" '
+        f'letter-spacing="-0.02em" fill="{tone["ink"]}">{escape(grade or str(round(value)))}</text>'
+    )
+    parts.append(
+        f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.24)}" text-anchor="middle" '
+        f'font-size="{_fmt(size * 0.085)}" fill="{tone["ink_soft"]}">'
+        f"{round(value)} / 100</text>"
     )
     if label:
         parts.append(
-            f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.24)}" text-anchor="middle" '
-            f'font-size="{_fmt(size * 0.082)}" letter-spacing="0.08em" '
+            f'<text x="{_fmt(centre)}" y="{_fmt(centre + size * 0.4)}" text-anchor="middle" '
+            f'font-size="{_fmt(size * 0.075)}" letter-spacing="0.1em" '
             f'fill="{tone["ink_faint"]}">{escape(label.upper())}</text>'
         )
     parts.append("</svg>")

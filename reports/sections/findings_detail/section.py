@@ -102,17 +102,25 @@ def _ordered(issues, key: str):
 
 
 def _controls(issue) -> list[str]:
+    """One line per framework, so a mapping reads as text rather than a wall of boxes."""
+    from html import escape  # noqa: PLC0415
+
     out: list[str] = []
     for framework, controls in issue.controls.items():
         spec = FRAMEWORK_BY_KEY.get(framework)
         if not spec:
             continue
         lookup = spec.by_id
+        parts = []
         for control in controls:
             found = lookup.get(control)
-            label = f"{spec.name} {control}"
-            out.append(f"{label} {found.title}" if found else label)
-    return out[:6]
+            parts.append(
+                f"<b>{escape(control)}</b> {escape(found.title)}"
+                if found
+                else f"<b>{escape(control)}</b>"
+            )
+        out.append(f"{escape(spec.name)} {escape(spec.version)}: " + " · ".join(parts))
+    return out
 
 
 def _clip(value: str | None, length: int) -> str:

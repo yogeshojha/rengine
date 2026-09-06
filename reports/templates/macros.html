@@ -43,16 +43,42 @@
 {% endmacro %}
 
 {% macro severity_bar(counts) %}
+{% set actionable = counts | rejectattr('severity', 'in', ['info', 'unknown']) | list %}
+{% set quiet = counts | selectattr('severity', 'in', ['info', 'unknown']) | sum(attribute='count') %}
 {% set items = [] %}
-{% for row in counts %}{% if row.count %}{% set _ = items.append(Slice(row.label, row.count, ctx.sev(row.severity))) %}{% endif %}{% endfor %}
+{% for row in actionable %}{% if row.count %}{% set _ = items.append(Slice(row.label, row.count, ctx.sev(row.severity))) %}{% endif %}{% endfor %}
 {% if items %}
 <div class="block">
-  {{ stack_bar(items)|safe }}
+  {{ stack_bar(items, height=9)|safe }}
   <div class="chips" style="margin-top:1.6mm">
-    {% for row in counts %}{% if row.count %}
-    <span class="chip"><span style="display:inline-block;width:6px;height:6px;border-radius:2px;background:{{ ctx.sev(row.severity) }}"></span>&nbsp;{{ row.label }} {{ row.count|num }}</span>
+    {% for row in actionable %}{% if row.count %}
+    <span class="chip chip--quiet"><span class="dot" style="background:{{ ctx.sev(row.severity) }}"></span>{{ row.label }} {{ row.count|num }}</span>
     {% endif %}{% endfor %}
+    {% if quiet %}<span class="chip chip--quiet faint">+ {{ quiet|num }} informational, not drawn</span>{% endif %}
   </div>
 </div>
 {% endif %}
+{% endmacro %}
+
+{% macro severity_tiles(counts, compact=false) %}
+<div class="sevtiles {{ 'sevtiles--compact' if compact }}">
+  {% for row in counts %}
+  <div class="sevtile sevtile--{{ row.severity }} {{ 'sevtile--zero' if not row.count }}">
+    <div class="sevtile__n">{{ row.count|num }}</div>
+    <div class="sevtile__l"><span class="dot" style="background:{{ ctx.sev(row.severity) }}"></span>{{ row.label }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro strip(items) %}
+<div class="strip">
+  {% for item in items %}
+  <div class="strip__cell {{ 'strip__cell--dash' if item.dash }}">
+    <div class="strip__n">{{ item.value }}</div>
+    <div class="strip__l">{{ item.label }}</div>
+    {% if item.note %}<div class="strip__note">{{ item.note }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
 {% endmacro %}

@@ -1,7 +1,7 @@
 <section class="section {{ 'section--flow' if flow else '' }} section--{{ heading_style }}" id="{{ anchor }}">
   <div class="section__head">
     {% if kicker %}<span class="kicker">{{ kicker }}</span>{% endif %}
-    <h1 class="section__title">{% if number %}{{ number }}.&nbsp;&nbsp;{% endif %}{{ title }}</h1>
+    <h1 class="section__title" data-run="{% if number %}{{ number }} · {% endif %}{{ title }}">{% if number %}<span class="section__n">{{ number }}</span>{% endif %}{{ title }}</h1>
     {% if lede %}<p class="section__lede">{{ lede }}</p>{% endif %}
   </div>
   {{ body|safe }}

@@ -4,7 +4,9 @@ from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, limit
 from shared.definitions.reports import SectionGroup
 from shared.definitions.surface import SurfaceDimension
-from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER
+from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER, Severity
+
+QUIET = frozenset({Severity.INFO.value, Severity.UNKNOWN.value})
 
 
 class RiskSummaryConfig(SectionConfig):
