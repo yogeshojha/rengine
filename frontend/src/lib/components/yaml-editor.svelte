@@ -198,6 +198,13 @@
 
 	const readOnlyCompartment = new Compartment();
 
+	// a non-editable content DOM takes no focus, so its keymap (Ctrl+F) never fires
+	const readOnlyExtensions = (ro: boolean) => [
+		EditorState.readOnly.of(ro),
+		EditorView.editable.of(!ro),
+		...(ro ? [EditorView.contentAttributes.of({ tabindex: '0' })] : [])
+	];
+
 	let host: HTMLDivElement;
 	let view: EditorView | undefined;
 	let current = $state('');
@@ -293,10 +300,7 @@
 					placeholder(hint),
 					stageMarkers,
 					blockDecorations,
-					readOnlyCompartment.of([
-						EditorState.readOnly.of(readonly),
-						EditorView.editable.of(!readonly)
-					]),
+					readOnlyCompartment.of(readOnlyExtensions(readonly)),
 					keymap.of([
 						...completionKeymap,
 						...searchKeymap,
@@ -423,18 +427,51 @@
 							borderColor: 'var(--border)'
 						},
 						'.cm-panels.cm-panels-top': { borderBottom: '1px solid var(--border)' },
-						'.cm-panel.cm-search': { padding: '6px 10px', fontFamily: 'var(--font-sans)' },
+						'.cm-panels.cm-panels-bottom': { borderTop: '1px solid var(--border)' },
+						'.cm-panel.cm-search': {
+							padding: '7px 26px 7px 10px',
+							fontFamily: 'var(--font-sans)',
+							fontSize: '12px'
+						},
 						'.cm-panel.cm-search input, .cm-panel.cm-search button': {
 							fontSize: '12px',
 							borderRadius: '6px',
 							border: '1px solid var(--input)',
 							backgroundColor: 'var(--background)',
+							backgroundImage: 'none',
 							color: 'var(--foreground)',
 							padding: '3px 8px',
 							margin: '0 4px 0 0'
 						},
-						'.cm-panel.cm-search label': { fontSize: '12px', marginRight: '8px' },
-						'.cm-panel.cm-search button[name=close]': { color: 'var(--muted-foreground)' }
+						'.cm-panel.cm-search input:focus': {
+							outline: 'none',
+							borderColor: 'var(--ring)',
+							boxShadow: '0 0 0 3px color-mix(in oklch, var(--ring) 30%, transparent)'
+						},
+						'.cm-panel.cm-search button': { cursor: 'pointer' },
+						'.cm-panel.cm-search button:hover': {
+							backgroundColor: 'var(--accent)',
+							color: 'var(--accent-foreground)'
+						},
+						'.cm-panel.cm-search label': {
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '4px',
+							fontSize: '12px',
+							marginRight: '8px',
+							color: 'var(--muted-foreground)'
+						},
+						'.cm-panel.cm-search label input': { margin: '0', accentColor: 'var(--primary)' },
+						'.cm-panel.cm-search button[name=close]': {
+							top: '50%',
+							transform: 'translateY(-50%)',
+							border: 'none',
+							background: 'transparent',
+							color: 'var(--muted-foreground)',
+							padding: '0 6px',
+							fontSize: '16px',
+							lineHeight: '1'
+						}
 					})
 				]
 			})
@@ -480,10 +517,7 @@
 		const ro = readonly;
 		untrack(() => {
 			view?.dispatch({
-				effects: readOnlyCompartment.reconfigure([
-					EditorState.readOnly.of(ro),
-					EditorView.editable.of(!ro)
-				])
+				effects: readOnlyCompartment.reconfigure(readOnlyExtensions(ro))
 			});
 		});
 	});
