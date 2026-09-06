@@ -1,4 +1,5 @@
 <div class="cover cover--{{ layout }}">
+  {% if background %}<img class="cover__bg" src="{{ background }}" alt="">{% endif %}
   {% if art and art != 'none' %}<div class="cover__art">{{ cover_art(art, ctx.palette['accent'])|safe }}</div>{% endif %}
   {% if layout == 'split' %}<div class="cover__panel"></div>{% endif %}
   {% if layout == 'band' %}

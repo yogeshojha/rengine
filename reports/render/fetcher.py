@@ -15,6 +15,7 @@ SCAN_MEDIA = Path("/app/scan_media")
 
 # a rendered document may read vendored faces, uploaded faces and captured screenshots
 ALLOWED_ROOTS: tuple[Path, ...] = (ASSETS, CUSTOM_FONTS, SCAN_MEDIA)
+ALLOWED_PROTOCOLS: tuple[str, ...] = ("data", "file")
 
 
 class BlockedResourceError(ValueError):
@@ -29,24 +30,31 @@ def _allowed(path: Path) -> bool:
     return any(resolved.is_relative_to(root) for root in ALLOWED_ROOTS)
 
 
-def safe_url_fetcher(url: str, *args, **kwargs):
-    """Data URIs and files under a known root. No network, ever."""
-    from weasyprint.urls import default_url_fetcher  # noqa: PLC0415
-
+def permitted(url: str) -> bool:
+    """Data URIs, and files under a known root. No network, ever."""
     if url.startswith("data:"):
-        return default_url_fetcher(url, *args, **kwargs)
+        return True
+    if not url.startswith("file:"):
+        return False
+    parsed = urlparse(url)
+    if parsed.netloc not in ("", "localhost"):
+        return False
+    return _allowed(Path(unquote(parsed.path)))
 
-    if url.startswith("file:"):
-        parsed = urlparse(url)
-        if parsed.netloc not in ("", "localhost"):
-            msg = f"Refused a remote file reference: {url[:120]}"
-            raise BlockedResourceError(msg)
-        if _allowed(Path(unquote(parsed.path))):
-            return default_url_fetcher(url, *args, **kwargs)
 
-    logger.warning("report blocked a resource", url=url[:200])
-    msg = (
-        "A report may only load embedded data and files shipped with the instance. "
-        f"Refused: {url[:120]}"
-    )
-    raise BlockedResourceError(msg)
+def build_fetcher():
+    """A WeasyPrint fetcher that cannot reach the network, whatever the document asks for."""
+    from weasyprint.urls import URLFetcher  # noqa: PLC0415
+
+    class SafeFetcher(URLFetcher):
+        def fetch(self, url, headers=None):
+            if not permitted(url):
+                logger.warning("report blocked a resource", url=url[:200])
+                msg = (
+                    "A report may only load embedded data and files shipped with the "
+                    f"instance. Refused: {url[:120]}"
+                )
+                raise BlockedResourceError(msg)
+            return super().fetch(url, headers)
+
+    return SafeFetcher(timeout=5, allowed_protocols=ALLOWED_PROTOCOLS)

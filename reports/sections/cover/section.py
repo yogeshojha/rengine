@@ -65,6 +65,7 @@ class CoverSection(Section):
             if cfg.show_classification
             else "",
             "art": ctx.theme.cover.art,
+            "background": ctx.style.cover_image,
             "layout": ctx.theme.cover.layout,
             "accent_bar": ctx.theme.cover.accent_bar,
         }

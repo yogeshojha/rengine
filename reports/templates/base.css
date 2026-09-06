@@ -75,6 +75,14 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   color: var(--r-cover-ink);
 }
 
+.cover__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .cover__art { position: absolute; inset: 0; }
 .cover__art svg { width: 100%; height: 100%; }
 

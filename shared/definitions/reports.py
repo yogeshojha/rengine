@@ -16,6 +16,8 @@ MAX_LOGO_BYTES = 512_000
 MAX_REPORT_ROWS = 5_000
 MAX_EVIDENCE_CHARS = 4_000
 MAX_SCREENSHOTS = 60
+# a 500 KB PNG can still decode to a 64M pixel canvas, so the ceiling is on pixels, not bytes
+MAX_IMAGE_PIXELS = 30_000_000
 REPORT_ROOT = "/app/reports-out"
 RETENTION_DAYS = 90
 

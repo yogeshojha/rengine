@@ -8,6 +8,8 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import Hint from '$lib/components/hint.svelte';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
+	import { toast } from 'svelte-sonner';
+	import UploadIcon from '@lucide/svelte/icons/upload';
 	import type { ReportStyle } from '$lib/types/report';
 
 	let { style = $bindable() }: { style: ReportStyle } = $props();
@@ -18,6 +20,23 @@
 	const activeTheme = $derived(reportCatalog.theme(style.theme));
 
 	const SEVERITIES = ['critical', 'high', 'medium', 'low', 'info'];
+	const MAX_COVER = 512_000;
+	let coverInput = $state<HTMLInputElement | null>(null);
+
+	async function pickCover(event: Event) {
+		const file = (event.target as HTMLInputElement).files?.[0];
+		if (!file) return;
+		if (file.size > MAX_COVER) {
+			toast.error('Choose a cover image under 500 KB.');
+			return;
+		}
+		style.cover_image = await new Promise<string>((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => resolve(String(reader.result));
+			reader.onerror = reject;
+			reader.readAsDataURL(file);
+		});
+	}
 
 	function label(list: { key: string; label: string }[] | undefined, key: string): string {
 		return list?.find((i) => i.key === key)?.label ?? key;
@@ -319,6 +338,41 @@
 				/>
 			</div>
 		{/each}
+	</div>
+
+	<Separator />
+
+	<div class="space-y-2">
+		<Label class="text-xs">Cover image</Label>
+		<div class="flex items-center gap-3">
+			{#if style.cover_image}
+				<img src={style.cover_image} alt="" class="h-12 w-20 rounded border object-cover" />
+			{/if}
+			<Button variant="outline" size="sm" onclick={() => coverInput?.click()}>
+				<UploadIcon class="mr-1.5 size-3.5" />
+				{style.cover_image ? 'Replace' : 'Upload'}
+			</Button>
+			{#if style.cover_image}
+				<Button
+					variant="ghost"
+					size="sm"
+					class="text-destructive"
+					onclick={() => (style.cover_image = '')}
+				>
+					Remove
+				</Button>
+			{/if}
+			<input
+				bind:this={coverInput}
+				type="file"
+				accept="image/png,image/jpeg,image/webp,image/svg+xml"
+				class="hidden"
+				onchange={pickCover}
+			/>
+		</div>
+		<p class="text-xs text-muted-foreground">
+			Fills the cover behind the title. Uploaded and embedded, never fetched. Under 500 KB.
+		</p>
 	</div>
 
 	<Separator />

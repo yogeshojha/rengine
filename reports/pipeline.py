@@ -145,6 +145,7 @@ def generate(
         result = to_pdf(document.html, base_url=str(_base_url()))
         out.files[ReportFormat.PDF.value] = result.data
         out.pages = result.pages
+        out.warnings.extend(w for w in result.warnings if w not in out.warnings)
 
     out.stats = {
         "sections": len(document.rendered),
