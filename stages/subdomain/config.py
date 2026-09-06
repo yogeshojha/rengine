@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from pydantic import Field
 
+from shared.definitions.wordlists import WordlistKind
 from shared.enums.scan import Intensity
-from stages.config import StageConfig, threads, timeout
+from stages.config import StageConfig, threads, timeout, wordlist
 from stages.subdomain.providers import PASSIVE_PROVIDERS
 
 PASSIVE_TOOLS: tuple[str, ...] = tuple(sorted(PASSIVE_PROVIDERS))
-# ranked by real-world frequency, so a smaller budget is simply the first N lines
-DEFAULT_WORDLIST = "/app/tools/data/subdomains.txt"
 # amass is deliberately not here: it never exits early, so it costs the whole
 # tool timeout on every scan for hosts the other sources already return
 DEFAULT_PASSIVE_TOOLS: list[str] = [
@@ -42,11 +41,10 @@ class SubdomainConfig(StageConfig):
         title="Bruteforce names",
         description="Ask the target's nameservers for common names the public sources never listed.",
     )
-    wordlist: str = Field(
-        default=DEFAULT_WORDLIST,
-        max_length=500,
+    wordlist: str = wordlist(
+        WordlistKind.SUBDOMAIN.value,
         title="Wordlist",
-        description="One label per line, ranked best first. The word budget below reads from the top.",
+        description="Which list to guess from. Upload your own in the Tools Arsenal.",
     )
     wordlist_limit: int = Field(
         default=1000,

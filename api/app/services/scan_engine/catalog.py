@@ -47,6 +47,7 @@ def _field_specs(spec) -> list[StageField]:
                 maximum=prop.get("maximum"),
                 scale=prop.get("scale"),
                 widget=prop.get("widget"),
+                kind=prop.get("kind"),
                 launch=name in launch,
             )
         )
@@ -77,6 +78,7 @@ def build_catalog() -> EngineCatalog:
                 fields=_field_specs(spec),
             )
             for spec in stages()
+            if not spec.catalog_hidden
         ],
         rate_tools=list(rate_tools()),
         tool_options=[ToolOption(**t.model_dump()) for t in SCAN_TOOLS],

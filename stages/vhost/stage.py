@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from sqlalchemy import select
 
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
+from shared.services.wordlists import WordlistError, lookup, resolve_path
 from shared.utils.datetime import utc_now
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
 from stages.vhost.config import VhostConfig
@@ -35,9 +34,26 @@ class VhostStage(Stage):
     def run(self) -> StageResult:
         self._check_abort()
         cfg = self.cfg
-        if not Path(cfg.wordlist).is_file():
-            logger.warning("vhost wordlist missing: %s", cfg.wordlist)
-            return StageResult(counts={"subdomains": 0})
+        row = lookup(self.session, cfg.wordlist)
+        if row is None:
+            logger.warning("vhost wordlist not in the library: %s", cfg.wordlist)
+            return StageResult(
+                counts={"subdomains": 0},
+                warnings=[f"No wordlist named {cfg.wordlist!r} is in the library"],
+                partial=True,
+            )
+        try:
+            wordlist = resolve_path(row)
+        except WordlistError as exc:
+            return StageResult(
+                counts={"subdomains": 0}, warnings=[str(exc)], partial=True
+            )
+        if not wordlist.is_file():
+            return StageResult(
+                counts={"subdomains": 0},
+                warnings=[f"{row.name} is in the library but its file is missing"],
+                partial=True,
+            )
 
         apex = self.ctx.target_value.strip().lower().rstrip(".")
         ips = self._candidate_ips()
@@ -47,7 +63,7 @@ class VhostStage(Stage):
         net = self.net_options()
         try:
             client = FfufClient(
-                wordlist=cfg.wordlist,
+                wordlist=str(wordlist),
                 threads=cfg.threads,
                 rate=cfg.rate,
                 proxy_url=net.proxy_url,

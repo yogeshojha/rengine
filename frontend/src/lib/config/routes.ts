@@ -21,7 +21,7 @@ export const routeLabels: Record<string, string> = {
 export const SETTINGS_TABS = ['general', 'api-keys', 'proxies', 'notifications'] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
-export const ARSENAL_TABS = ['nuclei'] as const;
+export const ARSENAL_TABS = ['nuclei', 'wordlists'] as const;
 export type ArsenalTab = (typeof ARSENAL_TABS)[number];
 
 export const ROUTES = {

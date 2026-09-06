@@ -33,6 +33,7 @@ from app.api.v1 import (
     vuln_templates,
     vulnerabilities,
     whois,
+    wordlists,
 )
 
 router = APIRouter()
@@ -61,6 +62,7 @@ router.include_router(ip_addresses.router)
 router.include_router(endpoints.router)
 router.include_router(vulnerabilities.router)
 router.include_router(vuln_templates.router)
+router.include_router(wordlists.router)
 router.include_router(media.router)
 router.include_router(dashboard.router)
 router.include_router(celery_health.router)

@@ -4,13 +4,16 @@
 	import { browser } from '$app/environment';
 	import { untrack, type Component } from 'svelte';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
+	import WholeWordIcon from '@lucide/svelte/icons/whole-word';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import NucleiLibrary from '$lib/components/arsenal/nuclei-library.svelte';
+	import WordlistLibrary from '$lib/components/arsenal/wordlist-library.svelte';
 	import { ARSENAL_TABS, routeLabels, type ArsenalTab } from '$lib/config/routes';
 	import type { IconComponent } from '$lib/config/icons';
 
 	const TAB_META: Record<ArsenalTab, { label: string; icon: IconComponent; panel: Component }> = {
-		nuclei: { label: 'Nuclei', icon: ShieldAlertIcon, panel: NucleiLibrary }
+		nuclei: { label: 'Nuclei', icon: ShieldAlertIcon, panel: NucleiLibrary },
+		wordlists: { label: 'Wordlists', icon: WholeWordIcon, panel: WordlistLibrary }
 	};
 
 	const DEFAULT_TAB = ARSENAL_TABS[0];
@@ -40,7 +43,7 @@
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.arsenal}</h1>
 		<p class="mt-1 text-sm text-muted-foreground">
-			Scanners available to scan engines and the checks they run.
+			What your scans run with: the scanners and their checks, and the lists they guess from.
 		</p>
 	</div>
 

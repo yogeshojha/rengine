@@ -70,6 +70,7 @@ export interface StageField {
 	maximum: number | null;
 	scale: FieldScale | null;
 	widget: string | null;
+	kind: string | null;
 	launch: boolean;
 }
 

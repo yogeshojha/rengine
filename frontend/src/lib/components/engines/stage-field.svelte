@@ -11,6 +11,7 @@
 	import { SCALE_HELP } from '$lib/types/scan-engine';
 	import { parseCsv } from '$lib/utilities/parse';
 	import CustomTemplatesField from './custom-templates-field.svelte';
+	import WordlistField from './wordlist-field.svelte';
 
 	interface Props {
 		field: StageField;
@@ -83,6 +84,13 @@
 			<Switch {id} checked={boolValue} onCheckedChange={(v) => onChange(v)} />
 		{:else if field.widget === 'custom_templates'}
 			<CustomTemplatesField {id} value={listValue} onChange={(v) => onChange(v)} />
+		{:else if field.widget === 'wordlist'}
+			<WordlistField
+				{id}
+				kind={field.kind ?? 'subdomain'}
+				value={typeof value === 'string' ? value : String(field.default ?? '')}
+				onChange={(v) => onChange(v)}
+			/>
 		{:else if field.type === 'array' && field.options}
 			<ToggleGroup.Root
 				type="multiple"

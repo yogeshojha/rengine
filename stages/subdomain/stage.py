@@ -22,6 +22,7 @@ from shared.models.subdomain import Subdomain
 from shared.services.activity_log import ActivityLogService
 from shared.services.api_key.sync_api_key import SyncAPIKeyService
 from shared.services.scope_filter import matches_any
+from shared.services.wordlists import WordlistError, read_words
 from shared.utils.datetime import utc_now
 from stages.base import DOMAIN_TARGETS, Stage, StageAbortedError, StageResult
 from stages.subdomain.config import PASSIVE_TOOLS, SubdomainConfig
@@ -54,7 +55,6 @@ _SHUFFLE_SEED = 1
 # budget may assume. Guessing is bounded by total time, never by an idle watchdog.
 _GUESS_FLOOR_RATE = 5
 _GUESS_MIN_BUDGET = 300
-_MAX_LABEL = 63
 
 
 # a name close to the apex has more siblings worth guessing than a five-label one
@@ -216,28 +216,20 @@ class SubdomainStage(Stage):
 
     @contextlib.contextmanager
     def _wordlist(self, cfg: SubdomainConfig):
-        """The word budget is the first N lines, because the file is ranked best first."""
-        path = Path(cfg.wordlist)
-        if not path.is_file():
-            yield None
+        """The word budget is the first N words, because a list is ranked best first."""
+        try:
+            words, label = read_words(self.session, cfg.wordlist, cfg.wordlist_limit)
+        except WordlistError as exc:
+            yield None, str(exc)
             return
-        words: list[str] = []
-        with path.open(encoding="utf-8", errors="replace") as handle:
-            for line in handle:
-                word = line.strip().lower()
-                # a DNS label is 63 characters; anything longer is not a word list
-                if word and not word.startswith("#") and len(word) <= _MAX_LABEL:
-                    words.append(word)
-                if len(words) >= cfg.wordlist_limit:
-                    break
         if not words:
-            yield None
+            yield None, f"{label} has no usable words"
             return
         fd, name = tempfile.mkstemp(prefix="wordlist_", suffix=".txt")
         try:
             with os.fdopen(fd, "w") as handle:
                 handle.write("\n".join(words) + "\n")
-            yield name, len(words)
+            yield (name, len(words), label), None
         finally:
             with contextlib.suppress(OSError):
                 Path(name).unlink(missing_ok=True)
@@ -259,11 +251,11 @@ class SubdomainStage(Stage):
         if client is None:
             return self._skipped(source, "dnsx is not installed on this instance")
 
-        with self._wordlist(cfg) as prepared:
+        with self._wordlist(cfg) as (prepared, problem):
             if prepared is None:
-                return self._skipped(source, f"no wordlist at {cfg.wordlist}")
-            path, tried = prepared
-            self.emit_progress(f"trying {tried:,} names against {domain}")
+                return self._skipped(source, problem or "no wordlist selected")
+            path, tried, label = prepared
+            self.emit_progress(f"trying {tried:,} names from {label} against {domain}")
             start = time.monotonic()
             found: set[str] = set()
             wildcards = 0

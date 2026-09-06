@@ -96,6 +96,8 @@ class StageField(BaseModel):
     maximum: int | None = None
     scale: str | None = None
     widget: str | None = None
+    # what a widget selects, when the widget needs it (wordlist kind)
+    kind: str | None = None
     launch: bool = False
 
 

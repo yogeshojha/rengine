@@ -159,6 +159,14 @@ from shared.models.vulnerability import (
     VulnerabilityRead,
     VulnerabilityTriage,
 )
+from shared.models.wordlist import (
+    Wordlist,
+    WordlistFile,
+    WordlistRead,
+    WordlistUpdate,
+    WordlistUploadRequest,
+    WordlistUploadResult,
+)
 
 TargetRead.model_rebuild()
 
@@ -299,4 +307,10 @@ __all__ = [
     "VulnerabilityPage",
     "VulnerabilityRead",
     "VulnerabilityTriage",
+    "Wordlist",
+    "WordlistFile",
+    "WordlistRead",
+    "WordlistUpdate",
+    "WordlistUploadRequest",
+    "WordlistUploadResult",
 ]

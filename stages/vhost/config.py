@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from stages.config import StageConfig, rate, threads
-
-DEFAULT_WORDLIST = "/app/tools/data/vhosts.txt"
+from shared.definitions.wordlists import WordlistKind
+from stages.config import StageConfig, rate, threads, wordlist
 
 
 class VhostConfig(StageConfig):
@@ -13,10 +12,10 @@ class VhostConfig(StageConfig):
         title="Virtual host bruteforce",
         description="Host-header fuzzing to surface vhosts not resolvable via DNS.",
     )
-    wordlist: str = Field(
-        default=DEFAULT_WORDLIST,
+    wordlist: str = wordlist(
+        WordlistKind.VHOST.value,
         title="Wordlist",
-        description="Path to a vhost wordlist.",
+        description="Which list of host names to try. Upload your own in the Tools Arsenal.",
     )
     threads: int = threads(30, title="Threads")
     rate: int = rate(150, tool="ffuf", title="Requests/s")

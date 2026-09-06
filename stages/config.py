@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from shared.definitions.constants import MAX_RATE, MAX_THREADS, MAX_TIMEOUT
+from shared.definitions.wordlists import DEFAULT_WORDLIST, MAX_SLUG_LENGTH
 
 
 class Scale(StrEnum):
@@ -33,6 +34,17 @@ def timeout(default: int, *, title: str, description: str = "") -> Any:
         title=title,
         description=description,
         json_schema_extra={"scale": Scale.TIMEOUT.value},
+    )
+
+
+def wordlist(kind: str, *, title: str, description: str = "") -> Any:
+    """A named list from the library, picked in the UI — never a path off the disk."""
+    return Field(
+        DEFAULT_WORDLIST[kind],
+        max_length=MAX_SLUG_LENGTH,
+        title=title,
+        description=description,
+        json_schema_extra={"widget": "wordlist", "kind": kind},
     )
 
 
