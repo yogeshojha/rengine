@@ -26,6 +26,7 @@ from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity, VulnState
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
+from shared.models.interest import InterestSignal
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
@@ -476,3 +477,17 @@ def endpoint_status_class(name: str):
     if bucket is None:
         return false()
     return and_(Endpoint.status_code >= bucket[0], Endpoint.status_code < bucket[1])
+
+
+def interest_signal(condition=None):
+    stmt = select(1).where(
+        InterestSignal.subdomain_id == Subdomain.id,
+        InterestSignal.scan_id == Subdomain.scan_id,
+    )
+    if condition is not None:
+        stmt = stmt.where(condition)
+    return exists(stmt)
+
+
+def interesting():
+    return Subdomain.interest_score > 0

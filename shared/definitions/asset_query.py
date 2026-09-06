@@ -9,6 +9,13 @@ from shared.definitions.endpoints import (
     INTEREST_KEYS,
     SOURCE_LABELS,
 )
+from shared.definitions.interest import (
+    BAND_ORDER,
+    KIND_KEYS,
+)
+from shared.definitions.interest import (
+    SOURCE_LABELS as INTEREST_SOURCE_LABELS,
+)
 from shared.definitions.ports import (
     PORT_SOURCE_LABELS,
     SERVICE_CLASS_LABELS,
@@ -140,6 +147,7 @@ FLAGS: dict[str, str] = {
     "redirect": "Final URL differs from the probed URL",
     "vulnerable": "A vulnerability scan reported a finding on it",
     "kev": "A known-exploited weakness was found on it",
+    "interesting": "Flagged by an interest rule, a correlation or AI",
 }
 
 FIELDS: tuple[QueryField, ...] = (
@@ -479,6 +487,34 @@ FIELDS: tuple[QueryField, ...] = (
         description="Published vulnerability identifier reported on this host.",
         example="cve:CVE-2021-44228",
     ),
+    QueryField(
+        name="interest",
+        type=FieldType.ENUM,
+        group="Findings",
+        description="Why this host was flagged as worth a look.",
+        example="interest:admin_interface",
+        aliases=("worth",),
+        values=KIND_KEYS,
+        facet="interest",
+    ),
+    QueryField(
+        name="flagged",
+        type=FieldType.ENUM,
+        group="Findings",
+        description="What flagged the host: your rules, a correlation, or AI.",
+        example="flagged:ai",
+        values=tuple(INTEREST_SOURCE_LABELS),
+        facet="flagged",
+    ),
+    QueryField(
+        name="interest_band",
+        type=FieldType.ENUM,
+        group="Findings",
+        description="How strongly the host was flagged.",
+        example="interest_band:critical",
+        aliases=("band",),
+        values=BAND_ORDER,
+    ),
 )
 
 EVIDENCE_LABELS: dict[str, str] = {
@@ -580,6 +616,7 @@ EXAMPLE_GROUPS: tuple[str, ...] = (
     "Origin exposure",
     "Change",
     "Hygiene",
+    "Worth a look",
 )
 
 
@@ -828,6 +865,32 @@ EXAMPLES: tuple[QueryExample, ...] = (
         query="is:redirect and not is:live",
         description="Redirects terminating in an error",
         group="Hygiene",
+    ),
+    QueryExample(
+        query="is:interesting",
+        description="Everything flagged as worth a look",
+        group="Worth a look",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:interesting and is:new",
+        description="Flagged for the first time by this scan",
+        group="Worth a look",
+    ),
+    QueryExample(
+        query="flagged:ai",
+        description="Flagged by AI judgement rather than a rule",
+        group="Worth a look",
+    ),
+    QueryExample(
+        query="interest_band:critical",
+        description="The strongest signals on this surface",
+        group="Worth a look",
+    ),
+    QueryExample(
+        query="interest:admin_interface and not is:auth",
+        description="Administrative surfaces answering without a login",
+        group="Worth a look",
     ),
 )
 

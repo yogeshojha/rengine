@@ -65,6 +65,7 @@ COPY shared /app/shared
 COPY tools /app/tools
 COPY stages /app/stages
 COPY reports /app/reports
+COPY interest /app/interest
 
 COPY worker/pyproject.toml worker/uv.lock* ./
 

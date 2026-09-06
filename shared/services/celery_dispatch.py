@@ -119,3 +119,21 @@ def dispatch_report(report_id: str) -> bool:
         logger.warning("report dispatch failed", exc_info=True)
         return False
     return True
+
+
+def dispatch_interest_evaluation(scan_id: str, *, include_ai: bool = True) -> None:
+    logger.info("Dispatching interest evaluation for scan %s", scan_id)
+    get_celery_client().send_task(
+        "app.tasks.interest.evaluate_scan",
+        kwargs={"scan_id": scan_id, "include_ai": include_ai},
+        queue="default",
+    )
+
+
+def dispatch_interest_refresh(project_id: str) -> None:
+    logger.info("Dispatching interest refresh for project %s", project_id)
+    get_celery_client().send_task(
+        "app.tasks.interest.refresh_project",
+        kwargs={"project_id": project_id},
+        queue="default",
+    )

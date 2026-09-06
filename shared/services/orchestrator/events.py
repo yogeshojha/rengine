@@ -43,6 +43,19 @@ class ScanEventPublisher:
     def scan_cancelled(self, *, status: str) -> None:
         self._emit(ScanEventKind.SCAN_CANCELLED, {"status": status})
 
+    def interest_ready(
+        self, *, hosts: int, signals: int, bands: dict, ai_used: bool
+    ) -> None:
+        self._emit(
+            ScanEventKind.INTEREST_READY,
+            {
+                "hosts": hosts,
+                "signals": signals,
+                "bands": bands,
+                "ai_used": ai_used,
+            },
+        )
+
     def stage_started(
         self, *, activity_id: uuid.UUID | str | None, stage: str, title: str
     ) -> None:

@@ -100,6 +100,7 @@ celery_app.conf.task_routes = {
     "app.tasks.vuln_templates.*": {"queue": "default"},
     "app.tasks.endpoints.*": {"queue": "default"},
     "app.tasks.reports.*": {"queue": "default"},
+    "app.tasks.interest.*": {"queue": "default"},
 }
 
 # #############################################################
@@ -118,6 +119,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.vuln_templates",
         "app.tasks.endpoints",
         "app.tasks.reports",
+        "app.tasks.interest",
         "app.tasks.notifications",
     ]
 )

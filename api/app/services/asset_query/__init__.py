@@ -1,74 +1,16 @@
-from .ast import Node, QuerySyntaxError
-from .compiler import QueryContext, compile_query
-from .endpoint_compiler import EndpointQueryContext, compile_endpoint_query
-from .errors import NO_JIT, QUERY_SQLSTATES, STATEMENT_TIMEOUT, query_error_for
-from .evidence import collect as collect_evidence
-from .groups import (
-    build_endpoint_groups,
-    build_groups,
-    build_ip_groups,
-    build_service_groups,
-    build_vuln_groups,
-)
-from .ip_compiler import IpQueryContext, compile_ip_query
-from .leads import build_leads
-from .parser import parse_query
-from .predicates import (
-    endpoint_has_baseline,
-    endpoint_is_new,
-    endpoint_source,
-    endpoint_status_class,
-    resolved,
-    service_has_baseline,
-    service_is_new,
-    vuln_corroborated,
-    vuln_corroborated_ids,
-    vuln_has_baseline,
-    vuln_is_new,
-    vuln_state,
-    vuln_suppressed,
-)
-from .schema import build_schema
-from .service_compiler import ServiceQueryContext, compile_service_query
-from .vuln_compiler import VulnQueryContext, compile_vuln_query
+"""The compiler moved to shared/ so the worker can compile a query too; this keeps the import path."""
 
-__all__ = [
-    "NO_JIT",
-    "QUERY_SQLSTATES",
-    "STATEMENT_TIMEOUT",
-    "EndpointQueryContext",
-    "IpQueryContext",
-    "Node",
-    "QueryContext",
-    "QuerySyntaxError",
-    "ServiceQueryContext",
-    "VulnQueryContext",
-    "build_endpoint_groups",
-    "build_groups",
-    "build_ip_groups",
-    "build_leads",
-    "build_schema",
-    "build_service_groups",
-    "build_vuln_groups",
-    "collect_evidence",
-    "compile_endpoint_query",
-    "compile_ip_query",
-    "compile_query",
-    "compile_service_query",
-    "compile_vuln_query",
-    "endpoint_has_baseline",
-    "endpoint_is_new",
-    "endpoint_source",
-    "endpoint_status_class",
-    "parse_query",
-    "query_error_for",
-    "resolved",
-    "service_has_baseline",
-    "service_is_new",
-    "vuln_corroborated",
-    "vuln_corroborated_ids",
-    "vuln_has_baseline",
-    "vuln_is_new",
-    "vuln_state",
-    "vuln_suppressed",
-]
+import importlib
+import pkgutil
+import sys
+
+import shared.services.asset_query as _pkg
+from shared.services.asset_query import *
+from shared.services.asset_query import __all__ as _all
+
+for _info in pkgutil.iter_modules(_pkg.__path__):
+    _module = importlib.import_module(f"{_pkg.__name__}.{_info.name}")
+    sys.modules[f"{__name__}.{_info.name}"] = _module
+    globals()[_info.name] = _module
+
+__all__ = list(_all)

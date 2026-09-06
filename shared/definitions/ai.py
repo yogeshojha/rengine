@@ -21,6 +21,8 @@ class AITask(StrEnum):
     ISSUE_EXPLAINER = "issue_explainer"
     ATTACK_PATH = "attack_path"
     SURFACE_NARRATIVE = "surface_narrative"
+    ASSET_JUDGEMENT = "asset_judgement"
+    RULE_SUGGESTION = "rule_suggestion"
 
 
 AI_TASK_LABELS: dict[str, str] = {
@@ -30,6 +32,8 @@ AI_TASK_LABELS: dict[str, str] = {
     AITask.ISSUE_EXPLAINER.value: "Finding explanations",
     AITask.ATTACK_PATH.value: "Attack path narrative",
     AITask.SURFACE_NARRATIVE.value: "Attack surface narrative",
+    AITask.ASSET_JUDGEMENT.value: "Asset judgement",
+    AITask.RULE_SUGGESTION.value: "Rule suggestions",
 }
 
 # tasks that run once per report against the brief, versus once per distinct check
@@ -42,7 +46,10 @@ REPORT_TASKS: tuple[str, ...] = (
 )
 
 # an explainer depends only on the check, so it is cached across every report and target
-GLOBAL_CACHE_TASKS: tuple[str, ...] = (AITask.ISSUE_EXPLAINER.value,)
+GLOBAL_CACHE_TASKS: tuple[str, ...] = (
+    AITask.ISSUE_EXPLAINER.value,
+    AITask.ASSET_JUDGEMENT.value,
+)
 
 TASK_OUTPUT_TOKENS: dict[str, int] = {
     AITask.EXECUTIVE_SUMMARY.value: 1400,
@@ -51,6 +58,8 @@ TASK_OUTPUT_TOKENS: dict[str, int] = {
     AITask.ISSUE_EXPLAINER.value: 700,
     AITask.ATTACK_PATH.value: 900,
     AITask.SURFACE_NARRATIVE.value: 800,
+    AITask.ASSET_JUDGEMENT.value: 2500,
+    AITask.RULE_SUGGESTION.value: 900,
 }
 
 
@@ -67,6 +76,8 @@ TASK_EFFORT: dict[str, str] = {
     AITask.ISSUE_EXPLAINER.value: Effort.LOW.value,
     AITask.ATTACK_PATH.value: Effort.MEDIUM.value,
     AITask.SURFACE_NARRATIVE.value: Effort.LOW.value,
+    AITask.ASSET_JUDGEMENT.value: Effort.LOW.value,
+    AITask.RULE_SUGGESTION.value: Effort.LOW.value,
 }
 
 
@@ -186,6 +197,19 @@ AI_FEATURES: tuple[AIFeature, ...] = (
         "report_findings",
         "Finding explanations",
         "Explains what a check means for this estate. Cached per check, so it is written once.",
+        False,
+    ),
+    AIFeature(
+        "asset_judgement",
+        "Asset judgement",
+        "Reads hostnames and page titles after a scan and says which assets are worth a look, "
+        "and why. Never sees response bodies.",
+        False,
+    ),
+    AIFeature(
+        "rule_suggestions",
+        "Rule suggestions",
+        "Proposes an interest rule that would have caught what judgement found, for you to approve.",
         False,
     ),
     AIFeature(

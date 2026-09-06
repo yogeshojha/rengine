@@ -11,6 +11,7 @@ export const routeLabels: Record<string, string> = {
 
 	// Tools
 	arsenal: 'Arsenal',
+	interest: 'Worth a look',
 
 	// Reporting
 	reports: 'Reports',
@@ -27,6 +28,8 @@ export const SETTINGS_TABS = ['general', 'api-keys', 'proxies', 'notifications']
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 export const ARSENAL_TABS = ['nuclei', 'wordlists'] as const;
+export const INTEREST_TABS = ['rules', 'dismissed'] as const;
+export type InterestTab = (typeof INTEREST_TABS)[number];
 export const REPORT_TABS = ['reports', 'templates', 'themes', 'defaults'] as const;
 export type ReportTab = (typeof REPORT_TABS)[number];
 
@@ -64,6 +67,7 @@ export const ROUTES = {
 	},
 	schedules: '/schedules',
 	arsenal: (tab?: ArsenalTab) => (tab ? `/arsenal?tab=${tab}` : '/arsenal'),
+	interest: (tab?: InterestTab) => (tab ? `/interest?tab=${tab}` : '/interest'),
 	reports: (tab?: ReportTab) => (tab ? `/reports?tab=${tab}` : '/reports'),
 	report: (id: string) => `/reports/${id}`,
 	reportTemplate: (id: string) => `/reports/templates/${id}`,

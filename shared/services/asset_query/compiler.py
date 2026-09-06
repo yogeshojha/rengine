@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from shared.definitions.asset_query import FLAGS, HOST_QUERY, FieldType, Op
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
+from shared.models.interest import InterestSignal
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability
@@ -191,6 +192,7 @@ _FLAG_BUILDERS = {
         Subdomain.final_url.isnot(None), Subdomain.final_url != Subdomain.http_url
     ),
     "vulnerable": lambda ctx: preds.host_vuln(ctx.scan_id),
+    "interesting": lambda _ctx: preds.interesting(),
     "kev": lambda ctx: preds.host_vuln(ctx.scan_id, Vulnerability.is_kev.is_(True)),
 }
 
@@ -229,6 +231,25 @@ def _endpoint_count(scan_id):
         .correlate(Subdomain)
         .scalar_subquery()
     )
+
+
+def _interest_kind(cmp: Compare):
+    matched = preds.interest_signal(
+        InterestSignal.kind.in_([v.lower() for v in cmp.values])
+    )
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
+def _interest_source(cmp: Compare):
+    matched = preds.interest_signal(
+        InterestSignal.source.in_([v.lower() for v in cmp.values])
+    )
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
+def _interest_band(cmp: Compare):
+    matched = Subdomain.interest_band.in_([v.lower() for v in cmp.values])
+    return negate(matched) if cmp.op is Op.NE else matched
 
 
 _SUBDOMAIN_BUILDERS = {
@@ -272,6 +293,9 @@ _SUBDOMAIN_BUILDERS = {
     "vuln": lambda c, ctx: preds.host_vuln(
         ctx.scan_id, string_match(Vulnerability.severity, c)
     ),
+    "interest": lambda c, _ctx: _interest_kind(c),
+    "flagged": lambda c, _ctx: _interest_source(c),
+    "interest_band": lambda c, _ctx: _interest_band(c),
     "cve": lambda c, ctx: preds.host_vuln(
         ctx.scan_id, json_array_match(Vulnerability.cve_ids, c)
     ),

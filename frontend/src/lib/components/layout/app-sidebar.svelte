@@ -8,6 +8,7 @@
 	import SwordsIcon from '@lucide/svelte/icons/swords';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import SparkleIcon from '@lucide/svelte/icons/sparkle';
 	import NetworkIcon from '@lucide/svelte/icons/network';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
@@ -66,6 +67,7 @@
 					icon: FileTextIcon,
 					badge: reports.liveCount ? { count: reports.liveCount, live: true } : null
 				},
+				{ title: routeLabels.interest, url: ROUTES.interest(), icon: SparkleIcon },
 				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: SwordsIcon },
 				{ title: routeLabels.ai, url: ROUTES.ai(), icon: SparklesIcon },
 				{ title: routeLabels.mcp, url: ROUTES.mcp(), icon: NetworkIcon }

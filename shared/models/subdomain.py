@@ -55,6 +55,12 @@ class Subdomain(SQLModel, table=True):
     tls_self_signed: bool | None = Field(default=None)
     screenshot_path: str | None = Field(default=None, max_length=500)
 
+    interest_score: int = Field(default=0, index=True)
+    interest_band: str | None = Field(default=None, max_length=16, index=True)
+    interest_kinds: list = Field(
+        default_factory=list, sa_column=Column(JSON, nullable=False)
+    )
+
     discovered_at: datetime = Field(default_factory=utc_now)
     created_at: datetime = Field(default_factory=utc_now)
 
@@ -90,6 +96,9 @@ class SubdomainRead(BaseModel):
     tls_expired: bool | None = None
     tls_self_signed: bool | None = None
     screenshot_path: str | None = None
+    interest_score: int = 0
+    interest_band: str | None = None
+    interest_kinds: list[str] = Field(default_factory=list)
     discovered_at: datetime
 
 

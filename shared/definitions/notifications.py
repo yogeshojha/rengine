@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 
+from shared.definitions.interest import InterestBand, kind_label
 from shared.definitions.vulnerabilities import (
     ALERT_SEVERITIES,
     SEVERITY_LABELS,
@@ -277,4 +278,40 @@ def scan_failed(scan_id: str, target: str, engine: str, error: str) -> dict:
         "title": f"Scan failed on {target}",
         "message": f"The {engine} run did not finish: {error[:300]}",
         "metadata": _scan_meta(scan_id),
+    }
+
+
+@dataclass
+class InterestLead:
+    host: str
+    band: str
+    score: int
+    kinds: tuple[str, ...] = ()
+    source: str = ""
+
+
+def _lead_line(lead: InterestLead) -> str:
+    reasons = ", ".join(kind_label(k) for k in lead.kinds[:3])
+    return f"• {lead.host}" + (f" — {reasons}" if reasons else "")
+
+
+def scan_interesting(
+    scan_id: str, target: str, leads: list[InterestLead], shown: int = 5
+) -> dict | None:
+    """Only hosts this target has never flagged before, so a repeat scan says nothing."""
+    if not leads:
+        return None
+    critical = [x for x in leads if x.band == InterestBand.CRITICAL.value]
+    severity = NotificationSeverity.WARNING if critical else NotificationSeverity.INFO
+    head = _count(len(leads), "new asset", "new assets")
+    title = f"{head} worth a look on {target}"
+    body = "\n".join(_lead_line(lead) for lead in leads[:shown])
+    if len(leads) > shown:
+        body += f"\n… and {len(leads) - shown} more"
+    return {
+        "type": NotificationType.SCAN,
+        "severity": severity,
+        "title": title,
+        "message": body,
+        "metadata": _scan_meta(scan_id, "interesting"),
     }

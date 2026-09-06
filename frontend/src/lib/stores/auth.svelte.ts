@@ -29,6 +29,7 @@ import { rechecks } from './rechecks.svelte';
 import { wordlists } from '$lib/stores/wordlists.svelte';
 import { reports } from '$lib/stores/reports.svelte';
 import { reportCatalog } from '$lib/stores/report-catalog.svelte';
+import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
 import { ai } from '$lib/stores/ai.svelte';
 import { mcp } from '$lib/stores/mcp.svelte';
 import { clearServiceLookup } from '$lib/utilities/service-lookup';
@@ -119,6 +120,7 @@ function createAuthStore() {
 		wordlists.reset();
 		reports.reset();
 		reportCatalog.reset();
+		interestCatalog.reset();
 		ai.reset();
 		mcp.reset();
 		clearServiceLookup();

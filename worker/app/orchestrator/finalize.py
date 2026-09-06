@@ -19,6 +19,7 @@ from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.vulnerability import VulnerabilityCoverage
 from shared.services.activity_log import ActivityLogService
+from shared.services.celery_dispatch import dispatch_interest_evaluation
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator import (
     aggregate_counts,
@@ -216,6 +217,13 @@ def _dropped_hosts(session: Session, scan: Scan) -> int:
     return sum(len(entry or []) for entry in rows)
 
 
+def _dispatch_interest(scan: Scan) -> None:
+    try:
+        dispatch_interest_evaluation(str(scan.id))
+    except Exception:
+        logger.warning("interest dispatch failed", exc_info=True)
+
+
 def _guard(fn, fallback):
     try:
         return fn()
@@ -332,6 +340,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
         session.commit()
         events.scan_completed(status=status, counts=counts, duration_seconds=duration)
         if scan.scope != ScanScope.FOCUSED.value:
+            _dispatch_interest(scan)
             _notify(
                 notifier,
                 session,

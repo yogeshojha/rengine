@@ -57,6 +57,9 @@
 	import { targetTypeLabel } from '$lib/types/scan-engine';
 	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
 	import { RESULT_TABS, SURFACE_ORDER } from '$lib/config/surface';
+	import { INTEREST_TAB } from '$lib/config/interest';
+	import InterestingTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
+	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import { plannedStages } from '$lib/utilities/scan-progress';
 	import type { TargetType } from '$lib/types/target';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
@@ -64,10 +67,11 @@
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { NOW_TICK_MS } from '$lib/constants';
 
-	const TABS = ['overview', ...RESULT_TABS] as const;
+	const TABS = ['overview', INTEREST_TAB, ...RESULT_TABS] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
 		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
+		{ key: INTEREST_TAB as TabKey, label: 'Worth a look', icon: Sparkle },
 		...SURFACE_ORDER.map((s) => ({ key: s.tab as TabKey, label: s.label, icon: s.icon }))
 	];
 	const HISTORY_SIZE = 12;
@@ -218,12 +222,14 @@
 		);
 		return done.find((s) => s.engine_name === scan!.engine_name)?.duration_seconds ?? null;
 	});
+	let interestTotal = $state<number | null>(null);
 	let ipsTotal = $state<number | null>(null);
 	let servicesTotal = $state<number | null>(null);
 	let endpointsTotal = $state<number | null>(null);
 	let vulnsTotal = $state<number | null>(null);
 	let tabCounts = $derived<Record<TabKey, number | null>>({
 		overview: null,
+		[INTEREST_TAB]: interestTotal,
 		'web-assets': scan?.subdomains_found ?? 0,
 		endpoints: endpointsTotal ?? scan?.endpoints_found ?? 0,
 		services: servicesTotal ?? scan?.open_ports_found ?? 0,
@@ -238,6 +244,7 @@
 		TAB_DEFS.filter((t) => {
 			if (t.key === 'overview') return true;
 			if ((tabCounts[t.key] ?? 0) > 0) return true;
+			if (t.key === INTEREST_TAB) return false;
 			const spec = SURFACE_ORDER.find((sp) => sp.tab === t.key);
 			return live && !!spec && spec.kinds.some((k) => plannedKinds.has(k));
 		})
@@ -572,6 +579,19 @@
 						onFilter={applyFilter}
 						onTab={openTab}
 						onRescan={() => (showRescan = true)}
+					/>
+				{/key}
+			</Tabs.Content>
+
+			<Tabs.Content value={INTEREST_TAB} class="mt-6">
+				{#key scan.id}
+					<InterestingTable
+						scanId={scan.id}
+						targetId={scan.target_id}
+						{projectId}
+						active={activeTab === INTEREST_TAB}
+						onTab={openTab}
+						onTotal={(n) => (interestTotal = n)}
 					/>
 				{/key}
 			</Tabs.Content>
