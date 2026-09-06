@@ -3,6 +3,15 @@ import socket
 from urllib.parse import urlsplit
 
 
+def is_registry_routable(value: str) -> bool:
+    """Whether an address or netblock sits in public space an RIR can hold a record for."""
+    try:
+        net = ipaddress.ip_network(value.strip(), strict=False)
+    except ValueError:
+        return False
+    return net.is_global and not net.is_multicast
+
+
 def validate_public_https_url(raw: str, *, label: str = "URL") -> None:
     parts = urlsplit(raw)
     if parts.scheme != "https" or not parts.hostname:

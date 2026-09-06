@@ -21,6 +21,7 @@ from shared.models.whois import (
 from tools.whois.service import (
     WhoisError,
     WhoisLookupError,
+    WhoisNotApplicableError,
     WhoisService,
     WhoisValidationError,
 )
@@ -117,6 +118,11 @@ async def whois_lookup(
     except WhoisValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+    except WhoisNotApplicableError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e),
         ) from e
     except WhoisLookupError as e:

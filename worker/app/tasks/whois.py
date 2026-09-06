@@ -17,10 +17,65 @@ from shared.services.notification_sync import (
     single_project,
 )
 from shared.utils.datetime import utc_now
-from shared.utils.validation import normalize_query
-from tools.whois.service import WhoisService
+from tools.whois.service import WhoisNotApplicableError, WhoisService
 
 logger = get_logger(__name__)
+
+
+def _resolve_group(
+    session,
+    activity: ActivityLogService,
+    service: WhoisService,
+    normalized_query: str,
+    targets: list[Target],
+) -> tuple[int, int]:
+    """Resolve one registry query and stamp its outcome on every target sharing it."""
+    try:
+        record = service.get_or_create_record_sync(
+            session, normalized_query, targets[0].target_type
+        )
+    except WhoisNotApplicableError as exc:
+        # no registry can hold this record; that is an answer, not a failure
+        reason = str(exc)[:1000]
+        logger.info("WHOIS not applicable for %s: %s", normalized_query, reason)
+        for target in targets:
+            target.whois_status = TaskStatus.NOT_APPLICABLE
+            target.whois_error = reason
+            target.updated_at = utc_now()
+        session.commit()
+        return 0, 0
+    except Exception as exc:
+        error = str(exc)[:1000]
+        logger.warning("WHOIS lookup failed for %s: %s", normalized_query, error)
+        for target in targets:
+            target.whois_status = TaskStatus.FAILED
+            target.whois_error = error
+            target.updated_at = utc_now()
+            activity.log(
+                event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
+                title=f"WHOIS lookup failed · {target.target_value}",
+                description=error,
+                level=ActivityLevel.ERROR,
+                target_id=target.id,
+                project_id=target.project_id,
+            )
+        session.commit()
+        return 0, len(targets)
+
+    for target in targets:
+        target.whois_record_id = record.id
+        target.whois_status = TaskStatus.SUCCESS
+        target.whois_error = None
+        target.updated_at = utc_now()
+        activity.log(
+            event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_COMPLETED,
+            title=f"WHOIS lookup completed · {target.target_value}",
+            level=ActivityLevel.SUCCESS,
+            target_id=target.id,
+            project_id=target.project_id,
+        )
+    session.commit()
+    return len(targets), 0
 
 
 @celery_app.task(
@@ -30,7 +85,7 @@ logger = get_logger(__name__)
     soft_time_limit=600,
     time_limit=900,
 )
-def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
+def perform_whois_lookups(target_ids: list[str]) -> dict:
     """WHOIS a batch of targets, deduped by normalized query value."""
     if not target_ids:
         return {"success": 0, "failed": 0, "total": 0}
@@ -60,55 +115,18 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
 
         query_groups: dict[str, list[Target]] = {}
         for target in targets:
-            normalized = normalize_query(target.target_value, target.target_type)
+            normalized = service.lookup_key(target.target_value, target.target_type)
             query_groups.setdefault(normalized, []).append(target)
 
         success_count = 0
         failed_count = 0
 
         for normalized_query, group_targets in query_groups.items():
-            representative = group_targets[0]
-
-            try:
-                record = service.get_or_create_record_sync(
-                    session, normalized_query, representative.target_type
-                )
-
-                for target in group_targets:
-                    target.whois_record_id = record.id
-                    target.whois_status = TaskStatus.SUCCESS
-                    target.whois_error = None
-                    target.updated_at = utc_now()
-                    success_count += 1
-                    activity.log(
-                        event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_COMPLETED,
-                        title=f"WHOIS lookup completed · {target.target_value}",
-                        level=ActivityLevel.SUCCESS,
-                        target_id=target.id,
-                        project_id=target.project_id,
-                    )
-
-                session.commit()
-
-            except Exception as e:
-                error_msg = str(e)[:1000]
-                logger.warning(
-                    "WHOIS lookup failed for %s: %s", normalized_query, error_msg
-                )
-                for target in group_targets:
-                    target.whois_status = TaskStatus.FAILED
-                    target.whois_error = error_msg
-                    target.updated_at = utc_now()
-                    failed_count += 1
-                    activity.log(
-                        event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
-                        title=f"WHOIS lookup failed · {target.target_value}",
-                        description=error_msg,
-                        level=ActivityLevel.ERROR,
-                        target_id=target.id,
-                        project_id=target.project_id,
-                    )
-                session.commit()
+            ok, failed = _resolve_group(
+                session, activity, service, normalized_query, group_targets
+            )
+            success_count += ok
+            failed_count += failed
 
         total = success_count + failed_count
         template = whois_enrichment_incomplete(

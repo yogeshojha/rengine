@@ -13,11 +13,11 @@ from shared.models.dns import DnsLookup
 from shared.models.target import Target
 from shared.models.whois import WhoisRecord
 from shared.utils.datetime import utc_now
-from shared.utils.validation import normalize_domain, normalize_query
+from shared.utils.validation import normalize_domain
 from stages.base import Stage, StageResult
 from stages.target_enrichment.config import TargetEnrichmentConfig
 from tools.dnsx.service import DnsxService
-from tools.whois.service import WhoisService
+from tools.whois.service import WhoisNotApplicableError, WhoisService
 
 logger = get_logger(__name__)
 
@@ -94,14 +94,21 @@ class TargetEnrichmentStage(Stage):
             else None
         )
         if record is None or _is_stale(record.queried_at):
+            svc = WhoisService()
+            ttype = TargetType(self.ctx.target_type)
             try:
-                ttype = TargetType(self.ctx.target_type)
-                normalized = normalize_query(self.ctx.target_value, ttype)
-                svc = WhoisService()
-                response = svc.do_lookup(normalized, ttype)
+                response = svc.do_lookup(
+                    svc.lookup_key(self.ctx.target_value, ttype), ttype
+                )
                 record = svc.store_record_sync(self.session, response)
                 target.whois_record_id = record.id
                 target.whois_status = TaskStatus.SUCCESS
+                target.whois_error = None
+                self.session.add(target)
+                self.session.commit()
+            except WhoisNotApplicableError as exc:
+                target.whois_status = TaskStatus.NOT_APPLICABLE
+                target.whois_error = str(exc)[:1000]
                 self.session.add(target)
                 self.session.commit()
             except Exception as exc:

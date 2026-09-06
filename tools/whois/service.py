@@ -10,12 +10,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from shared.definitions.domains import registrable_domain
 from shared.enums.target import TargetType
 from shared.enums.whois import WhoisLookupType
 from shared.logging import get_logger
 from shared.models.whois import WhoisNameserver, WhoisRecord
 from shared.utils.datetime import normalize_datetime, utc_now
 from shared.utils.infra import is_shared_nameserver
+from shared.utils.net import is_registry_routable
 from shared.utils.privacy import is_redacted_name
 from shared.utils.validation import (
     extract_asn_number,
@@ -64,6 +66,10 @@ class WhoisLookupError(WhoisError):
     """Raised when a WHOIS lookup fails."""
 
 
+class WhoisNotApplicableError(WhoisError):
+    """Raised when no registry can hold a record for the query — not a failure."""
+
+
 class WhoisService:
     """WHOIS lookup service with optional DB caching."""
 
@@ -89,8 +95,18 @@ class WhoisService:
                 msg = f"Unsupported target type for WHOIS: {target_type}"
                 raise WhoisValidationError(msg)
 
+    @staticmethod
+    def lookup_key(query: str, target_type) -> str:
+        """The value a registry is asked for — also the cache and record key."""
+        normalized = normalize_query(query, target_type)
+        if target_type in (TargetType.DOMAIN, TargetType.URL):
+            return registrable_domain(normalized) or normalized
+        return normalized
+
     def lookup_domain(self, domain: str) -> WhoisResponse:
-        domain = normalize_domain(domain)
+        # registries only hold the registered name, so api.example.com must ask for example.com
+        host = normalize_domain(domain)
+        domain = registrable_domain(host) or host
         try:
             raw = self._provider.lookup_domain(domain)
             return parse_domain_response(raw, domain)
@@ -99,6 +115,12 @@ class WhoisService:
 
     def lookup_ip(self, ip: str) -> WhoisResponse:
         ip = ip.strip()
+        if not is_registry_routable(ip):
+            msg = (
+                f"{ip} is private, reserved or otherwise outside publicly routable "
+                "address space, so no regional registry holds a record for it."
+            )
+            raise WhoisNotApplicableError(msg)
         try:
             raw = self._provider.lookup_ip(ip)
             return parse_ip_response(raw, ip)
@@ -131,7 +153,7 @@ class WhoisService:
         if target_type is None:
             target_type = self._detect_type(query)
 
-        normalized = normalize_query(query, target_type)
+        normalized = self.lookup_key(query, target_type)
 
         if store_in_db and session:
             cached = await self._get_cached_record(session, normalized)

@@ -522,7 +522,8 @@ function buildNetwork(target: Target, detail: TargetDetailRead | null): TargetIn
 	const bgpStatus = target.bgp_status;
 	const whoisStatus = target.whois_status;
 	const t = target.target_type;
-	const isPrivate = t === TargetType.IP && isPrivateIp(target.target_value);
+	const isPrivate =
+		(t === TargetType.IP || t === TargetType.IP_RANGE) && isPrivateIp(target.target_value);
 	const as = bgp?.as_overview ?? null;
 	const rir =
 		[whois?.rir, as?.rir].map((x) => (x || '').trim()).find((x) => VALID_RIR.test(x)) || '';
