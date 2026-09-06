@@ -108,7 +108,7 @@
 		bulkDeleting = false;
 		bulkDeleteOpen = false;
 		selectedIds.clear();
-		if (ok > 0) toast.success(`Deleted ${ok} report${ok !== 1 ? 's' : ''}.`);
+		if (ok > 0) toast.success(`Deleted ${ok} report${ok !== 1 ? 's' : ''}`);
 		if (failed > 0) toast.error(`${failed} report${failed !== 1 ? 's' : ''} could not be deleted`);
 	}
 
@@ -145,7 +145,7 @@
 			formats: template.formats,
 			clone_of: template.id
 		});
-		if (created) toast.success(`${created.name} is ready to edit.`);
+		if (created) toast.success(`${created.name} is ready to edit`);
 	}
 
 	const deleteDescription = $derived(
@@ -182,9 +182,7 @@
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.reports}</h1>
-			<p class="mt-1 text-sm text-muted-foreground">
-				Documents built from what a scan observed. Generation runs in the background.
-			</p>
+			<p class="mt-1 text-sm text-muted-foreground">Documents generated from scan results</p>
 		</div>
 		<Button onclick={() => (generateOpen = true)} disabled={!projectId}>
 			<PlusIcon class="mr-1.5 size-4" />
@@ -246,7 +244,7 @@
 				<EmptyState
 					icon={FileTextIcon}
 					title="No reports yet"
-					description="Generate one from a finished scan. It runs in the background and appears here when it is ready."
+					description="Generate a report from a finished scan. Generation runs in the background."
 				/>
 			{:else}
 				<Card.Root class="gap-0 py-0">
@@ -308,8 +306,8 @@
 					<div>
 						<h2 class="text-base font-semibold">Typefaces</h2>
 						<p class="text-xs text-muted-foreground">
-							What a theme can name for its headings, body and code. Files are stored on this
-							instance; a report never fetches a font.
+							Typefaces a theme can name for its headings, body and code. Files are stored on this
+							instance. A report never fetches a font.
 						</p>
 					</div>
 					<Card.Root class="gap-0 py-0">
