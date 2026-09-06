@@ -11,8 +11,10 @@ from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from shared.utils.cidr import expand_network, parse_network
 from shared.utils.datetime import utc_now
+from shared.utils.validation import normalize_domain
 from stages.base import IP_TARGETS, Stage, StageResult
 from stages.seed_resolution.config import SeedResolutionConfig
+from tools.dnsx.service import DnsxLookupError, DnsxService
 from tools.ripestat.service import RIPEStatError, RIPEStatService
 
 logger = get_logger(__name__)
@@ -30,17 +32,20 @@ def _parse_asn(value: str) -> int | None:
 class SeedResolutionStage(Stage):
     name = "seed_resolution"
     title = "Seed Resolution"
-    description = "Expand an IP, netblock or ASN seed into individual hosts."
+    description = "Expand an IP, netblock, ASN or URL seed into individual addresses."
     phase = Phase.DISCOVERY.value
     group = StageGroup.ADDRESSES.value
     role = StageRole.SUPPORT.value
     produces = frozenset({AssetKind.ADDRESSES.value})
-    applies_to = IP_TARGETS
+    applies_to = IP_TARGETS | {TargetType.URL.value}
     touches_target = False
+    tools = ("dnsx",)
     config_model = SeedResolutionConfig
+    _dropped: int = 0
 
     def run(self) -> StageResult:
         self._check_abort()
+        self._dropped = 0
         cfg = self.cfg
         value = self.ctx.target_value.strip()
 
@@ -48,22 +53,36 @@ class SeedResolutionStage(Stage):
             records, truncated = self._from_ip(value), False
         elif self.ctx.target_type == TargetType.IP_RANGE.value:
             records, truncated = self._from_cidr(value, cfg)
+        elif self.ctx.target_type == TargetType.URL.value:
+            records, truncated = self._from_url(value), False
         else:
             records, truncated = self._from_asn(value, cfg)
 
         self._check_abort()
         count = self._persist(records)
-        if truncated:
-            self.emit_progress(
-                f"large seed sampled to {count} hosts ({cfg.asn_scan_mode} mode)"
-            )
         if not count:
             # a seed that expands to nothing leaves every later stage empty; say so here
             reason = f"{value} expanded to no addresses, so this scan has nothing to examine."
             self.emit_progress(reason)
             return StageResult(counts={"ips": 0}, warnings=[reason], partial=True)
+
         self.emit_progress(f"discovered {count} IP assets")
+        if truncated or self._dropped:
+            # a sampled seed is not a census, and the run must not read as one
+            warning = self._sample_note(value, count, cfg)
+            self.emit_progress(warning)
+            return StageResult(counts={"ips": count}, warnings=[warning], partial=True)
         return StageResult(counts={"ips": count})
+
+    def _sample_note(self, value: str, count: int, cfg: SeedResolutionConfig) -> str:
+        note = (
+            f"{value} is larger than one scan can enumerate, so {count} addresses "
+            f"were sampled across it ({cfg.asn_scan_mode} mode). Results describe the "
+            "sample, not the whole range."
+        )
+        if self._dropped:
+            note += f" {self._dropped} announced prefixes were left out."
+        return note
 
     def _from_ip(self, value: str) -> list[dict]:
         try:
@@ -79,6 +98,33 @@ class SeedResolutionStage(Stage):
                 "prefix": None,
                 "asn": None,
             }
+        ]
+
+    def _from_url(self, value: str) -> list[dict]:
+        """A URL names a host, and that host has an address the rest of the scan needs."""
+        host = normalize_domain(value)
+        if not host:
+            return []
+        try:
+            addr = ipaddress.ip_address(host)
+        except ValueError:
+            pass
+        else:
+            return self._from_ip(str(addr))
+        try:
+            recon = DnsxService().do_recon(host)
+        except DnsxLookupError as exc:
+            logger.warning("URL seed %s did not resolve: %s", host, exc)
+            return []
+        return [
+            {
+                "ip": ip,
+                "version": ipaddress.ip_address(ip).version,
+                "source": IpSource.SEED.value,
+                "prefix": None,
+                "asn": None,
+            }
+            for ip in [*recon.a, *recon.aaaa]
         ]
 
     def _from_cidr(
@@ -111,7 +157,9 @@ class SeedResolutionStage(Stage):
     def _from_asn(
         self, value: str, cfg: SeedResolutionConfig
     ) -> tuple[list[dict], bool]:
-        prefixes = self._asn_prefixes(value)[:_MAX_ASN_PREFIXES]
+        announced = self._asn_prefixes(value)
+        prefixes = announced[:_MAX_ASN_PREFIXES]
+        self._dropped = len(announced) - len(prefixes)
         if not prefixes:
             logger.warning("no announced prefixes for %s", value)
             return [], False
