@@ -86,3 +86,8 @@ export function fontStack(slug: string, fonts: { slug: string; name: string; rol
 	const fallback = FONT_ROLE_STACKS[font?.role ?? 'sans'] ?? FONT_ROLE_STACKS.sans;
 	return font ? `"${font.name}", ${fallback}` : fallback;
 }
+
+export const SectionRole = {
+	CONTENT: 'content',
+	FURNITURE: 'furniture'
+} as const;

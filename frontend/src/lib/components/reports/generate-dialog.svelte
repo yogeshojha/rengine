@@ -8,12 +8,17 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import ThemePreview from './theme-preview.svelte';
+	import SectionPill from './generate/section-pill.svelte';
+	import SectionConfigPopover from './generate/section-config-popover.svelte';
+	import SectionField from './builder/section-field.svelte';
+	import { ReportPlan } from './generate/report-plan.svelte';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
-	import CheckIcon from '@lucide/svelte/icons/check';
+	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
@@ -24,6 +29,7 @@
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { FORMAT_LABELS, ReportFormat } from '$lib/config/reports';
+	import { SELECT_NONE } from '$lib/constants';
 	import { ROUTES } from '$lib/config/routes';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { cn } from '$lib/utils.js';
@@ -45,6 +51,8 @@
 		subject?: string;
 	} = $props();
 
+	const plan = new ReportPlan();
+
 	let templateId = $state('');
 	let title = $state('');
 	let theme = $state('');
@@ -53,7 +61,9 @@
 	let explainFindings = $state(false);
 	let busy = $state(false);
 	let estimate = $state<ReportEstimate | null>(null);
+	let baseEstimate = $state<ReportEstimate | null>(null);
 	let estimating = $state(false);
+	let seededFor = $state('');
 	let subjectKind = $state<'scan' | 'target'>('scan');
 	let pickedScan = $state('');
 	let pickedTarget = $state('');
@@ -72,10 +82,16 @@
 	);
 
 	const templates = $derived(reportsStore.templates);
-	const selected = $derived<ReportTemplate | undefined>(templates.find((t) => t.id === templateId));
+	const usingTemplate = $derived(templateId && templateId !== SELECT_NONE ? templateId : '');
+	const selected = $derived<ReportTemplate | undefined>(
+		templates.find((t) => t.id === usingTemplate)
+	);
 	const aiAvailable = $derived(reportCatalog.aiAvailable);
 	const preview = $derived(reportCatalog.themes.find((t) => t.slug === theme));
-	const sectionCount = $derived(selected?.sections.filter((s) => s.enabled).length ?? 0);
+	const groups = $derived(reportCatalog.catalog?.groups ?? []);
+	const promoted = $derived(
+		plan.content.filter((s) => plan.enabled(s.name) && plan.launchFields(s.name).length)
+	);
 
 	$effect(() => {
 		if (!open) return;
@@ -105,20 +121,27 @@
 		templateId = (templates.find((t) => t.is_default) ?? templates[0]).id;
 	});
 
+	// the template seeds the contents once; from then on the plan belongs to this report
 	$effect(() => {
-		const template = selected;
-		if (!template) return;
-		title = template.title || template.name;
-		theme = template.theme;
-		formats = template.formats.length ? [...template.formats] : [ReportFormat.PDF];
+		const sections = reportCatalog.catalog?.sections;
+		if (!open || !sections?.length) return;
+		const key = `${templateId}:${sections.length}`;
+		if (seededFor === key) return;
+		seededFor = key;
+		plan.seed(sections, selected);
+		title = selected?.title || selected?.name || 'Security Assessment Report';
+		if (selected?.theme) theme = selected.theme;
+		formats = selected?.formats?.length ? [...selected.formats] : [ReportFormat.PDF];
+		baseEstimate = null;
 	});
 
 	const body = $derived<ReportCreate>({
-		template_id: templateId || null,
+		template_id: usingTemplate || null,
 		scan_id: activeScan,
 		target_id: activeScan ? null : activeTarget,
 		title,
 		theme: theme || undefined,
+		sections: plan.entries,
 		formats,
 		narrative: selected
 			? {
@@ -130,30 +153,45 @@
 	});
 
 	const signature = $derived(
-		JSON.stringify({ templateId, useAi, explainFindings, activeScan, activeTarget })
+		JSON.stringify({ activeScan, activeTarget, useAi, explainFindings, entries: plan.entries })
 	);
 
 	$effect(() => {
 		void signature;
-		if (!open || !templateId || !hasSubject) return;
+		if (!open || !hasSubject) return;
 		estimating = true;
 		reportsApi
 			.estimate(projectId, body)
-			.then((result) => (estimate = result))
+			.then((result) => {
+				estimate = result;
+				if (!plan.changed) baseEstimate = result;
+			})
 			.catch(() => (estimate = null))
 			.finally(() => (estimating = false));
 	});
 
+	const STATS: [string, 'sections' | 'findings' | 'assets' | 'pages_estimated'][] = [
+		['Sections', 'sections'],
+		['Findings', 'findings'],
+		['Assets', 'assets'],
+		['Estimated pages', 'pages_estimated']
+	];
+
+	function before(key: 'sections' | 'findings' | 'assets' | 'pages_estimated') {
+		if (!baseEstimate || !estimate || baseEstimate[key] === estimate[key]) return null;
+		return baseEstimate[key];
+	}
+
 	async function start() {
-		if (!hasSubject) return toast.error('Choose a scan or a target to report on.');
-		if (!templateId) return toast.error('Choose a report template.');
-		if (!formats.length) return toast.error('Choose at least one output format.');
+		if (!hasSubject) return toast.error('Select a scan or a target to report on.');
+		if (!plan.enabledCount) return toast.error('Select at least one section.');
+		if (!formats.length) return toast.error('Select at least one output format.');
 		busy = true;
 		const report = await reportsStore.create(projectId, body);
 		busy = false;
 		if (!report) return;
 		open = false;
-		toast.success('The report is generating. It will appear in Reports when it is ready.');
+		toast.success('Report queued. It will appear in Reports when generation completes.');
 		void goto(ROUTES.reports());
 	}
 </script>
@@ -168,11 +206,11 @@
 			<Dialog.Description>
 				{subject
 					? `Everything this run observed about ${subject}.`
-					: 'Choose what the document says and how it looks.'}
+					: 'Select the subject, the contents and the output.'}
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<div class="grid min-h-0 flex-1 md:grid-cols-[1fr_17rem]">
+		<div class="grid min-h-0 flex-1 md:grid-cols-[1fr_16rem]">
 			<ScrollArea class="min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-13rem)]">
 				<div class="space-y-5 px-6 py-5">
 					{#if !fixed}
@@ -193,12 +231,12 @@
 									<Select.Root type="single" bind:value={pickedScan}>
 										<Select.Trigger class="min-w-0 flex-1">
 											{#if pickedScan}
-												{@const s = scanOptions.find((o) => o.id === pickedScan)}
-												{s
-													? `${targetName(s.target_id)} · ${formatShortDate(s.created_at)}`
-													: 'Choose a scan'}
+												{@const picked = scanOptions.find((o) => o.id === pickedScan)}
+												{picked
+													? `${targetName(picked.target_id)} · ${formatShortDate(picked.created_at)}`
+													: 'Select a scan'}
 											{:else}
-												Choose a scan
+												Select a scan
 											{/if}
 										</Select.Trigger>
 										<Select.Content class="max-h-72">
@@ -218,7 +256,7 @@
 								{:else}
 									<Select.Root type="single" bind:value={pickedTarget}>
 										<Select.Trigger class="min-w-0 flex-1">
-											{pickedTarget ? targetName(pickedTarget) : 'Choose a target'}
+											{pickedTarget ? targetName(pickedTarget) : 'Select a target'}
 										</Select.Trigger>
 										<Select.Content class="max-h-72">
 											{#each targetOptions as option (option.id)}
@@ -230,11 +268,6 @@
 									</Select.Root>
 								{/if}
 							</div>
-							<p class="text-xs text-muted-foreground">
-								{subjectKind === 'scan'
-									? 'Everything that one run observed, as it observed it.'
-									: 'The current surface, from the most recent run that covered each dimension.'}
-							</p>
 						</div>
 					{/if}
 
@@ -242,9 +275,15 @@
 						<Label class="text-xs" for="report-template">Template</Label>
 						<Select.Root type="single" bind:value={templateId}>
 							<Select.Trigger id="report-template" class="w-full">
-								{selected?.name ?? 'Choose a template'}
+								{selected?.name ?? 'Standard sections'}
 							</Select.Trigger>
 							<Select.Content class="max-h-72">
+								<Select.Item value={SELECT_NONE} label="Standard sections">
+									<span>Standard sections</span>
+									<span class="ml-auto shrink-0 pl-3 text-xs text-muted-foreground"
+										>no template</span
+									>
+								</Select.Item>
 								{#each templates as template (template.id)}
 									<Select.Item value={template.id} label={template.name}>
 										<span class="truncate">{template.name}</span>
@@ -255,15 +294,88 @@
 								{/each}
 							</Select.Content>
 						</Select.Root>
-						{#if selected?.description}
-							<p class="text-xs text-muted-foreground">{selected.description}</p>
-						{/if}
+						<p class="text-xs text-muted-foreground">
+							The template supplies the starting contents. Changes below apply to this report only
+							and do not modify the template.
+						</p>
 					</div>
 
 					<div class="space-y-1.5">
 						<Label class="text-xs" for="report-title">Title</Label>
 						<Input id="report-title" bind:value={title} class="h-9" />
 					</div>
+
+					<div class="space-y-3">
+						<div class="flex flex-wrap items-baseline justify-between gap-x-3 border-b pb-1.5">
+							<span class="text-sm font-medium">Contents</span>
+							<span class="text-xs text-muted-foreground">
+								{plan.enabledCount} sections{#if plan.furniture.length}
+									&nbsp;· cover, contents and reference sections are included automatically{/if}
+							</span>
+						</div>
+
+						{#each groups as group (group.key)}
+							{@const inGroup = plan.content.filter((s) => s.group === group.key)}
+							{#if inGroup.length}
+								<div class="space-y-1.5">
+									<p class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+										{group.label}
+									</p>
+									<div class="flex flex-wrap gap-1.5">
+										{#each inGroup as section (section.name)}
+											<SectionPill
+												{section}
+												on={plan.enabled(section.name)}
+												onToggle={() => plan.toggle(section.name)}
+											>
+												{#if section.fields.length}
+													<SectionConfigPopover {section} {plan} hideLaunchFields />
+												{/if}
+											</SectionPill>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						{/each}
+					</div>
+
+					{#each promoted as section (section.name)}
+						{@const values = plan.config(section.name)}
+						{@const changed = plan.changedFields(section.name)}
+						<div class="rounded-lg border">
+							<div class="flex items-center justify-between gap-3 border-b px-3.5 py-2.5">
+								<span class="text-sm font-medium">{section.title}</span>
+								{#if changed.length}
+									<span class="flex items-center gap-1">
+										<span
+											class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+										>
+											This report only
+										</span>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="h-6 gap-1 px-1.5 text-xs text-muted-foreground"
+											onclick={() => plan.resetSection(section.name)}
+										>
+											<RotateCcwIcon class="size-3" /> Reset
+										</Button>
+									</span>
+								{/if}
+							</div>
+							<div class="divide-y divide-border px-3.5">
+								{#each plan.launchFields(section.name) as field (field.name)}
+									<SectionField
+										{field}
+										value={values[field.name] ?? field.default}
+										onChange={(value) => plan.setField(section.name, field.name, value)}
+									/>
+								{/each}
+							</div>
+						</div>
+					{/each}
+
+					<Separator />
 
 					<div class="space-y-2">
 						<Label class="text-xs">Theme</Label>
@@ -318,7 +430,7 @@
 								</Label>
 								<p class="text-xs text-muted-foreground">
 									{aiAvailable
-										? 'The model sees a summary of the findings, never the raw rows.'
+										? 'The model receives a summary of the findings, never the underlying rows.'
 										: 'Connect a provider on the AI page to enable this.'}
 								</p>
 							</div>
@@ -340,7 +452,7 @@
 								<div class="space-y-0.5">
 									<Label class="text-sm">Explain each finding</Label>
 									<p class="text-xs text-muted-foreground">
-										One short paragraph per weakness. Written once per check, then reused.
+										One paragraph per weakness, written once per check and reused.
 									</p>
 								</div>
 								<Switch checked={explainFindings} onCheckedChange={(v) => (explainFindings = v)} />
@@ -364,10 +476,17 @@
 
 					<div class="space-y-1.5 border-t pt-4 text-xs">
 						{#if estimate}
-							{#each [['Sections', sectionCount], ['Findings', estimate.findings], ['Assets', estimate.assets], ['Pages, about', estimate.pages_estimated]] as [label, value] (label)}
+							{#each STATS as [label, key] (key)}
 								<div class="flex items-baseline justify-between gap-3">
 									<span class="text-muted-foreground">{label}</span>
-									<span class="font-medium tabular-nums">{value.toLocaleString()}</span>
+									<span class="tabular-nums">
+										{#if before(key) !== null}
+											<span class="mr-1.5 text-muted-foreground/70 line-through">
+												{before(key)?.toLocaleString()}
+											</span>
+										{/if}
+										<span class="font-medium">{estimate[key].toLocaleString()}</span>
+									</span>
 								</div>
 							{/each}
 							{#if estimate.ai_calls}
@@ -381,6 +500,8 @@
 							{/if}
 						{:else if estimating}
 							{#each [1, 2, 3, 4] as n (n)}<Skeleton class="h-4 w-full" />{/each}
+						{:else}
+							<p class="text-muted-foreground">Select a subject to see what this will contain.</p>
 						{/if}
 					</div>
 
@@ -394,18 +515,24 @@
 							{/each}
 						</div>
 					{/if}
-
-					<p class="flex items-start gap-1.5 border-t pt-4 text-xs text-muted-foreground">
-						<CheckIcon class="mt-px size-3.5 shrink-0 text-success" />
-						<span>Generation runs in the background. You can leave this page.</span>
-					</p>
 				</div>
 			</aside>
 		</div>
 
-		<Dialog.Footer class="border-t px-6 py-4">
-			<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-			<LoadingButton loading={busy} disabled={!hasSubject} onclick={start}>Generate</LoadingButton>
+		<Dialog.Footer class="justify-between border-t px-6 py-4 sm:justify-between">
+			<Button
+				variant="ghost"
+				class="text-muted-foreground"
+				disabled={!plan.changed}
+				onclick={() => plan.reset()}
+			>
+				Reset to template
+			</Button>
+			<div class="flex gap-2">
+				<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
+				<LoadingButton loading={busy} disabled={!hasSubject} onclick={start}>Generate</LoadingButton
+				>
+			</div>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

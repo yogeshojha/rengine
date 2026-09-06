@@ -21,6 +21,7 @@ export interface SectionField {
 	maximum: number | null;
 	widget: string;
 	depends_on: string;
+	launch: boolean;
 }
 
 export interface SectionCatalogEntry {
@@ -28,6 +29,7 @@ export interface SectionCatalogEntry {
 	title: string;
 	description: string;
 	group: string;
+	role: string;
 	requires: string[];
 	repeatable: boolean;
 	default_enabled: boolean;
