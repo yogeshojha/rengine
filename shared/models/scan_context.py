@@ -6,6 +6,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.models.types import EncryptedJSON
 from shared.utils.datetime import utc_now
 
 AUTH_TYPES = ("none", "header", "bearer", "basic", "cookie", "api_key")
@@ -47,9 +48,11 @@ class ScanContext(SQLModel, table=True):
     name: str = Field(max_length=200)
     description: str | None = Field(default=None, max_length=1000)
     auth_type: str = Field(default="none")
-    auth: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    auth: dict = Field(
+        default_factory=dict, sa_column=Column(EncryptedJSON, nullable=False)
+    )
     extra_headers: list = Field(
-        default_factory=list, sa_column=Column(JSON, nullable=False)
+        default_factory=list, sa_column=Column(EncryptedJSON, nullable=False)
     )
     global_rate_limit_override: int | None = Field(default=None)
     per_tool_rate_overrides: dict = Field(
