@@ -1,8 +1,13 @@
 import { api } from './client';
-import type { DashboardSignals } from '$lib/types/dashboard';
+import type { DashboardDiscovery, DashboardOverview, DashboardWindow } from '$lib/types/dashboard';
 
 export const dashboardApi = {
-	async signals(projectId: string): Promise<DashboardSignals> {
-		return api.get<DashboardSignals>(`/dashboard/signals?project_id=${projectId}`);
+	async overview(projectId: string, window: DashboardWindow): Promise<DashboardOverview> {
+		return api.get<DashboardOverview>(
+			`/dashboard/overview?project_id=${projectId}&window=${window}`
+		);
+	},
+	async discovery(projectId: string): Promise<DashboardDiscovery> {
+		return api.get<DashboardDiscovery>(`/dashboard/discovery?project_id=${projectId}`);
 	}
 };

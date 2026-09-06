@@ -9,6 +9,11 @@ class ScanStatus(Enum):
     CANCELLED = "cancelled"
 
 
+class ScanScope(Enum):
+    FULL = "full"
+    FOCUSED = "focused"
+
+
 class ScanActivityStatus(Enum):
     PENDING = "pending"
     RUNNING = "running"

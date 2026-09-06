@@ -1,58 +1,58 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { targetsStore } from '$lib/stores/targets.svelte';
-	import { activityFeed } from '$lib/stores/activity-feed.svelte';
-	import { dashboardStore } from '$lib/stores/dashboard.svelte';
-	import { liveScans } from '$lib/stores/live-scans.svelte';
-	import { sseStore } from '$lib/stores/sse.svelte';
-	import { SSEChannel, SSEEventType } from '$lib/types/sse';
-	import type { ActivityLog } from '$lib/types/activity';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Empty from '$lib/components/ui/empty/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
-	import ActivityTimeline from '$lib/components/activity/activity-timeline.svelte';
-	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
-	import AttackSurfaceDelta from '$lib/components/dashboard/attack-surface-delta.svelte';
-	import NeedsAttention from '$lib/components/dashboard/needs-attention.svelte';
-	import TargetsByTypeDonut from '$lib/components/dashboard/targets-by-type-donut.svelte';
-	import Boxes from '@lucide/svelte/icons/boxes';
-	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
-	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-	import Hourglass from '@lucide/svelte/icons/hourglass';
-	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import FolderOpen from '@lucide/svelte/icons/folder-open';
 	import Plus from '@lucide/svelte/icons/plus';
+	import Play from '@lucide/svelte/icons/play';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import ArrowRight from '@lucide/svelte/icons/arrow-right';
-	import type { SignalFilter } from '$lib/utilities/target-signals';
-	import { TargetType } from '$lib/types/target';
-	import { ROUTES } from '$lib/config/routes';
-	import type { IconComponent } from '$lib/config/icons';
-	import { ACTIVITY_TICK_MS } from '$lib/constants';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import { Button } from '$lib/components/ui/button';
+	import * as Empty from '$lib/components/ui/empty';
+	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { dashboardStore } from '$lib/stores/dashboard.svelte';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
+	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
+	import HeroPanel from '$lib/components/dashboard/hero-panel.svelte';
+	import AttentionPanel, {
+		type QueueFilter
+	} from '$lib/components/dashboard/attention-panel.svelte';
+	import VulnerabilityPanel from '$lib/components/dashboard/vulnerability-panel.svelte';
+	import ChangesPanel, { type ChartMetric } from '$lib/components/dashboard/changes-panel.svelte';
+	import ExposurePanel from '$lib/components/dashboard/exposure-panel.svelte';
+	import { SurfaceDimension } from '$lib/config/surface';
+
+	const TICK_MS = 1000;
+	const SECTION = {
+		vulns: 'dashboard-vulnerabilities',
+		exposure: 'dashboard-exposure',
+		changes: 'dashboard-changes'
+	};
 
 	let activeProject = $derived(projectsStore.activeProject);
+	let overview = $derived(dashboardStore.overview);
 	let addTargetOpen = $state(false);
-
-	$effect(() => {
-		const slug = activeProject?.slug;
-		untrack(() => {
-			if (slug) targetsStore.fetchAll(slug);
-		});
-	});
-
-	$effect(() => {
-		const pid = activeProject?.id;
-		untrack(() => {
-			if (pid) {
-				activityFeed.reset();
-				activityFeed.load(pid, 1);
-			}
-		});
+	let launchOpen = $state(false);
+	let launchTargetIds = $state<string[] | undefined>(undefined);
+	let scheduleOpen = $state(false);
+	let scheduleTargetIds = $state<string[]>([]);
+	let now = $state(Date.now());
+	let queueFilter = $state<QueueFilter>('all');
+	let chartMetric = $state<ChartMetric | null>(null);
+	const CHART_ORDER: ChartMetric[] = [
+		SurfaceDimension.WEB_ASSETS,
+		SurfaceDimension.SERVICES,
+		SurfaceDimension.VULNERABILITIES,
+		'runs'
+	];
+	// the chart opens on the first metric with data in the window
+	let defaultMetric = $derived.by<ChartMetric>(() => {
+		const days = overview ? overview.daily.slice(dashboardStore.window === '30d' ? -30 : -7) : [];
+		for (const key of CHART_ORDER) {
+			const total = days.reduce((n, d) => n + (key === 'runs' ? d.runs : (d.new[key] ?? 0)), 0);
+			if (total > 0) return key;
+		}
+		return CHART_ORDER[0];
 	});
 
 	$effect(() => {
@@ -63,294 +63,145 @@
 	});
 
 	$effect(() => {
-		if (liveScans.completedTick > 0) dashboardStore.refresh();
+		if (liveScans.completedTick > 0) untrack(() => dashboardStore.refresh());
 	});
 
 	$effect(() => {
-		const pid = activeProject?.id;
-		if (!pid) return;
-		return sseStore.on<ActivityLog>(SSEChannel.project(pid), SSEEventType.ACTIVITY, (d) =>
-			activityFeed.ingest(d)
-		);
-	});
-
-	$effect(() => {
-		const iv = setInterval(() => activityFeed.bumpTick(), ACTIVITY_TICK_MS);
+		if (!liveScans.hasLive) return;
+		const iv = setInterval(() => (now = Date.now()), TICK_MS);
 		return () => clearInterval(iv);
 	});
 
-	let summary = $derived(targetsStore.signalSummary);
-
-	function retryStats() {
-		const slug = activeProject?.slug;
-		if (slug) targetsStore.fetchAll(slug, undefined, true);
+	function scrollTo(id: string) {
+		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
-
-	function refresh() {
-		const slug = activeProject?.slug;
-		const pid = activeProject?.id;
-		if (slug) targetsStore.refresh();
-		if (pid) {
-			activityFeed.load(pid, 1);
-			dashboardStore.refresh();
-		}
+	function openQueue(filter: QueueFilter) {
+		queueFilter = filter;
+		scrollTo(SECTION.vulns);
 	}
-
-	interface Kpi {
-		signal: SignalFilter | null;
-		label: string;
-		value: number;
-		icon: IconComponent;
-		accent: string;
+	function showChanges(key: SurfaceDimension) {
+		chartMetric =
+			key === SurfaceDimension.ENDPOINTS || key === SurfaceDimension.IPS ? chartMetric : key;
+		scrollTo(SECTION.changes);
 	}
-
-	let kpis = $derived<Kpi[]>([
-		{
-			signal: 'attention',
-			label: 'Needs attention',
-			value: summary.attention,
-			icon: TriangleAlert,
-			accent: 'text-destructive'
-		},
-		{
-			signal: 'expiring',
-			label: 'Expiring',
-			value: summary.expiring,
-			icon: CalendarClock,
-			accent: 'text-warning'
-		},
-		{
-			signal: null,
-			label: 'Total targets',
-			value: summary.total,
-			icon: Boxes,
-			accent: 'text-foreground'
-		},
-		{
-			signal: 'awaiting',
-			label: 'Awaiting enrichment',
-			value: summary.awaiting,
-			icon: Hourglass,
-			accent: 'text-chart-1'
-		},
-		{
-			signal: 'enriched',
-			label: 'Enriched',
-			value: summary.enriched,
-			icon: ShieldCheck,
-			accent: 'text-foreground'
-		}
-	]);
-
-	let breakdown = $derived(
-		[
-			{ type: TargetType.DOMAIN, count: targetsStore.counts.domain },
-			{ type: TargetType.IP, count: targetsStore.counts.ip },
-			{ type: TargetType.IP_RANGE, count: targetsStore.counts.ip_range },
-			{ type: TargetType.ASN, count: targetsStore.counts.asn },
-			{ type: TargetType.URL, count: targetsStore.counts.url }
-		].filter((b) => b.count > 0)
-	);
-
-	function openSignal(signal: SignalFilter | null) {
-		goto(signal ? `${ROUTES.targets}?signal=${signal}` : ROUTES.targets);
+	function scanTargets(ids?: string[]) {
+		launchTargetIds = ids;
+		launchOpen = true;
 	}
-
-	function openType(type: TargetType) {
-		goto(`${ROUTES.targets}?type=${type}`);
+	function scheduleTargets(ids: string[]) {
+		scheduleTargetIds = ids;
+		scheduleOpen = true;
 	}
 </script>
 
-<div class="space-y-6">
-	<div class="flex flex-wrap items-start justify-between gap-3">
-		<div>
+<div class="flex flex-col gap-5">
+	<div class="flex flex-wrap items-center justify-between gap-3">
+		<div class="flex items-baseline gap-2">
 			<h1 class="text-lg font-semibold">Dashboard</h1>
-			<p class="text-sm text-muted-foreground">
-				{activeProject?.name ?? 'Select a project'}
-			</p>
+			<span class="text-sm text-muted-foreground">{activeProject?.name ?? 'Select a project'}</span>
 		</div>
 		{#if activeProject}
 			<div class="flex items-center gap-2">
-				<Button variant="outline" size="sm" onclick={refresh} disabled={targetsStore.isLoading}>
-					<RefreshCw class="h-4 w-4 {targetsStore.isLoading ? 'animate-spin' : ''}" />
+				<Button
+					variant="outline"
+					size="sm"
+					onclick={() => dashboardStore.refresh()}
+					disabled={dashboardStore.loading}
+				>
+					<RefreshCw class="size-4 {dashboardStore.loading ? 'animate-spin' : ''}" />
 					Refresh
 				</Button>
-				<Button size="sm" onclick={() => (addTargetOpen = true)}>
-					<Plus class="h-4 w-4" />
+				<Button variant="outline" size="sm" onclick={() => (addTargetOpen = true)}>
+					<Plus class="size-4" />
 					Add target
+				</Button>
+				<Button size="sm" onclick={() => scanTargets()}>
+					<Play class="size-4" />
+					Start scan
 				</Button>
 			</div>
 		{/if}
 	</div>
 
-	{#if projectsStore.isLoading && !activeProject}
-		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-			{#each { length: 5 } as _, i (i)}
-				<Skeleton class="h-[88px] rounded-xl" />
-			{/each}
-		</div>
-		<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-			<Skeleton class="h-64 rounded-xl lg:col-span-2" />
-			<Skeleton class="h-64 rounded-xl" />
-		</div>
-	{:else if activeProject}
-		{#if targetsStore.error && !targetsStore.hasFetched}
-			<Empty.Root class="rounded-lg border border-dashed border-destructive/40 py-12">
-				<Empty.Header>
-					<Empty.Media class="rounded-full bg-destructive/10 p-3">
-						<TriangleAlert class="h-5 w-5 text-destructive" strokeWidth={1.5} />
-					</Empty.Media>
-					<Empty.Title class="text-sm">Couldn't load dashboard</Empty.Title>
-					<Empty.Description>{targetsStore.error}</Empty.Description>
-				</Empty.Header>
-				<Empty.Content>
-					<Button variant="outline" onclick={retryStats} disabled={targetsStore.isLoading}>
-						<RefreshCw class="h-4 w-4 {targetsStore.isLoading ? 'animate-spin' : ''}" />
-						Retry
-					</Button>
-				</Empty.Content>
-			</Empty.Root>
-		{:else}
-			<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-				{#each kpis as kpi (kpi.label)}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							{#snippet child({ props })}
-								<button
-									{...props}
-									type="button"
-									onclick={() => openSignal(kpi.signal)}
-									aria-label={kpi.signal ? `View ${kpi.label} targets` : 'View all targets'}
-									class="w-full text-left"
-								>
-									<Card.Root class="h-full transition-colors hover:bg-muted/40">
-										<Card.Content class="flex items-center gap-3 px-4 py-3">
-											<kpi.icon class="h-4 w-4 shrink-0 {kpi.accent}" />
-											<div class="min-w-0">
-												<div class="text-lg font-semibold leading-none tabular-nums">
-													{#if targetsStore.isLoading && !targetsStore.hasFetched}
-														<Skeleton class="h-5 w-8 rounded" />
-													{:else}
-														{kpi.value}
-													{/if}
-												</div>
-												<div class="mt-1 truncate text-[11px] text-muted-foreground">
-													{kpi.label}
-												</div>
-											</div>
-										</Card.Content>
-									</Card.Root>
-								</button>
-							{/snippet}
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p class="text-xs">
-								{kpi.signal ? `Filter targets by ${kpi.label.toLowerCase()}` : 'View all targets'}
-							</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				{/each}
-			</div>
-
-			<AttackSurfaceDelta
-				changes={dashboardStore.changes}
-				window={dashboardStore.changeWindow}
-				onWindow={(w) => dashboardStore.setChangeWindow(w)}
-			/>
-
-			<NeedsAttention
-				signals={dashboardStore.signals}
-				loading={dashboardStore.loadingSignals}
-				error={dashboardStore.signalsError}
-				onRetry={() => dashboardStore.retrySignals()}
-			/>
-
-			<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-				<Card.Root>
-					<Card.Header>
-						<Card.Title class="text-sm">Attack surface</Card.Title>
-						<Card.Description>By asset type across {summary.total} targets</Card.Description>
-					</Card.Header>
-					<Card.Content>
-						{#if !targetsStore.hasFetched}
-							<div class="flex justify-center py-6">
-								<Skeleton class="h-[170px] w-[170px] rounded-full" />
-							</div>
-						{:else if summary.total === 0}
-							<Empty.Root class="border-none py-8">
-								<Empty.Header>
-									<Empty.Media class="rounded-full bg-muted/30 p-3">
-										<Boxes class="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-									</Empty.Media>
-									<Empty.Title class="text-sm">No targets yet</Empty.Title>
-									<Empty.Description
-										>Add a target to start mapping your attack surface.</Empty.Description
-									>
-								</Empty.Header>
-								<Empty.Content>
-									<Button onclick={() => (addTargetOpen = true)}>
-										<Plus class="h-4 w-4" />
-										Add target
-									</Button>
-								</Empty.Content>
-							</Empty.Root>
-						{:else}
-							<TargetsByTypeDonut {breakdown} total={summary.total} onSelect={openType} />
-						{/if}
-					</Card.Content>
-				</Card.Root>
-
-				<Card.Root class="flex flex-col lg:col-span-2">
-					<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0">
-						<div class="flex items-center gap-2">
-							<Card.Title class="text-sm">Recent activity</Card.Title>
-							{#if activityFeed.isLive}
-								<span class="flex items-center gap-1 text-[10px] text-muted-foreground">
-									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-foreground"></span>
-									Live
-								</span>
-							{/if}
-						</div>
-						<Button
-							variant="link"
-							size="sm"
-							class="h-auto p-0 text-xs"
-							onclick={() => activityFeed.setOpen(true)}
-						>
-							View all
-							<ArrowRight class="h-3 w-3" />
-						</Button>
-					</Card.Header>
-					<Card.Content class="min-h-0 flex-1 p-0">
-						<ScrollArea class="h-[360px]">
-							<div class="px-4 pb-4">
-								<ActivityTimeline
-									dayGroups={activityFeed.days}
-									targetGroups={activityFeed.targetGroups}
-									grouping={activityFeed.grouping}
-									newEventIds={activityFeed.freshIds}
-									runningIds={activityFeed.runningIds}
-									tick={activityFeed.tick}
-									isLoading={activityFeed.initialLoad}
-									isEmpty={!activityFeed.initialLoad && activityFeed.filtered.length === 0}
-								/>
-							</div>
-						</ScrollArea>
-					</Card.Content>
-				</Card.Root>
-			</div>
-		{/if}
-	{:else}
+	{#if !activeProject}
 		<Empty.Root class="rounded-lg border border-dashed border-border py-16">
 			<Empty.Header>
 				<Empty.Media class="rounded-full bg-muted/30 p-3">
-					<FolderOpen class="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+					<FolderOpen class="size-5 text-muted-foreground" strokeWidth={1.5} />
 				</Empty.Media>
 				<Empty.Title class="text-sm">No project selected</Empty.Title>
 				<Empty.Description>Select or create a project to view its dashboard.</Empty.Description>
 			</Empty.Header>
 		</Empty.Root>
+	{:else if dashboardStore.error && !overview}
+		<Empty.Root class="rounded-lg border border-dashed border-destructive/40 py-12">
+			<Empty.Header>
+				<Empty.Media class="rounded-full bg-destructive/10 p-3">
+					<TriangleAlert class="size-5 text-destructive" strokeWidth={1.5} />
+				</Empty.Media>
+				<Empty.Title class="text-sm">Dashboard could not be loaded</Empty.Title>
+				<Empty.Description>{dashboardStore.error}</Empty.Description>
+			</Empty.Header>
+			<Empty.Content>
+				<Button
+					variant="outline"
+					onclick={() => dashboardStore.refresh()}
+					disabled={dashboardStore.loading}
+				>
+					<RefreshCw class="size-4 {dashboardStore.loading ? 'animate-spin' : ''}" />
+					Retry
+				</Button>
+			</Empty.Content>
+		</Empty.Root>
+	{:else}
+		<HeroPanel
+			{overview}
+			loading={dashboardStore.loading}
+			window={dashboardStore.window}
+			{now}
+			onWindow={(w) => dashboardStore.setWindow(w)}
+			onChanges={showChanges}
+			onScan={() => scanTargets()}
+			onScanTargets={scanTargets}
+			onAddTarget={() => (addTargetOpen = true)}
+		/>
+
+		<AttentionPanel
+			{overview}
+			discovery={dashboardStore.discovery}
+			loading={dashboardStore.loading}
+			onQueue={openQueue}
+			onScanTargets={scanTargets}
+			onSchedule={scheduleTargets}
+			onExposure={() => scrollTo(SECTION.exposure)}
+		/>
+
+		{#if overview && overview.targets_total > 0}
+			<div id={SECTION.vulns} class="scroll-mt-4">
+				<VulnerabilityPanel
+					{overview}
+					window={dashboardStore.window}
+					filter={queueFilter}
+					onFilter={(f) => (queueFilter = f)}
+				/>
+			</div>
+			<div id={SECTION.exposure} class="scroll-mt-4">
+				<ExposurePanel exposure={overview.exposure} sensitive={overview.sensitive} />
+			</div>
+			{#if overview.runs_total > 0}
+				<div id={SECTION.changes} class="scroll-mt-4">
+					<ChangesPanel
+						{overview}
+						window={dashboardStore.window}
+						metric={chartMetric ?? defaultMetric}
+						onMetric={(m) => (chartMetric = m)}
+					/>
+				</div>
+			{/if}
+		{/if}
 	{/if}
 </div>
 
 <AddTargetModal bind:open={addTargetOpen} />
+<LaunchDialog bind:open={launchOpen} targetIds={launchTargetIds} />
+<ScheduleModal bind:open={scheduleOpen} presetTargetIds={scheduleTargetIds} />

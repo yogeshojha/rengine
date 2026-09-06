@@ -78,6 +78,12 @@ SCAN_TOOLS: tuple[ToolSpec, ...] = (
         phase="DNS Resolution",
         example="-rcode noerror",
     ),
+    ToolSpec(
+        name="alterx",
+        label="Alterx",
+        phase="Subdomain Discovery",
+        example="-p '{{sub}}-{{word}}.{{suffix}}'",
+    ),
 )
 
 TOOL_NAMES: frozenset[str] = frozenset(t.name for t in SCAN_TOOLS)

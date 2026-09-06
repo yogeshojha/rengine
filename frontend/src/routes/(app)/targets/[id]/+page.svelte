@@ -258,7 +258,8 @@
 				target_id: targetId,
 				size: HISTORY_SIZE,
 				sort_by: 'started',
-				sort_dir: 'desc'
+				sort_dir: 'desc',
+				include_focused: true
 			});
 			history = res.items;
 		} catch {

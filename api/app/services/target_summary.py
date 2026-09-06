@@ -38,6 +38,7 @@ from shared.models.target_summary import (
     TargetSummaryRead,
 )
 from shared.models.vulnerability import SeverityCount, Vulnerability
+from shared.services.scan_scope import census_only
 from shared.services.schedule_timing import describe_schedule
 from stages.registry import stages
 
@@ -109,7 +110,11 @@ class TargetSummaryService:
     async def _runs(self, target_id: UUID, project_id: UUID) -> list[Scan]:
         result = await self.session.execute(
             select(Scan)
-            .where(Scan.target_id == target_id, Scan.project_id == project_id)
+            .where(
+                Scan.target_id == target_id,
+                Scan.project_id == project_id,
+                census_only(),
+            )
             .order_by(func.coalesce(Scan.started_at, Scan.created_at).desc())
         )
         return list(result.scalars().all())

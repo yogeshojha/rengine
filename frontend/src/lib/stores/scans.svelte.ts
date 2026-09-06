@@ -24,6 +24,7 @@ interface ScanFilters {
 	sortKey: ScanSortKey;
 	sortDir: ScanSortDir;
 	scheduled: boolean | null;
+	includeFocused: boolean;
 }
 
 export type ScheduleMode = 'all' | 'scheduled' | 'manual';
@@ -44,7 +45,8 @@ function defaultFilters(): ScanFilters {
 		timeRange: 'all',
 		sortKey: 'started',
 		sortDir: 'desc',
-		scheduled: null
+		scheduled: null,
+		includeFocused: false
 	};
 }
 
@@ -95,7 +97,8 @@ function createScansStore() {
 			time_range: filters.timeRange,
 			sort_by: filters.sortKey,
 			sort_dir: filters.sortDir,
-			scheduled: filters.scheduled ?? undefined
+			scheduled: filters.scheduled ?? undefined,
+			include_focused: filters.includeFocused || undefined
 		};
 	}
 
@@ -290,6 +293,13 @@ function createScansStore() {
 
 		setScheduleMode(mode: ScheduleMode) {
 			filters.scheduled = mode === 'all' ? null : mode === 'scheduled';
+			reload();
+		},
+		get includeFocused() {
+			return filters.includeFocused;
+		},
+		setIncludeFocused(value: boolean) {
+			filters.includeFocused = value;
 			reload();
 		},
 

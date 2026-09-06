@@ -22,6 +22,7 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
+	import SelectionBar from './table/selection-bar.svelte';
 	import GroupList from './table/group-list.svelte';
 	import FilterBar from './ips/filter-bar.svelte';
 	import IpRow from './ips/ip-row.svelte';
@@ -30,6 +31,11 @@
 
 	import { ipsApi } from '$lib/api/scan-results';
 	import { servicesOn } from '$lib/utilities/service-lookup';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
+	import { seedKindFor } from '$lib/utilities/rechecks';
+	import { rechecks } from '$lib/stores/rechecks.svelte';
+	import { startRescan } from '$lib/utilities/rechecks';
+	import { SurfaceDimension } from '$lib/config/surface';
 	import { ipQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import {
@@ -54,6 +60,8 @@
 
 	interface Props {
 		scanId: string;
+		targetId?: string;
+		targetType?: string;
 		projectId: string;
 		active?: boolean;
 		onTab?: (tab: string, filter?: string) => void;
@@ -63,6 +71,8 @@
 
 	let {
 		scanId,
+		targetId = '',
+		targetType = '',
 		projectId,
 		active = true,
 		onTab,
@@ -469,6 +479,40 @@
 			cursor = -1;
 		}
 	}
+
+	let rescanBusy = $state(false);
+
+	$effect(() => {
+		if (!active || !scanId || !projectId) return;
+		void rechecks.loadSchema();
+		untrack(() => rechecks.load(scanId, projectId));
+	});
+
+	async function rescanSelection() {
+		if (rescanBusy) return;
+		const assets = items.filter((g) => checkedIps.has(g.ip)).map((g) => g.ip);
+		if (!assets.length) return;
+		rescanBusy = true;
+		const ok = await startRescan(
+			projectId,
+			{
+				parent_scan_id: scanId,
+				dimension: SurfaceDimension.IPS,
+				assets
+			},
+			'address',
+			'addresses'
+		);
+		if (ok) checkedIps.clear();
+		rescanBusy = false;
+	}
+
+	let rescanOptionsFor = $state<string[] | null>(null);
+
+	function openRescanOptions() {
+		const assets = items.filter((g) => checkedIps.has(g.ip)).map((g) => g.ip);
+		if (assets.length) rescanOptionsFor = assets;
+	}
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -549,6 +593,18 @@
 				Clear all
 			</button>
 		</div>
+	{/if}
+
+	{#if !groupBy}
+		<SelectionBar
+			count={checkedCount}
+			noun="address"
+			nounPlural="addresses"
+			busy={rescanBusy}
+			onRescan={rescanSelection}
+			onOptions={openRescanOptions}
+			onClear={() => checkedIps.clear()}
+		/>
 	{/if}
 
 	{#if loading && items.length === 0 && !groupBy}
@@ -637,6 +693,7 @@
 						onHosts={showHosts}
 						onServices={showServices}
 						loadServices={(ip) => servicesOn(projectId, scanId, 'ip', ip)}
+						recheck={rechecks.latest(scanId, g.ip)}
 					/>
 				{/each}
 			</div>
@@ -673,4 +730,22 @@
 	onFilter={applyDsl}
 	onHosts={showHosts}
 	onServices={showServices}
+/>
+
+<LaunchDialog
+	open={rescanOptionsFor !== null}
+	rescan={rescanOptionsFor
+		? {
+				parentScanId: scanId,
+				targetId,
+				dimension: SurfaceDimension.IPS,
+				targetType,
+				seedKind: seedKindFor(rechecks.schema, SurfaceDimension.IPS),
+				assets: rescanOptionsFor
+			}
+		: null}
+	onClose={() => {
+		rescanOptionsFor = null;
+		checkedIps.clear();
+	}}
 />

@@ -4,6 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import CornerDownLeft from '@lucide/svelte/icons/corner-down-left';
 	import Play from '@lucide/svelte/icons/play';
+	import X from '@lucide/svelte/icons/x';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Kbd from '$lib/components/ui/kbd';
 	import { Button } from '$lib/components/ui/button';
@@ -24,7 +25,9 @@
 	import type { PreviewPhase, ScanPreview, ScanRead } from '$lib/types/scan';
 	import type { Target } from '$lib/types/target';
 	import { mostRecentEngine, readLastPlan, rememberLastPlan } from '$lib/utilities/launch-plan';
-	import { LaunchState } from './launch-state.svelte';
+	import { rechecks } from '$lib/stores/rechecks.svelte';
+	import { stagesForDimension } from '$lib/utilities/rechecks';
+	import { LaunchState, type RescanSeed } from './launch-state.svelte';
 	import { chipFor, INVALID_TARGET_MESSAGE, resolveTargetValue, TARGET_FORMATS } from './targets';
 	import TargetPicker from './target-picker.svelte';
 	import PlanPicker from './plan-picker.svelte';
@@ -41,6 +44,7 @@
 		presetEngineId?: string;
 		presetContextId?: string;
 		rerun?: ScanRead | null;
+		rescan?: Omit<RescanSeed, 'rescannable'> | null;
 		onClose?: () => void;
 	}
 
@@ -52,6 +56,7 @@
 		presetEngineId,
 		presetContextId,
 		rerun = null,
+		rescan = null,
 		onClose
 	}: Props = $props();
 
@@ -83,10 +88,14 @@
 	let busy = $derived(launching || targetsLoading);
 	let firstTarget = $derived(launch.targets[0] ?? null);
 	let launchLabel = $derived(
-		launch.targets.length > 1 ? `Start ${launch.targets.length} scans` : 'Start scan'
+		launch.rescan
+			? `Rescan ${launch.rescan.assets.length} ${launch.rescan.assets.length === 1 ? 'asset' : 'assets'}`
+			: launch.targets.length > 1
+				? `Start ${launch.targets.length} scans`
+				: 'Start scan'
 	);
 	let canSaveEngine = $derived(
-		launch.mode === 'quick' && !!launch.catalog && launch.runningStages.length > 0
+		!launch.rescan && launch.mode === 'quick' && !!launch.catalog && launch.runningStages.length > 0
 	);
 	// the engine pipeline shows what the engine decides, not what the target type rules out
 	let enginePipeline = $derived(
@@ -118,15 +127,25 @@
 			if (scanEnginesStore.fetchedProjectId !== p.id) scanEnginesStore.fetchEngines(p.id);
 			if (scanContextsStore.fetchedProjectId !== p.id) scanContextsStore.fetchContexts(p.id);
 			if (!engineCatalogStore.hasFetched) engineCatalogStore.fetch();
-			loadTargets(p.slug);
+			if (rescan) void rechecks.loadSchema();
+			else loadTargets(p.slug);
 		});
 	});
 
 	$effect(() => {
 		if (!open || planRestored || !enginesReady || !catalogReady) return;
+		if (rescan && !rechecks.schema) return;
 		planRestored = true;
-		untrack(restorePlan);
+		untrack(() => (rescan ? startRescan(rescan) : restorePlan()));
 	});
+
+	function startRescan(seed: Omit<RescanSeed, 'rescannable'>) {
+		const schema = rechecks.schema;
+		launch.beginRescan(
+			{ ...seed, rescannable: schema?.rescannable_stages ?? [] },
+			stagesForDimension(schema, seed.dimension)
+		);
+	}
 
 	$effect(() => {
 		if (!open) return;
@@ -262,6 +281,10 @@
 		if (!p || !launch.canLaunch || busy) return;
 		launching = true;
 		try {
+			if (launch.rescan) {
+				await launchRescan(p.id);
+				return;
+			}
 			const created = await scansStore.launchScans(p.id, launch.body());
 			if (!created) {
 				toast.error(scansStore.error ?? 'Failed to launch scan');
@@ -284,6 +307,21 @@
 			goto(created.length === 1 ? ROUTES.scan(created[0].id) : ROUTES.scans);
 		} finally {
 			launching = false;
+		}
+	}
+
+	async function launchRescan(projectId: string) {
+		const body = launch.rescanBody();
+		if (!body) return;
+		try {
+			await rechecks.rescan(projectId, body);
+			const n = body.assets.length;
+			toast.success(`Rechecking ${n} ${n === 1 ? 'asset' : 'assets'}`, {
+				description: 'Results land on the rows as they arrive.'
+			});
+			close();
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Rescan could not start');
 		}
 	}
 
@@ -315,9 +353,11 @@
 	>
 		{#if view === 'launch'}
 			<Dialog.Header class="px-6 pt-6 pb-0">
-				<Dialog.Title>New scan</Dialog.Title>
+				<Dialog.Title>{launch.rescan ? 'Rescan' : 'New scan'}</Dialog.Title>
 				<Dialog.Description class="sr-only">
-					Choose targets and a configuration, then start the scan.
+					{launch.rescan
+						? 'Choose what to re-run against the selected assets.'
+						: 'Choose targets and a configuration, then start the scan.'}
 				</Dialog.Description>
 			</Dialog.Header>
 
@@ -325,19 +365,50 @@
 				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-10rem)]"
 			>
 				<div class="flex flex-col gap-5 px-6 pt-5 pb-4">
-					<div class="flex flex-col gap-2">
-						<Label>Targets</Label>
-						{#if project}
-							<TargetPicker
-								chips={launch.targets}
-								projectSlug={project.slug}
-								disabled={launching}
-								loading={targetsLoading}
-								onAdd={(chip) => launch.addTarget(chip)}
-								onRemove={(key) => launch.removeTarget(key)}
-							/>
-						{/if}
-					</div>
+					{#if launch.rescan}
+						<div class="flex flex-col gap-2">
+							<Label>
+								Assets
+								<span class="ml-1 font-normal text-muted-foreground">
+									from the run that found them
+								</span>
+							</Label>
+							<div
+								class="flex max-h-32 flex-wrap gap-1.5 overflow-y-auto rounded-md border bg-muted/20 p-2"
+							>
+								{#each launch.rescan.assets as asset (asset)}
+									<span
+										class="inline-flex items-center gap-1.5 rounded-md border bg-background py-0.5 pr-1 pl-2 font-mono text-xs"
+									>
+										{asset}
+										<button
+											type="button"
+											class="rounded-sm px-0.5 text-muted-foreground hover:text-foreground"
+											aria-label="Remove {asset}"
+											disabled={launching}
+											onclick={() => launch.removeAsset(asset)}
+										>
+											<X class="size-3" />
+										</button>
+									</span>
+								{/each}
+							</div>
+						</div>
+					{:else}
+						<div class="flex flex-col gap-2">
+							<Label>Targets</Label>
+							{#if project}
+								<TargetPicker
+									chips={launch.targets}
+									projectSlug={project.slug}
+									disabled={launching}
+									loading={targetsLoading}
+									onAdd={(chip) => launch.addTarget(chip)}
+									onRemove={(key) => launch.removeTarget(key)}
+								/>
+							{/if}
+						</div>
+					{/if}
 
 					<PlanPicker
 						{launch}

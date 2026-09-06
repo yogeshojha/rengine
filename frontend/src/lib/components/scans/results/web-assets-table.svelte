@@ -25,6 +25,7 @@
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
+	import SelectionBar from './table/selection-bar.svelte';
 	import GroupList from './table/group-list.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
 	import HostStructureDialog from './web-assets/host-structure-dialog.svelte';
@@ -36,6 +37,10 @@
 
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { servicesOn } from '$lib/utilities/service-lookup';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
+	import { seedKindFor } from '$lib/utilities/rechecks';
+	import { rechecks } from '$lib/stores/rechecks.svelte';
+	import { SurfaceDimension } from '$lib/config/surface';
 	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import type { SubdomainRead } from '$lib/types/subdomain';
@@ -57,6 +62,8 @@
 
 	interface Props {
 		scanId: string;
+		targetId?: string;
+		targetType?: string;
 		projectId: string;
 		apex?: string;
 		active?: boolean;
@@ -66,6 +73,8 @@
 
 	let {
 		scanId,
+		targetId = '',
+		targetType = '',
 		projectId,
 		apex = '',
 		active = true,
@@ -493,6 +502,39 @@
 			)
 			.then((r) => r.items.map((i) => i.name));
 	}
+	let rescanBusy = $state(false);
+
+	$effect(() => {
+		if (!active || !scanId || !projectId) return;
+		void rechecks.loadSchema();
+		untrack(() => rechecks.load(scanId, projectId));
+	});
+
+	async function rescan(hosts: string[]) {
+		if (!hosts.length || rescanBusy) return;
+		rescanBusy = true;
+		try {
+			await rechecks.rescan(projectId, {
+				parent_scan_id: scanId,
+				dimension: SurfaceDimension.WEB_ASSETS,
+				assets: hosts
+			});
+			checkedIds.clear();
+			toast.success(`Rechecking ${hosts.length} ${hosts.length === 1 ? 'host' : 'hosts'}`, {
+				description: 'Results land on the rows as they arrive.'
+			});
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Rescan could not start');
+		} finally {
+			rescanBusy = false;
+		}
+	}
+
+	function rescanSelection() {
+		const hosts = items.filter((s) => checkedIds.has(s.id)).map((s) => s.name);
+		void rescan(hosts.length ? hosts : cursor >= 0 && items[cursor] ? [items[cursor].name] : []);
+	}
+
 	function scrollCursor() {
 		document.querySelector(`[data-row-index="${cursor}"]`)?.scrollIntoView({ block: 'nearest' });
 	}
@@ -517,9 +559,19 @@
 			scrollCursor();
 		} else if (e.key === 'Enter' && cursor >= 0 && items[cursor]) {
 			open(items[cursor]);
+		} else if (e.key === 'r') {
+			e.preventDefault();
+			rescanSelection();
 		} else if (e.key === 'Escape') {
 			cursor = -1;
 		}
+	}
+
+	let rescanOptionsFor = $state<string[] | null>(null);
+
+	function openRescanOptions() {
+		const assets = items.filter((s) => checkedIds.has(s.id)).map((s) => s.name);
+		if (assets.length) rescanOptionsFor = assets;
 	}
 </script>
 
@@ -612,6 +664,18 @@
 				Clear all
 			</button>
 		</div>
+	{/if}
+
+	{#if !groupBy}
+		<SelectionBar
+			count={checkedCount}
+			noun="web asset"
+			nounPlural="web assets"
+			busy={rescanBusy}
+			onRescan={rescanSelection}
+			onOptions={openRescanOptions}
+			onClear={() => checkedIds.clear()}
+		/>
 	{/if}
 
 	{#if loading && items.length === 0 && !groupBy}
@@ -711,6 +775,9 @@
 						onServices={onTab ? showServices : undefined}
 						onVulns={onTab ? showVulns : undefined}
 						onStructure={(sub) => (structureHost = sub.name)}
+						recheck={rechecks.latest(scanId, s.name)}
+						onRescan={(sub) => rescan([sub.name])}
+						onRescanOptions={(sub) => (rescanOptionsFor = [sub.name])}
 					/>
 				{/each}
 			</div>
@@ -759,4 +826,22 @@
 	{projectId}
 	{scanId}
 	onOpenEndpoints={onTab ? (h) => onTab('endpoints', exactToken('host', h)) : undefined}
+/>
+
+<LaunchDialog
+	open={rescanOptionsFor !== null}
+	rescan={rescanOptionsFor
+		? {
+				parentScanId: scanId,
+				targetId,
+				dimension: SurfaceDimension.WEB_ASSETS,
+				targetType,
+				seedKind: seedKindFor(rechecks.schema, SurfaceDimension.WEB_ASSETS),
+				assets: rescanOptionsFor
+			}
+		: null}
+	onClose={() => {
+		rescanOptionsFor = null;
+		checkedIds.clear();
+	}}
 />

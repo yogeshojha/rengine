@@ -55,6 +55,8 @@
 	import TechIcon from './tech-icon.svelte';
 	import OverflowPopover from './table/overflow-popover.svelte';
 	import HostStructure from './web-assets/host-structure.svelte';
+	import RecheckHistory from './recheck-history.svelte';
+	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { httpAssetsApi } from '$lib/api/scan-results';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import type { SubdomainRead } from '$lib/types/subdomain';
@@ -115,6 +117,7 @@
 	const MAX_HOSTS = 16;
 
 	let tab = $state('overview');
+	let recheckCount = $derived(sub ? rechecks.history(scanId, sub.name).length : 0);
 	let contentEl = $state<HTMLElement | null>(null);
 	let detail = $state<HttpAssetDetail | null>(null);
 	let detailLoading = $state(false);
@@ -368,6 +371,9 @@
 				<Tabs.List
 					class="h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0 px-2"
 				>
+					{#if recheckCount}
+						{@render tabTrigger('rechecks', 'Re-checks', recheckCount)}
+					{/if}
 					{@render tabTrigger('overview', 'Overview', null)}
 					{@render tabTrigger('http', 'HTTP', null)}
 					{@render tabTrigger('services', 'Services', hostAssets.length + ports.length || null)}
@@ -376,6 +382,10 @@
 				</Tabs.List>
 
 				<ScrollArea class="min-h-0 flex-1">
+					<Tabs.Content value="rechecks" class="m-0 p-5">
+						<RecheckHistory {scanId} assetKey={sub.name} />
+					</Tabs.Content>
+
 					<Tabs.Content value="overview" class="m-0 flex flex-col gap-6 p-5">
 						{#if sub.screenshot_path}
 							<ScreenshotThumb

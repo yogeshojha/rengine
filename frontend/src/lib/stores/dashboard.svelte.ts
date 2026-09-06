@@ -1,65 +1,67 @@
 import { dashboardApi } from '$lib/api/dashboard';
-import { scansApi } from '$lib/api/scans';
-import type { DashboardSignals } from '$lib/types/dashboard';
-import type { ScanChanges, ScanChangeWindow } from '$lib/types/scan';
+import {
+	DEFAULT_DASHBOARD_WINDOW,
+	type DashboardDiscovery,
+	type DashboardOverview,
+	type DashboardWindow
+} from '$lib/types/dashboard';
 
 function createDashboardStore() {
 	let projectId = $state<string | undefined>(undefined);
-	let signals = $state<DashboardSignals | null>(null);
-	let changes = $state<ScanChanges | null>(null);
-	let changeWindow = $state<ScanChangeWindow>('7d');
-	let loadingSignals = $state(false);
-	let signalsError = $state<string | null>(null);
+	let overview = $state<DashboardOverview | null>(null);
+	let discovery = $state<DashboardDiscovery | null>(null);
+	let changeWindow = $state<DashboardWindow>(DEFAULT_DASHBOARD_WINDOW);
+	let loading = $state(false);
+	let error = $state<string | null>(null);
 	let hasFetched = $state(false);
+	let seq = 0;
 
-	function fetchSignals() {
-		const pid = projectId;
-		if (!pid) return;
-		loadingSignals = true;
-		dashboardApi
-			.signals(pid)
-			.then((s) => {
-				if (pid !== projectId) return;
-				signals = s;
-				signalsError = null;
-				hasFetched = true;
-			})
-			.catch((e) => {
-				if (pid === projectId)
-					signalsError = e instanceof Error ? e.message : 'Failed to load signals';
-			})
-			.finally(() => {
-				if (pid === projectId) loadingSignals = false;
-			});
-	}
-
-	function fetchChanges() {
+	async function load() {
 		const pid = projectId;
 		const win = changeWindow;
 		if (!pid) return;
-		scansApi
-			.changes(pid, win)
-			.then((c) => {
-				if (pid === projectId && win === changeWindow) changes = c;
-			})
-			.catch(() => {});
+		const mySeq = ++seq;
+		loading = true;
+		try {
+			const data = await dashboardApi.overview(pid, win);
+			if (mySeq !== seq) return;
+			overview = data;
+			error = null;
+			hasFetched = true;
+		} catch (e) {
+			if (mySeq !== seq) return;
+			error = e instanceof Error ? e.message : 'Failed to load the dashboard';
+		} finally {
+			if (mySeq === seq) loading = false;
+		}
+		void loadDiscovery(pid, mySeq);
+	}
+
+	// the certificate walk is the one slow rollup, so it lands after the page has painted
+	async function loadDiscovery(pid: string, mySeq: number) {
+		try {
+			const data = await dashboardApi.discovery(pid);
+			if (mySeq === seq) discovery = data;
+		} catch {
+			if (mySeq === seq) discovery = null;
+		}
 	}
 
 	return {
-		get signals() {
-			return signals;
+		get overview() {
+			return overview;
 		},
-		get changes() {
-			return changes;
+		get discovery() {
+			return discovery;
 		},
-		get changeWindow() {
+		get window() {
 			return changeWindow;
 		},
-		get loadingSignals() {
-			return loadingSignals;
+		get loading() {
+			return loading;
 		},
-		get signalsError() {
-			return signalsError;
+		get error() {
+			return error;
 		},
 		get hasFetched() {
 			return hasFetched;
@@ -67,46 +69,39 @@ function createDashboardStore() {
 
 		init(pid: string) {
 			if (pid === projectId) {
-				if (!hasFetched && !loadingSignals) {
-					fetchSignals();
-					fetchChanges();
-				}
+				if (!hasFetched && !loading) void load();
 				return;
 			}
 			projectId = pid;
-			signals = null;
-			changes = null;
-			signalsError = null;
+			overview = null;
+			discovery = null;
+			error = null;
 			hasFetched = false;
-			fetchSignals();
-			fetchChanges();
+			void load();
 		},
 
 		refresh() {
-			fetchSignals();
-			fetchChanges();
+			void load();
 		},
 
 		markStale() {
 			hasFetched = false;
 		},
 
-		setChangeWindow(win: ScanChangeWindow) {
+		setWindow(win: DashboardWindow) {
+			if (win === changeWindow) return;
 			changeWindow = win;
-			fetchChanges();
-		},
-
-		retrySignals() {
-			fetchSignals();
+			void load();
 		},
 
 		clear() {
+			seq++;
 			projectId = undefined;
-			signals = null;
-			changes = null;
-			changeWindow = '7d';
-			loadingSignals = false;
-			signalsError = null;
+			overview = null;
+			discovery = null;
+			changeWindow = DEFAULT_DASHBOARD_WINDOW;
+			loading = false;
+			error = null;
 			hasFetched = false;
 		}
 	};

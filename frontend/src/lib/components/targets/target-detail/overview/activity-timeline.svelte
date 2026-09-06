@@ -6,7 +6,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { TargetType, type Target } from '$lib/types/target';
 	import { TaskStatus } from '$lib/types/task-status';
-	import type { ScanRead, ScanStatus } from '$lib/types/scan';
+	import type { ScanRead } from '$lib/types/scan';
 	import type { TargetSummaryRead } from '$lib/types/target-summary';
 	import type { LiveRun } from '$lib/stores/live-scans.svelte';
 	import {
@@ -14,7 +14,9 @@
 		elapsedSeconds,
 		formatSeconds,
 		isLiveStatus,
-		SCAN_STATUS_LABEL
+		SCAN_STATUS_DOT,
+		SCAN_STATUS_LABEL,
+		SCAN_STATUS_PILL
 	} from '$lib/utilities/scan-status';
 
 	interface Props {
@@ -37,21 +39,6 @@
 		{ key: 'ips_found', spec: SURFACE[SurfaceDimension.IPS] },
 		{ key: 'vulnerabilities_found', spec: SURFACE[SurfaceDimension.VULNERABILITIES] }
 	];
-	const DOT: Record<ScanStatus, string> = {
-		completed: 'border-success bg-success',
-		cancelled: 'border-warning bg-warning',
-		failed: 'border-destructive bg-destructive',
-		running:
-			'border-info bg-info shadow-[0_0_0_4px_color-mix(in_oklch,var(--info)_18%,transparent)]',
-		pending: 'border-muted-foreground bg-card'
-	};
-	const PILL: Record<ScanStatus, string> = {
-		completed: 'bg-success/10 text-success',
-		cancelled: 'bg-warning/12 text-warning',
-		failed: 'bg-destructive/10 text-destructive',
-		running: 'bg-info/10 text-info',
-		pending: 'bg-muted text-muted-foreground'
-	};
 	const fmtTime = (iso: string) =>
 		new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 	const fmtDay = (iso: string) => {
@@ -61,15 +48,22 @@
 		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 	};
 
-	let runs = $derived(
-		[...history]
-			.sort(
-				(a, b) =>
-					new Date(b.started_at ?? b.created_at).getTime() -
-					new Date(a.started_at ?? a.created_at).getTime()
-			)
-			.slice(0, SHOWN)
-	);
+	const started = (s: ScanRead) => new Date(s.started_at ?? s.created_at).getTime();
+
+	// focused rescans hang off the run that seeded them, never on the rail of their own
+	let runs = $derived.by(() => {
+		const sorted = [...history].sort((a, b) => started(b) - started(a));
+		const census = sorted.filter((s) => s.scope !== 'focused').slice(0, SHOWN);
+		const shown = new Set(census.map((s) => s.id));
+		const children = new Map<string, ScanRead[]>();
+		for (const s of sorted) {
+			if (s.scope !== 'focused' || !s.parent_scan_id || !shown.has(s.parent_scan_id)) continue;
+			const bucket = children.get(s.parent_scan_id);
+			if (bucket) bucket.push(s);
+			else children.set(s.parent_scan_id, [s]);
+		}
+		return census.map((scan) => ({ scan, rescans: (children.get(scan.id) ?? []).slice(0, 4) }));
+	});
 	let total = $derived(summary?.scans_total ?? history.length);
 
 	function detailFor(s: ScanRead): string {
@@ -146,7 +140,7 @@
 		</div>
 	{:else}
 		<ol class="flex flex-col">
-			{#each runs as s (s.id)}
+			{#each runs as { scan: s, rescans } (s.id)}
 				{@const started = s.started_at ?? s.created_at}
 				{@const counts = countsFor(s)}
 				<li class="grid grid-cols-[5.5rem_1.25rem_minmax(0,1fr)] gap-x-2.5">
@@ -156,7 +150,9 @@
 					</span>
 					<span class="relative flex justify-center">
 						<span class="z-[1] flex h-5 items-center"
-							><span class="size-2.5 rounded-full border-2 {DOT[s.status]}" aria-hidden="true"
+							><span
+								class="size-2.5 rounded-full border-2 {SCAN_STATUS_DOT[s.status]}"
+								aria-hidden="true"
 							></span></span
 						>
 						<span
@@ -168,7 +164,7 @@
 						<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
 							<a href={ROUTES.scan(s.id)} class="font-semibold hover:underline">{s.engine_name}</a>
 							<span
-								class="rounded-full px-[7px] text-[11px] font-semibold tracking-[0.02em] {PILL[
+								class="rounded-full px-[7px] text-[11px] font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
 									s.status
 								]}"
 							>
@@ -191,6 +187,41 @@
 						{/if}
 					</span>
 				</li>
+				{#each rescans as r (r.id)}
+					<li class="grid grid-cols-[5.5rem_1.25rem_1.25rem_minmax(0,1fr)] gap-x-2.5">
+						<span class="pt-0.5 text-right text-xs leading-tight text-muted-foreground">
+							{fmtTime(r.started_at ?? r.created_at)}
+						</span>
+						<span class="relative flex justify-center">
+							<span class="absolute -top-1 -bottom-1 left-1/2 border-l-2 border-dotted"></span>
+						</span>
+						<span class="relative flex justify-center">
+							<span
+								class="absolute top-[9px] -left-[calc(1.25rem-1px)] w-[calc(0.625rem+1px)] border-t-2 border-dotted"
+								aria-hidden="true"
+							></span>
+							<span class="z-[1] flex h-5 items-center">
+								<span
+									class="size-2 rounded-full border-2 border-primary bg-background"
+									aria-hidden="true"
+								></span>
+							</span>
+						</span>
+						<span class="flex min-w-0 flex-col gap-1 pb-3.5">
+							<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+								<a href={ROUTES.scan(r.id)} class="font-medium hover:underline">{r.engine_name}</a>
+								<span
+									class="rounded-full px-[7px] text-[11px] font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
+										r.status
+									]}"
+								>
+									{SCAN_STATUS_LABEL[r.status]}
+								</span>
+								<span class="text-muted-foreground">{detailFor(r)}</span>
+							</span>
+						</span>
+					</li>
+				{/each}
 			{/each}
 			<li class="grid grid-cols-[5.5rem_1.25rem_minmax(0,1fr)] gap-x-2.5">
 				<span class="pt-0.5 text-right text-xs leading-tight text-muted-foreground">

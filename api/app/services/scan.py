@@ -18,6 +18,7 @@ from app.services.scan_engine import ScanEngineService, stage_effects
 from app.services.target import TargetService
 from shared.config import BaseAppSettings
 from shared.definitions.notifications import scan_cancelled
+from shared.definitions.rescan import ASSET_SEED_STAGE, rescan_label
 from shared.enums.api_key import APIProvider
 from shared.enums.scan import SCAN_LIVE_STATUSES, ScanActivityStatus, ScanStatus
 from shared.models.api_key import APIKey
@@ -63,6 +64,7 @@ from shared.services.scan_resolve import (
     merge_engine_context,
     redact_command,
 )
+from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
 from shared.utils.validation import validate_target
 
@@ -249,8 +251,20 @@ class ScanService:
             overrides=data.overrides,
             intensity=data.intensity,
         )
+        seeds = list(getattr(data, "seed_assets", None) or [])
+        if seeds:
+            resolved.seed_assets = [seed.model_dump() for seed in seeds]
+            resolved.stages[ASSET_SEED_STAGE] = {
+                **(resolved.stages.get(ASSET_SEED_STAGE) or {}),
+                "enabled": True,
+            }
         if engine.id is None:
-            engine = replace(engine, name=plan_label(resolved))
+            label = (
+                rescan_label(data.dimension or "", len(seeds))
+                if seeds
+                else plan_label(resolved)
+            )
+            engine = replace(engine, name=label)
         return engine, resolved
 
     async def _launch_target(
@@ -407,6 +421,8 @@ class ScanService:
             created_by=created_by,
             schedule_id=schedule_id,
             schedule_type=schedule_type,
+            parent_scan_id=data.parent_scan_id,
+            dimension=data.dimension,
         )
         self.session.add(scan)
         await self.session.commit()
@@ -505,8 +521,11 @@ class ScanService:
         engines: list[str] | None,
         contexts: list[str] | None,
         time_range: str | None,
+        include_focused: bool = False,
     ) -> list:
         conds: list = []
+        if not include_focused:
+            conds.append(census_only(m))
         if statuses:
             conds.append(m.status.in_(statuses))
         if engines:
@@ -531,10 +550,13 @@ class ScanService:
         sort_dir: ScanSortDir = "desc",
         schedule_id: UUID | None = None,
         scheduled: bool | None = None,
+        include_focused: bool = False,
     ) -> Select:
         query = select(Scan).where(
             Scan.project_id == project_id,
-            *self._filter_conditions(Scan, statuses, engines, contexts, time_range),
+            *self._filter_conditions(
+                Scan, statuses, engines, contexts, time_range, include_focused
+            ),
         )
         if target_id is not None:
             query = query.where(Scan.target_id == target_id)
@@ -637,6 +659,7 @@ class ScanService:
         sort_by: ScanSortKey = "started",
         sort_dir: ScanSortDir = "desc",
         scheduled: bool | None = None,
+        include_focused: bool = False,
     ) -> list[ScanExportRow]:
         query = self.build_list_query(
             project_id=project_id,
@@ -649,6 +672,7 @@ class ScanService:
             sort_by=sort_by,
             sort_dir=sort_dir,
             scheduled=scheduled,
+            include_focused=include_focused,
         ).limit(MAX_SCAN_EXPORT)
         result = await self.session.execute(query)
         return [
@@ -908,8 +932,15 @@ class ScanService:
             failed_runs=failed_runs,
         )
 
-    async def stats(self, project_id: UUID, target_id: UUID | None = None) -> ScanStats:
+    async def stats(
+        self,
+        project_id: UUID,
+        target_id: UUID | None = None,
+        include_focused: bool = False,
+    ) -> ScanStats:
         conds = [Scan.project_id == project_id]
+        if not include_focused:
+            conds.append(census_only())
         if target_id is not None:
             conds.append(Scan.target_id == target_id)
 
@@ -1210,6 +1241,9 @@ class ScanService:
             context_name=scan.context_name,
             schedule_id=scan.schedule_id,
             schedule_type=scan.schedule_type,
+            scope=scan.scope,
+            parent_scan_id=scan.parent_scan_id,
+            seed_count=len((scan.execution_config or {}).get("seed_assets") or []),
             execution_config=resolved,
             auth_summary=_auth_summary(auth, list(masked.get("headers", {}).keys())),
             status=scan.status,

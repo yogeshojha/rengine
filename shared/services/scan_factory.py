@@ -1,6 +1,6 @@
 import uuid
 
-from shared.enums.scan import ScanStatus
+from shared.enums.scan import ScanScope, ScanStatus
 from shared.models.scan import Scan
 from shared.services.proxy_resolve import resolve_proxy_url
 from shared.services.scan_resolve import (
@@ -24,9 +24,13 @@ def build_scan_row(
     created_by: uuid.UUID,
     schedule_id: uuid.UUID | None = None,
     schedule_type: str | None = None,
+    parent_scan_id: uuid.UUID | None = None,
+    dimension: str | None = None,
 ) -> Scan:
     """Assemble an unsaved PENDING Scan from an already-resolved config."""
     execution_config = resolved.model_dump()
+    if dimension:
+        execution_config["_dimension"] = dimension
     execution_config["_auth_header_names"] = list(resolved._auth_header_names)
     execution_config["_auth"] = (
         _mask_auth(context.auth) if context is not None else {"auth_type": "none"}
@@ -48,6 +52,10 @@ def build_scan_row(
         created_by=created_by,
         schedule_id=schedule_id,
         schedule_type=schedule_type,
+        scope=(
+            ScanScope.FOCUSED.value if resolved.seed_assets else ScanScope.FULL.value
+        ),
+        parent_scan_id=parent_scan_id,
     )
 
 

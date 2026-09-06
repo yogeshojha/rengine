@@ -14,6 +14,7 @@ import {
 	type StageCatalogEntry,
 	type StageConfig
 } from '$lib/types/scan-engine';
+import type { RescanCreate } from '$lib/types/recheck';
 import { summarize, type EngineSummary } from '$lib/utilities/engine-summary';
 import {
 	CAPABILITY,
@@ -28,6 +29,23 @@ import {
 	type StoredPlan
 } from '$lib/utilities/launch-plan';
 
+export interface RescanSeed {
+	parentScanId: string;
+	targetId: string;
+	dimension: string;
+	targetType: string;
+	seedKind: string;
+	assets: string[];
+	rescannable: readonly string[];
+	templateIds?: string[];
+}
+
+// what asset_seed hands the pipeline, so the solver never implies a discovery stage
+const SEED_KINDS: Record<string, readonly string[]> = {
+	host: ['hosts', 'addresses'],
+	address: ['addresses']
+};
+
 export interface TargetChip {
 	key: string;
 	id: string | null;
@@ -37,6 +55,7 @@ export interface TargetChip {
 
 export class LaunchState {
 	targets = $state<TargetChip[]>([]);
+	rescan = $state<RescanSeed | null>(null);
 	mode = $state<LaunchMode>('quick');
 	engineId = $state<string | null>(null);
 	patch = $state<StageOverrides>({});
@@ -59,11 +78,23 @@ export class LaunchState {
 	readonly effective = $derived(mergeStages(this.baseline, this.patch));
 	readonly baseIntensity = $derived<Intensity>(this.engine?.intensity ?? DEFAULT_INTENSITY);
 	readonly runIntensity = $derived<Intensity>(this.intensity ?? this.baseIntensity);
-	readonly targetTypes = $derived([...new SvelteSet(this.targets.map((t) => t.type))]);
-	readonly lensType = $derived(this.targets[0]?.type ?? null);
+	readonly targetTypes = $derived(
+		this.rescan ? [this.rescan.targetType] : [...new SvelteSet(this.targets.map((t) => t.type))]
+	);
+	readonly lensType = $derived(this.rescan?.targetType ?? this.targets[0]?.type ?? null);
+	readonly seedKinds = $derived<readonly string[]>(
+		this.rescan ? (SEED_KINDS[this.rescan.seedKind] ?? SEED_KINDS.host) : []
+	);
 	readonly resolution = $derived<PlanResolution | null>(
 		this.catalog
-			? resolvePlan(this.catalog, this.effective, this.lensType, this.runIntensity)
+			? resolvePlan(
+					this.catalog,
+					this.effective,
+					this.lensType,
+					this.runIntensity,
+					true,
+					this.seedKinds
+				)
 			: null
 	);
 	readonly overrides = $derived<StageOverrides>(
@@ -73,7 +104,9 @@ export class LaunchState {
 		this.catalog ? this.catalog.stages.filter((s) => stageApplies(s, this.targetTypes)) : []
 	);
 	readonly quickStages = $derived<StageCatalogEntry[]>(
-		this.applicableStages.filter((s) => s.role === CAPABILITY)
+		this.applicableStages.filter(
+			(s) => s.role === CAPABILITY && (!this.rescan || this.rescan.rescannable.includes(s.name))
+		)
 	);
 	readonly runningStages = $derived<StageCatalogEntry[]>(
 		this.catalog && this.resolution
@@ -89,6 +122,11 @@ export class LaunchState {
 			: null
 	);
 	readonly blockReason = $derived.by<string | null>(() => {
+		if (this.rescan) {
+			if (this.rescan.assets.length === 0) return 'Add at least one asset.';
+			if (this.catalog && this.runningStages.length === 0) return 'Select at least one stage.';
+			return null;
+		}
 		if (this.mode === 'engine' && !this.engine) return 'Select a scan engine.';
 		if (this.targets.length === 0) return 'Add at least one target.';
 		if (this.targets.length > MAX_SCAN_BATCH) return `Select at most ${MAX_SCAN_BATCH} targets.`;
@@ -212,6 +250,40 @@ export class LaunchState {
 				: null;
 	}
 
+	beginRescan(seed: RescanSeed, defaultStages: readonly string[]) {
+		this.mode = 'quick';
+		this.engineId = null;
+		this.rescan = seed;
+		this.intensity = null;
+		const next: StageOverrides = {};
+		for (const stage of this.catalog?.stages ?? []) {
+			if (stage.role !== CAPABILITY) continue;
+			const on = defaultStages.includes(stage.name);
+			if (on !== !!this.baseline[stage.name]?.enabled) next[stage.name] = { enabled: on };
+		}
+		this.patch = next;
+	}
+
+	removeAsset(asset: string) {
+		if (!this.rescan) return;
+		this.rescan = { ...this.rescan, assets: this.rescan.assets.filter((a) => a !== asset) };
+	}
+
+	rescanBody(): RescanCreate | null {
+		const seed = this.rescan;
+		if (!seed) return null;
+		return {
+			parent_scan_id: seed.parentScanId,
+			dimension: seed.dimension,
+			assets: seed.assets,
+			stages: this.runningStages.filter((s) => s.role === CAPABILITY).map((s) => s.name),
+			overrides: this.overrides,
+			context_id: this.contextId === SELECT_NONE ? null : this.contextId,
+			intensity: this.intensity,
+			template_ids: seed.templateIds ?? []
+		};
+	}
+
 	addTarget(chip: TargetChip) {
 		if (this.targets.some((t) => t.key === chip.key)) return;
 		this.targets = [...this.targets, chip];
@@ -246,6 +318,7 @@ export class LaunchState {
 	reset() {
 		this.savedQuick = null;
 		this.targets = [];
+		this.rescan = null;
 		this.mode = 'quick';
 		this.engineId = null;
 		this.patch = {};

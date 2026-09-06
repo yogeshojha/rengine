@@ -83,6 +83,8 @@ class Stage(ABC):
     touches_target: ClassVar[bool] = True
     # config fields a launch may override for one run; the rest belong to the engine
     launch_fields: ClassVar[tuple[str, ...]] = ()
+    # kept out of the catalog: enabled by the server, never picked by a user
+    catalog_hidden: ClassVar[bool] = False
     # asset kinds this stage reads (any one suffices) and writes; a launch implies producers from these
     consumes: ClassVar[frozenset[str]] = frozenset()
     produces: ClassVar[frozenset[str]] = frozenset()

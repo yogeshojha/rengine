@@ -8,9 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.services.rescan import RescanService, rescan_schema
 from app.services.scan import ScanService, ScanSortDir, ScanSortKey
 from shared.enums.scan import ScanStatus
+from shared.models.recheck import RecheckRead
 from shared.models.scan import (
+    RescanCreate,
+    RescanSchema,
     ScanBatchCreate,
     ScanChanges,
     ScanCreate,
@@ -33,6 +37,39 @@ def get_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ScanService:
     return ScanService(session)
+
+
+def get_rescan_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> RescanService:
+    return RescanService(session)
+
+
+@router.get("/rescan/schema", response_model=RescanSchema)
+async def rescan_vocabulary(_current_user: CurrentUser):
+    return rescan_schema()
+
+
+@router.post("/rescan", response_model=ScanRead, status_code=status.HTTP_201_CREATED)
+async def rescan_assets(
+    data: RescanCreate,
+    current_user: CurrentUser,
+    service: Annotated[RescanService, Depends(get_rescan_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.create(
+        data=data, project_id=project_id, created_by=current_user.id
+    )
+
+
+@router.get("/{scan_id}/rechecks", response_model=list[RecheckRead])
+async def scan_rechecks(
+    scan_id: UUID,
+    _current_user: CurrentUser,
+    service: Annotated[RescanService, Depends(get_rescan_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.rechecks(parent_scan_id=scan_id, project_id=project_id)
 
 
 @router.post("/preview", response_model=ScanPreview)
@@ -98,6 +135,9 @@ async def list_scans(
     scheduled: Annotated[
         bool | None, Query(description="True=scheduled only, False=manual only")
     ] = None,
+    include_focused: Annotated[
+        bool, Query(description="Include focused rescans in the ledger")
+    ] = False,
 ):
     query = service.build_list_query(
         project_id=project_id,
@@ -110,6 +150,7 @@ async def list_scans(
         sort_by=sort_by,
         sort_dir=sort_dir,
         scheduled=scheduled,
+        include_focused=include_focused,
     )
     page = await paginate(
         session,
@@ -126,8 +167,13 @@ async def scan_stats(
     service: Annotated[ScanService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
     target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
+    include_focused: Annotated[
+        bool, Query(description="Include focused rescans in the counts")
+    ] = False,
 ):
-    return await service.stats(project_id=project_id, target_id=target_id)
+    return await service.stats(
+        project_id=project_id, target_id=target_id, include_focused=include_focused
+    )
 
 
 @router.get("/targets", response_model=Page[ScanTargetGroup])
@@ -200,6 +246,7 @@ async def export_scans(
     sort_by: Annotated[ScanSortKey, Query()] = "started",
     sort_dir: Annotated[ScanSortDir, Query()] = "desc",
     scheduled: Annotated[bool | None, Query()] = None,
+    include_focused: Annotated[bool, Query()] = False,
 ):
     return await service.export_rows(
         project_id=project_id,
@@ -212,6 +259,7 @@ async def export_scans(
         sort_by=sort_by,
         sort_dir=sort_dir,
         scheduled=scheduled,
+        include_focused=include_focused,
     )
 
 

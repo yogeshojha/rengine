@@ -13,6 +13,7 @@ from shared.models.target_asset import (
     TargetAssetPage,
     TargetAssetRow,
 )
+from shared.services.scan_scope import census_only
 
 
 class TargetAssetService:
@@ -56,6 +57,7 @@ class TargetAssetService:
                 Scan.project_id == project_id,
                 Scan.target_id == target_id,
                 Scan.status.in_(SCAN_LIVE_STATUSES),
+                census_only(),
             )
         )
         return list(result.scalars().all())
@@ -65,7 +67,15 @@ class TargetAssetService:
     ) -> UUID | None:
         """Newest finished scan that found web assets — a live run cannot retire anything."""
         query = select(Subdomain.scan_id).where(
-            Subdomain.project_id == project_id, Subdomain.target_id == target_id
+            Subdomain.project_id == project_id,
+            Subdomain.target_id == target_id,
+            Subdomain.scan_id.in_(
+                select(Scan.id).where(
+                    Scan.project_id == project_id,
+                    Scan.target_id == target_id,
+                    census_only(),
+                )
+            ),
         )
         if live:
             query = query.where(Subdomain.scan_id.notin_(live))

@@ -7,11 +7,33 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 from shared.definitions.constants import MAX_SCAN_BATCH
-from shared.enums.scan import ScanStatus
+from shared.definitions.rescan import MAX_SEED_ASSETS, SeedKind
+from shared.definitions.surface import SURFACE_ORDER
+from shared.enums.scan import ScanScope, ScanStatus
 from shared.services.scan_resolve import ResolvedScanConfig
 from shared.utils.datetime import utc_now
 
 SCAN_STATUSES = tuple(s.value for s in ScanStatus)
+SCAN_SCOPES = tuple(s.value for s in ScanScope)
+
+
+class SeedAsset(BaseModel):
+    """One asset a focused scan starts from."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str = Field(max_length=16)
+    value: str = Field(max_length=500)
+
+    @model_validator(mode="after")
+    def _known_kind(self):
+        if self.kind not in {k.value for k in SeedKind}:
+            msg = f"Unknown seed kind '{self.kind}'."
+            raise ValueError(msg)
+        if not self.value.strip():
+            msg = "Seed asset value cannot be empty."
+            raise ValueError(msg)
+        return self
 
 
 class Scan(SQLModel, table=True):
@@ -28,6 +50,8 @@ class Scan(SQLModel, table=True):
     context_name: str | None = Field(default=None, max_length=200)
     schedule_id: uuid.UUID | None = Field(default=None, index=True)
     schedule_type: str | None = Field(default=None, max_length=20)
+    scope: str = Field(default=ScanScope.FULL.value, max_length=16, index=True)
+    parent_scan_id: uuid.UUID | None = Field(default=None, index=True)
     execution_config: dict = Field(sa_column=Column(JSON, nullable=False))
     status: str = Field(default=ScanStatus.PENDING.value, index=True)
     celery_task_ids: list = Field(
@@ -57,6 +81,11 @@ class ScanCreate(BaseModel):
     target_value: str | None = Field(default=None, max_length=500)
     overrides: dict[str, dict] = Field(default_factory=dict)
     intensity: str | None = None
+    seed_assets: list[SeedAsset] = Field(
+        default_factory=list, max_length=MAX_SEED_ASSETS
+    )
+    parent_scan_id: uuid.UUID | None = None
+    dimension: str | None = Field(default=None, max_length=32)
 
     @model_validator(mode="after")
     def _require_target(self):
@@ -64,6 +93,48 @@ class ScanCreate(BaseModel):
             msg = "Provide either target_id or target_value."
             raise ValueError(msg)
         return self
+
+
+class RescanCreate(BaseModel):
+    """Re-run chosen stages against assets picked from an earlier run."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    parent_scan_id: uuid.UUID
+    dimension: str = Field(max_length=32)
+    assets: list[str] = Field(min_length=1, max_length=MAX_SEED_ASSETS)
+    stages: list[str] = Field(default_factory=list, max_length=20)
+    overrides: dict[str, dict] = Field(default_factory=dict)
+    context_id: uuid.UUID | None = None
+    intensity: str | None = None
+    template_ids: list[str] = Field(default_factory=list, max_length=50)
+
+    @model_validator(mode="after")
+    def _known_dimension(self):
+        if self.dimension not in SURFACE_ORDER:
+            msg = f"Unknown dimension '{self.dimension}'."
+            raise ValueError(msg)
+        cleaned = [a.strip() for a in self.assets if a and a.strip()]
+        if not cleaned:
+            msg = "Select at least one asset to rescan."
+            raise ValueError(msg)
+        self.assets = list(dict.fromkeys(cleaned))
+        return self
+
+
+class RescanDimension(BaseModel):
+    dimension: str
+    label: str
+    noun: str
+    noun_plural: str
+    seed_kind: str
+    default_stages: list[str]
+
+
+class RescanSchema(BaseModel):
+    dimensions: list[RescanDimension]
+    rescannable_stages: list[str]
+    max_assets: int
 
 
 class ScanBatchCreate(BaseModel):
@@ -98,6 +169,9 @@ class ScanRead(BaseModel):
     context_name: str | None
     schedule_id: uuid.UUID | None = None
     schedule_type: str | None = None
+    scope: str = ScanScope.FULL.value
+    parent_scan_id: uuid.UUID | None = None
+    seed_count: int = 0
     execution_config: ResolvedScanConfig
     auth_summary: str
     status: str

@@ -27,6 +27,22 @@ export const SCAN_STATUS_VARIANT: Record<ScanStatus, BadgeVariant> = {
 	cancelled: 'outline'
 };
 
+export const SCAN_STATUS_DOT: Record<ScanStatus, string> = {
+	completed: 'border-success bg-success',
+	cancelled: 'border-warning bg-warning',
+	failed: 'border-destructive bg-destructive',
+	running: 'border-info bg-info shadow-[0_0_0_4px_color-mix(in_oklch,var(--info)_18%,transparent)]',
+	pending: 'border-muted-foreground bg-card'
+};
+
+export const SCAN_STATUS_PILL: Record<ScanStatus, string> = {
+	completed: 'bg-success/10 text-success',
+	cancelled: 'bg-warning/12 text-warning',
+	failed: 'bg-destructive/10 text-destructive',
+	running: 'bg-info/10 text-info',
+	pending: 'bg-muted text-muted-foreground'
+};
+
 export function scanStatusVariant(s: ScanStatus): BadgeVariant {
 	return SCAN_STATUS_VARIANT[s];
 }

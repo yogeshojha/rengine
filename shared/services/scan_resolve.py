@@ -222,6 +222,7 @@ class ResolvedScanConfig(BaseModel):
     proxy_url: str | None = None
     tool_options: dict[str, str] = Field(default_factory=dict)
     overrides: dict[str, dict] = Field(default_factory=dict)
+    seed_assets: list[dict] = Field(default_factory=list)
 
     _auth_header_names: list[str] = PrivateAttr(default_factory=list)
 

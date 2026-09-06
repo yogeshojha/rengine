@@ -54,7 +54,11 @@
 
 	let engines = $derived(scanEnginesStore.engines);
 	let groups = $derived(launch.catalog?.groups ?? []);
-	let caption = $derived(MODES.find((m) => m.value === launch.mode)?.caption ?? '');
+	let caption = $derived(
+		launch.rescan
+			? 'Runs against the chosen assets only. Dependent stages are included automatically.'
+			: (MODES.find((m) => m.value === launch.mode)?.caption ?? '')
+	);
 	let allSelected = $derived(
 		launch.quickStages.length > 0 &&
 			launch.quickStages.every((s) => launch.effective[s.name]?.enabled)
@@ -95,14 +99,18 @@
 </script>
 
 <div class="flex flex-col gap-3">
-	<Label>Configuration</Label>
-	<Tabs.Root value={launch.mode} onValueChange={setMode} class="gap-3">
-		<Tabs.List class="grid h-9 w-full grid-cols-2">
-			{#each MODES as mode (mode.value)}
-				<Tabs.Trigger value={mode.value} class="text-[13px]" {disabled}>{mode.label}</Tabs.Trigger>
-			{/each}
-		</Tabs.List>
-	</Tabs.Root>
+	<Label>{launch.rescan ? 'What to re-run' : 'Configuration'}</Label>
+	{#if !launch.rescan}
+		<Tabs.Root value={launch.mode} onValueChange={setMode} class="gap-3">
+			<Tabs.List class="grid h-9 w-full grid-cols-2">
+				{#each MODES as mode (mode.value)}
+					<Tabs.Trigger value={mode.value} class="text-[13px]" {disabled}>
+						{mode.label}
+					</Tabs.Trigger>
+				{/each}
+			</Tabs.List>
+		</Tabs.Root>
+	{/if}
 
 	{#if !launch.catalog}
 		<div class="flex flex-col gap-3">

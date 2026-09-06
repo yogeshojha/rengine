@@ -17,7 +17,7 @@ from shared.definitions.notifications import (
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, CoverageStatus
 from shared.enums.activity import ActivityEvent, ActivityLevel
-from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
+from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanScope, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
@@ -31,6 +31,7 @@ from shared.services.orchestrator import (
     derived_counts,
 )
 from shared.services.orchestrator.events import ScanEventPublisher
+from shared.services.recheck import compute_rechecks
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -274,6 +275,12 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     session.commit()
     scan = locked
 
+    if scan.scope == ScanScope.FOCUSED.value:
+        try:
+            compute_rechecks(session, scan)
+        except Exception:
+            logger.warning("recheck diff failed for scan %s", scan.id, exc_info=True)
+
     activity_log = ActivityLogService(session)
 
     if status == ScanStatus.CANCELLED.value:
@@ -300,13 +307,14 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
         )
         session.commit()
         events.scan_completed(status=status, counts=counts, duration_seconds=duration)
-        _notify(
-            notifier,
-            session,
-            scan_completed(
-                str(scan.id), target_value, scan.engine_name, counts, duration
-            ),
-        )
+        if scan.scope != ScanScope.FOCUSED.value:
+            _notify(
+                notifier,
+                session,
+                scan_completed(
+                    str(scan.id), target_value, scan.engine_name, counts, duration
+                ),
+            )
         _notify_deltas(notifier, session, scan, target_value)
         return
 

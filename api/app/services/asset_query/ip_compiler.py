@@ -111,6 +111,7 @@ def _flag(cmp: Compare, ctx: IpQueryContext):
 
 
 _FLAG_BUILDERS = {
+    "new": lambda ctx: preds.address_is_new(ctx.source.c.ip, ctx.scan_id),
     "alive": lambda ctx: ctx.source.c.is_alive.is_(True),
     "open": lambda ctx: ctx.source.c.port_count > 0,
     "sensitive": lambda ctx: ctx.source.c.sensitive.is_(True),

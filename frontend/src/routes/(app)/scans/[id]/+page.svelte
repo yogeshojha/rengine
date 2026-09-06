@@ -187,6 +187,10 @@
 	});
 
 	let live = $derived(!!scan && isLiveStatus(scan.status));
+	let focused = $derived(scan?.scope === 'focused');
+	let seedNoun = $derived(
+		(scan?.seed_count ?? 0) === 1 ? '1 asset' : `${scan?.seed_count ?? 0} assets`
+	);
 	let shouldPoll = $derived(live && !sseStore.isConnected);
 	let TargetIcon = $derived(
 		scan ? (TARGET_TYPE_ICONS[scan.execution_config.target_type as TargetType] ?? Globe) : Globe
@@ -371,11 +375,11 @@
 
 <div class="flex w-full flex-col gap-5 px-4 py-4 md:px-6">
 	<a
-		href={ROUTES.scans}
+		href={focused && scan?.parent_scan_id ? ROUTES.scan(scan.parent_scan_id) : ROUTES.scans}
 		class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
 	>
 		<ArrowLeft class="size-3.5" />
-		Scans
+		{focused && scan?.parent_scan_id ? 'The run this was seeded from' : 'Scans'}
 	</a>
 
 	{#if loading && !scan}
@@ -413,6 +417,9 @@
 						class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground"
 					>
 						<ScanStatusBadge status={scan.status} class="h-5" />
+						{#if focused}
+							<Badge variant="info" class="h-5 font-normal">Focused</Badge>
+						{/if}
 						<span>{timing}</span>
 						<span aria-hidden="true">·</span>
 						<span>{scan.engine_name}</span>
@@ -462,6 +469,16 @@
 				</DropdownMenu.Root>
 			</div>
 		</header>
+
+		{#if focused}
+			<p class="rounded-md border border-info/30 bg-info/5 p-3 text-sm">
+				<span class="font-medium">A focused scan.</span>
+				<span class="text-muted-foreground">
+					Its counts describe the {seedNoun} it was given, not this target's surface — the target summary
+					and dashboard read from full runs.
+				</span>
+			</p>
+		{/if}
 
 		{#if scan.error && scan.status === 'failed'}
 			<p
@@ -547,6 +564,8 @@
 				{#key scan.id}
 					<WebAssetsTable
 						scanId={scan.id}
+						targetId={scan.target_id}
+						targetType={scan.execution_config.target_type}
 						{projectId}
 						apex={scan.execution_config.target_value}
 						active={activeTab === 'web-assets'}
@@ -573,6 +592,8 @@
 				{#key scan.id}
 					<ServicesTable
 						scanId={scan.id}
+						targetId={scan.target_id}
+						targetType={scan.execution_config.target_type}
 						{projectId}
 						active={activeTab === 'services'}
 						onTab={openTab}
@@ -586,6 +607,8 @@
 				{#key scan.id}
 					<IpsTable
 						scanId={scan.id}
+						targetId={scan.target_id}
+						targetType={scan.execution_config.target_type}
 						{projectId}
 						active={activeTab === 'ips'}
 						onTab={openTab}
@@ -599,6 +622,8 @@
 				{#key scan.id}
 					<VulnerabilitiesTable
 						scanId={scan.id}
+						targetId={scan.target_id}
+						targetType={scan.execution_config.target_type}
 						active={activeTab === 'vulnerabilities'}
 						onTab={openTab}
 						onScanTotal={(n) => (vulnsTotal = n)}

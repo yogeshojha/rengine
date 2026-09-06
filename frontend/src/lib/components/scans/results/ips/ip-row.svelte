@@ -29,6 +29,8 @@
 	import type { ServiceRead } from '$lib/utilities/services';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 	import { IP_LEAD_COLUMNS } from './columns';
+	import RecheckChip from '../recheck-chip.svelte';
+	import type { Recheck } from '$lib/types/recheck';
 
 	interface Props {
 		group: IpGroupRead;
@@ -45,6 +47,7 @@
 		onHosts: (filter: string) => void;
 		onServices: (filter: string) => void;
 		loadServices: (ip: string) => Promise<ServiceRead[]>;
+		recheck?: Recheck | null;
 	}
 
 	let {
@@ -61,7 +64,8 @@
 		onFilter,
 		onHosts,
 		onServices,
-		loadServices
+		loadServices,
+		recheck = null
 	}: Props = $props();
 
 	const MAX_PORTS = 4;
@@ -187,6 +191,12 @@
 				/>
 			</span>
 		</div>
+
+		{#if recheck}
+			<div class="flex items-center">
+				<RecheckChip {recheck} onclick={() => onOpen(g)} />
+			</div>
+		{/if}
 
 		{#if ptr.length}
 			<div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">

@@ -110,6 +110,8 @@ export interface ResolvedScanConfig {
 	overrides?: StageOverrides;
 }
 
+export type ScanScope = 'full' | 'focused';
+
 export interface ScanRead {
 	id: string;
 	project_id: string;
@@ -120,6 +122,9 @@ export interface ScanRead {
 	context_name: string | null;
 	schedule_id: string | null;
 	schedule_type: string | null;
+	scope: ScanScope;
+	parent_scan_id: string | null;
+	seed_count: number;
 	execution_config: ResolvedScanConfig;
 	auth_summary: string;
 	status: ScanStatus;
@@ -225,24 +230,6 @@ export interface ScanDailyCount {
 	running: number;
 	pending: number;
 	new_subdomains: number;
-}
-
-export const SCAN_CHANGE_WINDOWS = [
-	{ key: '6h', label: '6h' },
-	{ key: '12h', label: '12h' },
-	{ key: '24h', label: '24h' },
-	{ key: '7d', label: '7d' },
-	{ key: '30d', label: '30d' }
-] as const;
-export type ScanChangeWindow = (typeof SCAN_CHANGE_WINDOWS)[number]['key'];
-
-export interface ScanChanges {
-	window: ScanChangeWindow;
-	new_subdomains: number;
-	retired_subdomains: number;
-	targets_changed: number;
-	scans_run: number;
-	failed_runs: number;
 }
 
 export interface ScanTargetGroup {

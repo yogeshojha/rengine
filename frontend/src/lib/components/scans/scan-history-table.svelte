@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
+	import Hint from '$lib/components/hint.svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { toast } from 'svelte-sonner';
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -301,6 +303,23 @@
 			/>
 		</div>
 		<div class="flex items-center gap-2">
+			<Hint
+				text="Rescans of chosen assets. They are evidence, not a census, so the ledger hides them by default."
+			>
+				{#snippet child(props)}
+					<label
+						{...props}
+						class="flex cursor-pointer items-center gap-2 rounded-md border border-border px-2.5 py-2 text-xs text-muted-foreground hover:text-foreground"
+					>
+						<Checkbox
+							checked={scansStore.includeFocused}
+							onCheckedChange={(v) => scansStore.setIncludeFocused(v === true)}
+							aria-label="Include focused rescans"
+						/>
+						Focused rescans
+					</label>
+				{/snippet}
+			</Hint>
 			{#if !targetId}
 				<ToggleGroup.Root
 					type="single"

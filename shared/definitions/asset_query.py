@@ -884,6 +884,7 @@ IP_GROUPS: tuple[str, ...] = (
 )
 
 IP_FLAGS: dict[str, str] = {
+    "new": "Not recorded by an earlier scan of this target",
     "alive": "Responded to a probe",
     "open": "One or more ports are open",
     "sensitive": "An admin or database port is open",
@@ -1083,6 +1084,7 @@ IP_EXAMPLE_GROUPS: tuple[str, ...] = (
     "Origin exposure",
     "Hosting",
     "Hygiene",
+    "Change",
 )
 
 IP_EXAMPLES: tuple[QueryExample, ...] = (
@@ -1091,6 +1093,17 @@ IP_EXAMPLES: tuple[QueryExample, ...] = (
         description="Administrative or database ports exposed",
         group="Exposed services",
         generic=True,
+    ),
+    QueryExample(
+        query="is:new",
+        description="Addresses not recorded by the previous scan",
+        group="Change",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:new and is:sensitive",
+        description="Administrative ports on addresses that are new this scan",
+        group="Change",
     ),
     QueryExample(
         query="port:[3306,5432,27017,6379,9200,11211,5984]",

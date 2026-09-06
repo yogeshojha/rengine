@@ -183,10 +183,11 @@ def _validate_stages(submitted: dict | None) -> dict[str, dict]:
     clean: dict[str, dict] = {}
     for name, raw in (submitted or {}).items():
         spec = known.get(name)
-        if spec is None:
+        if spec is None or spec.catalog_hidden:
+            offered = sorted(n for n, s in known.items() if not s.catalog_hidden)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unknown stage '{name}'. Known stages: {', '.join(sorted(known))}.",
+                detail=f"Unknown stage '{name}'. Known stages: {', '.join(offered)}.",
             )
         if not isinstance(raw, dict):
             raise HTTPException(

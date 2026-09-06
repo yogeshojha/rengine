@@ -59,6 +59,10 @@
 	import { SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { SubdomainRead } from '$lib/types/subdomain';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Settings2 from '@lucide/svelte/icons/settings-2';
+	import type { Recheck } from '$lib/types/recheck';
+	import RecheckChip from '../recheck-chip.svelte';
 	import type { ServiceRead } from '$lib/utilities/services';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 
@@ -81,6 +85,9 @@
 		onServices?: (host: string, port: number) => void;
 		onStructure?: (s: SubdomainRead) => void;
 		onVulns?: (filter: string) => void;
+		recheck?: Recheck | null;
+		onRescan?: (s: SubdomainRead) => void;
+		onRescanOptions?: (s: SubdomainRead) => void;
 	}
 
 	let {
@@ -101,7 +108,10 @@
 		loadServices,
 		onServices,
 		onVulns,
-		onStructure
+		onStructure,
+		recheck = null,
+		onRescan,
+		onRescanOptions
 	}: Props = $props();
 
 	let worstSeverity = $derived((s.vuln_count ?? 0) > 0 ? (s.vuln_severity ?? null) : null);
@@ -328,6 +338,12 @@
 				/>
 			</span>
 		</div>
+
+		{#if recheck}
+			<div class="flex items-center">
+				<RecheckChip {recheck} onclick={() => onOpen(s)} />
+			</div>
+		{/if}
 
 		{#if s.http_status}
 			<div class="flex items-start gap-1.5 text-xs text-muted-foreground sm:hidden">
@@ -693,6 +709,19 @@
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-48">
 					<DropdownMenu.Group>
+						{#if onRescan}
+							<DropdownMenu.Item onclick={() => onRescan(s)} class="gap-2">
+								<RefreshCw class="h-4 w-4" /> Rescan this host
+							</DropdownMenu.Item>
+						{/if}
+						{#if onRescanOptions}
+							<DropdownMenu.Item onclick={() => onRescanOptions(s)} class="gap-2">
+								<Settings2 class="h-4 w-4" /> Rescan with options…
+							</DropdownMenu.Item>
+						{/if}
+						{#if onRescan || onRescanOptions}
+							<DropdownMenu.Separator />
+						{/if}
 						{#if s.http_url}
 							<DropdownMenu.Item class="gap-2">
 								{#snippet child({ props })}

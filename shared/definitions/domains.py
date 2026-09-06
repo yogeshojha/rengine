@@ -43,6 +43,16 @@ PUBLIC_SECOND_LEVEL: frozenset[str] = frozenset(
         "gov.br",
         "net.br",
         "org.br",
+        "ac.cy",
+        "biz.cy",
+        "com.cy",
+        "ltd.cy",
+        "name.cy",
+        "net.cy",
+        "org.cy",
+        "press.cy",
+        "pro.cy",
+        "tm.cy",
         "ac.cn",
         "com.cn",
         "edu.cn",
@@ -190,6 +200,12 @@ PUBLIC_SECOND_LEVEL: frozenset[str] = frozenset(
         "org.za",
     }
 )
+
+# suffixes that never resolve publicly, so a certificate naming them is not a lead
+PRIVATE_TLDS: frozenset[str] = frozenset(
+    {"local", "localhost", "localdomain", "internal", "intranet", "lan", "home",
+     "corp", "default", "svc", "cluster", "test", "example", "invalid"}
+)  # fmt: skip
 
 # vendor and platform domains that are never worth suggesting as a target
 VENDOR_DOMAINS: frozenset[str] = frozenset(

@@ -124,7 +124,8 @@ export function resolvePlan(
 	effective: Record<string, StageConfig>,
 	targetType: string | null,
 	intensity: Intensity,
-	quick = true
+	quick = true,
+	seedKinds: readonly string[] = []
 ): PlanResolution {
 	const passive = intensity === 'passive';
 	const blocked = (stage: StageCatalogEntry) => passive && stage.touches_target;
@@ -144,7 +145,10 @@ export function resolvePlan(
 		changed = false;
 		unsatisfied.clear();
 		const active = applicable.some((s) => chosen.has(s.name) && s.touches_target && !blocked(s));
-		const available = new Set(targetType ? (catalog.seed_produces[targetType] ?? []) : []);
+		const available = new Set([
+			...(targetType ? (catalog.seed_produces[targetType] ?? []) : []),
+			...seedKinds
+		]);
 		const earlier: StageCatalogEntry[] = [];
 		for (const level of levels) {
 			const produced = new Set<string>();

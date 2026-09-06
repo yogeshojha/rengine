@@ -9,7 +9,7 @@ from app.database import get_sync_session
 from app.orchestrator import build_canvas, finalize_scan_run, run_stage
 from shared.definitions.notifications import scan_started
 from shared.enums.activity import ActivityEvent, ActivityLevel
-from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
+from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanScope, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.services.activity_log import ActivityLogService
@@ -88,11 +88,12 @@ def run_scan(self, scan_id: str) -> dict:
             )
             session.commit()
             events.scan_started(status=scan.status, engine=scan.engine_name)
-            _send_notif(
-                redis_url,
-                session,
-                scan_started(scan_id, target_value, scan.engine_name),
-            )
+            if scan.scope != ScanScope.FOCUSED.value:
+                _send_notif(
+                    redis_url,
+                    session,
+                    scan_started(scan_id, target_value, scan.engine_name),
+                )
         return {"dispatched": True, "task_id": result.id}
 
 

@@ -26,6 +26,7 @@ from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity, VulnState
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
+from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
@@ -115,6 +116,48 @@ def has_baseline():
 
 def is_new():
     return and_(has_baseline(), not_(seen_earlier()))
+
+
+def address_seen_earlier(ip_column, scan_id):
+    earlier = aliased(IpAddress)
+    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    cutoff = (
+        select(func.min(IpAddress.discovered_at))
+        .where(IpAddress.scan_id == scan_id)
+        .scalar_subquery()
+    )
+    return exists(
+        select(1).where(
+            earlier.target_id == target,
+            earlier.ip == ip_column,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < cutoff,
+        )
+    )
+
+
+def address_has_baseline(scan_id):
+    """Whether an earlier scan of this target recorded any address. Scan-level, never per row."""
+    earlier = aliased(IpAddress)
+    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    cutoff = (
+        select(func.min(IpAddress.discovered_at))
+        .where(IpAddress.scan_id == scan_id)
+        .scalar_subquery()
+    )
+    return exists(
+        select(1).where(
+            earlier.target_id == target,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < cutoff,
+        )
+    )
+
+
+def address_is_new(ip_column, scan_id):
+    return and_(
+        address_has_baseline(scan_id), not_(address_seen_earlier(ip_column, scan_id))
+    )
 
 
 def service_seen_earlier(source, scan_id):

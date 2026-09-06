@@ -2,8 +2,6 @@ import { api } from './client';
 import type {
 	ScanActivityRead,
 	ScanBatchCreate,
-	ScanChanges,
-	ScanChangeWindow,
 	ScanCommandDetail,
 	ScanCommandRead,
 	ScanCreate,
@@ -18,6 +16,7 @@ import type {
 	ScanTimeRange
 } from '$lib/types/scan';
 import type { PaginatedResponse } from '$lib/types/pagination';
+import type { Recheck, RescanCreate, RescanSchema } from '$lib/types/recheck';
 
 interface ScanFilterParams {
 	target_id?: string;
@@ -29,6 +28,7 @@ interface ScanFilterParams {
 	sort_by?: ScanSortKey;
 	sort_dir?: ScanSortDir;
 	scheduled?: boolean | null;
+	include_focused?: boolean;
 }
 
 interface ListScansParams extends ScanFilterParams {
@@ -47,10 +47,23 @@ function buildScanQuery(projectId: string, params: ScanFilterParams): URLSearchP
 	if (params.sort_by) sp.append('sort_by', params.sort_by);
 	if (params.sort_dir) sp.append('sort_dir', params.sort_dir);
 	if (params.scheduled != null) sp.append('scheduled', String(params.scheduled));
+	if (params.include_focused) sp.append('include_focused', 'true');
 	return sp;
 }
 
 export const scansApi = {
+	async rescanSchema(): Promise<RescanSchema> {
+		return api.get<RescanSchema>('/scans/rescan/schema');
+	},
+
+	async rescan(projectId: string, body: RescanCreate): Promise<ScanRead> {
+		return api.post<ScanRead>(`/scans/rescan?project_id=${projectId}`, body);
+	},
+
+	async rechecks(projectId: string, scanId: string): Promise<Recheck[]> {
+		return api.get<Recheck[]>(`/scans/${scanId}/rechecks?project_id=${projectId}`);
+	},
+
 	async preview(projectId: string, body: ScanCreate): Promise<ScanPreview> {
 		return api.post<ScanPreview>(`/scans/preview?project_id=${projectId}`, body);
 	},
@@ -84,20 +97,11 @@ export const scansApi = {
 		return api.get<PaginatedResponse<ScanTargetGroup>>(`/scans/targets?${sp.toString()}`);
 	},
 
-	async stats(projectId: string, targetId?: string): Promise<ScanStats> {
+	async stats(projectId: string, targetId?: string, includeFocused = false): Promise<ScanStats> {
 		const sp = new URLSearchParams({ project_id: projectId });
 		if (targetId) sp.append('target_id', targetId);
+		if (includeFocused) sp.append('include_focused', 'true');
 		return api.get<ScanStats>(`/scans/stats?${sp.toString()}`);
-	},
-
-	async changes(
-		projectId: string,
-		window: ScanChangeWindow,
-		targetId?: string
-	): Promise<ScanChanges> {
-		const sp = new URLSearchParams({ project_id: projectId, window });
-		if (targetId) sp.append('target_id', targetId);
-		return api.get<ScanChanges>(`/scans/changes?${sp.toString()}`);
 	},
 
 	async get(id: string, projectId: string): Promise<ScanRead> {

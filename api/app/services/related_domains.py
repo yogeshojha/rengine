@@ -9,6 +9,7 @@ from sqlmodel import select
 from shared.definitions.domains import (
     MAX_RELATED_DOMAINS,
     MAX_RELATED_HOSTNAMES,
+    PRIVATE_TLDS,
     RELATED_REASON_DETAIL,
     RELATED_REASON_LABELS,
     VENDOR_DOMAINS,
@@ -103,6 +104,8 @@ class RelatedDomainService:
             for name in names:
                 domain = registrable_domain(name)
                 if not domain or domain == root or domain in VENDOR_DOMAINS:
+                    continue
+                if domain.rsplit(".", 1)[-1] in PRIVATE_TLDS:
                     continue
                 hostnames[domain].add(name)
                 evidence[domain].setdefault(name, host)

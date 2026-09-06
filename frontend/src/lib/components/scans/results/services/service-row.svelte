@@ -34,6 +34,8 @@
 	} from '$lib/config/service-classes';
 	import type { ServiceRead } from '$lib/utilities/services';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
+	import RecheckChip from '../recheck-chip.svelte';
+	import type { Recheck } from '$lib/types/recheck';
 	import { SERVICE_LEAD_COLUMNS } from './columns';
 
 	interface Props {
@@ -50,6 +52,7 @@
 		onFilter: (token: string) => void;
 		onHosts: (filter: string) => void;
 		onAddress: (filter: string) => void;
+		recheck?: Recheck | null;
 	}
 
 	let {
@@ -65,7 +68,8 @@
 		onOpen,
 		onFilter,
 		onHosts,
-		onAddress
+		onAddress,
+		recheck = null
 	}: Props = $props();
 
 	const MAX_HOSTS = 3;
@@ -235,6 +239,12 @@
 				/>
 			</span>
 		</div>
+
+		{#if recheck}
+			<div class="flex items-center">
+				<RecheckChip {recheck} onclick={() => onOpen(s)} />
+			</div>
+		{/if}
 
 		{#if passive}
 			<Hint text={PORT_SOURCE_HELP[PortSource.INTERNETDB]}>

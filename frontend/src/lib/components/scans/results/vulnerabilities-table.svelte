@@ -2,6 +2,12 @@
 	import { page as appPage } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { untrack } from 'svelte';
+	import { projectsStore } from '$lib/stores/projects.svelte';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
+	import { seedKindFor } from '$lib/utilities/rechecks';
+	import { rechecks } from '$lib/stores/rechecks.svelte';
+	import { startRescan } from '$lib/utilities/rechecks';
+	import { SurfaceDimension } from '$lib/config/surface';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -28,6 +34,7 @@
 	import CoverageStrip from './vulnerabilities/coverage-strip.svelte';
 	import FilterBar from './vulnerabilities/filter-bar.svelte';
 	import IssueInstances from './vulnerabilities/issue-instances.svelte';
+	import SelectionBar from './table/selection-bar.svelte';
 	import IssueRow from './vulnerabilities/issue-row.svelte';
 	import VulnRow from './vulnerabilities/vuln-row.svelte';
 	import VulnerabilityDetailSheet from './vulnerability-detail-sheet.svelte';
@@ -69,6 +76,8 @@
 
 	interface Props {
 		scanId: string;
+		targetId?: string;
+		targetType?: string;
 		active?: boolean;
 		onTab?: (tab: string, filter?: string) => void;
 		onScanTotal?: (total: number) => void;
@@ -77,6 +86,8 @@
 
 	let {
 		scanId,
+		targetId = '',
+		targetType = '',
 		active = true,
 		onTab,
 		onScanTotal,
@@ -657,6 +668,59 @@
 			if (isIssues) collapse();
 		}
 	}
+
+	let rescanBusy = $state(false);
+	let projectId = $derived(projectsStore.activeProject?.id ?? '');
+
+	$effect(() => {
+		if (!active || !scanId || !projectId) return;
+		void rechecks.loadSchema();
+		untrack(() => rechecks.load(scanId, projectId));
+	});
+
+	// re-verify exactly the checks that produced the selected findings
+	async function rescanSelection() {
+		if (rescanBusy) return;
+		const picked = isIssues
+			? instances.filter((v) => checkedIds.has(v.template_id))
+			: items.filter((v) => checkedIds.has(v.id));
+		const rows = picked.length
+			? picked
+			: isIssues
+				? []
+				: items.filter((v) => v.id === selected?.id);
+		const assets = [...new Set(rows.map((v) => v.host || v.ip).filter(Boolean))] as string[];
+		const templates = [...new Set(rows.map((v) => v.template_id).filter(Boolean))] as string[];
+		if (!assets.length) return;
+		rescanBusy = true;
+		const ok = await startRescan(
+			projectId,
+			{
+				parent_scan_id: scanId,
+				dimension: SurfaceDimension.VULNERABILITIES,
+				assets,
+				template_ids: templates
+			},
+			'finding',
+			'findings'
+		);
+		if (ok) checkedIds.clear();
+		rescanBusy = false;
+	}
+
+	let rescanOptionsFor = $state<{ assets: string[]; templates: string[] } | null>(null);
+
+	function openRescanOptions() {
+		const rows = isIssues
+			? instances.filter((v) => checkedIds.has(v.template_id))
+			: items.filter((v) => checkedIds.has(v.id));
+		const assets = [...new Set(rows.map((v) => v.host || v.ip).filter(Boolean))] as string[];
+		if (!assets.length) return;
+		rescanOptionsFor = {
+			assets,
+			templates: [...new Set(rows.map((v) => v.template_id).filter(Boolean))] as string[]
+		};
+	}
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -793,6 +857,19 @@
 				Clear selection
 			</Button>
 		</div>
+	{/if}
+
+	{#if !groupBy}
+		<SelectionBar
+			count={checkedCount}
+			noun="finding"
+			nounPlural="findings"
+			busy={rescanBusy}
+			reason="re-runs the exact checks that found them"
+			onRescan={rescanSelection}
+			onOptions={openRescanOptions}
+			onClear={() => checkedIds.clear()}
+		/>
 	{/if}
 
 	{#if loading && rowCount === 0 && !groupBy}
@@ -984,4 +1061,23 @@
 			}
 		: undefined}
 	onTriage={triage}
+/>
+
+<LaunchDialog
+	open={rescanOptionsFor !== null}
+	rescan={rescanOptionsFor
+		? {
+				parentScanId: scanId,
+				targetId,
+				dimension: SurfaceDimension.VULNERABILITIES,
+				targetType,
+				seedKind: seedKindFor(rechecks.schema, SurfaceDimension.VULNERABILITIES),
+				assets: rescanOptionsFor.assets,
+				templateIds: rescanOptionsFor.templates
+			}
+		: null}
+	onClose={() => {
+		rescanOptionsFor = null;
+		checkedIds.clear();
+	}}
 />
