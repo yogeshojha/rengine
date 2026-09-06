@@ -415,7 +415,9 @@
 							>
 								<ArrowUpRight class="size-3.5 text-success" />
 								<span class="font-medium tabular-nums">{c.new_in_window.toLocaleString()}</span>
-								new {c.spec?.nounPlural ?? c.key}
+								new {c.new_in_window === 1
+									? (c.spec?.noun ?? c.key)
+									: (c.spec?.nounPlural ?? c.key)}
 							</button>
 						{/each}
 					</div>

@@ -930,7 +930,7 @@
 			<EmptyState
 				icon={ShieldCheck}
 				title="No findings"
-				description="Every selected check ran and matched nothing. Coverage is reported above."
+				description="No check matched anything on this scan. Coverage is reported above."
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else}
