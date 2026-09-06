@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +23,24 @@ from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 
 _MAX_TRUST_PASSES = 3
+
+
+@dataclass(frozen=True)
+class Cert:
+    """One certificate a scan saw, and whether it is ours to read names from."""
+
+    host_root: str
+    cn_root: str
+    names: set[str]
+    host: str
+    fronted: bool
+
+    def ours(self, trusted: set[str]) -> bool:
+        # the subject is often a sibling brand rather than the host, so a certificate
+        # a host of ours served counts too — unless a CDN served it, where it is theirs
+        if self.cn_root and self.cn_root in trusted:
+            return True
+        return not self.fronted and bool(self.host_root) and self.host_root in trusted
 
 
 def _clean(value: str | None) -> str:
@@ -49,18 +68,27 @@ class RelatedDomainService:
         rows = (
             await self.session.execute(
                 select(
-                    HttpAsset.host, HttpAsset.tls_subject_cn, HttpAsset.tls_sans
+                    HttpAsset.host,
+                    HttpAsset.tls_subject_cn,
+                    HttpAsset.tls_sans,
+                    HttpAsset.is_cdn,
                 ).where(HttpAsset.scan_id == scan_id)
             )
         ).all()
 
         certs = []
-        for host, subject_cn, sans in rows:
+        for host, subject_cn, sans, is_cdn in rows:
             names = {_clean(str(san)) for san in (sans or [])}
             names.discard("")
             if names:
                 certs.append(
-                    (host, registrable_domain(_clean(subject_cn) or host), names)
+                    Cert(
+                        host_root=registrable_domain(_clean(host)),
+                        cn_root=registrable_domain(_clean(subject_cn) or host),
+                        names=names,
+                        host=host,
+                        fronted=bool(is_cdn),
+                    )
                 )
 
         # only trust certificates we own: start at the target root, then let a
@@ -68,9 +96,9 @@ class RelatedDomainService:
         trusted = {root}
         for _ in range(_MAX_TRUST_PASSES):
             grown = set(trusted)
-            for _host, cert_root, names in certs:
-                if cert_root in trusted:
-                    grown |= {registrable_domain(name) for name in names}
+            for cert in certs:
+                if cert.ours(trusted):
+                    grown |= {registrable_domain(name) for name in cert.names}
             grown.discard("")
             if grown == trusted:
                 break
@@ -98,9 +126,11 @@ class RelatedDomainService:
 
         hostnames: dict[str, set[str]] = defaultdict(set)
         evidence: dict[str, dict[str, str]] = defaultdict(dict)
-        for host, cert_root, names in certs:
-            if cert_root not in trusted:
+        # a hostname is better proof than the address behind it, so it claims the evidence
+        for cert in sorted(certs, key=lambda c: not c.host_root):
+            if not cert.ours(trusted):
                 continue
+            host, names = cert.host, cert.names
             for name in names:
                 domain = registrable_domain(name)
                 if not domain or domain == root or domain in VENDOR_DOMAINS:
