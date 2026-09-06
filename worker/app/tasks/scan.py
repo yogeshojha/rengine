@@ -49,8 +49,16 @@ def run_scan(self, scan_id: str) -> dict:
         scan.celery_task_ids = [self.request.id]
         session.commit()
 
-        workflow = build_canvas(scan_id)
-        result = workflow.apply_async()
+        try:
+            result = build_canvas(scan_id).apply_async()
+        except Exception as exc:
+            # a scan that never reached the queue must say so, not sit in RUNNING
+            logger.exception("scan %s canvas dispatch failed", scan_id)
+            scan.status = ScanStatus.FAILED.value
+            scan.error = f"The scan could not be queued: {exc}"[:2000]
+            scan.completed_at = utc_now()
+            session.commit()
+            return {"error": "dispatch failed"}
         scan.celery_task_ids = [self.request.id, result.id]
         session.commit()
         logger.info("scan %s canvas dispatched (root=%s)", scan_id, result.id)

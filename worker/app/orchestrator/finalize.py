@@ -22,15 +22,26 @@ from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import dispatch_interest_evaluation
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator import (
-    aggregate_counts,
     aggregate_status,
     derived_counts,
 )
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.recheck import compute_rechecks
 from shared.utils.datetime import utc_now
+from stages.registry import ordered_levels
 
 logger = get_logger(__name__)
+
+
+def _undispatched(activities: list[ScanActivity]) -> str | None:
+    """Report the stages the canvas never reached, so a truncated run is never 'completed'."""
+    expected = sum(len(level) for level in ordered_levels())
+    if len(activities) >= expected:
+        return None
+    return (
+        f"The scan stopped after {len(activities)} of {expected} stages. "
+        "The remaining stages were never dispatched."
+    )
 
 
 def _notify(
@@ -285,7 +296,15 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     if status == ScanStatus.RUNNING.value:
         logger.info("finalize deferred: scan %s still has in-flight stages", scan.id)
         return
-    counts = {**aggregate_counts(activities), **derived_counts(session, scan.id)}
+    truncated = (
+        _undispatched(list(activities))
+        if status == ScanStatus.COMPLETED.value
+        else None
+    )
+    if truncated:
+        status = ScanStatus.FAILED.value
+        logger.error("scan %s finalized incomplete: %s", scan.id, truncated)
+    counts = derived_counts(session, scan.id)
 
     # Row-lock + re-check so a concurrent user-cancel (or a duplicate finalize) wins.
     locked = session.get(Scan, scan.id, with_for_update=True)
@@ -306,7 +325,10 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     if status == ScanStatus.FAILED.value:
         failed = next((a for a in activities if a.error), None)
         locked.error = (
-            failed.error if failed and failed.error else "One or more stages failed"
+            truncated
+            or (
+                failed.error if failed and failed.error else "One or more stages failed"
+            )
         )[:2000]
     session.add(locked)
     session.commit()
