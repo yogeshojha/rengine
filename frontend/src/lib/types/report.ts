@@ -57,6 +57,7 @@ export interface ReportStyle {
 	mono_safe: boolean;
 	table_zebra: boolean;
 	section_numbering: boolean;
+	chapter_breaks: boolean;
 	figure_numbering: boolean;
 	page_numbers: boolean;
 	show_header: boolean;
@@ -72,6 +73,7 @@ export interface ReportStyle {
 	watermark_text: string;
 	watermark_opacity: number;
 	link_urls: boolean;
+	justify: boolean;
 	hyphenate: boolean;
 }
 
@@ -185,9 +187,22 @@ export interface ThemeSummary {
 	accent: string;
 	page: string;
 	ink: string;
+	ink_soft: string;
+	ink_faint: string;
+	rule: string;
+	surface: string;
+	cover_background: string;
+	cover_ink: string;
 	cover_layout: string;
+	cover_art: string;
 	heading_font: string;
 	body_font: string;
+	mono_font: string;
+	heading_style: string;
+	table_style: string;
+	finding_style: string;
+	radius: number;
+	uppercase_labels: boolean;
 	severity: Record<string, string>;
 	chart: string[];
 }

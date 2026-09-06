@@ -11,6 +11,8 @@
 	import { toast } from 'svelte-sonner';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import type { ReportStyle } from '$lib/types/report';
+	import ThemePreview from '../theme-preview.svelte';
+	import { cn } from '$lib/utils.js';
 
 	let { style = $bindable() }: { style: ReportStyle } = $props();
 
@@ -54,32 +56,33 @@
 <div class="space-y-6">
 	<div class="space-y-2">
 		<Label class="text-xs">Theme</Label>
-		<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+		<div class="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
 			{#each reportCatalog.themes as theme (theme.slug)}
 				<button
 					type="button"
-					class="flex items-center gap-3 rounded-md border p-2.5 text-left transition-colors data-[active=true]:border-primary data-[active=true]:bg-muted"
-					data-active={style.theme === theme.slug}
+					class={cn(
+						'rounded-md p-1.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+						style.theme === theme.slug ? 'bg-muted' : 'hover:bg-muted/60'
+					)}
+					aria-pressed={style.theme === theme.slug}
 					onclick={() => (style.theme = theme.slug)}
 				>
-					<span
-						class="size-10 shrink-0 overflow-hidden rounded border"
-						style="background:{theme.page}"
-					>
-						<span class="block h-3 w-full" style="background:{theme.accent}"></span>
-						<span class="mt-1 ml-1 flex gap-0.5">
-							{#each theme.chart.slice(0, 4) as colour, i (i)}
-								<span class="size-1.5 rounded-full" style="background:{colour}"></span>
-							{/each}
-						</span>
-					</span>
-					<span class="min-w-0">
-						<span class="block truncate text-sm font-medium">{theme.name}</span>
-						<span class="block truncate text-xs text-muted-foreground">{theme.description}</span>
-					</span>
+					<ThemePreview
+						{theme}
+						variant="cover"
+						class={cn(
+							style.theme === theme.slug
+								? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+								: ''
+						)}
+					/>
+					<span class="mt-1.5 block truncate text-xs">{theme.name}</span>
 				</button>
 			{/each}
 		</div>
+		{#if activeTheme}
+			<p class="text-xs text-muted-foreground">{activeTheme.description}</p>
+		{/if}
 	</div>
 
 	<Separator />
@@ -326,7 +329,7 @@
 	<Separator />
 
 	<div class="space-y-3">
-		{#each [['section_numbering', 'Number the sections', 'Prints 1., 2., 3. before each heading.'], ['table_zebra', 'Shade alternate table rows', ''], ['mono_safe', 'Ink saving', 'Greys every fill so the document prints cleanly in black and white.'], ['hyphenate', 'Hyphenate body text', 'Tighter paragraphs, at the cost of more broken words.']] as [key, name, help] (key)}
+		{#each [['section_numbering', 'Number the sections', 'Prints 1., 2., 3. before each heading.'], ['chapter_breaks', 'Start each chapter on a new page', 'Off runs the chapters on, separated by a rule. Fewer pages, less white space.'], ['justify', 'Justify body text', 'Flush on both edges. Reads best with hyphenation on.'], ['hyphenate', 'Hyphenate body text', 'Tighter paragraphs, at the cost of more broken words.'], ['table_zebra', 'Shade alternate table rows', ''], ['mono_safe', 'Ink saving', 'Greys every fill so the document prints cleanly in black and white.']] as [key, name, help] (key)}
 			<div class="flex items-start justify-between gap-4">
 				<div class="space-y-0.5">
 					<span class="text-sm">{name}</span>

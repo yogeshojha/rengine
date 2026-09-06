@@ -73,3 +73,16 @@ export function formatBytes(bytes: number): string {
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
 	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+export const FONT_ROLE_STACKS: Record<string, string> = {
+	sans: 'ui-sans-serif, system-ui, sans-serif',
+	serif: 'Georgia, "Times New Roman", serif',
+	mono: 'ui-monospace, SFMono-Regular, Menlo, monospace'
+};
+
+/** A browser stack that stands in for a report face, so a preview shows its character. */
+export function fontStack(slug: string, fonts: { slug: string; name: string; role: string }[]) {
+	const font = fonts.find((f) => f.slug === slug);
+	const fallback = FONT_ROLE_STACKS[font?.role ?? 'sans'] ?? FONT_ROLE_STACKS.sans;
+	return font ? `"${font.name}", ${fallback}` : fallback;
+}

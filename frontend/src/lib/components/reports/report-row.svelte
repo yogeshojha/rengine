@@ -19,7 +19,9 @@
 		isLive
 	} from '$lib/config/reports';
 	import { reportsApi } from '$lib/api/reports';
+	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
+	import ThemePreview from './theme-preview.svelte';
 	import type { Report } from '$lib/types/report';
 
 	let {
@@ -37,9 +39,15 @@
 	const live = $derived(isLive(report.status));
 	const failed = $derived(report.status === ReportStatus.FAILED);
 	const pdf = $derived(report.files.find((f) => f.format === 'pdf') ?? report.files[0]);
+	const theme = $derived(reportCatalog.theme(report.theme));
 </script>
 
 <div class="flex flex-col gap-3 border-b px-4 py-3.5 last:border-b-0 sm:flex-row sm:items-center">
+	{#if theme}
+		<div class="hidden w-9 shrink-0 self-start sm:block">
+			<ThemePreview {theme} variant="cover" class="shadow-sm" />
+		</div>
+	{/if}
 	<div class="min-w-0 flex-1 space-y-1">
 		<div class="flex flex-wrap items-center gap-2">
 			<span class="truncate font-medium">{report.title}</span>
