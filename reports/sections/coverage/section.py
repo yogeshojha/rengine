@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag
-from shared.definitions.reports import SectionGroup
+from shared.definitions.reports import SectionGroup, SectionRole
 from shared.definitions.surface import SURFACE_LABELS, SURFACE_ORDER
 
 
@@ -17,6 +17,8 @@ class CoverageSection(Section):
     title = "Coverage and limitations"
     description = "What ran, what did not, and what this report therefore cannot say."
     group = SectionGroup.APPENDIX.value
+    order = 20
+    role = SectionRole.FURNITURE.value
     config_model = CoverageConfig
 
     def build(self, ctx: RenderContext, cfg: CoverageConfig) -> dict:

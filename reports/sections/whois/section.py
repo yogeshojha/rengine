@@ -16,6 +16,7 @@ class WhoisSection(Section):
     title = "Registration"
     description = "The registration record for the subject."
     group = SectionGroup.INTELLIGENCE.value
+    order = 10
     default_enabled = False
     config_model = WhoisConfig
 

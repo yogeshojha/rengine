@@ -27,6 +27,8 @@ class ServicesSection(Section):
     title = "Network services"
     description = "What is listening, on which address, and which of it is web."
     group = SectionGroup.SURFACE.value
+    order = 20
+    launch_fields = frozenset({"max_rows"})
     requires = frozenset({SurfaceDimension.SERVICES.value})
     config_model = ServicesConfig
 

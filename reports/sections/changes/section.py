@@ -22,6 +22,7 @@ class ChangesSection(Section):
     title = "What changed"
     description = "The difference against the previous run. Nothing is reported as new on a first run."
     group = SectionGroup.SUMMARY.value
+    order = 50
     config_model = ChangesConfig
 
     def build(self, ctx: RenderContext, cfg: ChangesConfig) -> dict | None:

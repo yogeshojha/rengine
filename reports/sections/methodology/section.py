@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, choice, flag, paragraph
-from shared.definitions.reports import SectionGroup
+from shared.definitions.reports import SectionGroup, SectionRole
 
 _STANDARDS = {
     "": "Do not cite a standard",
@@ -29,6 +29,8 @@ class MethodologySection(Section):
     title = "Scope and methodology"
     description = "What was in scope, what ran against it, and with which tools."
     group = SectionGroup.APPENDIX.value
+    order = 10
+    role = SectionRole.FURNITURE.value
     config_model = MethodologyConfig
 
     def build(self, ctx: RenderContext, cfg: MethodologyConfig) -> dict:

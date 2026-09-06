@@ -26,6 +26,9 @@ class SectionSpec:
     title: str
     description: str
     group: str
+    order: int
+    role: str
+    launch_fields: frozenset[str]
     requires: frozenset[str]
     repeatable: bool
     default_enabled: bool
@@ -97,6 +100,9 @@ def _spec(cls: type[Section]) -> SectionSpec:
         title=cls.title,
         description=cls.description,
         group=cls.group,
+        order=cls.order,
+        role=cls.role,
+        launch_fields=frozenset(cls.launch_fields),
         requires=frozenset(cls.requires),
         repeatable=cls.repeatable,
         default_enabled=cls.default_enabled,
@@ -111,7 +117,7 @@ def _spec(cls: type[Section]) -> SectionSpec:
 def sections() -> dict[str, SectionSpec]:
     specs = [_spec(cls) for cls in _classes()]
     order = {group: index for index, group in enumerate(SECTION_GROUP_ORDER)}
-    specs.sort(key=lambda s: (order.get(s.group, 99), s.title))
+    specs.sort(key=lambda s: (order.get(s.group, 99), s.order, s.title))
     return {spec.name: spec for spec in specs}
 
 
@@ -146,6 +152,7 @@ def _fields(spec: SectionSpec) -> list[SectionField]:
                 minimum=prop.get("minimum"),
                 maximum=prop.get("maximum"),
                 widget=widget,
+                launch=name in spec.launch_fields,
             )
         )
     return out
@@ -158,6 +165,7 @@ def catalog() -> list[SectionCatalogEntry]:
             title=spec.title,
             description=spec.description,
             group=spec.group,
+            role=spec.role,
             requires=sorted(spec.requires),
             repeatable=spec.repeatable,
             default_enabled=spec.default_enabled,

@@ -21,6 +21,7 @@ class HostingSection(Section):
         "How the surface is fronted, which networks carry it and where it resolves."
     )
     group = SectionGroup.SURFACE.value
+    order = 60
     requires = frozenset({SurfaceDimension.WEB_ASSETS.value})
     config_model = HostingConfig
 

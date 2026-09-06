@@ -24,6 +24,8 @@ class RemediationPlanSection(Section):
     title = "Remediation plan"
     description = "Actions ordered by the risk they remove, with the reach of each."
     group = SectionGroup.FINDINGS.value
+    order = 20
+    launch_fields = frozenset({"top"})
     requires = frozenset({SurfaceDimension.VULNERABILITIES.value})
     config_model = RemediationPlanConfig
 

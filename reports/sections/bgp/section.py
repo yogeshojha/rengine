@@ -14,6 +14,7 @@ class BgpSection(Section):
     title = "Routing"
     description = "How the subject is announced on the global routing table."
     group = SectionGroup.INTELLIGENCE.value
+    order = 30
     default_enabled = False
     config_model = BgpConfig
 

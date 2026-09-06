@@ -21,6 +21,7 @@ class SurfaceOverviewSection(Section):
     title = "Attack surface"
     description = "What the run found in each dimension, and what it did not look at."
     group = SectionGroup.SUMMARY.value
+    order = 40
     config_model = SurfaceOverviewConfig
 
     def build(self, ctx: RenderContext, cfg: SurfaceOverviewConfig) -> dict:

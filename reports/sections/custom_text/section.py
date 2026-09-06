@@ -30,6 +30,7 @@ class CustomTextSection(Section):
     title = "Custom text"
     description = "Anything you want to say, in Markdown. Add as many as you need."
     group = SectionGroup.SUMMARY.value
+    order = 60
     repeatable = True
     default_enabled = False
     config_model = CustomTextConfig

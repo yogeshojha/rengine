@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, paragraph, text
-from shared.definitions.reports import SectionGroup
+from shared.definitions.reports import SectionGroup, SectionRole
 
 
 class SignoffConfig(SectionConfig):
@@ -24,6 +24,8 @@ class SignoffSection(Section):
     )
     page_break = "flow"
     group = SectionGroup.APPENDIX.value
+    order = 50
+    role = SectionRole.FURNITURE.value
     default_enabled = False
     config_model = SignoffConfig
 

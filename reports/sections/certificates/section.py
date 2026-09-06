@@ -22,6 +22,7 @@ class CertificatesSection(Section):
         "Expired, expiring and self-signed certificates on assets that answered."
     )
     group = SectionGroup.SURFACE.value
+    order = 50
     requires = frozenset({SurfaceDimension.WEB_ASSETS.value})
     config_model = CertificatesConfig
 

@@ -63,6 +63,7 @@ from shared.definitions.reports import (
     SectionEntry,
     coerce_scope,
 )
+from shared.definitions.vulnerabilities import SEVERITY_ORDER, Severity
 from shared.models.instance_settings import InstanceSettings
 from shared.models.report import (
     FontFace,
@@ -754,43 +755,60 @@ class ReportService:
         dispatch_report(str(report.id))
         return self.to_read(report)
 
-    async def _volumes(self, scan: Scan | None) -> tuple[int, int, int]:
+    async def _volumes(
+        self, scan: Scan | None, severities: list[str] | None = None
+    ) -> tuple[int, int, int, dict[str, int]]:
+        """What the document will draw on, counted the way the sections filter it."""
         if scan is None:
-            return (0, 0, 0)
+            return (0, 0, 0, {})
         from shared.models.subdomain import Subdomain  # noqa: PLC0415
         from shared.models.vulnerability import Vulnerability  # noqa: PLC0415
 
+        scoped = [Vulnerability.scan_id == scan.id]
+        if severities is not None:
+            scoped.append(Vulnerability.severity.in_(severities))
         findings = int(
             await self.session.scalar(
-                select(func.count(Vulnerability.id)).where(
-                    Vulnerability.scan_id == scan.id
-                )
+                select(func.count(Vulnerability.id)).where(*scoped)
             )
             or 0
         )
         issues = int(
             await self.session.scalar(
                 select(func.count(func.distinct(Vulnerability.template_id))).where(
-                    Vulnerability.scan_id == scan.id
+                    *scoped
                 )
             )
             or 0
         )
+        rows = (
+            await self.session.execute(
+                select(
+                    Vulnerability.severity,
+                    func.count(func.distinct(Vulnerability.template_id)),
+                )
+                .where(*scoped)
+                .group_by(Vulnerability.severity)
+            )
+        ).all()
+        by_severity = {str(severity): int(count) for severity, count in rows}
         assets = int(
             await self.session.scalar(
                 select(func.count(Subdomain.id)).where(Subdomain.scan_id == scan.id)
             )
             or 0
         )
-        return (findings, issues, assets)
+        return (findings, issues, assets, by_severity)
 
     async def estimate(self, data: ReportCreate, project_id: UUID) -> ReportEstimate:
         scan, _target = await self._subject(data, project_id)
         spec, _ = await self.build_spec(data, project_id)
         cfg = await load_config_async(self.session)
-        findings, issues, assets = await self._volumes(scan)
-
         enabled = [s for s in spec.sections if s.enabled]
+        findings_cfg = _section_config(enabled, "findings_detail")
+        findings, issues, assets, by_severity = await self._volumes(
+            scan, findings_cfg.get("severities") if findings_cfg else None
+        )
         estimate = ReportEstimate(
             sections=len(enabled),
             findings=findings,
@@ -799,6 +817,7 @@ class ReportService:
                 enabled,
                 issues=issues,
                 assets=assets,
+                by_severity=by_severity,
                 chapter_breaks=spec.style.chapter_breaks,
             ),
         )
@@ -945,8 +964,20 @@ _ROWS_PER_PAGE = 42
 # a weakness, with and without its request and response
 _PAGES_PER_ISSUE = 0.9
 _PAGES_PER_ISSUE_EVIDENCE = 1.8
+# a rolled-up observation costs a table row rather than an entry
+_ROLLED_PER_PAGE = 26
+_QUIET_SEVERITIES = frozenset({Severity.INFO.value, Severity.UNKNOWN.value})
 # a chapter that runs on reclaims most of the page its predecessor left unfilled
 _PAGE_SAVED_PER_RUN_ON = 0.4
+_PAGE_TAIL_PER_CHAPTER = 0.3
+
+
+def _section_config(sections: list[SectionEntry], name: str) -> dict | None:
+    entry = next((e for e in sections if e.section == name), None)
+    if entry is None:
+        return None
+    spec = lookup_section(name)
+    return {**(spec.defaults if spec else {}), **(entry.config or {})}
 
 
 def _pages(
@@ -954,6 +985,7 @@ def _pages(
     *,
     issues: int,
     assets: int,
+    by_severity: dict[str, int] | None = None,
     chapter_breaks: bool = True,
 ) -> int:
     """Estimated length, read from each section's own limits rather than the raw totals."""
@@ -970,7 +1002,27 @@ def _pages(
                 if config.get("show_evidence", True)
                 else _PAGES_PER_ISSUE
             )
-            total += min(issues, int(config.get("max_issues", 60))) * weight
+            counts = by_severity or {}
+            shown = min(issues, int(config.get("max_issues", 60)))
+            scale = shown / issues if issues else 0.0
+            # each tier costs a different amount: a table row, a short entry, a full write-up
+            quiet = (
+                sum(counts.get(s, 0) for s in _QUIET_SEVERITIES)
+                if config.get("roll_up_info", True)
+                else 0
+            )
+            cut = SEVERITY_ORDER.index(config.get("detail_from", Severity.MEDIUM.value))
+            brief = sum(
+                count
+                for severity, count in counts.items()
+                if severity in SEVERITY_ORDER
+                and severity not in _QUIET_SEVERITIES
+                and SEVERITY_ORDER.index(severity) > cut
+            )
+            full = max(0, issues - quiet - brief)
+            total += scale * (
+                full * weight + brief * _PAGES_PER_ISSUE + quiet / _ROLLED_PER_PAGE
+            )
         elif name == "appendix_assets":
             total += max(1.0, min(assets, int(config.get("max_rows", 1500))) / 260)
         elif "max_rows" in config:
@@ -982,8 +1034,11 @@ def _pages(
             total += 1
         else:
             total += 1
-    if not chapter_breaks:
-        total -= _PAGE_SAVED_PER_RUN_ON * max(0, len(sections) - 2)
+    tails = max(0, len(sections) - 2)
+    # a chapter that starts its own page leaves part of the previous one unfilled
+    total += (
+        _PAGE_TAIL_PER_CHAPTER if chapter_breaks else -_PAGE_SAVED_PER_RUN_ON
+    ) * tails
     return max(2, round(total))
 
 

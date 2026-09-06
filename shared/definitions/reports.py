@@ -112,6 +112,16 @@ SECTION_GROUP_LABELS: dict[str, str] = {
 }
 
 
+class SectionRole(StrEnum):
+    """Content is what a reader asked for; furniture is the document around it."""
+
+    CONTENT = "content"
+    FURNITURE = "furniture"
+
+
+SECTION_ROLES: tuple[str, ...] = tuple(r.value for r in SectionRole)
+
+
 class Audience(StrEnum):
     EXECUTIVE = "executive"
     TECHNICAL = "technical"

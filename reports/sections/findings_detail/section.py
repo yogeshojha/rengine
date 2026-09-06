@@ -21,22 +21,6 @@ class FindingsDetailConfig(SectionConfig):
         title="Severities included",
         options={s: s.title() for s in SEVERITY_ORDER},
     )
-    max_issues: int = limit(60, title="Weaknesses shown", minimum=1, maximum=500)
-    max_assets: int = limit(
-        25, title="Affected assets listed per weakness", minimum=1, maximum=500
-    )
-    show_description: bool = flag(True, title="Show description")
-    show_impact: bool = flag(True, title="Show impact")
-    show_remediation: bool = flag(True, title="Show remediation")
-    show_references: bool = flag(True, title="Show references")
-    show_evidence: bool = flag(True, title="Show request and response")
-    show_curl: bool = flag(True, title="Show reproduction command")
-    show_screenshot: bool = flag(False, title="Show a screenshot of the affected asset")
-    show_controls: bool = flag(True, title="Show control mapping")
-    show_classification: bool = flag(True, title="Show CVE, CWE, CVSS and EPSS")
-    evidence_chars: int = limit(
-        1200, title="Evidence characters kept", minimum=200, maximum=MAX_EVIDENCE_CHARS
-    )
     detail_from: str = choice(
         Severity.MEDIUM.value,
         title="Full detail down to",
@@ -49,6 +33,22 @@ class FindingsDetailConfig(SectionConfig):
         title="Roll informational observations into a table",
         description="One row per check instead of an entry each. A long tail of observations "
         "should not outweigh the weaknesses above it.",
+    )
+    max_assets: int = limit(
+        25, title="Affected assets listed per weakness", minimum=1, maximum=500
+    )
+    max_issues: int = limit(60, title="Weaknesses shown", minimum=1, maximum=500)
+    show_description: bool = flag(True, title="Show description")
+    show_impact: bool = flag(True, title="Show impact")
+    show_remediation: bool = flag(True, title="Show remediation")
+    show_references: bool = flag(True, title="Show references")
+    show_evidence: bool = flag(True, title="Show request and response")
+    show_curl: bool = flag(True, title="Show reproduction command")
+    show_screenshot: bool = flag(False, title="Show a screenshot of the affected asset")
+    show_controls: bool = flag(True, title="Show control mapping")
+    show_classification: bool = flag(True, title="Show CVE, CWE, CVSS and EPSS")
+    evidence_chars: int = limit(
+        1200, title="Evidence characters kept", minimum=200, maximum=MAX_EVIDENCE_CHARS
     )
     order: str = choice(
         "risk",
@@ -67,6 +67,10 @@ class FindingsDetailSection(Section):
     title = "Findings"
     description = "Every weakness with its evidence, affected assets and remediation."
     group = SectionGroup.FINDINGS.value
+    order = 10
+    launch_fields = frozenset(
+        {"severities", "detail_from", "max_assets", "roll_up_info"}
+    )
     requires = frozenset({SurfaceDimension.VULNERABILITIES.value})
     config_model = FindingsDetailConfig
 

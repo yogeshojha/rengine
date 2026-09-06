@@ -26,6 +26,7 @@ class ExecutiveSummarySection(Section):
     title = "Executive summary"
     description = "The narrative, the posture score and the figures behind both."
     group = SectionGroup.SUMMARY.value
+    order = 10
     config_model = ExecutiveSummaryConfig
 
     def build(self, ctx: RenderContext, cfg: ExecutiveSummaryConfig) -> dict:

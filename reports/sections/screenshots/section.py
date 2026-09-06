@@ -26,6 +26,8 @@ class ScreenshotsSection(Section):
     title = "Screenshots"
     description = "What the assets look like. Images are embedded in the document."
     group = SectionGroup.SURFACE.value
+    order = 70
+    launch_fields = frozenset({"max_images"})
     requires = frozenset({SurfaceDimension.WEB_ASSETS.value})
     default_enabled = False
     config_model = ScreenshotsConfig

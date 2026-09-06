@@ -19,6 +19,8 @@ class AppendixAssetsSection(Section):
     title = "Asset inventory"
     description = "The full lists behind the figures, as dense columns."
     group = SectionGroup.APPENDIX.value
+    order = 40
+    launch_fields = frozenset({"max_rows"})
     default_enabled = False
     config_model = AppendixAssetsConfig
 

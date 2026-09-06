@@ -28,6 +28,8 @@ class EndpointsSection(Section):
         "The paths worth looking at, rather than every URL the crawl produced."
     )
     group = SectionGroup.SURFACE.value
+    order = 30
+    launch_fields = frozenset({"max_rows"})
     requires = frozenset({SurfaceDimension.ENDPOINTS.value})
     config_model = EndpointsConfig
 

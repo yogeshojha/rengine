@@ -365,6 +365,7 @@ class SectionField(BaseModel):
     maximum: float | None = None
     widget: str = ""
     depends_on: str = ""
+    launch: bool = False
 
 
 class SectionCatalogEntry(BaseModel):
@@ -372,6 +373,7 @@ class SectionCatalogEntry(BaseModel):
     title: str
     description: str
     group: str
+    role: str = ""
     requires: list[str] = PydanticField(default_factory=list)
     repeatable: bool = False
     default_enabled: bool = True

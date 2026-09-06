@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag
-from shared.definitions.reports import SectionGroup
+from shared.definitions.reports import SectionGroup, SectionRole
 from shared.definitions.vulnerabilities import (
     EPSS_HIGH,
     SEVERITY_HELP,
@@ -50,6 +50,8 @@ class SeverityDefinitionsSection(Section):
     description = "What each severity means, and how findings were ranked."
     page_break = "flow"
     group = SectionGroup.APPENDIX.value
+    order = 30
+    role = SectionRole.FURNITURE.value
     config_model = SeverityDefinitionsConfig
 
     def build(self, ctx: RenderContext, cfg: SeverityDefinitionsConfig) -> dict:

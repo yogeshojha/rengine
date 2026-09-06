@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
 from reports.config import SectionConfig
-from shared.definitions.reports import ReportSpec, SectionGroup
+from shared.definitions.reports import ReportSpec, SectionGroup, SectionRole
 
 if TYPE_CHECKING:
     from reports.analysis.brief import ReportBrief
@@ -94,6 +94,9 @@ class Section(ABC):
     title: ClassVar[str]
     description: ClassVar[str] = ""
     group: ClassVar[str] = SectionGroup.SUMMARY.value
+    role: ClassVar[str] = SectionRole.CONTENT.value
+    order: ClassVar[int] = 100
+    launch_fields: ClassVar[frozenset[str]] = frozenset()
     requires: ClassVar[frozenset[str]] = frozenset()
     repeatable: ClassVar[bool] = False
     default_enabled: ClassVar[bool] = True

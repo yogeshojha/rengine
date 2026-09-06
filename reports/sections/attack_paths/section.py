@@ -16,6 +16,7 @@ class AttackPathsSection(Section):
     title = "Attack paths"
     description = "Conditions that chain into a route an attacker can take. Not a list of findings."
     group = SectionGroup.SUMMARY.value
+    order = 30
     config_model = AttackPathsConfig
 
     def build(self, ctx: RenderContext, cfg: AttackPathsConfig) -> dict | None:

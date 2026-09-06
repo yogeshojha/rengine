@@ -26,6 +26,7 @@ class RiskSummarySection(Section):
     title = "Risk summary"
     description = "Severity distribution, the ranked weaknesses and where they cluster."
     group = SectionGroup.SUMMARY.value
+    order = 20
     requires = frozenset({SurfaceDimension.VULNERABILITIES.value})
     config_model = RiskSummaryConfig
 

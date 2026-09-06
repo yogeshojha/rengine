@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, text
-from shared.definitions.reports import SectionGroup
+from shared.definitions.reports import SectionGroup, SectionRole
 
 
 class ContentsConfig(SectionConfig):
@@ -19,6 +19,8 @@ class ContentsSection(Section):
     title = "Contents"
     description = "A table of contents with real page numbers, resolved at layout time."
     group = SectionGroup.FRONT_MATTER.value
+    order = 30
+    role = SectionRole.FURNITURE.value
     in_toc = False
     config_model = ContentsConfig
 

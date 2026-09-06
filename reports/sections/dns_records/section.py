@@ -15,6 +15,7 @@ class DnsRecordsSection(Section):
     title = "DNS records"
     description = "The zone as it answered at enrichment time."
     group = SectionGroup.INTELLIGENCE.value
+    order = 20
     default_enabled = False
     config_model = DnsRecordsConfig
 

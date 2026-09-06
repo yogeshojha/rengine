@@ -18,6 +18,7 @@ class IpAddressesSection(Section):
     title = "Addresses"
     description = "The address inventory with network, country and exposure."
     group = SectionGroup.SURFACE.value
+    order = 40
     requires = frozenset({SurfaceDimension.IPS.value})
     config_model = IpAddressesConfig
 

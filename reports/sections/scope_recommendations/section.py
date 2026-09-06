@@ -32,6 +32,7 @@ class ScopeRecommendationsSection(Section):
     title = "Domains worth adding to scope"
     description = "Other registrable domains named on certificates this estate serves."
     group = SectionGroup.INTELLIGENCE.value
+    order = 40
     requires = frozenset({SurfaceDimension.WEB_ASSETS.value})
     default_enabled = False
     config_model = ScopeRecommendationsConfig

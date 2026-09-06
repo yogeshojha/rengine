@@ -30,6 +30,7 @@ class ComplianceSection(Section):
     title = "Control mapping"
     description = "Findings mapped to control frameworks as audit evidence, not a compliance verdict."
     group = SectionGroup.FINDINGS.value
+    order = 30
     requires = frozenset({SurfaceDimension.VULNERABILITIES.value})
     default_enabled = False
     config_model = ComplianceConfig

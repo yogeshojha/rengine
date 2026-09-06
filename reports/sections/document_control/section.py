@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, paragraph
-from shared.definitions.reports import SectionGroup
+from shared.definitions.reports import SectionGroup, SectionRole
 
 _DEFAULT_CONFIDENTIALITY = (
     "This document contains information about security weaknesses in systems operated by "
@@ -27,6 +27,8 @@ class DocumentControlSection(Section):
     title = "Document control"
     description = "Version, distribution, revision history and handling instructions."
     group = SectionGroup.FRONT_MATTER.value
+    order = 20
+    role = SectionRole.FURNITURE.value
     default_enabled = False
     config_model = DocumentControlConfig
 
