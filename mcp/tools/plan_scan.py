@@ -34,6 +34,10 @@ class Input(ToolInput):
     intensity: str | None = Field(
         default=None, description="passive, normal or aggressive."
     )
+    project_id: str | None = Field(
+        default=None,
+        description="Project to act in. Omit when the token is scoped to one.",
+    )
 
 
 class PlanScan(Tool):
@@ -56,7 +60,9 @@ class PlanScan(Tool):
         from app.services.scan import ScanService  # noqa: PLC0415
         from shared.models.scan import ScanCreate  # noqa: PLC0415
 
-        project_id = await project_for(ctx, None)
+        project_id = await project_for(
+            ctx, uuid.UUID(args.project_id) if args.project_id else None
+        )
         payload = _scan_create(args, ScanCreate)
 
         try:

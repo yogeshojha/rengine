@@ -34,6 +34,10 @@ class Input(ToolInput):
     context_id: str | None = Field(
         default=None, description="A saved scan context for auth, scope and rate."
     )
+    project_id: str | None = Field(
+        default=None,
+        description="Project to act in. Omit when the token is scoped to one.",
+    )
 
 
 class StartScan(Tool):
@@ -58,7 +62,9 @@ class StartScan(Tool):
             msg = "This token has no issuing operator, so a scan cannot be attributed."
             raise ToolError(msg)
 
-        project_id = await project_for(ctx, None)
+        project_id = await project_for(
+            ctx, uuid.UUID(args.project_id) if args.project_id else None
+        )
         payload: dict = {
             "target_value": args.target.strip(),
             "overrides": {stage: {"enabled": True} for stage in args.stages},

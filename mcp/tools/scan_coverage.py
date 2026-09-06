@@ -67,6 +67,17 @@ class ScanCoverage(Tool):
         caveats.append(
             "A count reported as null means the scanner did not say, not zero."
         )
+        # a plan asked for more checks than the scanner loaded: the gap is the point of this tool
+        shortfall = sum(
+            max(0, (r.get("templates_selected") or 0) - r["templates_loaded"])
+            for r in runs
+            if r.get("templates_loaded") is not None
+        )
+        if shortfall:
+            caveats.append(
+                f"{shortfall} selected check(s) were not loaded and did not run. "
+                "Report what ran, not what was selected."
+            )
         if not runs:
             caveats.append(
                 "No coverage rows exist, so nothing can be said about what ran."
