@@ -38,6 +38,18 @@ class ToolExecutionError(Exception):
     """Raised when tool execution fails unexpectedly."""
 
 
+# a tool that bails on a bad flag may say so on stdout; only a short one is a complaint
+_MAX_STDOUT_AS_ERROR = 2000
+
+
+def _failure_excerpt(stderr: str | None, stdout: str | None) -> str:
+    text = (stderr or "").strip()
+    if text:
+        return text[:500]
+    out = (stdout or "").strip()
+    return out[:500] if 0 < len(out) <= _MAX_STDOUT_AS_ERROR else ""
+
+
 class CLIToolRunner:
     """Generic CLI tool executor managing the full run lifecycle (validate, run, parse, cleanup)."""
 
@@ -178,10 +190,10 @@ class CLIToolRunner:
             success = process_result.returncode == 0
             error = None
             if not success:
-                stderr_excerpt = (process_result.stderr or "").strip()[:500]
+                excerpt = _failure_excerpt(process_result.stderr, process_result.stdout)
                 error = (
                     f"{self.binary} exited with code {process_result.returncode}"
-                    + (f": {stderr_excerpt}" if stderr_excerpt else "")
+                    + (f": {excerpt}" if excerpt else "")
                 )
                 logger.warning(error)
 

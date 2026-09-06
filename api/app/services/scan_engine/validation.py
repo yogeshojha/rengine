@@ -85,7 +85,14 @@ def _validate_tool_options(options: dict | None) -> dict[str, str]:
     clean: dict[str, str] = {}
     for tool, raw in (options or {}).items():
         if tool not in TOOL_NAMES:
-            continue
+            # dropping it silently would accept the request and lose the setting
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"'{tool}' does not take custom arguments. "
+                    f"Tools that do: {', '.join(sorted(TOOL_NAMES))}."
+                ),
+            )
         value = (raw or "").strip()
         if not value:
             continue

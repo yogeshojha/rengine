@@ -84,6 +84,42 @@ SCAN_TOOLS: tuple[ToolSpec, ...] = (
         phase="Subdomain Discovery",
         example="-p '{{sub}}-{{word}}.{{suffix}}'",
     ),
+    ToolSpec(
+        name="naabu",
+        label="Naabu",
+        phase="Port Scan",
+        example="-scan-all-ips -sn",
+    ),
+    ToolSpec(
+        name="httpx",
+        label="HTTPX",
+        phase="HTTP Probe",
+        example="-favicon -jarm",
+    ),
+    ToolSpec(
+        name="nuclei",
+        label="Nuclei",
+        phase="Vulnerability Scan",
+        example="-etags intrusive -exclude-severity info",
+    ),
+    ToolSpec(
+        name="ffuf",
+        label="ffuf",
+        phase="URL Discovery",
+        example="-mc 200,204,301,302",
+    ),
+    ToolSpec(
+        name="wafw00f",
+        label="wafw00f",
+        phase="WAF Detection",
+        example="-a",
+    ),
+    ToolSpec(
+        name="cdncheck",
+        label="cdncheck",
+        phase="CDN Attribution",
+        example="-resp",
+    ),
 )
 
 TOOL_NAMES: frozenset[str] = frozenset(t.name for t in SCAN_TOOLS)
