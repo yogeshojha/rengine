@@ -76,7 +76,11 @@ from shared.services.celery_dispatch import (
     dispatch_whois_lookups,
 )
 from shared.utils.datetime import utc_now
-from shared.utils.validation import validate_target
+from shared.utils.validation import (
+    normalize_target_value,
+    unrecognised_target,
+    validate_target,
+)
 from tools.dnsx.service import DnsxService
 
 MAX_TARGETS_IMPORT = 500
@@ -343,11 +347,12 @@ class TargetService:
         return len(targets)
 
     async def create_target(self, target_in: TargetCreate, user_id: str) -> TargetRead:
-        target_type = validate_target(target_in.target_value)
+        target_value = normalize_target_value(target_in.target_value)
+        target_type = validate_target(target_value)
         if not target_type:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid target ID",
+                detail=unrecognised_target(target_in.target_value),
             )
 
         project = await self._get_project_by_slug(target_in.project_slug)
@@ -357,7 +362,7 @@ class TargetService:
                 detail="Project not found",
             )
 
-        await self._check_duplicate_target(target_in.target_value, project.id)
+        await self._check_duplicate_target(target_value, project.id)
 
         organizations = await self._get_or_create_organizations(
             target_in.organization_names, project.id, user_id
@@ -365,9 +370,9 @@ class TargetService:
         tags = await self._get_or_create_tags(target_in.tag_names, project.id, user_id)
 
         target = Target(
-            target_value=target_in.target_value,
+            target_value=target_value,
             target_type=target_type,
-            display_name=target_in.display_name or target_in.target_value,
+            display_name=target_in.display_name or target_value,
             project_id=project.id,
             created_by=user_id,
             organizations=organizations,
@@ -892,7 +897,7 @@ class TargetService:
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid target ID",
+                detail="That is not a valid target ID.",
             ) from e
         result = await self.session.execute(
             select(Target).where(Target.id == target_id)
@@ -994,7 +999,7 @@ class TargetService:
                 import_result=TargetImportResult(
                     target_value=_target_value,
                     success=False,
-                    error="Invalid target ID",
+                    error=unrecognised_target(_target_value),
                 )
             )
 
@@ -1065,7 +1070,7 @@ class TargetService:
                 import_result=TargetImportResult(
                     target_value=target_value,
                     success=False,
-                    error="Invalid target ID",
+                    error=unrecognised_target(target_value),
                 )
             )
 

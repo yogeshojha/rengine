@@ -45,11 +45,40 @@ def validate_asn(value: str) -> bool:
     return bool(re.match(asn_pattern, value.upper()))
 
 
+WEB_SCHEMES = ("http://", "https://")
+_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*://")
+
+
 def validate_url(value: str) -> bool:
-    return validators.url(value) is True
+    # reNgine scans over HTTP; another scheme is not a target it can do anything with
+    return value.lower().startswith(WEB_SCHEMES) and validators.url(value) is True
+
+
+def normalize_target_value(value: str) -> str:
+    """What a user typed, reduced to the form reNgine validates and stores."""
+    v = (value or "").strip()
+    if not v or _SCHEME.match(v):
+        return v
+    # a scope list writes *.example.com for a domain and everything under it
+    v = v.removeprefix("*.")
+    # a pasted hostname often carries a trailing slash or the root dot
+    return v.rstrip("/").rstrip(".")
+
+
+TARGET_FORMAT_HINT = "Enter a domain, IP address, CIDR range, URL or ASN."
+_MAX_ECHO = 120
+
+
+def unrecognised_target(value: str) -> str:
+    """The one wording for a target value reNgine cannot read."""
+    shown = (value or "").strip()[:_MAX_ECHO]
+    return f"Unrecognised target: {shown}. {TARGET_FORMAT_HINT}"
 
 
 def validate_target(target_value: str) -> TargetType | None:
+    value = normalize_target_value(target_value)
+    if not value:
+        return None
     _validators = [
         (TargetType.IP_RANGE, validate_ip_range),
         (TargetType.IP, validate_ip),
@@ -59,7 +88,7 @@ def validate_target(target_value: str) -> TargetType | None:
     ]
 
     for target_type, validator_func in _validators:
-        if validator_func(target_value):
+        if validator_func(value):
             return target_type
 
     return None
