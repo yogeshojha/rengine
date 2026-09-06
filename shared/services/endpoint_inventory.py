@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import DatabaseError
+from sqlalchemy.exc import StatementError
 
 from shared.definitions.endpoints import (
     MAX_PARAM_SAMPLES,
@@ -25,6 +25,7 @@ from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
 from shared.utils.datetime import utc_now
+from shared.utils.text import scrub
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -215,50 +216,53 @@ def _row(
         endpoint_class=endpoint_class,
         extension=merged.extension,
     )
-    return {
-        "id": uuid.uuid4(),
-        "scan_id": scan_id,
-        "target_id": target_id,
-        "project_id": project_id,
-        "signature": merged.signature,
-        "url": merged.url,
-        "host": merged.host,
-        "port": merged.port,
-        "scheme": merged.scheme,
-        "path": merged.path,
-        "dir_path": merged.dir_path,
-        "filename": merged.filename,
-        "extension": merged.extension,
-        "depth": merged.depth,
-        "params": merged.params,
-        "param_count": len(merged.params),
-        "param_samples": merged.samples,
-        "variants": max(len(merged.samples), 1),
-        "more_variants": merged.more_variants,
-        "methods": sorted(merged.methods),
-        "sources": [source],
-        "primary_source": source,
-        "discovery": {source: _evidence(merged, now)},
-        "found_on": merged.found_on,
-        "is_probed": merged.is_probed,
-        "status_code": merged.status_code,
-        "content_type": merged.content_type,
-        "content_length": merged.content_length,
-        "title": merged.title,
-        "words": merged.words,
-        "lines": merged.lines,
-        "response_time": merged.response_time,
-        "redirect_location": merged.redirect_location,
-        "content_hash": merged.content_hash,
-        "tech": merged.tech,
-        "endpoint_class": endpoint_class,
-        "interest": interest,
-        "http_asset_id": index.assets.get((merged.host, merged.port)),
-        "subdomain_id": index.subdomains.get(merged.host),
-        "archive_last_seen": merged.observed_at,
-        "discovered_at": now,
-        "created_at": now,
-    }
+    # a sitemap, an archive record and a crawl result are all arbitrary bytes
+    return scrub(
+        {
+            "id": uuid.uuid4(),
+            "scan_id": scan_id,
+            "target_id": target_id,
+            "project_id": project_id,
+            "signature": merged.signature,
+            "url": merged.url,
+            "host": merged.host,
+            "port": merged.port,
+            "scheme": merged.scheme,
+            "path": merged.path,
+            "dir_path": merged.dir_path,
+            "filename": merged.filename,
+            "extension": merged.extension,
+            "depth": merged.depth,
+            "params": merged.params,
+            "param_count": len(merged.params),
+            "param_samples": merged.samples,
+            "variants": max(len(merged.samples), 1),
+            "more_variants": merged.more_variants,
+            "methods": sorted(merged.methods),
+            "sources": [source],
+            "primary_source": source,
+            "discovery": {source: _evidence(merged, now)},
+            "found_on": merged.found_on,
+            "is_probed": merged.is_probed,
+            "status_code": merged.status_code,
+            "content_type": merged.content_type,
+            "content_length": merged.content_length,
+            "title": merged.title,
+            "words": merged.words,
+            "lines": merged.lines,
+            "response_time": merged.response_time,
+            "redirect_location": merged.redirect_location,
+            "content_hash": merged.content_hash,
+            "tech": merged.tech,
+            "endpoint_class": endpoint_class,
+            "interest": interest,
+            "http_asset_id": index.assets.get((merged.host, merged.port)),
+            "subdomain_id": index.subdomains.get(merged.host),
+            "archive_last_seen": merged.observed_at,
+            "discovered_at": now,
+            "created_at": now,
+        }
+    )
 
 
 def _evidence(merged: _Merged, now: datetime) -> dict:
@@ -340,7 +344,7 @@ def _changes(row: Endpoint, merged: _Merged, source: str, now: datetime) -> dict
         )
         if merged.tech:
             changed["tech"] = merged.tech
-    return changed
+    return scrub(changed)
 
 
 def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
@@ -354,7 +358,7 @@ def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
                 .returning(Endpoint.signature)
             )
             return set(written.scalars().all()), 0
-    except DatabaseError:
+    except StatementError:
         logger.warning("endpoint batch rejected, retrying row by row")
     created: set[str] = set()
     refused = 0
@@ -368,7 +372,7 @@ def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
                     .returning(Endpoint.signature)
                 )
                 created.update(written.scalars().all())
-        except DatabaseError:
+        except StatementError:
             refused += 1
     return created, refused
 

@@ -20,6 +20,7 @@ from shared.definitions.ports import (
 )
 from shared.models.port import Port
 from shared.utils.datetime import utc_now
+from shared.utils.text import scrub
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -57,27 +58,30 @@ def _row(
 ) -> dict:
     name = obs.service_name or service_for_port(obs.port)
     tls = obs.tls or likely_tls(obs.port)
-    return {
-        "id": uuid.uuid4(),
-        "scan_id": scan_id,
-        "target_id": target_id,
-        "project_id": project_id,
-        "ip": obs.ip,
-        "number": obs.port,
-        "protocol": obs.protocol,
-        "state": obs.state,
-        "service_name": name,
-        "service_class": service_class(name, obs.port, is_http=obs.is_http),
-        "source": source,
-        "is_http": obs.is_http,
-        "tls": tls,
-        "product": obs.product,
-        "version": obs.version,
-        "banner": obs.banner,
-        "cpe": list(obs.cpe or []),
-        "discovered_at": now,
-        "created_at": now,
-    }
+    # a service banner is whatever the socket sent back, bytes and all
+    return scrub(
+        {
+            "id": uuid.uuid4(),
+            "scan_id": scan_id,
+            "target_id": target_id,
+            "project_id": project_id,
+            "ip": obs.ip,
+            "number": obs.port,
+            "protocol": obs.protocol,
+            "state": obs.state,
+            "service_name": name,
+            "service_class": service_class(name, obs.port, is_http=obs.is_http),
+            "source": source,
+            "is_http": obs.is_http,
+            "tls": tls,
+            "product": obs.product,
+            "version": obs.version,
+            "banner": obs.banner,
+            "cpe": list(obs.cpe or []),
+            "discovered_at": now,
+            "created_at": now,
+        }
+    )
 
 
 def upsert(

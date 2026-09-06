@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from sqlalchemy import delete, select
-from sqlalchemy.exc import DatabaseError
+from sqlalchemy.exc import StatementError
 from sqlalchemy.orm import defer
 
 from shared.definitions.ports import (
@@ -280,14 +280,14 @@ class HttpProbeStage(Stage):
             with self.session.begin_nested():
                 self.session.add_all(pending)
                 self.session.flush()
-        except DatabaseError:
+        except StatementError:
             logger.warning("http asset batch rejected, retrying row by row")
             for obj in pending:
                 try:
                     with self.session.begin_nested():
                         self.session.add(obj)
                         self.session.flush()
-                except DatabaseError:
+                except StatementError:
                     rejected += 1
         # detach again: the row is written, and its body must not stay in RAM
         for obj in pending:
