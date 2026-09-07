@@ -885,7 +885,7 @@ class SubdomainService:
             ("auth", "Login or admin panels", counts.auth, "is:auth", "warning"),
             (
                 "sensitive",
-                "Exposed sensitive services",
+                "Hosts exposing a sensitive service",
                 int(sensitive or 0),
                 "is:sensitive",
                 "destructive",
