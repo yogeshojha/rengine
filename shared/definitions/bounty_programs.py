@@ -349,6 +349,8 @@ def notify_enabled(settings: dict | None) -> bool:
 
 
 MAX_TAGS_PER_IMPORT = 10
+# bounty_events.detail is varchar(500); an instruction is capped far higher
+MAX_EVENT_DETAIL = 500
 
 MAX_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "none")
 

@@ -12,6 +12,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -20,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from shared.definitions.bounty_programs import (
     DEFAULT_SYNC_INTERVAL,
+    MAX_EVENT_DETAIL,
     SYNC_INTERVAL_HOURS,
     BountyEvent,
     BountyPlatform,
@@ -52,6 +55,28 @@ MAX_RETRIES = 3
 MAX_INSTRUCTION = 4000
 # a truncated URL is a broken link, so an absurd one is dropped instead
 MAX_PICTURE_URL = 4000
+
+
+# two syncs deleting the same scope rows block each other badly: a no-change
+# yeswehack pass measured 0.5s alone and 120.5s against a concurrent run
+SYNC_LOCK_KEY = 0x624F0001
+FEED_LOCK_KEY = 0x624F0002
+
+
+@contextmanager
+def sync_lock(session: Session, key: int) -> Iterator[bool]:
+    """Session-level advisory lock, so it survives the per-program commits."""
+    held = bool(
+        session.execute(
+            text("SELECT pg_try_advisory_lock(:key)"), {"key": key}
+        ).scalar_one()
+    )
+    try:
+        yield held
+    finally:
+        if held:
+            session.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": key})
+            session.commit()
 
 
 class HackerOneError(RuntimeError):
@@ -341,7 +366,8 @@ def _scope_changes(
                 kind,
                 asset_type=asset_type,
                 asset_identifier=identifier,
-                detail=row.get("instruction"),
+                detail=(row.get("instruction") or None)
+                and row["instruction"][:MAX_EVENT_DETAIL],
             )
         )
     for key in before.keys() - after.keys():

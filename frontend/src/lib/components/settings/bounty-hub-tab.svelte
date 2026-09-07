@@ -7,7 +7,6 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { Switch } from '$lib/components/ui/switch';
-	import EmptyState from '$lib/components/empty-state.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import {
@@ -80,19 +79,27 @@
 		<Spinner class="size-4" />
 		Loading
 	</div>
-{:else if status && !status.configured}
-	<Card.Root>
-		<EmptyState
-			icon={KeyRoundIcon}
-			title="Connect your HackerOne account"
-			description="Bounty Hub reads programs and their scope with your HackerOne API username and token."
-			class="p-10"
-		>
-			<Button href={ROUTES.settings('api-keys')} size="sm">Add HackerOne credentials</Button>
-		</EmptyState>
-	</Card.Root>
 {:else if settings}
 	<div class="flex flex-col gap-6">
+		{#if status && !status.configured}
+			<Card.Root class="border-dashed">
+				<div class="flex flex-wrap items-center justify-between gap-3 p-4">
+					<div class="flex min-w-0 items-start gap-3">
+						<KeyRoundIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+						<div class="flex min-w-0 flex-col gap-0.5">
+							<span class="text-sm font-medium">HackerOne is not connected</span>
+							<span class="text-xs text-muted-foreground">
+								The public feed works without credentials. A HackerOne token adds its programs and
+								the private ones you are invited to.
+							</span>
+						</div>
+					</div>
+					<Button href={ROUTES.settings('api-keys')} size="sm" variant="outline">
+						Add credentials
+					</Button>
+				</div>
+			</Card.Root>
+		{/if}
 		<Card.Root class="gap-0 py-0">
 			<div class="border-b p-4">
 				<SectionHead title="HackerOne" count={`${settings.programs} programs`}>

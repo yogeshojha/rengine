@@ -9,7 +9,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
-	import { MAX_IMPORT_TAGS, PLATFORM_TAG } from '$lib/config/bounty-programs';
+	import { MAX_IMPORT_TAGS } from '$lib/config/bounty-programs';
 	import type { BountyProgram } from '$lib/types/bounty-program';
 
 	interface Props {
@@ -39,7 +39,7 @@
 		if (!open) return;
 		groupByProgram = true;
 		organizationName = program.name;
-		tags = [PLATFORM_TAG];
+		tags = [program.platform];
 		draft = '';
 	});
 
@@ -71,7 +71,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Add {count} {count === 1 ? 'target' : 'targets'}</Dialog.Title>
 			<Dialog.Description>
-				From {program.name} on HackerOne.
+				From {program.name} on {program.platform_label}.
 				{#if outOfScopeCount > 0}
 					{outOfScopeCount} of them {outOfScopeCount === 1 ? 'is' : 'are'} marked out of scope by the
 					program.

@@ -184,11 +184,13 @@ def dispatch_bounty_sync(*, scopes: bool = True) -> bool:
     return True
 
 
-def dispatch_bounty_program_sync(handle: str) -> bool:
+def dispatch_bounty_program_sync(handle: str, platform: str = "hackerone") -> bool:
     """Refresh one program's scope."""
     try:
         get_celery_client().send_task(
-            "app.tasks.bounty_programs.sync_program", args=[handle], queue="default"
+            "app.tasks.bounty_programs.sync_program",
+            args=[handle, platform],
+            queue="default",
         )
     except Exception:
         logger.warning("bounty program scope dispatch failed", exc_info=True)

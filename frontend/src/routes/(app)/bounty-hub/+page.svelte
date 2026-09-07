@@ -133,7 +133,10 @@
 	async function sync() {
 		syncing = true;
 		try {
-			await Promise.all([bountyProgramsApi.sync(), bountyProgramsApi.syncFeed()]);
+			await Promise.all([
+				status?.configured ? bountyProgramsApi.sync() : Promise.resolve(),
+				bountyProgramsApi.syncFeed()
+			]);
 			toast.success('Refreshing every platform. This runs in the background.');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Could not start the refresh');
@@ -171,26 +174,33 @@
 			</p>
 		</div>
 
-		{#if status?.configured}
-			<LoadingButton loading={syncing} variant="outline" size="sm" onclick={sync}>
-				<RefreshCwIcon class="mr-2 size-3.5" />
-				Refresh all platforms
-			</LoadingButton>
-		{/if}
+		<LoadingButton loading={syncing} variant="outline" size="sm" onclick={sync}>
+			<RefreshCwIcon class="mr-2 size-3.5" />
+			Refresh all platforms
+		</LoadingButton>
 	</div>
 
 	{#if status && !status.configured}
-		<Card.Root>
-			<EmptyState
-				icon={KeyRoundIcon}
-				title="Connect your HackerOne account"
-				description="Bounty Hub reads programs and their structured scope with your HackerOne API username and token. Public and private programs your account can see will appear here."
-				class="p-10"
-			>
-				<Button href={ROUTES.settings('api-keys')} size="sm">Add HackerOne credentials</Button>
-			</EmptyState>
+		<Card.Root class="border-dashed">
+			<div class="flex flex-wrap items-center justify-between gap-3 p-4">
+				<div class="flex min-w-0 items-start gap-3">
+					<KeyRoundIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+					<div class="flex min-w-0 flex-col gap-0.5">
+						<span class="text-sm font-medium">Connect HackerOne for private programs</span>
+						<span class="text-xs text-muted-foreground">
+							Public programs from Bugcrowd, Intigriti and YesWeHack are already here. A HackerOne
+							API token adds its programs, including the private ones you are invited to.
+						</span>
+					</div>
+				</div>
+				<Button href={ROUTES.settings('api-keys')} size="sm" variant="outline">
+					Add credentials
+				</Button>
+			</div>
 		</Card.Root>
-	{:else}
+	{/if}
+
+	{#if status}
 		<CountTabs
 			tabs={[
 				{ key: 'programs', label: 'Programs' },

@@ -199,7 +199,9 @@ def sync_platform(session: Session, spec: FeedSpec) -> dict:
         session.add_all([BountyScope(**r) for r in wanted.values()])
         program.scopes_synced_at = utc_now()
         assets += len(wanted)
-    session.commit()
+        # committing per program keeps the pending set from growing into an
+        # autoflush storm on every in-loop select
+        session.commit()
     return {
         "platform": spec.platform,
         "programs": len(seen),

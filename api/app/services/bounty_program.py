@@ -59,6 +59,12 @@ from shared.utils.datetime import utc_now
 from shared.utils.slug import add_with_unique_slug
 from shared.utils.validation import clean_name
 
+
+def _platform_label(platform: str) -> str:
+    spec = PLATFORMS_BY_KEY.get(platform)
+    return spec.label if spec else platform
+
+
 MAX_ORG_NAME = 100
 MAX_TAG_NAME = 50
 DEFAULT_TAG_COLOR = "#6B7280"
@@ -522,11 +528,21 @@ class BountyProgramService:
             query = query.where(BountyScope.scope_state == ScopeState.IN_SCOPE.value)
         rows = (await self.session.execute(query)).scalars().all()
 
+        # what the user actually selected but reNgine cannot reach
+        unreachable = select(BountyScope).where(
+            BountyScope.program_id == program.id,
+            col(BountyScope.target_value).is_(None),
+        )
+        if request.scope_ids:
+            unreachable = unreachable.where(col(BountyScope.id).in_(request.scope_ids))
+        if not request.include_out_of_scope:
+            unreachable = unreachable.where(
+                BountyScope.scope_state == ScopeState.IN_SCOPE.value
+            )
         skipped = sorted(
             {
                 s.asset_identifier
-                for s in (await self._all_scopes(program.id))
-                if not s.target_value
+                for s in (await self.session.execute(unreachable)).scalars()
             }
         )
         values = sorted({s.target_value for s in rows if s.target_value})
@@ -576,9 +592,10 @@ class BountyProgramService:
         spec = PLATFORMS_BY_KEY.get(program.platform)
         wanted: dict[str, str] = {}
         for raw in request.tags[:MAX_TAGS_PER_IMPORT]:
-            name = clean_name(raw, max_len=MAX_TAG_NAME).lower()
-            if name:
-                wanted.setdefault(name, DEFAULT_TAG_COLOR)
+            candidate = (raw or "").strip()[:MAX_TAG_NAME]
+            if not candidate:
+                continue
+            wanted.setdefault(candidate.lower(), DEFAULT_TAG_COLOR)
         if spec and spec.tag in wanted:
             wanted[spec.tag] = spec.tag_color
         if not wanted:
@@ -600,11 +617,11 @@ class BountyProgramService:
                 created_by=user_id,
             )
             try:
-                await add_with_unique_slug(
-                    self.session, tag, name, project_id=request.project_id
-                )
+                async with self.session.begin_nested():
+                    await add_with_unique_slug(
+                        self.session, tag, name, project_id=request.project_id
+                    )
             except IntegrityError:
-                await self.session.rollback()
                 again = await self.session.execute(
                     select(Tag).where(
                         Tag.project_id == request.project_id, Tag.name == name
@@ -635,8 +652,13 @@ class BountyProgramService:
         override: str | None = None,
     ) -> Organization:
         """The project's organization for this program, created on first import."""
-        chosen = (override or "").strip() or program.name
-        name = clean_name(chosen, max_len=MAX_ORG_NAME).lower()
+        chosen = ((override or "").strip() or program.name)[:MAX_ORG_NAME]
+        try:
+            name = clean_name(chosen, max_len=MAX_ORG_NAME).lower()
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            ) from exc
         found = await self.session.execute(
             select(Organization).where(
                 Organization.project_id == project_id, Organization.name == name
@@ -647,7 +669,9 @@ class BountyProgramService:
             return existing
         organization = Organization(
             name=name,
-            description=f"HackerOne program @{program.handle}"[:MAX_ORG_DESCRIPTION],
+            description=f"{_platform_label(program.platform)} program @{program.handle}"[
+                :MAX_ORG_DESCRIPTION
+            ],
             project_id=project_id,
             created_by=user_id,
         )

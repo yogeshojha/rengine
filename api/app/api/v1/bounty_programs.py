@@ -276,7 +276,7 @@ async def sync_program(
     await _require_mode(session)
     BountyProgramService.require_platform(platform)
     await service.get_program(platform, handle)
-    return {"queued": dispatch_bounty_program_sync(handle)}
+    return {"queued": dispatch_bounty_program_sync(handle, platform)}
 
 
 @router.post("/{platform}/{handle}/import")

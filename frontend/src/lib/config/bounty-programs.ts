@@ -136,8 +136,15 @@ export const SYNC_INTERVAL_LABELS: Record<string, string> = {
 	weekly: 'Every week'
 };
 
+export const SEARCH_DEBOUNCE_MS = 250;
 export const EVENT_PAGE_SIZE = 50;
 export const PROGRAM_PAGE_SIZE = 25;
 
-export const PLATFORM_TAG = 'hackerone';
 export const MAX_IMPORT_TAGS = 10;
+
+export const PLATFORM_LABELS: Record<string, string> = {
+	hackerone: 'HackerOne',
+	bugcrowd: 'Bugcrowd',
+	intigriti: 'Intigriti',
+	yeswehack: 'YesWeHack'
+};

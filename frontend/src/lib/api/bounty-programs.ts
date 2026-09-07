@@ -82,7 +82,7 @@ export const bountyProgramsApi = {
 		size: number,
 		kind?: string | null,
 		handle?: string | null,
-		platform: string = BountyPlatform.HackerOne
+		platform?: string | null
 	): Promise<Paged<BountyEvent>> {
 		return api.get<Paged<BountyEvent>>(
 			`/bounty-programs/events${query({ platform, page, size, kind, handle })}`

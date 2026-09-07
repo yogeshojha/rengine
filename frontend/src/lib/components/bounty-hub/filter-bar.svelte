@@ -7,7 +7,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import FacetedFilter from '$lib/components/scans/results/faceted-filter.svelte';
-	import { PROGRAM_SORTS, SOURCE_LABELS } from '$lib/config/bounty-programs';
+	import { PROGRAM_SORTS, SEARCH_DEBOUNCE_MS, SOURCE_LABELS } from '$lib/config/bounty-programs';
 	import { SELECT_NONE } from '$lib/constants';
 	import {
 		ProgramSource,
@@ -24,6 +24,37 @@
 	}
 
 	let { filters, platforms, onChange }: Props = $props();
+
+	// typing must not fire a paginated query plus its aggregates per keystroke
+	let draft = $state('');
+	let timer: ReturnType<typeof setTimeout> | undefined;
+
+	$effect(() => {
+		if ((filters.q ?? '') !== draft.trim()) draft = filters.q ?? '';
+	});
+
+	function clearAll() {
+		draft = '';
+		clearTimeout(timer);
+		onChange({
+			q: '',
+			state: null,
+			submission: null,
+			bounty: null,
+			bookmarked: null,
+			joined: null,
+			scope: null,
+			platforms: [],
+			sources: [],
+			sort: filters.sort
+		});
+	}
+
+	function onSearch(value: string) {
+		draft = value;
+		clearTimeout(timer);
+		timer = setTimeout(() => patch({ q: value.trim() }), SEARCH_DEBOUNCE_MS);
+	}
 
 	const platformFacets = $derived(
 		platforms
@@ -93,8 +124,8 @@
 			class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
 		/>
 		<Input
-			value={filters.q ?? ''}
-			oninput={(e) => patch({ q: e.currentTarget.value })}
+			value={draft}
+			oninput={(e) => onSearch(e.currentTarget.value)}
 			placeholder="Search programs"
 			class="pl-8"
 		/>
@@ -204,24 +235,7 @@
 	</Select.Root>
 
 	{#if activeCount > 0}
-		<Button
-			variant="ghost"
-			size="sm"
-			class="h-9"
-			onclick={() =>
-				onChange({
-					q: '',
-					state: null,
-					submission: null,
-					bounty: null,
-					bookmarked: null,
-					joined: null,
-					scope: null,
-					platforms: [],
-					sources: [],
-					sort: filters.sort
-				})}
-		>
+		<Button variant="ghost" size="sm" class="h-9" onclick={clearAll}>
 			<XIcon class="mr-1 size-3.5" />
 			Clear
 			<Badge variant="secondary" class="ml-1.5 h-5 px-1.5 text-xs">{activeCount}</Badge>

@@ -6,8 +6,10 @@ from sqlmodel import col
 
 from app.config import settings
 from app.database import get_sync_session
+from shared.definitions.bounty_feed import FEEDS_BY_PLATFORM
 from shared.definitions.bounty_programs import (
     BountyPlatform,
+    ProgramSource,
     notify_enabled,
     notify_events,
 )
@@ -18,13 +20,17 @@ from shared.services.bounty_feed import (
     feed_due,
     mark_feed_synced,
     sync_feeds,
+    sync_platform,
 )
 from shared.services.bounty_programs import (
+    FEED_LOCK_KEY,
+    SYNC_LOCK_KEY,
     CredentialsError,
     HackerOneError,
     credentials,
     mark_synced,
     sync_due,
+    sync_lock,
     sync_programs,
     sync_scopes,
 )
@@ -91,7 +97,9 @@ def _notify(session, since) -> int:
 def sync(scopes: bool = True, force: bool = True) -> dict:
     """Pull programs, then each program's scope so the library can be filtered by it."""
     started = utc_now()
-    with get_sync_session() as session:
+    with get_sync_session() as session, sync_lock(session, SYNC_LOCK_KEY) as held:
+        if not held:
+            return {"skipped": "already_running"}
         # a manual refresh always runs, whatever the schedule says
         if not force and not sync_due(session):
             return {"skipped": "not_due"}
@@ -101,9 +109,6 @@ def sync(scopes: bool = True, force: bool = True) -> dict:
             return {"skipped": "not_configured"}
         try:
             result = sync_programs(session, auth)
-        except CredentialsError as exc:
-            logger.warning("bounty program sync rejected", error=str(exc))
-            return {"error": str(exc)}
         except HackerOneError as exc:
             logger.warning("bounty program sync failed", error=str(exc))
             return {"error": str(exc)}
@@ -149,20 +154,26 @@ def sync(scopes: bool = True, force: bool = True) -> dict:
 
 
 @shared_task(name="app.tasks.bounty_programs.sync_program")
-def sync_program(handle: str) -> dict:
+def sync_program(handle: str, platform: str = BountyPlatform.HACKERONE.value) -> dict:
     """Refresh one program's scope, for a program opened before the sweep reached it."""
     with get_sync_session() as session:
-        auth = credentials(session)
-        if not auth:
-            return {"skipped": "not_configured"}
         program = session.execute(
             select(BountyProgram).where(
-                BountyProgram.platform == BountyPlatform.HACKERONE.value,
+                BountyProgram.platform == platform,
                 BountyProgram.handle == handle,
             )
         ).scalar_one_or_none()
         if not program:
             return {"error": "unknown program"}
+        # a feed platform has no per-program endpoint; refresh the whole file
+        if program.source == ProgramSource.FEED.value:
+            spec = FEEDS_BY_PLATFORM.get(platform)
+            if not spec:
+                return {"error": "unknown platform"}
+            return sync_platform(session, spec)
+        auth = credentials(session)
+        if not auth:
+            return {"skipped": "not_configured"}
         try:
             return {"assets": sync_scopes(session, program, auth)}
         except HackerOneError as exc:
@@ -174,9 +185,13 @@ def sync_program(handle: str) -> dict:
 def sync_feed(force: bool = True) -> dict:
     """Public scope for the platforms with no researcher API."""
     started = utc_now()
-    with get_sync_session() as session:
+    with get_sync_session() as session, sync_lock(session, FEED_LOCK_KEY) as held:
+        if not held:
+            return {"skipped": "already_running"}
         if not force and not feed_due(session):
             return {"skipped": "not_due"}
         result = sync_feeds(session)
-        mark_feed_synced(session)
+        # a run where nothing downloaded must not suppress the next attempt
+        if result["platforms"]:
+            mark_feed_synced(session)
         return {**result, "alerted": _notify(session, started)}
