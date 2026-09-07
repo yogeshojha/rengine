@@ -11,6 +11,7 @@ from enum import Enum
 import validators
 
 from shared.enums.target import TargetType
+from shared.utils.text import strip_control
 from shared.utils.validation import normalize_target_value, validate_target
 
 
@@ -410,20 +411,30 @@ def submission_state(raw: str | None) -> SubmissionState:
 
 def normalize_identifier(asset_type: str | None, identifier: str) -> str | None:
     """The scannable value behind a scope entry, or None when there is not one."""
-    value = (identifier or "").strip()
+    # Postgres refuses NUL and a scope value is stored, so scrub at the source
+    value = strip_control(identifier or "").strip()
     if not value:
         return None
     spec = asset_type_spec(asset_type)
     if spec.key not in IMPORTABLE_TYPES:
         return None
-    if spec.key != "URL":
-        # a scope list writes https://*.example.com for a wildcard
-        value = _SCHEME.sub("", value).strip()
-        # a path only ever qualifies a URL; a CIDR's slash is its prefix
-        if spec.key != "CIDR":
-            value = value.split("/")[0].strip()
+
+    # a scope list writes https://*.example.com for a wildcard
+    stripped = _SCHEME.sub("", value).strip()
+    host = stripped.split("/")[0]
+    if host.startswith("*."):
+        # platforms file wildcards under whatever type they like, so the value
+        # decides this, not the declared type
+        value = host
+    elif spec.key == "URL":
+        pass
+    elif spec.key == "CIDR":
+        # a CIDR's slash is its prefix length, never a path
+        value = stripped
+    else:
+        value = host
     value = normalize_target_value(value)
-    # a residual wildcard (*.example.*) names no single asset
+    # a residual wildcard (*.example.*, *-faq.example.com) names no single asset
     return None if not value or "*" in value else value
 
 
