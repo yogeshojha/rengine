@@ -64,7 +64,7 @@ from shared.services.scan_resolve import (
 )
 from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
-from shared.utils.validation import validate_target
+from shared.utils.validation import unrecognised_target, validate_target
 
 logger = logging.getLogger(__name__)
 
@@ -281,7 +281,7 @@ class ScanService:
         if target_type is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid target: {value}",
+                detail=unrecognised_target(value),
             )
         return Target(
             target_value=value, target_type=target_type, project_id=project_id

@@ -12,8 +12,6 @@ from shared.utils.validation import clean_name
 class ProjectBase(SQLModel):
     name: str = Field(max_length=50)
 
-    _validate_name = field_validator("name")(partial(clean_name, max_len=50))
-
 
 class Project(ProjectBase, table=True):
     __tablename__ = "projects"
@@ -30,6 +28,9 @@ class Project(ProjectBase, table=True):
 class ProjectCreate(ProjectBase):
     description: str | None = None
     label: str | None = None
+
+    # on the request only: a stored name from before this rule must still read back
+    _validate_name = field_validator("name")(partial(clean_name, max_len=50))
 
 
 class ProjectRead(ProjectBase):

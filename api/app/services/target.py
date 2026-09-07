@@ -415,7 +415,7 @@ class TargetService:
             if not target_type:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid target: {value}",
+                    detail=unrecognised_target(value),
                 )
             wanted[value] = target_type
         if not wanted:
