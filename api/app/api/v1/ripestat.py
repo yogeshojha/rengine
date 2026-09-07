@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from tools.ripestat.client import RIPEStatInvalidResourceError
 from tools.ripestat.models import RIPEStatResult
 from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
 
@@ -25,6 +26,12 @@ def get_ripestat_service(
 
 
 def _handle_lookup_error(e: RIPEStatLookupError):
+    if isinstance(e.__cause__, RIPEStatInvalidResourceError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="RIPEstat does not recognise that resource. "
+            "Enter an IP address, CIDR prefix or AS number.",
+        ) from e
     raise HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail=f"RIPEstat lookup failed: {e}",

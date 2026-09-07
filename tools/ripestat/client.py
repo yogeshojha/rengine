@@ -22,6 +22,10 @@ class RIPEStatRateLimitError(RIPEStatAPIError):
     """Rate limit exceeded (429 or data-level throttle)."""
 
 
+class RIPEStatInvalidResourceError(RIPEStatAPIError):
+    """RIPEstat refused the resource, so the caller asked about something it cannot answer."""
+
+
 class RIPEStatClient:
     """Low-level HTTP client for RIPEstat API."""
 
@@ -42,7 +46,12 @@ class RIPEStatClient:
         if resp.status_code == 429:  # noqa: PLR2004
             msg = f"RIPEstat rate limit on {endpoint}"
             raise RIPEStatRateLimitError(msg)
-        resp.raise_for_status()
+        if 400 <= resp.status_code < 500:  # noqa: PLR2004
+            msg = f"RIPEstat does not accept that resource for {endpoint}"
+            raise RIPEStatInvalidResourceError(msg)
+        if resp.status_code >= 500:  # noqa: PLR2004
+            msg = f"RIPEstat returned {resp.status_code} for {endpoint}"
+            raise RIPEStatAPIError(msg)
 
         body = resp.json()
 
