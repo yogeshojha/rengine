@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -40,6 +40,9 @@ from tools.whois.parser import (
 from tools.whois.providers.whoisit import RDAPProvider, RDAPProviderError
 
 logger = get_logger(__name__)
+
+# advisory-lock namespace, kept distinct from other advisory locks
+WHOIS_LOCK_NAMESPACE = 0x5748
 
 DEFAULT_CACHE_TTL_DAYS = 7
 
@@ -268,8 +271,18 @@ class WhoisService:
             return existing
 
         record = WhoisRecord(**db_fields, queried_at=now)
-        session.add(record)
-        session.flush()
+        try:
+            with session.begin_nested():
+                session.add(record)
+                session.flush()
+        except IntegrityError:
+            # query_value is unique, so a concurrent writer won; take its row
+            # rather than leaving the caller with a poisoned session
+            winner = self.get_cached_record_sync(session, db_fields["query_value"])
+            if winner is None:
+                raise
+            session.commit()
+            return winner
         self._sync_nameservers_sync(session, record.id, db_fields.get("nameservers"))
         session.commit()
         session.refresh(record)
@@ -279,6 +292,17 @@ class WhoisService:
         self, session: Session, normalized_query: str, target_type
     ) -> WhoisRecord:
         """Get cached record or perform lookup and store (sync)."""
+        existing = self.get_cached_record_sync(session, normalized_query)
+        if existing:
+            return existing
+
+        # adding a.example.com, b.example.com and c.example.com separately makes
+        # three tasks that all miss the cache and all query the registry for the
+        # same name; serialise on the query so only the first one asks
+        session.execute(
+            text("SELECT pg_advisory_xact_lock(:ns, hashtext(:q))"),
+            {"ns": WHOIS_LOCK_NAMESPACE, "q": normalized_query},
+        )
         existing = self.get_cached_record_sync(session, normalized_query)
         if existing:
             return existing
