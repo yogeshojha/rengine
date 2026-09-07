@@ -6,7 +6,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
 	import ScanTrendSparkline from '$lib/components/scans/scan-trend-sparkline.svelte';
-	import SectionHead from '../section-head.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension, surfaceSpec } from '$lib/config/surface';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';

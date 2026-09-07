@@ -1,32 +1,79 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import PlusIcon from '@lucide/svelte/icons/plus';
+	import * as Card from '$lib/components/ui/card';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { Button } from '$lib/components/ui/button';
 	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
-	import PanelHead from '$lib/components/panel-head.svelte';
+	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import Hint from '$lib/components/hint.svelte';
+	import CapabilityChips from './capability-chips.svelte';
 	import { mcp } from '$lib/stores/mcp.svelte';
-	import { relativeTime, formatShortDate } from '$lib/utilities/dates';
-	import { TOUCHES_TARGETS, tokenState, type McpCapability, type McpToken } from '$lib/types/mcp';
+	import { relativeTime } from '$lib/utilities/dates';
+	import {
+		expiryLabel,
+		expiryTone,
+		parseClient,
+		SESSION_LIVE_MS,
+		sessionsByToken
+	} from '$lib/utilities/mcp';
+	import {
+		MCP_STATE_DOT,
+		MCP_TOKEN_STATE_LABELS,
+		MCP_TOKEN_STATES,
+		tokenState,
+		type McpToken,
+		type McpTokenState
+	} from '$lib/types/mcp';
 
 	interface Props {
 		canAdmin: boolean;
+		now: number;
 		onIssueToken: () => void;
 	}
 
-	let { canAdmin, onIssueToken }: Props = $props();
+	let { canAdmin, now, onIssueToken }: Props = $props();
 
+	const ALL = 'all';
+	const HEAD =
+		'px-4 py-2 text-left text-[10px] font-semibold tracking-wider text-muted-foreground uppercase whitespace-nowrap';
+
+	let filter = $state<string>(ALL);
 	let pending = $state<{ token: McpToken; action: 'revoke' | 'delete' } | null>(null);
 
-	const tokens = $derived(mcp.tokens);
-	const active = $derived(tokens.filter((t) => tokenState(t) === 'active').length);
-	const launching = $derived(
-		tokens.filter((t) => tokenState(t) === 'active' && t.capabilities.includes('launch')).length
+	const stateOf = (t: McpToken): McpTokenState => {
+		const base = tokenState(t);
+		return base === 'active' && expiryTone(t) === 'soon' ? 'expiring' : base;
+	};
+	const usable = (s: McpTokenState) => s === 'active' || s === 'expiring';
+
+	const tokens = $derived(
+		[...mcp.tokens].sort((a, b) => {
+			const ua = usable(stateOf(a)) ? 0 : 1;
+			const ub = usable(stateOf(b)) ? 0 : 1;
+			if (ua !== ub) return ua - ub;
+			return (b.last_used_at ?? b.created_at).localeCompare(a.last_used_at ?? a.created_at);
+		})
 	);
+	const counts = $derived.by(() => {
+		const out: Record<string, number> = { [ALL]: tokens.length };
+		for (const s of MCP_TOKEN_STATES) out[s] = tokens.filter((t) => stateOf(t) === s).length;
+		return out;
+	});
+	const tabs = $derived([
+		{ key: ALL, label: 'All' },
+		...MCP_TOKEN_STATES.filter((s) => counts[s] > 0).map((s) => ({
+			key: s,
+			label: MCP_TOKEN_STATE_LABELS[s]
+		}))
+	]);
+	const partitioned = $derived(tabs.length > 2);
+	const shown = $derived(tokens.filter((t) => filter === ALL || stateOf(t) === filter));
+	const launching = $derived(
+		tokens.filter((t) => usable(stateOf(t)) && t.capabilities.includes('launch')).length
+	);
+	const liveByToken = $derived(sessionsByToken(mcp.status?.sessions ?? []));
 
 	async function confirm() {
 		if (!pending) return;
@@ -37,94 +84,122 @@
 	}
 </script>
 
-<Card.Root class="gap-0 py-0">
-	<PanelHead title="Service tokens">
-		<span class="tabular-nums">{active} active</span>
-		{#if launching}
-			<span class="flex items-center gap-1.5 tabular-nums text-warning">
-				<span class="size-1.5 rounded-full bg-warning" aria-hidden="true"></span>
-				{launching} can launch
-			</span>
-		{/if}
-		{#if canAdmin}
-			<Button size="sm" onclick={onIssueToken}>
-				<PlusIcon class="size-4" />
-				New token
-			</Button>
-		{/if}
-	</PanelHead>
-
-	{#if tokens.length === 0}
-		<div class="px-5 py-8">
-			<EmptyState
-				compact
-				icon={KeyRoundIcon}
-				title="No tokens yet"
-				description="No agent can reach this instance without a service token."
-			>
-				{#if canAdmin}
-					<Button size="sm" onclick={onIssueToken}>New token</Button>
+<Card.Root class="gap-0 overflow-hidden py-0">
+	{#if tokens.length}
+		<div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b px-2">
+			{#if partitioned}
+				<CountTabs {tabs} value={filter} {counts} onChange={(k) => (filter = k)} />
+			{:else}
+				<span class="px-3 pb-2.5 text-sm font-medium">
+					Service tokens
+					<span class="ml-1 text-xs text-muted-foreground tabular-nums">{tokens.length}</span>
+				</span>
+			{/if}
+			<div class="flex items-center gap-3 pr-3 pb-2.5 text-xs text-muted-foreground">
+				{#if launching}
+					<span class="flex items-center gap-1.5 text-warning">
+						<span class="size-1.5 rounded-full bg-warning" aria-hidden="true"></span>
+						{launching} can launch scans
+					</span>
 				{/if}
-			</EmptyState>
+				<span class="tabular-nums">
+					{counts.active + counts.expiring} of {tokens.length} active
+				</span>
+			</div>
 		</div>
-	{:else}
+
 		<div class="overflow-x-auto">
-			<table class="w-full min-w-[46rem] text-sm">
+			<table class="w-full min-w-[52rem] text-sm">
 				<thead>
 					<tr class="border-b bg-muted/40">
-						{#each ['Name', 'Project', 'May', 'Last used', 'Expires', ''] as heading (heading)}
-							<th
-								class="px-5 py-2.5 text-left text-[10px] font-semibold tracking-wider text-muted-foreground uppercase whitespace-nowrap"
-							>
-								{heading}
-							</th>
-						{/each}
+						<th class={HEAD}>Token</th>
+						<th class={HEAD}>Scope</th>
+						<th class={HEAD}>Capabilities</th>
+						<th class={HEAD}>Usage</th>
+						<th class={HEAD}>Expires</th>
+						<th class={HEAD}><span class="sr-only">Actions</span></th>
 					</tr>
 				</thead>
 				<tbody>
-					{#each tokens as token (token.id)}
-						{@const state = tokenState(token)}
-						<tr class="border-b last:border-b-0 {state === 'active' ? '' : 'opacity-55'}">
-							<td class="px-5 py-3">
-								<div class="flex items-center gap-2 font-medium">
-									{token.name}
-									{#if state === 'revoked'}
-										<Badge variant="outline" class="text-[10px]">Revoked</Badge>
-									{:else if state === 'expired'}
-										<Badge variant="outline" class="text-[10px]">Expired</Badge>
-									{/if}
+					{#each shown as token (token.id)}
+						{@const state = stateOf(token)}
+						{@const live = liveByToken.get(token.id) ?? []}
+						{@const client = token.last_client ? parseClient(token.last_client) : null}
+						{@const tone = expiryTone(token)}
+						<tr class="border-b last:border-b-0 {usable(state) ? '' : 'text-muted-foreground'}">
+							<td class="px-4 py-2.5">
+								<div class="min-w-0">
+									<div class="flex flex-wrap items-center gap-2 leading-5">
+										<span class="max-w-[18rem] truncate font-medium">{token.name}</span>
+										{#if live.length}
+											{@const recent = live.some(
+												(s) => now - new Date(s.last).getTime() < SESSION_LIVE_MS
+											)}
+											<Hint
+												text="Connected · {live.map((s) => parseClient(s.client).name).join(', ')}"
+											>
+												{#snippet child(props)}
+													<span {...props} class="flex h-5 items-center">
+														<span
+															class="size-2 rounded-full border {recent
+																? MCP_STATE_DOT.running
+																: MCP_STATE_DOT.idle}"
+														></span>
+													</span>
+												{/snippet}
+											</Hint>
+										{/if}
+										{#if state === 'revoked' || state === 'expired'}
+											<span class="text-[11px] text-muted-foreground">
+												{MCP_TOKEN_STATE_LABELS[state]}
+											</span>
+										{/if}
+									</div>
+									<div class="font-mono text-xs text-muted-foreground">{token.token_prefix}…</div>
 								</div>
-								<div class="font-mono text-xs text-muted-foreground">{token.token_prefix}…</div>
 							</td>
-							<td class="px-5 py-3 text-muted-foreground">
-								{token.project_name ?? 'Every project'}
-							</td>
-							<td class="px-5 py-3">
-								<div class="flex flex-wrap gap-1">
-									{#each token.capabilities as capability (capability)}
-										<Badge
-											variant={TOUCHES_TARGETS.includes(capability as McpCapability)
-												? 'warning'
-												: 'info'}
-											class="text-[10px] capitalize"
-										>
-											{capability}
-										</Badge>
-									{/each}
-								</div>
-							</td>
-							<td class="px-5 py-3 whitespace-nowrap text-muted-foreground">
-								{#if token.last_used_at}
-									{relativeTime(token.last_used_at)}
-									<span class="block text-xs">{token.calls} calls</span>
+							<td class="px-4 py-2.5 whitespace-nowrap">
+								{#if token.project_name}
+									{token.project_name}
 								{:else}
-									Never used
+									<span class="text-muted-foreground">Every project</span>
 								{/if}
 							</td>
-							<td class="px-5 py-3 whitespace-nowrap text-muted-foreground">
-								{token.expires_at ? formatShortDate(token.expires_at) : 'Never'}
+							<td class="px-4 py-2.5">
+								<CapabilityChips granted={token.capabilities} ladder class="flex-nowrap" />
 							</td>
-							<td class="px-5 py-3 text-right">
+							<td class="px-4 py-2.5 whitespace-nowrap">
+								{#if token.last_used_at}
+									<div class="leading-5">
+										<span class="tabular-nums">{token.calls.toLocaleString()} calls</span>
+										<span class="text-muted-foreground"> · {relativeTime(token.last_used_at)}</span>
+									</div>
+									{#if client}
+										<div class="text-xs text-muted-foreground">
+											{client.name}{#if client.version}
+												<span class="ml-1 font-mono">{client.version}</span>{/if}
+										</div>
+									{/if}
+								{:else}
+									<span class="text-muted-foreground">Never used</span>
+								{/if}
+							</td>
+							<td
+								class="px-4 py-2.5 whitespace-nowrap {tone === 'soon'
+									? 'text-warning'
+									: tone === 'expired'
+										? 'text-destructive'
+										: token.expires_at
+											? ''
+											: 'text-muted-foreground'}"
+							>
+								{#if state === 'revoked'}
+									<span class="text-muted-foreground">—</span>
+								{:else}
+									{expiryLabel(token)}
+								{/if}
+							</td>
+							<td class="w-12 px-2 py-2.5 text-right">
 								{#if canAdmin}
 									<DropdownMenu.Root>
 										<DropdownMenu.Trigger>
@@ -136,7 +211,7 @@
 											{/snippet}
 										</DropdownMenu.Trigger>
 										<DropdownMenu.Content align="end">
-											{#if state === 'active'}
+											{#if usable(state)}
 												<DropdownMenu.Item onSelect={() => (pending = { token, action: 'revoke' })}>
 													Revoke
 												</DropdownMenu.Item>
@@ -156,6 +231,19 @@
 				</tbody>
 			</table>
 		</div>
+	{:else}
+		<div class="p-5">
+			<EmptyState
+				compact
+				icon={KeyRoundIcon}
+				title="No service tokens"
+				description="An agent needs a service token to reach this instance."
+			>
+				{#if canAdmin}
+					<Button size="sm" onclick={onIssueToken}>New token</Button>
+				{/if}
+			</EmptyState>
+		</div>
 	{/if}
 </Card.Root>
 
@@ -163,7 +251,7 @@
 	open={pending !== null}
 	title={pending?.action === 'revoke' ? 'Revoke this token?' : 'Delete this token?'}
 	description={pending
-		? `${pending.token.name} stops working on its next call. Any agent using it loses access immediately; scans it already started keep running.`
+		? `${pending.token.name} stops working on its next call and any connected agent loses access. Scans it started keep running. This action cannot be undone.`
 		: ''}
 	confirmLabel={pending?.action === 'revoke' ? 'Revoke' : 'Delete'}
 	destructive

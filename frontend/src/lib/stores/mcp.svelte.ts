@@ -9,6 +9,7 @@ import type {
 	McpTool
 } from '$lib/types/mcp';
 import { toast } from 'svelte-sonner';
+import { TRAIL_CAP } from '$lib/utilities/mcp';
 
 function message(e: unknown, fallback: string): string {
 	return e instanceof Error ? e.message : fallback;
@@ -22,12 +23,13 @@ function createMcpStore() {
 	let isLoading = $state(false);
 	let isSaving = $state(false);
 	let hasFetched = $state(false);
+	let callsLoadedAt = $state<number | null>(null);
 
-	async function refreshStatus() {
+	async function refreshStatus(silent = false) {
 		try {
 			status = await mcpApi.status();
 		} catch (e) {
-			toast.error(message(e, 'MCP server status could not be loaded'));
+			if (!silent) toast.error(message(e, 'MCP server status could not be loaded'));
 		}
 	}
 
@@ -52,6 +54,9 @@ function createMcpStore() {
 		},
 		get hasFetched() {
 			return hasFetched;
+		},
+		get callsLoadedAt() {
+			return callsLoadedAt;
 		},
 		get running() {
 			return status?.enabled ?? false;
@@ -82,11 +87,12 @@ function createMcpStore() {
 			}
 		},
 
-		async loadCalls() {
+		async loadCalls(silent = false) {
 			try {
-				calls = await mcpApi.calls();
+				calls = await mcpApi.calls(TRAIL_CAP);
+				callsLoadedAt = Date.now();
 			} catch (e) {
-				toast.error(message(e, 'Recent calls could not be loaded'));
+				if (!silent) toast.error(message(e, 'Recent calls could not be loaded'));
 			}
 		},
 
@@ -174,6 +180,7 @@ function createMcpStore() {
 			isLoading = false;
 			isSaving = false;
 			hasFetched = false;
+			callsLoadedAt = null;
 		}
 	};
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import SectionHead from '../section-head.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { TargetType, type Target } from '$lib/types/target';

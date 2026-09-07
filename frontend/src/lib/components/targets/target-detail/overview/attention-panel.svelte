@@ -5,7 +5,7 @@
 	import Check from '@lucide/svelte/icons/check';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Spinner } from '$lib/components/ui/spinner';
-	import SectionHead from '../section-head.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { IconComponent } from '$lib/config/icons';

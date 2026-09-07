@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SectionHead from '../section-head.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import HostingFlow from '$lib/components/scans/results/overview/hosting-flow.svelte';
 	import type { HostingFlow as Flow } from '$lib/types/hosting-flow';
 

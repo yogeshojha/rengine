@@ -5,7 +5,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import LoadingButton from '$lib/components/loading-button.svelte';
-	import SectionHead from '../section-head.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';

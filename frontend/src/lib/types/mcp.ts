@@ -1,3 +1,5 @@
+import type { McpTab } from '$lib/config/routes';
+
 export const MCP_CAPABILITIES = ['read', 'plan', 'write', 'launch'] as const;
 export type McpCapability = (typeof MCP_CAPABILITIES)[number];
 
@@ -20,6 +22,23 @@ export const MCP_EXPIRY_CHOICES: { value: number | null; label: string }[] = [
 ];
 
 export const MCP_TOOL_GROUPS = ['Orient', 'Interrogate', 'Explain', 'Act'] as const;
+
+export const MCP_TAB_LABELS: Record<McpTab, string> = {
+	server: 'Overview',
+	tools: 'Tools',
+	access: 'Access',
+	activity: 'Activity'
+};
+
+export const MCP_TOKEN_STATES = ['active', 'expiring', 'expired', 'revoked'] as const;
+export type McpTokenState = (typeof MCP_TOKEN_STATES)[number];
+
+export const MCP_TOKEN_STATE_LABELS: Record<McpTokenState, string> = {
+	active: 'Active',
+	expiring: 'Expiring soon',
+	expired: 'Expired',
+	revoked: 'Revoked'
+};
 
 export interface McpCapabilitySpec {
 	key: McpCapability;
@@ -115,9 +134,10 @@ export interface McpSettingsUpdate {
 }
 
 // running is info, never success — success is reserved for a finished scan
-export const MCP_STATE_DOT: Record<'running' | 'stopped', string> = {
-	running: 'border-info bg-info shadow-[0_0_0_4px_color-mix(in_oklch,var(--info)_18%,transparent)]',
-	stopped: 'border-muted-foreground/40 bg-muted-foreground/40'
+export const MCP_STATE_DOT: Record<'running' | 'stopped' | 'idle', string> = {
+	running: 'bg-info',
+	idle: 'bg-info/40',
+	stopped: 'bg-muted-foreground/40'
 };
 
 export const MCP_STATE_LABEL: Record<'running' | 'stopped', string> = {

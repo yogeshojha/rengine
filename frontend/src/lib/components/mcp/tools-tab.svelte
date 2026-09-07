@@ -1,125 +1,180 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
-	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-	import PanelHead from '$lib/components/panel-head.svelte';
-	import CodeBlock from '$lib/components/code-block.svelte';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import * as Card from '$lib/components/ui/card';
+	import { Input } from '$lib/components/ui/input';
+	import { Badge } from '$lib/components/ui/badge';
+	import CountTabs from '$lib/components/count-tabs.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import CapabilityChips from './capability-chips.svelte';
+	import ToolSheet from './tool-sheet.svelte';
 	import { mcp } from '$lib/stores/mcp.svelte';
-	import { MCP_TOOL_GROUPS, TOUCHES_TARGETS, type McpCapability } from '$lib/types/mcp';
+	import { countByTool, schemaArgs } from '$lib/utilities/mcp';
+	import {
+		MCP_CAPABILITIES,
+		MCP_CAPABILITY_LABELS,
+		MCP_TOOL_GROUPS,
+		type McpTool
+	} from '$lib/types/mcp';
+	import type { McpTab } from '$lib/config/routes';
+
+	interface Props {
+		canAdmin: boolean;
+		onTab: (tab: McpTab) => void;
+	}
+
+	let { canAdmin, onTab }: Props = $props();
+
+	const ALL = 'all';
+	const TABS = [
+		{ key: ALL, label: 'All' },
+		...MCP_CAPABILITIES.map((c) => ({ key: c, label: MCP_CAPABILITY_LABELS[c] }))
+	];
+
+	let capability = $state<string>(ALL);
+	let search = $state('');
+	let selected = $state<string | null>(null);
 
 	const tools = $derived(mcp.tools);
 	const ceiling = $derived(mcp.status?.ceiling ?? {});
+	const counts = $derived(
+		Object.fromEntries(
+			TABS.map((t) => [t.key, tools.filter((x) => t.key === ALL || x.capability === t.key).length])
+		)
+	);
+	const callCounts = $derived(countByTool(mcp.calls));
 
-	const grouped = $derived(
+	const filtered = $derived.by(() => {
+		const q = search.trim().toLowerCase();
+		return tools.filter(
+			(t) =>
+				(capability === ALL || t.capability === capability) &&
+				(!q ||
+					t.name.includes(q) ||
+					t.title.toLowerCase().includes(q) ||
+					t.description.toLowerCase().includes(q))
+		);
+	});
+	const groups = $derived(
 		MCP_TOOL_GROUPS.map((group) => ({
 			group,
-			tools: tools.filter((t) => t.group === group)
-		})).filter((entry) => entry.tools.length > 0)
+			tools: filtered.filter((t) => t.group === group)
+		})).filter((g) => g.tools.length)
 	);
+	const ordered = $derived(groups.flatMap((g) => g.tools));
+	const off = $derived(tools.filter((t) => !ceiling[t.capability]));
+	const offCapabilities = $derived([...new Set(off.map((t) => t.capability))]);
 
-	function args(schema: Record<string, unknown>): { name: string; required: boolean }[] {
-		const properties = (schema.properties ?? {}) as Record<string, unknown>;
-		const required = new Set((schema.required ?? []) as string[]);
-		return Object.keys(properties).map((name) => ({ name, required: required.has(name) }));
-	}
+	const selectedIndex = $derived(ordered.findIndex((t) => t.name === selected));
+	const selectedTool = $derived<McpTool | null>(selectedIndex >= 0 ? ordered[selectedIndex] : null);
 
-	function describe(schema: Record<string, unknown>, key: string): string {
-		const properties = (schema.properties ?? {}) as Record<string, { description?: string }>;
-		return properties[key]?.description ?? '';
+	function step(dir: -1 | 1) {
+		const next = ordered[selectedIndex + dir];
+		if (next) selected = next.name;
 	}
 </script>
 
-<div class="space-y-6">
-	{#each grouped as entry (entry.group)}
-		<Card.Root class="gap-0 py-0">
-			<PanelHead title={entry.group}>
-				<span>{entry.tools.length} tools</span>
-			</PanelHead>
-			<div class="divide-y">
-				{#each entry.tools as tool (tool.name)}
-					{@const available = ceiling[tool.capability] ?? false}
-					{@const touches = TOUCHES_TARGETS.includes(tool.capability as McpCapability)}
-					<Collapsible.Root>
-						<div class="flex flex-wrap items-start justify-between gap-3 px-5 py-3.5">
-							<div class="min-w-0 flex-1">
-								<div class="flex flex-wrap items-center gap-2">
-									<span class="font-mono text-sm font-medium">{tool.name}</span>
-									<Badge variant={touches ? 'warning' : 'info'} class="text-[10px] capitalize">
-										{tool.capability}
-									</Badge>
-									{#if tool.destructive}
-										<Badge variant="destructive" class="text-[10px]">Destructive</Badge>
-									{/if}
-									{#if !available}
-										<Badge variant="outline" class="gap-1 text-[10px]">
-											<TriangleAlertIcon class="size-3" />
-											Off for this instance
-										</Badge>
-									{/if}
-								</div>
-								<p class="mt-1 text-xs text-muted-foreground">{tool.description}</p>
-								<div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-									{#each args(tool.schema) as arg (arg.name)}
-										<span
-											class="rounded border px-1.5 py-0.5 font-mono text-[11px] {arg.required
-												? 'border-foreground/25 font-medium'
-												: 'text-muted-foreground'}"
-										>
-											{arg.name}{arg.required ? '' : '?'}
-										</span>
-									{:else}
-										<span class="text-[11px] text-muted-foreground">No arguments</span>
-									{/each}
-								</div>
-							</div>
-							<Collapsible.Trigger>
-								{#snippet child({ props })}
-									<Button {...props} variant="ghost" size="sm" class="shrink-0">
-										Arguments
-										<ChevronDownIcon class="size-4" />
-									</Button>
-								{/snippet}
-							</Collapsible.Trigger>
-						</div>
-						<Collapsible.Content>
-							<div class="space-y-2 border-t bg-muted/25 px-5 py-3">
-								{#each args(tool.schema) as arg (arg.name)}
-									<div class="flex gap-3 text-xs">
-										<span class="w-32 shrink-0 font-mono">{arg.name}</span>
-										<span class="text-muted-foreground">
-											{describe(tool.schema, arg.name) || 'No description.'}
-										</span>
-									</div>
-								{:else}
-									<p class="text-xs text-muted-foreground">This tool takes no arguments.</p>
-								{/each}
-								{#if tool.examples.length}
-									<div class="pt-1">
-										<span
-											class="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground"
-										>
-											Example
-										</span>
-										{#each tool.examples as example (example)}
-											<CodeBlock
-												code={example}
-												lang="shell"
-												toolbar={false}
-												numbers={false}
-												maxLines={0}
-												class="mt-1"
-											/>
-										{/each}
-									</div>
-								{/if}
-							</div>
-						</Collapsible.Content>
-					</Collapsible.Root>
-				{/each}
-			</div>
-		</Card.Root>
+<Card.Root class="gap-0 overflow-hidden py-0">
+	<div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b px-2">
+		<CountTabs tabs={TABS} value={capability} {counts} onChange={(k) => (capability = k)} />
+		<Input
+			bind:value={search}
+			placeholder="Filter tools"
+			class="mr-1 mb-1.5 h-8 w-full sm:w-56"
+			aria-label="Filter tools"
+		/>
+	</div>
+
+	{#if off.length && capability === ALL && !search}
+		<p class="border-b px-5 py-2 text-xs text-muted-foreground">
+			{off.length} tools are off for this instance because {offCapabilities
+				.map((c) => MCP_CAPABILITY_LABELS[c as (typeof MCP_CAPABILITIES)[number]] ?? c)
+				.join(' and ')} is below the ceiling.
+			{#if canAdmin}
+				<button
+					type="button"
+					class="font-medium text-primary hover:underline"
+					onclick={() => onTab('server')}
+				>
+					Change the ceiling
+				</button>
+			{/if}
+		</p>
+	{/if}
+
+	{#each groups as entry, i (entry.group)}
+		<div
+			class="flex items-baseline gap-2 border-b bg-muted/30 px-5 py-1.5 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase {i
+				? 'border-t'
+				: ''}"
+		>
+			{entry.group}
+			<span class="text-xs font-medium tracking-normal normal-case tabular-nums"
+				>{entry.tools.length}</span
+			>
+		</div>
+		<div class="divide-y">
+			{#each entry.tools as tool (tool.name)}
+				{@const available = ceiling[tool.capability] ?? false}
+				{@const args = schemaArgs(tool.schema)}
+				{@const calls = callCounts.get(tool.name) ?? 0}
+				<button
+					type="button"
+					class="flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-muted/40 {available
+						? ''
+						: 'text-muted-foreground'}"
+					onclick={() => (selected = tool.name)}
+				>
+					<span class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+						<span class="font-mono text-sm font-medium">{tool.name}</span>
+						<span class="text-sm text-muted-foreground">{tool.title}</span>
+					</span>
+					<span class="hidden shrink-0 items-center gap-3 text-xs text-muted-foreground sm:flex">
+						{#if calls}
+							<span class="tabular-nums">{calls} calls</span>
+						{/if}
+						<span class="tabular-nums">
+							{args.length === 0
+								? 'no args'
+								: `${args.length} ${args.length === 1 ? 'arg' : 'args'}`}
+						</span>
+					</span>
+					<span class="flex shrink-0 items-center gap-1.5">
+						{#if tool.destructive}
+							<Badge variant="destructive" class="text-[10px]">Destructive</Badge>
+						{/if}
+						{#if !available}
+							<Badge variant="outline" class="border-dashed text-[10px]">Off</Badge>
+						{/if}
+						<CapabilityChips granted={[tool.capability]} />
+					</span>
+					<ChevronRight class="size-4 shrink-0 text-muted-foreground/60" />
+				</button>
+			{/each}
+		</div>
+	{:else}
+		<div class="p-5">
+			<EmptyState
+				compact
+				icon={SearchX}
+				title="No tools match"
+				description="Widen the search or pick another capability."
+			/>
+		</div>
 	{/each}
-</div>
+</Card.Root>
+
+<ToolSheet
+	tool={selectedTool}
+	open={selectedTool !== null}
+	onOpenChange={(v) => {
+		if (!v) selected = null;
+	}}
+	{ceiling}
+	calls={mcp.calls}
+	index={selectedIndex}
+	total={ordered.length}
+	onStep={step}
+	{canAdmin}
+	onCeiling={() => onTab('server')}
+/>
