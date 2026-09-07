@@ -19,9 +19,7 @@ class SignoffConfig(SectionConfig):
 class SignoffSection(Section):
     name = "signoff"
     title = "Contact"
-    description = (
-        "Contact details and optional signature lines."
-    )
+    description = "Contact details and optional signature lines."
     page_break = "flow"
     group = SectionGroup.APPENDIX.value
     order = 50

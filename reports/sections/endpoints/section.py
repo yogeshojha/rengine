@@ -24,9 +24,7 @@ class EndpointsConfig(SectionConfig):
 class EndpointsSection(Section):
     name = "endpoints"
     title = "Endpoints"
-    description = (
-        "Administrative, authentication, API and debug paths, rather than every URL the crawl produced."
-    )
+    description = "Administrative, authentication, API and debug paths, rather than every URL the crawl produced."
     group = SectionGroup.SURFACE.value
     order = 30
     launch_fields = frozenset({"max_rows"})
