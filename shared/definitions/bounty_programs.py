@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
+import ipaddress
 import re
 from dataclasses import dataclass
 from enum import Enum
+
+import validators
 
 from shared.enums.target import TargetType
 from shared.utils.validation import normalize_target_value, validate_target
@@ -355,6 +359,8 @@ MAX_EVENT_DETAIL = 500
 MAX_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "none")
 
 _SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*://", re.I)
+_HOSTNAME_TYPES = frozenset({TargetType.DOMAIN, TargetType.URL})
+_IPV6_HOST = re.compile(r"^\[([^\]]+)\]")
 
 
 def event_spec(kind: str) -> EventSpec:
@@ -421,6 +427,22 @@ def normalize_identifier(asset_type: str | None, identifier: str) -> str | None:
     return None if not value or "*" in value else value
 
 
+def _public_host(value: str) -> bool:
+    """A program's scope is internet-facing, so a bundle id is not a hostname.
+
+    validators accepts com.etoro.wallet and io.flutter.plugins as domains until
+    consider_tld is on. It is deliberately not on in validate_target, because a
+    hand-added internal target like traefik.default is legitimate there.
+    """
+    authority = _SCHEME.sub("", value).split("/")[0].split("?")[0]
+    bracketed = _IPV6_HOST.match(authority)
+    host = bracketed.group(1) if bracketed else authority.rsplit(":", 1)[0]
+    with contextlib.suppress(ValueError):
+        ipaddress.ip_address(host)
+        return True
+    return bool(validators.domain(host, consider_tld=True))
+
+
 def _canonical(value: str, target_type: TargetType) -> str:
     """The casing reNgine already stores for this target type."""
     if target_type is TargetType.ASN:
@@ -438,4 +460,8 @@ def target_for_scope(
     if not value:
         return None
     target_type = validate_target(value)
-    return (_canonical(value, target_type), target_type) if target_type else None
+    if not target_type:
+        return None
+    if target_type in _HOSTNAME_TYPES and not _public_host(value):
+        return None
+    return _canonical(value, target_type), target_type
