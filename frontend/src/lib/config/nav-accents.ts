@@ -6,6 +6,7 @@ const ACCENTS: Record<string, string> = {
 	'/automation': 'var(--chart-4)',
 	'/arsenal': 'var(--chart-1)',
 	'/interest': 'var(--chart-2)',
+	'/bounty-hub': 'var(--chart-4)',
 	'/reports': 'var(--chart-3)',
 	'/ai': 'var(--chart-4)',
 	'/mcp': 'var(--chart-5)'

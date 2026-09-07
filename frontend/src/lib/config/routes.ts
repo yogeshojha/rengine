@@ -12,6 +12,7 @@ export const routeLabels: Record<string, string> = {
 	// Tools
 	arsenal: 'Arsenal',
 	interest: 'Worth a look',
+	bountyHub: 'Bounty Hub',
 
 	// Reporting
 	reports: 'Reports',
@@ -67,6 +68,7 @@ export const ROUTES = {
 	},
 	schedules: '/schedules',
 	arsenal: (tab?: ArsenalTab) => (tab ? `/arsenal?tab=${tab}` : '/arsenal'),
+	bountyHub: (handle?: string) => (handle ? `/bounty-hub?program=${handle}` : '/bounty-hub'),
 	interest: (tab?: InterestTab) => (tab ? `/interest?tab=${tab}` : '/interest'),
 	reports: (tab?: ReportTab) => (tab ? `/reports?tab=${tab}` : '/reports'),
 	report: (id: string) => `/reports/${id}`,

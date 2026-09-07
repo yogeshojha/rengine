@@ -102,6 +102,7 @@ celery_app.conf.task_routes = {
     "app.tasks.reports.*": {"queue": "default"},
     "app.tasks.interest.*": {"queue": "default"},
     "app.tasks.threat_intel.*": {"queue": "default"},
+    "app.tasks.bounty_programs.*": {"queue": "default"},
 }
 
 # #############################################################
@@ -123,6 +124,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.interest",
         "app.tasks.notifications",
         "app.tasks.threat_intel",
+        "app.tasks.bounty_programs",
     ]
 )
 

@@ -5,6 +5,7 @@ from app.api.v1 import (
     ai,
     api_keys,
     auth,
+    bounty_programs,
     celery_health,
     dashboard,
     endpoints,
@@ -70,6 +71,7 @@ router.include_router(vulnerabilities.router)
 router.include_router(vuln_templates.router)
 router.include_router(threat_intel.router)
 router.include_router(interest.router)
+router.include_router(bounty_programs.router)
 router.include_router(wordlists.router)
 router.include_router(media.router)
 router.include_router(reports.router)

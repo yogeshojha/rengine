@@ -170,3 +170,27 @@ def dispatch_threat_intel_refresh(*, force: bool = False) -> bool:
         logger.warning("threat intel refresh dispatch failed", exc_info=True)
         return False
     return True
+
+
+def dispatch_bounty_sync(*, scopes: bool = True) -> bool:
+    """Refresh the bug bounty program library. Returns whether the queue accepted it."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.bounty_programs.sync", kwargs={"scopes": scopes}, queue="default"
+        )
+    except Exception:
+        logger.warning("bounty program sync dispatch failed", exc_info=True)
+        return False
+    return True
+
+
+def dispatch_bounty_program_sync(handle: str) -> bool:
+    """Refresh one program's scope."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.bounty_programs.sync_program", args=[handle], queue="default"
+        )
+    except Exception:
+        logger.warning("bounty program scope dispatch failed", exc_info=True)
+        return False
+    return True

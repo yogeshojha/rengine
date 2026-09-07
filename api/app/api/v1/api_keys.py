@@ -1,5 +1,6 @@
 from typing import Annotated
 
+import anyio
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,18 +9,35 @@ from app.core.database import get_session
 from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKeyCreate, APIKeyRead, APIKeyUpdate, ProviderInfo
 from shared.services.api_key.async_api_key import APIKeyService
+from shared.services.bounty_programs import verify as verify_hackerone
 from shared.utils.crypto import try_decrypt
 from tools.viewdns.client import ViewDNSClient
 
 
-async def _test_viewdns(key_value: str) -> dict:
+async def _test_viewdns(key_value: str, _key_meta: dict | None) -> dict:
     client = ViewDNSClient(key_value)
     _ = await client.ip_history("rengine.wiki")
     return {"message": "API Key is valid."}
 
 
+async def _test_hackerone(key_value: str, key_meta: dict | None) -> dict:
+    username = (key_meta or {}).get("username")
+    if not username:
+        msg = "Add your HackerOne API username alongside the token."
+        raise ValueError(msg)
+    result = await anyio.to_thread.run_sync(
+        verify_hackerone, (str(username), key_value)
+    )
+    sample = result.get("sample_handle")
+    detail = f" First program visible: @{sample}." if sample else ""
+    return {"message": f"Signed in to HackerOne as {username}.{detail}"}
+
+
+# a tester receives the decrypted value and the key_meta, so username-bearing
+# providers can be checked too
 API_KEY_TESTERS = {
     APIProvider.VIEWDNS: _test_viewdns,
+    APIProvider.HACKERONE: _test_hackerone,
 }
 
 
@@ -103,7 +121,9 @@ async def test_api_key(
         }
 
     try:
-        result = await tester(try_decrypt(api_key.key_value) or api_key.key_value)
+        result = await tester(
+            try_decrypt(api_key.key_value) or api_key.key_value, api_key.key_meta
+        )
         return {"provider": api_key.provider, "success": True, **result}
     except Exception as e:
         return {"provider": api_key.provider, "success": False, "message": str(e)}

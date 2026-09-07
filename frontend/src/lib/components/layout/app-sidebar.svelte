@@ -10,6 +10,7 @@
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import SparkleIcon from '@lucide/svelte/icons/sparkle';
 	import NetworkIcon from '@lucide/svelte/icons/network';
+	import TargetIcon from '@lucide/svelte/icons/target';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
 	import NavUser from './nav-user.svelte';
@@ -20,6 +21,8 @@
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { reports } from '$lib/stores/reports.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+	import { Capability } from '$lib/config/capabilities';
 
 	let {
 		ref = $bindable(null),
@@ -69,6 +72,9 @@
 				},
 				{ title: routeLabels.interest, url: ROUTES.interest(), icon: SparkleIcon },
 				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: SwordsIcon },
+				...(capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)
+					? [{ title: routeLabels.bountyHub, url: ROUTES.bountyHub(), icon: TargetIcon }]
+					: []),
 				{ title: routeLabels.ai, url: ROUTES.ai(), icon: SparklesIcon },
 				{ title: routeLabels.mcp, url: ROUTES.mcp(), icon: NetworkIcon }
 			]
