@@ -2,13 +2,13 @@ import uuid as _uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.api.pagination import Page
 from app.core.database import get_session
 from shared.enums.whois import WhoisLookupType
 from shared.models.target import Target

@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -31,8 +31,8 @@ async def get_user_summary(
 async def list_users(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: CurrentSuperuser,  # noqa: ARG001
-    skip: int = 0,
-    limit: int = 100,
+    skip: Annotated[int, Query(ge=0, le=1_000_000)] = 0,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
     query = select(User).offset(skip).limit(limit)
     result = await session.execute(query)

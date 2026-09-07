@@ -1,12 +1,19 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from tools.ripestat.models import RIPEStatResult
 from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
+
+# an ASN reaches int() further down, so anything else must be refused here
+AsnParam = Annotated[
+    str,
+    Path(pattern=r"^[Aa][Ss]?\d{1,10}$|^\d{1,10}$", description="ASN, e.g. AS13335"),
+]
+
 
 router = APIRouter(prefix="/tools/ripestat", tags=["ripestat"])
 
@@ -26,7 +33,7 @@ def _handle_lookup_error(e: RIPEStatLookupError):
 
 @router.get("/prefixes/{asn}", response_model=RIPEStatResult | None)
 async def announced_prefixes(
-    asn: str,
+    asn: AsnParam,
     _current_user: CurrentUser,
     service: Annotated[RIPEStatService, Depends(get_ripestat_service)],
     cached_only: bool = Query(False),
@@ -39,7 +46,7 @@ async def announced_prefixes(
 
 @router.get("/neighbours/{asn}", response_model=RIPEStatResult | None)
 async def asn_neighbours(
-    asn: str,
+    asn: AsnParam,
     _current_user: CurrentUser,
     service: Annotated[RIPEStatService, Depends(get_ripestat_service)],
     cached_only: bool = Query(False),
@@ -52,7 +59,7 @@ async def asn_neighbours(
 
 @router.get("/overview/{asn}", response_model=RIPEStatResult | None)
 async def as_overview(
-    asn: str,
+    asn: AsnParam,
     _current_user: CurrentUser,
     service: Annotated[RIPEStatService, Depends(get_ripestat_service)],
     cached_only: bool = Query(False),

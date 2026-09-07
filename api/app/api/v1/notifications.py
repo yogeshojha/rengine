@@ -2,12 +2,12 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
+from app.api.pagination import Page
 from app.config import settings
 from app.core.database import get_session
 from app.debug.notifications import DEBUG_NOTIFICATION_TEMPLATES

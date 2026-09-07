@@ -8,6 +8,7 @@ from fastapi_pagination import add_pagination
 from app.api.router import router as api_router
 from app.config import settings
 from app.core.redis_sse_bridge import RedisSSEBridge
+from app.core.sanitize import RejectNulMiddleware
 from app.core.throttle import GlobalRateLimitMiddleware
 from app.utils.helpers import create_initial_admin
 from shared.logging import get_logger
@@ -71,6 +72,7 @@ if "*" in settings.CORS_ORIGINS:
     raise ValueError(msg)
 
 app.add_middleware(GlobalRateLimitMiddleware)
+app.add_middleware(RejectNulMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,

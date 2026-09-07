@@ -1,13 +1,14 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import BaseModel
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
+from app.api.pagination import Page
 from app.core.database import get_session
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.models.activity_log import ActivityLog, ActivityLogRead
@@ -26,9 +27,11 @@ class ActivityDeleteResponse(BaseModel):
 async def list_activity_logs(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[str | None, Query(description="Filter by project ID")] = None,
-    target_id: Annotated[str | None, Query(description="Filter by target ID")] = None,
-    scan_id: Annotated[str | None, Query(description="Filter by scan ID")] = None,
+    project_id: Annotated[
+        UUID | None, Query(description="Filter by project ID")
+    ] = None,
+    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
+    scan_id: Annotated[UUID | None, Query(description="Filter by scan ID")] = None,
     level: Annotated[
         ActivityLevel | None, Query(description="Filter by severity level")
     ] = None,
@@ -61,10 +64,10 @@ async def delete_activity_logs(
     _current_user: CurrentSuperuser,
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: Annotated[
-        str | None, Query(description="Delete logs for a specific project")
+        UUID | None, Query(description="Delete logs for a specific project")
     ] = None,
     target_id: Annotated[
-        str | None, Query(description="Delete logs for a specific target")
+        UUID | None, Query(description="Delete logs for a specific target")
     ] = None,
     level: Annotated[
         ActivityLevel | None, Query(description="Delete logs of a specific level")

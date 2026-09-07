@@ -2,11 +2,11 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
-from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.api.pagination import Page
 from app.core.database import get_session
 from app.services.rescan import RescanService, rescan_schema
 from app.services.scan import ScanService, ScanSortDir, ScanSortKey
