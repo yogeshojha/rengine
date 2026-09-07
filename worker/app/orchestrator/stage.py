@@ -67,7 +67,8 @@ def _scan_is_cancelled(
 ) -> bool:
     with session_factory() as session:
         scan = session.get(Scan, scan_id)
-        return scan is not None and scan.status == ScanStatus.CANCELLED.value
+        # the row is committed before the run is dispatched, so a missing one means it was deleted
+        return scan is None or scan.status == ScanStatus.CANCELLED.value
 
 
 def _register_task_id(session: Session, scan: Scan, celery_task_id: str | None) -> None:
