@@ -4,9 +4,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi_pagination import add_pagination
+from sqlalchemy.exc import DBAPIError
 
 from app.api.router import router as api_router
 from app.config import settings
+from app.core.db_errors import data_exception_handler
 from app.core.redis_sse_bridge import RedisSSEBridge
 from app.core.sanitize import RejectNulMiddleware
 from app.core.throttle import GlobalRateLimitMiddleware
@@ -70,6 +72,8 @@ app.openapi = custom_openapi
 if "*" in settings.CORS_ORIGINS:
     msg = "CORS_ORIGINS must be an explicit allowlist (no '*') when credentials are enabled"
     raise ValueError(msg)
+
+app.add_exception_handler(DBAPIError, data_exception_handler)
 
 app.add_middleware(GlobalRateLimitMiddleware)
 app.add_middleware(RejectNulMiddleware)

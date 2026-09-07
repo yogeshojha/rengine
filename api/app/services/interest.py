@@ -121,6 +121,12 @@ def _to_read(rule: InterestRule, matches: int | None = None) -> InterestRuleRead
     )
 
 
+def _clearable(field: str) -> bool:
+    """An explicit null may only be stored where the column accepts one; elsewhere it means unchanged."""
+    column = InterestRule.__table__.columns.get(field)
+    return column is not None and column.nullable
+
+
 class InterestService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -294,6 +300,8 @@ class InterestService:
             data["kind"] = coerce_kind(data["kind"])
 
         for key, value in data.items():
+            if value is None and not _clearable(key):
+                continue
             setattr(rule, key, value)
         rule.updated_at = utc_now()
         self.session.add(rule)
