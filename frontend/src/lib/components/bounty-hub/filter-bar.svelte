@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { Badge } from '$lib/components/ui/badge';
@@ -29,8 +30,11 @@
 	let draft = $state('');
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
+	// reading draft here would make this effect its own dependency and wipe the
+	// input on every keystroke
 	$effect(() => {
-		if ((filters.q ?? '') !== draft.trim()) draft = filters.q ?? '';
+		const applied = filters.q ?? '';
+		if (applied !== untrack(() => draft.trim())) draft = applied;
 	});
 
 	function clearAll() {

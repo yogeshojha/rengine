@@ -16,7 +16,12 @@
 	import ImportDialog from './import-dialog.svelte';
 	import ScopeRow from './scope-row.svelte';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
-	import { SOURCE_NOTES, SUBMISSION_STATE_LABELS, formatPayout } from '$lib/config/bounty-programs';
+	import {
+		SOURCE_NOTES,
+		SUBMISSION_STATE_LABELS,
+		formatPayout,
+		platformUrl
+	} from '$lib/config/bounty-programs';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import {
 		ProgramState,
@@ -154,7 +159,9 @@
 		syncing = true;
 		try {
 			await bountyProgramsApi.syncProgram(program.handle, program.platform);
-			toast.success('Refreshing scope from HackerOne. Reopen the program in a moment.');
+			toast.success(
+				`Refreshing scope from ${program.platform_label}. Reopen the program in a moment.`
+			);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Could not refresh the scope');
 		} finally {
@@ -188,7 +195,7 @@
 				</Sheet.Title>
 				<Sheet.Description class="flex flex-wrap items-center gap-x-3 gap-y-1">
 					<a
-						href={program.url ?? `https://hackerone.com/${program.handle}`}
+						href={program.url ?? platformUrl(program.platform)}
 						target="_blank"
 						rel="noreferrer noopener"
 						class="inline-flex items-center gap-1 font-mono text-xs hover:underline"
@@ -235,24 +242,24 @@
 				{:else if scopes.length === 0 && detail?.scopes_synced_at}
 					<EmptyState
 						title="This program publishes no structured scope"
-						description="HackerOne returned no scope assets for it. The scope is described in the program policy instead, so there is nothing reNgine can add as a target from here."
+						description={`${program.platform_label} returned no scope assets for it. The scope is described in the program policy instead, so there is nothing reNgine can add as a target from here.`}
 						class="p-10"
 					>
 						<Button
-							href={program.url ?? `https://hackerone.com/${program.handle}`}
+							href={program.url ?? platformUrl(program.platform)}
 							target="_blank"
 							rel="noreferrer noopener"
 							variant="outline"
 							size="sm"
 						>
 							<ExternalLinkIcon class="mr-2 size-3.5" />
-							Read the policy on HackerOne
+							Read the policy on {program.platform_label}
 						</Button>
 					</EmptyState>
 				{:else if scopes.length === 0}
 					<EmptyState
 						title="Scope not fetched yet"
-						description="reNgine has not read this program's scope from HackerOne."
+						description={`reNgine has not read this program's scope from ${program.platform_label}.`}
 						class="p-10"
 					>
 						<LoadingButton loading={syncing} variant="outline" size="sm" onclick={refreshScope}>

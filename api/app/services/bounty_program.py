@@ -522,7 +522,7 @@ class BountyProgramService:
             BountyScope.program_id == program.id,
             col(BountyScope.target_value).is_not(None),
         )
-        if request.scope_ids:
+        if request.scope_ids is not None:
             query = query.where(col(BountyScope.id).in_(request.scope_ids))
         if not request.include_out_of_scope:
             query = query.where(BountyScope.scope_state == ScopeState.IN_SCOPE.value)
@@ -533,7 +533,7 @@ class BountyProgramService:
             BountyScope.program_id == program.id,
             col(BountyScope.target_value).is_(None),
         )
-        if request.scope_ids:
+        if request.scope_ids is not None:
             unreachable = unreachable.where(col(BountyScope.id).in_(request.scope_ids))
         if not request.include_out_of_scope:
             unreachable = unreachable.where(
@@ -676,11 +676,11 @@ class BountyProgramService:
             created_by=user_id,
         )
         try:
-            await add_with_unique_slug(
-                self.session, organization, name, project_id=project_id
-            )
+            async with self.session.begin_nested():
+                await add_with_unique_slug(
+                    self.session, organization, name, project_id=project_id
+                )
         except IntegrityError:
-            await self.session.rollback()
             again = await self.session.execute(
                 select(Organization).where(
                     Organization.project_id == project_id, Organization.name == name

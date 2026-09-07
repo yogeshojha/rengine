@@ -92,7 +92,13 @@
 	$effect(() => {
 		const handle = page.url.searchParams.get('program');
 		const platform = page.url.searchParams.get('platform') ?? undefined;
-		if (!handle || sheetOpen || deepLinked === handle) return;
+		// deepLinked is only cleared once the param has left the URL, or closing
+		// the sheet would immediately reopen it
+		if (!handle) {
+			deepLinked = null;
+			return;
+		}
+		if (sheetOpen || deepLinked === handle) return;
 		deepLinked = handle;
 		const match = programs.find(
 			(p) => p.handle === handle && (!platform || p.platform === platform)
@@ -124,7 +130,6 @@
 
 	function onSheetOpen(value: boolean) {
 		sheetOpen = value;
-		if (!value) deepLinked = null;
 		if (!value && page.url.searchParams.has('program')) {
 			void goto(ROUTES.bountyHub(), { replaceState: true, noScroll: true, keepFocus: true });
 		}

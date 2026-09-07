@@ -161,7 +161,7 @@
 						How often to refresh Bugcrowd, Intigriti and YesWeHack
 					</span>
 					<span class="text-xs text-muted-foreground">
-						Four small files from
+						Three small files from
 						<a
 							href={settings.feed_url}
 							target="_blank"

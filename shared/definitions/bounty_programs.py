@@ -356,6 +356,8 @@ def notify_enabled(settings: dict | None) -> bool:
 MAX_TAGS_PER_IMPORT = 10
 # bounty_events.detail is varchar(500); an instruction is capped far higher
 MAX_EVENT_DETAIL = 500
+# bounty_scopes.target_value and targets.target_value are both varchar(500)
+MAX_TARGET_VALUE = 500
 
 MAX_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "none")
 
@@ -435,7 +437,9 @@ def normalize_identifier(asset_type: str | None, identifier: str) -> str | None:
         value = host
     value = normalize_target_value(value)
     # a residual wildcard (*.example.*, *-faq.example.com) names no single asset
-    return None if not value or "*" in value else value
+    if not value or "*" in value or len(value) > MAX_TARGET_VALUE:
+        return None
+    return value
 
 
 def _public_host(value: str) -> bool:

@@ -77,6 +77,17 @@ export const SUBMISSION_STATE_LABELS: Record<SubmissionState, string> = {
 	[SubmissionState.Unknown]: 'Not reported'
 };
 
+const PLATFORM_URLS: Record<string, string> = {
+	hackerone: 'https://hackerone.com',
+	bugcrowd: 'https://bugcrowd.com',
+	intigriti: 'https://app.intigriti.com',
+	yeswehack: 'https://yeswehack.com'
+};
+
+export function platformUrl(platform: string): string {
+	return PLATFORM_URLS[platform] ?? '';
+}
+
 export const SOURCE_LABELS: Record<string, string> = {
 	api: 'Platform API',
 	feed: 'Bounty Targets feed'
@@ -101,7 +112,8 @@ export function formatPayout(
 	const symbol = !currency || currency.toUpperCase() === 'USD' ? '$' : `${currency} `;
 	if (min && max && min !== max)
 		return `${symbol}${PAYOUT_FORMAT.format(min)}–${PAYOUT_FORMAT.format(max)}`;
-	return `up to ${symbol}${PAYOUT_FORMAT.format(max ?? min ?? 0)}`;
+	if (max) return `up to ${symbol}${PAYOUT_FORMAT.format(max)}`;
+	return `from ${symbol}${PAYOUT_FORMAT.format(min ?? 0)}`;
 }
 
 export const SCOPE_STATE_LABELS: Record<ScopeState, string> = {

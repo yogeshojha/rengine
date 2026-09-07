@@ -165,20 +165,27 @@ def sync_program(handle: str, platform: str = BountyPlatform.HACKERONE.value) ->
         ).scalar_one_or_none()
         if not program:
             return {"error": "unknown program"}
-        # a feed platform has no per-program endpoint; refresh the whole file
-        if program.source == ProgramSource.FEED.value:
-            spec = FEEDS_BY_PLATFORM.get(platform)
-            if not spec:
-                return {"error": "unknown platform"}
-            return sync_platform(session, spec)
-        auth = credentials(session)
-        if not auth:
-            return {"skipped": "not_configured"}
-        try:
-            return {"assets": sync_scopes(session, program, auth)}
-        except HackerOneError as exc:
-            logger.info("bounty scope sync failed", handle=handle, error=str(exc))
-            return {"error": str(exc)}
+        feed = program.source == ProgramSource.FEED.value
+        key = FEED_LOCK_KEY if feed else SYNC_LOCK_KEY
+        with sync_lock(session, key) as held:
+            if not held:
+                return {"skipped": "already_running"}
+            # a feed platform has no per-program endpoint; refresh the whole file
+            if feed:
+                spec = FEEDS_BY_PLATFORM.get(platform)
+                return (
+                    sync_platform(session, spec)
+                    if spec
+                    else {"error": "unknown platform"}
+                )
+            auth = credentials(session)
+            if not auth:
+                return {"skipped": "not_configured"}
+            try:
+                return {"assets": sync_scopes(session, program, auth)}
+            except HackerOneError as exc:
+                logger.info("bounty scope sync failed", handle=handle, error=str(exc))
+                return {"error": str(exc)}
 
 
 @shared_task(name="app.tasks.bounty_programs.sync_feed")

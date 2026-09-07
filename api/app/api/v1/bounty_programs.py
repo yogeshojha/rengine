@@ -268,7 +268,7 @@ async def program_detail(
 async def sync_program(
     session: SessionDep,
     service: ServiceDep,
-    _current_user: CurrentUser,
+    _current_user: CurrentSuperuser,
     platform: PlatformPath,
     handle: str,
 ) -> dict:

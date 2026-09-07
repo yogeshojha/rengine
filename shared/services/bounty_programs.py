@@ -75,6 +75,9 @@ def sync_lock(session: Session, key: int) -> Iterator[bool]:
         yield held
     finally:
         if held:
+            # the body may have poisoned the transaction; unlocking on a pooled
+            # connection matters more than the failed work
+            session.rollback()
             session.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": key})
             session.commit()
 

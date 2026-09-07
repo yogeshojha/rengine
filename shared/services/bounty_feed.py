@@ -25,7 +25,9 @@ from shared.definitions.bounty_feed import (
     payout,
 )
 from shared.definitions.bounty_programs import (
+    DEFAULT_FEED_INTERVAL,
     SYNC_INTERVAL_HOURS,
+    BountyEvent,
     ProgramSource,
     ProgramState,
     SubmissionState,
@@ -172,7 +174,7 @@ def sync_platform(session: Session, spec: FeedSpec) -> dict:
             session.flush()
             created += 1
             if baseline:
-                session.add(_event(program, "program_added"))
+                session.add(_event(program, BountyEvent.PROGRAM_ADDED.value))
         else:
             # an API row is authoritative; the feed never overwrites one
             if program.source == ProgramSource.API.value:
@@ -235,7 +237,7 @@ def feed_settings(session: Session) -> tuple[str, object]:
             "SELECT bounty_feed_interval, bounty_feed_synced_at FROM instance_settings LIMIT 1"
         )
     ).first()
-    return (row[0] if row else "six_hours"), (row[1] if row else None)
+    return (row[0] if row else DEFAULT_FEED_INTERVAL), (row[1] if row else None)
 
 
 def feed_due(session: Session) -> bool:
