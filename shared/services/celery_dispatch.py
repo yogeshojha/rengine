@@ -125,11 +125,13 @@ def dispatch_report(report_id: str) -> bool:
     return True
 
 
-def dispatch_interest_evaluation(scan_id: str, *, include_ai: bool = True) -> None:
+def dispatch_interest_evaluation(
+    scan_id: str, *, include_ai: bool = True, notify: bool = True
+) -> None:
     logger.info("Dispatching interest evaluation for scan %s", scan_id)
     get_celery_client().send_task(
         "app.tasks.interest.evaluate_scan",
-        kwargs={"scan_id": scan_id, "include_ai": include_ai},
+        kwargs={"scan_id": scan_id, "include_ai": include_ai, "notify": notify},
         queue="default",
     )
 

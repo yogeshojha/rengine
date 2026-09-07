@@ -119,9 +119,9 @@ async def scan_interest(
     scan = await _scan(session, scan_id)
     service = InterestReadService(session)
     page = await service.page(scan, body)
-    # a rule changed since this scan was labelled; refresh in the background, never on the read
+    # a rule changed since this scan was labelled; relabelling is not a discovery, so it never alerts
     if page.summary.stale:
-        dispatch_interest_evaluation(str(scan_id), include_ai=False)
+        dispatch_interest_evaluation(str(scan_id), include_ai=False, notify=False)
     return page
 
 
