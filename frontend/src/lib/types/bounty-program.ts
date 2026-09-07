@@ -1,5 +1,13 @@
 export enum BountyPlatform {
-	HackerOne = 'hackerone'
+	HackerOne = 'hackerone',
+	Bugcrowd = 'bugcrowd',
+	Intigriti = 'intigriti',
+	YesWeHack = 'yeswehack'
+}
+
+export enum ProgramSource {
+	Api = 'api',
+	Feed = 'feed'
 }
 
 export enum ProgramState {
@@ -10,7 +18,8 @@ export enum ProgramState {
 export enum SubmissionState {
 	Open = 'open',
 	Paused = 'paused',
-	Closed = 'closed'
+	Closed = 'closed',
+	Unknown = 'unknown'
 }
 
 export enum ScopeState {
@@ -75,6 +84,9 @@ export interface BountyScope {
 export interface BountyProgram {
 	id: string;
 	platform: string;
+	platform_label: string;
+	source: ProgramSource;
+	source_label: string;
 	handle: string;
 	name: string;
 	url: string | null;
@@ -93,6 +105,11 @@ export interface BountyProgram {
 	bookmarked: boolean;
 	reports_for_user: number | null;
 	earnings_for_user: number | null;
+	min_payout: number | null;
+	max_payout: number | null;
+	payout_currency: string | null;
+	safe_harbor: string | null;
+	requires_2fa: boolean | null;
 	scopes_synced_at: string | null;
 	synced_at: string;
 	in_scope_count: number;
@@ -108,8 +125,16 @@ export interface BountyProgramDetail extends BountyProgram {
 
 export enum SyncInterval {
 	Off = 'off',
+	SixHours = 'six_hours',
 	Daily = 'daily',
 	Weekly = 'weekly'
+}
+
+export interface PlatformCount {
+	platform: string;
+	label: string;
+	source: ProgramSource;
+	programs: number;
 }
 
 export interface BountyEventSpec {
@@ -140,6 +165,13 @@ export interface BountyEvent {
 
 export interface BountySettings {
 	sync_interval: SyncInterval;
+	feed_interval: SyncInterval;
+	feed_synced_at: string | null;
+	feed_next_sync_at: string | null;
+	feed_programs: number;
+	feed_source: string;
+	feed_url: string;
+	feed_license: string;
 	notify: boolean;
 	notify_events: string[];
 	notifiable_events: string[];
@@ -151,6 +183,7 @@ export interface BountySettings {
 
 export interface BountySettingsUpdate {
 	sync_interval?: string;
+	feed_interval?: string;
 	notify?: boolean;
 	notify_events?: string[];
 }
@@ -165,6 +198,9 @@ export interface BountyStatus {
 	sync_interval: SyncInterval;
 	next_sync_at: string | null;
 	unseen_events: number;
+	platforms: PlatformCount[];
+	feed_interval: SyncInterval;
+	feed_synced_at: string | null;
 	error: string | null;
 }
 
@@ -188,6 +224,8 @@ export interface BountyProgramFilters {
 	bounty?: boolean | null;
 	bookmarked?: boolean | null;
 	joined?: boolean | null;
+	platforms?: string[];
+	sources?: string[];
 	scope?: 'importable' | 'none' | null;
 	sort?: string;
 }

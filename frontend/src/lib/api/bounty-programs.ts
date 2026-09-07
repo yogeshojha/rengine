@@ -33,6 +33,10 @@ function query(params: Record<string, unknown>): string {
 	const search = new URLSearchParams();
 	for (const [key, value] of Object.entries(params)) {
 		if (value === undefined || value === null || value === '') continue;
+		if (Array.isArray(value)) {
+			for (const item of value) search.append(key, String(item));
+			continue;
+		}
 		search.set(key, String(value));
 	}
 	const qs = search.toString();
@@ -52,11 +56,10 @@ export const bountyProgramsApi = {
 		filters: BountyProgramFilters,
 		page: number,
 		size: number,
-		projectId?: string,
-		platform: string = BountyPlatform.HackerOne
+		projectId?: string
 	): Promise<ProgramPage> {
 		return api.get<ProgramPage>(
-			`/bounty-programs${query({ ...filters, platform, page, size, project_id: projectId })}`
+			`/bounty-programs${query({ ...filters, page, size, project_id: projectId })}`
 		);
 	},
 
@@ -99,6 +102,10 @@ export const bountyProgramsApi = {
 		platform: string = BountyPlatform.HackerOne
 	): Promise<BountySettings> {
 		return api.put<BountySettings>(`/bounty-programs/settings${query({ platform })}`, patch);
+	},
+
+	async syncFeed(): Promise<unknown> {
+		return api.post('/bounty-programs/sync-feed', {});
 	},
 
 	async sync(scopes = true, platform: string = BountyPlatform.HackerOne): Promise<unknown> {

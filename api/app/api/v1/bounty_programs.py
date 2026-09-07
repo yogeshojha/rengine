@@ -34,6 +34,7 @@ from shared.models.bounty_program import (
     BountyStatus,
 )
 from shared.services.celery_dispatch import (
+    dispatch_bounty_feed_sync,
     dispatch_bounty_program_sync,
     dispatch_bounty_sync,
 )
@@ -113,13 +114,14 @@ async def list_events(
     session: SessionDep,
     service: ServiceDep,
     _current_user: CurrentUser,
-    platform: str = Query(BountyPlatform.HACKERONE.value),
+    platform: str | None = Query(None),
     kind: str | None = Query(None),
     handle: str | None = Query(None),
 ) -> Page[BountyEventRead]:
     """What changed in the library, newest first."""
     await _require_mode(session)
-    BountyProgramService.require_platform(platform)
+    if platform:
+        BountyProgramService.require_platform(platform)
     query = await service.events(platform, kind=kind, handle=handle)
     page = await paginate(session, query)
     page.items = [BountyProgramService.event_read(r) for r in page.items]
@@ -148,7 +150,7 @@ async def read_settings(
     """How often reNgine syncs, and which changes are worth an alert."""
     await _require_mode(session)
     BountyProgramService.require_platform(platform)
-    return await service.read_settings(platform)
+    return await service.read_settings()
 
 
 @router.put("/settings")
@@ -161,7 +163,7 @@ async def write_settings(
 ) -> BountySettingsRead:
     await _require_mode(session)
     BountyProgramService.require_platform(platform)
-    return await service.write_settings(data, platform)
+    return await service.write_settings(data)
 
 
 @router.get("/status")
@@ -195,12 +197,24 @@ async def sync(
     return {"queued": dispatch_bounty_sync(scopes=scopes)}
 
 
+@router.post("/sync-feed")
+async def sync_feed(
+    session: SessionDep,
+    _current_user: CurrentSuperuser,
+) -> dict:
+    """Queue a refresh of the public program feed. Needs no credentials."""
+    await _require_mode(session)
+    return {"queued": dispatch_bounty_feed_sync()}
+
+
 @router.get("")
 async def list_programs(
     session: SessionDep,
     service: ServiceDep,
     _current_user: CurrentUser,
-    platform: str = Query(BountyPlatform.HACKERONE.value),
+    platform: str | None = Query(None, description="a single platform key"),
+    platforms: Annotated[list[str] | None, Query()] = None,
+    sources: Annotated[list[str] | None, Query()] = None,
     q: str | None = Query(None),
     state: str | None = Query(None, description="public or private"),
     submission: str | None = Query(None, description="open, paused or closed"),
@@ -212,10 +226,13 @@ async def list_programs(
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> Page[BountyProgramRead]:
     await _require_mode(session)
-    BountyProgramService.require_platform(platform)
+    if platform:
+        BountyProgramService.require_platform(platform)
     query = service.list_query(
         platform,
         sort=sort,
+        platforms=platforms,
+        sources=sources,
         q=q,
         state=state,
         submission=submission,

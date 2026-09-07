@@ -91,22 +91,25 @@
 
 	$effect(() => {
 		const handle = page.url.searchParams.get('program');
+		const platform = page.url.searchParams.get('platform') ?? undefined;
 		if (!handle || sheetOpen || deepLinked === handle) return;
 		deepLinked = handle;
-		const match = programs.find((p) => p.handle === handle);
+		const match = programs.find(
+			(p) => p.handle === handle && (!platform || p.platform === platform)
+		);
 		if (match) {
 			open(match);
 			return;
 		}
 		void bountyProgramsApi
-			.detail(handle, projectId)
+			.detail(handle, projectId, null, platform)
 			.then((program) => open(program))
 			.catch(() => toast.error(`No program found for @${handle}`));
 	});
 
-	function openProgram(handle: string) {
+	function openProgram(handle: string, platform: string) {
 		tab = 'programs';
-		void goto(ROUTES.bountyHub(handle), { noScroll: true, keepFocus: true });
+		void goto(ROUTES.bountyHub(handle, platform), { noScroll: true, keepFocus: true });
 	}
 
 	function onFilters(next: BountyProgramFilters) {
@@ -130,8 +133,8 @@
 	async function sync() {
 		syncing = true;
 		try {
-			await bountyProgramsApi.sync();
-			toast.success('Refreshing programs and scope from HackerOne. This runs in the background.');
+			await Promise.all([bountyProgramsApi.sync(), bountyProgramsApi.syncFeed()]);
+			toast.success('Refreshing every platform. This runs in the background.');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Could not start the refresh');
 		} finally {
@@ -147,8 +150,10 @@
 		<div class="flex flex-col gap-1">
 			<h1 class="text-xl font-semibold">Bounty Hub</h1>
 			<p class="text-sm text-muted-foreground">
-				{#if status?.configured}
-					{status.programs} programs from HackerOne
+				{#if status}
+					{status.programs.toLocaleString()} programs across {status.platforms.filter(
+						(p) => p.programs > 0
+					).length} platforms
 					{#if status.private_programs > 0}
 						· {status.private_programs} private
 					{/if}
@@ -169,7 +174,7 @@
 		{#if status?.configured}
 			<LoadingButton loading={syncing} variant="outline" size="sm" onclick={sync}>
 				<RefreshCwIcon class="mr-2 size-3.5" />
-				Refresh from HackerOne
+				Refresh all platforms
 			</LoadingButton>
 		{/if}
 	</div>
@@ -199,7 +204,7 @@
 		{#if tab === 'updates'}
 			<UpdatesFeed onOpenProgram={openProgram} />
 		{:else}
-			<FilterBar {filters} onChange={onFilters} />
+			<FilterBar {filters} platforms={status?.platforms ?? []} onChange={onFilters} />
 
 			<Card.Root class="gap-0 overflow-hidden py-0">
 				{#if loading}

@@ -1,24 +1,42 @@
 <script lang="ts">
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import XIcon from '@lucide/svelte/icons/x';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import { Toggle } from '$lib/components/ui/toggle';
-	import { PROGRAM_SORTS } from '$lib/config/bounty-programs';
+	import FacetedFilter from '$lib/components/scans/results/faceted-filter.svelte';
+	import { PROGRAM_SORTS, SOURCE_LABELS } from '$lib/config/bounty-programs';
 	import { SELECT_NONE } from '$lib/constants';
 	import {
+		ProgramSource,
 		ProgramState,
 		SubmissionState,
-		type BountyProgramFilters
+		type BountyProgramFilters,
+		type PlatformCount
 	} from '$lib/types/bounty-program';
 
 	interface Props {
 		filters: BountyProgramFilters;
+		platforms: PlatformCount[];
 		onChange: (next: BountyProgramFilters) => void;
 	}
 
-	let { filters, onChange }: Props = $props();
+	let { filters, platforms, onChange }: Props = $props();
+
+	const platformFacets = $derived(
+		platforms
+			.filter((p) => p.programs > 0)
+			.map((p) => ({ value: p.platform, label: p.label, count: p.programs }))
+	);
+	const sourceFacets = $derived(
+		[ProgramSource.Api, ProgramSource.Feed].map((source) => ({
+			value: source as string,
+			label: SOURCE_LABELS[source],
+			count: platforms.filter((p) => p.source === source).reduce((n, p) => n + p.programs, 0)
+		}))
+	);
 
 	const REWARD = [
 		{ value: SELECT_NONE, label: 'Bounty and VDP' },
@@ -54,15 +72,18 @@
 		return options.find((o) => o.value === value)?.label ?? options[0].label;
 	}
 
-	const active = $derived(
-		Boolean(
-			filters.q ||
-			filters.state ||
-			filters.submission ||
-			filters.bounty != null ||
-			filters.bookmarked ||
-			filters.scope
-		)
+	const activeCount = $derived(
+		[
+			filters.q,
+			filters.state,
+			filters.submission,
+			filters.bounty != null ? 'x' : null,
+			filters.bookmarked ? 'x' : null,
+			filters.joined ? 'x' : null,
+			filters.scope,
+			filters.platforms?.length ? 'x' : null,
+			filters.sources?.length ? 'x' : null
+		].filter(Boolean).length
 	);
 </script>
 
@@ -79,12 +100,26 @@
 		/>
 	</div>
 
+	<FacetedFilter
+		title="Platform"
+		options={platformFacets}
+		selected={filters.platforms ?? []}
+		onChange={(next) => patch({ platforms: next })}
+	/>
+
+	<FacetedFilter
+		title="Source"
+		options={sourceFacets}
+		selected={filters.sources ?? []}
+		onChange={(next) => patch({ sources: next })}
+	/>
+
 	<Select.Root
 		type="single"
 		value={filters.state ?? SELECT_NONE}
 		onValueChange={(v) => patch({ state: v === SELECT_NONE ? null : (v as ProgramState) })}
 	>
-		<Select.Trigger class="w-44">{label(STATE, filters.state ?? SELECT_NONE)}</Select.Trigger>
+		<Select.Trigger class="w-40">{label(STATE, filters.state ?? SELECT_NONE)}</Select.Trigger>
 		<Select.Content>
 			{#each STATE as option (option.value)}
 				<Select.Item value={option.value}>{option.label}</Select.Item>
@@ -97,7 +132,7 @@
 		value={rewardValue}
 		onValueChange={(v) => patch({ bounty: v === SELECT_NONE ? null : v === 'bounty' })}
 	>
-		<Select.Trigger class="w-40">{label(REWARD, rewardValue)}</Select.Trigger>
+		<Select.Trigger class="w-36">{label(REWARD, rewardValue)}</Select.Trigger>
 		<Select.Content>
 			{#each REWARD as option (option.value)}
 				<Select.Item value={option.value}>{option.label}</Select.Item>
@@ -110,7 +145,7 @@
 		value={filters.submission ?? SELECT_NONE}
 		onValueChange={(v) => patch({ submission: v === SELECT_NONE ? null : (v as SubmissionState) })}
 	>
-		<Select.Trigger class="w-44">
+		<Select.Trigger class="w-40">
 			{label(SUBMISSION, filters.submission ?? SELECT_NONE)}
 		</Select.Trigger>
 		<Select.Content>
@@ -168,7 +203,7 @@
 		</Select.Content>
 	</Select.Root>
 
-	{#if active}
+	{#if activeCount > 0}
 		<Button
 			variant="ghost"
 			size="sm"
@@ -182,11 +217,14 @@
 					bookmarked: null,
 					joined: null,
 					scope: null,
+					platforms: [],
+					sources: [],
 					sort: filters.sort
 				})}
 		>
 			<XIcon class="mr-1 size-3.5" />
 			Clear
+			<Badge variant="secondary" class="ml-1.5 h-5 px-1.5 text-xs">{activeCount}</Badge>
 		</Button>
 	{/if}
 </div>

@@ -12,6 +12,16 @@ from shared.utils.validation import normalize_target_value, validate_target
 
 class BountyPlatform(Enum):
     HACKERONE = "hackerone"
+    BUGCROWD = "bugcrowd"
+    INTIGRITI = "intigriti"
+    YESWEHACK = "yeswehack"
+
+
+class ProgramSource(Enum):
+    """Where the row came from. An API row is authoritative over a feed row."""
+
+    API = "api"
+    FEED = "feed"
 
 
 class ProgramState(Enum):
@@ -23,6 +33,8 @@ class SubmissionState(Enum):
     OPEN = "open"
     PAUSED = "paused"
     CLOSED = "closed"
+    # a feed that does not report it must not be made to guess
+    UNKNOWN = "unknown"
 
 
 class ScopeState(Enum):
@@ -58,6 +70,7 @@ class PlatformSpec:
     note: str
     tag: str
     tag_color: str
+    source: str
 
 
 PLATFORMS: tuple[PlatformSpec, ...] = (
@@ -69,8 +82,44 @@ PLATFORMS: tuple[PlatformSpec, ...] = (
         note="Public and private programs your API token can see",
         tag="hackerone",
         tag_color="#0EA5E9",
+        source=ProgramSource.API.value,
+    ),
+    PlatformSpec(
+        key=BountyPlatform.BUGCROWD.value,
+        label="Bugcrowd",
+        url="https://bugcrowd.com",
+        supports_private=False,
+        note="Public engagements from the Bounty Targets feed",
+        tag="bugcrowd",
+        tag_color="#F97316",
+        source=ProgramSource.FEED.value,
+    ),
+    PlatformSpec(
+        key=BountyPlatform.INTIGRITI.value,
+        label="Intigriti",
+        url="https://app.intigriti.com",
+        supports_private=False,
+        note="Public programs from the Bounty Targets feed",
+        tag="intigriti",
+        tag_color="#8B5CF6",
+        source=ProgramSource.FEED.value,
+    ),
+    PlatformSpec(
+        key=BountyPlatform.YESWEHACK.value,
+        label="YesWeHack",
+        url="https://yeswehack.com",
+        supports_private=False,
+        note="Public programs from the Bounty Targets feed",
+        tag="yeswehack",
+        tag_color="#10B981",
+        source=ProgramSource.FEED.value,
     ),
 )
+
+SOURCE_LABELS: dict[str, str] = {
+    ProgramSource.API.value: "Platform API",
+    ProgramSource.FEED.value: "Bounty Targets feed",
+}
 
 PLATFORMS_BY_KEY: dict[str, PlatformSpec] = {p.key: p for p in PLATFORMS}
 
@@ -268,14 +317,18 @@ NOTIFIABLE_EVENTS: tuple[str, ...] = (
 
 class SyncInterval(Enum):
     OFF = "off"
+    SIX_HOURS = "six_hours"
     DAILY = "daily"
     WEEKLY = "weekly"
 
 
 SYNC_INTERVAL_HOURS: dict[str, int] = {
+    SyncInterval.SIX_HOURS.value: 6,
     SyncInterval.DAILY.value: 24,
     SyncInterval.WEEKLY.value: 24 * 7,
 }
+
+DEFAULT_FEED_INTERVAL = SyncInterval.SIX_HOURS.value
 
 DEFAULT_SYNC_INTERVAL = SyncInterval.DAILY.value
 DEFAULT_NOTIFY = True

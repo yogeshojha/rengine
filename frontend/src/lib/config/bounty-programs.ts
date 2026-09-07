@@ -73,8 +73,36 @@ export const PROGRAM_STATE_LABELS: Record<ProgramState, string> = {
 export const SUBMISSION_STATE_LABELS: Record<SubmissionState, string> = {
 	[SubmissionState.Open]: 'Open',
 	[SubmissionState.Paused]: 'Paused',
-	[SubmissionState.Closed]: 'Closed'
+	[SubmissionState.Closed]: 'Closed',
+	[SubmissionState.Unknown]: 'Not reported'
 };
+
+export const SOURCE_LABELS: Record<string, string> = {
+	api: 'Platform API',
+	feed: 'Bounty Targets feed'
+};
+
+export const SOURCE_NOTES: Record<string, string> = {
+	api: 'Read from the platform with your credentials — includes private programs.',
+	feed: 'Public programs republished by arkadiyt/bounty-targets-data. Public scope only.'
+};
+
+const PAYOUT_FORMAT = new Intl.NumberFormat('en', {
+	notation: 'compact',
+	maximumFractionDigits: 1
+});
+
+export function formatPayout(
+	min: number | null,
+	max: number | null,
+	currency: string | null
+): string | null {
+	if (!max && !min) return null;
+	const symbol = !currency || currency.toUpperCase() === 'USD' ? '$' : `${currency} `;
+	if (min && max && min !== max)
+		return `${symbol}${PAYOUT_FORMAT.format(min)}–${PAYOUT_FORMAT.format(max)}`;
+	return `up to ${symbol}${PAYOUT_FORMAT.format(max ?? min ?? 0)}`;
+}
 
 export const SCOPE_STATE_LABELS: Record<ScopeState, string> = {
 	[ScopeState.InScope]: 'In scope',
@@ -91,6 +119,7 @@ export const ASSET_GROUP_LABELS: Record<AssetGroup, string> = {
 export const PROGRAM_SORTS = [
 	{ value: 'age', label: 'Newest' },
 	{ value: 'name', label: 'Name' },
+	{ value: 'payout', label: 'Highest payout' },
 	{ value: 'reports', label: 'Most reports' }
 ] as const;
 
@@ -102,6 +131,7 @@ export const SCOPE_TABS = [
 
 export const SYNC_INTERVAL_LABELS: Record<string, string> = {
 	off: 'Manual only',
+	six_hours: 'Every 6 hours',
 	daily: 'Every day',
 	weekly: 'Every week'
 };

@@ -95,7 +95,7 @@
 	<div class="flex flex-col gap-6">
 		<Card.Root class="gap-0 py-0">
 			<div class="border-b p-4">
-				<SectionHead title="Sync" count={`${settings.programs} programs`}>
+				<SectionHead title="HackerOne" count={`${settings.programs} programs`}>
 					{#if settings.last_synced_at}
 						<span>Last synced {relativeTime(settings.last_synced_at)}</span>
 					{/if}
@@ -134,6 +134,54 @@
 					Nothing leaves this instance on a timer. You will only see changes after a manual refresh.
 				</div>
 			{/if}
+		</Card.Root>
+
+		<Card.Root class="gap-0 py-0">
+			<div class="border-b p-4">
+				<SectionHead title="Public program feed" count={`${settings.feed_programs} programs`}>
+					{#if settings.feed_synced_at}
+						<span>Last synced {relativeTime(settings.feed_synced_at)}</span>
+					{/if}
+					{#if settings.feed_next_sync_at}
+						<span>Next {relativeTime(settings.feed_next_sync_at)}</span>
+					{/if}
+				</SectionHead>
+			</div>
+
+			<div class="flex flex-wrap items-center justify-between gap-4 p-4">
+				<div class="flex min-w-0 flex-col gap-0.5">
+					<span class="text-sm font-medium">
+						How often to refresh Bugcrowd, Intigriti and YesWeHack
+					</span>
+					<span class="text-xs text-muted-foreground">
+						Four small files from
+						<a
+							href={settings.feed_url}
+							target="_blank"
+							rel="noreferrer noopener"
+							class="underline hover:text-foreground"
+						>
+							{settings.feed_source}
+						</a>
+						({settings.feed_license}), no credentials needed. Public programs only — private
+						programs come from a platform API.
+					</span>
+				</div>
+				<Select.Root
+					type="single"
+					value={settings.feed_interval}
+					onValueChange={(v) => v && save({ feed_interval: v })}
+				>
+					<Select.Trigger class="w-44 shrink-0">
+						{SYNC_INTERVAL_LABELS[settings.feed_interval] ?? settings.feed_interval}
+					</Select.Trigger>
+					<Select.Content>
+						{#each Object.entries(SYNC_INTERVAL_LABELS) as [value, label] (value)}
+							<Select.Item {value}>{label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div>
 		</Card.Root>
 
 		<Card.Root class="gap-0 py-0">

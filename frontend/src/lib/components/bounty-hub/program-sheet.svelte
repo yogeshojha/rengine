@@ -16,11 +16,12 @@
 	import ImportDialog from './import-dialog.svelte';
 	import ScopeRow from './scope-row.svelte';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
-	import { SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
+	import { SOURCE_NOTES, SUBMISSION_STATE_LABELS, formatPayout } from '$lib/config/bounty-programs';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import {
 		ProgramState,
 		ScopeState,
+		SubmissionState,
 		type BountyProgram,
 		type BountyProgramDetail
 	} from '$lib/types/bounty-program';
@@ -44,10 +45,10 @@
 	let showOutOfScope = $state(false);
 	let importOpen = $state(false);
 
-	async function load(handle: string) {
+	async function load(handle: string, platform: string) {
 		loading = true;
 		try {
-			detail = await bountyProgramsApi.detail(handle, projectId);
+			detail = await bountyProgramsApi.detail(handle, projectId, null, platform);
 			selected.clear();
 			for (const s of detail.scopes) {
 				if (s.importable && !s.already_target && s.scope_state === ScopeState.InScope) {
@@ -64,13 +65,17 @@
 
 	$effect(() => {
 		const handle = program?.handle;
-		if (!open || !handle) return;
+		const platform = program?.platform;
+		if (!open || !handle || !platform) return;
 		tab = 'all';
 		showOutOfScope = false;
-		void load(handle);
+		void load(handle, platform);
 	});
 
 	const scopes = $derived(detail?.scopes ?? []);
+	const payout = $derived(
+		program ? formatPayout(program.min_payout, program.max_payout, program.payout_currency) : null
+	);
 	const visible = $derived(tab === 'all' ? scopes : scopes.filter((s) => s.scope_state === tab));
 	const counts = $derived({
 		all: scopes.length,
@@ -124,7 +129,8 @@
 				selectedOutOfScope > 0,
 				options.groupByProgram,
 				options.organizationName,
-				options.tags
+				options.tags,
+				program.platform
 			);
 			const created = result.created.length;
 			const grouped = result.organization ? ` under ${result.organization.name}` : '';
@@ -134,7 +140,7 @@
 					: `Every selected asset is already a target${grouped}`
 			);
 			importOpen = false;
-			await load(program.handle);
+			await load(program.handle, program.platform);
 			onImported();
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Could not add the targets');
@@ -147,7 +153,7 @@
 		if (!program) return;
 		syncing = true;
 		try {
-			await bountyProgramsApi.syncProgram(program.handle);
+			await bountyProgramsApi.syncProgram(program.handle, program.platform);
 			toast.success('Refreshing scope from HackerOne. Reopen the program in a moment.');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Could not refresh the scope');
@@ -171,9 +177,14 @@
 					<Badge variant={program.offers_bounties ? 'default' : 'secondary'}>
 						{program.offers_bounties ? 'Bounty' : 'VDP'}
 					</Badge>
-					<Badge variant="outline" class="text-muted-foreground">
-						{SUBMISSION_STATE_LABELS[program.submission_state]}
-					</Badge>
+					{#if program.submission_state !== SubmissionState.Unknown}
+						<Badge variant="outline" class="text-muted-foreground">
+							{SUBMISSION_STATE_LABELS[program.submission_state]}
+						</Badge>
+					{/if}
+					{#if payout}
+						<Badge variant="outline" class="tabular-nums">{payout}</Badge>
+					{/if}
 				</Sheet.Title>
 				<Sheet.Description class="flex flex-wrap items-center gap-x-3 gap-y-1">
 					<a
@@ -191,6 +202,9 @@
 					{#if detail?.scopes_synced_at}
 						<span class="text-xs">Scope read {formatShortDate(detail.scopes_synced_at)}</span>
 					{/if}
+					{#if program.requires_2fa}
+						<span class="text-xs">2FA required</span>
+					{/if}
 				</Sheet.Description>
 			</Sheet.Header>
 
@@ -205,6 +219,11 @@
 					counts={counts as Record<string, number>}
 					onChange={(k) => (tab = k)}
 				/>
+			</div>
+
+			<div class="border-b bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+				<span class="font-medium text-foreground">{program.source_label}</span>
+				· {SOURCE_NOTES[program.source] ?? ''}
 			</div>
 
 			<ScrollArea.Root class="min-h-0 flex-1">

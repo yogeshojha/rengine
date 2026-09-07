@@ -152,6 +152,11 @@ celery_app.conf.beat_schedule = {
         "schedule": BOUNTY_SYNC_TICK_SECONDS,
         "kwargs": {"force": False},
     },
+    "bounty-feed-sync": {
+        "task": "app.tasks.bounty_programs.sync_feed",
+        "schedule": BOUNTY_SYNC_TICK_SECONDS,
+        "kwargs": {"force": False},
+    },
     "ip-range-refresh": {
         "task": "app.tasks.ip_asn.refresh",
         "schedule": IP_RANGE_REFRESH_SECONDS,

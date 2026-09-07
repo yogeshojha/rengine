@@ -194,3 +194,15 @@ def dispatch_bounty_program_sync(handle: str) -> bool:
         logger.warning("bounty program scope dispatch failed", exc_info=True)
         return False
     return True
+
+
+def dispatch_bounty_feed_sync() -> bool:
+    """Refresh the public program feed. Returns whether the queue accepted it."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.bounty_programs.sync_feed", queue="default"
+        )
+    except Exception:
+        logger.warning("bounty feed sync dispatch failed", exc_info=True)
+        return False
+    return True

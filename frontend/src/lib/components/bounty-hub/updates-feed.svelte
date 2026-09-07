@@ -19,7 +19,7 @@
 	import type { BountyEvent } from '$lib/types/bounty-program';
 
 	interface Props {
-		onOpenProgram: (handle: string) => void;
+		onOpenProgram: (handle: string, platform: string) => void;
 	}
 
 	let { onOpenProgram }: Props = $props();
@@ -105,7 +105,7 @@
 							<span class="text-sm font-medium">{event.label}</span>
 							<button
 								type="button"
-								onclick={() => onOpenProgram(event.handle)}
+								onclick={() => onOpenProgram(event.handle, event.platform)}
 								class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground hover:underline"
 							>
 								{event.program_name}

@@ -6,7 +6,10 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
-from shared.definitions.bounty_programs import DEFAULT_SYNC_INTERVAL
+from shared.definitions.bounty_programs import (
+    DEFAULT_FEED_INTERVAL,
+    DEFAULT_SYNC_INTERVAL,
+)
 from shared.enums.instance import InstanceMode
 from shared.utils.datetime import utc_now
 
@@ -45,6 +48,8 @@ class InstanceSettings(SQLModel, table=True):
     bounty_sync_interval: str = Field(default=DEFAULT_SYNC_INTERVAL, max_length=16)
     bounty_synced_at: datetime | None = Field(default=None)
     bounty_events_seen_at: datetime | None = Field(default=None)
+    bounty_feed_interval: str = Field(default=DEFAULT_FEED_INTERVAL, max_length=16)
+    bounty_feed_synced_at: datetime | None = Field(default=None)
     bounty_settings: dict = Field(
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )

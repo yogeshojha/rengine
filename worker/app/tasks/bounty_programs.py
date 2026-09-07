@@ -14,6 +14,11 @@ from shared.definitions.bounty_programs import (
 from shared.definitions.notifications import BountyChange, bounty_changes
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyEventRow, BountyProgram
+from shared.services.bounty_feed import (
+    feed_due,
+    mark_feed_synced,
+    sync_feeds,
+)
 from shared.services.bounty_programs import (
     CredentialsError,
     HackerOneError,
@@ -163,3 +168,15 @@ def sync_program(handle: str) -> dict:
         except HackerOneError as exc:
             logger.info("bounty scope sync failed", handle=handle, error=str(exc))
             return {"error": str(exc)}
+
+
+@shared_task(name="app.tasks.bounty_programs.sync_feed")
+def sync_feed(force: bool = True) -> dict:
+    """Public scope for the platforms with no researcher API."""
+    started = utc_now()
+    with get_sync_session() as session:
+        if not force and not feed_due(session):
+            return {"skipped": "not_due"}
+        result = sync_feeds(session)
+        mark_feed_synced(session)
+        return {**result, "alerted": _notify(session, started)}

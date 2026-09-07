@@ -4,7 +4,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { Badge } from '$lib/components/ui/badge';
 	import Hint from '$lib/components/hint.svelte';
-	import { SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
+	import { SUBMISSION_STATE_LABELS, formatPayout } from '$lib/config/bounty-programs';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { ProgramState, SubmissionState, type BountyProgram } from '$lib/types/bounty-program';
 
@@ -25,6 +25,10 @@
 	);
 	const isPrivate = $derived(program.program_state === ProgramState.Private);
 	const isOpen = $derived(program.submission_state === SubmissionState.Open);
+	const stateKnown = $derived(program.submission_state !== SubmissionState.Unknown);
+	const payout = $derived(
+		formatPayout(program.min_payout, program.max_payout, program.payout_currency)
+	);
 	const scopeKnown = $derived(program.scopes_synced_at !== null);
 	const scopeTotal = $derived(program.in_scope_count + program.out_of_scope_count);
 </script>
@@ -75,8 +79,12 @@
 					{program.importable_count} can be scanned
 				</span>
 			{/if}
+			<span class="text-muted-foreground/70">{program.platform_label}</span>
 			{#if program.started_accepting_at}
 				<span>Since {formatShortDate(program.started_accepting_at)}</span>
+			{/if}
+			{#if program.safe_harbor}
+				<span class="capitalize">{program.safe_harbor} safe harbor</span>
 			{/if}
 		</span>
 	</span>
@@ -93,10 +101,13 @@
 		{:else if program.joined}
 			<Badge variant="outline" class="text-muted-foreground">Joined</Badge>
 		{/if}
+		{#if payout}
+			<Badge variant="outline" class="tabular-nums">{payout}</Badge>
+		{/if}
 		<Badge variant={program.offers_bounties ? 'default' : 'secondary'}>
 			{program.offers_bounties ? 'Bounty' : 'VDP'}
 		</Badge>
-		{#if !isOpen}
+		{#if stateKnown && !isOpen}
 			<Badge variant="outline" class="text-muted-foreground">
 				{SUBMISSION_STATE_LABELS[program.submission_state]}
 			</Badge>

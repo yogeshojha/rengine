@@ -9,12 +9,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.services.target import TargetService
+from shared.definitions.bounty_feed import (
+    SOURCE_LICENSE,
+    SOURCE_NAME,
+    SOURCE_URL,
+)
 from shared.definitions.bounty_programs import (
+    DEFAULT_FEED_INTERVAL,
     DEFAULT_SYNC_INTERVAL,
     MAX_TAGS_PER_IMPORT,
     NOTIFIABLE_EVENTS,
+    PLATFORMS,
     PLATFORMS_BY_KEY,
+    SOURCE_LABELS,
     SYNC_INTERVAL_HOURS,
+    ProgramSource,
     ProgramState,
     ScopeState,
     SubmissionState,
@@ -40,6 +49,7 @@ from shared.models.bounty_program import (
     BountySettingsRead,
     BountySettingsUpdate,
     BountyStatus,
+    PlatformCount,
 )
 from shared.models.instance_settings import InstanceSettings
 from shared.models.organization import Organization, OrganizationSummary
@@ -69,6 +79,9 @@ def _without_counts(program) -> dict:
     ):
         data.pop(key, None)
     data["raw_state_label"] = raw_state_label(data.get("raw_state"))
+    spec = PLATFORMS_BY_KEY.get(data.get("platform") or "")
+    data["platform_label"] = spec.label if spec else (data.get("platform") or "")
+    data["source_label"] = SOURCE_LABELS.get(data.get("source") or "", "")
     return data
 
 
@@ -76,6 +89,7 @@ SORTS = {
     "name": (col(BountyProgram.name), "asc"),
     "reports": (col(BountyProgram.reports_for_user), "desc"),
     "age": (col(BountyProgram.started_accepting_at), "desc"),
+    "payout": (col(BountyProgram.max_payout), "desc"),
     "assets": (col(BountyProgram.name), "asc"),
 }
 
@@ -98,9 +112,11 @@ class BountyProgramService:
         return rows.scalar_one_or_none()
 
     async def events(
-        self, platform: str, *, kind: str | None, handle: str | None
+        self, platform: str | None, *, kind: str | None, handle: str | None
     ) -> Select:
-        query = select(BountyEventRow).where(BountyEventRow.platform == platform)
+        query = select(BountyEventRow)
+        if platform:
+            query = query.where(BountyEventRow.platform == platform)
         if kind:
             query = query.where(BountyEventRow.kind == kind)
         if handle:
@@ -127,7 +143,7 @@ class BountyProgramService:
             created_at=row.created_at,
         )
 
-    async def read_settings(self, platform: str) -> BountySettingsRead:
+    async def read_settings(self) -> BountySettingsRead:
         settings = await self._settings()
         interval = (
             settings.bounty_sync_interval if settings else None
@@ -137,17 +153,34 @@ class BountyProgramService:
         hours = SYNC_INTERVAL_HOURS.get(interval)
         totals = await self.session.execute(
             select(
-                select(func.count(BountyProgram.id))
-                .where(BountyProgram.platform == platform)
-                .scalar_subquery(),
-                select(func.count(BountyEventRow.id))
-                .where(BountyEventRow.platform == platform)
-                .scalar_subquery(),
+                select(func.count(BountyProgram.id)).scalar_subquery(),
+                select(func.count(BountyEventRow.id)).scalar_subquery(),
             )
         )
         programs, events = totals.one()
+        feed_interval = (
+            settings.bounty_feed_interval if settings else None
+        ) or DEFAULT_FEED_INTERVAL
+        feed_synced = settings.bounty_feed_synced_at if settings else None
+        feed_hours = SYNC_INTERVAL_HOURS.get(feed_interval)
+        feed_programs = await self.session.execute(
+            select(func.count(BountyProgram.id)).where(
+                BountyProgram.source == ProgramSource.FEED.value
+            )
+        )
         return BountySettingsRead(
             sync_interval=interval,
+            feed_interval=feed_interval,
+            feed_synced_at=feed_synced,
+            feed_next_sync_at=(
+                (feed_synced + timedelta(hours=feed_hours))
+                if (feed_hours and feed_synced)
+                else None
+            ),
+            feed_programs=feed_programs.scalar_one() or 0,
+            feed_source=SOURCE_NAME,
+            feed_url=SOURCE_URL,
+            feed_license=SOURCE_LICENSE,
             notify=notify_enabled(stored),
             notify_events=sorted(notify_events(stored)),
             notifiable_events=list(NOTIFIABLE_EVENTS),
@@ -159,9 +192,7 @@ class BountyProgramService:
             events_recorded=events or 0,
         )
 
-    async def write_settings(
-        self, data: BountySettingsUpdate, platform: str
-    ) -> BountySettingsRead:
+    async def write_settings(self, data: BountySettingsUpdate) -> BountySettingsRead:
         settings = await self._settings()
         if settings is None:
             raise HTTPException(
@@ -175,6 +206,13 @@ class BountyProgramService:
                     detail=f"Unknown sync interval: {data.sync_interval}",
                 )
             settings.bounty_sync_interval = data.sync_interval
+        if data.feed_interval is not None:
+            if data.feed_interval not in {i.value for i in SyncInterval}:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unknown sync interval: {data.feed_interval}",
+                )
+            settings.bounty_feed_interval = data.feed_interval
         stored = dict(settings.bounty_settings or {})
         if data.notify is not None:
             stored["notify"] = data.notify
@@ -188,13 +226,30 @@ class BountyProgramService:
             stored["notify_events"] = sorted(set(data.notify_events))
         settings.bounty_settings = stored
         await self.session.commit()
-        return await self.read_settings(platform)
+        return await self.read_settings()
 
     async def mark_events_seen(self) -> None:
         settings = await self._settings()
         if settings:
             settings.bounty_events_seen_at = utc_now()
             await self.session.commit()
+
+    async def platform_counts(self) -> list[PlatformCount]:
+        rows = await self.session.execute(
+            select(BountyProgram.platform, func.count(BountyProgram.id)).group_by(
+                BountyProgram.platform
+            )
+        )
+        counts = dict(rows.all())
+        return [
+            PlatformCount(
+                platform=spec.key,
+                label=spec.label,
+                source=spec.source,
+                programs=counts.get(spec.key, 0),
+            )
+            for spec in PLATFORMS
+        ]
 
     async def status(self, platform: str) -> BountyStatus:
         username = await self._credentials_username()
@@ -210,10 +265,10 @@ class BountyProgramService:
         )
         unseen = await self.session.execute(
             select(func.count(BountyEventRow.id)).where(
-                BountyEventRow.platform == platform,
                 *([BountyEventRow.created_at > seen_at] if seen_at else []),
             )
         )
+        platforms = await self.platform_counts()
         totals = await self.session.execute(
             select(
                 func.count(BountyProgram.id),
@@ -221,7 +276,7 @@ class BountyProgramService:
                     BountyProgram.program_state == ProgramState.PRIVATE.value
                 ),
                 func.max(BountyProgram.synced_at),
-            ).where(BountyProgram.platform == platform)
+            )
         )
         total, private, last = totals.one()
         return BountyStatus(
@@ -234,12 +289,18 @@ class BountyProgramService:
             sync_interval=interval,
             next_sync_at=next_sync,
             unseen_events=unseen.scalar_one() or 0,
+            platforms=platforms,
+            feed_interval=(settings.bounty_feed_interval if settings else None)
+            or DEFAULT_FEED_INTERVAL,
+            feed_synced_at=settings.bounty_feed_synced_at if settings else None,
         )
 
     def _filtered(
         self,
-        platform: str,
+        platform: str | None,
         *,
+        platforms: list[str] | None,
+        sources: list[str] | None,
         q: str | None,
         state: str | None,
         submission: str | None,
@@ -248,7 +309,13 @@ class BountyProgramService:
         joined: bool | None,
         scope: str | None,
     ) -> Select:
-        query = select(BountyProgram).where(BountyProgram.platform == platform)
+        query = select(BountyProgram)
+        if platform:
+            query = query.where(BountyProgram.platform == platform)
+        if platforms:
+            query = query.where(col(BountyProgram.platform).in_(platforms))
+        if sources:
+            query = query.where(col(BountyProgram.source).in_(sources))
         if q:
             term = f"%{q.strip().lower()}%"
             query = query.where(
@@ -285,7 +352,7 @@ class BountyProgramService:
             )
         return query
 
-    def list_query(self, platform: str, *, sort: str, **filters) -> Select:
+    def list_query(self, platform: str | None, *, sort: str, **filters) -> Select:
         query = self._filtered(platform, **filters)
         column, default_dir = SORTS.get(sort or "age", SORTS["age"])
         ordering = column.desc() if default_dir == "desc" else column.asc()

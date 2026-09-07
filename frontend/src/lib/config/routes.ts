@@ -77,7 +77,8 @@ export const ROUTES = {
 	},
 	schedules: '/schedules',
 	arsenal: (tab?: ArsenalTab) => (tab ? `/arsenal?tab=${tab}` : '/arsenal'),
-	bountyHub: (handle?: string) => (handle ? `/bounty-hub?program=${handle}` : '/bounty-hub'),
+	bountyHub: (handle?: string, platform?: string) =>
+		handle ? `/bounty-hub?program=${handle}&platform=${platform ?? 'hackerone'}` : '/bounty-hub',
 	bountyHubTab: (tab: BountyHubTab) => `/bounty-hub?tab=${tab}`,
 	interest: (tab?: InterestTab) => (tab ? `/interest?tab=${tab}` : '/interest'),
 	reports: (tab?: ReportTab) => (tab ? `/reports?tab=${tab}` : '/reports'),

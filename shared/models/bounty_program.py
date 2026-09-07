@@ -20,6 +20,7 @@ class BountyProgram(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     platform: str = Field(max_length=32, index=True)
+    source: str = Field(default="api", max_length=16, index=True)
     handle: str = Field(max_length=200, index=True)
     name: str = Field(max_length=300)
     url: str | None = Field(default=None, max_length=500)
@@ -39,6 +40,11 @@ class BountyProgram(SQLModel, table=True):
     bookmarked: bool = Field(default=False, index=True)
     reports_for_user: int | None = Field(default=None)
     earnings_for_user: float | None = Field(default=None)
+    min_payout: float | None = Field(default=None)
+    max_payout: float | None = Field(default=None)
+    payout_currency: str | None = Field(default=None, max_length=16)
+    safe_harbor: str | None = Field(default=None, max_length=32)
+    requires_2fa: bool | None = Field(default=None)
     scopes_synced_at: datetime | None = Field(default=None)
     synced_at: datetime = Field(default_factory=utc_now, index=True)
 
@@ -124,6 +130,9 @@ class BountyScopeRead(BaseModel):
 class BountyProgramRead(BaseModel):
     id: uuid.UUID
     platform: str
+    platform_label: str = ""
+    source: str = "api"
+    source_label: str = ""
     handle: str
     name: str
     url: str | None
@@ -143,6 +152,11 @@ class BountyProgramRead(BaseModel):
     bookmarked: bool
     reports_for_user: int | None
     earnings_for_user: float | None
+    min_payout: float | None = None
+    max_payout: float | None = None
+    payout_currency: str | None = None
+    safe_harbor: str | None = None
+    requires_2fa: bool | None = None
     scopes_synced_at: datetime | None
     synced_at: datetime
     in_scope_count: int = 0
@@ -190,6 +204,13 @@ class BountyImportResult(BaseModel):
     tags: list[TagSummary] = []
 
 
+class PlatformCount(BaseModel):
+    platform: str
+    label: str
+    source: str
+    programs: int
+
+
 class BountyStatus(BaseModel):
     configured: bool
     platform: str
@@ -200,11 +221,21 @@ class BountyStatus(BaseModel):
     sync_interval: str
     next_sync_at: datetime | None = None
     unseen_events: int = 0
+    platforms: list[PlatformCount] = []
+    feed_interval: str = ""
+    feed_synced_at: datetime | None = None
     error: str | None = None
 
 
 class BountySettingsRead(BaseModel):
     sync_interval: str
+    feed_interval: str
+    feed_synced_at: datetime | None
+    feed_next_sync_at: datetime | None
+    feed_programs: int
+    feed_source: str
+    feed_url: str
+    feed_license: str
     notify: bool
     notify_events: list[str]
     notifiable_events: list[str]
@@ -216,5 +247,6 @@ class BountySettingsRead(BaseModel):
 
 class BountySettingsUpdate(BaseModel):
     sync_interval: str | None = None
+    feed_interval: str | None = None
     notify: bool | None = None
     notify_events: list[str] | None = None
