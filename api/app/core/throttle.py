@@ -6,18 +6,12 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.config import settings
+from app.core.client_ip import client_id
 from app.core.ratelimit import _client
 
 logger = logging.getLogger(__name__)
 
 _EXEMPT_PREFIXES = ("/api/v1/events", "/api/v1/media")
-
-
-def _client_id(request: Request) -> str:
-    fwd = request.headers.get("x-forwarded-for")
-    if fwd:
-        return fwd.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
 
 
 class GlobalRateLimitMiddleware(BaseHTTPMiddleware):
@@ -32,7 +26,7 @@ class GlobalRateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         bucket = int(time.time() // 60)
-        key = f"throttle:{_client_id(request)}:{bucket}"
+        key = f"throttle:{client_id(request)}:{bucket}"
         try:
             pipe = _client().pipeline(transaction=True)
             pipe.incr(key)
@@ -46,5 +40,6 @@ class GlobalRateLimitMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Rate limit exceeded. Try again in a minute."},
+                headers={"Retry-After": str(60 - int(time.time() % 60))},
             )
         return await call_next(request)

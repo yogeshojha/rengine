@@ -16,6 +16,7 @@ class Settings(BaseAppSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     GLOBAL_RATE_LIMIT_PER_MINUTE: int = 600
+    TRUSTED_PROXIES: str = ""
 
     ADMIN_EMAIL: str = "admin@rengine.local"
     ADMIN_USERNAME: str = "rengine"
