@@ -7,6 +7,7 @@
 	import Flame from '@lucide/svelte/icons/flame';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Terminal from '@lucide/svelte/icons/terminal';
+	import Trophy from '@lucide/svelte/icons/trophy';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -17,6 +18,8 @@
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import TechIcon from '../tech-icon.svelte';
 	import CorroborationBadge from './corroboration-badge.svelte';
+	import ExploitMark from '$lib/components/threat-intel/exploit-mark.svelte';
+	import SignalChip from '$lib/components/threat-intel/signal-chip.svelte';
 	import SeverityMark from './severity-mark.svelte';
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
@@ -25,6 +28,9 @@
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, locationLabel, originLabel } from '$lib/utilities/vulns';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
+	import { BAND_FILL, bandFor } from '$lib/config/threat-intel';
+	import { Capability } from '$lib/config/capabilities';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import {
 		EPSS_HIGH,
 		PROTOCOL_ICONS,
@@ -78,6 +84,16 @@
 	let ProtocolIcon = $derived(PROTOCOL_ICONS[v.protocol] ?? Globe);
 	let reviewed = $derived(v.state !== VulnState.OPEN);
 	let likely = $derived((v.epss_score ?? 0) >= EPSS_HIGH);
+	// the row shows only what the visible columns do not already say
+	const ROW_SIGNALS = ['ransom_path', 'fresh_exploit', 'ransomware', 'overdue', 'untestable'];
+	const MAX_ROW_SIGNALS = 2;
+	let rowSignals = $derived(
+		(v.intel_kinds ?? []).filter((k) => ROW_SIGNALS.includes(k)).slice(0, MAX_ROW_SIGNALS)
+	);
+	let epssFill = $derived(BAND_FILL[bandFor(v.epss_score) ?? 'unlikely']);
+	let bounty = $derived(
+		capabilitiesStore.has(Capability.HACKERONE) && v.hackerone_reports ? v.hackerone_reports : 0
+	);
 	let cvss = $derived(v.cvss_score);
 	let path = $derived(locationLabel(v));
 	let origin = $derived(originLabel(v));
@@ -171,6 +187,27 @@
 					{/snippet}
 				</Hint>
 			{/if}
+			{#if bounty}
+				<Hint text="{bounty.toLocaleString()} HackerOne reports name this CVE">
+					{#snippet child(props)}
+						<button
+							{...props}
+							type="button"
+							class="flex h-5 shrink-0 items-center"
+							aria-label="{bounty} HackerOne reports, filter to this CVE"
+							onclick={(e) => pivot(e, exactToken('cve', v.cve_ids[0] ?? ''))}
+						>
+							<Badge variant="outline" class="gap-1 px-1.5 text-[10px] font-normal">
+								<Trophy class="size-2.5" />
+								{bounty.toLocaleString()}
+							</Badge>
+						</button>
+					{/snippet}
+				</Hint>
+			{/if}
+			{#each rowSignals as kind (kind)}
+				<SignalChip {kind} compact onFilter={(token) => onFilter(token)} />
+			{/each}
 			<CorroborationBadge
 				peers={v.corroborated_by}
 				scanner={v.scanner}
@@ -291,51 +328,95 @@
 				{:else}
 					<span class="text-xs text-muted-foreground">—</span>
 				{/if}
-			{:else if col.key === 'risk'}
-				<div class="flex min-w-0 flex-wrap items-center gap-1">
-					{#if v.cve_ids.length}
-						<button
-							type="button"
-							class="flex h-4 items-center"
-							onclick={(e) => pivot(e, exactToken('cve', v.cve_ids[0]))}
-						>
-							<Badge
-								variant="outline"
-								class="px-1 font-mono text-[10px] font-normal hover:bg-accent"
-							>
-								{v.cve_ids[0]}
-							</Badge>
-						</button>
-						{#if v.cve_ids.length > 1}
-							<span class="text-[10px] text-muted-foreground">+{v.cve_ids.length - 1}</span>
+			{:else if col.key === 'exploit'}
+				{#if v.exploit_score > 0}
+					<button
+						type="button"
+						class="flex items-center gap-2"
+						onclick={(e) => pivot(e, `exploit:>=${Math.max(10, v.exploit_score - 10)}`)}
+						aria-label="Filter to findings ranked {v.exploit_score} or higher"
+					>
+						<ExploitMark score={v.exploit_score} size={28} />
+						{#if v.poc_count}
+							<Hint text="{v.poc_count} public exploits published">
+								{#snippet child(props)}
+									<span {...props} class="text-[11px] text-muted-foreground tabular-nums">
+										{v.poc_count}
+										{v.poc_count === 1 ? 'exploit' : 'exploits'}
+									</span>
+								{/snippet}
+							</Hint>
 						{/if}
-					{/if}
-					{#if cvss !== null}
-						<Hint text="CVSS base score">
+					</button>
+				{:else}
+					<span class="text-xs text-muted-foreground">—</span>
+				{/if}
+			{:else if col.key === 'risk'}
+				<div class="flex min-w-0 items-center gap-2">
+					{#if v.exploit_score > 0}
+						<Hint
+							text="Exploitation rank {v.exploit_score} of 100{v.poc_count
+								? ` · ${v.poc_count} public exploits`
+								: ''}"
+						>
 							{#snippet child(props)}
-								<span {...props} class="font-mono text-xs tabular-nums text-muted-foreground">
-									{cvss.toFixed(1)}
-								</span>
-							{/snippet}
-						</Hint>
-					{/if}
-					{#if v.epss_score != null}
-						<Hint text="Probability of exploitation in the next 30 days">
-							{#snippet child(props)}
-								<span
+								<button
 									{...props}
-									class="font-mono text-xs tabular-nums {likely
-										? 'text-warning'
-										: 'text-muted-foreground'}"
+									type="button"
+									class="flex shrink-0 items-center"
+									onclick={(e) => pivot(e, `exploit:>=${Math.max(10, v.exploit_score - 10)}`)}
+									aria-label="Filter to findings ranked {v.exploit_score} or higher"
 								>
-									{epssPercent(v.epss_score)}
-								</span>
+									<ExploitMark score={v.exploit_score} size={26} />
+								</button>
 							{/snippet}
 						</Hint>
 					{/if}
-					{#if !v.cve_ids.length && v.cvss_score == null && v.epss_score == null}
-						<span class="text-xs text-muted-foreground">—</span>
-					{/if}
+					<div class="flex min-w-0 flex-wrap items-center gap-1">
+						{#if v.cve_ids.length}
+							<button
+								type="button"
+								class="flex h-4 items-center"
+								onclick={(e) => pivot(e, exactToken('cve', v.cve_ids[0]))}
+							>
+								<Badge
+									variant="outline"
+									class="px-1 font-mono text-[10px] font-normal hover:bg-accent"
+								>
+									{v.cve_ids[0]}
+								</Badge>
+							</button>
+							{#if v.cve_ids.length > 1}
+								<span class="text-[10px] text-muted-foreground">+{v.cve_ids.length - 1}</span>
+							{/if}
+						{/if}
+						{#if cvss !== null}
+							<Hint text="CVSS base score">
+								{#snippet child(props)}
+									<span {...props} class="font-mono text-xs tabular-nums text-muted-foreground">
+										{cvss.toFixed(1)}
+									</span>
+								{/snippet}
+							</Hint>
+						{/if}
+						{#if v.epss_score != null}
+							<Hint text="Probability of exploitation in the next 30 days">
+								{#snippet child(props)}
+									<span
+										{...props}
+										class="font-mono text-xs tabular-nums"
+										style={likely ? `color:${epssFill}` : ''}
+										class:text-muted-foreground={!likely}
+									>
+										{epssPercent(v.epss_score)}
+									</span>
+								{/snippet}
+							</Hint>
+						{/if}
+						{#if !v.cve_ids.length && v.cvss_score == null && v.epss_score == null}
+							<span class="text-xs text-muted-foreground">—</span>
+						{/if}
+					</div>
 				</div>
 			{:else if col.key === 'reach'}
 				{#if v.host_count > 1}

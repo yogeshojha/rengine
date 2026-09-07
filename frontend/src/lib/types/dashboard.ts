@@ -107,6 +107,9 @@ export interface DashboardRisk {
 	total: number;
 	actionable: number;
 	kev: number;
+	ransomware: number;
+	overdue: number;
+	newly_exploited: number;
 	new_in_window: number;
 	suppressed: number;
 	targets_affected: number;

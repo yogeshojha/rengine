@@ -327,3 +327,40 @@ def scan_interesting(
         "message": body,
         "metadata": _scan_meta(scan_id, "interesting"),
     }
+
+
+@dataclass
+class IntelShift:
+    """A finding whose exploitation intelligence moved without a new scan."""
+
+    cve: str
+    target: str
+    finding: str
+    kind: str
+    scan_id: str
+
+
+def _shift_line(shift: IntelShift) -> str:
+    return f"• {shift.cve} · {shift.target} — {shift.finding}"
+
+
+def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
+    """Delta-only: findings that earned a new exploitation signal since the last refresh."""
+    if not shifts:
+        return None
+    exploited = [s for s in shifts if s.kind in {"kev", "ransom_path", "fresh_exploit"}]
+    severity = NotificationSeverity.ERROR if exploited else NotificationSeverity.WARNING
+    head = _count(len(shifts), "finding", "findings")
+    what = "became known-exploited" if exploited else "gained a public exploit"
+    title = f"{head} {what} since the last refresh"
+    body = "\n".join(_shift_line(s) for s in shifts[:shown])
+    if len(shifts) > shown:
+        body += f"\n… and {len(shifts) - shown} more"
+    body += "\nNothing was rescanned. The exploitation feeds changed."
+    return {
+        "type": NotificationType.SCAN,
+        "severity": severity,
+        "title": title,
+        "message": body,
+        "metadata": {"kind": "threat_intel"},
+    }

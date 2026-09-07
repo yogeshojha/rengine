@@ -19,7 +19,10 @@ from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.vulnerability import VulnerabilityCoverage
 from shared.services.activity_log import ActivityLogService
-from shared.services.celery_dispatch import dispatch_interest_evaluation
+from shared.services.celery_dispatch import (
+    dispatch_interest_evaluation,
+    dispatch_threat_intel,
+)
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator import (
     aggregate_status,
@@ -235,6 +238,10 @@ def _dispatch_interest(scan: Scan) -> None:
         logger.warning("interest dispatch failed", exc_info=True)
 
 
+def _dispatch_intel(scan: Scan) -> None:
+    dispatch_threat_intel(str(scan.id))
+
+
 def _guard(fn, fallback):
     try:
         return fn()
@@ -361,6 +368,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
         )
         session.commit()
         events.scan_completed(status=status, counts=counts, duration_seconds=duration)
+        _dispatch_intel(scan)
         if scan.scope != ScanScope.FOCUSED.value:
             _dispatch_interest(scan)
             _notify(

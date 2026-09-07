@@ -5,7 +5,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import Text, and_, case, cast, exists, func, not_, select
+from sqlalchemy import Text, and_, case, cast, exists, func, not_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query.predicates import cert_state, live, vuln_seen_earlier
@@ -203,7 +203,7 @@ class DashboardOverviewService:
         out.surface = self._surface(counts, latest_cover, firsts, baselines, in_window)
 
         risk_ids = list(latest_cover[VULNS].values())
-        out.risk = await self._risk(risk_ids, firsts, baselines, in_window)
+        out.risk = await self._risk(risk_ids, firsts, baselines, in_window, cutoff)
         risk_by_target = await self._risk_by_target(risk_ids)
 
         service_ids = list(latest_cover[SERVICES].values())
@@ -537,6 +537,7 @@ class DashboardOverviewService:
         firsts: dict[str, dict[UUID, int]],
         baselines: dict[str, set[UUID]],
         in_window: list[Scan],
+        since: datetime,
     ) -> DashboardRisk:
         risk = DashboardRisk(targets_scanned=len(risk_ids))
         risk.new_in_window = sum(
@@ -565,6 +566,46 @@ class DashboardOverviewService:
                 select(func.count())
                 .select_from(Vulnerability)
                 .where(live_rows, Vulnerability.is_kev.is_(True), not_(_suppressed()))
+            )
+            or 0
+        )
+        risk.ransomware = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(Vulnerability)
+                .where(
+                    live_rows,
+                    Vulnerability.kev_ransomware.is_(True),
+                    not_(_suppressed()),
+                )
+            )
+            or 0
+        )
+        risk.overdue = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(Vulnerability)
+                .where(
+                    live_rows,
+                    Vulnerability.kev_due_date.isnot(None),
+                    Vulnerability.kev_due_date < func.current_date(),
+                    not_(_suppressed()),
+                )
+            )
+            or 0
+        )
+        # a signal's own created_at is when the finding first earned it, so this is a real delta
+        risk.newly_exploited = int(
+            await self.session.scalar(
+                text("""
+                    SELECT count(DISTINCT s.vulnerability_id)
+                    FROM intel_signals s
+                    JOIN vulnerabilities v ON v.id = s.vulnerability_id
+                    WHERE s.scan_id = ANY(:ids)
+                      AND s.kind IN ('kev', 'ransom_path', 'fresh_exploit')
+                      AND s.created_at >= :since
+                """),
+                {"ids": [str(i) for i in risk_ids], "since": since},
             )
             or 0
         )

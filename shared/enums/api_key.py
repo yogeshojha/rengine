@@ -7,3 +7,4 @@ class APIProvider(Enum):
     NETLAS = "netlas"
     SECURITYTRAILS = "securitytrails"
     HACKERONE = "hackerone"
+    VULNX = "vulnx"

@@ -5,15 +5,18 @@
 	import { untrack, type Component } from 'svelte';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import WholeWordIcon from '@lucide/svelte/icons/whole-word';
+	import FlameIcon from '@lucide/svelte/icons/flame';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import NucleiLibrary from '$lib/components/arsenal/nuclei-library.svelte';
 	import WordlistLibrary from '$lib/components/arsenal/wordlist-library.svelte';
+	import ThreatIntelLibrary from '$lib/components/arsenal/threat-intel-library.svelte';
 	import { ARSENAL_TABS, routeLabels, type ArsenalTab } from '$lib/config/routes';
 	import type { IconComponent } from '$lib/config/icons';
 
 	const TAB_META: Record<ArsenalTab, { label: string; icon: IconComponent; panel: Component }> = {
 		nuclei: { label: 'Nuclei', icon: ShieldAlertIcon, panel: NucleiLibrary },
-		wordlists: { label: 'Wordlists', icon: WholeWordIcon, panel: WordlistLibrary }
+		wordlists: { label: 'Wordlists', icon: WholeWordIcon, panel: WordlistLibrary },
+		'threat-intel': { label: 'Exploit intel', icon: FlameIcon, panel: ThreatIntelLibrary }
 	};
 
 	const DEFAULT_TAB = ARSENAL_TABS[0];
@@ -43,7 +46,7 @@
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.arsenal}</h1>
 		<p class="mt-1 text-sm text-muted-foreground">
-			Scanners, checks and wordlists available to scan engines
+			Scanners, checks, wordlists and exploitation intelligence your scans run with
 		</p>
 	</div>
 

@@ -40,6 +40,7 @@ class InstanceSettings(SQLModel, table=True):
     report_defaults: dict = Field(
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )
+    threat_intel_auto_sync: bool = Field(default=True)
     mcp_enabled: bool = Field(default=False)
     mcp_settings: dict = Field(
         default_factory=dict, sa_column=Column(JSON, nullable=False)

@@ -20,6 +20,7 @@ from shared.definitions.ports import (
     PORT_SOURCE_LABELS,
     SERVICE_CLASS_LABELS,
 )
+from shared.definitions.threat_intel import SIGNAL_ORDER
 from shared.definitions.vulnerabilities import (
     PROTOCOLS,
     SCANNER_LABELS,
@@ -1628,6 +1629,10 @@ VULN_GROUPS: tuple[str, ...] = (
 VULN_FLAGS: dict[str, str] = {
     "new": "Not reported by an earlier scan of this target",
     "kev": "Listed as exploited in the wild",
+    "ransomware": "Recorded in known ransomware campaigns",
+    "overdue": "Past the CISA remediation deadline",
+    "weaponised": "A public exploit is published",
+    "untestable": "No scanner template covers this CVE",
     "cve": "Carries a published vulnerability identifier",
     "exploitable": "Known exploited, or above the EPSS threshold",
     "corroborated": "A second check at the same location names the same CVE or weakness class",
@@ -1722,6 +1727,31 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         group="Finding",
         description="Author of the check.",
         example="author:pdteam",
+    ),
+    QueryField(
+        name="exploit",
+        type=FieldType.NUMBER,
+        group="Classification",
+        description="Exploitation rank, 0-100, from the signals behind the finding.",
+        example="exploit:>=80",
+        aliases=("rank",),
+    ),
+    QueryField(
+        name="poc",
+        type=FieldType.NUMBER,
+        group="Classification",
+        description="Number of published proof-of-concept exploits.",
+        example="poc:>0",
+        aliases=("exploits",),
+    ),
+    QueryField(
+        name="signal",
+        type=FieldType.ENUM,
+        group="Classification",
+        description="Exploitation signal carried by the finding.",
+        example="signal:ransom_path",
+        values=SIGNAL_ORDER,
+        facet="signal",
     ),
     QueryField(
         name="cve",

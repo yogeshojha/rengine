@@ -95,6 +95,13 @@ def _flag(cmp: Compare, ctx: VulnQueryContext):
 _FLAG_BUILDERS = {
     "new": lambda ctx: preds.vuln_is_new(ctx.scan_id),
     "kev": lambda _ctx: Vulnerability.is_kev.is_(True),
+    "ransomware": lambda _ctx: Vulnerability.kev_ransomware.is_(True),
+    "overdue": lambda _ctx: and_(
+        Vulnerability.kev_due_date.isnot(None),
+        Vulnerability.kev_due_date < func.current_date(),
+    ),
+    "weaponised": lambda _ctx: Vulnerability.poc_count > 0,
+    "untestable": lambda _ctx: Vulnerability.template_available.is_(False),
     "cve": lambda _ctx: func.jsonb_array_length(cast(Vulnerability.cve_ids, JSONB)) > 0,
     "exploitable": lambda _ctx: or_(
         Vulnerability.is_kev.is_(True), Vulnerability.epss_score >= EPSS_HIGH
@@ -147,6 +154,11 @@ _VULN_BUILDERS = {
     "cwe": lambda c, _ctx: json_array_match(Vulnerability.cwe_ids, c),
     "cvss": lambda c, _ctx: number_match(Vulnerability.cvss_score, c, _float_coerce),
     "epss": lambda c, _ctx: number_match(Vulnerability.epss_score, c, _float_coerce),
+    "exploit": lambda c, _ctx: number_match(
+        Vulnerability.exploit_score, c, int_coerce(c)
+    ),
+    "poc": lambda c, _ctx: number_match(Vulnerability.poc_count, c, int_coerce(c)),
+    "signal": lambda c, _ctx: json_array_match(Vulnerability.intel_kinds, c),
     "host": lambda c, _ctx: string_match(Vulnerability.host, c),
     "location": lambda c, _ctx: string_match(Vulnerability.matched_at, c),
     "ip": _address,

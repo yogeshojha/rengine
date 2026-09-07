@@ -27,7 +27,7 @@ export const routeLabels: Record<string, string> = {
 export const SETTINGS_TABS = ['general', 'api-keys', 'proxies', 'notifications'] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
-export const ARSENAL_TABS = ['nuclei', 'wordlists'] as const;
+export const ARSENAL_TABS = ['nuclei', 'wordlists', 'threat-intel'] as const;
 export const INTEREST_TABS = ['rules', 'dismissed'] as const;
 export type InterestTab = (typeof INTEREST_TABS)[number];
 export const REPORT_TABS = ['reports', 'templates', 'themes', 'defaults'] as const;

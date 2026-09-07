@@ -101,6 +101,7 @@ celery_app.conf.task_routes = {
     "app.tasks.endpoints.*": {"queue": "default"},
     "app.tasks.reports.*": {"queue": "default"},
     "app.tasks.interest.*": {"queue": "default"},
+    "app.tasks.threat_intel.*": {"queue": "default"},
 }
 
 # #############################################################
@@ -121,6 +122,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.reports",
         "app.tasks.interest",
         "app.tasks.notifications",
+        "app.tasks.threat_intel",
     ]
 )
 
@@ -133,6 +135,7 @@ IP_RANGE_REFRESH_SECONDS = 7 * 24 * 60 * 60.0
 TEMPLATE_SYNC_SECONDS = 24 * 60 * 60.0
 REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
 NOTIFICATION_CLEANUP_SECONDS = 6 * 60 * 60.0
+THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
 
 celery_app.conf.beat_schedule = {
     "scan-schedule-tick": {
@@ -154,6 +157,10 @@ celery_app.conf.beat_schedule = {
     "notification-cleanup": {
         "task": "app.tasks.notifications.cleanup",
         "schedule": NOTIFICATION_CLEANUP_SECONDS,
+    },
+    "threat-intel-refresh": {
+        "task": "app.tasks.threat_intel.refresh",
+        "schedule": THREAT_INTEL_REFRESH_SECONDS,
     },
 }
 
@@ -190,6 +197,7 @@ def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
         sender.concurrency,
     )
     _warm_ip_ranges()
+    _warm_threat_intel()
 
 
 def _warm_ip_ranges() -> None:
@@ -205,6 +213,24 @@ def _warm_ip_ranges() -> None:
         logger.info("ip range tables empty, refresh dispatched")
     except Exception:
         logger.warning("ip range warm-up could not be scheduled", exc_info=True)
+
+
+def _warm_threat_intel() -> None:
+    """Pull EPSS and KEV on first boot so a fresh install ranks findings correctly."""
+    try:
+        from app.database import get_sync_session  # noqa: PLC0415
+        from shared.services.threat_intel import (  # noqa: PLC0415
+            auto_sync_enabled,
+            feeds_ready,
+        )
+
+        with get_sync_session() as session:
+            if feeds_ready(session) or not auto_sync_enabled(session):
+                return
+        celery_app.send_task("app.tasks.threat_intel.refresh")
+        logger.info("threat feeds empty, refresh dispatched")
+    except Exception:
+        logger.warning("threat intel warm-up could not be scheduled", exc_info=True)
 
 
 @worker_shutdown.connect

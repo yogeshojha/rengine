@@ -143,3 +143,30 @@ def dispatch_interest_refresh(project_id: str) -> None:
         kwargs={"project_id": project_id},
         queue="default",
     )
+
+
+def dispatch_threat_intel(scan_id: str, *, enrich: bool = True) -> None:
+    """Score a finished scan from the feeds, then fill the provider cache behind it."""
+    try:
+        client = get_celery_client()
+        client.send_task(
+            "app.tasks.threat_intel.apply_scan", args=[scan_id], queue="default"
+        )
+        if enrich:
+            client.send_task(
+                "app.tasks.threat_intel.enrich", args=[scan_id], queue="default"
+            )
+    except Exception:
+        logger.warning("threat intel dispatch failed", exc_info=True)
+
+
+def dispatch_threat_intel_refresh(*, force: bool = False) -> bool:
+    """Kick off a feed refresh. Returns whether the queue accepted it."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.threat_intel.refresh", kwargs={"force": force}, queue="default"
+        )
+    except Exception:
+        logger.warning("threat intel refresh dispatch failed", exc_info=True)
+        return False
+    return True

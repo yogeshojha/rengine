@@ -17,8 +17,9 @@ export const VULN_LEAD_COLUMNS: TableColumn[] = [
 ];
 
 export const VULN_COLUMNS: TableColumn[] = [
-	{ key: 'asset', label: 'Asset', width: 'min-w-56 max-w-[20rem]', grow: true },
-	{ key: 'risk', label: 'Risk', sort: 'cvss', width: 'w-40' },
+	{ key: 'asset', label: 'Asset', width: 'min-w-48 max-w-[20rem]', grow: true },
+	{ key: 'risk', label: 'Risk', sort: 'exploit', width: 'w-48' },
+	{ key: 'exploit', label: 'Exploitation', sort: 'exploit', width: 'w-32' },
 	{ key: 'reach', label: 'Reach', width: 'w-24' },
 	{ key: 'type', label: 'Type', sort: 'type', width: 'w-24' },
 	{ key: 'scanner', label: 'Scanner', width: 'w-28' },

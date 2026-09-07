@@ -102,6 +102,9 @@ class DashboardRisk(BaseModel):
     total: int = 0
     actionable: int = 0
     kev: int = 0
+    ransomware: int = 0
+    overdue: int = 0
+    newly_exploited: int = 0
     new_in_window: int = 0
     suppressed: int = 0
     targets_affected: int = 0

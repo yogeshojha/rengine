@@ -50,6 +50,14 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "shield",
         "color": "#ef4444",
     },
+    APIProvider.VULNX: {
+        "name": "vulnx",
+        "description": "ProjectDiscovery vulnerability intelligence: exploits, coverage and exposure",
+        "docs_url": "https://cloud.projectdiscovery.io",
+        "requires_username": False,
+        "icon": "biohazard",
+        "color": "#f43f5e",
+    },
 }
 
 

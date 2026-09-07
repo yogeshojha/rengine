@@ -66,6 +66,13 @@ export interface VulnerabilityRead {
 	epss_percentile: number | null;
 	cpe: string | null;
 	is_kev: boolean;
+	exploit_score: number;
+	intel_kinds: string[];
+	kev_ransomware: boolean;
+	kev_due_date: string | null;
+	poc_count: number | null;
+	template_available: boolean | null;
+	hackerone_reports: number | null;
 	matched_at: string;
 	host: string | null;
 	ip: string | null;
@@ -326,6 +333,7 @@ export const VULN_SORTS: SortOption[] = [
 	{ key: 'name', label: 'Finding' },
 	{ key: 'template', label: 'Check' },
 	{ key: 'host', label: 'Host' },
+	{ key: 'exploit', label: 'Exploitation' },
 	{ key: 'cvss', label: 'CVSS' },
 	{ key: 'epss', label: 'EPSS' },
 	{ key: 'seen', label: 'First seen' }

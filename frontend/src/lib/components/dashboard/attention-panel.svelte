@@ -4,6 +4,9 @@
 
 <script lang="ts">
 	import Flame from '@lucide/svelte/icons/flame';
+	import Biohazard from '@lucide/svelte/icons/biohazard';
+	import CalendarX from '@lucide/svelte/icons/calendar-x';
+	import TrendingUp from '@lucide/svelte/icons/trending-up';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import Plug from '@lucide/svelte/icons/plug';
 	import Link2Off from '@lucide/svelte/icons/link-2-off';
@@ -159,6 +162,36 @@
 				count: risk.kev,
 				label: 'Known exploited',
 				detail: `Listed in CISA KEV on ${targets(kevTargets)}, fix first`,
+				open: () => onQueue('kev')
+			});
+		if (risk.newly_exploited > 0)
+			out.push({
+				key: 'newly-exploited',
+				tone: 'critical',
+				icon: TrendingUp,
+				count: risk.newly_exploited,
+				label: 'Newly exploited',
+				detail: 'Became known-exploited without a new scan',
+				open: () => onQueue('kev')
+			});
+		if (risk.ransomware > 0)
+			out.push({
+				key: 'ransomware',
+				tone: 'critical',
+				icon: Biohazard,
+				count: risk.ransomware,
+				label: 'Used by ransomware',
+				detail: 'CISA records these in ransomware campaigns',
+				open: () => onQueue('kev')
+			});
+		if (risk.overdue > 0)
+			out.push({
+				key: 'overdue',
+				tone: 'warning',
+				icon: CalendarX,
+				count: risk.overdue,
+				label: 'Past the CISA deadline',
+				detail: 'The federal remediation date has passed',
 				open: () => onQueue('kev')
 			});
 		const critical = sev('critical');
