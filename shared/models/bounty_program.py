@@ -203,5 +203,18 @@ class BountyStatus(BaseModel):
     error: str | None = None
 
 
-class SyncIntervalUpdate(BaseModel):
-    interval: str
+class BountySettingsRead(BaseModel):
+    sync_interval: str
+    notify: bool
+    notify_events: list[str]
+    notifiable_events: list[str]
+    last_synced_at: datetime | None
+    next_sync_at: datetime | None
+    programs: int
+    events_recorded: int
+
+
+class BountySettingsUpdate(BaseModel):
+    sync_interval: str | None = None
+    notify: bool | None = None
+    notify_events: list[str] | None = None

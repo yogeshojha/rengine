@@ -1,12 +1,16 @@
 """Refresh the bug bounty program list and every program's structured scope."""
 
 from celery import shared_task
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlmodel import col
 
 from app.config import settings
 from app.database import get_sync_session
-from shared.definitions.bounty_programs import ALERT_EVENTS, BountyPlatform
+from shared.definitions.bounty_programs import (
+    BountyPlatform,
+    notify_enabled,
+    notify_events,
+)
 from shared.definitions.notifications import BountyChange, bounty_changes
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyEventRow, BountyProgram
@@ -29,13 +33,21 @@ ALERT_LIMIT = 40
 
 
 def _notify(session, since) -> int:
-    """Delta-only: only changes this run is the first to record reach a channel."""
+    """Delta-only, and only the change kinds the operator asked to hear about."""
+    stored = session.execute(
+        text("SELECT bounty_settings FROM instance_settings LIMIT 1")
+    ).scalar_one_or_none()
+    if not notify_enabled(stored):
+        return 0
+    kinds = notify_events(stored)
+    if not kinds:
+        return 0
     rows = (
         session.execute(
             select(BountyEventRow)
             .where(
                 BountyEventRow.created_at >= since,
-                col(BountyEventRow.kind).in_(sorted(ALERT_EVENTS)),
+                col(BountyEventRow.kind).in_(sorted(kinds)),
             )
             .order_by(BountyEventRow.created_at.desc())
             .limit(ALERT_LIMIT)

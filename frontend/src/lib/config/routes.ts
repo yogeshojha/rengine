@@ -25,7 +25,13 @@ export const routeLabels: Record<string, string> = {
 	profile: 'Profile'
 };
 
-export const SETTINGS_TABS = ['general', 'api-keys', 'proxies', 'notifications'] as const;
+export const SETTINGS_TABS = [
+	'general',
+	'api-keys',
+	'proxies',
+	'notifications',
+	'bounty-hub'
+] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 export const BOUNTY_HUB_TABS = ['programs', 'updates'] as const;

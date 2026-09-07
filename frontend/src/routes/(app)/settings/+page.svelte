@@ -8,21 +8,32 @@
 	import InstanceSettingsTab from '$lib/components/settings/instance-settings-tab.svelte';
 	import ProxiesTab from '$lib/components/settings/proxies-tab.svelte';
 	import NotificationChannelsTab from '$lib/components/settings/notification-channels-tab.svelte';
+	import BountyHubTab from '$lib/components/settings/bounty-hub-tab.svelte';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import KeyIcon from '@lucide/svelte/icons/key-round';
 	import RouteIcon from '@lucide/svelte/icons/route';
 	import BellIcon from '@lucide/svelte/icons/bell';
+	import TargetIcon from '@lucide/svelte/icons/target';
 	import { SETTINGS_TABS, type SettingsTab } from '$lib/config/routes';
 	import type { IconComponent } from '$lib/config/icons';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+	import { Capability } from '$lib/config/capabilities';
 
 	const TAB_META: Record<SettingsTab, { label: string; icon: IconComponent; panel: Component }> = {
 		general: { label: 'General', icon: SlidersHorizontalIcon, panel: InstanceSettingsTab },
 		'api-keys': { label: 'API Keys', icon: KeyIcon, panel: ApiKeysTab },
 		proxies: { label: 'Proxies', icon: RouteIcon, panel: ProxiesTab },
-		notifications: { label: 'Notifications', icon: BellIcon, panel: NotificationChannelsTab }
+		notifications: { label: 'Notifications', icon: BellIcon, panel: NotificationChannelsTab },
+		'bounty-hub': { label: 'Bounty Hub', icon: TargetIcon, panel: BountyHubTab }
 	};
 
 	const DEFAULT_TAB = SETTINGS_TABS[0];
+	// Bounty Hub is a bug bounty capability, so its tab follows the mode
+	const tabs = $derived(
+		SETTINGS_TABS.filter(
+			(tab) => tab !== 'bounty-hub' || capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)
+		)
+	);
 	const validTabs = new Set<string>(SETTINGS_TABS);
 
 	const initialTab = page.url.searchParams.get('tab') ?? DEFAULT_TAB;
@@ -58,7 +69,7 @@
 		}}
 	>
 		<Tabs.List class="w-full sm:w-fit">
-			{#each SETTINGS_TABS as tab (tab)}
+			{#each tabs as tab (tab)}
 				{@const Icon = TAB_META[tab].icon}
 				<Tabs.Trigger value={tab} class="gap-1.5">
 					<Icon class="size-4" />
@@ -67,7 +78,7 @@
 			{/each}
 		</Tabs.List>
 
-		{#each SETTINGS_TABS as tab (tab)}
+		{#each tabs as tab (tab)}
 			{@const Panel = TAB_META[tab].panel}
 			<Tabs.Content value={tab} class="mt-6">
 				<Panel />

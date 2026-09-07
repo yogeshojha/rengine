@@ -138,6 +138,23 @@ export interface BountyEvent {
 	created_at: string;
 }
 
+export interface BountySettings {
+	sync_interval: SyncInterval;
+	notify: boolean;
+	notify_events: string[];
+	notifiable_events: string[];
+	last_synced_at: string | null;
+	next_sync_at: string | null;
+	programs: number;
+	events_recorded: number;
+}
+
+export interface BountySettingsUpdate {
+	sync_interval?: string;
+	notify?: boolean;
+	notify_events?: string[];
+}
+
 export interface BountyStatus {
 	configured: boolean;
 	platform: string;

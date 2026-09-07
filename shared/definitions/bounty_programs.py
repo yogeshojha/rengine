@@ -255,6 +255,17 @@ ALERT_EVENTS: frozenset[str] = frozenset(
 )
 
 
+# the kinds that may raise an alert; the rest only ever appear in the feed
+NOTIFIABLE_EVENTS: tuple[str, ...] = (
+    BountyEvent.PROGRAM_ADDED.value,
+    BountyEvent.SCOPE_ADDED.value,
+    BountyEvent.CAME_INTO_SCOPE.value,
+    BountyEvent.WENT_OUT_OF_SCOPE.value,
+    BountyEvent.SUBMISSIONS_OPENED.value,
+    BountyEvent.BOUNTIES_STARTED.value,
+)
+
+
 class SyncInterval(Enum):
     OFF = "off"
     DAILY = "daily"
@@ -267,6 +278,22 @@ SYNC_INTERVAL_HOURS: dict[str, int] = {
 }
 
 DEFAULT_SYNC_INTERVAL = SyncInterval.DAILY.value
+DEFAULT_NOTIFY = True
+DEFAULT_NOTIFY_EVENTS: tuple[str, ...] = NOTIFIABLE_EVENTS
+
+
+def notify_events(settings: dict | None) -> set[str]:
+    """Which change kinds may alert, falling back to every notifiable kind."""
+    stored = (settings or {}).get("notify_events")
+    if not isinstance(stored, list):
+        return set(DEFAULT_NOTIFY_EVENTS)
+    return {k for k in stored if k in NOTIFIABLE_EVENTS}
+
+
+def notify_enabled(settings: dict | None) -> bool:
+    value = (settings or {}).get("notify")
+    return DEFAULT_NOTIFY if value is None else bool(value)
+
 
 MAX_TAGS_PER_IMPORT = 10
 

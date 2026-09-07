@@ -45,6 +45,9 @@ class InstanceSettings(SQLModel, table=True):
     bounty_sync_interval: str = Field(default=DEFAULT_SYNC_INTERVAL, max_length=16)
     bounty_synced_at: datetime | None = Field(default=None)
     bounty_events_seen_at: datetime | None = Field(default=None)
+    bounty_settings: dict = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False)
+    )
     mcp_enabled: bool = Field(default=False)
     mcp_settings: dict = Field(
         default_factory=dict, sa_column=Column(JSON, nullable=False)

@@ -12,6 +12,7 @@ from app.services.target import TargetService
 from shared.definitions.bounty_programs import (
     DEFAULT_SYNC_INTERVAL,
     MAX_TAGS_PER_IMPORT,
+    NOTIFIABLE_EVENTS,
     PLATFORMS_BY_KEY,
     SYNC_INTERVAL_HOURS,
     ProgramState,
@@ -20,6 +21,8 @@ from shared.definitions.bounty_programs import (
     SyncInterval,
     asset_type_spec,
     event_spec,
+    notify_enabled,
+    notify_events,
     raw_state_label,
 )
 from shared.enums.api_key import APIProvider
@@ -34,6 +37,8 @@ from shared.models.bounty_program import (
     BountyProgramRead,
     BountyScope,
     BountyScopeRead,
+    BountySettingsRead,
+    BountySettingsUpdate,
     BountyStatus,
 )
 from shared.models.instance_settings import InstanceSettings
@@ -122,17 +127,68 @@ class BountyProgramService:
             created_at=row.created_at,
         )
 
-    async def set_interval(self, interval: str, platform: str) -> BountyStatus:
-        if interval not in {i.value for i in SyncInterval}:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unknown sync interval: {interval}",
-            )
+    async def read_settings(self, platform: str) -> BountySettingsRead:
         settings = await self._settings()
-        if settings:
-            settings.bounty_sync_interval = interval
-            await self.session.commit()
-        return await self.status(platform)
+        interval = (
+            settings.bounty_sync_interval if settings else None
+        ) or DEFAULT_SYNC_INTERVAL
+        stored = settings.bounty_settings if settings else {}
+        synced_at = settings.bounty_synced_at if settings else None
+        hours = SYNC_INTERVAL_HOURS.get(interval)
+        totals = await self.session.execute(
+            select(
+                select(func.count(BountyProgram.id))
+                .where(BountyProgram.platform == platform)
+                .scalar_subquery(),
+                select(func.count(BountyEventRow.id))
+                .where(BountyEventRow.platform == platform)
+                .scalar_subquery(),
+            )
+        )
+        programs, events = totals.one()
+        return BountySettingsRead(
+            sync_interval=interval,
+            notify=notify_enabled(stored),
+            notify_events=sorted(notify_events(stored)),
+            notifiable_events=list(NOTIFIABLE_EVENTS),
+            last_synced_at=synced_at,
+            next_sync_at=(
+                (synced_at + timedelta(hours=hours)) if (hours and synced_at) else None
+            ),
+            programs=programs or 0,
+            events_recorded=events or 0,
+        )
+
+    async def write_settings(
+        self, data: BountySettingsUpdate, platform: str
+    ) -> BountySettingsRead:
+        settings = await self._settings()
+        if settings is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Instance settings not found",
+            )
+        if data.sync_interval is not None:
+            if data.sync_interval not in {i.value for i in SyncInterval}:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unknown sync interval: {data.sync_interval}",
+                )
+            settings.bounty_sync_interval = data.sync_interval
+        stored = dict(settings.bounty_settings or {})
+        if data.notify is not None:
+            stored["notify"] = data.notify
+        if data.notify_events is not None:
+            unknown = set(data.notify_events) - set(NOTIFIABLE_EVENTS)
+            if unknown:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unknown change kinds: {', '.join(sorted(unknown))}",
+                )
+            stored["notify_events"] = sorted(set(data.notify_events))
+        settings.bounty_settings = stored
+        await self.session.commit()
+        return await self.read_settings(platform)
 
     async def mark_events_seen(self) -> None:
         settings = await self._settings()

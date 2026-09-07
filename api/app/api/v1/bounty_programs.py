@@ -29,8 +29,9 @@ from shared.models.bounty_program import (
     BountyImportResult,
     BountyProgramDetail,
     BountyProgramRead,
+    BountySettingsRead,
+    BountySettingsUpdate,
     BountyStatus,
-    SyncIntervalUpdate,
 )
 from shared.services.celery_dispatch import (
     dispatch_bounty_program_sync,
@@ -137,18 +138,30 @@ async def mark_events_seen(
     return {"ok": True}
 
 
-@router.put("/sync-interval")
-async def set_sync_interval(
+@router.get("/settings")
+async def read_settings(
+    session: SessionDep,
+    service: ServiceDep,
+    _current_user: CurrentUser,
+    platform: str = Query(BountyPlatform.HACKERONE.value),
+) -> BountySettingsRead:
+    """How often reNgine syncs, and which changes are worth an alert."""
+    await _require_mode(session)
+    BountyProgramService.require_platform(platform)
+    return await service.read_settings(platform)
+
+
+@router.put("/settings")
+async def write_settings(
     session: SessionDep,
     service: ServiceDep,
     _current_user: CurrentSuperuser,
-    data: SyncIntervalUpdate,
+    data: BountySettingsUpdate,
     platform: str = Query(BountyPlatform.HACKERONE.value),
-) -> BountyStatus:
-    """How often reNgine asks HackerOne what changed."""
+) -> BountySettingsRead:
     await _require_mode(session)
     BountyProgramService.require_platform(platform)
-    return await service.set_interval(data.interval, platform)
+    return await service.write_settings(data, platform)
 
 
 @router.get("/status")

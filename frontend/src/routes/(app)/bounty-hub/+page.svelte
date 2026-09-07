@@ -11,7 +11,6 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
-	import * as Select from '$lib/components/ui/select';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import FilterBar from '$lib/components/bounty-hub/filter-bar.svelte';
 	import UpdatesFeed from '$lib/components/bounty-hub/updates-feed.svelte';
@@ -27,7 +26,6 @@
 		BountyProgramFilters,
 		BountyStatus
 	} from '$lib/types/bounty-program';
-	import { SyncInterval } from '$lib/types/bounty-program';
 
 	let status = $state<BountyStatus | null>(null);
 	let programs = $state<BountyProgram[]>([]);
@@ -106,19 +104,6 @@
 			.catch(() => toast.error(`No program found for @${handle}`));
 	});
 
-	async function setInterval(value: string) {
-		try {
-			status = await bountyProgramsApi.setSyncInterval(value as SyncInterval);
-			toast.success(
-				value === SyncInterval.Off
-					? 'Automatic sync is off. Refresh from HackerOne still works.'
-					: `Syncing ${SYNC_INTERVAL_LABELS[value].toLowerCase()}.`
-			);
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not change the schedule');
-		}
-	}
-
 	function openProgram(handle: string) {
 		tab = 'programs';
 		void goto(ROUTES.bountyHub(handle), { noScroll: true, keepFocus: true });
@@ -170,9 +155,10 @@
 					{#if status.last_synced_at}
 						· synced {relativeTime(status.last_synced_at)}
 					{/if}
-					{#if status.next_sync_at}
-						· next {relativeTime(status.next_sync_at)}
-					{/if}
+					·
+					<a href={ROUTES.settings('bounty-hub')} class="hover:underline">
+						{SYNC_INTERVAL_LABELS[status.sync_interval] ?? status.sync_interval}
+					</a>
 				{:else}
 					Browse the bug bounty programs your HackerOne account can see, and add their scope as
 					targets.
@@ -181,26 +167,10 @@
 		</div>
 
 		{#if status?.configured}
-			<div class="flex items-center gap-2">
-				<Select.Root
-					type="single"
-					value={status.sync_interval}
-					onValueChange={(v) => v && setInterval(v)}
-				>
-					<Select.Trigger class="w-40">
-						{SYNC_INTERVAL_LABELS[status.sync_interval] ?? status.sync_interval}
-					</Select.Trigger>
-					<Select.Content>
-						{#each Object.entries(SYNC_INTERVAL_LABELS) as [value, label] (value)}
-							<Select.Item {value}>{label}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-				<LoadingButton loading={syncing} variant="outline" size="sm" onclick={sync}>
-					<RefreshCwIcon class="mr-2 size-3.5" />
-					Refresh from HackerOne
-				</LoadingButton>
-			</div>
+			<LoadingButton loading={syncing} variant="outline" size="sm" onclick={sync}>
+				<RefreshCwIcon class="mr-2 size-3.5" />
+				Refresh from HackerOne
+			</LoadingButton>
 		{/if}
 	</div>
 

@@ -1,13 +1,14 @@
 import type {
 	BountyEvent,
 	BountyImportResult,
+	BountySettings,
+	BountySettingsUpdate,
 	BountyProgram,
 	BountyProgramDetail,
 	BountyProgramFilters,
 	BountyStatus,
 	BountyVocabulary,
-	ScopeState,
-	SyncInterval
+	ScopeState
 } from '$lib/types/bounty-program';
 import { BountyPlatform } from '$lib/types/bounty-program';
 import { api } from './client';
@@ -89,13 +90,15 @@ export const bountyProgramsApi = {
 		return api.post('/bounty-programs/events/seen', {});
 	},
 
-	async setSyncInterval(
-		interval: SyncInterval,
+	async settings(platform: string = BountyPlatform.HackerOne): Promise<BountySettings> {
+		return api.get<BountySettings>(`/bounty-programs/settings${query({ platform })}`);
+	},
+
+	async saveSettings(
+		patch: BountySettingsUpdate,
 		platform: string = BountyPlatform.HackerOne
-	): Promise<BountyStatus> {
-		return api.put<BountyStatus>(`/bounty-programs/sync-interval${query({ platform })}`, {
-			interval
-		});
+	): Promise<BountySettings> {
+		return api.put<BountySettings>(`/bounty-programs/settings${query({ platform })}`, patch);
 	},
 
 	async sync(scopes = true, platform: string = BountyPlatform.HackerOne): Promise<unknown> {
