@@ -30,6 +30,7 @@ from shared.models.scan_engine import (
 )
 from shared.models.scan_schedule import ScanSchedule
 from shared.utils.datetime import utc_now
+from shared.utils.yaml_safe import DocumentTooLargeError, load_document
 
 _ENGINE_KEYS = frozenset(
     {
@@ -251,7 +252,11 @@ class ScanEngineService:
                 detail=f"YAML payload may not exceed {_MAX_YAML_LEN} bytes.",
             )
         try:
-            data = yaml.safe_load(yaml_str)
+            data = load_document(yaml_str)
+        except DocumentTooLargeError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+            ) from e
         except yaml.YAMLError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

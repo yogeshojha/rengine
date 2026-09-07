@@ -21,6 +21,7 @@ from shared.definitions.reports import (
 from shared.utils.color import ink as ink_of
 from shared.utils.color import is_dark, mix
 from shared.utils.color import tint as tint_of
+from shared.utils.yaml_safe import DocumentTooLargeError, load_document
 
 THEME_DIR = Path(__file__).resolve().parent / "themes"
 
@@ -62,7 +63,9 @@ def check_css(css: str) -> None:
 
 def parse(source: str, *, slug: str = "") -> ThemeTokens:
     try:
-        raw = yaml.safe_load(source)
+        raw = load_document(source)
+    except DocumentTooLargeError as exc:
+        raise ThemeError(str(exc)) from exc
     except yaml.YAMLError as exc:
         msg = f"Not valid YAML: {exc}"
         raise ThemeError(msg) from exc

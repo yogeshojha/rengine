@@ -13,6 +13,7 @@ from shared.services.scan_resolve import (
     redact_command,
     secret_runs,
 )
+from shared.utils.yaml_safe import DocumentTooLargeError, load_document
 from stages.registry import stage_by_name, stages
 
 _MAX_HEADERS = 1000
@@ -58,7 +59,11 @@ def _validate_yaml_source(source: str | None) -> str | None:
             detail=f"Stage YAML may not exceed {_MAX_YAML_LEN} bytes.",
         )
     try:
-        yaml.safe_load(source)
+        load_document(source)
+    except DocumentTooLargeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
     except yaml.YAMLError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid YAML: {exc}"

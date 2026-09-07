@@ -36,6 +36,7 @@ from shared.logging import get_logger
 from shared.models.vuln_template import TemplateSelection, VulnTemplate
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
+from shared.utils.yaml_safe import DocumentTooLargeError, load_document
 
 logger = get_logger(__name__)
 
@@ -139,7 +140,9 @@ def parse_template(raw: str) -> ParsedTemplate:
         msg = "Document is larger than the template size limit."
         raise TemplateError(msg)
     try:
-        document = yaml.safe_load(raw)
+        document = load_document(raw)
+    except DocumentTooLargeError as exc:
+        raise TemplateError(str(exc)) from exc
     except yaml.YAMLError as exc:
         msg = f"Not valid YAML: {str(exc).splitlines()[0][:160]}"
         raise TemplateError(msg) from exc
