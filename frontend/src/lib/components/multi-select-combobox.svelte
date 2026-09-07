@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 
 	interface Item {
 		id: string;
@@ -123,32 +124,34 @@
 		<Popover.Content class="w-[--radix-popover-trigger-width] p-0" align="start">
 			<Command.Root shouldFilter={false}>
 				<Command.Input {placeholder} bind:value={searchValue} onkeydown={handleKeydown} />
-				<Command.List>
+				<Command.List class="max-h-none overflow-visible">
 					<Command.Empty>
 						{#if !showCreateOption}
 							{emptyText}
 						{/if}
 					</Command.Empty>
-					<Command.Group>
-						{#each filteredItems as item (item.id)}
-							<Command.Item
-								value={item.id}
-								onSelect={() => handleSelect(item)}
-								class="flex items-center gap-2"
-							>
-								{#if showColors && item.color}
-									<span
-										class="h-2.5 w-2.5 rounded-full shrink-0"
-										style="background-color: {item.color}"
-									></span>
-								{/if}
-								<span class="flex-1 truncate">{item.label}</span>
-								{#if selected.some((s) => s.id === item.id)}
-									<Check class="h-4 w-4 text-primary" />
-								{/if}
-							</Command.Item>
-						{/each}
-					</Command.Group>
+					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
+						<Command.Group>
+							{#each filteredItems as item (item.id)}
+								<Command.Item
+									value={item.id}
+									onSelect={() => handleSelect(item)}
+									class="flex items-center gap-2"
+								>
+									{#if showColors && item.color}
+										<span
+											class="h-2.5 w-2.5 rounded-full shrink-0"
+											style="background-color: {item.color}"
+										></span>
+									{/if}
+									<span class="flex-1 truncate">{item.label}</span>
+									{#if selected.some((s) => s.id === item.id)}
+										<Check class="h-4 w-4 text-primary" />
+									{/if}
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					</ScrollArea>
 
 					{#if showCreateOption}
 						<Command.Group>

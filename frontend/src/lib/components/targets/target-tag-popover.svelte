@@ -8,6 +8,7 @@
 	import * as Command from '$lib/components/ui/command';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as HoverCard from '$lib/components/ui/hover-card';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { targetsApi } from '$lib/api/targets';
 	import { tagsApi } from '$lib/api/tags';
 	import { targetsStore } from '$lib/stores/targets.svelte';
@@ -245,7 +246,7 @@
 			{:else}
 				<Command.Root shouldFilter={false}>
 					<Command.Input placeholder="Search or create tags…" bind:value={searchValue} />
-					<Command.List>
+					<Command.List class="max-h-none overflow-visible">
 						<Command.Empty>
 							{#if !showCreateOption}
 								<div class="flex flex-col items-center gap-1 py-2">
@@ -254,26 +255,28 @@
 								</div>
 							{/if}
 						</Command.Empty>
-						<Command.Group>
-							{#each filteredTags as tag (tag.id)}
-								{@const isApplied = appliedIds.has(tag.id)}
-								<Command.Item
-									value={tag.id}
-									onSelect={() => toggleTag(tag)}
-									class="flex items-center gap-2"
-									disabled={isUpdating}
-								>
-									<span
-										class="h-2.5 w-2.5 rounded-full shrink-0"
-										style="background-color: {tag.color}"
-									></span>
-									<span class="flex-1 truncate">{tag.name}</span>
-									{#if isApplied}
-										<Check class="h-4 w-4 text-primary shrink-0" />
-									{/if}
-								</Command.Item>
-							{/each}
-						</Command.Group>
+						<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
+							<Command.Group>
+								{#each filteredTags as tag (tag.id)}
+									{@const isApplied = appliedIds.has(tag.id)}
+									<Command.Item
+										value={tag.id}
+										onSelect={() => toggleTag(tag)}
+										class="flex items-center gap-2"
+										disabled={isUpdating}
+									>
+										<span
+											class="h-2.5 w-2.5 rounded-full shrink-0"
+											style="background-color: {tag.color}"
+										></span>
+										<span class="flex-1 truncate">{tag.name}</span>
+										{#if isApplied}
+											<Check class="h-4 w-4 text-primary shrink-0" />
+										{/if}
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						</ScrollArea>
 
 						{#if showCreateOption}
 							<Command.Group>

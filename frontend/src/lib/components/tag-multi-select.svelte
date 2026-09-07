@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 
 	interface TagItem {
 		id: string;
@@ -183,30 +184,32 @@
 			{:else}
 				<Command.Root shouldFilter={false}>
 					<Command.Input {placeholder} bind:value={searchValue} onkeydown={handleSearchKeydown} />
-					<Command.List>
+					<Command.List class="max-h-none overflow-visible">
 						<Command.Empty>
 							{#if !showCreateOption}
 								No tags found.
 							{/if}
 						</Command.Empty>
-						<Command.Group>
-							{#each filteredItems as item (item.id)}
-								<Command.Item
-									value={item.id}
-									onSelect={() => handleSelect(item)}
-									class="flex items-center gap-2"
-								>
-									<span
-										class="h-2.5 w-2.5 rounded-full shrink-0"
-										style="background-color: {item.color}"
-									></span>
-									<span class="flex-1 truncate">{item.label}</span>
-									{#if selected.some((s) => s.id === item.id)}
-										<Check class="h-4 w-4 text-primary" />
-									{/if}
-								</Command.Item>
-							{/each}
-						</Command.Group>
+						<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
+							<Command.Group>
+								{#each filteredItems as item (item.id)}
+									<Command.Item
+										value={item.id}
+										onSelect={() => handleSelect(item)}
+										class="flex items-center gap-2"
+									>
+										<span
+											class="h-2.5 w-2.5 rounded-full shrink-0"
+											style="background-color: {item.color}"
+										></span>
+										<span class="flex-1 truncate">{item.label}</span>
+										{#if selected.some((s) => s.id === item.id)}
+											<Check class="h-4 w-4 text-primary" />
+										{/if}
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						</ScrollArea>
 
 						{#if showCreateOption}
 							<Command.Group>
