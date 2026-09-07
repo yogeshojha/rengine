@@ -34,13 +34,19 @@ class Cert:
     names: set[str]
     host: str
     fronted: bool
+    covers_host: bool
 
     def ours(self, trusted: set[str]) -> bool:
-        # the subject is often a sibling brand rather than the host, so a certificate
-        # a host of ours served counts too — unless a CDN served it, where it is theirs
         if self.cn_root and self.cn_root in trusted:
             return True
-        return not self.fronted and bool(self.host_root) and self.host_root in trusted
+        # a host of ours may only vouch for a certificate issued to it — otherwise the
+        # default vhost of whoever hosts us hands over every name on their certificate
+        return (
+            self.covers_host
+            and not self.fronted
+            and bool(self.host_root)
+            and self.host_root in trusted
+        )
 
 
 def _clean(value: str | None) -> str:
@@ -48,6 +54,21 @@ def _clean(value: str | None) -> str:
         return ""
     host = value.strip().lower().rstrip(".").removeprefix("*.")
     return host if "." in host and " " not in host else ""
+
+
+def _covers(host: str, sans: list) -> bool:
+    """Whether the certificate was issued to the host that served it (wildcards match one label)."""
+    name = (host or "").strip().lower().rstrip(".")
+    if not name:
+        return False
+    for raw in sans:
+        san = str(raw).strip().lower().rstrip(".")
+        if san.startswith("*."):
+            if name.partition(".")[2] == san[2:]:
+                return True
+        elif san and name == san:
+            return True
+    return False
 
 
 class RelatedDomainService:
@@ -88,6 +109,7 @@ class RelatedDomainService:
                         names=names,
                         host=host,
                         fronted=bool(is_cdn),
+                        covers_host=_covers(host, sans or []),
                     )
                 )
 
