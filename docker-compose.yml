@@ -68,6 +68,7 @@ services:
 
   # default workers for handling regular tasks like imports, whois etc
   worker-default:
+    init: true
     build:
       context: .
       dockerfile: worker/Dockerfile
@@ -111,6 +112,7 @@ services:
 
   # beat scheduler: emits the schedule tick that fires due scan schedules
   worker-beat:
+    init: true
     build:
       context: .
       dockerfile: worker/Dockerfile
