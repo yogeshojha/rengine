@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import Tag
-from shared.utils.slug import generate_slug
+from shared.utils.slug import add_with_unique_slug
 from shared.utils.validation import clean_name
 
 
@@ -26,14 +26,12 @@ async def get_or_create_tag(
     tag = result.scalar_one_or_none()
 
     if not tag:
-        slug = generate_slug(normalized_name)
         tag = Tag(
             name=normalized_name,
-            slug=slug,
             color=color,
             project_id=project_id,
             created_by=user_id,
         )
-        session.add(tag)
+        await add_with_unique_slug(session, tag, normalized_name, project_id=project_id)
 
     return tag

@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -14,29 +15,12 @@ from shared.models.tag import (
     TagRead,
     TagUpdate,
 )
-from shared.utils.slug import generate_slug
+from shared.utils.slug import add_with_unique_slug, unique_slug
 
 router = APIRouter(
     prefix="/tags",
     tags=["tags"],
 )
-
-
-async def generate_unique_slug(
-    name: str, project_id: str, session: AsyncSession
-) -> str:
-    base_slug = generate_slug(name)
-    slug = base_slug
-    counter = 1
-
-    while True:
-        result = await session.execute(
-            select(Tag).where(Tag.slug == slug, Tag.project_id == project_id)
-        )
-        if not result.scalar_one_or_none():
-            return slug
-        counter += 1
-        slug = f"{base_slug}-{counter}"
 
 
 @router.get("", response_model=list[TagRead])
@@ -93,17 +77,21 @@ async def create_tag(
             detail="Tag with this name already exists in this project",
         )
 
-    slug = generate_slug(normalized_name)
-
     tag = Tag(
         name=normalized_name,
-        slug=slug,
         color=tag_in.color,
         project_id=project.id,
         created_by=current_user.id,
     )
-    session.add(tag)
-    await session.commit()
+    try:
+        await add_with_unique_slug(session, tag, normalized_name, project_id=project.id)
+        await session.commit()
+    except IntegrityError as e:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Tag with this name already exists in this project",
+        ) from e
     await session.refresh(tag)
     return tag
 
@@ -135,7 +123,9 @@ async def init_predefined_tags(
             )
         )
         if not existing_tag.scalar_one_or_none():
-            slug = generate_slug(tag_data["name"])
+            slug = await unique_slug(
+                session, Tag, tag_data["name"], project_id=project.id
+            )
             tag = Tag(
                 name=tag_data["name"],
                 slug=slug,
@@ -217,8 +207,8 @@ async def update_tag(
     update_data = tag_in.model_dump(exclude_unset=True)
 
     if "name" in update_data:
-        tag.slug = await generate_unique_slug(
-            update_data["name"], str(project_id), session
+        tag.slug = await unique_slug(
+            session, Tag, update_data["name"], project_id=project_id
         )
 
     for field, value in update_data.items():

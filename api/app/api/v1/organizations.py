@@ -14,31 +14,12 @@ from shared.models.organization import (
     OrganizationUpdate,
 )
 from shared.models.project import Project
-from shared.utils.slug import generate_slug
+from shared.utils.slug import add_with_unique_slug, unique_slug
 
 router = APIRouter(
     prefix="/organizations",
     tags=["organizations"],
 )
-
-
-async def generate_unique_slug(
-    name: str, project_id: str, session: AsyncSession
-) -> str:
-    base_slug = generate_slug(name)
-    slug = base_slug
-    counter = 1
-
-    while True:
-        result = await session.execute(
-            select(Organization).where(
-                Organization.slug == slug, Organization.project_id == project_id
-            )
-        )
-        if not result.scalar_one_or_none():
-            return slug
-        counter += 1
-        slug = f"{base_slug}-{counter}"
 
 
 @router.get("", response_model=list[OrganizationRead])
@@ -95,17 +76,16 @@ async def create_organization(
             detail="Organization with this name already exists in this project",
         )
 
-    slug = await generate_unique_slug(normalized_name, project.id, session)
-
     organization = Organization(
         name=normalized_name,
-        slug=slug,
         description=organization_in.description,
         project_id=project.id,
         created_by=current_user.id,
     )
-    session.add(organization)
     try:
+        await add_with_unique_slug(
+            session, organization, normalized_name, project_id=project.id
+        )
         await session.commit()
     except IntegrityError as e:
         await session.rollback()
@@ -200,8 +180,8 @@ async def update_organization(
                 detail="Organization with this name already exists in this project",
             )
 
-        organization.slug = await generate_unique_slug(
-            normalized_name, project_id, session
+        organization.slug = await unique_slug(
+            session, Organization, normalized_name, project_id=project_id
         )
 
     for field, value in update_data.items():

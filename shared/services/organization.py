@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import Organization
-from shared.utils.slug import generate_slug
+from shared.utils.slug import add_with_unique_slug
 from shared.utils.validation import clean_name
 
 
@@ -26,14 +26,14 @@ async def get_or_create_organization(
     organization = result.scalar_one_or_none()
 
     if not organization:
-        slug = generate_slug(normalized_name)
         organization = Organization(
             name=normalized_name,
-            slug=slug,
             description=description,
             project_id=project_id,
             created_by=user_id,
         )
-        session.add(organization)
+        await add_with_unique_slug(
+            session, organization, normalized_name, project_id=project_id
+        )
 
     return organization

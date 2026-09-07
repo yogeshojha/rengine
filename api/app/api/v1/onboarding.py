@@ -6,7 +6,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
-from app.api.v1.projects import generate_unique_slug
 from app.core.database import get_session
 from app.services.instance_settings import InstanceSettingsService
 from shared.models.api_key import APIKey
@@ -14,6 +13,7 @@ from shared.models.notification_channel import NotificationChannel
 from shared.models.project import Project, ProjectCreate, ProjectRead
 from shared.models.proxy import Proxy
 from shared.utils.datetime import utc_now
+from shared.utils.slug import add_with_unique_slug
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
@@ -121,15 +121,13 @@ async def create_first_project(
     current_user: CurrentSuperuser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    slug = await generate_unique_slug(data.name, session)
     project = Project(
         name=data.name,
-        slug=slug,
         description=data.description,
         label=data.label,
         created_by=current_user.id,
     )
-    session.add(project)
+    await add_with_unique_slug(session, project, data.name)
     await session.commit()
     await session.refresh(project)
     return project

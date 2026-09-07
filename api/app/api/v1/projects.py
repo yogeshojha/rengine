@@ -10,25 +10,12 @@ from shared.models.organization import Organization
 from shared.models.project import Project, ProjectCreate, ProjectRead, ProjectSummary
 from shared.models.tag import Tag
 from shared.models.target import Target
-from shared.utils.slug import generate_slug
+from shared.utils.slug import add_with_unique_slug
 
 router = APIRouter(
     prefix="/projects",
     tags=["projects"],
 )
-
-
-async def generate_unique_slug(name: str, session: AsyncSession) -> str:
-    base_slug = generate_slug(name)
-    slug = base_slug
-    counter = 1
-
-    while True:
-        result = await session.execute(select(Project).where(Project.slug == slug))
-        if not result.scalar_one_or_none():
-            return slug
-        counter += 1
-        slug = f"{base_slug}-{counter}"
 
 
 @router.get("", response_model=list[ProjectRead])
@@ -83,16 +70,13 @@ async def create_project(
     current_user: CurrentSuperuser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    slug = await generate_unique_slug(project_in.name, session)
-
     project = Project(
         name=project_in.name,
-        slug=slug,
         description=project_in.description,
         label=project_in.label,
         created_by=current_user.id,
     )
-    session.add(project)
+    await add_with_unique_slug(session, project, project_in.name)
     await session.commit()
     await session.refresh(project)
     return project
