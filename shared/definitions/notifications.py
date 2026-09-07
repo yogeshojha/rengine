@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
+from shared.definitions.bounty_programs import BountyEvent, event_spec
 from shared.definitions.interest import InterestBand, kind_label
 from shared.definitions.vulnerabilities import (
     ALERT_SEVERITIES,
@@ -363,4 +364,46 @@ def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
         "title": title,
         "message": body,
         "metadata": {"kind": "threat_intel"},
+    }
+
+
+@dataclass
+class BountyChange:
+    kind: str
+    program: str
+    handle: str
+    asset: str | None = None
+
+
+def _bounty_line(change: "BountyChange") -> str:
+    what = f" — {change.asset}" if change.asset else ""
+    return f"• {event_spec(change.kind).label} · {change.program}{what}"
+
+
+def bounty_changes(changes: list["BountyChange"], shown: int = 6) -> dict | None:
+    """Delta-only: what a program changed since the last sync."""
+    if not changes:
+        return None
+    stop = [c for c in changes if c.kind == BountyEvent.WENT_OUT_OF_SCOPE.value]
+    fresh = [
+        c
+        for c in changes
+        if c.kind in {BountyEvent.PROGRAM_ADDED.value, BountyEvent.SCOPE_ADDED.value}
+    ]
+    severity = NotificationSeverity.WARNING if stop else NotificationSeverity.INFO
+    if stop:
+        title = _count(len(stop), "asset", "assets") + " went out of scope"
+    elif fresh:
+        title = _count(len(fresh), "change", "changes") + " worth looking at"
+    else:
+        title = _count(len(changes), "program change", "program changes")
+    body = "\n".join(_bounty_line(c) for c in changes[:shown])
+    if len(changes) > shown:
+        body += f"\n… and {len(changes) - shown} more"
+    return {
+        "type": NotificationType.INTEGRATION,
+        "severity": severity,
+        "title": title,
+        "message": body,
+        "metadata": {"kind": "bounty_programs"},
     }

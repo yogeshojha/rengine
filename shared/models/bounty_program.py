@@ -69,6 +69,41 @@ class BountyScope(SQLModel, table=True):
     synced_at: datetime = Field(default_factory=utc_now)
 
 
+class BountyEventRow(SQLModel, table=True):
+    __tablename__ = "bounty_events"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    platform: str = Field(max_length=32, index=True)
+    program_id: uuid.UUID = Field(
+        foreign_key="bounty_programs.id", index=True, ondelete="CASCADE"
+    )
+    handle: str = Field(max_length=200, index=True)
+    program_name: str = Field(max_length=300)
+    kind: str = Field(max_length=32, index=True)
+    asset_type: str | None = Field(default=None, max_length=48)
+    asset_identifier: str | None = Field(default=None, max_length=1000)
+    detail: str | None = Field(default=None, max_length=500)
+    created_at: datetime = Field(default_factory=utc_now, index=True)
+
+
+class BountyEventRead(BaseModel):
+    id: uuid.UUID
+    platform: str
+    handle: str
+    program_name: str
+    kind: str
+    # derived by the service; paginate() coerces the ORM row first
+    label: str = ""
+    description: str = ""
+    icon: str = "circle-help"
+    tone: str = "muted"
+    actionable: bool = False
+    asset_type: str | None
+    asset_identifier: str | None
+    detail: str | None
+    created_at: datetime
+
+
 class BountyScopeRead(BaseModel):
     id: uuid.UUID
     asset_type: str
@@ -162,4 +197,11 @@ class BountyStatus(BaseModel):
     programs: int
     private_programs: int
     last_synced_at: datetime | None
+    sync_interval: str
+    next_sync_at: datetime | None = None
+    unseen_events: int = 0
     error: str | None = None
+
+
+class SyncIntervalUpdate(BaseModel):
+    interval: str

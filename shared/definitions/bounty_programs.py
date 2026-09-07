@@ -30,6 +30,18 @@ class ScopeState(Enum):
     OUT_OF_SCOPE = "out_of_scope"
 
 
+class BountyEvent(Enum):
+    PROGRAM_ADDED = "program_added"
+    PROGRAM_WENT_PUBLIC = "program_went_public"
+    SUBMISSIONS_OPENED = "submissions_opened"
+    SUBMISSIONS_CLOSED = "submissions_closed"
+    BOUNTIES_STARTED = "bounties_started"
+    SCOPE_ADDED = "scope_added"
+    SCOPE_REMOVED = "scope_removed"
+    WENT_OUT_OF_SCOPE = "went_out_of_scope"
+    CAME_INTO_SCOPE = "came_into_scope"
+
+
 class AssetGroup(Enum):
     NETWORK = "network"
     MOBILE = "mobile"
@@ -141,11 +153,132 @@ IMPORTABLE_TYPES: frozenset[str] = frozenset(
     {a.key for a in ASSET_TYPES if a.targetable} | {"OTHER"}
 )
 
+
+@dataclass(frozen=True)
+class EventSpec:
+    kind: str
+    label: str
+    description: str
+    icon: str
+    tone: str
+    # a change you can act on now ranks above one that is merely news
+    actionable: bool
+
+
+EVENTS: tuple[EventSpec, ...] = (
+    EventSpec(
+        BountyEvent.PROGRAM_ADDED.value,
+        "New program",
+        "A program appeared in your library",
+        "sparkles",
+        "info",
+        actionable=True,
+    ),
+    EventSpec(
+        BountyEvent.SCOPE_ADDED.value,
+        "Scope added",
+        "The program put a new asset in scope",
+        "plus",
+        "info",
+        actionable=True,
+    ),
+    EventSpec(
+        BountyEvent.CAME_INTO_SCOPE.value,
+        "Now in scope",
+        "An asset the program excluded is now testable",
+        "circle-check",
+        "info",
+        actionable=True,
+    ),
+    EventSpec(
+        BountyEvent.WENT_OUT_OF_SCOPE.value,
+        "Now out of scope",
+        "Stop testing this asset",
+        "octagon-alert",
+        "warning",
+        actionable=True,
+    ),
+    EventSpec(
+        BountyEvent.SCOPE_REMOVED.value,
+        "Scope removed",
+        "The program no longer lists this asset",
+        "minus",
+        "warning",
+        actionable=True,
+    ),
+    EventSpec(
+        BountyEvent.SUBMISSIONS_OPENED.value,
+        "Accepting reports",
+        "The program reopened for submissions",
+        "door-open",
+        "info",
+        actionable=True,
+    ),
+    EventSpec(
+        BountyEvent.BOUNTIES_STARTED.value,
+        "Now pays bounties",
+        "The program moved from VDP to paying",
+        "banknote",
+        "info",
+        actionable=True,
+    ),
+    EventSpec(
+        BountyEvent.PROGRAM_WENT_PUBLIC.value,
+        "Went public",
+        "A private program opened to everyone",
+        "globe",
+        "muted",
+        actionable=False,
+    ),
+    EventSpec(
+        BountyEvent.SUBMISSIONS_CLOSED.value,
+        "Stopped accepting",
+        "The program paused or closed submissions",
+        "door-closed",
+        "muted",
+        actionable=False,
+    ),
+)
+
+EVENTS_BY_KIND: dict[str, EventSpec] = {e.kind: e for e in EVENTS}
+
+# the changes worth waking someone for; the rest live in the feed
+ALERT_EVENTS: frozenset[str] = frozenset(
+    {
+        BountyEvent.PROGRAM_ADDED.value,
+        BountyEvent.SCOPE_ADDED.value,
+        BountyEvent.CAME_INTO_SCOPE.value,
+        BountyEvent.WENT_OUT_OF_SCOPE.value,
+        BountyEvent.SUBMISSIONS_OPENED.value,
+        BountyEvent.BOUNTIES_STARTED.value,
+    }
+)
+
+
+class SyncInterval(Enum):
+    OFF = "off"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+
+
+SYNC_INTERVAL_HOURS: dict[str, int] = {
+    SyncInterval.DAILY.value: 24,
+    SyncInterval.WEEKLY.value: 24 * 7,
+}
+
+DEFAULT_SYNC_INTERVAL = SyncInterval.DAILY.value
+
 MAX_TAGS_PER_IMPORT = 10
 
 MAX_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "none")
 
 _SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*://", re.I)
+
+
+def event_spec(kind: str) -> EventSpec:
+    return EVENTS_BY_KIND.get(
+        kind, EventSpec(kind, kind, "", "circle-help", "muted", actionable=False)
+    )
 
 
 def asset_type_spec(key: str | None) -> AssetTypeSpec:

@@ -51,6 +51,8 @@ export interface BountyVocabulary {
 	submission_states: SubmissionState[];
 	scope_states: ScopeState[];
 	max_severities: string[];
+	events: BountyEventSpec[];
+	sync_intervals: SyncInterval[];
 }
 
 export interface BountyScope {
@@ -104,6 +106,38 @@ export interface BountyProgramDetail extends BountyProgram {
 	unreachable: Record<string, number>;
 }
 
+export enum SyncInterval {
+	Off = 'off',
+	Daily = 'daily',
+	Weekly = 'weekly'
+}
+
+export interface BountyEventSpec {
+	kind: string;
+	label: string;
+	description: string;
+	icon: string;
+	tone: string;
+	actionable: boolean;
+}
+
+export interface BountyEvent {
+	id: string;
+	platform: string;
+	handle: string;
+	program_name: string;
+	kind: string;
+	label: string;
+	description: string;
+	icon: string;
+	tone: string;
+	actionable: boolean;
+	asset_type: string | null;
+	asset_identifier: string | null;
+	detail: string | null;
+	created_at: string;
+}
+
 export interface BountyStatus {
 	configured: boolean;
 	platform: string;
@@ -111,6 +145,9 @@ export interface BountyStatus {
 	programs: number;
 	private_programs: number;
 	last_synced_at: string | null;
+	sync_interval: SyncInterval;
+	next_sync_at: string | null;
+	unseen_events: number;
 	error: string | null;
 }
 

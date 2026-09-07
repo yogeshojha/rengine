@@ -2,7 +2,15 @@ import AppWindowIcon from '@lucide/svelte/icons/app-window';
 import AsteriskIcon from '@lucide/svelte/icons/asterisk';
 import BinaryIcon from '@lucide/svelte/icons/binary';
 import BrainIcon from '@lucide/svelte/icons/brain';
+import BanknoteIcon from '@lucide/svelte/icons/banknote';
+import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
+import DoorClosedIcon from '@lucide/svelte/icons/door-closed';
+import DoorOpenIcon from '@lucide/svelte/icons/door-open';
+import MinusIcon from '@lucide/svelte/icons/minus';
+import OctagonAlertIcon from '@lucide/svelte/icons/octagon-alert';
+import PlusIcon from '@lucide/svelte/icons/plus';
+import SparklesIcon from '@lucide/svelte/icons/sparkles';
 import CpuIcon from '@lucide/svelte/icons/cpu';
 import FileCodeIcon from '@lucide/svelte/icons/file-code';
 import FileSignatureIcon from '@lucide/svelte/icons/file-signature';
@@ -30,7 +38,27 @@ export const ASSET_ICONS: Record<string, IconComponent> = {
 	brain: BrainIcon,
 	cpu: CpuIcon,
 	'file-signature': FileSignatureIcon,
-	'circle-help': CircleHelpIcon
+	'circle-help': CircleHelpIcon,
+	sparkles: SparklesIcon,
+	plus: PlusIcon,
+	minus: MinusIcon,
+	'circle-check': CircleCheckIcon,
+	'octagon-alert': OctagonAlertIcon,
+	'door-open': DoorOpenIcon,
+	'door-closed': DoorClosedIcon,
+	banknote: BanknoteIcon
+};
+
+export const EVENT_TONE: Record<string, string> = {
+	info: 'text-info',
+	warning: 'text-warning',
+	muted: 'text-muted-foreground'
+};
+
+export const EVENT_TONE_BG: Record<string, string> = {
+	info: 'bg-info/10',
+	warning: 'bg-warning/10',
+	muted: 'bg-muted'
 };
 
 export function assetIcon(icon: string): IconComponent {
@@ -72,6 +100,13 @@ export const SCOPE_TABS = [
 	{ value: ScopeState.OutOfScope, label: 'Out of scope' }
 ] as const;
 
+export const SYNC_INTERVAL_LABELS: Record<string, string> = {
+	off: 'Manual only',
+	daily: 'Every day',
+	weekly: 'Every week'
+};
+
+export const EVENT_PAGE_SIZE = 50;
 export const PROGRAM_PAGE_SIZE = 25;
 
 export const PLATFORM_TAG = 'hackerone';

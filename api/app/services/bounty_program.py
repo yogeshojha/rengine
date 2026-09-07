@@ -1,3 +1,4 @@
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -9,17 +10,23 @@ from sqlmodel import col
 
 from app.services.target import TargetService
 from shared.definitions.bounty_programs import (
+    DEFAULT_SYNC_INTERVAL,
     MAX_TAGS_PER_IMPORT,
     PLATFORMS_BY_KEY,
+    SYNC_INTERVAL_HOURS,
     ProgramState,
     ScopeState,
     SubmissionState,
+    SyncInterval,
     asset_type_spec,
+    event_spec,
     raw_state_label,
 )
 from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKey
 from shared.models.bounty_program import (
+    BountyEventRead,
+    BountyEventRow,
     BountyImportRequest,
     BountyImportResult,
     BountyProgram,
@@ -29,9 +36,11 @@ from shared.models.bounty_program import (
     BountyScopeRead,
     BountyStatus,
 )
+from shared.models.instance_settings import InstanceSettings
 from shared.models.organization import Organization, OrganizationSummary
 from shared.models.tag import Tag, TagSummary, TargetTag
 from shared.models.target import Target, TargetOrganization
+from shared.utils.datetime import utc_now
 from shared.utils.slug import add_with_unique_slug
 from shared.utils.validation import clean_name
 
@@ -79,8 +88,76 @@ class BountyProgramService:
             return None
         return (key.key_meta or {}).get("username")
 
+    async def _settings(self) -> InstanceSettings | None:
+        rows = await self.session.execute(select(InstanceSettings).limit(1))
+        return rows.scalar_one_or_none()
+
+    async def events(
+        self, platform: str, *, kind: str | None, handle: str | None
+    ) -> Select:
+        query = select(BountyEventRow).where(BountyEventRow.platform == platform)
+        if kind:
+            query = query.where(BountyEventRow.kind == kind)
+        if handle:
+            query = query.where(BountyEventRow.handle == handle)
+        return query.order_by(col(BountyEventRow.created_at).desc())
+
+    @staticmethod
+    def event_read(row: BountyEventRow) -> BountyEventRead:
+        spec = event_spec(row.kind)
+        return BountyEventRead(
+            id=row.id,
+            platform=row.platform,
+            handle=row.handle,
+            program_name=row.program_name,
+            kind=row.kind,
+            label=spec.label,
+            description=spec.description,
+            icon=spec.icon,
+            tone=spec.tone,
+            actionable=spec.actionable,
+            asset_type=row.asset_type,
+            asset_identifier=row.asset_identifier,
+            detail=row.detail,
+            created_at=row.created_at,
+        )
+
+    async def set_interval(self, interval: str, platform: str) -> BountyStatus:
+        if interval not in {i.value for i in SyncInterval}:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown sync interval: {interval}",
+            )
+        settings = await self._settings()
+        if settings:
+            settings.bounty_sync_interval = interval
+            await self.session.commit()
+        return await self.status(platform)
+
+    async def mark_events_seen(self) -> None:
+        settings = await self._settings()
+        if settings:
+            settings.bounty_events_seen_at = utc_now()
+            await self.session.commit()
+
     async def status(self, platform: str) -> BountyStatus:
         username = await self._credentials_username()
+        settings = await self._settings()
+        interval = (settings.bounty_sync_interval if settings else None) or (
+            DEFAULT_SYNC_INTERVAL
+        )
+        synced_at = settings.bounty_synced_at if settings else None
+        seen_at = settings.bounty_events_seen_at if settings else None
+        hours = SYNC_INTERVAL_HOURS.get(interval)
+        next_sync = (
+            (synced_at + timedelta(hours=hours)) if (hours and synced_at) else None
+        )
+        unseen = await self.session.execute(
+            select(func.count(BountyEventRow.id)).where(
+                BountyEventRow.platform == platform,
+                *([BountyEventRow.created_at > seen_at] if seen_at else []),
+            )
+        )
         totals = await self.session.execute(
             select(
                 func.count(BountyProgram.id),
@@ -97,7 +174,10 @@ class BountyProgramService:
             username=username,
             programs=total or 0,
             private_programs=private or 0,
-            last_synced_at=last,
+            last_synced_at=synced_at or last,
+            sync_interval=interval,
+            next_sync_at=next_sync,
+            unseen_events=unseen.scalar_one() or 0,
         )
 
     def _filtered(

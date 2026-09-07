@@ -11,12 +11,15 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
+	import * as Select from '$lib/components/ui/select';
+	import CountTabs from '$lib/components/count-tabs.svelte';
 	import FilterBar from '$lib/components/bounty-hub/filter-bar.svelte';
+	import UpdatesFeed from '$lib/components/bounty-hub/updates-feed.svelte';
 	import ProgramRow from '$lib/components/bounty-hub/program-row.svelte';
 	import ProgramSheet from '$lib/components/bounty-hub/program-sheet.svelte';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
-	import { PROGRAM_PAGE_SIZE } from '$lib/config/bounty-programs';
-	import { ROUTES } from '$lib/config/routes';
+	import { PROGRAM_PAGE_SIZE, SYNC_INTERVAL_LABELS } from '$lib/config/bounty-programs';
+	import { BOUNTY_HUB_TABS, ROUTES, type BountyHubTab } from '$lib/config/routes';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type {
@@ -24,6 +27,7 @@
 		BountyProgramFilters,
 		BountyStatus
 	} from '$lib/types/bounty-program';
+	import { SyncInterval } from '$lib/types/bounty-program';
 
 	let status = $state<BountyStatus | null>(null);
 	let programs = $state<BountyProgram[]>([]);
@@ -35,6 +39,7 @@
 	let selected = $state<BountyProgram | null>(null);
 	let sheetOpen = $state(false);
 	let filters = $state<BountyProgramFilters>({ sort: 'age' });
+	let tab = $state<BountyHubTab>('programs');
 
 	const projectId = $derived(projectsStore.activeProject?.id);
 	const filterKey = $derived(JSON.stringify(filters));
@@ -76,6 +81,13 @@
 		void loadPrograms(filters, pageIndex, pageSize, projectId);
 	});
 
+	$effect(() => {
+		const requested = page.url.searchParams.get('tab');
+		if (requested && (BOUNTY_HUB_TABS as readonly string[]).includes(requested)) {
+			tab = requested as BountyHubTab;
+		}
+	});
+
 	// a deep link opens any program, not only one on the page being shown
 	let deepLinked = $state<string | null>(null);
 
@@ -93,6 +105,24 @@
 			.then((program) => open(program))
 			.catch(() => toast.error(`No program found for @${handle}`));
 	});
+
+	async function setInterval(value: string) {
+		try {
+			status = await bountyProgramsApi.setSyncInterval(value as SyncInterval);
+			toast.success(
+				value === SyncInterval.Off
+					? 'Automatic sync is off. Refresh from HackerOne still works.'
+					: `Syncing ${SYNC_INTERVAL_LABELS[value].toLowerCase()}.`
+			);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Could not change the schedule');
+		}
+	}
+
+	function openProgram(handle: string) {
+		tab = 'programs';
+		void goto(ROUTES.bountyHub(handle), { noScroll: true, keepFocus: true });
+	}
 
 	function onFilters(next: BountyProgramFilters) {
 		filters = next;
@@ -140,6 +170,9 @@
 					{#if status.last_synced_at}
 						· synced {relativeTime(status.last_synced_at)}
 					{/if}
+					{#if status.next_sync_at}
+						· next {relativeTime(status.next_sync_at)}
+					{/if}
 				{:else}
 					Browse the bug bounty programs your HackerOne account can see, and add their scope as
 					targets.
@@ -148,10 +181,26 @@
 		</div>
 
 		{#if status?.configured}
-			<LoadingButton loading={syncing} variant="outline" size="sm" onclick={sync}>
-				<RefreshCwIcon class="mr-2 size-3.5" />
-				Refresh from HackerOne
-			</LoadingButton>
+			<div class="flex items-center gap-2">
+				<Select.Root
+					type="single"
+					value={status.sync_interval}
+					onValueChange={(v) => v && setInterval(v)}
+				>
+					<Select.Trigger class="w-40">
+						{SYNC_INTERVAL_LABELS[status.sync_interval] ?? status.sync_interval}
+					</Select.Trigger>
+					<Select.Content>
+						{#each Object.entries(SYNC_INTERVAL_LABELS) as [value, label] (value)}
+							<Select.Item {value}>{label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				<LoadingButton loading={syncing} variant="outline" size="sm" onclick={sync}>
+					<RefreshCwIcon class="mr-2 size-3.5" />
+					Refresh from HackerOne
+				</LoadingButton>
+			</div>
 		{/if}
 	</div>
 
@@ -167,44 +216,58 @@
 			</EmptyState>
 		</Card.Root>
 	{:else}
-		<FilterBar {filters} onChange={onFilters} />
+		<CountTabs
+			tabs={[
+				{ key: 'programs', label: 'Programs' },
+				{ key: 'updates', label: 'Updates' }
+			]}
+			counts={{ programs: total, updates: status?.unseen_events ?? 0 }}
+			value={tab}
+			onChange={(k) => (tab = k as BountyHubTab)}
+		/>
 
-		<Card.Root class="gap-0 overflow-hidden py-0">
-			{#if loading}
-				<div class="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
-					<Spinner class="size-4" />
-					Loading programs
-				</div>
-			{:else if programs.length === 0}
-				<EmptyState
-					icon={TargetIcon}
-					title={total === 0 && status?.programs === 0
-						? 'No programs yet'
-						: 'No programs match these filters'}
-					description={total === 0 && status?.programs === 0
-						? 'Refresh from HackerOne to pull the programs your account can see.'
-						: 'Try clearing a filter.'}
-					class="p-12"
+		{#if tab === 'updates'}
+			<UpdatesFeed onOpenProgram={openProgram} />
+		{:else}
+			<FilterBar {filters} onChange={onFilters} />
+
+			<Card.Root class="gap-0 overflow-hidden py-0">
+				{#if loading}
+					<div class="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
+						<Spinner class="size-4" />
+						Loading programs
+					</div>
+				{:else if programs.length === 0}
+					<EmptyState
+						icon={TargetIcon}
+						title={total === 0 && status?.programs === 0
+							? 'No programs yet'
+							: 'No programs match these filters'}
+						description={total === 0 && status?.programs === 0
+							? 'Refresh from HackerOne to pull the programs your account can see.'
+							: 'Try clearing a filter.'}
+						class="p-12"
+					/>
+				{:else}
+					{#each programs as program (program.id)}
+						<ProgramRow {program} onOpen={open} />
+					{/each}
+				{/if}
+			</Card.Root>
+
+			{#if total > pageSize}
+				<ResultsPagination
+					page={pageIndex}
+					{pageSize}
+					{total}
+					noun="program"
+					onPage={(p) => (pageIndex = p)}
+					onPageSize={(s) => {
+						pageSize = s;
+						pageIndex = 0;
+					}}
 				/>
-			{:else}
-				{#each programs as program (program.id)}
-					<ProgramRow {program} onOpen={open} />
-				{/each}
 			{/if}
-		</Card.Root>
-
-		{#if total > pageSize}
-			<ResultsPagination
-				page={pageIndex}
-				{pageSize}
-				{total}
-				noun="program"
-				onPage={(p) => (pageIndex = p)}
-				onPageSize={(s) => {
-					pageSize = s;
-					pageIndex = 0;
-				}}
-			/>
 		{/if}
 	{/if}
 </div>

@@ -12,14 +12,19 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session
 
 from shared.definitions.bounty_programs import (
+    DEFAULT_SYNC_INTERVAL,
+    SYNC_INTERVAL_HOURS,
+    BountyEvent,
     BountyPlatform,
+    ScopeState,
+    SubmissionState,
     asset_type_spec,
     program_state,
     scope_state,
@@ -29,7 +34,7 @@ from shared.definitions.bounty_programs import (
 from shared.enums.api_key import APIProvider
 from shared.logging import get_logger
 from shared.models.api_key import APIKey
-from shared.models.bounty_program import BountyProgram, BountyScope
+from shared.models.bounty_program import BountyEventRow, BountyProgram, BountyScope
 from shared.utils.crypto import try_decrypt
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
@@ -229,6 +234,36 @@ def _scope_row(program_id, entry: dict) -> dict | None:
     }
 
 
+def _event(program: BountyProgram, kind: str, **extra) -> BountyEventRow:
+    return BountyEventRow(
+        platform=program.platform,
+        program_id=program.id,
+        handle=program.handle,
+        program_name=program.name,
+        kind=kind,
+        **extra,
+    )
+
+
+def _program_changes(current: BountyProgram, row: dict) -> list[str]:
+    """What moved on a program the library already knew about."""
+    kinds: list[str] = []
+    if current.submission_state != row["submission_state"]:
+        kinds.append(
+            BountyEvent.SUBMISSIONS_OPENED.value
+            if row["submission_state"] == SubmissionState.OPEN.value
+            else BountyEvent.SUBMISSIONS_CLOSED.value
+        )
+    if (
+        current.program_state != row["program_state"]
+        and row["program_state"] == "public"
+    ):
+        kinds.append(BountyEvent.PROGRAM_WENT_PUBLIC.value)
+    if row["offers_bounties"] and not current.offers_bounties:
+        kinds.append(BountyEvent.BOUNTIES_STARTED.value)
+    return kinds
+
+
 def sync_programs(session: Session, auth: tuple[str, str]) -> dict[str, int]:
     """Refresh the program list; scopes are fetched per program on demand."""
     started = time.monotonic()
@@ -241,8 +276,11 @@ def sync_programs(session: Session, auth: tuple[str, str]) -> dict[str, int]:
             )
         ).scalars()
     }
+    # a first library sync is a baseline, not 630 new programs
+    baseline = bool(existing)
     created = updated = 0
     seen: set[str] = set()
+    events: list[BountyEventRow] = []
     for entry in entries:
         row = _program_row(entry)
         if not row["handle"] or row["handle"] in seen:
@@ -250,34 +288,124 @@ def sync_programs(session: Session, auth: tuple[str, str]) -> dict[str, int]:
         seen.add(row["handle"])
         current = existing.get((row["platform"], row["handle"]))
         if current is None:
-            session.add(BountyProgram(**row))
+            program = BountyProgram(**row)
+            session.add(program)
+            session.flush()
             created += 1
+            if baseline:
+                events.append(_event(program, BountyEvent.PROGRAM_ADDED.value))
             continue
+        for kind in _program_changes(current, row):
+            events.append(_event(current, kind))
         for key, value in row.items():
             setattr(current, key, value)
         updated += 1
+    session.add_all(events)
     session.commit()
     return {
         "programs": len(seen),
         "created": created,
         "updated": updated,
         "duration_ms": int((time.monotonic() - started) * 1000),
+        "events": len(events),
     }
+
+
+_SCOPE_TRANSITIONS = {
+    (ScopeState.IN_SCOPE.value, ScopeState.OUT_OF_SCOPE.value): (
+        BountyEvent.WENT_OUT_OF_SCOPE.value
+    ),
+    (ScopeState.OUT_OF_SCOPE.value, ScopeState.IN_SCOPE.value): (
+        BountyEvent.CAME_INTO_SCOPE.value
+    ),
+}
+
+
+def _scope_changes(
+    program: BountyProgram, before: dict[tuple[str, str], str], after: dict
+) -> list[BountyEventRow]:
+    """Added, removed and flipped assets — never on a program's first read."""
+    events: list[BountyEventRow] = []
+    for key, row in after.items():
+        asset_type, identifier = key
+        was = before.get(key)
+        if was is None:
+            kind = BountyEvent.SCOPE_ADDED.value
+        else:
+            kind = _SCOPE_TRANSITIONS.get((was, row["scope_state"]))
+            if kind is None:
+                continue
+        events.append(
+            _event(
+                program,
+                kind,
+                asset_type=asset_type,
+                asset_identifier=identifier,
+                detail=row.get("instruction"),
+            )
+        )
+    for key in before.keys() - after.keys():
+        events.append(
+            _event(
+                program,
+                BountyEvent.SCOPE_REMOVED.value,
+                asset_type=key[0],
+                asset_identifier=key[1],
+            )
+        )
+    return events
 
 
 def sync_scopes(session: Session, program: BountyProgram, auth: tuple[str, str]) -> int:
     """Replace one program's scope rows with what the platform reports now."""
     entries = fetch_scopes(program.handle, auth)
     rows = [r for r in (_scope_row(program.id, e) for e in entries) if r]
-    # a program restates its whole scope, so the set is replaced not merged
-    session.execute(delete(BountyScope).where(BountyScope.program_id == program.id))
     deduped: dict[tuple[str, str], dict] = {}
     for row in rows:
         deduped[(row["asset_type"], row["asset_identifier"])] = row
+
+    # a program read for the first time is a baseline, not a scope change
+    before: dict[tuple[str, str], str] = {}
+    if program.scopes_synced_at is not None:
+        before = {
+            (s.asset_type, s.asset_identifier): s.scope_state
+            for s in session.execute(
+                select(BountyScope).where(BountyScope.program_id == program.id)
+            ).scalars()
+        }
+        session.add_all(_scope_changes(program, before, deduped))
+
+    # a program restates its whole scope, so the set is replaced not merged
+    session.execute(delete(BountyScope).where(BountyScope.program_id == program.id))
     session.add_all([BountyScope(**row) for row in deduped.values()])
     program.scopes_synced_at = utc_now()
     session.commit()
     return len(deduped)
+
+
+def sync_settings(session: Session) -> tuple[str, datetime | None]:
+    row = session.execute(
+        text(
+            "SELECT bounty_sync_interval, bounty_synced_at FROM instance_settings LIMIT 1"
+        )
+    ).first()
+    if not row:
+        return DEFAULT_SYNC_INTERVAL, None
+    return (row[0] or DEFAULT_SYNC_INTERVAL), row[1]
+
+
+def sync_due(session: Session) -> bool:
+    """Whether the schedule says to sync now. A manual refresh never asks."""
+    interval, last = sync_settings(session)
+    hours = SYNC_INTERVAL_HOURS.get(interval)
+    if hours is None:
+        return False
+    return last is None or (utc_now() - last) >= timedelta(hours=hours)
+
+
+def mark_synced(session: Session) -> None:
+    session.execute(text("UPDATE instance_settings SET bounty_synced_at = now()"))
+    session.commit()
 
 
 def unreachable_summary(scopes: list[BountyScope]) -> dict[str, int]:

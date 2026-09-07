@@ -12,6 +12,7 @@ from app.services.bounty_program import BountyProgramService
 from app.services.instance_settings import InstanceSettingsService
 from shared.definitions.bounty_programs import (
     ASSET_TYPES,
+    EVENTS,
     MAX_SEVERITIES,
     PLATFORMS,
     AssetGroup,
@@ -19,14 +20,17 @@ from shared.definitions.bounty_programs import (
     ProgramState,
     ScopeState,
     SubmissionState,
+    SyncInterval,
 )
 from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS, has_capability
 from shared.models.bounty_program import (
+    BountyEventRead,
     BountyImportRequest,
     BountyImportResult,
     BountyProgramDetail,
     BountyProgramRead,
     BountyStatus,
+    SyncIntervalUpdate,
 )
 from shared.services.celery_dispatch import (
     dispatch_bounty_program_sync,
@@ -88,7 +92,63 @@ async def vocabulary(_current_user: CurrentUser) -> dict:
         "submission_states": [s.value for s in SubmissionState],
         "scope_states": [s.value for s in ScopeState],
         "max_severities": list(MAX_SEVERITIES),
+        "events": [
+            {
+                "kind": e.kind,
+                "label": e.label,
+                "description": e.description,
+                "icon": e.icon,
+                "tone": e.tone,
+                "actionable": e.actionable,
+            }
+            for e in EVENTS
+        ],
+        "sync_intervals": [i.value for i in SyncInterval],
     }
+
+
+@router.get("/events")
+async def list_events(
+    session: SessionDep,
+    service: ServiceDep,
+    _current_user: CurrentUser,
+    platform: str = Query(BountyPlatform.HACKERONE.value),
+    kind: str | None = Query(None),
+    handle: str | None = Query(None),
+) -> Page[BountyEventRead]:
+    """What changed in the library, newest first."""
+    await _require_mode(session)
+    BountyProgramService.require_platform(platform)
+    query = await service.events(platform, kind=kind, handle=handle)
+    page = await paginate(session, query)
+    page.items = [BountyProgramService.event_read(r) for r in page.items]
+    return page
+
+
+@router.post("/events/seen")
+async def mark_events_seen(
+    session: SessionDep,
+    service: ServiceDep,
+    _current_user: CurrentUser,
+) -> dict:
+    """Clear the unseen badge once the feed has been read."""
+    await _require_mode(session)
+    await service.mark_events_seen()
+    return {"ok": True}
+
+
+@router.put("/sync-interval")
+async def set_sync_interval(
+    session: SessionDep,
+    service: ServiceDep,
+    _current_user: CurrentSuperuser,
+    data: SyncIntervalUpdate,
+    platform: str = Query(BountyPlatform.HACKERONE.value),
+) -> BountyStatus:
+    """How often reNgine asks HackerOne what changed."""
+    await _require_mode(session)
+    BountyProgramService.require_platform(platform)
+    return await service.set_interval(data.interval, platform)
 
 
 @router.get("/status")

@@ -139,10 +139,18 @@ REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
 NOTIFICATION_CLEANUP_SECONDS = 6 * 60 * 60.0
 THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
 
+# the task itself decides whether the interval is due
+BOUNTY_SYNC_TICK_SECONDS = 60 * 60
+
 celery_app.conf.beat_schedule = {
     "scan-schedule-tick": {
         "task": "app.tasks.schedule.tick",
         "schedule": SCHEDULE_TICK_SECONDS,
+    },
+    "bounty-program-sync": {
+        "task": "app.tasks.bounty_programs.sync",
+        "schedule": BOUNTY_SYNC_TICK_SECONDS,
+        "kwargs": {"force": False},
     },
     "ip-range-refresh": {
         "task": "app.tasks.ip_asn.refresh",

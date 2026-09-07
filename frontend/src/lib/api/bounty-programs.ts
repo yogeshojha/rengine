@@ -1,14 +1,24 @@
 import type {
+	BountyEvent,
 	BountyImportResult,
 	BountyProgram,
 	BountyProgramDetail,
 	BountyProgramFilters,
 	BountyStatus,
 	BountyVocabulary,
-	ScopeState
+	ScopeState,
+	SyncInterval
 } from '$lib/types/bounty-program';
 import { BountyPlatform } from '$lib/types/bounty-program';
 import { api } from './client';
+
+export interface Paged<T> {
+	items: T[];
+	total: number;
+	page: number;
+	size: number;
+	pages: number;
+}
 
 export interface ProgramPage {
 	items: BountyProgram[];
@@ -61,6 +71,31 @@ export const bountyProgramsApi = {
 				scope
 			})}`
 		);
+	},
+
+	async events(
+		page: number,
+		size: number,
+		kind?: string | null,
+		handle?: string | null,
+		platform: string = BountyPlatform.HackerOne
+	): Promise<Paged<BountyEvent>> {
+		return api.get<Paged<BountyEvent>>(
+			`/bounty-programs/events${query({ platform, page, size, kind, handle })}`
+		);
+	},
+
+	async markEventsSeen(): Promise<unknown> {
+		return api.post('/bounty-programs/events/seen', {});
+	},
+
+	async setSyncInterval(
+		interval: SyncInterval,
+		platform: string = BountyPlatform.HackerOne
+	): Promise<BountyStatus> {
+		return api.put<BountyStatus>(`/bounty-programs/sync-interval${query({ platform })}`, {
+			interval
+		});
 	},
 
 	async sync(scopes = true, platform: string = BountyPlatform.HackerOne): Promise<unknown> {

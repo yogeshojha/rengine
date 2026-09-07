@@ -28,6 +28,9 @@ export const routeLabels: Record<string, string> = {
 export const SETTINGS_TABS = ['general', 'api-keys', 'proxies', 'notifications'] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
+export const BOUNTY_HUB_TABS = ['programs', 'updates'] as const;
+export type BountyHubTab = (typeof BOUNTY_HUB_TABS)[number];
+
 export const ARSENAL_TABS = ['nuclei', 'wordlists', 'threat-intel'] as const;
 export const INTEREST_TABS = ['rules', 'dismissed'] as const;
 export type InterestTab = (typeof INTEREST_TABS)[number];
@@ -69,6 +72,7 @@ export const ROUTES = {
 	schedules: '/schedules',
 	arsenal: (tab?: ArsenalTab) => (tab ? `/arsenal?tab=${tab}` : '/arsenal'),
 	bountyHub: (handle?: string) => (handle ? `/bounty-hub?program=${handle}` : '/bounty-hub'),
+	bountyHubTab: (tab: BountyHubTab) => `/bounty-hub?tab=${tab}`,
 	interest: (tab?: InterestTab) => (tab ? `/interest?tab=${tab}` : '/interest'),
 	reports: (tab?: ReportTab) => (tab ? `/reports?tab=${tab}` : '/reports'),
 	report: (id: string) => `/reports/${id}`,
