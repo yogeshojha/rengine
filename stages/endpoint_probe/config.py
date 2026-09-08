@@ -24,7 +24,7 @@ class EndpointProbeConfig(StageConfig):
     skip_static: bool = Field(
         default=True,
         title="Skip images and media",
-        description="Do not spend the budget on content that carries no attack surface.",
+        description="Skip images, stylesheets, fonts and other static files.",
     )
     follow_redirects: bool = Field(
         default=False,

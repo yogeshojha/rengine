@@ -55,7 +55,7 @@ def _parse_asn(value: str) -> int | None:
 class IpEnrichmentStage(Stage):
     name = "ip_enrichment"
     title = "IP Enrichment"
-    description = "Sweep up every address the scan found and complete what only the finished run can know."
+    description = "Resolve ASN, network operator and country for every IP address the scan found."
     phase = Phase.DEPTH.value
     depends_on = frozenset(
         {
@@ -70,8 +70,8 @@ class IpEnrichmentStage(Stage):
     applies_to = ALL_TARGETS
     touches_target = False
     # not a choice: it sends nothing, calls nothing, costs a tenth of a second, and every
-    # address surface reads what it writes. Turning it off is a footgun with no upside.
-    catalog_hidden = True
+    # address surface reads what it writes. Shown in the catalog so it is not a secret, locked on.
+    always_on = True
     config_model = IpEnrichmentConfig
 
     def run(self) -> StageResult:

@@ -10,7 +10,7 @@ class VhostConfig(StageConfig):
     enabled: bool = Field(
         default=False,
         title="Virtual host bruteforce",
-        description="Host-header fuzzing to surface vhosts not resolvable via DNS.",
+        description="Find virtual hosts that DNS does not resolve, by varying the Host header.",
     )
     wordlist: str = wordlist(
         WordlistKind.VHOST.value,

@@ -96,6 +96,8 @@ class Stage(ABC):
     launch_fields: ClassVar[tuple[str, ...]] = ()
     # kept out of the catalog: enabled by the server, never picked by a user
     catalog_hidden: ClassVar[bool] = False
+    # offered in the catalog but locked on: the server owns `enabled`, a user only sees it
+    always_on: ClassVar[bool] = False
     # asset kinds this stage reads (any one suffices) and writes; a launch implies producers from these
     consumes: ClassVar[frozenset[str]] = frozenset()
     produces: ClassVar[frozenset[str]] = frozenset()

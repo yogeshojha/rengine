@@ -234,6 +234,7 @@
 	}
 
 	function toggleStageFromGutter(stageName: string) {
+		if (catalog?.stages.find((s) => s.name === stageName)?.always_on) return;
 		const current = stageStates[stageName] ?? true;
 		editDoc((d) => yamlSetStageField(d, stageName, 'enabled', !current));
 		activeStage = stageName;

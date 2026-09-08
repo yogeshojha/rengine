@@ -197,6 +197,13 @@ export function validate(
 			push(['stages', stageName], 'error', `'${stageName}' settings must be a mapping.`);
 			continue;
 		}
+		if (spec.always_on && (config as Record<string, unknown>).enabled === false) {
+			push(
+				['stages', stageName, 'enabled'],
+				'warning',
+				`${spec.title} cannot be disabled. This setting is ignored.`
+			);
+		}
 		for (const [key, value] of Object.entries(config as Record<string, unknown>)) {
 			const field = spec.fields.find((f) => f.name === key);
 			if (!field) {

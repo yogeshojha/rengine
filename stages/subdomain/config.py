@@ -25,6 +25,11 @@ _TOOL_TIMEOUTS = {
 
 
 class SubdomainConfig(StageConfig):
+    enabled: bool = Field(
+        default=True,
+        title="Enabled",
+        description="Enumerate subdomains from passive sources, certificates, wordlists and permutations.",
+    )
     passive_tools: list[str] = Field(
         default_factory=lambda: list(DEFAULT_PASSIVE_TOOLS),
         title="Passive sources",
@@ -87,9 +92,8 @@ class SubdomainConfig(StageConfig):
         title="Resolver batches in parallel",
         description=(
             "Resolver invocations in flight at once. Leave at 1 unless the scan uses "
-            "dedicated resolvers: on public resolvers three batches at once answered 446 of the "
-            "same 1,000 names that one batch answered 838 of. The loss is uniform across "
-            "batches, so the stall and peer-median checks cannot see it."
+            "dedicated resolvers. Public resolvers drop answers under parallel load, "
+            "and every batch degrades equally, so the loss is not detectable."
         ),
     )
     dns_idle_timeout: int = timeout(

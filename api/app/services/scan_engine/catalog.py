@@ -69,6 +69,7 @@ def build_catalog() -> EngineCatalog:
                 api_keys=list(spec.api_keys),
                 requires_api_keys=spec.requires_api_keys,
                 touches_target=spec.touches_target,
+                always_on=spec.always_on,
                 launch_fields=list(spec.launch_fields),
                 group=spec.group,
                 role=spec.role,

@@ -353,8 +353,19 @@ def validate_overrides(overrides: dict | None) -> dict[str, dict]:
         return {}
     specs = stage_by_name()
     clean: dict[str, dict] = {}
-    for name, values in overrides.items():
+    for name, authored in overrides.items():
         spec = specs.get(name)
+        values = authored
+        if spec is not None and (spec.catalog_hidden or spec.always_on):
+            # the server decides this one; recording an override that had no effect
+            # would put a lie in the run's audit trail
+            values = (
+                {k: v for k, v in values.items() if k != "enabled"}
+                if isinstance(values, dict)
+                else values
+            )
+            if spec.catalog_hidden or not values:
+                continue
         if spec is None or not isinstance(values, dict):
             msg = f"Unknown stage {name!r} in run overrides."
             raise _bad(msg)
@@ -419,9 +430,18 @@ def merge_engine_context(
     per_tool_rate_limits: dict[str, int] = {}
 
     for spec in stage_specs():
-        config = spec.config_model(
-            **{**(stored.get(spec.name) or {}), **(run_overrides.get(spec.name) or {})}
+        # not a choice, so no stored document may switch it off either
+        authored = (
+            {}
+            if spec.catalog_hidden
+            else {
+                **(stored.get(spec.name) or {}),
+                **(run_overrides.get(spec.name) or {}),
+            }
         )
+        if spec.always_on:
+            authored["enabled"] = True
+        config = spec.config_model(**authored)
         values = config.model_dump()
         for name, (scale, tool) in spec.config_model.scaled_fields().items():
             base = values[name]

@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import Hint from '$lib/components/hint.svelte';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import KeyRound from '@lucide/svelte/icons/key-round';
@@ -44,7 +45,8 @@
 		onReset
 	}: Props = $props();
 
-	const enabled = $derived(Boolean(config.enabled ?? stage.defaults.enabled));
+	const alwaysOn = $derived(Boolean(stage.always_on));
+	const enabled = $derived(alwaysOn || Boolean(config.enabled ?? stage.defaults.enabled));
 	const dimmed = $derived(!applicable || blockedByIntensity);
 	const nodeState = $derived(!enabled ? 'off' : dimmed ? 'dim' : 'on');
 
@@ -112,6 +114,9 @@
 		</Collapsible.Trigger>
 
 		<div class="meta">
+			{#if alwaysOn}
+				<Badge variant="outline" class="tag">Always on</Badge>
+			{/if}
 			{#if blockedByIntensity}
 				<Badge variant="outline" class="tag">Skipped at passive</Badge>
 			{:else if !applicable && lensTargetType}
@@ -146,11 +151,21 @@
 				</Tooltip.Root>
 			{/if}
 
-			<Switch
-				checked={enabled}
-				onCheckedChange={(v) => onChange('enabled', v)}
-				aria-label="Enable {stage.title}"
-			/>
+			{#if alwaysOn}
+				<Hint text="{stage.title} always runs and cannot be disabled.">
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<Switch checked disabled aria-label="{stage.title} always runs" />
+						</span>
+					{/snippet}
+				</Hint>
+			{:else}
+				<Switch
+					checked={enabled}
+					onCheckedChange={(v) => onChange('enabled', v)}
+					aria-label="Enable {stage.title}"
+				/>
+			{/if}
 		</div>
 	</div>
 
@@ -176,6 +191,8 @@
 					/>
 				{/each}
 			</div>
+		{:else if alwaysOn}
+			<p class="desc">This stage always runs and has no configurable settings.</p>
 		{:else}
 			<p class="desc">This stage has no configurable settings.</p>
 		{/if}

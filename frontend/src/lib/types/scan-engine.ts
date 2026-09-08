@@ -85,6 +85,7 @@ export interface StageCatalogEntry {
 	api_keys: string[];
 	requires_api_keys: boolean;
 	touches_target: boolean;
+	always_on?: boolean;
 	launch_fields: string[];
 	group: string;
 	role: string;

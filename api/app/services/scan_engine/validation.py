@@ -183,11 +183,17 @@ def _unmask_global_headers(incoming: list, stored: list) -> list[str]:
 def _validate_stages(submitted: dict | None) -> dict[str, dict]:
     known = stage_by_name()
     clean: dict[str, dict] = {}
-    for name, raw in (submitted or {}).items():
+    for name, authored in (submitted or {}).items():
         spec = known.get(name)
+        raw = authored
         if spec is not None and spec.catalog_hidden:
             # the server decides this one; a document that still names it just loses the key
             continue
+        if spec is not None and spec.always_on and isinstance(raw, dict):
+            # visible in the catalog so a user knows it runs, but `enabled` is not theirs
+            raw = {k: v for k, v in raw.items() if k != "enabled"}
+            if not raw:
+                continue
         if spec is None:
             offered = sorted(n for n, s in known.items() if not s.catalog_hidden)
             raise HTTPException(

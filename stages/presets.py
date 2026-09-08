@@ -50,7 +50,8 @@ def preset_stages(name: str) -> dict[str, dict]:
     return {
         spec.name: {"enabled": _enabled(name, spec)}
         for spec in stages()
-        if not spec.catalog_hidden and _enabled(name, spec) != spec.defaults["enabled"]
+        if not (spec.catalog_hidden or spec.always_on)
+        and _enabled(name, spec) != spec.defaults["enabled"]
     }
 
 

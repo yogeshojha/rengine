@@ -29,6 +29,7 @@ class StageSpec:
     touches_target: bool
     launch_fields: tuple[str, ...]
     catalog_hidden: bool
+    always_on: bool
     consumes: frozenset[str]
     produces: frozenset[str]
     group: str
@@ -125,6 +126,7 @@ def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
         touches_target=stage_cls.touches_target,
         launch_fields=tuple(stage_cls.launch_fields),
         catalog_hidden=stage_cls.catalog_hidden,
+        always_on=stage_cls.always_on,
         consumes=frozenset(stage_cls.consumes),
         produces=frozenset(stage_cls.produces),
         group=stage_cls.group,
