@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 import queue
@@ -35,6 +34,16 @@ IDLE_SECONDS = 2.0
 _IDLE = object()
 
 
+def _offer(inbox: queue.Queue, item: object, stop: threading.Event) -> None:
+    """Hand an item over, waiting for room. Only a stop request may drop it."""
+    while not stop.is_set():
+        try:
+            inbox.put(item, timeout=IDLE_SECONDS)
+            return
+        except queue.Full:
+            continue
+
+
 class NucleiError(Exception):
     """Raised when nuclei cannot be started."""
 
@@ -64,11 +73,9 @@ def _paced(
                 if stop.is_set():
                     return
         except Exception as exc:
-            with contextlib.suppress(queue.Full):
-                inbox.put(exc, timeout=IDLE_SECONDS)
+            _offer(inbox, exc, stop)
             return
-        with contextlib.suppress(queue.Full):
-            inbox.put(done, timeout=IDLE_SECONDS)
+        _offer(inbox, done, stop)
 
     reader = threading.Thread(target=_read, daemon=True)
     reader.start()
@@ -77,6 +84,10 @@ def _paced(
             try:
                 item = inbox.get(timeout=IDLE_SECONDS)
             except queue.Empty:
+                # a reader that has exited with nothing left to hand over IS the end; without
+                # this a sentinel lost to a full queue would idle-tick until the celery limit
+                if not reader.is_alive() and inbox.empty():
+                    return
                 on_idle()
                 yield _IDLE
                 continue
@@ -88,6 +99,20 @@ def _paced(
     finally:
         # GeneratorExit, a raised callback or a plain return all land here
         stop.set()
+
+
+def _guarded(callback: Callable[[], None] | None) -> Callable[[], None] | None:
+    """on_idle writes exactly what on_finding writes, so it needs the same escape hatch."""
+    if callback is None:
+        return None
+
+    def _call() -> None:
+        try:
+            callback()
+        except Exception as exc:
+            raise _CallbackError(exc) from exc
+
+    return _call
 
 
 class _CallbackError(Exception):
@@ -279,7 +304,7 @@ class NucleiClient:
             with self._stream(targets, _stderr, timeout, should_stop) as stream:
                 # findings are sparse, so the caller is handed the thread on a timer too:
                 # a burst that stops arriving must not sit unwritten for the rest of the run
-                for record in _paced(stream.records, on_idle):
+                for record in _paced(stream.records, _guarded(on_idle)):
                     if record is _IDLE:
                         continue
                     finding = parse_finding(record)

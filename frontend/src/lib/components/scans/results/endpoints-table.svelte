@@ -424,7 +424,7 @@
 				loadAccount()
 			]);
 		} finally {
-			refreshing = false;
+			if (!quiet) refreshing = false;
 		}
 	}
 

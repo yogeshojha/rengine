@@ -135,7 +135,7 @@
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Could not load what is worth a look';
 		} finally {
-			loading = false;
+			if (!quiet) loading = false;
 		}
 	}
 

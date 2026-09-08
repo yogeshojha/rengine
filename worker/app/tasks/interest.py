@@ -1,6 +1,8 @@
 """Decide what is worth a look after a scan, and say so once."""
 
+import contextlib
 import uuid
+from contextlib import contextmanager
 
 from celery import shared_task
 from sqlalchemy import select, text
@@ -29,10 +31,20 @@ MAX_REFRESH_SCANS = 25
 LIVE_LOCK_TIMEOUT_S = 5
 
 
-def _yield_to_scans(session) -> None:
-    """Bound how long a judgement may hold host-row locks. SESSION, not LOCAL: `ensure_builtin`
-    commits when it seeds a preset, and a LOCAL setting dies with that transaction."""
+@contextmanager
+def _yield_to_scans(session):
+    """Bound how long a judgement may hold host-row locks, then put the connection back as found.
+
+    SESSION, not LOCAL: `ensure_builtin` commits when it seeds a preset and a LOCAL setting dies
+    with that transaction. Measured that this pool resets the GUC on checkin anyway; the explicit
+    RESET is here so a pooled connection can never carry a 5s timeout into an unrelated stage.
+    """
     session.execute(text(f"SET SESSION lock_timeout = '{LIVE_LOCK_TIMEOUT_S}s'"))
+    try:
+        yield
+    finally:
+        with contextlib.suppress(Exception):
+            session.execute(text("RESET lock_timeout"))
 
 
 def _publish(scan: Scan, result) -> None:
@@ -60,10 +72,10 @@ def evaluate_scan(scan_id: str, include_ai: bool = True, notify: bool = True) ->
             return {"error": "scan not found"}
         # the rollup rewrites host rows a still-running scan may also be writing; whoever
         # asked for this, the scan has priority
-        _yield_to_scans(session)
         ai = load_config(session)
         try:
-            result = evaluate(session, scan, ai=ai, include_ai=include_ai)
+            with _yield_to_scans(session):
+                result = evaluate(session, scan, ai=ai, include_ai=include_ai)
         except OperationalError:
             session.rollback()
             logger.info("interest evaluation yielded to a running scan", scan=scan_id)
@@ -98,10 +110,10 @@ def evaluate_live(scan_id: str) -> dict:
         scan = session.get(Scan, uuid.UUID(scan_id))
         if scan is None or scan.status in SCAN_TERMINAL_STATUSES:
             return {"skipped": "run is over"}
-        _yield_to_scans(session)
         try:
-            ensure_builtin(session)
-            result = evaluate(session, scan, include_ai=False, only=LIVE_SOURCES)
+            with _yield_to_scans(session):
+                ensure_builtin(session)
+                result = evaluate(session, scan, include_ai=False, only=LIVE_SOURCES)
         except OperationalError:
             session.rollback()
             logger.info("live interest pass yielded to the scan", scan=scan_id)

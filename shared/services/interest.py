@@ -32,11 +32,6 @@ from shared.utils.datetime import utc_now
 logger = get_logger(__name__)
 
 SIGNATURE_VERSION = "1"
-DETERMINISTIC_SOURCES: tuple[str, ...] = (
-    InterestSource.KEYWORD.value,
-    InterestSource.RULE.value,
-    InterestSource.CORRELATION.value,
-)
 # what may be judged while the scan is still discovering: a saved query matches a host on
 # its own facts, so it is right at any point. Rarity needs a finished estate to mean
 # anything, and a model costs money per pass, so neither runs until the run is complete.
@@ -274,13 +269,16 @@ def evaluate(
         sources = only
     else:
         sources = tuple({s for p in providers() if p.name in ran for s in p.sources()})
-    session.execute(
-        delete(InterestSignal).where(
-            InterestSignal.scan_id == scan.id,
-            InterestSignal.source.in_(sources or DETERMINISTIC_SOURCES),
+    # nothing ran, so nothing is being rewritten: leave the previous judgement alone rather
+    # than clearing every deterministic signal because a provider raised and was swallowed
+    if sources:
+        session.execute(
+            delete(InterestSignal).where(
+                InterestSignal.scan_id == scan.id,
+                InterestSignal.source.in_(sources),
+            )
         )
-    )
-    session.flush()
+        session.flush()
 
     rows = [
         InterestSignal(
@@ -301,7 +299,7 @@ def evaluate(
             prompt_version=s.prompt_version,
         )
         for s in kept
-        if s.source in (sources or DETERMINISTIC_SOURCES)
+        if s.source in sources
     ]
     session.add_all(rows)
     session.flush()

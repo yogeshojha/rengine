@@ -304,7 +304,7 @@
 			if (!quiet) loadedLeadSig = '';
 			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
 		} finally {
-			refreshing = false;
+			if (!quiet) refreshing = false;
 		}
 	}
 

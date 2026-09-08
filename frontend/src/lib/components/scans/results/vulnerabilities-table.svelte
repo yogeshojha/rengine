@@ -403,7 +403,7 @@
 			await Promise.all([runSearch(), loadFacets(), loadCoverage(), loadGroups()]);
 			if (expandedId) await loadInstances(expandedId, instanceLimit);
 		} finally {
-			refreshing = false;
+			if (!quiet) refreshing = false;
 		}
 	}
 

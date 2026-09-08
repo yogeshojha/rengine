@@ -137,8 +137,12 @@
 		// the first load has nothing to compare against: every tab would refetch on mount
 		if (!Object.keys(before).length) return;
 		for (const spec of SURFACE_ORDER) {
-			if (spec.countColumns.some((c) => before[c] !== ((after[c] as number) ?? 0)))
-				resultTicks[spec.key] = (resultTicks[spec.key] ?? 0) + 1;
+			if (!spec.countColumns.some((c) => before[c] !== ((after[c] as number) ?? 0))) continue;
+			resultTicks[spec.key] = (resultTicks[spec.key] ?? 0) + 1;
+			// what is worth a look is judged from the hosts, and its own event only arrives
+			// over SSE — carry it on the poll fallback too
+			if (spec.key === SurfaceDimension.WEB_ASSETS)
+				resultTicks[INTEREST_TAB] = (resultTicks[INTEREST_TAB] ?? 0) + 1;
 		}
 	}
 
