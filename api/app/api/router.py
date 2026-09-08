@@ -7,6 +7,7 @@ from app.api.v1 import (
     auth,
     bounty_programs,
     celery_health,
+    connectors,
     dashboard,
     endpoints,
     events,
@@ -63,6 +64,7 @@ router.include_router(scan_schedules.router)
 router.include_router(scans.router)
 router.include_router(subdomains.router)
 router.include_router(mcp.router)
+router.include_router(connectors.router)
 router.include_router(http_assets.router)
 router.include_router(ports.router)
 router.include_router(ip_addresses.router)

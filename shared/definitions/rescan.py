@@ -10,6 +10,7 @@ from shared.definitions.surface import SurfaceDimension
 class SeedKind(StrEnum):
     HOST = "host"
     ADDRESS = "address"
+    URL = "url"
 
 
 MAX_SEED_ASSETS = 200
@@ -49,6 +50,7 @@ RESCANNABLE_STAGES: frozenset[str] = frozenset(
 SEED_KIND_NOUN: dict[str, tuple[str, str]] = {
     SeedKind.HOST.value: ("host", "hosts"),
     SeedKind.ADDRESS.value: ("address", "addresses"),
+    SeedKind.URL.value: ("URL", "URLs"),
 }
 
 

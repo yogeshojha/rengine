@@ -12,6 +12,7 @@ export const routeLabels: Record<string, string> = {
 	// Tools
 	arsenal: 'Arsenal',
 	interest: 'Worth a look',
+	connectors: 'Connectors',
 	bountyHub: 'Bounty Hub',
 
 	// Reporting
@@ -44,6 +45,8 @@ export const REPORT_TABS = ['reports', 'templates', 'themes', 'defaults'] as con
 export type ReportTab = (typeof REPORT_TABS)[number];
 
 export const AI_TABS = ['connection', 'features', 'usage'] as const;
+export const CONNECTOR_TABS = ['queue', 'discovered', 'coverage', 'sessions', 'settings'] as const;
+export type ConnectorTab = (typeof CONNECTOR_TABS)[number];
 export const MCP_TABS = ['server', 'tools', 'access', 'activity'] as const;
 export type McpTab = (typeof MCP_TABS)[number];
 export type AiTab = (typeof AI_TABS)[number];
@@ -88,6 +91,7 @@ export const ROUTES = {
 	reportsForTarget: (targetId: string) => `/reports?target=${targetId}`,
 	ai: (tab?: AiTab) => (tab ? `/ai?tab=${tab}` : '/ai'),
 	mcp: (tab?: McpTab) => (tab ? `/mcp?tab=${tab}` : '/mcp'),
+	connectors: (tab?: ConnectorTab) => (tab ? `/connectors?tab=${tab}` : '/connectors'),
 	settings: (tab?: SettingsTab) => (tab ? `/settings?tab=${tab}` : '/settings')
 } as const;
 

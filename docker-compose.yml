@@ -43,6 +43,7 @@ services:
       - ./reports:/app/reports
       - ./interest:/app/interest
       - ./mcp:/app/mcp
+      - ./connectors:/app/connectors
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
       - ./scan_media:/app/scan_media

@@ -25,6 +25,7 @@ import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 import { activityScope } from '$lib/stores/activity-scope.svelte';
 import { activityFeed } from '$lib/stores/activity-feed.svelte';
 import { liveScans } from '$lib/stores/live-scans.svelte';
+import { connectors } from '$lib/stores/connectors.svelte';
 import { rechecks } from './rechecks.svelte';
 import { wordlists } from '$lib/stores/wordlists.svelte';
 import { reports } from '$lib/stores/reports.svelte';
@@ -123,6 +124,7 @@ function createAuthStore() {
 		interestCatalog.reset();
 		ai.reset();
 		mcp.reset();
+		connectors.reset();
 		clearServiceLookup();
 	}
 

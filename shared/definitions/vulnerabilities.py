@@ -114,9 +114,13 @@ CORROBORATION_BASIS_LABELS: dict[str, str] = {
 
 class Scanner(StrEnum):
     NUCLEI = "nuclei"
+    MANUAL = "manual"
 
 
-SCANNER_LABELS: dict[str, str] = {Scanner.NUCLEI.value: "Nuclei"}
+SCANNER_LABELS: dict[str, str] = {
+    Scanner.NUCLEI.value: "Nuclei",
+    Scanner.MANUAL.value: "Manual testing",
+}
 
 DEFAULT_SCANNERS: list[str] = [Scanner.NUCLEI.value]
 

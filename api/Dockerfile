@@ -22,6 +22,7 @@ COPY stages /app/stages
 COPY reports /app/reports
 COPY interest /app/interest
 COPY mcp /app/mcp
+COPY connectors /app/connectors
 
 COPY api/pyproject.toml api/uv.lock* ./
 

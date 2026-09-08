@@ -9,7 +9,8 @@ const ACCENTS: Record<string, string> = {
 	'/bounty-hub': 'var(--chart-4)',
 	'/reports': 'var(--chart-3)',
 	'/ai': 'var(--chart-4)',
-	'/mcp': 'var(--chart-5)'
+	'/mcp': 'var(--chart-5)',
+	'/connectors': 'var(--chart-2)'
 };
 
 export function navAccent(url: string): string | null {

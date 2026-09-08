@@ -5,15 +5,20 @@ from enum import StrEnum
 
 class RelatedReason(StrEnum):
     CERT_SAN = "cert_san"
+    PROXY_TRAFFIC = "proxy_traffic"
 
 
 RELATED_REASON_LABELS: dict[str, str] = {
     RelatedReason.CERT_SAN.value: "Named on a certificate",
+    RelatedReason.PROXY_TRAFFIC.value: "Reached through a proxy",
 }
 
 RELATED_REASON_DETAIL: dict[str, str] = {
     RelatedReason.CERT_SAN.value: (
         "A certificate served by this scan lists hostnames on this domain."
+    ),
+    RelatedReason.PROXY_TRAFFIC.value: (
+        "A connected proxy reached this domain while testing a target."
     ),
 }
 
@@ -251,6 +256,59 @@ VENDOR_DOMAINS: frozenset[str] = frozenset(
 
 _MIN_LABELS = 2
 _SUFFIX_LABELS = 3
+
+
+# analytics, advertising, social and link vendors a browser reaches on almost every site.
+# separate from VENDOR_DOMAINS, which names the hosting providers a certificate points at.
+THIRD_PARTY_DOMAINS: frozenset[str] = frozenset(
+    {
+        "adnxs.com",
+        "adobedtm.com",
+        "adsrvr.org",
+        "app.link",
+        "bing.com",
+        "branch.io",
+        "clarity.ms",
+        "criteo.com",
+        "demdex.net",
+        "doubleclick.net",
+        "facebook.com",
+        "facebook.net",
+        "google.com",
+        "google-analytics.com",
+        "googleadservices.com",
+        "googlesyndication.com",
+        "googletagmanager.com",
+        "gstatic.com",
+        "hotjar.com",
+        "hs-scripts.com",
+        "hubspot.com",
+        "instagram.com",
+        "intercom.io",
+        "licdn.com",
+        "linkedin.com",
+        "mixpanel.com",
+        "newrelic.com",
+        "onetrust.com",
+        "optimizely.com",
+        "pinterest.com",
+        "recaptcha.net",
+        "segment.com",
+        "segment.io",
+        "sentry.io",
+        "snapchat.com",
+        "t.co",
+        "taboola.com",
+        "tiktok.com",
+        "twitter.com",
+        "x.com",
+        "youtube.com",
+        "yandex.ru",
+    }
+)
+
+# a domain a browser reaches that tells you nothing about who owns the site
+IGNORED_DOMAINS: frozenset[str] = frozenset(VENDOR_DOMAINS | THIRD_PARTY_DOMAINS)
 
 
 def registrable_domain(hostname: str) -> str:

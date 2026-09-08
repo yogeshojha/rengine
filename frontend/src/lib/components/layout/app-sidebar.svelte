@@ -10,6 +10,7 @@
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import SparkleIcon from '@lucide/svelte/icons/sparkle';
 	import NetworkIcon from '@lucide/svelte/icons/network';
+	import PlugZapIcon from '@lucide/svelte/icons/plug-zap';
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
@@ -76,7 +77,8 @@
 					? [{ title: routeLabels.bountyHub, url: ROUTES.bountyHub(), icon: TargetIcon }]
 					: []),
 				{ title: routeLabels.ai, url: ROUTES.ai(), icon: SparklesIcon },
-				{ title: routeLabels.mcp, url: ROUTES.mcp(), icon: NetworkIcon }
+				{ title: routeLabels.mcp, url: ROUTES.mcp(), icon: NetworkIcon },
+				{ title: routeLabels.connectors, url: ROUTES.connectors(), icon: PlugZapIcon }
 			]
 		},
 		{

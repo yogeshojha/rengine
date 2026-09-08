@@ -4,13 +4,15 @@ import ipaddress
 
 from sqlalchemy import select
 
+from shared.definitions.endpoints import EndpointSource, parse_url
 from shared.definitions.rescan import SeedKind
 from shared.enums.ip import IpSource
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
-from shared.services import ip_inventory
+from shared.services import endpoint_inventory, ip_inventory
+from shared.services.endpoint_inventory import EndpointObservation
 from shared.utils.datetime import utc_now
 from stages.asset_seed.config import AssetSeedConfig
 from stages.base import ALL_TARGETS, Stage, StageResult
@@ -35,7 +37,7 @@ class AssetSeedStage(Stage):
 
     def run(self) -> StageResult:
         self._check_abort()
-        hosts, addresses = self._seeds()
+        hosts, addresses, urls = self._seeds()
         if not hosts and not addresses:
             return StageResult(
                 counts={},
@@ -56,13 +58,34 @@ class AssetSeedStage(Stage):
             ips=addresses,
             source=IpSource.SEED.value,
         )
+        seeded_urls = self._persist_urls(urls)
         self.session.commit()
-        self.emit_progress(f"seeded {stored} host(s) and {materialized} address(es)")
-        return StageResult(counts={"subdomains": stored, "ips": materialized})
+        self.emit_progress(
+            f"seeded {stored} host(s), {materialized} address(es) and {seeded_urls} URL(s)"
+        )
+        counts = {"subdomains": stored, "ips": materialized}
+        if seeded_urls:
+            counts["endpoints"] = seeded_urls
+        return StageResult(counts=counts)
 
-    def _seeds(self) -> tuple[list[str], list[str]]:
+    def _persist_urls(self, urls: list[str]) -> int:
+        """A URL seed carries the exact request shape a person chose, not just its host."""
+        if not urls:
+            return 0
+        result = endpoint_inventory.upsert(
+            self.session,
+            scan_id=self.ctx.scan_id,
+            target_id=self.ctx.target_id,
+            project_id=self.ctx.project_id,
+            source=EndpointSource.PROXY.value,
+            observations=[EndpointObservation(url=url) for url in urls],
+        )
+        return result.created + result.updated
+
+    def _seeds(self) -> tuple[list[str], list[str], list[str]]:
         hosts: list[str] = []
         addresses: list[str] = []
+        urls: list[str] = []
         for seed in self.ctx.resolved.seed_assets or []:
             value = (seed.get("value") or "").strip()
             if not value:
@@ -74,9 +97,20 @@ class AssetSeedStage(Stage):
                     logger.warning("invalid address seed: %s", value)
                     continue
                 addresses.append(value)
+            elif seed.get("kind") == SeedKind.URL.value:
+                parsed = parse_url(value)
+                if parsed is None:
+                    logger.warning("invalid url seed: %s", value)
+                    continue
+                urls.append(parsed.url)
+                hosts.append(parsed.host)
             else:
                 hosts.append(value.lower())
-        return list(dict.fromkeys(hosts)), list(dict.fromkeys(addresses))
+        return (
+            list(dict.fromkeys(hosts)),
+            list(dict.fromkeys(addresses)),
+            list(dict.fromkeys(urls)),
+        )
 
     def _carried(self, hosts: list[str]) -> dict[str, list[str]]:
         """Resolved addresses the parent run already knew, so downstream stages are fed."""

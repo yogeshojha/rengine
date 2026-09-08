@@ -52,6 +52,7 @@ class EndpointSource(StrEnum):
     FUZZ = "fuzz"
     PARAM_MINING = "param_mining"
     VULN_SCAN = "vuln_scan"
+    PROXY = "proxy"
     IMPORT = "import"
     OTHER = "other"
 
@@ -68,6 +69,7 @@ SOURCE_LABELS: dict[str, str] = {
     EndpointSource.FUZZ.value: "Content discovery",
     EndpointSource.PARAM_MINING.value: "Parameter mining",
     EndpointSource.VULN_SCAN.value: "Vulnerability scan",
+    EndpointSource.PROXY.value: "Proxy",
     EndpointSource.IMPORT.value: "Imported",
     EndpointSource.OTHER.value: "Other",
 }
@@ -84,6 +86,7 @@ SOURCE_HELP: dict[str, str] = {
     EndpointSource.FUZZ.value: "Guessed from a wordlist and answered.",
     EndpointSource.PARAM_MINING.value: "A parameter the endpoint accepts but did not advertise.",
     EndpointSource.VULN_SCAN.value: "A location a vulnerability scanner reported.",
+    EndpointSource.PROXY.value: "Observed in a connected proxy while a person was testing.",
     EndpointSource.IMPORT.value: "Supplied by a user.",
     EndpointSource.OTHER.value: "Source not recorded.",
 }
@@ -100,6 +103,7 @@ SOURCE_KIND: dict[str, str] = {
     EndpointSource.FUZZ.value: SourceKind.ACTIVE.value,
     EndpointSource.PARAM_MINING.value: SourceKind.ACTIVE.value,
     EndpointSource.VULN_SCAN.value: SourceKind.DERIVED.value,
+    EndpointSource.PROXY.value: SourceKind.DERIVED.value,
     EndpointSource.IMPORT.value: SourceKind.DERIVED.value,
     EndpointSource.OTHER.value: SourceKind.DERIVED.value,
 }

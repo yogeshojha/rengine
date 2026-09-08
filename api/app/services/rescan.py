@@ -66,6 +66,23 @@ def rescan_schema() -> RescanSchema:
     )
 
 
+def focused_overrides(picked: list[str]) -> dict:
+    """The seed is the only source of assets: nothing may enumerate the target again."""
+    known = stage_by_name()
+    overrides = {
+        name: {"enabled": False}
+        for name, spec in known.items()
+        if not spec.catalog_hidden
+        and (
+            spec.role == StageRole.CAPABILITY.value
+            or (not spec.consumes and (spec.produces or spec.phase == _DISCOVERY))
+        )
+    }
+    for name in picked:
+        overrides[name] = {**(overrides.get(name) or {}), "enabled": True}
+    return overrides
+
+
 class RescanService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -203,18 +220,7 @@ class RescanService:
 
     async def _overrides(self, picked: list[str], data: RescanCreate) -> dict:
         known = stage_by_name()
-        # the seed is the only source of assets: nothing may enumerate the target again
-        overrides = {
-            name: {"enabled": False}
-            for name, spec in known.items()
-            if not spec.catalog_hidden
-            and (
-                spec.role == StageRole.CAPABILITY.value
-                or (not spec.consumes and (spec.produces or spec.phase == _DISCOVERY))
-            )
-        }
-        for name in picked:
-            overrides[name] = {**(overrides.get(name) or {}), "enabled": True}
+        overrides = focused_overrides(picked)
         for name, values in (data.overrides or {}).items():
             if name in known and not known[name].catalog_hidden:
                 overrides[name] = {**(overrides.get(name) or {}), **(values or {})}
