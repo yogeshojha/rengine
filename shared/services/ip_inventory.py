@@ -1,4 +1,4 @@
-"""Every IP a scan knows about, materialised once into ip_addresses and shared by stages."""
+"""Every IP a scan knows about, materialised into ip_addresses and enriched in the same write."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from shared.enums.ip import IpSource
 from shared.models.ip_address import IpAddress
+from shared.services.ip_asn import enrich_addresses
 from shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
@@ -87,6 +88,13 @@ def materialize(
         .on_conflict_do_nothing(constraint="uq_ipaddress_scan_ip")
     )
     result = session.execute(statement)
+    session.commit()
+    # ASN, operator and country are a pure function of the address and a local table, so an
+    # address is never stored without them; the enrichment stage is a sweep, not the source.
+    # It runs after the insert commits and only over these addresses: parallel stages at the
+    # same level both call ensure(), and one long transaction holding unordered update locks
+    # across the whole scan is how two overlapping address sets deadlock.
+    enrich_addresses(session, scan_id=scan_id, ips=ips)
     session.commit()
     return int(result.rowcount or 0)
 

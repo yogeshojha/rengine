@@ -4,7 +4,7 @@ import contextlib
 from collections.abc import Iterator
 
 from shared.logging import get_logger
-from tools.runner import CLIToolRunner, OutputFormat, StreamOutcome, ToolNotFoundError
+from tools.runner import CLIToolRunner, StreamOutcome, ToolNotFoundError
 from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
@@ -14,6 +14,10 @@ DEFAULT_TIMEOUT = 900
 # a probe that keeps answering keeps running; only a stalled one is killed
 _IDLE_FLOOR = 120
 _IDLE_TIMEOUT_FACTOR = 6
+_CAPTURE_IDLE_FLOOR = 300
+# rendering budget: generous per target, hard-capped, never unbounded
+CAPTURE_SECONDS_PER_TARGET = 6
+MAX_CAPTURE_SECONDS = 7200
 
 # cap response-body read to bound DB growth + worker memory (per-record, times N hosts)
 _RESPONSE_SIZE_CAP = 131072  # 128 KiB
@@ -109,10 +113,7 @@ class HttpxClient:
         ) as stream:
             yield stream
 
-    def capture(self, targets: list[str]) -> tuple[list[dict], bool]:
-        """Render each target to an image. Returns the records and whether it was cut short."""
-        if not targets:
-            return [], False
+    def _capture_args(self) -> list[str]:
         args = [
             "-status-code",
             "-screenshot",
@@ -129,18 +130,33 @@ class HttpxClient:
             args += ["-proxy", self.proxy_url]
         for key, value in self.headers.items():
             args += ["-header", f"{key}: {value}"]
+        return args
 
-        result = self._runner.run(
-            args=args,
+    @contextlib.contextmanager
+    def stream_capture(self, targets: list[str]) -> Iterator[StreamOutcome]:
+        """The same render, streaming each image as the browser finishes it."""
+        if not targets:
+            yield StreamOutcome(records=iter(()), return_code=0)
+            return
+        # a total ceiling as well as the idle watchdog: a renderer that keeps emitting one
+        # image every few minutes is not stalled, but it must not run to the celery limit
+        ceiling = min(
+            MAX_CAPTURE_SECONDS,
+            max(DEFAULT_TIMEOUT, len(targets) * CAPTURE_SECONDS_PER_TARGET),
+        )
+        with self._runner.stream_json(
+            args=self._capture_args(),
             input_data=targets,
             input_flag="-l",
-            use_output_file=False,
-            output_format=OutputFormat.JSONL,
             json_flag="-json",
             silent=True,
             silent_flag="-silent",
+            timeout=ceiling,
+            # a headless browser is slow to start and slow per page, so the watchdog
+            # has to be generous — it is only there for a renderer that has died
+            idle_timeout=max(_CAPTURE_IDLE_FLOOR, self.timeout * _IDLE_TIMEOUT_FACTOR),
             recorder=self.recorder,
             tool=HTTPX_BINARY,
             extra_args=self.extra_args,
-        )
-        return result.json_records, result.timed_out
+        ) as stream:
+            yield stream

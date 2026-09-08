@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 from shared.definitions.ports import (
@@ -10,7 +12,13 @@ from shared.definitions.ports import (
     profile_ports,
 )
 from shared.logging import get_logger
-from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError, ToolResult
+from tools.runner import (
+    CLIToolRunner,
+    OutputFormat,
+    StreamOutcome,
+    ToolNotFoundError,
+    ToolResult,
+)
 from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
@@ -70,6 +78,38 @@ class NaabuClient:
         """Active connect/SYN scan. Returns [{ip, port, protocol, tls}] per open port."""
         if not ips:
             return []
+        return self._records(self._run(ips, self._scan_args(port_flags)))
+
+    @contextlib.contextmanager
+    def stream_scan(
+        self,
+        ips: list[str],
+        port_flags: list[str],
+        *,
+        should_stop=None,
+    ) -> Iterator[StreamOutcome]:
+        """The same scan, yielding each open port as naabu prints it."""
+        if not ips:
+            yield StreamOutcome(records=iter(()), return_code=0)
+            return
+        with self._runner.stream_json(
+            args=[*self._scan_args(port_flags), "-duc"],
+            input_data=ips,
+            input_flag="-l",
+            json_flag="-json",
+            silent=True,
+            silent_flag="-silent",
+            timeout=DEFAULT_TIMEOUT,
+            recorder=self.recorder,
+            tool=NAABU_BINARY,
+            extra_args=self.options.extra_args,
+            should_stop=should_stop,
+        ) as stream:
+            raw = stream.records
+            stream.records = (rec for rec in map(_port_record, raw) if rec is not None)
+            yield stream
+
+    def _scan_args(self, port_flags: list[str]) -> list[str]:
         opt = self.options
         args = [*port_flags, "-Pn"]
         args += [
@@ -92,7 +132,7 @@ class NaabuClient:
             args += ["-exclude-ports", opt.exclude_ports.strip()]
         if opt.proxy_url:
             args += ["-proxy", opt.proxy_url]
-        return self._records(self._run(ips, args))
+        return args
 
     def passive(self, ips: list[str]) -> list[dict]:
         """Ports already known to Shodan's internetdb. Sends nothing to the target."""
@@ -105,21 +145,9 @@ class NaabuClient:
         # a timed-out or crashed run returns nothing; reporting that as zero open ports is a lie
         if not result.success and not result.json_records:
             raise NaabuError(result.error or "naabu produced no output")
-        out: list[dict] = []
-        for rec in result.json_records:
-            ip = rec.get("ip") or rec.get("host")
-            port = rec.get("port")
-            if not ip or not isinstance(port, int) or not 0 < port <= MAX_PORT:
-                continue
-            out.append(
-                {
-                    "ip": str(ip),
-                    "port": port,
-                    "protocol": rec.get("protocol") or "tcp",
-                    "tls": bool(rec.get("tls")),
-                }
-            )
-        return out
+        return [
+            rec for rec in map(_port_record, result.json_records) if rec is not None
+        ]
 
     def _run(self, ips: list[str], args: list[str]) -> ToolResult:
         return self._runner.run(
@@ -135,3 +163,16 @@ class NaabuClient:
             tool=NAABU_BINARY,
             extra_args=self.options.extra_args,
         )
+
+
+def _port_record(rec: dict) -> dict | None:
+    ip = rec.get("ip") or rec.get("host")
+    port = rec.get("port")
+    if not ip or not isinstance(port, int) or not 0 < port <= MAX_PORT:
+        return None
+    return {
+        "ip": str(ip),
+        "port": port,
+        "protocol": rec.get("protocol") or "tcp",
+        "tls": bool(rec.get("tls")),
+    }

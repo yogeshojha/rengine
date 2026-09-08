@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 from shared.definitions.endpoints import EndpointSource
 from shared.services.endpoint_inventory import EndpointObservation
 from stages.url_discovery.providers.base import ProviderResult, UrlProvider
@@ -7,6 +9,8 @@ from tools.katana.client import KatanaClient, KatanaError
 from tools.katana.parser import parse_katana_record
 
 _UNRESPONSIVE = ("could not", "connection refused", "timeout", "no address")
+# a crawl runs for minutes, so what it has found is handed to the stage as it goes
+_HANDOVER_EVERY = 200
 # katana prints these when it cannot start at all, which must not read as "found nothing"
 _FATAL = (
     "flag provided but not defined",
@@ -62,53 +66,68 @@ class KatanaProvider(UrlProvider):
 
         client = self._client()
 
-        found = 0
-        out_of_scope = 0
-        deepest = 0
-        seen: set[str] = set()
-        observations: list[EndpointObservation] = []
-        cap = cfg.max_urls
-
+        state = _Crawl()
         with client.stream_crawl(
             targets, should_stop=self.ctx.is_aborted, stderr_sink=_stderr
         ) as records:
-            for record in records:
-                parsed = parse_katana_record(record)
-                if parsed is None:
-                    continue
-                found += 1
-                url = parsed["url"]
-                if url in seen:
-                    continue
-                seen.add(url)
-                # katana's -field-scope bounds what it follows, not what it prints, so a
-                # link to any third party arrives here; scope before the budget
-                if not self.in_scope(url):
-                    out_of_scope += 1
-                    continue
-                if len(observations) >= cap:
-                    result.capped = True
-                    result.cap_reason = (
-                        f"Stopped at the {cap} URL limit for this provider."
-                    )
-                    break
-                observations.append(_observation(parsed))
-                deepest = max(deepest, url.count("/") - 2)
+            self._ingest(records, state, result, cfg.max_urls)
 
         if fatal:
             # zero records because the tool never ran is a failure, not an empty result
             msg = f"katana could not run: {fatal[0]}"
             raise RuntimeError(msg)
 
-        result.observations = observations
-        result.urls_found = found
+        result.observations = state.observations
+        result.urls_found = state.found
         result.hosts_scanned = len(targets)
-        result.depth_reached = min(deepest, cfg.crawl_depth)
+        result.depth_reached = min(state.deepest, cfg.crawl_depth)
         result.errors = errors
-        note = f"crawled {len(targets)} sites, {len(observations)} urls"
-        if out_of_scope:
-            note += f" ({out_of_scope} off-site links not in scope)"
+        note = f"crawled {len(targets)} sites, {state.collected} urls"
+        if state.out_of_scope:
+            note += f" ({state.out_of_scope} off-site links not in scope)"
         self.progress(note)
+
+    def _ingest(self, records, state: _Crawl, result: ProviderResult, cap: int) -> None:
+        """Read the crawl, handing what it finds to the stage as it goes."""
+        for record in records:
+            parsed = parse_katana_record(record)
+            if parsed is None:
+                continue
+            state.found += 1
+            url = parsed["url"]
+            if url in state.seen:
+                continue
+            state.seen.add(url)
+            # katana's -field-scope bounds what it follows, not what it prints, so a
+            # link to any third party arrives here; scope before the budget
+            if not self.in_scope(url):
+                state.out_of_scope += 1
+                continue
+            if state.collected >= cap:
+                result.capped = True
+                result.cap_reason = f"Stopped at the {cap} URL limit for this provider."
+                break
+            state.observations.append(_observation(parsed))
+            state.deepest = max(state.deepest, url.count("/") - 2)
+            if len(state.observations) >= _HANDOVER_EVERY:
+                state.handed += len(state.observations)
+                self.hand_over(state.observations)
+
+
+@dataclass
+class _Crawl:
+    """What the crawl has seen so far, including the batches already handed over."""
+
+    found: int = 0
+    out_of_scope: int = 0
+    deepest: int = 0
+    handed: int = 0
+    seen: set[str] = field(default_factory=set)
+    observations: list[EndpointObservation] = field(default_factory=list)
+
+    @property
+    def collected(self) -> int:
+        return self.handed + len(self.observations)
 
 
 def _observation(parsed: dict) -> EndpointObservation:

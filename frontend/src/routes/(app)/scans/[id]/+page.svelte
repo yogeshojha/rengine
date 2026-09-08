@@ -21,7 +21,7 @@
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
-	import { SSEChannel, SSEEventType } from '$lib/types/sse';
+	import { SCAN_EVENT_KIND, SSEChannel, SSEEventType } from '$lib/types/sse';
 	import type { ScanEvent } from '$lib/types/sse';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -56,12 +56,13 @@
 	import { emptyVulnQuery, type VulnQuery } from '$lib/utilities/vulns';
 	import { targetTypeLabel } from '$lib/types/scan-engine';
 	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
-	import { RESULT_TABS, SURFACE_ORDER } from '$lib/config/surface';
+	import { RESULT_TABS, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
 	import { INTEREST_TAB } from '$lib/config/interest';
 	import InterestingTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import { plannedStages } from '$lib/utilities/scan-progress';
 	import type { TargetType } from '$lib/types/target';
+	import { SCAN_COUNT_COLUMNS } from '$lib/types/scan';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
 	import { ROUTES } from '$lib/config/routes';
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
@@ -111,6 +112,35 @@
 		...emptyEndpointQuery(),
 		search: initialSearch('ep_q')
 	});
+
+	// bumped when the worker says a dimension gained rows, so a live tab can refresh itself
+	let resultTicks = $state<Record<string, number>>({});
+	let liveTick = $derived(Object.values(resultTicks).reduce((a, b) => a + b, 0));
+
+	function applyLiveCounts(counts: Record<string, number> | undefined) {
+		if (!scan || !counts) return;
+		for (const column of Object.values(SCAN_COUNT_COLUMNS)) {
+			const value = counts[column];
+			if (typeof value === 'number') scan[column] = value;
+		}
+	}
+
+	function countsOf(run: ScanRead | null): Record<string, number> {
+		if (!run) return {};
+		return Object.fromEntries(
+			Object.values(SCAN_COUNT_COLUMNS).map((c) => [c, (run[c] as number) ?? 0])
+		);
+	}
+
+	// SSE is the fast path; this is what keeps the tables live when it is not connected
+	function bumpChangedDimensions(before: Record<string, number>, after: ScanRead) {
+		// the first load has nothing to compare against: every tab would refetch on mount
+		if (!Object.keys(before).length) return;
+		for (const spec of SURFACE_ORDER) {
+			if (spec.countColumns.some((c) => before[c] !== ((after[c] as number) ?? 0)))
+				resultTicks[spec.key] = (resultTicks[spec.key] ?? 0) + 1;
+		}
+	}
 
 	const initialTab = page.url.searchParams.get('tab');
 	let activeTab = $state<TabKey>(
@@ -272,6 +302,7 @@
 				serviceQuery = emptyServiceQuery();
 				endpointQuery = emptyEndpointQuery();
 				vulnQuery = emptyVulnQuery();
+				resultTicks = {};
 				history = [];
 				historyLoaded = false;
 			});
@@ -311,8 +342,10 @@
 		if (!project || !scanId) return;
 		if (!silent) loading = true;
 		error = null;
+		const before = countsOf(scan);
 		try {
 			scan = await scansApi.get(scanId, project.id);
+			bumpChangedDimensions(before, scan);
 			if (!silent) breadcrumbStore.set(scanId, `${scan.execution_config.target_value} scan`);
 			const statusChanged = scan.status !== lastStatus;
 			lastStatus = scan.status;
@@ -362,7 +395,19 @@
 		const id = scanId;
 		if (!project || !id) return;
 		return sseStore.on<ScanEvent>(SSEChannel.project(project.id), SSEEventType.SCAN, (data) => {
-			if (data.scan_id === id) scheduleRefresh();
+			if (data.scan_id !== id) return;
+			// rows landing mid-stage: patch the counters and nudge the tab, never refetch the run
+			if (data.kind === SCAN_EVENT_KIND.RESULTS_FOUND) {
+				applyLiveCounts(data.counts);
+				const key = data.dimension ?? '';
+				if (key) resultTicks[key] = (resultTicks[key] ?? 0) + 1;
+				return;
+			}
+			if (data.kind === SCAN_EVENT_KIND.INTEREST_READY) {
+				resultTicks[INTEREST_TAB] = (resultTicks[INTEREST_TAB] ?? 0) + 1;
+				return;
+			}
+			scheduleRefresh();
 		});
 	});
 
@@ -576,6 +621,7 @@
 						{previousDuration}
 						{now}
 						active={activeTab === 'overview'}
+						revision={liveTick}
 						onFilter={applyFilter}
 						onTab={openTab}
 						onRescan={() => (showRescan = true)}
@@ -590,6 +636,7 @@
 						targetId={scan.target_id}
 						{projectId}
 						active={activeTab === INTEREST_TAB}
+						revision={resultTicks[INTEREST_TAB] ?? 0}
 						onTab={openTab}
 						onTotal={(n) => (interestTotal = n)}
 					/>
@@ -605,6 +652,7 @@
 						{projectId}
 						apex={scan.execution_config.target_value}
 						active={activeTab === 'web-assets'}
+						revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
 						onTab={openTab}
 						bind:query={webQuery}
 					/>
@@ -617,6 +665,7 @@
 						scanId={scan.id}
 						{projectId}
 						active={activeTab === 'endpoints'}
+						revision={resultTicks[SurfaceDimension.ENDPOINTS] ?? 0}
 						onTab={openTab}
 						onScanTotal={(n) => (endpointsTotal = n)}
 						bind:query={endpointQuery}
@@ -632,6 +681,7 @@
 						targetType={scan.execution_config.target_type}
 						{projectId}
 						active={activeTab === 'services'}
+						revision={resultTicks[SurfaceDimension.SERVICES] ?? 0}
 						onTab={openTab}
 						onScanTotal={(n) => (servicesTotal = n)}
 						bind:query={serviceQuery}
@@ -647,6 +697,7 @@
 						targetType={scan.execution_config.target_type}
 						{projectId}
 						active={activeTab === 'ips'}
+						revision={resultTicks[SurfaceDimension.IPS] ?? 0}
 						onTab={openTab}
 						onScanTotal={(n) => (ipsTotal = n)}
 						bind:query={ipQuery}
@@ -661,6 +712,7 @@
 						targetId={scan.target_id}
 						targetType={scan.execution_config.target_type}
 						active={activeTab === 'vulnerabilities'}
+						revision={resultTicks[SurfaceDimension.VULNERABILITIES] ?? 0}
 						onTab={openTab}
 						onScanTotal={(n) => (vulnsTotal = n)}
 						bind:query={vulnQuery}

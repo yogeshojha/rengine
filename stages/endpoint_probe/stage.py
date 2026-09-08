@@ -4,6 +4,7 @@ from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.definitions.endpoints import PROBE_COVERAGE_SOURCE, STATIC_CLASSES
+from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
@@ -18,6 +19,8 @@ from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
 logger = get_logger(__name__)
+
+_WRITE_BATCH = 500
 
 
 class EndpointProbeStage(Stage):
@@ -78,7 +81,16 @@ class EndpointProbeStage(Stage):
             logger.warning("httpx unavailable, endpoints stay unverified")
             return StageResult(counts={"endpoints_probed": 0})
 
-        observations: list[EndpointObservation] = []
+        def _write(batch: list[EndpointObservation]) -> int:
+            # verify(), never upsert(): requesting an endpoint confirms it, it does not
+            # discover it, so this must not add a source to the row
+            return endpoint_inventory.verify(
+                self.session, scan_id=self.ctx.scan_id, observations=batch
+            ).updated
+
+        sink = self.results_sink(
+            SurfaceDimension.ENDPOINTS.value, _write, rows=_WRITE_BATCH
+        )
         with client.stream_probe(selected) as stream:
             for record in stream.records:
                 self._check_abort()
@@ -86,7 +98,7 @@ class EndpointProbeStage(Stage):
                 url = fields.get("url")
                 if not url:
                     continue
-                observations.append(
+                sink.add(
                     EndpointObservation(
                         url=url,
                         is_probed=True,
@@ -103,13 +115,8 @@ class EndpointProbeStage(Stage):
                         methods=[fields["method"]] if fields.get("method") else [],
                     )
                 )
-
-        # verify(), never upsert(): requesting an endpoint confirms it, it does not
-        # discover it, so this must not add a source to the row
-        written = endpoint_inventory.verify(
-            self.session, scan_id=self.ctx.scan_id, observations=observations
-        )
-        answered = written.updated
+        sink.close()
+        answered = sink.written
         status = (
             CoverageStatus.PARTIAL.value if skipped else CoverageStatus.COMPLETED.value
         )

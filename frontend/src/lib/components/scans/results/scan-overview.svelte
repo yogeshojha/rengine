@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import { Button } from '$lib/components/ui/button';
@@ -18,6 +18,7 @@
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { isLiveStatus } from '$lib/utilities/scan-status';
+	import { LiveRefresh, LIVE_OVERVIEW_MS } from '$lib/utilities/live-results';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
 	import type { RelatedDomains } from '$lib/types/asset-query';
 	import { scanFoundNothing } from '$lib/types/scan';
@@ -41,6 +42,7 @@
 		previousDuration: number | null;
 		now: number;
 		active?: boolean;
+		revision?: number;
 		onFilter: (search: string) => void;
 		onTab: (tab: string, filter?: string) => void;
 		onRescan: () => void;
@@ -58,6 +60,7 @@
 		previousDuration,
 		now,
 		active = true,
+		revision = 0,
 		onFilter,
 		onTab,
 		onRescan
@@ -83,15 +86,8 @@
 	let type = $derived(scan.execution_config.target_type);
 	let nounPlural = $derived(targetAssetNoun(type));
 	let isDomain = $derived(type === TargetType.DOMAIN);
-	let revision = $derived(
-		[
-			scan.status,
-			scan.subdomains_found,
-			scan.ips_found,
-			scan.http_assets_found,
-			scan.open_ports_found
-		].join(':')
-	);
+	// counts move constantly while a scan runs; those arrive throttled through `revision`
+	let signature = $derived([scanId, projectId, scan.status].join(':'));
 
 	function loadInsights() {
 		if (!scanId || !projectId) return;
@@ -158,21 +154,27 @@
 			.catch(() => (relatedDomains = null));
 	}
 
+	function reload() {
+		loadInsights();
+		loadRelated();
+		loadHostingFlow();
+		loadExposure();
+		loadStructure();
+		loadVulns();
+		loadOrigins();
+	}
+
 	$effect(() => {
-		void revision;
-		void scanId;
-		void projectId;
+		void signature;
 		if (!seen) return;
-		untrack(() => {
-			loadInsights();
-			loadRelated();
-			loadHostingFlow();
-			loadExposure();
-			loadStructure();
-			loadVulns();
-			loadOrigins();
-		});
+		untrack(reload);
 	});
+
+	const liveRefresh = new LiveRefresh(reload, LIVE_OVERVIEW_MS);
+	$effect(() => {
+		liveRefresh.notify(revision, seen);
+	});
+	onDestroy(() => liveRefresh.stop());
 
 	$effect(() => {
 		if (!engineCatalogStore.hasFetched) engineCatalogStore.fetch();

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import queue
 import re
 import tempfile
+import threading
 import time
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
@@ -27,10 +30,64 @@ _DROPPED = re.compile(
 )
 MAX_DROPPED = 500
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
+# how often a quiet run hands the caller its thread back, so a small burst still lands
+IDLE_SECONDS = 2.0
+_IDLE = object()
 
 
 class NucleiError(Exception):
     """Raised when nuclei cannot be started."""
+
+
+def _paced(
+    records: Iterator[dict], on_idle: Callable[[], None] | None
+) -> Iterator[object]:
+    """Yield each record, and an idle marker whenever nuclei has gone quiet."""
+    if on_idle is None:
+        yield from records
+        return
+    inbox: queue.Queue = queue.Queue(maxsize=1000)
+    done = object()
+    stop = threading.Event()
+
+    def _read() -> None:
+        try:
+            for record in records:
+                # never block forever on a full queue: the consumer may have walked away
+                # (a cancelled scan abandons this generator) and would strand this thread
+                while not stop.is_set():
+                    try:
+                        inbox.put(record, timeout=IDLE_SECONDS)
+                        break
+                    except queue.Full:
+                        continue
+                if stop.is_set():
+                    return
+        except Exception as exc:
+            with contextlib.suppress(queue.Full):
+                inbox.put(exc, timeout=IDLE_SECONDS)
+            return
+        with contextlib.suppress(queue.Full):
+            inbox.put(done, timeout=IDLE_SECONDS)
+
+    reader = threading.Thread(target=_read, daemon=True)
+    reader.start()
+    try:
+        while True:
+            try:
+                item = inbox.get(timeout=IDLE_SECONDS)
+            except queue.Empty:
+                on_idle()
+                yield _IDLE
+                continue
+            if item is done:
+                return
+            if isinstance(item, Exception):
+                raise item
+            yield item
+    finally:
+        # GeneratorExit, a raised callback or a plain return all land here
+        stop.set()
 
 
 class _CallbackError(Exception):
@@ -178,10 +235,15 @@ class NucleiClient:
         *,
         on_finding: Callable[[Finding], None] | None = None,
         on_progress: Callable[[NucleiStats], None] | None = None,
+        on_idle: Callable[[], None] | None = None,
         should_stop: Callable[[], bool] | None = None,
         timeout: int | None = None,
     ) -> NucleiRun:
-        """Run one group and return everything nuclei said about it."""
+        """Run one group and return everything nuclei said about it.
+
+        on_finding and on_idle are both called on this thread, so a caller may write to
+        its database session from either; on_progress fires on the stderr reader.
+        """
         run = NucleiRun()
         if not targets:
             return run
@@ -215,7 +277,11 @@ class NucleiClient:
         run.started = True
         try:
             with self._stream(targets, _stderr, timeout, should_stop) as stream:
-                for record in stream.records:
+                # findings are sparse, so the caller is handed the thread on a timer too:
+                # a burst that stops arriving must not sit unwritten for the rest of the run
+                for record in _paced(stream.records, on_idle):
+                    if record is _IDLE:
+                        continue
                     finding = parse_finding(record)
                     if finding is None:
                         continue

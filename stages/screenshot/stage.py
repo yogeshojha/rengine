@@ -4,6 +4,7 @@ from pathlib import Path
 
 from sqlalchemy import select, update
 
+from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
@@ -17,6 +18,7 @@ logger = get_logger(__name__)
 
 _MEDIA_ROOT = "/app/scan_media"
 _MAX_TARGETS = 2000
+_WRITE_BATCH = 50
 
 
 def _relpath(path: str) -> str:
@@ -72,26 +74,36 @@ class ScreenshotStage(Stage):
 
         by_url = {url: asset_id for asset_id, url in live}
         selected = [url for _, url in live][:_MAX_TARGETS]
-        records, cut_short = client.capture(selected)
-        updates = []
-        for rec in records:
-            path = rec.get("screenshot_path")
-            asset_id = by_url.get(rec.get("input")) or by_url.get(rec.get("url"))
-            if asset_id is not None and path:
-                updates.append(
-                    {"id": asset_id, "screenshot_path": _relpath(path)[:500]}
-                )
-        if updates:
-            self.session.execute(update(HttpAsset), updates)
+
+        def _write(batch: list[dict]) -> int:
+            self.session.execute(update(HttpAsset), batch)
             self.session.commit()
+            return len(batch)
+
+        sink = self.results_sink(
+            SurfaceDimension.WEB_ASSETS.value, _write, rows=_WRITE_BATCH
+        )
+        captured = 0
+        with client.stream_capture(selected) as stream:
+            for rec in stream.records:
+                path = rec.get("screenshot_path")
+                asset_id = by_url.get(rec.get("input")) or by_url.get(rec.get("url"))
+                if asset_id is None or not path:
+                    continue
+                captured += 1
+                sink.add({"id": asset_id, "screenshot_path": _relpath(path)[:500]})
+                if sink.pending == 0:
+                    self._check_abort()
+        sink.close()
+        cut_short = stream.timed_out
         if self.ctx.target_type == TargetType.DOMAIN.value:
             self._denormalize_to_subdomains()
-        self.emit_progress(f"captured {len(updates)} screenshots")
+        self.emit_progress(f"captured {captured} screenshots")
         skipped = max(0, len(live) - len(selected))
         warnings = []
         if cut_short:
             warnings.append(
-                f"the renderer ran out of time. {len(updates):,} of "
+                f"the renderer ran out of time. {captured:,} of "
                 f"{len(selected):,} services were captured."
             )
         if skipped:
@@ -99,7 +111,7 @@ class ScreenshotStage(Stage):
                 f"{skipped:,} services beyond the {_MAX_TARGETS:,} budget were not captured"
             )
         return StageResult(
-            counts={"screenshots": len(updates)},
+            counts={"screenshots": captured},
             warnings=warnings,
             partial=bool(warnings),
         )

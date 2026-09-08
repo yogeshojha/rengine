@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
@@ -40,6 +41,7 @@ class CdnCheckStage(Stage):
             target_id=self.ctx.target_id,
             project_id=self.ctx.project_id,
         )
+        self.publish_results(SurfaceDimension.IPS.value)
         if not ips:
             return StageResult(counts={"addresses": 0, "cdn": 0, "cloud": 0})
 

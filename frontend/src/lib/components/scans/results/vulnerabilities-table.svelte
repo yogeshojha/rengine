@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page as appPage } from '$app/state';
 	import { replaceState } from '$app/navigation';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import { seedKindFor } from '$lib/utilities/rechecks';
@@ -73,12 +73,14 @@
 	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 	import { locationTokensFromUrl } from '$lib/utilities/endpoints';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { LiveRefresh } from '$lib/utilities/live-results';
 
 	interface Props {
 		scanId: string;
 		targetId?: string;
 		targetType?: string;
 		active?: boolean;
+		revision?: number;
 		onTab?: (tab: string, filter?: string) => void;
 		onScanTotal?: (total: number) => void;
 		query?: VulnQuery;
@@ -89,6 +91,7 @@
 		targetId = '',
 		targetType = '',
 		active = true,
+		revision = 0,
 		onTab,
 		onScanTotal,
 		query = $bindable({
@@ -393,16 +396,22 @@
 		void loadInstances(expandedId, instanceLimit);
 	}
 
-	async function refresh() {
-		refreshing = true;
+	async function refresh(quiet = false) {
+		refreshing = !quiet;
 		try {
-			loadedLeadSig = '';
+			if (!quiet) loadedLeadSig = '';
 			await Promise.all([runSearch(), loadFacets(), loadCoverage(), loadGroups()]);
 			if (expandedId) await loadInstances(expandedId, instanceLimit);
 		} finally {
 			refreshing = false;
 		}
 	}
+
+	const liveRefresh = new LiveRefresh(() => refresh(true));
+	$effect(() => {
+		liveRefresh.notify(revision, active);
+	});
+	onDestroy(() => liveRefresh.stop());
 
 	$effect(() => {
 		void JSON.stringify(query);
@@ -889,7 +898,7 @@
 			title="Findings could not be loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
-			<Button variant="outline" class="gap-2" onclick={refresh}>
+			<Button variant="outline" class="gap-2" onclick={() => refresh()}>
 				<RefreshCw class="h-4 w-4" /> Retry
 			</Button>
 		</EmptyState>

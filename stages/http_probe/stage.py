@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from sqlalchemy import delete, select
+from sqlalchemy import bindparam, delete, select, update
 from sqlalchemy.exc import StatementError
 from sqlalchemy.orm import defer
 
@@ -12,6 +12,7 @@ from shared.definitions.ports import (
     ServiceClass,
     service_class,
 )
+from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
@@ -33,13 +34,50 @@ _IP_FAMILY = {TargetType.IP.value, TargetType.IP_RANGE.value, TargetType.ASN.val
 _MAX_TARGETS = 50000
 _WEB_CAPABLE = (ServiceClass.WEB.value, ServiceClass.OTHER.value)
 _PERSIST_BATCH = 500
+_PERSIST_SECONDS = 2.0
 
 _HTTP_FIELDS = set(HttpAsset.model_fields)
 
+# the summary a host row carries: written per batch so the table fills as httpx answers
+_DENORM_FIELDS: dict[str, str] = {
+    "http_url": "url",
+    "final_url": "final_url",
+    "http_status": "status_code",
+    "page_title": "title",
+    "content_type": "content_type",
+    "content_length": "content_length",
+    "response_time": "response_time",
+    "webserver": "webserver",
+    "tech": "tech",
+    "is_cdn": "is_cdn",
+    "cdn_name": "cdn_name",
+    "waf": "waf",
+    "asn": "asn",
+    "asn_org": "asn_org",
+    "favicon_hash": "favicon_hash",
+    "tls_not_after": "tls_not_after",
+    "tls_expired": "tls_expired",
+    "tls_self_signed": "tls_self_signed",
+}
+
+
+_DENORM_UPDATE = (
+    update(Subdomain)
+    .where(
+        Subdomain.scan_id == bindparam("b_scan"),
+        Subdomain.name == bindparam("b_name"),
+    )
+    .values({column: bindparam(column) for column in _DENORM_FIELDS})
+)
+
+
+def _rank_of(scheme: str | None, status: int | None, port: int | None) -> tuple:
+    alive = status is not None and 200 <= status < 400  # noqa: PLR2004
+    return (scheme == "https", alive, port in (443, 80), -(port or 0))
+
 
 def _rank(asset: HttpAsset) -> tuple:
-    alive = asset.status_code is not None and 200 <= asset.status_code < 400  # noqa: PLR2004
-    return (asset.scheme == "https", alive, asset.port in (443, 80), -(asset.port or 0))
+    return _rank_of(asset.scheme, asset.status_code, asset.port)
 
 
 class HttpProbeStage(Stage):
@@ -221,10 +259,7 @@ class HttpProbeStage(Stage):
         return {name: list(ips or []) for name, ips in rows}
 
     def _persist(self, records: Iterable[dict]) -> tuple[int, int]:
-        """Store every answer. Returns (stored, rejected) — one bad row never costs the run."""
-        self.session.execute(
-            delete(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
-        )
+        """Store every answer as it lands. Returns (stored, rejected) — one bad row never costs the run."""
         now = utc_now()
         ip_asn = {
             ip: (asn, asn_org)
@@ -235,16 +270,33 @@ class HttpProbeStage(Stage):
             ).all()
         }
         seen: set[str] = set()
-        batch: list[HttpAsset] = []
         rejected = 0
+        cleared = False
+        best: dict[str, tuple] = {}
+        summaries: dict[str, dict] = {}
 
-        def _flush() -> None:
-            nonlocal rejected
-            if not batch:
-                return
-            rejected += self._flush_batch(batch)
-            batch.clear()
+        def _write(batch: list[HttpAsset]) -> int:
+            nonlocal rejected, cleared
+            if not cleared:
+                # the previous attempt's rows go inside the first insert, so the table
+                # is never empty for the length of the probe
+                self.session.execute(
+                    delete(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
+                )
+                cleared = True
+            bad = self._flush_batch(batch)
+            rejected += bad
+            self._denormalize_batch(summaries)
+            summaries.clear()
+            self.session.commit()
+            return len(batch) - bad
 
+        sink = self.results_sink(
+            SurfaceDimension.WEB_ASSETS.value,
+            _write,
+            rows=_PERSIST_BATCH,
+            seconds=_PERSIST_SECONDS,
+        )
         for record in records:
             fields = parse_httpx_record(record)
             url = fields.get("url")
@@ -254,27 +306,59 @@ class HttpProbeStage(Stage):
             if fields.get("asn") is None and fields.get("ip") in ip_asn:
                 fields["asn"], fields["asn_org"] = ip_asn[fields["ip"]]
             data = {k: v for k, v in fields.items() if k in _HTTP_FIELDS}
-            asset = HttpAsset(
-                scan_id=self.ctx.scan_id,
-                target_id=self.ctx.target_id,
-                project_id=self.ctx.project_id,
-                discovered_at=now,
-                **data,
+            self._note_summary(data, best, summaries)
+            sink.add(
+                HttpAsset(
+                    scan_id=self.ctx.scan_id,
+                    target_id=self.ctx.target_id,
+                    project_id=self.ctx.project_id,
+                    discovered_at=now,
+                    **data,
+                )
             )
-            self.session.add(asset)
-            batch.append(asset)
-            if len(batch) >= _PERSIST_BATCH:
-                _flush()
+            if sink.pending == 0:
                 self._check_abort()
-        _flush()
-        self.session.commit()
+        sink.close()
+        if not cleared:
+            self.session.execute(
+                delete(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
+            )
+            self.session.commit()
         return len(seen) - rejected, rejected
+
+    @staticmethod
+    def _note_summary(
+        data: dict, best: dict[str, tuple], summaries: dict[str, dict]
+    ) -> None:
+        """Keep the strongest answer per host so its row can be updated batch by batch."""
+        host = data.get("host")
+        if not host:
+            return
+        rank = _rank_of(data.get("scheme"), data.get("status_code"), data.get("port"))
+        if host in best and rank <= best[host]:
+            return
+        best[host] = rank
+        summaries[host] = {
+            column: (
+                list(data.get(field) or []) if column == "tech" else data.get(field)
+            )
+            for column, field in _DENORM_FIELDS.items()
+        }
+
+    def _denormalize_batch(self, summaries: dict[str, dict]) -> None:
+        if not summaries or self.ctx.target_type != TargetType.DOMAIN.value:
+            return
+        self.session.connection().execute(
+            _DENORM_UPDATE,
+            [
+                {"b_scan": self.ctx.scan_id, "b_name": host, **values}
+                for host, values in summaries.items()
+            ],
+        )
 
     def _flush_batch(self, batch: list[HttpAsset]) -> int:
         """Flush inside a savepoint; on a row postgres refuses, keep the rest of the batch."""
         pending = list(batch)
-        for obj in batch:
-            self.session.expunge(obj)
         rejected = 0
         try:
             with self.session.begin_nested():

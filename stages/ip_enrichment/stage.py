@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from sqlalchemy import select, text
+from sqlalchemy import select, text, update
 
+from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
@@ -10,29 +11,12 @@ from shared.models.ip_address import IpAddress
 from shared.models.ripestat import RIPEStatASOverview
 from shared.models.target import Target
 from shared.models.whois import WhoisRecord
-from shared.services.ip_asn import ranges_ready, sync_ranges
+from shared.services.ip_asn import enrich_addresses, ranges_ready, sync_ranges
 from shared.services.ip_inventory import collect_ips, materialize
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.ip_enrichment.config import IpEnrichmentConfig
 
 logger = get_logger(__name__)
-
-_ENRICH_SQL = """
-UPDATE ip_addresses a SET
-    asn     = coalesce(r.asn, a.asn),
-    asn_org = coalesce(r.as_name, a.asn_org),
-    country = coalesce(c.country, a.country)
-FROM ip_addresses base
-LEFT JOIN LATERAL (
-    SELECT asn, as_name, end_ip FROM ip_asn_ranges
-    WHERE start_ip <= base.ip::inet ORDER BY start_ip DESC LIMIT 1
-) r ON r.end_ip >= base.ip::inet
-LEFT JOIN LATERAL (
-    SELECT country, end_ip FROM ip_country_ranges
-    WHERE start_ip <= base.ip::inet ORDER BY start_ip DESC LIMIT 1
-) c ON c.end_ip >= base.ip::inet
-WHERE a.id = base.id AND base.scan_id = :sid
-"""
 
 # http probing is the authority on CDN; fold it back so ip_addresses is the full record
 _ADOPT_CDN_SQL = """
@@ -71,7 +55,7 @@ def _parse_asn(value: str) -> int | None:
 class IpEnrichmentStage(Stage):
     name = "ip_enrichment"
     title = "IP Enrichment"
-    description = "Resolve ASN, network operator and country for every IP address."
+    description = "Sweep up every address the scan found and complete what only the finished run can know."
     phase = Phase.DEPTH.value
     depends_on = frozenset(
         {
@@ -99,6 +83,7 @@ class IpEnrichmentStage(Stage):
         enriched = self._enrich()
         self._backfill()
         self.session.commit()
+        self.publish_results(SurfaceDimension.IPS.value)
         self.emit_progress(
             f"{enriched} of {len(found)} addresses resolved to an ASN or country"
         )
@@ -126,7 +111,8 @@ class IpEnrichmentStage(Stage):
         sync_ranges(self.session)
 
     def _enrich(self) -> int:
-        self.session.execute(text(_ENRICH_SQL).bindparams(sid=self.ctx.scan_id))
+        """Most addresses were enriched as they were written; this catches the late ones."""
+        enrich_addresses(self.session, scan_id=self.ctx.scan_id)
         self._apply_target_context()
         return int(
             self.session.execute(
@@ -150,24 +136,22 @@ class IpEnrichmentStage(Stage):
     def _apply_target_context(self) -> None:
         """Last-resort fill from the target's own ASN/WHOIS for anything still blank."""
         asn, org, country = self._target_context()
-        if asn is None and not org and not country:
-            return
-        rows = (
-            self.session.execute(
-                select(IpAddress).where(
-                    IpAddress.scan_id == self.ctx.scan_id,
-                )
-            )
-            .scalars()
-            .all()
+        fills = (
+            (IpAddress.asn, asn),
+            (IpAddress.asn_org, org[:255] if org else None),
+            (IpAddress.country, country[:10] if country else None),
         )
-        for row in rows:
-            if asn is not None and row.asn is None:
-                row.asn = asn
-            if org and not row.asn_org:
-                row.asn_org = org[:255]
-            if country and not row.country:
-                row.country = country[:10]
+        for column, value in fills:
+            if value is None:
+                continue
+            self.session.execute(
+                update(IpAddress)
+                .where(
+                    IpAddress.scan_id == self.ctx.scan_id,
+                    column.is_(None),
+                )
+                .values({column: value})
+            )
 
     def _target_context(self) -> tuple[int | None, str | None, str | None]:
         asn: int | None = None

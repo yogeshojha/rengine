@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page as appPage } from '$app/state';
 	import { replaceState } from '$app/navigation';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import X from '@lucide/svelte/icons/x';
@@ -59,6 +59,7 @@
 	} from '$lib/utilities/scan-insights';
 	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { LiveRefresh } from '$lib/utilities/live-results';
 
 	interface Props {
 		scanId: string;
@@ -67,6 +68,7 @@
 		projectId: string;
 		apex?: string;
 		active?: boolean;
+		revision?: number;
 		query?: WebAssetQuery;
 		onTab?: (tab: string, filter?: string) => void;
 	}
@@ -78,6 +80,7 @@
 		projectId,
 		apex = '',
 		active = true,
+		revision = 0,
 		query = $bindable(emptyQuery()),
 		onTab
 	}: Props = $props();
@@ -317,15 +320,21 @@
 		}
 	}
 
-	async function refresh() {
-		refreshing = true;
+	async function refresh(quiet = false) {
+		refreshing = !quiet;
 		try {
-			loadedLeadSig = '';
+			if (!quiet) loadedLeadSig = '';
 			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
 		} finally {
 			refreshing = false;
 		}
 	}
+
+	const liveRefresh = new LiveRefresh(() => refresh(true));
+	$effect(() => {
+		liveRefresh.notify(revision, active);
+	});
+	onDestroy(() => liveRefresh.stop());
 
 	$effect(() => {
 		void JSON.stringify(query);
@@ -695,7 +704,7 @@
 			title="Web assets could not be loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
-			<Button variant="outline" class="gap-2" onclick={refresh}>
+			<Button variant="outline" class="gap-2" onclick={() => refresh()}>
 				<RefreshCw class="h-4 w-4" /> Retry
 			</Button>
 		</EmptyState>

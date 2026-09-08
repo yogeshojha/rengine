@@ -7,13 +7,24 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar
 
+from sqlalchemy import update
+
+from shared.definitions.surface import SURFACE_COUNT_COLUMNS, SurfaceDimension
 from shared.enums.scan import Phase
 from shared.enums.target import TargetType
 from shared.logging import get_logger
+from shared.models.scan import Scan
+from shared.services.celery_dispatch import dispatch_interest_live
+from shared.services.debounce import claim
+from shared.services.orchestrator.aggregate import derived_counts
 from stages.config import StageConfig
+from stages.sink import DEFAULT_ROWS, DEFAULT_SECONDS, ResultSink
 from tools.runner import CLIToolRunner
 
 logger = get_logger(__name__)
+
+# judging costs a pass over the scan's hosts, so it is paced well above the write cadence
+LIVE_JUDGE_SECONDS = 90
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -131,6 +142,53 @@ class Stage(ABC):
             headers=headers,
             user_agent=user_agent,
         )
+
+    def results_sink[T](
+        self,
+        dimension: str,
+        write: Callable[[list[T]], int],
+        *,
+        rows: int = DEFAULT_ROWS,
+        seconds: float = DEFAULT_SECONDS,
+    ) -> ResultSink[T]:
+        """A sink whose every flush is committed by `write` and then announced to the UI."""
+        return ResultSink(
+            write,
+            announce=lambda _written: self.publish_results(dimension),
+            rows=rows,
+            seconds=seconds,
+        )
+
+    def publish_results(self, dimension: str) -> None:
+        """Roll this dimension's scan counters forward and say that rows landed."""
+        columns = SURFACE_COUNT_COLUMNS.get(dimension)
+        if not columns:
+            return
+        try:
+            counts = derived_counts(self.session, self.ctx.scan_id, columns)
+            self.session.execute(
+                update(Scan).where(Scan.id == self.ctx.scan_id).values(**counts)
+            )
+            self.session.commit()
+        except Exception:
+            logger.warning("live result counters could not be updated", exc_info=True)
+            self.session.rollback()
+            return
+        self._judge_live(dimension)
+        if self.ctx.events is None:
+            return
+        try:
+            self.ctx.events.results_found(dimension=dimension, counts=counts)
+        except Exception:
+            logger.warning("results event emit failed", exc_info=True)
+
+    def _judge_live(self, dimension: str) -> None:
+        """Hosts landed, so let the rule-based judgement catch up without waiting for the run."""
+        if dimension != SurfaceDimension.WEB_ASSETS.value:
+            return
+        if not claim(f"interest:{self.ctx.scan_id}", LIVE_JUDGE_SECONDS):
+            return
+        dispatch_interest_live(str(self.ctx.scan_id))
 
     def emit_progress(self, message: str, source: str | None = None) -> None:
         if self.ctx.events is None:

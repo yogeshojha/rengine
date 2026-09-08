@@ -22,7 +22,9 @@ export const SCAN_EVENT_KIND = {
 	STAGE_PROGRESS: 'stage_progress',
 	STAGE_COMPLETED: 'stage_completed',
 	COMMAND_STARTED: 'command_started',
-	COMMAND_FINISHED: 'command_finished'
+	COMMAND_FINISHED: 'command_finished',
+	RESULTS_FOUND: 'results_found',
+	INTEREST_READY: 'interest_ready'
 } as const;
 
 export type ScanEventKind = (typeof SCAN_EVENT_KIND)[keyof typeof SCAN_EVENT_KIND];
@@ -32,6 +34,7 @@ export interface ScanEvent {
 	scan_id: string;
 	activity_id?: string | null;
 	stage?: string;
+	dimension?: string;
 	status?: string;
 	engine?: string;
 	title?: string;

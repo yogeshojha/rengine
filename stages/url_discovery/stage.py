@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
+import queue
+from concurrent.futures import ThreadPoolExecutor, wait
 
 from sqlalchemy import func, select
 
 from shared.definitions.domains import registrable_domain
 from shared.definitions.endpoints import parse_url
+from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
@@ -14,6 +16,7 @@ from shared.models.endpoint import Endpoint, EndpointCoverage
 from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
 from shared.services import endpoint_inventory
+from shared.services.endpoint_inventory import UpsertResult
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
 from shared.utils.validation import normalize_domain
@@ -25,6 +28,7 @@ logger = get_logger(__name__)
 
 _LIVE_MAX = 400
 _MAX_PROVIDER_WORKERS = 4
+_DRAIN_SECONDS = 1.0
 
 
 def _unavailable(source: str, reason: str) -> EndpointCoverage:
@@ -99,28 +103,59 @@ class UrlDiscoveryStage(Stage):
         passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
         created = seeded.created
         coverage: list[EndpointCoverage] = []
-        results = self._collect(cfg.providers, context, passive, coverage)
+        # a provider hands over what it has as it crawls; only the stage thread writes
+        inbox: queue.SimpleQueue = queue.SimpleQueue()
+        tallies: dict[str, UpsertResult] = {}
+        context.on_batch = inbox.put
+
+        def drain() -> None:
+            wrote = False
+            while True:
+                try:
+                    source, observations = inbox.get_nowait()
+                except queue.Empty:
+                    break
+                wrote |= bool(self._write(source, observations, index, tallies))
+            if wrote:
+                self.publish_results(SurfaceDimension.ENDPOINTS.value)
+
+        results = self._collect(cfg.providers, context, passive, coverage, drain)
+        drain()
         for result in results:
             self._check_abort()
-            result.observations = self._in_scope(result.observations)
-            written = endpoint_inventory.upsert(
-                self.session,
-                scan_id=self.ctx.scan_id,
-                target_id=self.ctx.target_id,
-                project_id=self.ctx.project_id,
-                source=result.source,
-                observations=result.observations,
-                index=index,
-            )
+            self._write(result.source, result.observations, index, tallies)
+            written = tallies.get(result.source, UpsertResult())
             created += written.created
             coverage.append(self._coverage(result, written))
+        self.publish_results(SurfaceDimension.ENDPOINTS.value)
 
         self._store(coverage)
         total = self._total()
         self.emit_progress(f"{total} endpoints across {len(hosts)} web assets")
         return StageResult(counts={"endpoints": total, "endpoints_new": created})
 
-    def _collect(self, sources, context, passive: bool, coverage: list):
+    def _write(self, source: str, observations: list, index, tallies: dict) -> int:
+        """The one write path: scope, upsert, and keep this source's running tally."""
+        kept = self._in_scope(observations)
+        if not kept:
+            return 0
+        written = endpoint_inventory.upsert(
+            self.session,
+            scan_id=self.ctx.scan_id,
+            target_id=self.ctx.target_id,
+            project_id=self.ctx.project_id,
+            source=source,
+            observations=kept,
+            index=index,
+        )
+        total = tallies.setdefault(source, UpsertResult())
+        total.created += written.created
+        total.updated += written.updated
+        total.rejected += written.rejected
+        total.seen += written.seen
+        return written.created + written.updated
+
+    def _collect(self, sources, context, passive: bool, coverage: list, drain):
         """Sources are independent, so the ones that only talk to the network run together."""
         pooled = []
         results = []
@@ -146,12 +181,19 @@ class UrlDiscoveryStage(Stage):
                 pooled.append(provider_cls)
         if not pooled:
             return results
-        if len(pooled) == 1:
-            results.append(pooled[0](context).run())
-            return results
         workers = min(_MAX_PROVIDER_WORKERS, len(pooled))
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            results.extend(pool.map(lambda cls: cls(context).run(), pooled))
+            remaining = {pool.submit(cls(context).run) for cls in pooled}
+            while remaining:
+                done, remaining = wait(remaining, timeout=_DRAIN_SECONDS)
+                for future in done:
+                    result = future.result()
+                    results.append(result)
+                    # a finished provider's tail must not wait on its slower peers
+                    if result.observations and context.on_batch is not None:
+                        context.on_batch((result.source, result.observations))
+                        result.observations = []
+                drain()
         return results
 
     def _in_scope(self, observations: list) -> list:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 
 from shared.definitions.ports import DEFAULT_WEB_PORTS, ServiceClass
+from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
@@ -15,6 +16,8 @@ from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
 logger = get_logger(__name__)
+
+_WRITE_BATCH = 200
 
 _HTTP_FIELDS = set(HttpAsset.model_fields)
 
@@ -105,7 +108,15 @@ class OriginProbeStage(Stage):
                 select(HttpAsset.url).where(HttpAsset.scan_id == self.ctx.scan_id)
             ).scalars()
         )
-        answered = 0
+
+        def _write(batch: list[HttpAsset]) -> int:
+            self.session.add_all(batch)
+            self.session.commit()
+            return len(batch)
+
+        sink = self.results_sink(
+            SurfaceDimension.WEB_ASSETS.value, _write, rows=_WRITE_BATCH
+        )
         for record in records:
             fields = parse_httpx_record(record)
             url = fields.get("url")
@@ -113,7 +124,7 @@ class OriginProbeStage(Stage):
                 continue
             known.add(url)
             data = {k: v for k, v in fields.items() if k in _HTTP_FIELDS}
-            self.session.add(
+            sink.add(
                 HttpAsset(
                     scan_id=self.ctx.scan_id,
                     target_id=self.ctx.target_id,
@@ -122,9 +133,7 @@ class OriginProbeStage(Stage):
                     **data,
                 )
             )
-            answered += 1
-            if answered % 200 == 0:
-                self.session.flush()
+            if sink.pending == 0:
                 self._check_abort()
-        self.session.commit()
-        return answered
+        sink.close()
+        return sink.written

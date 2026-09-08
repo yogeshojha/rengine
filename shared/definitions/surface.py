@@ -45,3 +45,12 @@ SURFACE_KINDS: dict[str, frozenset[str]] = {
         {AssetKind.VULNERABILITIES.value}
     ),
 }
+
+# the scans rollup columns a dimension's rows move; the live counter refreshes these
+SURFACE_COUNT_COLUMNS: dict[str, tuple[str, ...]] = {
+    SurfaceDimension.WEB_ASSETS.value: ("subdomains_found", "http_assets_found"),
+    SurfaceDimension.ENDPOINTS.value: ("endpoints_found",),
+    SurfaceDimension.SERVICES.value: ("open_ports_found",),
+    SurfaceDimension.IPS.value: ("ips_found",),
+    SurfaceDimension.VULNERABILITIES.value: ("vulnerabilities_found",),
+}

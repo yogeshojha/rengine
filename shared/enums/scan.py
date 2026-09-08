@@ -96,4 +96,5 @@ class ScanEventKind(Enum):
     STAGE_COMPLETED = "stage_completed"
     COMMAND_STARTED = "command_started"
     COMMAND_FINISHED = "command_finished"
+    RESULTS_FOUND = "results_found"
     INTEREST_READY = "interest_ready"

@@ -51,6 +51,8 @@ def _escape(word: str) -> str:
 class RulesProvider(InterestProvider):
     name = "rules"
     source = InterestSource.RULE.value
+    # a keyword rule emits KEYWORD, a saved query emits RULE
+    emits = (InterestSource.KEYWORD.value, InterestSource.RULE.value)
     title = "Rules"
     description = "Keyword lists and saved queries, evaluated against the scan."
     order = 10

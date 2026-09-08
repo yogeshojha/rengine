@@ -136,6 +136,18 @@ def dispatch_interest_evaluation(
     )
 
 
+def dispatch_interest_live(scan_id: str) -> None:
+    """Re-judge a running scan from its rules alone. Cheap, deterministic, no model."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.interest.evaluate_live",
+            kwargs={"scan_id": scan_id},
+            queue="default",
+        )
+    except Exception:
+        logger.warning("live interest dispatch failed", exc_info=True)
+
+
 def dispatch_interest_refresh(project_id: str) -> None:
     logger.info("Dispatching interest refresh for project %s", project_id)
     get_celery_client().send_task(

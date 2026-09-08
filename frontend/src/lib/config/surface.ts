@@ -4,6 +4,7 @@ import Plug from '@lucide/svelte/icons/plug';
 import Server from '@lucide/svelte/icons/server';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import type { IconComponent } from './icons';
+import type { ScanRead } from '$lib/types/scan';
 
 export enum SurfaceDimension {
 	WEB_ASSETS = 'web_assets',
@@ -31,6 +32,7 @@ export interface SurfaceSpec {
 	tab: ResultTab;
 	queryParam: string;
 	kinds: string[];
+	countColumns: (keyof ScanRead)[];
 }
 
 export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
@@ -42,7 +44,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: Globe,
 		tab: 'web-assets',
 		queryParam: 'q',
-		kinds: ['hosts', 'http_assets']
+		kinds: ['hosts', 'http_assets'],
+		countColumns: ['subdomains_found', 'http_assets_found']
 	},
 	[SurfaceDimension.ENDPOINTS]: {
 		key: SurfaceDimension.ENDPOINTS,
@@ -52,7 +55,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: Waypoints,
 		tab: 'endpoints',
 		queryParam: 'ep_q',
-		kinds: ['endpoints']
+		kinds: ['endpoints'],
+		countColumns: ['endpoints_found']
 	},
 	[SurfaceDimension.SERVICES]: {
 		key: SurfaceDimension.SERVICES,
@@ -62,7 +66,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: Plug,
 		tab: 'services',
 		queryParam: 'svc_q',
-		kinds: ['ports']
+		kinds: ['ports'],
+		countColumns: ['open_ports_found']
 	},
 	[SurfaceDimension.IPS]: {
 		key: SurfaceDimension.IPS,
@@ -72,7 +77,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: Server,
 		tab: 'ips',
 		queryParam: 'ip_q',
-		kinds: ['addresses']
+		kinds: ['addresses'],
+		countColumns: ['ips_found']
 	},
 	[SurfaceDimension.VULNERABILITIES]: {
 		key: SurfaceDimension.VULNERABILITIES,
@@ -82,7 +88,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: ShieldAlert,
 		tab: 'vulnerabilities',
 		queryParam: 'vuln_q',
-		kinds: ['vulnerabilities']
+		kinds: ['vulnerabilities'],
+		countColumns: ['vulnerabilities_found']
 	}
 };
 

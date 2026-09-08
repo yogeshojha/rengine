@@ -30,10 +30,16 @@ class RawSignal:
 class InterestProvider:
     name: str = ""
     source: str = ""
+    # every source this provider can emit; a pass rewrites exactly these
+    emits: tuple[str, ...] = ()
     title: str = ""
     description: str = ""
     requires_ai: bool = False
     order: int = 50
+
+    @classmethod
+    def sources(cls) -> tuple[str, ...]:
+        return cls.emits or ((cls.source,) if cls.source else ())
 
     def available(self, ctx: InterestContext) -> bool:  # noqa: ARG002
         return True

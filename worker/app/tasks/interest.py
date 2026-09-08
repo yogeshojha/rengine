@@ -3,16 +3,18 @@
 import uuid
 
 from celery import shared_task
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.exc import OperationalError
 
 from app.database import get_sync_session
 from shared.config import BaseAppSettings
 from shared.definitions.notifications import scan_interesting
-from shared.enums.scan import ScanStatus
+from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.services.ai.config import load_config
 from shared.services.interest import (
+    LIVE_SOURCES,
     ensure_builtin,
     evaluate,
     is_stale,
@@ -24,6 +26,13 @@ from shared.services.orchestrator.events import ScanEventPublisher
 logger = get_logger(__name__)
 
 MAX_REFRESH_SCANS = 25
+LIVE_LOCK_TIMEOUT_S = 5
+
+
+def _yield_to_scans(session) -> None:
+    """Bound how long a judgement may hold host-row locks. SESSION, not LOCAL: `ensure_builtin`
+    commits when it seeds a preset, and a LOCAL setting dies with that transaction."""
+    session.execute(text(f"SET SESSION lock_timeout = '{LIVE_LOCK_TIMEOUT_S}s'"))
 
 
 def _publish(scan: Scan, result) -> None:
@@ -49,8 +58,16 @@ def evaluate_scan(scan_id: str, include_ai: bool = True, notify: bool = True) ->
         scan = session.get(Scan, uuid.UUID(scan_id))
         if scan is None:
             return {"error": "scan not found"}
+        # the rollup rewrites host rows a still-running scan may also be writing; whoever
+        # asked for this, the scan has priority
+        _yield_to_scans(session)
         ai = load_config(session)
-        result = evaluate(session, scan, ai=ai, include_ai=include_ai)
+        try:
+            result = evaluate(session, scan, ai=ai, include_ai=include_ai)
+        except OperationalError:
+            session.rollback()
+            logger.info("interest evaluation yielded to a running scan", scan=scan_id)
+            return {"skipped": "busy"}
         logger.info(
             "interest evaluated",
             scan=scan_id,
@@ -68,6 +85,29 @@ def evaluate_scan(scan_id: str, include_ai: bool = True, notify: bool = True) ->
             "ai_used": result.ai_used,
             "providers": result.ran,
         }
+
+
+@shared_task(name="app.tasks.interest.evaluate_live")
+def evaluate_live(scan_id: str) -> dict:
+    """Judge a running scan from its rules alone, so the list fills while the scan works.
+
+    Rarity and the model wait for `evaluate_scan` at the end: a correlation over a tenth of
+    the estate is not a weaker judgement, it is a wrong one.
+    """
+    with get_sync_session() as session:
+        scan = session.get(Scan, uuid.UUID(scan_id))
+        if scan is None or scan.status in SCAN_TERMINAL_STATUSES:
+            return {"skipped": "run is over"}
+        _yield_to_scans(session)
+        try:
+            ensure_builtin(session)
+            result = evaluate(session, scan, include_ai=False, only=LIVE_SOURCES)
+        except OperationalError:
+            session.rollback()
+            logger.info("live interest pass yielded to the scan", scan=scan_id)
+            return {"skipped": "busy"}
+        _publish(scan, result)
+        return {"hosts": result.hosts, "signals": result.signals, "live": True}
 
 
 def _notify(session, scan: Scan) -> None:

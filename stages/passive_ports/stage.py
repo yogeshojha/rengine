@@ -5,6 +5,7 @@ import ipaddress
 from sqlalchemy import select
 
 from shared.definitions.ports import PortSource
+from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
@@ -44,6 +45,7 @@ class PassivePortsStage(Stage):
             target_id=self.ctx.target_id,
             project_id=self.ctx.project_id,
         )
+        self.publish_results(SurfaceDimension.IPS.value)
         addresses = self._candidates(cfg.max_addresses)
         if not addresses:
             return StageResult(counts={"known_ports": 0, "addresses": 0})

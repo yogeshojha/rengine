@@ -12,6 +12,7 @@ from shared.definitions.ports import (
     ScanPolicy,
     profile_ports,
 )
+from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
@@ -29,6 +30,7 @@ logger = get_logger(__name__)
 CDN_KINDS = ("cdn", "waf")
 
 _NAMED_SEED_TYPES = frozenset({TargetType.IP.value, TargetType.IP_RANGE.value})
+_WRITE_BATCH = 200
 
 
 @dataclass(frozen=True)
@@ -94,12 +96,40 @@ class PortScanStage(Stage):
             logger.warning("naabu unavailable, skipping port scan")
             return StageResult(counts={"open_ports": 0, "scanned": 0})
 
-        found: list[dict] = []
+        found: set[tuple[str, int, str]] = set()
         failures: list[str] = []
+        replaced = [False]
+
+        def _write(batch: list[dict]) -> int:
+            # only the first write clears the previous attempt, or each batch would
+            # delete the one before it
+            written = port_inventory.upsert(
+                self.session,
+                scan_id=self.ctx.scan_id,
+                target_id=self.ctx.target_id,
+                project_id=self.ctx.project_id,
+                source=PortSource.NAABU.value,
+                observations=[
+                    ServiceObservation(
+                        ip=item["ip"],
+                        port=item["port"],
+                        protocol=item["protocol"],
+                        tls=item["tls"],
+                    )
+                    for item in batch
+                ],
+                replace=not replaced[0],
+            )
+            replaced[0] = True
+            return written
+
+        sink = self.results_sink(
+            SurfaceDimension.SERVICES.value, _write, rows=_WRITE_BATCH
+        )
         if full:
             self.emit_progress(f"scanning {len(full)} addresses on {self._label(cfg)}")
-            found += self._batch(
-                client, full, port_args(cfg.profile, cfg.ports), failures
+            self._batch(
+                client, full, port_args(cfg.profile, cfg.ports), sink, found, failures
             )
             self._check_abort()
         if edge:
@@ -107,26 +137,14 @@ class PortScanStage(Stage):
                 f"probing {len(edge)} CDN-fronted addresses on edge ports"
             )
             edge_ports = ["-p", ",".join(str(p) for p in CDN_EDGE_PORTS)]
-            found += self._batch(client, edge, edge_ports, failures)
+            self._batch(client, edge, edge_ports, sink, found, failures)
             self._check_abort()
+        sink.close()
+        if not replaced[0]:
+            # nothing was found, so nothing cleared the previous attempt's rows
+            _write([])
 
-        count = port_inventory.upsert(
-            self.session,
-            scan_id=self.ctx.scan_id,
-            target_id=self.ctx.target_id,
-            project_id=self.ctx.project_id,
-            source=PortSource.NAABU.value,
-            observations=[
-                ServiceObservation(
-                    ip=item["ip"],
-                    port=item["port"],
-                    protocol=item["protocol"],
-                    tls=item["tls"],
-                )
-                for item in found
-            ],
-            replace=True,
-        )
+        count = len(found)
         scanned = len(full) + len(edge)
         if failures:
             raise RuntimeError("; ".join(failures))
@@ -141,13 +159,34 @@ class PortScanStage(Stage):
         )
 
     def _batch(
-        self, client: NaabuClient, ips: list[str], flags: list[str], failures: list[str]
-    ) -> list[dict]:
+        self,
+        client: NaabuClient,
+        ips: list[str],
+        flags: list[str],
+        sink,
+        found: set[tuple[str, int, str]],
+        failures: list[str],
+    ) -> None:
+        """Stream one naabu run into the sink; a crash with no output is a failure, not zero ports."""
         try:
-            return client.scan(ips, flags)
+            with client.stream_scan(
+                ips, flags, should_stop=self.ctx.is_aborted
+            ) as stream:
+                for item in stream.records:
+                    key = (item["ip"], item["port"], item["protocol"])
+                    if key in found:
+                        continue
+                    found.add(key)
+                    sink.add(item)
+                    if sink.pending == 0:
+                        self._check_abort()
+            sink.flush()
+            if stream.return_code != 0 and stream.record_count == 0:
+                failures.append(
+                    stream.stderr.strip()[:300] or "naabu produced no output"
+                )
         except NaabuError as exc:
             failures.append(str(exc))
-            return []
 
     def _addresses(self) -> list[IpAddress]:
         return list(

@@ -43,6 +43,11 @@ class ScanEventPublisher:
     def scan_cancelled(self, *, status: str) -> None:
         self._emit(ScanEventKind.SCAN_CANCELLED, {"status": status})
 
+    def results_found(self, *, dimension: str, counts: dict[str, int]) -> None:
+        self._emit(
+            ScanEventKind.RESULTS_FOUND, {"dimension": dimension, "counts": counts}
+        )
+
     def interest_ready(
         self, *, hosts: int, signals: int, bands: dict, ai_used: bool
     ) -> None:

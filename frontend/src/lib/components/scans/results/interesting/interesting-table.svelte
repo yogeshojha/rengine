@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
+	import { LiveRefresh } from '$lib/utilities/live-results';
 	import Search from '@lucide/svelte/icons/search';
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -32,10 +34,11 @@
 		projectId: string;
 		active: boolean;
 		onTab: (tab: string, filter?: string) => void;
+		revision?: number;
 		onTotal?: (total: number) => void;
 	}
 
-	let { scanId, targetId, projectId, active, onTab, onTotal }: Props = $props();
+	let { scanId, targetId, projectId, active, revision = 0, onTab, onTotal }: Props = $props();
 
 	const PAGE_SIZE = 25;
 	const ALL = 'all';
@@ -106,8 +109,8 @@
 		}
 	}
 
-	async function run(): Promise<void> {
-		loading = true;
+	async function run(quiet = false): Promise<void> {
+		loading = !quiet;
 		try {
 			const result = await interestApi.scan(scanId, {
 				q: q.trim() || null,
@@ -135,6 +138,12 @@
 			loading = false;
 		}
 	}
+
+	const liveRefresh = new LiveRefresh(() => run(true));
+	$effect(() => {
+		liveRefresh.notify(revision, active ?? true);
+	});
+	onDestroy(() => liveRefresh.stop());
 
 	function toggle(list: string[], value: string): string[] {
 		return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
@@ -223,7 +232,13 @@
 						</Button>
 					{/snippet}
 				</Hint>
-				<Button variant="ghost" size="icon" class="size-8" onclick={run} aria-label="Refresh">
+				<Button
+					variant="ghost"
+					size="icon"
+					class="size-8"
+					onclick={() => run()}
+					aria-label="Refresh"
+				>
 					<RefreshCw class="size-3.5 {loading ? 'animate-spin' : ''}" />
 				</Button>
 			</div>
@@ -373,7 +388,7 @@
 			</div>
 		{:else if error}
 			<EmptyState icon={Eye} title="Could not load this list" description={error} class="py-12">
-				<Button variant="outline" size="sm" onclick={run}>Try again</Button>
+				<Button variant="outline" size="sm" onclick={() => run()}>Try again</Button>
 			</EmptyState>
 		{:else if !data?.rows.length}
 			<EmptyState

@@ -15,6 +15,8 @@ const LIVE_STATUSES = SCAN_STATUSES.filter(isLiveStatus);
 const REFRESH_DEBOUNCE_MS = 400;
 const FALLBACK_POLL_MS = 30_000;
 const LIVE_PAGE_SIZE = 25;
+type CountColumn = (typeof SCAN_COUNT_COLUMNS)[keyof typeof SCAN_COUNT_COLUMNS];
+const COUNT_COLUMNS = new Set<string>(Object.values(SCAN_COUNT_COLUMNS));
 
 export interface LiveRun {
 	stage: { name: string; title: string } | null;
@@ -134,6 +136,15 @@ function createLiveScansStore() {
 		}
 	}
 
+	function applyColumns(scanId: string, counts: Record<string, number> | undefined) {
+		const scan = scans.find((s) => s.id === scanId);
+		if (!scan || !counts) return;
+		for (const [column, value] of Object.entries(counts)) {
+			if (typeof value === 'number' && COUNT_COLUMNS.has(column))
+				scan[column as CountColumn] = value;
+		}
+	}
+
 	function onEvent(e: ScanEvent) {
 		switch (e.kind) {
 			case SCAN_EVENT_KIND.SCAN_STARTED:
@@ -172,6 +183,10 @@ function createLiveScansStore() {
 				scheduleRefresh();
 				break;
 			}
+			case SCAN_EVENT_KIND.RESULTS_FOUND:
+				// rows landed mid-stage: patch the counters, never refetch the list
+				applyColumns(e.scan_id, e.counts);
+				break;
 			case SCAN_EVENT_KIND.COMMAND_STARTED:
 				patch(e.scan_id, () => ({ tool: e.tool ?? null, commandId: e.command_id ?? null }));
 				break;

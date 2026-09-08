@@ -55,6 +55,7 @@ class ProviderContext:
     recorder: CommandRecorder | None = None
     api_keys: dict[str, str | None] = field(default_factory=dict)
     on_progress: Callable[[str], None] | None = None
+    on_batch: Callable[[tuple[str, list[EndpointObservation]]], None] | None = None
     is_aborted: Callable[[], bool] | None = None
 
 
@@ -138,6 +139,13 @@ class UrlProvider(ABC):
     def progress(self, message: str) -> None:
         if self.ctx.on_progress is not None:
             self.ctx.on_progress(message)
+
+    def hand_over(self, observations: list[EndpointObservation]) -> None:
+        """Give the stage what has been found so far; it, not this thread, does the writing."""
+        if not observations or self.ctx.on_batch is None:
+            return
+        self.ctx.on_batch((self.source, list(observations)))
+        observations.clear()
 
     def aborted(self) -> bool:
         return self.ctx.is_aborted is not None and self.ctx.is_aborted()

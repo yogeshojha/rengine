@@ -28,10 +28,14 @@ DERIVED_COUNTS: dict[str, str] = {
 }
 
 
-def derived_counts(session: "Session", scan_id: uuid.UUID) -> dict[str, int]:
+def derived_counts(
+    session: "Session", scan_id: uuid.UUID, columns: Iterable[str] | None = None
+) -> dict[str, int]:
+    wanted = set(columns) if columns is not None else None
     return {
         column: int(session.execute(text(sql).bindparams(sid=scan_id)).scalar() or 0)
         for column, sql in DERIVED_COUNTS.items()
+        if wanted is None or column in wanted
     }
 
 

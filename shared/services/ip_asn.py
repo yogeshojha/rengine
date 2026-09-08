@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from sqlalchemy import func, select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from shared.logging import get_logger
@@ -45,11 +45,63 @@ FEEDS: tuple[Feed, ...] = (
 
 
 def ranges_ready(session: Session) -> bool:
+    """Existence, not a count — this is checked on the write path, and the tables are ~1.1M rows."""
     return bool(
-        session.scalar(select(func.count()).select_from(IpAsnRange).limit(1))
-    ) and bool(
-        session.scalar(select(func.count()).select_from(IpCountryRange).limit(1))
+        session.scalar(select(IpAsnRange.start_ip).limit(1)) is not None
+        and session.scalar(select(IpCountryRange.start_ip).limit(1)) is not None
     )
+
+
+# the one definition of an address lookup: a LATERAL per range table, with the upper-bound
+# test on the JOIN rather than inside the subquery (inside, a gap address scans backwards
+# over the whole table). Postgres sorts every IPv4 inet below every IPv6 one, so one index
+# on start_ip serves both families.
+_ENRICH_SQL = """
+UPDATE ip_addresses a SET
+    asn     = coalesce(r.asn, a.asn),
+    asn_org = coalesce(r.as_name, a.asn_org),
+    country = coalesce(c.country, a.country)
+FROM ip_addresses base
+LEFT JOIN LATERAL (
+    SELECT asn, as_name, end_ip FROM ip_asn_ranges
+    WHERE start_ip <= base.ip::inet ORDER BY start_ip DESC LIMIT 1
+) r ON r.end_ip >= base.ip::inet
+LEFT JOIN LATERAL (
+    SELECT country, end_ip FROM ip_country_ranges
+    WHERE start_ip <= base.ip::inet ORDER BY start_ip DESC LIMIT 1
+) c ON c.end_ip >= base.ip::inet
+WHERE a.id = base.id AND base.scan_id = :sid{scope}{only}
+"""
+# a row the feeds could not place is retried, not skipped, so a later feed load fills it
+_ONLY_MISSING = " AND (base.asn IS NULL OR base.country IS NULL)"
+_SCOPED = " AND base.ip = ANY(:ips)"
+
+
+def enrich_addresses(
+    session: Session,
+    *,
+    scan_id,
+    ips: list[str] | None = None,
+    only_missing: bool = True,
+) -> int:
+    """Fill ASN, operator and country from the local range tables. Offline, keyless, idempotent.
+
+    `ips` bounds the update to the addresses a caller just wrote, so a write path never takes
+    row locks across the whole scan. Returns rows touched, and 0 when the feeds have never
+    been loaded — a box with no egress keeps writing addresses, it just cannot name them yet.
+    """
+    if ips is not None and not ips:
+        return 0
+    if not ranges_ready(session):
+        return 0
+    sql = _ENRICH_SQL.format(
+        scope=_SCOPED if ips is not None else "",
+        only=_ONLY_MISSING if only_missing else "",
+    )
+    statement = text(sql).bindparams(sid=scan_id)
+    if ips is not None:
+        statement = statement.bindparams(ips=list(ips))
+    return int(session.execute(statement).rowcount or 0)
 
 
 @contextmanager

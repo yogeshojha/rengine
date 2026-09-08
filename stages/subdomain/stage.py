@@ -7,12 +7,15 @@ import statistics
 import tempfile
 import time
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from sqlalchemy import delete
+from sqlalchemy import bindparam, delete, update
+from sqlalchemy.dialects.postgresql import insert
 
+from shared.definitions.surface import SurfaceDimension
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
 from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
@@ -38,6 +41,20 @@ from tools.dnsx.client import DnsxClient, DnsxError
 
 logger = get_logger(__name__)
 
+_RESOLUTION_UPDATE = (
+    update(Subdomain)
+    .where(
+        Subdomain.scan_id == bindparam("b_scan"),
+        Subdomain.name == bindparam("b_name"),
+    )
+    .values(
+        resolved_ips=bindparam("resolved_ips"),
+        cname=bindparam("cname"),
+        is_active=bindparam("is_active"),
+        is_wildcard=bindparam("is_wildcard"),
+    )
+)
+
 _PREFETCH_KEYS = (
     APIProvider.SECURITYTRAILS,
     APIProvider.CHAOS,
@@ -55,6 +72,7 @@ _SHUFFLE_SEED = 1
 # budget may assume. Guessing is bounded by total time, never by an idle watchdog.
 _GUESS_FLOOR_RATE = 5
 _GUESS_MIN_BUDGET = 300
+_WRITE_BATCH = 1000
 
 
 # a name close to the apex has more siblings worth guessing than a five-label one
@@ -128,6 +146,9 @@ class SubdomainStage(Stage):
 
     def run(self) -> StageResult:
         self._check_abort()
+        self._cleared = False
+        self._written: dict[str, set[str]] = {}
+        self._resolved: dict[str, dict] = {}
         cfg = self.cfg
         resolved = self.ctx.resolved
         domain = self.ctx.target_value.strip().lower().rstrip(".")
@@ -145,7 +166,15 @@ class SubdomainStage(Stage):
         )
 
         provider_classes = self._select_providers(cfg)
-        results = self._run_providers(provider_classes, pctx, activity)
+        # each source's names land as it returns, so the table fills while the rest run
+        results = self._run_providers(
+            provider_classes,
+            pctx,
+            activity,
+            on_result=lambda result: self._write_names(
+                merge_and_filter([result], domain, resolved.included_subdomains)
+            ),
+        )
         self._check_abort()
 
         merged = merge_and_filter(results, domain, resolved.included_subdomains)
@@ -171,8 +200,9 @@ class SubdomainStage(Stage):
         )
 
         # excluded subdomains are stored but not resolved or processed further
+        self._write_names(merged)
         to_resolve = [n for n in merged if n not in excluded]
-        state = self._resolve(to_resolve, cfg)
+        state = self._resolve(to_resolve, cfg, wildcard_ips)
 
         active, ips_seen = self._persist(merged, state.records, wildcard_ips, excluded)
         # the stage runner logs the warning + flips the activity to PARTIAL
@@ -401,6 +431,7 @@ class SubdomainStage(Stage):
         provider_classes: list[type[SubdomainProvider]],
         pctx: ProviderContext,
         activity: ActivityLogService,
+        on_result: Callable[[ProviderResult], None] | None = None,
     ) -> list[ProviderResult]:
         if not provider_classes:
             return []
@@ -412,6 +443,9 @@ class SubdomainStage(Stage):
                 result = future.result()
                 results.append(result)
                 self._log_provider(activity, result)
+                # the session is not thread-safe: writing happens here, never in a worker
+                if on_result is not None:
+                    on_result(result)
         return results
 
     def _log_provider(
@@ -484,7 +518,13 @@ class SubdomainStage(Stage):
                 self._check_abort()
         return out, stream.timed_out
 
-    def _resolve(self, names: list[str], cfg: SubdomainConfig) -> _Resolution:
+    def _resolve(
+        self,
+        names: list[str],
+        cfg: SubdomainConfig,
+        wildcard_ips: set[str] | None = None,
+    ) -> _Resolution:
+        """wildcard_ips is None for the wildcard probe itself, whose name is not stored."""
         state = _Resolution(submitted=len(names))
         if not names:
             return state
@@ -509,6 +549,8 @@ class SubdomainStage(Stage):
             state.records.update(records)
             batch.answered = len(records)
             batch.stalled = stalled
+            if wildcard_ips is not None:
+                self._write_resolution(records, wildcard_ips)
             self.emit_progress(
                 f"resolved {state.answered:,}/{len(names):,} names "
                 f"(batch {done}/{len(batches)})"
@@ -587,6 +629,99 @@ class SubdomainStage(Stage):
             for future in as_completed(futures):
                 yield futures[future], future.result()
 
+    def _clear_once(self) -> None:
+        """Drop the previous attempt's rows inside the first write, never before it."""
+        if self._cleared:
+            return
+        self.session.execute(
+            delete(Subdomain).where(Subdomain.scan_id == self.ctx.scan_id)
+        )
+        self._cleared = True
+
+    def _write_names(self, merged: dict[str, set[str]]) -> int:
+        """Upsert what is known so far, each name carrying every source seen for it yet.
+
+        The caller may hold one provider's result, so the union is accumulated here: the
+        upsert overwrites `sources`, and a second provider must not erase the first.
+        """
+        fresh: dict[str, set[str]] = {}
+        for name, sources in merged.items():
+            known = self._written.get(name)
+            union = set(sources) if known is None else known | sources
+            if known is not None and union == known:
+                continue
+            fresh[name] = union
+        if not fresh:
+            return 0
+        self._clear_once()
+        excluded_patterns = self.ctx.resolved.excluded_subdomains
+        now = utc_now()
+        rows = [
+            {
+                "id": uuid.uuid4(),
+                "scan_id": self.ctx.scan_id,
+                "target_id": self.ctx.target_id,
+                "project_id": self.ctx.project_id,
+                "name": name,
+                "sources": sorted(sources),
+                "resolved_ips": [],
+                "tech": [],
+                "interest_kinds": [],
+                "is_excluded": matches_any(name, excluded_patterns),
+                "discovered_at": now,
+                "created_at": now,
+            }
+            for name, sources in sorted(fresh.items())
+        ]
+        for start in range(0, len(rows), _WRITE_BATCH):
+            statement = insert(Subdomain).values(rows[start : start + _WRITE_BATCH])
+            self.session.execute(
+                statement.on_conflict_do_update(
+                    constraint="uq_subdomain_scan_name",
+                    set_={
+                        "sources": statement.excluded.sources,
+                        "is_excluded": statement.excluded.is_excluded,
+                    },
+                )
+            )
+        self.session.commit()
+        self._written.update(fresh)
+        self.publish_results(SurfaceDimension.WEB_ASSETS.value)
+        return len(rows)
+
+    def _write_resolution(
+        self, records: dict[str, dict], wildcard_ips: set[str]
+    ) -> int:
+        """Apply one batch of answers to rows the name write already created."""
+        rows = []
+        for name, info in sorted(records.items()):
+            if name not in self._written:
+                continue
+            ips = list(info.get("ips") or [])
+            row = {
+                "b_scan": self.ctx.scan_id,
+                "b_name": name,
+                "resolved_ips": ips,
+                "cname": info.get("cname"),
+                "is_active": bool(info.get("active", False)),
+                "is_wildcard": bool(ips)
+                and bool(wildcard_ips)
+                and set(ips) <= wildcard_ips,
+            }
+            if self._resolved.get(name) == row:
+                continue
+            self._resolved[name] = dict(row)
+            rows.append(row)
+        if not rows:
+            return 0
+        for start in range(0, len(rows), _WRITE_BATCH):
+            self.session.connection().execute(
+                _RESOLUTION_UPDATE, rows[start : start + _WRITE_BATCH]
+            )
+        self.session.commit()
+        self.publish_results(SurfaceDimension.WEB_ASSETS.value)
+        return len(rows)
+
     def _persist(
         self,
         merged: dict[str, set[str]],
@@ -594,35 +729,19 @@ class SubdomainStage(Stage):
         wildcard_ips: set[str],
         excluded: set[str],
     ) -> tuple[int, set[str]]:
-        self.session.execute(
-            delete(Subdomain).where(Subdomain.scan_id == self.ctx.scan_id)
+        """The reconciling write: whatever the incremental ones missed lands here."""
+        self._write_names(merged)
+        self._write_resolution(
+            {n: info for n, info in resolution.items() if n not in excluded},
+            wildcard_ips,
         )
-        now = utc_now()
         active = 0
         ips_seen: set[str] = set()
-        for name, sources in merged.items():
-            is_excluded = name in excluded
-            info = {} if is_excluded else resolution.get(name, {})
-            ips = info.get("ips", [])
-            is_active = bool(info.get("active", False))
-            if is_active:
+        for name in merged:
+            if name in excluded:
+                continue
+            info = resolution.get(name, {})
+            if info.get("active"):
                 active += 1
-            ips_seen.update(ips)
-            is_wildcard = bool(ips) and bool(wildcard_ips) and set(ips) <= wildcard_ips
-            self.session.add(
-                Subdomain(
-                    scan_id=self.ctx.scan_id,
-                    target_id=self.ctx.target_id,
-                    project_id=self.ctx.project_id,
-                    name=name,
-                    sources=sorted(sources),
-                    resolved_ips=ips,
-                    cname=info.get("cname"),
-                    is_active=is_active,
-                    is_wildcard=is_wildcard,
-                    is_excluded=is_excluded,
-                    discovered_at=now,
-                )
-            )
-        self.session.commit()
+            ips_seen.update(info.get("ips", []))
         return active, ips_seen

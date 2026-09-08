@@ -30,6 +30,7 @@ from shared.definitions.interest import (
     kind_label,
     kind_weight,
 )
+from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.logging import get_logger
 from shared.models.interest import (
     BandEntry,
@@ -547,7 +548,11 @@ class InterestReadService(InterestService):
             model=scan.interest_model,
             ai_available=bool(cfg and cfg.available),
             ai_enabled=bool(cfg and cfg.allows("asset_judgement")),
-            stale=scan.interest_signature != _signature(rules),
+            # a running scan is re-judged live and labelled in full at finalize, so it is
+            # never stale: saying otherwise made every read of this tab queue the full
+            # correlation pass against a half-discovered estate
+            stale=scan.status in SCAN_TERMINAL_STATUSES
+            and scan.interest_signature != _signature(rules),
         )
 
     async def dismiss(
