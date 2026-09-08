@@ -69,6 +69,9 @@ class IpEnrichmentStage(Stage):
     role = StageRole.SUPPORT.value
     applies_to = ALL_TARGETS
     touches_target = False
+    # not a choice: it sends nothing, calls nothing, costs a tenth of a second, and every
+    # address surface reads what it writes. Turning it off is a footgun with no upside.
+    catalog_hidden = True
     config_model = IpEnrichmentConfig
 
     def run(self) -> StageResult:
