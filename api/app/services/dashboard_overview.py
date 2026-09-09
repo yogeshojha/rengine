@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 
 from sqlalchemy import Text, and_, case, cast, exists, func, not_, select, text
@@ -222,7 +222,9 @@ class DashboardOverviewService:
         out.changes = await self._changes(
             in_window, counts, firsts, baselines, names, targets
         )
-        out.daily = self._daily(scans, firsts, baselines, series_cutoff, now)
+        out.daily = self._daily(
+            scans, firsts, baselines, series_cutoff, now, covered, counts
+        )
         out.targets = self._target_rows(
             targets,
             runs_by_target,
@@ -1021,12 +1023,41 @@ class DashboardOverviewService:
         baselines: dict[str, set[UUID]],
         series_cutoff: datetime,
         now: datetime,
+        covered: Covered,
+        counts: Counts,
     ) -> list[DashboardDay]:
         days: dict[str, DashboardDay] = {}
         start = series_cutoff.date() + timedelta(days=1)
         for i in range((now.date() - start).days + 1):
             key = (start + timedelta(days=i)).isoformat()
-            days[key] = DashboardDay(date=key, new=dict.fromkeys(SURFACE_ORDER, 0))
+            days[key] = DashboardDay(
+                date=key,
+                new=dict.fromkeys(SURFACE_ORDER, 0),
+                total=dict.fromkeys(SURFACE_ORDER, 0),
+            )
+        # the estate as it stood at the end of each day: every target's newest covering run by then
+        for key, per_target in covered.items():
+            for ids in per_target.values():
+                timeline = sorted(
+                    (
+                        (_started(scans[sid]), counts[key].get(sid, (0, None))[0])
+                        for sid in ids
+                    ),
+                    key=lambda x: x[0],
+                )
+                if not timeline:
+                    continue
+                at = 0
+                for day_key, day in days.items():
+                    end = datetime.combine(
+                        date.fromisoformat(day_key) + timedelta(days=1),
+                        time.min,
+                        tzinfo=UTC,
+                    )
+                    while at < len(timeline) and timeline[at][0] < end:
+                        at += 1
+                    if at:
+                        day.total[key] += timeline[at - 1][1]
         for s in scans.values():
             key = _started(s).date().isoformat()
             day = days.get(key)

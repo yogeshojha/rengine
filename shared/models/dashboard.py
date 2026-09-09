@@ -178,6 +178,7 @@ class DashboardDay(BaseModel):
     runs: int = 0
     failed: int = 0
     new: dict[str, int] = Field(default_factory=dict)
+    total: dict[str, int] = Field(default_factory=dict)
 
 
 class DashboardTargetSurface(BaseModel):

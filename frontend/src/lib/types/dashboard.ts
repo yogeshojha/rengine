@@ -183,6 +183,7 @@ export interface DashboardDay {
 	runs: number;
 	failed: number;
 	new: Record<string, number>;
+	total: Record<string, number>;
 }
 
 export interface DashboardTargetSurface {
@@ -271,4 +272,34 @@ export interface DashboardDiscoveredDomain {
 export interface DashboardDiscovery {
 	targets_examined: number;
 	domains: DashboardDiscoveredDomain[];
+}
+
+export type QueueFilter = 'all' | 'kev' | 'critical' | 'high' | 'new';
+
+// the fronting split of resolving web assets, each a query the Web Assets page answers verbatim
+export const HOSTING_QUERIES = {
+	resolved: 'is:resolved',
+	edge: 'is:cdn',
+	cloud: 'is:cloud',
+	direct: 'is:resolved and not is:cdn and not is:cloud'
+} as const;
+
+export interface HostingSplit {
+	resolved: number;
+	edge: number;
+	cloud: number;
+	direct: number;
+}
+
+export const FEED_QUERIES = {
+	services: 'is:new and is:sensitive',
+	endpoints: 'is:new and is:param and is:live',
+	exposures: 'is:new'
+} as const;
+
+export interface DashboardFeed {
+	vulns: { items: import('$lib/utilities/vulns').VulnerabilityRead[]; total: number };
+	exposures: { rows: import('./interest').InterestRow[]; total: number };
+	services: { items: import('$lib/utilities/services').ServiceRead[]; total: number };
+	endpoints: { items: import('$lib/utilities/endpoints').EndpointRead[]; total: number };
 }
