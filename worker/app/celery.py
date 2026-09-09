@@ -11,7 +11,7 @@ from celery.signals import (
 from kombu import Exchange, Queue
 
 from app.config import settings
-from shared.definitions.constants import SCANS_QUEUE
+from shared.definitions.constants import CRITICAL_QUEUE, SCANS_QUEUE
 from shared.logging import get_logger
 from shared.logging import setup_logging as setup_rengine_logging
 
@@ -103,6 +103,7 @@ celery_app.conf.task_routes = {
     "app.tasks.interest.*": {"queue": "default"},
     "app.tasks.threat_intel.*": {"queue": "default"},
     "app.tasks.bounty_programs.*": {"queue": "default"},
+    "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
 
 # #############################################################
@@ -125,6 +126,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.notifications",
         "app.tasks.threat_intel",
         "app.tasks.bounty_programs",
+        "app.tasks.toolbox",
     ]
 )
 

@@ -162,3 +162,18 @@ def sync_ranges(session: Session) -> dict[str, int]:
                 "ip range feed refresh failed", table=feed.table, exc_info=True
             )
     return counts
+
+
+# the same LATERAL shape as the bulk enrich, for one address, on either session flavour
+ADDRESS_LOOKUP_SQL = text("""
+SELECT r.asn, r.as_name, c.country
+FROM (SELECT CAST(:ip AS inet) AS ip) base
+LEFT JOIN LATERAL (
+    SELECT asn, as_name, end_ip FROM ip_asn_ranges
+    WHERE start_ip <= base.ip ORDER BY start_ip DESC LIMIT 1
+) r ON r.end_ip >= base.ip
+LEFT JOIN LATERAL (
+    SELECT country, end_ip FROM ip_country_ranges
+    WHERE start_ip <= base.ip ORDER BY start_ip DESC LIMIT 1
+) c ON c.end_ip >= base.ip
+""")

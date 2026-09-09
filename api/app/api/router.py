@@ -35,6 +35,7 @@ from app.api.v1 import (
     tags,
     targets,
     threat_intel,
+    toolbox,
     totp,
     users,
     viewdns,
@@ -74,6 +75,7 @@ router.include_router(endpoints.router)
 router.include_router(vulnerabilities.router)
 router.include_router(vuln_templates.router)
 router.include_router(threat_intel.router)
+router.include_router(toolbox.router)
 router.include_router(interest.router)
 router.include_router(bounty_programs.router)
 router.include_router(wordlists.router)

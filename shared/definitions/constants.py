@@ -5,6 +5,7 @@ MAX_SCAN_BATCH = 500
 MAX_COMMAND_OUTPUT = 200_000
 
 SCANS_QUEUE = "scans"
+CRITICAL_QUEUE = "critical"
 
 # Ceilings applied to every engine-config value scaled by a scan context.
 MAX_RATE = 10000

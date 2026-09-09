@@ -23,6 +23,7 @@ COPY reports /app/reports
 COPY interest /app/interest
 COPY mcp /app/mcp
 COPY connectors /app/connectors
+COPY toolbox /app/toolbox
 
 COPY api/pyproject.toml api/uv.lock* ./
 
@@ -40,6 +41,7 @@ CMD ["uv", "run", "uvicorn", "app.main:app", \
      "--reload-dir", "/app/tools", \
      "--reload-dir", "/app/stages", \
      "--reload-dir", "/app/reports", \
+     "--reload-dir", "/app/toolbox", \
      "--timeout-graceful-shutdown", "2"]
 
 ##################################################################

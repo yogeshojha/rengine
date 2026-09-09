@@ -220,3 +220,32 @@ def dispatch_bounty_feed_sync() -> bool:
         logger.warning("bounty feed sync dispatch failed", exc_info=True)
         return False
     return True
+
+
+def dispatch_toolbox_run(
+    *,
+    run_id: str,
+    user_id: str,
+    tool: str,
+    payload: dict,
+    project_id: str | None,
+) -> bool:
+    """Hand a toolbox run to the worker. Returns whether the queue accepted it."""
+    from shared.definitions.constants import CRITICAL_QUEUE  # noqa: PLC0415
+
+    try:
+        get_celery_client().send_task(
+            "app.tasks.toolbox.run",
+            kwargs={
+                "run_id": run_id,
+                "user_id": user_id,
+                "tool": tool,
+                "payload": payload,
+                "project_id": project_id,
+            },
+            queue=CRITICAL_QUEUE,
+        )
+    except Exception:
+        logger.warning("toolbox dispatch failed", exc_info=True)
+        return False
+    return True

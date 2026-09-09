@@ -26,6 +26,7 @@ import { activityScope } from '$lib/stores/activity-scope.svelte';
 import { activityFeed } from '$lib/stores/activity-feed.svelte';
 import { liveScans } from '$lib/stores/live-scans.svelte';
 import { connectors } from '$lib/stores/connectors.svelte';
+import { toolbox } from '$lib/stores/toolbox.svelte';
 import { rechecks } from './rechecks.svelte';
 import { wordlists } from '$lib/stores/wordlists.svelte';
 import { reports } from '$lib/stores/reports.svelte';
@@ -127,6 +128,7 @@ function createAuthStore() {
 		ai.reset();
 		mcp.reset();
 		connectors.reset();
+		toolbox.reset();
 		clearServiceLookup();
 	}
 
