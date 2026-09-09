@@ -5,9 +5,18 @@
 	import { TOOLBOX_ICON } from '$lib/config/toolbox';
 
 	let open = $state(false);
+
+	function onKeydown(event: KeyboardEvent) {
+		if (event.key.toLowerCase() !== 'k' || !(event.metaKey || event.ctrlKey)) return;
+		if (!event.shiftKey) return;
+		event.preventDefault();
+		open = !open;
+	}
 </script>
 
-<Hint text="Toolbox">
+<svelte:window onkeydown={onKeydown} />
+
+<Hint text="Toolbox (⌘⇧K)">
 	{#snippet child(hintProps)}
 		<span {...hintProps} class="inline-flex">
 			<Button variant="ghost" size="icon" onclick={() => (open = true)}>

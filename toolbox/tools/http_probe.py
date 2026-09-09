@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
+import shutil
+import uuid
 from datetime import datetime
+from pathlib import Path
 
 from pydantic import Field
 
@@ -14,6 +18,7 @@ from shared.definitions.toolbox import (
     ToolExecution,
     ToolGroup,
 )
+from shared.logging import get_logger
 from shared.utils.datetime import utc_now
 from toolbox.base import (
     Tool,
@@ -25,6 +30,7 @@ from toolbox.base import (
     fact,
     facts,
     hero,
+    image,
     lookup,
     mark,
     metric,
@@ -37,10 +43,17 @@ from toolbox.pivot import target_pivot_sync
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
+logger = get_logger(__name__)
+
 PROBE_TIMEOUT = 15
 CERT_WARNING_DAYS = 30
 OK_STATUS = 400
 REDIRECT_STATUS = 300
+
+MEDIA_ROOT = Path("/app/scan_media")
+SHOT_DIR = "toolbox"
+MEDIA_URL = "/api/v1/media/screenshot?path="
+KEPT_RUNS = 40
 
 
 class Input(ToolInput):
@@ -55,6 +68,11 @@ class Input(ToolInput):
         default=True,
         title="Follow redirects",
         description="Report the final response in the redirect chain",
+    )
+    screenshot: bool = Field(
+        default=True,
+        title="Screenshot",
+        description="Render the page in a headless browser",
     )
 
 
@@ -96,9 +114,11 @@ class HttpProbe(Tool):
         row = parse_httpx_record(records[0])
         status = row.get("status_code")
         tech = row.get("tech") or []
+        shot = _capture(args.target) if args.screenshot else None
 
         blocks = [
             _hero(row, status, tech),
+            image(shot, title="Page") if shot else None,
             facts(
                 fact("URL", row.get("final_url") or row.get("url"), mono=True),
                 fact("Server", row.get("webserver")),
@@ -145,7 +165,11 @@ class HttpProbe(Tool):
 
         return ToolOutcome(
             summary=_summary(status, row.get("webserver"), len(tech)),
-            blocks=[b for b in blocks if b.kind != BlockKind.CODE.value or b.text],
+            blocks=[
+                b
+                for b in blocks
+                if b is not None and (b.kind != BlockKind.CODE.value or b.text)
+            ],
             pivot=target_pivot_sync(ctx, hostname_of(args.target)),
             raw=_raw(row),
         )
@@ -201,6 +225,45 @@ def _summary(status: int | None, server: str | None, tech: int) -> str:
     if tech:
         parts.append(f"{tech} technolog{'ies' if tech != 1 else 'y'}")
     return " · ".join(parts)
+
+
+def _capture(target: str) -> str | None:
+    """Render the page and return the media URL, or None when the browser gave nothing."""
+    run_dir = MEDIA_ROOT / SHOT_DIR / uuid.uuid4().hex
+    try:
+        client = HttpxClient(timeout=PROBE_TIMEOUT, threads=1, store_dir=str(run_dir))
+        with client.stream_capture([target]) as stream:
+            path = next(
+                (
+                    r.get("screenshot_path")
+                    for r in stream.records
+                    if r.get("screenshot_path")
+                ),
+                None,
+            )
+    except (HttpxError, OSError) as exc:
+        logger.warning("toolbox screenshot skipped", error=str(exc))
+        return None
+    if not path:
+        with contextlib.suppress(OSError):
+            shutil.rmtree(run_dir, ignore_errors=True)
+        return None
+    _prune()
+    return MEDIA_URL + str(Path(path).resolve().relative_to(MEDIA_ROOT))
+
+
+def _prune() -> None:
+    root = MEDIA_ROOT / SHOT_DIR
+    try:
+        runs = sorted(
+            (d for d in root.iterdir() if d.is_dir()),
+            key=lambda d: d.stat().st_mtime,
+            reverse=True,
+        )
+    except OSError:
+        return
+    for stale in runs[KEPT_RUNS:]:
+        shutil.rmtree(stale, ignore_errors=True)
 
 
 def _status_tone(status: int | None) -> str:

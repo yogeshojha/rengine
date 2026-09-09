@@ -51,7 +51,7 @@
 		<img
 			src={block.src}
 			alt={block.title ?? ''}
-			class="w-full rounded-md border bg-muted/30 object-contain"
+			class="max-h-56 w-full rounded-md border bg-muted/30 object-cover object-top"
 		/>
 		{#if block.sub}<p class="pt-1 text-[11px] text-muted-foreground">{block.sub}</p>{/if}
 	{:else if count === 0}
