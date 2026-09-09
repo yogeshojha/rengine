@@ -60,7 +60,7 @@
 	import { RESULT_TABS, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
 	import { INTEREST_TAB } from '$lib/config/interest';
 	import InterestingTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
-	import Sparkle from '@lucide/svelte/icons/sparkle';
+	import ScanEye from '@lucide/svelte/icons/scan-eye';
 	import { plannedStages } from '$lib/utilities/scan-progress';
 	import type { TargetType } from '$lib/types/target';
 	import { SCAN_COUNT_COLUMNS } from '$lib/types/scan';
@@ -73,7 +73,7 @@
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
 		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
-		{ key: INTEREST_TAB as TabKey, label: 'Worth a look', icon: Sparkle },
+		{ key: INTEREST_TAB as TabKey, label: 'Exposures', icon: ScanEye },
 		...SURFACE_ORDER.map((s) => ({ key: s.tab as TabKey, label: s.label, icon: s.icon }))
 	];
 	const HISTORY_SIZE = 12;
@@ -140,7 +140,7 @@
 		for (const spec of SURFACE_ORDER) {
 			if (!spec.countColumns.some((c) => before[c] !== ((after[c] as number) ?? 0))) continue;
 			resultTicks[spec.key] = (resultTicks[spec.key] ?? 0) + 1;
-			// what is worth a look is judged from the hosts, and its own event only arrives
+			// exposures are judged from the hosts, and their own event only arrives
 			// over SSE — carry it on the poll fallback too
 			if (spec.key === SurfaceDimension.WEB_ASSETS)
 				resultTicks[INTEREST_TAB] = (resultTicks[INTEREST_TAB] ?? 0) + 1;

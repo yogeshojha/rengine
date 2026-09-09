@@ -162,6 +162,8 @@ class SignalRead(BaseModel):
 
 class InterestRow(BaseModel):
     subdomain_id: uuid.UUID
+    target_id: uuid.UUID
+    target_value: str | None = None
     host: str
     score: int
     band: str

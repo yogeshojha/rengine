@@ -27,6 +27,7 @@ export interface SurfaceOverview {
 	project_id: string;
 	targets_total: number;
 	live_scans: number;
+	exposures: number;
 	dimensions: SurfaceCoverage[];
 	generated_at: string;
 }

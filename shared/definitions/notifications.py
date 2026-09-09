@@ -317,7 +317,7 @@ def scan_interesting(
     critical = [x for x in leads if x.band == InterestBand.CRITICAL.value]
     severity = NotificationSeverity.WARNING if critical else NotificationSeverity.INFO
     head = _count(len(leads), "new asset", "new assets")
-    title = f"{head} worth a look on {target}"
+    title = f"{head} flagged as an exposure on {target}"
     body = "\n".join(_lead_line(lead) for lead in leads[:shown])
     if len(leads) > shown:
         body += f"\n… and {len(leads) - shown} more"

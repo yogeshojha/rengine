@@ -45,6 +45,8 @@ export interface InterestSignal {
 
 export interface InterestRow {
 	subdomain_id: string;
+	target_id: string;
+	target_value?: string | null;
 	host: string;
 	score: number;
 	band: string;

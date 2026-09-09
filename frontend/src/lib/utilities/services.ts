@@ -121,7 +121,7 @@ export const SERVICE_CLASS_TABS: { key: string; label: string }[] = [
 ];
 
 export const SERVICE_SORTS: SortOption[] = [
-	{ key: 'exposure', label: 'Exposure' },
+	{ key: 'exposure', label: 'Sensitivity' },
 	{ key: 'port', label: 'Port' },
 	{ key: 'service', label: 'Service' },
 	{ key: 'product', label: 'Software' },

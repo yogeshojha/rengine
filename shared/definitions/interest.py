@@ -1,4 +1,4 @@
-"""What makes an asset worth a look, and how much each reason weighs."""
+"""What makes an asset an exposure, and how much each reason weighs."""
 
 from __future__ import annotations
 
@@ -252,8 +252,8 @@ BAND_ORDER: tuple[str, ...] = (
 )
 
 BAND_LABELS: dict[str, str] = {
-    InterestBand.CRITICAL.value: "Look first",
-    InterestBand.HIGH.value: "Worth a look",
+    InterestBand.CRITICAL.value: "Critical",
+    InterestBand.HIGH.value: "High",
     InterestBand.NOTABLE.value: "Notable",
 }
 

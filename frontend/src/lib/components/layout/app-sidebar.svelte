@@ -1,17 +1,17 @@
 <script lang="ts">
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
-	import CrosshairIcon from '@lucide/svelte/icons/crosshair';
+	import TargetIcon from '@lucide/svelte/icons/target';
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import CogIcon from '@lucide/svelte/icons/cog';
-	import LayersIcon from '@lucide/svelte/icons/layers';
-	import SwordsIcon from '@lucide/svelte/icons/swords';
+	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
+	import LibraryIcon from '@lucide/svelte/icons/library';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
-	import SparkleIcon from '@lucide/svelte/icons/sparkle';
-	import NetworkIcon from '@lucide/svelte/icons/network';
-	import PlugZapIcon from '@lucide/svelte/icons/plug-zap';
-	import TargetIcon from '@lucide/svelte/icons/target';
+	import ScanEyeIcon from '@lucide/svelte/icons/scan-eye';
+	import BotIcon from '@lucide/svelte/icons/bot';
+	import CableIcon from '@lucide/svelte/icons/cable';
+	import AwardIcon from '@lucide/svelte/icons/award';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
 	import { SURFACE_ORDER } from '$lib/config/surface';
@@ -65,12 +65,22 @@
 		},
 		{
 			label: routeLabels.surface,
-			items: surfaceItems
+			items: [
+				...surfaceItems,
+				{
+					title: routeLabels.exposures,
+					url: ROUTES.exposures(),
+					icon: ScanEyeIcon,
+					badge: surfaceStore.exposures
+						? { label: compactCount(surfaceStore.exposures), tone: 'muted' as const }
+						: null
+				}
+			]
 		},
 		{
-			label: 'Reconnaissance',
+			label: 'Discovery',
 			items: [
-				{ title: routeLabels.targets, url: ROUTES.targets, icon: CrosshairIcon },
+				{ title: routeLabels.targets, url: ROUTES.targets, icon: TargetIcon },
 				{
 					title: routeLabels.scans,
 					url: ROUTES.scans,
@@ -86,7 +96,7 @@
 			label: routeLabels.automation,
 			items: [
 				{ title: routeLabels.engines, url: ROUTES.engines, icon: CogIcon },
-				{ title: routeLabels.contexts, url: ROUTES.contexts, icon: LayersIcon }
+				{ title: routeLabels.contexts, url: ROUTES.contexts, icon: SlidersHorizontalIcon }
 			]
 		},
 		{
@@ -100,14 +110,13 @@
 						? { label: String(reports.liveCount), live: true, tone: 'info' as const }
 						: null
 				},
-				{ title: routeLabels.interest, url: ROUTES.interest(), icon: SparkleIcon },
-				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: SwordsIcon },
+				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: LibraryIcon },
 				...(capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)
-					? [{ title: routeLabels.bountyHub, url: ROUTES.bountyHub(), icon: TargetIcon }]
+					? [{ title: routeLabels.bountyHub, url: ROUTES.bountyHub(), icon: AwardIcon }]
 					: []),
 				{ title: routeLabels.ai, url: ROUTES.ai(), icon: SparklesIcon },
-				{ title: routeLabels.mcp, url: ROUTES.mcp(), icon: NetworkIcon },
-				{ title: routeLabels.connectors, url: ROUTES.connectors(), icon: PlugZapIcon }
+				{ title: routeLabels.mcp, url: ROUTES.mcp(), icon: BotIcon },
+				{ title: routeLabels.connectors, url: ROUTES.connectors(), icon: CableIcon }
 			]
 		},
 		{

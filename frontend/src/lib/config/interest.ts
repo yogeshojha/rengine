@@ -93,6 +93,6 @@ export function sourceChipClass(source: string): string {
 }
 
 export const INTEREST_SORTS = [
-	{ value: 'score', label: 'Worth a look' },
+	{ value: 'score', label: 'Exposure score' },
 	{ value: 'host', label: 'Hostname' }
 ] as const;

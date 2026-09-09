@@ -16,7 +16,7 @@ export const routeLabels: Record<string, string> = {
 
 	// Tools
 	arsenal: 'Arsenal',
-	interest: 'Worth a look',
+	exposures: 'Exposures',
 	connectors: 'Connectors',
 	bountyHub: 'Bounty Hub',
 
@@ -44,8 +44,8 @@ export const BOUNTY_HUB_TABS = ['programs', 'updates'] as const;
 export type BountyHubTab = (typeof BOUNTY_HUB_TABS)[number];
 
 export const ARSENAL_TABS = ['nuclei', 'wordlists', 'threat-intel'] as const;
-export const INTEREST_TABS = ['rules', 'dismissed'] as const;
-export type InterestTab = (typeof INTEREST_TABS)[number];
+export const EXPOSURE_TABS = ['exposures', 'rules', 'dismissed'] as const;
+export type ExposureTab = (typeof EXPOSURE_TABS)[number];
 export const REPORT_TABS = ['reports', 'templates', 'themes', 'defaults'] as const;
 export type ReportTab = (typeof REPORT_TABS)[number];
 
@@ -93,7 +93,12 @@ export const ROUTES = {
 	bountyHub: (handle?: string, platform?: string) =>
 		handle ? `/bounty-hub?program=${handle}&platform=${platform ?? 'hackerone'}` : '/bounty-hub',
 	bountyHubTab: (tab: BountyHubTab) => `/bounty-hub?tab=${tab}`,
-	interest: (tab?: InterestTab) => (tab ? `/interest?tab=${tab}` : '/interest'),
+	exposures: (tab?: ExposureTab, query?: Record<string, string>) => {
+		const params = new URLSearchParams(query ?? {});
+		if (tab) params.set('tab', tab);
+		const suffix = params.toString();
+		return `/exposures${suffix ? `?${suffix}` : ''}`;
+	},
 	reports: (tab?: ReportTab) => (tab ? `/reports?tab=${tab}` : '/reports'),
 	report: (id: string) => `/reports/${id}`,
 	reportTemplate: (id: string) => `/reports/templates/${id}`,

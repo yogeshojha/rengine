@@ -193,6 +193,8 @@ _FLAG_BUILDERS = {
         Subdomain.final_url.isnot(None), Subdomain.final_url != Subdomain.http_url
     ),
     "vulnerable": lambda ctx: preds.host_vuln(ctx.scope),
+    "exposed": lambda _ctx: preds.interesting(),
+    # queries saved before the feature was named still compile
     "interesting": lambda _ctx: preds.interesting(),
     "kev": lambda ctx: preds.host_vuln(ctx.scope, Vulnerability.is_kev.is_(True)),
 }
@@ -293,9 +295,9 @@ _SUBDOMAIN_BUILDERS = {
     "vuln": lambda c, ctx: preds.host_vuln(
         ctx.scope, string_match(Vulnerability.severity, c)
     ),
-    "interest": lambda c, _ctx: _interest_kind(c),
+    "exposure": lambda c, _ctx: _interest_kind(c),
     "flagged": lambda c, _ctx: _interest_source(c),
-    "interest_band": lambda c, _ctx: _interest_band(c),
+    "exposure_band": lambda c, _ctx: _interest_band(c),
     "cve": lambda c, ctx: preds.host_vuln(
         ctx.scope, json_array_match(Vulnerability.cve_ids, c)
     ),

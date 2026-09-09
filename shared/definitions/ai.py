@@ -202,14 +202,14 @@ AI_FEATURES: tuple[AIFeature, ...] = (
     AIFeature(
         "asset_judgement",
         "Asset judgement",
-        "Reads hostnames and page titles after a scan and says which assets are worth a look, "
+        "Reads hostnames and page titles after a scan and says which assets are exposures, "
         "and why. Never sees response bodies.",
         False,
     ),
     AIFeature(
         "rule_suggestions",
         "Rule suggestions",
-        "Proposes an interest rule that would have caught what judgement found, for review.",
+        "Proposes an exposure rule that would have caught what judgement found, for review.",
         False,
     ),
     AIFeature(

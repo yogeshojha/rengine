@@ -37,6 +37,10 @@ export const interestApi = {
 		return api.post<RulePreview>(`/interest/rules/preview${suffix}`, { query });
 	},
 
+	project(projectId: string, filter: InterestFilter): Promise<InterestPage> {
+		return api.post<InterestPage>(`/interest/project?project_id=${projectId}`, filter);
+	},
+
 	scan(scanId: string, filter: InterestFilter): Promise<InterestPage> {
 		return api.post<InterestPage>(`/interest/scan/${scanId}`, filter);
 	},

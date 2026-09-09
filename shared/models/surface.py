@@ -37,5 +37,6 @@ class SurfaceOverview(BaseModel):
     project_id: uuid.UUID
     targets_total: int = 0
     live_scans: int = 0
+    exposures: int = 0
     dimensions: list[SurfaceCoverage] = Field(default_factory=list)
     generated_at: datetime

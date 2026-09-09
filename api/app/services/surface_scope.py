@@ -218,4 +218,18 @@ class SurfaceScopeService:
         )
         for dimension in SURFACE_ORDER:
             out.dimensions.append(await self.coverage(project_id, dimension))
+        out.exposures = await self._exposures(project_id)
         return out
+
+    async def _exposures(self, project_id: UUID) -> int:
+        """Assets flagged for what they are; a judgement over web assets, not a dimension."""
+        scope = await self.scope(project_id, SurfaceDimension.WEB_ASSETS.value)
+        if not scope:
+            return 0
+        counted = await self.session.scalar(
+            select(func.count()).where(
+                scope.match(Subdomain.scan_id),
+                Subdomain.interest_band.isnot(None),
+            )
+        )
+        return int(counted or 0)

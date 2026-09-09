@@ -115,7 +115,7 @@
 							</button>
 							{#if event.actionable && event.tone !== 'muted'}
 								<Badge variant={event.tone === 'warning' ? 'warning' : 'info'}>
-									{event.tone === 'warning' ? 'Act now' : 'Worth a look'}
+									{event.tone === 'warning' ? 'Act now' : 'For review'}
 								</Badge>
 							{/if}
 						</div>

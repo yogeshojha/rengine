@@ -1,7 +1,7 @@
 import Globe from '@lucide/svelte/icons/globe';
 import Waypoints from '@lucide/svelte/icons/waypoints';
-import Plug from '@lucide/svelte/icons/plug';
-import Server from '@lucide/svelte/icons/server';
+import ServerCog from '@lucide/svelte/icons/server-cog';
+import Network from '@lucide/svelte/icons/network';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import type { IconComponent } from './icons';
 import type { ScanRead } from '$lib/types/scan';
@@ -63,7 +63,7 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		label: 'Services',
 		noun: 'service',
 		nounPlural: 'services',
-		icon: Plug,
+		icon: ServerCog,
 		tab: 'services',
 		queryParam: 'svc_q',
 		kinds: ['ports'],
@@ -71,10 +71,10 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 	},
 	[SurfaceDimension.IPS]: {
 		key: SurfaceDimension.IPS,
-		label: 'IPs',
+		label: 'IP addresses',
 		noun: 'address',
 		nounPlural: 'addresses',
-		icon: Server,
+		icon: Network,
 		tab: 'ips',
 		queryParam: 'ip_q',
 		kinds: ['addresses'],

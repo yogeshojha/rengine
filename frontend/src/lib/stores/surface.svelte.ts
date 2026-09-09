@@ -38,6 +38,9 @@ function createSurfaceStore() {
 		get dimensions() {
 			return overview?.dimensions ?? [];
 		},
+		get exposures() {
+			return overview?.exposures ?? 0;
+		},
 		coverage(dimension: string): SurfaceCoverage | null {
 			return overview?.dimensions.find((d) => d.dimension === dimension) ?? null;
 		},

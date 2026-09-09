@@ -101,7 +101,7 @@
 			<Sheet.Description>
 				{locked
 					? 'A shipped rule keeps its query. You can change whether it runs and whether it notifies.'
-					: 'A rule is a saved query. Anything it matches is flagged as worth a look.'}
+					: 'A rule is a saved query. Anything it matches is flagged as an exposure.'}
 			</Sheet.Description>
 		</Sheet.Header>
 

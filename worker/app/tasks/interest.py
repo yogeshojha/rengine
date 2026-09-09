@@ -1,4 +1,4 @@
-"""Decide what is worth a look after a scan, and say so once."""
+"""Decide which assets are exposures after a scan, and say so once."""
 
 import contextlib
 import uuid

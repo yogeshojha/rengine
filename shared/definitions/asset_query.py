@@ -149,7 +149,7 @@ FLAGS: dict[str, str] = {
     "redirect": "Final URL differs from the probed URL",
     "vulnerable": "A vulnerability scan reported a finding on it",
     "kev": "A known-exploited weakness was found on it",
-    "interesting": "Flagged by an interest rule, a correlation or AI",
+    "exposed": "Flagged as an exposure by a rule, a correlation or AI",
 }
 
 FIELDS: tuple[QueryField, ...] = (
@@ -499,12 +499,12 @@ FIELDS: tuple[QueryField, ...] = (
         example="cve:CVE-2021-44228",
     ),
     QueryField(
-        name="interest",
+        name="exposure",
         type=FieldType.ENUM,
         group="Findings",
-        description="The reason this host was flagged.",
-        example="interest:admin_interface",
-        aliases=("worth",),
+        description="The reason this host was flagged as an exposure.",
+        example="exposure:admin_interface",
+        aliases=("interest", "worth"),
         values=KIND_KEYS,
         facet="interest",
     ),
@@ -518,12 +518,12 @@ FIELDS: tuple[QueryField, ...] = (
         facet="flagged",
     ),
     QueryField(
-        name="interest_band",
+        name="exposure_band",
         type=FieldType.ENUM,
         group="Findings",
-        description="Strength of the flag on this host.",
-        example="interest_band:critical",
-        aliases=("band",),
+        description="Strength of the exposure on this host.",
+        example="exposure_band:critical",
+        aliases=("interest_band", "band"),
         values=BAND_ORDER,
     ),
 )
@@ -632,7 +632,7 @@ EXAMPLE_GROUPS: tuple[str, ...] = (
     "Origin exposure",
     "Change",
     "Hygiene",
-    "Worth a look",
+    "Exposures",
 )
 
 
@@ -883,30 +883,30 @@ EXAMPLES: tuple[QueryExample, ...] = (
         group="Hygiene",
     ),
     QueryExample(
-        query="is:interesting",
-        description="Everything flagged as worth a look",
-        group="Worth a look",
+        query="is:exposed",
+        description="Everything flagged as an exposure",
+        group="Exposures",
         generic=True,
     ),
     QueryExample(
-        query="is:interesting and is:new",
+        query="is:exposed and is:new",
         description="Flagged for the first time by this scan",
-        group="Worth a look",
+        group="Exposures",
     ),
     QueryExample(
         query="flagged:ai",
         description="Flagged by AI judgement rather than a rule",
-        group="Worth a look",
+        group="Exposures",
     ),
     QueryExample(
-        query="interest_band:critical",
+        query="exposure_band:critical",
         description="The strongest signals on this surface",
-        group="Worth a look",
+        group="Exposures",
     ),
     QueryExample(
-        query="interest:admin_interface and not is:auth",
+        query="exposure:admin_interface and not is:auth",
         description="Administrative surfaces answering without a login",
-        group="Worth a look",
+        group="Exposures",
     ),
 )
 

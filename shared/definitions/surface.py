@@ -21,7 +21,7 @@ SURFACE_LABELS: dict[str, str] = {
     SurfaceDimension.WEB_ASSETS.value: "Web assets",
     SurfaceDimension.ENDPOINTS.value: "Endpoints",
     SurfaceDimension.SERVICES.value: "Services",
-    SurfaceDimension.IPS.value: "IPs",
+    SurfaceDimension.IPS.value: "IP addresses",
     SurfaceDimension.VULNERABILITIES.value: "Vulnerabilities",
 }
 

@@ -12,6 +12,7 @@ from app.services.asset_query import compile_query, parse_query
 from app.services.asset_query.ast import QuerySyntaxError
 from app.services.asset_query.compiler import QueryContext
 from app.services.asset_query.scope import QueryScope
+from app.services.target_names import target_names
 from shared.definitions.interest import (
     BAND_FLOOR,
     BAND_LABELS,
@@ -376,9 +377,9 @@ class InterestReadService(InterestService):
             .all()
         )
 
-    def _filtered(self, scan_id: uuid.UUID, f: InterestFilter):
+    def _filtered(self, scope: QueryScope, f: InterestFilter):
         stmt = select(Subdomain).where(
-            Subdomain.scan_id == scan_id,
+            scope.match(Subdomain.scan_id),
             Subdomain.interest_band.isnot(None),
         )
         if f.q:
@@ -390,7 +391,7 @@ class InterestReadService(InterestService):
                 select(1)
                 .where(
                     InterestSignal.subdomain_id == Subdomain.id,
-                    InterestSignal.scan_id == scan_id,
+                    scope.match(InterestSignal.scan_id),
                     InterestSignal.kind.in_(f.kinds),
                 )
                 .exists()
@@ -400,15 +401,17 @@ class InterestReadService(InterestService):
                 select(1)
                 .where(
                     InterestSignal.subdomain_id == Subdomain.id,
-                    InterestSignal.scan_id == scan_id,
+                    scope.match(InterestSignal.scan_id),
                     InterestSignal.source.in_(f.sources),
                 )
                 .exists()
             )
         return stmt
 
-    async def page(self, scan: Scan, f: InterestFilter) -> InterestPage:
-        stmt = self._filtered(scan.id, f)
+    async def page(
+        self, scope: QueryScope, f: InterestFilter, scan: Scan | None = None
+    ) -> InterestPage:
+        stmt = self._filtered(scope, f)
         total = int(
             await self.session.scalar(select(func.count()).select_from(stmt.subquery()))
             or 0
@@ -427,15 +430,19 @@ class InterestReadService(InterestService):
             .scalars()
             .all()
         )
-        signals = await self._signals(scan.id, [r.id for r in rows])
+        signals = await self._signals(scope, [r.id for r in rows])
+        names = await target_names(self.session, (r.target_id for r in rows))
         return InterestPage(
-            rows=[self._row(r, signals.get(r.id, [])) for r in rows],
+            rows=[
+                self._row(r, signals.get(r.id, []), names.get(r.target_id))
+                for r in rows
+            ],
             total=total,
-            summary=await self.summary(scan),
+            summary=await self.summary(scope, scan),
         )
 
     async def _signals(
-        self, scan_id: uuid.UUID, ids: list[uuid.UUID]
+        self, scope: QueryScope, ids: list[uuid.UUID]
     ) -> dict[uuid.UUID, list[InterestSignal]]:
         if not ids:
             return {}
@@ -444,7 +451,7 @@ class InterestReadService(InterestService):
                 await self.session.execute(
                     select(InterestSignal)
                     .where(
-                        InterestSignal.scan_id == scan_id,
+                        scope.match(InterestSignal.scan_id),
                         InterestSignal.subdomain_id.in_(ids),
                     )
                     .order_by(InterestSignal.weight.desc())
@@ -458,10 +465,17 @@ class InterestReadService(InterestService):
             grouped[row.subdomain_id].append(row)
         return grouped
 
-    def _row(self, host: Subdomain, signals: list[InterestSignal]) -> InterestRow:
+    def _row(
+        self,
+        host: Subdomain,
+        signals: list[InterestSignal],
+        target_value: str | None = None,
+    ) -> InterestRow:
         kinds = list(host.interest_kinds or [])
         return InterestRow(
             subdomain_id=host.id,
+            target_id=host.target_id,
+            target_value=target_value,
             host=host.name,
             score=host.interest_score,
             band=host.interest_band or "",
@@ -494,7 +508,9 @@ class InterestReadService(InterestService):
             is_new="newly_appeared" in kinds,
         )
 
-    async def summary(self, scan: Scan) -> InterestSummary:
+    async def summary(
+        self, scope: QueryScope, scan: Scan | None = None
+    ) -> InterestSummary:
         from shared.services.ai.config import load_config_async  # noqa: PLC0415
 
         bands = {
@@ -502,7 +518,8 @@ class InterestReadService(InterestService):
             for row in await self.session.execute(
                 select(Subdomain.interest_band, func.count(Subdomain.id))
                 .where(
-                    Subdomain.scan_id == scan.id, Subdomain.interest_band.isnot(None)
+                    scope.match(Subdomain.scan_id),
+                    Subdomain.interest_band.isnot(None),
                 )
                 .group_by(Subdomain.interest_band)
             )
@@ -514,7 +531,7 @@ class InterestReadService(InterestService):
                     InterestSignal.source,
                     func.count(func.distinct(InterestSignal.subdomain_id)),
                 )
-                .where(InterestSignal.scan_id == scan.id)
+                .where(scope.match(InterestSignal.scan_id))
                 .group_by(InterestSignal.source)
             )
         }
@@ -525,20 +542,22 @@ class InterestReadService(InterestService):
                     InterestSignal.kind,
                     func.count(func.distinct(InterestSignal.subdomain_id)),
                 )
-                .where(InterestSignal.scan_id == scan.id)
+                .where(scope.match(InterestSignal.scan_id))
                 .group_by(InterestSignal.kind)
             )
         }
+        targets = select(Scan.target_id).where(Scan.id.in_(scope.ids))
         dismissed = int(
             await self.session.scalar(
                 select(func.count(InterestDismissal.id)).where(
-                    InterestDismissal.target_id == scan.target_id
+                    InterestDismissal.target_id.in_(targets)
                 )
             )
             or 0
         )
         cfg = await load_config_async(self.session)
-        rules = await self._applicable(scan.project_id)
+        project_id = scan.project_id if scan else scope.project_id
+        rules = await self._applicable(project_id) if project_id else []
         return InterestSummary(
             total=sum(bands.values()),
             bands=bands,
@@ -546,14 +565,16 @@ class InterestReadService(InterestService):
             kinds=kinds,
             dismissed=dismissed,
             judged_hosts=sources.get(InterestSource.AI.value, 0),
-            judged_at=scan.interest_judged_at,
-            model=scan.interest_model,
+            judged_at=scan.interest_judged_at if scan else None,
+            model=scan.interest_model if scan else None,
             ai_available=bool(cfg and cfg.available),
             ai_enabled=bool(cfg and cfg.allows("asset_judgement")),
             # a running scan is re-judged live and labelled in full at finalize, so it is
             # never stale: saying otherwise made every read of this tab queue the full
             # correlation pass against a half-discovered estate
-            stale=scan.status in SCAN_TERMINAL_STATUSES
+            # a project view spans many scans, so it never asks for a re-label
+            stale=bool(scan)
+            and scan.status in SCAN_TERMINAL_STATUSES
             and scan.interest_signature != _signature(rules),
         )
 

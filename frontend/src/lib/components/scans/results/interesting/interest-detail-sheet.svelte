@@ -138,7 +138,7 @@
 					}}
 				>
 					<X class="size-3.5" />
-					Not interesting
+					Not an exposure
 				</Button>
 			</Sheet.Footer>
 		{/if}

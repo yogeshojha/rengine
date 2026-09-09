@@ -6,7 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.services.asset_query import QueryScope
 from app.services.interest import InterestError, InterestReadService, catalog
+from app.services.surface_scope import SurfaceScopeService
+from shared.definitions.surface import SurfaceDimension
 from shared.models.interest import (
     DismissRequest,
     InterestCatalog,
@@ -118,11 +121,27 @@ async def scan_interest(
 ) -> InterestPage:
     scan = await _scan(session, scan_id)
     service = InterestReadService(session)
-    page = await service.page(scan, body)
+    page = await service.page(
+        QueryScope((scan.id,), project_id=scan.project_id), body, scan
+    )
     # a rule changed since this scan was labelled; relabelling is not a discovery, so it never alerts
     if page.summary.stale:
         dispatch_interest_evaluation(str(scan_id), include_ai=False, notify=False)
     return page
+
+
+@router.post("/project", response_model=InterestPage)
+async def project_interest(
+    session: SessionDep,
+    _user: CurrentUser,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    body: InterestFilter,
+) -> InterestPage:
+    """Every flagged asset in the project, from each target's latest covering scan."""
+    scope = await SurfaceScopeService(session).scope(
+        project_id, SurfaceDimension.WEB_ASSETS.value
+    )
+    return await InterestReadService(session).page(scope, body)
 
 
 @router.post("/scan/{scan_id}/judge", status_code=status.HTTP_202_ACCEPTED)

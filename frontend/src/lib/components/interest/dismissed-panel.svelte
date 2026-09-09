@@ -72,7 +72,7 @@
 		<EmptyState
 			icon={EyeOff}
 			title="Nothing dismissed"
-			description="Assets dismissed from the Worth a look tab of a scan appear here."
+			description="Assets dismissed from the Exposures list appear here."
 			class="py-12"
 		/>
 	{:else}

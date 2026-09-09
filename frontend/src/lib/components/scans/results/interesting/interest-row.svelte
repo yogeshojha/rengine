@@ -62,6 +62,9 @@
 	<div class="flex min-w-0 flex-1 flex-col gap-1.5">
 		<div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
 			<span class="font-mono text-[12.5px] font-medium wrap-anywhere">{row.host}</span>
+			{#if row.target_value}
+				<span class="text-[11px] text-muted-foreground">{row.target_value}</span>
+			{/if}
 			{#if row.http_status != null}
 				<span class="text-[11px] tabular-nums {statusTone}">{row.http_status}</span>
 			{/if}
@@ -117,7 +120,7 @@
 	</div>
 
 	<span class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100">
-		<Hint text="Not interesting. Stays out on later scans of this target.">
+		<Hint text="Not an exposure. Stays out on later scans of this target.">
 			{#snippet child(props)}
 				<Button
 					{...props}

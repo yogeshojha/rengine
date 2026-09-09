@@ -1,4 +1,4 @@
-"""A provider decides why a host is worth a look. One directory each, discovered from disk."""
+"""A provider decides why a host is an exposure. One directory each, discovered from disk."""
 
 from __future__ import annotations
 

@@ -104,7 +104,7 @@
 
 {#if loading && !exposure}
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Exposure" />
+		<PanelHead title="Open services" />
 		<div class="-mt-px -ml-px grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 			{#each Array(3) as _, i (i)}
 				<div class="flex flex-col gap-4 border-t border-l p-5">
@@ -117,7 +117,7 @@
 	</Card.Root>
 {:else if hasData && exposure}
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Exposure">
+		<PanelHead title="Open services">
 			<span class="tabular-nums">
 				{plural(exposure.services, 'service', 'services')} · {plural(
 					exposure.addresses,

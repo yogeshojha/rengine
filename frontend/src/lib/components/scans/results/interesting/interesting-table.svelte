@@ -29,16 +29,26 @@
 	import SuggestionRow from './suggestion-row.svelte';
 
 	interface Props {
-		scanId: string;
-		targetId: string;
+		scanId?: string;
+		targetId?: string;
 		projectId: string;
+		projectWide?: boolean;
 		active: boolean;
-		onTab: (tab: string, filter?: string) => void;
+		onTab?: (tab: string, filter?: string) => void;
 		revision?: number;
 		onTotal?: (total: number) => void;
 	}
 
-	let { scanId, targetId, projectId, active, revision = 0, onTab, onTotal }: Props = $props();
+	let {
+		scanId = '',
+		targetId = '',
+		projectId,
+		projectWide = false,
+		active,
+		revision = 0,
+		onTab,
+		onTotal
+	}: Props = $props();
 
 	const PAGE_SIZE = 25;
 	const ALL = 'all';
@@ -96,7 +106,7 @@
 	// a suggestion costs a model call, so it is asked for once, and only where AI judged something
 	$effect(() => {
 		const s = summary;
-		if (!active || !s?.ai_enabled || !s.judged_hosts || askedFor === scanId) return;
+		if (projectWide || !active || !s?.ai_enabled || !s.judged_hosts || askedFor === scanId) return;
 		askedFor = scanId;
 		void loadSuggestions();
 	});
@@ -112,7 +122,7 @@
 	async function run(quiet = false): Promise<void> {
 		loading = !quiet;
 		try {
-			const result = await interestApi.scan(scanId, {
+			const filter = {
 				q: q.trim() || null,
 				bands: band === ALL ? [] : [band],
 				sources,
@@ -121,7 +131,10 @@
 				order: sort === 'host' ? 'asc' : 'desc',
 				limit: PAGE_SIZE,
 				offset: (page - 1) * PAGE_SIZE
-			});
+			};
+			const result = projectWide
+				? await interestApi.project(projectId, filter)
+				: await interestApi.scan(scanId, filter);
 			data = result;
 			error = null;
 			onTotal?.(result.summary.total);
@@ -133,7 +146,7 @@
 				}, STALE_RETRY_MS);
 			}
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Could not load what is worth a look';
+			error = e instanceof Error ? e.message : 'Could not load exposures';
 		} finally {
 			if (!quiet) loading = false;
 		}
@@ -163,7 +176,7 @@
 
 	async function dismiss(row: InterestRow): Promise<void> {
 		try {
-			await interestApi.dismiss({ host: row.host, target_id: targetId });
+			await interestApi.dismiss({ host: row.host, target_id: row.target_id || targetId });
 			toast.success(`${row.host} will stay out of this list`);
 			await run();
 		} catch {
@@ -181,7 +194,7 @@
 	});
 
 	function openInAssets(row: InterestRow): void {
-		onTab('web-assets', `host="${row.host}"`);
+		onTab?.('web-assets', `host="${row.host}"`);
 	}
 </script>
 
@@ -189,7 +202,9 @@
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
 			<div class="flex min-w-0 flex-col gap-0.5">
-				<h2 class="text-base leading-6 font-semibold">Worth a look</h2>
+				{#if !projectWide}
+					<h2 class="text-base leading-6 font-semibold">Exposures</h2>
+				{/if}
 				<p class="text-xs text-muted-foreground">
 					{#if summary && summary.total > 0}
 						{summary.total.toLocaleString()}
@@ -204,7 +219,7 @@
 				</p>
 			</div>
 			<div class="flex shrink-0 items-center gap-2">
-				{#if summary?.ai_enabled}
+				{#if !projectWide && summary?.ai_enabled}
 					<LoadingButton
 						variant="outline"
 						size="sm"
@@ -215,7 +230,7 @@
 						<Sparkle class="size-3.5" />
 						{summary.judged_at ? 'Judge again' : 'Judge with AI'}
 					</LoadingButton>
-				{:else if summary?.ai_available}
+				{:else if !projectWide && summary?.ai_available}
 					<Hint text="Enable Asset judgement on the AI page to include AI signals">
 						{#snippet child(props)}
 							<Button {...props} variant="outline" size="sm" href={ROUTES.ai('features')}>
@@ -225,13 +240,15 @@
 						{/snippet}
 					</Hint>
 				{/if}
-				<Hint text="Rules, keywords and notifications">
-					{#snippet child(props)}
-						<Button {...props} variant="ghost" size="sm" href={ROUTES.interest('rules')}>
-							Manage rules
-						</Button>
-					{/snippet}
-				</Hint>
+				{#if !projectWide}
+					<Hint text="Rules, keywords and notifications">
+						{#snippet child(props)}
+							<Button {...props} variant="ghost" size="sm" href={ROUTES.exposures('rules')}>
+								Manage rules
+							</Button>
+						{/snippet}
+					</Hint>
+				{/if}
 				<Button
 					variant="ghost"
 					size="icon"

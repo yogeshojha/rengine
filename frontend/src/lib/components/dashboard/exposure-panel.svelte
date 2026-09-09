@@ -101,7 +101,7 @@
 
 {#if exposure.services > 0}
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Exposure">
+		<PanelHead title="Open services">
 			<span class="tabular-nums">
 				{plural(exposure.services, 'service', 'services')} · {plural(
 					exposure.addresses,

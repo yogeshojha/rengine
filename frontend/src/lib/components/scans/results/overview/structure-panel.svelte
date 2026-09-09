@@ -134,7 +134,7 @@
 		<div class="-mt-px -ml-px grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
 			{#if findings.length}
 				<div class="flex flex-col gap-3 border-t border-l p-5">
-					<h3 class="text-xs font-medium text-muted-foreground uppercase">Worth a look</h3>
+					<h3 class="text-xs font-medium text-muted-foreground uppercase">Worth testing</h3>
 					<ul class="space-y-2.5">
 						{#each findings as f (f.kind + f.label)}
 							{@const Icon = FINDING_ICON[f.kind as keyof typeof FINDING_ICON] ?? ShieldAlert}
