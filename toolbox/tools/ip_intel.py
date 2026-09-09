@@ -133,8 +133,8 @@ class IpIntel(Tool):
                 empty="No PTR record",
             ),
             facts(
-                fact("Targets", seen.targets),
-                fact("Scans", seen.scans),
+                fact("Targets", seen.targets or ""),
+                fact("Scans", seen.scans or ""),
                 fact("Open ports", seen.ports or ""),
                 fact("Last seen", (seen.last_seen or "")[:10]),
                 fact(
