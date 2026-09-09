@@ -14,6 +14,10 @@
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
+	import { SURFACE_ORDER } from '$lib/config/surface';
+	import { surfaceStore } from '$lib/stores/surface.svelte';
+	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { compactCount } from '$lib/utilities/strings';
 	import NavUser from './nav-user.svelte';
 	import ProjectSwitcher from './project-switcher.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -31,6 +35,23 @@
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> = $props();
 
+	$effect(() => {
+		const id = projectsStore.activeProject?.id;
+		if (id) void surfaceStore.load(id);
+	});
+
+	const surfaceItems = $derived(
+		SURFACE_ORDER.map((spec) => {
+			const total = surfaceStore.total(spec.key);
+			return {
+				title: spec.label,
+				url: ROUTES.surface(spec.tab),
+				icon: spec.icon,
+				badge: total ? { label: compactCount(total), tone: 'muted' as const } : null
+			};
+		})
+	);
+
 	const userData = $derived({
 		name: auth.user?.username ?? 'Unknown user',
 		email: auth.user?.email ?? 'admin@rengine.local',
@@ -43,14 +64,20 @@
 			items: [{ title: routeLabels.dashboard, url: ROUTES.dashboard, icon: LayoutDashboardIcon }]
 		},
 		{
-			label: 'Attack surface',
+			label: routeLabels.surface,
+			items: surfaceItems
+		},
+		{
+			label: 'Reconnaissance',
 			items: [
 				{ title: routeLabels.targets, url: ROUTES.targets, icon: CrosshairIcon },
 				{
 					title: routeLabels.scans,
 					url: ROUTES.scans,
 					icon: RadarIcon,
-					badge: liveScans.hasLive ? { count: liveScans.count, live: true } : null
+					badge: liveScans.hasLive
+						? { label: String(liveScans.count), live: true, tone: 'info' as const }
+						: null
 				},
 				{ title: routeLabels.schedules, url: ROUTES.schedules, icon: CalendarClockIcon }
 			]
@@ -69,7 +96,9 @@
 					title: routeLabels.reports,
 					url: ROUTES.reports(),
 					icon: FileTextIcon,
-					badge: reports.liveCount ? { count: reports.liveCount, live: true } : null
+					badge: reports.liveCount
+						? { label: String(reports.liveCount), live: true, tone: 'info' as const }
+						: null
 				},
 				{ title: routeLabels.interest, url: ROUTES.interest(), icon: SparkleIcon },
 				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: SwordsIcon },

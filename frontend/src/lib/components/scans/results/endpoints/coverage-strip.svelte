@@ -13,6 +13,7 @@
 	interface Props {
 		coverage: EndpointCoverageRead[];
 		summary: EndpointSummary | null;
+		projectWide?: boolean;
 		compact?: boolean;
 		hidden?: number;
 		onShowStatic?: () => void;
@@ -23,6 +24,7 @@
 	let {
 		coverage,
 		summary,
+		projectWide = false,
 		compact = false,
 		hidden = 0,
 		onShowStatic,
@@ -33,7 +35,8 @@
 	const n = (value: number | null | undefined) =>
 		value === null || value === undefined ? null : value.toLocaleString();
 
-	let ran = $derived(coverage.some((c) => c.status !== 'skipped'));
+	// rows are proof a stage ran, whatever the coverage table remembers
+	let ran = $derived(coverage.some((c) => c.status !== 'skipped') || (summary?.total ?? 0) > 0);
 	// requested and got nothing back is not the same as never requested
 	let noAnswer = $derived(
 		coverage
@@ -48,7 +51,10 @@
 		!ran ? 'text-muted-foreground' : failed || capped ? 'text-warning' : 'text-muted-foreground'
 	);
 	let line = $derived.by(() => {
-		if (!ran) return 'No URL discovery ran on this scan.';
+		if (!ran)
+			return projectWide
+				? 'No scan has discovered endpoints yet.'
+				: 'No URL discovery ran on this scan.';
 		const parts: string[] = [];
 		if (summary) {
 			parts.push(

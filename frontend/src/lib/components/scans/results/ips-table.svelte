@@ -21,6 +21,7 @@
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
+	import { withTarget } from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import GroupList from './table/group-list.svelte';
@@ -61,6 +62,7 @@
 
 	interface Props {
 		scanId: string;
+		projectWide?: boolean;
 		targetId?: string;
 		targetType?: string;
 		projectId: string;
@@ -73,6 +75,7 @@
 
 	let {
 		scanId,
+		projectWide = false,
 		targetId = '',
 		targetType = '',
 		projectId,
@@ -80,8 +83,13 @@
 		revision = 0,
 		onTab,
 		onScanTotal,
-		query = $bindable(emptyIpQuery())
+		query = $bindable({
+			...emptyIpQuery(),
+			search: appPage.url.searchParams.get('ip_q') ?? ''
+		})
 	}: Props = $props();
+
+	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
 	const DEFAULT_SORT = { key: 'hosts', dir: -1 as const };
 	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
@@ -151,7 +159,10 @@
 	let visible = $derived(
 		visiblePref ?? DEFAULT_VISIBLE_IP_COLUMNS.filter((k) => k !== 'ports' || facets.port.length > 0)
 	);
-	let shownColumns = $derived(IP_COLUMNS.filter((c) => visible.includes(c.key)));
+	let allColumns = $derived(withTarget(IP_COLUMNS, projectWide));
+	let shownColumns = $derived(
+		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
+	);
 	let checkedCount = $derived(items.filter((g) => checkedIps.has(g.ip)).length);
 	let selectAllChecked = $derived<boolean | 'indeterminate'>(
 		items.length > 0 && checkedCount === items.length
@@ -263,13 +274,13 @@
 	}
 
 	function syncLeads() {
-		if (!active || loading || !scanId || !projectId) return;
+		if (!active || loading || !ready) return;
 		if (leadSig === loadedLeadSig) return;
 		void loadLeads();
 	}
 
 	async function loadGroups() {
-		if (!groupBy || !scanId || !projectId) {
+		if (!groupBy || !ready) {
 			groupSet = null;
 			return;
 		}
@@ -286,7 +297,7 @@
 	}
 
 	async function loadFacets() {
-		if (!scanId || !projectId) return;
+		if (!ready) return;
 		try {
 			facets = await ipsApi.facets(projectId, scanId);
 			// only a successful response may restate the tab count; a failed one is not zero
@@ -323,7 +334,7 @@
 		void scanId;
 		void projectId;
 		void queryReady;
-		if (!seen) return;
+		if (!seen || !ready) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
 		primed = true;
@@ -492,7 +503,7 @@
 	let rescanBusy = $state(false);
 
 	$effect(() => {
-		if (!active || !scanId || !projectId) return;
+		if (projectWide || !active || !scanId || !projectId) return;
 		void rechecks.loadSchema();
 		untrack(() => rechecks.load(scanId, projectId));
 	});
@@ -604,7 +615,7 @@
 		</div>
 	{/if}
 
-	{#if !groupBy}
+	{#if !groupBy && !projectWide}
 		<SelectionBar
 			count={checkedCount}
 			noun="address"

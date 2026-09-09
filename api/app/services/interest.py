@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.asset_query import compile_query, parse_query
 from app.services.asset_query.ast import QuerySyntaxError
 from app.services.asset_query.compiler import QueryContext
+from app.services.asset_query.scope import QueryScope
 from shared.definitions.interest import (
     BAND_FLOOR,
     BAND_LABELS,
@@ -215,7 +216,8 @@ class InterestService:
             return
         try:
             compile_query(
-                parse_query(query), QueryContext(scan_id=uuid.uuid4(), now=utc_now())
+                parse_query(query),
+                QueryContext(scope=QueryScope((uuid.uuid4(),)), now=utc_now()),
             )
         except QuerySyntaxError as exc:
             raise InterestError(exc.message) from exc
@@ -329,7 +331,7 @@ class InterestService:
             return RulePreview()
         try:
             predicate = compile_query(
-                node, QueryContext(scan_id=scan_id, now=utc_now())
+                node, QueryContext(scope=QueryScope((scan_id,)), now=utc_now())
             )
         except QuerySyntaxError as exc:
             return RulePreview(error=exc.message)

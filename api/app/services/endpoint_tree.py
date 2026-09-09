@@ -14,7 +14,7 @@ from sqlalchemy import exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
-from app.services.asset_query import endpoint_is_new
+from app.services.asset_query import QueryScope, endpoint_is_new
 from shared.definitions.endpoints import (
     ADMIN_INTERESTS,
     ARCHIVE_SOURCES,
@@ -215,7 +215,7 @@ async def build_tree(
     session: AsyncSession,
     base,
     *,
-    scan_id: UUID,
+    scope: QueryScope,
     mode: str = _HOST,
     previous_scan_id: UUID | None = None,
     hide_static: bool = False,
@@ -240,7 +240,7 @@ async def build_tree(
             Endpoint.endpoint_class,
             Endpoint.sources,
             Endpoint.interest,
-            endpoint_is_new(scan_id).label("is_new"),
+            endpoint_is_new(scope).label("is_new"),
         )
         .select_from(Endpoint)
         .join(scoped, Endpoint.id == scoped.c.id)
@@ -327,7 +327,7 @@ async def build_tree(
         await _count_gone(
             session,
             roots,
-            scan_id=scan_id,
+            scope=scope,
             previous_scan_id=previous_scan_id,
             hosts={r.host for r in rows},
             merged=merged,
@@ -348,7 +348,7 @@ async def _count_gone(
     session: AsyncSession,
     roots: dict[str, _Node],
     *,
-    scan_id: UUID,
+    scope: QueryScope,
     previous_scan_id: UUID,
     hosts: set[str],
     merged: bool,
@@ -361,7 +361,8 @@ async def _count_gone(
         Endpoint.host.in_(sorted(hosts)),
         ~exists(
             select(1).where(
-                current.scan_id == scan_id, current.signature == Endpoint.signature
+                scope.match(current.scan_id),
+                current.signature == Endpoint.signature,
             )
         ),
     )

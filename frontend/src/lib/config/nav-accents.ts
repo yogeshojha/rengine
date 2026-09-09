@@ -1,6 +1,11 @@
 const ACCENTS: Record<string, string> = {
 	'/dashboard': 'var(--chart-1)',
 	'/targets': 'var(--chart-3)',
+	'/surface/web-assets': 'var(--chart-1)',
+	'/surface/endpoints': 'var(--chart-2)',
+	'/surface/services': 'var(--chart-3)',
+	'/surface/ips': 'var(--chart-5)',
+	'/surface/vulnerabilities': 'var(--destructive)',
 	'/scans': 'var(--chart-2)',
 	'/schedules': 'var(--chart-5)',
 	'/automation': 'var(--chart-4)',

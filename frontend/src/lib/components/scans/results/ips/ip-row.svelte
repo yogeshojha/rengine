@@ -15,6 +15,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import TargetCell from '../table/target-cell.svelte';
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
@@ -250,7 +251,9 @@
 				? 'justify-end'
 				: ''}"
 		>
-			{#if col.key === 'ports'}
+			{#if col.key === 'target'}
+				<TargetCell values={g.targets} {onFilter} />
+			{:else if col.key === 'ports'}
 				{#if ports.length}
 					<div class="flex flex-nowrap items-center gap-0.5 overflow-hidden">
 						{#each ports.slice(0, MAX_PORTS) as p (p.id)}

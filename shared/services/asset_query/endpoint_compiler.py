@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime
-from uuid import UUID
 
 from sqlalchemy import and_, cast, false, func, or_, true
 from sqlalchemy.dialects.postgresql import JSONB
@@ -20,6 +19,7 @@ from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
+from .scope import QueryScope
 from .terms import (
     date_match,
     int_coerce,
@@ -28,6 +28,7 @@ from .terms import (
     number_match,
     scaled_coerce,
     string_match,
+    target_match,
 )
 
 _SENSITIVE_INTEREST = (
@@ -40,7 +41,7 @@ _MISSING = (404, 410)
 
 @dataclass(frozen=True)
 class EndpointQueryContext:
-    scan_id: UUID
+    scope: QueryScope
     now: datetime
 
 
@@ -61,7 +62,7 @@ def _flag(cmp: Compare, ctx: EndpointQueryContext):
 
 
 _FLAG_BUILDERS = {
-    "new": lambda ctx: preds.endpoint_is_new(ctx.scan_id),
+    "new": lambda ctx: preds.endpoint_is_new(ctx.scope),
     "param": lambda _ctx: Endpoint.param_count > 0,
     "probed": lambda _ctx: Endpoint.is_probed.is_(True),
     "live": lambda _ctx: and_(
@@ -87,8 +88,8 @@ _FLAG_BUILDERS = {
     "crawled": lambda _ctx: preds.endpoint_source(EndpointSource.CRAWL.value),
     "root": lambda _ctx: and_(Endpoint.path == "/", Endpoint.param_count == 0),
     "titled": lambda _ctx: and_(Endpoint.title.isnot(None), Endpoint.title != ""),
-    "vulnerable": lambda ctx: preds.endpoint_vuln(ctx.scan_id),
-    "kev": lambda ctx: preds.endpoint_vuln(ctx.scan_id, Vulnerability.is_kev.is_(True)),
+    "vulnerable": lambda ctx: preds.endpoint_vuln(ctx.scope),
+    "kev": lambda ctx: preds.endpoint_vuln(ctx.scope, Vulnerability.is_kev.is_(True)),
 }
 
 
@@ -125,20 +126,19 @@ def _status_match(cmp: Compare, _ctx: EndpointQueryContext):
 
 
 def _vuln_severity(cmp: Compare, ctx: EndpointQueryContext):
-    matched = preds.endpoint_vuln(
-        ctx.scan_id, string_match(Vulnerability.severity, cmp)
-    )
+    matched = preds.endpoint_vuln(ctx.scope, string_match(Vulnerability.severity, cmp))
     return negate(matched) if cmp.op is Op.NE else matched
 
 
 def _vuln_cve(cmp: Compare, ctx: EndpointQueryContext):
     matched = preds.endpoint_vuln(
-        ctx.scan_id, json_array_match(Vulnerability.cve_ids, cmp)
+        ctx.scope, json_array_match(Vulnerability.cve_ids, cmp)
     )
     return negate(matched) if cmp.op is Op.NE else matched
 
 
 _ENDPOINT_BUILDERS = {
+    "target": lambda c, _ctx: target_match(Endpoint.target_id, c),
     "url": lambda c, _ctx: string_match(Endpoint.url, c),
     "path": lambda c, _ctx: string_match(Endpoint.path, c),
     "dir": _dir_match,

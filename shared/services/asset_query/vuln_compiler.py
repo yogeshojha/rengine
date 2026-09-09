@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from uuid import UUID
 
 from sqlalchemy import Text, and_, case, cast, false, func, literal, or_, select, true
 from sqlalchemy.dialects.postgresql import INET, JSONB
@@ -20,6 +19,7 @@ from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
+from .scope import QueryScope
 from .terms import (
     date_match,
     int_coerce,
@@ -27,6 +27,7 @@ from .terms import (
     negate,
     number_match,
     string_match,
+    target_match,
 )
 from .values import asn_number, like, network
 
@@ -36,7 +37,7 @@ _IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 
 @dataclass(frozen=True)
 class VulnQueryContext:
-    scan_id: UUID
+    scope: QueryScope
     now: datetime
 
 
@@ -68,7 +69,7 @@ def _asset_by_host(ctx: VulnQueryContext, condition):
     return or_(
         _asset(condition),
         Vulnerability.host.in_(
-            select(HttpAsset.host).where(HttpAsset.scan_id == ctx.scan_id, condition)
+            select(HttpAsset.host).where(ctx.scope.match(HttpAsset.scan_id), condition)
         ),
     )
 
@@ -76,7 +77,7 @@ def _asset_by_host(ctx: VulnQueryContext, condition):
 def _address_meta(ctx: VulnQueryContext, condition):
     """A property of the address the finding sits on."""
     return Vulnerability.ip.in_(
-        select(IpAddress.ip).where(IpAddress.scan_id == ctx.scan_id, condition)
+        select(IpAddress.ip).where(ctx.scope.match(IpAddress.scan_id), condition)
     )
 
 
@@ -93,7 +94,7 @@ def _flag(cmp: Compare, ctx: VulnQueryContext):
 
 
 _FLAG_BUILDERS = {
-    "new": lambda ctx: preds.vuln_is_new(ctx.scan_id),
+    "new": lambda ctx: preds.vuln_is_new(ctx.scope),
     "kev": lambda _ctx: Vulnerability.is_kev.is_(True),
     "ransomware": lambda _ctx: Vulnerability.kev_ransomware.is_(True),
     "overdue": lambda _ctx: and_(
@@ -106,7 +107,7 @@ _FLAG_BUILDERS = {
     "exploitable": lambda _ctx: or_(
         Vulnerability.is_kev.is_(True), Vulnerability.epss_score >= EPSS_HIGH
     ),
-    "corroborated": lambda ctx: preds.vuln_corroborated(ctx.scan_id),
+    "corroborated": lambda ctx: preds.vuln_corroborated(ctx.scope),
     "proven": lambda _ctx: and_(
         Vulnerability.request.isnot(None), Vulnerability.response.isnot(None)
     ),
@@ -115,11 +116,11 @@ _FLAG_BUILDERS = {
     ),
     "web": lambda _ctx: Vulnerability.http_asset_id.isnot(None),
     "cdn": lambda ctx: _asset(
-        and_(HttpAsset.scan_id == ctx.scan_id, HttpAsset.is_cdn.is_(True))
+        and_(ctx.scope.match(HttpAsset.scan_id), HttpAsset.is_cdn.is_(True))
     ),
-    "triaged": lambda ctx: preds.vuln_state(ctx.scan_id) != VulnState.OPEN.value,
-    "open": lambda ctx: preds.vuln_state(ctx.scan_id) == VulnState.OPEN.value,
-    "suppressed": lambda ctx: preds.vuln_state(ctx.scan_id).in_(SUPPRESSED_STATES),
+    "triaged": lambda ctx: preds.vuln_state(ctx.scope) != VulnState.OPEN.value,
+    "open": lambda ctx: preds.vuln_state(ctx.scope) == VulnState.OPEN.value,
+    "suppressed": lambda ctx: preds.vuln_state(ctx.scope).in_(SUPPRESSED_STATES),
 }
 
 
@@ -132,13 +133,14 @@ def _float_coerce(raw: str) -> float:
 
 
 def _state_match(cmp: Compare, ctx: VulnQueryContext):
-    state = preds.vuln_state(ctx.scan_id)
+    state = preds.vuln_state(ctx.scope)
     values = [v.lower().replace("-", "_").replace(" ", "_") for v in cmp.values]
     matched = state.in_(values)
     return negate(matched) if cmp.op is Op.NE else matched
 
 
 _VULN_BUILDERS = {
+    "target": lambda c, _ctx: target_match(Vulnerability.target_id, c),
     "name": lambda c, _ctx: string_match(Vulnerability.template_name, c),
     "template": lambda c, _ctx: string_match(Vulnerability.template_id, c),
     "severity": lambda c, _ctx: string_match(Vulnerability.severity, c),
@@ -165,7 +167,7 @@ _VULN_BUILDERS = {
     "port": lambda c, _ctx: number_match(Vulnerability.port, c, int_coerce(c)),
     "status": lambda c, ctx: _asset(
         and_(
-            HttpAsset.scan_id == ctx.scan_id,
+            ctx.scope.match(HttpAsset.scan_id),
             number_match(HttpAsset.status_code, c, int_coerce(c)),
         )
     ),

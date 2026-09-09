@@ -30,6 +30,7 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import GroupList from './table/group-list.svelte';
 	import ListHeader from './table/list-header.svelte';
+	import { withTarget } from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import CoverageStrip from './vulnerabilities/coverage-strip.svelte';
 	import FilterBar from './vulnerabilities/filter-bar.svelte';
@@ -77,6 +78,7 @@
 
 	interface Props {
 		scanId: string;
+		projectWide?: boolean;
 		targetId?: string;
 		targetType?: string;
 		active?: boolean;
@@ -88,6 +90,7 @@
 
 	let {
 		scanId,
+		projectWide = false,
 		targetId = '',
 		targetType = '',
 		active = true,
@@ -99,6 +102,9 @@
 			search: appPage.url.searchParams.get('vuln_q') ?? ''
 		})
 	}: Props = $props();
+
+	let projectId = $derived(projectsStore.activeProject?.id ?? '');
+	let ready = $derived(projectWide ? Boolean(projectId) : Boolean(scanId));
 
 	const DEFAULT_SORT = { key: 'risk', dir: -1 as const };
 	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
@@ -186,7 +192,10 @@
 	let selectedIndex = $derived(selected ? sheetItems.findIndex((v) => v.id === selected?.id) : -1);
 	let sheetTotal = $derived(isIssues ? instancesTotal : total);
 	let visible = $derived(visiblePref ?? DEFAULT_VISIBLE_VULN_COLUMNS);
-	let shownColumns = $derived(VULN_COLUMNS.filter((c) => visible.includes(c.key)));
+	let allColumns = $derived(withTarget(VULN_COLUMNS, projectWide));
+	let shownColumns = $derived(
+		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
+	);
 	let checkedCount = $derived(
 		isIssues
 			? issues.filter((i) => checkedIds.has(i.template_id)).length
@@ -252,7 +261,7 @@
 		loading = true;
 		try {
 			if (view === 'issues') {
-				const res = await vulnerabilitiesApi.issues(scanId, filter);
+				const res = await vulnerabilitiesApi.issues(projectId, scanId, filter);
 				if (my !== reqId) return;
 				issues = res.items;
 				total = res.total;
@@ -260,7 +269,7 @@
 				queryError = res.error;
 				if (expandedId && !issues.some((i) => i.template_id === expandedId)) collapse();
 			} else {
-				const res = await vulnerabilitiesApi.search(scanId, filter);
+				const res = await vulnerabilitiesApi.search(projectId, scanId, filter);
 				if (my !== reqId) return;
 				items = res.items;
 				total = res.total;
@@ -299,7 +308,7 @@
 		const sig = leadSig;
 		loadedLeadSig = sig;
 		try {
-			const res = await vulnerabilitiesApi.leads(scanId, leadFilter);
+			const res = await vulnerabilitiesApi.leads(projectId, scanId, leadFilter);
 			if (leadSig === sig) leadSet = res.computed ? res : null;
 		} catch {
 			if (leadSig === sig) leadSet = null;
@@ -308,20 +317,20 @@
 	}
 
 	function syncLeads() {
-		if (!active || loading || !scanId) return;
+		if (!active || loading || !ready) return;
 		if (leadSig === loadedLeadSig) return;
 		void loadLeads();
 	}
 
 	async function loadGroups() {
-		if (!groupBy || !scanId) {
+		if (!groupBy || !ready) {
 			groupSet = null;
 			return;
 		}
 		const my = ++groupReq;
 		groupLoading = true;
 		try {
-			const res = await vulnerabilitiesApi.groups(scanId, groupBy, leadFilterWithQuery);
+			const res = await vulnerabilitiesApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
 			if (my === groupReq) groupSet = res;
 		} catch {
 			if (my === groupReq) groupSet = null;
@@ -331,9 +340,9 @@
 	}
 
 	async function loadFacets() {
-		if (!scanId) return;
+		if (!ready) return;
 		try {
-			facets = await vulnerabilitiesApi.facets(scanId);
+			facets = await vulnerabilitiesApi.facets(projectId, scanId);
 			// only a successful response may restate the tab count; a failed one is not zero
 			onScanTotal?.(facets.severity.reduce((n, f) => n + f.count, 0));
 		} catch {
@@ -344,9 +353,9 @@
 	}
 
 	async function loadCoverage() {
-		if (!scanId) return;
+		if (!ready) return;
 		try {
-			coverage = await vulnerabilitiesApi.coverage(scanId);
+			coverage = await vulnerabilitiesApi.coverage(projectId, scanId);
 		} catch {
 			coverage = [];
 		}
@@ -357,7 +366,7 @@
 		instancesLoading = true;
 		try {
 			const filter = compileVulnQuery({ ...query, templates: [templateId] }, 'host', 1, 0, limit);
-			const res = await vulnerabilitiesApi.search(scanId, filter);
+			const res = await vulnerabilitiesApi.search(projectId, scanId, filter);
 			if (my !== instanceReq) return;
 			instances = res.items;
 			instancesTotal = res.total;
@@ -420,9 +429,10 @@
 		void pageIndex;
 		void pageSize;
 		void scanId;
+		void projectId;
 		void queryReady;
 		void view;
-		if (!seen) return;
+		if (!seen || !ready) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
 		primed = true;
@@ -433,6 +443,7 @@
 
 	$effect(() => {
 		void scanId;
+		void projectId;
 		if (!seen) return;
 		untrack(() => {
 			void loadFacets();
@@ -585,7 +596,13 @@
 	async function triage(v: VulnerabilityRead, state: string, note: string | null = null) {
 		const previous = v.state;
 		try {
-			const result = await vulnerabilitiesApi.triage(scanId, v.fingerprint, state, note);
+			const result = await vulnerabilitiesApi.triage(
+				projectId,
+				v.scan_id ?? scanId,
+				v.fingerprint,
+				state,
+				note
+			);
 			applyState(new Set([v.fingerprint]), result.state, result.note);
 			toast.success(`Marked ${VULN_STATE_LABELS[state].toLowerCase()}`, {
 				description:
@@ -607,7 +624,7 @@
 	) {
 		bulkBusy = true;
 		try {
-			const result = await vulnerabilitiesApi.triageMany(scanId, { ...body, state });
+			const result = await vulnerabilitiesApi.triageMany(projectId, scanId, { ...body, state });
 			toast.success(`Marked ${what} ${VULN_STATE_LABELS[state].toLowerCase()}`, {
 				description: `${result.fingerprints.toLocaleString()} ${
 					result.fingerprints === 1 ? 'finding' : 'findings'
@@ -679,10 +696,9 @@
 	}
 
 	let rescanBusy = $state(false);
-	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 
 	$effect(() => {
-		if (!active || !scanId || !projectId) return;
+		if (projectWide || !active || !scanId || !projectId) return;
 		void rechecks.loadSchema();
 		untrack(() => rechecks.load(scanId, projectId));
 	});
@@ -781,7 +797,7 @@
 		</ToggleGroup.Root>
 	</div>
 
-	<CoverageStrip {coverage} />
+	<CoverageStrip {projectWide} {coverage} />
 
 	<FilterBar
 		{query}
@@ -868,7 +884,7 @@
 		</div>
 	{/if}
 
-	{#if !groupBy}
+	{#if !groupBy && !projectWide}
 		<SelectionBar
 			count={checkedCount}
 			noun="finding"
@@ -1050,6 +1066,7 @@
 
 <VulnerabilityDetailSheet
 	vuln={selected}
+	{projectId}
 	{scanId}
 	open={drawerOpen}
 	onOpenChange={(o) => (drawerOpen = o)}

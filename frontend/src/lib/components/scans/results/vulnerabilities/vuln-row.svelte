@@ -15,6 +15,7 @@
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
+	import TargetCell from '../table/target-cell.svelte';
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import TechIcon from '../tech-icon.svelte';
 	import CorroborationBadge from './corroboration-badge.svelte';
@@ -280,7 +281,9 @@
 				? 'justify-end'
 				: ''}"
 		>
-			{#if col.key === 'asset'}
+			{#if col.key === 'target'}
+				<TargetCell value={v.target_value} {onFilter} />
+			{:else if col.key === 'asset'}
 				{#if asset}
 					<div class="flex min-w-0 flex-col gap-1">
 						<div class="flex min-w-0 items-center gap-1.5">

@@ -15,6 +15,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import TargetCell from '../table/target-cell.svelte';
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
@@ -304,7 +305,9 @@
 				? 'justify-end'
 				: ''}"
 		>
-			{#if col.key === 'hosts'}
+			{#if col.key === 'target'}
+				<TargetCell value={s.target_value} {onFilter} />
+			{:else if col.key === 'hosts'}
 				{#if s.host_count}
 					<div class="flex min-w-0 flex-wrap items-center gap-1">
 						{#each hosts.slice(0, MAX_HOSTS) as h (h)}

@@ -1,4 +1,5 @@
 import { api } from './client';
+import { scopeQuery } from '$lib/utilities/surface-scope';
 import type {
 	EndpointCoverageRead,
 	EndpointDetail,
@@ -31,17 +32,11 @@ export const httpAssetsApi = {
 
 export const ipsApi = {
 	async search(projectId: string, scanId: string, filter: IpGroupFilter): Promise<IpSearchResult> {
-		return api.post<IpSearchResult>(
-			`/ips/search?project_id=${projectId}&scan_id=${scanId}`,
-			filter
-		);
+		return api.post<IpSearchResult>(`/ips/search?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
 	async leads(projectId: string, scanId: string, filter: IpGroupFilter): Promise<QueryLeads> {
-		return api.post<QueryLeads>(
-			`/ips/search/leads?project_id=${projectId}&scan_id=${scanId}`,
-			filter
-		);
+		return api.post<QueryLeads>(`/ips/search/leads?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
 	async groups(
@@ -51,13 +46,13 @@ export const ipsApi = {
 		filter: IpGroupFilter
 	): Promise<QueryGroups> {
 		return api.post<QueryGroups>(
-			`/ips/search/groups?project_id=${projectId}&scan_id=${scanId}&group_by=${encodeURIComponent(groupBy)}`,
+			`/ips/search/groups?${scopeQuery({ projectId, scanId })}&group_by=${encodeURIComponent(groupBy)}`,
 			filter
 		);
 	},
 
 	async facets(projectId: string, scanId: string): Promise<IpFacetSet> {
-		return api.get<IpFacetSet>(`/ips/facets?project_id=${projectId}&scan_id=${scanId}`);
+		return api.get<IpFacetSet>(`/ips/facets?${scopeQuery({ projectId, scanId })}`);
 	}
 };
 
@@ -68,16 +63,13 @@ export const servicesApi = {
 		filter: ServiceFilter
 	): Promise<ServiceSearchResult> {
 		return api.post<ServiceSearchResult>(
-			`/ports/search?project_id=${projectId}&scan_id=${scanId}`,
+			`/ports/search?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
 	},
 
 	async leads(projectId: string, scanId: string, filter: ServiceFilter): Promise<QueryLeads> {
-		return api.post<QueryLeads>(
-			`/ports/search/leads?project_id=${projectId}&scan_id=${scanId}`,
-			filter
-		);
+		return api.post<QueryLeads>(`/ports/search/leads?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
 	async groups(
@@ -87,35 +79,32 @@ export const servicesApi = {
 		filter: ServiceFilter
 	): Promise<QueryGroups> {
 		return api.post<QueryGroups>(
-			`/ports/search/groups?project_id=${projectId}&scan_id=${scanId}&group_by=${encodeURIComponent(groupBy)}`,
+			`/ports/search/groups?${scopeQuery({ projectId, scanId })}&group_by=${encodeURIComponent(groupBy)}`,
 			filter
 		);
 	},
 
 	async facets(projectId: string, scanId: string): Promise<ServiceFacetSet> {
-		return api.get<ServiceFacetSet>(`/ports/facets?project_id=${projectId}&scan_id=${scanId}`);
+		return api.get<ServiceFacetSet>(`/ports/facets?${scopeQuery({ projectId, scanId })}`);
 	},
 
 	async exposure(projectId: string, scanId: string): Promise<ScanExposure> {
-		return api.get<ScanExposure>(`/ports/exposure?project_id=${projectId}&scan_id=${scanId}`);
+		return api.get<ScanExposure>(`/ports/exposure?${scopeQuery({ projectId, scanId })}`);
 	},
 
 	async origins(projectId: string, scanId: string): Promise<OriginExposure> {
-		return api.get<OriginExposure>(`/ports/origins?project_id=${projectId}&scan_id=${scanId}`);
+		return api.get<OriginExposure>(`/ports/origins?${scopeQuery({ projectId, scanId })}`);
 	}
 };
 
 export const endpointsApi = {
 	async search(projectId: string, scanId: string, filter: EndpointFilter): Promise<EndpointPage> {
-		return api.post<EndpointPage>(
-			`/endpoints/search?project_id=${projectId}&scan_id=${scanId}`,
-			filter
-		);
+		return api.post<EndpointPage>(`/endpoints/search?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
 	async leads(projectId: string, scanId: string, filter: EndpointFilter): Promise<QueryLeads> {
 		return api.post<QueryLeads>(
-			`/endpoints/search/leads?project_id=${projectId}&scan_id=${scanId}`,
+			`/endpoints/search/leads?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
 	},
@@ -127,7 +116,7 @@ export const endpointsApi = {
 		filter: EndpointFilter
 	): Promise<QueryGroups> {
 		return api.post<QueryGroups>(
-			`/endpoints/search/groups?project_id=${projectId}&scan_id=${scanId}&group_by=${encodeURIComponent(groupBy)}`,
+			`/endpoints/search/groups?${scopeQuery({ projectId, scanId })}&group_by=${encodeURIComponent(groupBy)}`,
 			filter
 		);
 	},
@@ -139,7 +128,7 @@ export const endpointsApi = {
 		filter: EndpointFilter
 	): Promise<EndpointTree> {
 		return api.post<EndpointTree>(
-			`/endpoints/tree?project_id=${projectId}&scan_id=${scanId}&mode=${encodeURIComponent(mode)}`,
+			`/endpoints/tree?${scopeQuery({ projectId, scanId })}&mode=${encodeURIComponent(mode)}`,
 			filter
 		);
 	},
@@ -147,19 +136,19 @@ export const endpointsApi = {
 	async facets(projectId: string, scanId: string, q?: string | null): Promise<EndpointFacetSet> {
 		const search = q ? `&q=${encodeURIComponent(q)}` : '';
 		return api.get<EndpointFacetSet>(
-			`/endpoints/facets?project_id=${projectId}&scan_id=${scanId}${search}`
+			`/endpoints/facets?${scopeQuery({ projectId, scanId })}${search}`
 		);
 	},
 
 	async summary(projectId: string, scanId: string, host?: string | null): Promise<EndpointSummary> {
 		const scope = host ? `&host=${encodeURIComponent(host)}` : '';
 		return api.get<EndpointSummary>(
-			`/endpoints/summary?project_id=${projectId}&scan_id=${scanId}${scope}`
+			`/endpoints/summary?${scopeQuery({ projectId, scanId })}${scope}`
 		);
 	},
 
 	async gone(projectId: string, scanId: string, filter: EndpointFilter): Promise<GonePage> {
-		return api.post<GonePage>(`/endpoints/gone?project_id=${projectId}&scan_id=${scanId}`, filter);
+		return api.post<GonePage>(`/endpoints/gone?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
 	async verify(
@@ -167,14 +156,11 @@ export const endpointsApi = {
 		scanId: string,
 		body: { host: string; dir_path: string | null; limit: number }
 	): Promise<{ queued: number; unverified: number; accepted: boolean }> {
-		return api.post(`/endpoints/verify?project_id=${projectId}&scan_id=${scanId}`, body);
+		return api.post(`/endpoints/verify?${scopeQuery({ projectId, scanId })}`, body);
 	},
 
 	async treeHosts(projectId: string, scanId: string, filter: EndpointFilter): Promise<HostPage> {
-		return api.post<HostPage>(
-			`/endpoints/tree/hosts?project_id=${projectId}&scan_id=${scanId}`,
-			filter
-		);
+		return api.post<HostPage>(`/endpoints/tree/hosts?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
 	async mergedLeaves(
@@ -183,22 +169,22 @@ export const endpointsApi = {
 		filter: EndpointFilter
 	): Promise<MergedLeafPage> {
 		return api.post<MergedLeafPage>(
-			`/endpoints/tree/leaves?project_id=${projectId}&scan_id=${scanId}`,
+			`/endpoints/tree/leaves?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
 	},
 
 	async coverage(projectId: string, scanId: string): Promise<EndpointCoverageRead[]> {
 		return api.get<EndpointCoverageRead[]>(
-			`/endpoints/coverage?project_id=${projectId}&scan_id=${scanId}`
+			`/endpoints/coverage?${scopeQuery({ projectId, scanId })}`
 		);
 	},
 
 	async structure(projectId: string, scanId: string): Promise<ScanStructure> {
-		return api.get<ScanStructure>(`/endpoints/structure?project_id=${projectId}&scan_id=${scanId}`);
+		return api.get<ScanStructure>(`/endpoints/structure?${scopeQuery({ projectId, scanId })}`);
 	},
 
 	async detail(projectId: string, scanId: string, id: string): Promise<EndpointDetail> {
-		return api.get<EndpointDetail>(`/endpoints/${id}?project_id=${projectId}&scan_id=${scanId}`);
+		return api.get<EndpointDetail>(`/endpoints/${id}?${scopeQuery({ projectId, scanId })}`);
 	}
 };

@@ -25,6 +25,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import MatchChips from './match-chips.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
+	import TargetCell from '../table/target-cell.svelte';
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import HostHoverCard from './host-hover-card.svelte';
 	import SamePagePopover from './same-page-popover.svelte';
@@ -498,7 +499,9 @@
 
 	{#each columns as col (col.key)}
 		<div class="hidden shrink-0 sm:block {col.width} {col.align === 'right' ? 'text-right' : ''}">
-			{#if col.key === 'tech'}
+			{#if col.key === 'target'}
+				<TargetCell value={s.target_value} {onFilter} />
+			{:else if col.key === 'tech'}
 				{#if s.tech.length}
 					<div class="flex flex-wrap items-center gap-1">
 						{#each s.tech.slice(0, MAX_TECH) as t (t)}

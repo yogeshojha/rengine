@@ -1,6 +1,7 @@
 import type { MatchEvidence } from './asset-query';
 
 export interface SubdomainRead {
+	target_value?: string | null;
 	id: string;
 	scan_id: string;
 	target_id: string;

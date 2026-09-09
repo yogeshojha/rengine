@@ -4,7 +4,6 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
-from uuid import UUID
 
 from sqlalchemy import and_, case, cast, exists, false, func, literal, or_, select, true
 from sqlalchemy.dialects.postgresql import INET, JSONB
@@ -16,12 +15,14 @@ from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
+from .scope import QueryScope
 from .terms import (
     int_coerce,
     json_array_match,
     negate,
     number_match,
     string_match,
+    target_overlap,
     tri_state,
 )
 from .values import asn_number, like, network
@@ -45,7 +46,7 @@ _PRIVATE_NETWORKS = (
 
 @dataclass(frozen=True)
 class IpQueryContext:
-    scan_id: UUID
+    scope: QueryScope
     now: datetime
     source: Any
 
@@ -62,7 +63,7 @@ def _within(ctx: IpQueryContext, cidr: str):
 def _host_exists(ctx: IpQueryContext, condition):
     return exists(
         select(1).where(
-            Subdomain.scan_id == ctx.scan_id,
+            ctx.scope.match(Subdomain.scan_id),
             condition,
             func.jsonb_exists(cast(Subdomain.resolved_ips, JSONB), ctx.source.c.ip),
         )
@@ -72,7 +73,7 @@ def _host_exists(ctx: IpQueryContext, condition):
 def _port_exists(ctx: IpQueryContext, condition):
     return exists(
         select(1).where(
-            Port.scan_id == ctx.scan_id, Port.ip == ctx.source.c.ip, condition
+            ctx.scope.match(Port.scan_id), Port.ip == ctx.source.c.ip, condition
         )
     )
 
@@ -111,7 +112,7 @@ def _flag(cmp: Compare, ctx: IpQueryContext):
 
 
 _FLAG_BUILDERS = {
-    "new": lambda ctx: preds.address_is_new(ctx.source.c.ip, ctx.scan_id),
+    "new": lambda ctx: preds.address_is_new(ctx.source, ctx.scope),
     "alive": lambda ctx: ctx.source.c.is_alive.is_(True),
     "open": lambda ctx: ctx.source.c.port_count > 0,
     "sensitive": lambda ctx: ctx.source.c.sensitive.is_(True),
@@ -122,13 +123,14 @@ _FLAG_BUILDERS = {
     "private": lambda ctx: or_(*[_within(ctx, n) for n in _PRIVATE_NETWORKS]),
     "v4": lambda ctx: ctx.source.c.version == _IPV4,
     "v6": lambda ctx: ctx.source.c.version == _IPV6,
-    "vulnerable": lambda ctx: preds.address_vuln(ctx.scan_id, ctx.source.c.ip),
+    "vulnerable": lambda ctx: preds.address_vuln(ctx.scope, ctx.source.c.ip),
     "kev": lambda ctx: preds.address_vuln(
-        ctx.scan_id, ctx.source.c.ip, Vulnerability.is_kev.is_(True)
+        ctx.scope, ctx.source.c.ip, Vulnerability.is_kev.is_(True)
     ),
 }
 
 _IP_BUILDERS = {
+    "target": lambda c, ctx: target_overlap(ctx.source.c.target_ids, c),
     "ip": _address,
     "ptr": lambda c, ctx: json_array_match(ctx.source.c.ptr_hostnames, c),
     "asn": lambda c, ctx: number_match(
@@ -147,10 +149,10 @@ _IP_BUILDERS = {
     "hosts": lambda c, ctx: number_match(ctx.source.c.host_count, c, int_coerce(c)),
     "assets": lambda c, ctx: number_match(ctx.source.c.asset_count, c, int_coerce(c)),
     "vuln": lambda c, ctx: preds.address_vuln(
-        ctx.scan_id, ctx.source.c.ip, string_match(Vulnerability.severity, c)
+        ctx.scope, ctx.source.c.ip, string_match(Vulnerability.severity, c)
     ),
     "cve": lambda c, ctx: preds.address_vuln(
-        ctx.scan_id, ctx.source.c.ip, json_array_match(Vulnerability.cve_ids, c)
+        ctx.scope, ctx.source.c.ip, json_array_match(Vulnerability.cve_ids, c)
     ),
     "is": _flag,
 }

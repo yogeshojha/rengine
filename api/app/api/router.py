@@ -31,6 +31,7 @@ from app.api.v1 import (
     scan_schedules,
     scans,
     subdomains,
+    surface,
     tags,
     targets,
     threat_intel,
@@ -63,6 +64,7 @@ router.include_router(scan_contexts.router)
 router.include_router(scan_schedules.router)
 router.include_router(scans.router)
 router.include_router(subdomains.router)
+router.include_router(surface.router)
 router.include_router(mcp.router)
 router.include_router(connectors.router)
 router.include_router(http_assets.router)

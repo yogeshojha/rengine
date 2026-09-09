@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from uuid import UUID
 
 from sqlalchemy import (
     and_,
@@ -29,6 +28,7 @@ from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
+from .scope import QueryScope
 from .terms import (
     date_match,
     int_coerce,
@@ -37,6 +37,7 @@ from .terms import (
     number_match,
     scaled_coerce,
     string_match,
+    target_match,
     tri_state,
 )
 from .values import asn_number, like, network, status_range, tsquery
@@ -49,7 +50,7 @@ _BODY_WEIGHT = "B"
 
 @dataclass(frozen=True)
 class QueryContext:
-    scan_id: UUID
+    scope: QueryScope
     now: datetime
 
 
@@ -61,7 +62,7 @@ class Compiled:
     def flatten(self, ctx: QueryContext):
         parts = [self.where] if self.where is not None else []
         if self.asset is not None:
-            parts.append(preds.asset_match(ctx.scan_id, self.asset))
+            parts.append(preds.asset_match(ctx.scope, self.asset))
         return and_(*parts) if parts else true()
 
 
@@ -178,7 +179,7 @@ _FLAG_BUILDERS = {
     "resolved": lambda _ctx: preds.resolved(),
     "auth": lambda _ctx: preds.auth(),
     "cdn": lambda _ctx: Subdomain.is_cdn.is_(True),
-    "cloud": lambda ctx: preds.asset_match(ctx.scan_id, HttpAsset.cdn_type == "cloud"),
+    "cloud": lambda ctx: preds.asset_match(ctx.scope, HttpAsset.cdn_type == "cloud"),
     "waf": lambda _ctx: Subdomain.waf.isnot(None),
     "screenshot": lambda _ctx: Subdomain.screenshot_path.isnot(None),
     "important": lambda _ctx: Subdomain.is_important.is_(True),
@@ -186,14 +187,14 @@ _FLAG_BUILDERS = {
     "issue": lambda ctx: preds.issues(ctx.now),
     "sensitive": lambda _ctx: preds.sensitive(),
     "http2": lambda ctx: preds.asset_match(
-        ctx.scan_id, HttpAsset.supports_http2.is_(True)
+        ctx.scope, HttpAsset.supports_http2.is_(True)
     ),
     "redirect": lambda _ctx: and_(
         Subdomain.final_url.isnot(None), Subdomain.final_url != Subdomain.http_url
     ),
-    "vulnerable": lambda ctx: preds.host_vuln(ctx.scan_id),
+    "vulnerable": lambda ctx: preds.host_vuln(ctx.scope),
     "interesting": lambda _ctx: preds.interesting(),
-    "kev": lambda ctx: preds.host_vuln(ctx.scan_id, Vulnerability.is_kev.is_(True)),
+    "kev": lambda ctx: preds.host_vuln(ctx.scope, Vulnerability.is_kev.is_(True)),
 }
 
 
@@ -223,11 +224,11 @@ def _url():
     return func.coalesce(Subdomain.final_url, Subdomain.http_url)
 
 
-def _endpoint_count(scan_id):
+def _endpoint_count(scope: QueryScope):
     return (
         select(func.count())
         .select_from(Endpoint)
-        .where(Endpoint.scan_id == scan_id, Endpoint.host == Subdomain.name)
+        .where(scope.match(Endpoint.scan_id), Endpoint.host == Subdomain.name)
         .correlate(Subdomain)
         .scalar_subquery()
     )
@@ -253,6 +254,7 @@ def _interest_band(cmp: Compare):
 
 
 _SUBDOMAIN_BUILDERS = {
+    "target": lambda c, _ctx: target_match(Subdomain.target_id, c),
     "host": lambda c, _ctx: string_match(Subdomain.name, c),
     "url": lambda c, _ctx: string_match(_url(), c),
     "cname": lambda c, _ctx: string_match(Subdomain.cname, c),
@@ -271,9 +273,7 @@ _SUBDOMAIN_BUILDERS = {
     "time": lambda c, _ctx: number_match(
         Subdomain.response_time, c, scaled_coerce(c, FieldType.DURATION)
     ),
-    "paths": lambda c, ctx: number_match(
-        _endpoint_count(ctx.scan_id), c, int_coerce(c)
-    ),
+    "paths": lambda c, ctx: number_match(_endpoint_count(ctx.scope), c, int_coerce(c)),
     "favicon": lambda c, _ctx: string_match(Subdomain.favicon_hash, c),
     "ip": lambda c, _ctx: _ip(c),
     "asn": lambda c, _ctx: number_match(
@@ -291,13 +291,13 @@ _SUBDOMAIN_BUILDERS = {
         Subdomain.tls_not_after, c, ctx.now, future=True
     ),
     "vuln": lambda c, ctx: preds.host_vuln(
-        ctx.scan_id, string_match(Vulnerability.severity, c)
+        ctx.scope, string_match(Vulnerability.severity, c)
     ),
     "interest": lambda c, _ctx: _interest_kind(c),
     "flagged": lambda c, _ctx: _interest_source(c),
     "interest_band": lambda c, _ctx: _interest_band(c),
     "cve": lambda c, ctx: preds.host_vuln(
-        ctx.scan_id, json_array_match(Vulnerability.cve_ids, c)
+        ctx.scope, json_array_match(Vulnerability.cve_ids, c)
     ),
     "is": _flag,
 }
@@ -337,7 +337,7 @@ def compile_compare(cmp: Compare, ctx: QueryContext) -> Compiled:
 
 
 def compile_term(term: Term, ctx: QueryContext):
-    scope = Subdomain.scan_id == ctx.scan_id
+    reach = ctx.scope.match(Subdomain.scan_id)
     branches = []
     assets = []
     for spec in HOST_QUERY.fields:
@@ -360,12 +360,12 @@ def compile_term(term: Term, ctx: QueryContext):
         else:
             branches.append(_SUBDOMAIN_BUILDERS[spec.name](cmp, ctx))
     if assets:
-        branches.append(preds.asset_match(ctx.scan_id, or_(*assets)))
+        branches.append(preds.asset_match(ctx.scope, or_(*assets)))
     if not branches:
         return false()
     reachable = union_all(
         *[
-            select(Subdomain.id).where(scope, branch).correlate(None)
+            select(Subdomain.id).where(reach, branch).correlate(None)
             for branch in branches
         ]
     ).subquery()

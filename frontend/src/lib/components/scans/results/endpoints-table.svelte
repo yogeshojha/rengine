@@ -71,6 +71,7 @@
 
 	interface Props {
 		scanId: string;
+		projectWide?: boolean;
 		projectId: string;
 		active?: boolean;
 		revision?: number;
@@ -81,6 +82,7 @@
 
 	let {
 		scanId,
+		projectWide = false,
 		projectId,
 		active = true,
 		revision = 0,
@@ -93,6 +95,8 @@
 			dir: appPage.url.searchParams.get('ep_dir') ?? ''
 		})
 	}: Props = $props();
+
+	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
 	const DEFAULT_SORT = { key: 'relevance', dir: -1 as const };
 	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
@@ -302,7 +306,7 @@
 	let loadedTreeSig = '';
 
 	async function loadTree() {
-		if (!scanId || !projectId) return;
+		if (!ready) return;
 		const my = ++treeReq;
 		const merged = treeMode === 'merged';
 		loadedTreeSig = merged ? treeSig : hostsSig;
@@ -361,13 +365,13 @@
 	}
 
 	function syncLeads() {
-		if (!active || loading || !scanId || !projectId) return;
+		if (!active || loading || !ready) return;
 		if (leadSig === loadedLeadSig) return;
 		void loadLeads();
 	}
 
 	async function loadGroups() {
-		if (!groupBy || !scanId || !projectId) {
+		if (!groupBy || !ready) {
 			groupSet = null;
 			return;
 		}
@@ -384,7 +388,7 @@
 	}
 
 	async function loadFacets() {
-		if (!scanId || !projectId) return;
+		if (!ready) return;
 		try {
 			facets = await endpointsApi.facets(projectId, scanId);
 			// only a successful response may restate the tab count; a failed one is not zero
@@ -397,7 +401,7 @@
 	}
 
 	async function loadAccount() {
-		if (!scanId || !projectId) return;
+		if (!ready) return;
 		try {
 			const [c, s] = await Promise.all([
 				endpointsApi.coverage(projectId, scanId),
@@ -444,7 +448,7 @@
 		void projectId;
 		void queryReady;
 		void hideStatic;
-		if (!seen) return;
+		if (!seen || !ready) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
 		primed = true;
@@ -585,7 +589,7 @@
 	let loadedGoneSig = '';
 
 	async function loadGone() {
-		if (!scanId || !projectId) return;
+		if (!ready) return;
 		const my = ++goneReq;
 		loadedGoneSig = goneSig;
 		goneLoading = true;
@@ -788,10 +792,11 @@
 	<CoverageStrip
 		{coverage}
 		{summary}
+		{projectWide}
 		hidden={hideStatic ? staticTotal : 0}
 		onShowStatic={() => setHideStatic(false)}
 		onShowNew={() => setQuery({ ...query, newOnly: true })}
-		onShowGone={() => (goneLens = true)}
+		onShowGone={projectWide ? undefined : () => (goneLens = true)}
 	/>
 
 	<FilterBar
@@ -964,7 +969,7 @@
 				onHost={pivotHost}
 				onHostPage={(p) => (hostPage = p)}
 				onExpandedChange={(n) => (expandedCount = n)}
-				onVerify={verifyBranch}
+				onVerify={projectWide ? undefined : verifyBranch}
 				edgeEl={headEl}
 				onCrumbs={(c) => (crumbs = c)}
 			/>

@@ -19,7 +19,12 @@ from shared.definitions.interest import (
 from shared.logging import get_logger
 from shared.models.interest import InterestRule
 from shared.models.subdomain import Subdomain
-from shared.services.asset_query import QueryContext, compile_query, parse_query
+from shared.services.asset_query import (
+    QueryContext,
+    QueryScope,
+    compile_query,
+    parse_query,
+)
 from shared.services.asset_query.ast import QuerySyntaxError
 
 logger = get_logger(__name__)
@@ -58,7 +63,7 @@ class RulesProvider(InterestProvider):
     order = 10
 
     def evaluate(self, ctx: InterestContext) -> Iterable[RawSignal]:
-        query_ctx = QueryContext(scan_id=ctx.scan.id, now=ctx.now)
+        query_ctx = QueryContext(scope=QueryScope((ctx.scan.id,)), now=ctx.now)
         for rule in ctx.rules:
             if not rule.enabled:
                 continue

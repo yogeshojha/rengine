@@ -71,6 +71,7 @@ class SubdomainCorrelation(BaseModel):
 class IpGroupRead(BaseModel):
     ip: str
     version: int
+    targets: list[str] = Field(default_factory=list)
     asn: int | None = None
     asn_org: str | None = None
     country: str | None = None
@@ -138,6 +139,8 @@ class IpFacets(BaseModel):
 
 class ServiceRead(BaseModel):
     id: uuid.UUID
+    target_id: uuid.UUID | None = None
+    target_value: str | None = None
     ip: str
     port: int
     protocol: str

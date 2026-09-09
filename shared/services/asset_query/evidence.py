@@ -18,6 +18,7 @@ from shared.models.asset_query import MatchEvidence
 from shared.models.subdomain import Subdomain
 
 from .ast import Node, positive_compares, positive_terms
+from .scope import QueryScope, ScopeLike
 
 MAX_PROBES = 4
 _WHITESPACE = re.compile(r"\s+")
@@ -42,7 +43,7 @@ _ASSET_SQL = text(
                  (SELECT v FROM jsonb_array_elements_text(cast(tls_sans AS jsonb)) v
                    WHERE v ILIKE :pattern LIMIT 1))) AS cert
     FROM http_assets
-    WHERE scan_id = :scan_id AND host = ANY(:hosts)
+    WHERE scan_id = ANY(:scan_ids) AND host = ANY(:hosts)
     GROUP BY host
     """
 ).bindparams(bindparam("hosts", expanding=False))
@@ -111,7 +112,7 @@ def _row_values(row: Subdomain) -> dict[str, list[str]]:
 
 async def collect(
     session: AsyncSession,
-    scan_id: UUID,
+    scope: ScopeLike,
     rows: list[Subdomain],
     node: Node | None,
 ) -> dict[UUID, list[MatchEvidence]]:
@@ -129,13 +130,13 @@ async def collect(
                 hit = next((c for c in candidates if needle in c.lower()), None)
                 if hit is not None:
                     _add(buckets[row.id], field, probe.term, hit)
-    await _asset_evidence(session, scan_id, rows, found, buckets)
+    await _asset_evidence(session, QueryScope.of(scope), rows, found, buckets)
     return {rid: list(items.values()) for rid, items in buckets.items() if items}
 
 
 async def _asset_evidence(
     session: AsyncSession,
-    scan_id: UUID,
+    scope: QueryScope,
     rows: list[Subdomain],
     found: list[Probe],
     buckets: dict[UUID, dict[str, MatchEvidence]],
@@ -156,7 +157,7 @@ async def _asset_evidence(
                 "needle": probe.term,
                 "radius": SNIPPET_RADIUS,
                 "width": SNIPPET_LENGTH,
-                "scan_id": str(scan_id),
+                "scan_ids": [str(sid) for sid in scope.ids],
                 "hosts": hosts,
             },
         )

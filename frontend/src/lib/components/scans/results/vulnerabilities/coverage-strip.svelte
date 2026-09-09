@@ -10,10 +10,11 @@
 
 	interface Props {
 		coverage: CoverageRead[];
+		projectWide?: boolean;
 		compact?: boolean;
 	}
 
-	let { coverage, compact = false }: Props = $props();
+	let { coverage, projectWide = false, compact = false }: Props = $props();
 
 	const n = (value: number | null | undefined) =>
 		value === null || value === undefined ? null : value.toLocaleString();
@@ -37,7 +38,10 @@
 		!ran ? 'text-muted-foreground' : partial ? 'text-warning' : 'text-muted-foreground'
 	);
 	let summary = $derived.by(() => {
-		if (!ran) return 'No vulnerability scan ran on this scan.';
+		if (!ran)
+			return projectWide
+				? 'No scan has run vulnerability checks yet.'
+				: 'No vulnerability scan ran on this scan.';
 		const parts = [
 			`${n(checks)} ${checks === 1 ? 'check' : 'checks'} against ${n(targets)} ${
 				targets === 1 ? 'target' : 'targets'

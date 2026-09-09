@@ -23,16 +23,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query import (
     STATEMENT_TIMEOUT,
+    QueryScope,
     QuerySyntaxError,
+    ScopeLike,
     ServiceQueryContext,
     build_leads,
     build_service_groups,
     compile_service_query,
     parse_query,
     query_error_for,
-    service_has_baseline,
     service_is_new,
 )
+from app.services.surface_scope import baselined_targets
+from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, SERVICE_QUERY
 from shared.definitions.ports import (
     DEFAULT_WEB_PORTS,
@@ -71,21 +74,27 @@ _DERIVED_SQL = """
 WITH hosts AS (
     SELECT ip, count(DISTINCT s.name) AS host_count
     FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip
-    WHERE s.scan_id = :sid GROUP BY ip
+    WHERE s.scan_id = ANY(:sids) GROUP BY ip
+), addr AS (
+    SELECT DISTINCT ON (ip) ip, asn, asn_org, country, prefix, is_cdn, cdn_name,
+           scan_policy
+    FROM ip_addresses WHERE scan_id = ANY(:sids)
+    ORDER BY ip, discovered_at DESC
 ), web_top AS (
     -- the origin probe stores assets whose host is the address itself; a hostname
     -- describes the service, the default virtual host does not
     SELECT DISTINCT ON (ip, port) ip, port, status_code, url, title, screenshot_path
     FROM http_assets
-    WHERE scan_id = :sid AND ip IS NOT NULL
+    WHERE scan_id = ANY(:sids) AND ip IS NOT NULL
     ORDER BY ip, port, (host = ip) ASC, (scheme = 'https') DESC,
              (status_code BETWEEN 200 AND 399) DESC, url
 ), web_count AS (
     SELECT ip, port, count(DISTINCT host) AS web_count
     FROM http_assets
-    WHERE scan_id = :sid AND ip IS NOT NULL AND host <> ip GROUP BY ip, port
+    WHERE scan_id = ANY(:sids) AND ip IS NOT NULL AND host <> ip GROUP BY ip, port
 )
 SELECT p.id AS id,
+       p.scan_id AS scan_id,
        p.target_id AS target_id,
        p.discovered_at AS discovered_at,
        p.ip AS ip,
@@ -117,25 +126,25 @@ SELECT p.id AS id,
        w.title AS title,
        w.screenshot_path AS screenshot_path
 FROM ports p
-LEFT JOIN ip_addresses x ON x.scan_id = :sid AND x.ip = p.ip
+LEFT JOIN addr x ON x.ip = p.ip
 LEFT JOIN hosts h ON h.ip = p.ip
 LEFT JOIN web_top w ON w.ip = p.ip AND w.port = p.number
 LEFT JOIN web_count c ON c.ip = p.ip AND c.port = p.number
-WHERE p.scan_id = :sid
+WHERE p.scan_id = ANY(:sids)
 """
 
 _HOSTS_SQL = """
 SELECT ip AS ip, s.name AS host
 FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip
-WHERE s.scan_id = :sid AND ip = ANY(:ips)
+WHERE s.scan_id = ANY(:sids) AND ip = ANY(:ips)
 """
 
 # ports on this page an earlier scan of the same target already reported
 _SEEN_SQL = """
 SELECT DISTINCT e.ip AS ip, e.number AS number
 FROM ports e
-JOIN ports cur ON cur.scan_id = :sid AND cur.ip = e.ip AND cur.number = e.number
-WHERE e.target_id = cur.target_id AND e.scan_id <> :sid
+JOIN ports cur ON cur.scan_id = ANY(:sids) AND cur.ip = e.ip AND cur.number = e.number
+WHERE e.target_id = cur.target_id AND NOT (e.scan_id = ANY(:sids))
   AND e.discovered_at < cur.discovered_at AND e.ip = ANY(:ips)
 """
 
@@ -210,11 +219,12 @@ class PortService:
         return PortSummary(total=len(rows), by_service=dict(by_service))
 
     @staticmethod
-    def _derived(scan_id: UUID):
+    def _derived(scope: QueryScope):
         return (
             text(_DERIVED_SQL)
             .columns(
                 column("id", PG_UUID(as_uuid=True)),
+                column("scan_id", PG_UUID(as_uuid=True)),
                 column("target_id", PG_UUID(as_uuid=True)),
                 column("discovered_at", DateTime(timezone=True)),
                 column("ip", String),
@@ -247,14 +257,14 @@ class PortService:
                 column("screenshot_path", String),
             )
             .bindparams(
-                bindparam("sid", scan_id),
+                bindparam("sids", list(scope.ids), type_=ARRAY(PG_UUID(as_uuid=True))),
                 bindparam("sensitive_ports", SENSITIVE_PORTS, type_=ARRAY(Integer)),
             )
             .subquery("services")
         )
 
     @staticmethod
-    def _apply_filter(query, d, f: ServiceFilter, scan_id: UUID):
+    def _apply_filter(query, d, f: ServiceFilter, scope: QueryScope):
         if f.classes:
             query = query.where(d.c.service_class.in_(f.classes))
         if f.ports:
@@ -280,7 +290,7 @@ class PortService:
         if f.named:
             query = query.where(d.c.product.isnot(None))
         if f.new:
-            query = query.where(service_is_new(d, scan_id))
+            query = query.where(service_is_new(d, scope))
         return query
 
     @staticmethod
@@ -308,30 +318,34 @@ class PortService:
         primary = col.desc() if f.order == "desc" else col.asc()
         return query.order_by(primary.nulls_last(), d.c.inet.asc(), d.c.port.asc())
 
-    def _scoped(self, scan_id: UUID, f: ServiceFilter, columns=None):
-        d = self._derived(scan_id)
+    def _scoped(self, scope: QueryScope, f: ServiceFilter, columns=None):
+        d = self._derived(scope)
         base = select(d) if columns is None else select(*columns(d))
-        return d, self._apply_filter(base, d, f, scan_id)
+        return d, self._apply_filter(base, d, f, scope)
 
     @staticmethod
-    def _context(scan_id: UUID, d, now: datetime) -> ServiceQueryContext:
-        return ServiceQueryContext(scan_id=scan_id, now=now, source=d)
+    def _context(scope: QueryScope, d, now: datetime) -> ServiceQueryContext:
+        return ServiceQueryContext(scope=scope, now=now, source=d)
 
     async def _seen_before(
-        self, scan_id: UUID, ips: list[str]
-    ) -> tuple[bool, set[tuple[str, int]]]:
-        baseline = await self.session.scalar(select(service_has_baseline(scan_id)))
+        self, scope: QueryScope, ips: list[str]
+    ) -> tuple[set[UUID], set[tuple[str, int]]]:
+        baseline = await baselined_targets(self.session, Port, scope)
         if not baseline:
-            return False, set()
-        rows = (
-            await self.session.execute(text(_SEEN_SQL).bindparams(sid=scan_id, ips=ips))
-        ).all()
-        return True, {(ip, int(number)) for ip, number in rows}
-
-    async def _hosts_for(self, scan_id: UUID, ips: list[str]) -> dict[str, set[str]]:
+            return set(), set()
         rows = (
             await self.session.execute(
-                text(_HOSTS_SQL).bindparams(sid=scan_id, ips=ips)
+                text(_SEEN_SQL).bindparams(sids=list(scope.ids), ips=ips)
+            )
+        ).all()
+        return baseline, {(ip, int(number)) for ip, number in rows}
+
+    async def _hosts_for(
+        self, scope: QueryScope, ips: list[str]
+    ) -> dict[str, set[str]]:
+        rows = (
+            await self.session.execute(
+                text(_HOSTS_SQL).bindparams(sids=list(scope.ids), ips=ips)
             )
         ).all()
         out: dict[str, set[str]] = {}
@@ -339,12 +353,13 @@ class PortService:
             out.setdefault(ip, set()).add(host)
         return out
 
-    async def search(self, scan_id: UUID, f: ServiceFilter) -> ServicePage:
+    async def search(self, scope: ScopeLike, f: ServiceFilter) -> ServicePage:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        d, base = self._scoped(scan_id, f)
+        d, base = self._scoped(scope, f)
         try:
             predicate = compile_service_query(
-                parse_query(f.q, SERVICE_QUERY), self._context(scan_id, d, now)
+                parse_query(f.q, SERVICE_QUERY), self._context(scope, d, now)
             )
         except QuerySyntaxError as exc:
             return ServicePage(
@@ -385,14 +400,17 @@ class PortService:
         if not rows:
             return page
         page_ips = [r["ip"] for r in rows]
-        hosts = await self._hosts_for(scan_id, page_ips)
-        baseline, seen = await self._seen_before(scan_id, page_ips)
+        hosts = await self._hosts_for(scope, page_ips)
+        baseline, seen = await self._seen_before(scope, page_ips)
+        targets = await target_names(self.session, (r["target_id"] for r in rows))
         for r in rows:
             names = sorted(hosts.get(r["ip"], set()))
             description, registered = describe(int(r["port"]), r["service_name"])
             page.items.append(
                 ServiceRead(
                     id=r["id"],
+                    target_id=r["target_id"],
+                    target_value=targets.get(r["target_id"]),
                     ip=r["ip"],
                     port=r["port"],
                     protocol=r["protocol"],
@@ -422,15 +440,17 @@ class PortService:
                     title=r["title"],
                     screenshot_path=r["screenshot_path"],
                     is_sensitive=bool(r["sensitive"]),
-                    is_new=baseline and (r["ip"], int(r["port"])) not in seen,
+                    is_new=r["target_id"] in baseline
+                    and (r["ip"], int(r["port"])) not in seen,
                 )
             )
         return page
 
-    async def leads(self, scan_id: UUID, f: ServiceFilter) -> QueryLeads:
+    async def leads(self, scope: ScopeLike, f: ServiceFilter) -> QueryLeads:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        d, base = self._scoped(scan_id, f, columns=lambda d: (d.c.id,))
-        ctx = self._context(scan_id, d, now)
+        d, base = self._scoped(scope, f, columns=lambda d: (d.c.id,))
+        ctx = self._context(scope, d, now)
         await self.session.execute(text(STATEMENT_TIMEOUT))
         try:
             return await build_leads(
@@ -445,12 +465,13 @@ class PortService:
             logger.info("service leads failed", error=str(exc.orig))
             return QueryLeads()
 
-    async def groups(self, scan_id: UUID, f: ServiceFilter, key: str) -> QueryGroups:
+    async def groups(self, scope: ScopeLike, f: ServiceFilter, key: str) -> QueryGroups:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        d, base = self._scoped(scan_id, f)
+        d, base = self._scoped(scope, f)
         try:
             predicate = compile_service_query(
-                parse_query(f.q, SERVICE_QUERY), self._context(scan_id, d, now)
+                parse_query(f.q, SERVICE_QUERY), self._context(scope, d, now)
             )
         except QuerySyntaxError:
             return QueryGroups(dimension=key)
@@ -464,8 +485,9 @@ class PortService:
             logger.info("service groups failed", error=str(exc.orig))
             return QueryGroups(dimension=key)
 
-    async def facets(self, scan_id: UUID) -> ServiceFacets:
-        d = self._derived(scan_id)
+    async def facets(self, scope: ScopeLike) -> ServiceFacets:
+        scope = QueryScope.of(scope)
+        d = self._derived(scope)
         n = func.count()
 
         async def tally(col, limit: int = _FACET_LIMIT):
@@ -530,8 +552,9 @@ class PortService:
             ],
         )
 
-    async def exposure(self, scan_id: UUID) -> ScanExposure:
-        d = self._derived(scan_id)
+    async def exposure(self, scope: ScopeLike) -> ScanExposure:
+        scope = QueryScope.of(scope)
+        d = self._derived(scope)
         n = func.count()
         addresses = func.count(func.distinct(d.c.ip))
         web_class = d.c.service_class == ServiceClass.WEB.value
@@ -600,8 +623,8 @@ class PortService:
                 text(
                     "SELECT coalesce(scan_policy, 'unplanned') AS policy, "
                     "coalesce(scan_policy_reason, '') AS reason, count(*) AS n "
-                    "FROM ip_addresses WHERE scan_id = :sid GROUP BY 1, 2"
-                ).bindparams(sid=scan_id)
+                    "FROM ip_addresses WHERE scan_id = ANY(:sids) GROUP BY 1, 2"
+                ).bindparams(sids=list(scope.ids))
             )
         ).all()
         coverage = _coverage(policy_rows)

@@ -1,5 +1,10 @@
+import { SURFACE_ORDER } from './surface';
+
 export const routeLabels: Record<string, string> = {
 	dashboard: 'Dashboard',
+
+	surface: 'Attack surface',
+	...Object.fromEntries(SURFACE_ORDER.map((spec) => [spec.tab, spec.label])),
 
 	// Reconnaissance
 	targets: 'Targets',
@@ -61,6 +66,11 @@ export const ROUTES = {
 	target: (id: string, tab?: string) => (tab ? `/targets/${id}?tab=${tab}` : `/targets/${id}`),
 	scans: '/scans',
 	scansForTarget: (id: string) => `/scans?target=${id}`,
+	surface: (tab: string, query?: Record<string, string>) => {
+		const params = new URLSearchParams(query ?? {});
+		const suffix = params.toString();
+		return `/surface/${tab}${suffix ? `?${suffix}` : ''}`;
+	},
 	scan: (id: string) => `/scans/${id}`,
 	scanTab: (id: string, tab: string, query?: Record<string, string>) => {
 		const params = new URLSearchParams({ tab, ...(query ?? {}) });

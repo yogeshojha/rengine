@@ -12,7 +12,7 @@ from app.services.asset_query.predicates import cert_state, live, vuln_seen_earl
 from app.services.dashboard import DashboardService
 from app.services.related_domains import RelatedDomainService
 from app.services.scan import ScanService
-from app.services.target_summary import _covering_stages
+from app.services.surface_scope import covering_stages
 from shared.definitions.dashboard import (
     CHANGES_LIMIT,
     DEFAULT_WINDOW,
@@ -453,7 +453,7 @@ class DashboardOverviewService:
         ran: dict[UUID, set[str]],
     ) -> Covered:
         """Per dimension and target, the scans that ran it, newest first."""
-        by_dimension = _covering_stages()
+        by_dimension = covering_stages()
         out: Covered = {key: {} for key in SURFACE_ORDER}
         for tid, runs in runs_by_target.items():
             for key, names in by_dimension.items():

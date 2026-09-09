@@ -6,6 +6,7 @@ from functools import lru_cache
 from sqlalchemy import (
     Text,
     and_,
+    any_,
     cast,
     distinct,
     exists,
@@ -33,6 +34,8 @@ from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 
+from .scope import QueryScope, ScopeLike, scope_of
+
 HTTP_OK = 200
 HTTP_REDIRECT = 300
 HTTP_CLIENT = 400
@@ -47,6 +50,24 @@ STATUS_BUCKETS = {
 }
 AUTH_RE = "login|sign ?in|log ?in|admin|dashboard|portal|console|authenticat"
 EXPIRING_DAYS = 30
+
+
+def _one_target(scope: QueryScope, column):
+    """The target these scans belong to; the row's own once the scope spans several."""
+    single = scope.single
+    if single is None:
+        return column
+    return select(Scan.target_id).where(Scan.id == single).scalar_subquery()
+
+
+def _per_scan(scope: QueryScope, column, build):
+    """A scan-level fact evaluated against each row's own scan."""
+    single = scope.single
+    if single is not None:
+        return build(single)
+    if not scope.ids:
+        return false()
+    return or_(*[and_(column == sid, build(sid)) for sid in scope.ids])
 
 
 def status_class(name: str):
@@ -119,62 +140,82 @@ def is_new():
     return and_(has_baseline(), not_(seen_earlier()))
 
 
-def address_seen_earlier(ip_column, scan_id):
-    earlier = aliased(IpAddress)
-    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
-    cutoff = (
+def _address_cutoff(scan_id):
+    return (
         select(func.min(IpAddress.discovered_at))
         .where(IpAddress.scan_id == scan_id)
         .scalar_subquery()
     )
-    return exists(
-        select(1).where(
-            earlier.target_id == target,
-            earlier.ip == ip_column,
-            earlier.scan_id != scan_id,
-            earlier.discovered_at < cutoff,
-        )
-    )
 
 
-def address_has_baseline(scan_id):
+def _address_baseline(scan_id):
     """Whether an earlier scan of this target recorded any address. Scan-level, never per row."""
     earlier = aliased(IpAddress)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
-    cutoff = (
-        select(func.min(IpAddress.discovered_at))
-        .where(IpAddress.scan_id == scan_id)
-        .scalar_subquery()
-    )
     return exists(
         select(1).where(
             earlier.target_id == target,
             earlier.scan_id != scan_id,
-            earlier.discovered_at < cutoff,
+            earlier.discovered_at < _address_cutoff(scan_id),
         )
     )
 
 
-def address_is_new(ip_column, scan_id):
-    return and_(
-        address_has_baseline(scan_id), not_(address_seen_earlier(ip_column, scan_id))
+def _address_seen_earlier(source, scan_id):
+    earlier = aliased(IpAddress)
+    return exists(
+        select(1).where(
+            earlier.target_id
+            == select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery(),
+            earlier.ip == source.c.ip,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < _address_cutoff(scan_id),
+        )
     )
 
 
-def service_seen_earlier(source, scan_id):
+def _address_history(source, scope: QueryScope, *conditions):
+    """History for an address is every target it serves, since the view folds them into one row."""
+    earlier = aliased(IpAddress)
+    return exists(
+        select(1).where(
+            earlier.target_id == any_(source.c.target_ids),
+            not_(scope.match(earlier.scan_id)),
+            earlier.discovered_at < source.c.first_seen,
+            *[c(earlier) for c in conditions],
+        )
+    )
+
+
+def address_is_new(source, scope: ScopeLike):
+    scope = scope_of(scope)
+    single = scope.single
+    if single is not None:
+        return and_(
+            _address_baseline(single),
+            not_(_address_seen_earlier(source, single)),
+        )
+    return and_(
+        _address_history(source, scope),
+        not_(_address_history(source, scope, lambda e: e.ip == source.c.ip)),
+    )
+
+
+def service_seen_earlier(source, scope: ScopeLike):
+    scope = scope_of(scope)
     earlier = aliased(Port)
     return exists(
         select(1).where(
             earlier.target_id == source.c.target_id,
             earlier.ip == source.c.ip,
             earlier.number == source.c.port,
-            earlier.scan_id != scan_id,
+            not_(scope.match(earlier.scan_id)),
             earlier.discovered_at < source.c.discovered_at,
         )
     )
 
 
-def service_has_baseline(scan_id):
+def _service_baseline(scan_id):
     """Whether an earlier scan of this target recorded any port at all.
 
     Scan-level, so it must not correlate with the row: joining every port of this
@@ -196,10 +237,18 @@ def service_has_baseline(scan_id):
     )
 
 
-def service_is_new(source, scan_id):
+def service_has_baseline(scope: ScopeLike):
+    scope = scope_of(scope)
+    if not scope.ids:
+        return false()
+    return or_(*[_service_baseline(sid) for sid in scope.ids])
+
+
+def service_is_new(source, scope: ScopeLike):
+    scope = scope_of(scope)
     return and_(
-        service_has_baseline(scan_id),
-        not_(service_seen_earlier(source, scan_id)),
+        _per_scan(scope, source.c.scan_id, _service_baseline),
+        not_(service_seen_earlier(source, scope)),
     )
 
 
@@ -237,9 +286,11 @@ def issues(now: datetime):
     )
 
 
-def asset_match(scan_id, condition):
+def asset_match(scope: ScopeLike, condition):
     return Subdomain.name.in_(
-        select(HttpAsset.host).where(HttpAsset.scan_id == scan_id, condition)
+        select(HttpAsset.host).where(
+            scope_of(scope).match(HttpAsset.scan_id), condition
+        )
     )
 
 
@@ -247,30 +298,32 @@ def ip_text():
     return cast(Subdomain.resolved_ips, Text)
 
 
-def vuln_on(scan_id, *conditions):
-    """A finding recorded by this scan, narrowed by the caller's asset join."""
-    return exists(select(1).where(Vulnerability.scan_id == scan_id, *conditions))
+def vuln_on(scope: ScopeLike, *conditions):
+    """A finding recorded by these scans, narrowed by the caller's asset join."""
+    return exists(
+        select(1).where(scope_of(scope).match(Vulnerability.scan_id), *conditions)
+    )
 
 
-def host_vuln(scan_id, condition=None):
+def host_vuln(scope: ScopeLike, condition=None):
     clauses = [Vulnerability.host == Subdomain.name]
     if condition is not None:
         clauses.append(condition)
-    return vuln_on(scan_id, *clauses)
+    return vuln_on(scope, *clauses)
 
 
-def address_vuln(scan_id, column, condition=None):
+def address_vuln(scope: ScopeLike, column, condition=None):
     clauses = [Vulnerability.ip == column]
     if condition is not None:
         clauses.append(condition)
-    return vuln_on(scan_id, *clauses)
+    return vuln_on(scope, *clauses)
 
 
-def service_vuln(scan_id, ip_column, port_column, condition=None):
+def service_vuln(scope: ScopeLike, ip_column, port_column, condition=None):
     clauses = [Vulnerability.ip == ip_column, Vulnerability.port == port_column]
     if condition is not None:
         clauses.append(condition)
-    return vuln_on(scan_id, *clauses)
+    return vuln_on(scope, *clauses)
 
 
 def vuln_seen_earlier():
@@ -285,7 +338,7 @@ def vuln_seen_earlier():
     )
 
 
-def vuln_has_baseline(scan_id):
+def _vuln_baseline(scan_id):
     """Whether an earlier scan of this target recorded any finding. Scan-level, never per row."""
     earlier = aliased(Vulnerability)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
@@ -303,24 +356,36 @@ def vuln_has_baseline(scan_id):
     )
 
 
-def vuln_is_new(scan_id):
-    return and_(vuln_has_baseline(scan_id), not_(vuln_seen_earlier()))
+def vuln_has_baseline(scope: ScopeLike):
+    scope = scope_of(scope)
+    if not scope.ids:
+        return false()
+    return or_(*[_vuln_baseline(sid) for sid in scope.ids])
 
 
-def vuln_suppressed(scan_id):
+def vuln_is_new(scope: ScopeLike):
+    scope = scope_of(scope)
+    return and_(
+        _per_scan(scope, Vulnerability.scan_id, _vuln_baseline),
+        not_(vuln_seen_earlier()),
+    )
+
+
+def vuln_suppressed(scope: ScopeLike):
     """A reviewer set this finding aside. An EXISTS so Postgres can hash-join it, not probe per row."""
-    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    scope = scope_of(scope)
     return exists(
         select(1).where(
-            VulnerabilityTriage.target_id == target,
+            VulnerabilityTriage.target_id
+            == _one_target(scope, Vulnerability.target_id),
             VulnerabilityTriage.fingerprint == Vulnerability.fingerprint,
             VulnerabilityTriage.state.in_(SUPPRESSED_STATES),
         )
     )
 
 
-def _vuln_eligible(scan_id):
-    """Findings allowed to vouch: this scan, not informational, not set aside by a reviewer."""
+def _vuln_eligible(scope: QueryScope):
+    """Findings allowed to vouch: these scans, not informational, not set aside by a reviewer."""
     return (
         select(
             Vulnerability.id.label("id"),
@@ -330,9 +395,9 @@ def _vuln_eligible(scan_id):
             Vulnerability.cwe_ids.label("cwe_ids"),
         )
         .where(
-            Vulnerability.scan_id == scan_id,
+            scope.match(Vulnerability.scan_id),
             Vulnerability.severity != Severity.INFO.value,
-            not_(vuln_suppressed(scan_id)),
+            not_(vuln_suppressed(scope)),
         )
         .cte("vuln_eligible")
     )
@@ -350,9 +415,9 @@ def _vuln_keys(source, column, prefix: str, name: str):
 
 # cached so both the filter and the sort share one CTE object; two would collide by name
 @lru_cache(maxsize=128)
-def vuln_corroborated_ids(scan_id):
+def _corroborated_ids(scope: QueryScope):
     """Findings a different check confirms at the same location by naming the same CVE or CWE."""
-    eligible = _vuln_eligible(scan_id)
+    eligible = _vuln_eligible(scope)
     signals = union_all(
         _vuln_keys(eligible, eligible.c.cve_ids, "cve:", "cve_key"),
         _vuln_keys(eligible, eligible.c.cwe_ids, "cwe:", "cwe_key"),
@@ -377,17 +442,22 @@ def vuln_corroborated_ids(scan_id):
     )
 
 
-def vuln_corroborated(scan_id):
-    return Vulnerability.id.in_(vuln_corroborated_ids(scan_id))
+def vuln_corroborated_ids(scope: ScopeLike):
+    return _corroborated_ids(scope_of(scope))
 
 
-def vuln_state(scan_id):
+def vuln_corroborated(scope: ScopeLike):
+    return Vulnerability.id.in_(vuln_corroborated_ids(scope))
+
+
+def vuln_state(scope: ScopeLike):
     """The review decision for this finding, defaulting to open when nobody has decided."""
-    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    scope = scope_of(scope)
     return func.coalesce(
         select(VulnerabilityTriage.state)
         .where(
-            VulnerabilityTriage.target_id == target,
+            VulnerabilityTriage.target_id
+            == _one_target(scope, Vulnerability.target_id),
             VulnerabilityTriage.fingerprint == Vulnerability.fingerprint,
         )
         .limit(1)
@@ -408,7 +478,7 @@ def endpoint_seen_earlier():
     )
 
 
-def endpoint_has_baseline(scan_id):
+def _endpoint_baseline(scan_id):
     """Whether an earlier scan of this target recorded any endpoint. Scan-level, never per row."""
     earlier = aliased(Endpoint)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
@@ -426,11 +496,22 @@ def endpoint_has_baseline(scan_id):
     )
 
 
-def endpoint_is_new(scan_id):
-    return and_(endpoint_has_baseline(scan_id), not_(endpoint_seen_earlier()))
+def endpoint_has_baseline(scope: ScopeLike):
+    scope = scope_of(scope)
+    if not scope.ids:
+        return false()
+    return or_(*[_endpoint_baseline(sid) for sid in scope.ids])
 
 
-def endpoint_vuln(scan_id, condition=None):
+def endpoint_is_new(scope: ScopeLike):
+    scope = scope_of(scope)
+    return and_(
+        _per_scan(scope, Endpoint.scan_id, _endpoint_baseline),
+        not_(endpoint_seen_earlier()),
+    )
+
+
+def endpoint_vuln(scope: ScopeLike, condition=None):
     """A finding this scan reported at this endpoint's location or on its host."""
     clauses = [
         or_(
@@ -440,7 +521,7 @@ def endpoint_vuln(scan_id, condition=None):
     ]
     if condition is not None:
         clauses.append(condition)
-    return vuln_on(scan_id, *clauses)
+    return vuln_on(scope, *clauses)
 
 
 def endpoint_source(*names: str):

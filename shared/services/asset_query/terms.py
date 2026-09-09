@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.asset_query import FieldType, Op
+from shared.models.target import Target
 
 from .ast import Compare
 from .values import is_relative, like, moment, scaled_number, split_range
@@ -47,6 +48,23 @@ def string_match(col, cmp: Compare):
     if cmp.op is Op.RE:
         return matched
     return or_(col.is_(None), negate(matched))
+
+
+def target_match(column, cmp: Compare):
+    """Rows whose target id belongs to a target whose value matches; every row has one."""
+    return column.in_(select(Target.id).where(string_match(Target.target_value, cmp)))
+
+
+def target_overlap(column, cmp: Compare):
+    """The same test where a row carries several targets, as a shared address does."""
+    wanted = (
+        select(func.array_agg(Target.id))
+        .where(string_match(Target.target_value, cmp))
+        .scalar_subquery()
+    )
+    return func.coalesce(column, pg_array([], type_=column.type)).op("&&")(
+        func.coalesce(wanted, pg_array([], type_=column.type))
+    )
 
 
 def number_match(col, cmp: Compare, coerce):

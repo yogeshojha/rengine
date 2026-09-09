@@ -10,6 +10,17 @@ export interface TableColumn extends ColumnDef {
 	grow?: boolean;
 }
 
+// the row's target; only meaningful when a view spans more than one
+export const TARGET_COLUMN: TableColumn = {
+	key: 'target',
+	label: 'Target',
+	width: 'w-40'
+};
+
+export function withTarget(columns: TableColumn[], projectWide: boolean): TableColumn[] {
+	return projectWide ? [TARGET_COLUMN, ...columns] : columns;
+}
+
 export interface SortOption {
 	key: string;
 	label: string;

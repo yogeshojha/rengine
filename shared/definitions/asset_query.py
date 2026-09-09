@@ -118,6 +118,7 @@ class QueryField:
 
 
 GROUPS: tuple[str, ...] = (
+    "Scope",
     "Host",
     "HTTP",
     "Response",
@@ -152,6 +153,15 @@ FLAGS: dict[str, str] = {
 }
 
 FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="target",
+        type=FieldType.STRING,
+        group="Scope",
+        description="Target this host belongs to.",
+        example="target:acme.com",
+        aliases=("scope",),
+        facet="target",
+    ),
     QueryField(
         name="host",
         type=FieldType.STRING,
@@ -549,6 +559,11 @@ class GroupDimension:
 
 GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     GroupDimension(
+        key="target",
+        label="Target",
+        description="Rows belonging to the same target",
+    ),
+    GroupDimension(
         key="ip",
         label="IP address",
         description="Names sharing a resolved address",
@@ -939,6 +954,7 @@ HOST_QUERY = QueryRegistry(
 )
 
 IP_GROUPS: tuple[str, ...] = (
+    "Scope",
     "Address",
     "Network",
     "Services",
@@ -970,6 +986,15 @@ IP_EXPOSURE: dict[str, str] = {
 }
 
 IP_FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="target",
+        type=FieldType.STRING,
+        group="Scope",
+        description="Target this address belongs to.",
+        example="target:acme.com",
+        aliases=("scope",),
+        facet="target",
+    ),
     QueryField(
         name="ip",
         type=FieldType.IP,
@@ -1106,6 +1131,11 @@ IP_FIELDS: tuple[QueryField, ...] = (
 )
 
 IP_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
+    GroupDimension(
+        key="target",
+        label="Target",
+        description="Rows belonging to the same target",
+    ),
     GroupDimension(
         key="asn",
         label="Autonomous system",
@@ -1257,6 +1287,7 @@ IP_QUERY = QueryRegistry(
 )
 
 SERVICE_GROUPS: tuple[str, ...] = (
+    "Scope",
     "Service",
     "Software",
     "Address",
@@ -1285,6 +1316,15 @@ SERVICE_FLAGS: dict[str, str] = {
 SERVICE_EXPOSURE: dict[str, str] = dict(SERVICE_CLASS_LABELS)
 
 SERVICE_FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="target",
+        type=FieldType.STRING,
+        group="Scope",
+        description="Target this service belongs to.",
+        example="target:acme.com",
+        aliases=("scope",),
+        facet="target",
+    ),
     QueryField(
         name="port",
         type=FieldType.NUMBER,
@@ -1439,6 +1479,11 @@ SERVICE_FIELDS: tuple[QueryField, ...] = (
 )
 
 SERVICE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
+    GroupDimension(
+        key="target",
+        label="Target",
+        description="Rows belonging to the same target",
+    ),
     GroupDimension(
         key="service",
         label="Service",
@@ -1619,6 +1664,7 @@ SERVICE_QUERY = QueryRegistry(
 
 
 VULN_GROUPS: tuple[str, ...] = (
+    "Scope",
     "Finding",
     "Classification",
     "Asset",
@@ -1646,6 +1692,15 @@ VULN_FLAGS: dict[str, str] = {
 }
 
 VULN_FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="target",
+        type=FieldType.STRING,
+        group="Scope",
+        description="Target this finding belongs to.",
+        example="target:acme.com",
+        aliases=("scope",),
+        facet="target",
+    ),
     QueryField(
         name="name",
         type=FieldType.STRING,
@@ -1878,6 +1933,11 @@ VULN_FIELDS: tuple[QueryField, ...] = (
 
 VULN_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     GroupDimension(
+        key="target",
+        label="Target",
+        description="Rows belonging to the same target",
+    ),
+    GroupDimension(
         key="template",
         label="Check",
         description="The same weakness across every asset it was found on",
@@ -2078,6 +2138,7 @@ VULN_QUERY = QueryRegistry(
 
 
 ENDPOINT_GROUPS: tuple[str, ...] = (
+    "Scope",
     "Location",
     "Parameters",
     "Response",
@@ -2110,6 +2171,15 @@ ENDPOINT_FLAGS: dict[str, str] = {
 }
 
 ENDPOINT_FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="target",
+        type=FieldType.STRING,
+        group="Scope",
+        description="Target this endpoint belongs to.",
+        example="target:acme.com",
+        aliases=("scope",),
+        facet="target",
+    ),
     QueryField(
         name="url",
         type=FieldType.STRING,
@@ -2327,6 +2397,11 @@ ENDPOINT_FIELDS: tuple[QueryField, ...] = (
 )
 
 ENDPOINT_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
+    GroupDimension(
+        key="target",
+        label="Target",
+        description="Rows belonging to the same target",
+    ),
     GroupDimension(
         key="dir",
         label="Directory",

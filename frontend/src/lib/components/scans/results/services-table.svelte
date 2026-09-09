@@ -20,6 +20,7 @@
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
+	import { withTarget } from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import GroupList from './table/group-list.svelte';
@@ -59,6 +60,7 @@
 
 	interface Props {
 		scanId: string;
+		projectWide?: boolean;
 		targetId?: string;
 		targetType?: string;
 		projectId: string;
@@ -71,6 +73,7 @@
 
 	let {
 		scanId,
+		projectWide = false,
 		targetId = '',
 		targetType = '',
 		projectId,
@@ -83,6 +86,8 @@
 			search: appPage.url.searchParams.get('svc_q') ?? ''
 		})
 	}: Props = $props();
+
+	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
 	const DEFAULT_SORT = { key: 'exposure', dir: -1 as const };
 	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
@@ -149,7 +154,10 @@
 	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
 	let selectedIndex = $derived(selected ? items.findIndex((s) => s.id === selected?.id) : -1);
 	let visible = $derived(visiblePref ?? DEFAULT_VISIBLE_SERVICE_COLUMNS);
-	let shownColumns = $derived(SERVICE_COLUMNS.filter((c) => visible.includes(c.key)));
+	let allColumns = $derived(withTarget(SERVICE_COLUMNS, projectWide));
+	let shownColumns = $derived(
+		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
+	);
 	let checkedCount = $derived(items.filter((s) => checkedIds.has(s.id)).length);
 	let selectAllChecked = $derived<boolean | 'indeterminate'>(
 		items.length > 0 && checkedCount === items.length
@@ -255,13 +263,13 @@
 	}
 
 	function syncLeads() {
-		if (!active || loading || !scanId || !projectId) return;
+		if (!active || loading || !ready) return;
 		if (leadSig === loadedLeadSig) return;
 		void loadLeads();
 	}
 
 	async function loadGroups() {
-		if (!groupBy || !scanId || !projectId) {
+		if (!groupBy || !ready) {
 			groupSet = null;
 			return;
 		}
@@ -278,7 +286,7 @@
 	}
 
 	async function loadFacets() {
-		if (!scanId || !projectId) return;
+		if (!ready) return;
 		try {
 			facets = await servicesApi.facets(projectId, scanId);
 			// only a successful response may restate the tab count; a failed one is not zero
@@ -315,7 +323,7 @@
 		void scanId;
 		void projectId;
 		void queryReady;
-		if (!seen) return;
+		if (!seen || !ready) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
 		primed = true;
@@ -467,7 +475,7 @@
 	let rescanBusy = $state(false);
 
 	$effect(() => {
-		if (!active || !scanId || !projectId) return;
+		if (projectWide || !active || !scanId || !projectId) return;
 		void rechecks.loadSchema();
 		untrack(() => rechecks.load(scanId, projectId));
 	});
@@ -579,7 +587,7 @@
 		</div>
 	{/if}
 
-	{#if !groupBy}
+	{#if !groupBy && !projectWide}
 		<SelectionBar
 			count={checkedCount}
 			noun="service"

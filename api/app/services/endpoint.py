@@ -13,7 +13,9 @@ from app.services.asset_query import (
     NO_JIT,
     STATEMENT_TIMEOUT,
     EndpointQueryContext,
+    QueryScope,
     QuerySyntaxError,
+    ScopeLike,
     build_endpoint_groups,
     build_leads,
     compile_endpoint_query,
@@ -28,6 +30,7 @@ from app.services.endpoint_tree import (
     build_tree,
     static_clause,
 )
+from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, ENDPOINT_QUERY
 from shared.definitions.endpoints import (
     ADMIN_INTERESTS,
@@ -129,11 +132,11 @@ class EndpointService:
         self.session = session
 
     @staticmethod
-    def _context(scan_id: UUID, now: datetime) -> EndpointQueryContext:
-        return EndpointQueryContext(scan_id=scan_id, now=now)
+    def _context(scope: QueryScope, now: datetime) -> EndpointQueryContext:
+        return EndpointQueryContext(scope=scope, now=now)
 
     @staticmethod
-    def _apply_filter(query, f: EndpointFilter, scan_id: UUID):
+    def _apply_filter(query, f: EndpointFilter, scope: QueryScope):
         if f.host:
             query = query.where(Endpoint.host == f.host)
         if f.dir_path:
@@ -160,7 +163,7 @@ class EndpointService:
         if f.probed is not None:
             query = query.where(Endpoint.is_probed.is_(f.probed))
         if f.new:
-            query = query.where(endpoint_is_new(scan_id))
+            query = query.where(endpoint_is_new(scope))
         if f.hide_static:
             query = query.where(~_is_static())
         return query
@@ -196,21 +199,22 @@ class EndpointService:
             primary.nulls_last(), Endpoint.host.asc(), Endpoint.path.asc()
         )
 
-    def _scoped(self, scan_id: UUID, f: EndpointFilter, columns=None):
+    def _scoped(self, scope: QueryScope, f: EndpointFilter, columns=None):
         base = select(Endpoint) if columns is None else select(*columns)
-        base = base.where(Endpoint.scan_id == scan_id)
-        return self._apply_filter(base, f, scan_id)
+        base = base.where(scope.match(Endpoint.scan_id))
+        return self._apply_filter(base, f, scope)
 
-    def _compiled(self, scan_id: UUID, f: EndpointFilter, now: datetime):
+    def _compiled(self, scope: QueryScope, f: EndpointFilter, now: datetime):
         return compile_endpoint_query(
-            parse_query(f.q, ENDPOINT_QUERY), self._context(scan_id, now)
+            parse_query(f.q, ENDPOINT_QUERY), self._context(scope, now)
         )
 
-    async def search(self, scan_id: UUID, f: EndpointFilter) -> EndpointPage:
+    async def search(self, scope: ScopeLike, f: EndpointFilter) -> EndpointPage:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        base = self._scoped(scan_id, f)
+        base = self._scoped(scope, f)
         try:
-            predicate = self._compiled(scan_id, f, now)
+            predicate = self._compiled(scope, f, now)
         except QuerySyntaxError as exc:
             return EndpointPage(
                 error=QueryError(
@@ -255,15 +259,26 @@ class EndpointService:
         )
         if not rows:
             return page
-        fresh = await self._new_signatures(scan_id, [r.signature for r in rows])
-        page.items = [self._to_read(row, is_new=row.signature in fresh) for row in rows]
+        fresh = await self._new_signatures(scope, [r.signature for r in rows])
+        names = await target_names(self.session, (r.target_id for r in rows))
+        page.items = [
+            self._to_read(
+                row,
+                is_new=row.signature in fresh,
+                target_value=names.get(row.target_id),
+            )
+            for row in rows
+        ]
         return page
 
-    def _to_read(self, row: Endpoint, *, is_new: bool = False) -> EndpointRead:
+    def _to_read(
+        self, row: Endpoint, *, is_new: bool = False, target_value: str | None = None
+    ) -> EndpointRead:
         return EndpointRead(
             id=row.id,
             scan_id=row.scan_id,
             target_id=row.target_id,
+            target_value=target_value,
             signature=row.signature,
             url=row.url,
             host=row.host,
@@ -302,20 +317,23 @@ class EndpointService:
             is_new=is_new,
         )
 
-    async def detail(self, scan_id: UUID, endpoint_id: UUID) -> EndpointDetail | None:
+    async def detail(
+        self, scope: ScopeLike, endpoint_id: UUID
+    ) -> EndpointDetail | None:
+        scope = QueryScope.of(scope)
         row = await self.session.scalar(
             select(Endpoint).where(
-                Endpoint.id == endpoint_id, Endpoint.scan_id == scan_id
+                Endpoint.id == endpoint_id, scope.match(Endpoint.scan_id)
             )
         )
         if row is None:
             return None
-        fresh = await self._new_signatures(scan_id, [row.signature])
+        fresh = await self._new_signatures(scope, [row.signature])
         siblings = await self.session.scalar(
             select(func.count())
             .select_from(Endpoint)
             .where(
-                Endpoint.scan_id == scan_id,
+                scope.match(Endpoint.scan_id),
                 Endpoint.host == row.host,
                 Endpoint.dir_path == row.dir_path,
                 Endpoint.id != row.id,
@@ -330,24 +348,27 @@ class EndpointService:
             siblings=int(siblings or 0),
         )
 
-    async def _new_signatures(self, scan_id: UUID, signatures: list[str]) -> set[str]:
+    async def _new_signatures(
+        self, scope: QueryScope, signatures: list[str]
+    ) -> set[str]:
         if not signatures:
             return set()
         rows = await self.session.execute(
             select(Endpoint.signature).where(
-                Endpoint.scan_id == scan_id,
+                scope.match(Endpoint.scan_id),
                 Endpoint.signature.in_(signatures),
-                endpoint_is_new(scan_id),
+                endpoint_is_new(scope),
             )
         )
         return set(rows.scalars().all())
 
-    async def facets(self, scan_id: UUID, f: EndpointFilter) -> EndpointFacets:
+    async def facets(self, scope: ScopeLike, f: EndpointFilter) -> EndpointFacets:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        base = select(Endpoint.id).where(Endpoint.scan_id == scan_id)
-        base = self._apply_filter(base, f, scan_id)
+        base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
+        base = self._apply_filter(base, f, scope)
         try:
-            predicate = self._compiled(scan_id, f, now)
+            predicate = self._compiled(scope, f, now)
         except QuerySyntaxError:
             return EndpointFacets()
         if predicate is not None:
@@ -436,11 +457,12 @@ class EndpointService:
                 )
         return out
 
-    async def leads(self, scan_id: UUID, f: EndpointFilter) -> QueryLeads:
+    async def leads(self, scope: ScopeLike, f: EndpointFilter) -> QueryLeads:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        base = select(Endpoint.id).where(Endpoint.scan_id == scan_id)
-        base = self._apply_filter(base, f, scan_id)
-        context = self._context(scan_id, now)
+        base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
+        base = self._apply_filter(base, f, scope)
+        context = self._context(scope, now)
 
         def predicate_for(query: str):
             return compile_endpoint_query(parse_query(query, ENDPOINT_QUERY), context)
@@ -453,24 +475,30 @@ class EndpointService:
             filtered=f.has_facets(),
         )
 
-    async def groups(self, scan_id: UUID, f: EndpointFilter, key: str) -> QueryGroups:
+    async def groups(
+        self, scope: ScopeLike, f: EndpointFilter, key: str
+    ) -> QueryGroups:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        base = select(Endpoint.id).where(Endpoint.scan_id == scan_id)
-        base = self._apply_filter(base, f, scan_id)
+        base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
+        base = self._apply_filter(base, f, scope)
         try:
-            predicate = self._compiled(scan_id, f, now)
+            predicate = self._compiled(scope, f, now)
         except QuerySyntaxError:
             return QueryGroups(dimension=key)
         if predicate is not None:
             base = base.where(predicate)
         return await build_endpoint_groups(self.session, base, key)
 
-    async def tree(self, scan_id: UUID, f: EndpointFilter, mode: str) -> EndpointTree:
+    async def tree(
+        self, scope: ScopeLike, f: EndpointFilter, mode: str
+    ) -> EndpointTree:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        base = select(Endpoint.id).where(Endpoint.scan_id == scan_id)
-        base = self._apply_filter(base, f, scan_id)
+        base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
+        base = self._apply_filter(base, f, scope)
         try:
-            predicate = self._compiled(scan_id, f, now)
+            predicate = self._compiled(scope, f, now)
         except QuerySyntaxError as exc:
             return EndpointTree(
                 mode=mode,
@@ -481,24 +509,27 @@ class EndpointService:
         if predicate is not None:
             base = base.where(predicate)
         await self.session.execute(text(STATEMENT_TIMEOUT))
-        previous, _at = await self._previous_scan(scan_id)
+        previous, _at = await self._previous_scan(scope)
         return await build_tree(
             self.session,
             base,
-            scan_id=scan_id,
+            scope=scope,
             mode=mode,
             previous_scan_id=previous,
             hide_static=f.hide_static,
         )
 
     async def _previous_scan(
-        self, scan_id: UUID
+        self, scope: QueryScope
     ) -> tuple[UUID | None, datetime | None]:
         """The latest earlier scan of the same target that recorded endpoints."""
-        target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+        single = scope.single
+        if single is None:
+            return None, None
+        target = select(Scan.target_id).where(Scan.id == single).scalar_subquery()
         cutoff = (
             select(func.min(Endpoint.discovered_at))
-            .where(Endpoint.scan_id == scan_id)
+            .where(Endpoint.scan_id == single)
             .scalar_subquery()
         )
         row = (
@@ -506,7 +537,7 @@ class EndpointService:
                 select(Endpoint.scan_id, func.max(Endpoint.discovered_at).label("at"))
                 .where(
                     Endpoint.target_id == target,
-                    Endpoint.scan_id != scan_id,
+                    Endpoint.scan_id != single,
                     Endpoint.discovered_at < cutoff,
                 )
                 .group_by(Endpoint.scan_id)
@@ -518,16 +549,18 @@ class EndpointService:
 
     async def _gone_by_host(
         self,
-        scan_id: UUID,
+        scope: QueryScope,
         previous_scan_id: UUID | None,
         hosts: list[str],
         hide_static: bool,
     ) -> dict[str, int]:
-        if previous_scan_id is None or not hosts:
+        if previous_scan_id is None or not hosts or scope.single is None:
             return {}
         query = (
             select(Endpoint.host, func.count())
-            .where(*_gone_from(previous_scan_id, scan_id), Endpoint.host.in_(hosts))
+            .where(
+                *_gone_from(previous_scan_id, scope.single), Endpoint.host.in_(hosts)
+            )
             .group_by(Endpoint.host)
         )
         if hide_static:
@@ -535,13 +568,14 @@ class EndpointService:
         rows = await self.session.execute(query)
         return {host: int(n) for host, n in rows.all()}
 
-    async def hosts(self, scan_id: UUID, f: EndpointFilter) -> HostPage:
+    async def hosts(self, scope: ScopeLike, f: EndpointFilter) -> HostPage:
         """The hosts of the outline, rolled up in SQL so ten thousand of them page cheaply."""
+        scope = QueryScope.of(scope)
         now = utc_now()
-        base = select(Endpoint.id).where(Endpoint.scan_id == scan_id)
-        base = self._apply_filter(base, f, scan_id)
+        base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
+        base = self._apply_filter(base, f, scope)
         try:
-            predicate = self._compiled(scan_id, f, now)
+            predicate = self._compiled(scope, f, now)
         except QuerySyntaxError as exc:
             return HostPage(
                 error=QueryError(
@@ -576,7 +610,7 @@ class EndpointService:
                 func.count()
                 .filter(Endpoint.endpoint_class == EndpointClass.API.value)
                 .label("api"),
-                func.count().filter(endpoint_is_new(scan_id)).label("fresh"),
+                func.count().filter(endpoint_is_new(scope)).label("fresh"),
                 func.count()
                 .filter(Endpoint.status_code.in_(_AUTH_WALL))
                 .label("walled"),
@@ -606,8 +640,8 @@ class EndpointService:
         sources = await self._host_values(scoped, names, Endpoint.sources)
         classes = await self._host_classes(scoped, names)
         folders = await self._host_top_folders(scoped, names)
-        previous, _at = await self._previous_scan(scan_id)
-        gone = await self._gone_by_host(scan_id, previous, names, f.hide_static)
+        previous, _at = await self._previous_scan(scope)
+        gone = await self._gone_by_host(scope, previous, names, f.hide_static)
         items = []
         for r in rows:
             n = int(r.n)
@@ -736,11 +770,14 @@ class EndpointService:
                 bucket.append(str(seg))
         return out
 
-    async def merged_leaves(self, scan_id: UUID, f: EndpointFilter) -> MergedLeafPage:
+    async def merged_leaves(
+        self, scope: ScopeLike, f: EndpointFilter
+    ) -> MergedLeafPage:
         """One row per path shape inside a folder, folded across every host that serves it."""
+        scope = QueryScope.of(scope)
         now = utc_now()
         base = self._scoped(
-            scan_id,
+            scope,
             f.model_copy(update={"subtree": False}),
             columns=(
                 Endpoint.id,
@@ -755,11 +792,11 @@ class EndpointService:
                 Endpoint.status_code,
                 Endpoint.interest,
                 Endpoint.sources,
-                endpoint_is_new(scan_id).label("is_new"),
+                endpoint_is_new(scope).label("is_new"),
             ),
         )
         try:
-            predicate = self._compiled(scan_id, f, now)
+            predicate = self._compiled(scope, f, now)
         except QuerySyntaxError:
             return MergedLeafPage()
         if predicate is not None:
@@ -817,14 +854,17 @@ class EndpointService:
         )
         return MergedLeafPage(items=items, total=len(items), truncated=truncated)
 
-    async def gone(self, scan_id: UUID, f: EndpointFilter) -> GonePage:
+    async def gone(self, scope: ScopeLike, f: EndpointFilter) -> GonePage:
         """Endpoints the previous scan of this target recorded and this scan never did."""
-        previous, previous_at = await self._previous_scan(scan_id)
-        if previous is None:
+        scope = QueryScope.of(scope)
+        previous, previous_at = await self._previous_scan(scope)
+        if previous is None or scope.single is None:
             return GonePage()
         now = utc_now()
-        base = select(Endpoint).where(*_gone_from(previous, scan_id))
-        base = self._apply_filter(base, f.model_copy(update={"new": False}), previous)
+        base = select(Endpoint).where(*_gone_from(previous, scope.single))
+        base = self._apply_filter(
+            base, f.model_copy(update={"new": False}), QueryScope.of(previous)
+        )
         try:
             predicate = self._compiled(previous, f, now)
         except QuerySyntaxError as exc:
@@ -891,12 +931,13 @@ class EndpointService:
             queued=queued if accepted else 0, unverified=unverified, accepted=accepted
         )
 
-    async def coverage(self, scan_id: UUID) -> list[CoverageRead]:
+    async def coverage(self, scope: ScopeLike) -> list[CoverageRead]:
+        scope = QueryScope.of(scope)
         rows = (
             (
                 await self.session.execute(
                     select(EndpointCoverage)
-                    .where(EndpointCoverage.scan_id == scan_id)
+                    .where(scope.match(EndpointCoverage.scan_id))
                     .order_by(EndpointCoverage.started_at)
                 )
             )
@@ -929,27 +970,30 @@ class EndpointService:
             for row in rows
         ]
 
-    async def summary(self, scan_id: UUID, host: str | None = None) -> EndpointSummary:
-        scope = [Endpoint.scan_id == scan_id]
+    async def summary(
+        self, scope: ScopeLike, host: str | None = None
+    ) -> EndpointSummary:
+        scope = QueryScope.of(scope)
+        reach = [scope.match(Endpoint.scan_id)]
         if host:
-            scope.append(Endpoint.host == host)
+            reach.append(Endpoint.host == host)
         row = (
             await self.session.execute(
                 select(
                     func.count().label("total"),
                     func.count(func.distinct(Endpoint.host)).label("hosts"),
-                ).where(*scope)
+                ).where(*reach)
             )
         ).one()
         total = int(row.total)
         out = EndpointSummary(total=total, hosts=int(row.hosts))
         if not total:
             return out
-        previous, previous_at = await self._previous_scan(scan_id)
+        previous, previous_at = await self._previous_scan(scope)
         out.previous_scan_id = previous
         out.previous_scan_at = previous_at
         if previous is not None:
-            gone_scope = [*_gone_from(previous, scan_id)]
+            gone_scope = [*_gone_from(previous, scope.single)]
             if host:
                 gone_scope.append(Endpoint.host == host)
             out.gone = int(
@@ -957,32 +1001,32 @@ class EndpointService:
             )
         out.new = int(
             await self.session.scalar(
-                select(func.count()).where(*scope, endpoint_is_new(scan_id))
+                select(func.count()).where(*reach, endpoint_is_new(scope))
             )
             or 0
         )
         out.probed = int(
             await self.session.scalar(
-                select(func.count()).where(*scope, Endpoint.is_probed.is_(True))
+                select(func.count()).where(*reach, Endpoint.is_probed.is_(True))
             )
             or 0
         )
         out.live = int(
             await self.session.scalar(
-                select(func.count()).where(*scope, endpoint_status_class("2xx"))
+                select(func.count()).where(*reach, endpoint_status_class("2xx"))
             )
             or 0
         )
         out.with_params = int(
             await self.session.scalar(
-                select(func.count()).where(*scope, Endpoint.param_count > 0)
+                select(func.count()).where(*reach, Endpoint.param_count > 0)
             )
             or 0
         )
         out.interesting = int(
             await self.session.scalar(
                 select(func.count()).where(
-                    *scope,
+                    *reach,
                     func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0,
                 )
             )
@@ -990,7 +1034,7 @@ class EndpointService:
         )
         by_class = await self.session.execute(
             select(Endpoint.endpoint_class, func.count())
-            .where(*scope)
+            .where(*reach)
             .group_by(Endpoint.endpoint_class)
         )
         out.by_class = {k: int(v) for k, v in by_class.all()}
@@ -1000,7 +1044,7 @@ class EndpointService:
         by_source = await self.session.execute(
             select(source, func.count(func.distinct(Endpoint.id)))
             .select_from(Endpoint)
-            .where(*scope)
+            .where(*reach)
             .group_by(source)
         )
         out.by_source = {str(k): int(v) for k, v in by_source.all()}

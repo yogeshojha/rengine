@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
+    DateTime,
     Integer,
     String,
     and_,
@@ -21,13 +22,16 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, INET, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query import (
     STATEMENT_TIMEOUT,
     IpQueryContext,
+    QueryScope,
     QuerySyntaxError,
+    ScopeLike,
     build_ip_groups,
     build_leads,
     compile_ip_query,
@@ -35,6 +39,7 @@ from app.services.asset_query import (
     query_error_for,
 )
 from app.services.port import PortService
+from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, IP_EXPOSURE, IP_QUERY
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
 from shared.logging import get_logger
@@ -59,21 +64,38 @@ _HOSTS_PER_ROW = 50
 # every IP the scan touched (resolved names, probed assets, open ports, enrichment rows)
 _DERIVED_SQL = """
 WITH hosts AS (
-    SELECT ip, count(DISTINCT s.name) AS host_count
+    SELECT ip, count(DISTINCT s.name) AS host_count,
+           array_agg(DISTINCT s.target_id) AS target_ids
     FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip
-    WHERE s.scan_id = :sid GROUP BY ip
+    WHERE s.scan_id = ANY(:sids) GROUP BY ip
 ), open_ports AS (
-    SELECT ip, count(*) AS port_count, bool_or(number = ANY(:sensitive_ports)) AS sensitive
-    FROM ports WHERE scan_id = :sid GROUP BY ip
+    SELECT ip, count(*) AS port_count, bool_or(number = ANY(:sensitive_ports)) AS sensitive,
+           array_agg(DISTINCT target_id) AS target_ids
+    FROM ports WHERE scan_id = ANY(:sids) GROUP BY ip
 ), assets AS (
     SELECT ip, max(asn) AS asn, max(asn_org) AS asn_org, bool_or(is_cdn) AS is_cdn,
-           max(cdn_name) AS cdn_name, count(*) AS asset_count
-    FROM http_assets WHERE scan_id = :sid AND ip IS NOT NULL GROUP BY ip
+           max(cdn_name) AS cdn_name, count(*) AS asset_count,
+           array_agg(DISTINCT target_id) AS target_ids
+    FROM http_assets WHERE scan_id = ANY(:sids) AND ip IS NOT NULL GROUP BY ip
+), addr AS (
+    SELECT DISTINCT ON (ip) ip, asn, asn_org, country, prefix,
+           is_cdn, cdn_name, is_alive, ptr_hostnames
+    FROM ip_addresses WHERE scan_id = ANY(:sids)
+    ORDER BY ip, discovered_at DESC
+), addr_t AS (
+    SELECT ip, array_agg(DISTINCT target_id) AS target_ids,
+           min(discovered_at) AS first_seen
+    FROM ip_addresses WHERE scan_id = ANY(:sids) GROUP BY ip
 ), ips AS (
     SELECT ip FROM hosts UNION SELECT ip FROM open_ports UNION SELECT ip FROM assets
-    UNION SELECT ip FROM ip_addresses WHERE scan_id = :sid
+    UNION SELECT ip FROM addr
 )
 SELECT i.ip AS ip,
+       (SELECT array_agg(DISTINCT tid) FROM unnest(
+            coalesce(xt.target_ids, '{}') || coalesce(p.target_ids, '{}')
+            || coalesce(a.target_ids, '{}') || coalesce(h.target_ids, '{}')
+        ) tid) AS target_ids,
+       xt.first_seen AS first_seen,
        CASE WHEN i.ip LIKE '%:%' THEN 6 ELSE 4 END AS version,
        coalesce(x.asn, a.asn) AS asn,
        coalesce(x.asn_org, a.asn_org) AS asn_org,
@@ -91,7 +113,8 @@ FROM ips i
 LEFT JOIN hosts h ON h.ip = i.ip
 LEFT JOIN open_ports p ON p.ip = i.ip
 LEFT JOIN assets a ON a.ip = i.ip
-LEFT JOIN ip_addresses x ON x.scan_id = :sid AND x.ip = i.ip
+LEFT JOIN addr x ON x.ip = i.ip
+LEFT JOIN addr_t xt ON xt.ip = i.ip
 """
 
 
@@ -171,14 +194,14 @@ class IpAddressService:
         )
 
     async def _page_details(
-        self, scan_id: UUID, page_ips: list[str]
+        self, scope: QueryScope, page_ips: list[str]
     ) -> tuple[dict[str, list], dict[str, set]]:
         ps = PortService(self.session)
         port_rows = (
             (
                 await self.session.execute(
                     select(Port)
-                    .where(Port.scan_id == scan_id, Port.ip.in_(page_ips))
+                    .where(scope.match(Port.scan_id), Port.ip.in_(page_ips))
                     .order_by(Port.number)
                 )
             )
@@ -194,14 +217,14 @@ class IpAddressService:
                 text(
                     "SELECT ip AS ip, s.name AS host "
                     "FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip "
-                    "WHERE s.scan_id = :sid AND ip = ANY(:ips)"
-                ).bindparams(sid=scan_id, ips=page_ips)
+                    "WHERE s.scan_id = ANY(:sids) AND ip = ANY(:ips)"
+                ).bindparams(sids=list(scope.ids), ips=page_ips)
             )
         ).all()
         asset_rows = (
             await self.session.execute(
                 select(HttpAsset.ip, HttpAsset.host).where(
-                    HttpAsset.scan_id == scan_id, HttpAsset.ip.in_(page_ips)
+                    scope.match(HttpAsset.scan_id), HttpAsset.ip.in_(page_ips)
                 )
             )
         ).all()
@@ -214,11 +237,13 @@ class IpAddressService:
         return ports_by_ip, hosts_by_ip
 
     @staticmethod
-    def _derived(scan_id: UUID):
+    def _derived(scope: QueryScope):
         return (
             text(_DERIVED_SQL)
             .columns(
                 column("ip", String),
+                column("target_ids", ARRAY(PG_UUID(as_uuid=True))),
+                column("first_seen", DateTime(timezone=True)),
                 column("version", Integer),
                 column("asn", Integer),
                 column("asn_org", String),
@@ -234,15 +259,17 @@ class IpAddressService:
                 column("asset_count", Integer),
             )
             .bindparams(
-                bindparam("sid", scan_id),
+                bindparam("sids", list(scope.ids), type_=ARRAY(PG_UUID(as_uuid=True))),
                 bindparam("sensitive_ports", SENSITIVE_PORTS, type_=ARRAY(Integer)),
             )
             .subquery("ip_groups")
         )
 
     @staticmethod
-    def _port_exists(scan_id: UUID, d, cond):
-        return exists(select(1).where(Port.scan_id == scan_id, Port.ip == d.c.ip, cond))
+    def _port_exists(scope: QueryScope, d, cond):
+        return exists(
+            select(1).where(scope.match(Port.scan_id), Port.ip == d.c.ip, cond)
+        )
 
     @staticmethod
     def _exposure(d, bucket: str):
@@ -255,7 +282,7 @@ class IpAddressService:
             return and_(d.c.port_count == 0, not_(alive))
         return None
 
-    def _apply_filter(self, q, d, f: IpGroupFilter, scan_id: UUID):
+    def _apply_filter(self, q, d, f: IpGroupFilter, scope: QueryScope):
         if f.exposure:
             buckets = [self._exposure(d, b) for b in f.exposure]
             q = q.where(or_(*[b for b in buckets if b is not None]))
@@ -264,11 +291,9 @@ class IpAddressService:
         if f.countries:
             q = q.where(d.c.country.in_(f.countries))
         if f.ports:
-            q = q.where(self._port_exists(scan_id, d, Port.number.in_(f.ports)))
+            q = q.where(self._port_exists(scope, d, Port.number.in_(f.ports)))
         if f.services:
-            q = q.where(
-                self._port_exists(scan_id, d, Port.service_name.in_(f.services))
-            )
+            q = q.where(self._port_exists(scope, d, Port.service_name.in_(f.services)))
         if f.cdn == "yes":
             q = q.where(d.c.is_cdn.is_(True))
         elif f.cdn == "no":
@@ -300,21 +325,22 @@ class IpAddressService:
         primary = col.desc() if f.order == "desc" else col.asc()
         return q.order_by(primary.nulls_last(), ip_num.asc())
 
-    def _scoped(self, scan_id: UUID, f: IpGroupFilter, columns=None):
-        d = self._derived(scan_id)
+    def _scoped(self, scope: QueryScope, f: IpGroupFilter, columns=None):
+        d = self._derived(scope)
         base = select(d) if columns is None else select(*columns(d))
-        return d, self._apply_filter(base, d, f, scan_id)
+        return d, self._apply_filter(base, d, f, scope)
 
     @staticmethod
-    def _context(scan_id: UUID, d, now: datetime) -> IpQueryContext:
-        return IpQueryContext(scan_id=scan_id, now=now, source=d)
+    def _context(scope: QueryScope, d, now: datetime) -> IpQueryContext:
+        return IpQueryContext(scope=scope, now=now, source=d)
 
-    async def search(self, scan_id: UUID, f: IpGroupFilter) -> IpGroupPage:
+    async def search(self, scope: ScopeLike, f: IpGroupFilter) -> IpGroupPage:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        d, base = self._scoped(scan_id, f)
+        d, base = self._scoped(scope, f)
         try:
             predicate = compile_ip_query(
-                parse_query(f.q, IP_QUERY), self._context(scan_id, d, now)
+                parse_query(f.q, IP_QUERY), self._context(scope, d, now)
             )
         except QuerySyntaxError as exc:
             return IpGroupPage(
@@ -355,13 +381,19 @@ class IpAddressService:
         page_ips = [r["ip"] for r in rows]
         if not page_ips:
             return page
-        ports_by_ip, hosts_by_ip = await self._page_details(scan_id, page_ips)
+        ports_by_ip, hosts_by_ip = await self._page_details(scope, page_ips)
+        names = await target_names(
+            self.session, (tid for r in rows for tid in (r["target_ids"] or []))
+        )
         for r in rows:
             host_set = hosts_by_ip.get(r["ip"], set())
             page.items.append(
                 IpGroupRead(
                     ip=r["ip"],
                     version=r["version"],
+                    targets=sorted(
+                        names[tid] for tid in (r["target_ids"] or []) if tid in names
+                    ),
                     asn=r["asn"],
                     asn_org=r["asn_org"],
                     country=r["country"],
@@ -380,10 +412,11 @@ class IpAddressService:
             )
         return page
 
-    async def leads(self, scan_id: UUID, f: IpGroupFilter) -> QueryLeads:
+    async def leads(self, scope: ScopeLike, f: IpGroupFilter) -> QueryLeads:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        d, base = self._scoped(scan_id, f, columns=lambda d: (d.c.ip,))
-        ctx = self._context(scan_id, d, now)
+        d, base = self._scoped(scope, f, columns=lambda d: (d.c.ip,))
+        ctx = self._context(scope, d, now)
         await self.session.execute(text(STATEMENT_TIMEOUT))
         try:
             return await build_leads(
@@ -398,12 +431,13 @@ class IpAddressService:
             logger.info("address leads failed", error=str(exc.orig))
             return QueryLeads()
 
-    async def groups(self, scan_id: UUID, f: IpGroupFilter, key: str) -> QueryGroups:
+    async def groups(self, scope: ScopeLike, f: IpGroupFilter, key: str) -> QueryGroups:
+        scope = QueryScope.of(scope)
         now = utc_now()
-        d, base = self._scoped(scan_id, f)
+        d, base = self._scoped(scope, f)
         try:
             predicate = compile_ip_query(
-                parse_query(f.q, IP_QUERY), self._context(scan_id, d, now)
+                parse_query(f.q, IP_QUERY), self._context(scope, d, now)
             )
         except QuerySyntaxError:
             return QueryGroups(dimension=key)
@@ -411,14 +445,15 @@ class IpAddressService:
             base = base.where(predicate)
         await self.session.execute(text(STATEMENT_TIMEOUT))
         try:
-            return await build_ip_groups(self.session, base, key, scan_id)
+            return await build_ip_groups(self.session, base, key, scope)
         except DBAPIError as exc:
             await self.session.rollback()
             logger.info("address groups failed", error=str(exc.orig))
             return QueryGroups(dimension=key)
 
-    async def facets(self, scan_id: UUID) -> IpFacets:
-        d = self._derived(scan_id)
+    async def facets(self, scope: ScopeLike) -> IpFacets:
+        scope = QueryScope.of(scope)
+        d = self._derived(scope)
         n = func.count()
         exposure_rows = (
             await self.session.execute(
@@ -452,7 +487,7 @@ class IpAddressService:
         port_rows = (
             await self.session.execute(
                 select(Port.number, func.max(Port.service_name), ips)
-                .where(Port.scan_id == scan_id)
+                .where(scope.match(Port.scan_id))
                 .group_by(Port.number)
                 .order_by(ips.desc())
                 .limit(_FACET_LIMIT)
@@ -461,7 +496,7 @@ class IpAddressService:
         service_rows = (
             await self.session.execute(
                 select(Port.service_name, ips)
-                .where(Port.scan_id == scan_id, Port.service_name.isnot(None))
+                .where(scope.match(Port.scan_id), Port.service_name.isnot(None))
                 .group_by(Port.service_name)
                 .order_by(ips.desc())
                 .limit(_FACET_LIMIT)

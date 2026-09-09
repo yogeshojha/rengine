@@ -1,4 +1,5 @@
 import { api } from './client';
+import { scopeQuery } from '$lib/utilities/surface-scope';
 import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type {
 	BulkTriageResult,
@@ -24,58 +25,86 @@ import type {
 } from '$lib/types/vuln-template';
 
 export const vulnerabilitiesApi = {
-	async search(scanId: string, filter: VulnFilter): Promise<VulnSearchResult> {
-		return api.post<VulnSearchResult>(`/vulnerabilities/search?scan_id=${scanId}`, filter);
-	},
-
-	async issues(scanId: string, filter: VulnFilter): Promise<IssuePage> {
-		return api.post<IssuePage>(`/vulnerabilities/search/issues?scan_id=${scanId}`, filter);
-	},
-
-	async triageMany(
-		scanId: string,
-		body: { fingerprints?: string[]; template_ids?: string[]; state: string; note?: string | null }
-	): Promise<BulkTriageResult> {
-		return api.post<BulkTriageResult>(`/vulnerabilities/triage/bulk?scan_id=${scanId}`, body);
-	},
-
-	async leads(scanId: string, filter: VulnFilter): Promise<QueryLeads> {
-		return api.post<QueryLeads>(`/vulnerabilities/search/leads?scan_id=${scanId}`, filter);
-	},
-
-	async groups(scanId: string, groupBy: string, filter: VulnFilter): Promise<QueryGroups> {
-		return api.post<QueryGroups>(
-			`/vulnerabilities/search/groups?scan_id=${scanId}&group_by=${encodeURIComponent(groupBy)}`,
+	async search(projectId: string, scanId: string, filter: VulnFilter): Promise<VulnSearchResult> {
+		return api.post<VulnSearchResult>(
+			`/vulnerabilities/search?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
 	},
 
-	async facets(scanId: string): Promise<VulnFacetSet> {
-		return api.get<VulnFacetSet>(`/vulnerabilities/facets?scan_id=${scanId}`);
+	async issues(projectId: string, scanId: string, filter: VulnFilter): Promise<IssuePage> {
+		return api.post<IssuePage>(
+			`/vulnerabilities/search/issues?${scopeQuery({ projectId, scanId })}`,
+			filter
+		);
 	},
 
-	async overview(scanId: string): Promise<ScanVulnerabilities> {
-		return api.get<ScanVulnerabilities>(`/vulnerabilities/overview?scan_id=${scanId}`);
+	async triageMany(
+		projectId: string,
+		scanId: string,
+		body: { fingerprints?: string[]; template_ids?: string[]; state: string; note?: string | null }
+	): Promise<BulkTriageResult> {
+		return api.post<BulkTriageResult>(
+			`/vulnerabilities/triage/bulk?${scopeQuery({ projectId, scanId })}`,
+			body
+		);
 	},
 
-	async coverage(scanId: string): Promise<CoverageRead[]> {
-		return api.get<CoverageRead[]>(`/vulnerabilities/coverage?scan_id=${scanId}`);
+	async leads(projectId: string, scanId: string, filter: VulnFilter): Promise<QueryLeads> {
+		return api.post<QueryLeads>(
+			`/vulnerabilities/search/leads?${scopeQuery({ projectId, scanId })}`,
+			filter
+		);
 	},
 
-	async detail(scanId: string, id: string): Promise<VulnerabilityRead> {
-		return api.get<VulnerabilityRead>(`/vulnerabilities/${id}?scan_id=${scanId}`);
+	async groups(
+		projectId: string,
+		scanId: string,
+		groupBy: string,
+		filter: VulnFilter
+	): Promise<QueryGroups> {
+		return api.post<QueryGroups>(
+			`/vulnerabilities/search/groups?${scopeQuery({ projectId, scanId })}&group_by=${encodeURIComponent(groupBy)}`,
+			filter
+		);
+	},
+
+	async facets(projectId: string, scanId: string): Promise<VulnFacetSet> {
+		return api.get<VulnFacetSet>(`/vulnerabilities/facets?${scopeQuery({ projectId, scanId })}`);
+	},
+
+	async overview(projectId: string, scanId: string): Promise<ScanVulnerabilities> {
+		return api.get<ScanVulnerabilities>(
+			`/vulnerabilities/overview?${scopeQuery({ projectId, scanId })}`
+		);
+	},
+
+	async coverage(projectId: string, scanId: string): Promise<CoverageRead[]> {
+		return api.get<CoverageRead[]>(
+			`/vulnerabilities/coverage?${scopeQuery({ projectId, scanId })}`
+		);
+	},
+
+	async detail(projectId: string, scanId: string, id: string): Promise<VulnerabilityRead> {
+		return api.get<VulnerabilityRead>(
+			`/vulnerabilities/${id}?${scopeQuery({ projectId, scanId })}`
+		);
 	},
 
 	async triage(
+		projectId: string,
 		scanId: string,
 		fingerprint: string,
 		state: string,
 		note: string | null
 	): Promise<TriageResult> {
-		return api.patch<TriageResult>(`/vulnerabilities/triage/${fingerprint}?scan_id=${scanId}`, {
-			state,
-			note
-		});
+		return api.patch<TriageResult>(
+			`/vulnerabilities/triage/${fingerprint}?${scopeQuery({ projectId, scanId })}`,
+			{
+				state,
+				note
+			}
+		);
 	}
 };
 

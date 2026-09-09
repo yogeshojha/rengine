@@ -122,9 +122,9 @@
 	}
 
 	function loadVulns() {
-		if (!scanId) return;
+		if (!scanId || !projectId) return;
 		vulnerabilitiesApi
-			.overview(scanId)
+			.overview(projectId, scanId)
 			.then((d) => (vulns = d))
 			.catch(() => (vulns = null));
 	}

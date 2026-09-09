@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.api.scope import EndpointScope
 from app.core.database import get_session
 from app.services.asset_query import build_schema
 from app.services.endpoint import EndpointService
@@ -47,63 +48,63 @@ async def endpoint_query_schema(_current_user: CurrentUser):
 async def search_endpoints(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: EndpointScope,
     body: EndpointFilter,
 ):
-    return await service.search(scan_id, body)
+    return await service.search(scope, body)
 
 
 @router.post("/search/leads", response_model=QueryLeads)
 async def endpoint_leads(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: EndpointScope,
     body: EndpointFilter,
 ):
-    return await service.leads(scan_id, body)
+    return await service.leads(scope, body)
 
 
 @router.post("/search/groups", response_model=QueryGroups)
 async def endpoint_groups(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: EndpointScope,
     group_by: Annotated[str, Query(description="Group dimension")],
     body: EndpointFilter,
 ):
-    return await service.groups(scan_id, body, group_by)
+    return await service.groups(scope, body, group_by)
 
 
 @router.post("/tree", response_model=EndpointTree)
 async def endpoint_tree(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: EndpointScope,
     body: EndpointFilter,
     mode: Annotated[str, Query(description="host or merged")] = "host",
 ):
     resolved = mode if mode in _TREE_MODES else "host"
-    return await service.tree(scan_id, body, resolved)
+    return await service.tree(scope, body, resolved)
 
 
 @router.post("/tree/hosts", response_model=HostPage)
 async def endpoint_tree_hosts(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: EndpointScope,
     body: EndpointFilter,
 ):
-    return await service.hosts(scan_id, body)
+    return await service.hosts(scope, body)
 
 
 @router.post("/tree/leaves", response_model=MergedLeafPage)
 async def endpoint_tree_leaves(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: EndpointScope,
     body: EndpointFilter,
 ):
-    return await service.merged_leaves(scan_id, body)
+    return await service.merged_leaves(scope, body)
 
 
 @router.post("/verify", response_model=VerifyBranchResponse)
@@ -130,20 +131,20 @@ async def endpoint_gone(
 async def endpoint_facets(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: EndpointScope,
     q: Annotated[str | None, Query(description="Query string")] = None,
 ):
-    return await service.facets(scan_id, EndpointFilter(q=q))
+    return await service.facets(scope, EndpointFilter(q=q))
 
 
 @router.get("/summary", response_model=EndpointSummary)
 async def endpoint_summary(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: EndpointScope,
     host: Annotated[str | None, Query(description="Scope to one host")] = None,
 ):
-    return await service.summary(scan_id, host)
+    return await service.summary(scope, host)
 
 
 @router.get("/coverage", response_model=list[CoverageRead])

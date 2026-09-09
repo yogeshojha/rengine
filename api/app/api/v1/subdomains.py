@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.api.scope import WebAssetScope
 from app.core.database import get_session
 from app.services.asset_query import build_schema
 from app.services.hosting_flow import HostingFlowService
@@ -73,9 +74,9 @@ async def search_subdomains(
     service: Annotated[SubdomainService, Depends(get_service)],
     body: SubdomainFilter,
     project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: WebAssetScope,
 ):
-    return await service.search(project_id=project_id, scan_id=scan_id, f=body)
+    return await service.search(project_id=project_id, scope=scope, f=body)
 
 
 @router.post("/search/leads", response_model=QueryLeads)
@@ -84,9 +85,9 @@ async def subdomain_search_leads(
     service: Annotated[SubdomainService, Depends(get_service)],
     body: SubdomainFilter,
     project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: WebAssetScope,
 ):
-    return await service.leads(project_id=project_id, scan_id=scan_id, f=body)
+    return await service.leads(project_id=project_id, scope=scope, f=body)
 
 
 @router.post("/search/groups", response_model=QueryGroups)
@@ -95,11 +96,11 @@ async def subdomain_search_groups(
     service: Annotated[SubdomainService, Depends(get_service)],
     body: SubdomainFilter,
     project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: WebAssetScope,
     group_by: Annotated[str, Query(max_length=20, description="Group dimension")],
 ):
     return await service.groups(
-        project_id=project_id, scan_id=scan_id, f=body, key=group_by
+        project_id=project_id, scope=scope, f=body, key=group_by
     )
 
 
@@ -130,9 +131,9 @@ async def subdomain_facets(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: WebAssetScope,
 ):
-    return await service.facets(project_id=project_id, scan_id=scan_id)
+    return await service.facets(project_id=project_id, scope=scope)
 
 
 @router.get("/related", response_model=list[SubdomainRelation])

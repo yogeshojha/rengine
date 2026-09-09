@@ -155,6 +155,7 @@ class EndpointRead(BaseModel):
     id: uuid.UUID
     scan_id: uuid.UUID
     target_id: uuid.UUID
+    target_value: str | None = None
     signature: str
     url: str
     host: str

@@ -5,6 +5,7 @@
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import Globe from '@lucide/svelte/icons/globe';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Play from '@lucide/svelte/icons/play';
@@ -285,6 +286,19 @@
 	);
 	$effect(() => {
 		if (scan && !loading && !visibleTabs.some((t) => t.key === activeTab)) setTab('overview');
+	});
+	// the same dimension, every target — carrying whatever is typed here
+	let surfaceLink = $derived.by(() => {
+		const spec = SURFACE_ORDER.find((sp) => sp.tab === activeTab);
+		if (!spec) return '';
+		const search = {
+			[SurfaceDimension.WEB_ASSETS]: webQuery.search,
+			[SurfaceDimension.ENDPOINTS]: endpointQuery.search,
+			[SurfaceDimension.SERVICES]: serviceQuery.search,
+			[SurfaceDimension.IPS]: ipQuery.search,
+			[SurfaceDimension.VULNERABILITIES]: vulnQuery.search
+		}[spec.key];
+		return ROUTES.surface(spec.tab, search ? { [spec.queryParam]: search } : undefined);
 	});
 	let timing = $derived.by(() => {
 		if (!scan) return '';
@@ -608,6 +622,15 @@
 							</Tooltip.Root>
 						{/each}
 					</Tabs.List>
+					{#if surfaceLink}
+						<a
+							href={surfaceLink}
+							class="ml-auto hidden shrink-0 items-center gap-1 py-2.5 pl-4 text-xs whitespace-nowrap text-muted-foreground hover:text-foreground hover:underline sm:flex"
+						>
+							Across all targets
+							<ArrowUpRight class="size-3.5" />
+						</a>
+					{/if}
 				</div>
 			</div>
 

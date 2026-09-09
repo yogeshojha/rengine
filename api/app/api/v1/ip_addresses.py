@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.api.scope import IpScope
 from app.core.database import get_session
 from app.services.asset_query import build_schema
 from app.services.ip_address import IpAddressService
@@ -55,44 +56,40 @@ async def ip_search_schema(_current_user: CurrentUser) -> QuerySchema:
 async def ip_search(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],
-    _project_id: Annotated[UUID, Query(alias="project_id", description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: IpScope,
     body: IpGroupFilter,
 ):
-    return await service.search(scan_id=scan_id, f=body)
+    return await service.search(scope=scope, f=body)
 
 
 @router.post("/search/leads", response_model=QueryLeads)
 async def ip_search_leads(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],
-    _project_id: Annotated[UUID, Query(alias="project_id", description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: IpScope,
     body: IpGroupFilter,
 ):
-    return await service.leads(scan_id=scan_id, f=body)
+    return await service.leads(scope=scope, f=body)
 
 
 @router.post("/search/groups", response_model=QueryGroups)
 async def ip_search_groups(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],
-    _project_id: Annotated[UUID, Query(alias="project_id", description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: IpScope,
     group_by: Annotated[str, Query(max_length=40, description="Group dimension")],
     body: IpGroupFilter,
 ):
-    return await service.groups(scan_id=scan_id, f=body, key=group_by)
+    return await service.groups(scope=scope, f=body, key=group_by)
 
 
 @router.get("/facets", response_model=IpFacets)
 async def ip_facets(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],
-    _project_id: Annotated[UUID, Query(alias="project_id", description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: IpScope,
 ):
-    return await service.facets(scan_id=scan_id)
+    return await service.facets(scope=scope)
 
 
 @router.get("/summary", response_model=IpAddressSummary)

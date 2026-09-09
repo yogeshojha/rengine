@@ -38,6 +38,7 @@ export interface Corroboration {
 }
 
 export interface VulnerabilityRead {
+	target_value?: string | null;
 	id: string;
 	scan_id: string;
 	target_id: string;

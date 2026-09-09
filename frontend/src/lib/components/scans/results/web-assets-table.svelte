@@ -22,6 +22,7 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import FilterBar from './web-assets/filter-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
+	import { withTarget } from './table/columns';
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
@@ -63,6 +64,7 @@
 
 	interface Props {
 		scanId: string;
+		projectWide?: boolean;
 		targetId?: string;
 		targetType?: string;
 		projectId: string;
@@ -75,6 +77,7 @@
 
 	let {
 		scanId,
+		projectWide = false,
 		targetId = '',
 		targetType = '',
 		projectId,
@@ -84,6 +87,8 @@
 		query = $bindable(emptyQuery()),
 		onTab
 	}: Props = $props();
+
+	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
 	const DEFAULT_SORT = { key: 'status', dir: 1 as const };
 	const EMPTY_FACETS: SubdomainFacetSet = {
@@ -147,6 +152,7 @@
 	let drawerOpen = $state(false);
 	let sheetFocus = $state<{ tab: string; pane?: string } | null>(null);
 	let structureHost = $state<string | null>(null);
+	let structureScanId = $state('');
 	let cursor = $state(-1);
 	let searchRef = $state<HTMLInputElement | null>(null);
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
@@ -162,7 +168,10 @@
 				? DEFAULT_VISIBLE_COLUMNS
 				: DEFAULT_VISIBLE_COLUMNS.filter((k) => k !== 'ports'))
 	);
-	let shownColumns = $derived(WEB_ASSET_COLUMNS.filter((c) => visible.includes(c.key)));
+	let allColumns = $derived(withTarget(WEB_ASSET_COLUMNS, projectWide));
+	let shownColumns = $derived(
+		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
+	);
 	let checkedCount = $derived(items.filter((s) => checkedIds.has(s.id)).length);
 	let selectAllChecked = $derived<boolean | 'indeterminate'>(
 		items.length > 0 && checkedCount === items.length
@@ -287,13 +296,13 @@
 	}
 
 	function syncLeads() {
-		if (!active || loading || !scanId || !projectId) return;
+		if (!active || loading || !ready) return;
 		if (leadSig === loadedLeadSig) return;
 		void loadLeads();
 	}
 
 	async function loadGroups() {
-		if (!groupBy || !scanId || !projectId) {
+		if (!groupBy || !ready) {
 			groupSet = null;
 			return;
 		}
@@ -310,7 +319,7 @@
 	}
 
 	async function loadFacets() {
-		if (!scanId || !projectId) return;
+		if (!ready) return;
 		try {
 			facets = await subdomainsApi.facets(projectId, scanId);
 		} catch {
@@ -347,6 +356,7 @@
 		void scanId;
 		void projectId;
 		void queryReady;
+		if (!ready) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
 		primed = true;
@@ -514,7 +524,7 @@
 	let rescanBusy = $state(false);
 
 	$effect(() => {
-		if (!active || !scanId || !projectId) return;
+		if (projectWide || !active || !scanId || !projectId) return;
 		void rechecks.loadSchema();
 		untrack(() => rechecks.load(scanId, projectId));
 	});
@@ -675,7 +685,7 @@
 		</div>
 	{/if}
 
-	{#if !groupBy}
+	{#if !groupBy && !projectWide}
 		<SelectionBar
 			count={checkedCount}
 			noun="web asset"
@@ -783,10 +793,13 @@
 						loadServices={(host) => servicesOn(projectId, scanId, 'host', host)}
 						onServices={onTab ? showServices : undefined}
 						onVulns={onTab ? showVulns : undefined}
-						onStructure={(sub) => (structureHost = sub.name)}
+						onStructure={(sub) => {
+							structureScanId = sub.scan_id;
+							structureHost = sub.name;
+						}}
 						recheck={rechecks.latest(scanId, s.name)}
-						onRescan={(sub) => rescan([sub.name])}
-						onRescanOptions={(sub) => (rescanOptionsFor = [sub.name])}
+						onRescan={projectWide ? undefined : (sub) => rescan([sub.name])}
+						onRescanOptions={projectWide ? undefined : (sub) => (rescanOptionsFor = [sub.name])}
 					/>
 				{/each}
 			</div>
@@ -816,7 +829,7 @@
 	focus={sheetFocus}
 	onOpenChange={(o) => (drawerOpen = o)}
 	{projectId}
-	{scanId}
+	scanId={selected?.scan_id || scanId}
 	index={selectedIndex}
 	pageOffset={pageIndex * pageSize}
 	{total}
@@ -833,7 +846,7 @@
 		if (!o) structureHost = null;
 	}}
 	{projectId}
-	{scanId}
+	scanId={structureScanId || scanId}
 	onOpenEndpoints={onTab ? (h) => onTab('endpoints', exactToken('host', h)) : undefined}
 />
 

@@ -1,9 +1,12 @@
 <script lang="ts" module>
 	import type { IconComponent } from '$lib/config/icons';
 
+	export type NavBadgeTone = 'info' | 'muted' | 'attention';
+
 	export interface NavBadge {
-		count: number;
+		label: string;
 		live?: boolean;
+		tone?: NavBadgeTone;
 	}
 
 	export interface NavItem {
@@ -21,6 +24,7 @@
 </script>
 
 <script lang="ts">
+	import { cn } from '$lib/utils';
 	import { navAccent } from '$lib/config/nav-accents';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -66,13 +70,21 @@
 {/snippet}
 
 {#snippet badge(b: NavBadge)}
+	{@const tone = b.tone ?? 'info'}
 	<Sidebar.MenuBadge
-		class="gap-1 rounded-full bg-info/10 px-1.5 font-mono text-[10px] font-semibold text-info peer-hover/menu-button:text-info peer-data-[active=true]/menu-button:text-info"
+		class={cn(
+			'gap-1 rounded-full px-1.5 font-mono text-[10px] font-semibold',
+			tone === 'info' &&
+				'bg-info/10 text-info peer-hover/menu-button:text-info peer-data-[active=true]/menu-button:text-info',
+			tone === 'attention' &&
+				'bg-destructive/10 text-destructive peer-hover/menu-button:text-destructive peer-data-[active=true]/menu-button:text-destructive',
+			tone === 'muted' && 'text-muted-foreground/70'
+		)}
 	>
 		{#if b.live}
 			<span class="size-1.5 animate-pulse rounded-full bg-info"></span>
 		{/if}
-		{b.count}
+		{b.label}
 	</Sidebar.MenuBadge>
 {/snippet}
 

@@ -29,6 +29,7 @@ from .predicates import (
     vuln_suppressed,
 )
 from .schema import build_schema
+from .scope import QueryScope, ScopeLike, scan_filter, scope_of
 from .service_compiler import ServiceQueryContext, compile_service_query
 from .vuln_compiler import VulnQueryContext, compile_vuln_query
 
@@ -40,7 +41,9 @@ __all__ = [
     "IpQueryContext",
     "Node",
     "QueryContext",
+    "QueryScope",
     "QuerySyntaxError",
+    "ScopeLike",
     "ServiceQueryContext",
     "VulnQueryContext",
     "build_endpoint_groups",
@@ -63,6 +66,8 @@ __all__ = [
     "parse_query",
     "query_error_for",
     "resolved",
+    "scan_filter",
+    "scope_of",
     "service_has_baseline",
     "service_is_new",
     "vuln_corroborated",

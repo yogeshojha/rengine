@@ -4,6 +4,8 @@ import type { SortOption } from '$lib/components/scans/results/table/columns';
 import { SERVICE_CLASS_LABELS, SERVICE_CLASS_ORDER } from '$lib/config/service-classes';
 
 export interface ServiceRead {
+	target_id?: string | null;
+	target_value?: string | null;
 	id: string;
 	ip: string;
 	port: number;

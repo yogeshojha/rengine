@@ -4,7 +4,6 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
-from uuid import UUID
 
 from sqlalchemy import and_, cast, exists, false, func, literal, or_, select, true
 from sqlalchemy.dialects.postgresql import INET, JSONB
@@ -16,12 +15,14 @@ from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
 from .ast import And, Compare, Node, Not, Or, QuerySyntaxError, Term
+from .scope import QueryScope
 from .terms import (
     int_coerce,
     json_array_match,
     negate,
     number_match,
     string_match,
+    target_match,
     tri_state,
 )
 from .values import asn_number, like, network
@@ -44,7 +45,7 @@ _PRIVATE_NETWORKS = (
 
 @dataclass(frozen=True)
 class ServiceQueryContext:
-    scan_id: UUID
+    scope: QueryScope
     now: datetime
     source: Any
 
@@ -56,7 +57,7 @@ def _within(ctx: ServiceQueryContext, cidr: str):
 def _host_exists(ctx: ServiceQueryContext, condition):
     return exists(
         select(1).where(
-            Subdomain.scan_id == ctx.scan_id,
+            ctx.scope.match(Subdomain.scan_id),
             condition,
             func.jsonb_exists(cast(Subdomain.resolved_ips, JSONB), ctx.source.c.ip),
         )
@@ -97,7 +98,7 @@ def _flag(cmp: Compare, ctx: ServiceQueryContext):
 
 
 _FLAG_BUILDERS = {
-    "new": lambda ctx: preds.service_is_new(ctx.source, ctx.scan_id),
+    "new": lambda ctx: preds.service_is_new(ctx.source, ctx.scope),
     "http": lambda ctx: ctx.source.c.is_http.is_(True),
     "tls": lambda ctx: ctx.source.c.tls.is_(True),
     "sensitive": lambda ctx: ctx.source.c.sensitive.is_(True),
@@ -110,14 +111,15 @@ _FLAG_BUILDERS = {
     "v4": lambda ctx: ctx.source.c.version == _IPV4,
     "v6": lambda ctx: ctx.source.c.version == _IPV6,
     "vulnerable": lambda ctx: preds.service_vuln(
-        ctx.scan_id, ctx.source.c.ip, ctx.source.c.port
+        ctx.scope, ctx.source.c.ip, ctx.source.c.port
     ),
     "kev": lambda ctx: preds.service_vuln(
-        ctx.scan_id, ctx.source.c.ip, ctx.source.c.port, Vulnerability.is_kev.is_(True)
+        ctx.scope, ctx.source.c.ip, ctx.source.c.port, Vulnerability.is_kev.is_(True)
     ),
 }
 
 _SERVICE_BUILDERS = {
+    "target": lambda c, ctx: target_match(ctx.source.c.target_id, c),
     "port": lambda c, ctx: number_match(ctx.source.c.port, c, int_coerce(c)),
     "service": lambda c, ctx: string_match(ctx.source.c.service_name, c),
     "class": lambda c, ctx: string_match(ctx.source.c.service_class, c),
@@ -137,13 +139,13 @@ _SERVICE_BUILDERS = {
     "host": lambda c, ctx: _host_exists(ctx, string_match(Subdomain.name, c)),
     "status": lambda c, ctx: number_match(ctx.source.c.status_code, c, int_coerce(c)),
     "vuln": lambda c, ctx: preds.service_vuln(
-        ctx.scan_id,
+        ctx.scope,
         ctx.source.c.ip,
         ctx.source.c.port,
         string_match(Vulnerability.severity, c),
     ),
     "cve": lambda c, ctx: preds.service_vuln(
-        ctx.scan_id,
+        ctx.scope,
         ctx.source.c.ip,
         ctx.source.c.port,
         json_array_match(Vulnerability.cve_ids, c),

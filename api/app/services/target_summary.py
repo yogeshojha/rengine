@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query.predicates import vuln_suppressed
 from app.services.scan import ScanService
+from app.services.surface_scope import TABLES, covering_stages
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.surface import (
-    SURFACE_KINDS,
     SURFACE_LABELS,
     SURFACE_ORDER,
     SurfaceDimension,
@@ -24,8 +24,6 @@ from shared.definitions.vulnerabilities import (
 )
 from shared.enums.scan import SCAN_LIVE_STATUSES, ScanActivityStatus, ScanStatus
 from shared.enums.scan_schedule import ScheduleStatus
-from shared.models.endpoint import Endpoint
-from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
@@ -40,28 +38,9 @@ from shared.models.target_summary import (
 from shared.models.vulnerability import SeverityCount, Vulnerability
 from shared.services.scan_scope import census_only
 from shared.services.schedule_timing import describe_schedule
-from stages.registry import stages
 
 # the surface sweep looks this far back; totals still count every run
 _MAX_RUNS = 25
-
-_TABLES = {
-    SurfaceDimension.WEB_ASSETS.value: Subdomain,
-    SurfaceDimension.ENDPOINTS.value: Endpoint,
-    SurfaceDimension.SERVICES.value: Port,
-    SurfaceDimension.IPS.value: IpAddress,
-    SurfaceDimension.VULNERABILITIES.value: Vulnerability,
-}
-
-
-def _covering_stages() -> dict[str, frozenset[str]]:
-    """Dimension -> the stage names whose success means the dimension was scanned."""
-    out: dict[str, set[str]] = {key: set() for key in SURFACE_ORDER}
-    for spec in stages():
-        for key, kinds in SURFACE_KINDS.items():
-            if spec.produces & kinds:
-                out[key].add(spec.name)
-    return {key: frozenset(names) for key, names in out.items()}
 
 
 class TargetSummaryService:
@@ -123,7 +102,7 @@ class TargetSummaryService:
         """Rows this target's scans hold, per dimension. The count is the promise."""
         ids = [r.id for r in runs]
         out: dict[str, dict[UUID, int]] = {}
-        for key, model in _TABLES.items():
+        for key, model in TABLES.items():
             query: Select = (
                 select(model.scan_id, func.count())
                 .where(model.scan_id.in_(ids))
@@ -151,7 +130,7 @@ class TargetSummaryService:
         for scan_id, name in result.all():
             ran[scan_id].add(name)
 
-        by_dimension = _covering_stages()
+        by_dimension = covering_stages()
         return {
             key: [
                 r.id

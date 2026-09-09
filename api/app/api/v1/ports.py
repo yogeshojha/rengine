@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.api.scope import ServiceScope
 from app.core.database import get_session
 from app.services.asset_query import build_schema
 from app.services.origin_exposure import OriginExposureService
@@ -75,40 +76,40 @@ async def service_query_schema(_current_user: CurrentUser):
 async def search_services(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: ServiceScope,
     body: ServiceFilter,
 ):
-    return await service.search(scan_id, body)
+    return await service.search(scope, body)
 
 
 @router.post("/search/leads", response_model=QueryLeads)
 async def service_leads(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: ServiceScope,
     body: ServiceFilter,
 ):
-    return await service.leads(scan_id, body)
+    return await service.leads(scope, body)
 
 
 @router.post("/search/groups", response_model=QueryGroups)
 async def service_groups(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: ServiceScope,
     group_by: Annotated[str, Query(description="Group dimension key", max_length=40)],
     body: ServiceFilter,
 ):
-    return await service.groups(scan_id, body, group_by)
+    return await service.groups(scope, body, group_by)
 
 
 @router.get("/facets", response_model=ServiceFacets)
 async def service_facets(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: ServiceScope,
 ):
-    return await service.facets(scan_id)
+    return await service.facets(scope)
 
 
 @router.get("/origins", response_model=OriginExposure)
@@ -124,6 +125,6 @@ async def origin_exposure(
 async def scan_exposure(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: ServiceScope,
 ):
-    return await service.exposure(scan_id)
+    return await service.exposure(scope)

@@ -1,4 +1,5 @@
 import { api } from './client';
+import { scopeQuery } from '$lib/utilities/surface-scope';
 import type { HostingFlow } from '$lib/types/hosting-flow';
 import type { SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
 import type { QueryGroups, QueryLeads, RelatedDomains } from '$lib/types/asset-query';
@@ -50,14 +51,14 @@ export const subdomainsApi = {
 		filter: SubdomainFilter
 	): Promise<SubdomainSearchResult> {
 		return api.post<SubdomainSearchResult>(
-			`/subdomains/search?project_id=${projectId}&scan_id=${scanId}`,
+			`/subdomains/search?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
 	},
 
 	async leads(projectId: string, scanId: string, filter: SubdomainFilter): Promise<QueryLeads> {
 		return api.post<QueryLeads>(
-			`/subdomains/search/leads?project_id=${projectId}&scan_id=${scanId}`,
+			`/subdomains/search/leads?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
 	},
@@ -69,32 +70,28 @@ export const subdomainsApi = {
 		filter: SubdomainFilter
 	): Promise<QueryGroups> {
 		return api.post<QueryGroups>(
-			`/subdomains/search/groups?project_id=${projectId}&scan_id=${scanId}&group_by=${encodeURIComponent(groupBy)}`,
+			`/subdomains/search/groups?${scopeQuery({ projectId, scanId })}&group_by=${encodeURIComponent(groupBy)}`,
 			filter
 		);
 	},
 
 	async relatedDomains(projectId: string, scanId: string): Promise<RelatedDomains> {
 		return api.get<RelatedDomains>(
-			`/subdomains/related-domains?project_id=${projectId}&scan_id=${scanId}`
+			`/subdomains/related-domains?${scopeQuery({ projectId, scanId })}`
 		);
 	},
 
 	async hostingFlow(projectId: string, scanId: string): Promise<HostingFlow> {
-		return api.get<HostingFlow>(
-			`/subdomains/hosting-flow?project_id=${projectId}&scan_id=${scanId}`
-		);
+		return api.get<HostingFlow>(`/subdomains/hosting-flow?${scopeQuery({ projectId, scanId })}`);
 	},
 
 	async facets(projectId: string, scanId: string): Promise<SubdomainFacetSet> {
-		return api.get<SubdomainFacetSet>(
-			`/subdomains/facets?project_id=${projectId}&scan_id=${scanId}`
-		);
+		return api.get<SubdomainFacetSet>(`/subdomains/facets?${scopeQuery({ projectId, scanId })}`);
 	},
 
 	async related(projectId: string, scanId: string, name: string): Promise<SubdomainRelation[]> {
 		return api.get<SubdomainRelation[]>(
-			`/subdomains/related?project_id=${projectId}&scan_id=${scanId}&name=${encodeURIComponent(name)}`
+			`/subdomains/related?${scopeQuery({ projectId, scanId })}&name=${encodeURIComponent(name)}`
 		);
 	},
 
@@ -109,9 +106,7 @@ export const subdomainsApi = {
 	},
 
 	async insights(projectId: string, scanId: string): Promise<SubdomainInsights> {
-		return api.get<SubdomainInsights>(
-			`/subdomains/insights?project_id=${projectId}&scan_id=${scanId}`
-		);
+		return api.get<SubdomainInsights>(`/subdomains/insights?${scopeQuery({ projectId, scanId })}`);
 	},
 
 	async correlation(
@@ -120,7 +115,7 @@ export const subdomainsApi = {
 		name: string
 	): Promise<SubdomainCorrelation> {
 		return api.get<SubdomainCorrelation>(
-			`/subdomains/correlation?project_id=${projectId}&scan_id=${scanId}&name=${encodeURIComponent(name)}`
+			`/subdomains/correlation?${scopeQuery({ projectId, scanId })}&name=${encodeURIComponent(name)}`
 		);
 	}
 };

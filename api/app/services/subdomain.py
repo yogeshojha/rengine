@@ -23,7 +23,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.asset_query import (
     STATEMENT_TIMEOUT,
     QueryContext,
+    QueryScope,
     QuerySyntaxError,
+    ScopeLike,
     build_groups,
     build_leads,
     collect_evidence,
@@ -36,6 +38,7 @@ from app.services.asset_query import predicates as preds
 from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
+from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, HOST_QUERY
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
 from shared.definitions.vulnerabilities import SEVERITY_ORDER
@@ -129,7 +132,7 @@ def _json_facet_sql(column: str, search: bool = False):
     return text(
         f"SELECT v AS value, count(*) AS c "  # noqa: S608
         f"FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.{column} AS jsonb)) v "
-        f"WHERE s.project_id = :pid AND s.scan_id = :sid{where} "
+        f"WHERE s.project_id = :pid AND s.scan_id = ANY(:sids){where} "
         f"GROUP BY v ORDER BY c DESC, v ASC LIMIT :lim"
     )
 
@@ -138,7 +141,7 @@ def _json_distinct_sql(column: str):
     return text(
         f"SELECT count(DISTINCT v) "  # noqa: S608
         f"FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.{column} AS jsonb)) v "
-        f"WHERE s.project_id = :pid AND s.scan_id = :sid"
+        f"WHERE s.project_id = :pid AND s.scan_id = ANY(:sids)"
     )
 
 
@@ -299,16 +302,17 @@ class SubdomainService:
         return query.order_by(primary.nulls_last(), Subdomain.name.asc())
 
     async def search(
-        self, project_id: UUID, scan_id: UUID, f: SubdomainFilter
+        self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter
     ) -> SubdomainSearchResult:
         now = utc_now()
+        scope = QueryScope.of(scope)
         base = select(Subdomain).where(
-            Subdomain.project_id == project_id, Subdomain.scan_id == scan_id
+            Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
         )
         base = self._apply_filter(base, f, now)
         try:
             node = parse_query(f.q)
-            predicate = compile_query(node, QueryContext(scan_id=scan_id, now=now))
+            predicate = compile_query(node, QueryContext(scope=scope, now=now))
         except QuerySyntaxError as exc:
             return SubdomainSearchResult(
                 error=QueryError(
@@ -341,23 +345,24 @@ class SubdomainService:
         if all_ips:
             port_rows = await self.session.execute(
                 select(Port.ip, Port.number).where(
-                    Port.scan_id == scan_id, Port.ip.in_(all_ips)
+                    scope.match(Port.scan_id), Port.ip.in_(all_ips)
                 )
             )
             for ip, number in port_rows.all():
                 ports_by_ip.setdefault(ip, set()).add(number)
 
         title_counts = await self._shared_counts(
-            scan_id, Subdomain.page_title, {s.page_title for s in rows if s.page_title}
+            scope, Subdomain.page_title, {s.page_title for s in rows if s.page_title}
         )
         favicon_counts = await self._shared_counts(
-            scan_id,
+            scope,
             Subdomain.favicon_hash,
             {s.favicon_hash for s in rows if s.favicon_hash},
         )
-        findings = await self._findings_for(scan_id, [s.name for s in rows])
-        endpoint_counts = await self._endpoint_counts(scan_id, [s.name for s in rows])
-        evidence = await collect_evidence(self.session, scan_id, rows, node)
+        findings = await self._findings_for(scope, [s.name for s in rows])
+        endpoint_counts = await self._endpoint_counts(scope, [s.name for s in rows])
+        evidence = await collect_evidence(self.session, scope, rows, node)
+        names = await target_names(self.session, (s.target_id for s in rows))
         items = []
         for s in rows:
             nums: set[int] = set()
@@ -366,6 +371,7 @@ class SubdomainService:
             items.append(
                 SubdomainRow(
                     **self._to_read(s).model_dump(),
+                    target_value=names.get(s.target_id),
                     ports=sorted(nums, key=lambda n: (port_interest(n), n)),
                     endpoint_count=endpoint_counts.get(s.name, 0),
                     title_count=title_counts.get(s.page_title, 0),
@@ -383,7 +389,7 @@ class SubdomainService:
         )
 
     async def _findings_for(
-        self, scan_id: UUID, hosts: list[str]
+        self, scope: QueryScope, hosts: list[str]
     ) -> dict[str, tuple[int, str | None, bool]]:
         """Worst finding per host on this page, so the asset table shows risk without a join."""
         if not hosts:
@@ -401,9 +407,9 @@ class SubdomainService:
                 func.bool_or(Vulnerability.is_kev),
             )
             .where(
-                Vulnerability.scan_id == scan_id,
+                scope.match(Vulnerability.scan_id),
                 Vulnerability.host.in_(hosts),
-                not_(vuln_suppressed(scan_id)),
+                not_(vuln_suppressed(scope)),
             )
             .group_by(Vulnerability.host)
         )
@@ -414,16 +420,17 @@ class SubdomainService:
         }
 
     async def leads(
-        self, project_id: UUID, scan_id: UUID, f: SubdomainFilter
+        self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter
     ) -> QueryLeads:
         now = utc_now()
+        scope = QueryScope.of(scope)
         base = select(Subdomain.id).where(
-            Subdomain.project_id == project_id, Subdomain.scan_id == scan_id
+            Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
         )
         base = self._apply_filter(base, f, now)
         await self.session.execute(text(STATEMENT_TIMEOUT))
         try:
-            ctx = QueryContext(scan_id=scan_id, now=now)
+            ctx = QueryContext(scope=scope, now=now)
             return await build_leads(
                 self.session,
                 base,
@@ -437,16 +444,17 @@ class SubdomainService:
             return QueryLeads()
 
     async def groups(
-        self, project_id: UUID, scan_id: UUID, f: SubdomainFilter, key: str
+        self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter, key: str
     ) -> QueryGroups:
         now = utc_now()
+        scope = QueryScope.of(scope)
         base = select(Subdomain.id).where(
-            Subdomain.project_id == project_id, Subdomain.scan_id == scan_id
+            Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
         )
         base = self._apply_filter(base, f, now)
         try:
             node = parse_query(f.q)
-            predicate = compile_query(node, QueryContext(scan_id=scan_id, now=now))
+            predicate = compile_query(node, QueryContext(scope=scope, now=now))
         except QuerySyntaxError:
             return QueryGroups(dimension=key)
         if predicate is not None:
@@ -459,29 +467,32 @@ class SubdomainService:
             logger.info("search groups failed", error=str(exc.orig))
             return QueryGroups(dimension=key)
 
-    async def _endpoint_counts(self, scan_id: UUID, hosts: list[str]) -> dict[str, int]:
+    async def _endpoint_counts(
+        self, scope: QueryScope, hosts: list[str]
+    ) -> dict[str, int]:
         if not hosts:
             return {}
         rows = await self.session.execute(
             select(Endpoint.host, func.count())
-            .where(Endpoint.scan_id == scan_id, Endpoint.host.in_(hosts))
+            .where(scope.match(Endpoint.scan_id), Endpoint.host.in_(hosts))
             .group_by(Endpoint.host)
         )
         return {host: int(n) for host, n in rows.all()}
 
-    async def _shared_counts(self, scan_id: UUID, col, values: set) -> dict:
+    async def _shared_counts(self, scope: QueryScope, col, values: set) -> dict:
         if not values:
             return {}
         rows = await self.session.execute(
             select(col, func.count())
-            .where(Subdomain.scan_id == scan_id, col.in_(values))
+            .where(scope.match(Subdomain.scan_id), col.in_(values))
             .group_by(col)
         )
         return {value: int(n) for value, n in rows.all()}
 
-    async def facets(self, project_id: UUID, scan_id: UUID) -> SubdomainFacets:
+    async def facets(self, project_id: UUID, scope: ScopeLike) -> SubdomainFacets:
         now = utc_now()
-        scope = (Subdomain.project_id == project_id, Subdomain.scan_id == scan_id)
+        scope = QueryScope.of(scope)
+        reach = (Subdomain.project_id == project_id, scope.match(Subdomain.scan_id))
 
         # driven from _STATUS_BUCKETS so the facet matches `_status_pred` exactly
         status_key = case(
@@ -497,7 +508,7 @@ class SubdomainService:
         )
         status_rows = await self.session.execute(
             select(status_key.label("k"), func.count())
-            .where(*scope)
+            .where(*reach)
             .group_by(status_key)
         )
         order = ["2xx", "3xx", "4xx", "5xx", "none"]
@@ -524,7 +535,7 @@ class SubdomainService:
                     func.count().filter(self._cert_pred("valid", now)).label("valid"),
                 )
                 .select_from(Subdomain)
-                .where(*scope)
+                .where(*reach)
             )
         ).one()
         cert = [
@@ -538,14 +549,14 @@ class SubdomainService:
             if count > 0
         ]
 
-        tech = await self._json_facet("tech", project_id, scan_id)
-        source = await self._json_facet("sources", project_id, scan_id)
+        tech = await self._json_facet("tech", project_id, scope)
+        source = await self._json_facet("sources", project_id, scope)
 
         service_rows = await self.session.execute(
             select(Port.service_name, func.count())
             .where(
                 Port.project_id == project_id,
-                Port.scan_id == scan_id,
+                scope.match(Port.scan_id),
                 Port.service_name.isnot(None),
             )
             .group_by(Port.service_name)
@@ -565,17 +576,18 @@ class SubdomainService:
         self,
         column: str,
         project_id: UUID,
-        scan_id: UUID,
+        scope: ScopeLike,
         *,
         limit: int = _FACET_LIMIT,
         search: str | None = None,
     ) -> list[Facet]:
+        sids = list(QueryScope.of(scope).ids)
         if search:
             stmt = _FACET_SEARCH_SQL[column].bindparams(
-                pid=project_id, sid=scan_id, lim=limit, q=f"%{search}%"
+                pid=project_id, sids=sids, lim=limit, q=f"%{search}%"
             )
         else:
-            stmt = _FACET_SQL[column].bindparams(pid=project_id, sid=scan_id, lim=limit)
+            stmt = _FACET_SQL[column].bindparams(pid=project_id, sids=sids, lim=limit)
         rows = await self.session.execute(stmt)
         return [Facet(value=v, label=v, count=c) for v, c in rows.all()]
 
@@ -969,7 +981,7 @@ class SubdomainService:
         ]
         tech_total = int(
             await self.session.scalar(
-                _DISTINCT_SQL["tech"].bindparams(pid=project_id, sid=scan_id)
+                _DISTINCT_SQL["tech"].bindparams(pid=project_id, sids=[scan_id])
             )
             or 0
         )

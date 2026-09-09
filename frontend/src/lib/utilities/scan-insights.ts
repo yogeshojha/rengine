@@ -291,6 +291,7 @@ export interface SubdomainCorrelation {
 }
 
 export interface IpGroupRead {
+	targets?: string[];
 	ip: string;
 	version: number;
 	asn: number | null;
