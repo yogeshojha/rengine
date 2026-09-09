@@ -290,3 +290,45 @@ class OriginExposure(BaseModel):
     findings: list[OriginFinding] = Field(default_factory=list)
     probed_addresses: int = 0
     fronted_assets: int = 0
+
+
+class CorrelationHost(BaseModel):
+    id: uuid.UUID
+    name: str
+    live: bool = False
+    status: int | None = None
+    title: str | None = None
+    hubs: int = 0
+
+
+class CorrelationHub(BaseModel):
+    """One shared identity and the hosts that carry it; count is the rows its query lands on."""
+
+    id: str
+    kind: str
+    value: str
+    label: str
+    count: int
+    share: float = 0.0
+    common: bool = False
+    query: str
+    members: list[int] = Field(default_factory=list)
+
+
+class CorrelationKindStat(BaseModel):
+    key: str
+    label: str
+    help: str
+    default: bool = True
+    hubs: int = 0
+    hosts: int = 0
+    common: int = 0
+
+
+class CorrelationGraph(BaseModel):
+    hosts: list[CorrelationHost] = Field(default_factory=list)
+    hubs: list[CorrelationHub] = Field(default_factory=list)
+    kinds: list[CorrelationKindStat] = Field(default_factory=list)
+    total_hosts: int = 0
+    shared_hosts: int = 0
+    truncated: bool = False

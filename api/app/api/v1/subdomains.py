@@ -8,13 +8,18 @@ from app.api.deps import CurrentUser
 from app.api.scope import WebAssetScope
 from app.core.database import get_session
 from app.services.asset_query import build_schema
+from app.services.correlation_graph import CorrelationGraphService
 from app.services.hosting_flow import HostingFlowService
 from app.services.related_domains import RelatedDomainService
 from app.services.subdomain import SubdomainService
 from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
 from shared.models.hosting_flow import HostingFlow
 from shared.models.related import RelatedDomains
-from shared.models.scan_correlation import SubdomainCorrelation, SubdomainInsights
+from shared.models.scan_correlation import (
+    CorrelationGraph,
+    SubdomainCorrelation,
+    SubdomainInsights,
+)
 from shared.models.subdomain import (
     Facet,
     SubdomainFacets,
@@ -112,6 +117,17 @@ async def subdomain_hosting_flow(
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
     return await HostingFlowService(session).for_scan(project_id, scan_id)
+
+
+@router.get("/correlation-graph", response_model=CorrelationGraph)
+async def subdomain_correlation_graph(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    """Every identity two hosts of the scan share, as hubs the hosts hang off."""
+    return await CorrelationGraphService(session).build(project_id, scan_id)
 
 
 @router.get("/related-domains", response_model=RelatedDomains)

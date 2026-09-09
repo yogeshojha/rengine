@@ -59,6 +59,9 @@
 	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
 	import { RESULT_TABS, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
 	import { INTEREST_TAB } from '$lib/config/interest';
+	import { CORRELATION_TAB } from '$lib/config/correlation';
+	import CorrelationTab from '$lib/components/scans/results/correlation/correlation-tab.svelte';
+	import Share2 from '@lucide/svelte/icons/share-2';
 	import InterestingTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
 	import ScanEye from '@lucide/svelte/icons/scan-eye';
 	import { plannedStages } from '$lib/utilities/scan-progress';
@@ -69,12 +72,13 @@
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { NOW_TICK_MS } from '$lib/constants';
 
-	const TABS = ['overview', INTEREST_TAB, ...RESULT_TABS] as const;
+	const TABS = ['overview', INTEREST_TAB, ...RESULT_TABS, CORRELATION_TAB] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
 		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
 		{ key: INTEREST_TAB as TabKey, label: 'Exposures', icon: ScanEye },
-		...SURFACE_ORDER.map((s) => ({ key: s.tab as TabKey, label: s.label, icon: s.icon }))
+		...SURFACE_ORDER.map((s) => ({ key: s.tab as TabKey, label: s.label, icon: s.icon })),
+		{ key: CORRELATION_TAB as TabKey, label: 'Correlation', icon: Share2 }
 	];
 	const HISTORY_SIZE = 12;
 	const STATUS_TEXT: Record<string, string> = {
@@ -258,6 +262,7 @@
 		return done.find((s) => s.engine_name === scan!.engine_name)?.duration_seconds ?? null;
 	});
 	let interestTotal = $state<number | null>(null);
+	let correlationTotal = $state<number | null>(null);
 	let ipsTotal = $state<number | null>(null);
 	let servicesTotal = $state<number | null>(null);
 	let endpointsTotal = $state<number | null>(null);
@@ -269,7 +274,8 @@
 		endpoints: endpointsTotal ?? scan?.endpoints_found ?? 0,
 		services: servicesTotal ?? scan?.open_ports_found ?? 0,
 		ips: ipsTotal ?? scan?.ips_found ?? 0,
-		vulnerabilities: vulnsTotal ?? scan?.vulnerabilities_found ?? 0
+		vulnerabilities: vulnsTotal ?? scan?.vulnerabilities_found ?? 0,
+		[CORRELATION_TAB]: correlationTotal
 	});
 	let plannedKinds = $derived(
 		new Set(scan ? plannedStages(scan, engineCatalogStore.stages).flatMap((st) => st.produces) : [])
@@ -278,6 +284,8 @@
 	let visibleTabs = $derived(
 		TAB_DEFS.filter((t) => {
 			if (t.key === 'overview') return true;
+			// two hosts are the least that can share anything
+			if (t.key === CORRELATION_TAB) return (scan?.subdomains_found ?? 0) >= 2;
 			if ((tabCounts[t.key] ?? 0) > 0) return true;
 			if (t.key === INTEREST_TAB) return false;
 			const spec = SURFACE_ORDER.find((sp) => sp.tab === t.key);
@@ -666,6 +674,19 @@
 						revision={resultTicks[INTEREST_TAB] ?? 0}
 						onTab={openTab}
 						onTotal={(n) => (interestTotal = n)}
+					/>
+				{/key}
+			</Tabs.Content>
+
+			<Tabs.Content value={CORRELATION_TAB} class="mt-6">
+				{#key scan.id}
+					<CorrelationTab
+						scanId={scan.id}
+						{projectId}
+						active={activeTab === CORRELATION_TAB}
+						revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
+						onTab={openTab}
+						onTotal={(n) => (correlationTotal = n)}
 					/>
 				{/key}
 			</Tabs.Content>

@@ -47,6 +47,11 @@ def _token(field: str, op: str, value: str) -> str:
     return f"{field}{op}{quoted}"
 
 
+def group_token(field: str, op: str, value: str) -> str:
+    """The drill-down token a group's count is a promise for."""
+    return _token(field, op, value)
+
+
 def _target_value(column):
     return select(Target.target_value).where(Target.id == column).scalar_subquery()
 
