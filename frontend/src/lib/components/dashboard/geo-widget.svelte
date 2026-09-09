@@ -16,7 +16,7 @@
 
 	let { countries, loading = false, class: className = '' }: Props = $props();
 
-	const TOP = 6;
+	const TOP = 5;
 	const SPEC = SURFACE[SurfaceDimension.IPS];
 	const link = (code: string) =>
 		ROUTES.surface(SPEC.tab, { [SPEC.queryParam]: `country:${code.toUpperCase()}` });
@@ -38,18 +38,16 @@
 	loading={loading && !countries}
 	class={className}
 >
-	<div class="flex items-center gap-4 px-5 py-4">
-		<div class="hidden shrink-0 sm:block">
-			<Globe
-				{entries}
-				size={150}
-				class="w-28"
-				activeCode={active}
-				onPick={(code) => goto(link(code))}
-				onHover={(code) => (active = code)}
-			/>
-		</div>
-		<ul class="flex min-w-0 flex-1 flex-col gap-1.5">
+	<div class="flex flex-col items-center gap-3 px-5 py-4">
+		<Globe
+			{entries}
+			size={176}
+			class="w-44"
+			activeCode={active}
+			onPick={(code) => goto(link(code))}
+			onHover={(code) => (active = code)}
+		/>
+		<ul class="flex w-full flex-col gap-1.5">
 			{#each top as e (e.code)}
 				<li>
 					<a
@@ -64,9 +62,7 @@
 								{countryName(e.code)}
 							</span>
 							<span class="font-medium tabular-nums">{e.count.toLocaleString()}</span>
-							<span
-								class="hidden w-9 text-right text-[11px] text-muted-foreground tabular-nums 2xl:inline-block"
-							>
+							<span class="w-9 text-right text-[11px] text-muted-foreground tabular-nums">
 								{total ? Math.round((e.count / total) * 100) : 0}%
 							</span>
 						</span>

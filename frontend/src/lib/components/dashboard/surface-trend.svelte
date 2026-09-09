@@ -98,14 +98,14 @@
 		</ToggleGroup.Root>
 	</div>
 	{#if empty}
-		<p class="px-5 py-10 text-center text-sm text-muted-foreground">
+		<p class="flex flex-1 items-center justify-center px-5 py-10 text-sm text-muted-foreground">
 			No {spec.nounPlural} recorded in this window.
 		</p>
 	{:else}
 		{#key dim + window}
 			<Chart.Container
 				config={chartConfig}
-				class="aspect-auto h-[200px] w-full pt-2 [&_.lc-highlight-line]:stroke-border [&_.lc-highlight-line]:stroke-1 [&_.lc-highlight-point]:stroke-background [&_.lc-highlight-point]:stroke-2"
+				class="aspect-auto min-h-[200px] w-full flex-1 pt-2 [&_.lc-highlight-line]:stroke-border [&_.lc-highlight-line]:stroke-1 [&_.lc-highlight-point]:stroke-background [&_.lc-highlight-point]:stroke-2"
 			>
 				<AreaChart
 					{data}

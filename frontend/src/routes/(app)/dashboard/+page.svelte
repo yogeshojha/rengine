@@ -17,7 +17,6 @@
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import FirstRunPanel from '$lib/components/dashboard/first-run/first-run-panel.svelte';
 	import Launcher from '$lib/components/dashboard/first-run/launcher.svelte';
-	import LiveStrip from '$lib/components/dashboard/live-strip.svelte';
 	import StatStrip from '$lib/components/dashboard/stat-strip.svelte';
 	import SurfaceTrend from '$lib/components/dashboard/surface-trend.svelte';
 	import CoverageWidget from '$lib/components/dashboard/coverage-widget.svelte';
@@ -113,7 +112,6 @@
 					{subline || (activeProject?.name ?? 'Select a project')}
 				</span>
 			</div>
-			<LiveStrip />
 		</div>
 		{#if activeProject && !firstRun && !emptyProject}
 			<div class="flex flex-wrap items-center gap-2">
@@ -202,17 +200,16 @@
 					<SurfaceTrend
 						{overview}
 						window={dashboardStore.window}
-						class="col-span-12 xl:col-span-8"
+						class="col-span-12 {hasGeo ? 'xl:col-span-8' : ''}"
 					/>
 				{/if}
-				<CoverageWidget
-					{overview}
-					window={dashboardStore.window}
-					liveCount={liveScans.count}
-					onScan={scanTargets}
-					onSchedule={scheduleTargets}
-					class="col-span-12 xl:col-span-4"
-				/>
+				{#if hasGeo}
+					<GeoWidget
+						countries={dashboardStore.ipFacets?.country ?? null}
+						loading={dashboardStore.extrasLoading}
+						class="col-span-12 lg:col-span-6 xl:col-span-4"
+					/>
+				{/if}
 
 				{#if overview.risk.targets_scanned > 0 || overview.risk.total > 0}
 					<AttackQueue
@@ -223,9 +220,14 @@
 						class="col-span-12 xl:col-span-8"
 					/>
 				{/if}
-				{#if hasExposures}
-					<ExposuresWidget page={dashboardStore.exposures} class="col-span-12 xl:col-span-4" />
-				{/if}
+				<CoverageWidget
+					{overview}
+					window={dashboardStore.window}
+					liveCount={liveScans.count}
+					onScan={scanTargets}
+					onSchedule={scheduleTargets}
+					class="col-span-12 lg:col-span-6 xl:col-span-4"
+				/>
 
 				{#if feedHasRows}
 					<ChangesFeed {feed} class="col-span-12 lg:col-span-6 xl:col-span-4" />
@@ -236,10 +238,9 @@
 						class="col-span-12 lg:col-span-6 xl:col-span-4"
 					/>
 				{/if}
-				{#if hasTech}
-					<TechWidget
-						tech={dashboardStore.tech}
-						loading={dashboardStore.extrasLoading}
+				{#if hasExposures}
+					<ExposuresWidget
+						page={dashboardStore.exposures}
 						class="col-span-12 lg:col-span-6 xl:col-span-4"
 					/>
 				{/if}
@@ -252,9 +253,9 @@
 						class="col-span-12 lg:col-span-6 xl:col-span-4"
 					/>
 				{/if}
-				{#if hasGeo}
-					<GeoWidget
-						countries={dashboardStore.ipFacets?.country ?? null}
+				{#if hasTech}
+					<TechWidget
+						tech={dashboardStore.tech}
 						loading={dashboardStore.extrasLoading}
 						class="col-span-12 lg:col-span-6 xl:col-span-4"
 					/>
