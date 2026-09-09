@@ -18,7 +18,6 @@
 		block.total !== null && block.total > block.rows.length ? block.total - block.rows.length : 0
 	);
 	const external = (href: string) => href.startsWith('http');
-	// colour carries state on the dot; only what you must notice tints the value too
 	const DOTTED: Tone[] = ['success', 'warning', 'critical', 'info'];
 	const TINTED: Record<Tone, string> = {
 		...TONE_TEXT,

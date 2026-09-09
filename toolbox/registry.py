@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from shared.definitions.toolbox import (
-    GROUP_HELP,
     GROUP_LABELS,
     GROUP_ORDER,
     ToolboxCatalog,
@@ -144,8 +143,6 @@ def catalog() -> ToolboxCatalog:
     )
     present = [g for g in GROUP_ORDER if any(s.group == g for s in specs)]
     return ToolboxCatalog(
-        groups=[
-            {"key": g, "label": GROUP_LABELS[g], "help": GROUP_HELP[g]} for g in present
-        ],
+        groups=[{"key": g, "label": GROUP_LABELS[g]} for g in present],
         tools=[s.read() for s in specs],
     )

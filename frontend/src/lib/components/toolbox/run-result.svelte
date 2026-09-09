@@ -41,7 +41,7 @@
 {#if pending}
 	<div class="flex items-center gap-2 py-6 text-sm text-muted-foreground">
 		<Spinner class="size-4" />
-		{run.status === 'queued' ? 'Waiting for a worker…' : 'Running…'}
+		{run.status === 'queued' ? 'Queued' : 'Running'}
 	</div>
 {:else if run.status === 'failed'}
 	<div

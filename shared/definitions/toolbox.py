@@ -1,4 +1,4 @@
-"""The toolbox vocabulary: how a tool is grouped, where it runs, and how a result is shaped."""
+"""Toolbox vocabulary: tool grouping, execution, run status and result blocks."""
 
 from __future__ import annotations
 
@@ -23,12 +23,6 @@ GROUP_LABELS: dict[str, str] = {
     ToolGroup.LOOKUP.value: "Lookup",
     ToolGroup.DISCOVERY.value: "Discovery",
     ToolGroup.INTEL.value: "Intelligence",
-}
-
-GROUP_HELP: dict[str, str] = {
-    ToolGroup.LOOKUP.value: "Ask a registry or a resolver what it holds.",
-    ToolGroup.DISCOVERY.value: "Find surface that is not in an inventory yet.",
-    ToolGroup.INTEL.value: "What is already known about a weakness.",
 }
 
 

@@ -1,4 +1,4 @@
-"""A passive subdomain sweep: what public sources already know about a domain."""
+"""Passive subdomain enumeration over the same providers the scan stage uses."""
 
 from __future__ import annotations
 
@@ -50,12 +50,12 @@ class Input(ToolInput):
         min_length=1,
         max_length=MAX_INPUT_LENGTH,
         title="Domain",
-        description="The apex to enumerate.",
+        description="Registrable domain to enumerate",
     )
     sources: list[str] = Field(
         default=list(DEFAULT_SOURCES),
         title="Sources",
-        description="Which passive sources to ask.",
+        description="Passive sources to query",
         json_schema_extra={"options": list(SOURCES), "option_labels": SOURCE_LABELS},
     )
 
@@ -73,7 +73,7 @@ class Input(ToolInput):
     def _sources(cls, value: list[str]) -> list[str]:
         chosen = [v for v in value if v in SOURCES]
         if not chosen:
-            msg = "Pick at least one source."
+            msg = "Select at least one source."
             raise ValueError(msg)
         return chosen
 
@@ -81,9 +81,7 @@ class Input(ToolInput):
 class SubdomainFinder(Tool):
     name = "subdomains"
     title = "Subdomain finder"
-    description = (
-        "Names public sources already hold for a domain. No packets to the target."
-    )
+    description = "Hostnames for a domain from passive sources."
     group = ToolGroup.DISCOVERY.value
     icon = "git-fork"
     execution = ToolExecution.QUEUED.value
@@ -132,14 +130,14 @@ class SubdomainFinder(Tool):
                     for name in names[:MAX_LISTED]
                 ],
                 title="Hosts",
-                empty="No source holds a name under this domain.",
+                empty="No hostnames returned",
                 total=len(names),
             ),
         ]
         if len(names) > MAX_LISTED:
             blocks.append(
                 note(
-                    f"Showing the first {MAX_LISTED} of {len(names)}. Run a scan to keep them all.",
+                    f"First {MAX_LISTED} of {len(names)} shown.",
                     tone=Tone.INFO.value,
                 )
             )
@@ -150,7 +148,8 @@ class SubdomainFinder(Tool):
             ),
             blocks=blocks,
             caveats=[
-                "Passive sources only. A scan adds bruteforce, permutations and resolution."
+                "Passive sources only. Bruteforce, permutations and DNS resolution "
+                "require a scan."
             ],
             pivot=target_pivot_sync(ctx, args.domain),
             raw={"domain": args.domain, "hosts": names},

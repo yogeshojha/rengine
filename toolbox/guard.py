@@ -1,4 +1,4 @@
-"""A tool that sends packets may only send them somewhere public."""
+"""Destination guard for tools that send traffic."""
 
 from __future__ import annotations
 
@@ -30,10 +30,10 @@ def _blocked(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
 
 
 def require_public(value: str) -> list[str]:
-    """Resolve and refuse anything that is not routable on the public internet."""
+    """Resolve the value and refuse any address that is not publicly routable."""
     host = hostname_of(value)
     if not host:
-        msg = f"{value} is not a host we can reach."
+        msg = f"{value} is not a valid host."
         raise ToolError(msg)
     try:
         addresses = {info[4][0] for info in socket.getaddrinfo(host, None)}
@@ -43,8 +43,8 @@ def require_public(value: str) -> list[str]:
     for address in addresses:
         if _blocked(ipaddress.ip_address(address)):
             msg = (
-                f"{host} resolves to {address}, which is not public. "
-                "The toolbox only probes addresses on the internet."
+                f"{host} resolves to {address}. "
+                "Only publicly routable addresses can be probed."
             )
             raise ToolError(msg)
     return sorted(addresses)

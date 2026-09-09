@@ -1,4 +1,4 @@
-"""WHOIS/RDAP: who registered a name, who holds a block, who runs an AS."""
+"""RDAP registration records for a domain, address block or autonomous system."""
 
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def _date(value: datetime | None) -> str:
 
 
 def _expiry_tone(value: datetime | None) -> tuple[str, str | None]:
-    """A date years out needs no countdown; only a near one is a fact worth stating."""
+    """A countdown is only attached within a year of expiry."""
     if value is None:
         return Tone.NEUTRAL.value, None
     days = (value - utc_now()).days
@@ -80,7 +80,10 @@ def _expiry_tone(value: datetime | None) -> tuple[str, str | None]:
 class WhoisLookup(Tool):
     name = "whois"
     title = "WHOIS"
-    description = "Who registered a domain, who holds an address block, who runs an AS."
+    description = (
+        "Registration and allocation records for a domain, address block or "
+        "autonomous system."
+    )
     group = ToolGroup.LOOKUP.value
     icon = "scroll-text"
     execution = ToolExecution.INLINE.value
@@ -103,7 +106,7 @@ class WhoisLookup(Tool):
 
         caveats = []
         if result.cache_hit:
-            caveats.append("Served from reNgine's stored record, not a fresh query.")
+            caveats.append("Served from the stored record, not a fresh query.")
 
         return ToolOutcome(
             summary=summary,
@@ -158,27 +161,25 @@ def _domain(response) -> tuple[list, str]:
                 "Organisation",
                 _named(registrant),
                 tone=Tone.MUTED.value if redacted else Tone.NEUTRAL.value,
-                note="a privacy service, not the owner" if redacted else None,
+                note="privacy service" if redacted else None,
             ),
             fact("Email", registrant.email if registrant else ""),
             fact("Country", _country(registrant)),
             title="Registrant",
-            empty="The registrar publishes no registrant details.",
+            empty="No registrant details published",
         ),
         tags(
             [tag(ns, icon="server") for ns in response.nameservers],
             title="Nameservers",
-            empty="No nameservers in the record.",
+            empty="No nameservers in the record",
         ),
         tags(
             [tag(s) for s in response.status],
             title="EPP status",
-            empty="No status codes in the record.",
+            empty="No status codes in the record",
         ),
     ]
-    summary = (
-        f"Registered with {registrar}" if registrar else "Registration record found"
-    )
+    summary = f"Registered with {registrar}" if registrar else "Registration record"
     if expiry_note and expiry_tone != Tone.NEUTRAL.value:
         summary = f"{summary} · expires {expiry_note}"
     return blocks, summary
@@ -203,7 +204,7 @@ def _network(response) -> tuple[list, str]:
             fact("Holder", _named(holder)),
             fact("Abuse contact", abuse.email if abuse else ""),
             title="Contacts",
-            empty="The registry publishes no contact for this block.",
+            empty="No contact published for this block",
         ),
     ]
     label = response.name or response.network or "Address block"
@@ -233,7 +234,7 @@ def _asn(response) -> tuple[list, str]:
             fact("Operator", _named(_first(response.entities.registrant))),
             fact("Abuse contact", abuse.email if abuse else ""),
             title="Contacts",
-            empty="The registry publishes no contact for this AS.",
+            empty="No contact published for this AS",
         ),
     ]
-    return blocks, response.name or "Autonomous system record found"
+    return blocks, response.name or "Autonomous system record"

@@ -96,7 +96,7 @@
 		<Dialog.Header class="border-b px-4 py-2.5">
 			<Dialog.Title class="text-sm font-medium">Toolbox</Dialog.Title>
 			<Dialog.Description class="sr-only">
-				One-off lookups: WHOIS, DNS, subdomains, HTTP, addresses and CVEs.
+				Lookup, discovery and intelligence tools
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -128,11 +128,11 @@
 								<div class="flex items-center gap-2">
 									<h3 class="text-sm leading-5 font-medium">{tool.title}</h3>
 									{#if tool.touches_target}
-										<Hint text="This sends a request to the host you name.">
+										<Hint text="Sends a request to the named host">
 											{#snippet child(props)}
 												<span {...props} class="inline-flex">
 													<Badge variant="warning" class="h-4 px-1.5 text-[10px]">
-														Touches the target
+														Sends traffic
 													</Badge>
 												</span>
 											{/snippet}
@@ -155,11 +155,9 @@
 						<div class="px-4 py-3">
 							{#if run}
 								<RunResult {run} onNavigate={() => (open = false)} />
-							{:else}
+							{:else if tool.examples.length}
 								<p class="py-4 text-[13px] text-muted-foreground">
-									{tool.examples.length
-										? `Try ${tool.examples.join(', ')}.`
-										: 'Enter a value and press Run.'}
+									Examples: {tool.examples.join(', ')}
 								</p>
 							{/if}
 						</div>

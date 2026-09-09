@@ -73,7 +73,7 @@
 				{/each}
 			</div>
 		{:else}
-			<p class="px-2 py-6 text-center text-xs text-muted-foreground">No tool matches that.</p>
+			<p class="px-2 py-6 text-center text-xs text-muted-foreground">No matching tool</p>
 		{/each}
 	</div>
 </ScrollArea>

@@ -164,7 +164,7 @@ def sync_ranges(session: Session) -> dict[str, int]:
     return counts
 
 
-# the same LATERAL shape as the bulk enrich, for one address, on either session flavour
+# the bulk enrich LATERAL shape, for one address, on either session type
 ADDRESS_LOOKUP_SQL = text("""
 SELECT r.asn, r.as_name, c.country
 FROM (SELECT CAST(:ip AS inet) AS ip) base

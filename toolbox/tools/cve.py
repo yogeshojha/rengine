@@ -1,4 +1,4 @@
-"""One CVE, ranked by the local feeds: how likely it is exploited, and whether it is already in use."""
+"""One CVE, ranked from the local EPSS and KEV feeds and the provider cache."""
 
 from __future__ import annotations
 
@@ -110,7 +110,7 @@ class CveLookup(Tool):
                     note="CISA KEV",
                 ),
                 fact(
-                    "Used by ransomware",
+                    "Ransomware campaign use",
                     "yes" if kev and kev.known_ransomware else "",
                     tone=Tone.CRITICAL.value,
                 ),
@@ -136,7 +136,7 @@ class CveLookup(Tool):
                 ),
                 fact("Required action", kev.required_action if kev else ""),
                 title="CISA catalogue",
-                empty="Not in the CISA known-exploited catalogue.",
+                empty="Not in the CISA catalogue",
             ),
             facts(
                 fact(
@@ -154,13 +154,13 @@ class CveLookup(Tool):
                     "Patch available", "yes" if intel and intel.patch_available else ""
                 ),
                 fact(
-                    "Hosts exposed on the internet",
+                    "Internet-exposed hosts",
                     f"{intel.exposure_hosts:,}"
                     if intel and intel.exposure_hosts
                     else "",
                 ),
                 title="Exploitability",
-                empty="No provider detail is cached for this CVE yet.",
+                empty="No provider detail cached",
             ),
             code(intel.description.strip(), title="Description")
             if intel and intel.description
@@ -168,31 +168,33 @@ class CveLookup(Tool):
             tags(
                 [tag(w) for w in (intel.weaknesses if intel else [])],
                 title="Weaknesses",
-                empty="No CWE mapping cached.",
+                empty="No CWE mapping cached",
             ),
             table(
                 ["Exploit", "Source"],
                 [_poc_row(p) for p in (intel.pocs if intel else [])[:MAX_POCS]],
                 title="Published exploits",
-                empty="No public exploit is cached for this CVE.",
+                empty="No published exploit cached",
                 total=intel.poc_count if intel else 0,
             ),
         ]
-        blocks = [b for b in blocks if b is not None]
-
+        # nothing held: one statement, not four empty sections
         if epss is None and kev is None and intel is None:
-            blocks.append(
+            blocks = [
                 note(
-                    "Nothing is held locally for this identifier. Either the exploitation feeds "
-                    "have not been downloaded, or the CVE is not in them.",
+                    "No local record for this identifier. The exploitation feeds may "
+                    "not have been downloaded.",
                     tone=Tone.WARNING.value,
                 )
-            )
+            ]
+        else:
+            blocks = [b for b in blocks if b is not None]
 
         caveats = []
         if intel is not None:
             caveats.append(
-                "Severity, exploits and exposure counts are ProjectDiscovery's derived data, not reNgine's observations."
+                "Severity, exploits and exposure counts are ProjectDiscovery derived "
+                "data, not reNgine observations."
             )
 
         return ToolOutcome(
@@ -233,7 +235,7 @@ def _rank(percentile: float) -> str:
 def _template(intel: CveIntel | None) -> str:
     if intel is None or intel.template_available is None:
         return ""
-    return "available" if intel.template_available else "none exists"
+    return "available" if intel.template_available else "none"
 
 
 def _poc_row(poc) -> list:
@@ -268,7 +270,9 @@ def _summary(epss, kev, findings: int) -> str:
     if epss is not None:
         parts.append(f"EPSS {_pct(epss.score)}")
     if not parts:
-        parts.append("Nothing held locally")
+        parts.append("No local record")
     if findings:
-        parts.append(f"{findings} finding{'s' if findings != 1 else ''} here")
+        parts.append(
+            f"{findings} finding{'s' if findings != 1 else ''} in this project"
+        )
     return " · ".join(parts)

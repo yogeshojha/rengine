@@ -1,4 +1,4 @@
-"""Every DNS record a name publishes, in one query."""
+"""All DNS record types for a domain, in one dnsx invocation."""
 
 from __future__ import annotations
 
@@ -16,7 +16,6 @@ from toolbox.base import (
     cell,
     fact,
     facts,
-    note,
     table,
 )
 from toolbox.pivot import target_pivot_sync
@@ -49,7 +48,7 @@ class Input(ToolInput):
         min_length=1,
         max_length=MAX_INPUT_LENGTH,
         title="Domain",
-        description="The name to resolve.",
+        description="Domain name to resolve",
     )
 
     @field_validator("domain")
@@ -66,7 +65,7 @@ class DnsLookup(Tool):
     name = "dns"
     title = "DNS records"
     description = (
-        "Every record a name publishes: addresses, mail, nameservers, text, CAA."
+        "Address, mail, nameserver, text and CAA records published for a domain."
     )
     group = ToolGroup.LOOKUP.value
     icon = "list-tree"
@@ -89,7 +88,7 @@ class DnsLookup(Tool):
                 if status and status != "NOERROR"
                 else None,
                 fact(
-                    "Behind a CDN",
+                    "CDN",
                     (recon.cdn_name or "yes") if recon.cdn else "",
                     tone=Tone.INFO.value,
                 ),
@@ -102,20 +101,16 @@ class DnsLookup(Tool):
                 ["Type", "Value"],
                 rows,
                 title="Records",
-                empty="The name resolves, but publishes no records we asked for.",
+                empty="No records returned",
                 total=len(rows),
             ),
         ]
-        if status and status != "NOERROR":
-            blocks.insert(
-                0, note(f"The resolver answered {status}.", tone=Tone.WARNING.value)
-            )
 
         addresses = len(recon.a) + len(recon.aaaa)
         summary = (
             f"{len(rows)} records · {addresses} address{'es' if addresses != 1 else ''}"
             if rows
-            else f"No records ({status or 'no answer'})"
+            else f"No records returned ({status or 'no answer'})"
         )
         return ToolOutcome(
             summary=summary,

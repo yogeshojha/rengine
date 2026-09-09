@@ -32,7 +32,6 @@ export interface ToolSpec {
 export interface ToolGroupSpec {
 	key: string;
 	label: string;
-	help: string;
 }
 
 export interface ToolboxCatalog {

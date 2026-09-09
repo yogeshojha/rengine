@@ -1,4 +1,4 @@
-"""What an address is, from the offline range tables — and what reNgine has already seen on it."""
+"""Address facts from the offline range tables, plus its recorded scan history."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ class Input(ToolInput):
 class IpIntel(Tool):
     name = "ip"
     title = "IP address"
-    description = "Network, operator, country and reverse name — offline, plus what your scans found here."
+    description = "Network, operator, country and reverse DNS for an address, with its scan history."
     group = ToolGroup.LOOKUP.value
     icon = "network"
     execution = ToolExecution.INLINE.value
@@ -80,8 +80,8 @@ class IpIntel(Tool):
                 fact("Operator", as_name),
                 fact("Country", country),
                 fact(
-                    "Scope",
-                    "public" if address.is_global else "not routable on the internet",
+                    "Routing",
+                    "public" if address.is_global else "not publicly routable",
                     tone=Tone.NEUTRAL.value
                     if address.is_global
                     else Tone.WARNING.value,
@@ -91,15 +91,18 @@ class IpIntel(Tool):
             tags(
                 [tag(name, icon="server") for name in ptr],
                 title="Reverse DNS",
-                empty="No PTR record.",
+                empty="No PTR record",
             ),
-            facts(*_seen_facts(seen), title="In your scans", empty=_never(seen)),
+            facts(
+                *_seen_facts(seen),
+                title="Scan history",
+                empty="Not recorded by any scan in this project",
+            ),
         ]
         if asn is None and country is None:
             blocks.append(
                 note(
-                    "The IP range feeds have never been loaded on this instance, so no network "
-                    "or country can be named.",
+                    "IP range feeds have not been loaded on this instance.",
                     tone=Tone.WARNING.value,
                 )
             )
@@ -189,11 +192,3 @@ def _seen_facts(seen: dict) -> list:
         fact("Open ports", seen["ports"] or ""),
         fact("Last seen", (seen["last_seen"] or "")[:10]),
     ]
-
-
-def _never(seen: dict) -> str:
-    return (
-        "No scan in this project has recorded this address."
-        if not seen["rows"]
-        else "No detail recorded."
-    )

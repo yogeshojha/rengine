@@ -1,4 +1,4 @@
-"""Turning a request into a finished run — the one place a tool's result becomes a row."""
+"""The one place a tool result becomes a stored run."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def _elapsed(run: ToolRunRead) -> int:
 
 
 def _worth_showing(block: Block) -> bool:
-    """A block with nothing in it and nothing to say about that is not printed."""
+    """An empty block with no empty-state text is not rendered."""
     if block.facts or block.rows or block.tags or block.text:
         return True
     return bool(block.empty)
@@ -57,12 +57,12 @@ def _age(stamp: str | None) -> float:
 
 
 def expire(run: ToolRunRead) -> ToolRunRead:
-    """A run nobody picked up is a failure, not a spinner that never stops."""
+    """A run past its deadline is recorded as failed rather than left pending."""
     if (
         run.status == RunStatus.QUEUED.value
         and _age(run.queued_at) > QUEUE_DEADLINE_SECONDS
     ):
-        return fail(run, "No worker picked this up. Check that the worker is running.")
+        return fail(run, "No worker accepted this run.")
     if (
         run.status == RunStatus.RUNNING.value
         and _age(run.started_at) > RUN_DEADLINE_SECONDS

@@ -1,7 +1,4 @@
-"""Runs live in Redis with a TTL, not a table — a lookup is a question, not inventory.
-
-Every write is fail-open: losing the history must never fail the lookup itself.
-"""
+"""Run records, held in Redis with a TTL. Every write is fail-open."""
 
 from __future__ import annotations
 
@@ -136,7 +133,7 @@ async def clear(user_id: uuid.UUID) -> int:
 
 
 async def within_rate(user_id: uuid.UUID) -> bool:
-    """Fail-open throughput guard so one operator cannot loop the queue."""
+    """Fail-open per-user throughput guard."""
     key = RATE_KEY.format(user_id=user_id)
     try:
         redis = _async_client()

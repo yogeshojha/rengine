@@ -1,4 +1,4 @@
-"""What a toolbox tool declares, and the result vocabulary it answers in."""
+"""Tool declaration and the result vocabulary a tool answers in."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from shared.definitions.toolbox import (
 
 
 class ToolError(Exception):
-    """A run that failed for a reason worth showing the operator verbatim."""
+    """A failure whose message is shown to the operator verbatim."""
 
 
 class ToolInput(BaseModel):
@@ -64,7 +64,7 @@ class Tool(ABC):
 
     @classmethod
     def label_for(cls, args: ToolInput) -> str:
-        """The value that names the run in history — the first field, unless overridden."""
+        """The value that names the run in history: the first string field."""
         for value in args.model_dump().values():
             if isinstance(value, str) and value.strip():
                 return value.strip()
@@ -92,7 +92,7 @@ def fact(
     href: str | None = None,
     mono: bool = False,
 ) -> Fact | None:
-    """A row, or nothing at all — a blank fact is noise, not an answer."""
+    """A row, or None when the value is blank."""
     text = "" if value is None else str(value).strip()
     if not text:
         return None

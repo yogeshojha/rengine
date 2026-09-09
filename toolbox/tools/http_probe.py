@@ -1,4 +1,4 @@
-"""One HTTP request, read the way the scanner reads it: status, stack, certificate, edge."""
+"""One HTTP request through the same httpx path the scanner uses."""
 
 from __future__ import annotations
 
@@ -48,16 +48,14 @@ class Input(ToolInput):
     follow_redirects: bool = Field(
         default=True,
         title="Follow redirects",
-        description="Report the response at the end of the chain.",
+        description="Report the final response in the redirect chain",
     )
 
 
 class HttpProbe(Tool):
     name = "http"
     title = "HTTP probe"
-    description = (
-        "What answers on a host: status, title, server, technologies, TLS and edge."
-    )
+    description = "Status, title, server, technologies, certificate and CDN for a host."
     group = ToolGroup.DISCOVERY.value
     icon = "globe"
     execution = ToolExecution.QUEUED.value
@@ -102,11 +100,9 @@ class HttpProbe(Tool):
             tags(
                 [tag(name, icon=name) for name in tech],
                 title="Technologies",
-                empty="httpx recognised no technology on this response.",
+                empty="No technologies detected",
             ),
-            facts(
-                *_tls(row), title="Certificate", empty="The response was not over TLS."
-            ),
+            facts(*_tls(row), title="Certificate", empty="Response was not over TLS"),
             facts(
                 fact("Address", row.get("ip"), mono=True),
                 fact("CNAME", row.get("cname"), mono=True),
@@ -117,12 +113,12 @@ class HttpProbe(Tool):
                     else "",
                 ),
                 fact(
-                    "Edge",
+                    "CDN",
                     _edge(row),
                     tone=Tone.INFO.value if row.get("is_cdn") else Tone.NEUTRAL.value,
                 ),
                 fact("HTTP/2", "supported" if row.get("supports_http2") else ""),
-                title="Where it lives",
+                title="Network",
             ),
             code(
                 row.get("raw_response_header") or "",
@@ -132,16 +128,20 @@ class HttpProbe(Tool):
         ]
 
         return ToolOutcome(
-            summary=f"{status or 'no status'} · {row.get('webserver') or 'server not named'}"
-            + (
-                f" · {len(tech)} technolog{'ies' if len(tech) != 1 else 'y'}"
-                if tech
-                else ""
-            ),
+            summary=_summary(status, row.get("webserver"), len(tech)),
             blocks=[b for b in blocks if b.kind != BlockKind.CODE.value or b.text],
             pivot=target_pivot_sync(ctx, hostname_of(args.target)),
             raw=_raw(row),
         )
+
+
+def _summary(status: int | None, server: str | None, tech: int) -> str:
+    parts = [str(status) if status else "No status"]
+    if server:
+        parts.append(server)
+    if tech:
+        parts.append(f"{tech} technolog{'ies' if tech != 1 else 'y'}")
+    return " · ".join(parts)
 
 
 def _status_tone(status: int | None) -> str:
@@ -168,7 +168,7 @@ def _seconds(value: float | None) -> str:
 
 def _edge(row: dict) -> str:
     if not row.get("is_cdn"):
-        return "answers directly"
+        return "none"
     kind = row.get("cdn_type") or "cdn"
     return f"{row.get('cdn_name') or kind} ({kind})"
 
@@ -200,7 +200,7 @@ def _tls(row: dict) -> list:
             "yes" if row.get("tls_self_signed") else "",
             tone=Tone.CRITICAL.value,
         ),
-        fact("Names on it", ", ".join(row.get("tls_sans") or [])),
+        fact("Subject alternative names", ", ".join(row.get("tls_sans") or [])),
     ]
 
 

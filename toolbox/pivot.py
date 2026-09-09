@@ -1,4 +1,4 @@
-"""A result that names something reNgine already tracks should say so, and link to it."""
+"""Links a result to the target reNgine already tracks for that value."""
 
 from __future__ import annotations
 

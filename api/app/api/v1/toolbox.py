@@ -73,7 +73,7 @@ async def run_tool(
     if not await store.within_rate(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many toolbox runs. Wait a minute.",
+            detail="Too many toolbox runs. Try again in a minute.",
         )
 
     project_id = _project_id(body.project_id)
@@ -111,7 +111,7 @@ async def run_tool(
             project_id=str(project_id) if project_id else None,
         )
         if not accepted:
-            fail(run, "The task queue did not accept the run. Is the worker running?")
+            fail(run, "The task queue did not accept the run.")
             await store.save(current_user.id, run)
         return run
 
