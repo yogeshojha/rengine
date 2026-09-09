@@ -6,7 +6,6 @@ from pydantic import Field, field_validator
 
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
-    InputKind,
     Tone,
     ToolExecution,
     ToolGroup,
@@ -79,7 +78,6 @@ class DnsLookup(Tool):
     group = ToolGroup.LOOKUP.value
     icon = "list-tree"
     execution = ToolExecution.QUEUED.value
-    accepts = frozenset({InputKind.DOMAIN.value, InputKind.URL.value})
     order = 20
     value_field = "domain"
     placeholder = "example.com"
@@ -170,24 +168,24 @@ def _rows(recon) -> list[list]:
         )
 
     for value in recon.a:
-        add(DnsRecordType.A, value, lookup=lookup(value))
+        add(DnsRecordType.A, value, lookup=lookup(value, "ip"))
     for value in recon.aaaa:
-        add(DnsRecordType.AAAA, value, lookup=lookup(value))
+        add(DnsRecordType.AAAA, value, lookup=lookup(value, "ip"))
     for value in recon.cname:
-        add(DnsRecordType.CNAME, value, lookup=lookup(value, tool="dns"))
+        add(DnsRecordType.CNAME, value, lookup=lookup(value, "dns"))
     for value in recon.ns:
         add(
             DnsRecordType.NS,
             value,
             identity=nameserver(value),
-            lookup=lookup(value, tool="dns"),
+            lookup=lookup(value, "dns"),
         )
     for entry in recon.mx:
         add(
             DnsRecordType.MX,
             entry.host,
             f"priority {entry.priority}",
-            lookup=lookup(entry.host, tool="dns"),
+            lookup=lookup(entry.host, "dns"),
         )
     for value in recon.txt:
         add(DnsRecordType.TXT, value, _txt_note(value))

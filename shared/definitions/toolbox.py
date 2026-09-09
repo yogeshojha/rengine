@@ -6,8 +6,6 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from shared.enums.target import TargetType
-
 
 class ToolGroup(StrEnum):
     LOOKUP = "lookup"
@@ -25,25 +23,6 @@ GROUP_LABELS: dict[str, str] = {
     ToolGroup.LOOKUP.value: "Lookup",
     ToolGroup.DISCOVERY.value: "Discovery",
     ToolGroup.INTEL.value: "Intelligence",
-}
-
-
-class InputKind(StrEnum):
-    DOMAIN = TargetType.DOMAIN.value
-    IP = TargetType.IP.value
-    IP_RANGE = TargetType.IP_RANGE.value
-    URL = TargetType.URL.value
-    ASN = TargetType.ASN.value
-    CVE = "cve"
-
-
-INPUT_LABELS: dict[str, str] = {
-    InputKind.DOMAIN.value: "Domain",
-    InputKind.IP.value: "IP address",
-    InputKind.IP_RANGE.value: "Address range",
-    InputKind.URL.value: "URL",
-    InputKind.ASN.value: "Autonomous system",
-    InputKind.CVE.value: "CVE",
 }
 
 
@@ -205,8 +184,7 @@ class ToolSpecRead(BaseModel):
     icon: str
     execution: str
     touches_target: bool
-    auto: bool
-    accepts: list[str] = Field(default_factory=list)
+    value_field: str
     placeholder: str
     examples: list[str] = Field(default_factory=list)
     fields: list[ToolField] = Field(default_factory=list)
@@ -240,17 +218,3 @@ class ToolRunRequest(BaseModel):
     tool: str
     input: dict = Field(default_factory=dict)
     project_id: str | None = None
-
-
-class LookupRequest(BaseModel):
-    q: str = Field(min_length=1, max_length=MAX_INPUT_LENGTH)
-    project_id: str | None = None
-
-
-class LookupResult(BaseModel):
-    kind: str | None = None
-    kind_label: str | None = None
-    value: str
-    runs: list[ToolRunRead] = Field(default_factory=list)
-    offered: list[str] = Field(default_factory=list)
-    error: str | None = None

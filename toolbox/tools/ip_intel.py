@@ -11,7 +11,6 @@ from pydantic import Field, field_validator
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
-    InputKind,
     Pivot,
     Tone,
     ToolExecution,
@@ -66,7 +65,6 @@ class IpIntel(Tool):
     group = ToolGroup.LOOKUP.value
     icon = "network"
     execution = ToolExecution.INLINE.value
-    accepts = frozenset({InputKind.IP.value})
     order = 10
     value_field = "ip"
     placeholder = "8.8.8.8"
@@ -114,7 +112,7 @@ class IpIntel(Tool):
                     "Network",
                     f"AS{asn}" if asn else "",
                     mono=True,
-                    lookup=lookup(f"AS{asn}") if asn else None,
+                    lookup=lookup(f"AS{asn}", "whois") if asn else None,
                 ),
                 fact("Operator", as_name),
                 fact(
@@ -126,7 +124,7 @@ class IpIntel(Tool):
             ),
             tags(
                 [
-                    tag(name, identity=glyph("server"), lookup=lookup(name, tool="dns"))
+                    tag(name, identity=glyph("server"), lookup=lookup(name, "dns"))
                     for name in ptr
                 ],
                 title="Reverse DNS",

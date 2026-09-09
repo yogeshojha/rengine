@@ -60,9 +60,7 @@ class Tool(ABC):
     icon: ClassVar[str] = "search"
     execution: ClassVar[str] = ToolExecution.INLINE.value
     touches_target: ClassVar[bool] = False
-    auto: ClassVar[bool] = True
     order: ClassVar[int] = 50
-    accepts: ClassVar[frozenset[str]] = frozenset()
     value_field: ClassVar[str] = ""
     placeholder: ClassVar[str] = ""
     examples: ClassVar[tuple[str, ...]] = ()
@@ -110,7 +108,8 @@ def nameserver(host: str, label: str | None = None) -> Identity:
     return Identity(kind=IdentityKind.NAMESERVER.value, value=host, label=label)
 
 
-def lookup(value: str, tool: str | None = None) -> Lookup | None:
+def lookup(value: str, tool: str) -> Lookup | None:
+    """A value that another tool answers. The tool is named, never inferred."""
     return Lookup(value=value.strip(), tool=tool) if value and value.strip() else None
 
 

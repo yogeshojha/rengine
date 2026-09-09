@@ -8,7 +8,6 @@ from pydantic import Field, field_validator
 
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
-    InputKind,
     Tone,
     ToolExecution,
     ToolGroup,
@@ -98,8 +97,6 @@ class SubdomainFinder(Tool):
     group = ToolGroup.DISCOVERY.value
     icon = "git-fork"
     execution = ToolExecution.QUEUED.value
-    auto = False
-    accepts = frozenset({InputKind.DOMAIN.value, InputKind.URL.value})
     order = 40
     value_field = "domain"
     placeholder = "example.com"
@@ -157,7 +154,7 @@ class SubdomainFinder(Tool):
                 ["Host", "Found by", "Inventory"],
                 [
                     [
-                        cell(name, mono=True, lookup=lookup(name)),
+                        cell(name, mono=True, lookup=lookup(name, "dns")),
                         cell(
                             ", ".join(
                                 sorted(SOURCE_LABELS.get(s, s) for s in merged[name])

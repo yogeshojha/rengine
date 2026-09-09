@@ -24,8 +24,7 @@ export interface ToolSpec {
 	icon: string;
 	execution: ToolExecution;
 	touches_target: boolean;
-	auto: boolean;
-	accepts: string[];
+	value_field: string;
 	placeholder: string;
 	examples: string[];
 	fields: ToolField[];
@@ -154,13 +153,4 @@ export interface ToolRunRequest {
 	tool: string;
 	input: Record<string, unknown>;
 	project_id?: string;
-}
-
-export interface LookupResult {
-	kind: string | null;
-	kind_label: string | null;
-	value: string;
-	runs: ToolRun[];
-	offered: string[];
-	error: string | null;
 }

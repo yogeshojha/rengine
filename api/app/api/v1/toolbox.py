@@ -8,9 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from shared.definitions.toolbox import (
-    INPUT_LABELS,
-    LookupRequest,
-    LookupResult,
     RunStatus,
     ToolboxCatalog,
     ToolRunRead,
@@ -22,7 +19,6 @@ from shared.services.celery_dispatch import dispatch_toolbox_run
 from toolbox import registry, store
 from toolbox.base import ToolContext, ToolError
 from toolbox.registry import ToolSpec
-from toolbox.routing import classify
 from toolbox.runner import complete, expire, fail, validate
 
 logger = get_logger(__name__)
@@ -30,9 +26,6 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/toolbox", tags=["toolbox"])
 
 INLINE_TIMEOUT = 45
-UNRECOGNISED = (
-    "Enter a domain, IP address, address range, URL, autonomous system or CVE."
-)
 
 
 @router.get("/catalog", response_model=ToolboxCatalog)
@@ -65,50 +58,6 @@ async def toolbox_run(
 @router.delete("/runs", status_code=status.HTTP_204_NO_CONTENT)
 async def clear_toolbox_runs(current_user: CurrentUser):
     await store.clear(current_user.id)
-
-
-@router.post("/lookup", response_model=LookupResult)
-async def lookup_value(
-    body: LookupRequest,
-    current_user: CurrentUser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-):
-    """Classify a raw value and run every tool that answers it without being asked."""
-    classified = classify(body.q)
-    if classified is None:
-        return LookupResult(value=body.q.strip(), error=UNRECOGNISED)
-
-    kind, value = classified
-    specs = registry.for_kind(kind)
-    if not specs:
-        return LookupResult(
-            kind=kind,
-            kind_label=INPUT_LABELS.get(kind),
-            value=value,
-            error=f"No tool handles a {INPUT_LABELS.get(kind, kind).lower()}.",
-        )
-
-    await _check_rate(current_user)
-    project_id = _project_id(body.project_id)
-    ctx = ToolContext(session=session, user_id=current_user.id, project_id=project_id)
-
-    runs: list[ToolRunRead] = []
-    offered: list[str] = []
-    for spec in specs:
-        if not spec.auto:
-            offered.append(spec.name)
-            continue
-        runs.append(
-            await _start(spec, spec.tool_cls.payload_for(value), ctx, current_user)
-        )
-
-    return LookupResult(
-        kind=kind,
-        kind_label=INPUT_LABELS.get(kind),
-        value=value,
-        runs=runs,
-        offered=offered,
-    )
 
 
 @router.post("/run", response_model=ToolRunRead)

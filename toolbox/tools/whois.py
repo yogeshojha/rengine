@@ -9,7 +9,6 @@ from pydantic import Field
 
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
-    InputKind,
     Tone,
     ToolExecution,
     ToolGroup,
@@ -71,15 +70,6 @@ class WhoisLookup(Tool):
     group = ToolGroup.LOOKUP.value
     icon = "scroll-text"
     execution = ToolExecution.INLINE.value
-    accepts = frozenset(
-        {
-            InputKind.DOMAIN.value,
-            InputKind.IP.value,
-            InputKind.IP_RANGE.value,
-            InputKind.ASN.value,
-            InputKind.URL.value,
-        }
-    )
     order = 10
     value_field = "query"
     placeholder = "example.com, 8.8.8.8 or AS13335"
@@ -255,7 +245,7 @@ async def _domain(ctx: ToolContext, response) -> tuple[list, str]:
                 tag(
                     ns.lower(),
                     identity=glyph("server"),
-                    lookup=lookup(ns.lower(), tool="dns"),
+                    lookup=lookup(ns.lower(), "dns"),
                 )
                 for ns in response.nameservers
             ],
@@ -301,7 +291,10 @@ def _network(response) -> tuple[list, str]:
         ),
         facts(
             fact(
-                "Network", response.network, mono=True, lookup=lookup(response.network)
+                "Network",
+                response.network,
+                mono=True,
+                lookup=lookup(response.network, "whois"),
             ),
             fact("Name", response.name),
             fact("Handle", response.handle, mono=True),

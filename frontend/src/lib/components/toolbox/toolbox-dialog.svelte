@@ -2,239 +2,187 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import Hint from '$lib/components/hint.svelte';
+	import ToolList from './tool-list.svelte';
+	import ToolForm from './tool-form.svelte';
 	import RunSection from './run-section.svelte';
-	import ToolOptions from './tool-options.svelte';
-	import Search from '@lucide/svelte/icons/search';
-	import Plus from '@lucide/svelte/icons/plus';
-	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import RecentRuns from './recent-runs.svelte';
 	import { toolbox } from '$lib/stores/toolbox.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { toolIcon } from '$lib/config/toolbox';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
-	import { relativeTime } from '$lib/utilities/dates';
+	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import type { ToolRun } from '$lib/types/toolbox';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
-	let query = $state('');
-	let options = $state<Record<string, Record<string, unknown>>>({});
-	let field: HTMLInputElement | null = $state(null);
+	let selected = $state<string | null>(null);
+	let values = $state<Record<string, Record<string, unknown>>>({});
+	let shown = $state<Record<string, string>>({});
+	let form: ReturnType<typeof ToolForm> | null = $state(null);
 
 	const projectId = $derived(projectsStore.activeProject?.id);
-	const subject = $derived(toolbox.subject);
-	const offered = $derived(
-		(subject?.offered ?? []).map((n) => toolbox.tool(n)).filter((t) => t !== undefined)
-	);
-	const recent = $derived.by(() => {
-		const seen: Record<string, true> = {};
-		return toolbox.history
-			.filter((r) => {
-				if (seen[r.label]) return false;
-				seen[r.label] = true;
-				return true;
-			})
-			.slice(0, 8);
+	const tool = $derived(selected ? toolbox.tool(selected) : undefined);
+	const Icon = $derived(tool ? toolIcon(tool.icon) : null);
+	const run = $derived.by(() => {
+		if (!selected) return undefined;
+		const id = shown[selected];
+		return id ? toolbox.runs.find((r) => r.id === id) : toolbox.lastRun(selected);
 	});
-	const examples = $derived([...new Set(toolbox.tools.flatMap((t) => t.examples))].slice(0, 5));
 
 	$effect(() => {
 		if (!open) return;
 		void toolbox.load();
-		untrack(() => queueMicrotask(() => field?.focus()));
+		const names = toolbox.tools.map((t) => t.name);
+		if (!names.length) return;
+		const stored = localStorage.getItem(STORAGE_KEYS.toolboxLastTool);
+		untrack(() => {
+			if (selected && names.includes(selected)) return;
+			selected = stored && names.includes(stored) ? stored : names[0];
+		});
 	});
 
-	function submit(value?: string) {
-		const q = (value ?? query).trim();
-		if (!q || toolbox.busy) return;
-		query = q;
-		localStorage.setItem(STORAGE_KEYS.toolboxLastQuery, q);
-		void toolbox.lookup(q, projectId);
+	$effect(() => {
+		if (!open || !tool) return;
+		localStorage.setItem(STORAGE_KEYS.toolboxLastTool, tool.name);
+		untrack(() => queueMicrotask(() => form?.focus()));
+	});
+
+	function change(name: string, value: unknown) {
+		if (!selected) return;
+		values = { ...values, [selected]: { ...(values[selected] ?? {}), [name]: value } };
 	}
 
-	function chase(value: string, tool: string | null) {
-		if (tool) {
-			query = value;
-			void toolbox.add(tool, { [valueField(tool)]: value, ...(options[tool] ?? {}) }, projectId);
-			return;
+	function payload(name: string): Record<string, unknown> {
+		const spec = toolbox.tool(name);
+		if (!spec) return {};
+		const current = values[name] ?? {};
+		const out: Record<string, unknown> = {};
+		for (const f of spec.fields) {
+			const value = current[f.name] ?? f.default;
+			if (value !== null && value !== undefined && value !== '') out[f.name] = value;
 		}
-		submit(value);
+		return out;
 	}
 
-	function valueField(tool: string): string {
-		return toolbox.tool(tool)?.fields[0]?.name ?? 'query';
+	async function start(name: string) {
+		try {
+			const started = await toolbox.run(name, payload(name), projectId);
+			shown = { ...shown, [name]: started.id };
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'The run could not be started');
+		}
 	}
 
-	function addTool(name: string) {
-		if (!subject) return;
-		void toolbox.add(
-			name,
-			{ [valueField(name)]: subject.value, ...(options[name] ?? {}) },
-			projectId
-		);
+	/** A value in one result opens the tool that answers it, already filled in. */
+	function chase(value: string, name: string | null) {
+		const target = name ?? selected;
+		const spec = target ? toolbox.tool(target) : undefined;
+		if (!spec) return;
+		selected = spec.name;
+		values = {
+			...values,
+			[spec.name]: { ...(values[spec.name] ?? {}), [spec.value_field]: value }
+		};
+		void start(spec.name);
 	}
 
-	function setOption(tool: string, key: string, value: unknown) {
-		options = { ...options, [tool]: { ...(options[tool] ?? {}), [key]: value } };
+	function replay(previous: ToolRun) {
+		selected = previous.tool;
+		shown = { ...shown, [previous.tool]: previous.id };
+		values = { ...values, [previous.tool]: { ...previous.input } };
 	}
 
-	function replay(run: ToolRun) {
-		query = run.label;
-		toolbox.show(run);
+	async function clearHistory() {
+		await toolbox.clear();
+		shown = {};
 	}
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-h-[88vh] gap-0 overflow-hidden p-0 sm:max-w-3xl">
-		<Dialog.Header class="border-b py-3 pr-12 pl-4">
-			<Dialog.Title class="sr-only">Toolbox</Dialog.Title>
+	<Dialog.Content class="max-h-[88vh] gap-0 overflow-hidden p-0 sm:max-w-4xl">
+		<Dialog.Header class="border-b px-4 py-2.5">
+			<Dialog.Title class="text-sm font-medium">Toolbox</Dialog.Title>
 			<Dialog.Description class="sr-only">
 				Lookup, discovery and intelligence tools
 			</Dialog.Description>
-			<form
-				class="flex items-center gap-2"
-				onsubmit={(e) => {
-					e.preventDefault();
-					submit();
-				}}
-			>
-				<div class="relative flex-1">
-					<Search
-						class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-					/>
-					<Input
-						bind:ref={field}
-						bind:value={query}
-						placeholder="Domain, address, range, URL, AS or CVE"
-						aria-label="Value to look up"
-						autocomplete="off"
-						autocapitalize="off"
-						spellcheck={false}
-						class="h-9 pl-8 font-mono text-sm"
-					/>
-				</div>
-				<Button type="submit" size="sm" class="h-9 shrink-0 px-4" disabled={toolbox.busy}>
-					{#if toolbox.busy}<Spinner class="size-3.5" />{/if}
-					Look up
-				</Button>
-			</form>
 		</Dialog.Header>
 
-		<ScrollArea class="h-[70vh] min-h-0">
-			<div class="space-y-6 px-4 py-4">
-				{#if toolbox.error}
-					<div
-						class="flex items-start gap-2 rounded-md border border-warning/25 bg-warning/10 px-3 py-2.5 text-[13px] leading-5 text-warning"
-					>
-						<span class="flex h-5 shrink-0 items-center"><TriangleAlert class="size-4" /></span>
-						<span class="min-w-0">{toolbox.error}</span>
+		<div class="grid h-[70vh] min-h-0 grid-cols-1 md:grid-cols-[13.5rem_minmax(0,1fr)]">
+			<aside class="hidden min-h-0 min-w-0 flex-col border-r md:flex">
+				{#if toolbox.loadingCatalog && !toolbox.tools.length}
+					<div class="flex flex-1 items-center justify-center">
+						<Spinner class="size-4 text-muted-foreground" />
 					</div>
+				{:else}
+					<ToolList
+						tools={toolbox.tools}
+						groups={toolbox.groups}
+						{selected}
+						onSelect={(name) => (selected = name)}
+					/>
+					<RecentRuns
+						runs={toolbox.history}
+						activeId={run?.id ?? null}
+						onOpen={replay}
+						onClear={clearHistory}
+					/>
 				{/if}
+			</aside>
 
-				{#if subject && toolbox.runs.length}
-					<div class="flex flex-wrap items-center gap-2 border-b pb-3">
-						<span class="font-mono text-sm">{subject.value}</span>
-						{#if subject.kind_label}
-							<Badge variant="secondary" class="h-5 text-[10px]">{subject.kind_label}</Badge>
-						{/if}
-						<span class="flex-1"></span>
-						{#each offered as tool (tool.name)}
-							{@const Icon = toolIcon(tool.icon)}
-							{@const already = toolbox.runs.some((r) => r.tool === tool.name)}
-							<span class="flex items-center gap-0.5">
-								<Hint text={tool.description}>
-									{#snippet child(props)}
-										<span {...props} class="inline-flex">
-											<Button
-												variant="outline"
-												size="sm"
-												class="h-7 gap-1.5 px-2 text-xs"
-												disabled={already}
-												onclick={() => addTool(tool.name)}
-											>
-												{#if already}
-													<Icon class="size-3" />
-												{:else}
-													<Plus class="size-3" />
-												{/if}
-												{tool.title}
-											</Button>
-										</span>
-									{/snippet}
-								</Hint>
-								<ToolOptions
-									{tool}
-									values={options[tool.name] ?? {}}
-									onChange={(k, v) => setOption(tool.name, k, v)}
-								/>
-							</span>
-						{/each}
-					</div>
-
-					{#each toolbox.runs as run (run.id)}
-						<RunSection {run} onLookup={chase} onNavigate={() => (open = false)} />
-					{/each}
-				{:else if !toolbox.busy}
-					<div class="space-y-5 py-2">
-						{#if recent.length}
-							<div>
-								<div class="flex items-baseline justify-between pb-1.5">
-									<h4 class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-										Recent
-									</h4>
-									<Button
-										variant="ghost"
-										size="sm"
-										class="h-6 px-2 text-xs"
-										onclick={() => toolbox.clear()}>Clear</Button
-									>
+			<section class="flex min-h-0 min-w-0 flex-col">
+				{#if tool}
+					<div class="space-y-2.5 border-b px-4 py-3">
+						<div class="flex items-start gap-2">
+							{#if Icon}
+								<span class="flex h-5 shrink-0 items-center"><Icon class="size-4" /></span>
+							{/if}
+							<div class="min-w-0 flex-1">
+								<div class="flex items-center gap-2">
+									<h3 class="text-sm leading-5 font-medium">{tool.title}</h3>
+									{#if tool.touches_target}
+										<Hint text="Sends a request to the named host">
+											{#snippet child(props)}
+												<span {...props} class="inline-flex">
+													<Badge variant="warning" class="h-4 px-1.5 text-[10px]">
+														Sends traffic
+													</Badge>
+												</span>
+											{/snippet}
+										</Hint>
+									{/if}
 								</div>
-								{#each recent as run (run.id)}
-									{@const Icon = toolIcon(toolbox.tool(run.tool)?.icon ?? '')}
-									<button
-										type="button"
-										onclick={() => replay(run)}
-										class="flex w-full items-center gap-2.5 rounded-md border-b border-border/40 px-1 py-2 text-left last:border-0 hover:bg-accent/40"
-									>
-										<Icon class="size-3.5 shrink-0 text-muted-foreground" />
-										<span class="min-w-0 flex-1">
-											<span class="block truncate font-mono text-xs">{run.label}</span>
-											<span class="block truncate text-[11px] text-muted-foreground">
-												{run.title} · {run.status === 'failed'
-													? 'failed'
-													: (run.summary ?? run.status)}
-											</span>
-										</span>
-										<span class="shrink-0 text-[11px] text-muted-foreground">
-											{relativeTime(run.finished_at ?? run.queued_at)}
-										</span>
-									</button>
-								{/each}
+								<p class="text-xs leading-snug text-muted-foreground">{tool.description}</p>
 							</div>
-						{/if}
-
-						{#if examples.length}
-							<div class="flex flex-wrap items-center gap-1.5">
-								<span class="text-[11px] text-muted-foreground">Examples</span>
-								{#each examples as example (example)}
-									<Button
-										variant="outline"
-										size="sm"
-										class="h-6 px-2 font-mono text-[11px]"
-										onclick={() => submit(example)}
-									>
-										{example}
-									</Button>
-								{/each}
-							</div>
-						{/if}
+						</div>
+						<ToolForm
+							bind:this={form}
+							{tool}
+							values={values[tool.name] ?? {}}
+							busy={toolbox.busy}
+							onChange={change}
+							onSubmit={() => start(tool.name)}
+						/>
+					</div>
+					<ScrollArea class="min-h-0 flex-1">
+						<div class="px-4 py-3">
+							{#if run}
+								<RunSection {run} onLookup={chase} onNavigate={() => (open = false)} />
+							{:else if tool.examples.length}
+								<p class="py-4 text-[13px] text-muted-foreground">
+									Examples: {tool.examples.join(', ')}
+								</p>
+							{/if}
+						</div>
+					</ScrollArea>
+				{:else}
+					<div class="flex flex-1 items-center justify-center">
+						<Spinner class="size-4 text-muted-foreground" />
 					</div>
 				{/if}
-			</div>
-		</ScrollArea>
+			</section>
+		</div>
 	</Dialog.Content>
 </Dialog.Root>

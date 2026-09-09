@@ -13,7 +13,6 @@ from pydantic import Field
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
     BlockKind,
-    InputKind,
     Tone,
     ToolExecution,
     ToolGroup,
@@ -84,10 +83,6 @@ class HttpProbe(Tool):
     icon = "globe"
     execution = ToolExecution.QUEUED.value
     touches_target = True
-    auto = False
-    accepts = frozenset(
-        {InputKind.DOMAIN.value, InputKind.URL.value, InputKind.IP.value}
-    )
     order = 30
     value_field = "target"
     placeholder = "example.com or https://example.com/login"
@@ -139,20 +134,22 @@ class HttpProbe(Tool):
                     "Address",
                     row.get("ip"),
                     mono=True,
-                    lookup=lookup(row.get("ip") or ""),
+                    lookup=lookup(row.get("ip") or "", "ip"),
                 ),
                 fact(
                     "CNAME",
                     row.get("cname"),
                     mono=True,
-                    lookup=lookup(row.get("cname") or "", tool="dns"),
+                    lookup=lookup(row.get("cname") or "", "dns"),
                 ),
                 fact(
                     "Network",
                     f"AS{row['asn']} {row.get('asn_org') or ''}".strip()
                     if row.get("asn")
                     else "",
-                    lookup=lookup(f"AS{row['asn']}") if row.get("asn") else None,
+                    lookup=lookup(f"AS{row['asn']}", "whois")
+                    if row.get("asn")
+                    else None,
                 ),
                 title="Network",
             ),

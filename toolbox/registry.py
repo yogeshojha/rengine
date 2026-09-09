@@ -9,7 +9,6 @@ from functools import lru_cache
 from shared.definitions.toolbox import (
     GROUP_LABELS,
     GROUP_ORDER,
-    InputKind,
     ToolboxCatalog,
     ToolExecution,
     ToolField,
@@ -32,9 +31,8 @@ class ToolSpec:
     icon: str
     execution: str
     touches_target: bool
-    auto: bool
     order: int
-    accepts: frozenset[str]
+    value_field: str
     placeholder: str
     examples: tuple[str, ...]
     tool_cls: type[Tool]
@@ -52,8 +50,7 @@ class ToolSpec:
             icon=self.icon,
             execution=self.execution,
             touches_target=self.touches_target,
-            auto=self.auto,
-            accepts=sorted(self.accepts),
+            value_field=self.value_field,
             placeholder=self.placeholder,
             examples=list(self.examples),
             fields=_field_specs(self.tool_cls.schema()),
@@ -109,10 +106,6 @@ def _validate(cls: type[Tool]) -> None:
     if cls.execution not in {e.value for e in ToolExecution}:
         msg = f"{cls.__qualname__} declares unknown execution {cls.execution!r}."
         raise ToolRegistrationError(msg)
-    unknown = set(cls.accepts) - {k.value for k in InputKind}
-    if unknown:
-        msg = f"{cls.__qualname__} accepts unknown input kinds {sorted(unknown)}."
-        raise ToolRegistrationError(msg)
     if cls.value_field not in (cls.schema().get("properties") or {}):
         msg = f"{cls.__qualname__} names value_field {cls.value_field!r}, which its Input has no field for."
         raise ToolRegistrationError(msg)
@@ -139,9 +132,8 @@ def registry() -> dict[str, ToolSpec]:
             icon=cls.icon,
             execution=cls.execution,
             touches_target=bool(cls.touches_target),
-            auto=bool(cls.auto),
             order=int(cls.order),
-            accepts=frozenset(cls.accepts),
+            value_field=cls.value_field,
             placeholder=cls.placeholder,
             examples=tuple(cls.examples),
             tool_cls=cls,
@@ -153,16 +145,10 @@ def get(name: str) -> ToolSpec | None:
     return registry().get(name)
 
 
-def for_kind(kind: str) -> list[ToolSpec]:
-    """Tools that accept an input of this kind, automatic ones first."""
-    matched = [s for s in registry().values() if kind in s.accepts]
-    order = {g: i for i, g in enumerate(GROUP_ORDER)}
-    return sorted(matched, key=lambda s: (not s.auto, order[s.group], s.order, s.title))
-
-
 def catalog() -> ToolboxCatalog:
     specs = sorted(
-        registry().values(), key=lambda s: (GROUP_ORDER.index(s.group), s.title)
+        registry().values(),
+        key=lambda s: (GROUP_ORDER.index(s.group), s.order, s.title),
     )
     present = [g for g in GROUP_ORDER if any(s.group == g for s in specs)]
     return ToolboxCatalog(

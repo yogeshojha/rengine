@@ -9,7 +9,6 @@ from pydantic import Field, field_validator
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
-    InputKind,
     Pivot,
     Tone,
     ToolExecution,
@@ -77,7 +76,6 @@ class CveLookup(Tool):
     group = ToolGroup.INTEL.value
     icon = "shield-alert"
     execution = ToolExecution.INLINE.value
-    accepts = frozenset({InputKind.CVE.value})
     order = 10
     value_field = "cve"
     placeholder = "CVE-2021-44228"
