@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from pydantic import Field, field_validator
 
-from shared.definitions.toolbox import MAX_INPUT_LENGTH, Tone, ToolExecution, ToolGroup
+from shared.definitions.toolbox import (
+    MAX_INPUT_LENGTH,
+    InputKind,
+    Tone,
+    ToolExecution,
+    ToolGroup,
+)
 from shared.enums.dns import DnsRecordType
 from shared.utils.validation import normalize_domain, validate_domain
 from toolbox.base import (
@@ -16,6 +22,11 @@ from toolbox.base import (
     cell,
     fact,
     facts,
+    hero,
+    lookup,
+    mark,
+    metric,
+    nameserver,
     table,
 )
 from toolbox.pivot import target_pivot_sync
@@ -70,6 +81,8 @@ class DnsLookup(Tool):
     group = ToolGroup.LOOKUP.value
     icon = "list-tree"
     execution = ToolExecution.QUEUED.value
+    accepts = frozenset({InputKind.DOMAIN.value, InputKind.URL.value})
+    value_field = "domain"
     placeholder = "example.com"
     examples = ("example.com",)
     Input = Input
@@ -82,16 +95,43 @@ class DnsLookup(Tool):
 
         rows = _rows(recon)
         status = (recon.status_code or "").upper()
+        addresses = len(recon.a) + len(recon.aaaa)
+        answered = status in ("", "NOERROR")
+
         blocks = [
+            hero(
+                args.domain,
+                sub=f"{len(rows)} record{'s' if len(rows) != 1 else ''} · {status or 'NOERROR'}",
+                identity=nameserver(recon.ns[0]) if recon.ns else None,
+                metric=metric(addresses, "Addresses"),
+                marks=[
+                    mark(
+                        "Nameservers",
+                        note=str(len(recon.ns)) if recon.ns else "none",
+                        tone=Tone.NEUTRAL.value if recon.ns else Tone.WARNING.value,
+                    ),
+                    mark(
+                        "Mail",
+                        note=str(len(recon.mx)) if recon.mx else "none",
+                        tone=Tone.NEUTRAL.value if recon.mx else Tone.MUTED.value,
+                    ),
+                    mark(
+                        "CDN",
+                        tone=Tone.INFO.value if recon.cdn else Tone.MUTED.value,
+                        note=(recon.cdn_name or "yes") if recon.cdn else "none",
+                    ),
+                    mark(
+                        "Zone transfer",
+                        tone=Tone.CRITICAL.value if recon.axfr else Tone.MUTED.value,
+                        note="open" if recon.axfr else "refused",
+                    ),
+                ],
+                tone=Tone.NEUTRAL.value if answered else Tone.WARNING.value,
+            ),
             facts(
                 fact("Answer", status, mono=True, tone=Tone.WARNING.value)
-                if status and status != "NOERROR"
+                if not answered
                 else None,
-                fact(
-                    "CDN",
-                    (recon.cdn_name or "yes") if recon.cdn else "",
-                    tone=Tone.INFO.value,
-                ),
                 fact("Zone transfer", ", ".join(recon.axfr), tone=Tone.CRITICAL.value)
                 if recon.axfr
                 else None,
@@ -106,7 +146,6 @@ class DnsLookup(Tool):
             ),
         ]
 
-        addresses = len(recon.a) + len(recon.aaaa)
         summary = (
             f"{len(rows)} records · {addresses} address{'es' if addresses != 1 else ''}"
             if rows
@@ -131,21 +170,34 @@ def _txt_note(value: str) -> str | None:
 def _rows(recon) -> list[list]:
     rows: list[list] = []
 
-    def add(kind: DnsRecordType, value: str, hint: str | None = None) -> None:
+    def add(kind: DnsRecordType, value: str, hint: str | None = None, **kw) -> None:
         rows.append(
-            [cell(kind.value, tone=Tone.MUTED.value), cell(value, mono=True, note=hint)]
+            [
+                cell(kind.value, tone=Tone.MUTED.value),
+                cell(value, mono=True, note=hint, **kw),
+            ]
         )
 
     for value in recon.a:
-        add(DnsRecordType.A, value)
+        add(DnsRecordType.A, value, lookup=lookup(value))
     for value in recon.aaaa:
-        add(DnsRecordType.AAAA, value)
+        add(DnsRecordType.AAAA, value, lookup=lookup(value))
     for value in recon.cname:
-        add(DnsRecordType.CNAME, value)
+        add(DnsRecordType.CNAME, value, lookup=lookup(value, tool="dns"))
     for value in recon.ns:
-        add(DnsRecordType.NS, value)
+        add(
+            DnsRecordType.NS,
+            value,
+            identity=nameserver(value),
+            lookup=lookup(value, tool="dns"),
+        )
     for entry in recon.mx:
-        add(DnsRecordType.MX, entry.host, f"priority {entry.priority}")
+        add(
+            DnsRecordType.MX,
+            entry.host,
+            f"priority {entry.priority}",
+            lookup=lookup(entry.host, tool="dns"),
+        )
     for value in recon.txt:
         add(DnsRecordType.TXT, value, _txt_note(value))
     for entry in recon.soa:

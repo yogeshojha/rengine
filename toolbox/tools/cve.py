@@ -5,13 +5,11 @@ from __future__ import annotations
 import re
 
 from pydantic import Field, field_validator
-from sqlalchemy import cast, func, select
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
+    InputKind,
     Pivot,
     Tone,
     ToolExecution,
@@ -19,7 +17,7 @@ from shared.definitions.toolbox import (
 )
 from shared.definitions.vulnerabilities import EPSS_HIGH, Severity
 from shared.models.threat_intel import CveIntel, EpssScore, KevEntry
-from shared.models.vulnerability import Vulnerability
+from toolbox import estate
 from toolbox.base import (
     Tool,
     ToolContext,
@@ -29,6 +27,11 @@ from toolbox.base import (
     code,
     fact,
     facts,
+    glyph,
+    hero,
+    mark,
+    meter,
+    metric,
     note,
     table,
     tag,
@@ -74,6 +77,8 @@ class CveLookup(Tool):
     group = ToolGroup.INTEL.value
     icon = "shield-alert"
     execution = ToolExecution.INLINE.value
+    accepts = frozenset({InputKind.CVE.value})
+    value_field = "cve"
     placeholder = "CVE-2021-44228"
     examples = ("CVE-2021-44228", "CVE-2014-0160")
     Input = Input
@@ -82,9 +87,10 @@ class CveLookup(Tool):
         epss = await ctx.session.get(EpssScore, args.cve)
         kev = await ctx.session.get(KevEntry, args.cve)
         intel = await ctx.session.get(CveIntel, args.cve)
-        findings = await _findings(ctx, args.cve)
+        findings = await estate.cve_findings(ctx.session, ctx.project_id, args.cve)
 
         blocks = [
+            _hero(args.cve, epss, kev, intel, findings),
             facts(
                 fact(
                     "Severity",
@@ -178,14 +184,15 @@ class CveLookup(Tool):
                 total=intel.poc_count if intel else 0,
             ),
         ]
-        # nothing held: one statement, not four empty sections
+        # nothing held: the hero and one statement, not four empty sections
         if epss is None and kev is None and intel is None:
             blocks = [
+                blocks[0],
                 note(
                     "No local record for this identifier. The exploitation feeds may "
                     "not have been downloaded.",
                     tone=Tone.WARNING.value,
-                )
+                ),
             ]
         else:
             blocks = [b for b in blocks if b is not None]
@@ -247,19 +254,65 @@ def _poc_row(poc) -> list:
     return [cell(url, href=url or None, mono=True), cell(source, tone=Tone.MUTED.value)]
 
 
-async def _findings(ctx: ToolContext, cve: str) -> int:
-    if ctx.project_id is None:
-        return 0
-    return int(
-        await ctx.session.scalar(
-            select(func.count(Vulnerability.id)).where(
-                Vulnerability.project_id == ctx.project_id,
-                func.jsonb_exists_any(
-                    cast(Vulnerability.cve_ids, JSONB), pg_array([cve])
-                ),
-            )
+def _hero(cve: str, epss, kev, intel, findings: int) -> object:
+    severity = (intel.severity or "").lower() if intel else ""
+    tone = (
+        Tone.CRITICAL.value
+        if kev is not None or (epss is not None and epss.score >= EPSS_HIGH)
+        else _SEVERITY_TONE.get(severity, Tone.NEUTRAL.value)
+    )
+    product = " ".join(
+        p for p in ((kev.vendor if kev else ""), (kev.product if kev else "")) if p
+    )
+    return hero(
+        cve,
+        sub=product or (severity.title() if severity else None),
+        identity=glyph("shield-alert"),
+        metric=metric(
+            _pct(epss.score) if epss else "",
+            "Exploitation likelihood",
+            tone=Tone.CRITICAL.value
+            if epss and epss.score >= EPSS_HIGH
+            else Tone.NEUTRAL.value,
+        ),
+        meter=meter(
+            epss.percentile,
+            caption=_rank(epss.percentile),
+            tone=Tone.CRITICAL.value if epss.score >= EPSS_HIGH else Tone.NEUTRAL.value,
         )
-        or 0
+        if epss
+        else None,
+        marks=[
+            mark(
+                "Known exploited",
+                tone=Tone.CRITICAL.value if kev else Tone.MUTED.value,
+                note="CISA KEV" if kev else "not in the catalogue",
+            ),
+            mark(
+                "Ransomware",
+                tone=Tone.CRITICAL.value
+                if kev and kev.known_ransomware
+                else Tone.MUTED.value,
+                note="campaign use"
+                if kev and kev.known_ransomware
+                else "none recorded",
+            ),
+            mark(
+                "Nuclei template",
+                tone=Tone.WARNING.value
+                if intel and intel.template_available is False
+                else Tone.NEUTRAL.value,
+                note=_template(intel) or "unknown",
+            ),
+            mark(
+                "In this project",
+                tone=Tone.CRITICAL.value if findings else Tone.MUTED.value,
+                note=f"{findings} finding{'s' if findings != 1 else ''}"
+                if findings
+                else "no findings",
+            ),
+        ],
+        tone=tone,
     )
 
 

@@ -14,6 +14,12 @@ from shared.definitions.toolbox import (
     BlockKind,
     Cell,
     Fact,
+    Identity,
+    IdentityKind,
+    Lookup,
+    Mark,
+    Meter,
+    Metric,
     Pivot,
     Tag,
     Tone,
@@ -54,6 +60,9 @@ class Tool(ABC):
     icon: ClassVar[str] = "search"
     execution: ClassVar[str] = ToolExecution.INLINE.value
     touches_target: ClassVar[bool] = False
+    auto: ClassVar[bool] = True
+    accepts: ClassVar[frozenset[str]] = frozenset()
+    value_field: ClassVar[str] = ""
     placeholder: ClassVar[str] = ""
     examples: ClassVar[tuple[str, ...]] = ()
     Input: ClassVar[type[ToolInput]]
@@ -63,15 +72,92 @@ class Tool(ABC):
         return cls.Input.model_json_schema()
 
     @classmethod
+    def payload_for(cls, value: str) -> dict:
+        return {cls.value_field: value}
+
+    @classmethod
     def label_for(cls, args: ToolInput) -> str:
-        """The value that names the run in history: the first string field."""
-        for value in args.model_dump().values():
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-        return cls.title
+        value = args.model_dump().get(cls.value_field)
+        return (
+            str(value).strip()
+            if isinstance(value, str) and value.strip()
+            else cls.title
+        )
 
     @abstractmethod
     def run(self, ctx: ToolContext, args: Any) -> ToolOutcome: ...
+
+
+def tech(name: str, label: str | None = None) -> Identity:
+    return Identity(kind=IdentityKind.TECH.value, value=name, label=label)
+
+
+def flag(country: str, label: str | None = None) -> Identity:
+    return Identity(kind=IdentityKind.FLAG.value, value=country, label=label)
+
+
+def favicon(url: str, label: str | None = None) -> Identity:
+    return Identity(kind=IdentityKind.FAVICON.value, value=url, label=label)
+
+
+def glyph(slug: str, label: str | None = None) -> Identity:
+    return Identity(kind=IdentityKind.GLYPH.value, value=slug, label=label)
+
+
+def nameserver(host: str, label: str | None = None) -> Identity:
+    """The frontend resolves the provider from the hostname; the map lives there."""
+    return Identity(kind=IdentityKind.NAMESERVER.value, value=host, label=label)
+
+
+def lookup(value: str, tool: str | None = None) -> Lookup | None:
+    return Lookup(value=value.strip(), tool=tool) if value and value.strip() else None
+
+
+def hero(
+    headline: str,
+    *,
+    sub: str | None = None,
+    identity: Identity | None = None,
+    metric: Metric | None = None,
+    meter: Meter | None = None,
+    marks: list[Mark] | None = None,
+    tone: str = Tone.NEUTRAL.value,
+) -> Block:
+    return Block(
+        kind=BlockKind.HERO.value,
+        headline=headline,
+        sub=sub,
+        identity=identity,
+        metric=metric,
+        meter=meter,
+        marks=[m for m in (marks or []) if m is not None],
+        tone=tone,
+    )
+
+
+def metric(
+    value: Any, label: str | None = None, *, tone: str = Tone.NEUTRAL.value
+) -> Metric | None:
+    text = "" if value is None else str(value).strip()
+    return Metric(value=text, label=label, tone=tone) if text else None
+
+
+def meter(
+    value: float,
+    *,
+    label: str | None = None,
+    caption: str | None = None,
+    tone: str = Tone.NEUTRAL.value,
+) -> Meter:
+    return Meter(
+        value=max(0.0, min(1.0, value)), label=label, caption=caption, tone=tone
+    )
+
+
+def mark(
+    label: str, *, tone: str = Tone.NEUTRAL.value, note: str | None = None
+) -> Mark:
+    return Mark(label=label, tone=tone, note=note)
 
 
 def facts(*rows: Fact, title: str | None = None, empty: str | None = None) -> Block:
@@ -91,12 +177,23 @@ def fact(
     note: str | None = None,
     href: str | None = None,
     mono: bool = False,
+    identity: Identity | None = None,
+    lookup: Lookup | None = None,
 ) -> Fact | None:
     """A row, or None when the value is blank."""
     text = "" if value is None else str(value).strip()
     if not text:
         return None
-    return Fact(label=label, value=text, tone=tone, note=note, href=href, mono=mono)
+    return Fact(
+        label=label,
+        value=text,
+        tone=tone,
+        note=note,
+        href=href,
+        mono=mono,
+        identity=identity,
+        lookup=lookup,
+    )
 
 
 def table(
@@ -124,7 +221,8 @@ def cell(
     note: str | None = None,
     href: str | None = None,
     mono: bool = False,
-    icon: str | None = None,
+    identity: Identity | None = None,
+    lookup: Lookup | None = None,
 ) -> Cell:
     return Cell(
         value="" if value is None else str(value),
@@ -132,7 +230,8 @@ def cell(
         note=note,
         href=href,
         mono=mono,
-        icon=icon,
+        identity=identity,
+        lookup=lookup,
     )
 
 
@@ -146,15 +245,27 @@ def tag(
     value: str,
     *,
     tone: str = Tone.NEUTRAL.value,
-    icon: str | None = None,
-    href: str | None = None,
     note: str | None = None,
+    href: str | None = None,
+    identity: Identity | None = None,
+    lookup: Lookup | None = None,
 ) -> Tag:
-    return Tag(value=value, tone=tone, icon=icon, href=href, note=note)
+    return Tag(
+        value=value,
+        tone=tone,
+        note=note,
+        href=href,
+        identity=identity,
+        lookup=lookup,
+    )
 
 
 def code(text: str, *, lang: str | None = None, title: str | None = None) -> Block:
     return Block(kind=BlockKind.CODE.value, title=title, text=text, lang=lang)
+
+
+def image(src: str, *, title: str | None = None, sub: str | None = None) -> Block:
+    return Block(kind=BlockKind.IMAGE.value, title=title, src=src, sub=sub)
 
 
 def note(text: str, *, tone: str = Tone.INFO.value) -> Block:

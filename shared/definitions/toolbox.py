@@ -6,6 +6,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from shared.enums.target import TargetType
+
 
 class ToolGroup(StrEnum):
     LOOKUP = "lookup"
@@ -26,6 +28,25 @@ GROUP_LABELS: dict[str, str] = {
 }
 
 
+class InputKind(StrEnum):
+    DOMAIN = TargetType.DOMAIN.value
+    IP = TargetType.IP.value
+    IP_RANGE = TargetType.IP_RANGE.value
+    URL = TargetType.URL.value
+    ASN = TargetType.ASN.value
+    CVE = "cve"
+
+
+INPUT_LABELS: dict[str, str] = {
+    InputKind.DOMAIN.value: "Domain",
+    InputKind.IP.value: "IP address",
+    InputKind.IP_RANGE.value: "Address range",
+    InputKind.URL.value: "URL",
+    InputKind.ASN.value: "Autonomous system",
+    InputKind.CVE.value: "CVE",
+}
+
+
 class ToolExecution(StrEnum):
     INLINE = "inline"
     QUEUED = "queued"
@@ -42,11 +63,13 @@ TERMINAL_STATUSES = frozenset({RunStatus.COMPLETED.value, RunStatus.FAILED.value
 
 
 class BlockKind(StrEnum):
+    HERO = "hero"
     FACTS = "facts"
     TABLE = "table"
     TAGS = "tags"
     CODE = "code"
     NOTE = "note"
+    IMAGE = "image"
 
 
 class Tone(StrEnum):
@@ -58,11 +81,30 @@ class Tone(StrEnum):
     MUTED = "muted"
 
 
+class IdentityKind(StrEnum):
+    TECH = "tech"
+    FLAG = "flag"
+    FAVICON = "favicon"
+    GLYPH = "glyph"
+    NAMESERVER = "nameserver"
+
+
 RUN_TTL_SECONDS = 7 * 24 * 3600
 RUNS_KEPT = 40
 RUNS_PER_MINUTE = 30
 MAX_INPUT_LENGTH = 500
 MAX_ROWS_PER_BLOCK = 2000
+
+
+class Identity(BaseModel):
+    kind: str
+    value: str
+    label: str | None = None
+
+
+class Lookup(BaseModel):
+    value: str
+    tool: str | None = None
 
 
 class Fact(BaseModel):
@@ -72,6 +114,8 @@ class Fact(BaseModel):
     note: str | None = None
     href: str | None = None
     mono: bool = False
+    identity: Identity | None = None
+    lookup: Lookup | None = None
 
 
 class Cell(BaseModel):
@@ -80,14 +124,35 @@ class Cell(BaseModel):
     note: str | None = None
     href: str | None = None
     mono: bool = False
-    icon: str | None = None
+    identity: Identity | None = None
+    lookup: Lookup | None = None
 
 
 class Tag(BaseModel):
     value: str
     tone: str = Tone.NEUTRAL.value
-    icon: str | None = None
+    note: str | None = None
     href: str | None = None
+    identity: Identity | None = None
+    lookup: Lookup | None = None
+
+
+class Metric(BaseModel):
+    value: str
+    label: str | None = None
+    tone: str = Tone.NEUTRAL.value
+
+
+class Meter(BaseModel):
+    value: float = Field(ge=0.0, le=1.0)
+    label: str | None = None
+    caption: str | None = None
+    tone: str = Tone.NEUTRAL.value
+
+
+class Mark(BaseModel):
+    label: str
+    tone: str = Tone.NEUTRAL.value
     note: str | None = None
 
 
@@ -95,12 +160,19 @@ class Block(BaseModel):
     kind: str
     title: str | None = None
     tone: str = Tone.NEUTRAL.value
+    headline: str | None = None
+    sub: str | None = None
+    identity: Identity | None = None
+    metric: Metric | None = None
+    meter: Meter | None = None
+    marks: list[Mark] = Field(default_factory=list)
     facts: list[Fact] = Field(default_factory=list)
     columns: list[str] = Field(default_factory=list)
     rows: list[list[Cell]] = Field(default_factory=list)
     tags: list[Tag] = Field(default_factory=list)
     text: str | None = None
     lang: str | None = None
+    src: str | None = None
     empty: str | None = None
     total: int | None = None
 
@@ -133,6 +205,8 @@ class ToolSpecRead(BaseModel):
     icon: str
     execution: str
     touches_target: bool
+    auto: bool
+    accepts: list[str] = Field(default_factory=list)
     placeholder: str
     examples: list[str] = Field(default_factory=list)
     fields: list[ToolField] = Field(default_factory=list)
@@ -166,3 +240,17 @@ class ToolRunRequest(BaseModel):
     tool: str
     input: dict = Field(default_factory=dict)
     project_id: str | None = None
+
+
+class LookupRequest(BaseModel):
+    q: str = Field(min_length=1, max_length=MAX_INPUT_LENGTH)
+    project_id: str | None = None
+
+
+class LookupResult(BaseModel):
+    kind: str | None = None
+    kind_label: str | None = None
+    value: str
+    runs: list[ToolRunRead] = Field(default_factory=list)
+    offered: list[str] = Field(default_factory=list)
+    error: str | None = None

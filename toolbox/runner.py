@@ -6,7 +6,7 @@ from datetime import datetime
 
 from pydantic import ValidationError
 
-from shared.definitions.toolbox import Block, RunStatus, ToolRunRead
+from shared.definitions.toolbox import Block, BlockKind, RunStatus, ToolRunRead
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 from toolbox.base import ToolError, ToolInput, ToolOutcome
@@ -42,8 +42,13 @@ def _elapsed(run: ToolRunRead) -> int:
     return max(0, int((utc_now() - began).total_seconds() * 1000))
 
 
+_SELF_CARRYING = frozenset({BlockKind.HERO.value, BlockKind.IMAGE.value})
+
+
 def _worth_showing(block: Block) -> bool:
     """An empty block with no empty-state text is not rendered."""
+    if block.kind in _SELF_CARRYING:
+        return bool(block.headline or block.src)
     if block.facts or block.rows or block.tags or block.text:
         return True
     return bool(block.empty)

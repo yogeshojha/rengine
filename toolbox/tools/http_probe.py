@@ -9,6 +9,7 @@ from pydantic import Field
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
     BlockKind,
+    InputKind,
     Tone,
     ToolExecution,
     ToolGroup,
@@ -23,9 +24,14 @@ from toolbox.base import (
     code,
     fact,
     facts,
+    hero,
+    lookup,
+    mark,
+    metric,
     tag,
     tags,
 )
+from toolbox.base import tech as tech_identity
 from toolbox.guard import hostname_of, require_public
 from toolbox.pivot import target_pivot_sync
 from tools.httpx.client import HttpxClient, HttpxError
@@ -60,6 +66,11 @@ class HttpProbe(Tool):
     icon = "globe"
     execution = ToolExecution.QUEUED.value
     touches_target = True
+    auto = False
+    accepts = frozenset(
+        {InputKind.DOMAIN.value, InputKind.URL.value, InputKind.IP.value}
+    )
+    value_field = "target"
     placeholder = "example.com or https://example.com/login"
     examples = ("example.com", "https://example.com/login")
     Input = Input
@@ -86,6 +97,7 @@ class HttpProbe(Tool):
         tech = row.get("tech") or []
 
         blocks = [
+            _hero(row, status, tech),
             facts(
                 fact("URL", row.get("final_url") or row.get("url"), mono=True),
                 fact("Status", status, tone=_status_tone(status)),
@@ -98,19 +110,30 @@ class HttpProbe(Tool):
                 title="Response",
             ),
             tags(
-                [tag(name, icon=name) for name in tech],
+                [tag(name, identity=tech_identity(name)) for name in tech],
                 title="Technologies",
                 empty="No technologies detected",
             ),
             facts(*_tls(row), title="Certificate", empty="Response was not over TLS"),
             facts(
-                fact("Address", row.get("ip"), mono=True),
-                fact("CNAME", row.get("cname"), mono=True),
+                fact(
+                    "Address",
+                    row.get("ip"),
+                    mono=True,
+                    lookup=lookup(row.get("ip") or ""),
+                ),
+                fact(
+                    "CNAME",
+                    row.get("cname"),
+                    mono=True,
+                    lookup=lookup(row.get("cname") or "", tool="dns"),
+                ),
                 fact(
                     "Network",
                     f"AS{row['asn']} {row.get('asn_org') or ''}".strip()
                     if row.get("asn")
                     else "",
+                    lookup=lookup(f"AS{row['asn']}") if row.get("asn") else None,
                 ),
                 fact(
                     "CDN",
@@ -133,6 +156,49 @@ class HttpProbe(Tool):
             pivot=target_pivot_sync(ctx, hostname_of(args.target)),
             raw=_raw(row),
         )
+
+
+def _hero(row: dict, status: int | None, tech: list) -> object:
+    not_after = row.get("tls_not_after")
+    expired = row.get("tls_expired") or (
+        isinstance(not_after, datetime) and not_after < utc_now()
+    )
+    lead = row.get("webserver") or (tech[0] if tech else "")
+    return hero(
+        row.get("host") or row.get("url") or "",
+        sub=row.get("title") or row.get("final_url") or row.get("url"),
+        identity=tech_identity(lead) if lead else None,
+        metric=metric(status, "Status", tone=_status_tone(status)),
+        marks=[
+            mark(
+                "TLS",
+                tone=Tone.CRITICAL.value
+                if expired
+                else (Tone.SUCCESS.value if not_after else Tone.MUTED.value),
+                note="expired"
+                if expired
+                else ((row.get("tls_version") or "").upper() or "none"),
+            ),
+            mark(
+                "CDN",
+                tone=Tone.INFO.value if row.get("is_cdn") else Tone.MUTED.value,
+                note=_edge(row),
+            ),
+            mark(
+                "HTTP/2",
+                tone=Tone.NEUTRAL.value
+                if row.get("supports_http2")
+                else Tone.MUTED.value,
+                note="supported" if row.get("supports_http2") else "not offered",
+            ),
+            mark(
+                "Technologies",
+                tone=Tone.NEUTRAL.value if tech else Tone.MUTED.value,
+                note=str(len(tech)) if tech else "none detected",
+            ),
+        ],
+        tone=_status_tone(status),
+    )
 
 
 def _summary(status: int | None, server: str | None, tech: int) -> str:
