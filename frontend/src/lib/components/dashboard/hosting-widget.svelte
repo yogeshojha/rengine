@@ -27,14 +27,14 @@
 			? [
 					{
 						key: 'edge',
-						label: 'Behind a CDN or WAF',
+						label: 'CDN or WAF edge',
 						n: hosting.edge,
 						color: 'var(--chart-1)',
 						q: HOSTING_QUERIES.edge
 					},
 					{
 						key: 'cloud',
-						label: 'On a cloud provider',
+						label: 'Cloud provider',
 						n: hosting.cloud,
 						color: 'var(--chart-3)',
 						q: HOSTING_QUERIES.cloud
@@ -62,7 +62,7 @@
 
 <Widget
 	title="Hosting"
-	description="Where the resolving web assets are served from"
+	description="Resolving web assets by fronting and network"
 	href={ROUTES.surface(WEB.tab, { [WEB.queryParam]: HOSTING_QUERIES.resolved })}
 	hrefLabel="Resolving"
 	loading={loading && !hosting}
@@ -116,7 +116,7 @@
 	</div>
 	{#snippet footer()}
 		{#if hosting}
-			{plural(resolved, 'web asset resolves', 'web assets resolve')} to an address
+			{plural(resolved, 'resolving web asset', 'resolving web assets')}
 		{/if}
 	{/snippet}
 </Widget>

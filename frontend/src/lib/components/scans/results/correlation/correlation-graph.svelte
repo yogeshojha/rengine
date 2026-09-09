@@ -120,7 +120,7 @@
 		return HUB_MIN_R + t * (HUB_MAX_R - HUB_MIN_R);
 	}
 
-	// a node keeps its place across rebuilds so toggling a kind moves only what changed
+	// keep positions across rebuilds
 	function build() {
 		const maxCount = Math.max(1, ...hubs.map((h) => h.count));
 		const used = new Set(hubs.flatMap((h) => h.members));
@@ -207,7 +207,7 @@
 			fit();
 			draw();
 		} else {
-			// the view follows the layout as it settles, the way the globe draws in
+			// fit on every tick while settling
 			simulation.on('tick', fit).on('end', () => {
 				remember();
 				fit();
@@ -260,7 +260,7 @@
 	}
 
 	type Point = { x: number; y: number };
-	// the smallest convex outline around a hub and its hosts, for the soft cluster wash behind them
+	// convex hull, monotone chain
 	function hull(points: Point[]): Point[] {
 		const pts = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
 		if (pts.length < 3) return pts;
@@ -320,7 +320,7 @@
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		ctx.clearRect(0, 0, width, height);
 
-		// a faint dot grid moves with the canvas so panning reads as motion
+		// dot grid
 		const step = GRID * transform.k;
 		if (step >= 10) {
 			ctx.fillStyle = colors.muted;
@@ -341,7 +341,7 @@
 		const memberNodes: Record<string, GraphNode[]> = {};
 		for (const l of links) (memberNodes[l.source.id] ??= []).push(l.target);
 
-		// cluster washes: each hub's hosts inside one soft rounded shape
+		// cluster washes
 		ctx.lineJoin = 'round';
 		ctx.lineCap = 'round';
 		for (const n of nodes) {
@@ -361,7 +361,7 @@
 			if (outline.length >= 3) ctx.fill();
 		}
 
-		// links curve gently and carry the hub's hue, brighter along a traced neighbourhood
+		// links
 		for (const l of links) {
 			const on = !dim || (lit.has(l.source.id) && lit.has(l.target.id));
 			const g = Math.min(grow(l.source), grow(l.target));
@@ -379,7 +379,7 @@
 			ctx.stroke();
 		}
 
-		// hosts: a lit point when the host answered, a hollow one when it did not
+		// hosts
 		for (const n of nodes) {
 			if (n.kind !== 'host') continue;
 			const on = !dim || lit.has(n.id);
@@ -401,7 +401,7 @@
 			ctx.stroke();
 		}
 
-		// hubs: a soft glow, a glass core with a lit centre, and a thin ring in the kind's hue
+		// hubs
 		for (const n of nodes) {
 			if (n.kind !== 'hub' || !n.hub) continue;
 			const on = !dim || lit.has(n.id);
@@ -450,7 +450,7 @@
 			}
 		}
 
-		// labels: pills that sit beside the node, only where they earn the space
+		// labels
 		ctx.font = `500 ${11 / k}px ${font}`;
 		ctx.textBaseline = 'middle';
 		for (const n of nodes) {
@@ -645,8 +645,8 @@
 				kind: n.hub.kind,
 				title: n.hub.value,
 				lines: [
-					`${n.hub.count.toLocaleString()} hosts share this`,
-					n.hub.common ? 'Common across the estate' : ''
+					`Shared by ${n.hub.count.toLocaleString()} hosts`,
+					n.hub.common ? 'Common in this scan' : ''
 				]
 			};
 		if (n.host)
@@ -654,7 +654,7 @@
 				kind: null,
 				title: n.host.name,
 				lines: [
-					n.host.status !== null ? `HTTP ${n.host.status}` : 'Did not answer',
+					n.host.status !== null ? `HTTP ${n.host.status}` : 'No HTTP response',
 					n.host.title ?? '',
 					`${n.host.hubs} shared ${n.host.hubs === 1 ? 'identity' : 'identities'}`
 				]
@@ -675,7 +675,7 @@
 		onpointerleave={onPointerLeave}
 		onwheel={onWheel}
 		ondblclick={onDoubleClick}
-		aria-label="Hosts connected by the identities they share"
+		aria-label="Hosts grouped by shared identity"
 	></canvas>
 
 	{#if tip}
@@ -735,7 +735,7 @@
 				</Button>
 			{/snippet}
 		</Hint>
-		<Hint text="Lay out again">
+		<Hint text="Re-run layout">
 			{#snippet child(props)}
 				<Button
 					{...props}

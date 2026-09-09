@@ -164,7 +164,7 @@
 		<p
 			class="px-4 pt-3 pb-1 text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
 		>
-			Shares with others
+			Shared identities
 		</p>
 		<ScrollArea class="min-h-0 flex-1">
 			<ul class="divide-y divide-border/60">

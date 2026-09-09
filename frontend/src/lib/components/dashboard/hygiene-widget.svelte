@@ -131,7 +131,7 @@
 				open: () =>
 					show({
 						title: 'Expired certificates',
-						description: 'Live hosts answering with a certificate past its expiry.',
+						description: 'Live hosts presenting an expired certificate',
 						rows: certRows(certs.expired)
 					})
 			});
@@ -145,8 +145,8 @@
 				detail: `on ${plural(certs.expiring.targets.length, 'target', 'targets')}`,
 				open: () =>
 					show({
-						title: 'Certificates expiring soon',
-						description: 'Hosts whose certificate expires in the next 30 days.',
+						title: 'Certificates expiring within 30 days',
+						description: 'Hosts with a certificate expiring within 30 days',
 						rows: certRows(certs.expiring)
 					})
 			});
@@ -160,8 +160,8 @@
 				detail: expiryText(overview.expiring[0].expires_at),
 				open: () =>
 					show({
-						title: 'Domains expiring soon',
-						description: 'Registrations reNgine saw an expiry date for in WHOIS.',
+						title: 'Domains expiring within 30 days',
+						description: 'Registrations with a WHOIS expiry date within 30 days',
 						rows: overview.expiring.map((t) => ({
 							key: t.target_id,
 							primary: t.target_value,
@@ -176,14 +176,13 @@
 				key: 'spoofable',
 				icon: Mail,
 				tone: 'warn',
-				label: 'Domains that can be spoofed',
+				label: 'Spoofable domains',
 				count: spoof.count,
 				detail: 'no SPF or DMARC policy',
 				open: () =>
 					show({
 						title: 'Spoofable domains',
-						description:
-							'No SPF or DMARC record was found, so mail from the domain cannot be rejected.',
+						description: 'Domains with no SPF or DMARC record',
 						rows: spoof.items.map((d) => ({
 							key: d.target_id,
 							primary: d.target_value,
@@ -200,11 +199,11 @@
 				tone: 'bad',
 				label: 'Takeover candidates',
 				count: takeover.count,
-				detail: 'dangling records on a provider',
+				detail: 'dangling provider records',
 				open: () =>
 					show({
 						title: 'Takeover candidates',
-						description: 'Hostnames whose record points at a provider that no longer serves them.',
+						description: 'Hostnames with a dangling record at a third-party provider',
 						rows: takeover.items.map((c) => ({
 							key: c.name,
 							primary: c.name,
@@ -220,15 +219,14 @@
 				key: 'leads',
 				icon: Compass,
 				tone: 'lead',
-				label: 'Domains the estate vouches for',
+				label: 'Untracked domains',
 				count: leads,
-				detail: 'on your certificates, not yet targets',
+				detail: 'named on certificates, not yet targets',
 				open: () =>
 					show({
 						kind: 'discovery',
 						title: 'Untracked domains',
-						description:
-							'Registrable domains named on certificates the estate presents. Adding one starts tracking it.',
+						description: 'Registrable domains named on presented certificates that are not targets',
 						rows: []
 					})
 			});

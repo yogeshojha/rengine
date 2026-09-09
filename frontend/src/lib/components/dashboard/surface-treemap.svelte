@@ -51,7 +51,7 @@
 	);
 	let total = $derived(leaves.reduce((n, l) => n + l.value, 0));
 
-	// squarified layout: lay rows along the shorter side while the worst aspect ratio keeps improving
+	// squarified layout
 	function squarify(items: Leaf[], w: number, h: number): Rect[] {
 		const out: Rect[] = [];
 		if (!items.length || w <= 0 || h <= 0) return out;
@@ -127,8 +127,8 @@
 </script>
 
 <Widget
-	title="Where the surface lives"
-	description="Targets sized by {WEB.nounPlural}, tinted by their worst finding"
+	title="Web assets by target"
+	description="Targets sized by {WEB.nounPlural} and tinted by worst severity"
 	class={className}
 >
 	<div class="px-5 py-4">
@@ -166,7 +166,6 @@
 		</div>
 	</div>
 	{#snippet footer()}
-		{plural(leaves.length, 'target', 'targets')} with {WEB.nounPlural} · {total.toLocaleString()} in all.
-		Hover a block for its findings, click to open the target.
+		{plural(leaves.length, 'target', 'targets')} · {plural(total, WEB.noun, WEB.nounPlural)} in total
 	{/snippet}
 </Widget>

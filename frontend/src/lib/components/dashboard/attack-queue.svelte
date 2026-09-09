@@ -102,21 +102,21 @@
 </script>
 
 <Widget
-	title="Attack queue"
-	description="Findings across every target, ranked by how exploitable they are"
+	title="Findings by risk"
+	description="Open findings across all targets, ranked by exploitability"
 	href={ROUTES.surface(VULNS.tab)}
 	hrefLabel="All findings"
 	class={className}
 >
 	{#snippet head()}
 		<span class="tabular-nums">
-			{risk.targets_affected} of {plural(risk.targets_scanned, 'tested target', 'tested targets')} affected
+			{risk.targets_affected} of {plural(risk.targets_scanned, 'scanned target', 'scanned targets')} affected
 		</span>
 	{/snippet}
 	{#if risk.total === 0}
 		<div class="flex items-center gap-3 px-5 py-8 text-sm text-muted-foreground">
 			<ShieldCheck class="size-5 text-success" />
-			No open findings on {plural(risk.targets_scanned, 'tested target', 'tested targets')}.
+			No open findings on {plural(risk.targets_scanned, 'scanned target', 'scanned targets')}.
 		</div>
 	{:else}
 		<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_15rem]">
@@ -148,7 +148,7 @@
 								size="sm"
 								value={active}
 								onValueChange={(v) => v && onFilter(v as QueueFilter)}
-								aria-label="Filter the queue"
+								aria-label="Filter findings"
 							>
 								{#each filters as f (f.key)}
 									<ToggleGroup.Item value={f.key} class="gap-1.5 px-2.5 text-xs">
@@ -191,7 +191,7 @@
 									</span>
 								</span>
 								{#if f.epss_score !== null}
-									<Hint text="EPSS: the probability this is exploited in the next 30 days">
+									<Hint text="EPSS score: probability of exploitation within 30 days">
 										{#snippet child(props)}
 											<span {...props} class="shrink-0 text-xs tabular-nums text-muted-foreground">
 												{epssPercent(f.epss_score)}
@@ -223,7 +223,7 @@
 			{#if concentration.length}
 				<div class="flex flex-col gap-2 border-t px-5 py-4 lg:border-t-0 lg:border-l">
 					<span class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-						Where it concentrates
+						Findings by target
 					</span>
 					<RankedBars rows={concentration} dense />
 				</div>
@@ -244,7 +244,7 @@
 			No new findings in the {windowText(window)}
 		{/if}
 		{#if risk.suppressed > 0}
-			<span> · {risk.suppressed} set aside by a reviewer</span>
+			<span> · {risk.suppressed} suppressed by triage</span>
 		{/if}
 	{/snippet}
 </Widget>

@@ -276,7 +276,7 @@ export interface DashboardDiscovery {
 
 export type QueueFilter = 'all' | 'kev' | 'critical' | 'high' | 'new';
 
-// the fronting split of resolving web assets, each a query the Web Assets page answers verbatim
+// fronting split of resolving web assets
 export const HOSTING_QUERIES = {
 	resolved: 'is:resolved',
 	edge: 'is:cdn',

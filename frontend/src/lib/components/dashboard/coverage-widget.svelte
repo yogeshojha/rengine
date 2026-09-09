@@ -92,7 +92,7 @@
 			out.push({
 				key: 'live',
 				icon: RadioTower,
-				label: 'Running now',
+				label: 'Running',
 				count: liveCount,
 				tone: 'text-info',
 				href: ROUTES.scans
@@ -110,7 +110,7 @@
 			out.push({
 				key: 'stale',
 				icon: Clock,
-				label: `Older than ${STALE_DAYS} days`,
+				label: `Not scanned in ${STALE_DAYS} days`,
 				count: staleIds.length,
 				tone: 'text-warning',
 				action: { label: 'Scan', run: () => onScan(staleIds) }
@@ -119,7 +119,7 @@
 			out.push({
 				key: 'unmonitored',
 				icon: CalendarClock,
-				label: 'Not on a schedule',
+				label: 'Not scheduled',
 				count: unmonitored.length,
 				tone: 'text-warning',
 				action: { label: 'Schedule', run: () => onSchedule(unmonitored) }
@@ -143,7 +143,7 @@
 			<div class="flex items-baseline justify-between text-xs">
 				<span class="text-muted-foreground">
 					{plural(scanned, 'target', 'targets')} scanned
-					{#if buckets.never}<span> · {buckets.never} never</span>{/if}
+					{#if buckets.never}<span> · {buckets.never} never scanned</span>{/if}
 				</span>
 				<span class="font-medium tabular-nums">
 					{overview.targets_monitored} of {overview.targets_total} monitored

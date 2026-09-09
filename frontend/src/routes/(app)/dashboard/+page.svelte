@@ -37,7 +37,7 @@
 
 	let activeProject = $derived(projectsStore.activeProject);
 	let overview = $derived(dashboardStore.overview);
-	// the first run keeps its own surface until a scan of its own has finished
+	// first-run surface until a scan completes
 	let firstRun = $derived(!!overview?.first_run && !overview.last_completed_at);
 	let emptyProject = $derived(!!overview && overview.targets_total === 0 && !liveScans.hasLive);
 	let addTargetOpen = $state(false);

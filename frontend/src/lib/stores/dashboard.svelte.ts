@@ -85,7 +85,7 @@ function createDashboardStore() {
 		if (overview?.first_run) void loadReadiness(mySeq);
 	}
 
-	// a worker ping is a broker round trip, so only a first run asks for it
+	// worker ping only on first run
 	async function loadReadiness(mySeq: number) {
 		try {
 			const data = await dashboardApi.readiness();
@@ -95,7 +95,7 @@ function createDashboardStore() {
 		}
 	}
 
-	// the certificate walk is the one slow rollup, so it lands after the page has painted
+	// slow rollup, loaded after first paint
 	async function loadDiscovery(pid: string, mySeq: number) {
 		try {
 			const data = await dashboardApi.discovery(pid);
@@ -105,7 +105,7 @@ function createDashboardStore() {
 		}
 	}
 
-	// every widget that reads a project-wide result page asks that page's own endpoint, so its count is that page's count
+	// each widget reads its result page's own endpoint
 	async function loadExtras(pid: string, mySeq: number) {
 		extrasLoading = true;
 		const keep = () => mySeq === seq;

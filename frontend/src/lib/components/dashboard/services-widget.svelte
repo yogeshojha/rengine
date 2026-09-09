@@ -57,7 +57,7 @@
 
 <Widget
 	title="Services"
-	description="What is listening, from each target's latest service scan"
+	description="Service classes from the latest service scan of each target"
 	href={ROUTES.surface(SPEC.tab)}
 	hrefLabel="Services"
 	class={className}
@@ -144,7 +144,7 @@
 		{#if top.length}
 			<div class="flex flex-col gap-2">
 				<span class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-					Most exposed, outside the web
+					Top non-web services
 				</span>
 				<RankedBars rows={top} dense>
 					{#snippet icon(r)}

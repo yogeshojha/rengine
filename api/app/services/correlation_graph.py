@@ -1,8 +1,4 @@
-"""The correlation graph: every identity two hosts of a scan share, as hubs the hosts hang off.
-
-Hubs are built from the same columns the Web Assets group dimensions read, and each carries
-that dimension's drill-down token, so a hub's count is the row count its query lands on.
-"""
+"""Shared identities across a scan's hosts, keyed by the Web Assets group-dimension columns."""
 
 from __future__ import annotations
 
@@ -38,7 +34,7 @@ _HTTP_CLIENT = 400
 _LABEL_MAX = 60
 _HASH_LABEL = 14
 
-# how each kind reads its value off a host row, and the token operator the grammar expects
+# source column and token operator per kind
 _HOST_KINDS: dict[str, tuple[str, str]] = {
     CorrelationKind.IP.value: ("resolved_ips", ":"),
     CorrelationKind.CNAME.value: ("cname", "="),
@@ -65,7 +61,7 @@ def _values(raw) -> list[str]:
 
 
 def _label(kind: str, value: str) -> str:
-    # a hash keeps both ends so two that share a prefix still read apart
+    # keep both ends of a hash
     if kind in (
         CorrelationKind.BODY.value,
         CorrelationKind.JARM.value,

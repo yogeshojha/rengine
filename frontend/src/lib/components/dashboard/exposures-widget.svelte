@@ -32,7 +32,7 @@
 
 <Widget
 	title="Exposures"
-	description="Hosts that are risk by what they are, not by a CVE"
+	description="Hosts flagged by exposure rules, highest score first"
 	href={ROUTES.exposures()}
 	hrefLabel="All exposures"
 	class={className}
@@ -94,7 +94,7 @@
 	</ul>
 	{#snippet footer()}
 		{#if page}
-			{plural(page.total, 'exposed host', 'exposed hosts')} across the project, highest score first
+			{plural(page.total, 'exposed host', 'exposed hosts')} across the project
 		{/if}
 	{/snippet}
 </Widget>

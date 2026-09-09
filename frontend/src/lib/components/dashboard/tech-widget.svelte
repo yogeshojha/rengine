@@ -30,7 +30,7 @@
 
 <Widget
 	title="Technology"
-	description="Fingerprinted on live web assets across every target"
+	description="Technologies fingerprinted on live web assets"
 	href={ROUTES.surface(SPEC.tab)}
 	hrefLabel="Web assets"
 	loading={loading && !tech}
@@ -53,7 +53,7 @@
 				{tech.length - TOP} more technologies in Web assets
 			</a>
 		{:else}
-			Counts are hosts carrying the technology. Click one to see them.
+			Counts are hosts with the technology
 		{/if}
 	{/snippet}
 </Widget>

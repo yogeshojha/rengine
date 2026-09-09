@@ -54,7 +54,7 @@
 			{
 				key: 'endpoints',
 				spec: ENDPOINTS,
-				label: 'Live endpoints taking input',
+				label: 'Live endpoints with parameters',
 				total: feed.endpoints.total,
 				href: ROUTES.surface(ENDPOINTS.tab, { [ENDPOINTS.queryParam]: FEED_QUERIES.endpoints })
 			}
@@ -63,8 +63,8 @@
 </script>
 
 <Widget
-	title="New since the previous scan"
-	description="What the latest run of each target reported for the first time"
+	title="New since previous scan"
+	description="Items first reported by the latest run of each target"
 	class={className}
 >
 	<div class="divide-y divide-border/60">
@@ -170,7 +170,7 @@
 				feed.vulns.total + feed.exposures.total + feed.services.total + feed.endpoints.total,
 				'new item',
 				'new items'
-			)} judged against each target's own previous run
+			)} compared with the previous run of each target
 		{/if}
 	{/snippet}
 </Widget>

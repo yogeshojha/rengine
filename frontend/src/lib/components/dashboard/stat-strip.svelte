@@ -119,7 +119,7 @@
 								: ''}"
 						>
 							{t.freshHref ? '▲ ' : ''}{t.fresh.toLocaleString()}
-							{t.freshNoun} in the {windowLabel}
+							{t.freshNoun} in {windowLabel}
 						</svelte:element>
 					{:else}
 						<span class="truncate text-muted-foreground">

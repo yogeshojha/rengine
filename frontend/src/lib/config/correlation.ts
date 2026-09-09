@@ -39,7 +39,7 @@ export const KIND_ICONS: Record<string, IconComponent> = {
 	[CorrelationKind.CDN]: Cloud
 };
 
-// one hue per identity, equal lightness and chroma so no kind shouts; the infrastructure kinds sit at lower chroma
+// one hue per kind; infrastructure kinds at lower chroma
 export const KIND_HUE: Record<string, number> = {
 	[CorrelationKind.IP]: 255,
 	[CorrelationKind.CNAME]: 200,
@@ -66,7 +66,7 @@ export function kindColor(kind: string, dark: boolean, alpha = 1): string {
 	return alpha === 1 ? `oklch(${l} ${c} ${hue})` : `oklch(${l} ${c} ${hue} / ${alpha})`;
 }
 
-// two kinds close in hue are told apart by a dashed ring
+// dashed ring for kinds close in hue
 export const KIND_DASHED: ReadonlySet<string> = new Set([
 	CorrelationKind.JARM,
 	CorrelationKind.CERT_ISSUER

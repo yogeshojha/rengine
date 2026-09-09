@@ -302,7 +302,7 @@ class CorrelationHost(BaseModel):
 
 
 class CorrelationHub(BaseModel):
-    """One shared identity and the hosts that carry it; count is the rows its query lands on."""
+    """One shared identity and the hosts that carry it."""
 
     id: str
     kind: str

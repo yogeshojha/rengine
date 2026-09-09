@@ -32,7 +32,7 @@
 
 <Widget
 	title="Geography"
-	description="Where the addresses answer from"
+	description="IP addresses by country"
 	href={ROUTES.surface(SPEC.tab)}
 	hrefLabel="IP addresses"
 	loading={loading && !countries}

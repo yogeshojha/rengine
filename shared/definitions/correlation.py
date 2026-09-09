@@ -1,4 +1,4 @@
-"""The identities two hosts can share, and the noise rules that keep a shared identity meaningful."""
+"""Identity kinds two hosts can share, and the thresholds that make a shared identity significant."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from enum import StrEnum
 MAX_GRAPH_HOSTS = 3000
 MAX_HUBS_PER_KIND = 80
 MIN_SHARED = 2
-# an identity most of the estate carries says nothing about any one host
+# hidden by default at or above this share
 COMMON_SHARE = 0.5
 
 
@@ -38,19 +38,19 @@ CORRELATION_KIND_LABELS: dict[str, str] = {
 }
 
 CORRELATION_KIND_HELP: dict[str, str] = {
-    CorrelationKind.IP.value: "Hosts that resolve to the same address share a box, a load balancer or an edge.",
-    CorrelationKind.CNAME.value: "Hosts aliased to the same name sit on the same provider or service.",
-    CorrelationKind.TITLE.value: "Hosts answering with the same page title are usually the same application.",
-    CorrelationKind.FAVICON.value: "The same favicon hash is the same product, whatever the hostname says.",
-    CorrelationKind.BODY.value: "An identical response body is the same page served under several names.",
-    CorrelationKind.JARM.value: "The same TLS handshake fingerprint is the same server software and configuration.",
-    CorrelationKind.CERT_ISSUER.value: "Certificates from the same issuer point at one procurement path.",
-    CorrelationKind.TECH.value: "A shared technology. Common ones say little, rare ones say a lot.",
-    CorrelationKind.SERVER.value: "The same Server header, version included.",
-    CorrelationKind.CDN.value: "Fronted by the same CDN or WAF.",
+    CorrelationKind.IP.value: "Hosts resolving to the same IP address",
+    CorrelationKind.CNAME.value: "Hosts aliased to the same CNAME target",
+    CorrelationKind.TITLE.value: "Hosts responding with the same page title",
+    CorrelationKind.FAVICON.value: "Hosts serving the same favicon hash",
+    CorrelationKind.BODY.value: "Hosts returning an identical response body",
+    CorrelationKind.JARM.value: "Hosts with the same JARM TLS fingerprint",
+    CorrelationKind.CERT_ISSUER.value: "Hosts presenting certificates from the same issuer",
+    CorrelationKind.TECH.value: "Hosts fingerprinted with the same technology",
+    CorrelationKind.SERVER.value: "Hosts returning the same Server header",
+    CorrelationKind.CDN.value: "Hosts fronted by the same CDN or WAF",
 }
 
-# the identities strong enough to draw at rest; the rest are a click away
+# drawn by default
 CORRELATION_DEFAULT_KINDS: frozenset[str] = frozenset(
     {
         CorrelationKind.IP.value,

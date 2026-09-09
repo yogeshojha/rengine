@@ -59,7 +59,7 @@
 
 <Widget
 	title="Attack surface over time"
-	description="The estate at the end of each day, from every target's newest covering run"
+	description="Daily totals from the latest covering run of each target"
 	href={ROUTES.surface(spec.tab)}
 	hrefLabel={spec.label}
 	class={className}

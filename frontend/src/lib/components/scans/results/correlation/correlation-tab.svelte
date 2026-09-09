@@ -89,7 +89,7 @@
 	);
 	let hosts = $derived(graph?.hosts ?? []);
 	let sharing = $derived(new Set(hubs.flatMap((h) => h.members)).size);
-	// the tab badge is the number the head prints, whatever is drawn
+	// badge equals the head count
 	$effect(() => {
 		if (graph) onTotal?.(sharing);
 	});
@@ -158,16 +158,16 @@
 			{#if graph}
 				<p class="text-sm">
 					<b class="font-semibold tabular-nums">{sharing.toLocaleString()}</b> of
-					{plural(graph.total_hosts, 'host', 'hosts')} share an identity with another
+					{plural(graph.total_hosts, 'host', 'hosts')} share an identity
 					<span class="text-muted-foreground"
 						>· {plural(hubs.length, 'shared identity', 'shared identities')}{commonHidden
-							? ` · ${commonHidden} common ${commonHidden === 1 ? 'one' : 'ones'} hidden`
+							? ` · ${commonHidden} common hidden`
 							: ''}</span
 					>
 				</p>
 				<p class="text-xs text-muted-foreground">
-					A hub is one value several hosts carry. Hover to trace, click for the list, double-click
-					to open it in Web assets.{graph.truncated ? ' The first 3,000 hosts are drawn.' : ''}
+					A hub is a value shared by two or more hosts. Double-click a node to open it in Web
+					assets.{graph.truncated ? ' Limited to the first 3,000 hosts.' : ''}
 				</p>
 			{:else}
 				<Skeleton class="h-5 w-72" />
@@ -180,9 +180,9 @@
 			/>
 			<Input
 				bind:value={search}
-				placeholder="Find a host"
+				placeholder="Find host"
 				class="h-8 pl-8 font-mono text-xs"
-				aria-label="Find a host"
+				aria-label="Find host"
 				onkeydown={(e) => e.key === 'Enter' && findHost()}
 			/>
 		</div>
@@ -197,10 +197,10 @@
 				class="flex-wrap"
 				value={[...enabled]}
 				onValueChange={setKinds}
-				aria-label="Identities to draw"
+				aria-label="Identity types"
 			>
 				{#each kinds as k (k.key)}
-					<Hint text="{k.help} {plural(k.hosts, 'host carries', 'hosts carry')} one.">
+					<Hint text="{k.help}. Present on {plural(k.hosts, 'host', 'hosts')}.">
 						{#snippet child(props)}
 							<span {...props} class="inline-flex">
 								<ToggleGroup.Item value={k.key} class="h-7 gap-1.5 px-2 text-xs font-normal">
@@ -216,7 +216,7 @@
 					</Hint>
 				{/each}
 			</ToggleGroup.Root>
-			<Hint text="An identity carried by half the scan or more says nothing about any one host">
+			<Hint text="Identities present on half or more of the hosts are hidden">
 				{#snippet child(props)}
 					<span {...props} class="ml-auto inline-flex">
 						<ToggleGroup.Root
@@ -254,15 +254,15 @@
 	{:else if nothingShared}
 		<EmptyState
 			icon={Share2}
-			title="Nothing is shared"
-			description="No two hosts on this scan resolve to the same address, alias to the same name, or answer with the same page."
+			title="No shared identities"
+			description="No two hosts in this scan share an address, CNAME target, page title or fingerprint"
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
 	{:else if graph && hubs.length === 0}
 		<EmptyState
 			icon={Share2}
-			title="Nothing to draw"
-			description="Every hub is switched off or hidden as common. Turn an identity on above."
+			title="No identity types selected"
+			description="All identity types are disabled or hidden as common"
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
 	{:else if graph}
@@ -294,13 +294,13 @@
 		<div
 			class="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2 text-xs text-muted-foreground"
 		>
-			<span>Filled dots answered with 2xx; hollow ones did not.</span>
+			<span>Filled dots are hosts with a 2xx response. Hollow dots are hosts without one.</span>
 			<span
-				>Hub size is how many hosts share it; a dashed ring is a TLS or certificate identity.</span
+				>Hub size reflects the number of hosts. A dashed ring marks a TLS or certificate identity.</span
 			>
 			{#if graph.total_hosts - sharing > 0}
 				<span class="ml-auto tabular-nums">
-					{plural(graph.total_hosts - sharing, 'host shares', 'hosts share')} nothing that is drawn
+					{plural(graph.total_hosts - sharing, 'host', 'hosts')} with no shared identity shown
 				</span>
 			{/if}
 		</div>

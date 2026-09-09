@@ -34,8 +34,8 @@
 </script>
 
 <Widget
-	title="Movement by target"
-	description="What each target's runs in the {windowText(window)} were the first to report"
+	title="Changes by target"
+	description="Items first reported per target in the {windowText(window)}"
 	class={className}
 >
 	<div class="overflow-x-auto">
@@ -109,7 +109,7 @@
 										{/snippet}
 									</Hint>
 								{:else if baseline}
-									<Hint text="First run to cover {spec.nounPlural}, so nothing counts as new yet">
+									<Hint text="Baseline run for {spec.nounPlural}. Nothing is counted as new.">
 										{#snippet child(props)}
 											<span
 												{...props}
@@ -133,7 +133,7 @@
 		</table>
 	</div>
 	{#snippet footer()}
-		Shade is the share of the target's {SURFACE_ORDER[0].nounPlural} that are new. A cell opens the run's
-		new rows; a sum across runs cannot, so it stays unlinked.
+		Shading is the share of new {SURFACE_ORDER[0].nounPlural}. Cells spanning several runs are not
+		linked.
 	{/snippet}
 </Widget>
