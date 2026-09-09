@@ -13,6 +13,7 @@
 		vy?: number;
 		fx?: number | null;
 		fy?: number | null;
+		born: number;
 	}
 	export interface GraphLink {
 		source: GraphNode;
@@ -39,7 +40,7 @@
 	import Shuffle from '@lucide/svelte/icons/shuffle';
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
-	import { KIND_COLOR_VAR, KIND_DASHED, MAX_ZOOM, MIN_ZOOM } from '$lib/config/correlation';
+	import { KIND_DASHED, MAX_ZOOM, MIN_ZOOM, kindColor } from '$lib/config/correlation';
 	import type { CorrelationHost, CorrelationHub } from '$lib/types/correlation';
 
 	interface Props {
@@ -62,13 +63,17 @@
 		class: className = ''
 	}: Props = $props();
 
-	const HOST_R = 3.5;
-	const HUB_MIN_R = 7;
+	const HOST_R = 3.2;
+	const HUB_MIN_R = 8;
 	const HUB_MAX_R = 26;
-	const LABEL_ZOOM = 1.6;
+	const LABEL_ZOOM = 1.4;
+	const LABEL_MIN_COUNT = 3;
 	const HIT_PAD = 6;
 	const SETTLE_TICKS = 300;
-	const FIT_PAD = 40;
+	const FIT_PAD = 48;
+	const GRID = 24;
+	const BLOB_PAD = 14;
+	const POP_MS = 420;
 
 	let canvas = $state<HTMLCanvasElement | null>(null);
 	let width = $state(0);
@@ -88,11 +93,14 @@
 		moved: boolean;
 	} | null = null;
 	let previous = new Map<string, { x: number; y: number }>();
-	let colors: Record<string, string> = {};
+	let colors = { card: '#fff', ink: '#111', muted: '#888', border: '#ddd', primary: '#55f' };
+	let dark = false;
+	let font = 'ui-sans-serif, system-ui, sans-serif';
 	let reduced = false;
 
-	function readColors() {
-		const style = getComputedStyle(document.documentElement);
+	function readTheme() {
+		const root = document.documentElement;
+		const style = getComputedStyle(root);
 		const read = (name: string) => style.getPropertyValue(name).trim();
 		colors = {
 			card: read('--card'),
@@ -101,10 +109,11 @@
 			border: read('--border'),
 			primary: read('--primary')
 		};
-		for (const v of new Set(Object.values(KIND_COLOR_VAR))) colors[v] = read(v);
+		dark = root.classList.contains('dark');
+		font = getComputedStyle(document.body).fontFamily || font;
 	}
-	const kindColor = (kind: string) =>
-		colors[KIND_COLOR_VAR[kind] ?? '--muted-foreground'] ?? '#888';
+	const tone = (kind: string, alpha = 1) => kindColor(kind, dark, alpha);
+	const ease = (t: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
 
 	function hubRadius(count: number, max: number): number {
 		const t = Math.sqrt(count / Math.max(1, max));
@@ -118,12 +127,13 @@
 		const next: GraphNode[] = [];
 		const cx = width / 2;
 		const cy = height / 2;
+		const now = performance.now();
 		const seed = (id: string, i: number) => {
 			const p = previous.get(id);
-			if (p) return p;
+			if (p) return { ...p, born: now - POP_MS };
 			const a = (i * 2.399963) % (Math.PI * 2);
 			const d = 20 + Math.sqrt(i) * 14;
-			return { x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d };
+			return { x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d, born: now + i * 6 };
 		};
 		let i = 0;
 		for (const hub of hubs) {
@@ -174,16 +184,16 @@
 			.force(
 				'link',
 				forceLink<GraphNode, GraphLink>(links)
-					.distance((l) => 18 + l.source.r)
+					.distance((l) => 22 + l.source.r)
 					.strength(0.6)
 			)
 			.force(
 				'charge',
-				forceManyBody<GraphNode>().strength((n) => (n.kind === 'hub' ? -220 : -18))
+				forceManyBody<GraphNode>().strength((n) => (n.kind === 'hub' ? -260 : -22))
 			)
 			.force(
 				'collide',
-				forceCollide<GraphNode>().radius((n) => n.r + 3)
+				forceCollide<GraphNode>().radius((n) => n.r + 4)
 			)
 			.force('x', forceX(cx).strength(0.03))
 			.force('y', forceY(cy).strength(0.03))
@@ -193,6 +203,7 @@
 		if (reduced) {
 			simulation.stop();
 			simulation.tick(SETTLE_TICKS);
+			for (const n of nodes) n.born = 0;
 			fit();
 			draw();
 		} else {
@@ -248,6 +259,45 @@
 		]);
 	}
 
+	type Point = { x: number; y: number };
+	// the smallest convex outline around a hub and its hosts, for the soft cluster wash behind them
+	function hull(points: Point[]): Point[] {
+		const pts = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+		if (pts.length < 3) return pts;
+		const cross = (o: Point, a: Point, b: Point) =>
+			(a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+		const lower: Point[] = [];
+		for (const p of pts) {
+			while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0)
+				lower.pop();
+			lower.push(p);
+		}
+		const upper: Point[] = [];
+		for (const p of [...pts].reverse()) {
+			while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0)
+				upper.pop();
+			upper.push(p);
+		}
+		return [...lower.slice(0, -1), ...upper.slice(0, -1)];
+	}
+
+	function roundRect(
+		ctx: CanvasRenderingContext2D,
+		x: number,
+		y: number,
+		w: number,
+		h: number,
+		r: number
+	) {
+		ctx.beginPath();
+		ctx.moveTo(x + r, y);
+		ctx.arcTo(x + w, y, x + w, y + h, r);
+		ctx.arcTo(x + w, y + h, x, y + h, r);
+		ctx.arcTo(x, y + h, x, y, r);
+		ctx.arcTo(x, y, x + w, y, r);
+		ctx.closePath();
+	}
+
 	function draw() {
 		frame = 0;
 		const el = canvas;
@@ -259,89 +309,194 @@
 		}
 		const ctx = el.getContext('2d');
 		if (!ctx) return;
+		const now = performance.now();
+		let animating = false;
+		const grow = (n: GraphNode) => {
+			const t = (now - n.born) / POP_MS;
+			if (t < 1) animating = true;
+			return ease(t);
+		};
+
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		ctx.clearRect(0, 0, width, height);
+
+		// a faint dot grid moves with the canvas so panning reads as motion
+		const step = GRID * transform.k;
+		if (step >= 10) {
+			ctx.fillStyle = colors.muted;
+			ctx.globalAlpha = dark ? 0.22 : 0.28;
+			const ox = ((transform.x % step) + step) % step;
+			const oy = ((transform.y % step) + step) % step;
+			for (let gx = ox; gx < width; gx += step)
+				for (let gy = oy; gy < height; gy += step) ctx.fillRect(gx - 0.5, gy - 0.5, 1, 1);
+			ctx.globalAlpha = 1;
+		}
+
 		ctx.translate(transform.x, transform.y);
 		ctx.scale(transform.k, transform.k);
 		const k = transform.k;
 		const focus = hovered ?? nodes.find((n) => n.id === selectedId) ?? null;
 		const lit = neighbours(focus);
 		const dim = focus !== null;
+		const memberNodes: Record<string, GraphNode[]> = {};
+		for (const l of links) (memberNodes[l.source.id] ??= []).push(l.target);
 
-		ctx.lineWidth = 1 / k;
+		// cluster washes: each hub's hosts inside one soft rounded shape
+		ctx.lineJoin = 'round';
+		ctx.lineCap = 'round';
+		for (const n of nodes) {
+			if (n.kind !== 'hub' || !n.hub) continue;
+			const members = memberNodes[n.id] ?? [];
+			if (!members.length) continue;
+			const on = !dim || lit.has(n.id);
+			const outline = hull([n, ...members]);
+			ctx.globalAlpha = (on ? (dim ? 0.16 : 0.09) : 0.03) * grow(n);
+			ctx.fillStyle = tone(n.hub.kind);
+			ctx.strokeStyle = tone(n.hub.kind);
+			ctx.lineWidth = (BLOB_PAD + n.r) * 2;
+			ctx.beginPath();
+			outline.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+			ctx.closePath();
+			ctx.stroke();
+			if (outline.length >= 3) ctx.fill();
+		}
+
+		// links curve gently and carry the hub's hue, brighter along a traced neighbourhood
 		for (const l of links) {
 			const on = !dim || (lit.has(l.source.id) && lit.has(l.target.id));
-			ctx.globalAlpha = on ? (dim ? 0.55 : 0.22) : 0.04;
-			ctx.strokeStyle = kindColor(l.kind);
+			const g = Math.min(grow(l.source), grow(l.target));
+			ctx.globalAlpha = (on ? (dim ? 0.7 : 0.28) : 0.05) * g;
+			ctx.strokeStyle = tone(l.kind);
+			ctx.lineWidth = (on && dim ? 1.4 : 1) / k;
+			const mx = (l.source.x + l.target.x) / 2;
+			const my = (l.source.y + l.target.y) / 2;
+			const dx = l.target.x - l.source.x;
+			const dy = l.target.y - l.source.y;
+			const bend = 0.12 * (l.target.id.charCodeAt(6) % 2 ? 1 : -1);
 			ctx.beginPath();
 			ctx.moveTo(l.source.x, l.source.y);
-			ctx.lineTo(l.target.x, l.target.y);
+			ctx.quadraticCurveTo(mx - dy * bend, my + dx * bend, l.target.x, l.target.y);
 			ctx.stroke();
 		}
 
+		// hosts: a lit point when the host answered, a hollow one when it did not
 		for (const n of nodes) {
+			if (n.kind !== 'host') continue;
 			const on = !dim || lit.has(n.id);
-			ctx.globalAlpha = on ? 1 : 0.12;
-			if (n.kind === 'host') {
-				const live = n.host?.live;
+			const g = grow(n);
+			const r = n.r * g;
+			const live = !!n.host?.live;
+			ctx.globalAlpha = (on ? 1 : 0.15) * g;
+			if (live) {
+				ctx.shadowColor = colors.ink;
+				ctx.shadowBlur = 6 / k;
+			}
+			ctx.beginPath();
+			ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+			ctx.fillStyle = live ? colors.ink : colors.card;
+			ctx.fill();
+			ctx.shadowBlur = 0;
+			ctx.lineWidth = 1.2 / k;
+			ctx.strokeStyle = live ? colors.card : colors.muted;
+			ctx.stroke();
+		}
+
+		// hubs: a soft glow, a glass core with a lit centre, and a thin ring in the kind's hue
+		for (const n of nodes) {
+			if (n.kind !== 'hub' || !n.hub) continue;
+			const on = !dim || lit.has(n.id);
+			const g = grow(n);
+			const hot = n.id === focus?.id;
+			const r = n.r * g * (hot ? 1.08 : 1);
+			const color = tone(n.hub.kind);
+			const fade = n.hub.common ? 0.55 : 1;
+			ctx.globalAlpha = (on ? 1 : 0.12) * g * fade;
+
+			ctx.shadowColor = tone(n.hub.kind, dark ? 0.55 : 0.4);
+			ctx.shadowBlur = (hot ? 28 : 16) / k;
+			ctx.beginPath();
+			ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+			ctx.fillStyle = tone(n.hub.kind, dark ? 0.28 : 0.2);
+			ctx.fill();
+			ctx.shadowBlur = 0;
+
+			const core = ctx.createRadialGradient(n.x - r * 0.3, n.y - r * 0.35, r * 0.1, n.x, n.y, r);
+			core.addColorStop(0, tone(n.hub.kind, dark ? 0.75 : 0.55));
+			core.addColorStop(1, tone(n.hub.kind, dark ? 0.22 : 0.16));
+			ctx.beginPath();
+			ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+			ctx.fillStyle = core;
+			ctx.fill();
+
+			ctx.lineWidth = 1.5 / k;
+			ctx.strokeStyle = color;
+			ctx.setLineDash(KIND_DASHED.has(n.hub.kind) ? [3 / k, 3 / k] : []);
+			ctx.stroke();
+			ctx.setLineDash([]);
+
+			ctx.beginPath();
+			ctx.arc(n.x, n.y, Math.max(2, r * 0.22), 0, Math.PI * 2);
+			ctx.fillStyle = color;
+			ctx.fill();
+
+			if (n.id === selectedId) {
 				ctx.beginPath();
-				ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-				ctx.fillStyle = live ? colors.ink : colors.card;
-				ctx.fill();
-				ctx.lineWidth = 1.2 / k;
-				ctx.strokeStyle = live ? colors.card : colors.muted;
-				ctx.stroke();
-			} else if (n.hub) {
-				const color = kindColor(n.hub.kind);
-				ctx.beginPath();
-				ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-				ctx.fillStyle = color;
-				ctx.globalAlpha = (on ? 1 : 0.12) * (n.hub.common ? 0.45 : 0.9);
-				ctx.fill();
-				ctx.globalAlpha = on ? 1 : 0.12;
-				ctx.lineWidth = 2 / k;
-				ctx.strokeStyle = colors.card;
-				ctx.setLineDash(KIND_DASHED.has(n.hub.kind) ? [3 / k, 3 / k] : []);
+				ctx.arc(n.x, n.y, r + 5 / k, 0, Math.PI * 2);
+				ctx.lineWidth = 1.5 / k;
+				ctx.strokeStyle = colors.primary;
+				ctx.setLineDash([4 / k, 3 / k]);
 				ctx.stroke();
 				ctx.setLineDash([]);
-				if (n.id === selectedId) {
-					ctx.beginPath();
-					ctx.arc(n.x, n.y, n.r + 4 / k, 0, Math.PI * 2);
-					ctx.lineWidth = 2 / k;
-					ctx.strokeStyle = colors.primary;
-					ctx.stroke();
-				}
 			}
 		}
 
-		ctx.font = `${11 / k}px ui-sans-serif, system-ui, sans-serif`;
+		// labels: pills that sit beside the node, only where they earn the space
+		ctx.font = `500 ${11 / k}px ${font}`;
 		ctx.textBaseline = 'middle';
 		for (const n of nodes) {
 			const on = !dim || lit.has(n.id);
-			const showHost = n.kind === 'host' && (k >= LABEL_ZOOM || n.id === focus?.id);
-			const showHub = n.kind === 'hub' && (on || k >= LABEL_ZOOM);
+			const isFocus = n.id === focus?.id;
+			const showHost = n.kind === 'host' && (k >= LABEL_ZOOM || isFocus || (dim && on));
+			const showHub =
+				n.kind === 'hub' &&
+				((n.hub?.count ?? 0) >= LABEL_MIN_COUNT || k >= LABEL_ZOOM || isFocus || (dim && on));
 			if (!showHost && !showHub) continue;
-			ctx.globalAlpha = on ? 1 : 0.2;
-			const text = n.label.length > 28 ? `${n.label.slice(0, 27)}…` : n.label;
-			const x = n.x + n.r + 4 / k;
-			const metrics = ctx.measureText(text);
+			const g = grow(n);
+			const text = n.label.length > 30 ? `${n.label.slice(0, 29)}…` : n.label;
+			const w = ctx.measureText(text).width;
+			const padX = 6 / k;
+			const h = 18 / k;
+			const x = n.x + n.r + 6 / k;
+			const y = n.y - h / 2;
+			ctx.globalAlpha = (on ? 1 : 0.2) * g;
+			roundRect(ctx, x, y, w + padX * 2 + (n.kind === 'hub' ? 10 / k : 0), h, 6 / k);
 			ctx.fillStyle = colors.card;
-			ctx.globalAlpha = (on ? 1 : 0.2) * 0.85;
-			ctx.fillRect(x - 2 / k, n.y - 7 / k, metrics.width + 4 / k, 14 / k);
-			ctx.globalAlpha = on ? 1 : 0.2;
+			ctx.fill();
+			ctx.lineWidth = 1 / k;
+			ctx.strokeStyle = n.kind === 'hub' && n.hub ? tone(n.hub.kind, 0.45) : colors.border;
+			ctx.stroke();
+			let tx = x + padX;
+			if (n.kind === 'hub' && n.hub) {
+				ctx.beginPath();
+				ctx.arc(tx + 3 / k, n.y, 3 / k, 0, Math.PI * 2);
+				ctx.fillStyle = tone(n.hub.kind);
+				ctx.fill();
+				tx += 10 / k;
+			}
 			ctx.fillStyle = n.kind === 'hub' ? colors.ink : colors.muted;
-			ctx.fillText(text, x, n.y);
+			ctx.fillText(text, tx, n.y);
 		}
 		ctx.globalAlpha = 1;
+		if (animating) schedule();
 	}
 
-	function toGraph(e: PointerEvent | WheelEvent): { x: number; y: number } {
+	function toGraph(e: PointerEvent | WheelEvent): Point {
 		const rect = canvas!.getBoundingClientRect();
 		const px = e.clientX - rect.left;
 		const py = e.clientY - rect.top;
 		return { x: (px - transform.x) / transform.k, y: (py - transform.y) / transform.k };
 	}
-	function nodeAt(p: { x: number; y: number }): GraphNode | null {
+	function nodeAt(p: Point): GraphNode | null {
 		let best: GraphNode | null = null;
 		let bestD = Infinity;
 		const pad = HIT_PAD / transform.k;
@@ -360,8 +515,7 @@
 	function onPointerDown(e: PointerEvent) {
 		if (!canvas) return;
 		canvas.setPointerCapture(e.pointerId);
-		const p = toGraph(e);
-		const node = nodeAt(p);
+		const node = nodeAt(toGraph(e));
 		drag = { node, sx: e.clientX, sy: e.clientY, ox: transform.x, oy: transform.y, moved: false };
 		if (node) {
 			node.fx = node.x;
@@ -397,7 +551,7 @@
 			schedule();
 		}
 	}
-	function onPointerUp(e: PointerEvent) {
+	function onPointerUp() {
 		if (!drag) return;
 		const { node, moved } = drag;
 		drag = null;
@@ -410,7 +564,6 @@
 			onSelect(null);
 		}
 		if (!moved) schedule();
-		void e;
 	}
 	function onPointerLeave() {
 		hovered = null;
@@ -419,10 +572,7 @@
 	function onWheel(e: WheelEvent) {
 		e.preventDefault();
 		const rect = canvas!.getBoundingClientRect();
-		const px = e.clientX - rect.left;
-		const py = e.clientY - rect.top;
-		const factor = Math.exp(-e.deltaY * 0.0015);
-		zoomAt(factor, px, py);
+		zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX - rect.left, e.clientY - rect.top);
 	}
 	function zoomAt(factor: number, px: number, py: number) {
 		const k = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, transform.k * factor));
@@ -431,10 +581,9 @@
 		schedule();
 	}
 	function onDoubleClick(e: MouseEvent) {
-		const node = hovered;
-		if (node && onOpen) {
+		if (hovered && onOpen) {
 			e.preventDefault();
-			onOpen(node);
+			onOpen(hovered);
 		}
 	}
 	function relayout() {
@@ -450,15 +599,15 @@
 	}
 
 	$effect(() => {
-		readColors();
+		readTheme();
 		reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const observer = new MutationObserver(() => {
-			readColors();
+			readTheme();
 			schedule();
 		});
 		observer.observe(document.documentElement, {
 			attributes: true,
-			attributeFilter: ['class', 'data-theme']
+			attributeFilter: ['class', 'data-theme', 'style']
 		});
 		return () => {
 			observer.disconnect();
@@ -493,6 +642,7 @@
 		if (!n) return null;
 		if (n.kind === 'hub' && n.hub)
 			return {
+				kind: n.hub.kind,
 				title: n.hub.value,
 				lines: [
 					`${n.hub.count.toLocaleString()} hosts share this`,
@@ -501,6 +651,7 @@
 			};
 		if (n.host)
 			return {
+				kind: null,
 				title: n.host.name,
 				lines: [
 					n.host.status !== null ? `HTTP ${n.host.status}` : 'Did not answer',
@@ -512,7 +663,7 @@
 	});
 </script>
 
-<div class="relative {className}" bind:clientWidth={width} style="height:{height}px">
+<div class="relative bg-muted/20 {className}" bind:clientWidth={width} style="height:{height}px">
 	<canvas
 		bind:this={canvas}
 		class="block size-full touch-none {hovered ? 'cursor-pointer' : 'cursor-grab'}"
@@ -529,10 +680,15 @@
 
 	{#if tip}
 		<div
-			class="pointer-events-none absolute z-10 max-w-72 rounded-md border bg-popover px-2.5 py-1.5 text-xs shadow-md"
+			class="pointer-events-none absolute z-10 max-w-72 rounded-lg border bg-popover/95 px-3 py-2 text-xs shadow-lg backdrop-blur"
 			style="left:{Math.min(pointer.x + 14, Math.max(0, width - 300))}px;top:{pointer.y + 14}px"
 		>
-			<p class="truncate font-mono font-medium">{tip.title}</p>
+			<p class="flex items-center gap-1.5 font-mono font-medium">
+				{#if tip.kind}
+					<span class="size-2 shrink-0 rounded-full" style="background:{tone(tip.kind)}"></span>
+				{/if}
+				<span class="truncate">{tip.title}</span>
+			</p>
 			{#each tip.lines.filter(Boolean) as line (line)}
 				<p class="text-muted-foreground">{line}</p>
 			{/each}
@@ -546,7 +702,7 @@
 					{...props}
 					variant="outline"
 					size="icon"
-					class="size-7 bg-card"
+					class="size-7 bg-card/90 backdrop-blur"
 					onclick={() => zoomAt(1.4, width / 2, height / 2)}
 				>
 					<Plus class="size-3.5" />
@@ -559,7 +715,7 @@
 					{...props}
 					variant="outline"
 					size="icon"
-					class="size-7 bg-card"
+					class="size-7 bg-card/90 backdrop-blur"
 					onclick={() => zoomAt(1 / 1.4, width / 2, height / 2)}
 				>
 					<Minus class="size-3.5" />
@@ -568,14 +724,26 @@
 		</Hint>
 		<Hint text="Fit to view">
 			{#snippet child(props)}
-				<Button {...props} variant="outline" size="icon" class="size-7 bg-card" onclick={fit}>
+				<Button
+					{...props}
+					variant="outline"
+					size="icon"
+					class="size-7 bg-card/90 backdrop-blur"
+					onclick={fit}
+				>
 					<Maximize class="size-3.5" />
 				</Button>
 			{/snippet}
 		</Hint>
 		<Hint text="Lay out again">
 			{#snippet child(props)}
-				<Button {...props} variant="outline" size="icon" class="size-7 bg-card" onclick={relayout}>
+				<Button
+					{...props}
+					variant="outline"
+					size="icon"
+					class="size-7 bg-card/90 backdrop-blur"
+					onclick={relayout}
+				>
 					<Shuffle class="size-3.5" />
 				</Button>
 			{/snippet}

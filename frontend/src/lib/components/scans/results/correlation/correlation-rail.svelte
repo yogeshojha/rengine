@@ -4,7 +4,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import Hint from '$lib/components/hint.svelte';
-	import { KIND_COLOR_VAR, KIND_ICONS } from '$lib/config/correlation';
+	import { mode } from 'mode-watcher';
+	import { KIND_ICONS, kindColor } from '$lib/config/correlation';
 	import { STATUS_CLASS_FILL, statusClassOf } from '$lib/config/endpoints';
 	import type {
 		CorrelationHost,
@@ -50,7 +51,7 @@
 					.sort((a, b) => b.count - a.count)
 			: []
 	);
-	const dot = (kind: string) => `background:var(${KIND_COLOR_VAR[kind] ?? '--muted-foreground'})`;
+	let dot = $derived((kind: string) => `background:${kindColor(kind, mode.current === 'dark')}`);
 </script>
 
 <div class="flex h-full min-h-0 flex-col">

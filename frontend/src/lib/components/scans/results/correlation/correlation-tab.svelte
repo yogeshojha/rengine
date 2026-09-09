@@ -15,7 +15,8 @@
 	import CorrelationGraph, { type GraphNode } from './correlation-graph.svelte';
 	import CorrelationRail from './correlation-rail.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
-	import { KIND_COLOR_VAR } from '$lib/config/correlation';
+	import { mode } from 'mode-watcher';
+	import { kindColor } from '$lib/config/correlation';
 	import { exactToken } from '$lib/utilities/scan-insights';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 	import type {
@@ -106,7 +107,8 @@
 			r: 0,
 			hub,
 			x: 0,
-			y: 0
+			y: 0,
+			born: 0
 		};
 		selected = node;
 		chart?.focusNode(node.id);
@@ -122,7 +124,8 @@
 			host,
 			hostIndex: index,
 			x: 0,
-			y: 0
+			y: 0,
+			born: 0
 		};
 		chart?.focusNode(`host:${host.id}`);
 	}
@@ -203,7 +206,7 @@
 								<ToggleGroup.Item value={k.key} class="h-7 gap-1.5 px-2 text-xs font-normal">
 									<span
 										class="size-2 rounded-full"
-										style="background:var({KIND_COLOR_VAR[k.key] ?? '--muted-foreground'})"
+										style="background:{kindColor(k.key, mode.current === 'dark')}"
 									></span>
 									{k.label}
 									<span class="text-muted-foreground tabular-nums">{k.hubs}</span>

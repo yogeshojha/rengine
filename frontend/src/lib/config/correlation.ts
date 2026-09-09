@@ -39,21 +39,34 @@ export const KIND_ICONS: Record<string, IconComponent> = {
 	[CorrelationKind.CDN]: Cloud
 };
 
-// the strong identities take the chart scale; the infrastructure kinds share the neutral ink
-export const KIND_COLOR_VAR: Record<string, string> = {
-	[CorrelationKind.IP]: '--chart-1',
-	[CorrelationKind.CNAME]: '--chart-5',
-	[CorrelationKind.TITLE]: '--chart-2',
-	[CorrelationKind.FAVICON]: '--chart-4',
-	[CorrelationKind.BODY]: '--chart-3',
-	[CorrelationKind.JARM]: '--chart-3',
-	[CorrelationKind.CERT_ISSUER]: '--chart-4',
-	[CorrelationKind.TECH]: '--muted-foreground',
-	[CorrelationKind.SERVER]: '--muted-foreground',
-	[CorrelationKind.CDN]: '--muted-foreground'
+// one hue per identity, equal lightness and chroma so no kind shouts; the infrastructure kinds sit at lower chroma
+export const KIND_HUE: Record<string, number> = {
+	[CorrelationKind.IP]: 255,
+	[CorrelationKind.CNAME]: 200,
+	[CorrelationKind.TITLE]: 150,
+	[CorrelationKind.FAVICON]: 65,
+	[CorrelationKind.BODY]: 300,
+	[CorrelationKind.JARM]: 335,
+	[CorrelationKind.CERT_ISSUER]: 25,
+	[CorrelationKind.TECH]: 105,
+	[CorrelationKind.SERVER]: 235,
+	[CorrelationKind.CDN]: 180
 };
+const QUIET_KINDS: ReadonlySet<string> = new Set([
+	CorrelationKind.TECH,
+	CorrelationKind.SERVER,
+	CorrelationKind.CDN
+]);
 
-// two kinds share a hue only when one of them is drawn with a dashed ring
+export function kindColor(kind: string, dark: boolean, alpha = 1): string {
+	const hue = KIND_HUE[kind] ?? 265;
+	const quiet = QUIET_KINDS.has(kind);
+	const l = dark ? 0.76 : 0.6;
+	const c = quiet ? 0.07 : dark ? 0.15 : 0.17;
+	return alpha === 1 ? `oklch(${l} ${c} ${hue})` : `oklch(${l} ${c} ${hue} / ${alpha})`;
+}
+
+// two kinds close in hue are told apart by a dashed ring
 export const KIND_DASHED: ReadonlySet<string> = new Set([
 	CorrelationKind.JARM,
 	CorrelationKind.CERT_ISSUER
