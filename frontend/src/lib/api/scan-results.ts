@@ -11,7 +11,8 @@ import type {
 	GonePage,
 	HostPage,
 	MergedLeafPage,
-	ScanStructure
+	ScanStructure,
+	HostBrief
 } from '$lib/utilities/endpoints';
 import type { HttpAssetDetail } from '$lib/types/http-asset';
 import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
@@ -144,6 +145,17 @@ export const endpointsApi = {
 		const scope = host ? `&host=${encodeURIComponent(host)}` : '';
 		return api.get<EndpointSummary>(
 			`/endpoints/summary?${scopeQuery({ projectId, scanId })}${scope}`
+		);
+	},
+
+	async hostBrief(
+		projectId: string,
+		scanId: string,
+		host: string,
+		hideStatic: boolean
+	): Promise<HostBrief> {
+		return api.get<HostBrief>(
+			`/endpoints/host?${scopeQuery({ projectId, scanId })}&host=${encodeURIComponent(host)}&hide_static=${hideStatic}`
 		);
 	},
 

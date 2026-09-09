@@ -21,6 +21,7 @@ from shared.models.endpoint import (
     EndpointSummary,
     EndpointTree,
     GonePage,
+    HostBrief,
     HostPage,
     MergedLeafPage,
     ScanStructure,
@@ -145,6 +146,19 @@ async def endpoint_summary(
     host: Annotated[str | None, Query(description="Scope to one host")] = None,
 ):
     return await service.summary(scope, host)
+
+
+@router.get("/host", response_model=HostBrief)
+async def endpoint_host_brief(
+    _current_user: CurrentUser,
+    service: Annotated[EndpointService, Depends(get_service)],
+    scope: EndpointScope,
+    host: Annotated[str, Query(description="Hostname", max_length=500)],
+    hide_static: Annotated[
+        bool, Query(description="Count without static files")
+    ] = True,
+):
+    return await service.host_brief(scope, host, hide_static)
 
 
 @router.get("/coverage", response_model=list[CoverageRead])

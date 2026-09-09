@@ -214,6 +214,7 @@ class EndpointFilter(BaseModel):
     probed: bool | None = None
     new: bool = False
     hide_static: bool = False
+    hide_root_only: bool = False
     sort: str = "path"
     direction: str = "asc"
     page: int = 1
@@ -278,6 +279,26 @@ class TreeLeaf(BaseModel):
     interest: list[str] = PydanticField(default_factory=list)
 
 
+class FolderChip(BaseModel):
+    """One top-level folder of a host, sized and toned so a host row reads as a one-line sitemap."""
+
+    name: str
+    path: str
+    count: int = 0
+    glyph: str = "folder"
+    archive_only: bool = False
+    query: str
+
+
+class HostIdentity(BaseModel):
+    """What the host's own HTTP asset says it is."""
+
+    status_code: int | None = None
+    title: str | None = None
+    tech: list[str] = PydanticField(default_factory=list)
+    http_asset_id: uuid.UUID | None = None
+
+
 class TreeNode(BaseModel):
     """One directory or host in the site tree, counted through the same filter as the table."""
 
@@ -311,17 +332,51 @@ class TreeNode(BaseModel):
     lazy: bool = False
     folders: int = 0
     top_folders: list[str] = PydanticField(default_factory=list)
+    chips: list[FolderChip] = PydanticField(default_factory=list)
+    api: int = 0
+    walled: int = 0
+    unfiltered_count: int = 0
+    identity: HostIdentity | None = None
 
 
 class HostPage(BaseModel):
-    """One page of hosts with their rollups; a host's folders load when it is opened."""
+    """One page of hosts with their rollups, ranked by what there is to attack."""
 
     items: list[TreeNode] = PydanticField(default_factory=list)
     total: int = 0
     total_endpoints: int = 0
+    root_only: int = 0
     page: int = 1
     size: int = 50
     error: QueryError | None = None
+
+
+class ParamStat(BaseModel):
+    name: str
+    count: int = 0
+    interest: str | None = None
+
+
+class HostBrief(BaseModel):
+    """The header of one host's sitemap: identity, facts that pivot, and the parameter surface."""
+
+    host: str
+    identity: HostIdentity | None = None
+    total: int = 0
+    probed: int = 0
+    live: int = 0
+    with_params: int = 0
+    api: int = 0
+    walled: int = 0
+    interesting: int = 0
+    new: int = 0
+    gone: int = 0
+    findings: int = 0
+    previous_scan_at: datetime | None = None
+    params: list[ParamStat] = PydanticField(default_factory=list)
+    params_total: int = 0
+    by_class: dict[str, int] = PydanticField(default_factory=dict)
+    static_total: int = 0
 
 
 class MergedLeaf(BaseModel):

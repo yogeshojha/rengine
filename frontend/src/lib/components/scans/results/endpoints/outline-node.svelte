@@ -35,16 +35,8 @@
 	let open = $derived(headless || ctx.expanded.has(node.key));
 	let childDepth = $derived(headless ? depth : depth + 1);
 
-	// a host arrives without its folders; they load the first time it opens
-	let lazyChildren = $state<TreeNode[] | null>(null);
-	let lazyLoading = $state(false);
-	let lazySig = '';
-	let lazyReq = 0;
-	let children = $derived(node.lazy ? (lazyChildren ?? []) : node.children);
-	let childrenKnown = $derived(!node.lazy || lazyChildren !== null);
-
-	let folders = $derived(children.filter((c) => c.kind !== 'leaf'));
-	let leafNodes = $derived(children.filter((c) => c.kind === 'leaf'));
+	let folders = $derived(node.children.filter((c) => c.kind !== 'leaf'));
+	let leafNodes = $derived(node.children.filter((c) => c.kind === 'leaf'));
 	let ordered = $derived.by(() => {
 		if (ctx.filter.sort !== 'path') return { folders, leafNodes };
 		const dir = ctx.filter.direction === 'desc' ? -1 : 1;
@@ -52,48 +44,13 @@
 		return { folders: [...folders].sort(byName), leafNodes: [...leafNodes].sort(byName) };
 	});
 
-	let hostFilter = $derived({
-		...ctx.filter,
-		host: node.host,
-		dir_path: null,
-		subtree: true,
-		page: 1,
-		size: 1
-	});
-	let hostSig = $derived(JSON.stringify(hostFilter));
-
-	async function loadHost() {
-		const my = ++lazyReq;
-		lazyLoading = true;
-		try {
-			const res = await endpointsApi.tree(ctx.projectId, ctx.scanId, 'host', hostFilter);
-			if (my !== lazyReq) return;
-			lazyChildren = res.nodes[0]?.children ?? [];
-		} catch {
-			if (my === lazyReq) {
-				lazyChildren = [];
-				lazySig = '';
-			}
-		} finally {
-			if (my === lazyReq) lazyLoading = false;
-		}
-	}
-
-	$effect(() => {
-		void hostSig;
-		if (!node.lazy || !open) return;
-		if (hostSig === lazySig) return;
-		lazySig = hostSig;
-		untrack(() => void loadHost());
-	});
-
 	// a search opens this node only while the opened rows still fit the screen budget
 	$effect(() => {
 		const budget = ctx.budget;
 		if (!budget.enabled || headless || budget.decided.has(node.key)) return;
 		if (node.kind === 'leaf') return;
-		if (!node.lazy && !node.children.length && node.direct_count === 0) return;
-		const cost = nodeCost(node, node.lazy ? [] : node.children);
+		if (!node.children.length && node.direct_count === 0) return;
+		const cost = nodeCost(node);
 		budget.decided.add(node.key);
 		if (budget.used + cost <= AUTO_OPEN_ROWS) {
 			budget.used += cost;
@@ -212,14 +169,11 @@
 	let hint = $derived.by(() => {
 		if (node.kind === 'group') return `each has ${node.top_folders.join(', ')}`;
 		if (!ctx.searching || open) return '';
-		const names = node.lazy ? node.top_folders : node.children.map((c) => c.name);
-		const count = node.lazy ? node.folders : node.children.length;
+		const names = node.children.map((c) => c.name);
 		if (!names.length) return '';
 		const shown = names.slice(0, 3).join(', ');
-		return count > 3 ? `in ${shown} +${count - 3}` : `in ${shown}`;
+		return names.length > 3 ? `in ${shown} +${names.length - 3}` : `in ${shown}`;
 	});
-
-	let skeletonRows = $derived(Math.min(Math.max(node.direct_count, node.folders, 1), 3));
 </script>
 
 {#if !headless}
@@ -235,6 +189,8 @@
 		focused={ctx.focusedKey === node.key}
 		unverified={node.unprobed}
 		{parentKey}
+		connectors={ctx.connectors}
+		catalog={ctx.catalog}
 		onToggle={() => ctx.toggle(node.key)}
 		onCopy={() => ctx.copyBranch(node)}
 		onWordlist={() => ctx.copyWordlist(node)}
@@ -243,116 +199,106 @@
 		onVerify={ctx.verifyBranch && node.kind !== 'group' && !ctx.merged
 			? () => ctx.verifyBranch?.(node)
 			: undefined}
+		onSend={ctx.sendBranch && node.kind !== 'group' && !ctx.merged
+			? (id) => ctx.sendBranch?.(node, id)
+			: undefined}
 	/>
 {/if}
 
 {#if open}
-	{#if node.lazy && (lazyLoading || !childrenKnown)}
-		{#each Array(skeletonRows) as _, i (i)}
-			<div class="flex items-center gap-3 border-b px-4 py-3">
-				{#each Array(childDepth) as _g, j (j)}
-					<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"
-					></span>
-				{/each}
-				<Skeleton class="h-5 flex-1" />
-				<Skeleton class="hidden h-5 w-16 sm:block" />
-			</div>
-		{/each}
-	{:else}
-		{#each ordered.folders as child (child.key)}
-			<Self node={child} depth={childDepth} {ctx} parentKey={childParent} />
-		{/each}
+	{#each ordered.folders as child (child.key)}
+		<Self node={child} depth={childDepth} {ctx} parentKey={childParent} />
+	{/each}
 
-		{#if ctx.merged}
-			{#each ordered.leafNodes as child (child.key)}
-				{#if child.leaf}
-					<EndpointRow
-						endpoint={leafToEndpoint(child.leaf, ctx.scanId)}
-						columns={ctx.columns.map((c) => c.key)}
-						terms={ctx.terms}
-						outline
-						depth={childDepth}
-						label={child.name}
-						rowKey={child.key}
-						parentKey={childParent}
-						pad={ctx.pad}
-						active={ctx.selectedId === child.leaf.id}
-						focused={ctx.focusedKey === child.key}
-						onOpen={() => ctx.openById(child.leaf!.id)}
-						onFilter={ctx.onFilter}
-					/>
-				{/if}
-			{/each}
-		{:else}
-			{#each rows as row (row.key)}
+	{#if ctx.merged}
+		{#each ordered.leafNodes as child (child.key)}
+			{#if child.leaf}
 				<EndpointRow
-					endpoint={row.endpoint}
+					endpoint={leafToEndpoint(child.leaf, ctx.scanId)}
 					columns={ctx.columns.map((c) => c.key)}
 					terms={ctx.terms}
 					outline
 					depth={childDepth}
-					label={row.kind === 'node' ? row.node.name : leafLabel(row.endpoint)}
-					rowKey={row.key}
+					label={child.name}
+					rowKey={child.key}
 					parentKey={childParent}
 					pad={ctx.pad}
-					active={ctx.selectedId === row.endpoint.id}
-					focused={ctx.focusedKey === row.key}
-					onOpen={row.kind === 'node' ? () => ctx.openById(row.endpoint.id) : ctx.openEndpoint}
+					active={ctx.selectedId === child.leaf.id}
+					focused={ctx.focusedKey === child.key}
+					onOpen={() => ctx.openById(child.leaf!.id)}
 					onFilter={ctx.onFilter}
 				/>
-			{/each}
-		{/if}
+			{/if}
+		{/each}
+	{:else}
+		{#each rows as row (row.key)}
+			<EndpointRow
+				endpoint={row.endpoint}
+				columns={ctx.columns.map((c) => c.key)}
+				terms={ctx.terms}
+				outline
+				depth={childDepth}
+				label={row.kind === 'node' ? row.node.name : leafLabel(row.endpoint)}
+				rowKey={row.key}
+				parentKey={childParent}
+				pad={ctx.pad}
+				active={ctx.selectedId === row.endpoint.id}
+				focused={ctx.focusedKey === row.key}
+				onOpen={row.kind === 'node' ? () => ctx.openById(row.endpoint.id) : ctx.openEndpoint}
+				onFilter={ctx.onFilter}
+			/>
+		{/each}
+	{/if}
 
-		{#if node.direct_count > 0}
-			{#if loading && leaves.length === 0 && merged.length === 0}
-				{#each Array(Math.min(node.direct_count, 3)) as _, i (i)}
-					<div class="flex items-center gap-3 border-b px-4 py-3">
-						{#each Array(childDepth) as _g, j (j)}
-							<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"
-							></span>
-						{/each}
-						<Skeleton class="h-5 flex-1" />
-						<Skeleton class="hidden h-5 w-16 sm:block" />
-					</div>
-				{/each}
-			{:else if ctx.merged}
-				{#each merged as leaf (leaf.key)}
-					<MergedLeafRow
-						{leaf}
-						depth={childDepth}
-						columns={ctx.columns}
-						terms={ctx.terms}
-						pad={ctx.pad}
-						parentKey={childParent}
-						active={ctx.selectedId === leaf.sample_id}
-						focused={ctx.focusedKey === leaf.key}
-						onOpen={ctx.openMerged}
-						onFilter={ctx.onFilter}
-						onHost={ctx.onHost}
-					/>
-				{/each}
-			{:else if remaining > 0}
-				<div class="flex items-center gap-x-1.5 border-b px-4 py-2 text-xs">
+	{#if node.direct_count > 0}
+		{#if loading && leaves.length === 0 && merged.length === 0}
+			{#each Array(Math.min(node.direct_count, 3)) as _, i (i)}
+				<div class="flex items-center gap-3 border-b px-4 py-3">
 					{#each Array(childDepth) as _g, j (j)}
 						<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"
 						></span>
 					{/each}
-					<span class="size-4 shrink-0"></span>
-					<button
-						type="button"
-						class="font-medium text-primary hover:underline disabled:opacity-60"
-						disabled={loading}
-						onclick={() => load(page + 1)}
-					>
-						{loading
-							? 'Loading…'
-							: `Show ${Math.min(remaining, LEAF_PAGE).toLocaleString()} more${
-									node.kind === 'host' ? '' : ` in ${node.name}`
-								}`}
-					</button>
-					<span class="text-muted-foreground">· {remaining.toLocaleString()} remaining</span>
+					<Skeleton class="h-5 flex-1" />
+					<Skeleton class="hidden h-5 w-16 sm:block" />
 				</div>
-			{/if}
+			{/each}
+		{:else if ctx.merged}
+			{#each merged as leaf (leaf.key)}
+				<MergedLeafRow
+					{leaf}
+					depth={childDepth}
+					columns={ctx.columns}
+					terms={ctx.terms}
+					pad={ctx.pad}
+					parentKey={childParent}
+					active={ctx.selectedId === leaf.sample_id}
+					focused={ctx.focusedKey === leaf.key}
+					onOpen={ctx.openMerged}
+					onFilter={ctx.onFilter}
+					onHost={ctx.onHost}
+				/>
+			{/each}
+		{:else if remaining > 0}
+			<div class="flex items-center gap-x-1.5 border-b px-4 py-2 text-xs">
+				{#each Array(childDepth) as _g, j (j)}
+					<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"
+					></span>
+				{/each}
+				<span class="size-4 shrink-0"></span>
+				<button
+					type="button"
+					class="font-medium text-primary hover:underline disabled:opacity-60"
+					disabled={loading}
+					onclick={() => load(page + 1)}
+				>
+					{loading
+						? 'Loading…'
+						: `Show ${Math.min(remaining, LEAF_PAGE).toLocaleString()} more${
+								node.kind === 'host' ? '' : ` in ${node.name}`
+							}`}
+				</button>
+				<span class="text-muted-foreground">· {remaining.toLocaleString()} remaining</span>
+			</div>
 		{/if}
 	{/if}
 {/if}

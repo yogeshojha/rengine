@@ -6,6 +6,7 @@
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import Globe from '@lucide/svelte/icons/globe';
 	import ListTree from '@lucide/svelte/icons/list-tree';
+	import Terminal from '@lucide/svelte/icons/terminal';
 
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Badge } from '$lib/components/ui/badge';
@@ -16,6 +17,7 @@
 	import TechIcon from './tech-icon.svelte';
 	import StatusMark from './endpoints/status-mark.svelte';
 	import PathBreadcrumb from './endpoints/path-breadcrumb.svelte';
+	import ProxySend from './endpoints/proxy-send.svelte';
 	import {
 		ENDPOINT_CLASS_LABELS,
 		INTEREST_LABELS,
@@ -27,7 +29,8 @@
 	import { endpointsApi } from '$lib/api/scan-results';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatShortDate } from '$lib/utilities/dates';
-	import type { EndpointDetail, EndpointRead } from '$lib/utilities/endpoints';
+	import { curlFor, type EndpointDetail, type EndpointRead } from '$lib/utilities/endpoints';
+	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
 	interface Props {
 		endpoint: EndpointRead | null;
@@ -42,6 +45,9 @@
 		onFilter?: (token: string) => void;
 		onHost?: (filter: string) => void;
 		onReveal?: (e: EndpointRead) => void;
+		connectors?: Connector[];
+		catalog?: ConnectorSpec[];
+		onSend?: (e: EndpointRead, connectorId: string) => Promise<void> | void;
 	}
 
 	let {
@@ -56,7 +62,10 @@
 		onStep,
 		onFilter,
 		onHost,
-		onReveal
+		onReveal,
+		connectors = [],
+		catalog = [],
+		onSend
 	}: Props = $props();
 
 	let detail = $state<EndpointDetail | null>(null);
@@ -135,7 +144,7 @@
 					{/if}
 				</div>
 				<Sheet.Title class="font-mono text-sm break-all">{endpoint.url}</Sheet.Title>
-				<div class="flex items-center gap-2">
+				<div class="flex flex-wrap items-center gap-2">
 					<Button
 						variant="outline"
 						size="sm"
@@ -144,6 +153,22 @@
 					>
 						<Copy class="size-3" /> Copy
 					</Button>
+					<Hint text="Copy a curl command for this endpoint">
+						{#snippet child(props)}
+							<Button
+								{...props}
+								variant="outline"
+								size="sm"
+								class="h-7 gap-1.5 text-xs"
+								onclick={() => writeClipboard(curlFor(endpoint))}
+							>
+								<Terminal class="size-3" /> curl
+							</Button>
+						{/snippet}
+					</Hint>
+					{#if onSend && connectors.length}
+						<ProxySend {connectors} {catalog} class="h-7" onSend={(id) => onSend(endpoint, id)} />
+					{/if}
 					<Button
 						variant="outline"
 						size="sm"

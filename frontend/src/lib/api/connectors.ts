@@ -1,4 +1,6 @@
 import { api } from './client';
+import { scopeQuery } from '$lib/utilities/surface-scope';
+import type { EndpointFilter } from '$lib/utilities/endpoints';
 import type {
 	Candidate,
 	CandidatePage,
@@ -65,6 +67,18 @@ export const connectorsApi = {
 
 	clear(id: string, projectId: string): Promise<{ removed: number }> {
 		return api.delete<{ removed: number }>(`/connectors/${id}/candidates?project_id=${projectId}`);
+	},
+
+	sendEndpoints(
+		id: string,
+		projectId: string,
+		scanId: string,
+		body: { endpoint_ids?: string[]; filter?: EndpointFilter; limit?: number }
+	): Promise<{ queued: number }> {
+		return api.post<{ queued: number }>(
+			`/connectors/${id}/send-endpoints?${scopeQuery({ projectId, scanId })}`,
+			body
+		);
 	},
 
 	send(id: string, projectId: string, ids: string[]): Promise<{ queued: number }> {

@@ -560,6 +560,30 @@ def _build_param_lookup() -> dict[str, tuple[str, ...]]:
 
 _PARAM_LOOKUP: dict[str, tuple[str, ...]] = _build_param_lookup()
 
+# the order a parameter's reasons are reported in, most consequential first
+PARAM_INTEREST_ORDER: tuple[str, ...] = (
+    ParamInterest.RCE.value,
+    ParamInterest.SQLI.value,
+    ParamInterest.SSRF.value,
+    ParamInterest.TRAVERSAL.value,
+    ParamInterest.OPEN_REDIRECT.value,
+    ParamInterest.IDOR.value,
+    ParamInterest.UPLOAD.value,
+    ParamInterest.SSTI.value,
+    ParamInterest.DEBUG.value,
+    ParamInterest.XSS.value,
+)
+
+MAX_HOST_PARAMS = 60
+MAX_HOST_CHIPS = 8
+
+
+def param_interest(name: str) -> str | None:
+    hits = _PARAM_LOOKUP.get(name.lower())
+    if not hits:
+        return None
+    return min(hits, key=PARAM_INTEREST_ORDER.index)
+
 
 class PathInterest(StrEnum):
     VCS = "vcs"
@@ -645,6 +669,9 @@ PATH_INTEREST: dict[str, tuple[str, ...]] = {
         "/graphiql",
         "/graphql",
         "/.well-known/openapi",
+        "/.well-known/openid-configuration",
+        "/.well-known/oauth-authorization-server",
+        "/.well-known/ai-plugin.json",
     ),
     PathInterest.DEBUG_ENDPOINT.value: (
         "/actuator",
@@ -683,7 +710,6 @@ PATH_INTEREST: dict[str, tuple[str, ...]] = {
         "/rabbitmq",
         "/nagios",
         "/zabbix",
-        "/.well-known/",
     ),
 }
 
@@ -702,6 +728,33 @@ ADMIN_INTERESTS: frozenset[str] = frozenset(
         PathInterest.INFRA.value,
     }
 )
+
+# the one reason a host or folder row prints, most serious first; a reflected parameter flags too much to count
+WHY_INTERESTS: tuple[str, ...] = (
+    PathInterest.VCS.value,
+    PathInterest.SECRETS.value,
+    PathInterest.BACKUP.value,
+    PathInterest.ADMIN.value,
+    PathInterest.DEBUG_ENDPOINT.value,
+    PathInterest.INFRA.value,
+    PathInterest.API_DOC.value,
+    PathInterest.AUTH.value,
+    ParamInterest.RCE.value,
+    ParamInterest.SQLI.value,
+    ParamInterest.SSRF.value,
+    ParamInterest.TRAVERSAL.value,
+    ParamInterest.OPEN_REDIRECT.value,
+    ParamInterest.IDOR.value,
+    ParamInterest.UPLOAD.value,
+    ParamInterest.SSTI.value,
+    ParamInterest.DEBUG.value,
+)
+
+# a host that holds nothing beyond these is a parked name, not an application
+ROOT_NOISE_FILES: frozenset[str] = frozenset(
+    {"", "robots.txt", "sitemap.xml", "sitemap_index.xml", "favicon.ico", "humans.txt"}
+)
+ROOT_NOISE_DIRS: tuple[str, ...] = ("/.well-known/",)
 
 _DEFAULT_PORTS: dict[str, int] = {"http": 80, "https": 443}
 _EXT_RE = re.compile(r"^[A-Za-z0-9]{1,10}$")

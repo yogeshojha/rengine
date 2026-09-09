@@ -27,18 +27,26 @@
 	import FilterBar from './endpoints/filter-bar.svelte';
 	import EndpointRow from './endpoints/endpoint-row.svelte';
 	import Outline from './endpoints/outline.svelte';
+	import HostTable from './endpoints/host-table.svelte';
+	import HostCrumbs from './endpoints/host-crumbs.svelte';
+	import HostHeader from './endpoints/host-header.svelte';
 	import CoverageStrip from './endpoints/coverage-strip.svelte';
 	import EndpointDetailSheet from './endpoint-detail-sheet.svelte';
+	import { copyBranch, copyWordlist, hostNode } from './endpoints/branch-actions';
+	import { proxyLabel } from './endpoints/proxy';
 	import {
 		ENDPOINT_COLUMNS,
 		ENDPOINT_LEAD_COLUMNS,
 		DEFAULT_VISIBLE_ENDPOINT_COLUMNS,
 		DEFAULT_VISIBLE_OUTLINE_COLUMNS,
+		HOST_COLUMNS,
 		OUTLINE_HIDDEN_COLUMNS
 	} from './endpoints/columns';
 
 	import { endpointsApi } from '$lib/api/scan-results';
+	import { connectorsApi } from '$lib/api/connectors';
 	import { endpointQuerySchema } from '$lib/stores/query-schema.svelte';
+	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { STATIC_CLASSES } from '$lib/config/endpoints';
 	import { appendToken, exactToken, type Facet } from '$lib/utilities/scan-insights';
@@ -48,10 +56,12 @@
 		endpointActiveFacetCount,
 		endpointQueryChips,
 		highlightTerms,
-		locationTokens,
+		hostOnlyToken,
 		EMPTY_ENDPOINT_FACETS,
 		ENDPOINT_CLASS_TABS,
 		ENDPOINT_SORTS,
+		ENDPOINT_VIEWS,
+		HOST_SORTS,
 		type EndpointCoverageRead,
 		type EndpointFacetSet,
 		type EndpointFilter,
@@ -59,6 +69,9 @@
 		type EndpointRead as Endpoint,
 		type EndpointSummary,
 		type EndpointTree,
+		type EndpointView,
+		type FolderChip,
+		type HostBrief,
 		type HostPage,
 		type GonePage,
 		type TreeNode
@@ -100,8 +113,8 @@
 
 	const DEFAULT_SORT = { key: 'relevance', dir: -1 as const };
 	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
-	const VIEWS = ['outline', 'list'];
-	const DEFAULT_HIDE_STATIC: Record<string, boolean> = { outline: true, list: false };
+	const DEFAULT_HIDE_STATIC: Record<string, boolean> = { hosts: true, merged: true, list: false };
+	const SEND_CAP = 200;
 
 	function readPref<T>(key: string, fallback: T): T {
 		try {
@@ -118,8 +131,11 @@
 			// storage is a convenience
 		}
 	}
-	function normalizeView(raw: string | null | undefined): string {
-		return raw && VIEWS.includes(raw) ? raw : 'outline';
+	function normalizeView(raw: string | null | undefined): EndpointView {
+		if (raw === 'outline') return 'hosts';
+		return raw && (ENDPOINT_VIEWS as readonly string[]).includes(raw)
+			? (raw as EndpointView)
+			: 'hosts';
 	}
 
 	const initial = appPage.url.searchParams;
@@ -129,20 +145,22 @@
 	let outlineColumnsPref = $state<string[] | null>(
 		readPref(STORAGE_KEYS.endpointsOutlineColumns, null)
 	);
+	let hostColumnsPref = $state<string[] | null>(readPref(STORAGE_KEYS.endpointsHostColumns, null));
 	let density = $state<string>(readPref(STORAGE_KEYS.endpointsDensity, 'cozy'));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.endpointsPageSize, RESULTS_PAGE_SIZE));
-	let view = $state<string>(
-		normalizeView(initial.get('ep_view') ?? readPref(STORAGE_KEYS.endpointsView, 'outline'))
+	let view = $state<EndpointView>(
+		normalizeView(initial.get('ep_view') ?? readPref(STORAGE_KEYS.endpointsView, 'hosts'))
 	);
-	let treeMode = $state<string>(readPref(STORAGE_KEYS.endpointsTreeMode, 'host'));
 	let hideStaticPref = $state<Record<string, boolean>>(
 		readPref(STORAGE_KEYS.endpointsHideStatic, DEFAULT_HIDE_STATIC)
 	);
+	let hideRootOnly = $state<boolean>(readPref(STORAGE_KEYS.endpointsHideRootOnly, true));
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
 		initialSort[0]
 			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
 			: { ...DEFAULT_SORT }
 	);
+	let hostSort = $state<{ key: string; dir: 1 | -1 }>({ ...DEFAULT_SORT });
 	let pageIndex = $state(Math.max(0, Number(initial.get('ep_page') ?? 1) - 1));
 
 	let items = $state<Endpoint[]>([]);
@@ -161,10 +179,18 @@
 	let groupLoading = $state(false);
 	let groupReq = 0;
 	let tree = $state<EndpointTree | null>(null);
-	let hosts = $state<HostPage | null>(null);
-	let hostPage = $state(1);
 	let treeLoading = $state(false);
 	let treeReq = 0;
+	let hosts = $state<HostPage | null>(null);
+	let hostPage = $state(1);
+	let hostsLoading = $state(false);
+	let hostsReq = 0;
+	let hostCursor = $state(-1);
+	let pendingHost: 'first' | 'last' | null = null;
+	let brief = $state<HostBrief | null>(null);
+	let briefLoading = $state(false);
+	let briefReq = 0;
+	let openKeys = $state<string[]>([]);
 	let outline = $state<ReturnType<typeof Outline> | null>(null);
 	let expandedCount = $state(0);
 	let goneLens = $state(false);
@@ -190,25 +216,34 @@
 		if (active) seen = true;
 	});
 
-	let isOutline = $derived(view === 'outline');
+	let isList = $derived(view === 'list');
+	let isMerged = $derived(view === 'merged');
+	// the sitemap is a host with a query.host; the estate is the hosts lens without one
+	let inHost = $derived(view === 'hosts' && !!query.host);
+	let atEstate = $derived(view === 'hosts' && !query.host);
+	let isTree = $derived(inHost || isMerged);
 	let hideStatic = $derived(hideStaticPref[view] ?? DEFAULT_HIDE_STATIC[view] ?? false);
 	let scanTotal = $derived(facets.total);
 	let staticTotal = $derived(facets.static_total);
 	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
 	let selectedIndex = $derived(selected ? items.findIndex((e) => e.id === selected?.id) : -1);
 	let columnOptions = $derived(
-		isOutline
-			? ENDPOINT_COLUMNS.filter((c) => !OUTLINE_HIDDEN_COLUMNS.has(c.key))
-			: ENDPOINT_COLUMNS
+		atEstate
+			? HOST_COLUMNS
+			: isTree
+				? ENDPOINT_COLUMNS.filter((c) => !OUTLINE_HIDDEN_COLUMNS.has(c.key))
+				: ENDPOINT_COLUMNS
 	);
 	let visible = $derived(
-		isOutline
-			? (outlineColumnsPref ?? DEFAULT_VISIBLE_OUTLINE_COLUMNS)
-			: (listColumnsPref ?? DEFAULT_VISIBLE_ENDPOINT_COLUMNS)
+		atEstate
+			? (hostColumnsPref ?? HOST_COLUMNS.map((c) => c.key))
+			: isTree
+				? (outlineColumnsPref ?? DEFAULT_VISIBLE_OUTLINE_COLUMNS)
+				: (listColumnsPref ?? DEFAULT_VISIBLE_ENDPOINT_COLUMNS)
 	);
 	let shownColumns = $derived(columnOptions.filter((c) => visible.includes(c.key)));
-	let filtered = $derived(endpointActiveFacetCount(query) > 0 || !!query.search);
-	let chips = $derived(endpointQueryChips(query));
+	let filtered = $derived(endpointActiveFacetCount({ ...query, host: '' }) > 0 || !!query.search);
+	let chips = $derived(endpointQueryChips(query).filter((c) => !(inHost && c.id === 'host')));
 	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
 	let known = $derived((name: string) => endpointQuerySchema.byName.has(name));
 	let terms = $derived(highlightTerms(query.search, known));
@@ -216,12 +251,22 @@
 	let classTabs = $derived(
 		hideStatic ? ENDPOINT_CLASS_TABS.filter((t) => !STATIC_CLASSES.has(t.key)) : ENDPOINT_CLASS_TABS
 	);
+	// inside a host the tabs count that host; the scan-level facets would contradict the header
 	let classCounts = $derived.by(() => {
+		if (inHost) {
+			if (!brief || brief.host !== query.host) return null;
+			const all = Object.values(brief.by_class).reduce((a, b) => a + b, 0);
+			const m: Record<string, number> = { all: hideStatic ? all - brief.static_total : all };
+			for (const [k, v] of Object.entries(brief.by_class)) m[k] = v;
+			return m;
+		}
 		if (!facetsLoaded) return null;
 		const m: Record<string, number> = { all: hideStatic ? scanTotal - staticTotal : scanTotal };
 		for (const f of facets.endpoint_class) m[f.value] = f.count;
 		return m;
 	});
+	let proxies = $derived(connectorStore.items);
+	let catalog = $derived(connectorStore.catalog);
 
 	$effect(() => {
 		if (listColumnsPref) writePref(STORAGE_KEYS.endpointsColumns, listColumnsPref);
@@ -229,11 +274,31 @@
 	$effect(() => {
 		if (outlineColumnsPref) writePref(STORAGE_KEYS.endpointsOutlineColumns, outlineColumnsPref);
 	});
+	$effect(() => {
+		if (hostColumnsPref) writePref(STORAGE_KEYS.endpointsHostColumns, hostColumnsPref);
+	});
 	$effect(() => writePref(STORAGE_KEYS.endpointsDensity, density));
 	$effect(() => writePref(STORAGE_KEYS.endpointsPageSize, pageSize));
 	$effect(() => writePref(STORAGE_KEYS.endpointsView, view));
-	$effect(() => writePref(STORAGE_KEYS.endpointsTreeMode, treeMode));
 	$effect(() => writePref(STORAGE_KEYS.endpointsHideStatic, hideStaticPref));
+	$effect(() => writePref(STORAGE_KEYS.endpointsHideRootOnly, hideRootOnly));
+
+	$effect(() => {
+		if (!projectId) return;
+		void connectorStore.load(projectId);
+		void connectorStore.loadCatalog();
+	});
+
+	// a search that is exactly one host names the host, so the sitemap opens instead of a one-row table
+	$effect(() => {
+		const search = query.search;
+		if (view !== 'hosts' || !search.trim()) return;
+		untrack(() => {
+			if (query.host) return;
+			const host = hostOnlyToken(search, known);
+			if (host) enterHost(host);
+		});
+	});
 
 	function compiled(
 		q: EndpointQuery,
@@ -299,40 +364,27 @@
 		}
 	}
 
-	// the outline answers the whole query: what it shows is exactly what the list would
+	// the tree answers the whole query: what it shows is exactly what the list would
 	let treeFilter = $derived(compiled(query, sort.key, sort.dir, 1, 1));
-	let treeSig = $derived(JSON.stringify(treeFilter) + treeMode);
-	let hostsSig = $derived(treeSig + '|' + hostPage);
+	let treeSig = $derived(JSON.stringify(treeFilter) + (isMerged ? '|m' : '|h'));
 	let loadedTreeSig = '';
 
 	async function loadTree() {
-		if (!ready) return;
+		if (!ready || !isTree) return;
 		const my = ++treeReq;
-		const merged = treeMode === 'merged';
-		loadedTreeSig = merged ? treeSig : hostsSig;
+		loadedTreeSig = treeSig;
 		treeLoading = true;
 		try {
-			if (merged) {
-				const res = await endpointsApi.tree(projectId, scanId, treeMode, treeFilter);
-				if (my === treeReq) {
-					tree = res;
-					hosts = null;
-				}
-			} else {
-				const res = await endpointsApi.treeHosts(projectId, scanId, {
-					...treeFilter,
-					page: hostPage,
-					size: RESULTS_PAGE_SIZE
-				});
-				if (my === treeReq) {
-					hosts = res;
-					tree = null;
-				}
-			}
+			const res = await endpointsApi.tree(
+				projectId,
+				scanId,
+				isMerged ? 'merged' : 'host',
+				treeFilter
+			);
+			if (my === treeReq) tree = res;
 		} catch {
 			if (my === treeReq) {
 				tree = null;
-				hosts = null;
 				loadedTreeSig = '';
 			}
 		} finally {
@@ -340,15 +392,71 @@
 		}
 	}
 
+	// the ranked estate ignores the host in play, so the switcher inside a host still steps through it
+	let hostsFilter = $derived({
+		...compiled({ ...query, host: '', dir: '' }, hostSort.key, hostSort.dir, 1, 1),
+		hide_root_only: hideRootOnly,
+		page: hostPage,
+		size: RESULTS_PAGE_SIZE
+	});
+	let hostsSig = $derived(JSON.stringify(hostsFilter));
+	let loadedHostsSig = '';
+
+	async function loadHosts() {
+		if (!ready || view !== 'hosts') return;
+		const my = ++hostsReq;
+		loadedHostsSig = hostsSig;
+		hostsLoading = true;
+		try {
+			const res = await endpointsApi.treeHosts(projectId, scanId, hostsFilter);
+			if (my !== hostsReq) return;
+			hosts = res;
+			if (pendingHost) {
+				const pick = pendingHost === 'first' ? res.items[0] : res.items.at(-1);
+				pendingHost = null;
+				if (pick) enterHost(pick.name);
+			}
+		} catch {
+			if (my === hostsReq) {
+				hosts = null;
+				loadedHostsSig = '';
+			}
+		} finally {
+			if (my === hostsReq) hostsLoading = false;
+		}
+	}
+
+	let briefSig = $derived(`${query.host}|${hideStatic}|${scanId}|${projectId}`);
+	let loadedBriefSig = '';
+
+	async function loadBrief() {
+		if (!ready || !inHost) return;
+		const my = ++briefReq;
+		loadedBriefSig = briefSig;
+		briefLoading = true;
+		try {
+			const res = await endpointsApi.hostBrief(projectId, scanId, query.host, hideStatic);
+			if (my === briefReq) brief = res;
+		} catch {
+			if (my === briefReq) {
+				brief = null;
+				loadedBriefSig = '';
+			}
+		} finally {
+			if (my === briefReq) briefLoading = false;
+		}
+	}
+
 	// a new query starts the host list over at page one
 	$effect(() => {
 		void treeSig;
+		void hideRootOnly;
 		untrack(() => (hostPage = 1));
 	});
 
 	let leadFilter = $derived(compiled({ ...query, search: '' }, 'path', 1, 1, 1));
 	let leadSig = $derived(JSON.stringify(leadFilter));
-	let leadFilterWithQuery = $derived({ ...leadFilter, q: query.search.trim() || null });
+	let leadFilterWithQuery = $derived({ ...leadFilter, q: treeFilter.q });
 	let groupSig = $derived(groupBy ? JSON.stringify(leadFilterWithQuery) + groupBy : '');
 	let loadedLeadSig = '';
 
@@ -400,18 +508,22 @@
 		}
 	}
 
+	// the coverage table is per run; a project view has a summary and no run to account for
 	async function loadAccount() {
 		if (!ready) return;
 		try {
-			const [c, s] = await Promise.all([
-				endpointsApi.coverage(projectId, scanId),
-				endpointsApi.summary(projectId, scanId)
-			]);
-			coverage = c;
-			summary = s;
+			summary = await endpointsApi.summary(projectId, scanId);
+		} catch {
+			summary = null;
+		}
+		if (projectWide) {
+			coverage = [];
+			return;
+		}
+		try {
+			coverage = await endpointsApi.coverage(projectId, scanId);
 		} catch {
 			coverage = [];
-			summary = null;
 		}
 	}
 
@@ -420,11 +532,15 @@
 		try {
 			if (!quiet) loadedLeadSig = '';
 			loadedTreeSig = '';
+			loadedHostsSig = '';
+			loadedBriefSig = '';
 			await Promise.all([
 				runSearch(),
 				loadFacets(),
 				loadGroups(),
-				isOutline ? loadTree() : Promise.resolve(),
+				isTree ? loadTree() : Promise.resolve(),
+				view === 'hosts' ? loadHosts() : Promise.resolve(),
+				inHost ? loadBrief() : Promise.resolve(),
 				loadAccount()
 			]);
 		} finally {
@@ -467,12 +583,25 @@
 
 	$effect(() => {
 		void treeSig;
-		void hostsSig;
-		if (!seen || !isOutline) return;
-		const sig = treeMode === 'merged' ? treeSig : hostsSig;
-		if (sig === loadedTreeSig) return;
+		if (!seen || !isTree) return;
+		if (treeSig === loadedTreeSig) return;
 		const handle = setTimeout(() => untrack(loadTree), SEARCH_DEBOUNCE_MS);
 		return () => clearTimeout(handle);
+	});
+
+	$effect(() => {
+		void hostsSig;
+		if (!seen || view !== 'hosts') return;
+		if (hostsSig === loadedHostsSig) return;
+		const handle = setTimeout(() => untrack(loadHosts), SEARCH_DEBOUNCE_MS);
+		return () => clearTimeout(handle);
+	});
+
+	$effect(() => {
+		void briefSig;
+		if (!seen || !inHost) return;
+		if (briefSig === loadedBriefSig) return;
+		untrack(() => void loadBrief());
 	});
 
 	$effect(() => {
@@ -498,7 +627,7 @@
 			set('ep_host', query.host || null);
 			set('ep_dir', query.dir || null);
 			set('ep_group', groupBy || null);
-			set('ep_view', view === 'outline' ? null : view);
+			set('ep_view', view === 'hosts' ? null : view);
 			set('ep_page', pageIndex > 0 ? String(pageIndex + 1) : null);
 			set(
 				'ep_sort',
@@ -554,12 +683,47 @@
 			toast.error('Verification could not be queued.');
 		}
 	}
+	function proxyName(connectorId: string): string {
+		const c = proxies.find((p) => p.id === connectorId);
+		return c ? proxyLabel(c, catalog) : 'the proxy';
+	}
+	async function sendBranch(node: TreeNode, connectorId: string) {
+		const filter: EndpointFilter = {
+			...treeFilter,
+			host: isMerged ? null : node.host,
+			dir_path: node.kind === 'host' ? null : node.path,
+			subtree: true
+		};
+		try {
+			const res = await connectorsApi.sendEndpoints(connectorId, projectId, scanId, {
+				filter,
+				limit: SEND_CAP
+			});
+			toast.success(
+				`${res.queued.toLocaleString()} ${res.queued === 1 ? 'request' : 'requests'} sent to ${proxyName(connectorId)}. It collects them within a few seconds.`
+			);
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'The proxy queue did not accept them.');
+		}
+	}
+	async function sendEndpoint(e: Endpoint, connectorId: string) {
+		try {
+			await connectorsApi.sendEndpoints(connectorId, projectId, scanId, {
+				endpoint_ids: [e.id]
+			});
+			toast.success(`Sent to ${proxyName(connectorId)}. It collects it within a few seconds.`);
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'The proxy queue did not accept it.');
+		}
+	}
+	let branchScope = $derived({ projectId, scanId, filter: treeFilter, merged: isMerged });
+
 	function reveal(e: Endpoint) {
 		drawerOpen = false;
 		goneLens = false;
-		view = 'outline';
-		treeMode = 'host';
-		setQuery({ ...query, search: locationTokens(e.host, e.path) });
+		view = 'hosts';
+		openKeys = [];
+		setQuery({ ...query, host: e.host, dir: '', search: exactToken('path', e.path) });
 	}
 	function step(dir: -1 | 1) {
 		const next = selectedIndex + dir;
@@ -576,12 +740,18 @@
 		}
 	}
 	function toggleSort(key: string) {
+		if (atEstate) {
+			hostSort =
+				hostSort.key === key ? { key, dir: hostSort.dir === 1 ? -1 : 1 } : { key, dir: -1 };
+			return;
+		}
 		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
 		pageIndex = 0;
 	}
 	function toggleCol(key: string) {
 		const next = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
-		if (isOutline) outlineColumnsPref = next;
+		if (atEstate) hostColumnsPref = next;
+		else if (isTree) outlineColumnsPref = next;
 		else listColumnsPref = next;
 	}
 	let goneFilter = $derived(compiled(query, sort.key, sort.dir, goneIndex + 1, pageSize));
@@ -634,6 +804,10 @@
 		query = q;
 		pageIndex = 0;
 	}
+	function setView(v: EndpointView) {
+		view = v;
+		if (v !== 'hosts') openKeys = [];
+	}
 	function setClassTab(key: string) {
 		setQuery({ ...query, endpointClass: key === 'all' ? '' : key });
 	}
@@ -657,9 +831,65 @@
 		syncUrl();
 		onTab?.('web-assets', filter);
 	}
+
+	// level 1 → level 2: a host row is a door, not a chevron
+	function enterHost(host: string, chip?: FolderChip) {
+		openKeys = chip && chip.path !== '/' ? [`${host}${chip.path}`] : [];
+		view = 'hosts';
+		hostCursor = -1;
+		setQuery({
+			...query,
+			host,
+			dir: '',
+			search: hostOnlyToken(query.search, known) ? '' : query.search
+		});
+	}
+	function leaveHost() {
+		openKeys = [];
+		setQuery({ ...query, host: '', dir: '' });
+	}
+	function stepHost(dir: -1 | 1) {
+		if (!hosts) return;
+		const at = hosts.items.findIndex((n) => n.name === query.host);
+		if (at < 0) return;
+		const next = at + dir;
+		if (next >= 0 && next < hosts.items.length) {
+			enterHost(hosts.items[next].name);
+			return;
+		}
+		const pages = Math.ceil(hosts.total / hosts.size);
+		if (dir === 1 && hosts.page < pages) {
+			pendingHost = 'first';
+			hostPage = hosts.page + 1;
+		} else if (dir === -1 && hosts.page > 1) {
+			pendingHost = 'last';
+			hostPage = hosts.page - 1;
+		}
+	}
+	async function searchHosts(term: string): Promise<TreeNode[]> {
+		const res = await endpointsApi.treeHosts(projectId, scanId, {
+			...hostsFilter,
+			q: [hostsFilter.q, `host:${JSON.stringify(term)}`].filter(Boolean).join(' and '),
+			page: 1
+		});
+		return res.items;
+	}
+	function acrossHosts() {
+		openKeys = [];
+		setQuery({ ...query, host: '', dir: '' });
+		view = 'merged';
+	}
+	let hostRoot = $derived(tree?.nodes[0] ?? null);
+	let hostStandIn = $derived(hostRoot ?? hostNode(query.host));
+
 	function scrollCursor() {
 		document
 			.querySelector(`[data-endpoint-row-index="${cursor}"]`)
+			?.scrollIntoView({ block: 'nearest' });
+	}
+	function scrollHostCursor() {
+		document
+			.querySelector(`[data-host-row-index="${hostCursor}"]`)
 			?.scrollIntoView({ block: 'nearest' });
 	}
 	function onKey(e: KeyboardEvent) {
@@ -672,7 +902,44 @@
 			searchRef?.focus();
 			return;
 		}
-		if (isOutline || typing || drawerOpen || !items.length) return;
+		if (typing || drawerOpen) return;
+		if (inHost) {
+			if (e.key === '[') {
+				e.preventDefault();
+				stepHost(-1);
+			} else if (e.key === ']') {
+				e.preventDefault();
+				stepHost(1);
+			} else if (e.key === 'Backspace') {
+				e.preventDefault();
+				leaveHost();
+			}
+			return;
+		}
+		if (atEstate) {
+			const rows = hosts?.items ?? [];
+			if (!rows.length) return;
+			if (e.key === 'j' || e.key === 'ArrowDown') {
+				e.preventDefault();
+				hostCursor = Math.min(hostCursor + 1, rows.length - 1);
+				scrollHostCursor();
+			} else if (e.key === 'k' || e.key === 'ArrowUp') {
+				e.preventDefault();
+				hostCursor = Math.max(hostCursor - 1, 0);
+				scrollHostCursor();
+			} else if (
+				(e.key === 'Enter' || e.key === 'ArrowRight') &&
+				hostCursor >= 0 &&
+				rows[hostCursor]
+			) {
+				e.preventDefault();
+				enterHost(rows[hostCursor].name);
+			} else if (e.key === 'Escape') {
+				hostCursor = -1;
+			}
+			return;
+		}
+		if (!isList || !items.length) return;
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
 			cursor = Math.min(cursor + 1, items.length - 1);
@@ -700,7 +967,7 @@
 		bind:ref={searchRef}
 		store={endpointQuerySchema}
 		recentsKey={STORAGE_KEYS.endpointsRecentQueries}
-		hint="is:param and is:live"
+		hint={inHost ? 'path:/api or is:param' : 'is:param and is:live'}
 		value={query.search}
 		facets={facets as unknown as Record<string, Facet[]>}
 		busy={loading && !!query.search}
@@ -712,7 +979,7 @@
 		onChange={(v) => setQuery({ ...query, search: v })}
 		onSubmit={flushSearch}
 	/>
-	{#if isOutline && !goneLens && crumbs.length}
+	{#if isTree && !goneLens && crumbs.length}
 		<div
 			class="absolute inset-x-0 top-full flex h-8 items-center gap-1 overflow-hidden border-x border-b bg-card/95 px-4 text-xs shadow-sm backdrop-blur"
 		>
@@ -741,9 +1008,9 @@
 	{:else if filtered || (hideStatic && scanTotal > 0)}
 		<EmptyState
 			icon={SearchX}
-			title="No endpoints match"
+			title={atEstate ? 'No host matches' : 'No endpoints match'}
 			description={hideStatic && !filtered
-				? 'Every endpoint on this scan is a static file. Show static files to see them.'
+				? 'Every endpoint here is a static file. Show static files to see them.'
 				: 'Widen the search or remove a filter.'}
 			class="rounded-none border-0 bg-transparent py-16"
 		>
@@ -752,7 +1019,7 @@
 					size="sm"
 					variant="outline"
 					class="gap-2"
-					onclick={() => setQuery(emptyEndpointQuery())}
+					onclick={() => setQuery({ ...emptyEndpointQuery(), host: query.host })}
 				>
 					<X class="h-4 w-4" /> Clear filters
 				</Button>
@@ -761,6 +1028,17 @@
 					Show static files
 				</Button>
 			{/if}
+		</EmptyState>
+	{:else if atEstate && hideRootOnly && (hosts?.root_only ?? 0) > 0}
+		<EmptyState
+			icon={Waypoints}
+			title="Nothing beyond root pages"
+			description="Every host here holds only its root page. Show them to see the list."
+			class="rounded-none border-0 bg-transparent py-16"
+		>
+			<Button size="sm" variant="outline" onclick={() => (hideRootOnly = false)}>
+				Show root-only hosts
+			</Button>
 		</EmptyState>
 	{:else}
 		<EmptyState
@@ -789,15 +1067,48 @@
 		<CountTabs tabs={classTabs} value={classTab} counts={classCounts} onChange={setClassTab} />
 	</div>
 
-	<CoverageStrip
-		{coverage}
-		{summary}
-		{projectWide}
-		hidden={hideStatic ? staticTotal : 0}
-		onShowStatic={() => setHideStatic(false)}
-		onShowNew={() => setQuery({ ...query, newOnly: true })}
-		onShowGone={projectWide ? undefined : () => (goneLens = true)}
-	/>
+	{#if inHost}
+		<HostCrumbs
+			host={query.host}
+			ranked={hosts?.items ?? []}
+			offset={hosts ? (hosts.page - 1) * hosts.size : 0}
+			total={hosts?.total ?? 0}
+			onLeave={leaveHost}
+			onSwitch={(h) => enterHost(h)}
+			onStep={stepHost}
+			search={searchHosts}
+		/>
+		<HostHeader
+			host={query.host}
+			{brief}
+			loading={briefLoading}
+			connectors={proxies}
+			{catalog}
+			onPivot={showInList}
+			onNew={() => setQuery({ ...query, newOnly: true })}
+			onFindings={onTab
+				? () => onTab('vulnerabilities', exactToken('host', query.host))
+				: undefined}
+			onWebAsset={onTab ? () => showHost(exactToken('host', query.host)) : undefined}
+			onCopy={() => copyBranch(branchScope, hostStandIn)}
+			onWordlist={() => copyWordlist(branchScope, hostStandIn)}
+			onVerify={projectWide ? undefined : () => verifyBranch(hostStandIn)}
+			onSend={proxies.length ? (id) => sendBranch(hostStandIn, id) : undefined}
+			onAcross={acrossHosts}
+		/>
+	{:else}
+		<CoverageStrip
+			{coverage}
+			{summary}
+			{projectWide}
+			hidden={hideStatic ? staticTotal : 0}
+			rootOnly={atEstate && hideRootOnly ? (hosts?.root_only ?? 0) : 0}
+			onShowStatic={() => setHideStatic(false)}
+			onShowRootOnly={() => (hideRootOnly = false)}
+			onShowNew={() => setQuery({ ...query, newOnly: true })}
+			onShowGone={projectWide ? undefined : () => (goneLens = true)}
+		/>
+	{/if}
 
 	<FilterBar
 		{query}
@@ -809,20 +1120,21 @@
 		onToggleColumn={toggleCol}
 		{density}
 		onDensity={(d) => (density = d)}
-		sorts={ENDPOINT_SORTS}
-		sortKey={sort.key}
-		sortDir={sort.dir}
+		sorts={atEstate ? HOST_SORTS : ENDPOINT_SORTS}
+		sortKey={atEstate ? hostSort.key : sort.key}
+		sortDir={atEstate ? hostSort.dir : sort.dir}
 		onSort={toggleSort}
 		{refreshing}
 		onRefresh={refresh}
 		{groupBy}
 		onGroupBy={(key) => (groupBy = key)}
 		{view}
-		onView={(v) => (view = normalizeView(v))}
+		onView={setView}
+		{inHost}
 		{hideStatic}
 		onHideStatic={setHideStatic}
-		{treeMode}
-		onTreeMode={(m) => (treeMode = m)}
+		{hideRootOnly}
+		onHideRootOnly={(v) => (hideRootOnly = v)}
 		{expandedCount}
 		onCollapseAll={() => outline?.collapseAll()}
 		goneCount={summary?.gone ?? 0}
@@ -850,7 +1162,12 @@
 			{/each}
 			<button
 				class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-				onclick={() => setQuery({ ...emptyEndpointQuery(), search: query.search })}
+				onclick={() =>
+					setQuery({
+						...emptyEndpointQuery(),
+						search: query.search,
+						host: inHost ? query.host : ''
+					})}
 				aria-label="Clear all filters"
 			>
 				Clear all
@@ -938,10 +1255,54 @@
 				/>
 			{/if}
 		{/if}
-	{:else if isOutline}
-		{#if errored && !tree && !hosts}
+	{:else if atEstate}
+		{#if hosts?.error}
+			<EmptyState
+				icon={SearchX}
+				title="That query could not run"
+				description={hosts.error.message}
+				class="rounded-none border-0 bg-transparent py-16"
+			/>
+		{:else if errored && !hosts}
 			{@render retryState()}
-		{:else if !treeLoading && ((tree && tree.nodes.length === 0) || (hosts && hosts.items.length === 0))}
+		{:else if !hostsLoading && hosts && hosts.items.length === 0}
+			{@render emptyStates()}
+		{:else}
+			<HostTable
+				page={hosts}
+				loading={hostsLoading}
+				searching={filtered}
+				{terms}
+				columns={shownColumns}
+				pad={rowPad}
+				cursor={hostCursor}
+				sortKey={hostSort.key}
+				sortDir={hostSort.dir}
+				connectors={proxies}
+				{catalog}
+				onSort={toggleSort}
+				onPage={(p) => (hostPage = p)}
+				onEnter={(h) => enterHost(h)}
+				onEnterFolder={(h, chip) => enterHost(h, chip)}
+				onCopy={(node) => copyBranch(branchScope, node)}
+				onWordlist={(node) => copyWordlist(branchScope, node)}
+				onList={(node) => showInList(node.query)}
+				onVerify={projectWide ? undefined : verifyBranch}
+				onSend={proxies.length ? sendBranch : undefined}
+				onShowRootOnly={() => (hideRootOnly = false)}
+			/>
+		{/if}
+	{:else if isTree}
+		{#if tree?.error}
+			<EmptyState
+				icon={SearchX}
+				title="That query could not run"
+				description={tree.error.message}
+				class="rounded-none border-0 bg-transparent py-16"
+			/>
+		{:else if errored && !tree}
+			{@render retryState()}
+		{:else if !treeLoading && tree && tree.nodes.length === 0}
 			{@render emptyStates()}
 		{:else}
 			<Outline
@@ -949,9 +1310,10 @@
 				{projectId}
 				{scanId}
 				{tree}
-				{hosts}
 				loading={treeLoading}
-				merged={treeMode === 'merged'}
+				merged={isMerged}
+				rooted={inHost}
+				{openKeys}
 				filter={treeFilter}
 				{terms}
 				columns={shownColumns}
@@ -962,14 +1324,16 @@
 				selectedId={drawerOpen ? (selected?.id ?? null) : null}
 				sortKey={sort.key}
 				sortDir={sort.dir}
+				connectors={proxies}
+				{catalog}
 				onSort={toggleSort}
 				onOpen={open}
 				onFilter={applyDsl}
 				onShowInList={showInList}
 				onHost={pivotHost}
-				onHostPage={(p) => (hostPage = p)}
 				onExpandedChange={(n) => (expandedCount = n)}
 				onVerify={projectWide ? undefined : verifyBranch}
+				onSend={proxies.length ? sendBranch : undefined}
 				edgeEl={headEl}
 				onCrumbs={(c) => (crumbs = c)}
 			/>
@@ -1052,11 +1416,14 @@
 	scanId={selectedScanId || scanId}
 	open={drawerOpen}
 	onOpenChange={(o) => (drawerOpen = o)}
-	index={isOutline ? -1 : selectedIndex}
+	index={isList ? selectedIndex : -1}
 	pageOffset={pageIndex * pageSize}
-	total={isOutline ? 0 : total}
+	total={isList ? total : 0}
 	onStep={step}
 	onFilter={applyDsl}
 	onHost={showHost}
 	onReveal={reveal}
+	connectors={proxies}
+	{catalog}
+	onSend={proxies.length ? sendEndpoint : undefined}
 />

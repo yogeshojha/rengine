@@ -16,12 +16,14 @@ from shared.definitions.connectors import (
     DEFAULT_QUEUE_THRESHOLD,
     DEFAULT_QUIET_MINUTES,
     MAX_NAME,
+    MAX_PENDING_ACTIONS,
     ActionKind,
     CandidateState,
     ConnectorKind,
     SourceTool,
     SyncTrigger,
 )
+from shared.models.endpoint import EndpointFilter
 from shared.utils.datetime import utc_now
 
 
@@ -128,6 +130,19 @@ class ActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     ids: list[uuid.UUID] = PydanticField(default_factory=list, max_length=200)
+    kind: str = PydanticField(default=ActionKind.REPEATER.value, max_length=16)
+
+
+class EndpointActionRequest(BaseModel):
+    """Endpoints to hand to the proxy: chosen rows, or everything a filter names, capped."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    endpoint_ids: list[uuid.UUID] = PydanticField(default_factory=list, max_length=200)
+    filter: EndpointFilter | None = None
+    limit: int = PydanticField(
+        default=MAX_PENDING_ACTIONS, ge=1, le=MAX_PENDING_ACTIONS
+    )
     kind: str = PydanticField(default=ActionKind.REPEATER.value, max_length=16)
 
 

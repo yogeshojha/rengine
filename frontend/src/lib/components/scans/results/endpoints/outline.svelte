@@ -6,7 +6,6 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import ListHeader from '../table/list-header.svelte';
-	import ResultsPagination from '../table/results-pagination.svelte';
 	import OutlineNode from './outline-node.svelte';
 	import { OUTLINE_LEAD_COLUMNS } from './columns';
 	import {
@@ -19,42 +18,45 @@
 	import type { TableColumn } from '../table/columns';
 	import { endpointsApi } from '$lib/api/scan-results';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
-	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { copyBranch, copyWordlist, type BranchScope } from './branch-actions';
 	import type {
 		EndpointFilter,
 		EndpointRead,
 		EndpointTree,
-		HostPage,
 		MergedLeaf,
 		TreeNode
 	} from '$lib/utilities/endpoints';
+	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
 	interface Props {
 		projectId: string;
 		scanId: string;
 		tree?: EndpointTree | null;
-		hosts?: HostPage | null;
 		loading?: boolean;
 		merged?: boolean;
+		rooted?: boolean;
+		embedded?: boolean;
+		openKeys?: string[];
 		filter: EndpointFilter;
 		terms?: string[];
 		columns: TableColumn[];
 		pad?: string;
 		active?: boolean;
 		paused?: boolean;
-		embedded?: boolean;
 		searching?: boolean;
 		selectedId?: string | null;
 		sortKey: string;
 		sortDir: 1 | -1;
+		connectors?: Connector[];
+		catalog?: ConnectorSpec[];
 		onSort: (key: string) => void;
 		onOpen: (e: EndpointRead) => void;
 		onFilter: (token: string) => void;
 		onShowInList?: (token: string) => void;
 		onHost: (host: string) => void;
-		onHostPage?: (page: number) => void;
 		onExpandedChange?: (count: number) => void;
 		onVerify?: (node: TreeNode) => void;
+		onSend?: (node: TreeNode, connectorId: string) => void;
 		edgeEl?: HTMLElement | null;
 		onCrumbs?: (crumbs: Crumb[]) => void;
 	}
@@ -63,34 +65,35 @@
 		projectId,
 		scanId,
 		tree = null,
-		hosts = null,
 		loading = false,
 		merged = false,
+		rooted = false,
+		embedded = false,
+		openKeys = [],
 		filter,
 		terms = [],
 		columns,
 		pad = 'py-3',
 		active = true,
 		paused = false,
-		embedded = false,
 		searching = false,
 		selectedId = null,
 		sortKey,
 		sortDir,
+		connectors = [],
+		catalog = [],
 		onSort,
 		onOpen,
 		onFilter,
 		onShowInList,
 		onHost,
-		onHostPage,
 		onExpandedChange,
 		onVerify,
+		onSend,
 		edgeEl = null,
 		onCrumbs
 	}: Props = $props();
 
-	const COPY_CAP = 5000;
-	const COPY_PAGE = 200;
 	const REMEMBER_CAP = 400;
 
 	const expanded = new SvelteSet<string>();
@@ -99,12 +102,15 @@
 	let focusedKey = $state('');
 	let container = $state<HTMLElement | null>(null);
 
-	let roots = $derived(hosts ? hosts.items : (tree?.nodes ?? []));
-	// merged and embedded trees have one synthetic root whose children are the real top level
-	let headless = $derived(merged || embedded);
+	let roots = $derived(tree?.nodes ?? []);
+	// a tree always has exactly one root here, and the root is never a row: the header above it is
+	let headless = $derived(merged || embedded || rooted);
 	let shownRoots = $derived(headless ? roots.slice(0, 1) : roots);
+	let rootName = $derived(roots[0]?.name ?? '');
 	let rememberKey = $derived(
-		embedded ? '' : `${STORAGE_KEYS.endpointsExpanded}:${scanId}:${merged ? 'merged' : 'host'}`
+		embedded
+			? ''
+			: `${STORAGE_KEYS.endpointsExpanded}:${scanId}:${merged ? 'merged' : `host:${rootName}`}`
 	);
 
 	function remembered(): string[] {
@@ -129,7 +135,7 @@
 	$effect(() => {
 		const key =
 			roots.map((n) => n.key).join('|') + (searching ? '|s' : '') + (headless ? '|h' : '');
-		if ((!tree && !hosts) || key === autoKey) return;
+		if (!tree || key === autoKey) return;
 		autoKey = key;
 		expanded.clear();
 		focusedKey = '';
@@ -140,7 +146,29 @@
 				if (keys.has(k) || [...keys].some((root) => k.startsWith(root))) expanded.add(k);
 			}
 		}
+		for (const k of untrack(() => openKeys)) openWithAncestors(k);
 	});
+
+	// a folder chip on the host row lands here already open, through whatever group folds it
+	$effect(() => {
+		const keys = openKeys;
+		if (!tree) return;
+		untrack(() => {
+			for (const k of keys) openWithAncestors(k);
+		});
+	});
+
+	function pathTo(nodes: TreeNode[], key: string, trail: string[] = []): string[] | null {
+		for (const n of nodes) {
+			if (n.key === key) return [...trail, n.key];
+			const found = pathTo(n.children, key, [...trail, n.key]);
+			if (found) return found;
+		}
+		return null;
+	}
+	function openWithAncestors(key: string) {
+		for (const k of pathTo(roots, key) ?? [key]) expanded.add(k);
+	}
 
 	$effect(() => {
 		onExpandedChange?.(expanded.size);
@@ -169,79 +197,7 @@
 		void openById(leaf.sample_id);
 	}
 
-	async function copyBranch(node: TreeNode) {
-		const base: EndpointFilter = {
-			...filter,
-			host: merged ? null : node.host,
-			dir_path: node.kind === 'host' ? null : node.path,
-			subtree: true,
-			sort: 'path',
-			direction: 'asc',
-			size: COPY_PAGE,
-			page: 1
-		};
-		const urls: string[] = [];
-		try {
-			for (let page = 1; urls.length < COPY_CAP; page++) {
-				const res = await endpointsApi.search(projectId, scanId, { ...base, page });
-				urls.push(...res.items.map((e) => e.url));
-				if (res.items.length < COPY_PAGE || urls.length >= res.total) break;
-			}
-			const unique = [...new Set(urls)].slice(0, COPY_CAP);
-			await writeClipboard(unique.join('\n'));
-			toast.success(
-				`Copied ${unique.length.toLocaleString()} ${unique.length === 1 ? 'URL' : 'URLs'}${
-					urls.length >= COPY_CAP ? ' (first 5,000)' : ''
-				}`
-			);
-		} catch {
-			toast.error('The URLs could not be copied.');
-		}
-	}
-
-	async function collectUrls(node: TreeNode): Promise<{ urls: string[]; capped: boolean }> {
-		const base: EndpointFilter = {
-			...filter,
-			host: merged ? null : node.host,
-			dir_path: node.kind === 'host' ? null : node.path,
-			subtree: true,
-			sort: 'path',
-			direction: 'asc',
-			size: COPY_PAGE,
-			page: 1
-		};
-		const urls: string[] = [];
-		for (let page = 1; urls.length < COPY_CAP; page++) {
-			const res = await endpointsApi.search(projectId, scanId, { ...base, page });
-			urls.push(...res.items.map((e) => e.url));
-			if (res.items.length < COPY_PAGE || urls.length >= res.total) break;
-		}
-		return { urls: [...new Set(urls)].slice(0, COPY_CAP), capped: urls.length >= COPY_CAP };
-	}
-
-	// paths relative to the folder, one per line: what ffuf wants when you point it at a sibling host
-	async function copyWordlist(node: TreeNode) {
-		try {
-			const { urls, capped } = await collectUrls(node);
-			const prefix = node.kind === 'host' || node.kind === 'group' ? '/' : node.path;
-			const words = new SvelteSet<string>();
-			for (const raw of urls) {
-				try {
-					const path = new URL(raw).pathname;
-					const rel = path.startsWith(prefix) ? path.slice(prefix.length) : path.replace(/^\//, '');
-					if (rel) words.add(rel);
-				} catch {
-					// an unparsable url has no path to offer
-				}
-			}
-			await writeClipboard([...words].sort().join('\n'));
-			toast.success(
-				`Copied ${words.size.toLocaleString()} ${words.size === 1 ? 'path' : 'paths'}${capped ? ' (first 5,000 URLs)' : ''}`
-			);
-		} catch {
-			toast.error('The paths could not be copied.');
-		}
-	}
+	let branchScope = $derived<BranchScope>({ projectId, scanId, filter, merged });
 
 	let ctx = $derived<OutlineContext>({
 		projectId,
@@ -256,6 +212,8 @@
 		budget,
 		focusedKey,
 		selectedId,
+		connectors,
+		catalog,
 		toggle,
 		openEndpoint: onOpen,
 		openById,
@@ -263,9 +221,10 @@
 		onFilter,
 		onShowInList: onShowInList ?? onFilter,
 		onHost,
-		copyBranch,
-		copyWordlist,
-		verifyBranch: onVerify
+		copyBranch: (node) => copyBranch(branchScope, node),
+		copyWordlist: (node) => copyWordlist(branchScope, node),
+		verifyBranch: onVerify,
+		sendBranch: onSend
 	});
 
 	function rows(): HTMLElement[] {
@@ -319,7 +278,7 @@
 		}
 	}
 
-	let pending = $derived(loading && !tree && !hosts);
+	let pending = $derived(loading && !tree);
 
 	// the ancestors of the first visible row are reported to the head, which pins them outside the card
 	let crumbs: Crumb[] = [];
@@ -386,7 +345,6 @@
 	});
 	$effect(() => {
 		void expanded.size;
-		void hosts;
 		void tree;
 		onScroll();
 	});
@@ -441,16 +399,5 @@
 		<p class="border-b px-4 py-2 text-[11px] text-muted-foreground">
 			The tree stops at {tree.total_nodes.toLocaleString()} folders. Narrow the search to see the rest.
 		</p>
-	{/if}
-
-	{#if hosts && hosts.total > hosts.size && onHostPage}
-		<ResultsPagination
-			total={hosts.total}
-			page={hosts.page - 1}
-			pageSize={hosts.size}
-			noun="host"
-			plural="hosts"
-			onPage={(p) => onHostPage(p + 1)}
-		/>
 	{/if}
 </div>

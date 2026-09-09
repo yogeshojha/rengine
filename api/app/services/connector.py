@@ -838,6 +838,48 @@ class ConnectorService:
         await self.session.commit()
         return len(picked)
 
+    async def queue_endpoint_actions(
+        self,
+        connector_id: uuid.UUID,
+        project_id: uuid.UUID,
+        endpoints: list[Endpoint],
+        kind: str,
+    ) -> int:
+        """Hand discovered endpoints to the proxy, the same queue the candidates use."""
+        row = await self.get(connector_id, project_id)
+        if kind not in {k.value for k in ActionKind}:
+            msg = f"Unknown action {kind!r}."
+            raise ConnectorError(msg)
+        rows = [e for e in endpoints if e.project_id == project_id]
+        if not rows:
+            msg = "Nothing was selected."
+            raise ConnectorError(msg)
+        pending = await self.session.scalar(
+            select(func.count())
+            .select_from(ConnectorAction)
+            .where(
+                ConnectorAction.connector_id == row.id,
+                ConnectorAction.delivered_at.is_(None),
+            )
+        )
+        if (pending or 0) + len(rows) > MAX_PENDING_ACTIONS:
+            msg = f"{MAX_PENDING_ACTIONS} actions are already waiting to be collected."
+            raise ConnectorError(msg)
+        self.session.add_all(
+            [
+                ConnectorAction(
+                    connector_id=row.id,
+                    kind=kind,
+                    url=e.url,
+                    method=(e.methods or ["GET"])[0],
+                    label=e.path[:120],
+                )
+                for e in rows
+            ]
+        )
+        await self.session.commit()
+        return len(rows)
+
     async def take_notices(self, row: Connector) -> list[NoticeRead]:
         """What reNgine wants said while the tester is still testing. Delivered once."""
         pending = (

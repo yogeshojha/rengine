@@ -1,9 +1,22 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Text, cast, desc, exists, func, select, text
+from sqlalchemy import (
+    Integer,
+    Text,
+    and_,
+    cast,
+    desc,
+    exists,
+    func,
+    literal,
+    or_,
+    select,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, array
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +36,7 @@ from app.services.asset_query import (
     endpoint_status_class,
     parse_query,
     query_error_for,
+    vuln_suppressed,
 )
 from app.services.endpoint_tree import (
     anomaly_for,
@@ -34,10 +48,16 @@ from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, ENDPOINT_QUERY
 from shared.definitions.endpoints import (
     ADMIN_INTERESTS,
+    ARCHIVE_SOURCES,
     CLASS_LABELS,
     COVERAGE_SOURCE_LABELS,
     INTEREST_LABELS,
+    MAX_HOST_CHIPS,
+    MAX_HOST_PARAMS,
     MAX_TREE_ROWS,
+    PARAM_INTEREST_ORDER,
+    ROOT_NOISE_DIRS,
+    ROOT_NOISE_FILES,
     SENSITIVE_INTERESTS,
     SOURCE_HELP,
     SOURCE_KIND,
@@ -46,6 +66,7 @@ from shared.definitions.endpoints import (
     EndpointClass,
     PathInterest,
     folder_glyph,
+    param_interest,
 )
 from shared.logging import get_logger
 from shared.models.asset_query import QueryError, QueryGroups, QueryLeads
@@ -61,16 +82,22 @@ from shared.models.endpoint import (
     EndpointRead,
     EndpointSummary,
     EndpointTree,
+    FolderChip,
     GonePage,
+    HostBrief,
+    HostIdentity,
     HostPage,
     MergedLeaf,
     MergedLeafPage,
+    ParamStat,
     SourceEvidence,
     TreeNode,
     VerifyBranchRequest,
     VerifyBranchResponse,
 )
+from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan
+from shared.models.vulnerability import Vulnerability
 from shared.services.celery_dispatch import dispatch_endpoint_verify
 from shared.utils.datetime import utc_now
 
@@ -78,14 +105,50 @@ logger = get_logger(__name__)
 
 _FACET_LIMIT = 30
 _MERGED_HOST_SAMPLE = 12
-_TOP_FOLDERS = 3
 _HOST_PAGE_MAX = 200
+_HTTP_OK = 200
+_W_SENSITIVE = 4.0
+_W_CONTROL = 2.0
+_W_AUTH = 1.5
+_W_API = 1.5
+_W_SIZE = 0.5
 _AUTH_WALL = (401, 403)
 _STATUS_CLASSES = ("2xx", "3xx", "4xx", "5xx", "none")
 
 
 def _is_static():
     return static_clause()
+
+
+def _root_noise():
+    """The rows every parked hostname has: its root, robots, favicon and .well-known."""
+    return or_(
+        and_(
+            Endpoint.dir_path == "/",
+            func.coalesce(Endpoint.filename, "").in_(tuple(sorted(ROOT_NOISE_FILES))),
+        ),
+        *[Endpoint.dir_path.like(f"{d}%") for d in ROOT_NOISE_DIRS],
+    )
+
+
+def _archive_only_sources():
+    return cast(Endpoint.sources, JSONB).contained_by(
+        cast(literal(json.dumps(sorted(ARCHIVE_SOURCES))), JSONB)
+    )
+
+
+def _narrowed(f: EndpointFilter) -> bool:
+    """Whether anything but the static switch constrains the rows."""
+    return bool(
+        f.q
+        or f.dir_path
+        or f.endpoint_class
+        or f.source
+        or f.interest
+        or f.status_class
+        or f.probed is not None
+        or f.new
+    )
 
 
 def _gone_from(previous_scan_id: UUID, scan_id: UUID):
@@ -569,7 +632,7 @@ class EndpointService:
         return {host: int(n) for host, n in rows.all()}
 
     async def hosts(self, scope: ScopeLike, f: EndpointFilter) -> HostPage:
-        """The hosts of the outline, rolled up in SQL so ten thousand of them page cheaply."""
+        """The estate as a ranked table: one row per host, rolled up in SQL so ten thousand page cheaply."""
         scope = QueryScope.of(scope)
         now = utc_now()
         base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
@@ -585,43 +648,9 @@ class EndpointService:
         if predicate is not None:
             base = base.where(predicate)
         scoped = base.subquery()
-        interest = cast(Endpoint.interest, JSONB)
-        sensitive = func.bool_or(interest.has_any(array(sorted(SENSITIVE_INTERESTS))))
-        admin = func.bool_or(
-            interest.has_any(array(sorted(ADMIN_INTERESTS | {PathInterest.AUTH.value})))
-        )
-        top_segment = func.split_part(Endpoint.dir_path, "/", 2)
-        agg = (
-            select(
-                Endpoint.host.label("host"),
-                func.count().label("n"),
-                func.count().filter(Endpoint.is_probed.is_(True)).label("verified"),
-                func.count().filter(Endpoint.param_count > 0).label("params"),
-                func.count().filter(Endpoint.dir_path == "/").label("direct"),
-                func.count(func.distinct(top_segment))
-                .filter(Endpoint.dir_path != "/")
-                .label("folders"),
-                *[
-                    func.count()
-                    .filter(endpoint_status_class(name))
-                    .label(f"s{name[0]}")
-                    for name in _STATUS_CLASSES[:4]
-                ],
-                func.count()
-                .filter(Endpoint.endpoint_class == EndpointClass.API.value)
-                .label("api"),
-                func.count().filter(endpoint_is_new(scope)).label("fresh"),
-                func.count()
-                .filter(Endpoint.status_code.in_(_AUTH_WALL))
-                .label("walled"),
-                sensitive.label("sensitive"),
-                admin.label("admin"),
-                func.min(Endpoint.url).label("sample"),
-            )
-            .select_from(Endpoint)
-            .join(scoped, Endpoint.id == scoped.c.id)
-            .group_by(Endpoint.host)
-        )
+        agg, substantive = self._host_aggregate(scoped, scope)
+        if f.hide_root_only:
+            agg = agg.having(substantive > 0)
         await self.session.execute(text(STATEMENT_TIMEOUT))
         await self.session.execute(text(NO_JIT))
         totals = (
@@ -631,6 +660,19 @@ class EndpointService:
                 .join(scoped, Endpoint.id == scoped.c.id)
             )
         ).one()
+        root_only = 0
+        if f.hide_root_only:
+            parked = (
+                select(Endpoint.host)
+                .select_from(Endpoint)
+                .join(scoped, Endpoint.id == scoped.c.id)
+                .group_by(Endpoint.host)
+                .having(substantive == 0)
+                .subquery()
+            )
+            root_only = int(
+                await self.session.scalar(select(func.count()).select_from(parked)) or 0
+            )
         size = max(1, min(f.size, _HOST_PAGE_MAX))
         offset = max(0, (max(f.page, 1) - 1) * size)
         ordered = agg.order_by(*self._host_order(agg, f)).limit(size).offset(offset)
@@ -639,7 +681,13 @@ class EndpointService:
         interests = await self._host_values(scoped, names, Endpoint.interest)
         sources = await self._host_values(scoped, names, Endpoint.sources)
         classes = await self._host_classes(scoped, names)
-        folders = await self._host_top_folders(scoped, names)
+        chips = await self._host_chips(scoped, names)
+        identity = await self._host_identity(scope, names)
+        unfiltered = (
+            await self._host_unfiltered(scope, names, f.hide_static)
+            if _narrowed(f)
+            else {}
+        )
         previous, _at = await self._previous_scan(scope)
         gone = await self._gone_by_host(scope, previous, names, f.hide_static)
         items = []
@@ -655,6 +703,7 @@ class EndpointService:
                 mix["none"] = n - verified
             flags = set(interests.get(r.host, []))
             host_sources = set(sources.get(r.host, []))
+            host_chips = chips.get(r.host, [])
             items.append(
                 TreeNode(
                     key=f"{r.host}/",
@@ -686,35 +735,100 @@ class EndpointService:
                     query=_token("host", ":", r.host),
                     lazy=True,
                     folders=int(r.folders),
-                    top_folders=folders.get(r.host, []),
+                    top_folders=[c.name for c in host_chips if c.path != "/"],
+                    chips=host_chips,
+                    api=int(r.api),
+                    walled=int(r.walled),
+                    unfiltered_count=unfiltered.get(r.host, 0),
+                    identity=identity.get(r.host),
                 )
             )
         return HostPage(
             items=items,
-            total=int(totals[0] or 0),
+            total=max(0, int(totals[0] or 0) - root_only),
             total_endpoints=int(totals[1] or 0),
+            root_only=root_only,
             page=max(f.page, 1),
             size=size,
         )
 
     @staticmethod
+    def _host_aggregate(scoped, scope: QueryScope):
+        """The per-host rollup and the count that separates an application from a parked name."""
+        interest = cast(Endpoint.interest, JSONB)
+        sensitive = func.bool_or(interest.has_any(array(sorted(SENSITIVE_INTERESTS))))
+        admin = func.bool_or(
+            interest.has_any(array(sorted(ADMIN_INTERESTS | {PathInterest.AUTH.value})))
+        )
+        top_segment = func.split_part(Endpoint.dir_path, "/", 2)
+        substantive = func.count().filter(~_root_noise())
+        control = func.bool_or(interest.has_any(array(sorted(ADMIN_INTERESTS))))
+        auth = func.bool_or(interest.has_any(array([PathInterest.AUTH.value])))
+        api_count = func.count().filter(
+            Endpoint.endpoint_class == EndpointClass.API.value
+        )
+        input_count = func.count().filter(Endpoint.param_count > 0)
+        verified_count = func.count().filter(Endpoint.is_probed.is_(True))
+        # what a tester would open first: an exposed file, then a control surface, then input and reach
+        score = (
+            func.coalesce(cast(sensitive, Integer), 0) * _W_SENSITIVE
+            + func.coalesce(cast(control, Integer), 0) * _W_CONTROL
+            + func.coalesce(cast(auth, Integer), 0) * _W_AUTH
+            + cast(api_count > 0, Integer) * _W_API
+            + func.log(input_count + 1)
+            + func.log(verified_count + 1)
+            + func.log(func.count() + 1) * _W_SIZE
+        )
+        agg = (
+            select(
+                Endpoint.host.label("host"),
+                func.count().label("n"),
+                func.count().filter(Endpoint.is_probed.is_(True)).label("verified"),
+                func.count().filter(Endpoint.param_count > 0).label("params"),
+                func.count().filter(Endpoint.dir_path == "/").label("direct"),
+                func.count(func.distinct(top_segment))
+                .filter(Endpoint.dir_path != "/")
+                .label("folders"),
+                *[
+                    func.count()
+                    .filter(endpoint_status_class(name))
+                    .label(f"s{name[0]}")
+                    for name in _STATUS_CLASSES[:4]
+                ],
+                func.count()
+                .filter(Endpoint.endpoint_class == EndpointClass.API.value)
+                .label("api"),
+                func.count().filter(endpoint_is_new(scope)).label("fresh"),
+                func.count()
+                .filter(Endpoint.status_code.in_(_AUTH_WALL))
+                .label("walled"),
+                sensitive.label("sensitive"),
+                admin.label("admin"),
+                score.label("score"),
+                func.min(Endpoint.url).label("sample"),
+            )
+            .select_from(Endpoint)
+            .join(scoped, Endpoint.id == scoped.c.id)
+            .group_by(Endpoint.host)
+        )
+        return agg, substantive
+
+    @staticmethod
     def _host_order(agg, f: EndpointFilter):
         cols = agg.selected_columns
-        desc_ = f.direction == "desc"
         if f.sort in ("host", "path", "url"):
-            return [cols.host.desc() if desc_ else cols.host.asc()]
-        if f.sort == "status":
-            return [cols.verified.desc(), cols.n.desc(), cols.host.asc()]
-        if f.sort == "params":
-            return [cols.params.desc(), cols.n.desc(), cols.host.asc()]
+            return [cols.host.desc() if f.direction == "desc" else cols.host.asc()]
         if f.sort == "relevance":
-            return [
-                cols.sensitive.desc().nulls_last(),
-                cols.admin.desc().nulls_last(),
-                cols.n.desc(),
-                cols.host.asc(),
-            ]
-        return [cols.n.desc(), cols.host.asc()]
+            return [cols.score.desc().nulls_last(), cols.n.desc(), cols.host.asc()]
+        lead = {
+            "status": cols.verified,
+            "verified": cols.verified,
+            "params": cols.params,
+            "input": cols.params,
+            "api": cols.api,
+            "new": cols.fresh,
+        }.get(f.sort, cols.n)
+        return [lead.desc(), cols.n.desc(), cols.host.asc()]
 
     async def _host_values(
         self, scoped, hosts: list[str], column
@@ -751,23 +865,229 @@ class EndpointService:
             out.setdefault(host, {})[klass] = int(n)
         return out
 
-    async def _host_top_folders(self, scoped, hosts: list[str]) -> dict[str, list[str]]:
+    async def _host_chips(
+        self, scoped, hosts: list[str]
+    ) -> dict[str, list[FolderChip]]:
+        """Every top-level folder of each host, ranked the way the outline ranks them."""
         if not hosts:
             return {}
+        interest = cast(Endpoint.interest, JSONB)
         segment = func.split_part(Endpoint.dir_path, "/", 2).label("seg")
         rows = await self.session.execute(
-            select(Endpoint.host, segment, func.count().label("n"))
+            select(
+                Endpoint.host,
+                segment,
+                func.count().label("n"),
+                func.bool_or(
+                    interest.has_any(array(sorted(SENSITIVE_INTERESTS)))
+                ).label("sensitive"),
+                func.bool_or(interest.has_any(array(sorted(ADMIN_INTERESTS)))).label(
+                    "admin"
+                ),
+                func.bool_or(interest.has_any(array([PathInterest.AUTH.value]))).label(
+                    "auth"
+                ),
+                func.count()
+                .filter(Endpoint.endpoint_class == EndpointClass.API.value)
+                .label("api"),
+                func.count()
+                .filter(or_(endpoint_status_class("2xx"), endpoint_status_class("3xx")))
+                .label("answering"),
+                func.bool_and(_archive_only_sources()).label("archived"),
+            )
             .select_from(Endpoint)
             .join(scoped, Endpoint.id == scoped.c.id)
-            .where(Endpoint.host.in_(hosts), Endpoint.dir_path != "/")
+            .where(
+                Endpoint.host.in_(hosts),
+                *[~Endpoint.dir_path.like(f"{d}%") for d in ROOT_NOISE_DIRS],
+            )
             .group_by(Endpoint.host, segment)
-            .order_by(Endpoint.host, desc("n"), segment)
         )
-        out: dict[str, list[str]] = {}
-        for host, seg, _n in rows.all():
-            bucket = out.setdefault(host, [])
-            if len(bucket) < _TOP_FOLDERS:
-                bucket.append(str(seg))
+        grouped: dict[str, list[tuple]] = {}
+        for r in rows.all():
+            flags: set[str] = set()
+            if r.sensitive:
+                flags.add(PathInterest.VCS.value)
+            if r.admin:
+                flags.add(PathInterest.ADMIN.value)
+            if r.auth:
+                flags.add(PathInterest.AUTH.value)
+            n = int(r.n)
+            api = int(r.api)
+            glyph = folder_glyph(flags, api, n)
+            answering = int(r.answering)
+            path = f"/{r.seg}/" if r.seg else "/"
+            rank = (
+                1 if path == "/" else 0,
+                0 if r.sensitive else 1,
+                0 if (r.admin or r.auth) else 1,
+                0 if api else 1,
+                0 if answering else 1,
+                -n,
+                path,
+            )
+            grouped.setdefault(r.host, []).append(
+                (
+                    rank,
+                    FolderChip(
+                        name=str(r.seg) if r.seg else "/",
+                        path=path,
+                        count=n,
+                        glyph=glyph,
+                        archive_only=bool(r.archived) and answering == 0,
+                        query=_token("dir", ":" if r.seg else "=", path),
+                    ),
+                )
+            )
+        return {
+            host: [chip for _rank, chip in sorted(items, key=lambda x: x[0])][
+                :MAX_HOST_CHIPS
+            ]
+            for host, items in grouped.items()
+        }
+
+    async def _host_identity(
+        self, scope: QueryScope, hosts: list[str]
+    ) -> dict[str, HostIdentity]:
+        """What each host's own HTTP asset says it is, preferring the answer that was a page."""
+        if not hosts:
+            return {}
+        rows = await self.session.execute(
+            select(
+                HttpAsset.host,
+                HttpAsset.status_code,
+                HttpAsset.title,
+                HttpAsset.tech,
+                HttpAsset.id,
+            )
+            .where(scope.match(HttpAsset.scan_id), HttpAsset.host.in_(hosts))
+            .distinct(HttpAsset.host)
+            .order_by(
+                HttpAsset.host,
+                (HttpAsset.status_code == _HTTP_OK).desc().nulls_last(),
+                HttpAsset.status_code.asc().nulls_last(),
+            )
+        )
+        return {
+            host: HostIdentity(
+                status_code=status,
+                title=title or None,
+                tech=[str(t) for t in (tech or [])],
+                http_asset_id=asset_id,
+            )
+            for host, status, title, tech, asset_id in rows.all()
+        }
+
+    async def _host_unfiltered(
+        self, scope: QueryScope, hosts: list[str], hide_static: bool
+    ) -> dict[str, int]:
+        """How many endpoints each host holds before the query narrowed it."""
+        if not hosts:
+            return {}
+        query = (
+            select(Endpoint.host, func.count())
+            .where(scope.match(Endpoint.scan_id), Endpoint.host.in_(hosts))
+            .group_by(Endpoint.host)
+        )
+        if hide_static:
+            query = query.where(~_is_static())
+        return {host: int(n) for host, n in (await self.session.execute(query)).all()}
+
+    async def pick(
+        self, scope: ScopeLike, f: EndpointFilter, limit: int
+    ) -> list[Endpoint]:
+        """The rows a filter names, in relevance order, capped: what a proxy is handed."""
+        scope = QueryScope.of(scope)
+        now = utc_now()
+        base = self._scoped(scope, f)
+        predicate = self._compiled(scope, f, now)
+        if predicate is not None:
+            base = base.where(predicate)
+        base = self._order(base, EndpointFilter(sort="relevance"))
+        return list((await self.session.execute(base.limit(limit))).scalars().all())
+
+    async def host_brief(
+        self, scope: ScopeLike, host: str, hide_static: bool = True
+    ) -> HostBrief:
+        """The sitemap header: what the host is, the facts that pivot, the parameter surface."""
+        scope = QueryScope.of(scope)
+        reach = [scope.match(Endpoint.scan_id), Endpoint.host == host]
+        if hide_static:
+            reach.append(~_is_static())
+
+        async def count(*extra) -> int:
+            return int(
+                await self.session.scalar(select(func.count()).where(*reach, *extra))
+                or 0
+            )
+
+        out = HostBrief(host=host, total=await count())
+        out.identity = (await self._host_identity(scope, [host])).get(host)
+        by_class = await self.session.execute(
+            select(Endpoint.endpoint_class, func.count())
+            .where(scope.match(Endpoint.scan_id), Endpoint.host == host)
+            .group_by(Endpoint.endpoint_class)
+        )
+        out.by_class = {k: int(v) for k, v in by_class.all()}
+        out.static_total = int(
+            await self.session.scalar(
+                select(func.count()).where(
+                    scope.match(Endpoint.scan_id), Endpoint.host == host, _is_static()
+                )
+            )
+            or 0
+        )
+        if not out.total:
+            return out
+        out.probed = await count(Endpoint.is_probed.is_(True))
+        out.live = await count(endpoint_status_class("2xx"))
+        out.with_params = await count(Endpoint.param_count > 0)
+        out.api = await count(Endpoint.endpoint_class == EndpointClass.API.value)
+        out.walled = await count(Endpoint.status_code.in_(_AUTH_WALL))
+        out.interesting = await count(
+            func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0
+        )
+        out.new = await count(endpoint_is_new(scope))
+        previous, previous_at = await self._previous_scan(scope)
+        out.previous_scan_at = previous_at
+        if previous is not None:
+            gone_scope = [*_gone_from(previous, scope.single), Endpoint.host == host]
+            if hide_static:
+                gone_scope.append(~_is_static())
+            out.gone = int(
+                await self.session.scalar(select(func.count()).where(*gone_scope)) or 0
+            )
+        out.findings = int(
+            await self.session.scalar(
+                select(func.count()).where(
+                    scope.match(Vulnerability.scan_id),
+                    Vulnerability.host == host,
+                    ~vuln_suppressed(scope),
+                )
+            )
+            or 0
+        )
+        name = func.jsonb_array_elements_text(
+            cast(Endpoint.params, JSONB)
+        ).column_valued("name")
+        rows = (
+            await self.session.execute(
+                select(name, func.count().label("n"))
+                .select_from(Endpoint)
+                .where(*reach)
+                .group_by(name)
+            )
+        ).all()
+        stats = [
+            ParamStat(name=str(n), count=int(c), interest=param_interest(str(n)))
+            for n, c in rows
+        ]
+        out.params_total = len(stats)
+        rank = {k: i for i, k in enumerate(PARAM_INTEREST_ORDER)}
+        out.params = sorted(
+            stats,
+            key=lambda p: (rank.get(p.interest or "", len(rank)), -p.count, p.name),
+        )[:MAX_HOST_PARAMS]
         return out
 
     async def merged_leaves(

@@ -1,5 +1,6 @@
 import type { TableColumn } from '../table/columns';
 import type { EndpointFilter, EndpointRead, MergedLeaf, TreeNode } from '$lib/utilities/endpoints';
+import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
 export const GUIDE_WIDTH = 'w-5';
 export const OUTLINE_ROW_ATTR = 'data-outline-row';
@@ -33,6 +34,8 @@ export interface OutlineContext {
 	budget: OpenBudget;
 	focusedKey: string;
 	selectedId: string | null;
+	connectors: Connector[];
+	catalog: ConnectorSpec[];
 	toggle: (key: string) => void;
 	openEndpoint: (e: EndpointRead) => void;
 	openById: (id: string) => void;
@@ -43,9 +46,9 @@ export interface OutlineContext {
 	copyBranch: (node: TreeNode) => void;
 	copyWordlist: (node: TreeNode) => void;
 	verifyBranch?: (node: TreeNode) => void;
+	sendBranch?: (node: TreeNode, connectorId: string) => void;
 }
 
-export function nodeCost(node: TreeNode, children: TreeNode[]): number {
-	const kids = node.lazy && !children.length ? node.folders : children.length;
-	return kids + Math.min(node.direct_count, LEAF_PAGE);
+export function nodeCost(node: TreeNode): number {
+	return node.children.length + Math.min(node.direct_count, LEAF_PAGE);
 }

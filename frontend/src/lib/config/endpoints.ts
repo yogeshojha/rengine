@@ -17,6 +17,7 @@ import Home from '@lucide/svelte/icons/home';
 import Braces2 from '@lucide/svelte/icons/file-json';
 import Crosshair from '@lucide/svelte/icons/crosshair';
 import Upload from '@lucide/svelte/icons/upload';
+import Cable from '@lucide/svelte/icons/cable';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import Folder from '@lucide/svelte/icons/folder';
 import FolderOpen from '@lucide/svelte/icons/folder-open';
@@ -155,6 +156,7 @@ export enum EndpointSource {
 	FUZZ = 'fuzz',
 	PARAM_MINING = 'param_mining',
 	VULN_SCAN = 'vuln_scan',
+	PROXY = 'proxy',
 	IMPORT = 'import',
 	OTHER = 'other'
 }
@@ -175,6 +177,7 @@ export const SOURCE_LABELS: Record<string, string> = {
 	[EndpointSource.FUZZ]: 'Content discovery',
 	[EndpointSource.PARAM_MINING]: 'Parameter mining',
 	[EndpointSource.VULN_SCAN]: 'Vulnerability scan',
+	[EndpointSource.PROXY]: 'Proxy',
 	[EndpointSource.IMPORT]: 'Imported',
 	[EndpointSource.OTHER]: 'Other'
 };
@@ -196,6 +199,7 @@ export const SOURCE_ICONS: Record<string, IconComponent> = {
 	[EndpointSource.FUZZ]: Crosshair,
 	[EndpointSource.PARAM_MINING]: Crosshair,
 	[EndpointSource.VULN_SCAN]: ShieldAlert,
+	[EndpointSource.PROXY]: Cable,
 	[EndpointSource.IMPORT]: Upload,
 	[EndpointSource.OTHER]: CircleHelp
 };
@@ -207,6 +211,7 @@ export const PASSIVE_SOURCES: ReadonlySet<string> = new Set([
 	EndpointSource.ARCHIVE,
 	EndpointSource.DEEP_ARCHIVE,
 	EndpointSource.VULN_SCAN,
+	EndpointSource.PROXY,
 	EndpointSource.IMPORT,
 	EndpointSource.OTHER
 ]);
@@ -236,6 +241,63 @@ export const INTEREST_LABELS: Record<string, string> = {
 	debug_endpoint: 'Diagnostic endpoint',
 	auth: 'Authentication',
 	infra: 'Infrastructure service'
+};
+
+// mirrors ParamInterest + PathInterest help
+export const INTEREST_HELP: Record<string, string> = {
+	idor: 'Names an object directly. Worth testing for access control.',
+	open_redirect: 'Carries a destination the application redirects to.',
+	ssrf: 'Carries a location the server fetches server-side.',
+	traversal: 'Carries a file or path the server reads.',
+	sqli: 'Commonly reaches a query directly.',
+	xss: 'Commonly reflected into the page.',
+	rce: 'Names a command or process the server runs.',
+	ssti: 'Names a template the server renders.',
+	upload: 'Carries a file name or upload target.',
+	debug: 'Switches on diagnostic behaviour.',
+	vcs: 'A version control directory served over HTTP exposes source and history.',
+	secrets: 'A file that conventionally holds credentials or keys.',
+	backup: 'An editor or backup artefact left in the web root.',
+	admin: 'An administrative interface reachable from the internet.',
+	api_doc: 'A machine-readable description of the API surface.',
+	debug_endpoint: 'A diagnostic route that usually should not be public.',
+	auth: 'An authentication boundary.',
+	infra: 'A management or infrastructure service mounted on the web root.'
+};
+
+// mirrors shared/definitions/endpoints.py WHY_INTERESTS
+export const WHY_INTERESTS: readonly string[] = [
+	'vcs',
+	'secrets',
+	'backup',
+	'admin',
+	'debug_endpoint',
+	'infra',
+	'api_doc',
+	'auth',
+	'rce',
+	'sqli',
+	'ssrf',
+	'traversal',
+	'open_redirect',
+	'idor',
+	'upload',
+	'ssti',
+	'debug'
+];
+
+// how a reason is toned: an exposed file or an injection sink reads as destructive, a boundary as warning, an API as info
+export const INTEREST_TONE: Record<string, 'destructive' | 'warning' | 'info'> = {
+	vcs: 'destructive',
+	secrets: 'destructive',
+	backup: 'destructive',
+	rce: 'destructive',
+	sqli: 'destructive',
+	ssrf: 'destructive',
+	traversal: 'destructive',
+	open_redirect: 'destructive',
+	idor: 'destructive',
+	api_doc: 'info'
 };
 
 // the interests that describe an exposed file rather than an input to test

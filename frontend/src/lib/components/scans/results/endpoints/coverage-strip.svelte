@@ -16,7 +16,9 @@
 		projectWide?: boolean;
 		compact?: boolean;
 		hidden?: number;
+		rootOnly?: number;
 		onShowStatic?: () => void;
+		onShowRootOnly?: () => void;
 		onShowNew?: () => void;
 		onShowGone?: () => void;
 	}
@@ -27,7 +29,9 @@
 		projectWide = false,
 		compact = false,
 		hidden = 0,
+		rootOnly = 0,
 		onShowStatic,
+		onShowRootOnly,
 		onShowNew,
 		onShowGone
 	}: Props = $props();
@@ -85,6 +89,16 @@
 			onclick={onShowStatic}
 		>
 			{n(hidden)} static hidden
+		</button>
+	{/if}
+	{#if rootOnly > 0 && onShowRootOnly}
+		<span>·</span>
+		<button
+			type="button"
+			class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			onclick={onShowRootOnly}
+		>
+			{n(rootOnly)} root-only {rootOnly === 1 ? 'host' : 'hosts'} hidden
 		</button>
 	{/if}
 	{#if summary?.new && onShowNew}

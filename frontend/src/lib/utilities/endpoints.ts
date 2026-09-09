@@ -5,9 +5,11 @@ import type { SortOption } from '$lib/components/scans/results/table/columns';
 import {
 	ENDPOINT_CLASS_LABELS,
 	ENDPOINT_CLASS_ORDER,
+	EndpointSource,
 	INTEREST_LABELS,
 	SOURCE_LABELS,
-	STATUS_CLASS_LABELS
+	STATUS_CLASS_LABELS,
+	WHY_INTERESTS
 } from '$lib/config/endpoints';
 
 export interface SourceEvidence {
@@ -83,6 +85,22 @@ export interface TreeLeaf {
 	interest: string[];
 }
 
+export interface FolderChip {
+	name: string;
+	path: string;
+	count: number;
+	glyph: string;
+	archive_only: boolean;
+	query: string;
+}
+
+export interface HostIdentity {
+	status_code: number | null;
+	title: string | null;
+	tech: string[];
+	http_asset_id: string | null;
+}
+
 export interface TreeNode {
 	key: string;
 	name: string;
@@ -114,15 +132,47 @@ export interface TreeNode {
 	lazy: boolean;
 	folders: number;
 	top_folders: string[];
+	chips: FolderChip[];
+	api: number;
+	walled: number;
+	unfiltered_count: number;
+	identity: HostIdentity | null;
 }
 
 export interface HostPage {
 	items: TreeNode[];
 	total: number;
 	total_endpoints: number;
+	root_only: number;
 	page: number;
 	size: number;
 	error: QueryError | null;
+}
+
+export interface ParamStat {
+	name: string;
+	count: number;
+	interest: string | null;
+}
+
+export interface HostBrief {
+	host: string;
+	identity: HostIdentity | null;
+	total: number;
+	probed: number;
+	live: number;
+	with_params: number;
+	api: number;
+	walled: number;
+	interesting: number;
+	new: number;
+	gone: number;
+	findings: number;
+	previous_scan_at: string | null;
+	params: ParamStat[];
+	params_total: number;
+	by_class: Record<string, number>;
+	static_total: number;
 }
 
 export interface MergedLeaf {
@@ -291,6 +341,7 @@ export interface EndpointQuery {
 	statusClass: string;
 	probed: 'any' | 'yes' | 'no';
 	newOnly: boolean;
+	untested: boolean;
 }
 
 export function emptyEndpointQuery(): EndpointQuery {
@@ -304,7 +355,8 @@ export function emptyEndpointQuery(): EndpointQuery {
 		interest: '',
 		statusClass: '',
 		probed: 'any',
-		newOnly: false
+		newOnly: false,
+		untested: false
 	};
 }
 
@@ -320,6 +372,7 @@ export interface EndpointFilter {
 	probed: boolean | null;
 	new: boolean;
 	hide_static?: boolean;
+	hide_root_only?: boolean;
 	sort: string;
 	direction: 'asc' | 'desc';
 	page: number;
@@ -352,6 +405,19 @@ export const ENDPOINT_SORTS: SortOption[] = [
 	{ key: 'seen', label: 'First seen' }
 ];
 
+export const HOST_SORTS: SortOption[] = [
+	{ key: 'relevance', label: 'Relevance' },
+	{ key: 'endpoints', label: 'Endpoints' },
+	{ key: 'verified', label: 'Verified' },
+	{ key: 'input', label: 'Input' },
+	{ key: 'api', label: 'API' },
+	{ key: 'new', label: 'New' },
+	{ key: 'host', label: 'Host' }
+];
+
+export const ENDPOINT_VIEWS = ['hosts', 'merged', 'list'] as const;
+export type EndpointView = (typeof ENDPOINT_VIEWS)[number];
+
 export function endpointActiveFacetCount(q: EndpointQuery): number {
 	return (
 		(q.host ? 1 : 0) +
@@ -361,7 +427,8 @@ export function endpointActiveFacetCount(q: EndpointQuery): number {
 		(q.interest ? 1 : 0) +
 		(q.statusClass ? 1 : 0) +
 		(q.probed !== 'any' ? 1 : 0) +
-		(q.newOnly ? 1 : 0)
+		(q.newOnly ? 1 : 0) +
+		(q.untested ? 1 : 0)
 	);
 }
 
@@ -411,6 +478,12 @@ export function endpointQueryChips(q: EndpointQuery): EndpointFilterChip[] {
 			remove: (x) => ({ ...x, probed: 'any' })
 		});
 	if (q.newOnly) chips.push({ id: 'new', label: 'New', remove: (x) => ({ ...x, newOnly: false }) });
+	if (q.untested)
+		chips.push({
+			id: 'untested',
+			label: 'Not tested by me',
+			remove: (x) => ({ ...x, untested: false })
+		});
 	return chips;
 }
 
@@ -421,8 +494,11 @@ export function compileEndpointQuery(
 	page: number,
 	size: number
 ): EndpointFilter {
+	const search = q.search.trim();
+	// a proxy source is the record of the tester's own hand; its absence is the untested surface
+	const untested = q.untested ? `not source:${EndpointSource.PROXY}` : '';
 	return {
-		q: q.search.trim() || null,
+		q: (untested ? (search ? `(${search}) and ${untested}` : untested) : search) || null,
 		host: q.host || null,
 		dir_path: q.dir || null,
 		subtree: q.subtree,
@@ -465,6 +541,30 @@ export function highlightTerms(search: string, known: (name: string) => boolean)
 }
 
 const CONNECTOR_WORDS = new Set(['and', 'or', 'not']);
+
+// a query that is exactly one host token names the host, so the sitemap opens instead of a one-row table
+export function hostOnlyToken(search: string, known: (name: string) => boolean): string | null {
+	const { tokens } = lex(search, known);
+	const meaningful = tokens.filter((t) => t.kind !== 'space');
+	if (meaningful.length < 2 || meaningful.length > 3) return null;
+	const [field, ...rest] = meaningful;
+	if (field.kind !== 'field' || field.text.toLowerCase() !== 'host') return null;
+	const value = rest.find((t) => t.kind === 'value');
+	if (!value || rest.some((t) => t.kind !== 'value' && t.kind !== 'operator')) return null;
+	const raw = unquote(value.text).trim();
+	return raw && !/[*[\]]/.test(raw) ? raw : null;
+}
+
+// the reasons a row may print, most serious first; a reflected parameter flags too much to be one
+export function whyReasons(interest: string[], limit = 2): string[] {
+	return WHY_INTERESTS.filter((k) => interest.includes(k)).slice(0, limit);
+}
+
+export function curlFor(e: { url: string; methods: string[] }): string {
+	const method = e.methods.find((m) => m !== 'GET') ?? 'GET';
+	const flag = method === 'GET' ? '' : ` -X ${method}`;
+	return `curl -sk${flag} '${e.url.replace(/'/g, "'\\''")}'`;
+}
 
 // the two exact tokens that make the outline open to one endpoint
 export function locationTokens(host: string, path: string): string {

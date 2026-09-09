@@ -4,7 +4,6 @@
 	import Network from '@lucide/svelte/icons/network';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import X from '@lucide/svelte/icons/x';
-	import ListTree from '@lucide/svelte/icons/list-tree';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import ChevronsDownUp from '@lucide/svelte/icons/chevrons-down-up';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -16,7 +15,8 @@
 	import SortMenu from '../table/sort-menu.svelte';
 	import type { SortOption, TableColumn } from '../table/columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
-	import type { EndpointFacetSet, EndpointQuery } from '$lib/utilities/endpoints';
+	import { EndpointSource } from '$lib/config/endpoints';
+	import type { EndpointFacetSet, EndpointQuery, EndpointView } from '$lib/utilities/endpoints';
 
 	interface Props {
 		query: EndpointQuery;
@@ -36,12 +36,13 @@
 		onRefresh: () => void;
 		groupBy: string;
 		onGroupBy: (key: string) => void;
-		view: string;
-		onView: (v: string) => void;
+		view: EndpointView;
+		onView: (v: EndpointView) => void;
+		inHost?: boolean;
 		hideStatic: boolean;
 		onHideStatic: (v: boolean) => void;
-		treeMode: string;
-		onTreeMode: (m: string) => void;
+		hideRootOnly?: boolean;
+		onHideRootOnly?: (v: boolean) => void;
 		expandedCount?: number;
 		onCollapseAll?: () => void;
 		goneCount?: number;
@@ -69,10 +70,11 @@
 		onGroupBy,
 		view,
 		onView,
+		inHost = false,
 		hideStatic,
 		onHideStatic,
-		treeMode,
-		onTreeMode,
+		hideRootOnly = false,
+		onHideRootOnly,
 		expandedCount = 0,
 		onCollapseAll,
 		goneCount = 0,
@@ -80,26 +82,54 @@
 		onGoneLens
 	}: Props = $props();
 
-	const QUICK = [
-		{ value: 'new', label: 'New' },
-		{ value: 'unverified', label: 'Not checked' },
-		{ value: 'static', label: 'Hide static' }
+	const LENSES: { value: EndpointView; label: string; hint: string; icon: typeof Network }[] = [
+		{
+			value: 'hosts',
+			label: 'Hosts',
+			hint: 'Every host, ranked; open one to see its sitemap',
+			icon: Network
+		},
+		{
+			value: 'merged',
+			label: 'Across hosts',
+			hint: 'Paths merged across every host, so a shared route appears once',
+			icon: Layers
+		},
+		{ value: 'list', label: 'List', hint: 'One flat list', icon: Rows3 }
 	];
 
 	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
+	// a connected proxy is what makes "not tested by me" a real question
+	let hasProxy = $derived(facets.source.some((f) => f.value === EndpointSource.PROXY));
+	let hostsAtRest = $derived(view === 'hosts' && !inHost);
+	let quickOptions = $derived(
+		[
+			{ value: 'new', label: 'New' },
+			{ value: 'unverified', label: 'Not checked' },
+			hasProxy ? { value: 'untested', label: 'Not tested by me' } : null,
+			{ value: 'static', label: 'Hide static' },
+			hostsAtRest && onHideRootOnly ? { value: 'rootonly', label: 'Hide root-only' } : null
+		].filter((q): q is { value: string; label: string } => q !== null)
+	);
 	let quick = $derived(
-		[query.newOnly && 'new', query.probed === 'no' && 'unverified', hideStatic && 'static'].filter(
-			(v): v is string => !!v
-		)
+		[
+			query.newOnly && 'new',
+			query.probed === 'no' && 'unverified',
+			query.untested && 'untested',
+			hideStatic && 'static',
+			hideRootOnly && hostsAtRest && 'rootonly'
+		].filter((v): v is string => !!v)
 	);
 
 	function setQuick(values: string[]) {
 		onQuery({
 			...query,
 			newOnly: values.includes('new'),
-			probed: values.includes('unverified') ? 'no' : 'any'
+			probed: values.includes('unverified') ? 'no' : 'any',
+			untested: values.includes('untested')
 		});
 		onHideStatic(values.includes('static'));
+		if (hostsAtRest) onHideRootOnly?.(values.includes('rootonly'));
 	}
 
 	function pick(key: 'source' | 'interest' | 'statusClass', value: string) {
@@ -207,7 +237,7 @@
 			variant="outline"
 			aria-label="Quick filters"
 		>
-			{#each QUICK as q (q.value)}
+			{#each quickOptions as q (q.value)}
 				<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
 					{q.label}
 				</ToggleGroup.Item>
@@ -242,63 +272,26 @@
 		<ToggleGroup.Root
 			type="single"
 			value={view}
-			onValueChange={(v) => v && onView(v)}
+			onValueChange={(v) => v && onView(v as EndpointView)}
 			variant="outline"
 			aria-label="View"
 		>
-			<Hint text="Hosts, folders and endpoints in one outline">
-				{#snippet child(props)}
-					<span {...props} class="inline-flex">
-						<ToggleGroup.Item value="outline" class="h-9 px-3" aria-label="Outline">
-							<ListTree class="size-4" />
-						</ToggleGroup.Item>
-					</span>
-				{/snippet}
-			</Hint>
-			<Hint text="One flat list">
-				{#snippet child(props)}
-					<span {...props} class="inline-flex">
-						<ToggleGroup.Item value="list" class="h-9 px-3" aria-label="List">
-							<Rows3 class="size-4" />
-						</ToggleGroup.Item>
-					</span>
-				{/snippet}
-			</Hint>
+			{#each LENSES as lens (lens.value)}
+				<Hint text={lens.hint}>
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<ToggleGroup.Item value={lens.value} class="h-9 gap-1.5 px-3" aria-label={lens.label}>
+								<lens.icon class="size-4" />
+								<span class="hidden text-sm font-normal lg:inline">{lens.label}</span>
+							</ToggleGroup.Item>
+						</span>
+					{/snippet}
+				</Hint>
+			{/each}
 		</ToggleGroup.Root>
 
-		{#if view === 'outline'}
-			<ToggleGroup.Root
-				type="single"
-				value={treeMode}
-				onValueChange={(v) => v && onTreeMode(v)}
-				variant="outline"
-				aria-label="Tree mode"
-			>
-				<Hint text="One tree per host">
-					{#snippet child(props)}
-						<span {...props} class="inline-flex">
-							<ToggleGroup.Item value="host" class="h-9 gap-1.5 px-3" aria-label="By host">
-								<Network class="size-4" />
-								<span class="hidden text-sm font-normal lg:inline">By host</span>
-							</ToggleGroup.Item>
-						</span>
-					{/snippet}
-				</Hint>
-				<Hint text="Paths merged across every host, so a shared route appears once">
-					{#snippet child(props)}
-						<span {...props} class="inline-flex">
-							<ToggleGroup.Item value="merged" class="h-9 gap-1.5 px-3" aria-label="Across hosts">
-								<Layers class="size-4" />
-								<span class="hidden text-sm font-normal lg:inline">Across hosts</span>
-							</ToggleGroup.Item>
-						</span>
-					{/snippet}
-				</Hint>
-			</ToggleGroup.Root>
-		{/if}
-
-		{#if view === 'outline' && expandedCount > 0 && onCollapseAll}
-			<Hint text="Collapse every open host and folder">
+		{#if view !== 'list' && expandedCount > 0 && onCollapseAll}
+			<Hint text="Collapse every open folder">
 				{#snippet child(props)}
 					<Button
 						{...props}
