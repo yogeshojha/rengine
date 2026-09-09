@@ -1,6 +1,6 @@
 export type ToolExecution = 'inline' | 'queued';
 export type RunStatus = 'queued' | 'running' | 'completed' | 'failed';
-export type BlockKind = 'facts' | 'table' | 'tags' | 'code' | 'note';
+export type BlockKind = 'hero' | 'facts' | 'table' | 'tags' | 'code' | 'note' | 'image';
 export type Tone = 'neutral' | 'success' | 'warning' | 'critical' | 'info' | 'muted';
 
 export interface ToolField {
@@ -24,6 +24,8 @@ export interface ToolSpec {
 	icon: string;
 	execution: ToolExecution;
 	touches_target: boolean;
+	auto: boolean;
+	accepts: string[];
 	placeholder: string;
 	examples: string[];
 	fields: ToolField[];
@@ -39,6 +41,38 @@ export interface ToolboxCatalog {
 	tools: ToolSpec[];
 }
 
+export type IdentityKind = 'tech' | 'flag' | 'favicon' | 'glyph' | 'nameserver';
+
+export interface Identity {
+	kind: IdentityKind;
+	value: string;
+	label: string | null;
+}
+
+export interface Lookup {
+	value: string;
+	tool: string | null;
+}
+
+export interface Metric {
+	value: string;
+	label: string | null;
+	tone: Tone;
+}
+
+export interface Meter {
+	value: number;
+	label: string | null;
+	caption: string | null;
+	tone: Tone;
+}
+
+export interface Mark {
+	label: string;
+	tone: Tone;
+	note: string | null;
+}
+
 export interface Fact {
 	label: string;
 	value: string;
@@ -46,6 +80,8 @@ export interface Fact {
 	note: string | null;
 	href: string | null;
 	mono: boolean;
+	identity: Identity | null;
+	lookup: Lookup | null;
 }
 
 export interface Cell {
@@ -54,27 +90,36 @@ export interface Cell {
 	note: string | null;
 	href: string | null;
 	mono: boolean;
-	icon: string | null;
+	identity: Identity | null;
+	lookup: Lookup | null;
 }
 
 export interface Tag {
 	value: string;
 	tone: Tone;
-	icon: string | null;
-	href: string | null;
 	note: string | null;
+	href: string | null;
+	identity: Identity | null;
+	lookup: Lookup | null;
 }
 
 export interface ResultBlock {
 	kind: BlockKind;
 	title: string | null;
 	tone: Tone;
+	headline: string | null;
+	sub: string | null;
+	identity: Identity | null;
+	metric: Metric | null;
+	meter: Meter | null;
+	marks: Mark[];
 	facts: Fact[];
 	columns: string[];
 	rows: Cell[][];
 	tags: Tag[];
 	text: string | null;
 	lang: string | null;
+	src: string | null;
 	empty: string | null;
 	total: number | null;
 }
@@ -109,4 +154,13 @@ export interface ToolRunRequest {
 	tool: string;
 	input: Record<string, unknown>;
 	project_id?: string;
+}
+
+export interface LookupResult {
+	kind: string | null;
+	kind_label: string | null;
+	value: string;
+	runs: ToolRun[];
+	offered: string[];
+	error: string | null;
 }

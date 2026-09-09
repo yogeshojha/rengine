@@ -1,4 +1,6 @@
 import Wrench from '@lucide/svelte/icons/wrench';
+import Server from '@lucide/svelte/icons/server';
+import Route from '@lucide/svelte/icons/route';
 import ScrollText from '@lucide/svelte/icons/scroll-text';
 import ListTree from '@lucide/svelte/icons/list-tree';
 import Network from '@lucide/svelte/icons/network';
@@ -21,6 +23,16 @@ export const TOOLBOX_ICON = Wrench;
 
 export function toolIcon(slug: string): IconComponent {
 	return TOOL_ICONS[slug] ?? Wrench;
+}
+
+const GLYPHS: Record<string, IconComponent> = {
+	...TOOL_ICONS,
+	server: Server,
+	route: Route
+};
+
+export function glyphIcon(slug: string): IconComponent | null {
+	return GLYPHS[slug] ?? null;
 }
 
 export const TONE_TEXT: Record<Tone, string> = {
@@ -48,6 +60,15 @@ export const TONE_CHIP: Record<Tone, string> = {
 	critical: 'border-destructive/25 bg-destructive/10 text-destructive',
 	info: 'border-info/25 bg-info/10 text-info',
 	muted: 'border-border bg-muted/30 text-muted-foreground'
+};
+
+export const TONE_METER: Record<Tone, string> = {
+	neutral: 'bg-foreground/70',
+	success: 'bg-success',
+	warning: 'bg-warning',
+	critical: 'bg-destructive',
+	info: 'bg-info',
+	muted: 'bg-muted-foreground/40'
 };
 
 export const TOOLBOX_POLL_MS = 900;

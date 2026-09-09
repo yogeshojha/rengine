@@ -78,6 +78,7 @@ class CveLookup(Tool):
     icon = "shield-alert"
     execution = ToolExecution.INLINE.value
     accepts = frozenset({InputKind.CVE.value})
+    order = 10
     value_field = "cve"
     placeholder = "CVE-2021-44228"
     examples = ("CVE-2021-44228", "CVE-2014-0160")
@@ -101,25 +102,6 @@ class CveLookup(Tool):
                     ),
                 ),
                 fact("CVSS", intel.cvss_score if intel else ""),
-                fact(
-                    "EPSS",
-                    _pct(epss.score) if epss else "",
-                    tone=Tone.CRITICAL.value
-                    if epss and epss.score >= EPSS_HIGH
-                    else Tone.NEUTRAL.value,
-                    note=_rank(epss.percentile) if epss else None,
-                ),
-                fact(
-                    "Known exploited",
-                    "yes" if kev else "",
-                    tone=Tone.CRITICAL.value,
-                    note="CISA KEV",
-                ),
-                fact(
-                    "Ransomware campaign use",
-                    "yes" if kev and kev.known_ransomware else "",
-                    tone=Tone.CRITICAL.value,
-                ),
                 fact(
                     "Published",
                     intel.published_at.date().isoformat()

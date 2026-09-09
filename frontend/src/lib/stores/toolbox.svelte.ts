@@ -1,6 +1,6 @@
 import { toolboxApi } from '$lib/api/toolbox';
 import { TOOLBOX_POLL_MS } from '$lib/config/toolbox';
-import type { ToolboxCatalog, ToolRun, ToolSpec } from '$lib/types/toolbox';
+import type { LookupResult, ToolboxCatalog, ToolRun, ToolSpec } from '$lib/types/toolbox';
 
 const PENDING = new Set(['queued', 'running']);
 
@@ -8,32 +8,36 @@ function createToolboxStore() {
 	let catalog = $state<ToolboxCatalog | null>(null);
 	let loadingCatalog = $state(false);
 	let catalogError = $state<string | null>(null);
+	let history = $state<ToolRun[]>([]);
+	let subject = $state<LookupResult | null>(null);
 	let runs = $state<ToolRun[]>([]);
-	let running = $state(false);
+	let busy = $state(false);
+	let error = $state<string | null>(null);
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
-	function upsert(run: ToolRun) {
-		const rest = runs.filter((r) => r.id !== run.id);
-		runs = [run, ...rest];
-	}
+	const pending = () => runs.filter((r) => PENDING.has(r.status)).map((r) => r.id);
 
 	function stopPolling() {
 		if (timer) clearTimeout(timer);
 		timer = null;
 	}
 
-	function poll(id: string) {
+	function schedule() {
 		stopPolling();
+		if (!pending().length) return;
 		timer = setTimeout(async () => {
-			try {
-				const next = await toolboxApi.get(id);
-				upsert(next);
-				if (PENDING.has(next.status)) poll(id);
-				else running = false;
-			} catch {
-				running = false;
-			}
+			const settled = await Promise.all(
+				pending().map((id) => toolboxApi.get(id).catch(() => null))
+			);
+			for (const next of settled) if (next) replace(next);
+			schedule();
 		}, TOOLBOX_POLL_MS);
+	}
+
+	function replace(run: ToolRun) {
+		const at = runs.findIndex((r) => r.id === run.id);
+		runs = at === -1 ? [...runs, run] : runs.with(at, run);
+		history = [run, ...history.filter((r) => r.id !== run.id)];
 	}
 
 	return {
@@ -43,28 +47,30 @@ function createToolboxStore() {
 		get tools() {
 			return catalog?.tools ?? [];
 		},
-		get groups() {
-			return catalog?.groups ?? [];
-		},
 		get loadingCatalog() {
 			return loadingCatalog;
 		},
 		get catalogError() {
 			return catalogError;
 		},
+		get history() {
+			return history;
+		},
+		get subject() {
+			return subject;
+		},
 		get runs() {
 			return runs;
 		},
-		get running() {
-			return running;
+		get busy() {
+			return busy;
+		},
+		get error() {
+			return error;
 		},
 
 		tool(name: string): ToolSpec | undefined {
 			return catalog?.tools.find((t) => t.name === name);
-		},
-
-		lastRun(tool: string): ToolRun | undefined {
-			return runs.find((r) => r.tool === tool);
 		},
 
 		async load(force = false) {
@@ -78,36 +84,61 @@ function createToolboxStore() {
 			} finally {
 				loadingCatalog = false;
 			}
-			void this.history();
+			void this.loadHistory();
 		},
 
-		async history() {
+		async loadHistory() {
 			try {
-				runs = await toolboxApi.runs();
+				history = await toolboxApi.runs();
 			} catch {
-				runs = [];
+				history = [];
 			}
 		},
 
-		async run(tool: string, input: Record<string, unknown>, projectId?: string) {
-			running = true;
+		async lookup(q: string, projectId?: string) {
+			if (busy) return;
+			busy = true;
+			error = null;
 			stopPolling();
 			try {
-				const run = await toolboxApi.run({ tool, input, project_id: projectId });
-				upsert(run);
-				if (PENDING.has(run.status)) poll(run.id);
-				else running = false;
-				return run;
+				const result = await toolboxApi.lookup(q, projectId);
+				subject = result;
+				runs = result.runs;
+				error = result.error;
+				for (const run of result.runs) history = [run, ...history.filter((r) => r.id !== run.id)];
+				schedule();
 			} catch (e) {
-				running = false;
-				throw e;
+				error = e instanceof Error ? e.message : 'The lookup could not be started';
+			} finally {
+				busy = false;
 			}
+		},
+
+		async add(tool: string, input: Record<string, unknown>, projectId?: string) {
+			try {
+				replace(await toolboxApi.run({ tool, input, project_id: projectId }));
+				schedule();
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'The run could not be started';
+			}
+		},
+
+		show(run: ToolRun) {
+			subject = {
+				kind: null,
+				kind_label: null,
+				value: run.label,
+				runs: [run],
+				offered: [],
+				error: null
+			};
+			runs = [run];
+			schedule();
 		},
 
 		async clear() {
 			stopPolling();
-			running = false;
-			runs = [];
+			history = [];
 			await toolboxApi.clear();
 		},
 
@@ -115,8 +146,11 @@ function createToolboxStore() {
 			stopPolling();
 			catalog = null;
 			catalogError = null;
+			history = [];
+			subject = null;
 			runs = [];
-			running = false;
+			busy = false;
+			error = null;
 		}
 	};
 }

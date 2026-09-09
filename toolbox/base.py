@@ -61,6 +61,7 @@ class Tool(ABC):
     execution: ClassVar[str] = ToolExecution.INLINE.value
     touches_target: ClassVar[bool] = False
     auto: ClassVar[bool] = True
+    order: ClassVar[int] = 50
     accepts: ClassVar[frozenset[str]] = frozenset()
     value_field: ClassVar[str] = ""
     placeholder: ClassVar[str] = ""

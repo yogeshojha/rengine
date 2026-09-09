@@ -33,6 +33,7 @@ class ToolSpec:
     execution: str
     touches_target: bool
     auto: bool
+    order: int
     accepts: frozenset[str]
     placeholder: str
     examples: tuple[str, ...]
@@ -139,6 +140,7 @@ def registry() -> dict[str, ToolSpec]:
             execution=cls.execution,
             touches_target=bool(cls.touches_target),
             auto=bool(cls.auto),
+            order=int(cls.order),
             accepts=frozenset(cls.accepts),
             placeholder=cls.placeholder,
             examples=tuple(cls.examples),
@@ -155,7 +157,7 @@ def for_kind(kind: str) -> list[ToolSpec]:
     """Tools that accept an input of this kind, automatic ones first."""
     matched = [s for s in registry().values() if kind in s.accepts]
     order = {g: i for i, g in enumerate(GROUP_ORDER)}
-    return sorted(matched, key=lambda s: (not s.auto, order[s.group], s.title))
+    return sorted(matched, key=lambda s: (not s.auto, order[s.group], s.order, s.title))
 
 
 def catalog() -> ToolboxCatalog:

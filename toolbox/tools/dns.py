@@ -20,8 +20,6 @@ from toolbox.base import (
     ToolInput,
     ToolOutcome,
     cell,
-    fact,
-    facts,
     hero,
     lookup,
     mark,
@@ -82,6 +80,7 @@ class DnsLookup(Tool):
     icon = "list-tree"
     execution = ToolExecution.QUEUED.value
     accepts = frozenset({InputKind.DOMAIN.value, InputKind.URL.value})
+    order = 20
     value_field = "domain"
     placeholder = "example.com"
     examples = ("example.com",)
@@ -101,7 +100,8 @@ class DnsLookup(Tool):
         blocks = [
             hero(
                 args.domain,
-                sub=f"{len(rows)} record{'s' if len(rows) != 1 else ''} · {status or 'NOERROR'}",
+                sub=f"{len(rows)} record{'s' if len(rows) != 1 else ''}"
+                + ("" if answered else f" · {status}"),
                 identity=nameserver(recon.ns[0]) if recon.ns else None,
                 metric=metric(addresses, "Addresses"),
                 marks=[
@@ -127,15 +127,6 @@ class DnsLookup(Tool):
                     ),
                 ],
                 tone=Tone.NEUTRAL.value if answered else Tone.WARNING.value,
-            ),
-            facts(
-                fact("Answer", status, mono=True, tone=Tone.WARNING.value)
-                if not answered
-                else None,
-                fact("Zone transfer", ", ".join(recon.axfr), tone=Tone.CRITICAL.value)
-                if recon.axfr
-                else None,
-                title="Resolution",
             ),
             table(
                 ["Type", "Value"],

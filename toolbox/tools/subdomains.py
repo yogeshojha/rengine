@@ -100,6 +100,7 @@ class SubdomainFinder(Tool):
     execution = ToolExecution.QUEUED.value
     auto = False
     accepts = frozenset({InputKind.DOMAIN.value, InputKind.URL.value})
+    order = 40
     value_field = "domain"
     placeholder = "example.com"
     examples = ("example.com",)

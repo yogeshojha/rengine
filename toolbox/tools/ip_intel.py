@@ -67,6 +67,7 @@ class IpIntel(Tool):
     icon = "network"
     execution = ToolExecution.INLINE.value
     accepts = frozenset({InputKind.IP.value})
+    order = 10
     value_field = "ip"
     placeholder = "8.8.8.8"
     examples = ("8.8.8.8", "1.1.1.1")
@@ -80,13 +81,11 @@ class IpIntel(Tool):
         seen = await estate.address(ctx.session, ctx.project_id, args.ip)
         net = await estate.network(ctx.session, ctx.project_id, asn)
 
-        sub = " · ".join(
-            p for p in (f"AS{asn}" if asn else "", as_name or "", country or "") if p
-        )
+        sub = ptr[0] if ptr else f"IPv{address.version} address"
         blocks = [
             hero(
                 args.ip,
-                sub=sub or f"IPv{address.version} address",
+                sub=sub,
                 identity=flag(country) if country else glyph("network"),
                 metric=metric(seen.ports or "", "Open ports recorded")
                 or metric(
@@ -94,7 +93,6 @@ class IpIntel(Tool):
                 )
                 or metric(f"AS{asn}" if asn else "", "Network"),
                 marks=[
-                    mark("Reverse DNS", note=ptr[0] if ptr else "none"),
                     mark(
                         "Routing",
                         tone=Tone.NEUTRAL.value
@@ -112,8 +110,6 @@ class IpIntel(Tool):
                 ],
             ),
             facts(
-                fact("Address", args.ip, mono=True),
-                fact("Version", f"IPv{address.version}"),
                 fact(
                     "Network",
                     f"AS{asn}" if asn else "",
@@ -126,7 +122,7 @@ class IpIntel(Tool):
                     country,
                     identity=flag(country) if country else None,
                 ),
-                title="Address",
+                title="Network",
             ),
             tags(
                 [

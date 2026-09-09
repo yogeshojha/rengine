@@ -84,7 +84,7 @@ def _cve_findings(project_id: uuid.UUID, cve: str):
 def _registrant_domains(project_id: uuid.UUID, registrant: str, exclude: str):
     return (
         select(func.count(func.distinct(WhoisRecord.query_value)))
-        .join(Target, Target.id == WhoisRecord.target_id)
+        .join(Target, Target.target_value == WhoisRecord.query_value)
         .where(
             Target.project_id == project_id,
             WhoisRecord.registrant_name == registrant,

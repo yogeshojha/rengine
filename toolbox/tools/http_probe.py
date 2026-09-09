@@ -70,6 +70,7 @@ class HttpProbe(Tool):
     accepts = frozenset(
         {InputKind.DOMAIN.value, InputKind.URL.value, InputKind.IP.value}
     )
+    order = 30
     value_field = "target"
     placeholder = "example.com or https://example.com/login"
     examples = ("example.com", "https://example.com/login")
@@ -100,8 +101,6 @@ class HttpProbe(Tool):
             _hero(row, status, tech),
             facts(
                 fact("URL", row.get("final_url") or row.get("url"), mono=True),
-                fact("Status", status, tone=_status_tone(status)),
-                fact("Title", row.get("title")),
                 fact("Server", row.get("webserver")),
                 fact("Content type", row.get("content_type")),
                 fact("Size", _bytes(row.get("content_length"))),
@@ -135,12 +134,6 @@ class HttpProbe(Tool):
                     else "",
                     lookup=lookup(f"AS{row['asn']}") if row.get("asn") else None,
                 ),
-                fact(
-                    "CDN",
-                    _edge(row),
-                    tone=Tone.INFO.value if row.get("is_cdn") else Tone.NEUTRAL.value,
-                ),
-                fact("HTTP/2", "supported" if row.get("supports_http2") else ""),
                 title="Network",
             ),
             code(

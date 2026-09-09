@@ -80,6 +80,7 @@ class WhoisLookup(Tool):
             InputKind.URL.value,
         }
     )
+    order = 10
     value_field = "query"
     placeholder = "example.com, 8.8.8.8 or AS13335"
     examples = ("example.com", "8.8.8.8", "AS13335")
@@ -216,9 +217,6 @@ async def _domain(ctx: ToolContext, response) -> tuple[list, str]:
     blocks = [
         head,
         facts(
-            fact(
-                "Registrar", registrar, identity=tech(registrar) if registrar else None
-            ),
             fact("Registered", _date(response.registration_date)),
             fact("Updated", _date(response.last_changed_date)),
             fact(
@@ -254,7 +252,11 @@ async def _domain(ctx: ToolContext, response) -> tuple[list, str]:
         ),
         tags(
             [
-                tag(ns, identity=glyph("server"), lookup=lookup(ns, tool="dns"))
+                tag(
+                    ns.lower(),
+                    identity=glyph("server"),
+                    lookup=lookup(ns.lower(), tool="dns"),
+                )
                 for ns in response.nameservers
             ],
             title="Nameservers",

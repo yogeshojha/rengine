@@ -1,7 +1,7 @@
 export const STORAGE_KEYS = {
 	activeProjectSlug: 'activeProjectSlug',
 	launchLastEngine: 'rengine:launch:lastEngine',
-	toolboxLastTool: 'rengine:toolbox:lastTool',
+	toolboxLastQuery: 'rengine:toolbox:lastQuery',
 	launchLastContext: 'rengine:launch:lastContext',
 	targetViews: 'targets:views',
 	addTargetScanAfter: 'rengine:targets:scanAfterAdd',
