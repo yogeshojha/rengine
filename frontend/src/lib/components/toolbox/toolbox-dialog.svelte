@@ -10,7 +10,7 @@
 	import RecentRuns from './recent-runs.svelte';
 	import { toolbox } from '$lib/stores/toolbox.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { toolIcon } from '$lib/config/toolbox';
+	import { MODE_HELP, MODE_LABELS, toolIcon } from '$lib/config/toolbox';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
@@ -143,11 +143,11 @@
 								<div class="flex items-center gap-2">
 									<h3 class="text-sm leading-5 font-medium">{tool.title}</h3>
 									{#if tool.touches_target}
-										<Hint text="Sends a request to the named host">
+										<Hint text={MODE_HELP.active}>
 											{#snippet child(props)}
 												<span {...props} class="inline-flex">
 													<Badge variant="warning" class="h-4 px-1.5 text-[10px]">
-														Sends traffic
+														{MODE_LABELS.active}
 													</Badge>
 												</span>
 											{/snippet}

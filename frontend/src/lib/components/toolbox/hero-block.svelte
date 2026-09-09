@@ -5,7 +5,8 @@
 
 	let { block }: { block: ResultBlock } = $props();
 
-	const pct = $derived(Math.round((block.meter?.value ?? 0) * 100));
+	const raw = $derived(Math.round((block.meter?.value ?? 0) * 100));
+	const pct = $derived(raw > 0 ? Math.max(raw, 2) : 0);
 </script>
 
 <div class="rounded-lg border bg-muted/25 px-4 py-3.5">
@@ -45,7 +46,7 @@
 			<div class="h-1 w-full overflow-hidden rounded-full bg-border">
 				<div
 					class="h-full rounded-full transition-[width] duration-500 {TONE_METER[block.meter.tone]}"
-					style="width: {Math.max(pct, 2)}%"
+					style="width: {pct}%"
 				></div>
 			</div>
 			{#if block.meter.caption}

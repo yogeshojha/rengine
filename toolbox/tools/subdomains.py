@@ -39,18 +39,20 @@ from toolbox.base import (
 from toolbox.pivot import target_pivot_sync
 
 SOURCES = {
+    "certificates": CrtNameProvider,
     "subfinder": SubfinderProvider,
     "assetfinder": AssetfinderProvider,
-    "certificates": CrtNameProvider,
 }
 
 SOURCE_LABELS = {
+    "certificates": "certificate transparency",
     "subfinder": "subfinder",
     "assetfinder": "assetfinder",
-    "certificates": "certificate transparency",
 }
 
-DEFAULT_SOURCES = ["subfinder", "assetfinder"]
+PROVIDER_LABELS = {cls.source.value: SOURCE_LABELS[key] for key, cls in SOURCES.items()}
+
+DEFAULT_SOURCES = ["certificates", "subfinder", "assetfinder"]
 PREFETCH_KEYS = (APIProvider.SECURITYTRAILS, APIProvider.CHAOS)
 TOOL_TIMEOUT = 120
 MAX_LISTED = 500
@@ -157,7 +159,7 @@ class SubdomainFinder(Tool):
                         cell(name, mono=True, lookup=lookup(name, "dns")),
                         cell(
                             ", ".join(
-                                sorted(SOURCE_LABELS.get(s, s) for s in merged[name])
+                                sorted(PROVIDER_LABELS.get(s, s) for s in merged[name])
                             ),
                             tone=Tone.MUTED.value,
                         ),

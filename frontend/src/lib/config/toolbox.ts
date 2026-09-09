@@ -71,4 +71,21 @@ export const TONE_METER: Record<Tone, string> = {
 	muted: 'bg-muted-foreground/40'
 };
 
+export const MODE_LABELS: Record<'active' | 'passive', string> = {
+	active: 'Active',
+	passive: 'Passive'
+};
+
+export const MODE_HELP: Record<'active' | 'passive', string> = {
+	active: 'Sends a request to the named host',
+	passive: 'Sends nothing to the target'
+};
+
+export const MODE_CLASS: Record<'active' | 'passive', string> = {
+	active: 'text-warning',
+	passive: 'text-muted-foreground/60'
+};
+
+export const toolMode = (touchesTarget: boolean) => (touchesTarget ? 'active' : 'passive');
+
 export const TOOLBOX_POLL_MS = 900;

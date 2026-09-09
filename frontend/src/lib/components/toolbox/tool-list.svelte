@@ -2,7 +2,8 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Input } from '$lib/components/ui/input';
 	import Search from '@lucide/svelte/icons/search';
-	import { toolIcon } from '$lib/config/toolbox';
+	import Hint from '$lib/components/hint.svelte';
+	import { MODE_CLASS, MODE_HELP, MODE_LABELS, toolIcon, toolMode } from '$lib/config/toolbox';
 	import { cn } from '$lib/utils';
 	import type { ToolGroupSpec, ToolSpec } from '$lib/types/toolbox';
 
@@ -57,19 +58,26 @@
 				</p>
 				{#each section.items as tool (tool.name)}
 					{@const Icon = toolIcon(tool.icon)}
-					<button
-						type="button"
-						onclick={() => onSelect(tool.name)}
-						class={cn(
-							'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors',
-							selected === tool.name
-								? 'bg-accent text-accent-foreground'
-								: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-						)}
-					>
-						<Icon class="size-3.5 shrink-0" />
-						<span class="min-w-0 flex-1 truncate">{tool.title}</span>
-					</button>
+					{@const mode = toolMode(tool.touches_target)}
+					<Hint text={MODE_HELP[mode]}>
+						{#snippet child(hintProps)}
+							<button
+								{...hintProps}
+								type="button"
+								onclick={() => onSelect(tool.name)}
+								class={cn(
+									'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors',
+									selected === tool.name
+										? 'bg-accent text-accent-foreground'
+										: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+								)}
+							>
+								<Icon class="size-3.5 shrink-0" />
+								<span class="min-w-0 flex-1 truncate">{tool.title}</span>
+								<span class="shrink-0 text-[10px] {MODE_CLASS[mode]}">{MODE_LABELS[mode]}</span>
+							</button>
+						{/snippet}
+					</Hint>
 				{/each}
 			</div>
 		{:else}
