@@ -79,7 +79,7 @@
 	import type { Crumb } from './endpoints/outline-context';
 	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
-	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { LiveRefresh, Throttled } from '$lib/utilities/live-results';
 	import { formatShortDate } from '$lib/utilities/dates';
 
 	interface Props {
@@ -527,22 +527,28 @@
 		}
 	}
 
+	// the whole-scan aggregates; a live tick takes them at their own slower cadence
+	const aggregates = () => {
+		loadedTreeSig = '';
+		loadedHostsSig = '';
+		loadedBriefSig = '';
+		return Promise.all([
+			loadFacets(),
+			loadGroups(),
+			isTree ? loadTree() : Promise.resolve(),
+			view === 'hosts' ? loadHosts() : Promise.resolve(),
+			inHost ? loadBrief() : Promise.resolve(),
+			loadAccount()
+		]);
+	};
+	const liveAggregates = new Throttled(aggregates);
+
 	async function refresh(quiet = false) {
 		refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
-			loadedTreeSig = '';
-			loadedHostsSig = '';
-			loadedBriefSig = '';
-			await Promise.all([
-				runSearch(),
-				loadFacets(),
-				loadGroups(),
-				isTree ? loadTree() : Promise.resolve(),
-				view === 'hosts' ? loadHosts() : Promise.resolve(),
-				inHost ? loadBrief() : Promise.resolve(),
-				loadAccount()
-			]);
+			const heavy = quiet ? liveAggregates.call() : aggregates();
+			await Promise.all([runSearch(), heavy ?? Promise.resolve()]);
 		} finally {
 			if (!quiet) refreshing = false;
 		}
@@ -552,7 +558,10 @@
 	$effect(() => {
 		liveRefresh.notify(revision, active);
 	});
-	onDestroy(() => liveRefresh.stop());
+	onDestroy(() => {
+		liveRefresh.stop();
+		liveAggregates.stop();
+	});
 
 	$effect(() => {
 		void JSON.stringify(query);

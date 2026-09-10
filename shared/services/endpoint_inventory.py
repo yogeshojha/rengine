@@ -453,14 +453,17 @@ def upsert(
                     .all()
                 )
 
+        # one statement per shape of change rather than one per row: endpoint_probe's
+        # budget is 5,000 today and the table already holds 345,152 rows
+        shaped: dict[frozenset[str], list[dict]] = {}
         for row in merge:
             changes = _changes(row, folded[row.signature], resolved_source, now)
             if not changes:
                 continue
-            session.execute(
-                update(Endpoint).where(Endpoint.id == row.id).values(**changes)
-            )
+            shaped.setdefault(frozenset(changes), []).append({"id": row.id, **changes})
             result.updated += 1
+        for payload in shaped.values():
+            session.execute(update(Endpoint), payload)
 
     session.commit()
     return result
@@ -497,40 +500,39 @@ def verify(
             .scalars()
             .all()
         )
+        payload: list[dict] = []
         for row in rows:
             merged = folded[row.signature]
             if not merged.is_probed:
                 continue
-            session.execute(
-                update(Endpoint)
-                .where(Endpoint.id == row.id)
-                .values(
-                    is_probed=True,
-                    status_code=merged.status_code,
-                    content_type=merged.content_type,
-                    content_length=merged.content_length,
-                    title=merged.title,
-                    words=merged.words,
-                    lines=merged.lines,
-                    response_time=merged.response_time,
-                    redirect_location=merged.redirect_location,
-                    content_hash=merged.content_hash,
-                    tech=merged.tech or list(row.tech or []),
-                    endpoint_class=classify(
-                        merged.path, merged.extension, merged.content_type
-                    ),
-                    interest=interests_for(
+            klass = classify(merged.path, merged.extension, merged.content_type)
+            payload.append(
+                {
+                    "id": row.id,
+                    "is_probed": True,
+                    "status_code": merged.status_code,
+                    "content_type": merged.content_type,
+                    "content_length": merged.content_length,
+                    "title": merged.title,
+                    "words": merged.words,
+                    "lines": merged.lines,
+                    "response_time": merged.response_time,
+                    "redirect_location": merged.redirect_location,
+                    "content_hash": merged.content_hash,
+                    "tech": merged.tech or list(row.tech or []),
+                    "endpoint_class": klass,
+                    "interest": interests_for(
                         merged.path,
                         list(row.params or []),
-                        endpoint_class=classify(
-                            merged.path, merged.extension, merged.content_type
-                        ),
+                        endpoint_class=klass,
                         extension=merged.extension,
                     ),
-                    methods=sorted(set(row.methods or []) | merged.methods),
-                )
+                    "methods": sorted(set(row.methods or []) | merged.methods),
+                }
             )
-            result.updated += 1
+        if payload:
+            session.execute(update(Endpoint), payload)
+            result.updated += len(payload)
     session.commit()
     return result
 
