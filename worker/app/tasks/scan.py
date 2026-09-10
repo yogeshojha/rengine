@@ -43,7 +43,8 @@ def run_scan(self, scan_id: str) -> dict:
     """Orchestrator entrypoint: claim RUNNING, dispatch the stage canvas, then notify."""
     redis_url = settings.celery_broker_url
     with get_sync_session() as session:
-        scan = session.get(Scan, uuid.UUID(scan_id))
+        # locked: an API cancel between this read and the commit below would be overwritten
+        scan = session.get(Scan, uuid.UUID(scan_id), with_for_update=True)
         if scan is None:
             logger.warning("scan %s not found", scan_id)
             return {"error": "scan not found"}
@@ -148,15 +149,16 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
             .all()
         )
         for scan in scans:
-            level = _resume_level(session, scan, active)
-            if level is None:
+            resume = _resume_level(session, scan, active)
+            if resume is None:
                 continue
+            level, done = resume
             logger.warning(
                 "scan %s stalled with no task in flight, resuming at level %s",
                 scan.id,
                 level,
             )
-            build_canvas(str(scan.id), start_level=level).apply_async()
+            build_canvas(str(scan.id), start_level=level, done=done).apply_async()
             resumed.append(str(scan.id))
     return {"resumed": resumed}
 
@@ -187,7 +189,9 @@ def _active_task_ids() -> set[str] | None:
     return {t.get("id") for tasks in replies.values() for t in tasks}
 
 
-def _resume_level(session: Session, scan: Scan, active: set[str]) -> int | None:
+def _resume_level(
+    session: Session, scan: Scan, active: set[str]
+) -> tuple[int, set[str]] | None:
     rows = (
         session.execute(select(ScanActivity).where(ScanActivity.scan_id == scan.id))
         .scalars()
@@ -208,5 +212,5 @@ def _resume_level(session: Session, scan: Scan, active: set[str]) -> int | None:
     levels = ordered_levels()
     for index, level in enumerate(levels):
         if not all(spec.name in done for spec in level):
-            return index
-    return len(levels)
+            return index, done
+    return len(levels), done

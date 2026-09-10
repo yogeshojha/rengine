@@ -50,7 +50,11 @@ def _throttled_abort(
             if now - state["at"] < _ABORT_POLL_SECONDS:
                 return False
             state["at"] = now
-            state["cancelled"] = _scan_is_cancelled(session_factory, scan_id)
+            try:
+                state["cancelled"] = _scan_is_cancelled(session_factory, scan_id)
+            except Exception:
+                # a database blip must never fail a running stage — keep the last answer
+                logger.warning("abort check failed, keeping last answer", exc_info=True)
             return state["cancelled"]
 
     return _is_aborted
@@ -145,49 +149,50 @@ def run_stage(
 
     events.stage_started(activity_id=activity.id, stage=spec.name, title=spec.title)
 
-    recorder = ScanCommandRecorder(
-        session_factory=session_factory,
-        scan_id=scan.id,
-        project_id=scan.project_id,
-        activity_id=activity.id,
-        events=events,
-    )
-    resolved = load_resolved(scan.execution_config)
-
-    if resolved.target_type not in spec.applies_to:
-        activity_svc.finish(
-            activity,
-            status=ScanActivityStatus.SKIPPED,
-            result={"reason": "not applicable for target type"},
-        )
-        _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
-        return
-
-    ctx = StageContext(
-        scan_id=scan.id,
-        target_id=scan.target_id,
-        project_id=scan.project_id,
-        target_value=resolved.target_value,
-        target_type=resolved.target_type,
-        resolved=resolved,
-        activity_id=activity.id,
-        stage_name=spec.name,
-        recorder=recorder,
-        events=events,
-        is_aborted=_throttled_abort(session_factory, scan.id),
-    )
-    engine = spec.stage_cls(session, ctx)
-
-    if not engine.should_run():
-        activity_svc.finish(
-            activity,
-            status=ScanActivityStatus.SKIPPED,
-            result={"reason": "not applicable for this target/config"},
-        )
-        _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
-        return
-
+    # setup runs inside the handler: a raise here would leave the activity RUNNING forever
     try:
+        recorder = ScanCommandRecorder(
+            session_factory=session_factory,
+            scan_id=scan.id,
+            project_id=scan.project_id,
+            activity_id=activity.id,
+            events=events,
+        )
+        resolved = load_resolved(scan.execution_config)
+
+        if resolved.target_type not in spec.applies_to:
+            activity_svc.finish(
+                activity,
+                status=ScanActivityStatus.SKIPPED,
+                result={"reason": "not applicable for target type"},
+            )
+            _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
+            return
+
+        ctx = StageContext(
+            scan_id=scan.id,
+            target_id=scan.target_id,
+            project_id=scan.project_id,
+            target_value=resolved.target_value,
+            target_type=resolved.target_type,
+            resolved=resolved,
+            activity_id=activity.id,
+            stage_name=spec.name,
+            recorder=recorder,
+            events=events,
+            is_aborted=_throttled_abort(session_factory, scan.id),
+        )
+        engine = spec.stage_cls(session, ctx)
+
+        if not engine.should_run():
+            activity_svc.finish(
+                activity,
+                status=ScanActivityStatus.SKIPPED,
+                result={"reason": "not applicable for this target/config"},
+            )
+            _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
+            return
+
         result = engine.run()
     except StageAbortedError:
         _fail_stage(
@@ -214,17 +219,23 @@ def run_stage(
     )
     notes = "; ".join(result.warnings) or None
     activity_svc.finish(activity, status=status, result=result.counts, error=notes)
-    _log_stage(
-        session,
-        spec,
-        ids,
-        ActivityEvent.SCAN_STAGE_COMPLETED,
-        summary=stage_count_summary(result.counts),
-        warning=notes if result.partial else None,
-    )
-    scan = session.get(Scan, scan.id)
-    if scan is not None:
-        _apply_counts(session, scan)
+    try:
+        _log_stage(
+            session,
+            spec,
+            ids,
+            ActivityEvent.SCAN_STAGE_COMPLETED,
+            summary=stage_count_summary(result.counts),
+            warning=notes if result.partial else None,
+        )
+        scan = session.get(Scan, scan.id)
+        if scan is not None:
+            _apply_counts(session, scan)
+    except Exception:
+        logger.warning(
+            "stage bookkeeping failed after a terminal activity", exc_info=True
+        )
+        session.rollback()
     _emit_stage_done(events, spec, activity, status.value, counts=result.counts)
 
 
@@ -241,6 +252,11 @@ def _fail_stage(
 ) -> None:
     activity_svc.session.rollback()
     activity = activity_svc.session.get(ScanActivity, activity_id)
+    if activity is None:
+        logger.warning(
+            "stage activity %s vanished before its failure was recorded", activity_id
+        )
+        return
     try:
         activity_svc.finish(activity, status=status, error=error, traceback=traceback)
         if status == ScanActivityStatus.FAILED:
@@ -255,7 +271,13 @@ def _fail_stage(
         # recording the failure must never be what leaves the scan running forever
         logger.warning("stage failure could not be recorded in full", exc_info=True)
         activity_svc.session.rollback()
-        activity_svc.finish(activity, status=status, error="stage failed")
+        try:
+            activity_svc.finish(activity, status=status, error="stage failed")
+        except Exception:
+            logger.error(
+                "stage activity %s could not be finished", activity_id, exc_info=True
+            )
+            activity_svc.session.rollback()
     _emit_stage_done(events, spec, activity, status.value)
 
 

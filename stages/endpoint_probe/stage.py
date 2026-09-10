@@ -191,14 +191,14 @@ class EndpointProbeStage(Stage):
         return [r.url for r in rows[:budget]]
 
     def _unverified(self) -> int:
-        return int(
-            self.session.execute(
-                select(func.count()).where(
-                    Endpoint.scan_id == self.ctx.scan_id,
-                    Endpoint.is_probed.is_(False),
-                )
-            ).scalar_one()
+        # must match _pending's population or `skipped` counts static rows as budget-capped
+        q = select(func.count()).where(
+            Endpoint.scan_id == self.ctx.scan_id,
+            Endpoint.is_probed.is_(False),
         )
+        if self.cfg.skip_static:
+            q = q.where(Endpoint.endpoint_class.notin_(tuple(STATIC_CLASSES)))
+        return int(self.session.execute(q).scalar_one())
 
     def _store(
         self,

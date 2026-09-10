@@ -13,7 +13,13 @@ from shared.definitions.notifications import (
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, CoverageStatus
 from shared.enums.activity import ActivityEvent, ActivityLevel
-from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanScope, ScanStatus
+from shared.enums.scan import (
+    ACTIVITY_TERMINAL_STATUSES,
+    SCAN_TERMINAL_STATUSES,
+    ScanActivityStatus,
+    ScanScope,
+    ScanStatus,
+)
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
@@ -38,11 +44,13 @@ logger = get_logger(__name__)
 
 def _undispatched(activities: list[ScanActivity]) -> str | None:
     """Report the stages the canvas never reached, so a truncated run is never 'completed'."""
-    expected = sum(len(level) for level in ordered_levels())
-    if len(activities) >= expected:
+    expected = {spec.name for level in ordered_levels() for spec in level}
+    # a retried stage leaves two rows, so count the stages covered and never the rows
+    covered = {a.name for a in activities if a.status in ACTIVITY_TERMINAL_STATUSES}
+    if not expected - covered:
         return None
     return (
-        f"The scan stopped after {len(activities)} of {expected} stages. "
+        f"The scan stopped after {len(covered & expected)} of {len(expected)} stages. "
         "The remaining stages were never dispatched."
     )
 
@@ -330,7 +338,15 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     )
 
     if status == ScanStatus.FAILED.value:
-        failed = next((a for a in activities if a.error), None)
+        # SKIPPED-on-retry and PARTIAL rows also carry text in `error` — only a failure explains a failure
+        failed = next(
+            (
+                a
+                for a in activities
+                if a.status == ScanActivityStatus.FAILED.value and a.error
+            ),
+            None,
+        )
         locked.error = (
             truncated
             or (

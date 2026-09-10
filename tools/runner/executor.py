@@ -441,7 +441,7 @@ class CLIToolRunner:
             with os.fdopen(fd, "w") as f:
                 f.write(content)
         except Exception:
-            os.close(fd)
+            # os.fdopen owns fd — the with block already closed it
             filepath.unlink(missing_ok=True)
             raise
         return filepath
