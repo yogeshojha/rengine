@@ -35,3 +35,7 @@ skills-lock.json
 # scan artifacts (screenshots, etc.)
 scan_media/
 research/
+
+# backup archives carry SECRET_KEY, and therefore every stored credential
+backups/
+*.tar

@@ -9,6 +9,7 @@ from sqlalchemy.exc import DBAPIError
 
 from app.api.router import router as api_router
 from app.config import settings
+from app.core.database import check_capacity
 from app.core.db_errors import data_exception_handler
 from app.core.redis_sse_bridge import RedisSSEBridge
 from app.core.sanitize import RejectNulMiddleware
@@ -26,6 +27,7 @@ async def lifespan(_app: FastAPI):
     logger.info("Starting Backend...")
     try:
         await create_initial_admin()
+        await check_capacity()
         await redis_sse_bridge.start()
     except Exception as e:
         logger.exception("Failed to initialize the application: %s", e)

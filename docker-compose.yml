@@ -17,6 +17,7 @@ services:
       -c effective_io_concurrency=200
       -c max_parallel_workers_per_gather=4
       -c jit=off
+      -c max_connections=${POSTGRES_MAX_CONNECTIONS:-150}
       -c shared_preload_libraries=pg_stat_statements
       -c pg_stat_statements.max=5000
       -c pg_stat_statements.track=top

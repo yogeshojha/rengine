@@ -1,6 +1,10 @@
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
+from shared.logging import get_logger
+
+logger = get_logger(__name__)
 
 _server_settings = {"application_name": f"{settings.APP_NAME}-api"}
 
@@ -43,3 +47,43 @@ def pool_stats() -> dict[str, int]:
         "overflow": pool.overflow(),
         "capacity": settings.DB_POOL_SIZE + settings.DB_MAX_OVERFLOW,
     }
+
+
+def pool_demand() -> int:
+    """Connections every pool can ask for at once: the api, one worker pool per celery
+    child, and beat."""
+    per_child = settings.WORKER_DB_POOL_SIZE + settings.WORKER_DB_MAX_OVERFLOW
+    return (
+        settings.DB_POOL_SIZE
+        + settings.DB_MAX_OVERFLOW
+        + settings.CELERY_SCAN_CONCURRENCY * per_child
+        + per_child
+    )
+
+
+async def check_capacity() -> None:
+    """Say out loud when the pools can outgrow the server.
+
+    Exceeding max_connections does not fail at startup — it fails later, under load,
+    as a checkout timeout that reads like a slow query.
+    """
+    demand = pool_demand()
+    try:
+        async with engine.connect() as conn:
+            allowed = int(await conn.scalar(text("SHOW max_connections")))
+            reserved = int(
+                await conn.scalar(text("SHOW superuser_reserved_connections"))
+            )
+    except Exception:
+        logger.debug("could not read the connection ceiling", exc_info=True)
+        return
+    usable = allowed - reserved
+    if demand > usable:
+        logger.warning(
+            "database pools can outgrow the server",
+            demand=demand,
+            usable=usable,
+            hint="raise POSTGRES_MAX_CONNECTIONS or lower the pool sizes",
+        )
+    else:
+        logger.info("database pool headroom", demand=demand, usable=usable)

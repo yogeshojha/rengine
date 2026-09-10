@@ -20,6 +20,13 @@ class BaseAppSettings(BaseSettings):
     DB_POOL_RECYCLE: int = 1800
     DB_IDLE_TX_TIMEOUT: int = 120
 
+    # per celery prefork child, not per worker process; the api reads them to check
+    # that every pool together still fits inside the server's max_connections
+    WORKER_DB_POOL_SIZE: int = 2
+    WORKER_DB_MAX_OVERFLOW: int = 3
+    WORKER_DB_POOL_TIMEOUT: int = 30
+    CELERY_SCAN_CONCURRENCY: int = 12
+
     @property
     def database_url_async(self) -> str:
         return (
