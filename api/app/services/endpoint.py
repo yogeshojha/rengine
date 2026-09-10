@@ -102,6 +102,7 @@ from shared.models.endpoint import (
 from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan
 from shared.models.vulnerability import Vulnerability
+from shared.services.asset_query import lead_cache
 from shared.services.celery_dispatch import dispatch_endpoint_verify
 from shared.utils.datetime import utc_now
 
@@ -569,20 +570,32 @@ class EndpointService:
 
     async def leads(self, scope: ScopeLike, f: EndpointFilter) -> QueryLeads:
         scope = QueryScope.of(scope)
-        now = utc_now()
-        base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
-        base = self._apply_filter(base, f, scope)
-        context = self._context(scope, now)
 
-        def predicate_for(query: str):
-            return compile_endpoint_query(parse_query(query, ENDPOINT_QUERY), context)
+        async def _build() -> QueryLeads:
+            now = utc_now()
+            base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
+            base = self._apply_filter(base, f, scope)
+            context = self._context(scope, now)
 
-        return await build_leads(
+            def predicate_for(query: str):
+                return compile_endpoint_query(
+                    parse_query(query, ENDPOINT_QUERY), context
+                )
+
+            return await build_leads(
+                self.session,
+                base,
+                ENDPOINT_QUERY.examples,
+                predicate_for,
+                filtered=f.has_facets(),
+            )
+
+        return await lead_cache.leads(
             self.session,
-            base,
-            ENDPOINT_QUERY.examples,
-            predicate_for,
-            filtered=f.has_facets(),
+            dimension="endpoints",
+            scans=scope.ids,
+            facets=lead_cache.facets_of(f),
+            build=_build,
         )
 
     async def groups(

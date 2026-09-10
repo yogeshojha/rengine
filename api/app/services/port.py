@@ -62,6 +62,7 @@ from shared.models.scan_correlation import (
     ServiceRead,
 )
 from shared.models.subdomain import Facet
+from shared.services.asset_query import lead_cache
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -450,23 +451,33 @@ class PortService:
 
     async def leads(self, scope: ScopeLike, f: ServiceFilter) -> QueryLeads:
         scope = QueryScope.of(scope)
-        now = utc_now()
-        d, base = self._scoped(scope, f, columns=lambda d: (d.c.id,))
-        ctx = self._context(scope, d, now)
-        await self.session.execute(text(STATEMENT_TIMEOUT))
-        await self.session.execute(text(NO_JIT))
-        try:
-            return await build_leads(
-                self.session,
-                base,
-                SERVICE_QUERY.examples,
-                lambda q: compile_service_query(parse_query(q, SERVICE_QUERY), ctx),
-                filtered=f.has_facets(),
-            )
-        except DBAPIError as exc:
-            await self.session.rollback()
-            logger.info("service leads failed", error=str(exc.orig))
-            return QueryLeads()
+
+        async def _build() -> QueryLeads:
+            now = utc_now()
+            d, base = self._scoped(scope, f, columns=lambda d: (d.c.id,))
+            ctx = self._context(scope, d, now)
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            try:
+                return await build_leads(
+                    self.session,
+                    base,
+                    SERVICE_QUERY.examples,
+                    lambda q: compile_service_query(parse_query(q, SERVICE_QUERY), ctx),
+                    filtered=f.has_facets(),
+                )
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("service leads failed", error=str(exc.orig))
+                return QueryLeads()
+
+        return await lead_cache.leads(
+            self.session,
+            dimension="services",
+            scans=scope.ids,
+            facets=lead_cache.facets_of(f),
+            build=_build,
+        )
 
     async def groups(self, scope: ScopeLike, f: ServiceFilter, key: str) -> QueryGroups:
         scope = QueryScope.of(scope)

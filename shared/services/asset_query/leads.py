@@ -14,6 +14,9 @@ from .ast import QuerySyntaxError
 logger = get_logger(__name__)
 
 _TOTAL_IDX = 0
+# one statement per chunk: a 50-branch union plans as one enormous tree, and a
+# statement that outruns the timeout takes every count in it down
+_CHUNK = 16
 
 
 def _branch(query, index: int):
@@ -52,8 +55,11 @@ async def build_leads(
         branches.append(_branch(scoped, len(kept) + 1))
         kept.append(example)
 
-    rows = await session.execute(union_all(*branches))
-    counts = {int(idx): int(n) for idx, n in rows.all()}
+    counts: dict[int, int] = {}
+    for start in range(0, len(branches), _CHUNK):
+        chunk = branches[start : start + _CHUNK]
+        rows = await session.execute(chunk[0] if len(chunk) == 1 else union_all(*chunk))
+        counts.update({int(idx): int(n) for idx, n in rows.all()})
     total = counts.get(_TOTAL_IDX, 0)
     leads = [
         QueryLead(

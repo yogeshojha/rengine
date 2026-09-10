@@ -71,6 +71,7 @@ from shared.models.subdomain import (
     TargetSubdomainRead,
 )
 from shared.models.vulnerability import Vulnerability
+from shared.services.asset_query import lead_cache
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -424,27 +425,37 @@ class SubdomainService:
     async def leads(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter
     ) -> QueryLeads:
-        now = utc_now()
         scope = QueryScope.of(scope)
-        base = select(Subdomain.id).where(
-            Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
-        )
-        base = self._apply_filter(base, f, now, scope)
-        await self.session.execute(text(STATEMENT_TIMEOUT))
-        await self.session.execute(text(NO_JIT))
-        try:
-            ctx = QueryContext(scope=scope, now=now)
-            return await build_leads(
-                self.session,
-                base,
-                HOST_QUERY.examples,
-                lambda q: compile_query(parse_query(q), ctx),
-                filtered=f.has_facets(),
+
+        async def _build() -> QueryLeads:
+            now = utc_now()
+            base = select(Subdomain.id).where(
+                Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
             )
-        except DBAPIError as exc:
-            await self.session.rollback()
-            logger.info("search leads failed", error=str(exc.orig))
-            return QueryLeads()
+            base = self._apply_filter(base, f, now, scope)
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            try:
+                ctx = QueryContext(scope=scope, now=now)
+                return await build_leads(
+                    self.session,
+                    base,
+                    HOST_QUERY.examples,
+                    lambda q: compile_query(parse_query(q), ctx),
+                    filtered=f.has_facets(),
+                )
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("search leads failed", error=str(exc.orig))
+                return QueryLeads()
+
+        return await lead_cache.leads(
+            self.session,
+            dimension="web_assets",
+            scans=scope.ids,
+            facets=lead_cache.facets_of(f),
+            build=_build,
+        )
 
     async def groups(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter, key: str

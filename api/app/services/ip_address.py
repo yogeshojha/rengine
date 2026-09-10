@@ -55,6 +55,7 @@ from shared.models.scan_correlation import (
     IpGroupRead,
 )
 from shared.models.subdomain import Facet
+from shared.services.asset_query import lead_cache
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -416,23 +417,33 @@ class IpAddressService:
 
     async def leads(self, scope: ScopeLike, f: IpGroupFilter) -> QueryLeads:
         scope = QueryScope.of(scope)
-        now = utc_now()
-        d, base = self._scoped(scope, f, columns=lambda d: (d.c.ip,))
-        ctx = self._context(scope, d, now)
-        await self.session.execute(text(STATEMENT_TIMEOUT))
-        await self.session.execute(text(NO_JIT))
-        try:
-            return await build_leads(
-                self.session,
-                base,
-                IP_QUERY.examples,
-                lambda q: compile_ip_query(parse_query(q, IP_QUERY), ctx),
-                filtered=f.has_facets(),
-            )
-        except DBAPIError as exc:
-            await self.session.rollback()
-            logger.info("address leads failed", error=str(exc.orig))
-            return QueryLeads()
+
+        async def _build() -> QueryLeads:
+            now = utc_now()
+            d, base = self._scoped(scope, f, columns=lambda d: (d.c.ip,))
+            ctx = self._context(scope, d, now)
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            try:
+                return await build_leads(
+                    self.session,
+                    base,
+                    IP_QUERY.examples,
+                    lambda q: compile_ip_query(parse_query(q, IP_QUERY), ctx),
+                    filtered=f.has_facets(),
+                )
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("address leads failed", error=str(exc.orig))
+                return QueryLeads()
+
+        return await lead_cache.leads(
+            self.session,
+            dimension="ips",
+            scans=scope.ids,
+            facets=lead_cache.facets_of(f),
+            build=_build,
+        )
 
     async def groups(self, scope: ScopeLike, f: IpGroupFilter, key: str) -> QueryGroups:
         scope = QueryScope.of(scope)
