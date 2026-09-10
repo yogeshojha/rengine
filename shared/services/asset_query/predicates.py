@@ -103,14 +103,20 @@ def cert_state(name: str, now: datetime):
     return false()
 
 
-def port_match(condition):
-    return exists().where(
-        and_(
-            Port.scan_id == Subdomain.scan_id,
-            condition,
-            func.jsonb_exists(cast(Subdomain.resolved_ips, JSONB), Port.ip),
+def port_match(condition, scope: ScopeLike):
+    def build(scan_id):
+        addresses = (
+            select(
+                func.coalesce(
+                    func.array_agg(distinct(Port.ip)), pg_array([], type_=Text)
+                )
+            )
+            .where(Port.scan_id == scan_id, condition)
+            .scalar_subquery()
         )
-    )
+        return func.jsonb_exists_any(cast(Subdomain.resolved_ips, JSONB), addresses)
+
+    return _per_scan(scope_of(scope), Subdomain.scan_id, build)
 
 
 def seen_earlier():
@@ -125,19 +131,37 @@ def seen_earlier():
     )
 
 
-def has_baseline():
+def _host_baseline(scan_id):
+    """Whether an earlier scan of this target recorded any host. Scan-level, never per row."""
     earlier = aliased(Subdomain)
+    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    cutoff = (
+        select(func.min(Subdomain.discovered_at))
+        .where(Subdomain.scan_id == scan_id)
+        .scalar_subquery()
+    )
     return exists(
         select(1).where(
-            earlier.target_id == Subdomain.target_id,
-            earlier.scan_id != Subdomain.scan_id,
-            earlier.discovered_at < Subdomain.discovered_at,
+            earlier.target_id == target,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < cutoff,
         )
     )
 
 
-def is_new():
-    return and_(has_baseline(), not_(seen_earlier()))
+def has_baseline(scope: ScopeLike):
+    scope = scope_of(scope)
+    if not scope.ids:
+        return false()
+    return or_(*[_host_baseline(sid) for sid in scope.ids])
+
+
+def is_new(scope: ScopeLike):
+    scope = scope_of(scope)
+    return and_(
+        _per_scan(scope, Subdomain.scan_id, _host_baseline),
+        not_(seen_earlier()),
+    )
 
 
 def _address_cutoff(scan_id):
@@ -267,8 +291,8 @@ def resolved():
     return func.jsonb_array_length(cast(Subdomain.resolved_ips, JSONB)) > 0
 
 
-def sensitive():
-    return port_match(Port.number.in_(SENSITIVE_PORTS))
+def sensitive(scope: ScopeLike):
+    return port_match(Port.number.in_(SENSITIVE_PORTS), scope)
 
 
 def issues(now: datetime):

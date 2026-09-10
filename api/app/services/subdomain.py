@@ -21,6 +21,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query import (
+    NO_JIT,
     STATEMENT_TIMEOUT,
     QueryContext,
     QueryScope,
@@ -249,10 +250,8 @@ class SubdomainService:
 
     _status_pred = staticmethod(preds.status_class)
     _cert_pred = staticmethod(preds.cert_state)
-    _port_exists = staticmethod(preds.port_match)
-    _is_new = staticmethod(preds.is_new)
 
-    def _apply_filter(self, query, f: SubdomainFilter, now: datetime):
+    def _apply_filter(self, query, f: SubdomainFilter, now: datetime, scope: ScopeLike):
         if f.statuses:
             query = query.where(or_(*[self._status_pred(s) for s in f.statuses]))
         if f.tech:
@@ -268,7 +267,9 @@ class SubdomainService:
         if f.cert:
             query = query.where(or_(*[self._cert_pred(c, now) for c in f.cert]))
         if f.services:
-            query = query.where(self._port_exists(Port.service_name.in_(f.services)))
+            query = query.where(
+                preds.port_match(Port.service_name.in_(f.services), scope)
+            )
         if f.cdn == "yes":
             query = query.where(Subdomain.is_cdn.is_(True))
         elif f.cdn == "no":
@@ -282,7 +283,7 @@ class SubdomainService:
         if f.screenshot:
             query = query.where(Subdomain.screenshot_path.isnot(None))
         if f.new:
-            query = query.where(self._is_new())
+            query = query.where(preds.is_new(scope))
         if f.issues:
             query = query.where(preds.issues(now))
         return query
@@ -309,7 +310,7 @@ class SubdomainService:
         base = select(Subdomain).where(
             Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
         )
-        base = self._apply_filter(base, f, now)
+        base = self._apply_filter(base, f, now, scope)
         try:
             node = parse_query(f.q)
             predicate = compile_query(node, QueryContext(scope=scope, now=now))
@@ -323,6 +324,7 @@ class SubdomainService:
             base = base.where(predicate)
 
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         try:
             counted = await self.session.scalar(
                 select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
@@ -427,8 +429,9 @@ class SubdomainService:
         base = select(Subdomain.id).where(
             Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
         )
-        base = self._apply_filter(base, f, now)
+        base = self._apply_filter(base, f, now, scope)
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         try:
             ctx = QueryContext(scope=scope, now=now)
             return await build_leads(
@@ -451,7 +454,7 @@ class SubdomainService:
         base = select(Subdomain.id).where(
             Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
         )
-        base = self._apply_filter(base, f, now)
+        base = self._apply_filter(base, f, now, scope)
         try:
             node = parse_query(f.q)
             predicate = compile_query(node, QueryContext(scope=scope, now=now))
@@ -460,6 +463,7 @@ class SubdomainService:
         if predicate is not None:
             base = base.where(predicate)
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         try:
             return await build_groups(self.session, base, key)
         except DBAPIError as exc:
@@ -796,7 +800,7 @@ class SubdomainService:
         sensitive = await self.session.scalar(
             select(func.count())
             .select_from(Subdomain)
-            .where(*scope, self._port_exists(Port.number.in_(_SENSITIVE_PORTS)))
+            .where(*scope, preds.port_match(Port.number.in_(_SENSITIVE_PORTS), scan_id))
         )
         ip_total = await self.session.scalar(
             select(func.count())

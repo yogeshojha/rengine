@@ -175,7 +175,7 @@ def _flag(cmp: Compare, ctx: QueryContext):
 _FLAG_BUILDERS = {
     "live": lambda _ctx: preds.live(),
     "web": lambda _ctx: Subdomain.http_status.isnot(None),
-    "new": lambda _ctx: preds.is_new(),
+    "new": lambda ctx: preds.is_new(ctx.scope),
     "resolved": lambda _ctx: preds.resolved(),
     "auth": lambda _ctx: preds.auth(),
     "cdn": lambda _ctx: Subdomain.is_cdn.is_(True),
@@ -185,7 +185,7 @@ _FLAG_BUILDERS = {
     "important": lambda _ctx: Subdomain.is_important.is_(True),
     "wildcard": lambda _ctx: Subdomain.is_wildcard.is_(True),
     "issue": lambda ctx: preds.issues(ctx.now),
-    "sensitive": lambda _ctx: preds.sensitive(),
+    "sensitive": lambda ctx: preds.sensitive(ctx.scope),
     "http2": lambda ctx: preds.asset_match(
         ctx.scope, HttpAsset.supports_http2.is_(True)
     ),
@@ -284,10 +284,12 @@ _SUBDOMAIN_BUILDERS = {
     "org": lambda c, _ctx: string_match(Subdomain.asn_org, c),
     "cdn": lambda c, _ctx: _cdn(c),
     "waf": lambda c, _ctx: _waf(c),
-    "port": lambda c, _ctx: preds.port_match(
-        number_match(Port.number, c, int_coerce(c))
+    "port": lambda c, ctx: preds.port_match(
+        number_match(Port.number, c, int_coerce(c)), ctx.scope
     ),
-    "service": lambda c, _ctx: preds.port_match(string_match(Port.service_name, c)),
+    "service": lambda c, ctx: preds.port_match(
+        string_match(Port.service_name, c), ctx.scope
+    ),
     "cert": _cert,
     "cert.expires": lambda c, ctx: date_match(
         Subdomain.tls_not_after, c, ctx.now, future=True

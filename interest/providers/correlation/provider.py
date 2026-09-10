@@ -224,7 +224,7 @@ class CorrelationProvider(InterestProvider):
             .where(
                 Subdomain.scan_id == ctx.scan.id,
                 Subdomain.is_excluded.is_(False),
-                preds.is_new(),
+                preds.is_new(ctx.scan.id),
             )
             .limit(CAP * 4)
         )

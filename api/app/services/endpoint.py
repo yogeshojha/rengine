@@ -572,6 +572,7 @@ class EndpointService:
         if predicate is not None:
             base = base.where(predicate)
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         previous, _at = await self._previous_scan(scope)
         return await build_tree(
             self.session,
@@ -1122,6 +1123,7 @@ class EndpointService:
         if predicate is not None:
             base = base.where(predicate)
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         rows = (
             await self.session.execute(
                 base.order_by(Endpoint.path, Endpoint.host).limit(MAX_TREE_ROWS + 1)
@@ -1196,6 +1198,7 @@ class EndpointService:
         if predicate is not None:
             base = base.where(predicate)
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         size = max(1, min(f.size, 200))
         offset = max(0, (max(f.page, 1) - 1) * size)
         counted = await self.session.scalar(

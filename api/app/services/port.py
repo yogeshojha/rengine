@@ -22,6 +22,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query import (
+    NO_JIT,
     STATEMENT_TIMEOUT,
     QueryScope,
     QuerySyntaxError,
@@ -260,7 +261,7 @@ class PortService:
                 bindparam("sids", list(scope.ids), type_=ARRAY(PG_UUID(as_uuid=True))),
                 bindparam("sensitive_ports", SENSITIVE_PORTS, type_=ARRAY(Integer)),
             )
-            .subquery("services")
+            .cte("services")
         )
 
     @staticmethod
@@ -371,6 +372,7 @@ class PortService:
             base = base.where(predicate)
 
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         try:
             counted = await self.session.scalar(
                 select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
@@ -452,6 +454,7 @@ class PortService:
         d, base = self._scoped(scope, f, columns=lambda d: (d.c.id,))
         ctx = self._context(scope, d, now)
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         try:
             return await build_leads(
                 self.session,
@@ -478,6 +481,7 @@ class PortService:
         if predicate is not None:
             base = base.where(predicate)
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         try:
             return await build_service_groups(self.session, base, key)
         except DBAPIError as exc:

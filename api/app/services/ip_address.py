@@ -27,6 +27,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query import (
+    NO_JIT,
     STATEMENT_TIMEOUT,
     IpQueryContext,
     QueryScope,
@@ -262,7 +263,7 @@ class IpAddressService:
                 bindparam("sids", list(scope.ids), type_=ARRAY(PG_UUID(as_uuid=True))),
                 bindparam("sensitive_ports", SENSITIVE_PORTS, type_=ARRAY(Integer)),
             )
-            .subquery("ip_groups")
+            .cte("ip_groups")
         )
 
     @staticmethod
@@ -352,6 +353,7 @@ class IpAddressService:
             base = base.where(predicate)
 
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         try:
             counted = await self.session.scalar(
                 select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
@@ -418,6 +420,7 @@ class IpAddressService:
         d, base = self._scoped(scope, f, columns=lambda d: (d.c.ip,))
         ctx = self._context(scope, d, now)
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         try:
             return await build_leads(
                 self.session,
@@ -444,6 +447,7 @@ class IpAddressService:
         if predicate is not None:
             base = base.where(predicate)
         await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
         try:
             return await build_ip_groups(self.session, base, key, scope)
         except DBAPIError as exc:
