@@ -228,6 +228,7 @@ class Estate:
         content_hash: str | None = None,
         jarm: str | None = None,
         issuer: str | None = None,
+        body: str | None = None,
     ) -> None:
         sid = self.scans[scan]
         target_id = await self._target_of(sid)
@@ -243,6 +244,7 @@ class Estate:
                     status_code=status,
                     ip=ip,
                     content_hash=content_hash,
+                    response_body=body,
                     jarm=jarm,
                     tls_issuer=issuer,
                     discovered_at=at,

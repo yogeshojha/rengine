@@ -31,6 +31,32 @@ jobs:
       - name: 🎨 ruff format
         run: uvx ruff@0.14.14 format --check api shared reports worker interest connectors mcp toolbox stages tools tests
 
+  frontend:
+    name: 🎨 Frontend checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: 📥 Checkout the git repo
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install
+        run: npm ci
+
+      - name: 🧹 Lint
+        run: npm run lint
+
+      - name: 🔎 Type check
+        run: npm run check
+
   pytest:
     name: 🐍 Python tests
     runs-on: ubuntu-latest

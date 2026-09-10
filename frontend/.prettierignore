@@ -1,4 +1,6 @@
 # Package Managers
+# npm rewrites package.json with spaces on every install; prettier wants tabs
+package.json
 package-lock.json
 pnpm-lock.yaml
 yarn.lock

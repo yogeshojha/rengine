@@ -8,6 +8,7 @@ import pytest
 import sqlalchemy as sa
 
 from shared.enums.scan import ScanStatus
+from shared.models.http_asset import HttpAsset
 from shared.models.instance_settings import InstanceSettings
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
@@ -123,3 +124,67 @@ async def test_each_target_keeps_its_own_newest(durable_estate, now):
     assert durable_estate.scans["two.com-new"] in remaining
     assert durable_estate.scans["one.com-old"] not in remaining
     assert durable_estate.scans["two.com-old"] not in remaining
+
+
+async def test_evidence_ages_out_before_the_run_does(durable_estate, now):
+    """A screenshot and a response body are the bulk; the finding outlives them."""
+    old = now - timedelta(days=60)
+    await durable_estate.scan("example.com", "keeper", at=now)
+    await durable_estate.scan("example.com", "aged", at=old)
+    await durable_estate.assets(
+        "aged", ["a.example.com", "b.example.com"], at=old, body="<html>secret</html>"
+    )
+
+    result = await _run(durable_estate, scans=90, shots=30)
+
+    assert result.scans_removed == 0, "the run itself is still inside its window"
+    assert result.bodies_removed == 2
+    left = await durable_estate.session.scalars(
+        sa.select(HttpAsset.response_body).where(
+            HttpAsset.scan_id == durable_estate.scans["aged"]
+        )
+    )
+    assert list(left) == [None, None]
+
+
+async def test_evidence_inside_the_window_is_kept(durable_estate, now):
+    await durable_estate.scan("example.com", "recent", at=now)
+    await durable_estate.assets(
+        "recent", ["a.example.com"], at=now, body="<html>x</html>"
+    )
+
+    result = await _run(durable_estate, scans=90, shots=30)
+
+    assert result.bodies_removed == 0
+    body = await durable_estate.session.scalar(
+        sa.select(HttpAsset.response_body).where(
+            HttpAsset.scan_id == durable_estate.scans["recent"]
+        )
+    )
+    assert body == "<html>x</html>"
+
+
+async def test_the_identity_survives_the_evidence(durable_estate, now):
+    """content_hash is what correlation joins on; ageing the bytes must not touch it."""
+    old = now - timedelta(days=60)
+    await durable_estate.scan("example.com", "keeper", at=now)
+    await durable_estate.scan("example.com", "aged", at=old)
+    await durable_estate.assets(
+        "aged",
+        ["a.example.com"],
+        at=old,
+        body="<html>x</html>",
+        content_hash="deadbeef",
+    )
+
+    await _run(durable_estate, scans=90, shots=30)
+
+    row = (
+        await durable_estate.session.execute(
+            sa.select(HttpAsset.response_body, HttpAsset.content_hash).where(
+                HttpAsset.scan_id == durable_estate.scans["aged"]
+            )
+        )
+    ).one()
+    assert row.response_body is None
+    assert row.content_hash == "deadbeef"

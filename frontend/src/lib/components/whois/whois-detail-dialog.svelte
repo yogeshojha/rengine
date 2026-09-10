@@ -80,9 +80,13 @@
 
 	let LookupIcon = $derived(getLookupTypeIcon(displayRecord?.lookup_type ?? ''));
 
-	let showDiscoveriesTab = $derived(
-		targetValue != null && (targetType === TargetType.DOMAIN || targetType === TargetType.IP)
+	// the panel navigates to the target, so the tab is only offered when there is one
+	let discoveries = $derived(
+		targetValue && targetId && (targetType === TargetType.DOMAIN || targetType === TargetType.IP)
+			? { value: targetValue, id: targetId, type: targetType }
+			: null
 	);
+	let showDiscoveriesTab = $derived(discoveries !== null);
 
 	let headerEl = $state<HTMLDivElement | null>(null);
 	let tabListEl = $state<HTMLDivElement | null>(null);
@@ -305,14 +309,14 @@
 						</ScrollArea>
 					</Tabs.Content>
 
-					{#if showDiscoveriesTab && targetValue && targetType}
+					{#if discoveries}
 						<Tabs.Content value="discoveries">
 							<ScrollArea style="height: {scrollHeight}px">
 								<div class="px-6 py-5">
 									<DiscoveriesSummary
-										{targetValue}
-										{targetId}
-										{targetType}
+										targetValue={discoveries.value}
+										targetId={discoveries.id}
+										targetType={discoveries.type}
 										whoisRecord={displayRecord}
 										{onOpenTargetSummary}
 									/>

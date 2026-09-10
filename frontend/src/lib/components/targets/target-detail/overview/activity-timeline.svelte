@@ -55,14 +55,12 @@
 		const sorted = [...history].sort((a, b) => started(b) - started(a));
 		const census = sorted.filter((s) => s.scope !== 'focused').slice(0, SHOWN);
 		const shown = new Set(census.map((s) => s.id));
-		const children = new Map<string, ScanRead[]>();
+		const children: Record<string, ScanRead[]> = {};
 		for (const s of sorted) {
 			if (s.scope !== 'focused' || !s.parent_scan_id || !shown.has(s.parent_scan_id)) continue;
-			const bucket = children.get(s.parent_scan_id);
-			if (bucket) bucket.push(s);
-			else children.set(s.parent_scan_id, [s]);
+			(children[s.parent_scan_id] ??= []).push(s);
 		}
-		return census.map((scan) => ({ scan, rescans: (children.get(scan.id) ?? []).slice(0, 4) }));
+		return census.map((scan) => ({ scan, rescans: (children[scan.id] ?? []).slice(0, 4) }));
 	});
 	let total = $derived(summary?.scans_total ?? history.length);
 

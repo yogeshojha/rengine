@@ -258,7 +258,8 @@
 			<Card.Header>
 				<Card.Title class="text-base">Data retention</Card.Title>
 				<Card.Description
-					>Retention period for scan history and screenshots before pruning.</Card.Description
+					>How long runs are kept, and how long the bulky evidence inside them is kept. Both are
+					enforced daily; 0 keeps everything.</Card.Description
 				>
 			</Card.Header>
 			<Card.Content>
@@ -277,7 +278,7 @@
 						</Select.Root>
 					</div>
 					<div class="space-y-1.5">
-						<Label class="text-xs">Screenshots</Label>
+						<Label class="text-xs">Screenshots and response bodies</Label>
 						<Select.Root type="single" bind:value={screenshotRetention}>
 							<Select.Trigger class="h-9 w-full text-sm">
 								{SCREENSHOT_RETENTION.find((o) => o.value === screenshotRetention)?.label ??

@@ -36,6 +36,7 @@ class RetentionResult:
     activity_removed: int = 0
     media_removed: int = 0
     media_bytes: int = 0
+    bodies_removed: int = 0
     scans_kept_newest: int = 0
     capped: bool = False
     windows: dict[str, int] = field(default_factory=dict)
@@ -46,6 +47,7 @@ class RetentionResult:
             "activity_removed": self.activity_removed,
             "media_removed": self.media_removed,
             "media_bytes": self.media_bytes,
+            "bodies_removed": self.bodies_removed,
             "scans_kept_newest": self.scans_kept_newest,
             "capped": self.capped,
             **self.windows,
@@ -113,10 +115,30 @@ def _forget_media(session: Session, scan_id: UUID) -> None:
         )
 
 
-def prune_screenshots(session: Session, days: int) -> tuple[int, int]:
-    """Screenshots age out on their own window, before the scan row does."""
+def _forget_bodies(session: Session, scan_id: UUID) -> int:
+    """The bytes go; content_hash, favicon_hash and the rest of the identity stay,
+    so correlation still works on a scan whose evidence has aged out."""
+    result = session.execute(
+        update(HttpAsset)
+        .where(HttpAsset.scan_id == scan_id, HttpAsset.response_body.isnot(None))
+        .values(response_body=None)
+    )
+    return result.rowcount or 0
+
+
+@dataclass
+class EvidencePrune:
+    media_removed: int = 0
+    media_bytes: int = 0
+    bodies_removed: int = 0
+
+
+def prune_evidence(session: Session, days: int) -> EvidencePrune:
+    """Screenshots and response bodies are the bulk of a scan and age out first,
+    on their own window, well before the findings they were evidence for."""
+    out = EvidencePrune()
     if not window_active(days):
-        return 0, 0
+        return out
     cutoff = utc_now() - timedelta(days=days)
     scans = session.execute(
         select(Scan.id).where(
@@ -124,15 +146,17 @@ def prune_screenshots(session: Session, days: int) -> tuple[int, int]:
             func.coalesce(Scan.completed_at, Scan.created_at) < cutoff,
         )
     ).scalars()
-    removed = reclaimed = 0
     for scan_id in scans:
-        if not _media_dir(scan_id).is_dir():
-            continue
-        reclaimed += _drop_media(scan_id)
-        _forget_media(session, scan_id)
-        session.commit()
-        removed += 1
-    return removed, reclaimed
+        had_media = _media_dir(scan_id).is_dir()
+        if had_media:
+            out.media_bytes += _drop_media(scan_id)
+            _forget_media(session, scan_id)
+            out.media_removed += 1
+        bodies = _forget_bodies(session, scan_id)
+        out.bodies_removed += bodies
+        if had_media or bodies:
+            session.commit()
+    return out
 
 
 @dataclass
@@ -181,19 +205,23 @@ def enforce(session: Session) -> RetentionResult:
         windows={"scan_days": scan_days, "screenshot_days": shot_days}
     )
 
-    result.media_removed, result.media_bytes = prune_screenshots(session, shot_days)
+    evidence = prune_evidence(session, shot_days)
+    result.media_removed = evidence.media_removed
+    result.media_bytes = evidence.media_bytes
+    result.bodies_removed = evidence.bodies_removed
     pruned = prune_scans(session, scan_days)
     result.scans_removed = pruned.removed
     result.scans_kept_newest = pruned.kept_newest
     result.activity_removed = pruned.activity_removed
     result.capped = pruned.capped
 
-    if result.scans_removed or result.media_removed:
+    if result.scans_removed or result.media_removed or result.bodies_removed:
         logger.info(
             "retention enforced",
             scans_removed=result.scans_removed,
             media_removed=result.media_removed,
             media_bytes=result.media_bytes,
+            bodies_removed=result.bodies_removed,
             kept_newest=result.scans_kept_newest,
             capped=result.capped,
         )
