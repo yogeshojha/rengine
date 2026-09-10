@@ -6,13 +6,13 @@ repos:
       - id: ruff
         name: ruff-fix
         args: [--fix, --exit-zero]
-        files: ^(api|worker|shared|tools)/
+        files: ^(api|worker|shared|tools|stages|reports|interest|connectors|mcp|toolbox|tests)/
       - id: ruff-format
-        files: ^(api|worker|shared|tools)/
+        files: ^(api|worker|shared|tools|stages|reports|interest|connectors|mcp|toolbox|tests)/
       - id: ruff
         name: ruff-check
         args: [--exit-non-zero-on-fix]
-        files: ^(api|worker|shared|tools)/
+        files: ^(api|worker|shared|tools|stages|reports|interest|connectors|mcp|toolbox|tests)/
 
   # Frontend Svelte - Prettier
   - repo: local

@@ -14,23 +14,12 @@ async def _one_host_two_assets(estate, now):
     """One hostname answering on two ports with two different certificates."""
     await estate.scan("example.com", "run", at=now)
     await estate.hosts("run", ["www.example.com"], at=now, status=200)
-    await estate.assets("run", ["www.example.com"], at=now, issuer="CN=Alpha CA")
-    await estate.session.flush()
-    from shared.models.http_asset import HttpAsset
-
-    second = HttpAsset(
-        project_id=estate.project_id,
-        scan_id=estate.scans["run"],
-        target_id=await estate._target_of(estate.scans["run"]),
-        url="https://www.example.com:8443",
-        host="www.example.com",
-        port=8443,
-        status_code=200,
-        tls_issuer="CN=Beta CA",
-        discovered_at=now,
+    await estate.assets(
+        "run", ["www.example.com"], at=now, port=443, issuer="CN=Alpha CA"
     )
-    estate.session.add(second)
-    await estate.session.flush()
+    await estate.assets(
+        "run", ["www.example.com"], at=now, port=8443, issuer="CN=Beta CA"
+    )
     return estate.scans["run"]
 
 
