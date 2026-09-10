@@ -280,6 +280,34 @@ async def estate(session: AsyncSession) -> Estate:
     return await Estate(session).setup()
 
 
+async def _truncate(engine) -> None:
+    """Everything derives from users, projects and the settings row, so CASCADE clears the rest."""
+    async with engine.begin() as conn:
+        await conn.execute(
+            sa.text(
+                "TRUNCATE users, projects, instance_settings RESTART IDENTITY CASCADE"
+            )
+        )
+
+
+@pytest_asyncio.fixture
+async def durable(engine) -> AsyncIterator[AsyncSession]:
+    """For code whose behaviour includes committing; the tables are truncated around it."""
+    await _truncate(engine)
+    maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with maker() as s:
+        try:
+            yield s
+        finally:
+            await s.rollback()
+    await _truncate(engine)
+
+
+@pytest_asyncio.fixture
+async def durable_estate(durable: AsyncSession) -> Estate:
+    return await Estate(durable).setup()
+
+
 @pytest.fixture
 def now() -> datetime:
     return utc_now()

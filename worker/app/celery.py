@@ -130,6 +130,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.threat_intel",
         "app.tasks.bounty_programs",
         "app.tasks.toolbox",
+        "app.tasks.retention",
     ]
 )
 
@@ -143,6 +144,7 @@ IP_RANGE_REFRESH_SECONDS = 7 * 24 * 60 * 60.0
 TEMPLATE_SYNC_SECONDS = 24 * 60 * 60.0
 REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
 NOTIFICATION_CLEANUP_SECONDS = 6 * 60 * 60.0
+RETENTION_SECONDS = 24 * 60 * 60.0
 THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
 
 # the task itself decides whether the interval is due
@@ -182,6 +184,10 @@ celery_app.conf.beat_schedule = {
     "notification-cleanup": {
         "task": "app.tasks.notifications.cleanup",
         "schedule": NOTIFICATION_CLEANUP_SECONDS,
+    },
+    "retention-enforce": {
+        "task": "app.tasks.retention.enforce",
+        "schedule": RETENTION_SECONDS,
     },
     "threat-intel-refresh": {
         "task": "app.tasks.threat_intel.refresh",
