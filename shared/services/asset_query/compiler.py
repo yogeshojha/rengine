@@ -386,8 +386,27 @@ def compile_node(node: Node, ctx: QueryContext):
     if isinstance(node, And):
         return and_(*[compile_node(p, ctx) for p in node.parts])
     if isinstance(node, Or):
-        return or_(*[compile_node(p, ctx) for p in node.parts])
+        return _compile_or(node, ctx)
     return true()
+
+
+def _compile_or(node: Or, ctx: QueryContext):
+    """asset_match(a) OR asset_match(b) is asset_match(a OR b), so one semijoin serves
+    the whole branch. The same does not hold under AND, where the two halves may match
+    two different assets on the same host, so only OR is folded."""
+    parts, assets = [], []
+    for part in node.parts:
+        if isinstance(part, Compare):
+            compiled = compile_compare(part, ctx)
+            if compiled.where is None and compiled.asset is not None:
+                assets.append(compiled.asset)
+                continue
+            parts.append(compiled.flatten(ctx))
+        else:
+            parts.append(compile_node(part, ctx))
+    if assets:
+        parts.append(preds.asset_match(ctx.scope, or_(*assets)))
+    return or_(*parts) if parts else true()
 
 
 def compile_query(node: Node | None, ctx: QueryContext):
