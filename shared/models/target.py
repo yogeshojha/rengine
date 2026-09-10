@@ -63,7 +63,7 @@ class Target(TargetBase, table=True):
         UniqueConstraint("target_value", "project_id", name="uq_target_value_project"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     target_type: TargetType
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     created_at: datetime = Field(default_factory=utc_now)

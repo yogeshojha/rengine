@@ -18,7 +18,7 @@ class BountyProgram(SQLModel, table=True):
         UniqueConstraint("platform", "handle", name="uq_bounty_program_handle"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     platform: str = Field(max_length=32, index=True)
     source: str = Field(default="api", max_length=16, index=True)
     handle: str = Field(max_length=200, index=True)
@@ -57,7 +57,7 @@ class BountyScope(SQLModel, table=True):
         ),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     program_id: uuid.UUID = Field(
         foreign_key="bounty_programs.id", index=True, ondelete="CASCADE"
     )
@@ -78,7 +78,7 @@ class BountyScope(SQLModel, table=True):
 class BountyEventRow(SQLModel, table=True):
     __tablename__ = "bounty_events"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     platform: str = Field(max_length=32, index=True)
     program_id: uuid.UUID = Field(
         foreign_key="bounty_programs.id", index=True, ondelete="CASCADE"

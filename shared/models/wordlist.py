@@ -19,7 +19,7 @@ class Wordlist(SQLModel, table=True):
 
     __tablename__ = "wordlists"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     slug: str = Field(max_length=MAX_SLUG_LENGTH, unique=True, index=True)
     name: str = Field(max_length=200)
     description: str = Field(default="", max_length=1000)

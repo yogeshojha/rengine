@@ -12,7 +12,7 @@ from shared.utils.datetime import utc_now
 class ScanCommand(SQLModel, table=True):
     __tablename__ = "scan_commands"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
     activity_id: uuid.UUID | None = Field(
         default=None, foreign_key="scan_activities.id", index=True, ondelete="CASCADE"

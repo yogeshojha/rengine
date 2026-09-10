@@ -14,7 +14,7 @@ class ViewDNSCache(SQLModel, table=True):
         UniqueConstraint("lookup_type", "query_value", name="uq_viewdns_cache_lookup"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     lookup_type: str = Field(index=True)
     query_value: str = Field(index=True)
     result_count: int = Field(default=0)

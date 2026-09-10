@@ -34,7 +34,7 @@ def _json_list():
 class Connector(SQLModel, table=True):
     __tablename__ = "connectors"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     kind: str = Field(default=ConnectorKind.BURP.value, max_length=16, index=True)
     name: str = Field(max_length=MAX_NAME)
@@ -71,7 +71,7 @@ class ConnectorCandidate(SQLModel, table=True):
 
     __tablename__ = "connector_candidates"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
     project_id: uuid.UUID = Field(index=True)
     target_id: uuid.UUID | None = Field(default=None, index=True)
@@ -116,7 +116,7 @@ class ConnectorAction(SQLModel, table=True):
 
     __tablename__ = "connector_actions"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
     kind: str = Field(default=ActionKind.REPEATER.value, max_length=16)
     url: str = Field(max_length=2000)
@@ -226,7 +226,7 @@ class ConnectorHost(SQLModel, table=True):
 
     __tablename__ = "connector_hosts"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
     project_id: uuid.UUID = Field(index=True)
     host: str = Field(max_length=500, index=True)
@@ -259,7 +259,7 @@ class ConnectorSession(SQLModel, table=True):
 
     __tablename__ = "connector_sessions"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
     client: str | None = Field(default=None, max_length=120)
     hosts: list = _json_list()

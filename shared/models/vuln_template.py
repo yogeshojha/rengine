@@ -33,7 +33,7 @@ class VulnTemplate(SQLModel, table=True):
         UniqueConstraint("origin", "path", name="uq_vulntemplate_origin_path"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     origin: str = Field(
         default=TemplateOrigin.OFFICIAL.value, max_length=16, index=True
     )

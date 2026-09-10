@@ -18,7 +18,7 @@ class Port(SQLModel, table=True):
         ),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
     target_id: uuid.UUID = Field(
         foreign_key="targets.id", index=True, ondelete="CASCADE"

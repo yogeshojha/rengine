@@ -48,7 +48,7 @@ class NotificationBase(SQLModel):
 class Notification(NotificationBase, table=True):
     __tablename__ = "notifications"
 
-    id: int = SQLField(default=None, primary_key=True, index=True)
+    id: int = SQLField(default=None, primary_key=True)
     project_id: uuid.UUID | None = SQLField(default=None, index=True)
     notification_metadata: dict = SQLField(
         default_factory=dict, sa_column=Column(JSONB)

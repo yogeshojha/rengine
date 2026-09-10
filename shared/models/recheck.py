@@ -12,7 +12,7 @@ from shared.utils.datetime import utc_now
 class AssetRecheck(SQLModel, table=True):
     __tablename__ = "asset_rechecks"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     target_id: uuid.UUID = Field(
         foreign_key="targets.id", index=True, ondelete="CASCADE"

@@ -17,7 +17,7 @@ class Subdomain(SQLModel, table=True):
         UniqueConstraint("scan_id", "name", name="uq_subdomain_scan_name"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
     target_id: uuid.UUID = Field(
         foreign_key="targets.id", index=True, ondelete="CASCADE"

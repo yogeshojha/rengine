@@ -13,7 +13,7 @@ from shared.utils.datetime import utc_now
 class ScanActivity(SQLModel, table=True):
     __tablename__ = "scan_activities"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
 

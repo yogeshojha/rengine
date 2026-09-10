@@ -16,7 +16,7 @@ from shared.utils.validation import clean_name, clean_optional_name
 class ScanSchedule(SQLModel, table=True):
     __tablename__ = "scan_schedules"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     name: str = Field(max_length=200)
     target_ids: list = Field(

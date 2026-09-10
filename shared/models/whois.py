@@ -13,7 +13,7 @@ from shared.utils.datetime import utc_now
 class WhoisRecord(SQLModel, table=True):
     __tablename__ = "whois_records"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
     query_value: str = Field(max_length=500, index=True, unique=True)
     lookup_type: WhoisLookupType

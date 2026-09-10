@@ -20,7 +20,7 @@ class InstanceSettings(SQLModel, table=True):
         UniqueConstraint("singleton_key", name="uq_instance_settings_singleton"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     singleton_key: str = Field(default="instance", max_length=20)
     instance_name: str = Field(default="reNgine", max_length=120)
     timezone: str = Field(default="UTC", max_length=64)

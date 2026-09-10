@@ -31,7 +31,7 @@ class NotificationPreference(BaseModel):
 class NotificationChannel(SQLModel, table=True):
     __tablename__ = "notification_channels"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=120)
     provider: str = Field(max_length=20)
     is_active: bool = Field(default=True)

@@ -65,7 +65,7 @@ class APIKey(SQLModel, table=True):
     __tablename__ = "api_keys"
     __table_args__ = (UniqueConstraint("provider", name="uq_api_key_provider"),)
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     provider: APIProvider = Field(index=True)
     key_value: str = Field(max_length=1000)
     key_meta: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))

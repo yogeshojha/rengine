@@ -17,7 +17,7 @@ from shared.utils.validation import clean_name, clean_optional_name
 class ScanEngine(SQLModel, table=True):
     __tablename__ = "scan_engines"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     created_by: uuid.UUID = Field(foreign_key="users.id")
     name: str = Field(max_length=200)

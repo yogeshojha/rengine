@@ -24,7 +24,7 @@ class ProxyEndpoint(BaseModel):
 class Proxy(SQLModel, table=True):
     __tablename__ = "proxies"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=120)
     description: str | None = Field(default=None, max_length=500)
     mode: str = Field(default="single")

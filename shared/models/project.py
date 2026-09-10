@@ -16,7 +16,7 @@ class ProjectBase(SQLModel):
 class Project(ProjectBase, table=True):
     __tablename__ = "projects"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     slug: str = Field(max_length=100, unique=True, index=True)
     description: str | None = Field(default=None, max_length=1000)
     label: str | None = Field(default=None, max_length=50)

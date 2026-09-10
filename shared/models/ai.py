@@ -17,7 +17,7 @@ class AiNarrative(SQLModel, table=True):
         UniqueConstraint("task", "cache_key", name="uq_ai_narrative_task_key"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     task: str = Field(max_length=40, index=True)
     cache_key: str = Field(max_length=64, index=True)
     subject: str = Field(default="", max_length=300)

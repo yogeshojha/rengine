@@ -39,7 +39,7 @@ class Endpoint(SQLModel, table=True):
         UniqueConstraint("scan_id", "signature", name="uq_endpoint_scan_signature"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
     target_id: uuid.UUID = Field(
         foreign_key="targets.id", index=True, ondelete="CASCADE"
@@ -109,7 +109,7 @@ class EndpointCoverage(SQLModel, table=True):
 
     __tablename__ = "endpoint_coverage"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
     target_id: uuid.UUID = Field(
         foreign_key="targets.id", index=True, ondelete="CASCADE"

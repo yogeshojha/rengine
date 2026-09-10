@@ -24,7 +24,7 @@ class InterestRule(SQLModel, table=True):
         Index("ix_interest_rules_project_enabled", "project_id", "enabled"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     project_id: uuid.UUID | None = Field(
         default=None, foreign_key="projects.id", index=True, ondelete="CASCADE"
     )
@@ -56,7 +56,7 @@ class InterestSignal(SQLModel, table=True):
         Index("ix_interest_signals_scan_score", "scan_id", "weight"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
     target_id: uuid.UUID = Field(
         foreign_key="targets.id", index=True, ondelete="CASCADE"
@@ -86,7 +86,7 @@ class InterestDismissal(SQLModel, table=True):
         UniqueConstraint("target_id", "host", "kind", name="uq_interest_dismissal"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     target_id: uuid.UUID = Field(
         foreign_key="targets.id", index=True, ondelete="CASCADE"
     )

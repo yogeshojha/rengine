@@ -49,7 +49,7 @@ class Tag(TagBase, table=True):
         UniqueConstraint("slug", "project_id", name="uq_tag_slug_project"),
     )
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     slug: str = Field(max_length=100, index=True)
     project_id: uuid.UUID = Field(
         foreign_key="projects.id", index=True, ondelete="CASCADE"

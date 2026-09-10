@@ -23,7 +23,7 @@ EXPIRY_CHOICES: tuple[int | None, ...] = (7, 30, 90, 365, None)
 class McpToken(SQLModel, table=True):
     __tablename__ = "mcp_tokens"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=MAX_NAME, index=True)
     # null means every project this instance holds
     project_id: uuid.UUID | None = Field(default=None, index=True)

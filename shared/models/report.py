@@ -42,7 +42,7 @@ class ReportTemplate(SQLModel, table=True):
 
     __tablename__ = "report_templates"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     project_id: uuid.UUID | None = Field(default=None, index=True)
     slug: str = Field(max_length=64, index=True)
     name: str = Field(max_length=200)
@@ -72,7 +72,7 @@ class Report(SQLModel, table=True):
 
     __tablename__ = "reports"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     template_id: uuid.UUID | None = Field(default=None, index=True)
     template_name: str = Field(default="", max_length=200)
@@ -115,7 +115,7 @@ class ReportTheme(SQLModel, table=True):
     __tablename__ = "report_themes"
     __table_args__ = (UniqueConstraint("slug", name="uq_report_theme_slug"),)
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     slug: str = Field(max_length=64, index=True)
     name: str = Field(max_length=120)
     description: str = Field(default="", max_length=400)
@@ -135,7 +135,7 @@ class ReportFont(SQLModel, table=True):
     __tablename__ = "report_fonts"
     __table_args__ = (UniqueConstraint("slug", name="uq_report_font_slug"),)
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     slug: str = Field(max_length=64, index=True)
     name: str = Field(max_length=MAX_FAMILY_NAME)
     role: str = Field(default=FontRole.SANS.value, max_length=8, index=True)

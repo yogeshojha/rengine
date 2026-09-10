@@ -13,7 +13,7 @@ from shared.utils.datetime import utc_now
 class DnsLookup(SQLModel, table=True):
     __tablename__ = "dns_lookups"
 
-    id: uuid.UUID = SQLField(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = SQLField(default_factory=uuid.uuid4, primary_key=True)
 
     host: str = SQLField(max_length=500)
     status_code: str = SQLField(default="", max_length=20)
@@ -37,7 +37,7 @@ class DnsLookup(SQLModel, table=True):
 class DnsRecord(SQLModel, table=True):
     __tablename__ = "dns_records"
 
-    id: uuid.UUID = SQLField(default_factory=uuid.uuid4, primary_key=True, index=True)
+    id: uuid.UUID = SQLField(default_factory=uuid.uuid4, primary_key=True)
     dns_lookup_id: uuid.UUID = SQLField(
         foreign_key="dns_lookups.id", index=True, ondelete="CASCADE"
     )
