@@ -91,6 +91,9 @@ def _started():
 class SurfaceScopeService:
     def __init__(self, session: AsyncSession):
         self.session = session
+        # one instance per request, so these answer the same question every time
+        self._picked: dict[tuple[UUID, str], list] = {}
+        self._targets_by_project: dict[UUID, dict[UUID, Target]] = {}
 
     async def scope(self, project_id: UUID, dimension: str) -> QueryScope:
         picks = await self._picks(project_id, dimension)
@@ -98,6 +101,9 @@ class SurfaceScopeService:
 
     async def _picks(self, project_id: UUID, dimension: str):
         """The newest scan of each target that actually ran this dimension."""
+        cached = self._picked.get((project_id, dimension))
+        if cached is not None:
+            return cached
         model = TABLES[dimension]
         names = covering_stages()[dimension]
         rows = await self.session.execute(
@@ -117,13 +123,20 @@ class SurfaceScopeService:
             .distinct(Scan.target_id)
             .order_by(Scan.target_id, _started().desc())
         )
-        return list(rows.all())
+        picks = list(rows.all())
+        self._picked[(project_id, dimension)] = picks
+        return picks
 
     async def _targets(self, project_id: UUID) -> dict[UUID, Target]:
+        cached = self._targets_by_project.get(project_id)
+        if cached is not None:
+            return cached
         rows = await self.session.execute(
             select(Target).where(Target.project_id == project_id)
         )
-        return {row.id: row for row in rows.scalars().all()}
+        targets = {row.id: row for row in rows.scalars().all()}
+        self._targets_by_project[project_id] = targets
+        return targets
 
     async def _count(self, dimension: str, scope: QueryScope) -> tuple[int, bool]:
         if not scope:

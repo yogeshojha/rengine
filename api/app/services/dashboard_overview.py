@@ -470,24 +470,21 @@ class DashboardOverviewService:
         """Per dimension, how many keys each scan was the first to report for its target."""
         out: dict[str, dict[UUID, int]] = {}
         for key, model in _TABLES.items():
-            rn = (
-                func.row_number()
-                .over(
-                    partition_by=[model.target_id, *_KEYS[key]],
-                    order_by=[model.discovered_at.asc(), model.scan_id.asc()],
-                )
-                .label("rn")
-            )
-            firsts = select(model.scan_id.label("scan_id"), rn).where(
+            keys = [model.target_id, *_KEYS[key]]
+            # DISTINCT ON rides the (target_id, key) index and sorts incrementally;
+            # row_number() over the same rows re-sorted the whole project every load
+            firsts = select(model.scan_id.label("scan_id")).where(
                 model.project_id == project_id
             )
             if key == VULNS:
                 firsts = firsts.where(not_(_suppressed()))
-            firsts = firsts.subquery()
+            firsts = (
+                firsts.distinct(*keys)
+                .order_by(*keys, model.discovered_at.asc(), model.scan_id.asc())
+                .subquery()
+            )
             result = await self.session.execute(
-                select(firsts.c.scan_id, func.count())
-                .where(firsts.c.rn == 1)
-                .group_by(firsts.c.scan_id)
+                select(firsts.c.scan_id, func.count()).group_by(firsts.c.scan_id)
             )
             out[key] = {row[0]: int(row[1]) for row in result.all()}
         return out
