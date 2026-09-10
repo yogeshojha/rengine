@@ -13,10 +13,12 @@ from sqlalchemy import (
     desc,
     exists,
     func,
+    join,
     literal,
     or_,
     select,
     text,
+    true,
     union_all,
 )
 from sqlalchemy.dialects.postgresql import JSONB, array
@@ -201,18 +203,19 @@ def _token(field: str, op: str, value: str) -> str:
 
 
 class _Reach:
-    """The rows a facet counts. With nothing narrowing them, filter the table directly:
-    joining every facet against a scan-sized id subquery measured 3x slower."""
+    """The rows a query counts. With nothing narrowing them, filter the table directly:
+    joining against a scan-sized id subquery measured 3x slower per aggregate."""
 
     def __init__(self, scope: QueryScope, base, narrowed: bool):
         self.scope = scope
-        self._scoped = base.subquery() if narrowed else None
+        ids = base.subquery() if narrowed else None
+        self.source = (
+            Endpoint if ids is None else join(Endpoint, ids, Endpoint.id == ids.c.id)
+        )
+        self.limit = scope.match(Endpoint.scan_id) if ids is None else true()
 
     def within(self, query):
-        query = query.select_from(Endpoint)
-        if self._scoped is None:
-            return query.where(self.scope.match(Endpoint.scan_id))
-        return query.join(self._scoped, Endpoint.id == self._scoped.c.id)
+        return query.select_from(self.source).where(self.limit)
 
 
 def _column_branch(reach: _Reach, column):
@@ -692,8 +695,8 @@ class EndpointService:
             )
         if predicate is not None:
             base = base.where(predicate)
-        scoped = base.subquery()
-        agg, substantive = self._host_aggregate(scoped, scope)
+        reach = _Reach(scope, base, f.has_facets() or predicate is not None)
+        agg, substantive = self._host_aggregate(reach, scope)
         if f.hide_root_only:
             agg = agg.having(substantive > 0)
         await self.session.execute(text(STATEMENT_TIMEOUT))
@@ -701,16 +704,16 @@ class EndpointService:
         totals = (
             await self.session.execute(
                 select(func.count(func.distinct(Endpoint.host)), func.count())
-                .select_from(Endpoint)
-                .join(scoped, Endpoint.id == scoped.c.id)
+                .select_from(reach.source)
+                .where(reach.limit)
             )
         ).one()
         root_only = 0
         if f.hide_root_only:
             parked = (
                 select(Endpoint.host)
-                .select_from(Endpoint)
-                .join(scoped, Endpoint.id == scoped.c.id)
+                .select_from(reach.source)
+                .where(reach.limit)
                 .group_by(Endpoint.host)
                 .having(substantive == 0)
                 .subquery()
@@ -723,10 +726,10 @@ class EndpointService:
         ordered = agg.order_by(*self._host_order(agg, f)).limit(size).offset(offset)
         rows = (await self.session.execute(ordered)).all()
         names = [r.host for r in rows]
-        interests = await self._host_values(scoped, names, Endpoint.interest)
-        sources = await self._host_values(scoped, names, Endpoint.sources)
-        classes = await self._host_classes(scoped, names)
-        chips = await self._host_chips(scoped, names)
+        interests = await self._host_values(reach, names, Endpoint.interest)
+        sources = await self._host_values(reach, names, Endpoint.sources)
+        classes = await self._host_classes(reach, names)
+        chips = await self._host_chips(reach, names)
         identity = await self._host_identity(scope, names)
         unfiltered = (
             await self._host_unfiltered(scope, names, f.hide_static)
@@ -798,7 +801,7 @@ class EndpointService:
         )
 
     @staticmethod
-    def _host_aggregate(scoped, scope: QueryScope):
+    def _host_aggregate(reach: _Reach, scope: QueryScope):
         """The per-host rollup and the count that separates an application from a parked name."""
         interest = cast(Endpoint.interest, JSONB)
         sensitive = func.bool_or(interest.has_any(array(sorted(SENSITIVE_INTERESTS))))
@@ -852,8 +855,8 @@ class EndpointService:
                 score.label("score"),
                 func.min(Endpoint.url).label("sample"),
             )
-            .select_from(Endpoint)
-            .join(scoped, Endpoint.id == scoped.c.id)
+            .select_from(reach.source)
+            .where(reach.limit)
             .group_by(Endpoint.host)
         )
         return agg, substantive
@@ -876,15 +879,15 @@ class EndpointService:
         return [lead.desc(), cols.n.desc(), cols.host.asc()]
 
     async def _host_values(
-        self, scoped, hosts: list[str], column
+        self, reach: _Reach, hosts: list[str], column
     ) -> dict[str, list[str]]:
         if not hosts:
             return {}
         value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued("v")
         rows = await self.session.execute(
             select(Endpoint.host, value)
-            .select_from(Endpoint)
-            .join(scoped, Endpoint.id == scoped.c.id)
+            .select_from(reach.source)
+            .where(reach.limit)
             .where(Endpoint.host.in_(hosts))
             .group_by(Endpoint.host, value)
         )
@@ -894,14 +897,14 @@ class EndpointService:
         return out
 
     async def _host_classes(
-        self, scoped, hosts: list[str]
+        self, reach: _Reach, hosts: list[str]
     ) -> dict[str, dict[str, int]]:
         if not hosts:
             return {}
         rows = await self.session.execute(
             select(Endpoint.host, Endpoint.endpoint_class, func.count())
-            .select_from(Endpoint)
-            .join(scoped, Endpoint.id == scoped.c.id)
+            .select_from(reach.source)
+            .where(reach.limit)
             .where(Endpoint.host.in_(hosts))
             .group_by(Endpoint.host, Endpoint.endpoint_class)
         )
@@ -911,7 +914,7 @@ class EndpointService:
         return out
 
     async def _host_chips(
-        self, scoped, hosts: list[str]
+        self, reach: _Reach, hosts: list[str]
     ) -> dict[str, list[FolderChip]]:
         """Every top-level folder of each host, ranked the way the outline ranks them."""
         if not hosts:
@@ -940,8 +943,8 @@ class EndpointService:
                 .label("answering"),
                 func.bool_and(_archive_only_sources()).label("archived"),
             )
-            .select_from(Endpoint)
-            .join(scoped, Endpoint.id == scoped.c.id)
+            .select_from(reach.source)
+            .where(reach.limit)
             .where(
                 Endpoint.host.in_(hosts),
                 *[~Endpoint.dir_path.like(f"{d}%") for d in ROOT_NOISE_DIRS],

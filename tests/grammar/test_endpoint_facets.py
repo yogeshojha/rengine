@@ -106,3 +106,17 @@ async def test_summary_totals_agree_with_the_facets(estate, now):
     assert summary.live == live
     assert summary.with_params == 2
     assert summary.interesting == 1
+
+
+async def test_hide_static_narrows_the_host_rollup(estate, now):
+    """hide_static is applied by the filter but is absent from _narrowed(), so the
+    host rollup must decide its reach from has_facets() or the static rows leak back in."""
+    scan = await _scan(estate, now)
+    service = EndpointService(estate.session)
+
+    everything = await service.hosts(scan, EndpointFilter())
+    without_static = await service.hosts(scan, EndpointFilter(hide_static=True))
+
+    assert everything.total_endpoints == 8
+    assert without_static.total_endpoints == 6, "the two style rows must be gone"
+    assert without_static.items[0].subtree_count == 6
