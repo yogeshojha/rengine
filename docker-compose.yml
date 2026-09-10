@@ -111,10 +111,12 @@ services:
       - /app/tools/rengine_tools.egg-info
     env_file:
       - .env
+    # one scan now holds up to 5 slots at its widest — 3 gating stages plus the 2 that
+    # run beside them — so 8 covered a single scan and queued the moment two overlapped
     command: >
       uv run celery -A app.celery worker
       --loglevel=DEBUG
-      --concurrency=${CELERY_SCAN_CONCURRENCY:-8}
+      --concurrency=${CELERY_SCAN_CONCURRENCY:-12}
       --queues=critical,default,scans
       --hostname=worker-default@%h
       --max-tasks-per-child=100

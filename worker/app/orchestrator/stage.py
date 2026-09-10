@@ -136,6 +136,17 @@ def run_stage(
         (scan.execution_config or {}).get("target_value", ""),
     )
     _register_task_id(session, scan, celery_task_id)
+
+    done = activity_svc.finished(scan.id, spec.name)
+    if done is not None:
+        logger.info(
+            "stage already finished, not run again",
+            scan_id=str(scan.id),
+            stage=spec.name,
+            status=done.status,
+        )
+        return
+
     _supersede_orphan_activities(session, scan, spec.name)
 
     activity = activity_svc.create(

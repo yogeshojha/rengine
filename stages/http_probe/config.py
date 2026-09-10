@@ -11,7 +11,7 @@ class HttpProbeConfig(StageConfig):
         title="Probe HTTP services",
         description="Fingerprint every host and port for live HTTP, technologies and titles.",
     )
-    threads: int = threads(30, title="Threads")
+    threads: int = threads(150, title="Threads")
     timeout: int = timeout(10, title="Timeout (s)")
     rate: int = rate(150, tool="httpx", title="Requests/s")
     follow_redirects: bool = Field(

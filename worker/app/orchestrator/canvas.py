@@ -1,10 +1,10 @@
-"""Build the celery canvas (parallel group per level, chained, + finalize) for a scan."""
+"""Render the stage execution plan as a celery canvas."""
 
 from celery import chain, chord, group, signature
 
 from app.celery import celery_app
 from shared.definitions.constants import SCANS_QUEUE
-from stages.registry import ordered_levels
+from stages.registry import StagePlan, execution_plan
 
 
 def _stage_sig(scan_id: str, stage_name: str):
@@ -30,21 +30,37 @@ def _finalize_sig(scan_id: str):
     )
 
 
+def _parallel(parts: list):
+    return parts[0] if len(parts) == 1 else group(parts, app=celery_app)
+
+
+def _render(scan_id: str, plan: StagePlan):
+    """`gating` in front of `then`, `beside` alongside it."""
+    tail = None if plan.then is None else _render(scan_id, plan.then)
+    gating = [_stage_sig(scan_id, name) for name in plan.gating]
+    beside = [_stage_sig(scan_id, name) for name in plan.beside]
+
+    if tail is None:
+        return _parallel(gating + beside)
+    head = _parallel(gating) if gating else None
+    if head is None:
+        spine = tail
+    elif isinstance(head, group):
+        spine = chord(head, tail, app=celery_app)
+    else:
+        spine = chain(head, tail, app=celery_app)
+    return spine if not beside else _parallel([spine, *beside])
+
+
 def build_canvas(scan_id: str, start_level: int = 0, done: set[str] | None = None):
-    """Nest levels as chords innermost-first — a flat chain of groups lets celery merge and double-apply one."""
+    """Nest levels innermost-first — a flat chain of groups lets celery merge and double-apply one."""
     # every node carries the configured app: an unbound signature resolves to whatever
     # `current_app` happens to be, and a backend-less one cannot start a chord
-    workflow = _finalize_sig(scan_id)
-    for level in reversed(ordered_levels()[start_level:]):
-        # a resumed level re-runs only what never finished — a second run of a
-        # SUCCESS stage costs its whole runtime and can fail the scan on a retry
-        specs = [spec for spec in level if not done or spec.name not in done]
-        if not specs:
-            continue
-        stage_sigs = [_stage_sig(scan_id, spec.name) for spec in specs]
-        workflow = (
-            chain(stage_sigs[0], workflow, app=celery_app)
-            if len(stage_sigs) == 1
-            else chord(group(stage_sigs, app=celery_app), workflow, app=celery_app)
-        )
-    return workflow
+    plan = execution_plan(start_level, frozenset(done or ()))
+    finalize = _finalize_sig(scan_id)
+    if plan is None:
+        return finalize
+    body = _render(scan_id, plan)
+    if isinstance(body, group):
+        return chord(body, finalize, app=celery_app)
+    return chain(body, finalize, app=celery_app)

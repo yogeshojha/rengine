@@ -2,7 +2,7 @@ import logging
 import uuid
 from collections.abc import Callable
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from shared.definitions.constants import MAX_COMMAND_OUTPUT
@@ -23,6 +23,29 @@ class ScanActivityService:
 
     def __init__(self, session: Session) -> None:
         self.session = session
+
+    def finished(self, scan_id, name: str) -> ScanActivity | None:
+        """A stage that already reached SUCCESS or PARTIAL for this scan.
+
+        build_canvas omits finished stages on a resume, but a re-delivered celery
+        message or a hand-dispatched task reaches the runner directly — and several
+        stages clear the previous attempt's rows inside their first flush, so a second
+        run of a successful stage replaces a complete result with a partial one.
+        """
+        return self.session.execute(
+            select(ScanActivity)
+            .where(
+                ScanActivity.scan_id == scan_id,
+                ScanActivity.name == name,
+                ScanActivity.status.in_(
+                    (
+                        ScanActivityStatus.SUCCESS.value,
+                        ScanActivityStatus.PARTIAL.value,
+                    )
+                ),
+            )
+            .limit(1)
+        ).scalar_one_or_none()
 
     def create(
         self,

@@ -32,7 +32,7 @@ class UrlDiscoveryConfig(StageConfig):
         description="Sources URLs are collected from. Response mining reads bodies this scan already stored and sends no request.",
         json_schema_extra={"options": list(_PROVIDER_LABELS)},
     )
-    threads: int = threads(10, title="Threads")
+    threads: int = threads(50, title="Threads")
     timeout: int = timeout(15, title="Timeout (s)")
     rate: int = rate(150, tool="katana", title="Requests/s")
     crawl_depth: int = Field(

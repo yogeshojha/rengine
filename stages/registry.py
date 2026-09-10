@@ -189,6 +189,52 @@ def ordered_levels() -> list[list[StageSpec]]:
     return [groups[key] for key in sorted(groups)]
 
 
+@dataclass(frozen=True)
+class StagePlan:
+    """How the levels nest. `gating` must all finish before `then` may start; `beside`
+    runs in parallel with `then` because no later stage depends on it."""
+
+    gating: tuple[str, ...]
+    beside: tuple[str, ...]
+    then: StagePlan | None
+
+    def names(self) -> set[str]:
+        out = set(self.gating) | set(self.beside)
+        if self.then is not None:
+            out |= self.then.names()
+        return out
+
+
+def execution_plan(
+    start_level: int = 0, done: frozenset[str] | None = None
+) -> StagePlan | None:
+    """The scan's execution graph. A stage nothing later depends on never gates a level:
+    level 6 needs origin_probe, url_discovery and service_fingerprint, and used to wait
+    hours on vulnerability_scan, which nothing reads."""
+    return _plan(ordered_levels()[start_level:], done or frozenset())
+
+
+def _plan(levels: list[list[StageSpec]], done: frozenset[str]) -> StagePlan | None:
+    if not levels:
+        return None
+    head, rest = levels[0], levels[1:]
+    # a resumed level re-runs only what never finished — a second run of a
+    # SUCCESS stage costs its whole runtime and can fail the scan on a retry
+    specs = [spec for spec in head if spec.name not in done]
+    tail = _plan(rest, done)
+
+    if tail is None:
+        names = tuple(sorted(spec.name for spec in specs))
+        return StagePlan(gating=names, beside=(), then=None) if names else None
+    if not specs:
+        return tail
+
+    awaited = {dep for level in rest for spec in level for dep in spec.depends_on}
+    gating = tuple(sorted(s.name for s in specs if s.name in awaited))
+    beside = tuple(sorted(s.name for s in specs if s.name not in awaited))
+    return StagePlan(gating=gating, beside=beside, then=tail)
+
+
 def phases() -> list[tuple[str, list[StageSpec]]]:
     grouped: dict[str, list[StageSpec]] = {}
     for spec in stages():
@@ -207,8 +253,10 @@ def rate_tools() -> tuple[str, ...]:
 
 
 __all__ = [
+    "StagePlan",
     "StageRegistrationError",
     "StageSpec",
+    "execution_plan",
     "get_stage",
     "ordered_levels",
     "phases",
