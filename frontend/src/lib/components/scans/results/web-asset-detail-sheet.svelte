@@ -885,8 +885,8 @@
 										<Link2 class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
 										<div class="min-w-0 flex-1">
 											<p class="text-xs font-medium">
-												{r.hosts.length}
-												{r.hosts.length === 1 ? 'host' : 'hosts'}
+												{(r.total || r.hosts.length).toLocaleString()}
+												{(r.total || r.hosts.length) === 1 ? 'host' : 'hosts'}
 												{relationLabel(r)}
 											</p>
 											<Hint text={r.value}>

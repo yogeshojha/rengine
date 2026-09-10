@@ -217,6 +217,8 @@ export interface SubdomainRelation {
 	reason: string;
 	value: string;
 	hosts: string[];
+	// the list is capped; this is how many there really are
+	total: number;
 }
 
 export const RELATION_LABELS: Record<string, string> = {

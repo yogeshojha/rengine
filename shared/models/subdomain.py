@@ -180,6 +180,8 @@ class SubdomainRelation(BaseModel):
     reason: str
     value: str
     hosts: list[str] = Field(default_factory=list)
+    # the list is capped; this is how many there really are
+    total: int = 0
 
 
 class TargetSubdomainRead(BaseModel):

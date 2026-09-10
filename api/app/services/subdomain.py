@@ -41,6 +41,7 @@ from app.services.ip_address import IpAddressService
 from app.services.port import PortService
 from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, HOST_QUERY
+from shared.definitions.correlation import COMMON_SHARE, MIN_ESTATE_FOR_COMMON
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
 from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.logging import get_logger
@@ -631,13 +632,41 @@ class SubdomainService:
             Subdomain.scan_id == scan_id,
             Subdomain.name != name,
         )
+        estate = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(Subdomain)
+                .where(
+                    Subdomain.project_id == project_id,
+                    Subdomain.scan_id == scan_id,
+                )
+            )
+            or 0
+        )
+        # every other correlation here filters for noise; this one capped and did not,
+        # so "same network" returned 300 hosts on a single-network estate
+        common = (
+            int(estate * COMMON_SHARE)
+            if estate >= MIN_ESTATE_FOR_COMMON
+            else estate + 1
+        )
 
-        async def hosts(stmt) -> list[str]:
+        async def hosts(stmt) -> tuple[list[str], int]:
+            """The hosts sharing a value and how many there are. A value carried by
+            half the estate is the estate, not a relation."""
+            counted = int(
+                await self.session.scalar(
+                    select(func.count()).select_from(stmt.limit(common + 1).subquery())
+                )
+                or 0
+            )
+            if counted > common:
+                return [], counted
             res = await self.session.execute(stmt.limit(_RELATION_CAP))
-            return list(dict.fromkeys(res.scalars().all()))
+            return list(dict.fromkeys(res.scalars().all())), counted
 
         if target.resolved_ips:
-            h = await hosts(
+            h, seen = await hosts(
                 others.where(
                     func.jsonb_exists_any(
                         cast(Subdomain.resolved_ips, JSONB),
@@ -652,10 +681,13 @@ class SubdomainService:
                         reason=f"Resolve to a shared IP ({target.resolved_ips[0]})",
                         value=target.resolved_ips[0],
                         hosts=h,
+                        total=seen,
                     )
                 )
         if target.favicon_hash:
-            h = await hosts(others.where(Subdomain.favicon_hash == target.favicon_hash))
+            h, seen = await hosts(
+                others.where(Subdomain.favicon_hash == target.favicon_hash)
+            )
             if h:
                 out.append(
                     SubdomainRelation(
@@ -663,10 +695,11 @@ class SubdomainService:
                         reason="Same favicon hash",
                         value=target.favicon_hash,
                         hosts=h,
+                        total=seen,
                     )
                 )
         if target.cname:
-            h = await hosts(others.where(Subdomain.cname == target.cname))
+            h, seen = await hosts(others.where(Subdomain.cname == target.cname))
             if h:
                 out.append(
                     SubdomainRelation(
@@ -674,10 +707,11 @@ class SubdomainService:
                         reason=f"Share CNAME {target.cname}",
                         value=target.cname,
                         hosts=h,
+                        total=seen,
                     )
                 )
         if target.asn:
-            h = await hosts(others.where(Subdomain.asn == target.asn))
+            h, seen = await hosts(others.where(Subdomain.asn == target.asn))
             if h:
                 out.append(
                     SubdomainRelation(
@@ -686,6 +720,7 @@ class SubdomainService:
                         + (f" ({target.asn_org})" if target.asn_org else ""),
                         value=str(target.asn),
                         hosts=h,
+                        total=seen,
                     )
                 )
         fp = await self.session.scalar(
@@ -698,7 +733,7 @@ class SubdomainService:
             .limit(1)
         )
         if fp:
-            res = await self.session.execute(
+            h, seen = await hosts(
                 select(HttpAsset.host)
                 .where(
                     HttpAsset.scan_id == scan_id,
@@ -706,9 +741,7 @@ class SubdomainService:
                     HttpAsset.host != name,
                 )
                 .distinct()
-                .limit(_RELATION_CAP)
             )
-            h = list(dict.fromkeys(res.scalars().all()))
             if h:
                 out.append(
                     SubdomainRelation(
@@ -716,6 +749,7 @@ class SubdomainService:
                         reason="Same TLS certificate",
                         value=fp,
                         hosts=h,
+                        total=seen,
                     )
                 )
         return out
