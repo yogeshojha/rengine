@@ -7,6 +7,21 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    command: >
+      postgres
+      -c shared_buffers=${POSTGRES_SHARED_BUFFERS:-2GB}
+      -c effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-6GB}
+      -c work_mem=${POSTGRES_WORK_MEM:-32MB}
+      -c maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-512MB}
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c max_parallel_workers_per_gather=4
+      -c jit=off
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.max=5000
+      -c pg_stat_statements.track=top
+      -c track_io_timing=on
+      -c log_min_duration_statement=${POSTGRES_LOG_MIN_DURATION:-2000}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rengine"]
       interval: 5s
