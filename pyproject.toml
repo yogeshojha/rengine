@@ -64,6 +64,7 @@ section-order = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "F403"]
 "scripts/*.py" = ["T201"]  # maintenance CLIs: stdout is their interface
+"tests/**/*.py" = ["S101", "S105", "S106", "PLR2004", "ARG001", "PLR0915"]  # asserts, literal expectations, fixture args
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -77,4 +78,16 @@ line-ending = "auto"
 [dependency-groups]
 dev = [
     "ruff>=0.14.14",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+addopts = "-q --strict-markers --strict-config"
+markers = [
+    "grammar: invariants of the asset query language",
+    "pipeline: scan orchestration and stage behaviour",
+    "api: exercised through the HTTP surface",
 ]

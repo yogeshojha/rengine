@@ -20,7 +20,9 @@ _MAX_IPS = 8
 class VhostStage(Stage):
     name = "vhost"
     title = "Virtual Host Discovery"
-    description = "Find virtual hosts that DNS does not resolve, by varying the Host header."
+    description = (
+        "Find virtual hosts that DNS does not resolve, by varying the Host header."
+    )
     phase = Phase.EXPANSION.value
     depends_on = frozenset({"reverse_dns", "subdomain_discovery"})
     group = StageGroup.HOSTS.value

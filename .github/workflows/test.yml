@@ -1,0 +1,84 @@
+name: 🧪 Tests
+
+on:
+  push:
+    branches:
+      - master
+      - release/*
+  pull_request:
+    branches:
+      - master
+      - release/*
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: 🧹 Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout the git repo
+        uses: actions/checkout@v4
+
+      - name: 🐍 Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: 🧹 ruff check
+        run: uvx ruff@0.14.14 check api shared reports worker interest connectors mcp toolbox stages tools
+
+      - name: 🎨 ruff format
+        run: uvx ruff@0.14.14 format --check api shared reports worker interest connectors mcp toolbox stages tools tests
+
+  pytest:
+    name: 🐍 Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout the git repo
+        uses: actions/checkout@v4
+
+      - name: 🔑 Write a throwaway environment
+        run: |
+          cat > .env <<'ENV'
+          DEBUG=true
+          POSTGRES_USER=rengine
+          POSTGRES_PASSWORD=rengine
+          POSTGRES_DB=rengine
+          POSTGRES_HOST=db
+          POSTGRES_PORT=5432
+          POSTGRES_SHARED_BUFFERS=256MB
+          POSTGRES_EFFECTIVE_CACHE_SIZE=1GB
+          POSTGRES_WORK_MEM=16MB
+          POSTGRES_MAINTENANCE_WORK_MEM=128MB
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          SECRET_KEY=ci-only-not-a-secret-0000000000000000
+          ADMIN_EMAIL=admin@rengine.local
+          ADMIN_USERNAME=rengine
+          ADMIN_PASSWORD=ci-only-not-a-secret
+          ENV
+
+      - name: 🏗️ Build the api image
+        run: docker compose build api
+
+      - name: 🐘 Start postgres and redis
+        run: |
+          docker compose up -d db redis
+          for _ in $(seq 1 60); do
+            docker compose exec -T db pg_isready -U rengine && break
+            sleep 2
+          done
+
+      - name: 🧪 pytest
+        run: >
+          docker compose run --rm --no-deps api
+          sh -lc 'cd /app && /app/.venv/bin/python -m pytest tests -q --tb=short'
+
+      - name: 📜 Service logs on failure
+        if: failure()
+        run: docker compose logs --tail 200 db api
+
+      - name: 🧹 Tear down
+        if: always()
+        run: docker compose down -v

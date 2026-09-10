@@ -55,7 +55,9 @@ def _parse_asn(value: str) -> int | None:
 class IpEnrichmentStage(Stage):
     name = "ip_enrichment"
     title = "IP Enrichment"
-    description = "Resolve ASN, network operator and country for every IP address the scan found."
+    description = (
+        "Resolve ASN, network operator and country for every IP address the scan found."
+    )
     phase = Phase.DEPTH.value
     depends_on = frozenset(
         {
