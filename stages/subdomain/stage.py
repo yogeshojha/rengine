@@ -72,6 +72,8 @@ _SHUFFLE_SEED = 1
 # budget may assume. Guessing is bounded by total time, never by an idle watchdog.
 _GUESS_FLOOR_RATE = 5
 _GUESS_MIN_BUDGET = 300
+# a write worth naming in the timeline rather than hiding between two batches
+_SLOW_WRITE_SECONDS = 5.0
 _WRITE_BATCH = 1000
 
 
@@ -115,6 +117,7 @@ class _Batch:
     names: list[str]
     answered: int = 0
     stalled: bool = False
+    seconds: float = 0.0
 
     @property
     def rate(self) -> float:
@@ -543,18 +546,28 @@ class SubdomainStage(Stage):
         ]
         state.batches = len(batches)
 
+        # every phase is timed: a gov.np run left 707 s between one batch ending and
+        # the next starting with nothing in the timeline to explain it
         for done, (batch, (records, stalled)) in enumerate(
             self._resolve_batches(client, batches, cfg), start=1
         ):
             state.records.update(records)
             batch.answered = len(records)
             batch.stalled = stalled
+            wrote = 0.0
             if wildcard_ips is not None:
+                started = time.monotonic()
                 self._write_resolution(records, wildcard_ips)
-            self.emit_progress(
+                wrote = time.monotonic() - started
+            note = (
                 f"resolved {state.answered:,}/{len(names):,} names "
-                f"(batch {done}/{len(batches)})"
+                f"(batch {done}/{len(batches)}, {batch.seconds:.0f}s dns"
             )
+            if wrote >= _SLOW_WRITE_SECONDS:
+                note += f", {wrote:.0f}s write"
+            if stalled:
+                note += ", killed on silence"
+            self.emit_progress(note + ")")
 
         self._retry_degraded(client, batches, state, cfg)
         return state
@@ -566,15 +579,21 @@ class SubdomainStage(Stage):
         workers = min(max(1, cfg.dns_batch_concurrency), len(batches))
         if workers == 1:
             for batch in batches:
-                yield batch, self._run_batch(client, batch.names, cfg)
+                started = time.monotonic()
+                answered = self._run_batch(client, batch.names, cfg)
+                batch.seconds = time.monotonic() - started
+                yield batch, answered
             return
         with ThreadPoolExecutor(max_workers=workers) as pool:
+            started = time.monotonic()
             futures = {
                 pool.submit(self._run_batch, client, batch.names, cfg): batch
                 for batch in batches
             }
             for future in as_completed(futures):
-                yield futures[future], future.result()
+                batch = futures[future]
+                batch.seconds = time.monotonic() - started
+                yield batch, future.result()
 
     def _retry_degraded(
         self,
