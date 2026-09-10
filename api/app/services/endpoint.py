@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     Text,
     and_,
+    case,
     cast,
     desc,
     exists,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     or_,
     select,
     text,
+    union_all,
 )
 from sqlalchemy.dialects.postgresql import JSONB, array
 from sqlalchemy.exc import DBAPIError
@@ -114,6 +116,14 @@ _W_API = 1.5
 _W_SIZE = 0.5
 _AUTH_WALL = (401, 403)
 _STATUS_CLASSES = ("2xx", "3xx", "4xx", "5xx", "none")
+_STATUS_LABELS = {"none": "Not checked"}
+
+
+def _label(rows: list[tuple[str, int]], labels: dict) -> list[EndpointFacet]:
+    return [
+        EndpointFacet(value=value, label=labels.get(value) or value, count=count)
+        for value, count in rows
+    ]
 
 
 def _is_static():
@@ -188,6 +198,61 @@ def _token(field: str, op: str, value: str) -> str:
     escaped = value.replace("\\", "\\\\").replace('"', '\\"')
     quoted = f'"{escaped}"' if _needs_quote(value) else value
     return f"{field}{op}{quoted}"
+
+
+class _Reach:
+    """The rows a facet counts. With nothing narrowing them, filter the table directly:
+    joining every facet against a scan-sized id subquery measured 3x slower."""
+
+    def __init__(self, scope: QueryScope, base, narrowed: bool):
+        self.scope = scope
+        self._scoped = base.subquery() if narrowed else None
+
+    def within(self, query):
+        query = query.select_from(Endpoint)
+        if self._scoped is None:
+            return query.where(self.scope.match(Endpoint.scan_id))
+        return query.join(self._scoped, Endpoint.id == self._scoped.c.id)
+
+
+def _column_branch(reach: _Reach, column):
+    return (
+        reach.within(select(cast(column, Text).label("value"), func.count().label("n")))
+        .where(column.isnot(None), cast(column, Text) != "")
+        .group_by(column)
+        .order_by(desc("n"), cast(column, Text))
+        .limit(_FACET_LIMIT)
+        .subquery()
+    )
+
+
+def _array_branch(reach: _Reach, column):
+    value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued("v")
+    return (
+        reach.within(
+            select(
+                value.label("value"),
+                func.count(func.distinct(Endpoint.id)).label("n"),
+            )
+        )
+        .group_by(value)
+        .order_by(desc("n"), value)
+        .limit(_FACET_LIMIT)
+        .subquery()
+    )
+
+
+def _status_branch(reach: _Reach):
+    bucket = case(
+        *[(endpoint_status_class(name), literal(name)) for name in _STATUS_CLASSES],
+        else_=None,
+    )
+    return (
+        reach.within(select(bucket.label("value"), func.count().label("n")))
+        .where(bucket.isnot(None))
+        .group_by(bucket)
+        .subquery()
+    )
 
 
 class EndpointService:
@@ -436,88 +501,67 @@ class EndpointService:
             return EndpointFacets()
         if predicate is not None:
             base = base.where(predicate)
-        scoped = base.subquery()
+        reach = _Reach(scope, base, f.has_facets() or predicate is not None)
 
-        out = EndpointFacets()
-        out.total = int(
-            await self.session.scalar(select(func.count()).select_from(scoped)) or 0
-        )
-        out.static_total = int(
-            await self.session.scalar(
-                select(func.count())
-                .select_from(Endpoint)
-                .join(scoped, Endpoint.id == scoped.c.id)
-                .where(_is_static())
-            )
-            or 0
-        )
-        out.endpoint_class = await self._column_facet(
-            scoped, Endpoint.endpoint_class, CLASS_LABELS
-        )
-        out.extension = await self._column_facet(scoped, Endpoint.extension, {})
-        out.host = await self._column_facet(scoped, Endpoint.host, {})
-        out.source = await self._array_facet(scoped, Endpoint.sources, SOURCE_LABELS)
-        out.interest = await self._array_facet(
-            scoped, Endpoint.interest, INTEREST_LABELS
-        )
-        out.status_class = await self._status_facet(scoped)
-        return out
-
-    async def _column_facet(self, scoped, column, labels) -> list[EndpointFacet]:
-        rows = await self.session.execute(
-            select(column, func.count().label("n"))
-            .select_from(Endpoint)
-            .join(scoped, Endpoint.id == scoped.c.id)
-            .where(column.isnot(None), cast(column, Text) != "")
-            .group_by(column)
-            .order_by(desc("n"), column)
-            .limit(_FACET_LIMIT)
-        )
-        return [
-            EndpointFacet(
-                value=str(value),
-                label=labels.get(str(value)) or str(value),
-                count=int(n),
-            )
-            for value, n in rows.all()
-        ]
-
-    async def _array_facet(self, scoped, column, labels) -> list[EndpointFacet]:
-        value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued("v")
-        rows = await self.session.execute(
-            select(
-                value.label("value"), func.count(func.distinct(Endpoint.id)).label("n")
-            )
-            .select_from(Endpoint)
-            .join(scoped, Endpoint.id == scoped.c.id)
-            .group_by(value)
-            .order_by(desc("n"), value)
-            .limit(_FACET_LIMIT)
-        )
-        return [
-            EndpointFacet(
-                value=str(raw), label=labels.get(str(raw)) or str(raw), count=int(n)
-            )
-            for raw, n in rows.all()
-        ]
-
-    async def _status_facet(self, scoped) -> list[EndpointFacet]:
-        out: list[EndpointFacet] = []
-        for name in _STATUS_CLASSES:
-            n = await self.session.scalar(
-                select(func.count())
-                .select_from(Endpoint)
-                .join(scoped, Endpoint.id == scoped.c.id)
-                .where(endpoint_status_class(name))
-            )
-            if n:
-                out.append(
-                    EndpointFacet(
-                        value=name,
-                        label="Not checked" if name == "none" else name,
-                        count=int(n),
+        counts = (
+            await self.session.execute(
+                reach.within(
+                    select(
+                        func.count().label("total"),
+                        func.count().filter(_is_static()).label("static"),
                     )
                 )
+            )
+        ).one()
+
+        out = EndpointFacets()
+        out.total = int(counts.total or 0)
+        out.static_total = int(counts.static or 0)
+
+        grouped = await self._facets(
+            [
+                ("endpoint_class", _column_branch(reach, Endpoint.endpoint_class)),
+                ("extension", _column_branch(reach, Endpoint.extension)),
+                ("host", _column_branch(reach, Endpoint.host)),
+                ("status_class", _status_branch(reach)),
+            ]
+        )
+        arrays = await self._facets(
+            [
+                ("source", _array_branch(reach, Endpoint.sources)),
+                ("interest", _array_branch(reach, Endpoint.interest)),
+            ]
+        )
+        out.endpoint_class = _label(grouped["endpoint_class"], CLASS_LABELS)
+        out.extension = _label(grouped["extension"], {})
+        out.host = _label(grouped["host"], {})
+        out.status_class = _label(
+            sorted(grouped["status_class"], key=lambda r: _STATUS_CLASSES.index(r[0])),
+            _STATUS_LABELS,
+        )
+        out.source = _label(arrays["source"], SOURCE_LABELS)
+        out.interest = _label(arrays["interest"], INTEREST_LABELS)
+        return out
+
+    async def _facets(self, branches) -> dict[str, list[tuple[str, int]]]:
+        """One statement for many facets, so each keeps its own index and its own cap."""
+        rows = await self.session.execute(
+            union_all(
+                *[
+                    select(
+                        literal(kind).label("kind"),
+                        branch.c.value.label("value"),
+                        branch.c.n.label("n"),
+                    )
+                    for kind, branch in branches
+                ]
+            )
+        )
+        out: dict[str, list[tuple[str, int]]] = {kind: [] for kind, _ in branches}
+        for kind, value, n in rows.all():
+            out[kind].append((str(value), int(n)))
+        for values in out.values():
+            values.sort(key=lambda pair: (-pair[1], pair[0]))
         return out
 
     async def leads(self, scope: ScopeLike, f: EndpointFilter) -> QueryLeads:
@@ -1305,6 +1349,13 @@ class EndpointService:
                 select(
                     func.count().label("total"),
                     func.count(func.distinct(Endpoint.host)).label("hosts"),
+                    func.count().filter(endpoint_is_new(scope)).label("fresh"),
+                    func.count().filter(Endpoint.is_probed.is_(True)).label("probed"),
+                    func.count().filter(endpoint_status_class("2xx")).label("live"),
+                    func.count().filter(Endpoint.param_count > 0).label("with_params"),
+                    func.count()
+                    .filter(func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0)
+                    .label("interesting"),
                 ).where(*reach)
             )
         ).one()
@@ -1312,6 +1363,12 @@ class EndpointService:
         out = EndpointSummary(total=total, hosts=int(row.hosts))
         if not total:
             return out
+        out.new = int(row.fresh or 0)
+        out.probed = int(row.probed or 0)
+        out.live = int(row.live or 0)
+        out.with_params = int(row.with_params or 0)
+        out.interesting = int(row.interesting or 0)
+
         previous, previous_at = await self._previous_scan(scope)
         out.previous_scan_id = previous
         out.previous_scan_at = previous_at
@@ -1322,39 +1379,6 @@ class EndpointService:
             out.gone = int(
                 await self.session.scalar(select(func.count()).where(*gone_scope)) or 0
             )
-        out.new = int(
-            await self.session.scalar(
-                select(func.count()).where(*reach, endpoint_is_new(scope))
-            )
-            or 0
-        )
-        out.probed = int(
-            await self.session.scalar(
-                select(func.count()).where(*reach, Endpoint.is_probed.is_(True))
-            )
-            or 0
-        )
-        out.live = int(
-            await self.session.scalar(
-                select(func.count()).where(*reach, endpoint_status_class("2xx"))
-            )
-            or 0
-        )
-        out.with_params = int(
-            await self.session.scalar(
-                select(func.count()).where(*reach, Endpoint.param_count > 0)
-            )
-            or 0
-        )
-        out.interesting = int(
-            await self.session.scalar(
-                select(func.count()).where(
-                    *reach,
-                    func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0,
-                )
-            )
-            or 0
-        )
         by_class = await self.session.execute(
             select(Endpoint.endpoint_class, func.count())
             .where(*reach)

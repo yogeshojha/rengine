@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from shared.config import BaseAppSettings
 from shared.enums.target import TargetType
+from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.project import Project
@@ -243,6 +244,48 @@ class Estate:
                     content_hash=content_hash,
                     jarm=jarm,
                     tls_issuer=issuer,
+                    discovered_at=at,
+                )
+            )
+        await self.session.flush()
+
+    async def endpoints(
+        self,
+        scan: str,
+        paths: list[str],
+        *,
+        at: datetime,
+        host: str = "www.example.com",
+        status: int | None = None,
+        kind: str = "page",
+        sources: list[str] | None = None,
+        interest: list[str] | None = None,
+        params: int = 0,
+    ) -> None:
+        sid = self.scans[scan]
+        target_id = await self._target_of(sid)
+        for path in paths:
+            directory, _, filename = path.rpartition("/")
+            extension = filename.rpartition(".")[2] if "." in filename else None
+            self.session.add(
+                Endpoint(
+                    project_id=self.project_id,
+                    scan_id=sid,
+                    target_id=target_id,
+                    signature=uuid.uuid4().hex,
+                    url=f"https://{host}{path}",
+                    host=host,
+                    path=path,
+                    dir_path=f"{directory}/" if directory else "/",
+                    filename=filename or None,
+                    extension=extension,
+                    endpoint_class=kind,
+                    sources=sources or ["seed"],
+                    primary_source=(sources or ["seed"])[0],
+                    interest=interest or [],
+                    param_count=params,
+                    is_probed=status is not None,
+                    status_code=status,
                     discovered_at=at,
                 )
             )
