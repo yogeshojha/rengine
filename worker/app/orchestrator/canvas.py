@@ -30,12 +30,12 @@ def _finalize_sig(scan_id: str):
     )
 
 
-def build_canvas(scan_id: str):
+def build_canvas(scan_id: str, start_level: int = 0):
     """Nest levels as chords innermost-first — a flat chain of groups lets celery merge and double-apply one."""
     # every node carries the configured app: an unbound signature resolves to whatever
     # `current_app` happens to be, and a backend-less one cannot start a chord
     workflow = _finalize_sig(scan_id)
-    for level in reversed(ordered_levels()):
+    for level in reversed(ordered_levels()[start_level:]):
         stage_sigs = [_stage_sig(scan_id, spec.name) for spec in level]
         workflow = (
             chain(stage_sigs[0], workflow, app=celery_app)

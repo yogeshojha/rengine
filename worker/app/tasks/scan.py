@@ -1,25 +1,41 @@
 """Scan orchestrator celery tasks: run_scan (dispatch canvas), run_scan_stage, finalize_scan."""
 
 import uuid
+from datetime import timedelta
 
+import redis
 from celery import shared_task
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
+from app.celery import celery_app
 from app.config import settings
 from app.database import get_sync_session
 from app.orchestrator import build_canvas, finalize_scan_run, run_stage
+from shared.definitions.constants import SCANS_QUEUE
 from shared.enums.activity import ActivityEvent, ActivityLevel
-from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
+from shared.enums.scan import (
+    ACTIVITY_TERMINAL_STATUSES,
+    SCAN_TERMINAL_STATUSES,
+    ScanStatus,
+)
 from shared.logging import get_logger
 from shared.models.scan import Scan
+from shared.models.scan_activity import ScanActivity
 from shared.services.activity_log import ActivityLogService
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.utils.datetime import utc_now
-from stages.registry import get_stage
+from stages.registry import get_stage, ordered_levels
 
 logger = get_logger(__name__)
 
 # run_scan id + canvas root id — a RUNNING scan with fewer was claimed but not dispatched.
 _DISPATCHED_TASK_IDS = 2
+
+STALL_GRACE_SECONDS = 600
+_INSPECT_TIMEOUT = 5.0
+
+_broker_client: redis.Redis | None = None
 
 
 @shared_task(bind=True, name="app.tasks.scan.run_scan", max_retries=0)
@@ -114,3 +130,83 @@ def finalize_scan(self, scan_id: str) -> dict:  # noqa: ARG001
             return {"error": "scan not found"}
         finalize_scan_run(session, scan, redis_url=settings.celery_broker_url)
     return {"finalized": True, "scan_id": scan_id}
+
+
+@shared_task(bind=True, name="app.tasks.scan.reap_stalled", max_retries=0)
+def reap_stalled(self) -> dict:  # noqa: ARG001
+    """Resume a RUNNING scan whose canvas died."""
+    if _scans_queued():
+        return {"skipped": "queue busy"}
+    active = _active_task_ids()
+    if active is None:
+        return {"skipped": "no worker replied"}
+    resumed = []
+    with get_sync_session() as session:
+        scans = (
+            session.execute(select(Scan).where(Scan.status == ScanStatus.RUNNING.value))
+            .scalars()
+            .all()
+        )
+        for scan in scans:
+            level = _resume_level(session, scan, active)
+            if level is None:
+                continue
+            logger.warning(
+                "scan %s stalled with no task in flight, resuming at level %s",
+                scan.id,
+                level,
+            )
+            build_canvas(str(scan.id), start_level=level).apply_async()
+            resumed.append(str(scan.id))
+    return {"resumed": resumed}
+
+
+def _broker() -> redis.Redis:
+    global _broker_client  # noqa: PLW0603
+    if _broker_client is None:
+        _broker_client = redis.from_url(settings.celery_broker_url)
+    return _broker_client
+
+
+def _scans_queued() -> bool:
+    try:
+        return bool(_broker().llen(SCANS_QUEUE))
+    except Exception:
+        logger.warning("stall check could not read the scans queue", exc_info=True)
+        return True
+
+
+def _active_task_ids() -> set[str] | None:
+    try:
+        replies = celery_app.control.inspect(timeout=_INSPECT_TIMEOUT).active()
+    except Exception:
+        logger.warning("stall check could not inspect the workers", exc_info=True)
+        return None
+    if not replies:
+        return None
+    return {t.get("id") for tasks in replies.values() for t in tasks}
+
+
+def _resume_level(session: Session, scan: Scan, active: set[str]) -> int | None:
+    rows = (
+        session.execute(select(ScanActivity).where(ScanActivity.scan_id == scan.id))
+        .scalars()
+        .all()
+    )
+    if any(
+        r.status not in ACTIVITY_TERMINAL_STATUSES and r.celery_task_id in active
+        for r in rows
+    ):
+        return None
+    last = max(
+        (r.completed_at or r.started_at or r.created_at for r in rows),
+        default=scan.started_at or scan.created_at,
+    )
+    if utc_now() - last < timedelta(seconds=STALL_GRACE_SECONDS):
+        return None
+    done = {r.name for r in rows if r.status in ACTIVITY_TERMINAL_STATUSES}
+    levels = ordered_levels()
+    for index, level in enumerate(levels):
+        if not all(spec.name in done for spec in level):
+            return index
+    return len(levels)

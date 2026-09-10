@@ -28,6 +28,8 @@ celery_app = Celery("rengine")
 # the scan runs twice, so it must sit above the hard time limit, not below it.
 _VISIBILITY_TIMEOUT = settings.TASK_HARD_TIME_LIMIT + 3600
 
+_RESULT_EXPIRES = settings.TASK_HARD_TIME_LIMIT + 3600
+
 celery_app.conf.update(
     broker_url=settings.celery_broker_url,
     broker_connection_retry_on_startup=True,
@@ -43,7 +45,7 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_reject_on_worker_lost=True,
     task_ignore_result=False,
-    result_expires=3600,
+    result_expires=_RESULT_EXPIRES,
     task_soft_time_limit=settings.TASK_SOFT_TIME_LIMIT,
     task_time_limit=settings.TASK_HARD_TIME_LIMIT,
     worker_send_task_events=True,
@@ -91,6 +93,7 @@ celery_app.conf.task_default_routing_key = "default"
 # #############################################################
 
 celery_app.conf.task_routes = {
+    "app.tasks.scan.reap_stalled": {"queue": "default"},
     "app.tasks.scan.*": {"queue": SCANS_QUEUE},
     "app.tasks.whois.*": {"queue": "default"},
     "app.tasks.debug.*": {"queue": "default"},
@@ -135,6 +138,7 @@ celery_app.autodiscover_tasks(
 # #############################################################
 
 SCHEDULE_TICK_SECONDS = 60.0
+STALL_REAP_SECONDS = 300.0
 IP_RANGE_REFRESH_SECONDS = 7 * 24 * 60 * 60.0
 TEMPLATE_SYNC_SECONDS = 24 * 60 * 60.0
 REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
@@ -148,6 +152,10 @@ celery_app.conf.beat_schedule = {
     "scan-schedule-tick": {
         "task": "app.tasks.schedule.tick",
         "schedule": SCHEDULE_TICK_SECONDS,
+    },
+    "scan-stall-reap": {
+        "task": "app.tasks.scan.reap_stalled",
+        "schedule": STALL_REAP_SECONDS,
     },
     "bounty-program-sync": {
         "task": "app.tasks.bounty_programs.sync",
