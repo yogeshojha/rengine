@@ -26,10 +26,19 @@ __pycache__/
 **/build/
 **/*.egg-info/
 
-# Claude Code / agent tooling
+# Claude Code / agent tooling — working notes never ship
 CLAUDE.md
+CLAUDE.local.md
+NOTES.md
+AGENTS.md
+GEMINI.md
+.cursorrules
+.cursor/
+.windsurfrules
+.github/copilot-instructions.md
 .claude/
 .agents/
+.aider*
 skills-lock.json
 
 # scan artifacts (screenshots, etc.)
