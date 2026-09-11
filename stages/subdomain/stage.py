@@ -38,6 +38,7 @@ from stages.subdomain.providers import (
 )
 from tools.alterx import AlterxClient, AlterxError
 from tools.dnsx.client import DnsxClient, DnsxError
+from tools.dnsx.parser import parse_dnsx_jsonl
 
 logger = get_logger(__name__)
 
@@ -229,9 +230,11 @@ class SubdomainStage(Stage):
         wildcard_ips: set[str],
         activity: ActivityLogService,
     ) -> list[ProviderResult]:
-        """Names no public source listed: guessed from a wordlist, then built from what was found."""
+        """Names no public source listed: asked of the zone, guessed, then built from what was found."""
         passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
         out: list[ProviderResult] = []
+        if cfg.zone_transfer:
+            out.append(self._zone_transfer(domain, cfg, passive=passive))
         if cfg.bruteforce:
             out.append(self._bruteforce(domain, cfg, wildcard_ips, passive=passive))
         if cfg.permutations:
@@ -264,6 +267,63 @@ class SubdomainStage(Stage):
         finally:
             with contextlib.suppress(OSError):
                 Path(name).unlink(missing_ok=True)
+
+    def _zone_transfer(
+        self,
+        domain: str,
+        cfg: SubdomainConfig,
+        *,
+        passive: bool,
+    ) -> ProviderResult:
+        """A zone that transfers hands over every name it holds in one answer."""
+        source = SubdomainSource.ZONE_TRANSFER
+        if passive:
+            return self._skipped(
+                source, "a passive scan does not query the target's nameservers"
+            )
+        client = self._client(cfg)
+        if client is None:
+            return self._skipped(source, "dnsx is not installed on this instance")
+
+        start = time.monotonic()
+        result = client.axfr(domain)
+        if not result.success and not result.json_records:
+            return ProviderResult(
+                source=source,
+                error=(result.error or "dnsx returned nothing")[:300],
+                duration_seconds=round(time.monotonic() - start, 2),
+            )
+
+        found: set[str] = set()
+        servers: list[str] = []
+        for recon in parse_dnsx_jsonl(result.json_records):
+            if not recon.zone_transferred:
+                continue
+            found |= recon.zone_names
+            servers += [
+                s
+                for s in (recon.axfr.servers if recon.axfr else [])
+                if s not in servers
+            ]
+
+        if not found:
+            # every zone we meet should land here; say so rather than leaving it blank
+            return ProviderResult(
+                source=source,
+                note="refused by every nameserver",
+                duration_seconds=round(time.monotonic() - start, 2),
+            )
+
+        self.emit_progress(
+            f"{domain} transferred its zone: {len(found):,} names disclosed"
+        )
+        return ProviderResult(
+            source=source,
+            subdomains=found,
+            raw_count=len(found),
+            note=f"transferred by {', '.join(servers)}" if servers else None,
+            duration_seconds=round(time.monotonic() - start, 2),
+        )
 
     def _bruteforce(
         self,

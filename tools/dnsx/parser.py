@@ -139,9 +139,6 @@ def parse_dnsx_record(raw: dict) -> DnsxReconResponse:
         msg = "dnsx record missing 'host' field"
         raise ValueError(msg)
 
-    if isinstance(raw.get("axfr"), dict):
-        raw["axfr"] = None
-
     record = DnsxRecord.model_validate(raw)
 
     return DnsxReconResponse(
@@ -156,7 +153,7 @@ def parse_dnsx_record(raw: dict) -> DnsxReconResponse:
         srv=parse_srv_entries(record.srv_raw),
         soa=parse_soa_entries(record.soa_raw),
         caa=parse_caa_entries(record.caa_raw),
-        axfr=safe_str_list(record.axfr),
+        axfr=record.axfr,
         cdn=record.cdn,
         cdn_name=record.cdn_name,
         status_code=record.status_code,

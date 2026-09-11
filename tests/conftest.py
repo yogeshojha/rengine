@@ -191,6 +191,7 @@ class Estate:
         webserver: str | None = None,
         cdn_name: str | None = None,
         favicon: str | None = None,
+        sources: list[str] | None = None,
     ) -> None:
         sid = self.scans[scan]
         target_id = await self._target_of(sid)
@@ -202,7 +203,7 @@ class Estate:
                     target_id=target_id,
                     name=n,
                     discovered_at=at,
-                    sources=["test"],
+                    sources=sources or ["test"],
                     resolved_ips=ips or [],
                     http_status=status,
                     page_title=title,

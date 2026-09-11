@@ -73,6 +73,12 @@ class DnsxClient:
 
         return self._run(targets, args)
 
+    def axfr(self, targets: str | list[str]) -> ToolResult:
+        """Ask each zone's own nameservers for a transfer; dnsx answers even when refused."""
+        args = self._build_base_args()
+        args.append("-axfr")
+        return self._run(targets, args)
+
     def query(
         self,
         targets: str | list[str],

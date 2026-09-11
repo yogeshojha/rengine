@@ -41,6 +41,11 @@ class SubdomainConfig(StageConfig):
         title="TLS certificate discovery",
         description="Pull subject alternative names from the target's certificates.",
     )
+    zone_transfer: bool = Field(
+        default=True,
+        title="Attempt zone transfer",
+        description="Ask each of the zone's own nameservers for the whole zone. Almost always refused; when it is not, it hands over every name at once.",
+    )
     bruteforce: bool = Field(
         default=True,
         title="Bruteforce names",

@@ -14,7 +14,7 @@ Example dnsx JSONL record from dnsx -json -recon:
   "srv": [],
   "ptr": [],
   "caa": [{"flag":0,"tag":"issue","value":"letsencrypt.org"}],
-  "axfr": null,
+  "axfr": {"host": "example.com", "chain": []},
   "cdn": true,
   "cdn_name": "cloudflare",
   "status_code": "NOERROR",
@@ -58,6 +58,68 @@ class DnsxSRVEntry(BaseModel):
     target: str = ""
 
 
+MAX_ZONE_NAMES = 20000
+_NAME_RDATA = frozenset({"CNAME", "NS", "PTR", "MX", "SRV", "DNAME"})
+
+
+def _zone_name(value: str) -> str:
+    return value.strip().rstrip(".").lower()
+
+
+class DnsxAxfrChain(BaseModel):
+    """One nameserver's answer to a zone transfer request."""
+
+    host: str = ""
+    resolver: list[str] = Field(default_factory=list)
+    all: list[str] = Field(default_factory=list)
+
+
+class DnsxAxfr(BaseModel):
+    """dnsx answers every -axfr query with this object; only a transfer carries a chain."""
+
+    host: str = ""
+    chain: list[DnsxAxfrChain] = Field(default_factory=list)
+
+    @property
+    def transferred(self) -> bool:
+        return any(entry.all for entry in self.chain)
+
+    @property
+    def servers(self) -> list[str]:
+        seen: list[str] = []
+        for entry in self.chain:
+            for addr in entry.resolver:
+                server = addr.rsplit(":", 1)[0] if addr.count(":") == 1 else addr
+                if server and server not in seen:
+                    seen.append(server)
+        return seen
+
+    def lines(self) -> list[str]:
+        return [line for entry in self.chain for line in entry.all]
+
+    def hostnames(self) -> set[str]:
+        """Every name the zone names: each record's owner, and the names records point at."""
+        found: set[str] = set()
+        for line in self.lines():
+            if len(found) >= MAX_ZONE_NAMES:
+                break
+            # presentation format is owner TAB ttl TAB class TAB type TAB rdata
+            owner, _, _, rtype, rdata = (line.split("\t", 4) + [""] * 5)[:5]
+            if not rdata:
+                continue
+            # a wildcard owner is a rule, not a host, and @ is the zone itself
+            name = _zone_name(owner)
+            if name and not name.startswith("*") and name != "@":
+                found.add(name)
+            if rtype.strip().upper() not in _NAME_RDATA:
+                continue
+            fields = rdata.split()
+            target = _zone_name(fields[-1]) if fields else ""
+            if target and not target.startswith("*"):
+                found.add(target)
+        return found
+
+
 class DnsxRecord(BaseModel):
     host: str
     resolver: list[str] = Field(default_factory=list)
@@ -76,7 +138,7 @@ class DnsxRecord(BaseModel):
 
     caa_raw: list = Field(default_factory=list, alias="caa")
 
-    axfr: list[str] | None = None
+    axfr: DnsxAxfr | None = None
 
     # Probes
     cdn: bool = False
@@ -109,7 +171,7 @@ class DnsxReconResponse(BaseModel):
     caa: list[DnsxCAAEntry] = Field(default_factory=list)
 
     # AXFR
-    axfr: list[str] = Field(default_factory=list)
+    axfr: DnsxAxfr | None = None
 
     # Probes
     cdn: bool = False
@@ -118,6 +180,14 @@ class DnsxReconResponse(BaseModel):
     # Status
     status_code: str = ""
     timestamp: str = ""
+
+    @property
+    def zone_transferred(self) -> bool:
+        return self.axfr is not None and self.axfr.transferred
+
+    @property
+    def zone_names(self) -> set[str]:
+        return self.axfr.hostnames() if self.axfr else set()
 
     def to_db_records(self) -> list[dict]:
         """Flatten to dicts suitable for DnsRecord rows."""
@@ -190,8 +260,16 @@ class DnsxReconResponse(BaseModel):
                 }
             )
 
-        for axfr_entry in self.axfr:
-            records.append({**base, "record_type": "AXFR", "value": axfr_entry})
+        if self.zone_transferred:
+            # an outcome, not a record: the names it disclosed are stored as hosts
+            count = len(self.zone_names)
+            records.append(
+                {
+                    **base,
+                    "record_type": "AXFR",
+                    "value": f"open · {count:,} name{'' if count == 1 else 's'} disclosed",
+                }
+            )
 
         if self.cdn:
             records.append(

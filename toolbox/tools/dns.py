@@ -120,8 +120,16 @@ class DnsLookup(Tool):
                     ),
                     mark(
                         "Zone transfer",
-                        tone=Tone.CRITICAL.value if recon.axfr else Tone.MUTED.value,
-                        note="open" if recon.axfr else "refused",
+                        tone=(
+                            Tone.CRITICAL.value
+                            if recon.zone_transferred
+                            else Tone.MUTED.value
+                        ),
+                        note=(
+                            f"open · {len(recon.zone_names):,} names"
+                            if recon.zone_transferred
+                            else "refused"
+                        ),
                     ),
                 ],
                 tone=Tone.NEUTRAL.value if answered else Tone.WARNING.value,
