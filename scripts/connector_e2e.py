@@ -91,7 +91,7 @@ print("\n== catalog ==")
 s, cat = call("GET", "/connectors/catalog")
 check(
     "catalog lists both connectors",
-    s == OK and {c["kind"] for c in cat} == {"burp", "caido"},
+    s == OK and {c["kind"] for c in cat} == {"burp"},
     cat,
 )
 check(

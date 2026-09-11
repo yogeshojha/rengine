@@ -111,7 +111,7 @@
 		<div class="min-w-0">
 			<h1 class="text-xl font-semibold">{routeLabels.connectors}</h1>
 			<p class="text-muted-foreground text-sm">
-				Burp Suite and Caido connections, and the requests they record
+				Burp Suite connections, and the requests they record
 			</p>
 		</div>
 		<Button size="sm" onclick={() => (newOpen = true)}>
@@ -128,7 +128,7 @@
 				<EmptyState
 					icon={PlugZapIcon}
 					title="No connectors"
-					description="Burp Suite and Caido record proxied requests into this project."
+					description="Burp Suite records proxied requests into this project."
 				>
 					<Button size="sm" onclick={() => (newOpen = true)}>
 						<PlusIcon class="size-4" />

@@ -3,8 +3,8 @@
 A connector receives proxied traffic from a web proxy and records it as request shapes. Shapes are
 classified and flagged without sending a request; scanning them is a separate, explicit step.
 
-Two connectors ship: **Burp Suite** (Montoya extension, supported on Community and Professional) and
-**Caido** (plugin, or any client posting the same batch).
+One connector ships: **Burp Suite** (Montoya extension, supported on Community and Professional).
+Any client that posts the same batch works — see `clients/har` for a proxy that only exports HAR.
 
 ## The contract
 

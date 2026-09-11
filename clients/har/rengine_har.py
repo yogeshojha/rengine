@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Send a HAR file's traffic to reNgine's connector ingest endpoint.
 
-Every proxy exports HAR — Caido, ZAP, mitmproxy, Burp, and every browser's developer
-tools — so this is the path for any proxy without a native client.
+Every proxy exports HAR — ZAP, mitmproxy, Burp, and every browser's developer tools —
+so this is the path for any proxy without a native client.
 
     python3 rengine_har.py --endpoint https://rengine.example.com/api/v1/connectors/ingest \\
                            --token rngconn_... history.har

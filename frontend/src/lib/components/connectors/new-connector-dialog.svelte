@@ -67,7 +67,7 @@
 	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
 			<Dialog.Title>New connector</Dialog.Title>
-			<Dialog.Description>Receive proxied traffic from Burp Suite or Caido.</Dialog.Description>
+			<Dialog.Description>Receive proxied traffic from Burp Suite.</Dialog.Description>
 		</Dialog.Header>
 
 		<div class="space-y-4">

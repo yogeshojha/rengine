@@ -19,7 +19,6 @@ DEFAULT_QUEUE_THRESHOLD = 25
 
 class ConnectorKind(StrEnum):
     BURP = "burp"
-    CAIDO = "caido"
 
 
 class ConnectorState(StrEnum):

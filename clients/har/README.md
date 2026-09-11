@@ -1,14 +1,14 @@
 # HAR importer
 
 Sends a proxy's exported history to reNgine's connector ingest endpoint. Every proxy
-exports HAR — Caido, ZAP, mitmproxy, Burp, and every browser's developer tools — so
-this is the path for any proxy without a native client.
+exports HAR — ZAP, mitmproxy, Burp, and every browser's developer tools — so this is
+the path for any proxy without a native client.
 
 ```
 python3 rengine_har.py \
   --endpoint https://rengine.example.com/api/v1/connectors/ingest \
   --token rngconn_... \
-  --client caido \
+  --client zap \
   history.har
 ```
 

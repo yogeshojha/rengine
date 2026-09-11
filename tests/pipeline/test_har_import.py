@@ -262,7 +262,7 @@ def test_the_token_is_sent_as_a_bearer(monkeypatch):
         return _Response()
 
     monkeypatch.setattr(har.urllib.request, "urlopen", _open)
-    har.post("http://x", "tok", [{"url": "https://a/b"}], "caido")
+    har.post("http://x", "tok", [{"url": "https://a/b"}], "zap")
 
     assert sent["headers"]["Authorization"] == "Bearer tok"
-    assert sent["body"]["client"] == "caido"
+    assert sent["body"]["client"] == "zap"

@@ -1,4 +1,4 @@
-export type ConnectorKind = 'burp' | 'caido';
+export type ConnectorKind = 'burp';
 export type ConnectorState = 'idle' | 'live' | 'stale' | 'paused';
 export type SyncTrigger = 'manual' | 'quiet' | 'walked_away' | 'session_end';
 export type CandidateState = 'new' | 'queued' | 'scanned' | 'ignored';
