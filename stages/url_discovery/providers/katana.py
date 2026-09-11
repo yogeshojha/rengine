@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from shared.definitions.endpoints import EndpointSource
@@ -8,6 +9,7 @@ from stages.url_discovery.providers.base import ProviderResult, UrlProvider
 from tools.katana.client import KatanaClient, KatanaError
 from tools.katana.parser import parse_katana_record
 
+_JS_RE = re.compile(r"\.m?js(?:\.map)?(?:[?#]|$)", re.IGNORECASE)
 _UNRESPONSIVE = ("could not", "connection refused", "timeout", "no address")
 # a crawl runs for minutes, so what it has found is handed to the stage as it goes
 _HANDOVER_EVERY = 200
@@ -150,4 +152,7 @@ def _detail(parsed: dict) -> str:
         return f"Found in a <{tag}> {attribute} attribute"
     if tag:
         return f"Found in a <{tag}> element"
+    if _JS_RE.search(parsed.get("found_on") or ""):
+        # jsluice read it out of the bundle; nothing on the site links to it
+        return "Read out of a javascript bundle, not linked from any page"
     return "Reached by following links from the site"

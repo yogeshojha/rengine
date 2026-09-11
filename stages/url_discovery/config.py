@@ -10,6 +10,7 @@ DEFAULT_PROVIDERS: list[str] = [
     EndpointSource.SITEMAP.value,
     EndpointSource.CRAWL.value,
     EndpointSource.ARCHIVE.value,
+    EndpointSource.JS.value,
 ]
 
 _PROVIDER_LABELS = {
@@ -17,6 +18,7 @@ _PROVIDER_LABELS = {
     EndpointSource.SITEMAP.value: "robots.txt and sitemaps",
     EndpointSource.CRAWL.value: "Crawl",
     EndpointSource.ARCHIVE.value: "Public archives",
+    EndpointSource.JS.value: "Source maps",
 }
 
 
@@ -78,6 +80,13 @@ class UrlDiscoveryConfig(StageConfig):
         le=5000,
         title="Hosts for robots and sitemaps",
         description="Cap the hosts whose robots.txt and sitemap are fetched.",
+    )
+    max_source_maps: int = Field(
+        default=200,
+        ge=1,
+        le=5_000,
+        title="Bundles to ask for a map",
+        description="Javascript files this scan proved answer, asked for the .map beside them. Most refuse; the ones that do not carry the application's own source.",
     )
     max_archive_domains: int = Field(
         default=10,

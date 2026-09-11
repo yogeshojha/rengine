@@ -1,30 +1,13 @@
 from __future__ import annotations
 
-import html
-import re
-from urllib.parse import urljoin
-
 from sqlalchemy import select
 
 from shared.definitions.endpoints import EndpointSource
 from shared.models.http_asset import HttpAsset
 from shared.services.endpoint_inventory import EndpointObservation
+from stages.url_discovery.providers import mine
 from stages.url_discovery.providers.base import ProviderResult, UrlProvider
 
-_ATTRIBUTE_RE = re.compile(
-    r"""(?:href|src|action|data-url|data-href|data-src|formaction)\s*=\s*"""
-    r"""["']([^"'<>\s]{1,2000})["']""",
-    re.IGNORECASE,
-)
-_ABSOLUTE_RE = re.compile(r"""https?://[^\s"'<>()\[\]{}\\`]{4,1500}""", re.IGNORECASE)
-_QUOTED_PATH_RE = re.compile(
-    r"""["'`](/[A-Za-z0-9_\-./~%]{1,300}(?:\?[A-Za-z0-9_\-.=&%~+/]{0,200})?)["'`]"""
-)
-_LINK_HEADER_RE = re.compile(r"<([^>]{1,1500})>")
-
-_SKIP_PREFIXES = ("javascript:", "mailto:", "tel:", "data:", "blob:", "about:", "#")
-_PLACEHOLDER = ("{{", "${", "%7b%7b", "<%", "[[")
-_MINED_HEADERS = ("link", "content-location", "location", "refresh")
 _BATCH = 50
 
 
@@ -66,7 +49,7 @@ class ResponseMiningProvider(UrlProvider):
             if not body and not row.response_headers:
                 continue
             mined += 1
-            for candidate in self._candidates(body, row.response_headers or {}):
+            for candidate in mine.candidates(body, row.response_headers or {}):
                 resolved = self._resolve(base, candidate)
                 if resolved is None:
                     offsite += 1
@@ -94,28 +77,6 @@ class ResponseMiningProvider(UrlProvider):
             f"mined {len(observations)} in-scope urls from {mined} stored responses, no requests sent"
         )
 
-    def _candidates(self, body: str, headers: dict) -> list[str]:
-        out: list[str] = []
-        out.extend(_ATTRIBUTE_RE.findall(body))
-        out.extend(_ABSOLUTE_RE.findall(body))
-        out.extend(_QUOTED_PATH_RE.findall(body))
-        for name, value in headers.items():
-            if name.lower() not in _MINED_HEADERS or not isinstance(value, str):
-                continue
-            out.extend(_LINK_HEADER_RE.findall(value) or [value])
-        return out
-
     def _resolve(self, base: str, candidate: str) -> str | None:
-        value = html.unescape(candidate.strip())
-        if not value or len(value) > 2000:  # noqa: PLR2004
-            return None
-        lowered = value.lower()
-        if lowered.startswith(_SKIP_PREFIXES) or any(
-            token in lowered for token in _PLACEHOLDER
-        ):
-            return None
-        try:
-            absolute = urljoin(base, value)
-        except ValueError:
-            return None
-        return absolute if self.in_scope(absolute) else None
+        absolute = mine.resolve(base, candidate)
+        return absolute if absolute and self.in_scope(absolute) else None
