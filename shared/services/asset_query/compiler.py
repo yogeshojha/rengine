@@ -319,6 +319,8 @@ _ASSET_BUILDERS = {
     "cert.issuer": lambda c, _ctx: _issuer(c),
     "tls.version": lambda c, _ctx: string_match(HttpAsset.tls_version, c),
     "jarm": lambda c, _ctx: string_match(HttpAsset.jarm, c),
+    "cert.fingerprint": lambda c, _ctx: string_match(HttpAsset.tls_fingerprint, c),
+    "header_hash": lambda c, _ctx: string_match(HttpAsset.header_hash, c),
 }
 
 _FREE_TEXT_BUILDERS = {

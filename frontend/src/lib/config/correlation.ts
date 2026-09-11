@@ -5,6 +5,8 @@ import Image from '@lucide/svelte/icons/image';
 import FileDigit from '@lucide/svelte/icons/file-digit';
 import Fingerprint from '@lucide/svelte/icons/fingerprint';
 import FileBadge from '@lucide/svelte/icons/file-badge';
+import ShieldCheck from '@lucide/svelte/icons/shield-check';
+import List from '@lucide/svelte/icons/list';
 import Layers from '@lucide/svelte/icons/layers';
 import Server from '@lucide/svelte/icons/server';
 import Cloud from '@lucide/svelte/icons/cloud';
@@ -20,7 +22,9 @@ export enum CorrelationKind {
 	FAVICON = 'favicon',
 	BODY = 'content_hash',
 	JARM = 'jarm',
+	CERT = 'cert.fingerprint',
 	CERT_ISSUER = 'cert.issuer',
+	HEADERS = 'header_hash',
 	TECH = 'tech',
 	SERVER = 'server',
 	CDN = 'cdn'
@@ -33,7 +37,9 @@ export const KIND_ICONS: Record<string, IconComponent> = {
 	[CorrelationKind.FAVICON]: Image,
 	[CorrelationKind.BODY]: FileDigit,
 	[CorrelationKind.JARM]: Fingerprint,
+	[CorrelationKind.CERT]: ShieldCheck,
 	[CorrelationKind.CERT_ISSUER]: FileBadge,
+	[CorrelationKind.HEADERS]: List,
 	[CorrelationKind.TECH]: Layers,
 	[CorrelationKind.SERVER]: Server,
 	[CorrelationKind.CDN]: Cloud
@@ -47,7 +53,9 @@ export const KIND_HUE: Record<string, number> = {
 	[CorrelationKind.FAVICON]: 65,
 	[CorrelationKind.BODY]: 300,
 	[CorrelationKind.JARM]: 335,
+	[CorrelationKind.CERT]: 5,
 	[CorrelationKind.CERT_ISSUER]: 25,
+	[CorrelationKind.HEADERS]: 278,
 	[CorrelationKind.TECH]: 105,
 	[CorrelationKind.SERVER]: 235,
 	[CorrelationKind.CDN]: 180
@@ -69,6 +77,7 @@ export function kindColor(kind: string, dark: boolean, alpha = 1): string {
 // dashed ring for kinds close in hue
 export const KIND_DASHED: ReadonlySet<string> = new Set([
 	CorrelationKind.JARM,
+	CorrelationKind.CERT,
 	CorrelationKind.CERT_ISSUER
 ]);
 

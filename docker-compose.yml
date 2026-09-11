@@ -65,6 +65,8 @@ services:
       - ./alembic.ini:/app/alembic.ini
       - ./tests:/app/tests
       - ./pyproject.toml:/app/pyproject.toml
+      # read-only, so the tests can check a frontend mirror has not drifted
+      - ./frontend/src/lib/config:/app/frontend-config:ro
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists

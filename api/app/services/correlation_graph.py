@@ -47,7 +47,9 @@ _HOST_KINDS: dict[str, tuple[str, str]] = {
 _ASSET_KINDS: dict[str, tuple[str, str]] = {
     CorrelationKind.BODY.value: ("content_hash", "="),
     CorrelationKind.JARM.value: ("jarm", "="),
+    CorrelationKind.CERT.value: ("tls_fingerprint", "="),
     CorrelationKind.CERT_ISSUER.value: ("tls_issuer", "="),
+    CorrelationKind.HEADERS.value: ("header_hash", "="),
 }
 
 
@@ -120,13 +122,12 @@ class CorrelationGraphService:
                 for value in _values(getattr(row, attr)):
                     members[kind][value].add(i)
 
+        # the columns come from the kinds, so a new identity is one edit and not two
         assets = (
             await self.session.execute(
                 select(
                     HttpAsset.host,
-                    HttpAsset.content_hash,
-                    HttpAsset.jarm,
-                    HttpAsset.tls_issuer,
+                    *[getattr(HttpAsset, attr) for attr, _op in _ASSET_KINDS.values()],
                 ).where(HttpAsset.scan_id == scan_id)
             )
         ).all()

@@ -20,7 +20,9 @@ class CorrelationKind(StrEnum):
     FAVICON = "favicon"
     BODY = "content_hash"
     JARM = "jarm"
+    CERT = "cert.fingerprint"
     CERT_ISSUER = "cert.issuer"
+    HEADERS = "header_hash"
     TECH = "tech"
     SERVER = "server"
     CDN = "cdn"
@@ -33,7 +35,9 @@ CORRELATION_KIND_LABELS: dict[str, str] = {
     CorrelationKind.FAVICON.value: "Favicon",
     CorrelationKind.BODY.value: "Body hash",
     CorrelationKind.JARM.value: "TLS fingerprint",
+    CorrelationKind.CERT.value: "Certificate",
     CorrelationKind.CERT_ISSUER.value: "Certificate issuer",
+    CorrelationKind.HEADERS.value: "Header set",
     CorrelationKind.TECH.value: "Technology",
     CorrelationKind.SERVER.value: "Server header",
     CorrelationKind.CDN.value: "CDN",
@@ -46,7 +50,9 @@ CORRELATION_KIND_HELP: dict[str, str] = {
     CorrelationKind.FAVICON.value: "Hosts serving the same favicon hash",
     CorrelationKind.BODY.value: "Hosts returning an identical response body",
     CorrelationKind.JARM.value: "Hosts with the same JARM TLS fingerprint",
+    CorrelationKind.CERT.value: "Hosts presenting the same certificate",
     CorrelationKind.CERT_ISSUER.value: "Hosts presenting certificates from the same issuer",
+    CorrelationKind.HEADERS.value: "Hosts returning an identical set of response headers",
     CorrelationKind.TECH.value: "Hosts fingerprinted with the same technology",
     CorrelationKind.SERVER.value: "Hosts returning the same Server header",
     CorrelationKind.CDN.value: "Hosts fronted by the same CDN or WAF",
@@ -61,6 +67,7 @@ CORRELATION_DEFAULT_KINDS: frozenset[str] = frozenset(
         CorrelationKind.FAVICON.value,
         CorrelationKind.BODY.value,
         CorrelationKind.JARM.value,
+        CorrelationKind.CERT.value,
     }
 )
 

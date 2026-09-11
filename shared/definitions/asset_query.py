@@ -473,6 +473,21 @@ FIELDS: tuple[QueryField, ...] = (
         example="jarm:29d3fd00029d29d0",
     ),
     QueryField(
+        name="cert.fingerprint",
+        type=FieldType.STRING,
+        group="Certificates",
+        description="Hash of the certificate itself. Identical hashes mean the same certificate.",
+        example="cert.fingerprint:9f2b1c",
+        aliases=("cert.hash",),
+    ),
+    QueryField(
+        name="header_hash",
+        type=FieldType.STRING,
+        group="Response",
+        description="Hash of the response header set. Identical hashes mean the same stack answering.",
+        example="header_hash:3ab91c",
+    ),
+    QueryField(
         name="is",
         type=FieldType.FLAG,
         group="Flags",
@@ -599,9 +614,19 @@ GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         description="Names sharing a JARM TLS fingerprint",
     ),
     GroupDimension(
+        key="cert.fingerprint",
+        label="Certificate",
+        description="Names presenting the same certificate",
+    ),
+    GroupDimension(
         key="cert.issuer",
         label="Certificate issuer",
         description="Names whose certificate has the same issuer",
+    ),
+    GroupDimension(
+        key="header_hash",
+        label="Header set",
+        description="Names returning an identical set of response headers",
     ),
     GroupDimension(
         key="server",

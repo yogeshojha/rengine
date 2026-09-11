@@ -94,7 +94,14 @@ _DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
     "status": (_status_case, "status", ":", False),
     "content_hash": (lambda: HttpAsset.content_hash, "content_hash", "=", True),
     "jarm": (lambda: HttpAsset.jarm, "jarm", "=", True),
+    "cert.fingerprint": (
+        lambda: HttpAsset.tls_fingerprint,
+        "cert.fingerprint",
+        "=",
+        True,
+    ),
     "cert.issuer": (lambda: HttpAsset.tls_issuer, "cert.issuer", "=", True),
+    "header_hash": (lambda: HttpAsset.header_hash, "header_hash", "=", True),
     "target": (lambda: _target_value(Subdomain.target_id), "target", "=", False),
 }
 
