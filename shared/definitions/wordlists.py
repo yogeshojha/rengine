@@ -63,11 +63,22 @@ BUILTIN_WORDLISTS: tuple[BuiltinWordlist, ...] = (
         kind=WordlistKind.VHOST.value,
         description="Short list of host names worth trying against an address directly.",
     ),
+    BuiltinWordlist(
+        slug="common-content",
+        filename="content.txt",
+        name="Common paths and files",
+        kind=WordlistKind.CONTENT.value,
+        description=(
+            "Paths ranked by how often they were found on real sites, directories "
+            "before files. A smaller word budget reads from the top of this ranking."
+        ),
+    ),
 )
 
 DEFAULT_WORDLIST: dict[str, str] = {
     WordlistKind.SUBDOMAIN.value: "common-subdomains",
     WordlistKind.VHOST.value: "common-vhosts",
+    WordlistKind.CONTENT.value: "common-content",
 }
 
 

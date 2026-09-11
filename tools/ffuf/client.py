@@ -1,17 +1,27 @@
-"""ffuf CLI client - virtual-host (Host-header) bruteforce via CLIToolRunner."""
+"""ffuf CLI client - virtual-host and web-content bruteforce via CLIToolRunner."""
 
 from __future__ import annotations
 
+import contextlib
 import json
+from collections.abc import Iterator
 
 from shared.logging import get_logger
-from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
+from tools.runner import (
+    CLIToolRunner,
+    OutputFormat,
+    StreamOutcome,
+    ToolNotFoundError,
+)
 
 logger = get_logger(__name__)
 
 FFUF_BINARY = "ffuf"
 DEFAULT_TIMEOUT = 1800
 DEFAULT_MATCH_CODES = "200,204,301,302,307,401,403,405,500"
+DEFAULT_REQUEST_TIMEOUT = 8
+# ffuf stops itself at -maxtime; the runner's own kill is the backstop behind it
+_BUDGET_SLACK = 60
 
 
 class FfufError(Exception):
@@ -26,6 +36,7 @@ class FfufClient:
         threads: int = 40,
         rate: int = 0,
         match_codes: str = DEFAULT_MATCH_CODES,
+        request_timeout: int = DEFAULT_REQUEST_TIMEOUT,
         proxy_url: str | None = None,
         headers: dict[str, str] | None = None,
         recorder=None,
@@ -35,6 +46,7 @@ class FfufClient:
         self.threads = threads
         self.rate = rate
         self.match_codes = match_codes
+        self.request_timeout = request_timeout
         self.proxy_url = proxy_url
         self.headers = headers or {}
         self.recorder = recorder
@@ -44,6 +56,60 @@ class FfufClient:
             self._runner = CLIToolRunner(FFUF_BINARY, default_timeout=DEFAULT_TIMEOUT)
         except ToolNotFoundError as e:
             raise FfufError(str(e)) from e
+
+    @contextlib.contextmanager
+    def stream_content(
+        self,
+        base_url: str,
+        word_file: str,
+        *,
+        budget: int,
+        match_codes: str | None = None,
+    ) -> Iterator[StreamOutcome]:
+        """One site's worth of guesses, streaming each hit as it lands.
+
+        One process per site, never several sites through a second wordlist keyword:
+        measured on a soft-404 host, `-ach` in clusterbomb mode returned 278 of 300
+        words while the same host asked on its own returned 0. ffuf cannot calibrate
+        against a host it does not know until the payload is substituted, and
+        calibration is the only thing standing between this and a wordlist of lies.
+        """
+        args = [
+            "-w",
+            f"{word_file}:FUZZ",
+            "-u",
+            f"{base_url.rstrip('/')}/FUZZ",
+            "-ac",
+            "-mc",
+            match_codes or self.match_codes,
+            "-t",
+            str(self.threads),
+            "-timeout",
+            str(self.request_timeout),
+            "-maxtime",
+            str(budget),
+            "-sf",
+            "-noninteractive",
+        ]
+        if self.rate:
+            args += ["-rate", str(self.rate)]
+        if self.proxy_url:
+            args += ["-x", self.proxy_url]
+        for key, value in self.headers.items():
+            args += ["-H", f"{key}: {value}"]
+
+        with self._runner.stream_json(
+            args=args,
+            json_flag="-json",
+            silent=True,
+            silent_flag="-s",
+            # -maxtime is the real ceiling; the runner's own kill is the backstop
+            timeout=budget + _BUDGET_SLACK,
+            recorder=self.recorder,
+            tool=FFUF_BINARY,
+            extra_args=self.extra_args,
+        ) as stream:
+            yield stream
 
     def vhost(self, ip: str, base_host: str, scheme: str = "http") -> list[str]:
         """Bruteforce `Host: FUZZ.<base_host>` against an IP; return found labels."""
