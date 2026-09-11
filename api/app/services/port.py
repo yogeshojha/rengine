@@ -409,6 +409,7 @@ class PortService:
             page.items.append(
                 ServiceRead(
                     id=r["id"],
+                    scan_id=r["scan_id"],
                     target_id=r["target_id"],
                     target_value=targets.get(r["target_id"]),
                     ip=r["ip"],
@@ -445,6 +446,25 @@ class PortService:
                 )
             )
         return page
+
+    async def seeds(
+        self, scope: ScopeLike, f: ServiceFilter, limit: int
+    ) -> list[tuple[str, UUID]]:
+        scope = QueryScope.of(scope)
+        now = utc_now()
+        d, base = self._scoped(scope, f, columns=lambda d: (d.c.ip, d.c.scan_id))
+        try:
+            predicate = compile_service_query(
+                parse_query(f.q, SERVICE_QUERY), self._context(scope, d, now)
+            )
+        except QuerySyntaxError:
+            return []
+        if predicate is not None:
+            base = base.where(predicate)
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
+        rows = await self.session.execute(base.distinct().limit(limit))
+        return [(ip, scan_id) for ip, scan_id in rows.all()]
 
     async def leads(self, scope: ScopeLike, f: ServiceFilter) -> QueryLeads:
         scope = QueryScope.of(scope)

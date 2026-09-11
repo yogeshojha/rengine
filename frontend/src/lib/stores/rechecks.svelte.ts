@@ -1,7 +1,6 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { scansApi } from '$lib/api/scans';
-import type { Recheck, RescanCreate, RescanSchema } from '$lib/types/recheck';
-import type { ScanRead } from '$lib/types/scan';
+import type { FocusedRun, Recheck, RescanCreate, RescanSchema } from '$lib/types/recheck';
 import { isRecheckLive } from '$lib/utilities/rechecks';
 
 const POLL_MS = 3000;
@@ -52,11 +51,13 @@ class RechecksStore {
 		this.schedule(scanId, projectId);
 	}
 
-	async rescan(projectId: string, body: RescanCreate): Promise<ScanRead> {
-		const scan = await scansApi.rescan(projectId, body);
-		this.optimistic(body, scan);
-		this.schedule(body.parent_scan_id, projectId, 800);
-		return scan;
+	async rescan(projectId: string, body: RescanCreate): Promise<FocusedRun> {
+		const run = await scansApi.rescan(projectId, body);
+		this.optimistic(body, run);
+		for (const scan of run.scans) {
+			if (scan.parent_scan_id) this.schedule(scan.parent_scan_id, projectId, 800);
+		}
+		return run;
 	}
 
 	stop(scanId: string): void {
@@ -82,26 +83,32 @@ class RechecksStore {
 		this.byScan.set(scanId, map);
 	}
 
-	private optimistic(body: RescanCreate, scan: ScanRead): void {
-		const map = new SvelteMap(this.byScan.get(body.parent_scan_id) ?? []);
-		for (const asset of body.assets) {
-			const pending: Recheck = {
-				id: scan.id,
-				scan_id: scan.id,
-				parent_scan_id: body.parent_scan_id,
-				dimension: body.dimension,
-				asset_kind: this.dimension(body.dimension)?.seed_kind ?? 'host',
-				asset_key: asset,
-				changed: false,
-				changes: [],
-				created_at: scan.created_at,
-				status: scan.status,
-				stage_titles: [],
-				duration_seconds: null
-			};
-			map.set(asset, [pending, ...(map.get(asset) ?? [])]);
+	private optimistic(body: RescanCreate, run: FocusedRun): void {
+		const dimension = body.selection?.dimension ?? body.dimension ?? '';
+		const kind = this.dimension(dimension)?.seed_kind ?? 'host';
+		for (const scan of run.scans) {
+			const parent = scan.parent_scan_id;
+			if (!parent) continue;
+			const map = new SvelteMap(this.byScan.get(parent) ?? []);
+			for (const seed of scan.execution_config?.seed_assets ?? []) {
+				const pending: Recheck = {
+					id: scan.id,
+					scan_id: scan.id,
+					parent_scan_id: parent,
+					dimension,
+					asset_kind: seed.kind || kind,
+					asset_key: seed.value,
+					changed: false,
+					changes: [],
+					created_at: scan.created_at,
+					status: scan.status,
+					stage_titles: run.stage_titles,
+					duration_seconds: null
+				};
+				map.set(seed.value, [pending, ...(map.get(seed.value) ?? [])]);
+			}
+			this.byScan.set(parent, map);
 		}
-		this.byScan.set(body.parent_scan_id, map);
 	}
 
 	private schedule(scanId: string, projectId: string, delay = POLL_MS): void {

@@ -4,7 +4,7 @@
 	import { onDestroy, untrack } from 'svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
-	import { seedKindFor } from '$lib/utilities/rechecks';
+	import { seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { startRescan } from '$lib/utilities/rechecks';
 	import { SurfaceDimension } from '$lib/config/surface';
@@ -36,6 +36,7 @@
 	import FilterBar from './vulnerabilities/filter-bar.svelte';
 	import IssueInstances from './vulnerabilities/issue-instances.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
+	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import IssueRow from './vulnerabilities/issue-row.svelte';
 	import VulnRow from './vulnerabilities/vuln-row.svelte';
 	import VulnerabilityDetailSheet from './vulnerability-detail-sheet.svelte';
@@ -79,7 +80,6 @@
 	interface Props {
 		scanId: string;
 		projectWide?: boolean;
-		targetId?: string;
 		targetType?: string;
 		active?: boolean;
 		revision?: number;
@@ -91,7 +91,6 @@
 	let {
 		scanId,
 		projectWide = false,
-		targetId = '',
 		targetType = '',
 		active = true,
 		revision = 0,
@@ -697,52 +696,95 @@
 	let rescanBusy = $state(false);
 
 	$effect(() => {
-		if (projectWide || !active || !scanId || !projectId) return;
+		if (!active || !projectId) return;
 		void rechecks.loadSchema();
+		if (projectWide || !scanId) return;
 		untrack(() => rechecks.load(scanId, projectId));
 	});
 
-	async function rescanSelection() {
-		if (rescanBusy) return;
+	function pickedRows() {
 		const picked = isIssues
 			? instances.filter((v) => checkedIds.has(v.template_id))
 			: items.filter((v) => checkedIds.has(v.id));
-		const rows = picked.length
-			? picked
-			: isIssues
-				? []
-				: items.filter((v) => v.id === selected?.id);
-		const assets = [...new Set(rows.map((v) => v.host || v.ip).filter(Boolean))] as string[];
-		const templates = [...new Set(rows.map((v) => v.template_id).filter(Boolean))] as string[];
-		if (!assets.length) return;
-		rescanBusy = true;
-		const ok = await startRescan(
-			projectId,
-			{
-				parent_scan_id: scanId,
-				dimension: SurfaceDimension.VULNERABILITIES,
-				assets,
-				template_ids: templates
-			},
-			'finding',
-			'findings'
+		if (picked.length) return picked;
+		return isIssues ? [] : items.filter((v) => v.id === selected?.id);
+	}
+
+	function picksOf(rows: typeof items): SeedPick[] {
+		const picks: SeedPick[] = [];
+		const seen: Record<string, true> = {};
+		for (const v of rows) {
+			const value = v.host || v.ip;
+			if (!value) continue;
+			const key = `${value}:${v.scan_id ?? ''}`;
+			if (seen[key]) continue;
+			seen[key] = true;
+			picks.push({ value, scan_id: v.scan_id ?? scanId });
+		}
+		return picks;
+	}
+
+	function templatesOf(rows: typeof items): string[] {
+		return [...new Set(rows.map((v) => v.template_id).filter(Boolean))] as string[];
+	}
+
+	function queryLabel(): string {
+		return selectionLabel(
+			query.search,
+			chips.map((c) => c.label)
 		);
+	}
+
+	function querySelection(): SeedSelection {
+		const {
+			limit: _l,
+			offset: _o,
+			sort: _s,
+			order: _d,
+			...filter
+		} = compileVulnQuery(query, 'severity', 1, 0, 1);
+		return {
+			dimension: SurfaceDimension.VULNERABILITIES,
+			query: { filter, scan_ids: scanId ? [scanId] : [] }
+		};
+	}
+
+	async function run(sel: SeedSelection, templates: string[]) {
+		if (rescanBusy) return;
+		rescanBusy = true;
+		const ok = await startRescan(projectId, sel, 'finding', 'findings', {
+			template_ids: templates
+		});
 		if (ok) checkedIds.clear();
 		rescanBusy = false;
 	}
 
-	let rescanOptionsFor = $state<{ assets: string[]; templates: string[] } | null>(null);
+	function rescanSelection() {
+		const rows = pickedRows();
+		const picks = picksOf(rows);
+		if (picks.length) {
+			void run({ dimension: SurfaceDimension.VULNERABILITIES, picks }, templatesOf(rows));
+		}
+	}
+
+	function rescanAllMatching() {
+		void run(querySelection(), []);
+	}
+
+	let rescanOptionsFor = $state<{ selection: SeedSelection; templates: string[] } | null>(null);
 
 	function openRescanOptions() {
-		const rows = isIssues
-			? instances.filter((v) => checkedIds.has(v.template_id))
-			: items.filter((v) => checkedIds.has(v.id));
-		const assets = [...new Set(rows.map((v) => v.host || v.ip).filter(Boolean))] as string[];
-		if (!assets.length) return;
+		const rows = pickedRows();
+		const picks = picksOf(rows);
+		if (!picks.length) return;
 		rescanOptionsFor = {
-			assets,
-			templates: [...new Set(rows.map((v) => v.template_id).filter(Boolean))] as string[]
+			selection: { dimension: SurfaceDimension.VULNERABILITIES, picks },
+			templates: templatesOf(rows)
 		};
+	}
+
+	function openRescanAllOptions() {
+		rescanOptionsFor = { selection: querySelection(), templates: [] };
 	}
 </script>
 
@@ -882,15 +924,21 @@
 		</div>
 	{/if}
 
-	{#if !groupBy && !projectWide}
+	{#if !groupBy}
 		<SelectionBar
 			count={checkedCount}
 			noun="finding"
 			nounPlural="findings"
+			{total}
+			{totalCapped}
+			maxAssets={rechecks.schema?.max_assets ?? 0}
+			queryActive={Boolean(query.search.trim()) || chips.length > 0}
 			busy={rescanBusy}
 			reason="re-runs the exact checks that found them"
 			onRescan={rescanSelection}
 			onOptions={openRescanOptions}
+			onRescanAll={rescanAllMatching}
+			onRescanAllOptions={openRescanAllOptions}
 			onClear={() => checkedIds.clear()}
 		/>
 	{/if}
@@ -1091,12 +1139,12 @@
 	open={rescanOptionsFor !== null}
 	rescan={rescanOptionsFor
 		? {
-				parentScanId: scanId,
-				targetId,
+				selection: rescanOptionsFor.selection,
 				dimension: SurfaceDimension.VULNERABILITIES,
 				targetType,
 				seedKind: seedKindFor(rechecks.schema, SurfaceDimension.VULNERABILITIES),
-				assets: rescanOptionsFor.assets,
+				assets: rescanOptionsFor.selection.picks?.map((pick) => pick.value) ?? [],
+				queryLabel: rescanOptionsFor.selection.query ? queryLabel() : undefined,
 				templateIds: rescanOptionsFor.templates
 			}
 		: null}

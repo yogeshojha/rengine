@@ -14,7 +14,7 @@ import {
 	type StageCatalogEntry,
 	type StageConfig
 } from '$lib/types/scan-engine';
-import type { RescanCreate } from '$lib/types/recheck';
+import type { RescanCreate, SeedSelection } from '$lib/types/recheck';
 import { summarize, type EngineSummary } from '$lib/utilities/engine-summary';
 import {
 	CAPABILITY,
@@ -30,12 +30,12 @@ import {
 } from '$lib/utilities/launch-plan';
 
 export interface RescanSeed {
-	parentScanId: string;
-	targetId: string;
+	selection: SeedSelection;
 	dimension: string;
 	targetType: string;
 	seedKind: string;
 	assets: string[];
+	queryLabel?: string;
 	rescannable: readonly string[];
 	templateIds?: string[];
 }
@@ -78,9 +78,15 @@ export class LaunchState {
 	readonly baseIntensity = $derived<Intensity>(this.engine?.intensity ?? DEFAULT_INTENSITY);
 	readonly runIntensity = $derived<Intensity>(this.intensity ?? this.baseIntensity);
 	readonly targetTypes = $derived(
-		this.rescan ? [this.rescan.targetType] : [...new SvelteSet(this.targets.map((t) => t.type))]
+		this.rescan
+			? this.rescan.targetType
+				? [this.rescan.targetType]
+				: []
+			: [...new SvelteSet(this.targets.map((t) => t.type))]
 	);
-	readonly lensType = $derived(this.rescan?.targetType ?? this.targets[0]?.type ?? null);
+	readonly lensType = $derived(
+		(this.rescan ? this.rescan.targetType : this.targets[0]?.type) || null
+	);
 	readonly seedKinds = $derived<readonly string[]>(
 		this.rescan ? (SEED_KINDS[this.rescan.seedKind] ?? SEED_KINDS.host) : []
 	);
@@ -122,7 +128,8 @@ export class LaunchState {
 	);
 	readonly blockReason = $derived.by<string | null>(() => {
 		if (this.rescan) {
-			if (this.rescan.assets.length === 0) return 'Add at least one asset.';
+			const named = this.rescan.selection.picks !== undefined;
+			if (named && this.rescan.assets.length === 0) return 'Add at least one asset.';
 			if (this.catalog && this.runningStages.length === 0) return 'Select at least one stage.';
 			return null;
 		}
@@ -263,17 +270,24 @@ export class LaunchState {
 	}
 
 	removeAsset(asset: string) {
-		if (!this.rescan) return;
-		this.rescan = { ...this.rescan, assets: this.rescan.assets.filter((a) => a !== asset) };
+		const seed = this.rescan;
+		if (!seed || !seed.selection.picks) return;
+		this.rescan = {
+			...seed,
+			assets: seed.assets.filter((a) => a !== asset),
+			selection: {
+				...seed.selection,
+				picks: seed.selection.picks.filter((p) => p.value !== asset)
+			}
+		};
 	}
 
 	rescanBody(): RescanCreate | null {
 		const seed = this.rescan;
 		if (!seed) return null;
 		return {
-			parent_scan_id: seed.parentScanId,
-			dimension: seed.dimension,
-			assets: seed.assets,
+			selection: seed.selection,
+			dimension: '',
 			stages: this.runningStages.filter((s) => s.role === CAPABILITY).map((s) => s.name),
 			overrides: this.overrides,
 			context_id: this.contextId === SELECT_NONE ? null : this.contextId,

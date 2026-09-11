@@ -26,6 +26,7 @@ def build_scan_row(
     schedule_id: uuid.UUID | None = None,
     schedule_type: str | None = None,
     parent_scan_id: uuid.UUID | None = None,
+    run_group_id: uuid.UUID | None = None,
     dimension: str | None = None,
 ) -> Scan:
     """Assemble an unsaved PENDING Scan from an already-resolved config."""
@@ -58,6 +59,7 @@ def build_scan_row(
             ScanScope.FOCUSED.value if resolved.seed_assets else ScanScope.FULL.value
         ),
         parent_scan_id=parent_scan_id,
+        run_group_id=run_group_id,
     )
 
 

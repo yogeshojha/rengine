@@ -420,6 +420,7 @@ class ScanService:
             schedule_id=schedule_id,
             schedule_type=schedule_type,
             parent_scan_id=data.parent_scan_id,
+            run_group_id=data.run_group_id,
             dimension=data.dimension,
         )
         self.session.add(scan)
@@ -1226,6 +1227,7 @@ class ScanService:
             schedule_type=scan.schedule_type,
             scope=scan.scope,
             parent_scan_id=scan.parent_scan_id,
+            run_group_id=scan.run_group_id,
             seed_count=len((scan.execution_config or {}).get("seed_assets") or []),
             execution_config=resolved,
             auth_summary=_auth_summary(auth, list(masked.get("headers", {}).keys())),

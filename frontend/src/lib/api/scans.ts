@@ -16,7 +16,13 @@ import type {
 	ScanTimeRange
 } from '$lib/types/scan';
 import type { PaginatedResponse } from '$lib/types/pagination';
-import type { Recheck, RescanCreate, RescanSchema } from '$lib/types/recheck';
+import type {
+	FocusedRun,
+	Recheck,
+	RescanCreate,
+	RescanSchema,
+	RunPreview
+} from '$lib/types/recheck';
 
 interface ScanFilterParams {
 	target_id?: string;
@@ -56,8 +62,12 @@ export const scansApi = {
 		return api.get<RescanSchema>('/scans/rescan/schema');
 	},
 
-	async rescan(projectId: string, body: RescanCreate): Promise<ScanRead> {
-		return api.post<ScanRead>(`/scans/rescan?project_id=${projectId}`, body);
+	async rescan(projectId: string, body: RescanCreate): Promise<FocusedRun> {
+		return api.post<FocusedRun>(`/scans/rescan?project_id=${projectId}`, body);
+	},
+
+	async rescanPreview(projectId: string, body: RescanCreate): Promise<RunPreview> {
+		return api.post<RunPreview>(`/scans/rescan/preview?project_id=${projectId}`, body);
 	},
 
 	async rechecks(projectId: string, scanId: string): Promise<Recheck[]> {

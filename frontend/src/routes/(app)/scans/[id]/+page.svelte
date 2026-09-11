@@ -658,7 +658,6 @@
 				{#key scan.id}
 					<InterestingTable
 						scanId={scan.id}
-						targetId={scan.target_id}
 						{projectId}
 						active={activeTab === INTEREST_TAB}
 						revision={resultTicks[INTEREST_TAB] ?? 0}
@@ -685,7 +684,6 @@
 				{#key scan.id}
 					<WebAssetsTable
 						scanId={scan.id}
-						targetId={scan.target_id}
 						targetType={scan.execution_config.target_type}
 						{projectId}
 						apex={scan.execution_config.target_value}
@@ -715,7 +713,6 @@
 				{#key scan.id}
 					<ServicesTable
 						scanId={scan.id}
-						targetId={scan.target_id}
 						targetType={scan.execution_config.target_type}
 						{projectId}
 						active={activeTab === 'services'}
@@ -731,7 +728,6 @@
 				{#key scan.id}
 					<IpsTable
 						scanId={scan.id}
-						targetId={scan.target_id}
 						targetType={scan.execution_config.target_type}
 						{projectId}
 						active={activeTab === 'ips'}
@@ -747,7 +743,6 @@
 				{#key scan.id}
 					<VulnerabilitiesTable
 						scanId={scan.id}
-						targetId={scan.target_id}
 						targetType={scan.execution_config.target_type}
 						active={activeTab === 'vulnerabilities'}
 						revision={resultTicks[SurfaceDimension.VULNERABILITIES] ?? 0}

@@ -13,7 +13,8 @@ class SeedKind(StrEnum):
     URL = "url"
 
 
-MAX_SEED_ASSETS = 200
+MAX_RUN_ASSETS = 5000
+MAX_RUN_SCANS = 25
 RESCAN_LABEL = "Rescan"
 ASSET_SEED_STAGE = "asset_seed"
 

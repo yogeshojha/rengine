@@ -24,6 +24,7 @@
 	import { withTarget } from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
+	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import GroupList from './table/group-list.svelte';
 	import FilterBar from './ips/filter-bar.svelte';
 	import IpRow from './ips/ip-row.svelte';
@@ -33,7 +34,7 @@
 	import { ipsApi } from '$lib/api/scan-results';
 	import { servicesOn } from '$lib/utilities/service-lookup';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
-	import { seedKindFor } from '$lib/utilities/rechecks';
+	import { seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { startRescan } from '$lib/utilities/rechecks';
 	import { SurfaceDimension } from '$lib/config/surface';
@@ -63,7 +64,6 @@
 	interface Props {
 		scanId: string;
 		projectWide?: boolean;
-		targetId?: string;
 		targetType?: string;
 		projectId: string;
 		active?: boolean;
@@ -76,7 +76,6 @@
 	let {
 		scanId,
 		projectWide = false,
-		targetId = '',
 		targetType = '',
 		projectId,
 		active = true,
@@ -502,35 +501,65 @@
 	let rescanBusy = $state(false);
 
 	$effect(() => {
-		if (projectWide || !active || !scanId || !projectId) return;
+		if (!active || !projectId) return;
 		void rechecks.loadSchema();
+		if (projectWide || !scanId) return;
 		untrack(() => rechecks.load(scanId, projectId));
 	});
 
-	async function rescanSelection() {
-		if (rescanBusy) return;
-		const assets = items.filter((g) => checkedIps.has(g.ip)).map((g) => g.ip);
-		if (!assets.length) return;
-		rescanBusy = true;
-		const ok = await startRescan(
-			projectId,
-			{
-				parent_scan_id: scanId,
-				dimension: SurfaceDimension.IPS,
-				assets
-			},
-			'address',
-			'addresses'
+	function pickOf(ip: string): SeedPick {
+		return scanId ? { value: ip, scan_id: scanId } : { value: ip };
+	}
+
+	function pickedSelection(): SeedSelection {
+		return { dimension: SurfaceDimension.IPS, picks: [...checkedIps].map(pickOf) };
+	}
+
+	function queryLabel(): string {
+		return selectionLabel(
+			query.search,
+			chips.map((c) => c.label)
 		);
+	}
+
+	function querySelection(): SeedSelection {
+		const {
+			limit: _l,
+			offset: _o,
+			sort: _s,
+			order: _d,
+			...filter
+		} = compileIpQuery(query, 'ip', 1, 0, 1);
+		return {
+			dimension: SurfaceDimension.IPS,
+			query: { filter, scan_ids: scanId ? [scanId] : [] }
+		};
+	}
+
+	async function run(sel: SeedSelection) {
+		if (rescanBusy) return;
+		rescanBusy = true;
+		const ok = await startRescan(projectId, sel, 'address', 'addresses');
 		if (ok) checkedIps.clear();
 		rescanBusy = false;
 	}
 
-	let rescanOptionsFor = $state<string[] | null>(null);
+	function rescanSelection() {
+		if (checkedIps.size) void run(pickedSelection());
+	}
+
+	function rescanAllMatching() {
+		void run(querySelection());
+	}
+
+	let rescanOptionsFor = $state<SeedSelection | null>(null);
 
 	function openRescanOptions() {
-		const assets = items.filter((g) => checkedIps.has(g.ip)).map((g) => g.ip);
-		if (assets.length) rescanOptionsFor = assets;
+		if (checkedIps.size) rescanOptionsFor = pickedSelection();
+	}
+
+	function openRescanAllOptions() {
+		rescanOptionsFor = querySelection();
 	}
 </script>
 
@@ -614,14 +643,20 @@
 		</div>
 	{/if}
 
-	{#if !groupBy && !projectWide}
+	{#if !groupBy}
 		<SelectionBar
-			count={checkedCount}
+			count={checkedIps.size}
 			noun="address"
 			nounPlural="addresses"
+			{total}
+			{totalCapped}
+			maxAssets={rechecks.schema?.max_assets ?? 0}
+			queryActive={Boolean(query.search.trim()) || chips.length > 0}
 			busy={rescanBusy}
 			onRescan={rescanSelection}
 			onOptions={openRescanOptions}
+			onRescanAll={rescanAllMatching}
+			onRescanAllOptions={openRescanAllOptions}
 			onClear={() => checkedIps.clear()}
 		/>
 	{/if}
@@ -755,12 +790,12 @@
 	open={rescanOptionsFor !== null}
 	rescan={rescanOptionsFor
 		? {
-				parentScanId: scanId,
-				targetId,
+				selection: rescanOptionsFor,
 				dimension: SurfaceDimension.IPS,
 				targetType,
 				seedKind: seedKindFor(rechecks.schema, SurfaceDimension.IPS),
-				assets: rescanOptionsFor
+				assets: rescanOptionsFor.picks?.map((pick) => pick.value) ?? [],
+				queryLabel: rescanOptionsFor.query ? queryLabel() : undefined
 			}
 		: null}
 	onClose={() => {

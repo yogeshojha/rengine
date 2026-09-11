@@ -24,6 +24,7 @@
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import GroupList from './table/group-list.svelte';
+	import SelectionBar from './table/selection-bar.svelte';
 	import FilterBar from './endpoints/filter-bar.svelte';
 	import EndpointRow from './endpoints/endpoint-row.svelte';
 	import Outline from './endpoints/outline.svelte';
@@ -44,10 +45,15 @@
 	} from './endpoints/columns';
 
 	import { endpointsApi } from '$lib/api/scan-results';
+	import { rechecks } from '$lib/stores/rechecks.svelte';
+	import { seedKindFor, selectionLabel, startRescan } from '$lib/utilities/rechecks';
+	import type { SeedSelection } from '$lib/types/recheck';
+	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { endpointQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { SurfaceDimension } from '$lib/config/surface';
 	import { STATIC_CLASSES } from '$lib/config/endpoints';
 	import { appendToken, exactToken, type Facet } from '$lib/utilities/scan-insights';
 	import {
@@ -86,6 +92,7 @@
 		scanId: string;
 		projectWide?: boolean;
 		projectId: string;
+		targetType?: string;
 		active?: boolean;
 		revision?: number;
 		onTab?: (tab: string, filter?: string) => void;
@@ -97,6 +104,7 @@
 		scanId,
 		projectWide = false,
 		projectId,
+		targetType = '',
 		active = true,
 		revision = 0,
 		onTab,
@@ -305,6 +313,45 @@
 		size: number
 	): EndpointFilter {
 		return { ...compileEndpointQuery(q, sortKey, dir, pageNo, size), hide_static: hideStatic };
+	}
+
+	let rescanBusy = $state(false);
+	let rescanOptionsFor = $state<SeedSelection | null>(null);
+
+	$effect(() => {
+		if (projectId) void rechecks.loadSchema();
+	});
+
+	function queryLabel(): string {
+		return selectionLabel(
+			query.search,
+			chips.map((c) => c.label)
+		);
+	}
+
+	function querySelection(): SeedSelection {
+		const {
+			page: _p,
+			size: _z,
+			sort: _s,
+			direction: _d,
+			...filter
+		} = compiled(query, 'path', 1, 1, 1);
+		return {
+			dimension: SurfaceDimension.ENDPOINTS,
+			query: { filter, scan_ids: scanId ? [scanId] : [] }
+		};
+	}
+
+	async function rescanAllMatching() {
+		if (rescanBusy) return;
+		rescanBusy = true;
+		await startRescan(projectId, querySelection(), 'host', 'hosts');
+		rescanBusy = false;
+	}
+
+	function openRescanAllOptions() {
+		rescanOptionsFor = querySelection();
 	}
 
 	let reqId = 0;
@@ -1067,6 +1114,19 @@
 		<CountTabs tabs={classTabs} value={classTab} counts={classCounts} onChange={setClassTab} />
 	</div>
 
+	<SelectionBar
+		count={0}
+		noun="host"
+		nounPlural="hosts"
+		{total}
+		{totalCapped}
+		maxAssets={rechecks.schema?.max_assets ?? 0}
+		queryActive={Boolean(query.search.trim()) || chips.length > 0 || Boolean(query.host)}
+		busy={rescanBusy}
+		onRescanAll={rescanAllMatching}
+		onRescanAllOptions={openRescanAllOptions}
+	/>
+
 	{#if inHost}
 		<HostCrumbs
 			host={query.host}
@@ -1426,4 +1486,19 @@
 	connectors={proxies}
 	{catalog}
 	onSend={proxies.length ? sendEndpoint : undefined}
+/>
+
+<LaunchDialog
+	open={rescanOptionsFor !== null}
+	rescan={rescanOptionsFor
+		? {
+				selection: rescanOptionsFor,
+				dimension: SurfaceDimension.ENDPOINTS,
+				targetType,
+				seedKind: seedKindFor(rechecks.schema, SurfaceDimension.ENDPOINTS),
+				assets: [],
+				queryLabel: queryLabel()
+			}
+		: null}
+	onClose={() => (rescanOptionsFor = null)}
 />

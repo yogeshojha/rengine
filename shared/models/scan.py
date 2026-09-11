@@ -7,7 +7,7 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 from shared.definitions.constants import MAX_SCAN_BATCH
-from shared.definitions.rescan import MAX_SEED_ASSETS, SeedKind
+from shared.definitions.rescan import MAX_RUN_ASSETS, MAX_RUN_SCANS, SeedKind
 from shared.definitions.surface import SURFACE_ORDER
 from shared.enums.scan import ScanScope, ScanStatus
 from shared.services.scan_resolve import ResolvedScanConfig
@@ -36,6 +36,85 @@ class SeedAsset(BaseModel):
         return self
 
 
+class SeedPick(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    value: str = Field(max_length=500)
+    scan_id: uuid.UUID | None = None
+
+
+class QuerySelection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    filter: dict = Field(default_factory=dict)
+    scan_ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_RUN_SCANS)
+
+
+class SeedSelection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    dimension: str = Field(max_length=32)
+    picks: list[SeedPick] = Field(default_factory=list, max_length=MAX_RUN_ASSETS)
+    query: QuerySelection | None = None
+    exclude: list[str] = Field(default_factory=list, max_length=MAX_RUN_ASSETS)
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        if self.dimension not in SURFACE_ORDER:
+            msg = f"Unknown dimension '{self.dimension}'."
+            raise ValueError(msg)
+        if bool(self.picks) == (self.query is not None):
+            msg = "Provide either picks or a query, not both."
+            raise ValueError(msg)
+        return self
+
+
+class SeedGroup(BaseModel):
+    """Seed values for one target's scan."""
+
+    scan_id: uuid.UUID
+    target_id: uuid.UUID
+    target_value: str
+    values: list[str] = Field(default_factory=list)
+
+
+class ResolvedSelection(BaseModel):
+    groups: list[SeedGroup] = Field(default_factory=list)
+    total: int = 0
+    capped: bool = False
+    matched: int | None = None
+
+
+class SeedGroupSummary(BaseModel):
+    target_id: uuid.UUID
+    target_value: str
+    scan_id: uuid.UUID
+    count: int
+
+
+class RunPreview(BaseModel):
+    dimension: str
+    seed_kind: str
+    asset_count: int = 0
+    matched: int | None = None
+    target_count: int = 0
+    capped: bool = False
+    targets: list[SeedGroupSummary] = Field(default_factory=list)
+    stage_titles: list[str] = Field(default_factory=list)
+
+
+class FocusedRunRead(BaseModel):
+    """The scans one rescan created."""
+
+    run_group_id: uuid.UUID
+    scans: list["ScanRead"] = Field(default_factory=list)
+    asset_count: int = 0
+    matched: int | None = None
+    target_count: int = 0
+    capped: bool = False
+    stage_titles: list[str] = Field(default_factory=list)
+
+
 class Scan(SQLModel, table=True):
     __tablename__ = "scans"
 
@@ -52,6 +131,7 @@ class Scan(SQLModel, table=True):
     schedule_type: str | None = Field(default=None, max_length=20)
     scope: str = Field(default=ScanScope.FULL.value, max_length=16, index=True)
     parent_scan_id: uuid.UUID | None = Field(default=None, index=True)
+    run_group_id: uuid.UUID | None = Field(default=None, index=True)
     execution_config: dict = Field(sa_column=Column(JSON, nullable=False))
     status: str = Field(default=ScanStatus.PENDING.value, index=True)
     celery_task_ids: list = Field(
@@ -85,9 +165,10 @@ class ScanCreate(BaseModel):
     overrides: dict[str, dict] = Field(default_factory=dict)
     intensity: str | None = None
     seed_assets: list[SeedAsset] = Field(
-        default_factory=list, max_length=MAX_SEED_ASSETS
+        default_factory=list, max_length=MAX_RUN_ASSETS
     )
     parent_scan_id: uuid.UUID | None = None
+    run_group_id: uuid.UUID | None = None
     dimension: str | None = Field(default=None, max_length=32)
 
     @model_validator(mode="after")
@@ -103,9 +184,10 @@ class RescanCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    parent_scan_id: uuid.UUID
-    dimension: str = Field(max_length=32)
-    assets: list[str] = Field(min_length=1, max_length=MAX_SEED_ASSETS)
+    parent_scan_id: uuid.UUID | None = None
+    dimension: str = Field(default="", max_length=32)
+    assets: list[str] = Field(default_factory=list, max_length=MAX_RUN_ASSETS)
+    selection: SeedSelection | None = None
     stages: list[str] = Field(default_factory=list, max_length=20)
     overrides: dict[str, dict] = Field(default_factory=dict)
     context_id: uuid.UUID | None = None
@@ -113,15 +195,32 @@ class RescanCreate(BaseModel):
     template_ids: list[str] = Field(default_factory=list, max_length=50)
 
     @model_validator(mode="after")
-    def _known_dimension(self):
+    def _one_selection(self):
+        """`parent_scan_id` + `assets` is the legacy form; both normalize to `selection`."""
+        legacy = self.parent_scan_id is not None or bool(self.assets)
+        if legacy == (self.selection is not None):
+            msg = "Provide either a selection, or a parent scan and its assets."
+            raise ValueError(msg)
+        if self.selection is not None:
+            self.dimension = self.selection.dimension
+            return self
         if self.dimension not in SURFACE_ORDER:
             msg = f"Unknown dimension '{self.dimension}'."
             raise ValueError(msg)
-        cleaned = [a.strip() for a in self.assets if a and a.strip()]
+        if self.parent_scan_id is None:
+            msg = "Provide the scan these assets came from."
+            raise ValueError(msg)
+        cleaned = list(dict.fromkeys(a.strip() for a in self.assets if a and a.strip()))
         if not cleaned:
             msg = "Select at least one asset to rescan."
             raise ValueError(msg)
-        self.assets = list(dict.fromkeys(cleaned))
+        self.selection = SeedSelection(
+            dimension=self.dimension,
+            picks=[
+                SeedPick(value=value, scan_id=self.parent_scan_id) for value in cleaned
+            ],
+        )
+        self.assets = cleaned
         return self
 
 
@@ -138,6 +237,7 @@ class RescanSchema(BaseModel):
     dimensions: list[RescanDimension]
     rescannable_stages: list[str]
     max_assets: int
+    max_scans: int
 
 
 class ScanBatchCreate(BaseModel):
@@ -174,6 +274,7 @@ class ScanRead(BaseModel):
     schedule_type: str | None = None
     scope: str = ScanScope.FULL.value
     parent_scan_id: uuid.UUID | None = None
+    run_group_id: uuid.UUID | None = None
     seed_count: int = 0
     execution_config: ResolvedScanConfig
     auth_summary: str
@@ -267,3 +368,6 @@ class ScanStats(BaseModel):
     daily: list[ScanDailyCount]
     engines: list[ScanFacet] = []
     contexts: list[ScanFacet] = []
+
+
+FocusedRunRead.model_rebuild()

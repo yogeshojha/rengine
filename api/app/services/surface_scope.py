@@ -94,6 +94,12 @@ class SurfaceScopeService:
         picks = await self._picks(project_id, dimension)
         return QueryScope(tuple(row.id for row in picks), project_id=project_id)
 
+    async def scans_by_target(
+        self, project_id: UUID, dimension: str
+    ) -> dict[UUID, UUID]:
+        picks = await self._picks(project_id, dimension)
+        return {row.target_id: row.id for row in picks}
+
     async def _picks(self, project_id: UUID, dimension: str):
         """The newest scan of each target that actually ran this dimension."""
         cached = self._picked.get((project_id, dimension))

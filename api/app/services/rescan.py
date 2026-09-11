@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import uuid
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -10,8 +11,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.scan import ScanService
+from app.services.seed_selection import SeedSelectionService
 from shared.definitions.rescan import (
-    MAX_SEED_ASSETS,
+    MAX_RUN_ASSETS,
+    MAX_RUN_SCANS,
     RESCANNABLE_STAGES,
     SEED_KIND_NOUN,
     SeedKind,
@@ -22,13 +25,17 @@ from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN, SURFACE_ORD
 from shared.enums.scan import SCAN_LIVE_STATUSES, Phase, ScanScope, StageRole
 from shared.models.recheck import AssetRecheck, RecheckRead
 from shared.models.scan import (
+    FocusedRunRead,
     RescanCreate,
     RescanDimension,
     RescanSchema,
+    RunPreview,
     Scan,
     ScanCreate,
     ScanRead,
     SeedAsset,
+    SeedGroupSummary,
+    SeedSelection,
 )
 from shared.models.vuln_template import VulnTemplate
 from stages.registry import stage_by_name
@@ -62,7 +69,8 @@ def rescan_schema() -> RescanSchema:
             for dimension in SURFACE_ORDER
         ],
         rescannable_stages=sorted(RESCANNABLE_STAGES),
-        max_assets=MAX_SEED_ASSETS,
+        max_assets=MAX_RUN_ASSETS,
+        max_scans=MAX_RUN_SCANS,
     )
 
 
@@ -90,34 +98,100 @@ class RescanService:
 
     async def create(
         self, data: RescanCreate, project_id: UUID, created_by: UUID
-    ) -> ScanRead:
-        parent = await self._parent(data.parent_scan_id, project_id)
+    ) -> FocusedRunRead:
+        """One focused scan per target in the selection."""
+        resolved = await self._resolve(data.selection, project_id)
         picked = self._stages(data.stages, data.dimension)
         overrides = await self._overrides(picked, data)
         kind = seed_kind_for(data.dimension)
-        anchor = (
-            parent.parent_scan_id
-            if parent.scope == ScanScope.FOCUSED.value and parent.parent_scan_id
-            else parent.id
+        run_group_id = uuid.uuid4()
+        known = stage_by_name()
+
+        scans: list[ScanRead] = []
+        for group in resolved.groups:
+            parent = await self._parent(group.scan_id, project_id)
+            scans.append(
+                await self.scans.create(
+                    ScanCreate(
+                        engine_id=None,
+                        context_id=data.context_id or parent.context_id,
+                        target_id=parent.target_id,
+                        overrides=overrides,
+                        intensity=data.intensity
+                        or (parent.execution_config or {}).get("intensity"),
+                        seed_assets=[
+                            SeedAsset(kind=_seed_kind(value, kind), value=value)
+                            for value in group.values
+                        ],
+                        parent_scan_id=self._anchor(parent),
+                        run_group_id=run_group_id,
+                        dimension=data.dimension,
+                    ),
+                    project_id,
+                    created_by,
+                )
+            )
+        return FocusedRunRead(
+            run_group_id=run_group_id,
+            scans=scans,
+            asset_count=resolved.total,
+            matched=resolved.matched,
+            target_count=len(resolved.groups),
+            capped=resolved.capped,
+            stage_titles=sorted(known[name].title for name in picked if name in known),
         )
-        return await self.scans.create(
-            ScanCreate(
-                engine_id=None,
-                context_id=data.context_id or parent.context_id,
-                target_id=parent.target_id,
-                overrides=overrides,
-                intensity=data.intensity
-                or (parent.execution_config or {}).get("intensity"),
-                seed_assets=[
-                    SeedAsset(kind=_seed_kind(value, kind), value=value)
-                    for value in data.assets
-                ],
-                parent_scan_id=anchor,
-                dimension=data.dimension,
-            ),
-            project_id,
-            created_by,
+
+    async def preview(self, data: RescanCreate, project_id: UUID) -> RunPreview:
+        """Resolve a selection without starting anything."""
+        resolved = await self._resolve(data.selection, project_id)
+        picked = self._stages(data.stages, data.dimension)
+        known = stage_by_name()
+        return RunPreview(
+            dimension=data.dimension,
+            seed_kind=seed_kind_for(data.dimension),
+            asset_count=resolved.total,
+            matched=resolved.matched,
+            target_count=len(resolved.groups),
+            capped=resolved.capped,
+            targets=[
+                SeedGroupSummary(
+                    target_id=group.target_id,
+                    target_value=group.target_value,
+                    scan_id=group.scan_id,
+                    count=len(group.values),
+                )
+                for group in resolved.groups
+            ],
+            stage_titles=sorted(known[name].title for name in picked if name in known),
         )
+
+    async def _resolve(self, selection: SeedSelection | None, project_id: UUID):
+        if selection is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Select at least one asset to rescan.",
+            )
+        try:
+            resolved = await SeedSelectionService(self.session).resolve(
+                selection, project_id
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            ) from exc
+        if not resolved.groups:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The selection matched no assets in a completed scan.",
+            )
+        return resolved
+
+    @staticmethod
+    def _anchor(parent: Scan) -> UUID:
+        """A focused run anchors to the census scan; one level only."""
+        if parent.scope == ScanScope.FOCUSED.value and parent.parent_scan_id:
+            return parent.parent_scan_id
+        return parent.id
 
     async def rechecks(
         self, parent_scan_id: UUID, project_id: UUID

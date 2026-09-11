@@ -339,6 +339,25 @@ class EndpointService:
             parse_query(f.q, ENDPOINT_QUERY), self._context(scope, now)
         )
 
+    async def seeds(
+        self, scope: ScopeLike, f: EndpointFilter, limit: int
+    ) -> list[tuple[str, UUID]]:
+        scope = QueryScope.of(scope)
+        now = utc_now()
+        base = self._scoped(scope, f, columns=(Endpoint.host, Endpoint.scan_id))
+        try:
+            predicate = self._compiled(scope, f, now)
+        except QuerySyntaxError:
+            return []
+        if predicate is not None:
+            base = base.where(predicate)
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
+        rows = await self.session.execute(
+            base.distinct().order_by(Endpoint.host).limit(limit)
+        )
+        return [(host, scan_id) for host, scan_id in rows.all()]
+
     async def search(self, scope: ScopeLike, f: EndpointFilter) -> EndpointPage:
         scope = QueryScope.of(scope)
         now = utc_now()

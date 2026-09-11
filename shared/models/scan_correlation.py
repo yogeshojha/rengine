@@ -139,6 +139,7 @@ class IpFacets(BaseModel):
 
 class ServiceRead(BaseModel):
     id: uuid.UUID
+    scan_id: uuid.UUID | None = None
     target_id: uuid.UUID | None = None
     target_value: str | None = None
     ip: str

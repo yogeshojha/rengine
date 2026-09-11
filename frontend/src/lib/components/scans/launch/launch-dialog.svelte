@@ -4,7 +4,6 @@
 	import { toast } from 'svelte-sonner';
 	import CornerDownLeft from '@lucide/svelte/icons/corner-down-left';
 	import Play from '@lucide/svelte/icons/play';
-	import X from '@lucide/svelte/icons/x';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Kbd from '$lib/components/ui/kbd';
 	import { Button } from '$lib/components/ui/button';
@@ -23,15 +22,17 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { SELECT_NONE } from '$lib/constants';
 	import type { PreviewPhase, ScanPreview, ScanRead } from '$lib/types/scan';
+	import type { RunPreview } from '$lib/types/recheck';
 	import type { Target } from '$lib/types/target';
 	import { mostRecentEngine, readLastPlan, rememberLastPlan } from '$lib/utilities/launch-plan';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
-	import { stagesForDimension } from '$lib/utilities/rechecks';
+	import { runDescription, runStarted, stagesForDimension } from '$lib/utilities/rechecks';
 	import { LaunchState, type RescanSeed } from './launch-state.svelte';
 	import { chipFor, INVALID_TARGET_MESSAGE, resolveTargetValue, TARGET_FORMATS } from './targets';
 	import TargetPicker from './target-picker.svelte';
 	import PlanPicker from './plan-picker.svelte';
 	import LaunchSummary from './launch-summary.svelte';
+	import RescanScope from './rescan-scope.svelte';
 	import LaunchContextField from './launch-context-field.svelte';
 	import LaunchContextForm from './launch-context-form.svelte';
 	import SaveEngineDialog from './save-engine-dialog.svelte';
@@ -74,6 +75,9 @@
 	let enginePhasesLoading = $state(false);
 	let enginePreviewSeq = 0;
 	let launching = $state(false);
+	let runPreview = $state<RunPreview | null>(null);
+	let runPreviewLoading = $state(false);
+	let runPreviewSeq = 0;
 	let saveOpen = $state(false);
 	let whatRunsOpen = $state(false);
 	let previewSeq = 0;
@@ -87,13 +91,13 @@
 	let catalogReady = $derived(engineCatalogStore.hasFetched || !!engineCatalogStore.error);
 	let busy = $derived(launching || targetsLoading);
 	let firstTarget = $derived(launch.targets[0] ?? null);
-	let launchLabel = $derived(
-		launch.rescan
-			? `Rescan ${launch.rescan.assets.length} ${launch.rescan.assets.length === 1 ? 'asset' : 'assets'}`
-			: launch.targets.length > 1
-				? `Start ${launch.targets.length} scans`
-				: 'Start scan'
-	);
+	let launchLabel = $derived.by(() => {
+		if (!launch.rescan) {
+			return launch.targets.length > 1 ? `Start ${launch.targets.length} scans` : 'Start scan';
+		}
+		const n = runPreview?.asset_count ?? launch.rescan.assets.length;
+		return `Rescan ${n.toLocaleString()} ${n === 1 ? 'asset' : 'assets'}`;
+	});
 	let canSaveEngine = $derived(
 		!launch.rescan && launch.mode === 'quick' && !!launch.catalog && launch.runningStages.length > 0
 	);
@@ -145,6 +149,31 @@
 			stagesForDimension(schema, seed.dimension)
 		);
 	}
+
+	$effect(() => {
+		const seed = launch.rescan;
+		const p = project;
+		if (!open || !seed || !p) {
+			runPreview = null;
+			runPreviewLoading = false;
+			return;
+		}
+		void JSON.stringify(seed.selection);
+		runPreviewLoading = true;
+		const seq = ++runPreviewSeq;
+		const body = { selection: seed.selection, dimension: '' };
+		void scansApi
+			.rescanPreview(p.id, body)
+			.then((r) => {
+				if (seq === runPreviewSeq) runPreview = r;
+			})
+			.catch(() => {
+				if (seq === runPreviewSeq) runPreview = null;
+			})
+			.finally(() => {
+				if (seq === runPreviewSeq) runPreviewLoading = false;
+			});
+	});
 
 	$effect(() => {
 		if (!open) return;
@@ -312,11 +341,8 @@
 		const body = launch.rescanBody();
 		if (!body) return;
 		try {
-			await rechecks.rescan(projectId, body);
-			const n = body.assets.length;
-			toast.success(`Rechecking ${n} ${n === 1 ? 'asset' : 'assets'}`, {
-				description: 'Results appear as the scan produces them.'
-			});
+			const run = await rechecks.rescan(projectId, body);
+			toast.success(runStarted(run, 'asset', 'assets'), { description: runDescription(run) });
 			close();
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Rescan could not start');
@@ -364,34 +390,16 @@
 			>
 				<div class="flex flex-col gap-5 px-6 pt-5 pb-4">
 					{#if launch.rescan}
-						<div class="flex flex-col gap-2">
-							<Label>
-								Assets
-								<span class="ml-1 font-normal text-muted-foreground">
-									from the run that found them
-								</span>
-							</Label>
-							<div
-								class="flex max-h-32 flex-wrap gap-1.5 overflow-y-auto rounded-md border bg-muted/20 p-2"
-							>
-								{#each launch.rescan.assets as asset (asset)}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-md border bg-background py-0.5 pr-1 pl-2 font-mono text-xs"
-									>
-										{asset}
-										<button
-											type="button"
-											class="rounded-sm px-0.5 text-muted-foreground hover:text-foreground"
-											aria-label="Remove {asset}"
-											disabled={launching}
-											onclick={() => launch.removeAsset(asset)}
-										>
-											<X class="size-3" />
-										</button>
-									</span>
-								{/each}
-							</div>
-						</div>
+						<RescanScope
+							assets={launch.rescan.assets}
+							queryLabel={launch.rescan.queryLabel}
+							preview={runPreview}
+							loading={runPreviewLoading}
+							disabled={launching}
+							onRemove={launch.rescan.selection.picks
+								? (asset) => launch.removeAsset(asset)
+								: undefined}
+						/>
 					{:else}
 						<div class="flex flex-col gap-2">
 							<Label>Targets</Label>

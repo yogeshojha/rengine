@@ -1,4 +1,11 @@
-import type { Recheck, RecheckChange, RescanCreate, RescanSchema } from '$lib/types/recheck';
+import type {
+	FocusedRun,
+	Recheck,
+	RecheckChange,
+	RescanCreate,
+	RescanSchema,
+	SeedSelection
+} from '$lib/types/recheck';
 
 const LIVE = new Set(['pending', 'running']);
 
@@ -29,21 +36,41 @@ export function recheckTone(r: Recheck): 'live' | 'changed' | 'quiet' | 'failed'
 	return r.changed ? 'changed' : 'quiet';
 }
 
+export function selectionLabel(search: string, filters: string[]): string {
+	const parts = [search.trim(), ...filters].filter(Boolean);
+	return parts.length ? parts.join(' · ') : 'No filter';
+}
+
+export function runStarted(run: FocusedRun, noun: string, nounPlural: string): string {
+	const n = run.asset_count;
+	return `Rechecking ${n.toLocaleString()} ${n === 1 ? noun : nounPlural}`;
+}
+
+export function runDescription(run: FocusedRun): string {
+	const parts: string[] = [];
+	if (run.target_count > 1) parts.push(`${run.target_count} targets`);
+	if (run.capped) {
+		parts.push(
+			run.matched === null
+				? `Capped at ${run.asset_count.toLocaleString()}`
+				: `Capped at ${run.asset_count.toLocaleString()} of ${run.matched.toLocaleString()}`
+		);
+	}
+	return parts.join(' · ');
+}
+
 export async function startRescan(
 	projectId: string,
-	body: RescanCreate,
+	selection: SeedSelection,
 	noun: string,
-	nounPlural: string
+	nounPlural: string,
+	body: Omit<RescanCreate, 'selection'> = {}
 ): Promise<boolean> {
-	if (!body.assets.length) return false;
 	const { rechecks } = await import('$lib/stores/rechecks.svelte');
 	const { toast } = await import('svelte-sonner');
 	try {
-		await rechecks.rescan(projectId, body);
-		const n = body.assets.length;
-		toast.success(`Rechecking ${n} ${n === 1 ? noun : nounPlural}`, {
-			description: 'Results land on the rows as they arrive.'
-		});
+		const run = await rechecks.rescan(projectId, { ...body, selection, dimension: '' });
+		toast.success(runStarted(run, noun, nounPlural), { description: runDescription(run) });
 		return true;
 	} catch (e) {
 		toast.error(e instanceof Error ? e.message : 'Rescan could not start');

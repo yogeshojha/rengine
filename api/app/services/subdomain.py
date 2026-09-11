@@ -458,6 +458,28 @@ class SubdomainService:
             build=_build,
         )
 
+    async def seeds(
+        self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter, limit: int
+    ) -> list[tuple[str, UUID]]:
+        now = utc_now()
+        scope = QueryScope.of(scope)
+        base = select(Subdomain.name, Subdomain.scan_id).where(
+            Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
+        )
+        base = self._apply_filter(base, f, now, scope)
+        try:
+            predicate = compile_query(
+                parse_query(f.q), QueryContext(scope=scope, now=now)
+            )
+        except QuerySyntaxError:
+            return []
+        if predicate is not None:
+            base = base.where(predicate)
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
+        rows = await self.session.execute(base.order_by(Subdomain.name).limit(limit))
+        return [(name, scan_id) for name, scan_id in rows.all()]
+
     async def groups(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter, key: str
     ) -> QueryGroups:

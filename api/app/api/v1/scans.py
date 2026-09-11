@@ -13,8 +13,10 @@ from app.services.scan import ScanService, ScanSortDir, ScanSortKey
 from shared.enums.scan import ScanStatus
 from shared.models.recheck import RecheckRead
 from shared.models.scan import (
+    FocusedRunRead,
     RescanCreate,
     RescanSchema,
+    RunPreview,
     ScanBatchCreate,
     ScanChanges,
     ScanCreate,
@@ -50,7 +52,9 @@ async def rescan_vocabulary(_current_user: CurrentUser):
     return rescan_schema()
 
 
-@router.post("/rescan", response_model=ScanRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/rescan", response_model=FocusedRunRead, status_code=status.HTTP_201_CREATED
+)
 async def rescan_assets(
     data: RescanCreate,
     current_user: CurrentUser,
@@ -60,6 +64,16 @@ async def rescan_assets(
     return await service.create(
         data=data, project_id=project_id, created_by=current_user.id
     )
+
+
+@router.post("/rescan/preview", response_model=RunPreview)
+async def rescan_preview(
+    data: RescanCreate,
+    _current_user: CurrentUser,
+    service: Annotated[RescanService, Depends(get_rescan_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.preview(data=data, project_id=project_id)
 
 
 @router.get("/{scan_id}/rechecks", response_model=list[RecheckRead])

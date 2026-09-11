@@ -2,7 +2,7 @@
 	import { page as appPage } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
-	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import X from '@lucide/svelte/icons/x';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -27,6 +27,7 @@
 	import AssetGallery from './web-assets/asset-gallery.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
+	import { RowSelection } from './table/selection.svelte';
 	import GroupList from './table/group-list.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
 	import HostStructureDialog from './web-assets/host-structure-dialog.svelte';
@@ -39,12 +40,13 @@
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { servicesOn } from '$lib/utilities/service-lookup';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
-	import { seedKindFor } from '$lib/utilities/rechecks';
+	import { runDescription, runStarted, seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import type { SubdomainRead } from '$lib/types/subdomain';
+	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import {
 		appendToken,
 		exactToken,
@@ -65,7 +67,6 @@
 	interface Props {
 		scanId: string;
 		projectWide?: boolean;
-		targetId?: string;
 		targetType?: string;
 		projectId: string;
 		apex?: string;
@@ -78,7 +79,6 @@
 	let {
 		scanId,
 		projectWide = false,
-		targetId = '',
 		targetType = '',
 		projectId,
 		apex = '',
@@ -157,7 +157,7 @@
 	let searchRef = $state<HTMLInputElement | null>(null);
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let pendingSelect: 'first' | 'last' | null = null;
-	const checkedIds = new SvelteSet<string>();
+	const selection = new RowSelection<SubdomainRead>();
 
 	let scanTotal = $derived(facets.status.reduce((n, f) => n + f.count, 0));
 	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
@@ -172,7 +172,8 @@
 	let shownColumns = $derived(
 		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
 	);
-	let checkedCount = $derived(items.filter((s) => checkedIds.has(s.id)).length);
+	let checkedCount = $derived(selection.countOn(items));
+	let pickedCount = $derived(selection.size);
 	let selectAllChecked = $derived<boolean | 'indeterminate'>(
 		items.length > 0 && checkedCount === items.length
 			? true
@@ -197,10 +198,6 @@
 		if (visiblePref) writePref(STORAGE_KEYS.webAssetsColumns, visiblePref);
 	});
 	$effect(() => writePref(STORAGE_KEYS.webAssetsDensity, density));
-	$effect(() => {
-		const ids = new Set(items.map((s) => s.id));
-		for (const id of checkedIds) if (!ids.has(id)) checkedIds.delete(id);
-	});
 	$effect(() => writePref(STORAGE_KEYS.webAssetsPageSize, pageSize));
 
 	const initialSearch = initial.get('q');
@@ -471,13 +468,15 @@
 		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
 		pageIndex = 0;
 	}
+	function pickOf(s: SubdomainRead): SeedPick {
+		return { value: s.name, scan_id: s.scan_id };
+	}
 	function toggleCheck(id: string) {
-		if (checkedIds.has(id)) checkedIds.delete(id);
-		else checkedIds.add(id);
+		const row = items.find((s) => s.id === id);
+		if (row) selection.toggle(row, pickOf(row));
 	}
 	function toggleSelectAll() {
-		if (checkedCount === items.length) checkedIds.clear();
-		else for (const s of items) checkedIds.add(s.id);
+		selection.toggleAll(items, pickOf);
 	}
 	function toggleCol(key: string) {
 		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
@@ -524,23 +523,45 @@
 	let rescanBusy = $state(false);
 
 	$effect(() => {
-		if (projectWide || !active || !scanId || !projectId) return;
+		if (!active || !projectId) return;
 		void rechecks.loadSchema();
+		if (projectWide || !scanId) return;
 		untrack(() => rechecks.load(scanId, projectId));
 	});
 
-	async function rescan(hosts: string[]) {
-		if (!hosts.length || rescanBusy) return;
+	function selectionOf(picks: SeedPick[]): SeedSelection {
+		return { dimension: SurfaceDimension.WEB_ASSETS, picks };
+	}
+
+	function queryLabel(): string {
+		return selectionLabel(
+			query.search,
+			chips.map((c) => c.label)
+		);
+	}
+
+	function querySelection(): SeedSelection {
+		const {
+			limit: _l,
+			offset: _o,
+			sort: _s,
+			order: _d,
+			...filter
+		} = compileQuery(query, 'name', 1, 0, 1);
+		return {
+			dimension: SurfaceDimension.WEB_ASSETS,
+			query: { filter, scan_ids: scanId ? [scanId] : [] }
+		};
+	}
+
+	async function rescan(sel: SeedSelection) {
+		if (rescanBusy) return;
 		rescanBusy = true;
 		try {
-			await rechecks.rescan(projectId, {
-				parent_scan_id: scanId,
-				dimension: SurfaceDimension.WEB_ASSETS,
-				assets: hosts
-			});
-			checkedIds.clear();
-			toast.success(`Rechecking ${hosts.length} ${hosts.length === 1 ? 'host' : 'hosts'}`, {
-				description: 'Results appear as the scan produces them.'
+			const run = await rechecks.rescan(projectId, { selection: sel, dimension: '' });
+			selection.clear();
+			toast.success(runStarted(run, 'host', 'hosts'), {
+				description: runDescription(run)
 			});
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Rescan could not start');
@@ -550,8 +571,14 @@
 	}
 
 	function rescanSelection() {
-		const hosts = items.filter((s) => checkedIds.has(s.id)).map((s) => s.name);
-		void rescan(hosts.length ? hosts : cursor >= 0 && items[cursor] ? [items[cursor].name] : []);
+		const picks = selection.picks();
+		if (picks.length) return void rescan(selectionOf(picks));
+		const row = cursor >= 0 ? items[cursor] : null;
+		if (row) void rescan(selectionOf([pickOf(row)]));
+	}
+
+	function rescanAllMatching() {
+		void rescan(querySelection());
 	}
 
 	function scrollCursor() {
@@ -586,11 +613,15 @@
 		}
 	}
 
-	let rescanOptionsFor = $state<string[] | null>(null);
+	let rescanOptionsFor = $state<SeedSelection | null>(null);
 
 	function openRescanOptions() {
-		const assets = items.filter((s) => checkedIds.has(s.id)).map((s) => s.name);
-		if (assets.length) rescanOptionsFor = assets;
+		const picks = selection.picks();
+		if (picks.length) rescanOptionsFor = selectionOf(picks);
+	}
+
+	function openRescanAllOptions() {
+		rescanOptionsFor = querySelection();
 	}
 </script>
 
@@ -685,15 +716,21 @@
 		</div>
 	{/if}
 
-	{#if !groupBy && !projectWide}
+	{#if !groupBy}
 		<SelectionBar
-			count={checkedCount}
+			count={pickedCount}
 			noun="web asset"
 			nounPlural="web assets"
+			{total}
+			{totalCapped}
+			maxAssets={rechecks.schema?.max_assets ?? 0}
+			queryActive={Boolean(query.search.trim()) || chips.length > 0}
 			busy={rescanBusy}
 			onRescan={rescanSelection}
 			onOptions={openRescanOptions}
-			onClear={() => checkedIds.clear()}
+			onRescanAll={rescanAllMatching}
+			onRescanAllOptions={openRescanAllOptions}
+			onClear={() => selection.clear()}
 		/>
 	{/if}
 
@@ -780,7 +817,7 @@
 						index={i}
 						{apex}
 						columns={shownColumns}
-						checked={checkedIds.has(s.id)}
+						checked={selection.has(s.id)}
 						onCheck={toggleCheck}
 						selected={drawerOpen && selected?.id === s.id}
 						focused={cursor === i}
@@ -798,8 +835,8 @@
 							structureHost = sub.name;
 						}}
 						recheck={rechecks.latest(scanId, s.name)}
-						onRescan={projectWide ? undefined : (sub) => rescan([sub.name])}
-						onRescanOptions={projectWide ? undefined : (sub) => (rescanOptionsFor = [sub.name])}
+						onRescan={(sub) => rescan(selectionOf([pickOf(sub)]))}
+						onRescanOptions={(sub) => (rescanOptionsFor = selectionOf([pickOf(sub)]))}
 					/>
 				{/each}
 			</div>
@@ -812,8 +849,8 @@
 			capped={totalCapped}
 			page={pageIndex}
 			{pageSize}
-			selectedCount={checkedCount}
-			onClearSelection={() => checkedIds.clear()}
+			selectedCount={pickedCount}
+			onClearSelection={() => selection.clear()}
 			onPage={(p) => (pageIndex = p)}
 			onPageSize={(s) => {
 				pageSize = s;
@@ -854,16 +891,16 @@
 	open={rescanOptionsFor !== null}
 	rescan={rescanOptionsFor
 		? {
-				parentScanId: scanId,
-				targetId,
+				selection: rescanOptionsFor,
 				dimension: SurfaceDimension.WEB_ASSETS,
 				targetType,
 				seedKind: seedKindFor(rechecks.schema, SurfaceDimension.WEB_ASSETS),
-				assets: rescanOptionsFor
+				assets: rescanOptionsFor.picks?.map((pick) => pick.value) ?? [],
+				queryLabel: rescanOptionsFor.query ? queryLabel() : undefined
 			}
 		: null}
 	onClose={() => {
 		rescanOptionsFor = null;
-		checkedIds.clear();
+		selection.clear();
 	}}
 />

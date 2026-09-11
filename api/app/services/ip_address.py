@@ -414,6 +414,26 @@ class IpAddressService:
             )
         return page
 
+    async def seeds(
+        self, scope: ScopeLike, f: IpGroupFilter, limit: int
+    ) -> list[tuple[str, list[UUID]]]:
+        """An address folds across every target that serves it."""
+        scope = QueryScope.of(scope)
+        now = utc_now()
+        d, base = self._scoped(scope, f, columns=lambda d: (d.c.ip, d.c.target_ids))
+        try:
+            predicate = compile_ip_query(
+                parse_query(f.q, IP_QUERY), self._context(scope, d, now)
+            )
+        except QuerySyntaxError:
+            return []
+        if predicate is not None:
+            base = base.where(predicate)
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
+        rows = await self.session.execute(base.order_by(d.c.ip).limit(limit))
+        return [(ip, list(target_ids or [])) for ip, target_ids in rows.all()]
+
     async def leads(self, scope: ScopeLike, f: IpGroupFilter) -> QueryLeads:
         scope = QueryScope.of(scope)
 

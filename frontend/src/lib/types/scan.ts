@@ -107,7 +107,13 @@ export interface ResolvedScanConfig {
 	http_protocol: HttpProtocol;
 	global_http_crawl: boolean;
 	intensity: string;
+	seed_assets?: SeedAsset[];
 	overrides?: StageOverrides;
+}
+
+export interface SeedAsset {
+	kind: string;
+	value: string;
 }
 
 export type ScanScope = 'full' | 'focused';
@@ -124,6 +130,7 @@ export interface ScanRead {
 	schedule_type: string | null;
 	scope: ScanScope;
 	parent_scan_id: string | null;
+	run_group_id: string | null;
 	seed_count: number;
 	execution_config: ResolvedScanConfig;
 	auth_summary: string;
