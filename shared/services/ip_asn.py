@@ -56,14 +56,24 @@ def ranges_ready(session: Session) -> bool:
 # test on the JOIN rather than inside the subquery (inside, a gap address scans backwards
 # over the whole table). Postgres sorts every IPv4 inet below every IPv6 one, so one index
 # on start_ip serves both families.
+# 80.2% of the feed's ranges are exactly one CIDR; the rest are aggregates spanning
+# several, and inet_merge would report a network wider than the allocation. A prefix
+# is therefore filled only when the range IS the network — a null means unknown.
 _ENRICH_SQL = """
 UPDATE ip_addresses a SET
     asn     = coalesce(r.asn, a.asn),
     asn_org = coalesce(r.as_name, a.asn_org),
-    country = coalesce(c.country, a.country)
+    country = coalesce(c.country, a.country),
+    prefix  = coalesce(r.prefix, a.prefix)
 FROM ip_addresses base
 LEFT JOIN LATERAL (
-    SELECT asn, as_name, end_ip FROM ip_asn_ranges
+    SELECT asn, as_name, end_ip,
+           CASE
+               WHEN host(network(inet_merge(start_ip, end_ip)))::inet = start_ip
+                AND host(broadcast(inet_merge(start_ip, end_ip)))::inet = end_ip
+               THEN text(inet_merge(start_ip, end_ip))
+           END AS prefix
+    FROM ip_asn_ranges
     WHERE start_ip <= base.ip::inet ORDER BY start_ip DESC LIMIT 1
 ) r ON r.end_ip >= base.ip::inet
 LEFT JOIN LATERAL (

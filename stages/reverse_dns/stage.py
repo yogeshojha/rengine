@@ -5,7 +5,7 @@ from sqlalchemy import select
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
-from stages.base import IP_TARGETS, Stage, StageResult
+from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.reverse_dns.config import ReverseDnsConfig
 from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.parser import parse_dnsx_jsonl
@@ -25,7 +25,8 @@ class ReverseDnsStage(Stage):
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.ADDRESSES.value})
     produces = frozenset({AssetKind.HOSTS.value})
-    applies_to = IP_TARGETS
+    # a domain scan's addresses have PTRs too, and the lookup is one dnsx run
+    applies_to = ALL_TARGETS
     tools = ("dnsx",)
     touches_target = False
     config_model = ReverseDnsConfig
