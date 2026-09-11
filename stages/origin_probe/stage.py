@@ -8,10 +8,13 @@ from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
+from shared.services import vuln_inventory
+from shared.services.origin_exposure import OriginExposureService
 from shared.services.scope_filter import ip_excluded
 from shared.utils.datetime import utc_now
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.origin_probe.config import OriginProbeConfig
+from stages.origin_probe.finding import origin_finding
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
@@ -64,8 +67,13 @@ class OriginProbeStage(Stage):
         with client.stream_probe(targets) as stream:
             answered = self._persist(stream.records)
         self.emit_progress(f"{answered} of {len(targets)} answered by address alone")
+        exposed = self._record_exposure()
         return StageResult(
-            counts={"probed": len(targets), "answered": answered},
+            counts={
+                "probed": len(targets),
+                "answered": answered,
+                "vulnerabilities": exposed,
+            },
             warnings=[
                 f"httpx stalled and was stopped. {len(targets):,} addresses queued."
             ]
@@ -73,6 +81,31 @@ class OriginProbeStage(Stage):
             else [],
             partial=stream.timed_out,
         )
+
+    def _record_exposure(self) -> int:
+        """The correlation the read model already computes, written down as findings.
+
+        Rendering it only on the Overview meant it inherited none of triage, is:new,
+        delta-only alerting, the reports or the compliance mapping — all of which a
+        Vulnerability row gets for nothing.
+        """
+        exposure = OriginExposureService(self.session).run(self.ctx.scan_id)
+        findings = [origin_finding(found) for found in exposure.findings]
+        stored = vuln_inventory.upsert(
+            self.session,
+            scan_id=self.ctx.scan_id,
+            target_id=self.ctx.target_id,
+            project_id=self.ctx.project_id,
+            findings=findings,
+        )
+        self.session.commit()
+        if stored:
+            self.publish_results(SurfaceDimension.VULNERABILITIES.value)
+            self.emit_progress(
+                f"{stored} address{'' if stored == 1 else 'es'} answer the same "
+                "application as a name behind the CDN"
+            )
+        return stored
 
     def _targets(self, cfg: OriginProbeConfig) -> list[str]:
         rows = self.session.execute(
