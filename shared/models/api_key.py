@@ -58,6 +58,14 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "biohazard",
         "color": "#f43f5e",
     },
+    APIProvider.INTERACTSH: {
+        "name": "Interactsh",
+        "description": "Auth token for your own out-of-band server, so blind callbacks reach you and nobody else",
+        "docs_url": "https://github.com/projectdiscovery/interactsh",
+        "requires_username": False,
+        "icon": "satellite-dish",
+        "color": "#8b5cf6",
+    },
 }
 
 

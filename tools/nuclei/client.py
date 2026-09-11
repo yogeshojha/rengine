@@ -22,6 +22,8 @@ logger = get_logger(__name__)
 
 NUCLEI_BINARY = "nuclei"
 DEFAULT_TIMEOUT = 7200
+# a request must stay correlatable for longer than we keep listening for its callback
+_EVICTION_SLACK = 120
 
 # nuclei reports a host it gave up on only when -silent is absent
 _DROPPED = re.compile(
@@ -137,6 +139,8 @@ class NucleiOptions:
     headless: bool = False
     interactsh: bool = False
     interactsh_server: str | None = None
+    interactsh_token: str | None = None
+    oast_wait_seconds: int = 0
     honeypot_threshold: int = 0
     proxy_url: str | None = None
     headers: dict[str, str] = field(default_factory=dict)
@@ -233,8 +237,23 @@ class NucleiClient:
             args += ["-headless", "-system-chrome"]
         if not opt.interactsh:
             args.append("-no-interactsh")
-        elif opt.interactsh_server:
-            args += ["-interactsh-server", opt.interactsh_server]
+        else:
+            if opt.interactsh_server:
+                args += ["-interactsh-server", opt.interactsh_server]
+            token = (opt.interactsh_token or "").strip()
+            if token:
+                args += ["-interactsh-token", token]
+            if opt.oast_wait_seconds > 0:
+                # nuclei stops polling 5s after its last request by default, so a
+                # callback a queue fires minutes later is never heard; and eviction
+                # must outlast the wait or the callback arrives with no request to
+                # attribute it to
+                args += [
+                    "-interactions-cooldown-period",
+                    str(opt.oast_wait_seconds),
+                    "-interactions-eviction",
+                    str(opt.oast_wait_seconds + _EVICTION_SLACK),
+                ]
         if opt.honeypot_threshold > 0:
             args += [
                 "-honeypot-detect",

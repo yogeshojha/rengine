@@ -38,8 +38,10 @@ _HEADER_VALUE = re.compile(
     r'\s*:\s*)([^"\'\n]+?)(?=["\']|\s+-|\s*$)',
     re.IGNORECASE,
 )
+# the flag NAME may carry a prefix (-interactsh-token, -itoken): match on how it ends,
+# not on the whole word, or a tool's own spelling decides whether a secret is stored
 _CRED_FLAG = re.compile(
-    r"((?:-{1,2}(?:api[-_]?key|key|token|password|passwd|pass|secret))[ =])(\S+)",
+    r"((?:-{1,2}[\w-]*?(?:api[-_]?key|key|token|password|passwd|pass|secret))[ =])(\S+)",
     re.IGNORECASE,
 )
 _UNSAFE_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")

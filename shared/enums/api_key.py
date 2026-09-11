@@ -8,3 +8,4 @@ class APIProvider(Enum):
     SECURITYTRAILS = "securitytrails"
     HACKERONE = "hackerone"
     VULNX = "vulnx"
+    INTERACTSH = "interactsh"
