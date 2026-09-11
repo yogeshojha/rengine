@@ -11,6 +11,7 @@ export interface InstanceSettings {
 	onboarding_state: Record<string, unknown>;
 	scan_history_retention_days: number;
 	screenshot_retention_days: number;
+	cert_recheck_enabled: boolean;
 	ai_enabled: boolean;
 	ai_provider: string | null;
 	ai_model: string | null;
@@ -28,6 +29,7 @@ export interface InstanceSettingsUpdate {
 	mode?: string;
 	scan_history_retention_days?: number;
 	screenshot_retention_days?: number;
+	cert_recheck_enabled?: boolean;
 	ai_enabled?: boolean;
 	ai_provider?: string | null;
 	ai_model?: string | null;

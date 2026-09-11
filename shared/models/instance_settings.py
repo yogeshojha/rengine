@@ -45,6 +45,8 @@ class InstanceSettings(SQLModel, table=True):
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )
     threat_intel_auto_sync: bool = Field(default=True)
+    # it handshakes targets outside a scan, so it is opt-in, not opt-out
+    cert_recheck_enabled: bool = Field(default=False)
     bounty_sync_interval: str = Field(default=DEFAULT_SYNC_INTERVAL, max_length=16)
     bounty_synced_at: datetime | None = Field(default=None)
     bounty_events_seen_at: datetime | None = Field(default=None)
@@ -67,6 +69,7 @@ class InstanceSettingsUpdate(BaseModel):
     mode: str | None = None
     scan_history_retention_days: int | None = None
     screenshot_retention_days: int | None = None
+    cert_recheck_enabled: bool | None = None
     ai_enabled: bool | None = None
     ai_provider: str | None = None
     ai_model: str | None = None
@@ -87,6 +90,7 @@ class InstanceSettingsRead(BaseModel):
     onboarding_state: dict
     scan_history_retention_days: int
     screenshot_retention_days: int
+    cert_recheck_enabled: bool
     ai_enabled: bool
     ai_provider: str | None
     ai_model: str | None

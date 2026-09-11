@@ -105,6 +105,7 @@ celery_app.conf.task_routes = {
     "app.tasks.reports.*": {"queue": "default"},
     "app.tasks.interest.*": {"queue": "default"},
     "app.tasks.threat_intel.*": {"queue": "default"},
+    "app.tasks.freshness.*": {"queue": "default"},
     "app.tasks.bounty_programs.*": {"queue": "default"},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
@@ -123,6 +124,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.schedule",
         "app.tasks.ip_asn",
         "app.tasks.vuln_templates",
+        "app.tasks.freshness",
         "app.tasks.endpoints",
         "app.tasks.reports",
         "app.tasks.interest",
@@ -146,6 +148,8 @@ REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
 NOTIFICATION_CLEANUP_SECONDS = 6 * 60 * 60.0
 RETENTION_SECONDS = 24 * 60 * 60.0
 THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
+# a certificate inside its renewal window is worth asking about several times a day
+CERT_RECHECK_SECONDS = 4 * 60 * 60.0
 
 # the task itself decides whether the interval is due
 BOUNTY_SYNC_TICK_SECONDS = 60 * 60
@@ -192,6 +196,10 @@ celery_app.conf.beat_schedule = {
     "threat-intel-refresh": {
         "task": "app.tasks.threat_intel.refresh",
         "schedule": THREAT_INTEL_REFRESH_SECONDS,
+    },
+    "certificate-recheck": {
+        "task": "app.tasks.freshness.certificates",
+        "schedule": CERT_RECHECK_SECONDS,
     },
 }
 

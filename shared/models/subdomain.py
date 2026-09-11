@@ -51,6 +51,7 @@ class Subdomain(SQLModel, table=True):
     asn_org: str | None = Field(default=None, max_length=255)
     favicon_hash: str | None = Field(default=None, max_length=64)
     tls_not_after: datetime | None = Field(default=None)
+    tls_checked_at: datetime | None = Field(default=None)
     tls_expired: bool | None = Field(default=None)
     tls_self_signed: bool | None = Field(default=None)
     screenshot_path: str | None = Field(default=None, max_length=500)

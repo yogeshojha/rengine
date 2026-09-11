@@ -119,6 +119,8 @@ class InstanceSettingsService:
             settings.scan_history_retention_days = data.scan_history_retention_days
         if data.screenshot_retention_days is not None:
             settings.screenshot_retention_days = data.screenshot_retention_days
+        if data.cert_recheck_enabled is not None:
+            settings.cert_recheck_enabled = data.cert_recheck_enabled
         if data.ai_enabled is not None:
             settings.ai_enabled = data.ai_enabled
         if data.ai_provider is not None:

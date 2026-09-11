@@ -16,6 +16,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
@@ -68,6 +69,7 @@
 	let mode = $state<string>(DEFAULT_INSTANCE_MODE);
 	let scanRetention = $state('90');
 	let screenshotRetention = $state('30');
+	let certRecheck = $state(false);
 
 	let zoneOptions = $derived.by(() => {
 		const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -86,7 +88,8 @@
 			timezone,
 			mode,
 			scanRetention,
-			screenshotRetention
+			screenshotRetention,
+			certRecheck
 		});
 	}
 
@@ -100,6 +103,7 @@
 		mode = coerceInstanceMode(s.mode);
 		scanRetention = String(s.scan_history_retention_days);
 		screenshotRetention = String(s.screenshot_retention_days);
+		certRecheck = s.cert_recheck_enabled;
 		snapshot = currentState();
 	}
 
@@ -119,7 +123,8 @@
 				timezone,
 				mode,
 				scan_history_retention_days: Number(scanRetention),
-				screenshot_retention_days: Number(screenshotRetention)
+				screenshot_retention_days: Number(screenshotRetention),
+				cert_recheck_enabled: certRecheck
 			});
 			if (updated) {
 				hydrate();
@@ -291,6 +296,23 @@
 							</Select.Content>
 						</Select.Root>
 					</div>
+				</div>
+			</Card.Content>
+		</Card.Root>
+
+		<Card.Root>
+			<Card.Header>
+				<Card.Title class="text-base">Between scans</Card.Title>
+				<Card.Description
+					>A certificate expires and renews without a scan. Turning this on lets reNgine open one
+					TLS connection to each host every few hours to keep its expiry current. It reaches your
+					targets outside a scan, so it is off until you ask for it.</Card.Description
+				>
+			</Card.Header>
+			<Card.Content>
+				<div class="flex items-center justify-between gap-4">
+					<Label class="text-xs" for="cert-recheck">Re-check certificates</Label>
+					<Switch id="cert-recheck" bind:checked={certRecheck} />
 				</div>
 			</Card.Content>
 		</Card.Root>
