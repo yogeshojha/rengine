@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.definitions.domains import takeover_provider
 from shared.enums.dns import DnsRecordType
 from shared.enums.scan import ScanStatus
 from shared.enums.target import TargetType
@@ -31,49 +32,6 @@ _ITEMS_CAP = 100
 _STALE_DAYS = 30
 
 _DOMAIN_TYPES = (TargetType.DOMAIN, TargetType.URL)
-
-# CNAME suffix → provider; a dangling CNAME to these is a takeover candidate
-TAKEOVER_FINGERPRINTS: tuple[tuple[str, str], ...] = (
-    ("s3.amazonaws.com", "AWS S3"),
-    ("s3-website", "AWS S3"),
-    ("cloudfront.net", "AWS CloudFront"),
-    ("github.io", "GitHub Pages"),
-    ("herokuapp.com", "Heroku"),
-    ("herokudns.com", "Heroku"),
-    ("herokussl.com", "Heroku"),
-    ("azurewebsites.net", "Azure"),
-    ("cloudapp.net", "Azure"),
-    ("cloudapp.azure.com", "Azure"),
-    ("trafficmanager.net", "Azure"),
-    ("blob.core.windows.net", "Azure"),
-    ("azureedge.net", "Azure"),
-    ("myshopify.com", "Shopify"),
-    ("fastly.net", "Fastly"),
-    ("ghost.io", "Ghost"),
-    ("wpengine.com", "WP Stage"),
-    ("zendesk.com", "Zendesk"),
-    ("surge.sh", "Surge"),
-    ("bitbucket.io", "Bitbucket"),
-    ("statuspage.io", "Statuspage"),
-    ("uservoice.com", "UserVoice"),
-    ("netlify.app", "Netlify"),
-    ("netlify.com", "Netlify"),
-    ("readme.io", "Readme"),
-    ("pantheonsite.io", "Pantheon"),
-    ("unbouncepages.com", "Unbounce"),
-    ("tilda.ws", "Tilda"),
-    ("helpscoutdocs.com", "Help Scout"),
-    ("launchrock.com", "LaunchRock"),
-    ("wordpress.com", "WordPress.com"),
-)
-
-
-def _match_takeover(cname: str) -> str | None:
-    host = cname.strip().lower().rstrip(".")
-    for suffix, provider in TAKEOVER_FINGERPRINTS:
-        if suffix in host:
-            return provider
-    return None
 
 
 # Only flag the absence of an effective sender policy; ~all/-all express a real
@@ -123,7 +81,7 @@ class DashboardService:
         for r in latest.values():
             if r.resolved_ips:
                 continue
-            provider = _match_takeover(r.cname or "")
+            provider = takeover_provider(r.cname or "")
             if provider is None:
                 continue
             candidates.append(

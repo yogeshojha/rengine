@@ -323,3 +323,52 @@ def registrable_domain(hostname: str) -> str:
     if len(labels) >= _SUFFIX_LABELS and ".".join(labels[-2:]) in PUBLIC_SECOND_LEVEL:
         return ".".join(labels[-3:])
     return ".".join(labels[-2:])
+
+
+# CNAME suffix → provider; a dangling CNAME to these is a takeover candidate
+TAKEOVER_FINGERPRINTS: tuple[tuple[str, str], ...] = (
+    ("s3.amazonaws.com", "AWS S3"),
+    ("s3-website", "AWS S3"),
+    ("cloudfront.net", "AWS CloudFront"),
+    ("github.io", "GitHub Pages"),
+    ("herokuapp.com", "Heroku"),
+    ("herokudns.com", "Heroku"),
+    ("herokussl.com", "Heroku"),
+    ("azurewebsites.net", "Azure"),
+    ("cloudapp.net", "Azure"),
+    ("cloudapp.azure.com", "Azure"),
+    ("trafficmanager.net", "Azure"),
+    ("blob.core.windows.net", "Azure"),
+    ("azureedge.net", "Azure"),
+    ("myshopify.com", "Shopify"),
+    ("fastly.net", "Fastly"),
+    ("ghost.io", "Ghost"),
+    ("wpengine.com", "WP Stage"),
+    ("zendesk.com", "Zendesk"),
+    ("surge.sh", "Surge"),
+    ("bitbucket.io", "Bitbucket"),
+    ("statuspage.io", "Statuspage"),
+    ("uservoice.com", "UserVoice"),
+    ("netlify.app", "Netlify"),
+    ("netlify.com", "Netlify"),
+    ("readme.io", "Readme"),
+    ("pantheonsite.io", "Pantheon"),
+    ("unbouncepages.com", "Unbounce"),
+    ("tilda.ws", "Tilda"),
+    ("helpscoutdocs.com", "Help Scout"),
+    ("launchrock.com", "LaunchRock"),
+    ("wordpress.com", "WordPress.com"),
+)
+
+
+def takeover_provider(cname: str) -> str | None:
+    """The provider a CNAME points at, when it is one a dangling name can be claimed on.
+
+    A fingerprint has to start a DNS label. A bare substring match puts
+    mys3-website.evil.com on AWS — the same trap an unanchored keyword match is.
+    """
+    host = cname.strip().lower().rstrip(".")
+    for suffix, provider in TAKEOVER_FINGERPRINTS:
+        if host == suffix or host.startswith(f"{suffix}.") or f".{suffix}" in host:
+            return provider
+    return None

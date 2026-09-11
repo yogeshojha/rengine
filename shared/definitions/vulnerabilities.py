@@ -114,11 +114,13 @@ CORROBORATION_BASIS_LABELS: dict[str, str] = {
 
 class Scanner(StrEnum):
     NUCLEI = "nuclei"
+    RENGINE = "rengine"
     MANUAL = "manual"
 
 
 SCANNER_LABELS: dict[str, str] = {
     Scanner.NUCLEI.value: "Nuclei",
+    Scanner.RENGINE.value: "reNgine",
     Scanner.MANUAL.value: "Manual testing",
 }
 
