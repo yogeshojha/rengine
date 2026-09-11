@@ -6,6 +6,7 @@ import Globe from '@lucide/svelte/icons/globe';
 import Radiation from '@lucide/svelte/icons/radiation';
 import Swords from '@lucide/svelte/icons/swords';
 import TrendingUp from '@lucide/svelte/icons/trending-up';
+import ShieldOff from '@lucide/svelte/icons/shield-off';
 import Unplug from '@lucide/svelte/icons/unplug';
 import Zap from '@lucide/svelte/icons/zap';
 import type { IconComponent } from './icons';
@@ -49,6 +50,7 @@ export enum ExploitSignal {
 	WEAPONISED = 'weaponised',
 	LIKELY = 'likely',
 	REACHABLE = 'reachable',
+	BYPASSED = 'bypassed',
 	CROWD = 'crowd',
 	UNTESTABLE = 'untestable'
 }
@@ -62,6 +64,7 @@ export const SIGNAL_ORDER: string[] = [
 	ExploitSignal.WEAPONISED,
 	ExploitSignal.LIKELY,
 	ExploitSignal.REACHABLE,
+	ExploitSignal.BYPASSED,
 	ExploitSignal.CROWD,
 	ExploitSignal.UNTESTABLE
 ];
@@ -75,6 +78,7 @@ export const SIGNAL_LABELS: Record<string, string> = {
 	[ExploitSignal.WEAPONISED]: 'Public exploit available',
 	[ExploitSignal.LIKELY]: 'Likely to be exploited',
 	[ExploitSignal.REACHABLE]: 'Directly reachable',
+	[ExploitSignal.BYPASSED]: 'Confirmed through a WAF',
 	[ExploitSignal.CROWD]: 'Mass-scanned software',
 	[ExploitSignal.UNTESTABLE]: 'No check exists'
 };
@@ -91,6 +95,8 @@ export const SIGNAL_HELP: Record<string, string> = {
 	[ExploitSignal.LIKELY]: 'EPSS puts these above the threshold most teams act on.',
 	[ExploitSignal.REACHABLE]:
 		'The host answers from the internet with no CDN or WAF in front of it.',
+	[ExploitSignal.BYPASSED]:
+		'A WAF or CDN sits in front of the host and the check still succeeded, so the protection did not stop it.',
 	[ExploitSignal.CROWD]:
 		'Hundreds of thousands of hosts run this software, so it is swept continuously.',
 	[ExploitSignal.UNTESTABLE]:
@@ -106,6 +112,7 @@ export const SIGNAL_ICONS: Record<string, IconComponent> = {
 	[ExploitSignal.WEAPONISED]: Swords,
 	[ExploitSignal.LIKELY]: Zap,
 	[ExploitSignal.REACHABLE]: Unplug,
+	[ExploitSignal.BYPASSED]: ShieldOff,
 	[ExploitSignal.CROWD]: Globe,
 	[ExploitSignal.UNTESTABLE]: EyeOff
 };
@@ -119,6 +126,7 @@ export const SIGNAL_QUERY: Record<string, string> = {
 	[ExploitSignal.WEAPONISED]: 'is:weaponised',
 	[ExploitSignal.LIKELY]: 'signal:likely',
 	[ExploitSignal.REACHABLE]: 'signal:reachable',
+	[ExploitSignal.BYPASSED]: 'signal:bypassed',
 	[ExploitSignal.CROWD]: 'signal:crowd',
 	[ExploitSignal.UNTESTABLE]: 'is:untestable'
 };

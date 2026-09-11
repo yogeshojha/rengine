@@ -117,6 +117,7 @@ class ExploitSignal(StrEnum):
     FRESH_EXPLOIT = "fresh_exploit"
     LIKELY = "likely"
     REACHABLE = "reachable"
+    BYPASSED = "bypassed"
     RANSOM_PATH = "ransom_path"
     UNTESTABLE = "untestable"
     CROWD = "crowd"
@@ -192,6 +193,14 @@ SIGNALS: tuple[SignalSpec, ...] = (
         ExploitSignal.REACHABLE.value,
         "Directly reachable",
         "The host answers from the internet with no CDN or WAF in front of it.",
+        15,
+        TONE_WARNING,
+    ),
+    SignalSpec(
+        ExploitSignal.BYPASSED.value,
+        "Confirmed through a WAF",
+        "A WAF or CDN sits in front of this host and the check still succeeded, "
+        "so the protection did not stop it.",
         15,
         TONE_WARNING,
     ),
