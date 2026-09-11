@@ -13,7 +13,7 @@
 	import ContextFacets from './context-facets.svelte';
 	import type { ScanContextRead } from '$lib/types/scan-context';
 	import { authBadgeLabel } from './context-summary';
-	import { formatDistanceToNow } from '$lib/utilities/dates';
+	import { relativeTimeLong } from '$lib/utilities/dates';
 
 	interface Props {
 		context: ScanContextRead;
@@ -41,7 +41,7 @@
 		const parts: string[] = [];
 		const scans = context.usage?.scans ?? 0;
 		if (scans) parts.push(`${scans} scan${scans === 1 ? '' : 's'}`);
-		if (context.last_used_at) parts.push(`used ${formatDistanceToNow(context.last_used_at)}`);
+		if (context.last_used_at) parts.push(`used ${relativeTimeLong(context.last_used_at)}`);
 		return parts.length ? parts.join(' · ') : 'Never used';
 	});
 </script>

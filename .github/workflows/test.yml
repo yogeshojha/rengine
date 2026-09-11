@@ -57,6 +57,9 @@ jobs:
       - name: 🔎 Type check
         run: npm run check
 
+      - name: 🧪 Unit tests
+        run: npm run test
+
   pytest:
     name: 🐍 Python tests
     runs-on: ubuntu-latest

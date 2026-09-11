@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Target } from '$lib/types/target';
 	import { formatTargetType, TargetType } from '$lib/types/target';
-	import { formatDate, formatDistanceToNow } from '$lib/utilities/dates';
+	import { formatDate, relativeTimeLong } from '$lib/utilities/dates';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
@@ -164,7 +164,7 @@
 						</div>
 						<p class="text-sm font-medium">{formatDate(target.created_at)}</p>
 						<p class="text-xs text-muted-foreground">
-							{formatDistanceToNow(target.created_at)} ago
+							{relativeTimeLong(target.created_at)}
 						</p>
 					</div>
 					<div class="space-y-1">
@@ -174,7 +174,7 @@
 						</div>
 						<p class="text-sm font-medium">{formatDate(target.updated_at)}</p>
 						<p class="text-xs text-muted-foreground">
-							{formatDistanceToNow(target.updated_at)} ago
+							{relativeTimeLong(target.updated_at)}
 						</p>
 					</div>
 				</div>

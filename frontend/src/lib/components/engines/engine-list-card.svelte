@@ -18,7 +18,7 @@
 	import type { Intensity, ScanEngine, StageCatalogEntry } from '$lib/types/scan-engine';
 	import { INTENSITY_LABELS } from '$lib/types/scan-engine';
 	import { summarize } from '$lib/utilities/engine-summary';
-	import { formatDistanceToNow } from '$lib/utilities/dates';
+	import { relativeTimeLong } from '$lib/utilities/dates';
 
 	interface Props {
 		engine: ScanEngine;
@@ -63,7 +63,7 @@
 		const parts: string[] = [];
 		const scans = engine.usage?.scans ?? 0;
 		if (scans) parts.push(`${scans} scan${scans === 1 ? '' : 's'}`);
-		if (engine.last_used_at) parts.push(`used ${formatDistanceToNow(engine.last_used_at)}`);
+		if (engine.last_used_at) parts.push(`used ${relativeTimeLong(engine.last_used_at)}`);
 		return parts.length ? parts.join(' · ') : 'Never used';
 	});
 </script>

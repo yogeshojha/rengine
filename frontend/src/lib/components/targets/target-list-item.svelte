@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { TargetType, getTargetTypeColor, formatTargetType, type Target } from '$lib/types/target';
-	import { formatDistanceToNow, getColorsForTimestamp } from '$lib/utilities/dates';
+	import { relativeTime, getColorsForTimestamp } from '$lib/utilities/dates';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -224,7 +224,7 @@
 		class="hidden w-[92px] shrink-0 items-center justify-end gap-1.5 text-right text-xs text-muted-foreground sm:flex"
 	>
 		<span class="h-1.5 w-1.5 rounded-full shrink-0 {freshness.dot}"></span>
-		{formatDistanceToNow(target.updated_at)}
+		{relativeTime(target.updated_at)}
 	</div>
 
 	<!-- svelte-ignore a11y_click_events_have_key_events -->

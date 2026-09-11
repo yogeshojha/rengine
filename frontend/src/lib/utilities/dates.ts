@@ -9,51 +9,38 @@ export const formatDate = (dateString: string) => {
 	});
 };
 
-export function formatDistanceToNow(date: string | Date): string {
-	const now = new Date();
-	const past = new Date(date);
-	const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+const UNITS: [minutes: number, short: string, long: string][] = [
+	[60 * 24 * 365, 'y', 'year'],
+	[60 * 24 * 30, 'mo', 'month'],
+	[60 * 24, 'd', 'day'],
+	[60, 'h', 'hour'],
+	[1, 'm', 'minute']
+];
 
-	if (diffInSeconds < 60) {
-		return 'just now';
+function elapsed(timestamp: string | Date | null | undefined) {
+	if (!timestamp) return null;
+	const then = new Date(timestamp).getTime();
+	if (Number.isNaN(then)) return null;
+	const minutes = Math.floor((Date.now() - then) / 60000);
+	for (const [per, short, long] of UNITS) {
+		// >= 1, not != 0: a clock running ahead of ours falls through to just now
+		const count = Math.floor(minutes / per);
+		if (count >= 1) return { count, short, long };
 	}
-
-	const diffInMinutes = Math.floor(diffInSeconds / 60);
-	if (diffInMinutes < 60) {
-		return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'}`;
-	}
-
-	const diffInHours = Math.floor(diffInMinutes / 60);
-	if (diffInHours < 24) {
-		return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'}`;
-	}
-
-	const diffInDays = Math.floor(diffInHours / 24);
-	if (diffInDays < 30) {
-		return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'}`;
-	}
-
-	const diffInMonths = Math.floor(diffInDays / 30);
-	if (diffInMonths < 12) {
-		return `${diffInMonths} ${diffInMonths === 1 ? 'month' : 'months'}`;
-	}
-
-	const diffInYears = Math.floor(diffInMonths / 12);
-	return `${diffInYears} ${diffInYears === 1 ? 'year' : 'years'}`;
+	return { count: 0, short: '', long: '' };
 }
 
-export function relativeTime(timestamp: string | null | undefined): string {
-	if (!timestamp) return 'never';
-	const diffMs = Date.now() - new Date(timestamp).getTime();
-	const minutes = Math.floor(diffMs / 60000);
-	if (minutes < 1) return 'just now';
-	if (minutes < 60) return `${minutes}m ago`;
-	const hours = Math.floor(minutes / 60);
-	if (hours < 24) return `${hours}h ago`;
-	const days = Math.floor(hours / 24);
-	if (days < 30) return `${days}d ago`;
-	const months = Math.floor(days / 30);
-	return `${months}mo ago`;
+export function relativeTime(timestamp: string | Date | null | undefined): string {
+	const e = elapsed(timestamp);
+	if (!e) return 'never';
+	return e.count ? `${e.count}${e.short} ago` : 'just now';
+}
+
+export function relativeTimeLong(timestamp: string | Date | null | undefined): string {
+	const e = elapsed(timestamp);
+	if (!e) return 'never';
+	if (!e.count) return 'just now';
+	return `${e.count} ${e.long}${e.count === 1 ? '' : 's'} ago`;
 }
 
 export function formatShortDate(date: string | Date): string {
