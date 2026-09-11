@@ -17,6 +17,8 @@
 
 <script lang="ts">
 	import Globe from '@lucide/svelte/icons/globe';
+	import NoteSection from '$lib/components/notes/note-section.svelte';
+	import { SurfaceDimension } from '$lib/config/surface';
 	import Network from '@lucide/svelte/icons/network';
 	import Plug from '@lucide/svelte/icons/plug';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
@@ -707,6 +709,16 @@
 								{/if}
 							</section>
 						{/if}
+
+						<NoteSection
+							anchor={{
+								targetId: sub.target_id,
+								scanId: sub.scan_id,
+								dimension: SurfaceDimension.WEB_ASSETS,
+								assetKey: sub.name,
+								assetLabel: sub.name
+							}}
+						/>
 					</Tabs.Content>
 
 					<Tabs.Content value="http" class="m-0 p-5">

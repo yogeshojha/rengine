@@ -17,6 +17,7 @@ from app.api.v1 import (
     ip_addresses,
     mcp,
     media,
+    notes,
     notification_channels,
     notifications,
     onboarding,
@@ -55,6 +56,7 @@ router.include_router(organizations.router)
 router.include_router(targets.router)
 router.include_router(tags.router)
 router.include_router(activity_logs.router)
+router.include_router(notes.router)
 router.include_router(notifications.router)
 router.include_router(api_keys.router)
 router.include_router(whois.router)

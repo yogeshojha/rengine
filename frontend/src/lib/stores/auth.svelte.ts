@@ -28,6 +28,7 @@ import { liveScans } from '$lib/stores/live-scans.svelte';
 import { connectors } from '$lib/stores/connectors.svelte';
 import { toolbox } from '$lib/stores/toolbox.svelte';
 import { rechecks } from './rechecks.svelte';
+import { notes } from './notes.svelte';
 import { wordlists } from '$lib/stores/wordlists.svelte';
 import { reports } from '$lib/stores/reports.svelte';
 import { reportCatalog } from '$lib/stores/report-catalog.svelte';
@@ -120,6 +121,7 @@ function createAuthStore() {
 		activityFeed.reset();
 		liveScans.clear();
 		rechecks.reset();
+		notes.reset();
 		wordlists.reset();
 		reports.reset();
 		reportCatalog.reset();

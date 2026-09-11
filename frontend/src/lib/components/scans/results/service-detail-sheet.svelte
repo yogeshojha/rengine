@@ -5,6 +5,8 @@
 
 <script lang="ts">
 	import Network from '@lucide/svelte/icons/network';
+	import NoteSection from '$lib/components/notes/note-section.svelte';
+	import { SurfaceDimension } from '$lib/config/surface';
 	import Plug from '@lucide/svelte/icons/plug';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Server from '@lucide/svelte/icons/server';
@@ -435,6 +437,18 @@
 							<p class="text-xs text-muted-foreground">No hostname resolves to this address.</p>
 						{/if}
 					</section>
+
+					{#if s.target_id}
+						<NoteSection
+							anchor={{
+								targetId: s.target_id,
+								scanId: s.scan_id,
+								dimension: SurfaceDimension.SERVICES,
+								assetKey: `${s.ip}:${s.port}`,
+								assetLabel: `${s.ip}:${s.port}`
+							}}
+						/>
+					{/if}
 				</div>
 			</ScrollArea>
 		{/if}

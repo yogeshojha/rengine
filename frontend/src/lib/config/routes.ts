@@ -9,6 +9,7 @@ export const routeLabels: Record<string, string> = {
 	// Reconnaissance
 	targets: 'Targets',
 	scans: 'Scans',
+	notes: 'Notes',
 	automation: 'Automation',
 	engines: 'Scan engines',
 	contexts: 'Scan contexts',
@@ -65,6 +66,7 @@ export const ROUTES = {
 	targets: '/targets',
 	target: (id: string, tab?: string) => (tab ? `/targets/${id}?tab=${tab}` : `/targets/${id}`),
 	scans: '/scans',
+	notes: '/notes',
 	scansForTarget: (id: string) => `/scans?target=${id}`,
 	surface: (tab: string, query?: Record<string, string>) => {
 		const params = new URLSearchParams(query ?? {});

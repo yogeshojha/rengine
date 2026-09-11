@@ -62,6 +62,8 @@
 	import { CORRELATION_TAB } from '$lib/config/correlation';
 	import CorrelationTab from '$lib/components/scans/results/correlation/correlation-tab.svelte';
 	import Share2 from '@lucide/svelte/icons/share-2';
+	import StickyNote from '@lucide/svelte/icons/sticky-note';
+	import NotePanel from '$lib/components/notes/note-panel.svelte';
 	import InterestingTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
 	import ScanEye from '@lucide/svelte/icons/scan-eye';
 	import { plannedStages } from '$lib/utilities/scan-progress';
@@ -72,13 +74,15 @@
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { NOW_TICK_MS } from '$lib/constants';
 
-	const TABS = ['overview', INTEREST_TAB, ...RESULT_TABS, CORRELATION_TAB] as const;
+	const NOTES_TAB = 'notes';
+	const TABS = ['overview', INTEREST_TAB, ...RESULT_TABS, CORRELATION_TAB, NOTES_TAB] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
 		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
 		{ key: INTEREST_TAB as TabKey, label: 'Exposures', icon: ScanEye },
 		...SURFACE_ORDER.map((s) => ({ key: s.tab as TabKey, label: s.label, icon: s.icon })),
-		{ key: CORRELATION_TAB as TabKey, label: 'Correlation', icon: Share2 }
+		{ key: CORRELATION_TAB as TabKey, label: 'Correlation', icon: Share2 },
+		{ key: NOTES_TAB as TabKey, label: 'Notes', icon: StickyNote }
 	];
 	const HISTORY_SIZE = 12;
 	const STATUS_TEXT: Record<string, string> = {
@@ -263,6 +267,7 @@
 	let servicesTotal = $state<number | null>(null);
 	let endpointsTotal = $state<number | null>(null);
 	let vulnsTotal = $state<number | null>(null);
+	let notesTotal = $state<number | null>(null);
 	let tabCounts = $derived<Record<TabKey, number | null>>({
 		overview: null,
 		[INTEREST_TAB]: interestTotal,
@@ -271,14 +276,15 @@
 		services: servicesTotal ?? scan?.open_ports_found ?? 0,
 		ips: ipsTotal ?? scan?.ips_found ?? 0,
 		vulnerabilities: vulnsTotal ?? scan?.vulnerabilities_found ?? 0,
-		[CORRELATION_TAB]: correlationTotal
+		[CORRELATION_TAB]: correlationTotal,
+		[NOTES_TAB]: notesTotal
 	});
 	let plannedKinds = $derived(
 		new Set(scan ? plannedStages(scan, engineCatalogStore.stages).flatMap((st) => st.produces) : [])
 	);
 	let visibleTabs = $derived(
 		TAB_DEFS.filter((t) => {
-			if (t.key === 'overview') return true;
+			if (t.key === 'overview' || t.key === NOTES_TAB) return true;
 			// two hosts are the least that can share anything
 			if (t.key === CORRELATION_TAB) return (scan?.subdomains_found ?? 0) >= 2;
 			if ((tabCounts[t.key] ?? 0) > 0) return true;
@@ -736,6 +742,20 @@
 						onScanTotal={(n) => (ipsTotal = n)}
 						bind:query={ipQuery}
 					/>
+				{/key}
+			</Tabs.Content>
+
+			<Tabs.Content value={NOTES_TAB} class="mt-6">
+				{#key scan.id}
+					<div class="overflow-hidden rounded-xl border bg-card">
+						<NotePanel
+							anchor={{ targetId: scan.target_id, scanId: scan.id }}
+							filter={{ scan_id: scan.id }}
+							emptyTitle="No notes on this run"
+							emptyDescription="Notes written on this run's assets appear here."
+							onCount={(n) => (notesTotal = n)}
+						/>
+					</div>
 				{/key}
 			</Tabs.Content>
 

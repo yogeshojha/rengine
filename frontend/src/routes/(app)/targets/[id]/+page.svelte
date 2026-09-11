@@ -11,6 +11,8 @@
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import Router from '@lucide/svelte/icons/router';
+	import StickyNote from '@lucide/svelte/icons/sticky-note';
+	import NotePanel from '$lib/components/notes/note-panel.svelte';
 	import Network from '@lucide/svelte/icons/network';
 
 	import { targetsApi } from '$lib/api/targets';
@@ -64,7 +66,7 @@
 	import { isLiveStatus } from '$lib/utilities/scan-status';
 	import { downloadBlob } from '$lib/utilities/download';
 
-	const TABS = ['overview', 'web-assets', 'dns', 'whois', 'bgp'] as const;
+	const TABS = ['overview', 'web-assets', 'dns', 'whois', 'bgp', 'notes'] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: Record<TabKey, { label: string; icon: IconComponent }> = {
 		overview: { label: 'Overview', icon: LayoutDashboard },
@@ -74,7 +76,8 @@
 		},
 		dns: { label: 'DNS', icon: Network },
 		whois: { label: 'WHOIS', icon: FileText },
-		bgp: { label: 'BGP', icon: Router }
+		bgp: { label: 'BGP', icon: Router },
+		notes: { label: 'Notes', icon: StickyNote }
 	};
 	const LEGACY_TABS: Record<string, TabKey> = {
 		summary: 'overview',
@@ -137,10 +140,12 @@
 	let ipsScanId = $derived(
 		summary?.surface.find((m) => m.key === SurfaceDimension.IPS)?.scan_id ?? null
 	);
+	let notesTotal = $state<number | null>(null);
 	let tabCounts = $derived<Partial<Record<TabKey, number>>>({
 		'web-assets': summary?.inventory_total,
 		dns: detail?.dns ? dnsRecords : undefined,
-		bgp: detail?.bgp?.announced_prefixes.length || undefined
+		bgp: detail?.bgp?.announced_prefixes.length || undefined,
+		notes: notesTotal ?? undefined
 	});
 	let bgpHasData = $derived(
 		!!detail?.bgp &&
@@ -767,6 +772,18 @@
 					/>
 				</Tabs.Content>
 			{/if}
+
+			<Tabs.Content value="notes" class="mt-4">
+				<div class="overflow-hidden rounded-xl border bg-card">
+					<NotePanel
+						anchor={{ targetId: target.id }}
+						filter={{ target_id: target.id }}
+						emptyTitle="No notes on this target"
+						emptyDescription="Notes written on this target's assets appear here."
+						onCount={(n) => (notesTotal = n)}
+					/>
+				</div>
+			</Tabs.Content>
 		</Tabs.Root>
 	{/if}
 </div>

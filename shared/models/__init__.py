@@ -88,6 +88,14 @@ from shared.models.ip_address import (
     TargetIpAddressRead,
 )
 from shared.models.ip_asn_range import IpAsnRange, IpCountryRange
+from shared.models.note import (
+    Note,
+    NoteCount,
+    NoteCreate,
+    NoteRead,
+    NoteTag,
+    NoteUpdate,
+)
 from shared.models.notification import (
     Notification,
     NotificationCreate,
@@ -286,6 +294,12 @@ __all__ = [
     "IpAddressSummary",
     "IpAsnRange",
     "IpCountryRange",
+    "Note",
+    "NoteCount",
+    "NoteCreate",
+    "NoteRead",
+    "NoteTag",
+    "NoteUpdate",
     "NoticeRead",
     "Notification",
     "NotificationChannel",

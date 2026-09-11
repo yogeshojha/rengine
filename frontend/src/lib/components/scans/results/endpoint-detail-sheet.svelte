@@ -1,5 +1,7 @@
 <script lang="ts">
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import NoteSection from '$lib/components/notes/note-section.svelte';
+	import { SurfaceDimension } from '$lib/config/surface';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Copy from '@lucide/svelte/icons/copy';
@@ -379,6 +381,16 @@
 							{/if}
 						{/if}
 					</section>
+
+					<NoteSection
+						anchor={{
+							targetId: endpoint.target_id,
+							scanId: endpoint.scan_id,
+							dimension: SurfaceDimension.ENDPOINTS,
+							assetKey: endpoint.signature,
+							assetLabel: endpoint.url
+						}}
+					/>
 				</div>
 			</ScrollArea>
 		{/if}

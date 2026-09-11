@@ -24,11 +24,50 @@
 		onRemove
 	}: Props = $props();
 
+	const CHIP_SCROLL_AT = 12;
+	const TARGET_SCROLL_AT = 8;
+
 	let noun = $derived(
 		preview && preview.asset_count === 1 ? preview.seed_kind : `${preview?.seed_kind ?? 'asset'}s`
 	);
 	let byQuery = $derived(Boolean(queryLabel));
 </script>
+
+{#snippet chips()}
+	<div class="flex flex-wrap gap-1.5 p-2">
+		{#each assets as asset (asset)}
+			<span
+				class="inline-flex items-center gap-1.5 rounded-md border bg-background py-0.5 pr-1 pl-2 font-mono text-xs"
+			>
+				{asset}
+				{#if onRemove}
+					<button
+						type="button"
+						class="rounded-sm px-0.5 text-muted-foreground hover:text-foreground"
+						aria-label="Remove {asset}"
+						{disabled}
+						onclick={() => onRemove(asset)}
+					>
+						<X class="size-3" />
+					</button>
+				{/if}
+			</span>
+		{/each}
+	</div>
+{/snippet}
+
+{#snippet targetChips()}
+	<div class="flex flex-wrap gap-1">
+		{#each preview?.targets ?? [] as t (t.target_id)}
+			<span
+				class="inline-flex items-center gap-1.5 rounded border bg-background px-1.5 py-0.5 text-xs"
+			>
+				<span class="font-mono">{t.target_value}</span>
+				<span class="text-muted-foreground tabular-nums">{t.count.toLocaleString()}</span>
+			</span>
+		{/each}
+	</div>
+{/snippet}
 
 <div class="flex flex-col gap-2">
 	<Label>
@@ -45,29 +84,12 @@
 				<span class="min-w-0 truncate">{queryLabel}</span>
 			</div>
 		</div>
-	{:else}
-		<ScrollArea class="max-h-32 rounded-md border bg-muted/20">
-			<div class="flex flex-wrap gap-1.5 p-2">
-				{#each assets as asset (asset)}
-					<span
-						class="inline-flex items-center gap-1.5 rounded-md border bg-background py-0.5 pr-1 pl-2 font-mono text-xs"
-					>
-						{asset}
-						{#if onRemove}
-							<button
-								type="button"
-								class="rounded-sm px-0.5 text-muted-foreground hover:text-foreground"
-								aria-label="Remove {asset}"
-								{disabled}
-								onclick={() => onRemove(asset)}
-							>
-								<X class="size-3" />
-							</button>
-						{/if}
-					</span>
-				{/each}
-			</div>
+	{:else if assets.length > CHIP_SCROLL_AT}
+		<ScrollArea class="h-[104px] rounded-md border bg-muted/20">
+			{@render chips()}
 		</ScrollArea>
+	{:else}
+		<div class="rounded-md border bg-muted/20">{@render chips()}</div>
 	{/if}
 
 	{#if loading && !preview}
@@ -92,18 +114,11 @@
 			{/if}
 		</div>
 		{#if preview.targets.length > 1}
-			<ScrollArea class="max-h-24">
-				<div class="flex flex-wrap gap-1">
-					{#each preview.targets as t (t.target_id)}
-						<span
-							class="inline-flex items-center gap-1.5 rounded border bg-background px-1.5 py-0.5 text-xs"
-						>
-							<span class="font-mono">{t.target_value}</span>
-							<span class="text-muted-foreground tabular-nums">{t.count.toLocaleString()}</span>
-						</span>
-					{/each}
-				</div>
-			</ScrollArea>
+			{#if preview.targets.length > TARGET_SCROLL_AT}
+				<ScrollArea class="h-[68px]">{@render targetChips()}</ScrollArea>
+			{:else}
+				{@render targetChips()}
+			{/if}
 		{/if}
 	{/if}
 </div>

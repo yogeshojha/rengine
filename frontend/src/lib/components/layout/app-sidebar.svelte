@@ -3,6 +3,7 @@
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
+	import StickyNoteIcon from '@lucide/svelte/icons/sticky-note';
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import LibraryIcon from '@lucide/svelte/icons/library';
@@ -89,7 +90,8 @@
 						? { label: String(liveScans.count), live: true, tone: 'info' as const }
 						: null
 				},
-				{ title: routeLabels.schedules, url: ROUTES.schedules, icon: CalendarClockIcon }
+				{ title: routeLabels.schedules, url: ROUTES.schedules, icon: CalendarClockIcon },
+				{ title: routeLabels.notes, url: ROUTES.notes, icon: StickyNoteIcon }
 			]
 		},
 		{
