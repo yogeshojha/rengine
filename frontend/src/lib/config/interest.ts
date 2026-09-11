@@ -9,6 +9,7 @@ import LockOpen from '@lucide/svelte/icons/lock-open';
 import FolderOpen from '@lucide/svelte/icons/folder-open';
 import Bug from '@lucide/svelte/icons/bug';
 import Plug from '@lucide/svelte/icons/plug';
+import Flame from '@lucide/svelte/icons/flame';
 import FileBadge from '@lucide/svelte/icons/file-badge';
 import Unlink from '@lucide/svelte/icons/unlink';
 import Network from '@lucide/svelte/icons/network';
@@ -38,6 +39,7 @@ export const KIND_ICONS: Record<string, IconComponent> = {
 	exposed_content: FolderOpen,
 	diagnostic: Bug,
 	sensitive_service: Plug,
+	exploited_software: Flame,
 	certificate_anomaly: FileBadge,
 	takeover_risk: Unlink,
 	network_outlier: Network,

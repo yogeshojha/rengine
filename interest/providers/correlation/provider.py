@@ -26,6 +26,36 @@ logger = get_logger(__name__)
 
 CAP = 300
 
+# vendor and product must both match exactly once normalised — a substring match on
+# "apache" would put every nginx-fronted host on the KEV catalogue
+_EXPLOITED_SQL = """
+WITH seen AS (
+    SELECT DISTINCT
+           s.id, s.name,
+           lower(regexp_replace(v->>'vendor',  '[^a-z0-9]', '', 'gi'))  AS vendor,
+           lower(regexp_replace(v->>'product', '[^a-z0-9]', '', 'gi'))  AS product,
+           v->>'product' AS shown
+    FROM subdomains s
+    JOIN http_assets a ON a.scan_id = s.scan_id AND a.host = s.name
+    CROSS JOIN LATERAL jsonb_array_elements(cast(a.cpe AS jsonb)) v
+    WHERE s.scan_id = :sid AND s.is_excluded = false
+), catalogue AS (
+    SELECT lower(regexp_replace(vendor,  '[^a-z0-9]', '', 'gi'))  AS vendor,
+           lower(regexp_replace(product, '[^a-z0-9]', '', 'gi'))  AS product,
+           count(*) AS cves,
+           bool_or(known_ransomware) AS ransomware,
+           min(cve) AS example
+    FROM kev_entries
+    WHERE vendor IS NOT NULL AND product IS NOT NULL
+    GROUP BY 1, 2
+)
+SELECT seen.id, seen.name, seen.shown, c.cves, c.ransomware, c.example
+FROM seen
+JOIN catalogue c ON c.vendor = seen.vendor AND c.product = seen.product
+ORDER BY c.cves DESC, seen.name
+LIMIT :cap
+"""
+
 _NETWORK_SQL = """
 WITH resolved AS (
     SELECT id, name, asn, asn_org FROM subdomains
@@ -97,6 +127,11 @@ LIMIT :cap
 """
 
 
+def _unescape_cpe(value: str) -> str:
+    """A CPE product is machine-shaped: punctuation is escaped and words are joined."""
+    return value.replace("\\", "").replace("_", " ")
+
+
 def _plural(n: int, word: str) -> str:
     return f"{n} {word}" if n == 1 else f"{n} {word}s"
 
@@ -119,6 +154,7 @@ class CorrelationProvider(InterestProvider):
         yield from self._guard(self._tech, ctx)
         yield from self._guard(self._edge, ctx)
         yield from self._guard(self._favicon, ctx)
+        yield from self._guard(self._exploited, ctx)
         yield from self._guard(self._new, ctx)
 
     def _guard(self, fn, ctx: InterestContext) -> list[RawSignal]:
@@ -144,6 +180,27 @@ class CorrelationProvider(InterestProvider):
             reason=reason,
             evidence=evidence[:MAX_EVIDENCE],
         )
+
+    def _exploited(self, ctx: InterestContext) -> Iterable[RawSignal]:
+        """A product on CISA's exploited catalogue, matched from what httpx fingerprinted.
+
+        No packet is sent for this and no version is known — the CPE httpx emits carries
+        a wildcard version — so it says the host runs the product, never that this host
+        is affected.
+        """
+        rows = self._rows(ctx, _EXPLOITED_SQL, cap=CAP)
+        for row in rows:
+            product = _unescape_cpe(row.shown)
+            count = int(row.cves)
+            cves = f"{count} known exploited {'vulnerability' if count == 1 else 'vulnerabilities'}"
+            ransom = " Some are used in ransomware campaigns." if row.ransomware else ""
+            yield self._signal(
+                row,
+                InterestKind.EXPLOITED_SOFTWARE.value,
+                f"Runs {product}, which CISA lists with {cves}.{ransom} "
+                "The scan did not confirm the version.",
+                f"{product}:{row.example}",
+            )
 
     def _network(self, ctx: InterestContext) -> Iterable[RawSignal]:
         rows = self._rows(

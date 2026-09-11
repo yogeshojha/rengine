@@ -57,6 +57,7 @@ class InterestKind(StrEnum):
     EXPOSED_CONTENT = "exposed_content"
     DIAGNOSTIC = "diagnostic"
     SENSITIVE_SERVICE = "sensitive_service"
+    EXPLOITED_SOFTWARE = "exploited_software"
     CERTIFICATE_ANOMALY = "certificate_anomaly"
     TAKEOVER_RISK = "takeover_risk"
     NETWORK_OUTLIER = "network_outlier"
@@ -149,6 +150,15 @@ KINDS: tuple[KindSpec, ...] = (
         "Diagnostic output",
         "Returns stack traces, debug pages or environment detail.",
         26,
+        TONE_WARNING,
+    ),
+    KindSpec(
+        InterestKind.EXPLOITED_SOFTWARE.value,
+        "Known exploited software",
+        "This host runs a product CISA lists as exploited in the wild. The scan "
+        "identified the product, not the version, so it did not confirm this host "
+        "is affected.",
+        28,
         TONE_WARNING,
     ),
     KindSpec(
