@@ -27,6 +27,7 @@ class StageSpec:
     api_keys: tuple[str, ...]
     requires_api_keys: bool
     touches_target: bool
+    deferrable: bool
     launch_fields: tuple[str, ...]
     catalog_hidden: bool
     always_on: bool
@@ -124,6 +125,7 @@ def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
         api_keys=tuple(stage_cls.api_keys),
         requires_api_keys=stage_cls.requires_api_keys,
         touches_target=stage_cls.touches_target,
+        deferrable=stage_cls.deferrable,
         launch_fields=tuple(stage_cls.launch_fields),
         catalog_hidden=stage_cls.catalog_hidden,
         always_on=stage_cls.always_on,
@@ -198,6 +200,10 @@ def _deferrable(specs: dict[str, StageSpec]) -> set[str]:
     that only reads what the scan already holds costs nothing where it is while its
     results are wanted early — target_enrichment fills the target's WHOIS and DNS in
     the first second, and deferring it would hide them for the length of the scan.
+
+    And some stages exist *because* they run early, which nothing about their inputs or
+    outputs can say: session_check proves the credentials still work, so deferring it
+    fires the canary after the two hours it was there to save. Those declare it.
     """
     awaited = {dep for spec in specs.values() for dep in spec.depends_on}
     wanted: set[str] = set()
@@ -208,7 +214,10 @@ def _deferrable(specs: dict[str, StageSpec]) -> set[str]:
     return {
         name
         for name, spec in specs.items()
-        if name not in awaited and name not in wanted and spec.touches_target
+        if name not in awaited
+        and name not in wanted
+        and spec.touches_target
+        and spec.deferrable
     }
 
 

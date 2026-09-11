@@ -267,6 +267,14 @@ class ResolvedScanConfig(BaseModel):
     def stage(self, name: str) -> dict:
         return self.stages.get(name) or {}
 
+    def auth_headers(self) -> dict[str, str]:
+        names = {n.lower() for n in self._auth_header_names}
+        return {k: v for k, v in self.headers.items() if k.lower() in names}
+
+    def headers_without_auth(self) -> dict[str, str]:
+        names = {n.lower() for n in self._auth_header_names}
+        return {k: v for k, v in self.headers.items() if k.lower() not in names}
+
     def __repr__(self) -> str:
         proxy = "<set>" if self.proxy_url else "None"
         return (
@@ -312,7 +320,8 @@ def _build_headers(engine, ctx) -> tuple[dict[str, str], list[str]]:
     extra_headers = _ctx_get(ctx, "extra_headers") or []
     ctx_headers = resolve_headers(auth, extra_headers)
 
-    auth_header_names: list[str] = list(ctx_headers.keys())
+    # the credentials alone, so a control request can be sent without exactly them
+    auth_header_names: list[str] = list(resolve_headers(auth))
 
     lower_map = {k.lower(): k for k in headers}
     for name, value in ctx_headers.items():

@@ -61,9 +61,13 @@ def _throttled_abort(
 
 
 def load_resolved(execution_config: dict) -> ResolvedScanConfig:
-    clean = {k: v for k, v in (execution_config or {}).items() if not k.startswith("_")}
+    raw = execution_config or {}
+    clean = {k: v for k, v in raw.items() if not k.startswith("_")}
     clean["headers"] = unseal_headers(clean.get("headers"))
-    return ResolvedScanConfig(**clean)
+    config = ResolvedScanConfig(**clean)
+    # a private attribute does not survive the round trip, so it is put back by hand
+    config._auth_header_names = list(raw.get("_auth_header_names") or [])
+    return config
 
 
 def _scan_is_cancelled(

@@ -92,6 +92,8 @@ class Stage(ABC):
     api_keys: ClassVar[tuple[str, ...]] = ()
     requires_api_keys: ClassVar[bool] = False
     touches_target: ClassVar[bool] = True
+    # False when the stage's whole value is running early, not when it is cheap
+    deferrable: ClassVar[bool] = True
     # config fields a launch may override for one run; the rest belong to the engine
     launch_fields: ClassVar[tuple[str, ...]] = ()
     # kept out of the catalog: enabled by the server, never picked by a user
