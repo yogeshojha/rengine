@@ -61,14 +61,12 @@ class SeedResolutionStage(Stage):
         self._check_abort()
         count = self._persist(records)
         if not count:
-            # a seed that expands to nothing leaves every later stage empty; say so here
             reason = f"{value} expanded to no addresses, so this scan has nothing to examine."
             self.emit_progress(reason)
             return StageResult(counts={"ips": 0}, warnings=[reason], partial=True)
 
         self.emit_progress(f"discovered {count} IP assets")
         if truncated or self._dropped:
-            # a sampled seed is not a census, and the run must not read as one
             warning = self._sample_note(value, count, cfg)
             self.emit_progress(warning)
             return StageResult(counts={"ips": count}, warnings=[warning], partial=True)
@@ -134,8 +132,6 @@ class SeedResolutionStage(Stage):
         if net is None:
             logger.warning("invalid CIDR seed: %s", value)
             return [], False
-        # the netblock the user named is the scope; cidr_skip_rfc1918 filters the
-        # prefixes an ASN announces, not the seed itself
         ips, truncated = expand_network(
             value,
             max_hosts=cfg.max_expansion_hosts,

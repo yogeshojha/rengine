@@ -8,7 +8,6 @@ logger = get_logger(__name__)
 
 _server_settings = {"application_name": f"{settings.APP_NAME}-api"}
 
-# reclaims any connection a request leaks inside an open transaction
 if settings.DB_IDLE_TX_TIMEOUT > 0:
     _server_settings["idle_in_transaction_session_timeout"] = str(
         settings.DB_IDLE_TX_TIMEOUT * 1000
@@ -50,8 +49,7 @@ def pool_stats() -> dict[str, int]:
 
 
 def pool_demand() -> int:
-    """Connections every pool can ask for at once: the api, one worker pool per celery
-    child, and beat."""
+    """Connections every pool can ask for at once."""
     per_child = settings.WORKER_DB_POOL_SIZE + settings.WORKER_DB_MAX_OVERFLOW
     return (
         settings.DB_POOL_SIZE
@@ -62,11 +60,7 @@ def pool_demand() -> int:
 
 
 async def check_capacity() -> None:
-    """Say out loud when the pools can outgrow the server.
-
-    Exceeding max_connections does not fail at startup — it fails later, under load,
-    as a checkout timeout that reads like a slow query.
-    """
+    """Say out loud when the pools can outgrow the server."""
     demand = pool_demand()
     try:
         async with engine.connect() as conn:

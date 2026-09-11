@@ -16,20 +16,17 @@ from stages.url_discovery.providers.base import ProviderResult, UrlProvider
 
 _BUNDLE_EXTENSIONS = ("js", "mjs")
 _OK = 200
-# measured on 40 answering bundles: the largest real map was 9.4 MB, and a map cut
-# short is not a map, so a bigger one is reported rather than parsed from its middle
 _MAX_MAP_BYTES = 12 * 1024 * 1024
 _MAX_SOURCES_SHOWN = 3
 _MAX_WORKERS = 8
 
 
 class SourceMapProvider(UrlProvider):
-    """The .map beside a bundle, which carries the application's own source."""
+    """Source maps served beside a live javascript bundle."""
 
     source = EndpointSource.JS.value
     tool = None
     binary = None
-    # it reads the scan's own bundles out of the session, so it runs on the stage thread
     uses_session = True
 
     def discover(self, result: ProviderResult) -> None:
@@ -73,7 +70,7 @@ class SourceMapProvider(UrlProvider):
         self.progress(state.note(len(selected)))
 
     def _bundles(self) -> list[str]:
-        """Bundles this scan proved answer, because a map only exists beside a live file."""
+        """Distinct bundles this scan proved answer."""
         rows = self.ctx.session.scalars(
             select(Endpoint.url)
             .where(
@@ -188,7 +185,6 @@ class _State:
             f"modules including {shown}",
         )
 
-        # several hosts often serve one vendor bundle; its map is mined once
         if outcome.digest in self.digests:
             return
         self.digests.add(outcome.digest)
@@ -221,14 +217,13 @@ class _State:
             if self.exposed
             else [f"no source map beside any of {asked:,} bundles"]
         )
-        # a map we could not read is not a map that was not there
         if self.too_large:
             parts.append(f"{self.too_large:,} too large to read")
         return ", ".join(parts)
 
 
 def _strip(url: str) -> str | None:
-    """A map sits beside the file, so the query string and fragment are not part of it."""
+    """The bundle url without its query string or fragment."""
     try:
         parts = urlsplit(url)
     except ValueError:

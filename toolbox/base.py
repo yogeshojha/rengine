@@ -104,12 +104,12 @@ def glyph(slug: str, label: str | None = None) -> Identity:
 
 
 def nameserver(host: str, label: str | None = None) -> Identity:
-    """The frontend resolves the provider from the hostname; the map lives there."""
+    """The frontend resolves the provider from the hostname."""
     return Identity(kind=IdentityKind.NAMESERVER.value, value=host, label=label)
 
 
 def lookup(value: str, tool: str) -> Lookup | None:
-    """A value that another tool answers. The tool is named, never inferred."""
+    """A value that another tool answers."""
     return Lookup(value=value.strip(), tool=tool) if value and value.strip() else None
 
 

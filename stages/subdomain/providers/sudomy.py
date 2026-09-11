@@ -5,7 +5,7 @@ from stages.subdomain.providers.base import SubdomainProvider
 
 
 class SudomyProvider(SubdomainProvider):
-    """Scaffold: implements the provider interface; enumeration not yet wired."""
+    """Scaffold: implements the provider interface."""
 
     tool = "sudomy"
     source = SubdomainSource.SUDOMY

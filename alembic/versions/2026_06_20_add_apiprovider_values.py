@@ -15,8 +15,6 @@ down_revision: str | None = "a7c1e9f2b3d4"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-# New onboarding integration providers reuse the existing api_keys table whose
-# provider column is a native pg enum. Names match the Python enum MEMBER names.
 _NEW_VALUES = ("CHAOS", "NETLAS", "SECURITYTRAILS", "HACKERONE")
 
 

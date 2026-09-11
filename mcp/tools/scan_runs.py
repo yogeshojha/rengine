@@ -1,4 +1,4 @@
-"""A run an agent started, and the brake for it. Nothing else took a scan id."""
+"""A run an agent started, and the brake for it."""
 
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ from shared.utils.datetime import utc_now
 
 MAX_RUNS = 20
 
-# the run's own rollup column per dimension; final figures come from resolve_target
 ROLLUP: dict[str, str] = {
     SurfaceDimension.WEB_ASSETS.value: "subdomains_found",
     SurfaceDimension.IPS.value: "ips_found",
@@ -251,7 +250,6 @@ async def _stages(ctx: ToolContext, row: Scan) -> dict[str, list[str]]:
             out["failed"].append(activity.title)
         elif activity.status == ScanActivityStatus.SKIPPED.value:
             out["skipped"].append(activity.title)
-    # a stage can hold several activity rows; the agent wants the stage, once
     return {key: list(dict.fromkeys(titles)) for key, titles in out.items()}
 
 

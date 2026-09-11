@@ -57,7 +57,6 @@
 		onShowRootOnly
 	}: Props = $props();
 
-	// while a query is on, the count column is the match count, so the head says so
 	let lead = $derived(
 		searching
 			? HOST_LEAD_COLUMNS.map((c) => (c.key === 'endpoints' ? { ...c, label: 'Matches' } : c))

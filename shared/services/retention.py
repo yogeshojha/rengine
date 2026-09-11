@@ -59,7 +59,7 @@ def _settings(session: Session) -> InstanceSettings | None:
 
 
 def _newest_per_target(session: Session) -> set[UUID]:
-    """The most recent terminal scan of every target, which retention never removes."""
+    """The most recent terminal scan of every target."""
     newest = (
         select(Scan.target_id, func.max(Scan.created_at).label("at"))
         .where(Scan.status.in_(SCAN_TERMINAL_STATUSES))
@@ -116,8 +116,7 @@ def _forget_media(session: Session, scan_id: UUID) -> None:
 
 
 def _forget_bodies(session: Session, scan_id: UUID) -> int:
-    """The bytes go; content_hash, favicon_hash and the rest of the identity stay,
-    so correlation still works on a scan whose evidence has aged out."""
+    """Drop the stored bytes."""
     result = session.execute(
         update(HttpAsset)
         .where(HttpAsset.scan_id == scan_id, HttpAsset.response_body.isnot(None))
@@ -134,8 +133,7 @@ class EvidencePrune:
 
 
 def prune_evidence(session: Session, days: int) -> EvidencePrune:
-    """Screenshots and response bodies are the bulk of a scan and age out first,
-    on their own window, well before the findings they were evidence for."""
+    """Screenshots and response bodies, on their own retention window."""
     out = EvidencePrune()
     if not window_active(days):
         return out
@@ -168,7 +166,7 @@ class ScanPrune:
 
 
 def prune_scans(session: Session, days: int) -> ScanPrune:
-    """Older runs go with everything cascading off them; a target keeps its newest."""
+    """Older runs go with everything cascading off them."""
     if not window_active(days):
         return ScanPrune()
     expired = _expired_scans(session, days)
@@ -183,7 +181,6 @@ def prune_scans(session: Session, days: int) -> ScanPrune:
             out.kept_newest += 1
             continue
         _drop_media(scan_id)
-        # activity_logs.scan_id carries no FK, so the run trail must be removed by hand
         trail = session.execute(
             ActivityLog.__table__.delete().where(ActivityLog.scan_id == scan_id)
         )

@@ -1,4 +1,4 @@
-"""The grammar, on demand. Too large for a tool description, exact when fetched."""
+"""The grammar, on demand."""
 
 from __future__ import annotations
 

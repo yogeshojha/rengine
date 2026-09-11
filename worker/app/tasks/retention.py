@@ -1,4 +1,4 @@
-"""Apply the instance's retention windows, which are otherwise only a promise."""
+"""Apply the instance's retention windows."""
 
 from celery import shared_task
 

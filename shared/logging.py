@@ -55,12 +55,7 @@ _RESERVED = frozenset({"exc_info", "stack_info", "stacklevel", "extra"})
 
 
 class _FieldLogger(logging.LoggerAdapter):
-    """Accepts structured fields as keywords and appends them to the message.
-
-    Call sites throughout the codebase pass `logger.info("thing failed", error=...)`.
-    A bare stdlib logger raises TypeError on that — and only when the level is
-    enabled, so it hides in one environment and crashes in another.
-    """
+    """Accepts structured fields as keywords and appends them to the message."""
 
     def log(self, level, msg, *args, **kwargs):
         fields = {k: v for k, v in kwargs.items() if k not in _RESERVED}

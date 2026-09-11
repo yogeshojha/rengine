@@ -30,7 +30,7 @@ _HOUR = 3600
 
 
 def markdown(value: str | None) -> str:
-    """Authored text may embed an image, never link one, so nothing here can be fetched."""
+    """Authored text may embed an image."""
     return _REMOTE_IMG.sub("", _MD.render(value or "")).strip()
 
 

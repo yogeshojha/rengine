@@ -1,4 +1,4 @@
-"""Everything a report can know, gathered once and cached. Counts come from the tables."""
+"""Everything a report can know, gathered once and cached."""
 
 from __future__ import annotations
 
@@ -63,7 +63,6 @@ _KEY = {
     _DIM.ENDPOINTS.value: (Endpoint.signature,),
     _DIM.VULNERABILITIES.value: (Vulnerability.fingerprint,),
 }
-# the column a person reads, which is not always the column that identifies the row
 _LABEL = {
     _DIM.WEB_ASSETS.value: Subdomain.name,
     _DIM.IPS.value: IpAddress.ip,
@@ -260,7 +259,7 @@ class ReportSource:
             entry.previous = self._count(dimension, previous.id)
 
     def _covered_by(self, scan: Scan) -> set[str]:
-        """Rows are the only proof a previous run produced a dimension, so only they anchor a delta."""
+        """Rows are the only proof a previous run produced a dimension."""
         return {d for d in SURFACE_ORDER if self._count(d, scan.id)}
 
     @cached_property
@@ -651,7 +650,7 @@ class ReportSource:
 
     @cached_property
     def internal_estate(self) -> bool:
-        """Every address answered is private, so this surface was reached from inside."""
+        """Every address answered is private."""
         addresses = {s.ip for s in self.service_rows if s.ip}
         return bool(addresses) and not any(is_registry_routable(ip) for ip in addresses)
 

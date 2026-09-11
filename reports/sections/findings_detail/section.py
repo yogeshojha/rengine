@@ -141,7 +141,7 @@ def _ordered(issues, key: str):
 
 
 def _controls(issue) -> list[str]:
-    """One line per framework, so a mapping reads as text rather than a wall of boxes."""
+    """One line per framework."""
     from html import escape  # noqa: PLC0415
 
     out: list[str] = []

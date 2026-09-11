@@ -76,7 +76,7 @@ def decode(content: str) -> bytes:
 
 
 def store_face(slug: str, data: bytes, *, weight: int, italic: bool) -> dict:
-    """Write one face. The format comes from the bytes, and the name comes from us."""
+    """Write one face."""
     spec = detect_format(data)
     if spec is None:
         msg = "That file is not a WOFF2, WOFF, TrueType or OpenType font."
@@ -96,7 +96,7 @@ def store_face(slug: str, data: bytes, *, weight: int, italic: bool) -> dict:
 
 
 def _parse_or_reject(data: bytes) -> None:
-    """The signature is cheap to forge; opening the font is not."""
+    """The signature is cheap to forge."""
     import io  # noqa: PLC0415
 
     try:

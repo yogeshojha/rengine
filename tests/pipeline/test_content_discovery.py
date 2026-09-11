@@ -1,5 +1,3 @@
-"""Guessed paths, and the calibration that keeps a soft-404 site from inventing them."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -42,9 +40,6 @@ def _hit(**over) -> dict:
     }
 
 
-# ── reading a hit ──
-
-
 def test_a_hit_becomes_an_observation():
     parsed = parse_ffuf_record(_hit())
     assert parsed["url"] == "https://a.example.com/admin"
@@ -53,7 +48,6 @@ def test_a_hit_becomes_an_observation():
 
 
 def test_the_word_is_read_off_the_url_not_the_input():
-    """ffuf base64-encodes input.FUZZ in -json mode; url is the only safe field."""
     parsed = parse_ffuf_record(_hit(input={"FUZZ": "YWRtaW4="}))
     assert "admin" in parsed["url"]
     assert "YWRtaW4=" not in str(parsed)
@@ -78,11 +72,7 @@ def test_a_missing_redirect_is_none_not_an_empty_string():
     assert parse_ffuf_record(_hit(redirectlocation=""))["redirect_location"] is None
 
 
-# ── what is stored ──
-
-
 def test_a_guessed_path_is_stored_as_observed():
-    """It was requested, so its status is an observation, not an inference."""
     obs = _observation(parse_ffuf_record(_hit()), "Common paths and files")
 
     assert obs.is_probed is True
@@ -95,9 +85,6 @@ def test_the_detail_says_it_was_guessed():
     obs = _observation(parse_ffuf_record(_hit(status=200)), "My list")
     assert "Guessed from My list" in obs.detail
     assert "answered 200" in obs.detail
-
-
-# ── which sites are asked ──
 
 
 def _stage(rows: list[tuple[str, int | None]]) -> ContentDiscoveryStage:
@@ -129,13 +116,9 @@ def test_the_site_budget_is_honoured():
 
 
 def test_the_trailing_slash_is_dropped_so_the_url_is_not_doubled():
-    """ffuf builds HOSTW/FUZZ, so a trailing slash would produce //path."""
     assert _stage([("https://a.example.com/", 200)])._hosts(1) == [
         "https://a.example.com"
     ]
-
-
-# ── how it is declared ──
 
 
 def test_it_is_a_capability_a_person_chooses():
@@ -144,7 +127,6 @@ def test_it_is_a_capability_a_person_chooses():
 
 
 def test_it_is_off_until_asked_for():
-    """An existing engine must not silently gain a run that sends 25,000 requests."""
     assert ContentDiscoveryConfig().enabled is False
 
 
@@ -169,7 +151,6 @@ def test_the_source_has_somewhere_to_come_from():
 
 
 def test_a_content_wordlist_ships_with_the_image():
-    """A box with no egress still gets one."""
     shipped = {w.slug: w for w in BUILTIN_WORDLISTS}
     assert "common-content" in shipped
     assert shipped["common-content"].kind == WordlistKind.CONTENT.value
@@ -186,9 +167,6 @@ def test_the_shipped_list_is_ranked_and_real():
     assert all("/" not in w for w in lines), "a word is one segment, never a path"
 
 
-# ── the noise filter, which is the whole trick ──
-
-
 def _outcome(host: str, hits: int, tried: int) -> _Outcome:
     out = _Outcome(host=host)
     out.hits = [
@@ -199,7 +177,6 @@ def _outcome(host: str, hits: int, tried: int) -> _Outcome:
 
 
 def test_a_site_that_answers_to_everything_is_not_believed():
-    """Measured: one soft-404 host returned 278 of 300 guessed paths."""
     out = _outcome("soft404.example.com", hits=278, tried=300)
 
     assert out.uncalibrated is True
@@ -214,7 +191,6 @@ def test_a_site_with_real_content_is_believed():
 
 
 def test_the_threshold_is_a_share_not_a_count():
-    """A bigger wordlist must not make a catch-all site look reasonable."""
     assert _outcome("a", hits=30, tried=100).uncalibrated is True
     assert _outcome("a", hits=30, tried=10_000).uncalibrated is False
 

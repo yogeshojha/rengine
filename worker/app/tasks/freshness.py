@@ -1,4 +1,4 @@
-"""Class B: facts that need a per-asset request, refreshed on their own clock."""
+"""Per-asset facts refreshed on their own clock, outside a scan."""
 
 from __future__ import annotations
 

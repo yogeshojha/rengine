@@ -8,8 +8,6 @@ from stages.config import StageConfig, threads, timeout, wordlist
 from stages.subdomain.providers import PASSIVE_PROVIDERS
 
 PASSIVE_TOOLS: tuple[str, ...] = tuple(sorted(PASSIVE_PROVIDERS))
-# amass is deliberately not here: it never exits early, so it costs the whole
-# tool timeout on every scan for hosts the other sources already return
 DEFAULT_PASSIVE_TOOLS: list[str] = [
     "subfinder",
     "ctfr",

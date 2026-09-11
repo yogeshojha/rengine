@@ -1,4 +1,4 @@
-"""Cover artwork. Drawn in the cover's own ink so a theme change restyles it."""
+"""Cover artwork."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ from shared.definitions.report_theme import CoverArt
 _W = 210.0
 _H = 297.0
 _FADE_FLOOR = 0.02
-# where the grade mark sits, so artwork can centre on it
 MARK_X = 171.0
 MARK_Y = 42.0
 
@@ -32,7 +31,6 @@ def _grid(accent: str) -> str:
         coarse.append(f'<line x1="{x}" y1="0" x2="{x}" y2="{_H:.0f}"/>')
     for y in range(0, int(_H) + 1, 25):
         coarse.append(f'<line x1="0" y1="{y}" x2="{_W:.0f}" y2="{y}"/>')
-    # a reticle around the grade mark: the blueprint's own instrument
     rings = "".join(
         f'<circle cx="{MARK_X}" cy="{MARK_Y}" r="{r}"/>' for r in (24, 34, 46, 60)
     )
@@ -61,7 +59,6 @@ def _scan(accent: str) -> str:
         f'<line x1="0" y1="{y}" x2="{_W:.0f}" y2="{y}"/>'
         for y in range(0, int(_H) + 1, 3)
     ]
-    # a cursor bar down the left edge and a faint block of glyphs top-right
     glyphs = []
     for row in range(14):
         for col in range(18):

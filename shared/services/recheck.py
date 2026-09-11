@@ -28,7 +28,6 @@ logger = get_logger(__name__)
 
 _RAN = (ScanActivityStatus.SUCCESS.value, ScanActivityStatus.PARTIAL.value)
 
-# scalar host fields worth reporting, in the order a person reads them
 _HOST_FIELDS: tuple[tuple[str, str], ...] = (
     ("http_status", "Status"),
     ("page_title", "Title"),
@@ -281,7 +280,7 @@ def _ran_stages(session: Session, scan_id: uuid.UUID) -> set[str]:
 
 
 def compute_rechecks(session: Session, scan: Scan) -> int:
-    """Write one AssetRecheck per seeded asset. Returns how many changed."""
+    """Write one AssetRecheck per seeded asset."""
     if scan.scope != ScanScope.FOCUSED.value or scan.parent_scan_id is None:
         return 0
     config = scan.execution_config or {}

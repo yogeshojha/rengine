@@ -1,4 +1,4 @@
-"""Lead counts for a finished scan never change, so they are computed once."""
+"""Lead counts for a finished scan never change."""
 
 from __future__ import annotations
 
@@ -21,12 +21,6 @@ logger = get_logger(__name__)
 # bumped when the shape of a cached entry changes
 VERSION = "1"
 
-# A finished scan's own rows never change, but the counts drawn from them do: a
-# reviewer suppressing a finding moves every vulnerability lead, the nightly EPSS and
-# KEV load moves is:kev, and an interest pass moves is:exposed. Rather than plumb an
-# invalidation into each of those and hope none is ever missed, the entry is short
-# lived: it serves the burst — tab switches, facet changes, a second table on the same
-# page — and any count is at most this stale.
 TTL_SECONDS = 60
 
 _client: aioredis.Redis | None = None
@@ -39,8 +33,6 @@ def _redis() -> aioredis.Redis:
     return _client
 
 
-# paging and sorting do not change a count, and the lead set deliberately ignores
-# the search box: what is cached is the unfiltered-by-text view the page opens with
 _IGNORED = {"q", "page", "size", "limit", "offset", "sort", "direction", "order"}
 
 
@@ -54,11 +46,7 @@ def fingerprint(*parts: object) -> str:
 
 
 async def _settled(session: AsyncSession, scans: tuple[UUID, ...]) -> bool:
-    """Whether every scan in the scope has finished writing.
-
-    A live scan's counts change under the reader, and the count is a promise: it must
-    equal the rows its link opens. So only a settled scope is ever cached.
-    """
+    """Whether every scan in the scope has finished writing."""
     if not scans:
         return False
     statuses = await session.scalars(select(Scan.status).where(Scan.id.in_(scans)))
@@ -76,8 +64,7 @@ async def leads(
     facets: str,
     build: Callable[[], Awaitable[QueryLeads]],
 ) -> QueryLeads:
-    """Serve the lead set from redis when the scope has settled. Fail-open throughout:
-    a redis outage costs the cache, never the answer."""
+    """The cached lead set for a settled scope."""
     if not await _settled(session, scans):
         return await build()
 

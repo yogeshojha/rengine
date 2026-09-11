@@ -1,5 +1,3 @@
-"""Every pool together must fit inside the server, and say so when it does not."""
-
 from __future__ import annotations
 
 import logging
@@ -25,7 +23,6 @@ def test_demand_counts_every_pool():
 
 
 async def test_the_configured_pools_fit_the_configured_server(caplog):
-    """The shipped defaults must not be able to exhaust the shipped server."""
     with caplog.at_level(logging.WARNING):
         await check_capacity()
     assert "outgrow" not in caplog.text

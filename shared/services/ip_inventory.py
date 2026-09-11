@@ -59,12 +59,10 @@ def materialize(
     ips: list[str],
     source: str = IpSource.DNS_RESOLUTION.value,
 ) -> int:
-    """Insert missing ip_addresses rows. Safe to call from parallel stages."""
+    """Insert missing ip_addresses rows."""
     if not ips:
         return 0
     now = utc_now()
-    # cdn_check and passive_ports insert the same rows at the same level; a UNION has no
-    # guaranteed order, and two overlapping inserts taking locks in different orders deadlock
     ips = sorted(set(ips))
     rows = [
         {
@@ -89,11 +87,6 @@ def materialize(
     )
     result = session.execute(statement)
     session.commit()
-    # ASN, operator and country are a pure function of the address and a local table, so an
-    # address is never stored without them; the enrichment stage is a sweep, not the source.
-    # It runs after the insert commits and only over these addresses: parallel stages at the
-    # same level both call ensure(), and one long transaction holding unordered update locks
-    # across the whole scan is how two overlapping address sets deadlock.
     enrich_addresses(session, scan_id=scan_id, ips=ips)
     session.commit()
     return int(result.rowcount or 0)
@@ -106,7 +99,7 @@ def ensure(
     target_id: uuid.UUID,
     project_id: uuid.UUID,
 ) -> list[str]:
-    """Collect every known IP and guarantee a row for each. Returns the address list."""
+    """Collect every known IP and guarantee a row for each."""
     ips = collect_ips(session, scan_id)
     materialize(
         session,

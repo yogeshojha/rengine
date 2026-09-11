@@ -60,7 +60,6 @@ WHERE epss_score IS NOT NULL {and_scope}
 GROUP BY 1
 """
 
-# a signal's own created_at is when the finding first earned it, so this is a real delta
 _SIGNAL_FINDINGS_SQL = """
 SELECT DISTINCT ON (v.id)
        v.id, v.scan_id, v.target_id, v.template_name, v.severity, v.host, v.matched_at,
@@ -209,7 +208,7 @@ class ThreatIntelService:
     async def signal_findings(
         self, kind: str, project_id: uuid.UUID | None, *, limit: int = 100
     ) -> list[SignalFinding]:
-        """`kind` may name several signals, so a tile counting a column can open all of them."""
+        """`kind` may name several signals."""
         kinds = [k.strip() for k in kind.split(",") if k.strip()]
         and_scope = "AND v.project_id = :project_id" if project_id else ""
         params: dict = {"kinds": kinds, "limit": limit}

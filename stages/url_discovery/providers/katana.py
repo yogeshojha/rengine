@@ -11,9 +11,7 @@ from tools.katana.parser import parse_katana_record
 
 _JS_RE = re.compile(r"\.m?js(?:\.map)?(?:[?#]|$)", re.IGNORECASE)
 _UNRESPONSIVE = ("could not", "connection refused", "timeout", "no address")
-# a crawl runs for minutes, so what it has found is handed to the stage as it goes
 _HANDOVER_EVERY = 200
-# katana prints these when it cannot start at all, which must not read as "found nothing"
 _FATAL = (
     "flag provided but not defined",
     "invalid value",
@@ -75,7 +73,6 @@ class KatanaProvider(UrlProvider):
             self._ingest(records, state, result, cfg.max_urls)
 
         if fatal:
-            # zero records because the tool never ran is a failure, not an empty result
             msg = f"katana could not run: {fatal[0]}"
             raise RuntimeError(msg)
 
@@ -100,8 +97,6 @@ class KatanaProvider(UrlProvider):
             if url in state.seen:
                 continue
             state.seen.add(url)
-            # katana's -field-scope bounds what it follows, not what it prints, so a
-            # link to any third party arrives here; scope before the budget
             if not self.in_scope(url):
                 state.out_of_scope += 1
                 continue
@@ -153,6 +148,5 @@ def _detail(parsed: dict) -> str:
     if tag:
         return f"Found in a <{tag}> element"
     if _JS_RE.search(parsed.get("found_on") or ""):
-        # jsluice read it out of the bundle; nothing on the site links to it
         return "Read out of a javascript bundle, not linked from any page"
     return "Reached by following links from the site"

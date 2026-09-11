@@ -1,4 +1,4 @@
-"""Chained observations. A list of findings is not a story; these are the stories."""
+"""Chained observations."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ _OK = 2
 
 
 def _internal(values: Iterable[str]) -> bool:
-    """Every value is a private address, so this was reached from inside the network."""
+    """Every value is a private address."""
     seen = [v for v in values if v]
     if not seen:
         return False

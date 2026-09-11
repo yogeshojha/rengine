@@ -1,5 +1,3 @@
-"""A cached count is still a promise, so only a settled scope may be cached."""
-
 from __future__ import annotations
 
 import pytest
@@ -52,7 +50,6 @@ async def test_a_finished_scan_is_computed_once(estate, now):
 
 
 async def test_a_running_scan_is_never_cached(estate, now):
-    """Its counts change under the reader, and a count must equal the rows it opens."""
     await estate.scan("example.com", "live", at=now, status=ScanStatus.RUNNING.value)
     build = _Counter()
 
@@ -87,7 +84,6 @@ async def test_a_different_filter_is_a_different_answer(estate, now):
 
 
 async def test_an_answer_that_did_not_compute_is_not_cached(estate, now):
-    """A timed-out lead set must not be served for the next week."""
     await estate.scan("example.com", "done", at=now)
     calls = 0
 

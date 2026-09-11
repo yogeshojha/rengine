@@ -15,7 +15,7 @@ class UrlfinderError(Exception):
 
 
 class UrlfinderClient:
-    """Passive URL discovery from public archives. Keyless, and better with provider keys."""
+    """Passive URL discovery from public archives."""
 
     def __init__(
         self,
@@ -38,7 +38,6 @@ class UrlfinderClient:
             raise UrlfinderError(str(e)) from e
 
     def collect(self, domain: str) -> list[str]:
-        # urlfinder has no -t: passing one makes it exit 2 before querying anything
         args = ["-d", domain, "-all", "-no-color", "-timeout", str(self.timeout)]
         if self.proxy_url:
             args += ["-proxy", self.proxy_url]

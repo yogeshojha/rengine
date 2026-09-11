@@ -1,5 +1,3 @@
-"""The two nuclei rate groups run together, and only the stage thread writes."""
-
 from __future__ import annotations
 
 import threading
@@ -21,8 +19,6 @@ pytestmark = pytest.mark.pipeline
 
 
 class _Writes:
-    """Records what was stored and which thread stored it."""
-
     def __init__(self):
         self.threads: set[str] = set()
         self.stored: list = []
@@ -50,8 +46,6 @@ def _scanner(writes: _Writes) -> NucleiScanner:
 
 
 def _fake_group(hold: float, findings: int):
-    """Stands in for one nuclei process: emits findings from a worker thread."""
-
     def run(
         self, label, targets, rate, listing, selected, custom, result, missing, store
     ):
@@ -84,7 +78,6 @@ async def test_both_groups_run_and_every_finding_is_stored(monkeypatch):
 
 
 async def test_only_the_calling_thread_writes(monkeypatch):
-    """The Session is not thread-safe; a finding is handed over, never stored in place."""
     writes = _Writes()
     scanner = _scanner(writes)
     monkeypatch.setattr(NucleiScanner, "_one", _fake_group(0.2, 4))

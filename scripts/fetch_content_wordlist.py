@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate tools/data/content.txt from SecLists' web-content discovery list.
-
-The list is MIT-licensed and slow-moving, so the generated file is committed rather
-than fetched at build time — a scan on a box with no egress still gets a wordlist.
-Run this when you want a newer cut:
-
-    python3 scripts/fetch_content_wordlist.py [--size 5000]
-
-Words are ranked by how often the path was found in a real corpus, so the order is the
-budget: ffuf walks the file top to bottom and a smaller wordlist is simply the first N
-lines. Keep it that way.
-"""
+"""Regenerate tools/data/content.txt from SecLists' web-content discovery list."""
 
 from __future__ import annotations
 
@@ -28,7 +17,6 @@ KINDS = ("directories", "files")
 SIZES = ("small", "medium", "large")
 OUTPUT = Path(__file__).resolve().parent.parent / "tools" / "data" / "content.txt"
 
-# one path segment: what ffuf appends to the base url, never a full path or a query
 _WORD = re.compile(r"^[A-Za-z0-9._~!$&'()*+,;=:@%-]{1,100}$")
 
 
@@ -45,7 +33,7 @@ def fetch(size: str, kind: str) -> list[str]:
 
 
 def merge(size: str) -> list[str]:
-    """Directories first at each rank, because a folder is worth more than a file."""
+    """Directories before files at each rank."""
     seen: set[str] = set()
     ranked: list[str] = []
     columns = [fetch(size, kind) for kind in KINDS]

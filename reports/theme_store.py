@@ -1,4 +1,4 @@
-"""Shipped themes are indexed from disk on read; uploads live in the same table."""
+"""Shipped themes are indexed from disk on read."""
 
 from __future__ import annotations
 

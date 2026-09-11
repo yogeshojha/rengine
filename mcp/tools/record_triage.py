@@ -1,4 +1,4 @@
-"""An agent's judgement, made durable. The decision carries into later scans."""
+"""An agent's judgement, made durable."""
 
 from __future__ import annotations
 

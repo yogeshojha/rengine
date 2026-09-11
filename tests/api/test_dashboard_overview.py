@@ -1,5 +1,3 @@
-"""A scan is credited with a row only if it was the first to see it."""
-
 from __future__ import annotations
 
 from datetime import timedelta
@@ -50,7 +48,6 @@ async def test_only_the_scan_that_first_saw_a_host_is_credited(estate, now):
 
 
 async def test_a_repeat_finding_is_never_counted_twice(estate, now):
-    """Three scans, one unchanged host: the first sighting is credited once."""
     for days, name in ((10, "one"), (5, "two"), (0, "three")):
         await estate.scan("example.com", name, at=now - timedelta(days=days))
         await estate.hosts(name, ["a.example.com"], at=now - timedelta(days=days))

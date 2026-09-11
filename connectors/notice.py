@@ -1,4 +1,4 @@
-"""Notice derivation. Computed from stored data; never sends a request."""
+"""Notice derivation."""
 
 from __future__ import annotations
 

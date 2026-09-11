@@ -20,7 +20,6 @@ FFUF_BINARY = "ffuf"
 DEFAULT_TIMEOUT = 1800
 DEFAULT_MATCH_CODES = "200,204,301,302,307,401,403,405,500"
 DEFAULT_REQUEST_TIMEOUT = 8
-# ffuf stops itself at -maxtime; the runner's own kill is the backstop behind it
 _BUDGET_SLACK = 60
 
 
@@ -66,14 +65,7 @@ class FfufClient:
         budget: int,
         match_codes: str | None = None,
     ) -> Iterator[StreamOutcome]:
-        """One site's worth of guesses, streaming each hit as it lands.
-
-        One process per site, never several sites through a second wordlist keyword:
-        measured on a soft-404 host, `-ach` in clusterbomb mode returned 278 of 300
-        words while the same host asked on its own returned 0. ffuf cannot calibrate
-        against a host it does not know until the payload is substituted, and
-        calibration is the only thing standing between this and a wordlist of lies.
-        """
+        """One site's guesses, streaming each hit."""
         args = [
             "-w",
             f"{word_file}:FUZZ",
@@ -103,7 +95,6 @@ class FfufClient:
             json_flag="-json",
             silent=True,
             silent_flag="-s",
-            # -maxtime is the real ceiling; the runner's own kill is the backstop
             timeout=budget + _BUDGET_SLACK,
             recorder=self.recorder,
             tool=FFUF_BINARY,
@@ -112,7 +103,7 @@ class FfufClient:
             yield stream
 
     def vhost(self, ip: str, base_host: str, scheme: str = "http") -> list[str]:
-        """Bruteforce `Host: FUZZ.<base_host>` against an IP; return found labels."""
+        """Bruteforce `Host: FUZZ.<base_host>` against an IP."""
         args = [
             "-w",
             f"{self.wordlist}:FUZZ",

@@ -33,8 +33,6 @@ async def _test_hackerone(key_value: str, key_meta: dict | None) -> dict:
     return {"message": f"Signed in to HackerOne as {username}.{detail}"}
 
 
-# a tester receives the decrypted value and the key_meta, so username-bearing
-# providers can be checked too
 API_KEY_TESTERS = {
     APIProvider.VIEWDNS: _test_viewdns,
     APIProvider.HACKERONE: _test_hackerone,

@@ -22,22 +22,19 @@ logger = get_logger(__name__)
 
 NUCLEI_BINARY = "nuclei"
 DEFAULT_TIMEOUT = 7200
-# a request must stay correlatable for longer than we keep listening for its callback
 _EVICTION_SLACK = 120
 
-# nuclei reports a host it gave up on only when -silent is absent
 _DROPPED = re.compile(
     r"Skipped\s+(?P<host>\S+)\s+from target list as found unresponsive.*?:\s*(?P<reason>.*)$"
 )
 MAX_DROPPED = 500
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
-# how often a quiet run hands the caller its thread back, so a small burst still lands
 IDLE_SECONDS = 2.0
 _IDLE = object()
 
 
 def _offer(inbox: queue.Queue, item: object, stop: threading.Event) -> None:
-    """Hand an item over, waiting for room. Only a stop request may drop it."""
+    """Hand an item over, waiting for room."""
     while not stop.is_set():
         try:
             inbox.put(item, timeout=IDLE_SECONDS)
@@ -64,8 +61,6 @@ def _paced(
     def _read() -> None:
         try:
             for record in records:
-                # never block forever on a full queue: the consumer may have walked away
-                # (a cancelled scan abandons this generator) and would strand this thread
                 while not stop.is_set():
                     try:
                         inbox.put(record, timeout=IDLE_SECONDS)
@@ -86,8 +81,6 @@ def _paced(
             try:
                 item = inbox.get(timeout=IDLE_SECONDS)
             except queue.Empty:
-                # a reader that has exited with nothing left to hand over IS the end; without
-                # this a sentinel lost to a full queue would idle-tick until the celery limit
                 if not reader.is_alive() and inbox.empty():
                     return
                 on_idle()
@@ -99,12 +92,11 @@ def _paced(
                 raise item
             yield item
     finally:
-        # GeneratorExit, a raised callback or a plain return all land here
         stop.set()
 
 
 def _guarded(callback: Callable[[], None] | None) -> Callable[[], None] | None:
-    """on_idle writes exactly what on_finding writes, so it needs the same escape hatch."""
+    """on_idle writes exactly what on_finding writes."""
     if callback is None:
         return None
 
@@ -151,7 +143,7 @@ class NucleiOptions:
 
 @dataclass
 class NucleiStats:
-    """nuclei's own numbers. A field is None when nuclei did not report it — never zero."""
+    """nuclei's own numbers."""
 
     templates: int | None = None
     hosts: int | None = None
@@ -203,7 +195,6 @@ class NucleiClient:
 
     def args(self) -> list[str]:
         opt = self.options
-        # the resolved template list IS the contract: no severity or tag filter rides on top
         args: list[str] = []
         if opt.templates_file:
             args += ["-t", opt.templates_file]
@@ -244,10 +235,6 @@ class NucleiClient:
             if token:
                 args += ["-interactsh-token", token]
             if opt.oast_wait_seconds > 0:
-                # nuclei stops polling 5s after its last request by default, so a
-                # callback a queue fires minutes later is never heard; and eviction
-                # must outlast the wait or the callback arrives with no request to
-                # attribute it to
                 args += [
                     "-interactions-cooldown-period",
                     str(opt.oast_wait_seconds),
@@ -283,18 +270,13 @@ class NucleiClient:
         should_stop: Callable[[], bool] | None = None,
         timeout: int | None = None,
     ) -> NucleiRun:
-        """Run one group and return everything nuclei said about it.
-
-        on_finding and on_idle are both called on this thread, so a caller may write to
-        its database session from either; on_progress fires on the stderr reader.
-        """
+        """Run one group and return everything nuclei said about it."""
         run = NucleiRun()
         if not targets:
             return run
 
         stats = NucleiStats()
         dropped: list[dict] = []
-        # nuclei repeats the drop notice per attempt; one host is one dropped host
         seen_drops: set[str] = set()
 
         def _stderr(line: str) -> None:
@@ -321,8 +303,6 @@ class NucleiClient:
         run.started = True
         try:
             with self._stream(targets, _stderr, timeout, should_stop) as stream:
-                # findings are sparse, so the caller is handed the thread on a timer too:
-                # a burst that stops arriving must not sit unwritten for the rest of the run
                 for record in _paced(stream.records, _guarded(on_idle)):
                     if record is _IDLE:
                         continue
@@ -337,7 +317,6 @@ class NucleiClient:
                     except Exception as exc:
                         raise _CallbackError(exc) from exc
         except _CallbackError as wrapper:
-            # the caller asked us to stop (cancelled scan, budget); that is not a nuclei failure
             run.duration_seconds = round(time.monotonic() - started, 2)
             run.stats = stats
             run.dropped = dropped
@@ -394,7 +373,7 @@ class NucleiClient:
 
 
 def write_template_list(paths: list[str]) -> Path:
-    """Persist the resolved template set so nuclei runs exactly what was counted."""
+    """Persist the resolved template set for nuclei -t."""
     descriptor, name = tempfile.mkstemp(prefix="nuclei_templates_", suffix=".txt")
     with os.fdopen(descriptor, "w") as handle:
         handle.write("\n".join(paths) + "\n")

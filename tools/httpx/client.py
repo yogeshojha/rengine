@@ -11,15 +11,12 @@ logger = get_logger(__name__)
 
 HTTPX_BINARY = "httpx"
 DEFAULT_TIMEOUT = 900
-# a probe that keeps answering keeps running; only a stalled one is killed
 _IDLE_FLOOR = 120
 _IDLE_TIMEOUT_FACTOR = 6
 _CAPTURE_IDLE_FLOOR = 300
-# rendering budget: generous per target, hard-capped, never unbounded
 CAPTURE_SECONDS_PER_TARGET = 6
 MAX_CAPTURE_SECONDS = 7200
 
-# cap response-body read to bound DB growth + worker memory (per-record, times N hosts)
 _RESPONSE_SIZE_CAP = 131072  # 128 KiB
 
 _ENRICH_FLAGS = [
@@ -138,8 +135,6 @@ class HttpxClient:
         if not targets:
             yield StreamOutcome(records=iter(()), return_code=0)
             return
-        # a total ceiling as well as the idle watchdog: a renderer that keeps emitting one
-        # image every few minutes is not stalled, but it must not run to the celery limit
         ceiling = min(
             MAX_CAPTURE_SECONDS,
             max(DEFAULT_TIMEOUT, len(targets) * CAPTURE_SECONDS_PER_TARGET),
@@ -152,8 +147,6 @@ class HttpxClient:
             silent=True,
             silent_flag="-silent",
             timeout=ceiling,
-            # a headless browser is slow to start and slow per page, so the watchdog
-            # has to be generous — it is only there for a renderer that has died
             idle_timeout=max(_CAPTURE_IDLE_FLOOR, self.timeout * _IDLE_TIMEOUT_FACTOR),
             recorder=self.recorder,
             tool=HTTPX_BINARY,

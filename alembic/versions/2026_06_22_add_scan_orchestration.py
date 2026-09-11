@@ -24,9 +24,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column(
         "scans",
-        sa.Column(
-            "celery_task_ids", sa.JSON(), nullable=False, server_default="[]"
-        ),
+        sa.Column("celery_task_ids", sa.JSON(), nullable=False, server_default="[]"),
     )
 
     op.create_table(
@@ -38,9 +36,7 @@ def upgrade() -> None:
         sa.Column(
             "title", sqlmodel.sql.sqltypes.AutoString(length=200), nullable=False
         ),
-        sa.Column(
-            "status", sqlmodel.sql.sqltypes.AutoString(), nullable=False
-        ),
+        sa.Column("status", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column(
             "celery_task_id",
             sqlmodel.sql.sqltypes.AutoString(length=100),
@@ -107,9 +103,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["project_id"], ["projects.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_scan_commands_id"), "scan_commands", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_scan_commands_id"), "scan_commands", ["id"], unique=False)
     op.create_index(
         op.f("ix_scan_commands_scan_id"), "scan_commands", ["scan_id"], unique=False
     )

@@ -1,4 +1,4 @@
-"""A judgement, clearly labelled as one. It never sees a response body and never fails a scan."""
+"""A judgement, clearly labelled as one."""
 
 from __future__ import annotations
 
@@ -117,7 +117,6 @@ class AIProvider(InterestProvider):
         model = ctx.ai.model_for_task(fast=True)
         for item in _payload(answer):
             host = str(item.get("host") or "").strip().lower()
-            # a name the model invented is dropped, never stored
             if host not in allowed:
                 continue
             row = by_host.get(host)

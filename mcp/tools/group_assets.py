@@ -1,4 +1,4 @@
-"""Aggregate a dimension by any of its group keys. Each group carries its own query."""
+"""Aggregate a dimension by any of its group keys."""
 
 from __future__ import annotations
 

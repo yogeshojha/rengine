@@ -13,7 +13,6 @@ export interface BranchScope {
 	merged?: boolean;
 }
 
-// the filter that names everything under a node, in a stable order
 export function branchFilter(scope: BranchScope, node: TreeNode): EndpointFilter {
 	return {
 		...scope.filter,
@@ -55,7 +54,6 @@ export async function copyBranch(scope: BranchScope, node: TreeNode) {
 	}
 }
 
-// paths relative to the folder, one per line: what ffuf wants when you point it at a sibling host
 export async function copyWordlist(scope: BranchScope, node: TreeNode) {
 	try {
 		const { urls, capped } = await collectUrls(scope, node);
@@ -79,7 +77,6 @@ export async function copyWordlist(scope: BranchScope, node: TreeNode) {
 	}
 }
 
-// a stand-in root for a host the table knows only by name
 export function hostNode(host: string): TreeNode {
 	return {
 		key: `${host}/`,

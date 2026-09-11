@@ -86,7 +86,6 @@
 	let type = $derived(scan.execution_config.target_type);
 	let nounPlural = $derived(targetAssetNoun(type));
 	let isDomain = $derived(type === TargetType.DOMAIN);
-	// counts move constantly while a scan runs; those arrive throttled through `revision`
 	let signature = $derived([scanId, projectId, scan.status].join(':'));
 
 	function loadInsights() {

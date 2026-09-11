@@ -43,9 +43,8 @@ logger = get_logger(__name__)
 
 
 def _undispatched(activities: list[ScanActivity]) -> str | None:
-    """Report the stages the canvas never reached, so a truncated run is never 'completed'."""
+    """Report the stages the canvas never reached."""
     expected = {spec.name for level in ordered_levels() for spec in level}
-    # a retried stage leaves two rows, so count the stages covered and never the rows
     covered = {a.name for a in activities if a.status in ACTIVITY_TERMINAL_STATUSES}
     if not expected - covered:
         return None
@@ -103,7 +102,6 @@ def _log_cancelled(activity_log: ActivityLogService, scan: Scan) -> None:
     )
 
 
-# an earlier census run of this target; a focused rescan is never a baseline
 _HOST_BASELINE_SQL = """
 SELECT EXISTS (
     SELECT 1 FROM subdomains b
@@ -321,7 +319,6 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
         logger.error("scan %s finalized incomplete: %s", scan.id, truncated)
     counts = derived_counts(session, scan.id)
 
-    # Row-lock + re-check so a concurrent user-cancel (or a duplicate finalize) wins.
     locked = session.get(Scan, scan.id, with_for_update=True)
     if locked is None or locked.status in SCAN_TERMINAL_STATUSES:
         session.commit()
@@ -338,7 +335,6 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     )
 
     if status == ScanStatus.FAILED.value:
-        # SKIPPED-on-retry and PARTIAL rows also carry text in `error` — only a failure explains a failure
         failed = next(
             (
                 a

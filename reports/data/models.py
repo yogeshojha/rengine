@@ -1,4 +1,4 @@
-"""Plain rows the sections render. Nothing here knows about SQL or HTML."""
+"""Plain rows the sections render."""
 
 from __future__ import annotations
 

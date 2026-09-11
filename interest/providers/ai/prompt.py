@@ -12,7 +12,6 @@ MAX_TITLE = 160
 MAX_TECH = 6
 MAX_REASON_CHARS = 200
 
-# a judgement may only name something a person could see from outside; the rest is measured
 AI_KINDS: tuple[str, ...] = (
     InterestKind.ADMIN_INTERFACE.value,
     InterestKind.DEVELOPER_TOOLING.value,

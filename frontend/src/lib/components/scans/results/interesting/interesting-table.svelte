@@ -95,7 +95,6 @@
 		JSON.stringify({ scanId, band, q: q.trim(), sources, kinds, sort, page })
 	);
 
-	// the first load always runs so the tab can decide whether it has earned its place
 	$effect(() => {
 		void signature;
 		if (loaded && !active) return;
@@ -103,7 +102,6 @@
 		void run();
 	});
 
-	// a suggestion costs a model call, so it is asked for once, and only where AI judged something
 	$effect(() => {
 		const s = summary;
 		if (projectWide || !active || !s?.ai_enabled || !s.judged_hosts || askedFor === scanId) return;
@@ -138,7 +136,6 @@
 			data = result;
 			error = null;
 			onTotal?.(result.summary.total);
-			// a scan the rules have not been run against refreshes itself once the worker catches up
 			if (result.summary.stale && retry === null) {
 				retry = setTimeout(() => {
 					retry = null;

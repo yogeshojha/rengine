@@ -63,7 +63,6 @@ logger = get_logger(__name__)
 _FACET_LIMIT = 30
 _HOSTS_PER_ROW = 50
 
-# every IP the scan touched (resolved names, probed assets, open ports, enrichment rows)
 _DERIVED_SQL = """
 WITH hosts AS (
     SELECT ip, count(DISTINCT s.name) AS host_count,

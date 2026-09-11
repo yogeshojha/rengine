@@ -1,5 +1,3 @@
-"""A dangling CNAME becomes a finding, so it inherits triage, is:new and alerting."""
-
 from __future__ import annotations
 
 import pytest
@@ -33,7 +31,6 @@ def test_anything_else_is_not(cname: str):
 
 
 def test_the_fingerprint_is_stable_across_scans():
-    """Triage and is:new both key on it, so the same name twice is the same finding."""
     a = _finding("a.example.com", "x.s3.amazonaws.com", "AWS S3")
     b = _finding("a.example.com", "x.s3.amazonaws.com", "AWS S3")
     c = _finding("b.example.com", "x.s3.amazonaws.com", "AWS S3")
@@ -55,7 +52,6 @@ def test_the_finding_says_what_it_did_and_did_not_establish():
 
 
 def test_the_scanner_has_a_label():
-    """A finding whose scanner is unlabelled renders as its raw slug."""
     assert SCANNER_LABELS[Scanner.RENGINE.value] == "reNgine"
 
 
@@ -79,7 +75,6 @@ def test_a_fingerprint_matches_at_a_label_boundary(cname: str):
     "cname", ["mys3-website.evil.com", "notgithub.io.evil.com", "fakenetlify.app.co"]
 )
 def test_a_fingerprint_inside_a_label_is_not_a_match(cname: str):
-    """A bare substring match would put an attacker's hostname on a real provider."""
     assert takeover_provider(cname) is None
 
 

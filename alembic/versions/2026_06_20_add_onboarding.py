@@ -143,9 +143,7 @@ def upgrade() -> None:
 
     op.add_column("api_keys", sa.Column("key_meta", sa.JSON(), nullable=True))
 
-    op.add_column(
-        "scan_contexts", sa.Column("proxy_id", sa.Uuid(), nullable=True)
-    )
+    op.add_column("scan_contexts", sa.Column("proxy_id", sa.Uuid(), nullable=True))
     op.create_index(
         op.f("ix_scan_contexts_proxy_id"),
         "scan_contexts",
@@ -161,9 +159,7 @@ def upgrade() -> None:
     )
     op.add_column(
         "projects",
-        sa.Column(
-            "label", sqlmodel.sql.sqltypes.AutoString(length=50), nullable=True
-        ),
+        sa.Column("label", sqlmodel.sql.sqltypes.AutoString(length=50), nullable=True),
     )
 
 

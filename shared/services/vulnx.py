@@ -1,8 +1,4 @@
-"""vulnx: per-CVE exploit intelligence, fetched on demand and cached forever.
-
-Measured 2026-09-07: keyless is 10 requests/minute, the 11th gets a 429 with no
-Retry-After, so the client paces off x-ratelimit-remaining and sleeps to the reset.
-"""
+"""vulnx: per-CVE exploit intelligence, fetched on demand and cached forever."""
 
 from __future__ import annotations
 
@@ -29,13 +25,11 @@ BASE_URL = "https://api.projectdiscovery.io/v2/vulnerability"
 PROVIDER = "vulnx"
 TIMEOUT = 30
 MAX_PER_RUN = 200
-# the full document runs to 130 KB; only ever ask for what we store
 FIELDS = (
     "cve_id,severity,cvss_score,epss_score,is_kev,is_vkev,is_poc,poc_count,"
     "poc_first_seen,pocs,is_template,is_remote,is_auth,is_patch_available,"
     "description,remediation,weaknesses,exposure,kev,h1,cve_created_at"
 )
-# a cached CVE is refreshed after this; exploit counts move, scores do not
 REFRESH_AFTER = timedelta(days=14)
 MAX_POCS = 25
 MAX_EXPOSURE_PRODUCTS = 8
@@ -171,7 +165,7 @@ def _row(cve: str, data: dict) -> dict:
 
 
 def api_key(session: Session) -> str | None:
-    """The stored vulnx key, if the operator added one. Keyless still works."""
+    """The stored vulnx key, if the operator added one."""
     try:
         from shared.utils.crypto import decrypt  # noqa: PLC0415
 
@@ -203,7 +197,7 @@ def pending(session: Session, cves: list[str]) -> list[str]:
 
 
 def enrich(session: Session, cves: list[str], *, limit: int = MAX_PER_RUN) -> dict:
-    """Fetch and cache detail for CVEs we do not already hold. Never raises on rate limit."""
+    """Fetch and cache detail for CVEs we do not already hold."""
     todo = pending(session, cves)[:limit]
     if not todo:
         return {"requested": 0, "cached": 0, "failed": 0, "rate_limited": False}

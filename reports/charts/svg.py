@@ -1,4 +1,4 @@
-"""Charts are SVG built here, coloured by CSS variables, so a theme reskins them for free."""
+"""Charts are SVG built here, coloured by CSS variables."""
 
 from __future__ import annotations
 
@@ -56,7 +56,7 @@ def donut(
     centre_label: str = "",
     palette: dict[str, str] | None = None,
 ) -> str:
-    """A ring. Two slices or fewer is a statistic, not a chart, so it is refused."""
+    """A ring."""
     live = [s for s in slices if s.value > 0]
     total = sum(s.value for s in live)
     if len(live) < _MIN_SLICES or total <= 0:
@@ -148,7 +148,7 @@ def bars(
     suffix: str = "",
     palette: dict[str, str] | None = None,
 ) -> str:
-    """A ranked list. One hue for every bar; rank is carried by order, never by colour."""
+    """A ranked list."""
     live = [(label, value) for label, value in rows if value is not None]
     if not live:
         return ""
@@ -194,14 +194,12 @@ def dial(
     arc: str = "",
     palette: dict[str, str] | None = None,
 ) -> str:
-    """A 240 degree gauge. The grade is the message; the arc is the scale."""
+    """A 240 degree gauge."""
     tone = _p(palette)
     arc = arc or tone["accent"]
     ratio = max(0.0, min(1.0, value / 100))
     radius = (size - thickness) / 2 - 2
     centre = size / 2
-    # a ring that closes, read from twelve o'clock: a speedometer's detached stub of an
-    # arc reads as a stray mark when the score is low
     start = -math.pi / 2
     sweep = _TAU
 
@@ -256,7 +254,7 @@ def sparkline(
     fill: bool = True,
     palette: dict[str, str] | None = None,
 ) -> str:
-    """The y domain starts at zero, so flat data reads as flat."""
+    """The y domain starts at zero."""
     points = [v for v in values if v is not None]
     if len(points) < _MIN_POINTS:
         return ""

@@ -1,5 +1,3 @@
-"""Retention deletes, so what it must NOT delete is the part worth testing."""
-
 from __future__ import annotations
 
 from datetime import timedelta
@@ -69,7 +67,6 @@ async def test_a_run_past_the_window_goes_with_its_rows(durable_estate, now):
 
 
 async def test_a_target_never_loses_its_only_run(durable_estate, now):
-    """'Not scanned' must mean never scanned, never 'scanned and then pruned'."""
     old = now - timedelta(days=400)
     await durable_estate.scan("example.com", "only", at=old)
     await durable_estate.hosts("only", ["a.example.com"], at=old)
@@ -82,7 +79,6 @@ async def test_a_target_never_loses_its_only_run(durable_estate, now):
 
 
 async def test_a_running_scan_is_never_deleted(durable_estate, now):
-    """An old queued or running row is work in flight, not history."""
     old = now - timedelta(days=400)
     await durable_estate.scan("example.com", "keeper", at=now)
     await durable_estate.scan(
@@ -96,7 +92,6 @@ async def test_a_running_scan_is_never_deleted(durable_estate, now):
 
 
 async def test_zero_keeps_everything(durable_estate, now):
-    """0 is how an operator opts out; it must not read as 'delete everything'."""
     old = now - timedelta(days=4000)
     await durable_estate.scan("example.com", "ancient", at=old)
     await durable_estate.scan("example.com", "recent", at=now)
@@ -127,7 +122,6 @@ async def test_each_target_keeps_its_own_newest(durable_estate, now):
 
 
 async def test_evidence_ages_out_before_the_run_does(durable_estate, now):
-    """A screenshot and a response body are the bulk; the finding outlives them."""
     old = now - timedelta(days=60)
     await durable_estate.scan("example.com", "keeper", at=now)
     await durable_estate.scan("example.com", "aged", at=old)
@@ -165,7 +159,6 @@ async def test_evidence_inside_the_window_is_kept(durable_estate, now):
 
 
 async def test_the_identity_survives_the_evidence(durable_estate, now):
-    """content_hash is what correlation joins on; ageing the bytes must not touch it."""
     old = now - timedelta(days=60)
     await durable_estate.scan("example.com", "keeper", at=now)
     await durable_estate.scan("example.com", "aged", at=old)

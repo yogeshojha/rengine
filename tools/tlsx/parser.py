@@ -15,7 +15,6 @@ def _moment(value) -> datetime | None:
 
 
 def parse_certificate(record: dict) -> dict | None:
-    """One tlsx record reduced to the facts a stored certificate carries."""
     host = str(record.get("host") or "").strip().lower().rstrip(".")
     not_after = _moment(record.get("not_after"))
     if not host or not_after is None:

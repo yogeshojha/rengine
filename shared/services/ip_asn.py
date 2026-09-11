@@ -52,13 +52,6 @@ def ranges_ready(session: Session) -> bool:
     )
 
 
-# the one definition of an address lookup: a LATERAL per range table, with the upper-bound
-# test on the JOIN rather than inside the subquery (inside, a gap address scans backwards
-# over the whole table). Postgres sorts every IPv4 inet below every IPv6 one, so one index
-# on start_ip serves both families.
-# 80.2% of the feed's ranges are exactly one CIDR; the rest are aggregates spanning
-# several, and inet_merge would report a network wider than the allocation. A prefix
-# is therefore filled only when the range IS the network — a null means unknown.
 _ENRICH_SQL = """
 UPDATE ip_addresses a SET
     asn     = coalesce(r.asn, a.asn),
@@ -82,7 +75,6 @@ LEFT JOIN LATERAL (
 ) c ON c.end_ip >= base.ip::inet
 WHERE a.id = base.id AND base.scan_id = :sid{scope}{only}
 """
-# a row the feeds could not place is retried, not skipped, so a later feed load fills it
 _ONLY_MISSING = " AND (base.asn IS NULL OR base.country IS NULL)"
 _SCOPED = " AND base.ip = ANY(:ips)"
 
@@ -94,12 +86,7 @@ def enrich_addresses(
     ips: list[str] | None = None,
     only_missing: bool = True,
 ) -> int:
-    """Fill ASN, operator and country from the local range tables. Offline, keyless, idempotent.
-
-    `ips` bounds the update to the addresses a caller just wrote, so a write path never takes
-    row locks across the whole scan. Returns rows touched, and 0 when the feeds have never
-    been loaded — a box with no egress keeps writing addresses, it just cannot name them yet.
-    """
+    """Fill ASN, operator and country from the local range tables."""
     if ips is not None and not ips:
         return 0
     if not ranges_ready(session):
@@ -159,7 +146,7 @@ def _load(session: Session, feed: Feed, paths: list[Path]) -> int:
 
 
 def sync_ranges(session: Session) -> dict[str, int]:
-    """Refresh both range tables. A feed that fails to download is left untouched."""
+    """Refresh both range tables."""
     counts: dict[str, int] = {}
     for feed in FEEDS:
         try:
@@ -174,7 +161,6 @@ def sync_ranges(session: Session) -> dict[str, int]:
     return counts
 
 
-# the bulk enrich LATERAL shape, for one address, on either session type
 ADDRESS_LOOKUP_SQL = text("""
 SELECT r.asn, r.as_name, c.country
 FROM (SELECT CAST(:ip AS inet) AS ip) base

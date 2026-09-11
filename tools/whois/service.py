@@ -41,7 +41,6 @@ from tools.whois.providers.whoisit import RDAPProvider, RDAPProviderError
 
 logger = get_logger(__name__)
 
-# advisory-lock namespace, kept distinct from other advisory locks
 WHOIS_LOCK_NAMESPACE = 0x5748
 
 DEFAULT_CACHE_TTL_DAYS = 7
@@ -94,7 +93,6 @@ class WhoisService:
                 return self.lookup_asn(asn_number, query)
             case TargetType.URL:
                 host = normalize_domain(query)
-                # a URL may name an address rather than a name; ask the right registry
                 return (
                     self.lookup_ip(host)
                     if validate_ip(host)
@@ -113,7 +111,6 @@ class WhoisService:
         return normalized
 
     def lookup_domain(self, domain: str) -> WhoisResponse:
-        # registries only hold the registered name, so api.example.com must ask for example.com
         host = normalize_domain(domain)
         domain = registrable_domain(host) or host
         try:
@@ -173,7 +170,6 @@ class WhoisService:
                     cache_hit=True,
                 )
 
-        # whoisit/requests is synchronous blocking I/O - offload off the loop
         response = await asyncio.to_thread(self.do_lookup, normalized, target_type)
 
         if store_in_db and session:
@@ -222,7 +218,6 @@ class WhoisService:
             await session.commit()
             return record
         except IntegrityError:
-            # concurrent insert for the same query_value won the race; update it
             await session.rollback()
             existing = await self._get_cached_record(session, query_value)
             if existing is None:
@@ -276,8 +271,6 @@ class WhoisService:
                 session.add(record)
                 session.flush()
         except IntegrityError:
-            # query_value is unique, so a concurrent writer won; take its row
-            # rather than leaving the caller with a poisoned session
             winner = self.get_cached_record_sync(session, db_fields["query_value"])
             if winner is None:
                 raise
@@ -296,9 +289,6 @@ class WhoisService:
         if existing:
             return existing
 
-        # adding a.example.com, b.example.com and c.example.com separately makes
-        # three tasks that all miss the cache and all query the registry for the
-        # same name; serialise on the query so only the first one asks
         session.execute(
             text("SELECT pg_advisory_xact_lock(:ns, hashtext(:q))"),
             {"ns": WHOIS_LOCK_NAMESPACE, "q": normalized_query},

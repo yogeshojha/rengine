@@ -1,4 +1,4 @@
-"""The one place the renderer is allowed to load bytes from. Everything else is refused."""
+"""The one place the renderer is allowed to load bytes from."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ ASSETS = Path(__file__).resolve().parent.parent / "assets"
 CUSTOM_FONTS = Path("/app/report-fonts")
 SCAN_MEDIA = Path("/app/scan_media")
 
-# a rendered document may read vendored faces, uploaded faces and captured screenshots
 ALLOWED_ROOTS: tuple[Path, ...] = (ASSETS, CUSTOM_FONTS, SCAN_MEDIA)
 ALLOWED_PROTOCOLS: tuple[str, ...] = ("data", "file")
 
@@ -31,7 +30,7 @@ def _allowed(path: Path) -> bool:
 
 
 def permitted(url: str) -> bool:
-    """Data URIs, and files under a known root. No network, ever."""
+    """Data URIs, and files under a known root."""
     if url.startswith("data:"):
         return True
     if not url.startswith("file:"):

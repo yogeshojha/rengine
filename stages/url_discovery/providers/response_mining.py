@@ -12,10 +12,7 @@ _BATCH = 50
 
 
 class ResponseMiningProvider(UrlProvider):
-    """Links, scripts and forms read out of response bodies this scan already stored.
-
-    Sends no request: the bodies were captured by the HTTP probe, so this runs at any intensity.
-    """
+    """Links, scripts and forms read out of response bodies this scan already stored."""
 
     source = EndpointSource.RESPONSE_MINING.value
     tool = None

@@ -25,7 +25,6 @@ RELATED_REASON_DETAIL: dict[str, str] = {
 MAX_RELATED_DOMAINS = 25
 MAX_RELATED_HOSTNAMES = 12
 
-# second-level public suffixes, so telkomsel.co.id resolves to telkomsel.co.id not co.id
 PUBLIC_SECOND_LEVEL: frozenset[str] = frozenset(
     {
         "ac.at",
@@ -206,13 +205,11 @@ PUBLIC_SECOND_LEVEL: frozenset[str] = frozenset(
     }
 )
 
-# suffixes that never resolve publicly, so a certificate naming them is not a lead
 PRIVATE_TLDS: frozenset[str] = frozenset(
     {"local", "localhost", "localdomain", "internal", "intranet", "lan", "home",
      "corp", "default", "svc", "cluster", "test", "example", "invalid"}
 )  # fmt: skip
 
-# vendor and platform domains that are never worth suggesting as a target
 VENDOR_DOMAINS: frozenset[str] = frozenset(
     {
         "akamai.net",
@@ -258,8 +255,6 @@ _MIN_LABELS = 2
 _SUFFIX_LABELS = 3
 
 
-# analytics, advertising, social and link vendors a browser reaches on almost every site.
-# separate from VENDOR_DOMAINS, which names the hosting providers a certificate points at.
 THIRD_PARTY_DOMAINS: frozenset[str] = frozenset(
     {
         "adnxs.com",
@@ -307,7 +302,6 @@ THIRD_PARTY_DOMAINS: frozenset[str] = frozenset(
     }
 )
 
-# a domain a browser reaches that tells you nothing about who owns the site
 IGNORED_DOMAINS: frozenset[str] = frozenset(VENDOR_DOMAINS | THIRD_PARTY_DOMAINS)
 
 
@@ -316,8 +310,6 @@ def registrable_domain(hostname: str) -> str:
     labels = [part for part in host.split(".") if part]
     if len(labels) < _MIN_LABELS:
         return ""
-    # an address is not a name: 192.168.0.2 has no registrable domain, and reading one
-    # off its last two labels yields "0.2", which then gets queried and matched as a domain
     if labels[-1].isdigit():
         return ""
     if len(labels) >= _SUFFIX_LABELS and ".".join(labels[-2:]) in PUBLIC_SECOND_LEVEL:
@@ -325,7 +317,6 @@ def registrable_domain(hostname: str) -> str:
     return ".".join(labels[-2:])
 
 
-# CNAME suffix → provider; a dangling CNAME to these is a takeover candidate
 TAKEOVER_FINGERPRINTS: tuple[tuple[str, str], ...] = (
     ("s3.amazonaws.com", "AWS S3"),
     ("s3-website", "AWS S3"),
@@ -362,11 +353,7 @@ TAKEOVER_FINGERPRINTS: tuple[tuple[str, str], ...] = (
 
 
 def takeover_provider(cname: str) -> str | None:
-    """The provider a CNAME points at, when it is one a dangling name can be claimed on.
-
-    A fingerprint has to start a DNS label. A bare substring match puts
-    mys3-website.evil.com on AWS — the same trap an unanchored keyword match is.
-    """
+    """The provider a CNAME points at, when it is one a dangling name can be claimed on."""
     host = cname.strip().lower().rstrip(".")
     for suffix, provider in TAKEOVER_FINGERPRINTS:
         if host == suffix or host.startswith(f"{suffix}.") or f".{suffix}" in host:

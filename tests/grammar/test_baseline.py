@@ -1,5 +1,3 @@
-"""`is:new` needs a baseline: a target's first scan reports nothing new."""
-
 from __future__ import annotations
 
 from datetime import timedelta
@@ -16,7 +14,6 @@ SECOND = [*FIRST, "d.example.com", "e.example.com"]
 
 
 async def _hosts(estate, q: str, scan: str) -> int:
-
     result = await SubdomainService(estate.session).search(
         estate.project_id, estate.scans[scan], SubdomainFilter(q=q, limit=1)
     )
@@ -45,7 +42,6 @@ async def test_second_scan_reports_only_what_the_first_missed(estate, now):
 
 
 async def test_new_and_not_new_partition_the_scan(estate, now):
-    """The null-safe NOT rule: the two halves must add up to the whole."""
     old = now - timedelta(days=7)
     await estate.scan("example.com", "first", at=old)
     await estate.hosts("first", FIRST, at=old)
@@ -59,7 +55,6 @@ async def test_new_and_not_new_partition_the_scan(estate, now):
 
 
 async def test_a_baseline_belongs_to_one_target(estate, now):
-    """Another target's earlier scan must never count as this target's baseline."""
     old = now - timedelta(days=7)
     await estate.scan("other.com", "other", at=old)
     await estate.hosts("other", ["x.other.com"], at=old)
@@ -70,7 +65,6 @@ async def test_a_baseline_belongs_to_one_target(estate, now):
 
 
 async def test_a_later_scan_is_not_a_baseline(estate, now):
-    """Only an EARLIER scan baselines a run; a newer one must be ignored."""
     await estate.scan("example.com", "middle", at=now)
     await estate.hosts("middle", SECOND, at=now)
     later = now + timedelta(days=7)
@@ -82,8 +76,6 @@ async def test_a_later_scan_is_not_a_baseline(estate, now):
 
 
 async def test_project_scope_judges_newness_per_target(estate, now):
-    """One target with history and one without: only the first may report new hosts."""
-
     old = now - timedelta(days=7)
     await estate.scan("example.com", "first", at=old)
     await estate.hosts("first", FIRST, at=old)
@@ -102,8 +94,6 @@ async def test_project_scope_judges_newness_per_target(estate, now):
 
 
 async def test_the_facet_filter_agrees_with_the_query(estate, now):
-    """`_apply_filter` is a second code path onto the same predicate."""
-
     old = now - timedelta(days=7)
     await estate.scan("example.com", "first", at=old)
     await estate.hosts("first", FIRST, at=old)

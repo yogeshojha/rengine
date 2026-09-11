@@ -65,7 +65,7 @@ async def _recreate_database() -> None:
 
 @pytest_asyncio.fixture(scope="session")
 async def database() -> AsyncIterator[str]:
-    """A migrated database of its own, so a test run can never touch real scans."""
+    """A migrated database of its own."""
     await _recreate_database()
     env = {**os.environ, "POSTGRES_DB": TEST_DB}
     proc = await asyncio.to_thread(
@@ -91,7 +91,7 @@ async def engine(database: str):
 
 @pytest_asyncio.fixture
 async def session(engine) -> AsyncIterator[AsyncSession]:
-    """A test writes inside one transaction and never commits it, so nothing outlives the test."""
+    """One transaction per test, rolled back."""
     maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with maker() as s:
         try:
@@ -100,11 +100,8 @@ async def session(engine) -> AsyncIterator[AsyncSession]:
             await s.rollback()
 
 
-# ── fixtures that build a scan the way a scan builds itself ──
-
-
 class Estate:
-    """A project, a target and the scans under it, addressed by name rather than by uuid."""
+    """A project, a target and the scans under it, addressed by name."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -328,7 +325,7 @@ async def estate(session: AsyncSession) -> Estate:
 
 
 async def _truncate(engine) -> None:
-    """Everything derives from users, projects and the settings row, so CASCADE clears the rest."""
+    """Truncate the roots; CASCADE clears the rest."""
     async with engine.begin() as conn:
         await conn.execute(
             sa.text(
@@ -339,7 +336,7 @@ async def _truncate(engine) -> None:
 
 @pytest_asyncio.fixture
 async def durable(engine) -> AsyncIterator[AsyncSession]:
-    """For code whose behaviour includes committing; the tables are truncated around it."""
+    """A session that may commit; tables are truncated around it."""
     await _truncate(engine)
     maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with maker() as s:

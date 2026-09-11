@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end check of the Connectors feature, driven entirely through the HTTP API.
-
-    RENGINE_PROJECT_ID=<uuid> python3 scripts/connector_e2e.py
-
-The project needs at least one domain target; the scope assertions are made against it.
-Every connector this creates is deleted before the script exits.
-"""
+"""End-to-end check of the Connectors feature, driven entirely through the HTTP API."""
 
 from __future__ import annotations
 
@@ -346,7 +340,6 @@ call(
 )
 
 print("\n== discovered domains ==")
-# a real TLD: .example is reserved and is filtered as a private TLD, by design
 UNKNOWN = "e2e-partner-check-rengine.com"
 call(
     "POST",
@@ -415,7 +408,6 @@ s, tget = call("GET", f"/targets/{new_target}?project_id={PID}")
 check("the target really exists", s == OK and tget.get("target_value") == UNKNOWN, tget)
 
 print("\n== add-as-target does not over-claim ==")
-# the lookalike must already be stored, so widen the scope for this one batch
 NEIGHBOUR = f"not{UNKNOWN}"
 
 call(
@@ -797,7 +789,6 @@ check("connector is gone", s == NOT_FOUND, s)
 s, _ = call("POST", "/connectors/ingest", {"items": []}, token=new_secret)
 check("token dies with the connector", s == UNAUTHORIZED, s)
 
-# deliberately last: it trips the per-IP ceiling, which would refuse the rest of the run
 print("\n== a token cannot be guessed at speed ==")
 codes = []
 for attempt in range(TOKEN_ATTEMPTS):

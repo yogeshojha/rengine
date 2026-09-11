@@ -20,8 +20,6 @@ class BaseAppSettings(BaseSettings):
     DB_POOL_RECYCLE: int = 1800
     DB_IDLE_TX_TIMEOUT: int = 120
 
-    # per celery prefork child, not per worker process; the api reads them to check
-    # that every pool together still fits inside the server's max_connections
     WORKER_DB_POOL_SIZE: int = 2
     WORKER_DB_MAX_OVERFLOW: int = 3
     WORKER_DB_POOL_TIMEOUT: int = 30
@@ -55,7 +53,6 @@ class BaseAppSettings(BaseSettings):
 
     @property
     def celery_result_backend(self) -> str:
-        # the scan canvas chains groups, which celery runs as chords — those need a backend
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB + 1}"
 
     class Config:

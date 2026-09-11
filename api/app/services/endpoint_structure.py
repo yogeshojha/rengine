@@ -192,7 +192,7 @@ class EndpointStructureService:
         ]
 
     async def _shared_paths(self, scan_id: UUID) -> list[PathSpread]:
-        """The same route on many hosts is one framework, so one fix closes many findings."""
+        """The same route on many hosts is one framework."""
         hosts = func.count(func.distinct(Endpoint.host))
         rows = (
             await self.session.execute(
@@ -298,7 +298,7 @@ class EndpointStructureService:
 
 
 def _headline(out: ScanStructure) -> str:
-    """The finding leads, never the total."""
+    """The finding leads."""
     auth = [f for f in out.findings if f.kind == "auth_boundary"]
     if auth:
         n = len(auth)

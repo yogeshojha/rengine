@@ -1,4 +1,4 @@
-"""Field helpers for a section's config. The schema they produce is what the builder renders."""
+"""Field helpers for a section's config."""
 
 from __future__ import annotations
 

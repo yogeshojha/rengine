@@ -5,8 +5,6 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_400_BAD_REQUEST
 
-# Postgres rejects NUL in text, so a parameter carrying one fails while binding and
-# surfaces as a 500. It is never meaningful in a URL.
 _NUL = "\x00"
 
 

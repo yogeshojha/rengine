@@ -9,8 +9,6 @@ from shared.logging import get_logger
 
 logger = get_logger(__name__)
 
-# SQLSTATE class 22 is the SQL standard's data exception class: the value supplied
-# cannot be represented in the column it was sent to. It is never a server fault.
 _DATA_EXCEPTION = "22"
 
 _MESSAGES = {

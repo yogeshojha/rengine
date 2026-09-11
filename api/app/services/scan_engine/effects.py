@@ -37,7 +37,7 @@ def stage_effects(
 def _stage_statuses(
     resolved, configured: set[str], warnings: list[str]
 ) -> dict[str, PreviewTool]:
-    """One status per stage, walking levels so a producer only feeds later levels."""
+    """One status per stage, walking levels."""
     available = set(seed_produces(resolved.target_type))
     out: dict[str, PreviewTool] = {}
     for level in ordered_levels():

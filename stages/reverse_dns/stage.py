@@ -25,7 +25,6 @@ class ReverseDnsStage(Stage):
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.ADDRESSES.value})
     produces = frozenset({AssetKind.HOSTS.value})
-    # a domain scan's addresses have PTRs too, and the lookup is one dnsx run
     applies_to = ALL_TARGETS
     tools = ("dnsx",)
     touches_target = False

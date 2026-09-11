@@ -1,8 +1,4 @@
-"""Encrypt scan context credentials at rest.
-
-Revision ID: e8a1c5d29f47
-Revises: b7d2f4a91c63
-"""
+"""Encrypt scan context credentials at rest."""
 
 import json
 

@@ -51,7 +51,7 @@ def string_match(col, cmp: Compare):
 
 
 def target_match(column, cmp: Compare):
-    """Rows whose target id belongs to a target whose value matches; every row has one."""
+    """Rows whose target id belongs to a target whose value matches."""
     return column.in_(select(Target.id).where(string_match(Target.target_value, cmp)))
 
 

@@ -1,4 +1,4 @@
-"""The saved configurations start_scan takes ids for. Without these they are unusable."""
+"""The saved configurations start_scan takes ids for."""
 
 from __future__ import annotations
 

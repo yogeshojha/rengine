@@ -1,4 +1,4 @@
-"""What actually ran. The tool that keeps "no findings" honest."""
+"""What actually ran."""
 
 from __future__ import annotations
 
@@ -67,7 +67,6 @@ class ScanCoverage(Tool):
         caveats.append(
             "A count reported as null means the scanner did not say, not zero."
         )
-        # a plan asked for more checks than the scanner loaded: the gap is the point of this tool
         shortfall = sum(
             max(0, (r.get("templates_selected") or 0) - r["templates_loaded"])
             for r in runs

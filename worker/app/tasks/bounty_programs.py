@@ -95,12 +95,11 @@ def _notify(session, since) -> int:
 
 @shared_task(name="app.tasks.bounty_programs.sync")
 def sync(scopes: bool = True, force: bool = True) -> dict:
-    """Pull programs, then each program's scope so the library can be filtered by it."""
+    """Pull programs, then each program's scope."""
     started = utc_now()
     with get_sync_session() as session, sync_lock(session, SYNC_LOCK_KEY) as held:
         if not held:
             return {"skipped": "already_running"}
-        # a manual refresh always runs, whatever the schedule says
         if not force and not sync_due(session):
             return {"skipped": "not_due"}
         auth = credentials(session)
@@ -139,7 +138,6 @@ def sync(scopes: bool = True, force: bool = True) -> dict:
                 logger.info(
                     "bounty scope sync failed", handle=program.handle, error=str(exc)
                 )
-                # a run of failures means the API is unhappy, not this one program
                 if failed >= SCOPE_FAILURE_BUDGET:
                     logger.warning("bounty scope sync abandoned", failed=failed)
                     break
@@ -170,7 +168,6 @@ def sync_program(handle: str, platform: str = BountyPlatform.HACKERONE.value) ->
         with sync_lock(session, key) as held:
             if not held:
                 return {"skipped": "already_running"}
-            # a feed platform has no per-program endpoint; refresh the whole file
             if feed:
                 spec = FEEDS_BY_PLATFORM.get(platform)
                 return (
@@ -198,7 +195,6 @@ def sync_feed(force: bool = True) -> dict:
         if not force and not feed_due(session):
             return {"skipped": "not_due"}
         result = sync_feeds(session)
-        # a run where nothing downloaded must not suppress the next attempt
         if result["platforms"]:
             mark_feed_synced(session)
         return {**result, "alerted": _notify(session, started)}

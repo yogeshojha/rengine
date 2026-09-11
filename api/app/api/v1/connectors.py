@@ -48,7 +48,6 @@ def get_service(
     return ConnectorService(session)
 
 
-# a bearer token deserves the same brute-force ceiling as a password
 TOKEN_ATTEMPT_LIMIT = 20
 TOKEN_ATTEMPT_WINDOW = 900
 
@@ -69,7 +68,7 @@ async def _authenticate(
 
 
 def _base(request: Request) -> str:
-    """The URL the proxy must reach. Honours a reverse proxy's forwarded headers."""
+    """The URL the proxy must reach."""
     return str(request.base_url).rstrip("/")
 
 

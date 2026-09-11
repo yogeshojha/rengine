@@ -23,7 +23,6 @@ export function chipFor(target: {
 	return { key: target.id, id: target.id, value: target.target_value, type: target.target_type };
 }
 
-// An existing target when the value is already in the project, otherwise a chip to create on launch.
 export async function resolveTargetValue(
 	value: string,
 	projectSlug: string

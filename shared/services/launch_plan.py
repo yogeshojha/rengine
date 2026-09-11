@@ -27,7 +27,7 @@ class AdHocEngine:
 
 
 def plan_label(resolved: ResolvedScanConfig) -> str:
-    """Name an ad hoc run after the capabilities it runs; support stages only count when nothing else does."""
+    """Name an ad hoc run after the capabilities it runs."""
     from shared.enums.scan import StageRole  # noqa: PLC0415
     from stages.registry import stages  # noqa: PLC0415
 

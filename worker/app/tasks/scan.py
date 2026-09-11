@@ -29,7 +29,6 @@ from stages.registry import get_stage, ordered_levels
 
 logger = get_logger(__name__)
 
-# run_scan id + canvas root id — a RUNNING scan with fewer was claimed but not dispatched.
 _DISPATCHED_TASK_IDS = 2
 
 STALL_GRACE_SECONDS = 600
@@ -43,7 +42,6 @@ def run_scan(self, scan_id: str) -> dict:
     """Orchestrator entrypoint: claim RUNNING, dispatch the stage canvas, then notify."""
     redis_url = settings.celery_broker_url
     with get_sync_session() as session:
-        # locked: an API cancel between this read and the commit below would be overwritten
         scan = session.get(Scan, uuid.UUID(scan_id), with_for_update=True)
         if scan is None:
             logger.warning("scan %s not found", scan_id)
@@ -69,7 +67,6 @@ def run_scan(self, scan_id: str) -> dict:
         try:
             result = build_canvas(scan_id).apply_async()
         except Exception as exc:
-            # a scan that never reached the queue must say so, not sit in RUNNING
             logger.exception("scan %s canvas dispatch failed", scan_id)
             scan.status = ScanStatus.FAILED.value
             scan.error = f"The scan could not be queued: {exc}"[:2000]

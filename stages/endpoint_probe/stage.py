@@ -24,8 +24,7 @@ _WRITE_BATCH = 500
 
 
 class EndpointProbeStage(Stage):
-    """Turn discovered URLs into observed ones, spending a bounded request budget first on
-    what carries attack surface."""
+    """Request discovered URLs, highest attack surface first, within a budget."""
 
     name = "endpoint_probe"
     title = "Endpoint Verification"
@@ -82,8 +81,6 @@ class EndpointProbeStage(Stage):
             return StageResult(counts={"endpoints_probed": 0})
 
         def _write(batch: list[EndpointObservation]) -> int:
-            # verify(), never upsert(): requesting an endpoint confirms it, it does not
-            # discover it, so this must not add a source to the row
             return endpoint_inventory.verify(
                 self.session, scan_id=self.ctx.scan_id, observations=batch
             ).updated
@@ -142,13 +139,8 @@ class EndpointProbeStage(Stage):
         return StageResult(counts={"endpoints_probed": len(selected)})
 
     def _pending(self, budget: int) -> list[str]:
-        """The unverified endpoints most likely to matter, ranked in the database.
-
-        Ranking in Python meant loading every unverified row first, which on a large
-        scan is hundreds of thousands of them.
-        """
+        """The unverified endpoints most likely to matter, ranked in the database."""
         flagged = func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0
-        # one per directory first, so a wide surface is sampled before a deep one is exhausted
         novel = (
             func.row_number()
             .over(
@@ -173,7 +165,6 @@ class EndpointProbeStage(Stage):
         sub = ranked.subquery()
 
         excluded = self.ctx.resolved.excluded_paths or []
-        # over-fetch so path exclusions applied in Python cannot starve the budget
         headroom = budget * 4 if excluded else budget
         rows = self.session.execute(
             select(sub.c.url, sub.c.path)
@@ -191,7 +182,6 @@ class EndpointProbeStage(Stage):
         return [r.url for r in rows[:budget]]
 
     def _unverified(self) -> int:
-        # must match _pending's population or `skipped` counts static rows as budget-capped
         q = select(func.count()).where(
             Endpoint.scan_id == self.ctx.scan_id,
             Endpoint.is_probed.is_(False),
@@ -224,7 +214,6 @@ class EndpointProbeStage(Stage):
                 urls_found=total,
                 urls_probed=probed,
                 urls_stored=answered,
-                # requested and got nothing back: not the same as never requested
                 errors=None if answered is None else max(0, probed - answered),
                 capped=bool(skipped),
                 cap_reason=reason,

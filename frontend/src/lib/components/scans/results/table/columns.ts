@@ -10,7 +10,6 @@ export interface TableColumn extends ColumnDef {
 	grow?: boolean;
 }
 
-// the row's target; only meaningful when a view spans more than one
 export const TARGET_COLUMN: TableColumn = {
 	key: 'target',
 	label: 'Target',
@@ -26,7 +25,6 @@ export interface SortOption {
 	label: string;
 }
 
-// the actions cell stays at the right edge of the scrollport in every table
 export const ACTIONS_PIN = 'sticky right-0 z-10 ml-auto shrink-0 self-stretch bg-card';
 export const ACTIONS_BODY =
 	'flex h-full w-8 items-center justify-end gap-0.5 transition-colors sm:w-[3.75rem]';

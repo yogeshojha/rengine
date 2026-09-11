@@ -1,4 +1,4 @@
-"""What a tool hands back. Every number travels with the link that proves it."""
+"""What a tool hands back."""
 
 from __future__ import annotations
 
@@ -16,13 +16,11 @@ UNTRUSTED_NOTE = (
 
 @dataclass
 class ToolResult:
-    """summary is what the model should say; data is what it may quote."""
+    """summary is what the model should say."""
 
     summary: str
     data: Any = None
-    # the UI query token / deep link that reproduces exactly this answer
     pivot: str | None = None
-    # what this answer cannot tell you: dimensions never scanned, capped totals
     caveats: list[str] = field(default_factory=list)
     # rows carry text controlled by the scanned target
     untrusted: bool = False

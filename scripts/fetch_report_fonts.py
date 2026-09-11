@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Vendor the report fonts. Run on a checkout; the files are committed so an offline box still renders.
-
-One file per family, weight and style — never Google's per-script split. Several @font-face
-rules that share a family and differ only by unicode-range make WeasyPrint shape against one
-subset and rasterise from another, which printed Greek titles as scrambled Latin.
-"""
+"""Vendor the report fonts. Run on a checkout; the files are committed."""
 
 from __future__ import annotations
 
@@ -20,13 +15,11 @@ from fontTools.ttLib import TTFont
 
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent / "reports" / "assets" / "fonts"
 API = "https://fonts.googleapis.com/css2"
-# a UA that takes woff but predates unicode-range, so the API answers with one whole file
 UA = (
     "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"
 )
 
-# a body face carries the scripts a real estate is named in; display and mono stay latin
 WIDE = "latin,latin-ext,greek,cyrillic"
 LATIN = "latin,latin-ext"
 MONO = "latin"

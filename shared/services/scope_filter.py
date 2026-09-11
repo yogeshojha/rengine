@@ -4,7 +4,6 @@ import fnmatch
 import ipaddress
 import re
 
-# regex/glob metacharacters that signal an entry is a pattern, not a literal domain
 _METACHARS = frozenset("*?^$()[]{}+|\\")
 
 
@@ -13,9 +12,6 @@ def looks_like_domain(pattern: str) -> bool:
     return "." in pattern and not any(c in _METACHARS for c in pattern)
 
 
-# a quantified group whose body is itself quantified is the shape that backtracks
-# catastrophically: (a+)+, (x*)*, ([a-z]+){2,}. Matching runs per discovered host,
-# so one of these hangs a stage until the task time limit.
 _QUANTIFIERS = "+*"
 
 
@@ -46,7 +42,7 @@ def _has_quantifier(body: str) -> bool:
 
 
 def backtracks_badly(pattern: str) -> bool:
-    """Whether a pattern repeats a group that already repeats, which can never match quickly."""
+    """Whether a pattern repeats a group that already repeats."""
     stack: list[int] = []
     escaped = False
     for i, char in enumerate(pattern or ""):

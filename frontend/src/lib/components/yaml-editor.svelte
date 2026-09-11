@@ -198,7 +198,6 @@
 
 	const readOnlyCompartment = new Compartment();
 
-	// a non-editable content DOM takes no focus, so its keymap (Ctrl+F) never fires
 	const readOnlyExtensions = (ro: boolean) => [
 		EditorState.readOnly.of(ro),
 		EditorView.editable.of(!ro),

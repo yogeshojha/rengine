@@ -10,7 +10,7 @@ _CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
 def strip_nul(value: str) -> str:
-    """Drop only what postgres refuses to store; a captured response body is not text."""
+    """Drop only what postgres refuses to store."""
     return value.replace(_NUL, "") if _NUL in value else value
 
 

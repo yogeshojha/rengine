@@ -28,7 +28,6 @@ import FolderKey from '@lucide/svelte/icons/folder-key';
 import Folders from '@lucide/svelte/icons/folders';
 import type { IconComponent } from './icons';
 
-// mirrors shared/definitions/endpoints.py EndpointClass
 export enum EndpointClass {
 	PAGE = 'page',
 	API = 'api',
@@ -94,7 +93,6 @@ export const ENDPOINT_CLASS_FILL: Record<string, string> = {
 	[EndpointClass.OTHER]: 'color-mix(in oklch, var(--muted-foreground) 25%, transparent)'
 };
 
-// mirrors shared/definitions/endpoints.py STATIC_CLASSES + STATIC_EXTENSIONS
 export const STATIC_CLASSES: ReadonlySet<string> = new Set([
 	EndpointClass.STYLE,
 	EndpointClass.IMAGE,
@@ -143,7 +141,6 @@ export const ENDPOINT_CLASS_TONE: Record<string, string> = {
 	[EndpointClass.API]: 'text-chart-2'
 };
 
-// mirrors shared/definitions/endpoints.py EndpointSource
 export enum EndpointSource {
 	SEED = 'seed',
 	RESPONSE_MINING = 'response_mining',
@@ -161,8 +158,6 @@ export enum EndpointSource {
 	OTHER = 'other'
 }
 
-// mirrors shared/definitions/endpoints.py: the verification pass reports coverage
-// but never discovers, so it is not an EndpointSource
 export const PROBE_COVERAGE_SOURCE = 'probe';
 
 export const SOURCE_LABELS: Record<string, string> = {
@@ -204,7 +199,6 @@ export const SOURCE_ICONS: Record<string, IconComponent> = {
 	[EndpointSource.OTHER]: CircleHelp
 };
 
-// a source that never contacts the target reads differently from one that does
 export const PASSIVE_SOURCES: ReadonlySet<string> = new Set([
 	EndpointSource.SEED,
 	EndpointSource.RESPONSE_MINING,
@@ -265,7 +259,6 @@ export const INTEREST_HELP: Record<string, string> = {
 	infra: 'A management or infrastructure service mounted on the web root.'
 };
 
-// mirrors shared/definitions/endpoints.py WHY_INTERESTS
 export const WHY_INTERESTS: readonly string[] = [
 	'vcs',
 	'secrets',
@@ -286,7 +279,6 @@ export const WHY_INTERESTS: readonly string[] = [
 	'debug'
 ];
 
-// how a reason is toned: an exposed file or an injection sink reads as destructive, a boundary as warning, an API as info
 export const INTEREST_TONE: Record<string, 'destructive' | 'warning' | 'info'> = {
 	vcs: 'destructive',
 	secrets: 'destructive',
@@ -300,7 +292,6 @@ export const INTEREST_TONE: Record<string, 'destructive' | 'warning' | 'info'> =
 	api_doc: 'info'
 };
 
-// the interests that describe an exposed file rather than an input to test
 export const SENSITIVE_INTEREST: ReadonlySet<string> = new Set(['vcs', 'secrets', 'backup']);
 
 export const STATUS_CLASS_LABELS: Record<string, string> = {

@@ -1,5 +1,3 @@
-"""A stage that already finished must never be dispatched a second time."""
-
 from __future__ import annotations
 
 import pytest
@@ -51,7 +49,6 @@ async def test_a_finished_stage_is_recognised(estate, now, status):
 
 @pytest.mark.parametrize("status", RERUNNABLE)
 async def test_an_unfinished_stage_may_run(estate, now, status):
-    """A killed worker leaves RUNNING, and a failure must stay retryable."""
     await estate.scan("example.com", "run", at=now)
     await _activity(estate, "run", "http_probe", status)
 
@@ -59,7 +56,6 @@ async def test_an_unfinished_stage_may_run(estate, now, status):
 
 
 async def test_another_scan_of_the_same_target_is_unaffected(estate, now):
-    """The guard is per scan; a rescan runs every stage again."""
     await estate.scan("example.com", "first", at=now)
     await estate.scan("example.com", "second", at=now)
     await _activity(estate, "first", "http_probe", ScanActivityStatus.SUCCESS.value)

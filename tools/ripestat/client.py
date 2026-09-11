@@ -23,7 +23,7 @@ class RIPEStatRateLimitError(RIPEStatAPIError):
 
 
 class RIPEStatInvalidResourceError(RIPEStatAPIError):
-    """RIPEstat refused the resource, so the caller asked about something it cannot answer."""
+    """RIPEstat refused the resource."""
 
 
 class RIPEStatClient:

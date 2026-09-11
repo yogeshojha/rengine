@@ -18,7 +18,6 @@ from stages.ip_enrichment.config import IpEnrichmentConfig
 
 logger = get_logger(__name__)
 
-# http probing is the authority on CDN; fold it back so ip_addresses is the full record
 _ADOPT_CDN_SQL = """
 UPDATE ip_addresses a
 SET is_cdn = true, cdn_name = coalesce(a.cdn_name, h.cdn_name)
@@ -71,8 +70,6 @@ class IpEnrichmentStage(Stage):
     role = StageRole.SUPPORT.value
     applies_to = ALL_TARGETS
     touches_target = False
-    # not a choice: it sends nothing, calls nothing, costs a tenth of a second, and every
-    # address surface reads what it writes. Shown in the catalog so it is not a secret, locked on.
     always_on = True
     config_model = IpEnrichmentConfig
 
@@ -116,7 +113,7 @@ class IpEnrichmentStage(Stage):
         sync_ranges(self.session)
 
     def _enrich(self) -> int:
-        """Most addresses were enriched as they were written; this catches the late ones."""
+        """Most addresses were enriched as they were written."""
         enrich_addresses(self.session, scan_id=self.ctx.scan_id)
         self._apply_target_context()
         return int(

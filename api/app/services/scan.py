@@ -268,7 +268,7 @@ class ScanService:
     async def _launch_target(
         self, data: ScanCreate, project_id: UUID, created_by: UUID | None
     ) -> Target:
-        """The saved target, created from `target_value` when launching; transient when previewing."""
+        """The saved target, created from `target_value` when launching."""
         if data.target_id is not None:
             return await self._get_target(data.target_id, project_id)
         value = (data.target_value or "").strip()
@@ -576,8 +576,6 @@ class ScanService:
 
         expr = self._sort_expr(sort_by)
         ordering = expr.asc() if sort_dir == "asc" else expr.desc()
-        # Only `duration` can be NULL (un-started scans); nulls-last on the others
-        # would break the ix_scans_*_started index match (default DESC is nulls-first).
         if sort_by == "duration":
             ordering = nullslast(ordering)
         return query.order_by(ordering, Scan.created_at.desc())

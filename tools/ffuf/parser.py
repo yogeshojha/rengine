@@ -6,7 +6,7 @@ _MAX_URL = 2000
 
 
 def parse_ffuf_record(record: dict[str, Any]) -> dict[str, Any] | None:
-    """One ffuf NDJSON hit. `input.FUZZ` is base64 in this mode, so `url` is the word."""
+    """One ffuf NDJSON hit."""
     url = record.get("url")
     status = record.get("status")
     if not isinstance(url, str) or not url or len(url) > _MAX_URL:

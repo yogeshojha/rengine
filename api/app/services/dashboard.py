@@ -34,8 +34,6 @@ _STALE_DAYS = 30
 _DOMAIN_TYPES = (TargetType.DOMAIN, TargetType.URL)
 
 
-# Only flag the absence of an effective sender policy; ~all/-all express a real
-# policy (and ~all is usually DMARC-backed, which we can't see) so they're not flagged.
 def _spf_reason(spf: str | None) -> str | None:
     if spf is None:
         return "No SPF record (mail configured)"

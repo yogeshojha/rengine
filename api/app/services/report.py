@@ -192,7 +192,7 @@ class ReportService:
         return out
 
     async def sync_themes(self) -> None:
-        """Shipped themes are indexed on read so the picker never starts empty."""
+        """Shipped themes are indexed on read."""
         changed = False
         for slug, tokens in builtin_themes().items():
             source = builtin_source(slug)
@@ -975,15 +975,11 @@ class ReportService:
         )
 
 
-# a table section prints roughly this many rows on a page
 _ROWS_PER_PAGE = 42
-# a weakness, with and without its request and response
 _PAGES_PER_ISSUE = 0.9
 _PAGES_PER_ISSUE_EVIDENCE = 1.8
-# a rolled-up observation costs a table row rather than an entry
 _ROLLED_PER_PAGE = 26
 _QUIET_SEVERITIES = frozenset({Severity.INFO.value, Severity.UNKNOWN.value})
-# a chapter that runs on reclaims most of the page its predecessor left unfilled
 _PAGE_SAVED_PER_RUN_ON = 0.4
 _PAGE_TAIL_PER_CHAPTER = 0.3
 
@@ -1021,7 +1017,6 @@ def _pages(
             counts = by_severity or {}
             shown = min(issues, int(config.get("max_issues", 60)))
             scale = shown / issues if issues else 0.0
-            # each tier costs a different amount: a table row, a short entry, a full write-up
             quiet = (
                 sum(counts.get(s, 0) for s in _QUIET_SEVERITIES)
                 if config.get("roll_up_info", True)
@@ -1051,7 +1046,6 @@ def _pages(
         else:
             total += 1
     tails = max(0, len(sections) - 2)
-    # a chapter that starts its own page leaves part of the previous one unfilled
     total += (
         _PAGE_TAIL_PER_CHAPTER if chapter_breaks else -_PAGE_SAVED_PER_RUN_ON
     ) * tails
@@ -1059,7 +1053,7 @@ def _pages(
 
 
 def _fill_empty(branding: ReportBranding, defaults: ReportBranding) -> ReportBranding:
-    """Instance defaults fill what a template left blank; they never overwrite a choice."""
+    """Instance defaults fill what a template left blank."""
     merged = branding.model_dump()
     for key, fallback in defaults.model_dump().items():
         if not merged.get(key) and fallback:

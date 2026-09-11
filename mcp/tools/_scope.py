@@ -1,9 +1,4 @@
-"""Shared resolution: a name an agent typed becomes the scans that answer for it.
-
-Every result endpoint in reNgine is scan-scoped, and picking the newest scan is
-wrong — a run that enumerated names but never probed reports zero live hosts.
-`Scope` resolves each dimension to the scan that actually covered it.
-"""
+"""Shared resolution: a name an agent typed becomes the scans that answer for it."""
 
 from __future__ import annotations
 

@@ -585,7 +585,6 @@ class TargetService:
     async def delete_target(self, target_id: str, user_id: str) -> None:
         target = await self._get_target_or_404(target_id)
 
-        # scans cascade with the target — a live one would keep probing a deleted asset
         running = (
             await self.session.execute(
                 select(func.count())

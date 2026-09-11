@@ -1,4 +1,4 @@
-"""Deep links back into the UI. A tool's number is only a promise if it opens."""
+"""Deep links back into the UI."""
 
 from __future__ import annotations
 

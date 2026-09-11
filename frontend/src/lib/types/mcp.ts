@@ -133,7 +133,6 @@ export interface McpSettingsUpdate {
 	ceiling?: Record<string, boolean>;
 }
 
-// running is info, never success — success is reserved for a finished scan
 export const MCP_STATE_DOT: Record<'running' | 'stopped' | 'idle', string> = {
 	running: 'bg-info',
 	idle: 'bg-info/40',

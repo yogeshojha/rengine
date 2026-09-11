@@ -5,8 +5,6 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
 
-# each prefork child inherits this engine and is single-threaded, so the pool is
-# sized per child: concurrency x (pool_size + max_overflow) shares max_connections
 engine = create_engine(
     settings.database_url,
     echo=settings.DEBUG,

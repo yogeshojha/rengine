@@ -5,7 +5,6 @@ import type { Connector, ConnectorSpec } from '$lib/types/connector';
 export const GUIDE_WIDTH = 'w-5';
 export const OUTLINE_ROW_ATTR = 'data-outline-row';
 export const LEAF_PAGE = 25;
-// a search opens branches only while the result still fits on one screen
 export const AUTO_OPEN_ROWS = 40;
 
 export interface Crumb {

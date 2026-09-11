@@ -343,7 +343,6 @@
 		if (!ready) return;
 		try {
 			facets = await vulnerabilitiesApi.facets(projectId, scanId);
-			// only a successful response may restate the tab count; a failed one is not zero
 			onScanTotal?.(facets.severity.reduce((n, f) => n + f.count, 0));
 		} catch {
 			facets = EMPTY_VULN_FACETS;
@@ -703,7 +702,6 @@
 		untrack(() => rechecks.load(scanId, projectId));
 	});
 
-	// re-verify exactly the checks that produced the selected findings
 	async function rescanSelection() {
 		if (rescanBusy) return;
 		const picked = isIssues

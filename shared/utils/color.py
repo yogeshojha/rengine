@@ -1,4 +1,4 @@
-"""sRGB ↔ OKLCH, so a theme names one colour and the document derives the rest."""
+"""sRGB ↔ OKLCH."""
 
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ def from_oklch(lightness: float, chroma: float, hue: float) -> str:
 
 
 def restate(value: str, lightness: float, chroma: float, fallback: str = "") -> str:
-    """The same hue at a stated lightness and chroma. Chroma is a fraction of the source's."""
+    """The same hue at a stated lightness and chroma."""
     parsed = to_oklch(value)
     if parsed is None:
         return fallback or value
@@ -99,7 +99,7 @@ def ink(value: str, lightness: float = 0.44) -> str:
 
 
 def mix(value: str, other: str, amount: float) -> str:
-    """Blend two colours in linear light. `amount` is how much of `other`."""
+    """Blend two colours in linear light."""
     first, second = parse_hex(value), parse_hex(other)
     if first is None or second is None:
         return value

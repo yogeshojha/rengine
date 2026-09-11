@@ -4,8 +4,6 @@ from typing import Any
 
 import yaml
 
-# The largest document reNgine ships is a 24k-node nuclei template; this leaves headroom
-# while stopping a payload whose aliases expand to tens of millions of nodes.
 MAX_DOCUMENT_NODES = 100_000
 
 
@@ -33,12 +31,7 @@ def document_size(data: Any, *, limit: int = MAX_DOCUMENT_NODES) -> int:
 
 
 def load_document(text: str, *, limit: int = MAX_DOCUMENT_NODES) -> Any:
-    """safe_load plus an expanded-size budget.
-
-    PyYAML shares an aliased node rather than copying it, so parsing a billion-laughs
-    payload is fast and small — the cost lands on whatever walks the result as a tree,
-    which for us is pydantic. Measure the walk here, once, before handing it on.
-    """
+    """safe_load plus an expanded-size budget."""
     data = yaml.safe_load(text)
     document_size(data, limit=limit)
     return data

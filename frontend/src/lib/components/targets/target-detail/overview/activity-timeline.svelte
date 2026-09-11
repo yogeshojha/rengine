@@ -50,7 +50,6 @@
 
 	const started = (s: ScanRead) => new Date(s.started_at ?? s.created_at).getTime();
 
-	// focused rescans hang off the run that seeded them, never on the rail of their own
 	let runs = $derived.by(() => {
 		const sorted = [...history].sort((a, b) => started(b) - started(a));
 		const census = sorted.filter((s) => s.scope !== 'focused').slice(0, SHOWN);
@@ -104,7 +103,6 @@
 	let enrichment = $derived.by(() => {
 		const parts: string[] = [];
 		const t = target.target_type;
-		// a lookup that cannot apply is not pending: the rail says why, so it is left out
 		const state = (st: TaskStatus) =>
 			st === TaskStatus.NOT_APPLICABLE || st === TaskStatus.SKIPPED
 				? ''

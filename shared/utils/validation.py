@@ -21,7 +21,7 @@ def clean_name(v: str, *, max_len: int = MAX_NAME_LEN) -> str:
 
 
 def clean_optional_name(v: str | None, *, max_len: int = MAX_NAME_LEN) -> str | None:
-    """An update that omits the name leaves it alone; one that sends it must send a real one."""
+    """An update that omits the name leaves it alone."""
     return None if v is None else clean_name(v, max_len=max_len)
 
 
@@ -55,7 +55,6 @@ _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*://")
 
 
 def validate_url(value: str) -> bool:
-    # reNgine scans over HTTP; another scheme is not a target it can do anything with
     return value.lower().startswith(WEB_SCHEMES) and validators.url(value) is True
 
 
@@ -64,9 +63,7 @@ def normalize_target_value(value: str) -> str:
     v = (value or "").strip()
     if not v or _SCHEME.match(v):
         return v
-    # a scope list writes *.example.com for a domain and everything under it
     v = v.removeprefix("*.")
-    # a pasted hostname often carries a trailing slash or the root dot
     return v.rstrip("/").rstrip(".")
 
 

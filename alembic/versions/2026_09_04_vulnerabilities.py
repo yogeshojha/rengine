@@ -199,9 +199,7 @@ def upgrade() -> None:
         _json("template_sets"),
         sa.Column("templates_selected", sa.Integer(), nullable=True),
         sa.Column("templates_loaded", sa.Integer(), nullable=True),
-        sa.Column(
-            "custom_templates", sa.Integer(), nullable=False, server_default="0"
-        ),
+        sa.Column("custom_templates", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("hosts_total", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("hosts_scanned", sa.Integer(), nullable=True),
         _json("hosts_dropped"),
@@ -253,7 +251,9 @@ def upgrade() -> None:
             nullable=False,
             server_default=Protocol.OTHER.value,
         ),
-        sa.Column("directory", sa.String(length=200), nullable=False, server_default=""),
+        sa.Column(
+            "directory", sa.String(length=200), nullable=False, server_default=""
+        ),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("remediation", sa.Text(), nullable=True),
         _json("tags"),

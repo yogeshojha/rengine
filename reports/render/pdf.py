@@ -1,4 +1,4 @@
-"""WeasyPrint is imported here and nowhere else, so the api can read the catalog without it."""
+"""WeasyPrint is imported here and nowhere else."""
 
 from __future__ import annotations
 
@@ -17,12 +17,11 @@ class PdfResult:
     warnings: list[str] = field(default_factory=list)
 
 
-# a warning about an embedded image must not repeat the whole image
 _DATA_URI = re.compile(r"data:([\w./+-]+);base64,[A-Za-z0-9+/=]+")
 
 
 class _Collector(logging.Handler):
-    """WeasyPrint reports a dropped image or a missing face here; a report should say so."""
+    """WeasyPrint reports a dropped image or a missing face here."""
 
     def __init__(self) -> None:
         super().__init__(level=logging.WARNING)
@@ -40,7 +39,7 @@ class _Collector(logging.Handler):
 
 @contextmanager
 def render_limits():
-    """A small image may decode to a huge canvas, so the ceiling is on pixels, not bytes."""
+    """A small image may decode to a huge canvas."""
     from PIL import Image  # noqa: PLC0415
 
     previous = Image.MAX_IMAGE_PIXELS

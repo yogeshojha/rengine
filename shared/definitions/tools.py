@@ -6,7 +6,7 @@ MAX_TOOL_OPTION_LEN = 1000
 
 
 def parse_tool_args(raw: str) -> list[str]:
-    """shlex-split custom tool args for execution; [] on parse error (validated on save)."""
+    """shlex-split custom tool args for execution."""
     if not raw:
         return []
     try:
@@ -22,7 +22,6 @@ class ToolSpec(BaseModel):
     example: str
 
 
-# CLI tools that accept custom args today (HTTP-only providers + scaffolds excluded).
 SCAN_TOOLS: tuple[ToolSpec, ...] = (
     ToolSpec(
         name="subfinder",

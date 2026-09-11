@@ -55,11 +55,7 @@ def covering_stages() -> dict[str, frozenset[str]]:
 async def baselined_targets(
     session: AsyncSession, model, scope: QueryScope
 ) -> set[UUID]:
-    """The scope's targets an earlier scan already recorded this dimension for.
-
-    A project view spans targets on their first scan and targets with years of history,
-    so "new" has to be asked per target or a first scan marks everything new.
-    """
+    """The scope's targets an earlier scan already recorded this dimension for."""
     if not scope.ids:
         return set()
     earlier = aliased(model)
@@ -91,7 +87,6 @@ def _started():
 class SurfaceScopeService:
     def __init__(self, session: AsyncSession):
         self.session = session
-        # one instance per request, so these answer the same question every time
         self._picked: dict[tuple[UUID, str], list] = {}
         self._targets_by_project: dict[UUID, dict[UUID, Target]] = {}
 
@@ -142,7 +137,6 @@ class SurfaceScopeService:
         if not scope:
             return 0, False
         if dimension == SurfaceDimension.IPS.value:
-            # one row per address, so the count has to come from the table's own query
             from app.services.ip_address import IpAddressService  # noqa: PLC0415
 
             derived = IpAddressService._derived(scope)
@@ -235,7 +229,7 @@ class SurfaceScopeService:
         return out
 
     async def _exposures(self, project_id: UUID) -> int:
-        """Assets flagged for what they are; a judgement over web assets, not a dimension."""
+        """Assets flagged for what they are."""
         scope = await self.scope(project_id, SurfaceDimension.WEB_ASSETS.value)
         if not scope:
             return 0

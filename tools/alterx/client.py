@@ -38,12 +38,11 @@ class AlterxClient:
             raise AlterxError(str(e)) from e
 
     def permute(self, names: list[str]) -> list[str]:
-        """Candidate hostnames built from the seeds. Generates, never resolves."""
+        """Candidate hostnames built from the seeds."""
         if not names:
             return []
         args = ["-limit", str(self.limit)]
         if self.enrich:
-            # words mined from the seeds themselves, which is what beats a blind list
             args.append("-enrich")
         for pattern in self.patterns:
             args += ["-p", pattern]
@@ -51,7 +50,6 @@ class AlterxClient:
         result = self._runner.run(
             args=args,
             input_data=names,
-            # alterx reads its seeds from stdin; -l with a file path yields "no input found"
             use_stdin=True,
             use_output_file=False,
             output_format=OutputFormat.PLAIN,

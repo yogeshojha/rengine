@@ -43,7 +43,6 @@ class CrtNameProvider(SubdomainProvider):
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", errors="replace").strip()
             hint = _APEX_HINT_RE.search(detail)
-            # the endpoint only accepts an eTLD+1 but names it when it rejects a subdomain
             if e.code == _BAD_APEX and retry_apex and hint and hint.group(1) != apex:
                 return self._fetch(hint.group(1), retry_apex=False)
             message = f"crt.name {e.code}: {detail[:200]}"

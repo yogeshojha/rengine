@@ -16,7 +16,6 @@ MAX_LOGO_BYTES = 512_000
 MAX_REPORT_ROWS = 5_000
 MAX_EVIDENCE_CHARS = 4_000
 MAX_SCREENSHOTS = 60
-# a 500 KB PNG can still decode to a 64M pixel canvas, so the ceiling is on pixels, not bytes
 MAX_IMAGE_PIXELS = 30_000_000
 REPORT_ROOT = "/app/reports-out"
 RETENTION_DAYS = 90
@@ -113,7 +112,7 @@ SECTION_GROUP_LABELS: dict[str, str] = {
 
 
 class SectionRole(StrEnum):
-    """Content is what a reader asked for; furniture is the document around it."""
+    """Content is what a reader asked for."""
 
     CONTENT = "content"
     FURNITURE = "furniture"
@@ -172,7 +171,6 @@ PAGE_SIZE_CSS: dict[str, str] = {
     PageSize.LEGAL.value: "Legal",
 }
 
-# printable width in mm, used to size charts and decide table column budgets
 PAGE_WIDTH_MM: dict[str, float] = {
     PageSize.A4.value: 210.0,
     PageSize.LETTER.value: 215.9,
@@ -230,7 +228,6 @@ class FontFamily:
     note: str = ""
 
 
-# families vendored under reports/assets/fonts; the stack is what the CSS asks for
 FONT_FAMILIES: tuple[FontFamily, ...] = (
     FontFamily("inter", "Inter", "Inter", "sans", "Neutral UI sans."),
     FontFamily(
@@ -289,7 +286,6 @@ DEFAULT_FOOTER_RIGHT = "{page} / {pages}"
 
 DEFAULT_THEME = "midnight"
 
-# an uploaded image is embedded, never referenced, so the renderer can never be made to fetch
 ALLOWED_IMAGE_TYPES: frozenset[str] = frozenset(
     {"image/png", "image/jpeg", "image/svg+xml", "image/webp", "image/gif"}
 )
@@ -297,7 +293,7 @@ _DATA_IMAGE = re.compile(r"^data:(image/[a-z0-9.+-]+);base64,[A-Za-z0-9+/=\s]+$"
 
 
 def validate_embedded_image(value: str, field: str) -> str:
-    """An image must be embedded data of a known type. A URL is refused, not fetched."""
+    """An image must be embedded data of a known type."""
     text = (value or "").strip()
     if not text:
         return ""
@@ -317,9 +313,6 @@ def validate_embedded_image(value: str, field: str) -> str:
     return text
 
 
-# Severity is a reserved ramp, not a theme decision: it means the same thing in every
-# document. Lightness carries the rank so it survives deuteranopia, and each level is
-# always printed beside its own label. Validated all-pairs on white paper.
 DEFAULT_SEVERITY_COLORS: dict[str, str] = {
     "critical": "#d02f43",
     "high": "#f07c21",
@@ -339,7 +332,6 @@ DARK_SEVERITY_COLORS: dict[str, str] = {
     "unknown": "#858f9a",
 }
 
-# a categorical scale that clears the CVD and contrast gates on both papers
 DEFAULT_CHART_PALETTE: tuple[str, ...] = (
     "#2a78d6",
     "#eb6834",
@@ -357,7 +349,7 @@ DARK_CHART_PALETTE: tuple[str, ...] = (
 
 
 class ReportStyle(BaseModel):
-    """Everything about how the document looks. Empty means the theme decides."""
+    """Everything about how the document looks."""
 
     model_config = ConfigDict(extra="ignore", validate_assignment=True)
 

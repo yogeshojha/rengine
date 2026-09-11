@@ -1,5 +1,3 @@
-"""An expired session must not be reported as a clean scan of login pages."""
-
 from __future__ import annotations
 
 import hashlib
@@ -63,11 +61,7 @@ def _cfg(monkeypatch):
     )
 
 
-# ── the verdicts ──
-
-
 def test_a_session_that_changes_nothing_is_reported():
-    """The two-hour scan of login pages this exists to prevent."""
     same = _answer(200, b"<html>sign in</html>")
     result = _stage([same, same]).run()
 
@@ -98,9 +92,6 @@ def test_a_different_body_at_the_same_status_is_a_working_session():
     assert result.partial is False
 
 
-# ── what it must never claim ──
-
-
 def test_a_target_that_does_not_answer_is_not_a_pass():
     result = _stage([None, None, None, None]).run()
 
@@ -109,7 +100,6 @@ def test_a_target_that_does_not_answer_is_not_a_pass():
 
 
 def test_one_request_failing_decides_nothing():
-    """A control that did not answer cannot prove the credentials are ignored."""
     result = _stage([_answer(200), None, None, None]).run()
 
     assert result.partial is True
@@ -126,12 +116,8 @@ def test_a_target_with_no_url_says_so_rather_than_passing():
 
 
 def test_the_second_scheme_is_tried_before_giving_up():
-    """https goes unanswered, so http is asked rather than the check giving up."""
     result = _stage([None, _answer(200, b"a"), _answer(200, b"b")]).run()
     assert result.partial is False
-
-
-# ── when it runs at all ──
 
 
 def test_it_does_not_run_without_credentials():
@@ -144,13 +130,11 @@ def test_it_runs_when_the_context_carries_credentials():
 
 
 def test_an_extra_header_is_not_a_credential():
-    """Only the auth config's own headers are stripped for the control request."""
     stage = _stage([], headers={"X-Scan": "rengine"}, auth_names=[])
     assert stage.should_run() is False
 
 
 def test_the_control_request_is_actually_sent_without_the_credentials():
-    """The line this whole stage rests on: keep them and every session looks dead."""
     stage = _stage(
         [_answer(200, b"app"), _answer(200, b"login")],
         headers={"Authorization": "Bearer t", "X-Scan": "rengine"},
@@ -182,11 +166,7 @@ def test_the_control_request_drops_exactly_the_credentials():
     assert resolved.headers_without_auth() == {"X-Scan": "rengine"}
 
 
-# ── where it sits ──
-
-
 def test_it_runs_before_anything_expensive():
-    """Firing the canary at the end is firing it after the scan it was to save."""
     plan = execution_plan()
     step = next(i for i, s in enumerate(plan) if "session_check" in s)
     spend = next(i for i, s in enumerate(plan) if "url_discovery" in s)

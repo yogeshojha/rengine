@@ -1,4 +1,4 @@
-"""Every connector under connectors/, discovered by module. No registry edit."""
+"""Every connector under connectors/, discovered by module."""
 
 from __future__ import annotations
 

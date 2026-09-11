@@ -20,7 +20,6 @@ TEMPLATES = Path(__file__).resolve().parent.parent / "templates"
 
 _TOKEN_RE = re.compile("(" + "|".join(re.escape(t) for t in SLOT_TOKEN_VALUES) + ")")
 
-# how much air sits between a running head and the text block
 RUNNING_CLEAR = 8.0
 
 _COUNTER_SLOTS = {
@@ -77,8 +76,6 @@ def page_css(style: ReportStyle, values: dict[str, str]) -> str:
         ("bottom-center", style.footer_center if style.show_footer else ""),
         ("bottom-right", style.footer_right if style.show_footer else ""),
     )
-    # A running head belongs against the text block, not against the paper's edge: the
-    # top boxes sit on the bottom of their margin, the bottom boxes on the top of theirs.
     for box, template in slots:
         content = slot_content(template, values)
         if content == "none":

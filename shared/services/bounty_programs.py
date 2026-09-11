@@ -1,8 +1,4 @@
-"""HackerOne programs and their structured scopes: fetch, store, and resolve to targets.
-
-Measured limits are 600 reads/minute, so the pacer only has to survive a burst; the
-client backs off on 429 and never touches a write endpoint.
-"""
+"""HackerOne programs and their structured scopes: fetch, store, and resolve to targets."""
 
 from __future__ import annotations
 
@@ -53,19 +49,16 @@ HTTP_UNAUTHORIZED = 401
 RETRY_AFTER_DEFAULT = 5
 MAX_RETRIES = 3
 MAX_INSTRUCTION = 4000
-# a truncated URL is a broken link, so an absurd one is dropped instead
 MAX_PICTURE_URL = 4000
 
 
-# two syncs deleting the same scope rows block each other badly: a no-change
-# yeswehack pass measured 0.5s alone and 120.5s against a concurrent run
 SYNC_LOCK_KEY = 0x624F0001
 FEED_LOCK_KEY = 0x624F0002
 
 
 @contextmanager
 def sync_lock(session: Session, key: int) -> Iterator[bool]:
-    """Session-level advisory lock, so it survives the per-program commits."""
+    """Session-level advisory lock."""
     held = bool(
         session.execute(
             text("SELECT pg_try_advisory_lock(:key)"), {"key": key}
@@ -75,8 +68,6 @@ def sync_lock(session: Session, key: int) -> Iterator[bool]:
         yield held
     finally:
         if held:
-            # the body may have poisoned the transaction; unlocking on a pooled
-            # connection matters more than the failed work
             session.rollback()
             session.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": key})
             session.commit()
@@ -293,7 +284,7 @@ def _program_changes(current: BountyProgram, row: dict) -> list[str]:
 
 
 def sync_programs(session: Session, auth: tuple[str, str]) -> dict[str, int]:
-    """Refresh the program list; scopes are fetched per program on demand."""
+    """Refresh the program list."""
     started = time.monotonic()
     entries = fetch_programs(auth)
     existing = {
@@ -304,7 +295,6 @@ def sync_programs(session: Session, auth: tuple[str, str]) -> dict[str, int]:
             )
         ).scalars()
     }
-    # a first library sync is a baseline, not 630 new programs
     baseline = bool(existing)
     created = updated = 0
     seen: set[str] = set()
@@ -393,7 +383,6 @@ def sync_scopes(session: Session, program: BountyProgram, auth: tuple[str, str])
     for row in rows:
         deduped[(row["asset_type"], row["asset_identifier"])] = row
 
-    # a program read for the first time is a baseline, not a scope change
     before: dict[tuple[str, str], str] = {}
     if program.scopes_synced_at is not None:
         before = {
@@ -404,7 +393,6 @@ def sync_scopes(session: Session, program: BountyProgram, auth: tuple[str, str])
         }
         session.add_all(_scope_changes(program, before, deduped))
 
-    # a program restates its whole scope, so the set is replaced not merged
     session.execute(delete(BountyScope).where(BountyScope.program_id == program.id))
     session.add_all([BountyScope(**row) for row in deduped.values()])
     program.scopes_synced_at = utc_now()
@@ -424,7 +412,7 @@ def sync_settings(session: Session) -> tuple[str, datetime | None]:
 
 
 def sync_due(session: Session) -> bool:
-    """Whether the schedule says to sync now. A manual refresh never asks."""
+    """Whether the schedule says to sync now."""
     interval, last = sync_settings(session)
     hours = SYNC_INTERVAL_HOURS.get(interval)
     if hours is None:

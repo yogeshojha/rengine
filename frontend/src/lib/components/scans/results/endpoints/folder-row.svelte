@@ -90,7 +90,6 @@
 			? 'text-muted-foreground/70'
 			: (FOLDER_GLYPH_TONE[glyph] ?? 'text-muted-foreground')
 	);
-	// one reason per row: the most serious thing inside it, never a list
 	let reason = $derived(whyReasons(node.interest, 1)[0] ?? '');
 	let verifiedMix = $derived(
 		Object.fromEntries(Object.entries(node.status_mix).filter(([k]) => k !== 'none'))

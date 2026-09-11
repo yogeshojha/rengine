@@ -53,7 +53,7 @@ class ToolResult(BaseModel):
 
 @dataclass
 class StreamOutcome:
-    """How a stream_json run ended; populated once the caller's block exits."""
+    """How a stream_json run ended."""
 
     records: Iterator[dict]
     return_code: int = -1

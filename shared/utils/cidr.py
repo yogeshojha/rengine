@@ -10,7 +10,7 @@ DEFAULT_MAX_HOSTS = 4096
 
 
 def parse_network(cidr: str) -> IPNetwork | None:
-    """Parse a CIDR (or bare IP) into a network, host bits zeroed; None if invalid."""
+    """Parse a CIDR (or bare IP) into a network, host bits zeroed."""
     try:
         return ipaddress.ip_network(cidr.strip(), strict=False)
     except ValueError:
@@ -30,7 +30,7 @@ def expand_network(
     max_hosts: int = DEFAULT_MAX_HOSTS,
     skip_private: bool = False,
 ) -> tuple[list[str], bool]:
-    """Expand a CIDR to host IPs, capped at max_hosts by even-stride sampling; returns (ips, truncated)."""
+    """Expand a CIDR to host IPs, capped at max_hosts by even-stride sampling."""
     net = parse_network(cidr)
     if net is None:
         return [], False

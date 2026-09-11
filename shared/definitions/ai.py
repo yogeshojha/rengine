@@ -1,4 +1,4 @@
-"""What AI is allowed to do here, which models do it, and what it costs."""
+"""What AI is allowed to do here."""
 
 from __future__ import annotations
 
@@ -36,7 +36,6 @@ AI_TASK_LABELS: dict[str, str] = {
     AITask.RULE_SUGGESTION.value: "Rule suggestions",
 }
 
-# tasks that run once per report against the brief, versus once per distinct check
 REPORT_TASKS: tuple[str, ...] = (
     AITask.EXECUTIVE_SUMMARY.value,
     AITask.RISK_NARRATIVE.value,
@@ -45,7 +44,6 @@ REPORT_TASKS: tuple[str, ...] = (
     AITask.ATTACK_PATH.value,
 )
 
-# an explainer depends only on the check, so it is cached across every report and target
 GLOBAL_CACHE_TASKS: tuple[str, ...] = (
     AITask.ISSUE_EXPLAINER.value,
     AITask.ASSET_JUDGEMENT.value,
@@ -94,7 +92,6 @@ class ModelSpec:
     note: str = ""
 
 
-# priced models are Anthropic's published rates; other providers are listed without a price
 MODELS: tuple[ModelSpec, ...] = (
     ModelSpec(
         "claude-opus-5",
@@ -154,7 +151,6 @@ DEFAULT_MODEL: dict[str, str] = {
     AIProvider.GOOGLE.value: "gemini-1.5-flash",
 }
 
-# the cheap tier used for per-check explainers, which are cached forever once written
 FAST_MODEL: dict[str, str] = {
     AIProvider.ANTHROPIC.value: "claude-haiku-4-5",
     AIProvider.OPENAI.value: "gpt-4o-mini",
@@ -185,7 +181,6 @@ class AIFeature:
     default: bool = False
 
 
-# what the instance allows AI to be used for; a report still opts in per run
 AI_FEATURES: tuple[AIFeature, ...] = (
     AIFeature(
         "report_narrative",

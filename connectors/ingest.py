@@ -1,4 +1,4 @@
-"""Fold a batch of proxy traffic into request shapes. Parsing only, no database."""
+"""Fold a batch of proxy traffic into request shapes."""
 
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ from shared.definitions.endpoints import (
 )
 from shared.utils.text import strip_control
 
-# a browser fetches far more assets than surface; scripts and stylesheets are the bulk of it
 NOISE_CLASSES = STATIC_CLASSES | {EndpointClass.SCRIPT.value, EndpointClass.STYLE.value}
 
 
@@ -61,7 +60,6 @@ class Batch:
     seen: int = 0
     rejected: int = 0
     hosts: set[str] = field(default_factory=set)
-    # every host in the batch, including ones whose only requests were assets
     hosts_seen: dict[str, int] = field(default_factory=dict)
 
 

@@ -1,4 +1,4 @@
-"""Providers are discovered from disk. Adding one is a directory, never a registry edit."""
+"""Providers are discovered from disk."""
 
 from __future__ import annotations
 

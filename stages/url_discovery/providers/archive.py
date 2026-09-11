@@ -7,7 +7,7 @@ from tools.urlfinder.client import UrlfinderClient, UrlfinderError
 
 
 class ArchiveProvider(UrlProvider):
-    """URLs public archives recorded for this domain. Never contacts the target."""
+    """URLs public archives recorded for this domain."""
 
     source = EndpointSource.ARCHIVE.value
     tool = "urlfinder"
@@ -46,7 +46,6 @@ class ArchiveProvider(UrlProvider):
                 if url in seen:
                     continue
                 seen.add(url)
-                # scope first: an out-of-scope result must not consume the budget
                 if not self.in_scope(url):
                     continue
                 if len(observations) >= cap:

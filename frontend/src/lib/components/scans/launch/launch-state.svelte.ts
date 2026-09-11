@@ -40,7 +40,6 @@ export interface RescanSeed {
 	templateIds?: string[];
 }
 
-// what asset_seed hands the pipeline, so the solver never implies a discovery stage
 const SEED_KINDS: Record<string, readonly string[]> = {
 	host: ['hosts', 'addresses'],
 	address: ['addresses']
@@ -165,7 +164,6 @@ export class LaunchState {
 		this.patch = next;
 	}
 
-	// a remembered selection is applied over a cleared board so stage defaults never leak back in
 	private capabilityPatch(patch: StageOverrides): StageOverrides {
 		const next: StageOverrides = {};
 		for (const stage of this.catalog?.stages ?? []) {

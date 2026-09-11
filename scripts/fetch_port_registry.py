@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate shared/definitions/data/port_registry.json from the IANA port registry.
-
-The registry is public domain and slow-moving, so the generated file is committed
-rather than fetched at build time. Run this when IANA publishes an update:
-
-    python3 scripts/fetch_port_registry.py
-
-IANA is the fallback vocabulary only. shared/definitions/ports.py:WELL_KNOWN stays
-authoritative, because IANA still calls 9200 "wap-wsp" and 5601 "esmagent" while the
-internet uses those ports for Elasticsearch and Kibana.
-"""
+"""Regenerate shared/definitions/data/port_registry.json from the IANA port registry."""
 
 from __future__ import annotations
 
@@ -33,8 +23,6 @@ MAX_DESCRIPTION = 120
 UNASSIGNED = {"", "reserved", "unassigned", "de-registered", "deregistered"}
 
 _ALNUM = re.compile(r"[^a-z0-9]")
-# IANA appends its own registration housekeeping to 94 descriptions; it says nothing
-# about the service
 _HOUSEKEEPING = re.compile(
     r"\s*IANA assigned this well-formed service name as a replacement for.*$", re.I
 )
@@ -58,7 +46,6 @@ def build(raw: str) -> dict[str, list[str]]:
             continue
         if description.lower() in UNASSIGNED or len(description) > MAX_DESCRIPTION:
             continue
-        # a description that only restates the name carries nothing the UI cannot infer
         out[number] = [name] if _same(description, name) else [name, description]
     return out
 

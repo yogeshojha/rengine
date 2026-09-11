@@ -1,4 +1,4 @@
-"""A report theme is data: tokens a user can write, upload and share, never code."""
+"""A report theme is data: tokens a user can write, upload and share."""
 
 from __future__ import annotations
 

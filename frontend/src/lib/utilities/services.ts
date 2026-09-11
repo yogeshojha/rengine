@@ -262,7 +262,6 @@ export function serviceLabel(s: ServiceRead): string {
 	return s.service_name ?? `Port ${s.port}`;
 }
 
-// banners name the build, not the brand: "OpenSSH_6.6.1p1 Ubuntu-2" -> "OpenSSH"
 export function productBrand(product: string | null | undefined): string {
 	return (product ?? '').split(/[\s/_(,-]/)[0] ?? '';
 }

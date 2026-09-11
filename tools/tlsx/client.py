@@ -1,4 +1,4 @@
-"""tlsx CLI client - one handshake per host, for the certificate it presents today."""
+"""tlsx CLI client - the certificate a host presents, one handshake each."""
 
 from __future__ import annotations
 

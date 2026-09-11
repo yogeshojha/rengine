@@ -113,7 +113,7 @@ class AssetSeedStage(Stage):
         )
 
     def _carried(self, hosts: list[str]) -> dict[str, list[str]]:
-        """Resolved addresses the parent run already knew, so downstream stages are fed."""
+        """Resolved addresses the parent run already knew."""
         if not hosts:
             return {}
         parent = self.session.execute(

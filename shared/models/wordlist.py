@@ -15,7 +15,7 @@ from shared.utils.datetime import utc_now
 
 
 class Wordlist(SQLModel, table=True):
-    """One list a guessing stage can read. Shipped lists and uploads share the row shape."""
+    """One list a guessing stage can read."""
 
     __tablename__ = "wordlists"
 
@@ -25,7 +25,6 @@ class Wordlist(SQLModel, table=True):
     description: str = Field(default="", max_length=1000)
     origin: str = Field(default=WordlistOrigin.CUSTOM.value, max_length=16, index=True)
     kind: str = Field(default=WordlistKind.SUBDOMAIN.value, max_length=16, index=True)
-    # relative to the root its origin names, never an absolute path
     filename: str = Field(max_length=200)
     words: int = Field(default=0)
     bytes: int = Field(default=0)

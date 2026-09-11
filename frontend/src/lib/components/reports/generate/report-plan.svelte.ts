@@ -75,7 +75,6 @@ export class ReportPlan {
 			this.entries = next;
 			return;
 		}
-		// a section the template omitted takes the position its group implies
 		const at = this.entries.findIndex((e) => this.rank(e.section) > this.rank(name));
 		const entry: SectionEntry = { section: name, enabled: true, title: '', config: {} };
 		this.entries =

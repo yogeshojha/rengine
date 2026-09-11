@@ -1,4 +1,4 @@
-"""The model writes from the brief and nothing else. A failure falls back to the plain narrator."""
+"""The model writes from the brief and nothing else."""
 
 from __future__ import annotations
 

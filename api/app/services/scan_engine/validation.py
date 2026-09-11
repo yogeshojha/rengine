@@ -28,7 +28,7 @@ def _mask_tool_options(options: dict | None) -> dict[str, str]:
 
 
 def _unmask_tool_options(submitted: dict | None, stored: dict | None) -> dict[str, str]:
-    """Restore each masked run in place, so edits made alongside a secret survive."""
+    """Restore each masked run in place."""
     stored = stored or {}
     out: dict[str, str] = {}
     for tool, value in (submitted or {}).items():
@@ -39,8 +39,6 @@ def _unmask_tool_options(submitted: dict | None, stored: dict | None) -> dict[st
         restored = value
         for original in originals:
             restored = restored.replace(MASK, original, 1)
-        # a mask left over means the edit and the stored value disagree about the
-        # secrets; keep what is stored rather than write the mask over a credential
         out[tool] = stored[tool] if MASK in restored else restored
     return out
 
@@ -76,11 +74,10 @@ _MAX_ENGINE_THREADS = 1000
 
 
 def _validate_tool_options(options: dict | None) -> dict[str, str]:
-    """Keep only known tools; reject over-long or unparseable arg strings."""
+    """Keep only known tools."""
     clean: dict[str, str] = {}
     for tool, raw in (options or {}).items():
         if tool not in TOOL_NAMES:
-            # dropping it silently would accept the request and lose the setting
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
@@ -187,10 +184,8 @@ def _validate_stages(submitted: dict | None) -> dict[str, dict]:
         spec = known.get(name)
         raw = authored
         if spec is not None and spec.catalog_hidden:
-            # the server decides this one; a document that still names it just loses the key
             continue
         if spec is not None and spec.always_on and isinstance(raw, dict):
-            # visible in the catalog so a user knows it runs, but `enabled` is not theirs
             raw = {k: v for k, v in raw.items() if k != "enabled"}
             if not raw:
                 continue
@@ -217,7 +212,6 @@ def _validate_stages(submitted: dict | None) -> dict[str, dict]:
                 ),
             )
         try:
-            # validate against the whole model, but persist only the submitted keys
             validated = spec.config_model(**raw).model_dump()
             clean[name] = {k: validated[k] for k in raw if k in validated}
         except ValidationError as exc:
@@ -234,8 +228,6 @@ def _validate_stages(submitted: dict | None) -> dict[str, dict]:
 
 def _full_stages(stored: dict | None) -> dict[str, dict]:
     stored = stored or {}
-    # only the stages a user may author: a hidden one would be refused on import.
-    # json mode: an enum setting must come out as its value, not as the member
     return {
         spec.name: spec.config_model(**(stored.get(spec.name) or {})).model_dump(
             mode="json"

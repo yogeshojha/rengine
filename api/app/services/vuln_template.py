@@ -446,7 +446,7 @@ class VulnTemplateService:
         )
 
     async def rewrite(self, template_id: UUID, content: str) -> VulnTemplateRead | None:
-        """Replace an uploaded check in place; the path stays put so selections survive."""
+        """Replace an uploaded check in place."""
         row = await self.session.get(VulnTemplate, template_id)
         if row is None:
             return None

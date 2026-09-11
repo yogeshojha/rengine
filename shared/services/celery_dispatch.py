@@ -13,8 +13,6 @@ def get_celery_client() -> Celery:
     global _celery_client  # noqa: PLW0603
     if _celery_client is None:
         _settings = BaseAppSettings()
-        # never set_as_current: this client carries no result backend, and adopting it as
-        # the ambient app leaves every later chord in the process unable to start
         _celery_client = Celery(
             broker=_settings.celery_broker_url, set_as_current=False
         )
@@ -70,7 +68,7 @@ def dispatch_scan_run(scan_id: str) -> None:
 
 
 def revoke_scan_tasks(task_ids: list[str]) -> None:
-    """SIGKILL-revoke a scan's celery tasks so an in-flight scan stops promptly."""
+    """SIGKILL-revoke a scan's celery tasks."""
     if not task_ids:
         return
     logger.info("Revoking %d scan task(s)", len(task_ids))
@@ -83,7 +81,7 @@ def revoke_scan_tasks(task_ids: list[str]) -> None:
 
 
 def dispatch_template_sync() -> bool:
-    """Kick off a library refresh. Returns whether the queue accepted it."""
+    """Kick off a library refresh."""
     try:
         get_celery_client().send_task("app.tasks.vuln_templates.sync", queue="default")
     except Exception:
@@ -95,7 +93,7 @@ def dispatch_template_sync() -> bool:
 def dispatch_endpoint_verify(
     scan_id: str, host: str, dir_path: str | None, limit: int
 ) -> bool:
-    """Verify one branch of a scan's endpoints on demand. Returns whether the queue took it."""
+    """Verify one branch of a scan's endpoints on demand."""
     try:
         get_celery_client().send_task(
             "app.tasks.endpoints.verify_branch",
@@ -114,7 +112,7 @@ def dispatch_endpoint_verify(
 
 
 def dispatch_report(report_id: str) -> bool:
-    """Queue a report render. Returns whether the queue took it."""
+    """Queue a report render."""
     try:
         get_celery_client().send_task(
             "app.tasks.reports.generate", args=[report_id], queue="default"
@@ -137,7 +135,7 @@ def dispatch_interest_evaluation(
 
 
 def dispatch_interest_live(scan_id: str) -> None:
-    """Re-judge a running scan from its rules alone. Cheap, deterministic, no model."""
+    """Re-judge a running scan from its rules alone."""
     try:
         get_celery_client().send_task(
             "app.tasks.interest.evaluate_live",
@@ -173,7 +171,7 @@ def dispatch_threat_intel(scan_id: str, *, enrich: bool = True) -> None:
 
 
 def dispatch_threat_intel_refresh(*, force: bool = False) -> bool:
-    """Kick off a feed refresh. Returns whether the queue accepted it."""
+    """Kick off a feed refresh."""
     try:
         get_celery_client().send_task(
             "app.tasks.threat_intel.refresh", kwargs={"force": force}, queue="default"
@@ -185,7 +183,7 @@ def dispatch_threat_intel_refresh(*, force: bool = False) -> bool:
 
 
 def dispatch_bounty_sync(*, scopes: bool = True) -> bool:
-    """Refresh the bug bounty program library. Returns whether the queue accepted it."""
+    """Refresh the bug bounty program library."""
     try:
         get_celery_client().send_task(
             "app.tasks.bounty_programs.sync", kwargs={"scopes": scopes}, queue="default"
@@ -211,7 +209,7 @@ def dispatch_bounty_program_sync(handle: str, platform: str = "hackerone") -> bo
 
 
 def dispatch_bounty_feed_sync() -> bool:
-    """Refresh the public program feed. Returns whether the queue accepted it."""
+    """Refresh the public program feed."""
     try:
         get_celery_client().send_task(
             "app.tasks.bounty_programs.sync_feed", queue="default"
@@ -230,7 +228,7 @@ def dispatch_toolbox_run(
     payload: dict,
     project_id: str | None,
 ) -> bool:
-    """Hand a toolbox run to the worker. Returns whether the queue accepted it."""
+    """Hand a toolbox run to the worker."""
     from shared.definitions.constants import CRITICAL_QUEUE  # noqa: PLC0415
 
     try:

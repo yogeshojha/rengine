@@ -41,7 +41,9 @@ def upgrade() -> None:
         sa.Column("due_date", sa.Date(), nullable=True),
         sa.PrimaryKeyConstraint("cve"),
     )
-    op.create_index("ix_kev_entries_known_ransomware", "kev_entries", ["known_ransomware"])
+    op.create_index(
+        "ix_kev_entries_known_ransomware", "kev_entries", ["known_ransomware"]
+    )
     op.create_index("ix_kev_entries_date_added", "kev_entries", ["date_added"])
 
     op.create_table(
@@ -99,24 +101,52 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["scan_id"], ["scans.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("vulnerability_id", "kind", name="uq_intel_signal_vuln_kind"),
+        sa.UniqueConstraint(
+            "vulnerability_id", "kind", name="uq_intel_signal_vuln_kind"
+        ),
     )
-    op.create_index("ix_intel_signals_vulnerability_id", "intel_signals", ["vulnerability_id"])
+    op.create_index(
+        "ix_intel_signals_vulnerability_id", "intel_signals", ["vulnerability_id"]
+    )
     op.create_index("ix_intel_signals_scan_id", "intel_signals", ["scan_id"])
     op.create_index("ix_intel_signals_kind", "intel_signals", ["kind"])
 
-    op.add_column("vulnerabilities", sa.Column("exploit_score", sa.Integer(), nullable=False, server_default="0"))
-    op.add_column("vulnerabilities", sa.Column("intel_kinds", sa.JSON(), nullable=False, server_default="[]"))
     op.add_column(
         "vulnerabilities",
-        sa.Column("kev_ransomware", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column("exploit_score", sa.Integer(), nullable=False, server_default="0"),
     )
-    op.add_column("vulnerabilities", sa.Column("kev_due_date", sa.Date(), nullable=True))
-    op.add_column("vulnerabilities", sa.Column("poc_count", sa.Integer(), nullable=True))
-    op.add_column("vulnerabilities", sa.Column("template_available", sa.Boolean(), nullable=True))
-    op.add_column("vulnerabilities", sa.Column("intel_at", sa.DateTime(timezone=True), nullable=True))
-    op.create_index("ix_vulnerabilities_exploit_score", "vulnerabilities", ["exploit_score"])
-    op.create_index("ix_vulnerabilities_kev_ransomware", "vulnerabilities", ["kev_ransomware"])
+    op.add_column(
+        "vulnerabilities",
+        sa.Column("intel_kinds", sa.JSON(), nullable=False, server_default="[]"),
+    )
+    op.add_column(
+        "vulnerabilities",
+        sa.Column(
+            "kev_ransomware",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.text("false"),
+        ),
+    )
+    op.add_column(
+        "vulnerabilities", sa.Column("kev_due_date", sa.Date(), nullable=True)
+    )
+    op.add_column(
+        "vulnerabilities", sa.Column("poc_count", sa.Integer(), nullable=True)
+    )
+    op.add_column(
+        "vulnerabilities", sa.Column("template_available", sa.Boolean(), nullable=True)
+    )
+    op.add_column(
+        "vulnerabilities",
+        sa.Column("intel_at", sa.DateTime(timezone=True), nullable=True),
+    )
+    op.create_index(
+        "ix_vulnerabilities_exploit_score", "vulnerabilities", ["exploit_score"]
+    )
+    op.create_index(
+        "ix_vulnerabilities_kev_ransomware", "vulnerabilities", ["kev_ransomware"]
+    )
 
 
 def downgrade() -> None:

@@ -41,7 +41,7 @@ def passes_included(name: str, included: list[str]) -> bool:
 def merge_and_filter(
     results: Iterable[ProviderResult], domain: str, included_subdomains: list[str]
 ) -> dict[str, set[str]]:
-    """Scope to apex + included, merge sources; excluded names are kept for the caller to flag."""
+    """Scope to apex + included, merge sources."""
     included = [normalize_host(x) or x.strip().lower() for x in included_subdomains]
 
     merged: dict[str, set[str]] = {}

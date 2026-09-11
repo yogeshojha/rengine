@@ -1,11 +1,4 @@
-"""stdio transport, for an agent that launches the server itself.
-
-    docker compose exec -T api python -m mcp.stdio
-
-Reads one JSON-RPC message per line on stdin, writes one per line on stdout.
-The token comes from RENGINE_MCP_TOKEN — the same token the HTTP transport takes,
-so nothing about permissions changes with the transport.
-"""
+"""stdio transport, for an agent that launches the server itself."""
 
 from __future__ import annotations
 

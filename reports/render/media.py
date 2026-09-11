@@ -1,4 +1,4 @@
-"""Images are embedded, so a PDF and a standalone HTML file both carry their evidence."""
+"""Images are embedded."""
 
 from __future__ import annotations
 

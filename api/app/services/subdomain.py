@@ -395,7 +395,7 @@ class SubdomainService:
     async def _findings_for(
         self, scope: QueryScope, hosts: list[str]
     ) -> dict[str, tuple[int, str | None, bool]]:
-        """Worst finding per host on this page, so the asset table shows risk without a join."""
+        """Worst finding per host on this page."""
         if not hosts:
             return {}
         rank = case(
@@ -510,7 +510,6 @@ class SubdomainService:
         scope = QueryScope.of(scope)
         reach = (Subdomain.project_id == project_id, scope.match(Subdomain.scan_id))
 
-        # driven from _STATUS_BUCKETS so the facet matches `_status_pred` exactly
         status_key = case(
             (Subdomain.http_status.is_(None), "none"),
             *[
@@ -535,7 +534,6 @@ class SubdomainService:
             if k in status_map
         ]
 
-        # per-state counts (overlapping) so each facet matches its `cert:<state>` filter
         cert_counts = (
             await self.session.execute(
                 select(
@@ -643,8 +641,6 @@ class SubdomainService:
             )
             or 0
         )
-        # every other correlation here filters for noise; this one capped and did not,
-        # so "same network" returned 300 hosts on a single-network estate
         common = (
             int(estate * COMMON_SHARE)
             if estate >= MIN_ESTATE_FOR_COMMON
@@ -652,8 +648,7 @@ class SubdomainService:
         )
 
         async def hosts(stmt) -> tuple[list[str], int]:
-            """The hosts sharing a value and how many there are. A value carried by
-            half the estate is the estate, not a relation."""
+            """Hosts sharing a value, excluding what half the estate shares."""
             counted = int(
                 await self.session.scalar(
                     select(func.count()).select_from(stmt.limit(common + 1).subquery())
@@ -1198,8 +1193,6 @@ class SubdomainService:
                 _TARGET_ROLLUP_CAP,
             )
             rows = rows[:_TARGET_ROLLUP_CAP]
-        # fetched newest-first to keep the latest scan under the cap; _aggregate
-        # needs ascending so the newest row wins on overwrite (deterministic tie-break)
         rows.sort(key=lambda r: (r.discovered_at, str(r.scan_id)))
         return rows
 

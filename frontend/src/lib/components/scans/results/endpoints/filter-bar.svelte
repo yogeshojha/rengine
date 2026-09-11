@@ -99,7 +99,6 @@
 	];
 
 	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
-	// a connected proxy is what makes "not tested by me" a real question
 	let hasProxy = $derived(facets.source.some((f) => f.value === EndpointSource.PROXY));
 	let hostsAtRest = $derived(view === 'hosts' && !inHost);
 	let quickOptions = $derived(

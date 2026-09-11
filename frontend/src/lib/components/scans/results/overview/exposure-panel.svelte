@@ -74,7 +74,6 @@
 		text: string;
 	}
 
-	// lead with the finding, not the total: the tail is what a review misses
 	let headline = $derived.by<Headline | null>(() => {
 		if (!exposure) return null;
 		if (exposure.sensitive > 0)

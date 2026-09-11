@@ -10,7 +10,6 @@ MAX_BATCH = 500
 MAX_QUEUE = 5000
 MAX_BODY_SAMPLE = 4000
 MAX_CANDIDATE_SCAN = 200
-# a connector with no traffic for this long is reported stale rather than live
 STALE_MINUTES = 30
 LIVE_MINUTES = 2
 DEFAULT_QUIET_MINUTES = 5
@@ -50,7 +49,6 @@ SOURCE_TOOL_LABELS: dict[str, str] = {
     SourceTool.OTHER.value: "Other",
 }
 
-# manual requests are inventory; fuzzer and scanner payloads are not
 INGESTED_TOOLS: frozenset[str] = frozenset(
     {SourceTool.PROXY.value, SourceTool.REPEATER.value}
 )
@@ -81,7 +79,6 @@ SYNC_TRIGGER_HELP: dict[str, str] = {
 
 
 MAX_PICKER_TARGETS = 500
-# a proxy scope with thousands of entries is slower than no scope at all
 MAX_SCOPE_HOSTS = 500
 MAX_NOTICE_BATCH = 25
 MANUAL_RUN_LABEL = "Manual testing"
@@ -99,7 +96,6 @@ ACTION_KIND_LABELS: dict[str, str] = {
 
 MAX_PENDING_ACTIONS = 200
 MAX_ACTION_BATCH = 50
-# an action nobody collected is stale; a proxy that reconnects should not replay yesterday
 ACTION_TTL_MINUTES = 60
 
 
@@ -119,11 +115,7 @@ CANDIDATE_STATE_LABELS: dict[str, str] = {
 
 
 class NoticeKind(StrEnum):
-    """Why a shape was flagged, derived without sending a request.
-
-    Whether a request carried a session is a fact on the row, not a flag: it is true of
-    most traffic and says nothing on its own.
-    """
+    """Why a shape was flagged, derived without sending a request."""
 
     SENSITIVE = "sensitive"
     ADMIN = "admin"
@@ -161,7 +153,6 @@ LOUD_NOTICES: frozenset[str] = frozenset(
     }
 )
 
-# loudest first: what a tester is told when a shape carries several
 NOTICE_ORDER: tuple[str, ...] = (
     NoticeKind.OUT_OF_SCOPE.value,
     NoticeKind.SENSITIVE.value,
@@ -174,7 +165,6 @@ COMMON_METHODS: frozenset[str] = frozenset(
     {"GET", "POST", "HEAD", "OPTIONS", "PUT", "PATCH", "DELETE"}
 )
 
-# request headers that carry a session, in the order a connector should report them
 AUTH_HEADERS: tuple[str, ...] = (
     "authorization",
     "cookie",

@@ -39,9 +39,7 @@
 	const n = (value: number | null | undefined) =>
 		value === null || value === undefined ? null : value.toLocaleString();
 
-	// rows are proof a stage ran, whatever the coverage table remembers
 	let ran = $derived(coverage.some((c) => c.status !== 'skipped') || (summary?.total ?? 0) > 0);
-	// requested and got nothing back is not the same as never requested
 	let noAnswer = $derived(
 		coverage
 			.filter((c) => c.source === PROBE_COVERAGE_SOURCE)

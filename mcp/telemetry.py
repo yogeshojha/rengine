@@ -1,7 +1,4 @@
-"""Live sessions and the recent-call trail. Ephemeral by design: Redis, not a table.
-
-Every write is fail-open — losing a session row must never fail an agent's call.
-"""
+"""Live sessions and the recent-call trail."""
 
 from __future__ import annotations
 
@@ -102,7 +99,7 @@ async def sessions() -> list[dict]:
 
 
 async def drop(token_id: uuid.UUID, client: str | None = None) -> int:
-    """Forget a session so the UI stops showing it. The token itself stays valid."""
+    """Forget a session."""
     try:
         redis = _client()
         keys = [

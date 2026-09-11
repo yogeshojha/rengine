@@ -33,12 +33,7 @@ LIVE_LOCK_TIMEOUT_S = 5
 
 @contextmanager
 def _yield_to_scans(session):
-    """Bound how long a judgement may hold host-row locks, then put the connection back as found.
-
-    SESSION, not LOCAL: `ensure_builtin` commits when it seeds a preset and a LOCAL setting dies
-    with that transaction. Measured that this pool resets the GUC on checkin anyway; the explicit
-    RESET is here so a pooled connection can never carry a 5s timeout into an unrelated stage.
-    """
+    """Bound how long a judgement may hold host-row locks, then put the connection back as found."""
     session.execute(text(f"SET SESSION lock_timeout = '{LIVE_LOCK_TIMEOUT_S}s'"))
     try:
         yield
@@ -70,8 +65,6 @@ def evaluate_scan(scan_id: str, include_ai: bool = True, notify: bool = True) ->
         scan = session.get(Scan, uuid.UUID(scan_id))
         if scan is None:
             return {"error": "scan not found"}
-        # the rollup rewrites host rows a still-running scan may also be writing; whoever
-        # asked for this, the scan has priority
         ai = load_config(session)
         try:
             with _yield_to_scans(session):
@@ -101,11 +94,7 @@ def evaluate_scan(scan_id: str, include_ai: bool = True, notify: bool = True) ->
 
 @shared_task(name="app.tasks.interest.evaluate_live")
 def evaluate_live(scan_id: str) -> dict:
-    """Judge a running scan from its rules alone, so the list fills while the scan works.
-
-    Rarity and the model wait for `evaluate_scan` at the end: a correlation over a tenth of
-    the estate is not a weaker judgement, it is a wrong one.
-    """
+    """Judge a running scan from its rules alone."""
     with get_sync_session() as session:
         scan = session.get(Scan, uuid.UUID(scan_id))
         if scan is None or scan.status in SCAN_TERMINAL_STATUSES:
@@ -145,7 +134,7 @@ def _notify(session, scan: Scan) -> None:
 
 @shared_task(name="app.tasks.interest.refresh_project")
 def refresh_project(project_id: str) -> dict:
-    """A rule change re-labels history; only the rule-driven half is recomputed."""
+    """A rule change re-labels history."""
     refreshed = 0
     with get_sync_session() as session:
         scans = (

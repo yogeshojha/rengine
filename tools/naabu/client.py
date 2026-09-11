@@ -75,7 +75,7 @@ class NaabuClient:
             raise NaabuError(str(e)) from e
 
     def scan(self, ips: list[str], port_flags: list[str]) -> list[dict]:
-        """Active connect/SYN scan. Returns [{ip, port, protocol, tls}] per open port."""
+        """Active connect/SYN scan."""
         if not ips:
             return []
         return self._records(self._run(ips, self._scan_args(port_flags)))
@@ -119,8 +119,6 @@ class NaabuClient:
             str(opt.rate),
             "-c",
             str(opt.concurrency),
-            # naabu parses -timeout as a go duration: a bare number is not
-            # milliseconds, and costs a fixed ~135s per run for the same results
             "-timeout",
             f"{opt.timeout}s",
             "-retries",
@@ -135,14 +133,13 @@ class NaabuClient:
         return args
 
     def passive(self, ips: list[str]) -> list[dict]:
-        """Ports already known to Shodan's internetdb. Sends nothing to the target."""
+        """Ports already known to Shodan's internetdb."""
         if not ips:
             return []
         return self._records(self._run(ips, ["-passive"]))
 
     @staticmethod
     def _records(result: ToolResult) -> list[dict]:
-        # a timed-out or crashed run returns nothing; reporting that as zero open ports is a lie
         if not result.success and not result.json_records:
             raise NaabuError(result.error or "naabu produced no output")
         return [

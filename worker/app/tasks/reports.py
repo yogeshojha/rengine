@@ -1,4 +1,4 @@
-"""Report generation runs here so the api never blocks on a render."""
+"""Report generation."""
 
 from __future__ import annotations
 

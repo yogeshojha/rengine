@@ -23,7 +23,6 @@
 	let { row, rank, onOpen, onKind, onDismiss, onHost }: Props = $props();
 
 	const MAX_CHIPS = 4;
-	// the primary judgement or rule carries the sentence; the rest are chips only
 	let lead = $derived(row.signals.find((s) => s.reason) ?? null);
 	let chips = $derived(row.signals.slice(0, MAX_CHIPS));
 	let rest = $derived(Math.max(0, row.signals.length - MAX_CHIPS));

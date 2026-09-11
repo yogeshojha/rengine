@@ -92,7 +92,6 @@ export function draftFromDoc(doc: Document.Parsed): EngineDraft | null {
 	};
 }
 
-// toJS() throws on alias bombs and cyclic refs — never let that reach a $derived
 function toPlain(doc: Document.Parsed): Record<string, unknown> | null {
 	try {
 		const raw = doc.toJS() as Record<string, unknown> | null;

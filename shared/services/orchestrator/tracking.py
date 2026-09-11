@@ -25,13 +25,7 @@ class ScanActivityService:
         self.session = session
 
     def finished(self, scan_id, name: str) -> ScanActivity | None:
-        """A stage that already reached SUCCESS or PARTIAL for this scan.
-
-        build_canvas omits finished stages on a resume, but a re-delivered celery
-        message or a hand-dispatched task reaches the runner directly — and several
-        stages clear the previous attempt's rows inside their first flush, so a second
-        run of a successful stage replaces a complete result with a partial one.
-        """
+        """A stage that already reached SUCCESS or PARTIAL for this scan."""
         return self.session.execute(
             select(ScanActivity)
             .where(
@@ -78,8 +72,6 @@ class ScanActivityService:
         error: str | None = None,
         traceback: str | None = None,
     ) -> None:
-        # Conditional update: only transition from RUNNING, so a concurrent cancel
-        # that flipped this row to ABORTED is never clobbered back to success/failed.
         self.session.execute(
             update(ScanActivity)
             .where(
@@ -100,7 +92,7 @@ class ScanActivityService:
 
 
 class ScanCommandRecorder:
-    """Registers every command + captures its log; thread-safe (fresh session per write)."""
+    """Registers every command + captures its log."""
 
     def __init__(
         self,
@@ -162,7 +154,6 @@ class ScanCommandRecorder:
         try:
             with self._session_factory() as session:
                 cmd = session.get(ScanCommand, command_id)
-                # skip if a cancel already flipped this command to a terminal status
                 if cmd is None or cmd.status != ScanActivityStatus.RUNNING.value:
                     return
                 cmd.status = status.value

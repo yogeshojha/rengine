@@ -1,4 +1,4 @@
-"""What a fresh install already knows. Editable where it should be, locked where it must be."""
+"""What a fresh install already knows."""
 
 from __future__ import annotations
 
@@ -211,7 +211,6 @@ PRESETS: tuple[Preset, ...] = (
 PRESET_BY_NAME: dict[str, Preset] = {p.name: p for p in PRESETS}
 
 
-# what a shipped rule owns, versus what the user owns and an upgrade must never overwrite
 SYNCED_FIELDS: tuple[str, ...] = ("description", "mode", "query", "kind")
 USER_FIELDS: tuple[str, ...] = (
     "enabled",

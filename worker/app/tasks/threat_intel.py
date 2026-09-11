@@ -21,7 +21,6 @@ from shared.utils.datetime import utc_now
 logger = get_logger(__name__)
 
 
-# the signals worth waking someone for; a score nudge is not news
 ALERT_KINDS = ("kev", "ransom_path", "fresh_exploit", "weaponised")
 ALERT_LIMIT = 25
 
@@ -77,11 +76,7 @@ def _notify_changes(session, since) -> int:
 
 @shared_task(name="app.tasks.threat_intel.refresh")
 def refresh(feeds: list[str] | None = None, force: bool = False) -> dict:
-    """Download the feeds, re-score every finding, then re-rank. No target is touched.
-
-    `force` is what a person pressing Refresh sends, so a manual pull always works
-    even when the nightly download is switched off.
-    """
+    """Download the feeds, re-score every finding, then re-rank."""
     started = utc_now()
     with get_sync_session() as session:
         if not force and not auto_sync_enabled(session):

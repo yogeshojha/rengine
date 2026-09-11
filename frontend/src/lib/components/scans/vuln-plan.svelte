@@ -50,7 +50,6 @@
 
 	let catalogEntry = $derived(engineCatalogStore.stage(VULN_STAGE));
 
-	// what the engine ships with: its stored values on top of the stage defaults
 	let baseline = $derived.by<Plan | null>(() => {
 		if (!catalogEntry) return null;
 		const stored = (engineStages?.[VULN_STAGE] ?? {}) as Record<string, unknown>;
@@ -62,7 +61,6 @@
 		};
 	});
 
-	// fields the launch modal does not edit but the resolved count must still honour
 	let carried = $derived.by(() => {
 		if (!catalogEntry) return null;
 		const stored = (engineStages?.[VULN_STAGE] ?? {}) as Record<string, unknown>;
@@ -99,7 +97,6 @@
 		});
 	});
 
-	// a new engine replaces the plan; an edit keeps it
 	let baselineKey = $derived(baseline ? JSON.stringify([baseline, carried]) : '');
 	let lastBaseline = '';
 	$effect(() => {
@@ -158,7 +155,6 @@
 		});
 	}
 
-	// the count is a promise: it is resolved against the same library the scan will run
 	$effect(() => {
 		const base = current;
 		const isReady = ready;

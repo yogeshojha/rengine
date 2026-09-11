@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""Walk the connector workflow as a pentester would, reporting what they would see.
-
-    RENGINE_PROJECT_ID=<uuid> python3 scripts/connector_journey.py
-
-Unlike connector_e2e.py this asserts nothing. It exists to show the flow end to end and to
-surface friction: every step prints what a person would actually be looking at.
-Everything it creates is removed before it exits.
-"""
+"""Walk the connector workflow as a pentester would, reporting what they would see."""
 
 import http.cookiejar
 import json

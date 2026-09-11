@@ -20,7 +20,6 @@ import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 import Unlink from '@lucide/svelte/icons/unlink';
 import type { IconComponent } from './icons';
 
-// mirrors shared/definitions/vulnerabilities.py Severity
 export enum Severity {
 	CRITICAL = 'critical',
 	HIGH = 'high',
@@ -57,8 +56,6 @@ export const SEVERITY_HELP: Record<string, string> = {
 	[Severity.UNKNOWN]: 'The check did not state a severity.'
 };
 
-// the ramp the report prints, mirroring shared/definitions/reports.py: one severity vocabulary
-// for the screen and the page. Rank is carried by lightness, order and label, never colour alone.
 export const SEVERITY_FILL: Record<string, string> = {
 	[Severity.CRITICAL]: 'var(--sev-critical)',
 	[Severity.HIGH]: 'var(--sev-high)',
@@ -68,7 +65,6 @@ export const SEVERITY_FILL: Record<string, string> = {
 	[Severity.UNKNOWN]: 'var(--sev-info)'
 };
 
-// the mark is too light to carry text at its own step, so a label takes the ink variant
 export const SEVERITY_TEXT: Record<string, string> = {
 	[Severity.CRITICAL]: 'text-[var(--sev-critical-ink)]',
 	[Severity.HIGH]: 'text-[var(--sev-high-ink)]',
@@ -80,7 +76,6 @@ export const SEVERITY_TEXT: Record<string, string> = {
 
 export const ACTIONABLE_SEVERITIES: string[] = [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM];
 
-// mirrors shared/definitions/vulnerabilities.py CorroborationBasis
 export enum CorroborationBasis {
 	CVE = 'cve',
 	CWE = 'cwe'
@@ -100,7 +95,6 @@ export function severityLabel(value: string | null | undefined): string {
 	return SEVERITY_LABELS[value ?? ''] ?? 'Unknown';
 }
 
-// mirrors shared/definitions/vulnerabilities.py VulnState
 export enum VulnState {
 	OPEN = 'open',
 	CONFIRMED = 'confirmed',
@@ -131,7 +125,6 @@ export const VULN_STATE_HELP: Record<string, string> = {
 
 export const SUPPRESSED_STATES: string[] = [VulnState.FALSE_POSITIVE, VulnState.ACCEPTED];
 
-// mirrors shared/definitions/vulnerabilities.py Protocol
 export const PROTOCOL_LABELS: Record<string, string> = {
 	http: 'HTTP',
 	network: 'Network',
@@ -160,7 +153,6 @@ export const PROTOCOL_ICONS: Record<string, IconComponent> = {
 
 export const SCANNER_LABELS: Record<string, string> = { nuclei: 'Nuclei' };
 
-// mirrors shared/definitions/vulnerabilities.py TEMPLATE_SETS ordering
 export const TEMPLATE_SET_ICONS: Record<string, IconComponent> = {
 	kev: Flame,
 	cve: ShieldAlert,

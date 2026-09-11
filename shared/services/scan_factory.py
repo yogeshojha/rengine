@@ -30,7 +30,6 @@ def build_scan_row(
 ) -> Scan:
     """Assemble an unsaved PENDING Scan from an already-resolved config."""
     execution_config = resolved.model_dump()
-    # a credential must not sit in the clear on every run that used it
     execution_config["headers"] = seal_headers(execution_config.get("headers"))
     if dimension:
         execution_config["_dimension"] = dimension

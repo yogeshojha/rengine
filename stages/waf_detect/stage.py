@@ -29,7 +29,6 @@ class WafDetectStage(Stage):
     def run(self) -> StageResult:
         self._check_abort()
         net = self.net_options()
-        # id + url only: the full row carries the stored response body
         live = self.session.execute(
             select(HttpAsset.id, HttpAsset.url).where(
                 HttpAsset.scan_id == self.ctx.scan_id,

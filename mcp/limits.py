@@ -1,4 +1,4 @@
-"""Per-token call ceiling. Fail-open: if Redis is down the agent still works."""
+"""Per-token call ceiling."""
 
 from __future__ import annotations
 

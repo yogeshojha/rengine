@@ -13,8 +13,6 @@ def _part(value: object) -> str | int:
 async def validation_error_handler(
     _request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    # FastAPI's default puts the offending value in `input`, and encoding a deeply
-    # nested one exhausts the stack while building the 422 itself.
     detail = [
         {
             "type": str(error.get("type", "")),

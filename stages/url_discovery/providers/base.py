@@ -61,7 +61,7 @@ class ProviderContext:
 
 @dataclass
 class ProviderResult:
-    """One provider's account of its own run. A null count means unknown, never zero."""
+    """One provider's account of its own run."""
 
     source: str
     tool: str | None = None
@@ -90,9 +90,7 @@ class UrlProvider(ABC):
     tool: ClassVar[str | None] = None
     binary: ClassVar[str | None] = None
     requires_key: ClassVar[APIProvider | None] = None
-    # a provider that sends no request to the target survives a passive-intensity scan
     touches_target: ClassVar[bool] = True
-    # reads the scan's own rows, so it runs on the stage thread rather than in the pool
     uses_session: ClassVar[bool] = False
 
     def __init__(self, ctx: ProviderContext) -> None:
@@ -113,11 +111,7 @@ class UrlProvider(ABC):
         return True, None
 
     def in_scope(self, url: str) -> bool:
-        """A URL belongs to this scan if it is on a known host or under one of its apexes.
-
-        Hosts alone are not enough: the host list is capped, and a sitemap legitimately
-        names hosts the cap left out.
-        """
+        """A URL belongs to this scan if it is on a known host or under one of its apexes."""
         try:
             host = (urlsplit(url).hostname or "").lower()
         except ValueError:
@@ -141,7 +135,7 @@ class UrlProvider(ABC):
             self.ctx.on_progress(message)
 
     def hand_over(self, observations: list[EndpointObservation]) -> None:
-        """Give the stage what has been found so far; it, not this thread, does the writing."""
+        """Give the stage what has been found so far."""
         if not observations or self.ctx.on_batch is None:
             return
         self.ctx.on_batch((self.source, list(observations)))

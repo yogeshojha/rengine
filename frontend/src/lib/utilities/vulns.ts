@@ -319,7 +319,6 @@ export interface TriageResult {
 	updated: number;
 }
 
-// the count tabs are the severity partition; findings sort worst-first by default
 export const SEVERITY_TABS: { key: string; label: string }[] = [
 	{ key: 'all', label: 'All' },
 	...SEVERITY_ORDER.filter((s) => s !== 'unknown').map((key) => ({

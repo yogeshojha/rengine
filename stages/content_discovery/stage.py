@@ -29,14 +29,12 @@ _SINK_ROWS = 200
 _MAX_WORKERS = 4
 _DRAIN_SECONDS = 5
 _MIN_HOST_BUDGET = 30
-# a ranked list is ranked: a site answering to this share of it answers to anything,
-# and calibration did not catch it. Measured 278 of 300 on one soft-404 host.
 MAX_HIT_SHARE = 0.25
 _NAMED = 3
 
 
 class ContentDiscoveryStage(Stage):
-    """Paths no link, archive or crawl named, guessed from a ranked list and answered."""
+    """Paths guessed from a ranked wordlist against every live site."""
 
     name = "content_discovery"
     title = "Content Discovery"
@@ -119,7 +117,6 @@ class ContentDiscoveryStage(Stage):
                 for future in done:
                     outcome = future.result()
                     state.absorb(outcome)
-                    # only the stage thread writes; a pooled run never touches the session
                     for parsed in outcome.kept:
                         sink.add(_observation(parsed, label))
                 self._check_abort()
@@ -137,7 +134,7 @@ class ContentDiscoveryStage(Stage):
         )
 
     def _one(self, args: dict, host: str, word_file: str, budget: int, tried: int):
-        """One site, in its own ffuf process, so -ac has a host to calibrate against."""
+        """One site, in its own ffuf process."""
         outcome = _Outcome(host=host)
         try:
             client = FfufClient(**args)
@@ -171,7 +168,7 @@ class ContentDiscoveryStage(Stage):
         return result.created + result.updated
 
     def _hosts(self, limit: int) -> list[str]:
-        """Sites that answered, the ones that answered well first."""
+        """Sites that answered, best status first."""
         rows = self.session.execute(
             select(HttpAsset.url, HttpAsset.status_code)
             .where(
@@ -214,8 +211,6 @@ class ContentDiscoveryStage(Stage):
 
 @dataclass
 class _Outcome:
-    """One site's run: what it returned, and whether that can be believed."""
-
     host: str
     hits: list[dict] = field(default_factory=list)
     kept: list[dict] = field(default_factory=list)

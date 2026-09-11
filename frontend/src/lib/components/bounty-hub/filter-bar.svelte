@@ -26,11 +26,9 @@
 
 	let { filters, platforms, onChange }: Props = $props();
 
-	// typing must not fire a paginated query plus its aggregates per keystroke
 	let draft = $state('');
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
-	// reading draft here would make this effect its own dependency and wipe the
 	// input on every keystroke
 	$effect(() => {
 		const applied = filters.q ?? '';

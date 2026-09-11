@@ -1,7 +1,5 @@
 import type { TableColumn } from '../table/columns';
 
-// an address and its network are bounded strings; hostnames are the variable
-// content, so Hosts takes the free space instead of Address hogging it
 export const IP_LEAD_COLUMNS: TableColumn[] = [
 	{
 		key: 'ip',

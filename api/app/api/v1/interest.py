@@ -124,7 +124,6 @@ async def scan_interest(
     page = await service.page(
         QueryScope((scan.id,), project_id=scan.project_id), body, scan
     )
-    # a rule changed since this scan was labelled; relabelling is not a discovery, so it never alerts
     if page.summary.stale:
         dispatch_interest_evaluation(str(scan_id), include_ai=False, notify=False)
     return page

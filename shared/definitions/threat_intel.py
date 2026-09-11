@@ -71,7 +71,6 @@ FEEDS: tuple[FeedSpec, ...] = (
 
 FEEDS_BY_KIND: dict[str, FeedSpec] = {spec.kind: spec for spec in FEEDS}
 
-# the feeds republish daily; past this a score is old enough to say so
 STALE_AFTER_HOURS = 48
 
 
@@ -83,7 +82,6 @@ class ExploitBand:
     description: str
 
 
-# 0.088 is the published F1-optimal EPSS threshold; 0.5 matches EPSS_HIGH
 EXPLOIT_BANDS: tuple[ExploitBand, ...] = (
     ExploitBand(
         "very_likely", "Very likely", 0.5, "More likely than not to be exploited."
@@ -108,7 +106,7 @@ def exploit_band(score: float | None) -> str | None:
 
 
 class ExploitSignal(StrEnum):
-    """The reasons one finding outranks another. Correlation, not severity."""
+    """The reasons one finding outranks another."""
 
     KEV = "kev"
     RANSOMWARE = "ransomware"
@@ -138,7 +136,6 @@ class SignalSpec:
     tone: str
 
 
-# weights sum well past MAX_EXPLOIT_SCORE; the cap is what keeps the top of the queue flat
 SIGNALS: tuple[SignalSpec, ...] = (
     SignalSpec(
         ExploitSignal.KEV.value,
@@ -225,9 +222,7 @@ SIGNAL_ORDER: tuple[str, ...] = tuple(spec.kind for spec in SIGNALS)
 
 MAX_EXPLOIT_SCORE = 100
 
-# an internet population above this is a mass-scanned product
 CROWD_HOSTS = 100_000
-# services a ransomware crew reaches for once it is inside
 RANSOM_SERVICE_CLASSES: frozenset[str] = frozenset({"remote", "database"})
 
 

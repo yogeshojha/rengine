@@ -23,7 +23,7 @@ class BountyPlatform(Enum):
 
 
 class ProgramSource(Enum):
-    """Where the row came from. An API row is authoritative over a feed row."""
+    """Where the row came from."""
 
     API = "api"
     FEED = "feed"
@@ -38,7 +38,6 @@ class SubmissionState(Enum):
     OPEN = "open"
     PAUSED = "paused"
     CLOSED = "closed"
-    # a feed that does not report it must not be made to guess
     UNKNOWN = "unknown"
 
 
@@ -143,7 +142,6 @@ class AssetTypeSpec:
         return self.target_type is not None
 
 
-# every asset type a program can declare; target_type is None for what no scan can reach
 ASSET_TYPES: tuple[AssetTypeSpec, ...] = (
     AssetTypeSpec("DOMAIN", "Domain", AssetGroup.NETWORK, TargetType.DOMAIN, "globe"),
     AssetTypeSpec(
@@ -202,7 +200,6 @@ UNKNOWN_ASSET_TYPE = AssetTypeSpec(
     "UNKNOWN", "Unrecognised", AssetGroup.OTHER, None, "circle-help"
 )
 
-# asset types worth running through validate_target; OTHER carries ASNs and hostnames
 IMPORTABLE_TYPES: frozenset[str] = frozenset(
     {a.key for a in ASSET_TYPES if a.targetable} | {"OTHER"}
 )
@@ -215,7 +212,6 @@ class EventSpec:
     description: str
     icon: str
     tone: str
-    # a change you can act on now ranks above one that is merely news
     actionable: bool
 
 
@@ -296,7 +292,6 @@ EVENTS: tuple[EventSpec, ...] = (
 
 EVENTS_BY_KIND: dict[str, EventSpec] = {e.kind: e for e in EVENTS}
 
-# the changes worth waking someone for; the rest live in the feed
 ALERT_EVENTS: frozenset[str] = frozenset(
     {
         BountyEvent.PROGRAM_ADDED.value,
@@ -309,7 +304,6 @@ ALERT_EVENTS: frozenset[str] = frozenset(
 )
 
 
-# the kinds that may raise an alert; the rest only ever appear in the feed
 NOTIFIABLE_EVENTS: tuple[str, ...] = (
     BountyEvent.PROGRAM_ADDED.value,
     BountyEvent.SCOPE_ADDED.value,
@@ -354,9 +348,7 @@ def notify_enabled(settings: dict | None) -> bool:
 
 
 MAX_TAGS_PER_IMPORT = 10
-# bounty_events.detail is varchar(500); an instruction is capped far higher
 MAX_EVENT_DETAIL = 500
-# bounty_scopes.target_value and targets.target_value are both varchar(500)
 MAX_TARGET_VALUE = 500
 
 MAX_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "none")
@@ -380,8 +372,6 @@ def scope_state(eligible_for_submission: bool | None) -> ScopeState:
     return ScopeState.IN_SCOPE if eligible_for_submission else ScopeState.OUT_OF_SCOPE
 
 
-# measured 2026-09-07: the hacker API returns public_mode and soft_launched;
-# soft_launched is an invite-only program, so anything but public_mode is private
 PUBLIC_STATE = "public_mode"
 
 RAW_STATE_LABELS: dict[str, str] = {
@@ -413,7 +403,6 @@ def submission_state(raw: str | None) -> SubmissionState:
 
 def normalize_identifier(asset_type: str | None, identifier: str) -> str | None:
     """The scannable value behind a scope entry, or None when there is not one."""
-    # Postgres refuses NUL and a scope value is stored, so scrub at the source
     value = strip_control(identifier or "").strip()
     if not value:
         return None
@@ -421,34 +410,24 @@ def normalize_identifier(asset_type: str | None, identifier: str) -> str | None:
     if spec.key not in IMPORTABLE_TYPES:
         return None
 
-    # a scope list writes https://*.example.com for a wildcard
     stripped = _SCHEME.sub("", value).strip()
     host = stripped.split("/")[0]
     if host.startswith("*."):
-        # platforms file wildcards under whatever type they like, so the value
-        # decides this, not the declared type
         value = host
     elif spec.key == "URL":
         pass
     elif spec.key == "CIDR":
-        # a CIDR's slash is its prefix length, never a path
         value = stripped
     else:
         value = host
     value = normalize_target_value(value)
-    # a residual wildcard (*.example.*, *-faq.example.com) names no single asset
     if not value or "*" in value or len(value) > MAX_TARGET_VALUE:
         return None
     return value
 
 
 def _public_host(value: str) -> bool:
-    """A program's scope is internet-facing, so a bundle id is not a hostname.
-
-    validators accepts com.etoro.wallet and io.flutter.plugins as domains until
-    consider_tld is on. It is deliberately not on in validate_target, because a
-    hand-added internal target like traefik.default is legitimate there.
-    """
+    """A program's scope is internet-facing."""
     authority = _SCHEME.sub("", value).split("/")[0].split("?")[0]
     bracketed = _IPV6_HOST.match(authority)
     host = bracketed.group(1) if bracketed else authority.rsplit(":", 1)[0]

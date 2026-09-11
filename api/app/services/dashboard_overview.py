@@ -471,8 +471,6 @@ class DashboardOverviewService:
         out: dict[str, dict[UUID, int]] = {}
         for key, model in _TABLES.items():
             keys = [model.target_id, *_KEYS[key]]
-            # DISTINCT ON rides the (target_id, key) index and sorts incrementally;
-            # row_number() over the same rows re-sorted the whole project every load
             firsts = select(model.scan_id.label("scan_id")).where(
                 model.project_id == project_id
             )
@@ -593,7 +591,6 @@ class DashboardOverviewService:
             )
             or 0
         )
-        # a signal's own created_at is when the finding first earned it, so this is a real delta
         risk.newly_exploited = int(
             await self.session.scalar(
                 text("""
@@ -1032,7 +1029,6 @@ class DashboardOverviewService:
                 new=dict.fromkeys(SURFACE_ORDER, 0),
                 total=dict.fromkeys(SURFACE_ORDER, 0),
             )
-        # the estate as it stood at the end of each day: every target's newest covering run by then
         for key, per_target in covered.items():
             for ids in per_target.values():
                 timeline = sorted(

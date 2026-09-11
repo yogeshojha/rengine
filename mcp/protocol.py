@@ -1,8 +1,4 @@
-"""JSON-RPC 2.0 framing and the MCP method names. No transport, no database.
-
-Swapping this module for an SDK later changes nothing above it: `mcp.server`
-only depends on `parse`, `success` and `failure`.
-"""
+"""JSON-RPC 2.0 framing and the MCP method names."""
 
 from __future__ import annotations
 

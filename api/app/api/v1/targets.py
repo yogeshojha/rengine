@@ -61,7 +61,7 @@ def get_asset_service(
 
 
 async def _validated(raw: str, service: TargetService) -> TargetValidationResponse:
-    """Report the value as it would be stored, so a preview matches the import."""
+    """Report the value as it would be stored."""
     value = normalize_target_value(raw)
     target_type = await service.validate_target_value(value)
     return TargetValidationResponse(
@@ -93,7 +93,6 @@ async def validate_bulk_target(
             detail=f"Maximum {MAX_TARGET_IMPORT} targets allowed per request",
         )
 
-    # two spellings of one target are one target, so dedupe on the stored form
     seen: set[str] = set()
     results = []
     for req in request:

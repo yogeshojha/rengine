@@ -204,8 +204,7 @@ def _token(field: str, op: str, value: str) -> str:
 
 
 class _Reach:
-    """The rows a query counts. With nothing narrowing them, filter the table directly:
-    joining against a scan-sized id subquery measured 3x slower per aggregate."""
+    """The rows a query counts."""
 
     def __init__(self, scope: QueryScope, base, narrowed: bool):
         self.scope = scope
@@ -303,7 +302,6 @@ class EndpointService:
     @staticmethod
     def _order(query, f: EndpointFilter):
         if f.sort == "relevance":
-            # lead with what is worth opening: flagged, then input surface, then answering
             return query.order_by(
                 (func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0)
                 .desc()
@@ -548,7 +546,7 @@ class EndpointService:
         return out
 
     async def _facets(self, branches) -> dict[str, list[tuple[str, int]]]:
-        """One statement for many facets, so each keeps its own index and its own cap."""
+        """One statement for many facets."""
         rows = await self.session.execute(
             union_all(
                 *[
@@ -693,7 +691,7 @@ class EndpointService:
         return {host: int(n) for host, n in rows.all()}
 
     async def hosts(self, scope: ScopeLike, f: EndpointFilter) -> HostPage:
-        """The estate as a ranked table: one row per host, rolled up in SQL so ten thousand page cheaply."""
+        """The estate as a ranked table: one row per host, rolled up in SQL."""
         scope = QueryScope.of(scope)
         now = utc_now()
         base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
@@ -830,7 +828,6 @@ class EndpointService:
         )
         input_count = func.count().filter(Endpoint.param_count > 0)
         verified_count = func.count().filter(Endpoint.is_probed.is_(True))
-        # what a tester would open first: an exposed file, then a control surface, then input and reach
         score = (
             func.coalesce(cast(sensitive, Integer), 0) * _W_SENSITIVE
             + func.coalesce(cast(control, Integer), 0) * _W_CONTROL

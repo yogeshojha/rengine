@@ -27,9 +27,7 @@ def upgrade() -> None:
         ["status", "next_run_at"],
         unique=False,
     )
-    op.drop_index(
-        op.f("ix_scan_schedules_next_run_at"), table_name="scan_schedules"
-    )
+    op.drop_index(op.f("ix_scan_schedules_next_run_at"), table_name="scan_schedules")
 
 
 def downgrade() -> None:

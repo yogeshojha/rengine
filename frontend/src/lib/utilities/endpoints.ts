@@ -202,7 +202,6 @@ export interface MergedLeafPage {
 	truncated: boolean;
 }
 
-// a folder that is only its own index arrives as a leaf; the row needs the endpoint shape
 export function leafToEndpoint(leaf: TreeLeaf, scanId: string): EndpointRead {
 	const dir = leaf.path.endsWith('/')
 		? leaf.path
@@ -495,7 +494,6 @@ export function compileEndpointQuery(
 	size: number
 ): EndpointFilter {
 	const search = q.search.trim();
-	// a proxy source is the record of the tester's own hand; its absence is the untested surface
 	const untested = q.untested ? `not source:${EndpointSource.PROXY}` : '';
 	return {
 		q: (untested ? (search ? `(${search}) and ${untested}` : untested) : search) || null,
@@ -517,7 +515,6 @@ export function compileEndpointQuery(
 
 const LOCATION_FIELDS = new Set(['dir', 'directory', 'folder', 'path', 'file', 'filename', 'url']);
 
-// what to mark on folder and file names: free text plus the values of location fields
 export function highlightTerms(search: string, known: (name: string) => boolean): string[] {
 	const out: string[] = [];
 	const { tokens } = lex(search, known);
@@ -542,7 +539,6 @@ export function highlightTerms(search: string, known: (name: string) => boolean)
 
 const CONNECTOR_WORDS = new Set(['and', 'or', 'not']);
 
-// a query that is exactly one host token names the host, so the sitemap opens instead of a one-row table
 export function hostOnlyToken(search: string, known: (name: string) => boolean): string | null {
 	const { tokens } = lex(search, known);
 	const meaningful = tokens.filter((t) => t.kind !== 'space');
@@ -555,7 +551,6 @@ export function hostOnlyToken(search: string, known: (name: string) => boolean):
 	return raw && !/[*[\]]/.test(raw) ? raw : null;
 }
 
-// the reasons a row may print, most serious first; a reflected parameter flags too much to be one
 export function whyReasons(interest: string[], limit = 2): string[] {
 	return WHY_INTERESTS.filter((k) => interest.includes(k)).slice(0, limit);
 }
@@ -566,12 +561,10 @@ export function curlFor(e: { url: string; methods: string[] }): string {
 	return `curl -sk${flag} '${e.url.replace(/'/g, "'\\''")}'`;
 }
 
-// the two exact tokens that make the outline open to one endpoint
 export function locationTokens(host: string, path: string): string {
 	return `${exactToken('host', host)} ${exactToken('path', path)}`;
 }
 
-// a finding's location may be a bare host:port; without a scheme the URL parser reads the host as one
 export function locationTokensFromUrl(url: string): string | null {
 	const raw = url.trim();
 	if (!raw) return null;

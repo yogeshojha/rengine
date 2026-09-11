@@ -19,7 +19,6 @@ class TokenIdentity:
     name: str
     project_id: uuid.UUID | None
     capabilities: frozenset[str]
-    # the operator who issued the token; anything an agent writes is audited to them
     issued_by: uuid.UUID | None = None
 
     def allows(self, capability: str) -> bool:
@@ -41,7 +40,7 @@ class ToolContext:
             raise CapabilityError(msg)
 
     def scoped_projects(self) -> list[uuid.UUID] | None:
-        """None means every project; the token was issued without a project."""
+        """None means every project."""
         return None if self.token.project_id is None else [self.token.project_id]
 
     def check_project(self, project_id: uuid.UUID) -> uuid.UUID:

@@ -1,4 +1,4 @@
-"""Turn a source into a brief. Everything the report claims is decided here, once."""
+"""Turn a source into a brief."""
 
 from __future__ import annotations
 

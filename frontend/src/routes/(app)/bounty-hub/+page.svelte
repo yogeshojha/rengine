@@ -86,13 +86,11 @@
 		}
 	});
 
-	// a deep link opens any program, not only one on the page being shown
 	let deepLinked = $state<string | null>(null);
 
 	$effect(() => {
 		const handle = page.url.searchParams.get('program');
 		const platform = page.url.searchParams.get('platform') ?? undefined;
-		// deepLinked is only cleared once the param has left the URL, or closing
 		// the sheet would immediately reopen it
 		if (!handle) {
 			deepLinked = null;

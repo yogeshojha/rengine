@@ -9,7 +9,6 @@ MAX_HUBS_PER_KIND = 80
 MIN_SHARED = 2
 # hidden by default at or above this share
 COMMON_SHARE = 0.5
-# rarity has no meaning without a norm, so a small scan suppresses nothing
 MIN_ESTATE_FOR_COMMON = 25
 
 

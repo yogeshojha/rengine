@@ -67,7 +67,7 @@ class Connector(SQLModel, table=True):
 
 
 class ConnectorCandidate(SQLModel, table=True):
-    """One request shape captured by a connector. Values vary; the shape does not."""
+    """One request shape captured by a connector."""
 
     __tablename__ = "connector_candidates"
 
@@ -112,7 +112,7 @@ class ConnectorCandidate(SQLModel, table=True):
 
 
 class ConnectorAction(SQLModel, table=True):
-    """Work queued for the proxy to collect. Delivered once, never replayed."""
+    """Work queued for the proxy to collect."""
 
     __tablename__ = "connector_actions"
 
@@ -222,7 +222,7 @@ class ActionRead(BaseModel):
 
 
 class ConnectorHost(SQLModel, table=True):
-    """Every hostname a connector has reached. Hostname only, never a path."""
+    """Every hostname a connector has reached."""
 
     __tablename__ = "connector_hosts"
 
@@ -342,7 +342,7 @@ class ConnectorRead(BaseModel):
 
 
 class ConnectorCreated(BaseModel):
-    """The one time the secret is returned. Only its hash is stored."""
+    """The one time the secret is returned."""
 
     connector: ConnectorRead
     secret: str
@@ -385,7 +385,6 @@ class AddTargetRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     domain: str = PydanticField(min_length=1, max_length=500)
-    # a new target has no scan, so coverage and scope have nothing to say until one runs
     scan: bool = False
 
 
@@ -434,14 +433,12 @@ class IngestItem(BaseModel):
 
 
 class IngestRequest(BaseModel):
-    """One batch from a proxy. The client deduplicates; the server enforces scope."""
+    """One batch from a proxy."""
 
     model_config = ConfigDict(extra="forbid")
 
     client: str | None = PydanticField(default=None, max_length=120)
-    # the operator's choice while testing; it wins over matching the hostname
     target_id: uuid.UUID | None = None
-    # a whole program: each host is matched against that program's targets only
     program_id: uuid.UUID | None = None
     items: list[IngestItem] = PydanticField(default_factory=list, max_length=500)
 

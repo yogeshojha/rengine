@@ -1,5 +1,3 @@
-"""Origin exposure written down, so triage and alerting reach it."""
-
 from __future__ import annotations
 
 import pytest
@@ -53,7 +51,6 @@ def test_the_default_vhost_case_reads_differently():
 
 
 def test_the_fingerprint_is_stable_and_specific():
-    """Triage keys on it, so the same pair next week is the same finding."""
     a = origin_finding(_found())
     b = origin_finding(_found())
     assert a.fingerprint == b.fingerprint

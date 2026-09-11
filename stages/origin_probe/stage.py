@@ -83,12 +83,7 @@ class OriginProbeStage(Stage):
         )
 
     def _record_exposure(self) -> int:
-        """The correlation the read model already computes, written down as findings.
-
-        Rendering it only on the Overview meant it inherited none of triage, is:new,
-        delta-only alerting, the reports or the compliance mapping — all of which a
-        Vulnerability row gets for nothing.
-        """
+        """The correlation the read model already computes, written down as findings."""
         exposure = OriginExposureService(self.session).run(self.ctx.scan_id)
         findings = [origin_finding(found) for found in exposure.findings]
         stored = vuln_inventory.upsert(

@@ -54,7 +54,7 @@ PlatformPath = Annotated[str, Path(description="Bug bounty platform key")]
 
 
 async def _require_mode(session: AsyncSession) -> None:
-    """The library is a bug bounty capability; corporate mode does not carry it."""
+    """The library is a bug bounty capability."""
     settings = await InstanceSettingsService(session).get_or_create()
     if not has_capability(settings.mode, CAP_BOUNTY_PROGRAMS):
         raise HTTPException(

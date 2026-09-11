@@ -23,10 +23,8 @@ from tools.runner.models import (
 
 logger = get_logger(__name__)
 
-# go binaries, ahead of same-named venv console scripts on PATH
 _TOOL_BIN = os.environ.get("RENGINE_TOOL_BIN", "/root/go/bin")
 
-# how often a streaming run checks whether the caller has cancelled
 _STOP_POLL_SECONDS = 2.0
 
 
@@ -38,7 +36,6 @@ class ToolExecutionError(Exception):
     """Raised when tool execution fails unexpectedly."""
 
 
-# a tool that bails on a bad flag may say so on stdout; only a short one is a complaint
 _MAX_STDOUT_AS_ERROR = 2000
 
 
@@ -162,8 +159,6 @@ class CLIToolRunner:
                 input=stdin_data,
                 capture_output=True,
                 text=True,
-                # a tool reporting bytes it read off the wire is not always utf-8,
-                # and one bad byte must not discard the whole run
                 errors="replace",
                 timeout=timeout,
                 check=False,
@@ -220,7 +215,6 @@ class CLIToolRunner:
             duration = time.monotonic() - start_time
             logger.error(f"{self.binary} timed out after {timeout}s")
             timeout_error = f"{self.binary} timed out after {timeout} seconds"
-            # the tool wrote as it went — keep what landed instead of discarding the run
             raw_output = self._read_output(
                 output_file=output_file, stdout="", use_output_file=use_output_file
             )
@@ -270,7 +264,7 @@ class CLIToolRunner:
         stderr_sink: Callable[[str], None] | None = None,
         should_stop: Callable[[], bool] | None = None,
     ) -> Iterator[StreamOutcome]:
-        """Stream-parse the tool's JSONL stdout; killed when it stalls past idle_timeout, or exceeds timeout (0 = no ceiling)."""
+        """Stream-parse the tool's JSONL stdout."""
         timeout = self.default_timeout if timeout is None else timeout
         args = list(args) if args else []
         recorder = recorder if recorder is not None else self._recorder
@@ -287,8 +281,6 @@ class CLIToolRunner:
         killed_for: list[str] = [""]
         outcome = StreamOutcome(records=iter(()))
         try:
-            # go's flag parser stops at the first non-flag arg, so these lead —
-            # a malformed later flag must not be able to strip our input/output
             lead: list[str] = []
             if input_data is not None:
                 raw_input = self._normalize_input(input_data)
@@ -323,7 +315,7 @@ class CLIToolRunner:
                         proc.kill()
 
             if idle_timeout:
-                # progress, not volume, decides liveness — a slow-but-producing tool is healthy
+
                 def _watch_idle() -> None:
                     while proc is not None and proc.poll() is None:
                         if time.monotonic() - last_seen[0] > idle_timeout:
@@ -336,7 +328,6 @@ class CLIToolRunner:
                 timer = threading.Timer(timeout, lambda: _kill(f"exceeded {timeout}s"))
                 timer.start()
 
-            # drain stderr concurrently — else a full 64KB stderr pipe deadlocks our stdout read
             def _drain_stderr() -> None:
                 if proc is None or proc.stderr is None:
                     return
@@ -353,7 +344,6 @@ class CLIToolRunner:
             stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
             stderr_thread.start()
 
-            # a cancelled scan must stop the tool even while it is producing nothing to read
             if should_stop is not None:
 
                 def _watch_stop() -> None:

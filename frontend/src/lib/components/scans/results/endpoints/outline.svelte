@@ -103,7 +103,6 @@
 	let container = $state<HTMLElement | null>(null);
 
 	let roots = $derived(tree?.nodes ?? []);
-	// a tree always has exactly one root here, and the root is never a row: the header above it is
 	let headless = $derived(merged || embedded || rooted);
 	let shownRoots = $derived(headless ? roots.slice(0, 1) : roots);
 	let rootName = $derived(roots[0]?.name ?? '');
@@ -131,7 +130,6 @@
 		}
 	}
 
-	// at rest nothing opens on its own; a search hands out a screen budget and branches open while it lasts
 	$effect(() => {
 		const key =
 			roots.map((n) => n.key).join('|') + (searching ? '|s' : '') + (headless ? '|h' : '');
@@ -149,7 +147,6 @@
 		for (const k of untrack(() => openKeys)) openWithAncestors(k);
 	});
 
-	// a folder chip on the host row lands here already open, through whatever group folds it
 	$effect(() => {
 		const keys = openKeys;
 		if (!tree) return;
@@ -280,7 +277,6 @@
 
 	let pending = $derived(loading && !tree);
 
-	// the ancestors of the first visible row are reported to the head, which pins them outside the card
 	let crumbs: Crumb[] = [];
 	let frame = 0;
 
@@ -332,7 +328,6 @@
 		scroller.scrollTop += row.getBoundingClientRect().top - target;
 		focusedKey = key;
 	}
-	// capture phase, because a scroll event does not bubble and the scrolling ancestor is not known until rows exist
 	$effect(() => {
 		if (!container) return;
 		window.addEventListener('scroll', onScroll, { capture: true, passive: true });
@@ -349,7 +344,6 @@
 		onScroll();
 	});
 
-	// typing a few letters jumps to the next row whose name starts with them, like a file browser
 	let typed = '';
 	let typedAt = 0;
 	const TYPE_AHEAD_MS = 700;

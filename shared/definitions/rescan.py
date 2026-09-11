@@ -26,7 +26,6 @@ DIMENSION_SEED: dict[str, str] = {
     SurfaceDimension.VULNERABILITIES.value: SeedKind.HOST.value,
 }
 
-# what a one-click rescan re-runs; every consumer here is listed with what feeds it
 DIMENSION_STAGES: dict[str, tuple[str, ...]] = {
     SurfaceDimension.WEB_ASSETS.value: ("http_probe",),
     SurfaceDimension.ENDPOINTS.value: ("http_probe", "url_discovery"),
@@ -35,7 +34,6 @@ DIMENSION_STAGES: dict[str, tuple[str, ...]] = {
     SurfaceDimension.VULNERABILITIES.value: ("http_probe", "vulnerability_scan"),
 }
 
-# stages a rescan may run at all: everything else needs a target rather than assets
 RESCANNABLE_STAGES: frozenset[str] = frozenset(
     {
         "http_probe",

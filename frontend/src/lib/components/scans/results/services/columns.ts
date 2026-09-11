@@ -1,6 +1,5 @@
 import type { TableColumn } from '../table/columns';
 
-// address, port and software are bounded; hostnames are not, so Hosts takes the free space
 export const SERVICE_LEAD_COLUMNS: TableColumn[] = [
 	{
 		key: 'service',

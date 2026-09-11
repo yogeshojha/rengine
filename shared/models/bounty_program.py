@@ -68,7 +68,6 @@ class BountyScope(SQLModel, table=True):
     max_severity: str | None = Field(default=None, max_length=16)
     instruction: str | None = Field(default=None, sa_column=Column(Text))
     reference: str | None = Field(default=None, max_length=500)
-    # the reNgine target this entry resolves to, null when no scan can reach it
     target_value: str | None = Field(default=None, max_length=500, index=True)
     target_type: TargetType | None = Field(default=None)
     raw: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
@@ -98,7 +97,6 @@ class BountyEventRead(BaseModel):
     handle: str
     program_name: str
     kind: str
-    # derived by the service; paginate() coerces the ORM row first
     label: str = ""
     description: str = ""
     icon: str = "circle-help"
@@ -139,7 +137,6 @@ class BountyProgramRead(BaseModel):
     profile_picture: str | None
     program_state: str
     raw_state: str | None
-    # filled by the service; paginate() coerces the ORM row first
     raw_state_label: str = ""
     joined: bool
     joined_at: datetime | None

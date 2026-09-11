@@ -1,4 +1,4 @@
-"""Token minting and verification. reNgine keeps the hash, never the secret."""
+"""Token minting and verification."""
 
 from __future__ import annotations
 

@@ -20,9 +20,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column(
         "scans",
-        sa.Column(
-            "scope", sa.String(length=16), nullable=False, server_default="full"
-        ),
+        sa.Column("scope", sa.String(length=16), nullable=False, server_default="full"),
     )
     op.add_column("scans", sa.Column("parent_scan_id", sa.Uuid(), nullable=True))
     op.create_index("ix_scans_scope", "scans", ["scope"])

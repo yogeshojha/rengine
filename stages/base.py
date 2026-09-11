@@ -23,7 +23,6 @@ from tools.runner import CLIToolRunner
 
 logger = get_logger(__name__)
 
-# judging costs a pass over the scan's hosts, so it is paced well above the write cadence
 LIVE_JUDGE_SECONDS = 90
 
 if TYPE_CHECKING:
@@ -52,7 +51,6 @@ class StageContext:
 @dataclass
 class StageResult:
     counts: dict[str, int] = field(default_factory=dict)
-    # a stage that ran but got less than it asked for: reported, never silently accepted
     warnings: list[str] = field(default_factory=list)
     partial: bool = False
 
@@ -85,26 +83,19 @@ class Stage(ABC):
     title: ClassVar[str]
     description: ClassVar[str] = ""
     phase: ClassVar[str] = Phase.EXPANSION.value
-    # stages this one must wait for; the registry derives the execution level from it
     depends_on: ClassVar[frozenset[str]] = frozenset()
     applies_to: ClassVar[frozenset[str]] = ALL_TARGETS
     tools: ClassVar[tuple[str, ...]] = ()
     api_keys: ClassVar[tuple[str, ...]] = ()
     requires_api_keys: ClassVar[bool] = False
     touches_target: ClassVar[bool] = True
-    # False when the stage's whole value is running early, not when it is cheap
     deferrable: ClassVar[bool] = True
-    # config fields a launch may override for one run; the rest belong to the engine
     launch_fields: ClassVar[tuple[str, ...]] = ()
-    # kept out of the catalog: enabled by the server, never picked by a user
     catalog_hidden: ClassVar[bool] = False
-    # offered in the catalog but locked on: the server owns `enabled`, a user only sees it
     always_on: ClassVar[bool] = False
-    # asset kinds this stage reads (any one suffices) and writes; a launch implies producers from these
     consumes: ClassVar[frozenset[str]] = frozenset()
     produces: ClassVar[frozenset[str]] = frozenset()
     group: ClassVar[str] = ""
-    # capability = a result a user asks for; support = runs when its inputs exist
     role: ClassVar[str] = ""
     config_model: ClassVar[type[StageConfig]] = StageConfig
 
@@ -187,7 +178,7 @@ class Stage(ABC):
             logger.warning("results event emit failed", exc_info=True)
 
     def _judge_live(self, dimension: str) -> None:
-        """Hosts landed, so let the rule-based judgement catch up without waiting for the run."""
+        """Hosts landed."""
         if dimension != SurfaceDimension.WEB_ASSETS.value:
             return
         if not claim(f"interest:{self.ctx.scan_id}", LIVE_JUDGE_SECONDS):

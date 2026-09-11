@@ -1,4 +1,4 @@
-"""The compiler moved to shared/ so the worker can compile a query too; this keeps the import path."""
+"""Re-exports the query compiler from shared/."""
 
 import importlib
 import pkgutil

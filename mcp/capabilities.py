@@ -1,4 +1,4 @@
-"""What an MCP token may do. One definition; the frontend mirrors it."""
+"""What an MCP token may do."""
 
 from __future__ import annotations
 
@@ -28,10 +28,8 @@ CAPABILITY_HELP: dict[str, str] = {
     Capability.LAUNCH.value: "Start scans and focused rescans against targets.",
 }
 
-# read is granted to every token; a token with no capability at all is useless
 ALWAYS_GRANTED: tuple[str, ...] = (Capability.READ.value,)
 
-# the only capability that reaches a machine the operator does not own
 TOUCHES_TARGETS: tuple[str, ...] = (Capability.LAUNCH.value,)
 
 DEFAULT_CEILING: dict[str, bool] = {

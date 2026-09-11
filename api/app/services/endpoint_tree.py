@@ -1,8 +1,4 @@
-"""The site tree, built from the same filtered set the table shows.
-
-Every node carries the drill-down token that reproduces it, so a node's count is always
-the row count you land on.
-"""
+"""The site tree, built from the same filtered set the table shows."""
 
 from __future__ import annotations
 
@@ -52,7 +48,6 @@ _STATUS_BUCKETS = (
 
 
 def static_clause():
-    # coalesce keeps the predicate two-valued, or NOT drops every extension-less path
     return or_(
         Endpoint.endpoint_class.in_(tuple(STATIC_CLASSES)),
         func.coalesce(Endpoint.extension, "").in_(tuple(STATIC_EXTENSIONS)),
@@ -220,11 +215,7 @@ async def build_tree(
     previous_scan_id: UUID | None = None,
     hide_static: bool = False,
 ) -> EndpointTree:
-    """Aggregate the filtered endpoints into a directory tree.
-
-    In host mode the roots are hosts. In merged mode paths are folded across hosts, which
-    is what turns "/actuator/health" into one node that says it is on 40 hosts.
-    """
+    """Aggregate the filtered endpoints into a directory tree."""
     scoped = base.subquery()
     result = await session.execute(
         select(
@@ -278,7 +269,6 @@ async def build_tree(
     truncated = False
 
     for row in rows:
-        # the key is (host or "") + path so a client can rebuild it from the query alone
         prefix = "" if merged else row.host
         root_key = f"{prefix}/"
         root = roots.get(root_key)
@@ -317,7 +307,6 @@ async def build_tree(
                 count += 1
             child.absorb(row)
             cursor = child
-        # only count it as living here if the walk actually reached its folder
         if complete:
             cursor.direct += 1
             if row.is_index:
@@ -426,18 +415,13 @@ def _leaf(row: _Row) -> TreeLeaf:
 
 
 def _fold_layouts(parent: _Node, children: list[_Node]) -> list[_Node]:
-    """Siblings that share the same structural children fold into one group row.
-
-    A WordPress multisite is sixteen folders each holding author/, wp-json/ and feed/;
-    one row that says so beats sixteen that each say a little of it.
-    """
+    """Siblings that share the same structural children fold into one group row."""
     folders = [c for c in children if c.kind == "directory" and not _index_only(c)]
     if len(folders) < _MIN_GROUP:
         return children
     freq = Counter(name for c in folders for name in c.children)
     if not freq:
         return children
-    # anchor on the most repeated child, then look for the skeleton shared by its carriers
     anchor, carriers = freq.most_common(1)[0]
     if carriers < _MIN_GROUP:
         return children
@@ -467,7 +451,7 @@ def _fold_layouts(parent: _Node, children: list[_Node]) -> list[_Node]:
 
 
 def _emit(node: _Node) -> TreeNode:
-    """Collapse single-child chains the way a file tree does, so a deep path is one row."""
+    """Collapse single-child chains the way a file tree does."""
     if node.kind == _GROUP:
         return _emit_group(node)
     collapsed = node

@@ -300,7 +300,6 @@
 		if (!ready) return;
 		try {
 			facets = await ipsApi.facets(projectId, scanId);
-			// only a successful response may restate the tab count; a failed one is not zero
 			onScanTotal?.(facets.exposure.reduce((n, f) => n + f.count, 0));
 		} catch {
 			facets = EMPTY_IP_FACETS;

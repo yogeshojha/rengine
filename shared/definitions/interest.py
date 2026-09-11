@@ -13,7 +13,6 @@ MAX_RULE_NAME = 80
 MAX_REASON = 400
 MAX_EVIDENCE = 300
 
-# a correlation signal is only meaningful once the estate is big enough to have a norm
 MIN_ESTATE_FOR_RARITY = 25
 RARE_SHARE = 0.05
 RARE_MAX_HOSTS = 3
@@ -41,7 +40,6 @@ SOURCE_HELP: dict[str, str] = {
     InterestSource.AI.value: "A judgement written by a model, not an observation.",
 }
 
-# a judgement is never presented as a fact; the UI must always name its source
 JUDGEMENT_SOURCES: frozenset[str] = frozenset({InterestSource.AI.value})
 
 

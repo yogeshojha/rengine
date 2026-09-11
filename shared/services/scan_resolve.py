@@ -38,8 +38,6 @@ _HEADER_VALUE = re.compile(
     r'\s*:\s*)([^"\'\n]+?)(?=["\']|\s+-|\s*$)',
     re.IGNORECASE,
 )
-# the flag NAME may carry a prefix (-interactsh-token, -itoken): match on how it ends,
-# not on the whole word, or a tool's own spelling decides whether a secret is stored
 _CRED_FLAG = re.compile(
     r"((?:-{1,2}[\w-]*?(?:api[-_]?key|key|token|password|passwd|pass|secret))[ =])(\S+)",
     re.IGNORECASE,
@@ -85,10 +83,7 @@ def mask_proxy_url(value: str | None) -> str | None:
 
 
 def secret_runs(text: str | None) -> list[str]:
-    """The values redact_command would mask, in the order they appear.
-
-    Masking and restoring must agree on what a secret is, so both read this.
-    """
+    """The values redact_command would mask, in the order they appear."""
     if not text:
         return []
     found: list[tuple[int, str]] = []
@@ -131,12 +126,7 @@ MIN_SECRET_LENGTH = 8
 
 
 def redact_secrets(text: str | None, secrets: Iterable[str]) -> str | None:
-    """Mask credential values the scan itself injected, wherever a tool echoed them back.
-
-    Stored proof (a raw request, a curl command) carries whatever headers the scan
-    context supplied. nuclei masks the header names it knows; a custom one is its own
-    business, so we mask by value instead of by name.
-    """
+    """Mask credential values the scan itself injected, wherever a tool echoed them back."""
     if not text:
         return text
     for secret in secrets:
@@ -322,7 +312,6 @@ def _build_headers(engine, ctx) -> tuple[dict[str, str], list[str]]:
     extra_headers = _ctx_get(ctx, "extra_headers") or []
     ctx_headers = resolve_headers(auth, extra_headers)
 
-    # the credentials alone, so a control request can be sent without exactly them
     auth_header_names: list[str] = list(resolve_headers(auth))
 
     lower_map = {k.lower(): k for k in headers}
@@ -368,8 +357,6 @@ def validate_overrides(overrides: dict | None) -> dict[str, dict]:
         spec = specs.get(name)
         values = authored
         if spec is not None and (spec.catalog_hidden or spec.always_on):
-            # the server decides this one; recording an override that had no effect
-            # would put a lie in the run's audit trail
             values = (
                 {k: v for k, v in values.items() if k != "enabled"}
                 if isinstance(values, dict)
@@ -388,7 +375,6 @@ def validate_overrides(overrides: dict | None) -> dict[str, dict]:
         try:
             spec.config_model(**{**spec.defaults, **values})
         except ValidationError as exc:
-            # pydantic's first line only counts the errors; the reason is in the entries
             first = exc.errors()[0]
             field = ".".join(str(part) for part in first.get("loc") or ())
             reason = str(first.get("msg", "")).removeprefix("Value error, ")
@@ -441,7 +427,6 @@ def merge_engine_context(
     per_tool_rate_limits: dict[str, int] = {}
 
     for spec in stage_specs():
-        # not a choice, so no stored document may switch it off either
         authored = (
             {}
             if spec.catalog_hidden

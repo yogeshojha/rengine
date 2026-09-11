@@ -20,7 +20,7 @@ DEFAULT_PROBE_CAP = 5000
 
 
 class CrawlScope(StrEnum):
-    """katana -field-scope; anything else is read by katana as a custom regex."""
+    """katana -field-scope."""
 
     DN = "dn"
     RDN = "rdn"
@@ -108,7 +108,6 @@ SOURCE_KIND: dict[str, str] = {
     EndpointSource.OTHER.value: SourceKind.DERIVED.value,
 }
 
-# how strongly a source asserts the endpoint exists right now; drives merge precedence
 SOURCE_RANK: dict[str, int] = {
     EndpointSource.OTHER.value: 0,
     EndpointSource.ARCHIVE.value: 10,
@@ -129,7 +128,6 @@ ARCHIVE_SOURCES: frozenset[str] = frozenset(
     {EndpointSource.ARCHIVE.value, EndpointSource.DEEP_ARCHIVE.value}
 )
 
-# a source that proves the endpoint was linked from somewhere on the live site
 LINKED_SOURCES: frozenset[str] = frozenset(
     {
         EndpointSource.CRAWL.value,
@@ -144,7 +142,6 @@ PASSIVE_SOURCES: frozenset[str] = frozenset(
 )
 
 
-# the verification pass reports coverage but never discovers, so it is not an EndpointSource
 PROBE_COVERAGE_SOURCE = "probe"
 
 COVERAGE_SOURCE_LABELS: dict[str, str] = {
@@ -203,7 +200,6 @@ CLASS_HELP: dict[str, str] = {
     EndpointClass.OTHER.value: "Anything else.",
 }
 
-# classes that are content rather than attack surface; used to rank probe priority down
 STATIC_CLASSES: frozenset[str] = frozenset(
     {
         EndpointClass.STYLE.value,
@@ -212,7 +208,6 @@ STATIC_CLASSES: frozenset[str] = frozenset(
     }
 )
 
-# font files classify as OTHER but are static content all the same
 STATIC_EXTENSIONS: frozenset[str] = frozenset({"woff", "woff2", "ttf", "eot", "otf"})
 
 
@@ -371,7 +366,6 @@ PARAM_INTEREST_HELP: dict[str, str] = {
     ParamInterest.DEBUG.value: "Switches on diagnostic behaviour.",
 }
 
-# curated, not exhaustive: a name that flags everything flags nothing
 PARAM_INTEREST: dict[str, frozenset[str]] = {
     ParamInterest.IDOR.value: frozenset(
         {
@@ -560,7 +554,6 @@ def _build_param_lookup() -> dict[str, tuple[str, ...]]:
 
 _PARAM_LOOKUP: dict[str, tuple[str, ...]] = _build_param_lookup()
 
-# the order a parameter's reasons are reported in, most consequential first
 PARAM_INTEREST_ORDER: tuple[str, ...] = (
     ParamInterest.RCE.value,
     ParamInterest.SQLI.value,
@@ -618,7 +611,6 @@ PATH_INTEREST_HELP: dict[str, str] = {
     PathInterest.INFRA.value: "A management or infrastructure service mounted on the web root.",
 }
 
-# matched as path substrings, lowercased; curated for signal
 PATH_INTEREST: dict[str, tuple[str, ...]] = {
     PathInterest.VCS.value: ("/.git/", "/.git", "/.svn/", "/.hg/", "/.bzr/"),
     PathInterest.SECRETS.value: (
@@ -717,7 +709,6 @@ INTEREST_LABELS: dict[str, str] = {**PARAM_INTEREST_LABELS, **PATH_INTEREST_LABE
 INTEREST_HELP: dict[str, str] = {**PARAM_INTEREST_HELP, **PATH_INTEREST_HELP}
 INTEREST_KEYS: tuple[str, ...] = tuple(INTEREST_LABELS)
 
-# an exposed file is a finding whatever serves it; an admin path is not when it is a logo
 SENSITIVE_INTERESTS: frozenset[str] = frozenset(
     {PathInterest.VCS.value, PathInterest.SECRETS.value, PathInterest.BACKUP.value}
 )
@@ -729,7 +720,6 @@ ADMIN_INTERESTS: frozenset[str] = frozenset(
     }
 )
 
-# the one reason a host or folder row prints, most serious first; a reflected parameter flags too much to count
 WHY_INTERESTS: tuple[str, ...] = (
     PathInterest.VCS.value,
     PathInterest.SECRETS.value,
@@ -750,7 +740,6 @@ WHY_INTERESTS: tuple[str, ...] = (
     ParamInterest.DEBUG.value,
 )
 
-# a host that holds nothing beyond these is a parked name, not an application
 ROOT_NOISE_FILES: frozenset[str] = frozenset(
     {"", "robots.txt", "sitemap.xml", "sitemap_index.xml", "favicon.ico", "humans.txt"}
 )
@@ -813,7 +802,6 @@ def split_path(path: str) -> tuple[str, str | None, str | None, int]:
     else:
         cut = path.rfind("/")
         dir_path, filename = path[: cut + 1], path[cut + 1 :] or None
-        # a path is capped, a single segment inside it is not — the column is
         if filename:
             filename = filename[:MAX_FILENAME_LENGTH]
     extension = None
@@ -911,7 +899,6 @@ def param_interests(params: tuple[str, ...] | list[str] | None) -> list[str]:
 
 
 def _path_has(lowered: str, needle: str) -> bool:
-    # an editor backup ends in ~; a ~ inside a bundle name is just a hash separator
     if needle == "~":
         return lowered.endswith("~") or "~/" in lowered
     return needle in lowered

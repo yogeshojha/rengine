@@ -46,7 +46,6 @@ class Endpoint(SQLModel, table=True):
     )
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
 
-    # structural identity: path shape plus parameter names, never parameter values
     signature: str = Field(max_length=64, index=True)
 
     # where it is
@@ -95,7 +94,6 @@ class Endpoint(SQLModel, table=True):
     )
     interest: list = _json_list()
 
-    # correlation ids, resolved at write time; no FK so a row outlives its asset
     http_asset_id: uuid.UUID | None = Field(default=None, index=True)
     subdomain_id: uuid.UUID | None = Field(default=None, index=True)
 
@@ -105,7 +103,7 @@ class Endpoint(SQLModel, table=True):
 
 
 class EndpointCoverage(SQLModel, table=True):
-    """One provider's account of what it covered. A null count means unknown, never zero."""
+    """One provider's account of what it covered."""
 
     __tablename__ = "endpoint_coverage"
 
@@ -280,7 +278,7 @@ class TreeLeaf(BaseModel):
 
 
 class FolderChip(BaseModel):
-    """One top-level folder of a host, sized and toned so a host row reads as a one-line sitemap."""
+    """One top-level folder of a host, sized and toned."""
 
     name: str
     path: str

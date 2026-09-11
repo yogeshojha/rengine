@@ -102,7 +102,7 @@ def _socks5_connect(proxy: str, host: str, port: int, timeout: float) -> socket.
 
 
 class BannerClient:
-    """A bounded, thread-pooled TCP prober. Sends one short probe per port."""
+    """A bounded, thread-pooled TCP prober."""
 
     def __init__(
         self,

@@ -1,4 +1,4 @@
-"""Launch. The one read-write tool that reaches a machine the operator does not own."""
+"""Launch."""
 
 from __future__ import annotations
 

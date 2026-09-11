@@ -169,7 +169,7 @@ def upsert(
     findings: list[Finding],
     index: AssetIndex | None = None,
 ) -> int:
-    """Store findings for this scan. The same fingerprint twice in one scan is one row."""
+    """Store findings for this scan."""
     if not findings:
         return 0
     resolved = index if index is not None else build_index(session, scan_id)

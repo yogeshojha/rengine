@@ -14,8 +14,6 @@ from .ast import QuerySyntaxError
 logger = get_logger(__name__)
 
 _TOTAL_IDX = 0
-# one statement per chunk: a 50-branch union plans as one enormous tree, and a
-# statement that outruns the timeout takes every count in it down
 _CHUNK = 16
 
 

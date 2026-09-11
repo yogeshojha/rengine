@@ -1,12 +1,4 @@
-"""reNgine's Model Context Protocol server.
-
-Everything MCP lives in this package: the wire protocol, the tool registry, the
-default tools, tokens and settings. The API exposes it through one thin route
-file; nothing outside imports a submodule directly except `mcp.service` and
-`mcp.transport`.
-
-Adding a tool is one file in `mcp/tools/`. See ADDING_A_TOOL.md.
-"""
+"""reNgine's Model Context Protocol server."""
 
 from __future__ import annotations
 

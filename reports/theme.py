@@ -1,4 +1,4 @@
-"""Themes are token files. This turns one into the CSS custom properties the document reads."""
+"""Themes are token files."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ _URL_RE = re.compile(r"url\(\s*['\"]?([^)'\"]*)", re.I)
 
 
 def check_css(css: str) -> None:
-    """A theme may style, never fetch. Anything that could pull bytes is refused."""
+    """A theme may style."""
     if not css:
         return
     if _IMPORT_RE.search(css):
@@ -159,7 +159,7 @@ def _label_ink(value: str, page: str) -> str:
 
 
 def _snap_weight(value: int) -> int:
-    """WeasyPrint accepts only the hundreds, so 650 must become 700 rather than nothing."""
+    """WeasyPrint accepts only the hundreds."""
     return max(100, min(900, round(value / 100) * 100))
 
 

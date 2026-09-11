@@ -55,7 +55,7 @@ class RIPEStatLookupError(RIPEStatError):
 
 
 def _normalize_asn(raw: str) -> int:
-    """'AS23752', 'as23752', '23752' -> 23752"""
+    """'AS23752', 'as23752', '23752' -> 23752."""
     return int(raw.upper().replace("AS", "").strip())
 
 

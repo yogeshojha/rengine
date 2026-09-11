@@ -1,4 +1,4 @@
-"""What reNgine already holds about a looked-up value. Local reads, never a request."""
+"""What reNgine already holds about a looked-up value."""
 
 from __future__ import annotations
 

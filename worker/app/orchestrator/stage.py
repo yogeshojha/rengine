@@ -31,8 +31,6 @@ from stages.registry import StageSpec
 
 logger = get_logger(__name__)
 
-# stages call _check_abort() in tight loops (once per resolved name, per finding, per
-# root), so the cancel flag is polled at most this often instead of once per call
 _ABORT_POLL_SECONDS = 2.0
 
 
@@ -53,7 +51,6 @@ def _throttled_abort(
             try:
                 state["cancelled"] = _scan_is_cancelled(session_factory, scan_id)
             except Exception:
-                # a database blip must never fail a running stage — keep the last answer
                 logger.warning("abort check failed, keeping last answer", exc_info=True)
             return state["cancelled"]
 
@@ -65,7 +62,6 @@ def load_resolved(execution_config: dict) -> ResolvedScanConfig:
     clean = {k: v for k, v in raw.items() if not k.startswith("_")}
     clean["headers"] = unseal_headers(clean.get("headers"))
     config = ResolvedScanConfig(**clean)
-    # a private attribute does not survive the round trip, so it is put back by hand
     config._auth_header_names = list(raw.get("_auth_header_names") or [])
     return config
 
@@ -75,14 +71,12 @@ def _scan_is_cancelled(
 ) -> bool:
     with session_factory() as session:
         scan = session.get(Scan, scan_id)
-        # the row is committed before the run is dispatched, so a missing one means it was deleted
         return scan is None or scan.status == ScanStatus.CANCELLED.value
 
 
 def _register_task_id(session: Session, scan: Scan, celery_task_id: str | None) -> None:
     if not celery_task_id:
         return
-    # Row-lock the append so concurrent parallel stages don't drop ids (abort handle).
     locked = session.get(Scan, scan.id, with_for_update=True)
     if locked is None:
         session.commit()
@@ -96,7 +90,6 @@ def _register_task_id(session: Session, scan: Scan, celery_task_id: str | None) 
 
 
 def _supersede_orphan_activities(session: Session, scan: Scan, name: str) -> None:
-    # redelivery re-runs this stage — fail the orphan RUNNING row so finalize isn't blocked
     session.execute(
         update(ScanActivity)
         .where(
@@ -164,7 +157,6 @@ def run_stage(
 
     events.stage_started(activity_id=activity.id, stage=spec.name, title=spec.title)
 
-    # setup runs inside the handler: a raise here would leave the activity RUNNING forever
     try:
         recorder = ScanCommandRecorder(
             session_factory=session_factory,
@@ -228,7 +220,6 @@ def run_stage(
         )
         return
 
-    # a stage that ran but came up short reports PARTIAL — never a silent success
     status = (
         ScanActivityStatus.PARTIAL if result.partial else ScanActivityStatus.SUCCESS
     )
@@ -283,7 +274,6 @@ def _fail_stage(
                 error=error,
             )
     except Exception:
-        # recording the failure must never be what leaves the scan running forever
         logger.warning("stage failure could not be recorded in full", exc_info=True)
         activity_svc.session.rollback()
         try:

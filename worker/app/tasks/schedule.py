@@ -33,7 +33,7 @@ def _format_errors(errors: list[str]) -> str | None:
 
 
 def _fire_one(schedule_id: uuid.UUID) -> int:
-    """Lock the schedule, advance it, build a PENDING scan per target; dispatch after commit."""
+    """Lock the schedule, advance it, build a PENDING scan per target."""
     scan_ids: list[str] = []
     with get_sync_session() as session:
         sched = session.execute(

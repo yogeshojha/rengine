@@ -1,5 +1,3 @@
-"""A bundle that ships its map hands over the application's own source."""
-
 from __future__ import annotations
 
 import json
@@ -38,9 +36,6 @@ def _in_scope(url: str) -> bool:
     return "example.com" in url
 
 
-# ── reading a map ──
-
-
 def test_a_real_map_is_recognised():
     outcome = _read(_map(["webpack:///./src/api/client.ts"]))
     assert outcome.exposed
@@ -59,7 +54,6 @@ def test_a_real_map_is_recognised():
     ],
 )
 def test_anything_that_is_not_a_map_is_not_one(raw: bytes):
-    """A soft-404 answering 200 must never be reported as an exposed source map."""
     assert not _read(raw).exposed
 
 
@@ -67,9 +61,6 @@ def test_a_map_without_its_content_is_still_a_map():
     outcome = _read(_map(["webpack:///./src/app.ts"]))
     assert outcome.exposed
     assert outcome.contents == []
-
-
-# ── what it emits ──
 
 
 def _absorb(*outcomes: _Outcome) -> _State:
@@ -100,7 +91,6 @@ def test_an_out_of_scope_url_in_the_source_is_not_stored():
 
 
 def test_one_vendor_map_served_by_many_hosts_is_mined_once():
-    """Four hosts served the identical Plesk library map on the measured estate."""
     raw = _map(["webpack:///./lib.ts"], ['fetch("/api/shared");'])
     first, second = _read(raw), _read(raw)
     second.bundle = "https://other.example.com/static/js/main.abc123.js"
@@ -130,9 +120,6 @@ def test_the_note_never_claims_a_map_that_was_not_there():
     assert "no source map" in _State().note(asked=40)
 
 
-# ── the url a map sits beside ──
-
-
 @pytest.mark.parametrize(
     ("url", "expected"),
     [
@@ -151,9 +138,6 @@ def test_anything_that_is_not_an_http_url_is_refused(url: str):
     assert _strip(url) is None
 
 
-# ── how it is wired ──
-
-
 def test_it_is_a_registered_source_that_sends_requests():
     assert URL_PROVIDERS[EndpointSource.JS.value] is SourceMapProvider
     assert SourceMapProvider.touches_target is True, "a passive scan must skip it"
@@ -162,9 +146,6 @@ def test_it_is_a_registered_source_that_sends_requests():
 
 def test_the_mining_vocabulary_is_shared_with_response_mining():
     assert response_mining.mine is mine
-
-
-# ── provenance ──
 
 
 def test_a_url_read_out_of_a_bundle_does_not_claim_to_be_linked():

@@ -51,7 +51,6 @@ def upgrade() -> None:
     ):
         op.create_index(f"ix_connector_hosts_{column}", "connector_hosts", [column])
 
-
     op.add_column(
         "connectors",
         sa.Column("record_hosts", sa.Boolean(), nullable=False, server_default="true"),

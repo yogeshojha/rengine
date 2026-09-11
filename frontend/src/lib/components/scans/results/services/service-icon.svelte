@@ -12,7 +12,6 @@
 
 	let { service, serviceClass, product = null, class: className = 'size-4' }: Props = $props();
 
-	// the brand mark when the service is a product, the class glyph when it is a protocol
 	let name = $derived(product?.split(/[\s/_(,-]/)[0] || service || '');
 	let ClassIcon = $derived(SERVICE_CLASS_ICONS[serviceClass] ?? Server);
 </script>

@@ -1,4 +1,4 @@
-"""A certificate expires on a schedule nobody rescans for. This re-checks it."""
+"""Certificates re-checked between scans, on their own freshness clock."""
 
 from __future__ import annotations
 
@@ -17,14 +17,10 @@ from tools.tlsx.parser import parse_certificate
 
 logger = get_logger(__name__)
 
-# a certificate that has not been looked at for this long is worth one handshake
 STALE_AFTER = timedelta(hours=12)
-# and one already inside its renewal window is worth it sooner
 URGENT_WITHIN = timedelta(days=30)
 URGENT_AFTER = timedelta(hours=4)
 MAX_PER_RUN = 500
-# measured: tlsx writes every record it is going to write and then does not exit, so
-# the run is bounded by a budget and reports what it got, never waited on
 PER_HOST_SECONDS = 5
 CONCURRENCY = 50
 MIN_RUN_SECONDS = 45
@@ -38,8 +34,6 @@ def budget(hosts: int) -> int:
 
 @dataclass
 class Freshness:
-    """What one pass actually managed, so a caller reports rather than assumes."""
-
     picked: int = 0
     answered: int = 0
     renewed: int = 0
@@ -49,7 +43,6 @@ class Freshness:
 
 
 def enabled(session: Session) -> bool:
-    """It handshakes targets outside a scan, so it never runs unasked."""
     row = session.execute(
         text("SELECT cert_recheck_enabled FROM instance_settings LIMIT 1")
     ).first()
@@ -57,11 +50,7 @@ def enabled(session: Session) -> bool:
 
 
 def due(session: Session, *, limit: int = MAX_PER_RUN) -> list[Subdomain]:
-    """The hosts whose stored certificate is most likely to be wrong right now.
-
-    Only the newest scan of each target is considered: an older scan's rows are a
-    record of that run, not a claim about today.
-    """
+    """Hosts due a re-check, nearest expiry first, newest scan of each target only."""
     now = utc_now()
     newest = text(
         "subdomains.scan_id = ("
@@ -132,8 +121,6 @@ def _apply(session: Session, rows: list[Subdomain], seen: dict[str, dict]) -> Fr
     for row in rows:
         fresh = seen.get(row.name)
         if fresh is None:
-            # a host that did not answer keeps what the scan found; only the stamp
-            # moves, so one unreachable host is not asked again every four hours
             payload.append({"id": row.id, "tls_checked_at": now})
             continue
         moved = fresh["not_after"] != row.tls_not_after

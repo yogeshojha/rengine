@@ -64,7 +64,6 @@ class PassivePortsStage(Stage):
         try:
             found = client.passive(addresses)
         except NaabuError as exc:
-            # supplementary intel: a failed lookup must not fail the scan, but it must be visible
             logger.warning("passive port lookup failed: %s", exc)
             self.emit_progress(f"passive lookup failed: {exc}")
             return StageResult(counts={"known_ports": 0, "addresses": len(addresses)})

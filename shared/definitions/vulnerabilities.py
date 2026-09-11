@@ -211,7 +211,6 @@ class TemplateSet:
     headless: bool = False
 
 
-# curated bundles over the template library; a set is a tag or directory filter, never a copy
 TEMPLATE_SETS: tuple[TemplateSet, ...] = (
     TemplateSet(
         key="kev",
@@ -326,7 +325,7 @@ HEADLESS_SETS: frozenset[str] = frozenset(s.key for s in TEMPLATE_SETS if s.head
 
 
 def reject_unknown(values: list[str], known, axis: str) -> list[str]:
-    """A plan's count is a promise, so a value the library cannot honour is refused here."""
+    """A plan's count is a promise."""
     unknown = [v for v in values if v not in known]
     if unknown:
         msg = f"Unknown {axis}: {', '.join(sorted(unknown))}. Choose from: {', '.join(known)}."
@@ -334,7 +333,6 @@ def reject_unknown(values: list[str], known, axis: str) -> list[str]:
     return values
 
 
-# nuclei's code protocol runs shell on the scanner host; an uploaded template may never use it
 FORBIDDEN_TEMPLATE_KEYS: frozenset[str] = frozenset({"code"})
 
 KEV_TAG = "kev"
@@ -355,7 +353,6 @@ class RiskSignal:
     description: str
 
 
-# the reasons a finding outranks another finding of the same severity
 RISK_SIGNALS: tuple[RiskSignal, ...] = (
     RiskSignal("kev", "Known exploited", "Listed as exploited in the wild."),
     RiskSignal(

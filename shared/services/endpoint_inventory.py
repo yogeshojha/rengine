@@ -1,4 +1,4 @@
-"""The only writer of `endpoints`: merges observations by structural signature, never losing a source."""
+"""The only writer of `endpoints`: merges observations by structural signature."""
 
 from __future__ import annotations
 
@@ -45,7 +45,6 @@ class EndpointObservation:
     detail: str | None = None
     observed_at: datetime | None = None
     methods: list[str] = field(default_factory=list)
-    # probe results, only meaningful when the provider actually made the request
     is_probed: bool = False
     status_code: int | None = None
     content_type: str | None = None
@@ -146,8 +145,6 @@ class _Merged:
             self.observed_at = obs.observed_at
         if not obs.is_probed:
             return
-        # coalesce, never overwrite: a crawler reports a status and a title but no words,
-        # lines or hash, and must not erase what a full probe already recorded
         self.is_probed = True
         for field_ in (
             "status_code",
@@ -216,7 +213,6 @@ def _row(
         endpoint_class=endpoint_class,
         extension=merged.extension,
     )
-    # a sitemap, an archive record and a crawl result are all arbitrary bytes
     return scrub(
         {
             "id": uuid.uuid4(),
@@ -348,7 +344,7 @@ def _changes(row: Endpoint, merged: _Merged, source: str, now: datetime) -> dict
 
 
 def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
-    """Insert inside a savepoint; a row postgres refuses costs that row, not the stage."""
+    """Insert inside a savepoint."""
     try:
         with session.begin_nested():
             written = session.execute(
@@ -388,11 +384,7 @@ def upsert(
     index: AssetIndex | None = None,
     default_scheme: str = "https",
 ) -> UpsertResult:
-    """Merge one provider's sightings into the scan's endpoints.
-
-    A source is only ever added to a row, never replaced, and a probe result never
-    reverts to unprobed.
-    """
+    """Merge one provider's sightings into the scan's endpoints."""
     resolved_source = coerce_source(source)
     folded, rejected = _fold(observations, default_scheme)
     result = UpsertResult(rejected=rejected, seen=len(observations))
@@ -402,7 +394,6 @@ def upsert(
 
     resolved_index = index if index is not None else build_index(session, scan_id)
     now = utc_now()
-    # a stable key order keeps two providers upserting the same signatures from deadlocking
     signatures = sorted(folded)
 
     for start in range(0, len(signatures), _BATCH):
@@ -437,7 +428,6 @@ def upsert(
             created, refused = _insert_rows(session, fresh)
             result.created += len(created)
             result.rejected += refused
-            # another writer won the race: merge into its row instead of dropping ours
             lost = [sig for sig in missing if sig not in created]
             if lost:
                 merge.extend(
@@ -453,8 +443,6 @@ def upsert(
                     .all()
                 )
 
-        # one statement per shape of change rather than one per row: endpoint_probe's
-        # budget is 5,000 today and the table already holds 345,152 rows
         shaped: dict[frozenset[str], list[dict]] = {}
         for row in merge:
             changes = _changes(row, folded[row.signature], resolved_source, now)
@@ -476,11 +464,7 @@ def verify(
     observations: list[EndpointObservation],
     default_scheme: str = "https",
 ) -> UpsertResult:
-    """Apply probe results to endpoints that already exist.
-
-    A request that confirms an endpoint is not a claim that it was discovered, so this
-    never touches `sources`, `discovery` or `primary_source`.
-    """
+    """Apply probe results to endpoints that already exist."""
     folded, rejected = _fold(observations, default_scheme)
     result = UpsertResult(rejected=rejected, seen=len(observations))
     if not folded:

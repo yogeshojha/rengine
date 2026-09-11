@@ -1,4 +1,4 @@
-"""A provider decides why a host is an exposure. One directory each, discovered from disk."""
+"""A provider decides why a host is an exposure."""
 
 from __future__ import annotations
 
@@ -23,14 +23,12 @@ class RawSignal:
     rule_id: uuid.UUID | None = None
     model: str | None = None
     prompt_version: str | None = None
-    # a booster only counts once something else already flagged the host
     booster: bool = False
 
 
 class InterestProvider:
     name: str = ""
     source: str = ""
-    # every source this provider can emit; a pass rewrites exactly these
     emits: tuple[str, ...] = ()
     title: str = ""
     description: str = ""

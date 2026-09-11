@@ -67,7 +67,7 @@ class McpTokenRead(BaseModel):
 
 
 class McpTokenCreated(BaseModel):
-    """The one time the secret is returned. reNgine stores only its hash."""
+    """The one time the secret is returned."""
 
     token: McpTokenRead
     secret: str

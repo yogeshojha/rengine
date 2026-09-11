@@ -16,7 +16,6 @@ _TOKEN = re.compile(r"^[A-Za-z0-9_-]{20,}$")
 _MIXED = re.compile(r"^(?=.*\d)(?=.*[A-Za-z])[A-Za-z0-9]{8,}$")
 _HAS_DOT = re.compile(r"\.")
 
-# build output is named by content hash, so every deploy invents new filenames
 _MIN_STEM = 10
 _MIN_DIGITS = 3
 _HASH_STEM = re.compile(r"^[a-z0-9]+$", re.IGNORECASE)

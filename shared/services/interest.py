@@ -1,4 +1,4 @@
-"""Runs every provider over one scan and writes what it found. The worker's side of interest."""
+"""Runs every provider over one scan and writes what it found."""
 
 from __future__ import annotations
 
@@ -32,9 +32,6 @@ from shared.utils.datetime import utc_now
 logger = get_logger(__name__)
 
 SIGNATURE_VERSION = "1"
-# what may be judged while the scan is still discovering: a saved query matches a host on
-# its own facts, so it is right at any point. Rarity needs a finished estate to mean
-# anything, and a model costs money per pass, so neither runs until the run is complete.
 LIVE_SOURCES: tuple[str, ...] = (
     InterestSource.KEYWORD.value,
     InterestSource.RULE.value,
@@ -253,7 +250,7 @@ def evaluate(
     rules: list[InterestRule] | None = None,
     only: tuple[str, ...] | None = None,
 ) -> EvaluationResult:
-    """Judge a scan's hosts. `only` restricts which sources run — and which are rewritten."""
+    """Judge a scan's hosts."""
     resolved = applicable_rules(session, scan.project_id) if rules is None else rules
     ctx = InterestContext(
         session=session, scan=scan, rules=resolved, ai=ai, now=utc_now()
@@ -262,15 +259,10 @@ def evaluate(
     signals, ran, ai_used = _collect(ctx, include_ai, only)
     kept = _prune(signals, _dismissed(session, scan.target_id))
 
-    # a pass rewrites the sources whose providers RAN, not the ones that happened to
-    # produce something: a rule that now matches nothing has to clear its old rows, and a
-    # provider that never ran (no AI key) must keep its previous judgement
     if only is not None:
         sources = only
     else:
         sources = tuple({s for p in providers() if p.name in ran for s in p.sources()})
-    # nothing ran, so nothing is being rewritten: leave the previous judgement alone rather
-    # than clearing every deterministic signal because a provider raised and was swallowed
     if sources:
         session.execute(
             delete(InterestSignal).where(
@@ -307,7 +299,6 @@ def evaluate(
     _rollup(session, scan)
 
     if only is None:
-        # a partial pass has not applied every rule, so it must not claim to be current
         scan.interest_signature = signature(resolved)
     if ai_used:
         scan.interest_judged_at = utc_now()

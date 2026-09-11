@@ -1,4 +1,4 @@
-"""Posture and risk scores. Every deduction is named, so the number can be argued with."""
+"""Posture and risk scores."""
 
 from __future__ import annotations
 

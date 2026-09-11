@@ -143,7 +143,7 @@ def custom_css(session, *, embed: bool, only: frozenset[str] | None = None) -> s
 def font_faces(
     session=None, *, embed: bool = False, only: frozenset[str] | None = None
 ) -> str:
-    """Every face for print; only the families a theme names when the file must stand alone."""
+    """Every face for print."""
     css = vendored_css(embed=embed, only=only)
     if session is not None:
         extra = custom_css(session, embed=embed, only=only)

@@ -39,7 +39,6 @@ from shared.models.vulnerability import SeverityCount, Vulnerability
 from shared.services.scan_scope import census_only
 from shared.services.schedule_timing import describe_schedule
 
-# the surface sweep looks this far back; totals still count every run
 _MAX_RUNS = 25
 
 
@@ -99,7 +98,7 @@ class TargetSummaryService:
         return list(result.scalars().all())
 
     async def _counts(self, runs: list[Scan]) -> dict[str, dict[UUID, int]]:
-        """Rows this target's scans hold, per dimension. The count is the promise."""
+        """Rows this target's scans hold, per dimension."""
         ids = [r.id for r in runs]
         out: dict[str, dict[UUID, int]] = {}
         for key, model in TABLES.items():
@@ -109,7 +108,6 @@ class TargetSummaryService:
                 .group_by(model.scan_id)
             )
             if key == SurfaceDimension.VULNERABILITIES.value:
-                # every run here shares one target, so any of their ids resolves it
                 query = query.where(not_(vuln_suppressed(ids[0])))
             result = await self.session.execute(query)
             out[key] = {row[0]: row[1] for row in result.all()}
@@ -163,7 +161,6 @@ class TargetSummaryService:
                 if len(scan_ids) > 1:
                     metric.previous = counts[key].get(scan_ids[1], 0)
                     metric.delta = metric.value - metric.previous
-            # a first covering scan has nothing to compare against, so it reports no change
             if (
                 key == SurfaceDimension.WEB_ASSETS.value
                 and latest is not None

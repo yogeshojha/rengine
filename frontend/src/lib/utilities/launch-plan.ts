@@ -26,7 +26,6 @@ export interface PlanResolution {
 	effective: Record<string, StageConfig>;
 }
 
-// state proxies cannot be structuredClone'd; plans are plain JSON
 export const cloneStages = (stages: StageOverrides): StageOverrides =>
 	JSON.parse(JSON.stringify(stages ?? {}));
 
@@ -118,7 +117,6 @@ export function mostRecentEngine(engines: ScanEngine[]): ScanEngine | null {
 export const CAPABILITY = 'capability';
 export const SUPPORT = 'support';
 
-// quick: selected capabilities pull in producers and fed support stages follow; engine: runs as stored
 export function resolvePlan(
 	catalog: EngineCatalog,
 	effective: Record<string, StageConfig>,

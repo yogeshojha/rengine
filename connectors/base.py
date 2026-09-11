@@ -23,9 +23,7 @@ class ProxyConnector:
     vendor: str = ""
     description: str = ""
     docs_url: str = ""
-    # where the client lives in this repository, when one exists
     source_path: str = ""
-    # tools whose traffic this proxy labels, in the order the UI offers them
     tools: tuple[str, ...] = (SourceTool.PROXY.value, SourceTool.REPEATER.value)
     # this proxy can supply the session already in use
     supports_sessions: bool = True

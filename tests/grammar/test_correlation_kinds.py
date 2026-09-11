@@ -1,5 +1,3 @@
-"""A correlation kind is only useful if every link in its chain exists."""
-
 from __future__ import annotations
 
 import re
@@ -42,7 +40,6 @@ def test_every_kind_reads_a_column_that_exists(kind: str):
 
 
 def test_the_two_new_identities_are_wired():
-    """tls_fingerprint and header_hash were stored and correlated by nothing."""
     assert CorrelationKind.CERT.value in _ASSET_KINDS
     assert CorrelationKind.HEADERS.value in _ASSET_KINDS
     assert _ASSET_KINDS[CorrelationKind.CERT.value][0] == "tls_fingerprint"
@@ -50,7 +47,6 @@ def test_the_two_new_identities_are_wired():
 
 
 def test_the_frontend_mirror_carries_the_same_kinds():
-    """config/correlation.ts mirrors the enum; a kind missing there draws no colour."""
     text = MIRROR.read_text()
     declared = set(re.findall(r"^\t[A-Z_]+ = '([^']+)',?$", text, re.M))
     assert declared == set(CORRELATION_KIND_ORDER)

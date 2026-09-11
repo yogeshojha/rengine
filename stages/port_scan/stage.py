@@ -101,8 +101,6 @@ class PortScanStage(Stage):
         replaced = [False]
 
         def _write(batch: list[dict]) -> int:
-            # only the first write clears the previous attempt, or each batch would
-            # delete the one before it
             written = port_inventory.upsert(
                 self.session,
                 scan_id=self.ctx.scan_id,
@@ -141,7 +139,6 @@ class PortScanStage(Stage):
             self._check_abort()
         sink.close()
         if not replaced[0]:
-            # nothing was found, so nothing cleared the previous attempt's rows
             _write([])
 
         count = len(found)
@@ -167,7 +164,7 @@ class PortScanStage(Stage):
         found: set[tuple[str, int, str]],
         failures: list[str],
     ) -> None:
-        """Stream one naabu run into the sink; a crash with no output is a failure, not zero ports."""
+        """Stream one naabu run into the sink."""
         try:
             with client.stream_scan(
                 ips, flags, should_stop=self.ctx.is_aborted
@@ -208,7 +205,6 @@ class PortScanStage(Stage):
 
     def _plan(self, rows: list[IpAddress], cfg: PortScanConfig) -> dict[str, Decision]:
         excluded = self.ctx.resolved.excluded_ips or []
-        # skip_private is for addresses a scan merely came across, never for its own target
         skip_private = cfg.skip_private and not self._named_private_seed()
         plan: dict[str, Decision] = {}
         for row in rows:

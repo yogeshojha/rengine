@@ -15,7 +15,6 @@ _TITLE = {
     "origin": "Origin reachable outside the CDN",
     "vhost": "Address serves a different site by default",
 }
-# high confidence means two or more independent identities agreed
 _SEVERITY = {"high": Severity.MEDIUM.value, "medium": Severity.LOW.value}
 
 
@@ -27,7 +26,7 @@ def _evidence(found: OriginFinding) -> str:
 
 
 def origin_finding(found: OriginFinding) -> Finding:
-    """One origin-exposure correlation, written down so triage and alerting reach it."""
+    """One origin-exposure correlation as a finding."""
     address = found.exposed.host or found.exposed.ip or ""
     kind = found.kind if found.kind in _TEMPLATE else "origin"
     names = [sample.host for sample in found.fronted if sample.host]

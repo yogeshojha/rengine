@@ -86,7 +86,6 @@ class ServiceFingerprintStage(Stage):
         )
 
     def _endpoints(self, cfg: ServiceFingerprintConfig) -> list[Endpoint]:
-        # the banner grab is a real connection, so it obeys the port scan's own policy
         query = (
             select(
                 Port.ip,

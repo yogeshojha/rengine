@@ -26,7 +26,7 @@ def _json_list() -> Field:
 
 
 class VulnTemplate(SQLModel, table=True):
-    """One check in the library. Project templates and uploads share the row shape."""
+    """One check in the library."""
 
     __tablename__ = "vuln_templates"
     __table_args__ = (

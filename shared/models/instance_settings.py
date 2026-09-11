@@ -45,7 +45,6 @@ class InstanceSettings(SQLModel, table=True):
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )
     threat_intel_auto_sync: bool = Field(default=True)
-    # it handshakes targets outside a scan, so it is opt-in, not opt-out
     cert_recheck_enabled: bool = Field(default=False)
     bounty_sync_interval: str = Field(default=DEFAULT_SYNC_INTERVAL, max_length=16)
     bounty_synced_at: datetime | None = Field(default=None)

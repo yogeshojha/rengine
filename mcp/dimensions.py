@@ -1,8 +1,4 @@
-"""The five result dimensions, adapted for tools.
-
-One entry per dimension. Add a sixth here and `query_assets`, `group_assets`,
-`surface_brief` and `describe_query_language` all cover it with no further edits.
-"""
+"""The five result dimensions, adapted for tools."""
 
 from __future__ import annotations
 
@@ -43,7 +39,6 @@ class Dimension:
     tab: str
     filter_path: str
     service_path: str
-    # fields kept from a row; a raw row costs ~205 tokens, these cost ~25
     fields: tuple[str, ...]
     # the column a human reads first
     identity: str

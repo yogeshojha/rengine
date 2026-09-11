@@ -275,7 +275,6 @@ class ScanEngineService:
                 detail="YAML must include a 'name' field",
             )
 
-        # a mis-indented stage lands here as a top-level key — never accept it silently
         unknown = [k for k in data if k not in _ENGINE_KEYS]
         if unknown:
             raise HTTPException(

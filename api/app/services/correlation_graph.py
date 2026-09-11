@@ -122,7 +122,6 @@ class CorrelationGraphService:
                 for value in _values(getattr(row, attr)):
                     members[kind][value].add(i)
 
-        # the columns come from the kinds, so a new identity is one edit and not two
         assets = (
             await self.session.execute(
                 select(

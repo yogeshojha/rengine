@@ -1,4 +1,4 @@
-"""The api's view of origin exposure; the computation is shared with the stage."""
+"""The api's view of origin exposure."""
 
 from __future__ import annotations
 

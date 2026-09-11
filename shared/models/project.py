@@ -29,7 +29,6 @@ class ProjectCreate(ProjectBase):
     description: str | None = None
     label: str | None = None
 
-    # on the request only: a stored name from before this rule must still read back
     _validate_name = field_validator("name")(partial(clean_name, max_len=50))
 
 

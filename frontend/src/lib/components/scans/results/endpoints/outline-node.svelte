@@ -44,7 +44,6 @@
 		return { folders: [...folders].sort(byName), leafNodes: [...leafNodes].sort(byName) };
 	});
 
-	// a search opens this node only while the opened rows still fit the screen budget
 	$effect(() => {
 		const budget = ctx.budget;
 		if (!budget.enabled || headless || budget.decided.has(node.key)) return;
@@ -124,7 +123,6 @@
 		| { kind: 'node'; key: string; node: TreeNode; leaf: TreeLeaf; endpoint: EndpointRead }
 		| { kind: 'leaf'; key: string; endpoint: EndpointRead };
 
-	// interest, then input, then answering, then name: the same order the server gives leaves
 	function rank(e: EndpointRead, name: string): [number, number, number, number, string] {
 		const ok = e.status_code !== null && e.status_code >= 200 && e.status_code < 300;
 		return [
@@ -165,7 +163,6 @@
 		return [...fetched, ...nodes];
 	});
 
-	// a closed row says what is inside it while a search is on, so nothing has to be opened to see why it matched
 	let hint = $derived.by(() => {
 		if (node.kind === 'group') return `each has ${node.top_folders.join(', ')}`;
 		if (!ctx.searching || open) return '';

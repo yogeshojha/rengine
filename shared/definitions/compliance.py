@@ -1,4 +1,4 @@
-"""Findings mapped to control frameworks. A mapping is evidence for an auditor, never a compliance verdict."""
+"""Findings mapped to control frameworks."""
 
 from __future__ import annotations
 
@@ -210,7 +210,6 @@ FRAMEWORK_BY_KEY: dict[str, FrameworkSpec] = {f.key: f for f in FRAMEWORKS}
 FRAMEWORK_KEYS: tuple[str, ...] = tuple(f.key for f in FRAMEWORKS)
 DEFAULT_FRAMEWORKS: list[str] = [Framework.OWASP.value]
 
-# the OWASP 2021 category each weakness class belongs to, from the project's own mapping
 _OWASP_CWES: dict[str, tuple[int, ...]] = {
     "A01": (
         22,
@@ -411,7 +410,6 @@ OWASP_BY_CWE: dict[int, str] = {
     cwe: control for control, cwes in _OWASP_CWES.items() for cwe in cwes
 }
 
-# 2024 CWE Top 25 most dangerous software weaknesses, in rank order
 CWE_TOP_25: tuple[int, ...] = (
     79,
     787,
@@ -448,7 +446,6 @@ class TagRule:
     controls: dict[str, tuple[str, ...]]
 
 
-# a check with no weakness class still says what it is; its tags carry the mapping
 TAG_RULES: tuple[TagRule, ...] = (
     TagRule(
         frozenset(
@@ -545,14 +542,12 @@ TAG_RULES: tuple[TagRule, ...] = (
     ),
 )
 
-# what a discovery run alone is evidence for, findings or not
 SURFACE_CONTROLS: dict[str, tuple[str, ...]] = {
     Framework.NIST.value: ("ID.AM", "DE.CM"),
     Framework.ISO.value: ("A.8.20",),
     Framework.PCI.value: ("11",),
 }
 
-# the framework control each OWASP category corresponds to elsewhere
 _OWASP_ALIGN: dict[str, dict[str, tuple[str, ...]]] = {
     "A01": {
         Framework.PCI.value: ("7",),

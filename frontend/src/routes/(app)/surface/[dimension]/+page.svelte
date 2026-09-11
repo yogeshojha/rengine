@@ -27,7 +27,6 @@
 		untrack(() => void surfaceStore.load(id));
 	});
 
-	// a launch changes what the numbers rest on, so the coverage line has to be re-read
 	function afterLaunch() {
 		launchOpen = false;
 		if (projectId) void surfaceStore.load(projectId, true);

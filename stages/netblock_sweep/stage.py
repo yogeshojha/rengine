@@ -138,8 +138,6 @@ class NetblockSweepStage(Stage):
         owned: list[Network] = []
         rejected = 0
         for asn, as_name, hosts in rows:
-            # a transit provider is too large; a hosting or WAF provider is small but
-            # carries only a sliver of the estate, so both tests are needed
             if hosts < cfg.min_addresses or hosts * 100 < len(ips) * cfg.min_share:
                 continue
             self._check_abort()
@@ -185,8 +183,6 @@ class NetblockSweepStage(Stage):
         return out, False
 
     def _client(self, cfg: NetblockSweepConfig, count: int) -> DnsxClient | None:
-        # a total budget against a floor rate, never a flat ceiling: silence is the
-        # normal answer here, so a fixed timeout truncates the sweep and reports success
         try:
             return DnsxClient(
                 timeout=max(_MIN_BUDGET, count // _FLOOR_RATE),

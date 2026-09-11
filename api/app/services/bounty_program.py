@@ -74,7 +74,7 @@ EMPTY_COUNTS = {"in_scope_count": 0, "out_of_scope_count": 0, "importable_count"
 
 
 def _without_counts(program) -> dict:
-    """paginate() may hand back an already-coerced read, so drop the tallies it defaulted."""
+    """paginate() may hand back an already-coerced read."""
     data = program.model_dump()
     for key in (
         *EMPTY_COUNTS,
@@ -386,7 +386,7 @@ class BountyProgramService:
         return {program_id: count or 0 for program_id, count in rows.all()}
 
     async def counts_for(self, program_ids: list[UUID]) -> dict[UUID, dict[str, int]]:
-        """Scope tallies per program, so a card can state what it holds before it opens."""
+        """Scope tallies per program."""
         if not program_ids:
             return {}
         rows = await self.session.execute(
@@ -528,7 +528,6 @@ class BountyProgramService:
             query = query.where(BountyScope.scope_state == ScopeState.IN_SCOPE.value)
         rows = (await self.session.execute(query)).scalars().all()
 
-        # what the user actually selected but reNgine cannot reach
         unreachable = select(BountyScope).where(
             BountyScope.program_id == program.id,
             col(BountyScope.target_value).is_(None),

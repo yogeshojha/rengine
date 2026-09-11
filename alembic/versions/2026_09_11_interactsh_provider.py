@@ -20,5 +20,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Postgres cannot drop enum values without recreating the type; leave as-is.
     pass

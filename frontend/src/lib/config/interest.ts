@@ -65,7 +65,6 @@ export function sourceIcon(source: string): IconComponent {
 	return SOURCE_ICONS[source] ?? ListFilter;
 }
 
-// the rail beside a row: rank read as colour, never colour alone
 export const BAND_RAIL: Record<string, string> = {
 	[INTEREST_BAND.CRITICAL]: 'bg-destructive',
 	[INTEREST_BAND.HIGH]: 'bg-warning',
@@ -84,7 +83,6 @@ export const TONE_CHIP: Record<string, string> = {
 	neutral: 'border-border bg-muted/60 text-muted-foreground'
 };
 
-// a judgement is always dressed differently from an observation
 export const AI_CHIP = 'border-info/40 bg-info/10 text-info';
 export const RULE_CHIP = 'border-primary/30 bg-primary/[0.07] text-primary';
 

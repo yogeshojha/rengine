@@ -125,7 +125,6 @@ class TargetAssetService:
             .group_by(Subdomain.name)
             .subquery("agg")
         )
-        # the newest row per name carries the attributes worth showing
         newest = (
             select(Subdomain)
             .where(*scope)

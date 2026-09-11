@@ -28,7 +28,6 @@
 	};
 
 	const DEFAULT_TAB = SETTINGS_TABS[0];
-	// Bounty Hub is a bug bounty capability, so its tab follows the mode
 	const tabs = $derived(
 		SETTINGS_TABS.filter(
 			(tab) => tab !== 'bounty-hub' || capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)

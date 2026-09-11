@@ -1,5 +1,3 @@
-"""A prefix is filled only when the feed's range is exactly one network."""
-
 from __future__ import annotations
 
 import ipaddress
@@ -68,7 +66,6 @@ async def test_a_range_that_is_one_network_fills_the_prefix(estate, now):
 
 
 async def test_an_aggregated_range_leaves_the_prefix_unknown(estate, now):
-    """inet_merge would report a /17 for a range that is not one — a null is honest."""
     await estate.scan("example.com", "run", at=now)
     await _ranges(estate, [("198.51.100.0", "198.51.196.255", 64501, "Aggregate")])
     await _address(estate, "run", "198.51.100.9")

@@ -15,10 +15,7 @@ logger = get_logger(__name__)
 
 WAFW00F_BINARY = "wafw00f"
 DEFAULT_TIMEOUT = 600
-# wafw00f has no threading of its own, so concurrency is one process per shard
 DEFAULT_CONCURRENCY = 6
-# small shards on purpose: a shard killed at the timeout has written no json at all,
-# so the chunk size is what a stalled host can cost the run
 SHARD_SIZE = 25
 
 
@@ -28,7 +25,7 @@ class Wafw00fError(Exception):
 
 @dataclass
 class WafScan:
-    """What the run actually covered. A shard that never finished names no WAF at all."""
+    """What the run actually covered."""
 
     found: dict[str, str] = field(default_factory=dict)
     scanned: int = 0
@@ -113,7 +110,6 @@ class Wafw00fClient:
                 name = rec["firewall"]
                 if name and name.lower() not in ("none", "generic"):
                     out[url] = name[:100]
-        # wafw00f writes its json array only at the end, so a killed run says nothing
         return out, not result.timed_out
 
 

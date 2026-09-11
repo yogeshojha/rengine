@@ -1,5 +1,3 @@
-"""The execution plan must honour every depends_on, and defer only what is safe."""
-
 from __future__ import annotations
 
 import pytest
@@ -14,7 +12,6 @@ def _specs():
 
 
 def _before(steps: list[tuple[str, ...]]) -> dict[str, set[str]]:
-    """For each stage, everything that must finish before it may start."""
     out: dict[str, set[str]] = {}
     settled: set[str] = set()
     for step in steps:
@@ -38,8 +35,6 @@ def test_every_dependency_completes_before_its_dependent_starts():
 
 
 def test_a_producer_runs_before_anything_that_consumes_it():
-    """depends_on is not the whole graph: asset_seed is named by nobody yet produces
-    the hosts and addresses seven stages read."""
     specs = _specs()
     before = _before(execution_plan())
     for name, spec in specs.items():
@@ -52,7 +47,6 @@ def test_a_producer_runs_before_anything_that_consumes_it():
 
 
 def test_vulnerability_scan_no_longer_holds_up_the_last_stages():
-    """The whole point: it was 231 min of level 6 waiting on gov.ba."""
     plan = execution_plan()
     last = set(plan[-1])
     assert {"vulnerability_scan", "waf_detect"} <= last
@@ -103,15 +97,12 @@ def test_an_exhausted_plan_is_empty():
 
 
 def test_a_stage_that_sends_nothing_is_not_deferred():
-    """target_enrichment fills the target's WHOIS and DNS in the first second;
-    deferring it would hide them for the length of the scan and save nothing."""
     plan = execution_plan()
     assert "target_enrichment" in plan[0]
     assert "target_enrichment" not in plan[-1]
 
 
 def test_the_deferred_stages_join_the_last_step_rather_than_follow_it():
-    """A cheap stage left alone at the end would gate the very ones this defers."""
     plan = execution_plan()
     last = set(plan[-1])
     assert {"vulnerability_scan", "waf_detect", "ip_enrichment"} <= last

@@ -1,4 +1,4 @@
-"""Prose is cached by what it was written from, so a re-run of the same report costs nothing."""
+"""Prose is cached by what it was written from."""
 
 from __future__ import annotations
 

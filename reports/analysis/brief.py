@@ -125,7 +125,7 @@ class ReportBrief:
         return sum(1 for r in self.risks if r.kev)
 
     def prompt_payload(self, *, limit: int = 14) -> dict:
-        """The bounded slice a model is allowed to see. No rows, no evidence, no secrets."""
+        """The bounded slice a model is allowed to see."""
         return {
             "subject": self.subject,
             "subject_type": self.subject_type,

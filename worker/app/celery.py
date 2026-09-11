@@ -19,13 +19,7 @@ logger = get_logger(__name__)
 
 celery_app = Celery("rengine")
 
-# #############################################################
-# Celery Configuration
-# #############################################################
 
-# redis re-delivers a task still unacked after visibility_timeout — at celery's 1h
-# default a stage that runs longer is dispatched a second time and the whole rest of
-# the scan runs twice, so it must sit above the hard time limit, not below it.
 _VISIBILITY_TIMEOUT = settings.TASK_HARD_TIME_LIMIT + 3600
 
 _RESULT_EXPIRES = settings.TASK_HARD_TIME_LIMIT + 3600
@@ -56,9 +50,6 @@ celery_app.conf.update(
     beat_schedule_filename="/tmp/celerybeat-schedule",  # noqa: S108
 )
 
-# #############################################################
-# Queue Definitions
-# #############################################################
 
 default_exchange = Exchange("default", type="direct")
 scan_exchange = Exchange("scans", type="direct")
@@ -88,9 +79,6 @@ celery_app.conf.task_default_queue = "default"
 celery_app.conf.task_default_exchange = "default"
 celery_app.conf.task_default_routing_key = "default"
 
-# #############################################################
-# Task Routing
-# #############################################################
 
 celery_app.conf.task_routes = {
     "app.tasks.scan.reap_stalled": {"queue": "default"},
@@ -110,9 +98,6 @@ celery_app.conf.task_routes = {
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
 
-# #############################################################
-# Auto-discover Tasks
-# #############################################################
 
 celery_app.autodiscover_tasks(
     [
@@ -136,9 +121,6 @@ celery_app.autodiscover_tasks(
     ]
 )
 
-# #############################################################
-# Beat Schedule (Periodic Tasks)
-# #############################################################
 
 SCHEDULE_TICK_SECONDS = 60.0
 STALL_REAP_SECONDS = 300.0
@@ -148,7 +130,6 @@ REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
 NOTIFICATION_CLEANUP_SECONDS = 6 * 60 * 60.0
 RETENTION_SECONDS = 24 * 60 * 60.0
 THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
-# a certificate inside its renewal window is worth asking about several times a day
 CERT_RECHECK_SECONDS = 4 * 60 * 60.0
 
 # the task itself decides whether the interval is due
@@ -204,11 +185,6 @@ celery_app.conf.beat_schedule = {
 }
 
 
-# #############################################################
-# Signal Handlers
-# #############################################################
-
-
 @setup_logging.connect
 def configure_logging(loglevel: int, **kwargs) -> None:  # noqa: ARG001
     """Configure logging for Celery workers."""
@@ -221,7 +197,7 @@ def configure_logging(loglevel: int, **kwargs) -> None:  # noqa: ARG001
 
 @worker_process_init.connect
 def on_process_init(**_) -> None:
-    """Drop pooled sockets inherited from the parent; a fork must not share them."""
+    """Drop pooled sockets inherited from the parent."""
     from app.database import engine  # noqa: PLC0415
 
     engine.dispose(close=False)
@@ -240,7 +216,7 @@ def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
 
 
 def _warm_ip_ranges() -> None:
-    """Pre-load the IP -> ASN/country tables so the first scan never waits on the download."""
+    """Pre-load the IP -> ASN/country tables."""
     try:
         from app.database import get_sync_session  # noqa: PLC0415
         from shared.services.ip_asn import ranges_ready  # noqa: PLC0415
@@ -255,7 +231,7 @@ def _warm_ip_ranges() -> None:
 
 
 def _warm_threat_intel() -> None:
-    """Pull EPSS and KEV on first boot so a fresh install ranks findings correctly."""
+    """Pull EPSS and KEV on first boot."""
     try:
         from app.database import get_sync_session  # noqa: PLC0415
         from shared.services.threat_intel import (  # noqa: PLC0415
@@ -294,11 +270,6 @@ def on_task_postrun(task_id: str, task, retval, state, **_) -> None:  # noqa: AR
 def on_task_failure(task_id: str, exception, **_) -> None:
     """Log task failure."""
     logger.exception("Task failed: %s - %s", task_id, str(exception))
-
-
-# #############################################################
-# Debug Health Check Task
-# #############################################################
 
 
 @celery_app.task(bind=True, name="celery.ping")

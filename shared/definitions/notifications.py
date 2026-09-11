@@ -1,4 +1,4 @@
-"""Notification templates: one interrupt per event, never a copy of the activity log."""
+"""Notification templates: one interrupt per event."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -141,7 +141,7 @@ _STAGE_COUNT_LABELS: dict[str, tuple[str, str]] = {
 
 
 def stage_count_summary(counts: dict) -> str:
-    """Label every figure a stage reports. An unlabelled key is omitted, never printed raw."""
+    """Label every figure a stage reports."""
     parts = [
         _count(n, *_STAGE_COUNT_LABELS[key])
         for key, n in counts.items()
@@ -255,7 +255,7 @@ def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
 def scan_digest(
     scan_id: str, target: str, counts: dict, deltas: ScanDeltas
 ) -> dict | None:
-    """One row per run; None when there is nothing to say."""
+    """One row per run."""
     if not deltas.worth_reporting(counts):
         return None
 
@@ -311,7 +311,7 @@ def _lead_line(lead: InterestLead) -> str:
 def scan_interesting(
     scan_id: str, target: str, leads: list[InterestLead], shown: int = 5
 ) -> dict | None:
-    """Only hosts this target has never flagged before, so a repeat scan says nothing."""
+    """Only hosts this target has never flagged before."""
     if not leads:
         return None
     critical = [x for x in leads if x.band == InterestBand.CRITICAL.value]

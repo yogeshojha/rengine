@@ -1,20 +1,4 @@
-"""The Tool contract. Subclass it, drop the file in this directory, and it is live.
-
-    class Ping(Tool):
-        name = "ping_example"
-        title = "Ping"
-        description = "Answers with pong."
-
-        class Input(ToolInput):
-            loudly: bool = Field(default=False, description="Shout it")
-
-        async def run(self, ctx, args):
-            return ToolResult(summary="pong!" if args.loudly else "pong")
-
-Nothing else registers it: `mcp.registry` discovers every Tool subclass under
-`mcp/tools/`, turns `Input` into the JSON Schema the model sees, and gates the
-call on `capability`.
-"""
+"""The Tool contract."""
 
 from __future__ import annotations
 
@@ -30,7 +14,7 @@ from mcp.result import ToolResult
 
 
 class ToolInput(BaseModel):
-    """Base for a tool's arguments. Field(description=...) is what the model reads."""
+    """Base for a tool's arguments."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -57,12 +41,11 @@ class Tool(ABC):
     # the call destroys data a user cannot get back
     destructive: ClassVar[bool] = False
     Input: ClassVar[type[ToolInput]] = NoInput
-    # shown in the UI and the docs, never sent to the model
     examples: ClassVar[tuple[str, ...]] = ()
 
     @abstractmethod
     async def run(self, ctx: ToolContext, args: ToolInput) -> ToolResult:
-        """Answer the call. Raise ToolError for anything the caller should see."""
+        """Answer the call."""
 
     @classmethod
     def schema(cls) -> dict:

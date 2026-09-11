@@ -89,7 +89,6 @@ from tools.nuclei.parser import fingerprint
 
 _DIMENSION = SurfaceDimension.ENDPOINTS.value
 PAGE_SIZE = 50
-# what a person should read first: flagged, then a host they own, then testable, then recent
 _RANK = (
     cast(ConnectorCandidate.notices, JSONB).has_any(array(tuple(LOUD_NOTICES))).desc(),
     ConnectorCandidate.target_id.is_not(None).desc(),
@@ -142,7 +141,6 @@ class ConnectorService:
             .scalars()
             .all()
         )
-        # the discovery rollup scans every recorded host, so it runs once for the page
         owned = await self._owned_domains(project_id)
         return [await self._read(row, owned=owned) for row in rows]
 
@@ -376,7 +374,7 @@ class ConnectorService:
         }
 
     async def _upsert(self, rows: list[dict]) -> int:
-        """A shape already seen only moves forward; it never reverts to unknown or new."""
+        """A shape already seen only moves forward."""
         rows.sort(key=lambda r: r["signature"])
         before = await self.session.scalar(
             select(func.count())
@@ -412,7 +410,7 @@ class ConnectorService:
     async def _record_hosts(
         self, row: Connector, counts: dict[str, int], targets, now
     ) -> None:
-        """The hostname ledger. A hostname is kept even when the request itself is not."""
+        """The hostname ledger."""
         if not counts:
             return
         rows = [
@@ -504,7 +502,6 @@ class ConnectorService:
             )
             for domain, members in grouped.items()
         ]
-        # a forbidden domain leads, because it is a warning rather than a lead
         out.sort(
             key=lambda d: (not d.out_of_scope, -d.requests, -d.hostname_count, d.domain)
         )
@@ -562,7 +559,6 @@ class ConnectorService:
             )
             .values(target_id=target_id)
         )
-        # a bare suffix match would claim notbankaletihad.com for bankaletihad.com
         attached = await self.session.execute(
             update(ConnectorCandidate)
             .where(
@@ -589,7 +585,7 @@ class ConnectorService:
     async def _first_scan(
         self, target_id: uuid.UUID, project_id: uuid.UUID, created_by: uuid.UUID
     ) -> uuid.UUID:
-        """A full run, so coverage, scope and host facts have something to say."""
+        """A full run."""
         from app.services.scan import ScanService  # noqa: PLC0415
 
         run = await ScanService(self.session).create(
@@ -655,7 +651,7 @@ class ConnectorService:
 
     @staticmethod
     def _covers_forbidden(domain: str, patterns: dict[str, str]) -> str | None:
-        """The program that forbids something *under* this domain. A warning, not a refusal."""
+        """The program that forbids something *under* this domain."""
         for pattern, program in patterns.items():
             if _host_matches(pattern, domain):
                 return program
@@ -792,7 +788,7 @@ class ConnectorService:
         ids: list[uuid.UUID],
         kind: str,
     ) -> int:
-        """Hand chosen shapes back to the proxy. The proxy collects them; nothing is pushed."""
+        """Hand chosen shapes back to the proxy."""
         row = await self.get(connector_id, project_id)
         if kind not in {k.value for k in ActionKind}:
             msg = f"Unknown action {kind!r}."
@@ -881,7 +877,7 @@ class ConnectorService:
         return len(rows)
 
     async def take_notices(self, row: Connector) -> list[NoticeRead]:
-        """What reNgine wants said while the tester is still testing. Delivered once."""
+        """What reNgine wants said while the tester is still testing."""
         pending = (
             (
                 await self.session.execute(
@@ -926,7 +922,7 @@ class ConnectorService:
     async def record_finding(
         self, row: Connector, report: FindingReport, created_by: uuid.UUID | None
     ) -> FindingRecorded:
-        """A person confirmed something. It becomes a finding with its own provenance."""
+        """A person confirmed something."""
         parsed = parse_url(report.url)
         if parsed is None:
             msg = "That URL could not be read."
@@ -1017,7 +1013,6 @@ class ConnectorService:
             engine_name=label,
             scope=ScanScope.FOCUSED.value,
             status=ScanStatus.COMPLETED.value,
-            # reNgine ran nothing here; a person did, and the row says so
             execution_config={"manual": True, "connector": str(row.id)},
             started_at=now,
             completed_at=now,
@@ -1028,7 +1023,7 @@ class ConnectorService:
         return run.id
 
     async def take_actions(self, row: Connector) -> list[ActionRead]:
-        """Collected by the proxy, delivered once. A stale action is dropped, not replayed."""
+        """Collected by the proxy, delivered once."""
         cutoff = utc_now() - timedelta(minutes=ACTION_TTL_MINUTES)
         await self.session.execute(
             delete(ConnectorAction).where(
@@ -1315,7 +1310,7 @@ class ConnectorService:
     async def program_scope(
         self, row: Connector, program_id: uuid.UUID
     ) -> ConnectorScope:
-        """A program's own scope, available the moment it is imported. No scan needed."""
+        """A program's own scope, available the moment it is imported."""
         rows = (
             await self.session.execute(
                 select(
@@ -1326,7 +1321,6 @@ class ConnectorService:
                 .join(BountyProgram, BountyProgram.id == BountyScope.program_id)
                 .where(
                     BountyScope.program_id == program_id,
-                    # a token may only read a program this project actually uses
                     BountyScope.program_id.in_(
                         select(BountyScope.program_id)
                         .join(Target, Target.target_value == BountyScope.target_value)
@@ -1511,7 +1505,7 @@ class ConnectorService:
         return await self.session.scalar(query) or 0
 
     def _setup(self, row: Connector, secret: str, base_url: str = "") -> dict:
-        """The proxy runs on someone's laptop, so it needs an absolute URL, not a path."""
+        """The proxy runs on someone's laptop."""
         spec = connector_for(row.kind)
         if spec is None:
             return {}

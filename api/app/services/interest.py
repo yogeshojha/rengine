@@ -125,7 +125,7 @@ def _to_read(rule: InterestRule, matches: int | None = None) -> InterestRuleRead
 
 
 def _clearable(field: str) -> bool:
-    """An explicit null may only be stored where the column accepts one; elsewhere it means unchanged."""
+    """An explicit null may only be stored where the column accepts one."""
     column = InterestRule.__table__.columns.get(field)
     return column is not None and column.nullable
 
@@ -280,7 +280,6 @@ class InterestService:
             return None
         data = payload.model_dump(exclude_unset=True)
 
-        # a shipped rule keeps its identity; only what it matches and whether it runs may move
         if rule.builtin:
             allowed = {
                 "enabled",
@@ -569,10 +568,6 @@ class InterestReadService(InterestService):
             model=scan.interest_model if scan else None,
             ai_available=bool(cfg and cfg.available),
             ai_enabled=bool(cfg and cfg.allows("asset_judgement")),
-            # a running scan is re-judged live and labelled in full at finalize, so it is
-            # never stale: saying otherwise made every read of this tab queue the full
-            # correlation pass against a half-discovered estate
-            # a project view spans many scans, so it never asks for a re-label
             stale=bool(scan)
             and scan.status in SCAN_TERMINAL_STATUSES
             and scan.interest_signature != _signature(rules),
@@ -613,7 +608,6 @@ class InterestReadService(InterestService):
                 *([InterestSignal.kind == kind] if kind else []),
             )
         )
-        # the denormalised rank has to follow the signals, or the row stays in the list
         await self.session.execute(
             text(HOST_ROLLUP_SQL).bindparams(
                 bindparam("tid", target_id),
@@ -699,7 +693,6 @@ class InterestReadService(InterestService):
             if query in existing:
                 continue
             preview = await self.preview(query, scan.id)
-            # a rule that matches nothing, everything, or does not compile is not a suggestion
             if preview.error or preview.matches == 0:
                 continue
             out.append(

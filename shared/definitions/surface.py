@@ -33,7 +33,6 @@ SURFACE_NOUN: dict[str, tuple[str, str]] = {
     SurfaceDimension.VULNERABILITIES.value: ("finding", "findings"),
 }
 
-# a stage covers a dimension when it produces one of these kinds
 SURFACE_KINDS: dict[str, frozenset[str]] = {
     SurfaceDimension.WEB_ASSETS.value: frozenset(
         {AssetKind.HOSTS.value, AssetKind.HTTP_ASSETS.value}
@@ -46,7 +45,6 @@ SURFACE_KINDS: dict[str, frozenset[str]] = {
     ),
 }
 
-# the scans rollup columns a dimension's rows move; the live counter refreshes these
 SURFACE_COUNT_COLUMNS: dict[str, tuple[str, ...]] = {
     SurfaceDimension.WEB_ASSETS.value: ("subdomains_found", "http_assets_found"),
     SurfaceDimension.ENDPOINTS.value: ("endpoints_found",),

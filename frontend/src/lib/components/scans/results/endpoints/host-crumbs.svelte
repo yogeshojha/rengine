@@ -42,7 +42,6 @@
 	);
 	let options = $derived(remote ?? local);
 
-	// the loaded page answers most switches; a term that misses it asks the server
 	$effect(() => {
 		const needle = term.trim();
 		if (needle.length < 2 || local.length) {

@@ -194,7 +194,6 @@ _FLAG_BUILDERS = {
     ),
     "vulnerable": lambda ctx: preds.host_vuln(ctx.scope),
     "exposed": lambda _ctx: preds.interesting(),
-    # queries saved before the feature was named still compile
     "interesting": lambda _ctx: preds.interesting(),
     "kev": lambda ctx: preds.host_vuln(ctx.scope, Vulnerability.is_kev.is_(True)),
 }
@@ -393,9 +392,7 @@ def compile_node(node: Node, ctx: QueryContext):
 
 
 def _compile_or(node: Or, ctx: QueryContext):
-    """asset_match(a) OR asset_match(b) is asset_match(a OR b), so one semijoin serves
-    the whole branch. The same does not hold under AND, where the two halves may match
-    two different assets on the same host, so only OR is folded."""
+    """Fold sibling asset predicates into one semijoin."""
     parts, assets = [], []
     for part in node.parts:
         if isinstance(part, Compare):

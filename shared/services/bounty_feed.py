@@ -1,8 +1,4 @@
-"""Public program scope for Bugcrowd, Intigriti and YesWeHack.
-
-One JSON file per platform, no key and no account. A file that fails to download
-leaves its platform untouched, exactly as the exploitation feeds do.
-"""
+"""Public program scope for Bugcrowd, Intigriti and YesWeHack."""
 
 from __future__ import annotations
 
@@ -105,7 +101,6 @@ def _program_row(spec: FeedSpec, entry: dict, handle: str) -> dict:
         "program_state": ProgramState.PUBLIC.value,
         "raw_state": "public",
         "submission_state": _submission_state(entry),
-        # a range or a maximum is the only bounty signal these platforms give
         "offers_bounties": bool(high),
         "min_payout": low,
         "max_payout": high,
@@ -150,7 +145,7 @@ def _scope_rows(spec: FeedSpec, entry: dict, program_id) -> dict:
 
 
 def sync_platform(session: Session, spec: FeedSpec) -> dict:
-    """Refresh one platform. Its rows are only touched if the file downloaded."""
+    """Refresh one platform."""
     entries = _download(spec)
     existing = {
         p.handle: p
@@ -176,7 +171,6 @@ def sync_platform(session: Session, spec: FeedSpec) -> dict:
             if baseline:
                 session.add(_event(program, BountyEvent.PROGRAM_ADDED.value))
         else:
-            # an API row is authoritative; the feed never overwrites one
             if program.source == ProgramSource.API.value:
                 continue
             for key, value in row.items():
@@ -201,8 +195,6 @@ def sync_platform(session: Session, spec: FeedSpec) -> dict:
         session.add_all([BountyScope(**r) for r in wanted.values()])
         program.scopes_synced_at = utc_now()
         assets += len(wanted)
-        # committing per program keeps the pending set from growing into an
-        # autoflush storm on every in-loop select
         session.commit()
     return {
         "platform": spec.platform,
@@ -214,7 +206,7 @@ def sync_platform(session: Session, spec: FeedSpec) -> dict:
 
 
 def sync_feeds(session: Session) -> dict:
-    """Every platform the feed covers. One failure does not stop the others."""
+    """Every platform the feed covers."""
     started = time.monotonic()
     results, errors = [], {}
     for spec in FEEDS:

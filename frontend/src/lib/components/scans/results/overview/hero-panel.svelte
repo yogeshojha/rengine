@@ -227,7 +227,6 @@
 				key: 'http',
 				label: 'HTTP services',
 				value: scan.http_assets_found,
-				// an address target names no hosts, so its web services live under Services
 				...(scan.subdomains_found
 					? { tab: 'web-assets', filter: 'is:web' }
 					: { tab: 'services', filter: 'is:http' }),
@@ -275,7 +274,6 @@
 				tab: 'endpoints',
 				trend: trendOf('endpoints_found')
 			});
-		// a cell earns its place the way a result tab does: with a number, or with a run
 		// still in flight that may yet produce one
 		return live ? list : list.filter((k) => k.value !== 0);
 	});
@@ -290,7 +288,6 @@
 		2: 'sm:col-span-2',
 		3: 'sm:col-span-3'
 	};
-	// the last row must be full: pick the column count with the fewest empty slots, 4 on a tie
 	let cols = $derived.by(() => {
 		const n = kpis.length;
 		let best = 3;

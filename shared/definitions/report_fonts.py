@@ -1,4 +1,4 @@
-"""Uploaded typefaces. A face is stored bytes with a name we generate, never a path a user gives."""
+"""Uploaded typefaces."""
 
 from __future__ import annotations
 
@@ -51,7 +51,6 @@ class FontFormat:
     magic: tuple[bytes, ...]
 
 
-# the signature is checked against the bytes, so a renamed file is refused
 FONT_FORMATS: tuple[FontFormat, ...] = (
     FontFormat("woff2", "woff2", "font/woff2", (b"wOF2",)),
     FontFormat("woff", "woff", "font/woff", (b"wOFF",)),
@@ -71,7 +70,6 @@ def detect_format(data: bytes) -> FontFormat | None:
     return None
 
 
-# a family name is written into a quoted CSS string, so it may not carry string syntax
 _UNSAFE_NAME = frozenset("'\"\\;{}<>()")
 _CONTROL = 32
 

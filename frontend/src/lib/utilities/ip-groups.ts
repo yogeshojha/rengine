@@ -72,7 +72,6 @@ export const EMPTY_IP_FACETS: IpFacetSet = {
 	service: []
 };
 
-// mirrors shared/definitions/asset_query.py IP_EXPOSURE
 export const IP_EXPOSURE_TABS: { key: string; label: string }[] = [
 	{ key: 'all', label: 'All' },
 	{ key: 'open', label: 'Open ports' },

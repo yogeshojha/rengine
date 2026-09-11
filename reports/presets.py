@@ -1,4 +1,4 @@
-"""Shipped documents. A preset is a section list plus a look, exactly like a saved template."""
+"""Shipped documents."""
 
 from __future__ import annotations
 

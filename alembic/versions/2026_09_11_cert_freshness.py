@@ -18,10 +18,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "subdomains", sa.Column("tls_checked_at", sa.DateTime(timezone=True))
-    )
-    # the job picks the next hosts by urgency then by staleness
+    op.add_column("subdomains", sa.Column("tls_checked_at", sa.DateTime(timezone=True)))
     op.create_index(
         "ix_subdomains_tls_recheck",
         "subdomains",

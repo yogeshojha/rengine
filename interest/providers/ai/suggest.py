@@ -1,4 +1,4 @@
-"""What AI found, turned into a rule that works without it. The judgement graduates."""
+"""What AI found, turned into a rule that works without it."""
 
 from __future__ import annotations
 

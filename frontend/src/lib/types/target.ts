@@ -169,7 +169,6 @@ export function formatTargetType(type: TargetType): string {
 	return type.replace('_', ' ').toUpperCase();
 }
 
-// acronyms take a lowercase s; the rest are ordinary words
 const TARGET_TYPE_PLURALS: Record<string, string> = {
 	[TargetType.DOMAIN]: 'Domains',
 	[TargetType.IP]: 'IPs',

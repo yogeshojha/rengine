@@ -14,7 +14,6 @@ import type { IconComponent } from './icons';
 
 export const CORRELATION_TAB = 'correlation';
 
-// mirrors shared/definitions/correlation.py CorrelationKind
 export enum CorrelationKind {
 	IP = 'ip',
 	CNAME = 'cname',
@@ -45,7 +44,6 @@ export const KIND_ICONS: Record<string, IconComponent> = {
 	[CorrelationKind.CDN]: Cloud
 };
 
-// one hue per kind; infrastructure kinds at lower chroma
 export const KIND_HUE: Record<string, number> = {
 	[CorrelationKind.IP]: 255,
 	[CorrelationKind.CNAME]: 200,

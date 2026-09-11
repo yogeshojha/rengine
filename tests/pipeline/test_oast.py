@@ -1,5 +1,3 @@
-"""Out-of-band testing: a callback that arrives after the scan must still be heard."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -27,21 +25,16 @@ def _flag(args: list[str], name: str) -> str | None:
     return args[args.index(name) + 1] if name in args else None
 
 
-# ── how long it keeps listening ──
-
-
 def test_without_oast_it_is_switched_off_entirely():
     assert "-no-interactsh" in _args(interactsh=False)
 
 
 def test_the_listening_window_reaches_nuclei():
-    """nuclei gives up 5 seconds after its last request on its own."""
     args = _args(interactsh=True, oast_wait_seconds=300)
     assert _flag(args, "-interactions-cooldown-period") == "300"
 
 
 def test_a_request_stays_correlatable_for_longer_than_we_listen():
-    """A callback that outlives its request's cache entry has nothing to attach to."""
     args = _args(interactsh=True, oast_wait_seconds=300)
     cooldown = int(_flag(args, "-interactions-cooldown-period"))
     eviction = int(_flag(args, "-interactions-eviction"))
@@ -59,9 +52,6 @@ def test_the_default_waits_minutes_not_seconds():
     assert VulnerabilityScanConfig().oast_wait_minutes >= 1
 
 
-# ── the self-hosted server ──
-
-
 def test_the_token_reaches_nuclei():
     args = _args(
         interactsh=True, interactsh_server="oast.example.com", interactsh_token="t0k"
@@ -71,7 +61,6 @@ def test_the_token_reaches_nuclei():
 
 @pytest.mark.parametrize("token", [None, "", "   "])
 def test_no_token_is_not_an_empty_token(token):
-    """An empty key row must not become `-interactsh-token ""`, which nuclei rejects."""
     args = _args(
         interactsh=True, interactsh_server="oast.example.com", interactsh_token=token
     )
@@ -84,7 +73,6 @@ def test_a_token_is_never_sent_when_oast_is_off():
 
 
 def test_the_token_is_not_even_read_when_oast_is_off():
-    """Reading a secret you have no use for is a read that did not need to happen."""
     reads: list[str] = []
     scanner = NucleiScanner.__new__(NucleiScanner)
     scanner.ctx = SimpleNamespace(
@@ -124,7 +112,6 @@ def test_the_token_is_not_even_read_when_oast_is_off():
     ],
 )
 def test_the_server_is_reduced_to_a_host(given: str, expected: str):
-    """A scheme or a path makes nuclei register nowhere and fall back silently."""
     assert _oast_server(given) == expected
 
 
@@ -138,9 +125,6 @@ def test_the_token_has_somewhere_to_be_stored():
     assert API_PROVIDER_META[APIProvider.INTERACTSH]["requires_username"] is False
 
 
-# ── the token is a secret ──
-
-
 @pytest.mark.parametrize(
     "command",
     [
@@ -151,7 +135,6 @@ def test_the_token_has_somewhere_to_be_stored():
     ],
 )
 def test_every_spelling_of_the_token_flag_is_redacted(command: str):
-    """A tool's choice of short flag must not decide whether a secret is stored."""
     redacted = redact_command(command)
     assert "SECRET" not in redacted
     assert MASK in redacted

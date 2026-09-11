@@ -183,7 +183,6 @@ export function targetTypeLabel(type: string): string {
 	return TARGET_TYPE_LABELS[type] ?? type;
 }
 
-// URL takes "a" despite the vowel, so the article is stated rather than derived
 const TARGET_TYPE_ARTICLES: Record<string, string> = {
 	domain: 'a',
 	ip: 'an',

@@ -35,7 +35,7 @@ router = APIRouter(prefix="/wordlists", tags=["wordlists"])
 
 
 async def _index_builtin(session: AsyncSession) -> None:
-    """Shipped lists are indexed on read so the picker never starts empty."""
+    """Shipped lists are indexed on read."""
     from shared.definitions.wordlists import BUILTIN_WORDLISTS  # noqa: PLC0415
     from shared.services.wordlists import builtin_root  # noqa: PLC0415
 

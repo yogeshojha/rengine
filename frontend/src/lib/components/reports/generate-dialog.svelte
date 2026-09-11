@@ -99,7 +99,6 @@
 		void reportsStore.fetchTemplates(projectId);
 	});
 
-	// latch on the inputs, never on the response: an empty or failed load must not re-arm this effect
 	$effect(() => {
 		if (!open) {
 			subjectsFor = '';
@@ -129,7 +128,6 @@
 		templateId = (templates.find((t) => t.is_default) ?? templates[0]).id;
 	});
 
-	// the template seeds the contents once; from then on the plan belongs to this report
 	$effect(() => {
 		const sections = reportCatalog.catalog?.sections;
 		if (!open || !sections?.length) return;

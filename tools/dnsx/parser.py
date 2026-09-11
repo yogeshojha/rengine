@@ -162,7 +162,7 @@ def parse_dnsx_record(raw: dict) -> DnsxReconResponse:
 
 
 def parse_dnsx_jsonl(json_records: list[dict]) -> list[DnsxReconResponse]:
-    """Parse multiple dnsx JSON records; invalid records are logged and skipped."""
+    """Parse multiple dnsx JSON records."""
     results = []
     for i, raw in enumerate(json_records):
         try:

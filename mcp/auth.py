@@ -1,4 +1,4 @@
-"""Token minting and verification. reNgine keeps the hash, never the secret."""
+"""Token minting and verification."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ import secrets
 
 PREFIX = "rngmcp_"
 SECRET_BYTES = 24
-# enough of the token to recognise a row in the UI, never enough to use it
 DISPLAY_CHARS = 8
 
 

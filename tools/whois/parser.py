@@ -41,7 +41,7 @@ def _parse_entity(raw: dict[str, Any]) -> WhoisEntity:
 
 
 def _parse_entities(raw: Any) -> WhoisEntities:
-    """Parse whoisit's role-keyed entity lists into WhoisEntity objects; unknown roles are ignored."""
+    """Parse whoisit's role-keyed entity lists into WhoisEntity objects."""
     if not isinstance(raw, dict):
         return WhoisEntities()
 
@@ -125,7 +125,6 @@ def parse_asn_response(raw: dict[str, Any], query: str) -> WhoisASNResponse:
     """Parse a raw whoisit ASN response into a typed model."""
     base = _parse_base_fields(raw, query)
 
-    # asn_range comes as [start, end] list e.g. [38565, 38565]
     asn_range = raw.get("asn_range")
     asn_range_start = None
     asn_range_end = None

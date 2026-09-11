@@ -1,4 +1,4 @@
-"""Tools are discovered by module. A new tool is a file in this directory."""
+"""Tools are discovered by module."""
 
 from __future__ import annotations
 

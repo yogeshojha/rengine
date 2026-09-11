@@ -173,7 +173,6 @@ export const BAND_HELP: Record<string, string> = {
 	[ExploitBand.UNLIKELY]: 'In the long tail of unexploited CVEs.'
 };
 
-// an ordinal ramp: rank is carried by lightness, order and label, never by hue alone
 export const BAND_FILL: Record<string, string> = {
 	[ExploitBand.VERY_LIKELY]: 'var(--destructive)',
 	[ExploitBand.LIKELY]: 'var(--chart-4)',

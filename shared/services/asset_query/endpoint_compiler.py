@@ -94,7 +94,7 @@ _FLAG_BUILDERS = {
 
 
 def _dir_match(cmp: Compare, _ctx: EndpointQueryContext):
-    """`dir:` matches a whole branch of the tree; `dir=` matches that one folder."""
+    """`dir:` matches a whole branch of the tree."""
     branches = []
     for raw in cmp.values:
         value = raw if raw.startswith("/") else f"/{raw}"

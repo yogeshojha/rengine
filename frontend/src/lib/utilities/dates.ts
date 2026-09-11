@@ -23,7 +23,6 @@ function elapsed(timestamp: string | Date | null | undefined) {
 	if (Number.isNaN(then)) return null;
 	const minutes = Math.floor((Date.now() - then) / 60000);
 	for (const [per, short, long] of UNITS) {
-		// >= 1, not != 0: a clock running ahead of ours falls through to just now
 		const count = Math.floor(minutes / per);
 		if (count >= 1) return { count, short, long };
 	}

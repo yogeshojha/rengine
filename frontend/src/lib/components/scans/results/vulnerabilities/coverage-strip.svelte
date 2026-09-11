@@ -21,7 +21,6 @@
 
 	let ran = $derived(coverage.some((c) => c.status !== 'skipped'));
 	let checks = $derived(Math.max(0, ...coverage.map((c) => c.templates_selected ?? 0)));
-	// every group scans a different slice of the surface, but all of them run the same check set
 	let targets = $derived(coverage.reduce((n, c) => n + c.hosts_total, 0));
 	let requests = $derived.by(() => {
 		const known = coverage.map((c) => c.requests_sent).filter((v): v is number => v !== null);

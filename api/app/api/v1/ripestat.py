@@ -9,7 +9,6 @@ from tools.ripestat.client import RIPEStatInvalidResourceError
 from tools.ripestat.models import RIPEStatResult
 from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
 
-# an ASN reaches int() further down, so anything else must be refused here
 AsnParam = Annotated[
     str,
     Path(pattern=r"^[Aa][Ss]?\d{1,10}$|^\d{1,10}$", description="ASN, e.g. AS13335"),

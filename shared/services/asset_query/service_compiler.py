@@ -126,7 +126,6 @@ _SERVICE_BUILDERS = {
     "protocol": lambda c, ctx: string_match(ctx.source.c.protocol, c),
     "source": lambda c, ctx: string_match(ctx.source.c.source, c),
     "product": lambda c, ctx: string_match(ctx.source.c.product, c),
-    # the derived query also has an integer `version` (IP family); software version is version_text
     "version": lambda c, ctx: string_match(ctx.source.c.version_text, c),
     "banner": lambda c, ctx: string_match(ctx.source.c.banner, c),
     "ip": _address,

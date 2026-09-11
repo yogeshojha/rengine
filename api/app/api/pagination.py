@@ -5,8 +5,6 @@ from fastapi_pagination import Page as _Page
 from fastapi_pagination import Params
 from fastapi_pagination.customization import CustomizedPage, UseParams
 
-# a page beyond this multiplies out to an offset Postgres refuses, which surfaced
-# as a 500 rather than an empty page
 MAX_PAGE = 100_000
 
 

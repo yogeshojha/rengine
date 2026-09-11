@@ -39,7 +39,7 @@ class KevEntry(SQLModel, table=True):
 
 
 class CveIntel(SQLModel, table=True):
-    """Per-CVE detail fetched from a provider and cached; the feeds stay the source of scores."""
+    """Per-CVE detail fetched from a provider and cached."""
 
     __tablename__ = "cve_intel"
 
@@ -68,7 +68,7 @@ class CveIntel(SQLModel, table=True):
 
 
 class ThreatFeed(SQLModel, table=True):
-    """One row per feed: what the last refresh did, so the UI never has to guess."""
+    """One row per feed: what the last refresh did."""
 
     __tablename__ = "threat_feeds"
 

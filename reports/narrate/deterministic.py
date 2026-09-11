@@ -1,4 +1,4 @@
-"""Prose written from the brief with no model. This is what an instance without AI reads."""
+"""Prose written from the brief with no model."""
 
 from __future__ import annotations
 

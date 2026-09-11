@@ -58,7 +58,7 @@ def _download(url: str, name: str) -> Iterator[tuple[Path, int]]:
 
 
 def _load_epss(session: Session, path: Path) -> tuple[int, str | None]:
-    """The published CSV leads with a '#model_version' comment; COPY cannot skip it."""
+    """The published CSV leads with a '#model_version' comment."""
     clean = path.with_suffix(".clean.csv")
     version: str | None = None
     with gzip.open(path, "rt", encoding="utf-8", errors="replace") as src:
@@ -167,7 +167,7 @@ def _mark(
 
 
 def sync_feed(session: Session, kind: str) -> int:
-    """Refresh one feed. A failed download leaves the existing table untouched."""
+    """Refresh one feed."""
     spec = FEEDS_BY_KIND[kind]
     started = time.monotonic()
     _mark(session, kind, status=FeedStatus.SYNCING.value)
@@ -210,7 +210,7 @@ def sync_feeds(session: Session, kinds: list[str] | None = None) -> dict[str, in
 
 
 def auto_sync_enabled(session: Session) -> bool:
-    """The nightly download is opt-out; a missing settings row means default on."""
+    """The nightly download is opt-out."""
     try:
         value = session.execute(
             text("SELECT threat_intel_auto_sync FROM instance_settings LIMIT 1")
@@ -268,7 +268,6 @@ def feed_age_hours(feed: ThreatFeed | None) -> float | None:
     return round((utc_now() - feed.last_synced_at).total_seconds() / 3600, 1)
 
 
-# every finding that carries a CVE, joined to both feeds; the worst CVE wins
 _JOINED_SQL = """
 WITH exploded AS (
     SELECT v.id, upper(btrim(c.cve)) AS cve
@@ -290,7 +289,7 @@ GROUP BY x.id
 
 
 def apply_intel(session: Session, *, scan_id=None, project_id=None) -> dict[str, int]:
-    """Re-score findings from the feeds. Only rows that actually move are written."""
+    """Re-score findings from the feeds."""
     scope = ""
     params: dict = {"now": utc_now()}
     if scan_id is not None:

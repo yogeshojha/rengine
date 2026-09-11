@@ -1,5 +1,3 @@
-"""The count is a promise: a lead's badge equals the rows its query lands on."""
-
 from __future__ import annotations
 
 from datetime import timedelta
@@ -14,7 +12,6 @@ pytestmark = pytest.mark.grammar
 
 
 async def _rich_scan(estate, now):
-    """One scan carrying enough variety that a good share of the lead library matches."""
     old = now - timedelta(days=7)
     await estate.scan("example.com", "first", at=old)
     await estate.hosts("first", ["www.example.com", "old.example.com"], at=old)
@@ -78,7 +75,6 @@ async def _rich_scan(estate, now):
 
 
 async def test_every_lead_count_equals_its_search(estate, now):
-
     scan = await _rich_scan(estate, now)
     service = SubdomainService(estate.session)
 
@@ -98,8 +94,6 @@ async def test_every_lead_count_equals_its_search(estate, now):
 
 
 async def test_every_group_count_equals_its_drill_down(estate, now):
-    """Clicking a group must land on exactly the rows the group counted."""
-
     scan = await _rich_scan(estate, now)
     service = SubdomainService(estate.session)
 
@@ -124,8 +118,6 @@ async def test_every_group_count_equals_its_drill_down(estate, now):
 
 
 async def test_a_flag_and_its_negation_partition_the_scan(estate, now):
-    """Null-safe NOT: three-valued logic must not drop rows whose column is NULL."""
-
     scan = await _rich_scan(estate, now)
     service = SubdomainService(estate.session)
 

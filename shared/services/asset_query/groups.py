@@ -193,7 +193,6 @@ async def build_ip_groups(
     joined = None
     if key == "target":
         field, op = _IP_TARGET
-        # an address can serve several targets, so it lands in each of their groups
         rows_from = (
             select(
                 scoped.c.ip.label("ip"),
@@ -344,7 +343,7 @@ _VULN_LABELS: dict[str, dict[str, str]] = {
 async def build_vuln_groups(
     session: AsyncSession, base, key: str, scope: QueryScope
 ) -> QueryGroups:
-    """One row per finding; a multi-valued dimension puts a finding in several groups."""
+    """One row per finding."""
     if key in _VULN_ARRAYS:
         column, field, op = _VULN_ARRAYS[key]
         value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued(
@@ -420,7 +419,7 @@ _ENDPOINT_LABELS: dict[str, dict[str, str]] = {
 
 
 async def build_endpoint_groups(session: AsyncSession, base, key: str) -> QueryGroups:
-    """One row per endpoint; a multi-valued dimension puts an endpoint in several groups."""
+    """One row per endpoint."""
     if key in _ENDPOINT_ARRAYS:
         column, field, op = _ENDPOINT_ARRAYS[key]
         value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued(

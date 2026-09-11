@@ -38,7 +38,6 @@ _PERSIST_SECONDS = 2.0
 
 _HTTP_FIELDS = set(HttpAsset.model_fields)
 
-# the summary a host row carries: written per batch so the table fills as httpx answers
 _DENORM_FIELDS: dict[str, str] = {
     "http_url": "url",
     "final_url": "final_url",
@@ -207,7 +206,7 @@ class HttpProbeStage(Stage):
         return list(dict.fromkeys(targets))[:_MAX_TARGETS]
 
     def _record_services(self) -> int:
-        """Fold every live HTTP response back onto its port so a service is one row."""
+        """Fold every live HTTP response back onto its port."""
         resolved = self._resolved_ips()
         rows = self.session.execute(
             select(
@@ -224,7 +223,6 @@ class HttpProbeStage(Stage):
         merged: dict[tuple[str, int], ServiceObservation] = {}
         for host, ip, port, scheme, webserver in rows:
             https = scheme == "https"
-            # host:port was probed because the port was open on every address it resolves to
             addresses = set(resolved.get(host, ()))
             if ip:
                 addresses.add(ip)
@@ -259,7 +257,7 @@ class HttpProbeStage(Stage):
         return {name: list(ips or []) for name, ips in rows}
 
     def _persist(self, records: Iterable[dict]) -> tuple[int, int]:
-        """Store every answer as it lands. Returns (stored, rejected) — one bad row never costs the run."""
+        """Store every answer as it lands."""
         now = utc_now()
         ip_asn = {
             ip: (asn, asn_org)
@@ -278,8 +276,6 @@ class HttpProbeStage(Stage):
         def _write(batch: list[HttpAsset]) -> int:
             nonlocal rejected, cleared
             if not cleared:
-                # the previous attempt's rows go inside the first insert, so the table
-                # is never empty for the length of the probe
                 self.session.execute(
                     delete(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
                 )
@@ -330,7 +326,7 @@ class HttpProbeStage(Stage):
     def _note_summary(
         data: dict, best: dict[str, tuple], summaries: dict[str, dict]
     ) -> None:
-        """Keep the strongest answer per host so its row can be updated batch by batch."""
+        """Keep the strongest answer per host."""
         host = data.get("host")
         if not host:
             return
@@ -357,7 +353,7 @@ class HttpProbeStage(Stage):
         )
 
     def _flush_batch(self, batch: list[HttpAsset]) -> int:
-        """Flush inside a savepoint; on a row postgres refuses, keep the rest of the batch."""
+        """Flush inside a savepoint."""
         pending = list(batch)
         rejected = 0
         try:
@@ -373,14 +369,12 @@ class HttpProbeStage(Stage):
                         self.session.flush()
                 except StatementError:
                     rejected += 1
-        # detach again: the row is written, and its body must not stay in RAM
         for obj in pending:
             if obj in self.session:
                 self.session.expunge(obj)
         return rejected
 
     def _denormalize_to_subdomains(self) -> None:
-        # defer heavy raw-capture columns — denormalize only reads small summary fields
         assets = (
             self.session.execute(
                 select(HttpAsset)

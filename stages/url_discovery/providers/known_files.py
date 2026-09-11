@@ -20,7 +20,6 @@ _SITEMAP_RE = re.compile(r"^sitemap\s*:\s*(\S+)", re.IGNORECASE)
 _MAX_BYTES = 5 * 1024 * 1024
 _MAX_SITEMAPS = 20
 _MAX_URL = 2000
-# each root is 5+ blocking fetches and they are independent of one another
 _MAX_WORKERS = 12
 _CLIENT_ERROR = 400
 _WILDCARD = ("*", "$")

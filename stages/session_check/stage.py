@@ -38,7 +38,6 @@ class SessionCheckStage(Stage):
     produces = frozenset()
     applies_to = ALL_TARGETS
     touches_target = True
-    # nothing waits on it, but it is worthless anywhere but the front of the scan
     deferrable = False
     config_model = SessionCheckConfig
 
@@ -91,7 +90,6 @@ class SessionCheckStage(Stage):
         )
 
     def _compare(self, client: httpx.Client, url: str) -> tuple[str, str] | None:
-        """Both requests or neither: one of the two failing tells us nothing."""
         resolved = self.ctx.resolved
         signed = self._get(client, url, resolved.headers)
         if signed is None:
@@ -143,7 +141,6 @@ class SessionCheckStage(Stage):
         if verdict == Verdict.LIVE:
             self.emit_progress(detail)
             return StageResult(counts=counts)
-        # a dead session must not read as a clean run of whatever it scanned instead
         self.emit_progress(detail)
         return StageResult(counts=counts, warnings=[detail], partial=True)
 

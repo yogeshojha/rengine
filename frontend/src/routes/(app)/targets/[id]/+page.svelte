@@ -150,7 +150,6 @@
 				detail.bgp.prefix_overview.length > 0)
 	);
 	const inFlight = (s: TaskStatus) => s === TaskStatus.PENDING || s === TaskStatus.QUERYING;
-	// a tab earns its place with data, or while its lookup is still running
 	let tabs = $derived(
 		TABS.filter((t) => {
 			switch (t) {

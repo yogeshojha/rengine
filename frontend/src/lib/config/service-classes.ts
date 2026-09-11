@@ -43,7 +43,6 @@ export const SERVICE_CLASS_ICONS: Record<string, IconComponent> = {
 	[ServiceClass.OTHER]: CircleHelp
 };
 
-// the validated categorical scale, assigned in fixed order; Other is the residual bucket
 export const SERVICE_CLASS_FILL: Record<string, string> = {
 	[ServiceClass.WEB]: 'var(--chart-1)',
 	[ServiceClass.REMOTE]: 'var(--chart-4)',
@@ -75,7 +74,6 @@ export const PORT_SOURCE_HELP: Record<string, string> = {
 	banner: 'Returned a service banner to this scan'
 };
 
-// mirrors shared/definitions/ports.py SCAN_POLICY_LABELS
 export const SCAN_POLICY_LABELS: Record<string, string> = {
 	full: 'Scanned in full',
 	web: 'Web ports only',

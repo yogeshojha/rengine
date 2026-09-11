@@ -161,7 +161,6 @@ def _validate_paths(paths: list) -> None:
             msg = f"Excluded path '{p}' must start with '/'."
             raise _bad(msg)
         _reject_ctrl("Excluded path", p)
-        # an excluded path is matched as a pattern too, so it carries the same risk
         if backtracks_badly(p):
             msg = (
                 f"'{p}' repeats a group that already repeats, which can take "

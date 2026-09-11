@@ -15,7 +15,6 @@ def _stage_sig(scan_id: str, stage_name: str):
         immutable=True,
         app=celery_app,
     )
-    # celery rejects an errback on a group, so every stage carries its own
     sig.options["link_error"] = [_finalize_sig(scan_id)]
     return sig
 
@@ -31,11 +30,7 @@ def _finalize_sig(scan_id: str):
 
 
 def build_canvas(scan_id: str, start_level: int = 0, done: set[str] | None = None):
-    """Nest the steps innermost-first — a flat chain of groups lets celery merge and
-    double-apply one, and a chord inside a chord's header never fires its body, so every
-    header here stays a plain group of stage signatures."""
-    # every node carries the configured app: an unbound signature resolves to whatever
-    # `current_app` happens to be, and a backend-less one cannot start a chord
+    """Nest the steps innermost-first."""
     workflow = _finalize_sig(scan_id)
     for step in reversed(execution_plan(start_level, frozenset(done or ()))):
         sigs = [_stage_sig(scan_id, name) for name in step]

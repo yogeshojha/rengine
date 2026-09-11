@@ -1,4 +1,4 @@
-"""A dry run. Resolves exactly what would happen without touching the target."""
+"""A dry run."""
 
 from __future__ import annotations
 

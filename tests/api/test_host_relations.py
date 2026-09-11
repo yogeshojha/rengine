@@ -1,5 +1,3 @@
-"""A relation says how many hosts share a value, and drops what the whole estate shares."""
-
 from __future__ import annotations
 
 import pytest
@@ -31,11 +29,9 @@ async def test_a_shared_address_is_a_relation(estate, now):
 
 
 async def test_the_count_is_the_truth_not_the_length_of_the_list(estate, now):
-    """The host list is capped; the number beside it must not be."""
     await estate.scan("example.com", "run", at=now)
     names = [f"h{i}.example.com" for i in range(_RELATION_CAP + 40)]
     await estate.hosts("run", names, at=now, cname="edge.example.net")
-    # a bigger estate, so the shared cname is well under half of it
     await estate.hosts(
         "run", [f"other{i}.example.com" for i in range(_RELATION_CAP * 3)], at=now
     )
@@ -47,7 +43,6 @@ async def test_the_count_is_the_truth_not_the_length_of_the_list(estate, now):
 
 
 async def test_a_value_the_whole_estate_shares_is_not_a_relation(estate, now):
-    """ "Same network" over every host is the estate, not a correlation."""
     await estate.scan("example.com", "run", at=now)
     names = [f"h{i}.example.com" for i in range(MIN_ESTATE_FOR_COMMON + 10)]
     await estate.hosts("run", names, at=now, cname="everything.example.net")
@@ -58,7 +53,6 @@ async def test_a_value_the_whole_estate_shares_is_not_a_relation(estate, now):
 
 
 async def test_a_small_scan_suppresses_nothing(estate, now):
-    """Rarity has no meaning without a norm."""
     await estate.scan("example.com", "run", at=now)
     names = [f"h{i}.example.com" for i in range(4)]
     await estate.hosts("run", names, at=now, cname="edge.example.net")

@@ -164,7 +164,6 @@ class CveLookup(Tool):
                 total=intel.poc_count if intel else 0,
             ),
         ]
-        # nothing held: the hero and one statement, not four empty sections
         if epss is None and kev is None and intel is None:
             blocks = [
                 blocks[0],

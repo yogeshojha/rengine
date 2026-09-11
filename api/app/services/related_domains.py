@@ -39,8 +39,6 @@ class Cert:
     def ours(self, trusted: set[str]) -> bool:
         if self.cn_root and self.cn_root in trusted:
             return True
-        # a host of ours may only vouch for a certificate issued to it — otherwise the
-        # default vhost of whoever hosts us hands over every name on their certificate
         return (
             self.covers_host
             and not self.fronted
@@ -113,8 +111,6 @@ class RelatedDomainService:
                     )
                 )
 
-        # only trust certificates we own: start at the target root, then let a
-        # newly trusted domain vouch for the next one
         trusted = {root}
         for _ in range(_MAX_TRUST_PASSES):
             grown = set(trusted)
@@ -148,7 +144,6 @@ class RelatedDomainService:
 
         hostnames: dict[str, set[str]] = defaultdict(set)
         evidence: dict[str, dict[str, str]] = defaultdict(dict)
-        # a hostname is better proof than the address behind it, so it claims the evidence
         for cert in sorted(certs, key=lambda c: not c.host_root):
             if not cert.ours(trusted):
                 continue

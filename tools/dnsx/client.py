@@ -74,7 +74,7 @@ class DnsxClient:
         return self._run(targets, args)
 
     def axfr(self, targets: str | list[str]) -> ToolResult:
-        """Ask each zone's own nameservers for a transfer; dnsx answers even when refused."""
+        """Ask each zone's own nameservers for a transfer."""
         args = self._build_base_args()
         args.append("-axfr")
         return self._run(targets, args)
@@ -113,7 +113,7 @@ class DnsxClient:
         idle_timeout: int | None = None,
         timeout: int = 0,
     ) -> Iterator[StreamOutcome]:
-        """Resolve in bulk, streaming records as they land so a stall never zeroes the run."""
+        """Resolve in bulk, streaming records as they land."""
         args = self._build_base_args()
         for rt in record_types or ["a"]:
             args.append(f"-{rt.lower()}")
@@ -141,11 +141,7 @@ class DnsxClient:
         *,
         timeout: int,
     ) -> Iterator[StreamOutcome]:
-        """Bruteforce one apex from a wordlist, streaming only the names that answer.
-
-        Bounded by a total budget, never an idle watchdog: a guessed name that does not
-        exist produces no output, so silence here is the normal case, not a stall.
-        """
+        """Bruteforce one apex from a wordlist, streaming only the names that answer."""
         args = self._build_base_args()
         args += ["-d", domain, "-w", wordlist, "-a", "-aaaa", "-resp"]
         with self._runner.stream_json(

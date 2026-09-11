@@ -1,11 +1,4 @@
-"""RIPEstat enrichment tasks, triggered after target creation.
-
-Each target type gets different lookups:
-  ASN -> announced_prefixes, asn_neighbours, as_overview, abuse_contact
-  IP  -> network_info, abuse_contact
-  IP_RANGE -> prefix_overview, related_prefixes
-  DOMAIN/URL -> dont do anything of now
-"""
+"""RIPEstat enrichment tasks, triggered after target creation."""
 
 from sqlalchemy import select
 from sqlmodel import col
@@ -136,7 +129,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
 def _enrich_target(
     service: RIPEStatService, session, target: Target, activity: ActivityLogService
 ) -> int:
-    """Run target-type-specific lookups. Returns number of lookups performed."""
+    """Run target-type-specific lookups."""
     target.bgp_status = TaskStatus.QUERYING
     session.commit()
 
@@ -144,7 +137,6 @@ def _enrich_target(
         TargetType.IP,
         TargetType.IP_RANGE,
     ) and not is_registry_routable(target.target_value):
-        # private and reserved space is not announced, so there is nothing to look up
         target.bgp_status = TaskStatus.NOT_APPLICABLE
         session.commit()
         return 0

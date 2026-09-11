@@ -40,7 +40,6 @@
 	});
 	let surface = $derived(overview?.surface ?? []);
 
-	// every SSE message recomputes progress, so the counts refetch only when a stage lands
 	let counted = -1;
 	$effect(() => {
 		const landed = progress?.done ?? 0;

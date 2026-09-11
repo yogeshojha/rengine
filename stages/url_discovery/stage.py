@@ -41,7 +41,7 @@ def _unavailable(source: str, reason: str) -> EndpointCoverage:
 
 
 def _named_host(target_type: str, target_value: str) -> str:
-    """The hostname a domain or URL target names, which is that scan's scope."""
+    """The hostname a domain or URL target names."""
     if target_type not in (TargetType.DOMAIN.value, TargetType.URL.value):
         return ""
     return normalize_domain(target_value)
@@ -59,7 +59,6 @@ class UrlDiscoveryStage(Stage):
     produces = frozenset({AssetKind.ENDPOINTS.value})
     applies_to = ALL_TARGETS
     tools = ("katana", "urlfinder")
-    # the stage survives a passive scan; the providers that touch the target are gated below
     touches_target = False
     config_model = UrlDiscoveryConfig
     launch_fields = ("enabled", "providers", "crawl_depth", "max_crawl_minutes")
@@ -103,7 +102,6 @@ class UrlDiscoveryStage(Stage):
         passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
         created = seeded.created
         coverage: list[EndpointCoverage] = []
-        # a provider hands over what it has as it crawls; only the stage thread writes
         inbox: queue.SimpleQueue = queue.SimpleQueue()
         tallies: dict[str, UpsertResult] = {}
         context.on_batch = inbox.put
@@ -156,7 +154,7 @@ class UrlDiscoveryStage(Stage):
         return written.created + written.updated
 
     def _collect(self, sources, context, passive: bool, coverage: list, drain):
-        """Sources are independent, so the ones that only talk to the network run together."""
+        """Sources are independent."""
         pooled = []
         results = []
         for source in sources:
@@ -189,7 +187,6 @@ class UrlDiscoveryStage(Stage):
                 for future in done:
                     result = future.result()
                     results.append(result)
-                    # a finished provider's tail must not wait on its slower peers
                     if result.observations and context.on_batch is not None:
                         context.on_batch((result.source, result.observations))
                         result.observations = []
@@ -236,8 +233,6 @@ class UrlDiscoveryStage(Stage):
     def _apex_domains(self, hosts: list[Host]) -> list[str]:
         named = _named_host(self.ctx.target_type, self.ctx.target_value)
         if named:
-            # a subdomain target is scanned as itself — no other stage enumerates its
-            # parent, so this one may not claim the parent's URLs either
             apex = registrable_domain(named)
             if apex:
                 return [apex] if named == apex else [named]

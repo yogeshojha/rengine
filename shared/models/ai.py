@@ -10,7 +10,7 @@ from shared.utils.datetime import utc_now
 
 
 class AiNarrative(SQLModel, table=True):
-    """Written prose keyed by what it was written from, so the same input is never paid for twice."""
+    """Written prose keyed by what it was written from."""
 
     __tablename__ = "ai_narratives"
     __table_args__ = (

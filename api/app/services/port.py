@@ -71,7 +71,6 @@ _FACET_LIMIT = 30
 _HOSTS_PER_ROW = 20
 _TOP_SERVICES = 8
 
-# one row per listening service: the port, the address behind it, and its web identity
 _DERIVED_SQL = """
 WITH hosts AS (
     SELECT ip, count(DISTINCT s.name) AS host_count
@@ -141,7 +140,6 @@ FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS json
 WHERE s.scan_id = ANY(:sids) AND ip = ANY(:ips)
 """
 
-# ports on this page an earlier scan of the same target already reported
 _SEEN_SQL = """
 SELECT DISTINCT e.ip AS ip, e.number AS number
 FROM ports e
@@ -298,7 +296,6 @@ class PortService:
     @staticmethod
     def _order(query, d, f: ServiceFilter):
         if f.sort == "exposure":
-            # the finding first: sensitive, then the ports nobody meant to publish
             return query.order_by(
                 d.c.sensitive.desc(),
                 d.c.is_http.asc(),

@@ -1,4 +1,4 @@
-"""One call surface over every provider. A failure here never fails a report."""
+"""One call surface over every provider."""
 
 from __future__ import annotations
 
@@ -139,7 +139,6 @@ def _anthropic(
     try:
         response = client.messages.create(**kwargs)
     except anthropic.BadRequestError as exc:
-        # a model that rejects thinking or effort still answers without them
         kwargs.pop("thinking", None)
         kwargs.pop("output_config", None)
         try:

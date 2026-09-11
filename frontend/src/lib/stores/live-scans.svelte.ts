@@ -184,7 +184,6 @@ function createLiveScansStore() {
 				break;
 			}
 			case SCAN_EVENT_KIND.RESULTS_FOUND:
-				// rows landed mid-stage: patch the counters, never refetch the list
 				applyColumns(e.scan_id, e.counts);
 				break;
 			case SCAN_EVENT_KIND.COMMAND_STARTED:

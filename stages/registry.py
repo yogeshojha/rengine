@@ -57,7 +57,6 @@ _KINDS = frozenset(k.value for k in AssetKind)
 
 
 def _stage_dirs() -> list[str]:
-    # scanned by path, not pkgutil, so an engine needs no __init__.py
     names: set[str] = set()
     for root in stages_pkg.__path__:
         for entry in sorted(Path(root).iterdir()):
@@ -192,19 +191,7 @@ def ordered_levels() -> list[list[StageSpec]]:
 
 
 def _deferrable(specs: dict[str, StageSpec]) -> set[str]:
-    """Stages the pipeline can run last: nothing declares them in depends_on, nothing
-    consumes what they produce, and they spend their time on the network.
-
-    depends_on alone is not enough. asset_seed is named by no stage yet produces the
-    hosts and addresses that seven of them read, so it must keep its place. And a stage
-    that only reads what the scan already holds costs nothing where it is while its
-    results are wanted early — target_enrichment fills the target's WHOIS and DNS in
-    the first second, and deferring it would hide them for the length of the scan.
-
-    And some stages exist *because* they run early, which nothing about their inputs or
-    outputs can say: session_check proves the credentials still work, so deferring it
-    fires the canary after the two hours it was there to save. Those declare it.
-    """
+    """Stages nothing waits on, that touch the target and do not opt out."""
     awaited = {dep for spec in specs.values() for dep in spec.depends_on}
     wanted: set[str] = set()
     for spec in specs.values():
@@ -224,13 +211,7 @@ def _deferrable(specs: dict[str, StageSpec]) -> set[str]:
 def execution_plan(
     start_level: int = 0, done: frozenset[str] | None = None
 ) -> list[tuple[str, ...]]:
-    """The scan's steps. Each step runs in parallel and the next may not start until it
-    finishes, so a step is a chord header and the step after it is that chord's body.
-
-    A deferrable stage moves to the last step, where it gates only finalize. Measured:
-    vulnerability_scan held level 6 for 231 min on gov.ba and blocked it entirely on
-    gov.ng and go.ke, because a level is a chord and every stage in it gates the next.
-    """
+    """The scan's steps."""
     done = done or frozenset()
     specs = {spec.name: spec for spec in stages()}
     deferred = _deferrable(specs)
@@ -244,8 +225,6 @@ def execution_plan(
         if gating:
             steps.append(gating)
     if tail:
-        # they join the last step rather than forming one after it, or a cheap stage
-        # left at the end would gate the very stages this defers
         if steps:
             steps[-1] = tuple(sorted(set(steps[-1]) | set(tail)))
         else:

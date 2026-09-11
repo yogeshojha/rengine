@@ -7,7 +7,6 @@ from shared.enums.subdomain import SubdomainSource
 from stages.subdomain.providers.base import SubdomainProvider, proxy_env
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 
-# amass v4 prints a relationship graph, not a host list: "a (FQDN) --> rel --> b (FQDN)"
 _FQDN_RE = re.compile(r"([A-Za-z0-9_.-]+) \(FQDN\)")
 
 

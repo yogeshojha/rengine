@@ -3,7 +3,6 @@ export interface CountryGeo {
 	lonLat: [number, number];
 }
 
-// ISO 3166-1 alpha-2 -> country name + [longitude, latitude] centroid
 export const COUNTRY_GEO: Record<string, CountryGeo> = {
 	AD: { name: 'Andorra', lonLat: [1.6, 42.5] },
 	AE: { name: 'United Arab Emirates', lonLat: [54, 24] },

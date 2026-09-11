@@ -97,7 +97,6 @@
 	let canSaveEngine = $derived(
 		!launch.rescan && launch.mode === 'quick' && !!launch.catalog && launch.runningStages.length > 0
 	);
-	// the engine pipeline shows what the engine decides, not what the target type rules out
 	let enginePipeline = $derived(
 		(preview?.phases ?? enginePhases).map((phase) => ({
 			...phase,
@@ -180,7 +179,6 @@
 		return () => clearTimeout(timer);
 	});
 
-	// without a target the engine is previewed through the type lens alone
 	$effect(() => {
 		if (!open) return;
 		const engine = launch.engine;

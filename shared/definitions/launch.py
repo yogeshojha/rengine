@@ -23,7 +23,6 @@ ASSET_KIND_LABELS: dict[str, str] = {
     AssetKind.VULNERABILITIES.value: "findings",
 }
 
-# asset kinds the seed itself supplies before any stage runs
 SEED_PRODUCES: dict[str, frozenset[str]] = {
     TargetType.URL.value: frozenset({AssetKind.HOSTS.value}),
 }

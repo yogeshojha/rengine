@@ -53,7 +53,7 @@ EXPIRING_DAYS = 30
 
 
 def _one_target(scope: QueryScope, column):
-    """The target these scans belong to; the row's own once the scope spans several."""
+    """The target these scans belong to."""
     single = scope.single
     if single is None:
         return column
@@ -132,7 +132,7 @@ def seen_earlier():
 
 
 def _host_baseline(scan_id):
-    """Whether an earlier scan of this target recorded any host. Scan-level, never per row."""
+    """Whether an earlier scan of this target recorded any host."""
     earlier = aliased(Subdomain)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
     cutoff = (
@@ -173,7 +173,7 @@ def _address_cutoff(scan_id):
 
 
 def _address_baseline(scan_id):
-    """Whether an earlier scan of this target recorded any address. Scan-level, never per row."""
+    """Whether an earlier scan of this target recorded any address."""
     earlier = aliased(IpAddress)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
     return exists(
@@ -240,11 +240,7 @@ def service_seen_earlier(source, scope: ScopeLike):
 
 
 def _service_baseline(scan_id):
-    """Whether an earlier scan of this target recorded any port at all.
-
-    Scan-level, so it must not correlate with the row: joining every port of this
-    scan against every port of the target on target_id alone is quadratic.
-    """
+    """Whether an earlier scan of this target recorded any port at all."""
     earlier = aliased(Port)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
     cutoff = (
@@ -363,7 +359,7 @@ def vuln_seen_earlier():
 
 
 def _vuln_baseline(scan_id):
-    """Whether an earlier scan of this target recorded any finding. Scan-level, never per row."""
+    """Whether an earlier scan of this target recorded any finding."""
     earlier = aliased(Vulnerability)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
     cutoff = (
@@ -396,7 +392,7 @@ def vuln_is_new(scope: ScopeLike):
 
 
 def vuln_suppressed(scope: ScopeLike):
-    """A reviewer set this finding aside. An EXISTS so Postgres can hash-join it, not probe per row."""
+    """A reviewer set this finding aside."""
     scope = scope_of(scope)
     return exists(
         select(1).where(
@@ -437,7 +433,6 @@ def _vuln_keys(source, column, prefix: str, name: str):
     ).select_from(source)
 
 
-# cached so both the filter and the sort share one CTE object; two would collide by name
 @lru_cache(maxsize=128)
 def _corroborated_ids(scope: QueryScope):
     """Findings a different check confirms at the same location by naming the same CVE or CWE."""
@@ -503,7 +498,7 @@ def endpoint_seen_earlier():
 
 
 def _endpoint_baseline(scan_id):
-    """Whether an earlier scan of this target recorded any endpoint. Scan-level, never per row."""
+    """Whether an earlier scan of this target recorded any endpoint."""
     earlier = aliased(Endpoint)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
     cutoff = (

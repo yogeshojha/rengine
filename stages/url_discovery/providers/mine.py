@@ -23,7 +23,6 @@ PLACEHOLDER = ("{{", "${", "%7b%7b", "<%", "[[")
 
 
 def candidates(body: str, headers: dict | None = None) -> list[str]:
-    """Every string in a response that could name a url, before any of them is judged."""
     out: list[str] = []
     out.extend(ATTRIBUTE_RE.findall(body))
     out.extend(ABSOLUTE_RE.findall(body))
@@ -36,7 +35,7 @@ def candidates(body: str, headers: dict | None = None) -> list[str]:
 
 
 def resolve(base: str, candidate: str) -> str | None:
-    """Absolute url, or None when the string is not one. Scope is the caller's to apply."""
+    """Absolute url, or None when the string is not one."""
     value = html.unescape(candidate.strip())
     if not value or len(value) > MAX_URL:
         return None

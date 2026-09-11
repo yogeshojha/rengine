@@ -14,10 +14,6 @@ down_revision: str | None = "e17b2c904af6"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-# SQLModel emitted index=True beside primary_key=True on every id, so each table
-# carried ix_<table>_id alongside <table>_pkey — the same single-column btree twice.
-# Named dynamically because which tables exist depends on how far an install has
-# migrated, and a name that is already gone must not fail the upgrade.
 DROP = """
 DO $$
 DECLARE

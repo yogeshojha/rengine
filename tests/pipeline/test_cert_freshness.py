@@ -1,5 +1,3 @@
-"""A certificate expires on a schedule nobody rescans for, so it is re-checked."""
-
 from __future__ import annotations
 
 from datetime import timedelta
@@ -54,11 +52,7 @@ async def _due(estate, limit: int = 50) -> list[str]:
     return [r.name for r in rows]
 
 
-# ── what it is switched by ──
-
-
 async def test_it_never_runs_unasked(estate, now):
-    """It handshakes targets outside a scan, so it is opt-in."""
     await _on(estate, value=False)
     state = await estate.session.run_sync(cert_freshness.refresh)
 
@@ -69,9 +63,6 @@ async def test_it_never_runs_unasked(estate, now):
 async def test_it_runs_when_the_instance_asked_for_it(estate, now):
     await _on(estate)
     assert await estate.session.run_sync(cert_freshness.enabled) is True
-
-
-# ── what it picks ──
 
 
 async def test_a_host_never_checked_is_due(estate, now):
@@ -100,7 +91,6 @@ async def test_a_host_checked_a_moment_ago_is_not(estate, now):
 
 
 async def test_a_certificate_inside_its_renewal_window_is_asked_sooner(estate, now):
-    """A distant expiry waits half a day; one about to renew waits four hours."""
     await _on(estate)
     await estate.scan("example.com", "run", at=now)
     six_hours_ago = now - timedelta(hours=6)
@@ -160,7 +150,6 @@ async def test_an_excluded_host_is_never_asked(estate, now):
 
 
 async def test_an_older_scans_rows_are_a_record_not_a_claim(estate, now):
-    """Only the newest scan of a target describes today, so only it is refreshed."""
     await _on(estate)
     await estate.scan("example.com", "old", at=now - timedelta(days=30))
     await estate.scan("example.com", "new", at=now)
@@ -169,9 +158,6 @@ async def test_an_older_scans_rows_are_a_record_not_a_claim(estate, now):
 
     rows = await estate.session.run_sync(lambda s: cert_freshness.due(s, limit=50))
     assert [r.scan_id for r in rows] == [estate.scans["new"]]
-
-
-# ── what it writes ──
 
 
 def _seen(host: str, *, expires, expired=False, self_signed=False) -> dict:
@@ -243,7 +229,6 @@ async def test_a_certificate_replaced_with_a_shorter_one_is_a_change_not_a_renew
 
 
 async def test_a_host_that_did_not_answer_keeps_what_the_scan_found(estate, now):
-    """Silence is not evidence the certificate changed, but it must not be re-asked at once."""
     await _on(estate)
     await estate.scan("example.com", "run", at=now)
     expires = now + timedelta(days=9)
@@ -279,11 +264,7 @@ async def test_an_expiry_it_reports_is_stored(estate, now):
     assert row.tls_expired is True
 
 
-# ── the run is bounded, never waited on ──
-
-
 def test_a_small_batch_still_gets_a_floor():
-    """tlsx writes every record it will write and then does not exit."""
     assert budget(1) == MIN_RUN_SECONDS
     assert budget(40) == MIN_RUN_SECONDS
 

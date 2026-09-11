@@ -20,7 +20,6 @@ from shared.models.scan_correlation import (
     OriginSample,
 )
 
-# a shared fingerprint is only proof if it is specific to the application
 FINGERPRINTS: tuple[tuple[str, str, int], ...] = (
     ("tls_fingerprint", "TLS certificate", 3),
     ("content_hash", "Response body", 2),
@@ -29,13 +28,9 @@ FINGERPRINTS: tuple[tuple[str, str, int], ...] = (
 )
 HIGH_CONFIDENCE = 3
 MEDIUM_CONFIDENCE = 2
-# a fingerprint shared by more hosts than this is a platform default, not an application
 MAX_SHARED_HOSTS = 60
-# discriminating power falls off with reach: a body hash on two hosts identifies an
-# application, a wildcard certificate on thirty only identifies the organisation
 NARROW_REACH = 3
 BROAD_REACH = 12
-# an error or near-empty body hashes the same everywhere; it proves nothing
 MIN_BODY_BYTES = 512
 HTTP_OK = 200
 HTTP_REDIRECT = 300
@@ -100,7 +95,7 @@ class _Asset:
 
     @property
     def served(self) -> bool:
-        """Returned a page of its own. A redirect is the server asking for a hostname."""
+        """Returned a page of its own."""
         return (
             self.status_code is not None and HTTP_OK <= self.status_code < HTTP_REDIRECT
         )
@@ -188,7 +183,6 @@ class OriginExposureService:
         for asset in fronted:
             for kind, value in asset.prints.items():
                 index[(kind, value)].append(asset)
-        # a value on too many hosts is the CDN's own page, not the customer's app
         return {
             key: group for key, group in index.items() if len(group) <= MAX_SHARED_HOSTS
         }
@@ -234,7 +228,6 @@ class OriginExposureService:
                 )
                 for other in group:
                     matched.setdefault(other.url, other)
-                    # the sample shown as proof must be the one that shares the most
                     strength[other.url] = strength.get(other.url, 0) + _weight(
                         weight, reach
                     )
@@ -302,7 +295,6 @@ class OriginExposureService:
         ports: dict[str, list[int]],
     ) -> OriginFinding:
         open_ports = ports.get(exposed.ip or "", [])
-        # http and https of one hostname are one host, and the count says hostnames
         by_host: dict[str, _Asset] = {}
         for other in others:
             by_host.setdefault(other.host, other)
@@ -345,9 +337,7 @@ def _rank_fronted(
 
 
 def _merge(findings: list[OriginFinding]) -> list[OriginFinding]:
-    """One origin per address and hostname; http and https are the same finding."""
-    # the origin probe stores the address as a host, so the same origin can surface
-    # twice: once by name and once by address. The name is the useful one.
+    """One origin per address and hostname."""
     named = {
         f.exposed.ip
         for f in findings

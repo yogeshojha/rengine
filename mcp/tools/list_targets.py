@@ -1,4 +1,4 @@
-"""What this token can see. The tool an agent reaches for when nothing is named."""
+"""What this token can see."""
 
 from __future__ import annotations
 

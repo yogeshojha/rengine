@@ -1,6 +1,5 @@
 import type { TableColumn } from '../table/columns';
 
-// severity and the finding name lead; the exact location is the second fixed lead
 export const VULN_LEAD_COLUMNS: TableColumn[] = [
 	{
 		key: 'finding',

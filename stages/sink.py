@@ -5,10 +5,8 @@ from __future__ import annotations
 import time
 from collections.abc import Callable, Iterable
 
-# size bounds memory, age bounds silence — whichever comes first wins
 DEFAULT_ROWS = 500
 DEFAULT_SECONDS = 2.0
-# announcing costs a rollup query and a publish, so it is paced independently of the write
 ANNOUNCE_SECONDS = 2.0
 
 
@@ -50,7 +48,7 @@ class ResultSink[T]:
             self.add(item)
 
     def tick(self) -> int:
-        """Flush only because time passed — for a producer that has gone quiet."""
+        """Flush because the age bound was reached."""
         return self.flush() if self._due() else 0
 
     def flush(self, *, final: bool = False) -> int:

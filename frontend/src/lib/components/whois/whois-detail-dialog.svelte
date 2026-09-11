@@ -80,7 +80,6 @@
 
 	let LookupIcon = $derived(getLookupTypeIcon(displayRecord?.lookup_type ?? ''));
 
-	// the panel navigates to the target, so the tab is only offered when there is one
 	let discoveries = $derived(
 		targetValue && targetId && (targetType === TargetType.DOMAIN || targetType === TargetType.IP)
 			? { value: targetValue, id: targetId, type: targetType }

@@ -1,8 +1,4 @@
-"""One entry point for a whole request: authenticate, gate, dispatch, respond.
-
-The API route calls `handle_request` and nothing else; a stdio entry point would
-call the same function. Everything transport-specific stays out of `mcp.server`.
-"""
+"""One entry point for a whole request: authenticate, gate, dispatch, respond."""
 
 from __future__ import annotations
 
@@ -31,7 +27,7 @@ async def handle_request(
     ui_base_url: str,
     client_hint: str = "unknown",
 ) -> dict | None:
-    """Answer one JSON-RPC message. None means the caller sent a notification."""
+    """Answer one JSON-RPC message."""
     try:
         request = protocol.parse(payload)
     except McpError as exc:

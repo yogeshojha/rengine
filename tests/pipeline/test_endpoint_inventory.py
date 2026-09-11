@@ -1,5 +1,3 @@
-"""Endpoint writes go in batches now; the rows must come out the same."""
-
 from __future__ import annotations
 
 import pytest
@@ -99,12 +97,6 @@ async def test_verify_skips_what_was_never_probed(estate, now):
 
 
 async def test_rows_that_differ_in_shape_are_all_written(estate, now):
-    """The merge groups rows by which columns change, so a mixed set must not lose any.
-
-    A re-sighting only ever adds provenance — it never carries a title or a status,
-    which is what verify() is for — so the two shapes here are "gained a source" and
-    "gained a source and a method".
-    """
     await estate.scan("example.com", "run", at=now)
     await _upsert(
         estate,

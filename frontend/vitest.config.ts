@@ -2,7 +2,6 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
-// its own config, not vite.config.ts: sveltekit() wants a running kit and the dev proxy is noise here
 export default defineConfig({
 	plugins: [svelte({ hot: false })],
 	resolve: {

@@ -82,7 +82,6 @@ class RechecksStore {
 		this.byScan.set(scanId, map);
 	}
 
-	// the chip must move on the click, not on the first poll
 	private optimistic(body: RescanCreate, scan: ScanRead): void {
 		const map = new SvelteMap(this.byScan.get(body.parent_scan_id) ?? []);
 		for (const asset of body.assets) {

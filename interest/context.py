@@ -90,7 +90,7 @@ class InterestContext:
         return [HostRow(**dict(r)) for r in rows]
 
     def judgeable(self, limit: int = MAX_JUDGE_HOSTS) -> list[HostRow]:
-        """Bulk parked pages are one answer, not five hundred, so a shape is sampled not sent whole."""
+        """Bulk parked pages are one answer, not five hundred."""
         seen: dict[tuple, int] = {}
         kept: list[HostRow] = []
         for row in self.live_hosts:

@@ -18,7 +18,6 @@ class Signature:
     product_group: int | None = None
 
 
-# ordered: the first match wins, so put specific protocols before generic ones
 SIGNATURES: tuple[Signature, ...] = (
     Signature(
         "ssh",
@@ -70,7 +69,6 @@ SIGNATURES: tuple[Signature, ...] = (
     Signature("http", re.compile(rb"^HTTP/\d")),
 )
 
-# what to send when the port stays silent; keyed by the port's known service
 PAYLOADS: dict[str, bytes] = {
     "redis": b"PING\r\n",
     "memcached": b"version\r\n",
@@ -99,12 +97,11 @@ def _mysql(data: bytes) -> tuple[str, str | None] | None:
 
 def readable(data: bytes) -> str | None:
     text = _PRINTABLE.sub(b".", data[:BANNER_LIMIT]).decode("ascii", "ignore").strip()
-    # every byte was unprintable, so the substitution dots are all that is left: not a banner
     return text if text.strip(".") else None
 
 
 def identify(data: bytes, port_service: str | None) -> dict:
-    """Match a raw banner against the signature table. Returns {} when nothing fits."""
+    """Match a raw banner against the signature table."""
     if not data:
         return {}
     mysql = _mysql(data) if port_service in ("mysql", "mariadb", None) else None

@@ -118,7 +118,6 @@
 		search: initialSearch('ep_q')
 	});
 
-	// bumped when the worker says a dimension gained rows, so a live tab can refresh itself
 	let resultTicks = $state<Record<string, number>>({});
 	let liveTick = $derived(Object.values(resultTicks).reduce((a, b) => a + b, 0));
 
@@ -137,14 +136,11 @@
 		);
 	}
 
-	// SSE is the fast path; this is what keeps the tables live when it is not connected
 	function bumpChangedDimensions(before: Record<string, number>, after: ScanRead) {
-		// the first load has nothing to compare against: every tab would refetch on mount
 		if (!Object.keys(before).length) return;
 		for (const spec of SURFACE_ORDER) {
 			if (!spec.countColumns.some((c) => before[c] !== ((after[c] as number) ?? 0))) continue;
 			resultTicks[spec.key] = (resultTicks[spec.key] ?? 0) + 1;
-			// exposures are judged from the hosts, and their own event only arrives
 			// over SSE — carry it on the poll fallback too
 			if (spec.key === SurfaceDimension.WEB_ASSETS)
 				resultTicks[INTEREST_TAB] = (resultTicks[INTEREST_TAB] ?? 0) + 1;
@@ -280,7 +276,6 @@
 	let plannedKinds = $derived(
 		new Set(scan ? plannedStages(scan, engineCatalogStore.stages).flatMap((st) => st.produces) : [])
 	);
-	// a result tab earns its place with rows, or with a planned producer while the scan is live
 	let visibleTabs = $derived(
 		TAB_DEFS.filter((t) => {
 			if (t.key === 'overview') return true;
@@ -295,7 +290,6 @@
 	$effect(() => {
 		if (scan && !loading && !visibleTabs.some((t) => t.key === activeTab)) setTab('overview');
 	});
-	// the same dimension, every target — carrying whatever is typed here
 	let surfaceLink = $derived.by(() => {
 		const spec = SURFACE_ORDER.find((sp) => sp.tab === activeTab);
 		if (!spec) return '';
@@ -317,7 +311,6 @@
 		return `${end} · took ${durationLabel(scan, now)}`;
 	});
 
-	// seeded so the first mount keeps the queries the URL asked for
 	let lastScanId = page.params.id ?? '';
 	$effect(() => {
 		if (scanId && scanId !== lastScanId) {
@@ -341,9 +334,7 @@
 				scansApi.activities(scanId, projectId),
 				scansApi.commands(scanId, projectId)
 			]);
-		} catch {
-			// pipeline is supplementary — leave prior values on failure
-		}
+		} catch {}
 	}
 
 	async function loadHistory(projectId: string, targetId: string) {
@@ -422,7 +413,6 @@
 		if (!project || !id) return;
 		return sseStore.on<ScanEvent>(SSEChannel.project(project.id), SSEEventType.SCAN, (data) => {
 			if (data.scan_id !== id) return;
-			// rows landing mid-stage: patch the counters and nudge the tab, never refetch the run
 			if (data.kind === SCAN_EVENT_KIND.RESULTS_FOUND) {
 				applyLiveCounts(data.counts);
 				const key = data.dimension ?? '';

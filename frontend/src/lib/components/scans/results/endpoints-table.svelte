@@ -218,7 +218,6 @@
 
 	let isList = $derived(view === 'list');
 	let isMerged = $derived(view === 'merged');
-	// the sitemap is a host with a query.host; the estate is the hosts lens without one
 	let inHost = $derived(view === 'hosts' && !!query.host);
 	let atEstate = $derived(view === 'hosts' && !query.host);
 	let isTree = $derived(inHost || isMerged);
@@ -251,7 +250,6 @@
 	let classTabs = $derived(
 		hideStatic ? ENDPOINT_CLASS_TABS.filter((t) => !STATIC_CLASSES.has(t.key)) : ENDPOINT_CLASS_TABS
 	);
-	// inside a host the tabs count that host; the scan-level facets would contradict the header
 	let classCounts = $derived.by(() => {
 		if (inHost) {
 			if (!brief || brief.host !== query.host) return null;
@@ -289,7 +287,6 @@
 		void connectorStore.loadCatalog();
 	});
 
-	// a search that is exactly one host names the host, so the sitemap opens instead of a one-row table
 	$effect(() => {
 		const search = query.search;
 		if (view !== 'hosts' || !search.trim()) return;
@@ -364,7 +361,6 @@
 		}
 	}
 
-	// the tree answers the whole query: what it shows is exactly what the list would
 	let treeFilter = $derived(compiled(query, sort.key, sort.dir, 1, 1));
 	let treeSig = $derived(JSON.stringify(treeFilter) + (isMerged ? '|m' : '|h'));
 	let loadedTreeSig = '';
@@ -392,7 +388,6 @@
 		}
 	}
 
-	// the ranked estate ignores the host in play, so the switcher inside a host still steps through it
 	let hostsFilter = $derived({
 		...compiled({ ...query, host: '', dir: '' }, hostSort.key, hostSort.dir, 1, 1),
 		hide_root_only: hideRootOnly,
@@ -499,7 +494,6 @@
 		if (!ready) return;
 		try {
 			facets = await endpointsApi.facets(projectId, scanId);
-			// only a successful response may restate the tab count; a failed one is not zero
 			onScanTotal?.(facets.total);
 		} catch {
 			facets = EMPTY_ENDPOINT_FACETS;
@@ -508,7 +502,6 @@
 		}
 	}
 
-	// the coverage table is per run; a project view has a summary and no run to account for
 	async function loadAccount() {
 		if (!ready) return;
 		try {
@@ -527,7 +520,6 @@
 		}
 	}
 
-	// the whole-scan aggregates; a live tick takes them at their own slower cadence
 	const aggregates = () => {
 		loadedTreeSig = '';
 		loadedHostsSig = '';
@@ -841,7 +833,6 @@
 		onTab?.('web-assets', filter);
 	}
 
-	// level 1 → level 2: a host row is a door, not a chevron
 	function enterHost(host: string, chip?: FolderChip) {
 		openKeys = chip && chip.path !== '/' ? [`${host}${chip.path}`] : [];
 		view = 'hosts';

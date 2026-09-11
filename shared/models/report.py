@@ -68,7 +68,7 @@ class ReportTemplate(SQLModel, table=True):
 
 
 class Report(SQLModel, table=True):
-    """One generated document. The spec is stored so a report can always be explained."""
+    """One generated document."""
 
     __tablename__ = "reports"
 
@@ -110,7 +110,7 @@ class Report(SQLModel, table=True):
 
 
 class ReportTheme(SQLModel, table=True):
-    """A look, stored as tokens. Shipped themes are indexed from disk; the rest are uploads."""
+    """A look, stored as tokens."""
 
     __tablename__ = "report_themes"
     __table_args__ = (UniqueConstraint("slug", name="uq_report_theme_slug"),)
@@ -130,7 +130,7 @@ class ReportTheme(SQLModel, table=True):
 
 
 class ReportFont(SQLModel, table=True):
-    """One typeface family. Its faces live on the report-fonts volume, named by us."""
+    """One typeface family."""
 
     __tablename__ = "report_fonts"
     __table_args__ = (UniqueConstraint("slug", name="uq_report_font_slug"),)
@@ -188,7 +188,7 @@ class ReportFontRead(BaseModel):
 
 
 class ReportDefaults(BaseModel):
-    """Instance-wide starting point, so a logo and a classification are set once."""
+    """Instance-wide starting point."""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -270,7 +270,7 @@ class ReportTemplateRead(BaseModel):
 
 
 class ReportCreate(BaseModel):
-    """Ask for a document. Everything but the subject may come from the template."""
+    """Ask for a document."""
 
     model_config = ConfigDict(extra="forbid")
 

@@ -62,23 +62,17 @@ _PREFETCH_KEYS = (
     APIProvider.NETLAS,
 )
 _MAX_CONCURRENCY = 8
-# above ~50 the resolver silently drops answers rather than going faster (measured)
 _MAX_RESOLVE_THREADS = 50
 _MIN_RESOLVE_THREADS = 10
-# a batch answering far below its peers was throttled, not resolved — retry it
 _MIN_BATCHES_FOR_MEDIAN = 3
 _DEGRADED_RATIO = 0.5
 _SHUFFLE_SEED = 1
-# measured: dnsx -t 30 clears ~9 guessed names a second, so 5/s is the floor a
-# budget may assume. Guessing is bounded by total time, never by an idle watchdog.
 _GUESS_FLOOR_RATE = 5
 _GUESS_MIN_BUDGET = 300
-# a write worth naming in the timeline rather than hiding between two batches
 _SLOW_WRITE_SECONDS = 5.0
 _WRITE_BATCH = 1000
 
 
-# a name close to the apex has more siblings worth guessing than a five-label one
 def _seed_rank(name: str) -> tuple[int, int, str]:
     return (name.count("."), len(name), name)
 
@@ -94,7 +88,7 @@ def _is_wildcard(info: dict, wildcard_ips: set[str]) -> bool:
 
 @dataclass
 class _Resolution:
-    """What the resolver actually managed, so the stage can report instead of assume."""
+    """What the resolver actually managed."""
 
     records: dict[str, dict] = field(default_factory=dict)
     submitted: int = 0
@@ -170,7 +164,6 @@ class SubdomainStage(Stage):
         )
 
         provider_classes = self._select_providers(cfg)
-        # each source's names land as it returns, so the table fills while the rest run
         results = self._run_providers(
             provider_classes,
             pctx,
@@ -182,8 +175,6 @@ class SubdomainStage(Stage):
         self._check_abort()
 
         merged = merge_and_filter(results, domain, resolved.included_subdomains)
-        # a guessed name that lands on the wildcard address is not a discovery, so the
-        # probe that decides that has to run before any name is guessed
         wildcard_ips = self._wildcard_ips(domain, cfg)
         extra = self._expand(
             domain, cfg, sorted(merged, key=_seed_rank), wildcard_ips, activity
@@ -193,7 +184,6 @@ class SubdomainStage(Stage):
                 [*results, *extra], domain, resolved.included_subdomains
             )
 
-        # the target itself is in scope — nothing downstream runs without it
         merged.setdefault(domain, set()).add(SubdomainSource.TARGET.value)
         excluded = {n for n in merged if matches_any(n, resolved.excluded_subdomains)}
         logger.info(
@@ -203,13 +193,11 @@ class SubdomainStage(Stage):
             len(excluded),
         )
 
-        # excluded subdomains are stored but not resolved or processed further
         self._write_names(merged)
         to_resolve = [n for n in merged if n not in excluded]
         state = self._resolve(to_resolve, cfg, wildcard_ips)
 
         active, ips_seen = self._persist(merged, state.records, wildcard_ips, excluded)
-        # the stage runner logs the warning + flips the activity to PARTIAL
         return StageResult(
             counts={
                 "subdomains": len(merged),
@@ -250,7 +238,7 @@ class SubdomainStage(Stage):
 
     @contextlib.contextmanager
     def _wordlist(self, cfg: SubdomainConfig):
-        """The word budget is the first N words, because a list is ranked best first."""
+        """The word budget is the first N words."""
         try:
             words, label = read_words(self.session, cfg.wordlist, cfg.wordlist_limit)
         except WordlistError as exc:
@@ -275,7 +263,6 @@ class SubdomainStage(Stage):
         *,
         passive: bool,
     ) -> ProviderResult:
-        """A zone that transfers hands over every name it holds in one answer."""
         source = SubdomainSource.ZONE_TRANSFER
         if passive:
             return self._skipped(
@@ -307,7 +294,6 @@ class SubdomainStage(Stage):
             ]
 
         if not found:
-            # every zone we meet should land here; say so rather than leaving it blank
             return ProviderResult(
                 source=source,
                 note="refused by every nameserver",
@@ -417,7 +403,6 @@ class SubdomainStage(Stage):
         if client is None:
             return self._skipped(source, "dnsx is not installed on this instance")
         found: set[str] = set()
-        # same contract as bruteforce: a variant that does not exist says nothing back
         with client.stream_query(
             candidates,
             record_types=["a", "aaaa", "cname"],
@@ -506,7 +491,6 @@ class SubdomainStage(Stage):
                 result = future.result()
                 results.append(result)
                 self._log_provider(activity, result)
-                # the session is not thread-safe: writing happens here, never in a worker
                 if on_result is not None:
                     on_result(result)
         return results
@@ -596,8 +580,6 @@ class SubdomainStage(Stage):
             state.unavailable = True
             return state
 
-        # shuffled so every batch is a random sample — otherwise clustered dead
-        # names look like a throttled batch and the peer comparison is meaningless
         shuffled = list(names)
         random.Random(_SHUFFLE_SEED).shuffle(shuffled)  # noqa: S311
         size = max(1, cfg.dns_batch_size)
@@ -606,8 +588,6 @@ class SubdomainStage(Stage):
         ]
         state.batches = len(batches)
 
-        # every phase is timed: a gov.np run left 707 s between one batch ending and
-        # the next starting with nothing in the timeline to explain it
         for done, (batch, (records, stalled)) in enumerate(
             self._resolve_batches(client, batches, cfg), start=1
         ):
@@ -635,7 +615,7 @@ class SubdomainStage(Stage):
     def _resolve_batches(
         self, client: DnsxClient, batches: list[_Batch], cfg: SubdomainConfig
     ):
-        """Batches are independent, so several resolver invocations run at once."""
+        """Batches are independent."""
         workers = min(max(1, cfg.dns_batch_concurrency), len(batches))
         if workers == 1:
             for batch in batches:
@@ -683,7 +663,6 @@ class SubdomainStage(Stage):
             batch.stalled = stalled
             state.records.update(records)
             batch.answered += len(records)
-        # count what is still bad after the retry — a recovered batch lost nothing
         state.stalled = sum(1 for b in batches if b.stalled)
         state.degraded = sum(
             1 for b in batches if not b.stalled and floor and b.rate < floor
@@ -709,7 +688,7 @@ class SubdomainStage(Stage):
                 yield futures[future], future.result()
 
     def _clear_once(self) -> None:
-        """Drop the previous attempt's rows inside the first write, never before it."""
+        """Drop the previous attempt's rows inside the first write."""
         if self._cleared:
             return
         self.session.execute(
@@ -718,11 +697,7 @@ class SubdomainStage(Stage):
         self._cleared = True
 
     def _write_names(self, merged: dict[str, set[str]]) -> int:
-        """Upsert what is known so far, each name carrying every source seen for it yet.
-
-        The caller may hold one provider's result, so the union is accumulated here: the
-        upsert overwrites `sources`, and a second provider must not erase the first.
-        """
+        """Upsert what is known so far, each name carrying every source seen for it yet."""
         fresh: dict[str, set[str]] = {}
         for name, sources in merged.items():
             known = self._written.get(name)

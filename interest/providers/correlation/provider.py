@@ -1,4 +1,4 @@
-"""What stands out from the rest of the estate. A keyword list can never see this."""
+"""What stands out from the rest of the estate."""
 
 from __future__ import annotations
 
@@ -26,8 +26,6 @@ logger = get_logger(__name__)
 
 CAP = 300
 
-# vendor and product must both match exactly once normalised — a substring match on
-# "apache" would put every nginx-fronted host on the KEV catalogue
 _EXPLOITED_SQL = """
 WITH seen AS (
     SELECT DISTINCT
@@ -182,12 +180,7 @@ class CorrelationProvider(InterestProvider):
         )
 
     def _exploited(self, ctx: InterestContext) -> Iterable[RawSignal]:
-        """A product on CISA's exploited catalogue, matched from what httpx fingerprinted.
-
-        No packet is sent for this and no version is known — the CPE httpx emits carries
-        a wildcard version — so it says the host runs the product, never that this host
-        is affected.
-        """
+        """A product on CISA's exploited catalogue, matched from what httpx fingerprinted."""
         rows = self._rows(ctx, _EXPLOITED_SQL, cap=CAP)
         for row in rows:
             product = _unescape_cpe(row.shown)

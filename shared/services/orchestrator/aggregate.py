@@ -14,10 +14,6 @@ from shared.models.scan_activity import ScanActivity
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
-# rollup SSOT — a new headline metric needs an entry here + a scans column (migration)
-# + shared.definitions.notifications._SCAN_COUNT_LABELS; other count keys stay stage-only.
-# every headline is measured from its table: several stages write the same rows, so
-# summing per-stage results both double-counts and misses the stages that report no key.
 DERIVED_COUNTS: dict[str, str] = {
     "subdomains_found": "SELECT count(*) FROM subdomains WHERE scan_id = :sid",
     "ips_found": "SELECT count(*) FROM ip_addresses WHERE scan_id = :sid",
@@ -40,7 +36,6 @@ def derived_counts(
 
 
 def aggregate_status(activities: Iterable[ScanActivity]) -> str:
-    # in-flight/empty -> RUNNING sentinel (don't finalize); any failed stage -> failed
     statuses = [a.status for a in activities]
     if not statuses:
         return ScanStatus.RUNNING.value

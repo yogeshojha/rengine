@@ -51,6 +51,6 @@ class ScopeError(McpError):
 
 
 class ToolError(McpError):
-    """A tool ran and could not answer. Returned to the model, not to the transport."""
+    """A tool ran and could not answer."""
 
     code = INTERNAL_ERROR

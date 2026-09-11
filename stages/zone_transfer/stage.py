@@ -86,7 +86,7 @@ def _finding(zone: str, names: list[str]) -> Finding:
 
 
 def transferred_names(session: Session, scan_id: uuid.UUID) -> list[str]:
-    """A host whose sources name the zone transfer is the record that the zone gave it up."""
+    """Hosts this scan recorded as coming from a zone transfer."""
     return list(
         session.scalars(
             select(Subdomain.name)
@@ -113,7 +113,6 @@ class ZoneTransferStage(Stage):
     consumes = frozenset({AssetKind.HOSTS.value})
     produces = frozenset({AssetKind.VULNERABILITIES.value})
     applies_to = ALL_TARGETS
-    # discovery already asked; this reads what came back
     touches_target = False
     config_model = ZoneTransferConfig
 

@@ -58,7 +58,6 @@ def _row(
 ) -> dict:
     name = obs.service_name or service_for_port(obs.port)
     tls = obs.tls or likely_tls(obs.port)
-    # a service banner is whatever the socket sent back, bytes and all
     return scrub(
         {
             "id": uuid.uuid4(),
@@ -96,11 +95,7 @@ def upsert(
     keep_source: bool = False,
     replace: bool = False,
 ) -> int:
-    """Merge observations into ports. Never loses a field a weaker source already filled.
-
-    replace drops this source's earlier rows in the same transaction as the insert, so a
-    re-running stage never leaves the table short of what it already knew.
-    """
+    """Merge observations into ports."""
     if replace:
         session.execute(
             delete(Port).where(Port.scan_id == scan_id, Port.source == source)
@@ -112,7 +107,6 @@ def upsert(
     seen: dict[tuple[str, int, str], ServiceObservation] = {}
     for obs in observations:
         seen[(obs.ip, obs.port, obs.protocol)] = obs
-    # a stable key order keeps concurrent overlapping upserts from deadlocking
     ordered = [seen[key] for key in sorted(seen)]
     rows = [
         _row(

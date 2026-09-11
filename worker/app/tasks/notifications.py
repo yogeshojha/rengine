@@ -1,4 +1,4 @@
-"""Drop notifications past their expiry so the inbox stays a working set."""
+"""Drop notifications past their expiry."""
 
 from celery import shared_task
 from sqlalchemy import delete

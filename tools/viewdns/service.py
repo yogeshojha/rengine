@@ -114,9 +114,6 @@ class ViewDNSService:
         await self._api_key_service.increment_usage(APIProvider.VIEWDNS)
 
     async def _handle_api_error(self, e: ViewDNSAPIError) -> None:
-        # Rate limits are transient; never disable the shared instance-global key
-        # for them (one user's burst would deny ViewDNS to everyone). Only a
-        # genuine auth failure (invalid/revoked key) warrants disabling.
         if isinstance(e, ViewDNSRateLimitError):
             logger.warning("ViewDNS rate limit: %s", e)
             return
@@ -182,8 +179,6 @@ class ViewDNSService:
         api_key_service.increment_usage(APIProvider.VIEWDNS)
 
     def _handle_api_error_sync(self, session: Session, e: ViewDNSAPIError) -> None:
-        # Rate limits are transient; never disable the shared instance-global key
-        # for them. Only a genuine auth failure warrants disabling.
         if isinstance(e, ViewDNSRateLimitError):
             logger.warning("ViewDNS rate limit: %s", e)
             return

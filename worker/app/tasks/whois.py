@@ -35,7 +35,6 @@ def _resolve_group(
             session, normalized_query, targets[0].target_type
         )
     except WhoisNotApplicableError as exc:
-        # no registry can hold this record; that is an answer, not a failure
         reason = str(exc)[:1000]
         logger.info("WHOIS not applicable for %s: %s", normalized_query, reason)
         for target in targets:

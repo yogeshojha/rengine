@@ -1,5 +1,3 @@
-"""Asset predicates fold across OR and must not fold across AND."""
-
 from __future__ import annotations
 
 import pytest
@@ -11,7 +9,6 @@ pytestmark = pytest.mark.grammar
 
 
 async def _one_host_two_assets(estate, now):
-    """One hostname answering on two ports with two different certificates."""
     await estate.scan("example.com", "run", at=now)
     await estate.hosts("run", ["www.example.com"], at=now, status=200)
     await estate.assets(
@@ -42,7 +39,6 @@ async def test_or_over_asset_fields_matches_either_certificate(estate, now):
 
 
 async def test_and_over_asset_fields_may_match_two_different_assets(estate, now):
-    """The reason AND is not folded: one host, two certificates, both conditions true."""
     scan = await _one_host_two_assets(estate, now)
 
     assert await _total(estate, scan, 'cert.issuer:"Alpha" and cert.issuer:"Beta"') == 1
@@ -52,7 +48,6 @@ async def test_and_over_asset_fields_may_match_two_different_assets(estate, now)
 
 
 async def test_a_mixed_or_keeps_both_halves(estate, now):
-    """An OR of an asset field and a host field must still match on either."""
     scan = await _one_host_two_assets(estate, now)
 
     assert await _total(estate, scan, 'host:www or cert.issuer:"Gamma"') == 1

@@ -1,4 +1,4 @@
-"""Toolbox runs that shell out to a tool binary. The api image carries none."""
+"""Toolbox runs that shell out to a tool binary."""
 
 import uuid
 

@@ -61,7 +61,6 @@ _PROTOCOL_KEYS: tuple[tuple[str, str], ...] = (
     ("whois", Protocol.WHOIS.value),
 )
 
-# directories in the upstream archive that hold no runnable check
 _SKIP_DIRS = frozenset({".github", ".git", "helpers", "profiles", "workflows"})
 _clean = strip_control
 
@@ -195,7 +194,7 @@ def parse_template(raw: str) -> ParsedTemplate:
 
 
 def sets_for(tags: Iterable[str], path: str) -> list[str]:
-    """The curated sets a check belongs to. A check may belong to several, or to none."""
+    """The curated sets a check belongs to."""
     lowered = {t.lower() for t in tags or ()}
     normalized = path.replace("\\", "/").lstrip("/")
     keys = []
@@ -350,7 +349,7 @@ def index_directory(session: Session, root: Path, origin: str) -> int:
 
 
 def sync_official(session: Session) -> int:
-    """Refresh the project template set. A failed download leaves the last good copy in place."""
+    """Refresh the project template set."""
     root = official_root()
     root.parent.mkdir(parents=True, exist_ok=True)
     with _downloaded_archive() as archive:
@@ -410,7 +409,6 @@ def selection_predicate(selection: TemplateSelection, *, official_only: bool = T
     clauses = [VulnTemplate.enabled.is_(True)]
     if official_only:
         clauses.append(VulnTemplate.origin == TemplateOrigin.OFFICIAL.value)
-    # an empty axis means the user cleared it, which selects nothing — never everything
     clauses.append(VulnTemplate.severity.in_(list(selection.severities)))
     chosen = _set_predicate(selection.template_sets)
     extra = _tags_overlap(selection.include_tags)
@@ -428,7 +426,6 @@ def selection_predicate(selection: TemplateSelection, *, official_only: bool = T
         )
     if not selection.headless:
         clauses.append(VulnTemplate.protocol != Protocol.HEADLESS.value)
-    # file checks read the scanner's own disk, so they never apply to a remote target
     clauses.append(VulnTemplate.protocol != Protocol.FILE.value)
     return and_(*clauses)
 

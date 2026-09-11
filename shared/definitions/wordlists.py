@@ -11,7 +11,6 @@ CUSTOM_ROOT = "/app/wordlists/custom"
 
 MAX_WORDLIST_BYTES = 8 * 1024 * 1024
 MAX_WORDLIST_UPLOAD = 10
-# a DNS label is 63 characters; a longer line is not a word
 MAX_WORD_LENGTH = 63
 MAX_SLUG_LENGTH = 64
 
@@ -22,7 +21,7 @@ class WordlistOrigin(StrEnum):
 
 
 class WordlistKind(StrEnum):
-    """What the words are, so a stage never offers a list it cannot use."""
+    """What the words are."""
 
     SUBDOMAIN = "subdomain"
     VHOST = "vhost"
@@ -44,7 +43,6 @@ class BuiltinWordlist(BaseModel):
     description: str
 
 
-# shipped with the image, indexed on first read so they appear beside uploads
 BUILTIN_WORDLISTS: tuple[BuiltinWordlist, ...] = (
     BuiltinWordlist(
         slug="common-subdomains",

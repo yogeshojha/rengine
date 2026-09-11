@@ -1,5 +1,3 @@
-"""Facets narrow two different ways; both must produce the same answer."""
-
 from __future__ import annotations
 
 import pytest
@@ -43,7 +41,6 @@ async def test_facet_counts_add_up_to_the_total(estate, now):
 
 
 async def test_status_keeps_its_declared_order_not_a_count_order(estate, now):
-    """Status is an ordinal ramp; sorting it by count would reshuffle the tabs."""
     scan = await _scan(estate, now)
     facets = await EndpointService(estate.session).facets(scan, EndpointFilter())
 
@@ -55,7 +52,6 @@ async def test_status_keeps_its_declared_order_not_a_count_order(estate, now):
 
 
 async def test_a_narrowed_reach_agrees_with_an_unnarrowed_one(estate, now):
-    """A filter that excludes nothing must give exactly the unfiltered answer."""
     scan = await _scan(estate, now)
     service = EndpointService(estate.session)
 
@@ -109,8 +105,6 @@ async def test_summary_totals_agree_with_the_facets(estate, now):
 
 
 async def test_hide_static_narrows_the_host_rollup(estate, now):
-    """hide_static is applied by the filter but is absent from _narrowed(), so the
-    host rollup must decide its reach from has_facets() or the static rows leak back in."""
     scan = await _scan(estate, now)
     service = EndpointService(estate.session)
 

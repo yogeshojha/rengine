@@ -70,7 +70,6 @@
 	let dirLabel = $derived(isRoot ? '' : endpoint.dir_path);
 	let leaf = $derived(label ?? endpoint.filename ?? '/');
 	let dim = $derived(STATIC_CLASSES.has(endpoint.endpoint_class));
-	// several origins can share one path; only the index rows of a folder need to tell them apart
 	let origin = $derived.by(() => {
 		if (!isIndex) return '';
 		const port = endpoint.port && ![80, 443].includes(endpoint.port) ? `:${endpoint.port}` : '';

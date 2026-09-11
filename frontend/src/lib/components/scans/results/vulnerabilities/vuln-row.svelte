@@ -85,7 +85,6 @@
 	let ProtocolIcon = $derived(PROTOCOL_ICONS[v.protocol] ?? Globe);
 	let reviewed = $derived(v.state !== VulnState.OPEN);
 	let likely = $derived((v.epss_score ?? 0) >= EPSS_HIGH);
-	// the row shows only what the visible columns do not already say
 	const ROW_SIGNALS = ['ransom_path', 'fresh_exploit', 'ransomware', 'overdue', 'untestable'];
 	const MAX_ROW_SIGNALS = 2;
 	let rowSignals = $derived(

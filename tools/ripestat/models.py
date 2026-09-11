@@ -118,7 +118,6 @@ class RelatedPrefixRead(BaseModel):
     origin_asn: int | None
 
 
-# Generic wrapper for all lookup responses, includes cache metadata
 class RIPEStatResult(BaseModel):
     lookup_type: RIPEStatLookupType
     query_value: str

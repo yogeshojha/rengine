@@ -1,4 +1,4 @@
-"""The only reader and writer of wordlist files. Every path resolves inside a known root."""
+"""The only reader and writer of wordlist files."""
 
 from __future__ import annotations
 
@@ -67,7 +67,7 @@ def clean_words(raw: str) -> list[str]:
 
 
 def store_custom(filename: str, raw: str) -> tuple[str, list[str]]:
-    """Validate an upload and write it under the custom root. Returns (filename, words)."""
+    """Validate an upload and write it under the custom root."""
     words = clean_words(raw)
     if not words:
         msg = "No usable words: every line was blank, a comment or over 63 characters."
@@ -85,7 +85,7 @@ def store_custom(filename: str, raw: str) -> tuple[str, list[str]]:
 
 
 def delete_custom(row: Wordlist) -> None:
-    """Only ever unlinks inside the custom root; a builtin list is never removed."""
+    """Only ever unlinks inside the custom root."""
     if row.origin != WordlistOrigin.CUSTOM.value:
         msg = "A shipped wordlist cannot be deleted."
         raise WordlistError(msg)
@@ -94,7 +94,7 @@ def delete_custom(row: Wordlist) -> None:
 
 
 def ensure_builtin(session: Session) -> int:
-    """Index the shipped lists so they sit beside uploads in the same picker."""
+    """Index the shipped lists."""
     root = builtin_root()
     now = utc_now()
     indexed = 0

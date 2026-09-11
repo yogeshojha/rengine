@@ -23,7 +23,6 @@ _CAP = 5000
 
 
 def _finding(name: str, cname: str, provider: str) -> Finding:
-    # stable across scans, so triage and is:new carry, exactly as a nuclei finding does
     digest = hashlib.sha256(
         f"{Scanner.RENGINE.value}|{_TEMPLATE}|{name}|{cname}".encode()
     ).hexdigest()
@@ -87,7 +86,6 @@ class TakeoverStage(Stage):
     consumes = frozenset({AssetKind.HOSTS.value})
     produces = frozenset({AssetKind.VULNERABILITIES.value})
     applies_to = ALL_TARGETS
-    # reads what resolution already recorded; it sends nothing of its own
     touches_target = False
     config_model = TakeoverConfig
 

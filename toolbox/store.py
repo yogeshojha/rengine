@@ -1,4 +1,4 @@
-"""Run records, held in Redis with a TTL. Every write is fail-open."""
+"""Run records, held in Redis with a TTL."""
 
 from __future__ import annotations
 

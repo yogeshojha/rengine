@@ -1,4 +1,4 @@
-"""Dozens of expert queries, already counted for this scan. The orientation tool."""
+"""Dozens of expert queries, already counted for this scan."""
 
 from __future__ import annotations
 

@@ -95,7 +95,6 @@ class RescanService:
         picked = self._stages(data.stages, data.dimension)
         overrides = await self._overrides(picked, data)
         kind = seed_kind_for(data.dimension)
-        # one level of nesting: a rescan of a rescan belongs to the census that seeded both
         anchor = (
             parent.parent_scan_id
             if parent.scope == ScanScope.FOCUSED.value and parent.parent_scan_id

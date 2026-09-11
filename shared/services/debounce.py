@@ -1,4 +1,4 @@
-"""A shared 'not again yet' latch, so parallel stages collapse into one background job."""
+"""A shared 'not again yet' latch."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def _redis() -> redis.Redis:
 
 
 def claim(key: str, ttl_seconds: int) -> bool:
-    """True for the first caller in the window. Fail-open, so a redis outage never blocks work."""
+    """True for the first caller in the window."""
     try:
         return bool(_redis().set(f"debounce:{key}", "1", nx=True, ex=ttl_seconds))
     except Exception:

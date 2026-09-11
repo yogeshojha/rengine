@@ -17,9 +17,6 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # Convert every naive `timestamp` column to `timestamptz`, interpreting the
-    # existing stored values as UTC. Production-grade: timestamps are stored
-    # tz-aware so the API serializes ISO-8601 with offset (no client tz drift).
     op.execute(
         """
         DO $$

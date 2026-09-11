@@ -8,7 +8,6 @@ from shared.services.scan_resolve import MASK
 from shared.utils.datetime import utc_now
 from tools.runner.fieldmap import F, parse_record
 
-# mask scan-context auth headers the scanner injected (same contract as command redaction)
 _REQUEST_SECRET_HEADER = re.compile(
     r"(?im)^((?:authorization|proxy-authorization|cookie|x-api-key|"
     r"[\w-]*(?:token|secret|api-?key)[\w-]*)\s*:\s*).+$"

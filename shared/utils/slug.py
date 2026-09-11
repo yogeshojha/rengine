@@ -41,7 +41,7 @@ def _pending[T](
 async def unique_slug[T](
     session: AsyncSession, model: type[T], name: str, **scope: Any
 ) -> str:
-    """Slugs are constrained per scope, and a name maps to one many-to-one — so suffix until free."""
+    """Suffix a slug until it is free within its scope."""
     base = generate_slug(name) or FALLBACK_SLUG
     conditions = [getattr(model, key) == value for key, value in scope.items()]
     uncommitted = _pending(session, model, scope)
@@ -65,7 +65,7 @@ def _slug_conflict(exc: IntegrityError) -> bool:
 async def add_with_unique_slug[T](
     session: AsyncSession, row: T, name: str, **scope: Any
 ) -> T:
-    """The slug is constrained in the database, so a concurrent claim has to be retried, not pre-checked."""
+    """The slug is constrained in the database."""
     for _ in range(MAX_SLUG_ATTEMPTS):
         row.slug = await unique_slug(session, type(row), name, **scope)
         try:
