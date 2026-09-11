@@ -4,7 +4,8 @@ A connector receives proxied traffic from a web proxy and records it as request 
 classified and flagged without sending a request; scanning them is a separate, explicit step.
 
 One connector ships: **Burp Suite** (Montoya extension, supported on Community and Professional).
-Any client that posts the same batch works — see `clients/har` for a proxy that only exports HAR.
+Adding another is a directory here plus a `ConnectorKind` value — and a client that speaks the contract
+below, without which the connector is a name in a picker and nothing more.
 
 ## The contract
 

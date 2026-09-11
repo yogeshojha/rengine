@@ -67,8 +67,6 @@ services:
       - ./pyproject.toml:/app/pyproject.toml
       # read-only, so the tests can check a frontend mirror has not drifted
       - ./frontend/src/lib/config:/app/frontend-config:ro
-      # read-only, so the tests exercise the shipped client rather than a copy
-      - ./clients:/app/clients:ro
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
