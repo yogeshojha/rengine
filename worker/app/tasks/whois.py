@@ -4,6 +4,7 @@ from app.celery import celery_app
 from app.config import settings
 from app.database import get_sync_session
 from shared.definitions.notifications import (
+    ENRICHMENT_FAILED,
     whois_enrichment_failed,
     whois_enrichment_incomplete,
 )
@@ -17,9 +18,32 @@ from shared.services.notification_sync import (
     single_project,
 )
 from shared.utils.datetime import utc_now
-from tools.whois.service import WhoisNotApplicableError, WhoisService
+from tools.whois.service import WhoisError, WhoisNotApplicableError, WhoisService
 
 logger = get_logger(__name__)
+
+
+def _fail_group(
+    session,
+    activity: ActivityLogService,
+    targets: list[Target],
+    error: str,
+) -> tuple[int, int]:
+    """Stamp one failure on every target sharing the query."""
+    for target in targets:
+        target.whois_status = TaskStatus.FAILED
+        target.whois_error = error
+        target.updated_at = utc_now()
+        activity.log(
+            event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
+            title=f"WHOIS lookup failed · {target.target_value}",
+            description=error,
+            level=ActivityLevel.ERROR,
+            target_id=target.id,
+            project_id=target.project_id,
+        )
+    session.commit()
+    return 0, len(targets)
 
 
 def _resolve_group(
@@ -43,23 +67,13 @@ def _resolve_group(
             target.updated_at = utc_now()
         session.commit()
         return 0, 0
-    except Exception as exc:
+    except WhoisError as exc:
         error = str(exc)[:1000]
         logger.warning("WHOIS lookup failed for %s: %s", normalized_query, error)
-        for target in targets:
-            target.whois_status = TaskStatus.FAILED
-            target.whois_error = error
-            target.updated_at = utc_now()
-            activity.log(
-                event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
-                title=f"WHOIS lookup failed · {target.target_value}",
-                description=error,
-                level=ActivityLevel.ERROR,
-                target_id=target.id,
-                project_id=target.project_id,
-            )
-        session.commit()
-        return 0, len(targets)
+        return _fail_group(session, activity, targets, error)
+    except Exception:
+        logger.exception("WHOIS lookup failed for %s", normalized_query)
+        return _fail_group(session, activity, targets, ENRICHMENT_FAILED)
 
     for target in targets:
         target.whois_record_id = record.id
@@ -149,7 +163,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
 
         return {"success": success_count, "failed": failed_count, "total": total}
 
-    except Exception as e:
+    except Exception:
         logger.exception("WHOIS enrichment task failed entirely")
         try:
             remaining = (
@@ -165,12 +179,12 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
 
             for target in remaining:
                 target.whois_status = TaskStatus.FAILED
-                target.whois_error = str(e)[:1000]
+                target.whois_error = ENRICHMENT_FAILED
                 target.updated_at = utc_now()
                 activity.log(
                     event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
                     title=f"WHOIS lookup failed · {target.target_value}",
-                    description=str(e)[:1000],
+                    description=ENRICHMENT_FAILED,
                     level=ActivityLevel.ERROR,
                     target_id=target.id,
                     project_id=target.project_id,
@@ -179,7 +193,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
         except Exception:
             logger.exception("Failed to update target statuses after task failure")
 
-        template = whois_enrichment_failed(str(e)[:500])
+        template = whois_enrichment_failed()
         try:
             notifier.publish(
                 session=session,

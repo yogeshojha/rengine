@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Text
+from sqlalchemy import BigInteger, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
@@ -47,8 +47,8 @@ class WhoisRecord(SQLModel, table=True):
     assignment_type: str = Field(default="", max_length=100)
     network_cidr: str = Field(default="", max_length=100, index=True)
 
-    asn_range_start: int | None = None
-    asn_range_end: int | None = None
+    asn_range_start: int | None = Field(default=None, sa_type=BigInteger)
+    asn_range_end: int | None = Field(default=None, sa_type=BigInteger)
 
     parsed_data: dict | None = Field(default=None, sa_type=JSONB)
 

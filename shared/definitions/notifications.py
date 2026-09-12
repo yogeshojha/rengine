@@ -20,6 +20,7 @@ def _count(n: int, singular: str, plural: str) -> str:
 
 
 MAX_NAMED_TARGETS = 3
+ENRICHMENT_FAILED = "The lookup did not complete. Check the worker log."
 
 
 def _subject(names: Sequence[str], failed: int, total: int) -> str:
@@ -46,12 +47,12 @@ def whois_enrichment_incomplete(
     }
 
 
-def whois_enrichment_failed(error: str) -> dict:
+def whois_enrichment_failed() -> dict:
     return {
         "type": NotificationType.TARGET,
         "severity": NotificationSeverity.ERROR,
         "title": "WHOIS enrichment failed",
-        "message": f"WHOIS enrichment failed. {error}",
+        "message": "No target was enriched. Check the worker log.",
     }
 
 
@@ -72,12 +73,12 @@ def ripestat_enrichment_incomplete(
     }
 
 
-def ripestat_enrichment_failed(error: str) -> dict:
+def ripestat_enrichment_failed() -> dict:
     return {
         "type": NotificationType.TARGET,
         "severity": NotificationSeverity.ERROR,
         "title": "BGP enrichment failed",
-        "message": f"BGP enrichment failed. {error}",
+        "message": "No target was enriched. Check the worker log.",
     }
 
 

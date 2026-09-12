@@ -4,6 +4,7 @@ from celery import shared_task
 from sqlalchemy import select
 
 from app.database import get_sync_session
+from shared.definitions.notifications import ENRICHMENT_FAILED
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
@@ -111,14 +112,14 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                     exc_info=True,
                 )
                 target.dns_status = TaskStatus.FAILED
-                target.dns_error = f"Unexpected error: {str(e)[:900]}"
+                target.dns_error = ENRICHMENT_FAILED
                 target.updated_at = utc_now()
                 session.commit()
                 results["failed"] += 1
                 activity.log(
                     event=ActivityEvent.TARGET_ENRICHMENT_DNS_FAILED,
                     title=f"DNS lookup failed · {target.target_value}",
-                    description=str(e)[:1000],
+                    description=ENRICHMENT_FAILED,
                     level=ActivityLevel.ERROR,
                     target_id=target.id,
                     project_id=target.project_id,

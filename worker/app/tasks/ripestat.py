@@ -105,10 +105,10 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
         )
         return {"success": success, "failed": failed, "skipped": skipped}
 
-    except Exception as e:
+    except Exception:
         logger.exception("RIPEstat enrichment task failed entirely")
 
-        template = ripestat_enrichment_failed(str(e)[:500])
+        template = ripestat_enrichment_failed()
         try:
             notifier.publish(
                 session=session,
