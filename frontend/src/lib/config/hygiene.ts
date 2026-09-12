@@ -4,6 +4,7 @@ import Cookie from '@lucide/svelte/icons/cookie';
 import Globe from '@lucide/svelte/icons/globe';
 import Eye from '@lucide/svelte/icons/eye';
 import type { IconComponent } from './icons';
+import type { HygieneCheckCount, HygieneSummary } from '$lib/utilities/scan-insights';
 
 // mirrors shared/definitions/hygiene.py
 export const HygieneCheck = {
@@ -273,6 +274,9 @@ export function checkSpec(key: string): CheckSpec | null {
 }
 
 export function checkLabel(key: string): string {
+	if (key === HYGIENE_NONE) return 'Passes every check';
+	if (key === HYGIENE_ANY) return 'Any check failing';
+	if (key in TONE_LABEL) return `${TONE_LABEL[key as HygieneTone]} checks`;
 	return CHECK_BY_KEY[key]?.label ?? key;
 }
 
@@ -320,3 +324,46 @@ export const TONE_LABEL: Record<HygieneTone, string> = {
 	warning: 'Warning',
 	info: 'Info'
 };
+
+export interface HygieneRow {
+	spec: CheckSpec;
+	count: HygieneCheckCount;
+}
+
+export interface HygieneBreakdown {
+	warnings: HygieneRow[];
+	infos: HygieneRow[];
+	passing: CheckSpec[];
+	evaluated: number;
+	pending: number;
+	hasData: boolean;
+}
+
+export function hygieneShare(row: HygieneRow): number {
+	return row.count.applicable > 0 ? (row.count.failing / row.count.applicable) * 100 : 0;
+}
+
+export function hygieneShareLabel(row: HygieneRow): string {
+	const p = hygieneShare(row);
+	return p > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`;
+}
+
+export function hygieneBreakdown(summary: HygieneSummary | null): HygieneBreakdown {
+	const byKey = new Map((summary?.checks ?? []).map((c) => [c.key, c]));
+	const failing = CHECKS.map((spec) => ({ spec, count: byKey.get(spec.key) }))
+		.filter((r): r is HygieneRow => !!r.count && r.count.failing > 0)
+		.sort((a, b) => hygieneShare(b) - hygieneShare(a));
+	const evaluated = summary?.evaluated ?? 0;
+	const pending = summary?.pending ?? 0;
+	return {
+		warnings: failing.filter((r) => r.spec.tone === HygieneTone.WARNING),
+		infos: failing.filter((r) => r.spec.tone === HygieneTone.INFO),
+		passing: CHECKS.filter((spec) => {
+			const c = byKey.get(spec.key);
+			return !!c && c.applicable > 0 && c.failing === 0;
+		}),
+		evaluated,
+		pending,
+		hasData: evaluated > 0 || pending > 0
+	};
+}

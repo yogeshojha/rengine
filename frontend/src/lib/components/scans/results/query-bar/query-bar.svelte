@@ -10,6 +10,7 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import type { Snippet } from 'svelte';
 	import type { QuerySchemaStore } from '$lib/stores/query-schema.svelte';
 	import { caretContext, lex, replaceRange, type QueryProblem } from '$lib/utilities/query-lexer';
 	import type { QueryError, QueryLeads, QueryStarter } from '$lib/types/asset-query';
@@ -34,6 +35,7 @@
 		serverError?: QueryError | null;
 		onReady?: (ready: boolean) => void;
 		onSubmit?: () => void;
+		actions?: Snippet;
 		ref?: HTMLInputElement | null;
 	}
 
@@ -51,6 +53,7 @@
 		serverError = null,
 		onReady,
 		onSubmit,
+		actions,
 		ref = $bindable(null)
 	}: Props = $props();
 
@@ -345,6 +348,7 @@
 					<span class="max-sm:hidden">{findingWord}</span>
 				</Button>
 			{/if}
+			{@render actions?.()}
 			<Button
 				variant="ghost"
 				size="sm"

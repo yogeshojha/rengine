@@ -9,6 +9,7 @@
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Globe from '@lucide/svelte/icons/globe';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import PanelRight from '@lucide/svelte/icons/panel-right';
 
 	import * as Card from '$lib/components/ui/card';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -25,6 +26,7 @@
 	import { withTarget } from './table/columns';
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
+	import HygieneRail from './web-assets/hygiene-rail.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
@@ -44,6 +46,7 @@
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import { querySchema } from '$lib/stores/query-schema.svelte';
+	import { HygieneTone, TONE_DOT } from '$lib/config/hygiene';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
@@ -57,6 +60,7 @@
 		STATUS_CLASS_TABS,
 		WEB_ASSET_SORTS,
 		type Facet,
+		type HygieneSummary,
 		type WebAssetQuery,
 		type SubdomainFacetSet
 	} from '$lib/utilities/scan-insights';
@@ -143,6 +147,8 @@
 	let errored = $state(false);
 	let facets = $state<SubdomainFacetSet>(EMPTY_FACETS);
 	let facetsLoaded = $state(false);
+	let hygiene = $state<HygieneSummary | null>(null);
+	let insightsOpen = $state(false);
 	let leadSet = $state<QueryLeads | null>(null);
 	let groupBy = $state<string>(initial.get('group') ?? '');
 	let groupSet = $state<QueryGroups | null>(null);
@@ -187,6 +193,16 @@
 	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
 	let statusTab = $derived(
 		query.status.length === 0 ? 'all' : query.status.length === 1 ? query.status[0] : ''
+	);
+	let hygieneTone = $derived<HygieneTone | null>(
+		!hygiene || (hygiene.evaluated === 0 && hygiene.pending === 0)
+			? null
+			: hygiene.warning > 0
+				? HygieneTone.WARNING
+				: HygieneTone.INFO
+	);
+	let hygieneHeadline = $derived(
+		hygieneTone === HygieneTone.WARNING ? (hygiene?.warning ?? 0) : (hygiene?.info ?? 0)
 	);
 	let statusCounts = $derived.by(() => {
 		if (!facetsLoaded) return null;
@@ -327,11 +343,20 @@
 		}
 	}
 
+	async function loadHygiene() {
+		if (!ready) return;
+		try {
+			hygiene = await subdomainsApi.hygiene(projectId, scanId);
+		} catch {
+			hygiene = null;
+		}
+	}
+
 	async function refresh(quiet = false) {
 		refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
-			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
+			await Promise.all([runSearch(), loadFacets(), loadHygiene(), loadGroups()]);
 		} finally {
 			if (!quiet) refreshing = false;
 		}
@@ -373,6 +398,7 @@
 		void projectId;
 		if (!seen) return;
 		untrack(loadFacets);
+		untrack(loadHygiene);
 	});
 
 	$effect(() => {
@@ -491,6 +517,10 @@
 	function setQuery(q: WebAssetQuery) {
 		query = q;
 		pageIndex = 0;
+	}
+	function toggleHygiene(key: string) {
+		const on = query.hygiene.includes(key);
+		setQuery({ ...query, hygiene: on ? query.hygiene.filter((k) => k !== key) : [key] });
 	}
 	function setStatusTab(key: string) {
 		setQuery({ ...query, status: key === 'all' ? [] : [key] });
@@ -651,10 +681,30 @@
 		onReady={(value) => (queryReady = value)}
 		onChange={(v) => setQuery({ ...query, search: v })}
 		onSubmit={flushSearch}
-	/>
+	>
+		{#snippet actions()}
+			{#if hygieneTone}
+				<Button
+					variant="ghost"
+					size="sm"
+					class="h-8 gap-1.5 px-2 {insightsOpen
+						? 'bg-muted text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+					aria-label="Web hygiene"
+					aria-pressed={insightsOpen}
+					onclick={() => (insightsOpen = !insightsOpen)}
+				>
+					<PanelRight class="size-4" />
+					<span class="max-sm:hidden">Hygiene</span>
+					<span class="size-1.5 rounded-full {TONE_DOT[hygieneTone]}" aria-hidden="true"></span>
+					<span class="tabular-nums">{hygieneHeadline.toLocaleString()}</span>
+				</Button>
+			{/if}
+		{/snippet}
+	</QueryBar>
 </div>
 
-<Card.Root class="gap-0 overflow-hidden rounded-t-none border-t-0 py-0">
+<Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
 	<div class="border-b px-2">
 		<CountTabs
 			tabs={STATUS_CLASS_TABS}
@@ -741,129 +791,146 @@
 		/>
 	{/if}
 
-	{#if loading && items.length === 0 && !groupBy}
-		<div class="divide-y divide-border/50">
-			{#each Array(8) as _, i (i)}
-				<div class="flex items-center gap-3 px-4 py-3">
-					<Skeleton class="h-9 flex-1" />
-					<Skeleton class="h-5 w-12" />
-					<Skeleton class="hidden h-6 w-56 sm:block" />
-					<Skeleton class="hidden h-5 w-36 sm:block" />
+	<div class="flex min-w-0 flex-col md:flex-row">
+		<div class="min-w-0 flex-1">
+			{#if loading && items.length === 0 && !groupBy}
+				<div class="divide-y divide-border/50">
+					{#each Array(8) as _, i (i)}
+						<div class="flex items-center gap-3 px-4 py-3">
+							<Skeleton class="h-9 flex-1" />
+							<Skeleton class="h-5 w-12" />
+							<Skeleton class="hidden h-6 w-56 sm:block" />
+							<Skeleton class="hidden h-5 w-36 sm:block" />
+						</div>
+					{/each}
 				</div>
-			{/each}
+			{:else if errored}
+				<EmptyState
+					icon={TriangleAlert}
+					title="Web assets not loaded"
+					class="rounded-none border-0 bg-transparent py-16"
+				>
+					<Button variant="outline" class="gap-2" onclick={() => refresh()}>
+						<RefreshCw class="h-4 w-4" /> Retry
+					</Button>
+				</EmptyState>
+			{:else if groupBy}
+				<GroupList
+					set={groupSet}
+					dimensions={querySchema.schema.group_dimensions}
+					noun={querySchema.schema.noun}
+					nounPlural={querySchema.schema.noun_plural}
+					loading={groupLoading}
+					onPick={drillGroup}
+				/>
+			{:else if items.length === 0}
+				{#if queryError}
+					<EmptyState
+						icon={SearchX}
+						title="Query did not run"
+						description={queryError.message}
+						class="rounded-none border-0 bg-transparent py-16"
+					/>
+				{:else if filtered || (view === 'gallery' && onlyShots)}
+					<EmptyState
+						icon={SearchX}
+						title="No web assets match"
+						description="Widen the search or remove a filter."
+						class="rounded-none border-0 bg-transparent py-16"
+					>
+						<Button
+							size="sm"
+							variant="outline"
+							class="gap-2"
+							onclick={() => setQuery(emptyQuery())}
+						>
+							<X class="h-4 w-4" /> Clear filters
+						</Button>
+					</EmptyState>
+				{:else}
+					<EmptyState
+						icon={Globe}
+						title="No web assets in this scan"
+						class="rounded-none border-0 bg-transparent py-16"
+					/>
+				{/if}
+			{:else if view === 'gallery'}
+				<AssetGallery
+					{items}
+					{loading}
+					selectedId={drawerOpen ? (selected?.id ?? null) : null}
+					onOpen={open}
+				/>
+			{:else}
+				<ScrollArea orientation="horizontal">
+					<ListHeader
+						lead={WEB_ASSET_LEAD_COLUMNS}
+						columns={shownColumns}
+						{selectAllChecked}
+						selectAllLabel="Select all web assets on this page"
+						onSelectAll={toggleSelectAll}
+						sortKey={sort.key}
+						sortDir={sort.dir}
+						onSort={toggleSort}
+					/>
+					<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
+						{#each items as s, i (s.id)}
+							<AssetRow
+								sub={s}
+								index={i}
+								{apex}
+								columns={shownColumns}
+								checked={selection.has(s.id)}
+								onCheck={toggleCheck}
+								selected={drawerOpen && selected?.id === s.id}
+								focused={cursor === i}
+								pad={rowPad}
+								onOpen={open}
+								onHost={openHost}
+								onFilter={applyDsl}
+								onEvidence={openEvidence}
+								{hostsWithTitle}
+								loadServices={(host) => servicesOn(projectId, scanId, 'host', host)}
+								onServices={onTab ? showServices : undefined}
+								onVulns={onTab ? showVulns : undefined}
+								onStructure={(sub) => {
+									structureScanId = sub.scan_id;
+									structureHost = sub.name;
+								}}
+								recheck={rechecks.latest(scanId, s.name)}
+								onRescan={(sub) => rescan(selectionOf([pickOf(sub)]))}
+								onRescanOptions={(sub) => (rescanOptionsFor = selectionOf([pickOf(sub)]))}
+							/>
+						{/each}
+					</div>
+				</ScrollArea>
+			{/if}
+
+			{#if !errored && total > 0 && !groupBy}
+				<ResultsPagination
+					{total}
+					capped={totalCapped}
+					page={pageIndex}
+					{pageSize}
+					selectedCount={pickedCount}
+					onClearSelection={() => selection.clear()}
+					onPage={(p) => (pageIndex = p)}
+					onPageSize={(s) => {
+						pageSize = s;
+						pageIndex = 0;
+					}}
+				/>
+			{/if}
 		</div>
-	{:else if errored}
-		<EmptyState
-			icon={TriangleAlert}
-			title="Web assets not loaded"
-			class="rounded-none border-0 bg-transparent py-16"
-		>
-			<Button variant="outline" class="gap-2" onclick={() => refresh()}>
-				<RefreshCw class="h-4 w-4" /> Retry
-			</Button>
-		</EmptyState>
-	{:else if groupBy}
-		<GroupList
-			set={groupSet}
-			dimensions={querySchema.schema.group_dimensions}
-			noun={querySchema.schema.noun}
-			nounPlural={querySchema.schema.noun_plural}
-			loading={groupLoading}
-			onPick={drillGroup}
-		/>
-	{:else if items.length === 0}
-		{#if queryError}
-			<EmptyState
-				icon={SearchX}
-				title="Query did not run"
-				description={queryError.message}
-				class="rounded-none border-0 bg-transparent py-16"
-			/>
-		{:else if filtered || (view === 'gallery' && onlyShots)}
-			<EmptyState
-				icon={SearchX}
-				title="No web assets match"
-				description="Widen the search or remove a filter."
-				class="rounded-none border-0 bg-transparent py-16"
-			>
-				<Button size="sm" variant="outline" class="gap-2" onclick={() => setQuery(emptyQuery())}>
-					<X class="h-4 w-4" /> Clear filters
-				</Button>
-			</EmptyState>
-		{:else}
-			<EmptyState
-				icon={Globe}
-				title="No web assets in this scan"
-				class="rounded-none border-0 bg-transparent py-16"
+		{#if insightsOpen}
+			<HygieneRail
+				summary={hygiene}
+				selected={query.hygiene}
+				onToggle={toggleHygiene}
+				onClose={() => (insightsOpen = false)}
 			/>
 		{/if}
-	{:else if view === 'gallery'}
-		<AssetGallery
-			{items}
-			{loading}
-			selectedId={drawerOpen ? (selected?.id ?? null) : null}
-			onOpen={open}
-		/>
-	{:else}
-		<ScrollArea orientation="horizontal">
-			<ListHeader
-				lead={WEB_ASSET_LEAD_COLUMNS}
-				columns={shownColumns}
-				{selectAllChecked}
-				selectAllLabel="Select all web assets on this page"
-				onSelectAll={toggleSelectAll}
-				sortKey={sort.key}
-				sortDir={sort.dir}
-				onSort={toggleSort}
-			/>
-			<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
-				{#each items as s, i (s.id)}
-					<AssetRow
-						sub={s}
-						index={i}
-						{apex}
-						columns={shownColumns}
-						checked={selection.has(s.id)}
-						onCheck={toggleCheck}
-						selected={drawerOpen && selected?.id === s.id}
-						focused={cursor === i}
-						pad={rowPad}
-						onOpen={open}
-						onHost={openHost}
-						onFilter={applyDsl}
-						onEvidence={openEvidence}
-						{hostsWithTitle}
-						loadServices={(host) => servicesOn(projectId, scanId, 'host', host)}
-						onServices={onTab ? showServices : undefined}
-						onVulns={onTab ? showVulns : undefined}
-						onStructure={(sub) => {
-							structureScanId = sub.scan_id;
-							structureHost = sub.name;
-						}}
-						recheck={rechecks.latest(scanId, s.name)}
-						onRescan={(sub) => rescan(selectionOf([pickOf(sub)]))}
-						onRescanOptions={(sub) => (rescanOptionsFor = selectionOf([pickOf(sub)]))}
-					/>
-				{/each}
-			</div>
-		</ScrollArea>
-	{/if}
-
-	{#if !errored && total > 0 && !groupBy}
-		<ResultsPagination
-			{total}
-			capped={totalCapped}
-			page={pageIndex}
-			{pageSize}
-			selectedCount={pickedCount}
-			onClearSelection={() => selection.clear()}
-			onPage={(p) => (pageIndex = p)}
-			onPageSize={(s) => {
-				pageSize = s;
-				pageIndex = 0;
-			}}
-		/>
-	{/if}
+	</div>
 </Card.Root>
 
 <WebAssetDetailSheet

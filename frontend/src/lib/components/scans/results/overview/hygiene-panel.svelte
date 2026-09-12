@@ -7,15 +7,17 @@
 	import Hint from '$lib/components/hint.svelte';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import {
-		CHECKS,
 		HYGIENE_NONE,
 		HygieneTone,
 		TONE_DOT,
 		TONE_LABEL,
+		hygieneBreakdown,
 		hygieneQuery,
-		type CheckSpec
+		hygieneShare,
+		hygieneShareLabel,
+		type HygieneRow
 	} from '$lib/config/hygiene';
-	import type { HygieneCheckCount, HygieneSummary } from '$lib/utilities/scan-insights';
+	import type { HygieneSummary } from '$lib/utilities/scan-insights';
 
 	interface Props {
 		summary: HygieneSummary | null;
@@ -29,35 +31,13 @@
 	const plural = (n: number, one: string, many: string) =>
 		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
-	interface Row {
-		spec: CheckSpec;
-		count: HygieneCheckCount;
-	}
-
-	let byKey = $derived(new Map((summary?.checks ?? []).map((c) => [c.key, c])));
-	let failing = $derived.by<Row[]>(() =>
-		CHECKS.map((spec) => ({ spec, count: byKey.get(spec.key) }))
-			.filter((r): r is Row => !!r.count && r.count.failing > 0)
-			.sort((a, b) => b.count.failing / b.count.applicable - a.count.failing / a.count.applicable)
-	);
-	let warnings = $derived(failing.filter((r) => r.spec.tone === HygieneTone.WARNING));
-	let infos = $derived(failing.filter((r) => r.spec.tone === HygieneTone.INFO));
-	let passing = $derived(
-		CHECKS.filter((spec) => {
-			const c = byKey.get(spec.key);
-			return !!c && c.applicable > 0 && c.failing === 0;
-		})
-	);
-	let evaluated = $derived(summary?.evaluated ?? 0);
-	let pending = $derived(summary?.pending ?? 0);
-	let hasData = $derived(evaluated > 0 || pending > 0);
-
-	const share = (r: Row) =>
-		r.count.applicable > 0 ? (r.count.failing / r.count.applicable) * 100 : 0;
-	const shareLabel = (r: Row) => {
-		const p = share(r);
-		return p > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`;
-	};
+	let breakdown = $derived(hygieneBreakdown(summary));
+	let warnings = $derived(breakdown.warnings);
+	let infos = $derived(breakdown.infos);
+	let passing = $derived(breakdown.passing);
+	let evaluated = $derived(breakdown.evaluated);
+	let pending = $derived(breakdown.pending);
+	let hasData = $derived(breakdown.hasData);
 </script>
 
 {#if (loading && !summary) || hasData}
@@ -144,7 +124,7 @@
 	</Card.Root>
 {/if}
 
-{#snippet column(tone: HygieneTone, rows: Row[], cls: string)}
+{#snippet column(tone: HygieneTone, rows: HygieneRow[], cls: string)}
 	<section class="flex min-w-0 flex-col gap-3 p-5 {cls}">
 		<div class="flex items-center gap-2">
 			<span class="size-1.5 rounded-full {TONE_DOT[tone]}" aria-hidden="true"></span>
@@ -177,7 +157,7 @@
 									>{r.count.failing.toLocaleString()}</span
 								>
 								<span class="w-9 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-									{shareLabel(r)}
+									{hygieneShareLabel(r)}
 								</span>
 							</span>
 							<span
@@ -186,7 +166,7 @@
 							>
 								<span
 									class="block h-full rounded-full {TONE_DOT[tone]}"
-									style="width:{Math.max(MIN_METER, share(r))}%"
+									style="width:{Math.max(MIN_METER, hygieneShare(r))}%"
 								></span>
 							</span>
 						</button>
