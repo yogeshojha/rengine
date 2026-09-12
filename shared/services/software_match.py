@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from shared.definitions.evidence import Evidence
 from shared.definitions.software import (
     LOW_CAVEATS,
     MAX_MATCHES_PER_SCAN,
@@ -24,10 +25,11 @@ from shared.definitions.threat_intel import (
     ExploitSignal,
     exploit_score,
 )
-from shared.definitions.vulnerabilities import Severity
+from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity
 from shared.enums.scan import ScanScope, ScanStatus
 from shared.logging import get_logger
 from shared.models.software import SoftwareComponentRead, SoftwareCoverage
+from shared.services.asset_query.lead_cache import bump_sync
 from shared.utils.datetime import utc_now
 from shared.utils.software import (
     components_of,
@@ -41,6 +43,48 @@ logger = get_logger(__name__)
 LIKELY_EPSS = 0.088
 _BACKFILL_CHUNK = 2000
 _MAX_UNMAPPED_SHOWN = 25
+MAX_EXPOSURES_REPORTED = 200
+
+_PREVIOUS = """
+CREATE TEMP TABLE software_previous ON COMMIT DROP AS
+SELECT fingerprint, discovered_at FROM software_cves WHERE scan_id = :scan_id
+"""
+
+_CARRY_FORWARD = """
+UPDATE software_cves s SET discovered_at = p.discovered_at
+  FROM software_previous p
+ WHERE s.scan_id = :scan_id AND p.fingerprint = s.fingerprint
+"""
+
+_CORROBORATE = """
+UPDATE software_cves s SET evidence = :corroborated
+  FROM vulnerabilities v
+ WHERE s.scan_id = :scan_id
+   AND v.scan_id = :scan_id
+   AND v.severity <> :info
+   AND s.host IS NOT NULL AND v.host = s.host
+   AND jsonb_exists(v.cve_ids::jsonb, s.cve)
+   AND NOT EXISTS (
+       SELECT 1 FROM vulnerability_triage t
+        WHERE t.target_id = v.target_id AND t.fingerprint = v.fingerprint
+          AND t.state = ANY(:suppressed))
+"""
+
+_NEWLY_EXPOSED = """
+SELECT s.cve, s.host, s.ip, s.port, s.name, s.version, s.severity, s.is_kev,
+       s.kev_ransomware, s.exploit_score, s.evidence
+  FROM software_cves s
+ WHERE s.scan_id = :scan_id
+   AND NOT EXISTS (SELECT 1 FROM software_previous p WHERE p.fingerprint = s.fingerprint)
+ ORDER BY s.is_kev DESC, s.exploit_score DESC, s.cvss_score DESC NULLS LAST, s.cve, s.host
+ LIMIT :limit
+"""
+
+_NEWLY_EXPOSED_COUNT = """
+SELECT count(*) FROM software_cves s
+ WHERE s.scan_id = :scan_id
+   AND NOT EXISTS (SELECT 1 FROM software_previous p WHERE p.fingerprint = s.fingerprint)
+"""
 
 _TEMP = """
 CREATE TEMP TABLE software_components (
@@ -173,6 +217,38 @@ class _Component:
     source: str
     distro: str | None
     coarse: bool
+
+
+@dataclass(frozen=True)
+class Exposure:
+    """One software CVE row the latest match wrote that the previous match did not hold."""
+
+    cve: str
+    host: str
+    name: str
+    version: str
+    severity: str
+    is_kev: bool
+    kev_ransomware: bool
+    exploit_score: int
+    evidence: str
+    target_id: uuid.UUID
+    project_id: uuid.UUID
+
+
+@dataclass
+class MatchResult:
+    coverage: SoftwareCoverage
+    exposed: list[Exposure] = field(default_factory=list)
+    exposed_total: int = 0
+
+
+@dataclass
+class RematchResult:
+    scans: int = 0
+    findings: int = 0
+    exposed: list[Exposure] = field(default_factory=list)
+    exposed_total: int = 0
 
 
 _SEGMENTS_FOR_PRECISION = 2
@@ -338,13 +414,17 @@ def match_scan(
     scan_id: uuid.UUID,
     target_id: uuid.UUID,
     project_id: uuid.UUID,
-) -> SoftwareCoverage:
+) -> MatchResult:
     """Rebuild this scan's inferred CVEs from the software its assets reported."""
     components, unmapped = _gather(session, scan_id)
-    session.execute(
-        text("DELETE FROM software_cves WHERE scan_id = :scan_id"),
-        {"scan_id": str(scan_id)},
+    params = {"scan_id": str(scan_id)}
+    session.execute(text(_PREVIOUS), params)
+    had_previous = bool(
+        session.execute(
+            text("SELECT EXISTS (SELECT 1 FROM software_previous)")
+        ).scalar()
     )
+    session.execute(text("DELETE FROM software_cves WHERE scan_id = :scan_id"), params)
     coverage = SoftwareCoverage(
         components=len(components) + len(unmapped),
         mapped=len(components),
@@ -353,7 +433,7 @@ def match_scan(
     )
     if not components:
         session.commit()
-        return coverage
+        return MatchResult(coverage=coverage)
 
     session.execute(text(_TEMP))
     session.execute(
@@ -405,6 +485,42 @@ def match_scan(
     coverage.findings = result.rowcount or 0
     _confidence(session, scan_id)
     _rank(session, scan_id)
+    session.execute(text(_CARRY_FORWARD), params)
+    session.execute(
+        text(_CORROBORATE),
+        {
+            **params,
+            "corroborated": Evidence.CORROBORATED.value,
+            "info": Severity.INFO.value,
+            "suppressed": list(SUPPRESSED_STATES),
+        },
+    )
+    exposed: list[Exposure] = []
+    exposed_total = 0
+    if had_previous:
+        exposed_total = int(
+            session.execute(text(_NEWLY_EXPOSED_COUNT), params).scalar() or 0
+        )
+        if exposed_total:
+            rows = session.execute(
+                text(_NEWLY_EXPOSED), {**params, "limit": MAX_EXPOSURES_REPORTED}
+            ).all()
+            exposed = [
+                Exposure(
+                    cve=r.cve,
+                    host=r.host or r.ip or "",
+                    name=r.name,
+                    version=r.version,
+                    severity=r.severity,
+                    is_kev=bool(r.is_kev),
+                    kev_ransomware=bool(r.kev_ransomware),
+                    exploit_score=int(r.exploit_score or 0),
+                    evidence=r.evidence,
+                    target_id=target_id,
+                    project_id=project_id,
+                )
+                for r in rows
+            ]
     session.commit()
 
     coverage.matched = session.execute(
@@ -412,15 +528,16 @@ def match_scan(
             "SELECT count(DISTINCT coalesce(http_asset_id::text, port_id::text)) "
             "FROM software_cves WHERE scan_id = :scan_id"
         ),
-        {"scan_id": str(scan_id)},
+        params,
     ).scalar_one()
     logger.info(
         "software matched",
         scan=str(scan_id),
         components=len(components),
         findings=coverage.findings,
+        newly_exposed=exposed_total,
     )
-    return coverage
+    return MatchResult(coverage=coverage, exposed=exposed, exposed_total=exposed_total)
 
 
 def _unmapped_read(unmapped: list[tuple[str, str]]) -> list[SoftwareComponentRead]:
@@ -448,8 +565,8 @@ SELECT DISTINCT ON (target_id) id, target_id, project_id
 """
 
 
-def rematch_latest(session: Session) -> dict[str, int]:
-    """The corpus moves without a scan, so the covering run of every target is rebuilt."""
+def rematch_latest(session: Session) -> RematchResult:
+    """Rebuild the covering run of every target against the current corpus."""
     rows = session.execute(
         text(_LATEST_SCANS),
         {
@@ -457,11 +574,11 @@ def rematch_latest(session: Session) -> dict[str, int]:
             "focused": ScanScope.FOCUSED.value,
         },
     ).all()
-    scans = 0
-    findings = 0
+    out = RematchResult()
+    touched: list[uuid.UUID] = []
     for row in rows:
         try:
-            coverage = match_scan(
+            result = match_scan(
                 session,
                 scan_id=row.id,
                 target_id=row.target_id,
@@ -471,9 +588,16 @@ def rematch_latest(session: Session) -> dict[str, int]:
             session.rollback()
             logger.warning("software rematch failed", scan=str(row.id), exc_info=True)
             continue
-        scans += 1
-        findings += coverage.findings
-    return {"scans": scans, "findings": findings}
+        out.scans += 1
+        out.findings += result.coverage.findings
+        out.exposed_total += result.exposed_total
+        out.exposed.extend(result.exposed)
+        touched.append(row.target_id)
+    if touched:
+        bump_sync(touched)
+    out.exposed.sort(key=lambda e: (not e.is_kev, -e.exploit_score, e.cve, e.host))
+    del out.exposed[MAX_EXPOSURES_REPORTED:]
+    return out
 
 
 BACKFILL_SCANS_PER_TICK = 5

@@ -13,7 +13,7 @@
 	import AwardIcon from '@lucide/svelte/icons/award';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
-	import { SURFACE_ORDER } from '$lib/config/surface';
+	import { FINDINGS_ROOT, SIDEBAR_ORDER } from '$lib/config/surface';
 	import NavUser from './nav-user.svelte';
 	import ProjectSwitcher from './project-switcher.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -22,7 +22,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { reports } from '$lib/stores/reports.svelte';
-	import { ROUTES, routeLabels } from '$lib/config/routes';
+	import { FINDINGS_PATHS, ROUTES, routeLabels } from '$lib/config/routes';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { Capability } from '$lib/config/capabilities';
 
@@ -33,10 +33,11 @@
 	}: ComponentProps<typeof Sidebar.Root> = $props();
 
 	const surfaceItems = $derived(
-		SURFACE_ORDER.map((spec) => ({
+		SIDEBAR_ORDER.map((spec) => ({
 			title: spec.label,
 			url: ROUTES.surface(spec.tab),
-			icon: spec.icon
+			icon: spec.icon,
+			match: spec.key === FINDINGS_ROOT ? FINDINGS_PATHS : undefined
 		}))
 	);
 

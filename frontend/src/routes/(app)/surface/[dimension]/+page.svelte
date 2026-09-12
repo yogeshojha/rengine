@@ -4,6 +4,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScopeStrip from '$lib/components/surface/scope-strip.svelte';
+	import FindingsTabs from '$lib/components/surface/findings-tabs.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
 	import EndpointsTable from '$lib/components/scans/results/endpoints-table.svelte';
 	import ServicesTable from '$lib/components/scans/results/services-table.svelte';
@@ -12,10 +13,19 @@
 	import SoftwareTable from '$lib/components/scans/results/software-table.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { surfaceStore } from '$lib/stores/surface.svelte';
-	import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
+	import {
+		FINDINGS_TABS,
+		SURFACE_ORDER,
+		SurfaceDimension,
+		type FindingsTab
+	} from '$lib/config/surface';
 	import { ROUTES } from '$lib/config/routes';
 
 	let spec = $derived(SURFACE_ORDER.find((s) => s.tab === page.params.dimension) ?? null);
+	const FINDINGS_KEYS = new Set<string>(FINDINGS_TABS.map((t) => t.key));
+	let findingsTab = $derived(
+		spec && FINDINGS_KEYS.has(spec.key) ? (spec.key as FindingsTab) : null
+	);
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let coverage = $derived(spec ? surfaceStore.coverage(spec.key) : null);
 
@@ -40,7 +50,11 @@
 	</EmptyState>
 {:else}
 	<div class="space-y-6">
-		<h1 class="text-2xl font-semibold tracking-tight">{spec.label}</h1>
+		{#if findingsTab}
+			<FindingsTabs value={findingsTab} />
+		{:else}
+			<h1 class="text-2xl font-semibold tracking-tight">{spec.label}</h1>
+		{/if}
 
 		<div class="overflow-hidden rounded-xl border bg-card">
 			<ScopeStrip

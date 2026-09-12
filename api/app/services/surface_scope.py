@@ -47,6 +47,9 @@ TABLES = {
     SurfaceDimension.SOFTWARE.value: SoftwareCve,
 }
 
+# dimensions whose page headlines a true total, not a paged one
+EXACT_COUNT = frozenset({SurfaceDimension.SOFTWARE.value})
+
 
 async def baselined_targets(
     session: AsyncSession, model, scope: QueryScope
@@ -140,6 +143,11 @@ class SurfaceScopeService:
             inner = select(model.id).where(scope.match(model.scan_id))
             if dimension == SurfaceDimension.VULNERABILITIES.value:
                 inner = inner.where(not_(vuln_suppressed(scope)))
+        if dimension in EXACT_COUNT:
+            counted = await self.session.scalar(
+                select(func.count()).select_from(inner.subquery())
+            )
+            return int(counted or 0), False
         counted = await self.session.scalar(
             select(func.count()).select_from(inner.limit(COUNT_CAP + 1).subquery())
         )
@@ -232,7 +240,32 @@ class SurfaceScopeService:
                 )
             )
         out.exposures = await self._exposures(project_id)
+        out.cves = await self._cves(project_id)
         return out
+
+    async def _cves(self, project_id: UUID) -> int:
+        """Distinct CVEs a check reported or a version implies."""
+        from app.services.cve_exposure import CveExposureService  # noqa: PLC0415
+
+        software = await self.scope(project_id, SurfaceDimension.SOFTWARE.value)
+        findings = await self.scope(project_id, SurfaceDimension.VULNERABILITIES.value)
+        if not software and not findings:
+            return 0
+
+        async def _count() -> _Count:
+            counted = await CveExposureService(self.session).total(project_id)
+            return _Count(n=counted)
+
+        return (
+            await lead_cache.cached(
+                self.session,
+                name="surface_cves",
+                scans=tuple(sorted(set(software.ids) | set(findings.ids))),
+                facets=str(project_id),
+                model=_Count,
+                build=_count,
+            )
+        ).n
 
     async def _exposures(self, project_id: UUID) -> int:
         """Assets flagged for what they are."""

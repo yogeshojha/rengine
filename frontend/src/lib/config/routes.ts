@@ -1,4 +1,4 @@
-import { SURFACE_ORDER } from './surface';
+import { FINDINGS_TABS, SURFACE, SURFACE_ORDER, type FindingsTab } from './surface';
 
 export const routeLabels: Record<string, string> = {
 	dashboard: 'Dashboard',
@@ -126,6 +126,11 @@ export const ROUTES = {
 	connectors: (tab?: ConnectorTab) => (tab ? `/connectors?tab=${tab}` : '/connectors'),
 	settings: (section?: SettingsSection) => (section ? `/settings/${section}` : '/settings')
 } as const;
+
+export const findingsHref = (key: FindingsTab): string =>
+	key === 'cve' ? ROUTES.cves : ROUTES.surface(SURFACE[key].tab);
+
+export const FINDINGS_PATHS: string[] = FINDINGS_TABS.map((tab) => findingsHref(tab.key));
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

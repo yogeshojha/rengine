@@ -231,14 +231,22 @@ def _copy(session: Session, table: str, columns: str, path: Path) -> None:
         )
 
 
-def load(session: Session) -> tuple[int, str | None, int]:
+def load(
+    session: Session, current_version: str | None = None
+) -> tuple[int, str | None, int]:
     """Rebuild the corpus from the published year files."""
+    stamp = _release_stamp()
+    if stamp and stamp == current_version and corpus_ready(session):
+        held = int(
+            session.execute(text("SELECT count(*) FROM nvd_cpe_matches")).scalar() or 0
+        )
+        logger.info("nvd corpus unchanged", stamp=stamp, matches=held)
+        return held, stamp, 0
     workdir = Path(tempfile.mkdtemp(prefix="nvd_corpus_"))
     downloaded = 0
     cve_count = 0
     match_count = 0
     last_year = datetime.now(UTC).year
-    stamp = _release_stamp()
     try:
         cve_path = workdir / "cves.csv"
         match_path = workdir / "matches.csv"

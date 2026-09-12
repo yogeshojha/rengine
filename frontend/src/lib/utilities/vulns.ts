@@ -94,6 +94,7 @@ export interface VulnerabilityRead {
 	sets: string[];
 	corroborated_by: Corroboration[];
 	colocated: number;
+	evidence: string;
 	asset: AssetContext | null;
 }
 

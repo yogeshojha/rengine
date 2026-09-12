@@ -6,6 +6,10 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
+	import EvidenceMark from '$lib/components/evidence-mark.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { EVIDENCE_HELP } from '$lib/config/evidence';
+	import { ROUTES } from '$lib/config/routes';
 	import TechIcon from '../tech-icon.svelte';
 	import { relativeTimeLong } from '$lib/utilities/dates';
 	import { SEVERITY_TEXT, severityLabel } from '$lib/config/vulnerabilities';
@@ -55,6 +59,9 @@
 						<Badge variant="destructive" class="h-4 px-1 text-2xs">Ransomware</Badge>
 					{/if}
 				</Sheet.Description>
+				<div class="pt-1">
+					<Button variant="outline" size="sm" href={ROUTES.cve(row.cve)}>Open CVE exposure</Button>
+				</div>
 			</Sheet.Header>
 
 			<ScrollArea class="min-h-0 flex-1">
@@ -87,6 +94,12 @@
 							<dt class={DT}>Version from</dt>
 							<dd>{row.version_source_label}</dd>
 						</dl>
+					</section>
+
+					<section class="flex flex-col gap-2">
+						<SectionHead title="Evidence" />
+						<EvidenceMark evidence={row.evidence} size="md" hint={false} />
+						<p class="text-xs text-muted-foreground">{EVIDENCE_HELP[row.evidence] ?? ''}</p>
 					</section>
 
 					<section class="flex flex-col gap-2">

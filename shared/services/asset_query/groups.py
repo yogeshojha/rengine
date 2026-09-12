@@ -14,6 +14,7 @@ from shared.definitions.endpoints import (
     INTEREST_LABELS,
     SOURCE_LABELS,
 )
+from shared.definitions.evidence import EVIDENCE_LABELS, Evidence
 from shared.definitions.hygiene import CHECK_BY_KEY
 from shared.definitions.ports import PORT_SOURCE_LABELS, SERVICE_CLASS_LABELS
 from shared.definitions.vulnerabilities import (
@@ -353,7 +354,16 @@ _VULN_LABELS: dict[str, dict[str, str]] = {
     "type": PROTOCOL_LABELS,
     "state": VULN_STATE_LABELS,
     "scanner": SCANNER_LABELS,
+    "evidence": EVIDENCE_LABELS,
 }
+
+
+def _evidence_case(scope: QueryScope):
+    return case(
+        (Vulnerability.evidence == Evidence.PROVEN.value, Evidence.PROVEN.value),
+        (preds.vuln_corroborated(scope), Evidence.CORROBORATED.value),
+        else_=Evidence.OBSERVED.value,
+    )
 
 
 async def build_vuln_groups(
@@ -367,6 +377,8 @@ async def build_vuln_groups(
         )
     elif key == "state":
         value, field, op = preds.vuln_state(scope), "state", "="
+    elif key == "evidence":
+        value, field, op = _evidence_case(scope), "evidence", "="
     elif key in _VULN_COLUMNS:
         column, field, op = _VULN_COLUMNS[key]
         value = column

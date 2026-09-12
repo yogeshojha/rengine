@@ -367,6 +367,67 @@ def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
     }
 
 
+@dataclass(frozen=True)
+class SoftwareExposure:
+    """A software CVE match the nightly corpus refresh wrote for the first time."""
+
+    cve: str
+    host: str
+    name: str
+    version: str
+    severity: str
+    is_kev: bool
+    kev_ransomware: bool
+
+
+def _exposure_line(e: SoftwareExposure) -> str:
+    return f"• {e.cve} · {e.host} · {e.name} {e.version}"
+
+
+def software_exposed(
+    exposures: list["SoftwareExposure"], shown: int = 5
+) -> dict | None:
+    """Delta-only: matches absent from the previous corpus. Severe or known exploited."""
+    loud: list[SoftwareExposure] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    for e in exposures:
+        key = (e.cve, e.host, e.name, e.version)
+        if key in seen or not (e.is_kev or e.severity in ALERT_SEVERITIES):
+            continue
+        seen.add(key)
+        loud.append(e)
+    if not loud:
+        return None
+    exploited = any(e.is_kev for e in loud)
+    cves = sorted({e.cve for e in loud})
+    assets = _count(len({e.host for e in loud}), "asset", "assets")
+    what = "known-exploited" if exploited else "published"
+    if len(cves) == 1:
+        title = f"{assets} newly match {cves[0]}"
+    else:
+        title = (
+            f"{assets} newly match {_count(len(cves), f'{what} CVE', f'{what} CVEs')}"
+        )
+    body = "\n".join(_exposure_line(e) for e in loud[:shown])
+    if len(loud) > shown:
+        body += f"\n… and {len(loud) - shown} more"
+    body += "\nThe NVD corpus changed. No scan ran."
+    url = (
+        f"/surface/cve/{cves[0]}"
+        if len(cves) == 1
+        else "/surface/software?sw_q=seen%3A%3C24h"
+    )
+    return {
+        "type": NotificationType.VULNERABILITY,
+        "severity": NotificationSeverity.ERROR
+        if exploited
+        else NotificationSeverity.WARNING,
+        "title": title,
+        "message": body,
+        "metadata": {"kind": "software_exposed", "url": url, "cves": cves[:25]},
+    }
+
+
 @dataclass
 class BountyChange:
     kind: str

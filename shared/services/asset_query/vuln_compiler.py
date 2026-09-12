@@ -8,6 +8,7 @@ from sqlalchemy import Text, and_, case, cast, false, func, literal, or_, select
 from sqlalchemy.dialects.postgresql import INET, JSONB
 
 from shared.definitions.asset_query import VULN_FLAGS, VULN_QUERY, Op
+from shared.definitions.evidence import Evidence
 from shared.definitions.vulnerabilities import (
     EPSS_HIGH,
     SUPPRESSED_STATES,
@@ -108,7 +109,8 @@ _FLAG_BUILDERS = {
         Vulnerability.is_kev.is_(True), Vulnerability.epss_score >= EPSS_HIGH
     ),
     "corroborated": lambda ctx: preds.vuln_corroborated(ctx.scope),
-    "proven": lambda _ctx: and_(
+    "proven": lambda _ctx: Vulnerability.evidence == Evidence.PROVEN.value,
+    "recorded": lambda _ctx: and_(
         Vulnerability.request.isnot(None), Vulnerability.response.isnot(None)
     ),
     "extracted": lambda _ctx: (
@@ -136,6 +138,12 @@ def _state_match(cmp: Compare, ctx: VulnQueryContext):
     state = preds.vuln_state(ctx.scope)
     values = [v.lower().replace("-", "_").replace(" ", "_") for v in cmp.values]
     matched = state.in_(values)
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
+def _evidence_match(cmp: Compare, ctx: VulnQueryContext):
+    branches = [preds.vuln_evidence(ctx.scope, raw.lower()) for raw in cmp.values]
+    matched = or_(*branches)
     return negate(matched) if cmp.op is Op.NE else matched
 
 
@@ -177,6 +185,7 @@ _VULN_BUILDERS = {
     ),
     "country": lambda c, ctx: _address_meta(ctx, string_match(IpAddress.country, c)),
     "state": _state_match,
+    "evidence": _evidence_match,
     "seen": lambda c, ctx: date_match(
         Vulnerability.discovered_at, c, ctx.now, future=False
     ),

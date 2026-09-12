@@ -24,7 +24,7 @@ SURFACE_LABELS: dict[str, str] = {
     SurfaceDimension.SERVICES.value: "Services",
     SurfaceDimension.IPS.value: "IP addresses",
     SurfaceDimension.VULNERABILITIES.value: "Vulnerabilities",
-    SurfaceDimension.SOFTWARE.value: "Software CVEs",
+    SurfaceDimension.SOFTWARE.value: "Software",
 }
 
 SURFACE_NOUN: dict[str, tuple[str, str]] = {

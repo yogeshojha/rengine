@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
+from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
@@ -120,6 +121,19 @@ async def cve_findings(session, project_id: uuid.UUID | None, cve: str) -> int:
     if project_id is None:
         return 0
     return int(await session.scalar(_cve_findings(project_id, cve)) or 0)
+
+
+async def cve_software(session, project_id: uuid.UUID | None, cve: str) -> int:
+    if project_id is None:
+        return 0
+    return int(
+        await session.scalar(
+            select(func.count(SoftwareCve.id)).where(
+                SoftwareCve.project_id == project_id, SoftwareCve.cve == cve
+            )
+        )
+        or 0
+    )
 
 
 async def registrant_domains(

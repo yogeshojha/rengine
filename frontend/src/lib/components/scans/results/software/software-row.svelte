@@ -8,6 +8,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
+	import EvidenceMark from '$lib/components/evidence-mark.svelte';
 	import TargetCell from '../table/target-cell.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
@@ -15,6 +16,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { exactToken } from '$lib/utilities/scan-insights';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { ROUTES } from '$lib/config/routes';
 	import { SEVERITY_FILL, SEVERITY_TEXT, severityLabel } from '$lib/config/vulnerabilities';
 	import { CAVEAT_HELP, CONFIDENCE_HELP, CONFIDENCE_TEXT } from '$lib/config/software';
 	import type { SoftwareCve } from '$lib/types/software';
@@ -159,6 +161,12 @@
 		</div>
 	{/if}
 
+	{#if shown.has('evidence')}
+		<div class="flex w-32 items-center {pad}">
+			<EvidenceMark evidence={row.evidence} onFilter={onToken} />
+		</div>
+	{/if}
+
 	{#if shown.has('confidence')}
 		<div class="flex w-28 items-center {pad}">
 			<Hint text={confidenceHint}>
@@ -193,6 +201,11 @@
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end" class="w-56">
 						<DropdownMenu.Item onclick={() => onOpen(row)}>Open match</DropdownMenu.Item>
+						<DropdownMenu.Item>
+							{#snippet child({ props })}
+								<a {...props} href={ROUTES.cve(row.cve)}>Open CVE exposure</a>
+							{/snippet}
+						</DropdownMenu.Item>
 						<DropdownMenu.Item onclick={() => onToken(exactToken('cve', row.cve))}>
 							Filter to this CVE
 						</DropdownMenu.Item>

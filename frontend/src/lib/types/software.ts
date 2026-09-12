@@ -31,6 +31,8 @@ export interface SoftwareCve {
 	confidence: string;
 	confidence_label: string;
 	caveats: SoftwareCaveat[];
+	evidence: string;
+	evidence_label: string;
 	description: string | null;
 	host: string | null;
 	ip: string | null;
@@ -60,6 +62,7 @@ export interface SoftwareFacets {
 	confidence: SoftwareFacet[];
 	source: SoftwareFacet[];
 	caveat: SoftwareFacet[];
+	evidence: SoftwareFacet[];
 	product: SoftwareFacet[];
 }
 

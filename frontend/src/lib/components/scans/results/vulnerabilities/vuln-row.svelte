@@ -19,6 +19,7 @@
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import TechIcon from '../tech-icon.svelte';
 	import CorroborationBadge from './corroboration-badge.svelte';
+	import EvidenceMark from '$lib/components/evidence-mark.svelte';
 	import ExploitMark from '$lib/components/threat-intel/exploit-mark.svelte';
 	import SignalChip from '$lib/components/threat-intel/signal-chip.svelte';
 	import SeverityMark from './severity-mark.svelte';
@@ -333,6 +334,8 @@
 				{:else}
 					<span class="text-xs leading-5 text-muted-foreground">—</span>
 				{/if}
+			{:else if col.key === 'evidence'}
+				<EvidenceMark evidence={v.evidence} onFilter={(token) => onFilter(token)} />
 			{:else if col.key === 'exploit'}
 				{#if v.exploit_score > 0}
 					<button

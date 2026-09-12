@@ -6,6 +6,7 @@ from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.evidence import Evidence
 from shared.definitions.software import Confidence, VersionSource
 from shared.definitions.vulnerabilities import Severity
 from shared.models.asset_query import QueryError
@@ -88,6 +89,7 @@ class SoftwareCve(SQLModel, table=True):
     intel_kinds: list = _json_list()
     confidence: str = Field(default=Confidence.HIGH.value, max_length=16, index=True)
     caveats: list = _json_list()
+    evidence: str = Field(default=Evidence.INFERRED.value, max_length=16, index=True)
 
     # where it is
     host: str | None = Field(default=None, max_length=500, index=True)
@@ -130,6 +132,8 @@ class SoftwareCveRead(BaseModel):
     confidence: str
     confidence_label: str
     caveats: list[dict] = []
+    evidence: str = Evidence.INFERRED.value
+    evidence_label: str = ""
     description: str | None = None
     host: str | None = None
     ip: str | None = None
@@ -179,6 +183,7 @@ class SoftwareFacets(BaseModel):
     confidence: list[SoftwareFacet] = []
     source: list[SoftwareFacet] = []
     caveat: list[SoftwareFacet] = []
+    evidence: list[SoftwareFacet] = []
     product: list[SoftwareFacet] = []
 
 

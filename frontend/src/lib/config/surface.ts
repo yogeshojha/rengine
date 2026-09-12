@@ -96,7 +96,7 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 	},
 	[SurfaceDimension.SOFTWARE]: {
 		key: SurfaceDimension.SOFTWARE,
-		label: 'Software CVEs',
+		label: 'Software',
 		noun: 'software CVE',
 		nounPlural: 'software CVEs',
 		icon: Package,
@@ -107,6 +107,15 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 	}
 };
 
+export const FINDINGS_ROOT = SurfaceDimension.VULNERABILITIES;
+
+export const FINDINGS_TABS = [
+	{ key: SurfaceDimension.VULNERABILITIES, label: 'Findings' },
+	{ key: SurfaceDimension.SOFTWARE, label: SURFACE[SurfaceDimension.SOFTWARE].label },
+	{ key: 'cve', label: 'CVEs' }
+] as const;
+export type FindingsTab = (typeof FINDINGS_TABS)[number]['key'];
+
 export const SURFACE_ORDER: SurfaceSpec[] = [
 	SURFACE[SurfaceDimension.WEB_ASSETS],
 	SURFACE[SurfaceDimension.ENDPOINTS],
@@ -115,6 +124,10 @@ export const SURFACE_ORDER: SurfaceSpec[] = [
 	SURFACE[SurfaceDimension.VULNERABILITIES],
 	SURFACE[SurfaceDimension.SOFTWARE]
 ];
+
+export const SIDEBAR_ORDER: SurfaceSpec[] = SURFACE_ORDER.filter(
+	(spec) => spec.key !== SurfaceDimension.SOFTWARE
+);
 
 export function surfaceSpec(key: string): SurfaceSpec | undefined {
 	return SURFACE[key as SurfaceDimension];

@@ -6,7 +6,6 @@ import re
 
 from pydantic import Field, field_validator
 
-from shared.definitions.surface import SurfaceDimension
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
     Pivot,
@@ -87,6 +86,7 @@ class CveLookup(Tool):
         kev = await ctx.session.get(KevEntry, args.cve)
         intel = await ctx.session.get(CveIntel, args.cve)
         findings = await estate.cve_findings(ctx.session, ctx.project_id, args.cve)
+        inferred = await estate.cve_software(ctx.session, ctx.project_id, args.cve)
 
         blocks = [
             _hero(args.cve, epss, kev, intel, findings),
@@ -184,15 +184,11 @@ class CveLookup(Tool):
             )
 
         return ToolOutcome(
-            summary=_summary(epss, kev, findings),
+            summary=_summary(epss, kev, findings, inferred),
             blocks=blocks,
             caveats=caveats,
-            pivot=Pivot(
-                label="Open in Vulnerabilities",
-                dimension=SurfaceDimension.VULNERABILITIES.value,
-                query=f"cve:{args.cve}",
-            )
-            if findings
+            pivot=Pivot(label="Open exposure", href=f"/surface/cve/{args.cve}")
+            if findings or inferred
             else None,
             raw={
                 "cve": args.cve,
@@ -295,7 +291,7 @@ def _hero(cve: str, epss, kev, intel, findings: int) -> object:
     )
 
 
-def _summary(epss, kev, findings: int) -> str:
+def _summary(epss, kev, findings: int, inferred: int = 0) -> str:
     parts = []
     if kev is not None:
         parts.append("Known exploited")
@@ -307,4 +303,6 @@ def _summary(epss, kev, findings: int) -> str:
         parts.append(
             f"{findings} finding{'s' if findings != 1 else ''} in this project"
         )
+    if inferred:
+        parts.append(f"{inferred} software match{'es' if inferred != 1 else ''}")
     return " · ".join(parts)

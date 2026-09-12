@@ -15,6 +15,8 @@
 		icon?: IconComponent;
 		badge?: NavBadge | null;
 		items?: { title: string; url: string }[];
+		/** sibling routes this item stays lit for */
+		match?: string[];
 	}
 
 	export interface NavGroup {
@@ -41,6 +43,8 @@
 		const base = url.split('?')[0];
 		return path === base || path.startsWith(base + '/');
 	};
+
+	const itemActive = (item: NavItem) => isActive(item.url) || (item.match ?? []).some(isActive);
 
 	const hasActiveChild = (items?: { url: string }[]) => {
 		return items?.some((item) => isActive(item.url)) ?? false;
@@ -117,7 +121,7 @@
 										<Sidebar.MenuButton
 											{...props}
 											tooltipContent={item.title}
-											isActive={isActive(item.url)}
+											isActive={itemActive(item)}
 										>
 											{#if item.icon}
 												<item.icon class="size-4" />
@@ -149,11 +153,7 @@
 					</Collapsible.Root>
 				{:else}
 					<Sidebar.MenuItem>
-						<Sidebar.MenuButton
-							class="h-7"
-							tooltipContent={item.title}
-							isActive={isActive(item.url)}
-						>
+						<Sidebar.MenuButton class="h-7" tooltipContent={item.title} isActive={itemActive(item)}>
 							{#snippet child({ props })}
 								{@render link(item, props)}
 							{/snippet}

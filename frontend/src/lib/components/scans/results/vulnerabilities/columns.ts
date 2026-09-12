@@ -20,13 +20,14 @@ export const VULN_COLUMNS: TableColumn[] = [
 	{ key: 'risk', label: 'Risk', sort: 'exploit', width: 'w-56' },
 	{ key: 'exploit', label: 'Exploitation', sort: 'exploit', width: 'w-32' },
 	{ key: 'reach', label: 'Reach', width: 'w-24' },
+	{ key: 'evidence', label: 'Evidence', width: 'w-32' },
 	{ key: 'type', label: 'Type', sort: 'type', width: 'w-24' },
 	{ key: 'scanner', label: 'Scanner', width: 'w-28' },
 	{ key: 'review', label: 'Review', width: 'w-28' },
 	{ key: 'seen', label: 'First seen', sort: 'seen', width: 'w-28' }
 ];
 
-export const DEFAULT_VISIBLE_VULN_COLUMNS = ['asset', 'risk', 'reach', 'review'];
+export const DEFAULT_VISIBLE_VULN_COLUMNS = ['asset', 'risk', 'reach', 'evidence', 'review'];
 
 export const ISSUE_LEAD_COLUMNS: TableColumn[] = [
 	{

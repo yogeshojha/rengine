@@ -25,6 +25,7 @@ from sqlalchemy.orm import aliased
 
 from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.endpoints import ARCHIVE_SOURCES, LINKED_SOURCES
+from shared.definitions.evidence import Evidence
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity, VulnState
 from shared.models.endpoint import Endpoint
@@ -458,6 +459,7 @@ def _vuln_eligible(scope: QueryScope):
             Vulnerability.id.label("id"),
             Vulnerability.matched_at.label("matched_at"),
             Vulnerability.template_id.label("template_id"),
+            Vulnerability.host.label("host"),
             Vulnerability.cve_ids.label("cve_ids"),
             Vulnerability.cwe_ids.label("cwe_ids"),
         )
@@ -494,7 +496,7 @@ def _corroborated_ids(scope: QueryScope):
         .having(func.count(distinct(signals.c.template_id)) > 1)
         .cte("vuln_agreed")
     )
-    return (
+    by_check = (
         select(signals.c.id)
         .select_from(signals)
         .join(
@@ -504,8 +506,22 @@ def _corroborated_ids(scope: QueryScope):
                 signals.c.key == agreed.c.key,
             ),
         )
-        .distinct()
     )
+    by_software = (
+        select(eligible.c.id)
+        .select_from(eligible)
+        .join(
+            SoftwareCve,
+            and_(
+                scope.match(SoftwareCve.scan_id),
+                SoftwareCve.host.isnot(None),
+                SoftwareCve.host == eligible.c.host,
+                func.jsonb_exists(cast(eligible.c.cve_ids, JSONB), SoftwareCve.cve),
+            ),
+        )
+    )
+    agreeing = union_all(by_check, by_software).subquery("vuln_agreeing")
+    return select(agreeing.c.id).distinct()
 
 
 def vuln_corroborated_ids(scope: ScopeLike):
@@ -514,6 +530,20 @@ def vuln_corroborated_ids(scope: ScopeLike):
 
 def vuln_corroborated(scope: ScopeLike):
     return Vulnerability.id.in_(vuln_corroborated_ids(scope))
+
+
+def vuln_evidence(scope: ScopeLike, value: str):
+    """One rung of the ladder. A proven finding is not also counted as corroborated."""
+    corroborated = Vulnerability.id.in_(vuln_corroborated_ids(scope))
+    if value == Evidence.PROVEN.value:
+        return Vulnerability.evidence == Evidence.PROVEN.value
+    if value == Evidence.CORROBORATED.value:
+        return and_(Vulnerability.evidence != Evidence.PROVEN.value, corroborated)
+    if value == Evidence.OBSERVED.value:
+        return and_(
+            Vulnerability.evidence == Evidence.OBSERVED.value, not_(corroborated)
+        )
+    return false()
 
 
 def vuln_state(scope: ScopeLike):

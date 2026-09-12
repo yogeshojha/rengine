@@ -9,6 +9,7 @@ from shared.definitions.endpoints import (
     INTEREST_KEYS,
     SOURCE_LABELS,
 )
+from shared.definitions.evidence import EVIDENCE_ORDER, Evidence
 from shared.definitions.hygiene import (
     QUERY_VALUES as HYGIENE_VALUES,
 )
@@ -1779,8 +1780,9 @@ VULN_FLAGS: dict[str, str] = {
     "untestable": "No scanner template covers this CVE",
     "cve": "Carries a published vulnerability identifier",
     "exploitable": "Known exploited, or above the EPSS threshold",
-    "corroborated": "A second check at the same location names the same CVE or weakness class",
-    "proven": "The request and response that produced it were stored",
+    "corroborated": "A second signal at the same location names the same CVE or weakness class",
+    "proven": "The asset returned an artifact only a vulnerable one returns",
+    "recorded": "The request and response that produced it were stored",
     "extracted": "The check pulled a value out of the response",
     "web": "Found on an HTTP asset",
     "cdn": "On an asset served through a CDN",
@@ -2011,6 +2013,15 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         facet="state",
     ),
     QueryField(
+        name="evidence",
+        type=FieldType.ENUM,
+        group="Finding",
+        description="How the finding was established: observed, corroborated or proven.",
+        example="evidence:corroborated",
+        values=tuple(e for e in EVIDENCE_ORDER if e != Evidence.INFERRED.value),
+        facet="evidence",
+    ),
+    QueryField(
         name="seen",
         type=FieldType.DATE,
         group="Review",
@@ -2039,6 +2050,11 @@ VULN_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         key="template",
         label="Check",
         description="The same weakness across every asset it was found on",
+    ),
+    GroupDimension(
+        key="evidence",
+        label="Evidence",
+        description="Findings with the same evidence",
     ),
     GroupDimension(
         key="severity",
@@ -2118,6 +2134,11 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="is:corroborated and severity:[critical,high]",
         description="Severe findings that more than one check agrees on",
+        group="Priority",
+    ),
+    QueryExample(
+        query="evidence:proven",
+        description="Findings the asset answered with an out-of-band callback",
         group="Priority",
     ),
     QueryExample(
@@ -2719,6 +2740,7 @@ SOFTWARE_FLAGS: dict[str, str] = {
     "stated": "Version stated in a server header",
     "web": "Inferred from a web asset",
     "service": "Inferred from a service banner",
+    "corroborated": "A check at the same host names the same CVE",
 }
 
 SOFTWARE_FIELDS: tuple[QueryField, ...] = (
@@ -2820,6 +2842,15 @@ SOFTWARE_FIELDS: tuple[QueryField, ...] = (
         facet="caveat",
     ),
     QueryField(
+        name="evidence",
+        type=FieldType.ENUM,
+        group="Confidence",
+        description="Inferred from the version alone, or corroborated by a check at the same host.",
+        example="evidence:corroborated",
+        values=(Evidence.INFERRED.value, Evidence.CORROBORATED.value),
+        facet="evidence",
+    ),
+    QueryField(
         name="target",
         type=FieldType.STRING,
         group="Asset",
@@ -2896,6 +2927,11 @@ SOFTWARE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         label="Confidence",
         description="Matches with the same amount verified",
     ),
+    GroupDimension(
+        key="evidence",
+        label="Evidence",
+        description="Matches with the same evidence",
+    ),
 )
 
 SOFTWARE_EXAMPLE_GROUPS: tuple[str, ...] = (
@@ -2969,6 +3005,11 @@ SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="not caveat:conditional",
         description="Matches NVD does not tie to a further component",
+        group="Confidence",
+    ),
+    QueryExample(
+        query="evidence:corroborated",
+        description="Matches that a check at the same host also names",
         group="Confidence",
     ),
 )

@@ -181,7 +181,10 @@ def sync_feed(session: Session, kind: str) -> int:
     session.commit()
     try:
         if kind == FeedKind.NVD.value:
-            rows, version, size = nvd_corpus.load(session)
+            held = session.execute(
+                select(ThreatFeed.version).where(ThreatFeed.kind == kind)
+            ).scalar()
+            rows, version, size = nvd_corpus.load(session, current_version=held)
         else:
             rows, version, size = _sync_single(session, kind, spec)
         elapsed = int((time.monotonic() - started) * 1000)

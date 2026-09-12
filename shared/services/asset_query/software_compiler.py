@@ -8,6 +8,7 @@ from sqlalchemy import and_, case, cast, false, func, literal, or_, true
 from sqlalchemy.dialects.postgresql import INET, JSONB
 
 from shared.definitions.asset_query import SOFTWARE_FLAGS, SOFTWARE_QUERY, Op
+from shared.definitions.evidence import Evidence
 from shared.definitions.software import Caveat, Confidence, VersionSource
 from shared.models.software import SoftwareCve
 
@@ -98,6 +99,7 @@ _FLAG_BUILDERS = {
     "stated": lambda _ctx: SoftwareCve.version_source == VersionSource.BANNER.value,
     "web": lambda _ctx: SoftwareCve.http_asset_id.isnot(None),
     "service": lambda _ctx: SoftwareCve.port_id.isnot(None),
+    "corroborated": lambda _ctx: SoftwareCve.evidence == Evidence.CORROBORATED.value,
 }
 
 
@@ -126,6 +128,7 @@ _BUILDERS = {
     "epss": lambda c, _ctx: number_match(SoftwareCve.epss_score, c, _float_coerce),
     "rank": lambda c, _ctx: number_match(SoftwareCve.exploit_score, c, int_coerce(c)),
     "confidence": lambda c, _ctx: string_match(SoftwareCve.confidence, c),
+    "evidence": lambda c, _ctx: string_match(SoftwareCve.evidence, c),
     "caveat": _caveat,
     "host": lambda c, _ctx: string_match(SoftwareCve.host, c),
     "ip": _address,

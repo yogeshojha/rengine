@@ -19,11 +19,18 @@ export const SOFTWARE_COLUMNS: TableColumn[] = [
 	{ key: 'asset', label: 'Asset', sort: 'host', width: 'min-w-56 max-w-[22rem]', grow: true },
 	{ key: 'severity', label: 'Severity', sort: 'cvss', width: 'w-28' },
 	{ key: 'exploitation', label: 'Exploitation', sort: 'epss', width: 'w-36' },
+	{ key: 'evidence', label: 'Evidence', width: 'w-32' },
 	{ key: 'confidence', label: 'Confidence', width: 'w-32' },
 	{ key: 'seen', label: 'Seen', sort: 'seen', width: 'w-24' }
 ];
 
-export const DEFAULT_VISIBLE_SOFTWARE_COLUMNS = ['asset', 'severity', 'exploitation', 'confidence'];
+export const DEFAULT_VISIBLE_SOFTWARE_COLUMNS = [
+	'asset',
+	'severity',
+	'exploitation',
+	'evidence',
+	'confidence'
+];
 
 export const SOFTWARE_SORTS = [
 	{ key: 'rank', label: 'Exploitation rank' },

@@ -70,6 +70,7 @@
 		confidence: [],
 		source: [],
 		caveat: [],
+		evidence: [],
 		product: []
 	};
 	const DEFAULT_SORT = { key: 'rank', dir: -1 as const };
@@ -126,6 +127,7 @@
 	const QUICK_FILTERS = [
 		{ token: 'is:new', label: 'New' },
 		{ token: 'is:kev', label: 'Known exploited' },
+		{ token: 'evidence:corroborated', label: 'Corroborated' },
 		{ token: 'is:firm', label: 'Firm' },
 		{ token: 'is:stated', label: 'Server stated' }
 	];
@@ -160,7 +162,8 @@
 		severity: facets.severity.map((f) => ({ value: f.key, label: f.label, count: f.count })),
 		confidence: facets.confidence.map((f) => ({ value: f.key, label: f.label, count: f.count })),
 		source: facets.source.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		caveat: facets.caveat.map((f) => ({ value: f.key, label: f.label, count: f.count }))
+		caveat: facets.caveat.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		evidence: facets.evidence.map((f) => ({ value: f.key, label: f.label, count: f.count }))
 	});
 
 	$effect(() => {
@@ -304,7 +307,7 @@
 	}
 
 	function onPage(next: number) {
-		pageIndex = Math.max(0, Math.min(next - 1, pageCount - 1));
+		pageIndex = Math.max(0, Math.min(next, pageCount - 1));
 		syncUrl();
 		void runSearch();
 	}
@@ -444,7 +447,7 @@
 
 		<ResultsPagination
 			{total}
-			page={pageIndex + 1}
+			page={pageIndex}
 			{pageSize}
 			capped={totalCapped}
 			noun="software CVE"

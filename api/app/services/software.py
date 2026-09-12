@@ -21,6 +21,7 @@ from app.services.asset_query import (
 )
 from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, SOFTWARE_QUERY
+from shared.definitions.evidence import EVIDENCE_LABELS, EVIDENCE_ORDER
 from shared.definitions.software import (
     CAVEAT_LABELS,
     CAVEAT_ORDER,
@@ -195,6 +196,8 @@ class SoftwareService:
                 }
                 for kind in (row.caveats or [])
             ],
+            evidence=row.evidence,
+            evidence_label=EVIDENCE_LABELS.get(row.evidence, ""),
             description=description,
             host=row.host,
             ip=row.ip,
@@ -249,6 +252,9 @@ class SoftwareService:
                     tuple(VERSION_SOURCE_LABELS),
                 ),
                 caveat=await self._caveat_facet(scope),
+                evidence=await self._facet(
+                    scope, SoftwareCve.evidence, EVIDENCE_LABELS, EVIDENCE_ORDER
+                ),
                 product=await self._facet(scope, SoftwareCve.name, {}, ()),
             )
 

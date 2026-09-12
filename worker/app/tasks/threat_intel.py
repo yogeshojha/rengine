@@ -5,11 +5,16 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.database import get_sync_session
-from shared.definitions.notifications import IntelShift, intel_changed
+from shared.definitions.notifications import (
+    IntelShift,
+    SoftwareExposure,
+    intel_changed,
+    software_exposed,
+)
 from shared.logging import get_logger
 from shared.services.exploitation import evaluate_all, evaluate_scan
 from shared.services.notification_sync import SyncNotificationPublisher
-from shared.services.software_match import rematch_latest
+from shared.services.software_match import RematchResult, rematch_latest
 from shared.services.threat_intel import (
     apply_intel,
     auto_sync_enabled,
@@ -75,6 +80,46 @@ def _notify_changes(session, since) -> int:
     return len(rows)
 
 
+def _notify_exposures(session, result: RematchResult) -> int:
+    """One notification per project for the matches the corpus refresh wrote first."""
+    by_project: dict = {}
+    for e in result.exposed:
+        by_project.setdefault(e.project_id, []).append(e)
+    sent = 0
+    for project_id, rows in by_project.items():
+        payload = software_exposed(
+            [
+                SoftwareExposure(
+                    cve=e.cve,
+                    host=e.host,
+                    name=e.name,
+                    version=e.version,
+                    severity=e.severity,
+                    is_kev=e.is_kev,
+                    kev_ransomware=e.kev_ransomware,
+                )
+                for e in rows
+            ]
+        )
+        if payload is None:
+            continue
+        try:
+            SyncNotificationPublisher(settings.redis_url).publish(
+                session=session,
+                type=payload["type"],
+                severity=payload["severity"],
+                title=payload["title"],
+                message=payload["message"],
+                metadata=payload.get("metadata"),
+                project_id=project_id,
+            )
+        except Exception:
+            logger.warning("software exposure notification failed", exc_info=True)
+            continue
+        sent += len(rows)
+    return sent
+
+
 @shared_task(name="app.tasks.threat_intel.refresh")
 def refresh(feeds: list[str] | None = None, force: bool = False) -> dict:
     """Download the feeds, re-score every finding, then re-rank."""
@@ -88,13 +133,25 @@ def refresh(feeds: list[str] | None = None, force: bool = False) -> dict:
         ranked = evaluate_all(session)
         inferred = rematch_latest(session)
         alerted = _notify_changes(session, started)
-    logger.info("threat intel refreshed", **counts, **applied, alerted=alerted)
+        exposed = _notify_exposures(session, inferred)
+    logger.info(
+        "threat intel refreshed",
+        **counts,
+        **applied,
+        alerted=alerted,
+        newly_exposed=inferred.exposed_total,
+    )
     return {
         "feeds": counts,
         "applied": applied,
         "ranked": ranked,
-        "inferred": inferred,
+        "inferred": {
+            "scans": inferred.scans,
+            "findings": inferred.findings,
+            "newly_exposed": inferred.exposed_total,
+        },
         "alerted": alerted,
+        "exposed": exposed,
     }
 
 

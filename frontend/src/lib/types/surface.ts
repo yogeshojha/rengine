@@ -28,6 +28,7 @@ export interface SurfaceOverview {
 	targets_total: number;
 	live_scans: number;
 	exposures: number;
+	cves: number;
 	dimensions: SurfaceCoverage[];
 	generated_at: string;
 }

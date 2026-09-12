@@ -43,3 +43,7 @@ def scans_for_target(ui: str, target_id: uuid.UUID | str) -> str:
 
 def dashboard(ui: str) -> str:
     return f"{_base(ui)}/dashboard"
+
+
+def cve(ui: str, cve_id: str) -> str:
+    return f"{_base(ui)}/surface/cve/{cve_id}"

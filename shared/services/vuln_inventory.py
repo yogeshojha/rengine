@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from shared.definitions.evidence import Evidence
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
@@ -102,6 +103,11 @@ def _bind(finding: Finding, index: AssetIndex) -> dict:
     }
 
 
+def _evidence(finding: Finding) -> str:
+    """Proven when an out-of-band callback was recorded."""
+    return Evidence.PROVEN.value if finding.interaction else Evidence.OBSERVED.value
+
+
 def to_row(
     finding: Finding,
     *,
@@ -153,6 +159,7 @@ def to_row(
         "response": finding.response,
         "curl_command": finding.curl_command,
         "interaction": finding.interaction,
+        "evidence": _evidence(finding),
         "observed_at": finding.observed_at,
         "discovered_at": now,
         "created_at": now,
