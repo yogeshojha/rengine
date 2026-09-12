@@ -18,7 +18,7 @@
 	<span class="{dot} shrink-0 rounded-full" style="background:{fill}"></span>
 	{#if showLabel}
 		<span
-			class="text-[10px] font-semibold tracking-wide uppercase"
+			class="text-2xs font-semibold tracking-wide uppercase"
 			style="color:color-mix(in oklch, {fill} 88%, var(--foreground))"
 		>
 			{severityLabel(severity)}

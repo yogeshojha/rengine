@@ -146,7 +146,7 @@
 										<Hint text={MODE_HELP.active}>
 											{#snippet child(props)}
 												<span {...props} class="inline-flex">
-													<Badge variant="warning" class="h-4 px-1.5 text-[10px]">
+													<Badge variant="warning" class="h-4 px-1.5 text-2xs">
 														{MODE_LABELS.active}
 													</Badge>
 												</span>
@@ -171,7 +171,7 @@
 							{#if run}
 								<RunSection {run} onLookup={chase} onNavigate={() => (open = false)} />
 							{:else if tool.examples.length}
-								<p class="py-4 text-[13px] text-muted-foreground">
+								<p class="py-4 text-sm text-muted-foreground">
 									Examples: {tool.examples.join(', ')}
 								</p>
 							{/if}

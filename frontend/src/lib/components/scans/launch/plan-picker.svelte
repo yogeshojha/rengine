@@ -104,7 +104,7 @@
 		<Tabs.Root value={launch.mode} onValueChange={setMode} class="gap-3">
 			<Tabs.List class="grid h-9 w-full grid-cols-2">
 				{#each MODES as mode (mode.value)}
-					<Tabs.Trigger value={mode.value} class="text-[13px]" {disabled}>
+					<Tabs.Trigger value={mode.value} class="text-sm" {disabled}>
 						{mode.label}
 					</Tabs.Trigger>
 				{/each}
@@ -160,7 +160,7 @@
 					{/if}
 				</div>
 				{#if launch.engine && engineSummary}
-					<p class="text-[11px] text-muted-foreground">
+					<p class="text-2xs text-muted-foreground">
 						{INTENSITY_LABELS[launch.engine.intensity]} intensity · {engineSummary.activeStages} of
 						{engineSummary.totalStages} stages · {FOOTPRINT_LABEL[engineSummary.footprint]}
 						{#if launch.engine.last_used_at}
@@ -168,7 +168,7 @@
 						{/if}
 					</p>
 				{:else}
-					<p class="text-[11px] text-muted-foreground">{caption}</p>
+					<p class="text-2xs text-muted-foreground">{caption}</p>
 				{/if}
 			</div>
 			{#if launch.engine}
@@ -227,7 +227,7 @@
 				{@const stages = launch.quickStages.filter((s) => s.group === group.key)}
 				{#if stages.length}
 					<div class="flex flex-col gap-1.5">
-						<span class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+						<span class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
 							{group.label}
 						</span>
 						<div class="flex flex-wrap gap-1.5">
@@ -250,8 +250,8 @@
 		</div>
 		<div class="flex items-start justify-between gap-4 border-t pt-3">
 			<div class="min-w-0">
-				<Label class="text-[13px]">Intensity</Label>
-				<p class="text-[11px] text-muted-foreground">{INTENSITY_HELP[launch.runIntensity]}</p>
+				<Label class="text-sm">Intensity</Label>
+				<p class="text-2xs text-muted-foreground">{INTENSITY_HELP[launch.runIntensity]}</p>
 			</div>
 			<ToggleGroup.Root
 				type="single"

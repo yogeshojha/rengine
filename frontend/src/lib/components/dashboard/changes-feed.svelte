@@ -72,7 +72,7 @@
 			<section class="flex flex-col gap-1 px-5 py-3">
 				<a
 					href={s.href}
-					class="flex items-center gap-1.5 text-[11px] font-medium tracking-wider text-muted-foreground uppercase hover:text-foreground"
+					class="flex items-center gap-1.5 text-2xs font-medium tracking-wider text-muted-foreground uppercase hover:text-foreground"
 				>
 					<s.spec.icon class="size-3.5" />
 					{s.label}
@@ -152,7 +152,7 @@
 										<span class="text-muted-foreground">{e.host}</span>{e.path}
 									</span>
 									{#if e.param_count}
-										<span class="shrink-0 font-mono text-[11px] text-primary">
+										<span class="shrink-0 font-mono text-2xs text-primary">
 											?{e.params.slice(0, 2).join('&')}{e.params.length > 2 ? '…' : ''}
 										</span>
 									{/if}

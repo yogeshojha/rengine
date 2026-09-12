@@ -37,7 +37,7 @@
 
 	const ALL = 'all';
 	const HEAD =
-		'px-4 py-2 text-left text-[10px] font-semibold tracking-wider text-muted-foreground uppercase whitespace-nowrap';
+		'px-4 py-2 text-left text-2xs font-semibold tracking-wider text-muted-foreground uppercase whitespace-nowrap';
 
 	let filter = $state<string>(ALL);
 	let pending = $state<{ token: McpToken; action: 'revoke' | 'delete' } | null>(null);
@@ -150,7 +150,7 @@
 											</Hint>
 										{/if}
 										{#if state === 'revoked' || state === 'expired'}
-											<span class="text-[11px] text-muted-foreground">
+											<span class="text-2xs text-muted-foreground">
 												{MCP_TOKEN_STATE_LABELS[state]}
 											</span>
 										{/if}

@@ -88,7 +88,7 @@
 							<div class="flex items-baseline justify-between gap-2">
 								<span class="text-xs font-medium">{row.group}</span>
 								<span
-									class="text-[10px] tracking-wide uppercase {row.status === 'completed'
+									class="text-2xs tracking-wide uppercase {row.status === 'completed'
 										? 'text-success'
 										: row.status === 'skipped'
 											? 'text-muted-foreground'
@@ -97,7 +97,7 @@
 									{COVERAGE_STATUS_LABELS[row.status] ?? row.status}
 								</span>
 							</div>
-							<dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+							<dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-2xs">
 								<div class="flex justify-between gap-2">
 									<dt class="text-muted-foreground">Selected</dt>
 									<dd class="font-mono tabular-nums">{n(row.templates_selected) ?? '—'}</dd>
@@ -126,13 +126,13 @@
 								</div>
 							</dl>
 							{#if row.templates_selected != null && row.templates_loaded != null && row.templates_loaded < row.templates_selected}
-								<p class="text-[11px] text-warning">
+								<p class="text-2xs text-warning">
 									{n(row.templates_selected - row.templates_loaded)} of the selected checks were not loaded
 									by the scanner.
 								</p>
 							{/if}
 							{#if row.hosts_dropped_count && row.hosts_dropped.length}
-								<p class="text-[11px] text-warning">
+								<p class="text-2xs text-warning">
 									Stopped testing {row.hosts_dropped_count}
 									{row.hosts_dropped_count === 1 ? 'host' : 'hosts'} after repeated errors:
 									<span class="font-mono">{row.hosts_dropped[0].host}</span>
@@ -140,7 +140,7 @@
 								</p>
 							{/if}
 							{#if row.error}
-								<p class="text-[11px] text-muted-foreground">{row.error}</p>
+								<p class="text-2xs text-muted-foreground">{row.error}</p>
 							{/if}
 						</div>
 					{/each}

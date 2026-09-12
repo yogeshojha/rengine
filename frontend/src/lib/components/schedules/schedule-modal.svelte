@@ -250,7 +250,7 @@
 							placeholder="Search targets…"
 							emptyText="No targets in this project."
 						/>
-						<p class="text-[11px] text-muted-foreground">
+						<p class="text-2xs text-muted-foreground">
 							Each selected target runs as its own scan on every fire.
 						</p>
 					{/if}
@@ -352,13 +352,13 @@
 								placeholder="0 0 * * *"
 								class="mt-1.5 font-mono"
 							/>
-							<p class="mt-1 text-[11px] text-muted-foreground">
+							<p class="mt-1 text-2xs text-muted-foreground">
 								Standard 5-field cron: minute, hour, day of month, month, day of week.
 							</p>
 						</Tabs.Content>
 					</Tabs.Root>
 
-					<div class="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+					<div class="flex items-start gap-1.5 text-2xs text-muted-foreground">
 						<CalendarClock class="mt-px h-3.5 w-3.5 shrink-0" />
 						<span>
 							Scheduled times use the instance timezone

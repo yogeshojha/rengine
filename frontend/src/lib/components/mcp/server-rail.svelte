@@ -24,8 +24,8 @@
 
 	let { status, canAdmin, onTab }: Props = $props();
 
-	const LABEL = 'text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase';
-	const ROW = 'grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-[13px]';
+	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
+	const ROW = 'grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-sm';
 	const KEY = 'pt-px text-xs text-muted-foreground';
 
 	let rateDraft = $state<string | null>(null);
@@ -52,7 +52,7 @@
 <aside class="flex flex-col divide-y">
 	<div class="flex flex-col gap-1.5 pb-4">
 		<h4 class="mb-1 {LABEL}">Server</h4>
-		<div class="flex items-start gap-2 text-[13px]">
+		<div class="flex items-start gap-2 text-sm">
 			<span class="flex h-5 shrink-0 items-center">
 				<span class="size-2 rounded-full {MCP_STATE_DOT[serverState]}" aria-hidden="true"></span>
 			</span>
@@ -113,10 +113,10 @@
 			{@const on = capability.always || (status.ceiling[capability.key] ?? false)}
 			<div class="flex items-start justify-between gap-3">
 				<span class="flex min-w-0 flex-col">
-					<span class="flex items-center gap-1.5 text-[13px] leading-5 font-medium">
+					<span class="flex items-center gap-1.5 text-sm leading-5 font-medium">
 						{capability.label}
 						{#if capability.always}
-							<span class="text-[11px] font-normal text-muted-foreground">always on</span>
+							<span class="text-2xs font-normal text-muted-foreground">always on</span>
 						{:else if touches && on}
 							<Hint text="Tokens with this capability can send traffic to targets.">
 								{#snippet child(props)}

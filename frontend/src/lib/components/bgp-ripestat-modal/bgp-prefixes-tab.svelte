@@ -81,7 +81,7 @@
 				{#if ipv4Count > 0}
 					<Badge
 						variant="outline"
-						class="text-[10px] font-normal gap-1 text-muted-foreground border-border/60"
+						class="text-2xs font-normal gap-1 text-muted-foreground border-border/60"
 					>
 						IPv4
 						<span class="font-medium">{ipv4Count.toLocaleString()}</span>
@@ -90,7 +90,7 @@
 				{#if ipv6Count > 0}
 					<Badge
 						variant="outline"
-						class="text-[10px] font-normal gap-1 text-muted-foreground border-border/60"
+						class="text-2xs font-normal gap-1 text-muted-foreground border-border/60"
 					>
 						IPv6
 						<span class="font-medium">{ipv6Count.toLocaleString()}</span>
@@ -109,7 +109,7 @@
 						<span class="font-mono text-sm font-medium truncate">{prefix.prefix}</span>
 						<Badge
 							variant="outline"
-							class="text-[10px] font-normal shrink-0 text-muted-foreground border-border/60"
+							class="text-2xs font-normal shrink-0 text-muted-foreground border-border/60"
 						>
 							v{prefix.ip_version}
 						</Badge>
@@ -120,7 +120,7 @@
 
 					<div class="flex items-center gap-3 shrink-0">
 						{#if prefix.first_seen}
-							<span class="text-[11px] text-muted-foreground hidden sm:inline">
+							<span class="text-2xs text-muted-foreground hidden sm:inline">
 								{formatShortDate(prefix.first_seen)}
 							</span>
 						{/if}

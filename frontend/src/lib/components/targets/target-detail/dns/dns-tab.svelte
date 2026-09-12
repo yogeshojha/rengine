@@ -149,22 +149,22 @@
 		<div class="flex flex-wrap items-center gap-0.5">
 			<button
 				type="button"
-				class="rounded-md px-2 py-1 text-[13px] {type === ALL
+				class="rounded-md px-2 py-1 text-sm {type === ALL
 					? 'bg-muted font-medium'
 					: 'text-muted-foreground hover:text-foreground'}"
 				onclick={() => (type = ALL)}
 			>
-				All <span class="ml-1 text-[11px] tabular-nums">{records.length}</span>
+				All <span class="ml-1 text-2xs tabular-nums">{records.length}</span>
 			</button>
 			{#each typeCounts as [key, n] (key)}
 				<button
 					type="button"
-					class="rounded-md px-2 py-1 font-mono text-[12px] {type === key
+					class="rounded-md px-2 py-1 font-mono text-xs {type === key
 						? 'bg-muted font-medium'
 						: 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => (type = key)}
 				>
-					{key} <span class="ml-1 font-sans text-[11px] tabular-nums">{n}</span>
+					{key} <span class="ml-1 font-sans text-2xs tabular-nums">{n}</span>
 				</button>
 			{/each}
 		</div>
@@ -181,7 +181,7 @@
 				bind:value={query}
 				placeholder="Filter records"
 				aria-label="Filter records"
-				class="h-8 w-52 pl-8 text-[13px]"
+				class="h-8 w-52 pl-8 text-sm"
 			/>
 		</div>
 	{/snippet}
@@ -198,7 +198,7 @@
 						<div
 							class="group grid min-h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_16rem_auto]"
 						>
-							<span class="font-mono text-[12.5px] leading-5 wrap-anywhere">{r.value}</span>
+							<span class="font-mono text-xs leading-5 wrap-anywhere">{r.value}</span>
 							<span
 								class="hidden min-w-0 items-center gap-1.5 text-xs text-muted-foreground sm:flex {note.tone ===
 								'warn'
@@ -208,7 +208,7 @@
 								{#if note.brand}<TechIcon name={note.brand} class="size-3.5 rounded-[3px]" />{/if}
 								{#if note.tag}
 									<span
-										class="rounded-[5px] bg-muted px-1.5 text-[11px] font-semibold text-foreground"
+										class="rounded-[5px] bg-muted px-1.5 text-2xs font-semibold text-foreground"
 									>
 										{note.tag}
 									</span>

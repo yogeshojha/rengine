@@ -90,23 +90,20 @@
 									</span>
 									<CorroborationBadge peers={v.corroborated_by} scanner={v.scanner} />
 									{#if v.matcher_name}
-										<span class="shrink-0 font-mono text-[11px] text-muted-foreground">
+										<span class="shrink-0 font-mono text-2xs text-muted-foreground">
 											{v.matcher_name}
 										</span>
 									{/if}
 									{#if v.extracted_results.length}
-										<Badge
-											variant="secondary"
-											class="max-w-40 px-1 font-mono text-[10px] font-normal"
-										>
+										<Badge variant="secondary" class="max-w-40 px-1 font-mono text-2xs font-normal">
 											<span class="truncate">{v.extracted_results[0]}</span>
 										</Badge>
 									{/if}
 									{#if v.is_new}
-										<Badge variant="info" class="px-1 text-[10px] font-normal">new</Badge>
+										<Badge variant="info" class="px-1 text-2xs font-normal">new</Badge>
 									{/if}
 									{#if reviewed}
-										<Badge variant="secondary" class="px-1 text-[10px] font-normal">
+										<Badge variant="secondary" class="px-1 text-2xs font-normal">
 											{VULN_STATE_LABELS[v.state] ?? v.state}
 										</Badge>
 									{/if}

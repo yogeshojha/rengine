@@ -475,7 +475,7 @@
 												{template.name}
 											</span>
 											{#if custom}
-												<Badge variant="info" class="text-[10px] font-normal">Custom</Badge>
+												<Badge variant="info" class="text-2xs font-normal">Custom</Badge>
 											{/if}
 											{#if template.findings > 0}
 												<Hint text="Findings this check has produced across every scan">
@@ -483,7 +483,7 @@
 														<span {...props} class="flex h-5 items-center">
 															<Badge
 																variant="warning"
-																class="px-1.5 text-[10px] font-normal tabular-nums"
+																class="px-1.5 text-2xs font-normal tabular-nums"
 															>
 																{template.findings.toLocaleString()}
 																{template.findings === 1 ? 'finding' : 'findings'}

@@ -20,7 +20,7 @@
 		{@const on = granted.includes(cap)}
 		{@const warn = TOUCHES_TARGETS.includes(cap)}
 		<span
-			class="inline-flex h-5 items-center rounded border px-1.5 text-[11px] leading-none font-medium {on
+			class="inline-flex h-5 items-center rounded border px-1.5 text-2xs leading-none font-medium {on
 				? warn
 					? 'border-warning/40 bg-warning/10 text-warning'
 					: 'border-border bg-muted/60 text-foreground'

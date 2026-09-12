@@ -216,7 +216,7 @@
 							<Tabs.Trigger value="prefixes" class="flex-1 gap-1.5">
 								Prefixes
 								{#if !isLoadingPrefixes && prefixCount > 0}
-									<Badge variant="secondary" class="text-[10px] h-5 min-w-5 px-1.5 ml-1">
+									<Badge variant="secondary" class="text-2xs h-5 min-w-5 px-1.5 ml-1">
 										{prefixCount.toLocaleString()}
 									</Badge>
 								{:else if isLoadingPrefixes}
@@ -228,7 +228,7 @@
 							<Tabs.Trigger value="peers" class="flex-1 gap-1.5">
 								Peers
 								{#if !isLoadingPeers && peerCount > 0}
-									<Badge variant="secondary" class="text-[10px] h-5 min-w-5 px-1.5 ml-1">
+									<Badge variant="secondary" class="text-2xs h-5 min-w-5 px-1.5 ml-1">
 										{peerCount.toLocaleString()}
 									</Badge>
 								{:else if isLoadingPeers}

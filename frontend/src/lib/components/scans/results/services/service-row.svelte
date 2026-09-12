@@ -172,7 +172,7 @@
 								class="flex h-5 shrink-0 items-center"
 								onclick={(e) => pivot(e, exactToken('service', s.service_name ?? ''))}
 							>
-								<Badge variant="secondary" class="px-1.5 font-mono text-[10px] font-normal">
+								<Badge variant="secondary" class="px-1.5 font-mono text-2xs font-normal">
 									{s.service_name}
 								</Badge>
 							</button>
@@ -202,7 +202,7 @@
 								class="flex h-5 shrink-0 items-center"
 								onclick={(e) => pivot(e, 'is:new')}
 							>
-								<Badge variant="info" class="px-1 text-[10px] font-normal">new</Badge>
+								<Badge variant="info" class="px-1 text-2xs font-normal">new</Badge>
 							</button>
 						{/snippet}
 					</Tooltip.Trigger>
@@ -227,7 +227,7 @@
 					class="flex h-5 shrink-0 items-center"
 					onclick={(e) => pivot(e, filterToken('cdn', s.cdn_name ?? 'yes'))}
 				>
-					<Badge variant="info" class="gap-1 px-1 text-[10px] font-normal">
+					<Badge variant="info" class="gap-1 px-1 text-2xs font-normal">
 						<TechIcon name={s.cdn_name ?? ''} class="size-2.5" />
 						{s.cdn_name ?? 'CDN'}
 					</Badge>
@@ -323,7 +323,7 @@
 									>
 										<Badge
 											variant="outline"
-											class="max-w-full cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
+											class="max-w-full cursor-pointer font-mono text-2xs font-normal hover:bg-accent"
 										>
 											<span class="truncate">{h}</span>
 										</Badge>

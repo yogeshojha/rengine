@@ -18,9 +18,8 @@
 	<div class="min-w-0 flex-1">
 		<div class="flex flex-wrap items-center gap-2">
 			<span class="truncate font-medium">{font.name}</span>
-			<Badge variant="outline" class="text-[10px]">{ROLE_LABEL[font.role] ?? font.role}</Badge>
-			{#if font.origin === 'custom'}<Badge variant="secondary" class="text-[10px]">Custom</Badge
-				>{/if}
+			<Badge variant="outline" class="text-2xs">{ROLE_LABEL[font.role] ?? font.role}</Badge>
+			{#if font.origin === 'custom'}<Badge variant="secondary" class="text-2xs">Custom</Badge>{/if}
 		</div>
 		<div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
 			<span class="font-mono">{font.slug}</span>

@@ -73,7 +73,7 @@
 </script>
 
 {#snippet label(text: string)}
-	<h3 class="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">{text}</h3>
+	<h3 class="text-2xs font-medium tracking-[0.08em] text-muted-foreground uppercase">{text}</h3>
 {/snippet}
 
 {#snippet key(text: string)}
@@ -185,8 +185,7 @@
 					<section id="query-help-fields" class="flex scroll-mt-5 flex-col gap-1">
 						<div class="flex items-baseline justify-between">
 							{@render label('Fields')}
-							<span class="text-[11px] text-muted-foreground">Click one to add it to the query</span
-							>
+							<span class="text-2xs text-muted-foreground">Click one to add it to the query</span>
 						</div>
 						{#each groups as group (group.name)}
 							<div class="relative">
@@ -205,7 +204,7 @@
 											<span class="flex min-w-0 flex-col items-start gap-1">
 												{@render key(`${field.name}:`)}
 												{#if field.aliases.length}
-													<span class="truncate font-mono text-[11px] text-muted-foreground/70"
+													<span class="truncate font-mono text-2xs text-muted-foreground/70"
 														>{field.aliases.join(', ')}</span
 													>
 												{/if}
@@ -213,11 +212,11 @@
 											<span class="flex min-w-0 flex-col gap-1">
 												<span class="text-xs text-foreground">{field.description}</span>
 												<span
-													class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground/80"
+													class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-2xs text-muted-foreground/80"
 												>
 													<Badge
 														variant="outline"
-														class="h-4 px-1 font-sans text-[10px] font-normal text-muted-foreground"
+														class="h-4 px-1 font-sans text-2xs font-normal text-muted-foreground"
 														>{field.type}</Badge
 													>
 													<span>{field.example}</span>
@@ -241,7 +240,7 @@
 					<section id="query-help-flags" class="flex scroll-mt-5 flex-col gap-2.5">
 						<div class="flex items-baseline justify-between">
 							{@render label('Flags')}
-							<span class="text-[11px] text-muted-foreground"
+							<span class="text-2xs text-muted-foreground"
 								>Properties of {noun === 'host' ? 'a host' : 'an address'}, used as
 								<span class="font-mono">is:{schema.flags[0]?.value ?? 'live'}</span></span
 							>
@@ -264,7 +263,7 @@
 		</ScrollArea>
 
 		<div
-			class="flex items-center gap-3 border-t bg-muted/30 px-5 py-2 text-[11px] text-muted-foreground"
+			class="flex items-center gap-3 border-t bg-muted/30 px-5 py-2 text-2xs text-muted-foreground"
 		>
 			<span class="flex items-center gap-1"><Kbd>/</Kbd> focus search</span>
 			<span class="flex items-center gap-1"><Kbd>?</Kbd> open this guide</span>

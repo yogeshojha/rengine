@@ -671,7 +671,7 @@
 														</Tooltip.Content>
 													</Tooltip.Root>
 													{#if evidence}
-														<p class="font-mono text-[11px] break-all text-muted-foreground">
+														<p class="font-mono text-2xs break-all text-muted-foreground">
 															{evidence}
 														</p>
 													{/if}
@@ -703,9 +703,7 @@
 								{#if detail?.cpe?.length}
 									<div class="flex flex-wrap gap-1">
 										{#each detail.cpe as c (c)}
-											<Badge variant="secondary" class="font-mono text-[10px] font-normal"
-												>{c}</Badge
-											>
+											<Badge variant="secondary" class="font-mono text-2xs font-normal">{c}</Badge>
 										{/each}
 									</div>
 								{/if}
@@ -773,7 +771,7 @@
 												<dt class={DT}>SANs</dt>
 												<dd class="flex flex-wrap items-center gap-1">
 													{#each primaryAsset.tls_sans.slice(0, MAX_SANS) as san (san)}
-														<Badge variant="outline" class="font-mono text-[10px] font-normal"
+														<Badge variant="outline" class="font-mono text-2xs font-normal"
 															>{san}</Badge
 														>
 													{/each}
@@ -868,7 +866,7 @@
 											{@const GroupIcon = GROUP_ICONS[group]}
 											<section class="flex flex-col gap-1">
 												<div
-													class="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+													class="flex items-center gap-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 												>
 													<GroupIcon class="size-3.5" />
 													{GROUP_LABELS[group]}
@@ -887,7 +885,7 @@
 															<div class="min-w-0 flex-1">
 																<div class="flex flex-wrap items-baseline gap-x-2">
 																	<span class="text-sm leading-5">{spec?.control ?? v.key}</span>
-																	<span class="font-mono text-[11px] text-muted-foreground"
+																	<span class="font-mono text-2xs text-muted-foreground"
 																		>{spec?.header}</span
 																	>
 																</div>
@@ -897,7 +895,7 @@
 																	</p>
 																{/if}
 																{#if v.evidence}
-																	<p class="font-mono text-[11px] break-all text-muted-foreground">
+																	<p class="font-mono text-2xs break-all text-muted-foreground">
 																		{v.evidence}
 																	</p>
 																{/if}
@@ -1064,10 +1062,7 @@
 											</p>
 											<Hint text={r.value}>
 												{#snippet child(props)}
-													<p
-														{...props}
-														class="truncate font-mono text-[11px] text-muted-foreground"
-													>
+													<p {...props} class="truncate font-mono text-2xs text-muted-foreground">
 														{r.value}
 													</p>
 												{/snippet}
@@ -1091,7 +1086,7 @@
 													<button {...props} type="button" onclick={() => onPivot?.(h)}>
 														<Badge
 															variant="outline"
-															class="cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
+															class="cursor-pointer font-mono text-2xs font-normal hover:bg-accent"
 														>
 															{h}
 														</Badge>
@@ -1140,7 +1135,7 @@
 
 {#snippet heading(Icon: IconComponent, title: string)}
 	<div
-		class="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+		class="flex items-center gap-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 	>
 		<Icon class="size-3.5" />
 		<span>{title}</span>
@@ -1164,7 +1159,7 @@
 					<Badge
 						variant="outline"
 						class="cursor-pointer font-normal hover:bg-accent {mono
-							? 'font-mono text-[10px]'
+							? 'font-mono text-2xs'
 							: ''} {warn ? 'text-warning' : ''}"
 					>
 						{#if tech}<TechIcon name={text} />{/if}

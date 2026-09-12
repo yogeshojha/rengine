@@ -78,7 +78,7 @@
 	{@const tone = b.tone ?? 'info'}
 	<Sidebar.MenuBadge
 		class={cn(
-			'top-1 gap-1 rounded-full px-1.5 font-mono text-[10px] font-semibold',
+			'top-1 gap-1 rounded-full px-1.5 font-mono text-2xs font-semibold',
 			tone === 'info' &&
 				'bg-info/10 text-info peer-hover/menu-button:text-info peer-data-[active=true]/menu-button:text-info',
 			tone === 'attention' &&
@@ -100,7 +100,7 @@
 	<Sidebar.Group class={cn(groupIndex > 0 && 'pt-0', className)}>
 		{#if group.label}
 			<Sidebar.GroupLabel
-				class="h-6 px-2 text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/60 uppercase"
+				class="h-6 px-2 text-2xs font-semibold tracking-[0.1em] text-muted-foreground/60 uppercase"
 			>
 				{group.label}
 			</Sidebar.GroupLabel>

@@ -40,7 +40,7 @@
 					{#each created.setup.steps as step, index (step.title)}
 						<li class="flex gap-3">
 							<span
-								class="bg-muted text-muted-foreground mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-medium"
+								class="bg-muted text-muted-foreground mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-2xs font-medium"
 								>{index + 1}</span
 							>
 							<div class="min-w-0 flex-1 space-y-2">

@@ -151,10 +151,10 @@
 						Collecting {pendingSources.map((s) => s.label).join(', ')}
 					</span>
 				{:else if stale}
-					<Badge variant="warning" class="h-5 px-1.5 text-[11px]">Enrichment stale</Badge>
+					<Badge variant="warning" class="h-5 px-1.5 text-2xs">Enrichment stale</Badge>
 				{/if}
 				{#each failedSources as s (s.label)}
-					<Badge variant="destructive" class="h-5 gap-1 px-1.5 text-[11px]">
+					<Badge variant="destructive" class="h-5 gap-1 px-1.5 text-2xs">
 						<TriangleAlert class="size-3" />
 						{s.label} failed
 					</Badge>

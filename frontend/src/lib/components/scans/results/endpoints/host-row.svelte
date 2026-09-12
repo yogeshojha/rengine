@@ -148,7 +148,7 @@
 							<button
 								{...props}
 								type="button"
-								class="inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[11px] leading-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {chipClass(
+								class="inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-2xs leading-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {chipClass(
 									chip
 								)}"
 								onclick={(e) => {
@@ -165,12 +165,12 @@
 					</Hint>
 				{/each}
 				{#if moreFolders > 0}
-					<span class="text-[11px] text-muted-foreground">+{moreFolders} folders</span>
+					<span class="text-2xs text-muted-foreground">+{moreFolders} folders</span>
 				{/if}
 			</div>
 		{/if}
 		{#if node.anomaly}
-			<div class="mt-1 ml-7 flex items-center gap-1 text-[11px] text-warning">
+			<div class="mt-1 ml-7 flex items-center gap-1 text-2xs text-warning">
 				<TriangleAlert class="size-3" />
 				{node.anomaly}
 			</div>
@@ -215,7 +215,7 @@
 				{#if why.length}
 					<div class="flex min-h-5 flex-wrap items-center gap-1">
 						{#each why as key (key)}
-							<Badge variant={INTEREST_TONE[key] ?? 'warning'} class="h-4 px-1.5 text-[10px]">
+							<Badge variant={INTEREST_TONE[key] ?? 'warning'} class="h-4 px-1.5 text-2xs">
 								{INTEREST_LABELS[key] ?? key}
 							</Badge>
 						{/each}

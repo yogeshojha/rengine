@@ -51,9 +51,7 @@
 
 	<div class="flex flex-wrap items-stretch gap-3">
 		<div class="flex min-w-0 flex-col gap-1.5">
-			<span
-				class="flex items-center gap-1 text-[11px] tracking-wide text-muted-foreground uppercase"
-			>
+			<span class="flex items-center gap-1 text-2xs tracking-wide text-muted-foreground uppercase">
 				{#if bypass}
 					<TechIcon name={cdn} class="size-3" /> Behind {cdn}
 				{:else}
@@ -78,7 +76,7 @@
 
 		<div class="flex min-w-0 flex-1 basis-40 flex-col justify-center gap-1.5 px-1">
 			<span
-				class="flex items-center gap-1.5 text-[11px] tracking-wide text-muted-foreground uppercase"
+				class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
 			>
 				Matched on <ArrowRight class="size-3" />
 			</span>
@@ -90,7 +88,7 @@
 		</div>
 
 		<div class="flex min-w-0 flex-col gap-1.5">
-			<span class="text-[11px] tracking-wide text-muted-foreground uppercase">
+			<span class="text-2xs tracking-wide text-muted-foreground uppercase">
 				Reachable directly
 			</span>
 			<ScreenshotThumb
@@ -110,7 +108,7 @@
 			{#each ports as p (p)}
 				<Badge
 					variant="outline"
-					class="px-1 font-mono text-[10px] font-normal {sensitive.has(p)
+					class="px-1 font-mono text-2xs font-normal {sensitive.has(p)
 						? 'border-warning/40 text-warning'
 						: ''}"
 				>

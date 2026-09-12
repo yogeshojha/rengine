@@ -394,7 +394,7 @@
 								</div>
 							{/each}
 							<div class="flex flex-wrap items-center gap-2 pt-1">
-								<Badge variant="secondary" class="h-5 border-0 px-1.5 text-[10px]">
+								<Badge variant="secondary" class="h-5 border-0 px-1.5 text-2xs">
 									{summaryLine(channel)}
 								</Badge>
 								{#if channel.last_test_at}
@@ -528,7 +528,7 @@
 
 					<section class="space-y-4">
 						<div class="flex items-center justify-between gap-3">
-							<h4 class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+							<h4 class="text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
 								Connection
 							</h4>
 							{#if formMeta.help}
@@ -646,7 +646,7 @@
 
 					<section class="space-y-3">
 						<div class="flex items-center justify-between gap-3">
-							<h4 class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+							<h4 class="text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
 								Events
 							</h4>
 							<div class="flex items-center gap-2 text-xs text-muted-foreground">

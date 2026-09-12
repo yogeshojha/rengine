@@ -57,7 +57,7 @@
 				{s.engine_name}
 			</span>
 			{#if isCurrent}
-				<Badge class="h-4 px-1.5 text-[10px] font-normal">This scan</Badge>
+				<Badge class="h-4 px-1.5 text-2xs font-normal">This scan</Badge>
 			{/if}
 		</span>
 		<span class="truncate text-xs leading-4 text-muted-foreground">
@@ -87,7 +87,7 @@
 
 {#snippet group(label: string, scans: ScanRead[])}
 	{#if scans.length}
-		<li class="px-2.5 pt-2 pb-1 text-[11px] text-muted-foreground">{label}</li>
+		<li class="px-2.5 pt-2 pb-1 text-2xs text-muted-foreground">{label}</li>
 		{#each scans as s (s.id)}
 			<li>
 				<a

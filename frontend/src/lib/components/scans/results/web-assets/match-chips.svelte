@@ -86,7 +86,7 @@
 	<p class="text-xs font-medium">{match.label} contains “{match.term}”</p>
 	{#if match.snippet}
 		<p
-			class="mt-1.5 max-h-32 overflow-hidden rounded border border-border bg-accent/50 p-2 font-mono text-[11px] leading-relaxed break-all text-muted-foreground"
+			class="mt-1.5 max-h-32 overflow-hidden rounded border border-border bg-accent/50 p-2 font-mono text-2xs leading-relaxed break-all text-muted-foreground"
 		>
 			<HighlightText text={match.snippet} term={match.term} />
 		</p>
@@ -97,7 +97,7 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="flex flex-wrap items-center gap-1" onclick={stopProp}>
-		<span class="text-[10px] text-muted-foreground/70">matched in</span>
+		<span class="text-2xs text-muted-foreground/70">matched in</span>
 		{#each shown as match (match.field + match.term)}
 			{@const Icon = ICONS[match.field] ?? Hash}
 			<HoverCard.Root openDelay={120}>
@@ -106,7 +106,7 @@
 						<button
 							{...props}
 							type="button"
-							class="inline-flex items-center gap-1 rounded border border-primary/25 bg-primary/5 px-1.5 py-px text-[10px] font-medium text-primary/90 hover:bg-primary/10"
+							class="inline-flex items-center gap-1 rounded border border-primary/25 bg-primary/5 px-1.5 py-px text-2xs font-medium text-primary/90 hover:bg-primary/10"
 							onclick={() => onOpen(match.field)}
 						>
 							<Icon class="size-2.5" />
@@ -116,7 +116,7 @@
 				</HoverCard.Trigger>
 				<HoverCard.Content class="w-96 max-w-[90vw] p-3" side="top" align="start">
 					{@render detail(match)}
-					<p class="mt-1.5 text-[11px] text-muted-foreground">Click to open the evidence.</p>
+					<p class="mt-1.5 text-2xs text-muted-foreground">Click to open the evidence.</p>
 				</HoverCard.Content>
 			</HoverCard.Root>
 		{/each}
@@ -126,7 +126,7 @@
 					{#snippet child({ props })}
 						<span
 							{...props}
-							class="rounded border border-border px-1.5 py-px text-[10px] text-muted-foreground"
+							class="rounded border border-border px-1.5 py-px text-2xs text-muted-foreground"
 						>
 							+{rest.length}
 						</span>

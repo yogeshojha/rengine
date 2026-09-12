@@ -67,7 +67,7 @@
 					</span>
 					{#if r.badge}
 						<span class="flex h-5 shrink-0 items-center">
-							<Badge variant="warning" class="h-4 px-1 text-[10px]">{r.badge}</Badge>
+							<Badge variant="warning" class="h-4 px-1 text-2xs">{r.badge}</Badge>
 						</span>
 					{/if}
 					<span class="text-sm font-medium tabular-nums">{r.count.toLocaleString()}</span>

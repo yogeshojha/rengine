@@ -37,7 +37,7 @@
 			}}
 			aria-label={label}
 		>
-			<Badge {variant} class="gap-1 px-1.5 text-[10px] font-normal">
+			<Badge {variant} class="gap-1 px-1.5 text-2xs font-normal">
 				{#if Icon}<Icon class="size-2.5" />{/if}
 				{#if !compact}{label}{/if}
 			</Badge>

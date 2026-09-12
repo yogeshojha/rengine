@@ -41,7 +41,7 @@
 	<div class="overflow-x-auto">
 		<table class="w-full border-separate border-spacing-0 text-sm">
 			<thead>
-				<tr class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+				<tr class="text-2xs font-medium tracking-wider text-muted-foreground uppercase">
 					<th class="px-5 py-2 text-left font-medium whitespace-nowrap">Target</th>
 					{#each SURFACE_ORDER as spec (spec.key)}
 						<th class="px-2 py-2 text-right font-medium whitespace-nowrap">
@@ -68,7 +68,7 @@
 							</a>
 							<a
 								href={ROUTES.scan(r.last_scan_id)}
-								class="ml-[22px] block text-[11px] text-muted-foreground hover:underline"
+								class="ml-[22px] block text-2xs text-muted-foreground hover:underline"
 							>
 								{plural(r.runs, 'run', 'runs')} · last {relativeTime(r.last_at)}{r.gone_web_assets >
 								0
@@ -113,7 +113,7 @@
 										{#snippet child(props)}
 											<span
 												{...props}
-												class="flex h-8 items-center justify-end rounded-md border border-dashed px-2 text-[11px] text-muted-foreground"
+												class="flex h-8 items-center justify-end rounded-md border border-dashed px-2 text-2xs text-muted-foreground"
 											>
 												baseline
 											</span>

@@ -83,7 +83,7 @@
 				{@const more = g.records.length - shown.length}
 				<div class="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-[11rem_minmax(0,1fr)]">
 					<span class="text-xs text-muted-foreground">
-						<span class="block text-[13px] font-medium text-foreground"
+						<span class="block text-sm font-medium text-foreground"
 							>{groupLabel(g.correlation_type)}</span
 						>
 						<span class="wrap-anywhere">{g.correlation_value}</span>
@@ -120,7 +120,7 @@
 			{#each related as d (d.domain)}
 				<div class="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-[11rem_minmax(0,1fr)]">
 					<span class="text-xs text-muted-foreground">
-						<span class="block text-[13px] font-medium text-foreground">{d.reason_label}</span>
+						<span class="block text-sm font-medium text-foreground">{d.reason_label}</span>
 						<span class="wrap-anywhere"
 							>{d.hostname_count}
 							{d.hostname_count === 1 ? 'hostname' : 'hostnames'}{d.evidence[0]
@@ -136,7 +136,7 @@
 						</span>
 						{#if d.is_target || added.has(d.domain)}
 							<span
-								class="inline-flex h-6 items-center gap-1 rounded-md bg-success/10 px-2 text-[11px] font-medium text-success"
+								class="inline-flex h-6 items-center gap-1 rounded-md bg-success/10 px-2 text-2xs font-medium text-success"
 							>
 								<Check class="size-3" /> Target
 							</span>
@@ -144,7 +144,7 @@
 							<LoadingButton
 								size="sm"
 								variant="outline"
-								class="h-6 gap-1 px-2 text-[11px]"
+								class="h-6 gap-1 px-2 text-2xs"
 								loading={pending === d.domain}
 								onclick={() => addTarget(d)}
 							>

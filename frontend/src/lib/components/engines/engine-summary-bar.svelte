@@ -98,7 +98,7 @@
 						</HoverCard.Trigger>
 						<HoverCard.Content class="w-auto max-w-xs p-3 text-xs">
 							<p class="mb-1.5 font-medium">All tools</p>
-							<p class="font-mono text-[11px] leading-relaxed text-muted-foreground">
+							<p class="font-mono text-2xs leading-relaxed text-muted-foreground">
 								{toolNames.join(' · ')}
 							</p>
 						</HoverCard.Content>

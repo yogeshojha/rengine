@@ -226,7 +226,7 @@
 						{opt.label}
 						{#if opt.recommended}
 							<span
-								class="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+								class="rounded-full bg-primary/10 px-1.5 py-0.5 text-2xs font-medium text-primary"
 							>
 								Recommended
 							</span>
@@ -355,7 +355,7 @@
 				{/if}
 				Test connection
 			</Button>
-			<p class="mt-1.5 text-[11px] text-muted-foreground">
+			<p class="mt-1.5 text-2xs text-muted-foreground">
 				Saves the proxy and runs a reachability check. It becomes the default only on continue.
 			</p>
 		</div>

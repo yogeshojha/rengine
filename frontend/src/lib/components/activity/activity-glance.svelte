@@ -65,7 +65,7 @@
 							<span class="max-w-[180px] truncate text-foreground/70">{latest.title}</span>
 						</span>
 					{/key}
-					<span class="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+					<span class="shrink-0 font-mono text-2xs tabular-nums text-muted-foreground">
 						{timeLabel}
 					</span>
 				</span>
@@ -78,7 +78,7 @@
 			{#if activityFeed.newCount > 0}
 				<span
 					in:fly={{ y: -4, duration: 180 }}
-					class="ml-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-info/15 px-1 text-[10px] font-semibold text-info"
+					class="ml-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-info/15 px-1 text-2xs font-semibold text-info"
 				>
 					{activityFeed.newCount}
 				</span>

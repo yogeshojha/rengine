@@ -47,15 +47,15 @@
 						</span>
 					{/if}
 					{#if row.asn_org}<span>{row.asn_org}</span>{/if}
-					{#if row.is_cdn}<Badge variant="info" class="text-[10px]">CDN</Badge>{/if}
-					{#if row.is_new}<Badge variant="outline" class="text-[10px]">New</Badge>{/if}
+					{#if row.is_cdn}<Badge variant="info" class="text-2xs">CDN</Badge>{/if}
+					{#if row.is_new}<Badge variant="outline" class="text-2xs">New</Badge>{/if}
 				</div>
 			</Sheet.Header>
 
 			<ScrollArea.Root class="min-h-0 flex-1">
 				<div class="flex flex-col gap-5 px-5 py-4">
 					<section class="flex flex-col gap-3">
-						<h3 class="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+						<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 							Signals
 						</h3>
 						{#each ordered as signal (signal.source + signal.kind)}
@@ -68,11 +68,11 @@
 										? 'border-border'
 										: 'border-primary/50'}"
 							>
-								<span class="flex flex-wrap items-center gap-2 text-[12.5px] font-medium">
+								<span class="flex flex-wrap items-center gap-2 text-xs font-medium">
 									<Icon class="size-3.5 text-muted-foreground" />
 									{signal.kind_label}
 									<span
-										class="rounded border px-1 py-px text-[10px] font-normal {sourceChipClass(
+										class="rounded border px-1 py-px text-2xs font-normal {sourceChipClass(
 											signal.source
 										)}"
 									>
@@ -82,20 +82,20 @@
 									</span>
 								</span>
 								{#if signal.reason}
-									<p class="text-[12.5px] text-foreground/80">{signal.reason}</p>
+									<p class="text-xs text-foreground/80">{signal.reason}</p>
 								{:else}
-									<p class="text-[12.5px] text-muted-foreground">
+									<p class="text-xs text-muted-foreground">
 										{interestCatalog.kind(signal.kind)?.help ?? ''}
 									</p>
 								{/if}
 								{#if isAi}
-									<p class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+									<p class="flex items-center gap-1.5 text-2xs text-muted-foreground">
 										<Sparkle class="size-3 text-info" />
 										Written by {signal.model ?? 'a model'}. A judgement, not an observation.
 									</p>
 								{:else if signal.evidence}
 									<p
-										class="rounded border border-border bg-accent/40 p-2 font-mono text-[11px] break-all text-muted-foreground"
+										class="rounded border border-border bg-accent/40 p-2 font-mono text-2xs break-all text-muted-foreground"
 									>
 										{signal.evidence}
 									</p>
@@ -106,16 +106,14 @@
 
 					{#if row.page_title || row.resolved_ips.length}
 						<section class="flex flex-col gap-2">
-							<h3
-								class="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase"
-							>
+							<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 								Observed
 							</h3>
 							{#if row.page_title}
-								<p class="text-[12.5px]">{row.page_title}</p>
+								<p class="text-xs">{row.page_title}</p>
 							{/if}
 							{#if row.resolved_ips.length}
-								<p class="font-mono text-[11px] text-muted-foreground">
+								<p class="font-mono text-2xs text-muted-foreground">
 									{row.resolved_ips.join(', ')}
 								</p>
 							{/if}

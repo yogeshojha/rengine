@@ -72,7 +72,7 @@
 
 {#snippet heading(label: string, spark = false)}
 	<p
-		class="flex items-center gap-1.5 px-2 pt-2 pb-1.5 text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase"
+		class="flex items-center gap-1.5 px-2 pt-2 pb-1.5 text-2xs font-medium tracking-[0.08em] text-muted-foreground uppercase"
 	>
 		{#if spark}<Sparkles class="size-3 text-primary" />{/if}{label}
 	</p>
@@ -169,11 +169,11 @@
 							{#if entry.item.keepOpen}
 								<Badge
 									variant="outline"
-									class="h-4 shrink-0 px-1 text-[10px] font-normal text-muted-foreground"
+									class="h-4 shrink-0 px-1 text-2xs font-normal text-muted-foreground"
 									>{entry.item.hint}</Badge
 								>
 							{:else}
-								<span class="shrink-0 text-[11px] text-muted-foreground/70 tabular-nums"
+								<span class="shrink-0 text-2xs text-muted-foreground/70 tabular-nums"
 									>{entry.item.hint}</span
 								>
 							{/if}
@@ -191,7 +191,7 @@
 </ScrollArea>
 
 <div
-	class="flex items-center gap-3 border-t bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground"
+	class="flex items-center gap-3 border-t bg-muted/30 px-3 py-1.5 text-2xs text-muted-foreground"
 >
 	{#if showStarters}
 		<span class="flex items-center gap-1 max-sm:hidden"><Kbd>↵</Kbd> search</span>
@@ -209,7 +209,7 @@
 	<Button
 		variant="ghost"
 		size="sm"
-		class="ml-auto h-6 gap-1.5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+		class="ml-auto h-6 gap-1.5 px-1.5 text-2xs text-muted-foreground hover:text-foreground"
 		onclick={onHelp}
 	>
 		<CircleQuestionMark class="size-3.5" />

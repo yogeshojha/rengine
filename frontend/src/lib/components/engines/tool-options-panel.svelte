@@ -53,7 +53,7 @@
 
 				{#each phases as phase (phase)}
 					<div class="space-y-3">
-						<h4 class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+						<h4 class="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
 							{phase}
 						</h4>
 						{#each tools.filter((t) => t.phase === phase) as tool (tool.name)}

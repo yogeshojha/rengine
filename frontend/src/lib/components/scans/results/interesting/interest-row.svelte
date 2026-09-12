@@ -60,12 +60,12 @@
 
 	<div class="flex min-w-0 flex-1 flex-col gap-1.5">
 		<div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-			<span class="font-mono text-[12.5px] font-medium wrap-anywhere">{row.host}</span>
+			<span class="font-mono text-xs font-medium wrap-anywhere">{row.host}</span>
 			{#if row.target_value}
-				<span class="text-[11px] text-muted-foreground">{row.target_value}</span>
+				<span class="text-2xs text-muted-foreground">{row.target_value}</span>
 			{/if}
 			{#if row.http_status != null}
-				<span class="text-[11px] tabular-nums {statusTone}">{row.http_status}</span>
+				<span class="text-2xs tabular-nums {statusTone}">{row.http_status}</span>
 			{/if}
 			{#if row.tech.length}
 				<span class="flex items-center gap-1 text-xs text-muted-foreground">
@@ -74,8 +74,7 @@
 				</span>
 			{/if}
 			{#if row.is_new}
-				<span
-					class="rounded border border-primary/25 bg-primary/5 px-1 py-px text-[10px] text-primary"
+				<span class="rounded border border-primary/25 bg-primary/5 px-1 py-px text-2xs text-primary"
 					>New</span
 				>
 			{/if}
@@ -87,13 +86,13 @@
 		</div>
 
 		{#if lead?.reason}
-			<p class="max-w-[80ch] text-[12.5px] text-foreground/80">
+			<p class="max-w-[80ch] text-xs text-foreground/80">
 				{#if fromAi && lead.source === INTEREST_SOURCE.AI}
 					<Sparkle class="mr-1 inline size-3 align-[-1px] text-info" />
 				{/if}{lead.reason}
 			</p>
 		{:else if row.page_title}
-			<p class="max-w-[80ch] truncate text-[12.5px] text-muted-foreground">{row.page_title}</p>
+			<p class="max-w-[80ch] truncate text-xs text-muted-foreground">{row.page_title}</p>
 		{/if}
 
 		<div class="flex flex-wrap items-center gap-1">
@@ -101,14 +100,14 @@
 				<SignalChip {signal} onPick={onKind} />
 			{/each}
 			{#if rest > 0}
-				<span class="rounded border border-border px-1.5 py-px text-[10px] text-muted-foreground"
+				<span class="rounded border border-border px-1.5 py-px text-2xs text-muted-foreground"
 					>+{rest}</span
 				>
 			{/if}
 			{#if row.asn_org}
 				<button
 					type="button"
-					class="text-[10px] text-muted-foreground hover:text-foreground"
+					class="text-2xs text-muted-foreground hover:text-foreground"
 					onclick={(e) => {
 						e.stopPropagation();
 						onHost(row.host);

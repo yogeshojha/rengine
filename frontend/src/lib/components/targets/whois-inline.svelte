@@ -149,9 +149,7 @@
 					<div class="flex items-start gap-2.5">
 						<UserRound class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p
-								class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
-							>
+							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
 								Registrant
 							</p>
 							<p class="text-sm truncate">{whois.registrant_name}</p>
@@ -163,9 +161,7 @@
 					<div class="flex items-start gap-2.5">
 						<Building class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p
-								class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
-							>
+							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
 								Registrar
 							</p>
 							<p class="text-sm truncate">{whois.registrar_name}</p>
@@ -177,9 +173,7 @@
 					<div class="flex items-start gap-2.5">
 						<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p
-								class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
-							>
+							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
 								Network
 							</p>
 							<p class="text-sm font-mono">{whois.network_cidr}</p>
@@ -191,9 +185,7 @@
 					<div class="flex items-start gap-2.5">
 						<Flag class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p
-								class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
-							>
+							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
 								Country
 							</p>
 							<p class="text-sm">{whois.country}</p>
@@ -209,13 +201,13 @@
 									<CalendarDays class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 									<div>
 										<p
-											class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+											class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
 										>
 											Registered
 										</p>
 										<p class="text-xs font-medium">{formatShortDate(whois.registration_date)}</p>
 										{#if domainAge}
-											<p class="text-[11px] text-muted-foreground mt-0.5">{domainAge}</p>
+											<p class="text-2xs text-muted-foreground mt-0.5">{domainAge}</p>
 										{/if}
 									</div>
 								</div>
@@ -226,13 +218,13 @@
 									<CalendarClock class="h-3.5 w-3.5 mt-0.5 shrink-0 {urgencyClasses}" />
 									<div>
 										<p
-											class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+											class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
 										>
 											Expires
 										</p>
 										<p class="text-xs font-medium">{formatShortDate(whois.expiration_date)}</p>
 										{#if expirationLabel}
-											<p class="text-[11px] mt-0.5 font-medium {urgencyClasses}">
+											<p class="text-2xs mt-0.5 font-medium {urgencyClasses}">
 												{expirationLabel}
 											</p>
 										{/if}
@@ -246,13 +238,13 @@
 
 			<div class="px-4 py-2.5 border-t border-border/50 bg-muted/30">
 				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+					<div class="flex items-center gap-1.5 text-2xs text-muted-foreground">
 						<Clock class="h-3 w-3" />
 						<span>Queried {formatShortDate(whois.queried_at)}</span>
 					</div>
 					<button
 						type="button"
-						class="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
+						class="flex items-center gap-1 text-2xs text-primary/70 hover:text-primary transition-colors"
 						onclick={() => goto(ROUTES.target(targetId))}
 					>
 						See details

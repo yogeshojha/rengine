@@ -112,7 +112,7 @@
 					/>
 					<span
 						class={cn(
-							'text-[10px] tabular-nums',
+							'text-2xs tabular-nums',
 							number === page ? 'text-foreground font-medium' : 'text-muted-foreground'
 						)}
 					>

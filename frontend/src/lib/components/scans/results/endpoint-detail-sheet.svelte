@@ -111,11 +111,11 @@
 			<Sheet.Header class="gap-2 border-b px-5 py-4">
 				<div class="flex items-center gap-2">
 					<StatusMark status={endpoint.status_code} probed={endpoint.is_probed} />
-					<Badge variant="outline" class="text-[10px]">
+					<Badge variant="outline" class="text-2xs">
 						{ENDPOINT_CLASS_LABELS[endpoint.endpoint_class] ?? endpoint.endpoint_class}
 					</Badge>
 					{#if endpoint.is_new}
-						<Badge variant="info" class="text-[10px]">New</Badge>
+						<Badge variant="info" class="text-2xs">New</Badge>
 					{/if}
 					{#if total > 0 && position > 0}
 						<div class="ml-auto flex items-center gap-1">
@@ -276,14 +276,14 @@
 											{#if e.kind !== 'active'}
 												<Hint text="This source sent no request to the target.">
 													{#snippet child(props)}
-														<span {...props} class="text-[10px] text-muted-foreground">
+														<span {...props} class="text-2xs text-muted-foreground">
 															no request sent
 														</span>
 													{/snippet}
 												</Hint>
 											{/if}
 											{#if e.observed_at}
-												<span class="ml-auto text-[10px] text-muted-foreground">
+												<span class="ml-auto text-2xs text-muted-foreground">
 													{formatShortDate(e.observed_at)}
 												</span>
 											{/if}
@@ -292,7 +292,7 @@
 											<p class="mt-0.5 text-xs text-muted-foreground">{e.detail}</p>
 										{/if}
 										{#if e.found_on}
-											<p class="mt-0.5 font-mono text-[11px] break-all text-muted-foreground">
+											<p class="mt-0.5 font-mono text-2xs break-all text-muted-foreground">
 												{e.found_on}
 											</p>
 										{/if}
@@ -326,7 +326,7 @@
 							{:else if row?.param_samples.length}
 								<div class="space-y-1 rounded-md border p-2">
 									{#each row.param_samples.slice(0, 5) as sample, i (i)}
-										<p class="font-mono text-[11px] break-all text-muted-foreground">
+										<p class="font-mono text-2xs break-all text-muted-foreground">
 											{Object.entries(sample)
 												.map(([k, v]) => `${k}=${v}`)
 												.join('&')}

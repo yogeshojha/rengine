@@ -86,14 +86,14 @@
 						</span>
 						<span class="flex flex-col gap-1.5 pl-6">
 							<StageList {stages} config={p.stages} variant="inline" max={4} />
-							<span class="flex items-center justify-between gap-2 text-[11px] font-normal">
+							<span class="flex items-center justify-between gap-2 text-2xs font-normal">
 								<span class="text-muted-foreground tabular-nums">
 									{summary.activeStages} of {summary.totalStages} stages
 								</span>
 								<FootprintMeter
 									footprint={summary.footprint}
 									requestsPerSecond={summary.requestsPerSecond}
-									class="text-[11px]"
+									class="text-2xs"
 								/>
 							</span>
 						</span>

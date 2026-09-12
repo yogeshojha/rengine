@@ -191,7 +191,7 @@
 				<Tabs.Trigger value={tab} class="gap-1.5">
 					{MCP_TAB_LABELS[tab]}
 					{#if n}
-						<span class="text-[11px] text-muted-foreground tabular-nums">{n}</span>
+						<span class="text-2xs text-muted-foreground tabular-nums">{n}</span>
 					{/if}
 				</Tabs.Trigger>
 			{/each}

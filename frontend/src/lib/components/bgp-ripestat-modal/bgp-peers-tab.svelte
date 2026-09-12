@@ -182,7 +182,7 @@
 		{/if}
 
 		<div
-			class="flex items-center justify-between px-3 text-[11px] text-muted-foreground uppercase tracking-wider"
+			class="flex items-center justify-between px-3 text-2xs text-muted-foreground uppercase tracking-wider"
 		>
 			<span>Top peers by BGP power</span>
 			<Zap class="h-3 w-3" />
@@ -222,7 +222,7 @@
 							</Tooltip.Content>
 						</Tooltip.Root>
 
-						<Badge variant="outline" class="text-[10px] font-normal gap-1 shrink-0 {meta.badge}">
+						<Badge variant="outline" class="text-2xs font-normal gap-1 shrink-0 {meta.badge}">
 							<RelIcon class="h-3 w-3" />
 							{meta.label}
 						</Badge>

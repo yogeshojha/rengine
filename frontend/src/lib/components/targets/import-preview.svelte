@@ -105,7 +105,7 @@
 									<div class="flex items-center gap-1.5">
 										<Tag class="h-3 w-3 text-muted-foreground" />
 										{#each item.tags as tag (tag)}
-											<Badge variant="secondary" class="text-[10px] px-1.5 py-0 h-4 font-normal">
+											<Badge variant="secondary" class="text-2xs px-1.5 py-0 h-4 font-normal">
 												{tag}
 											</Badge>
 										{/each}

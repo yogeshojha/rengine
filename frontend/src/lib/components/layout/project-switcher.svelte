@@ -86,7 +86,7 @@
 								<span class="truncate font-medium">
 									{activeProject.name}
 								</span>
-								<span class="truncate text-[11px] text-muted-foreground">{modeLabel}</span>
+								<span class="truncate text-2xs text-muted-foreground">{modeLabel}</span>
 							</div>
 							<ChevronsUpDownIcon class="ms-auto size-4 text-muted-foreground" />
 						</Sidebar.MenuButton>

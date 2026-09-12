@@ -66,7 +66,7 @@
 			<span class="truncate font-mono text-sm font-medium">{group.target_value}</span>
 			<Badge
 				variant="outline"
-				class="shrink-0 rounded px-1.5 py-0.5 text-[10px] {getTargetTypeColor(
+				class="shrink-0 rounded px-1.5 py-0.5 text-2xs {getTargetTypeColor(
 					group.target_type as TargetType
 				)}"
 			>

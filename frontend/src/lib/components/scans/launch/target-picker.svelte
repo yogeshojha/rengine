@@ -163,7 +163,7 @@
 							<span class="font-mono text-xs">{chip.value}</span>
 							{#if !chip.id}
 								<span
-									class="rounded-full border border-border bg-background px-1.5 text-[10px] leading-4 text-muted-foreground"
+									class="rounded-full border border-border bg-background px-1.5 text-2xs leading-4 text-muted-foreground"
 								>
 									New
 								</span>
@@ -230,7 +230,7 @@
 								onclick={() => pick(target)}
 							>
 								<span class="min-w-0 flex-1 truncate font-mono text-xs">{target.target_value}</span>
-								<span class="text-[11px] text-muted-foreground">
+								<span class="text-2xs text-muted-foreground">
 									{targetTypeLabel(target.target_type)}
 								</span>
 							</button>
@@ -254,8 +254,8 @@
 		</Popover.Content>
 	</Popover.Root>
 	{#if error}
-		<p class="text-[11px] text-destructive">{error}</p>
+		<p class="text-2xs text-destructive">{error}</p>
 	{:else if chips.length > 1}
-		<p class="text-[11px] text-muted-foreground">Each target runs as its own scan.</p>
+		<p class="text-2xs text-muted-foreground">Each target runs as its own scan.</p>
 	{/if}
 </div>

@@ -326,7 +326,7 @@
 				x={i === 0 ? layout.xs[0] + NODE_W : layout.xs[i]}
 				y="11"
 				text-anchor={i === 0 ? 'end' : 'start'}
-				class="fill-muted-foreground text-[11px] font-semibold tracking-[0.08em] uppercase"
+				class="fill-muted-foreground text-2xs font-semibold tracking-[0.08em] uppercase"
 			>
 				{c}
 			</text>
@@ -425,7 +425,7 @@
 					y={(n.y0 + n.y1) / 2}
 					dy="0.35em"
 					text-anchor={left ? 'end' : 'start'}
-					class="pointer-events-none text-[12px] {n.tone === 'muted'
+					class="pointer-events-none text-xs {n.tone === 'muted'
 						? 'fill-muted-foreground'
 						: 'fill-foreground'} {on && hovered ? 'font-medium' : ''}"
 					style="paint-order:stroke;stroke:{SURFACE};stroke-width:3px;stroke-linejoin:round"
@@ -448,7 +448,7 @@
 				<div
 					class="mt-1.5 flex items-center justify-between gap-3 border-t border-background/15 pt-1.5"
 				>
-					<code class="truncate font-mono text-[11px] opacity-80">{tip.query}</code>
+					<code class="truncate font-mono text-2xs opacity-80">{tip.query}</code>
 					<span class="flex shrink-0 items-center gap-0.5 opacity-60">
 						Web assets <ArrowUpRight class="size-3" />
 					</span>

@@ -35,8 +35,7 @@
 				{:else}
 					<Minus size={12} class="relative top-0.5 shrink-0 opacity-60" aria-label="Default" />
 				{/if}
-				<span class="text-[10px] tracking-wider text-muted-foreground uppercase">{facet.label}</span
-				>
+				<span class="text-2xs tracking-wider text-muted-foreground uppercase">{facet.label}</span>
 				<span class="min-w-0 leading-snug break-words">{facet.value}</span>
 			</li>
 		{/each}

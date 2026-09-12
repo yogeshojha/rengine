@@ -87,7 +87,7 @@
 				{#each groups as g, gi (g.label ?? gi)}
 					{#if g.label}
 						<span
-							class="flex items-center justify-between px-3 pt-4 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+							class="flex items-center justify-between px-3 pt-4 pb-1 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 						>
 							{g.label}
 							<span class="tabular-nums">{g.rows.length}</span>

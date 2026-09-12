@@ -51,7 +51,7 @@
 			onclick={stop}
 			onkeydown={stop}
 			class={cn(
-				'inline-flex h-5 cursor-pointer items-center rounded-sm border border-border px-1 text-[10px] text-muted-foreground tabular-nums hover:bg-accent hover:text-foreground',
+				'inline-flex h-5 cursor-pointer items-center rounded-sm border border-border px-1 text-2xs text-muted-foreground tabular-nums hover:bg-accent hover:text-foreground',
 				className
 			)}
 			aria-label="Show all {items.length} {label}"

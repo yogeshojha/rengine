@@ -128,7 +128,7 @@
 		{#if record.registrant_name}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<UserRound class="h-3 w-3" />
 					Registrant
@@ -159,7 +159,7 @@
 		{#if record.registrar_name}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<Building class="h-3 w-3" />
 					Registrar
@@ -198,7 +198,7 @@
 		{#if record.network_cidr}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<Cable class="h-3 w-3" />
 					Network
@@ -229,7 +229,7 @@
 		{#if record.country}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<Flag class="h-3 w-3" />
 					Country
@@ -241,7 +241,7 @@
 		{#if record.registration_date}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<CalendarDays class="h-3 w-3" />
 					Registered
@@ -256,7 +256,7 @@
 		{#if record.last_changed_date}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<CalendarCheck class="h-3 w-3" />
 					Last updated
@@ -268,7 +268,7 @@
 		{#if record.expiration_date}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider {urgency ===
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider {urgency ===
 						'expired' || urgency === 'critical'
 						? 'text-destructive'
 						: urgency === 'warning'
@@ -296,7 +296,7 @@
 		{#if record.whois_server}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<MonitorCog class="h-3 w-3" />
 					WHOIS Server
@@ -308,7 +308,7 @@
 		{#if record.rir}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<Hash class="h-3 w-3" />
 					RIR
@@ -320,7 +320,7 @@
 		{#if record.asn_range_start != null && record.asn_range_end != null}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<Network class="h-3 w-3" />
 					ASN Range
@@ -348,7 +348,7 @@
 	{#if hasStatuses}
 		<Separator />
 		<div>
-			<p class="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Domain status</p>
+			<p class="text-2xs text-muted-foreground uppercase tracking-wider mb-2">Domain status</p>
 			<div class="flex flex-wrap gap-1.5">
 				{#each record.domain_status as status (status)}
 					<Badge
@@ -366,7 +366,7 @@
 	{#if hasNameservers}
 		<Separator />
 		<div>
-			<p class="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Nameservers</p>
+			<p class="text-2xs text-muted-foreground uppercase tracking-wider mb-2">Nameservers</p>
 			<div class="flex flex-wrap gap-1.5">
 				{#each record.nameservers as ns (ns)}
 					<Tooltip.Root>

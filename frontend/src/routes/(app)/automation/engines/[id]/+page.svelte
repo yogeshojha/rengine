@@ -522,7 +522,7 @@
 				variant="outline"
 				pressed={modifiedOnly}
 				onPressedChange={(v) => (modifiedOnly = v)}
-				class="h-7 gap-1.5 px-2 text-[11px]"
+				class="h-7 gap-1.5 px-2 text-2xs"
 				aria-label="Show only modified stages"
 			>
 				Modified

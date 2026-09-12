@@ -37,13 +37,8 @@
 
 {#if loaded && templates.length === 0}
 	<div class="w-[280px] text-right">
-		<p class="text-[11px] text-muted-foreground">No templates uploaded yet.</p>
-		<Button
-			variant="link"
-			size="sm"
-			class="h-auto px-0 text-[11px]"
-			href={ROUTES.arsenal('nuclei')}
-		>
+		<p class="text-2xs text-muted-foreground">No templates uploaded yet.</p>
+		<Button variant="link" size="sm" class="h-auto px-0 text-2xs" href={ROUTES.arsenal('nuclei')}>
 			Upload one in the Tools Arsenal
 		</Button>
 	</div>
@@ -60,7 +55,7 @@
 			emptyText="No uploaded templates match."
 		/>
 		{#if value.length}
-			<Badge variant="secondary" class="text-[10px] font-normal">
+			<Badge variant="secondary" class="text-2xs font-normal">
 				{value.length} selected, always run
 			</Badge>
 		{/if}

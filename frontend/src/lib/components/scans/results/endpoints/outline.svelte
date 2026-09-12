@@ -390,7 +390,7 @@
 	</ScrollArea>
 
 	{#if tree?.truncated}
-		<p class="border-b px-4 py-2 text-[11px] text-muted-foreground">
+		<p class="border-b px-4 py-2 text-2xs text-muted-foreground">
 			The tree stops at {tree.total_nodes.toLocaleString()} folders. Narrow the search to see the rest.
 		</p>
 	{/if}

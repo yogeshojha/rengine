@@ -73,7 +73,7 @@
 				>
 					{context.name}
 				</button>
-				<Badge variant={context.auth_type === 'none' ? 'outline' : 'secondary'} class="text-[10px]">
+				<Badge variant={context.auth_type === 'none' ? 'outline' : 'secondary'} class="text-2xs">
 					{authBadgeLabel(context)}
 				</Badge>
 			</div>
@@ -119,7 +119,7 @@
 	<Separator class="mt-3" />
 
 	<div class="flex items-center justify-between gap-3 px-4 py-2">
-		<span class="flex min-w-0 items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+		<span class="flex min-w-0 items-center gap-1.5 truncate text-2xs text-muted-foreground">
 			{#if context.usage?.schedules}
 				<CalendarClock size={12} class="shrink-0" />
 				{context.usage.schedules} schedule{context.usage.schedules === 1 ? '' : 's'}

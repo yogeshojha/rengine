@@ -218,7 +218,7 @@
 						{/if}
 					</span>
 					<span
-						class="shrink-0 pt-0.5 font-mono text-[11px] text-muted-foreground/60 group-hover:hidden group-focus-visible:hidden"
+						class="shrink-0 pt-0.5 font-mono text-2xs text-muted-foreground/60 group-hover:hidden group-focus-visible:hidden"
 						>{String(i + 1).padStart(2, '0')}</span
 					>
 					<ArrowUpRight

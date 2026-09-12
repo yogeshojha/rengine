@@ -46,7 +46,7 @@
 			<span class="font-mono font-medium">{group.ip}</span>
 			<span class="text-muted-foreground">{group.is_alive ? 'responding' : 'no response'}</span>
 			{#if group.is_cdn}
-				<Badge variant="info" class="ml-auto px-1 text-[9px] font-normal">
+				<Badge variant="info" class="ml-auto px-1 text-2xs font-normal">
 					<TechIcon name={group.cdn_name ?? ''} class="size-2.5" />
 					{group.cdn_name ?? 'CDN'}
 				</Badge>
@@ -69,7 +69,7 @@
 				{#each group.ports.slice(0, MAX_PORTS) as p (p.id)}
 					<Badge
 						variant="outline"
-						class="px-1 font-mono text-[10px] font-normal {isSensitivePort(p.number)
+						class="px-1 font-mono text-2xs font-normal {isSensitivePort(p.number)
 							? 'text-warning'
 							: ''}"
 					>
@@ -77,7 +77,7 @@
 					</Badge>
 				{/each}
 				{#if group.ports.length > MAX_PORTS}
-					<Badge variant="outline" class="px-1 text-[10px] font-normal text-muted-foreground">
+					<Badge variant="outline" class="px-1 text-2xs font-normal text-muted-foreground">
 						+{group.ports.length - MAX_PORTS}
 					</Badge>
 				{/if}
@@ -85,7 +85,7 @@
 		{/if}
 		{#if group.hosts.length}
 			<div class="flex flex-col gap-0.5">
-				<span class="text-[10px] tracking-wide text-muted-foreground uppercase">
+				<span class="text-2xs tracking-wide text-muted-foreground uppercase">
 					{group.host_count}
 					{group.host_count === 1 ? 'host' : 'hosts'}
 				</span>

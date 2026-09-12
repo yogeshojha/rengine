@@ -147,7 +147,7 @@
 								<div class="flex items-baseline gap-2">
 									<span class="text-sm font-medium">{row.label}</span>
 									{#if row.tool}
-										<span class="font-mono text-[10px] text-muted-foreground">{row.tool}</span>
+										<span class="font-mono text-2xs text-muted-foreground">{row.tool}</span>
 									{/if}
 									<span
 										class="ml-auto text-xs {row.status === 'failed'
@@ -170,10 +170,10 @@
 									{/each}
 								</dl>
 								{#if row.cap_reason}
-									<p class="mt-1 text-[11px] text-muted-foreground">{row.cap_reason}</p>
+									<p class="mt-1 text-2xs text-muted-foreground">{row.cap_reason}</p>
 								{/if}
 								{#if row.error}
-									<p class="mt-1 text-[11px] text-destructive">{row.error}</p>
+									<p class="mt-1 text-2xs text-destructive">{row.error}</p>
 								{/if}
 							</div>
 						{/each}

@@ -250,11 +250,11 @@
 					</Popover.Root>
 
 					{#if apiKey.is_enabled}
-						<Badge variant="secondary" class="h-5 text-[10px] px-1.5 shrink-0">Active</Badge>
+						<Badge variant="secondary" class="h-5 text-2xs px-1.5 shrink-0">Active</Badge>
 					{:else}
 						<Badge
 							variant="secondary"
-							class="h-5 text-[10px] px-1.5 bg-muted text-muted-foreground border-0 shrink-0"
+							class="h-5 text-2xs px-1.5 bg-muted text-muted-foreground border-0 shrink-0"
 						>
 							Disabled
 						</Badge>

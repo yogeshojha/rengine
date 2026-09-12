@@ -37,17 +37,17 @@
 			{#if row.severity}
 				<SeverityMark severity={row.severity} />
 			{/if}
-			<span class="min-w-0 font-mono text-[13px] break-all">{row.title}</span>
+			<span class="min-w-0 font-mono text-sm break-all">{row.title}</span>
 			{#if row.is_kev}
 				<span
-					class="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/30 bg-destructive/10 px-1.5 text-[10px] font-medium text-destructive"
+					class="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/30 bg-destructive/10 px-1.5 text-2xs font-medium text-destructive"
 				>
 					<Flame class="size-2.5" /> KEV
 				</span>
 			{/if}
 			{#if row.sensitive}
 				<span
-					class="shrink-0 rounded border border-warning/30 bg-warning/10 px-1.5 text-[10px] font-medium text-warning"
+					class="shrink-0 rounded border border-warning/30 bg-warning/10 px-1.5 text-2xs font-medium text-warning"
 				>
 					sensitive
 				</span>
@@ -55,7 +55,7 @@
 
 			<span
 				class={cn(
-					'ml-auto flex shrink-0 items-center gap-1.5 text-[11px] font-medium',
+					'ml-auto flex shrink-0 items-center gap-1.5 text-2xs font-medium',
 					SIGNAL_TONE_CLASS[signal.tone]
 				)}
 			>
@@ -64,7 +64,7 @@
 			</span>
 		</span>
 
-		<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+		<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs">
 			{#if showDimension && spec}
 				<span class="inline-flex shrink-0 items-center gap-1 text-muted-foreground">
 					<spec.icon class="size-3" />
@@ -78,7 +78,7 @@
 		</span>
 
 		{#if fields.length}
-			<span class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px]">
+			<span class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-2xs">
 				{#each fields as f (f.field)}
 					<span class="inline-flex items-center gap-1">
 						<span class="text-muted-foreground">{f.label}</span>

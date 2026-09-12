@@ -95,7 +95,7 @@
 				>
 					{engine.name}
 				</button>
-				<Badge variant={INTENSITY_VARIANT[engine.intensity] ?? 'secondary'} class="text-[10px]">
+				<Badge variant={INTENSITY_VARIANT[engine.intensity] ?? 'secondary'} class="text-2xs">
 					{INTENSITY_LABELS[engine.intensity] ?? engine.intensity}
 				</Badge>
 			</div>
@@ -165,7 +165,7 @@
 	<Separator class="mt-4" />
 
 	<div class="flex items-center justify-between gap-3 px-4 py-2">
-		<span class="flex min-w-0 items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+		<span class="flex min-w-0 items-center gap-1.5 truncate text-2xs text-muted-foreground">
 			{#if engine.usage?.schedules}
 				<CalendarClock size={12} class="shrink-0" />
 				{engine.usage.schedules} schedule{engine.usage.schedules === 1 ? '' : 's'}

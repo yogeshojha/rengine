@@ -17,7 +17,7 @@
 	<div class="flex flex-col gap-0.5 py-2.5 pr-3">
 		<span class="text-xs font-medium {mono ? 'font-mono' : ''}">{label}</span>
 		{#if sub}
-			<span class="text-[11px] text-muted-foreground">{sub}</span>
+			<span class="text-2xs text-muted-foreground">{sub}</span>
 		{/if}
 	</div>
 	<div class="flex min-w-0 flex-col divide-y divide-border/60">

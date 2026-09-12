@@ -50,7 +50,7 @@
 		onclick={stop}
 		onkeydown={stop}
 		class={cn(
-			'inline-flex h-5 shrink-0 cursor-pointer items-center gap-0.5 rounded-sm border border-border px-1 text-[10px] text-muted-foreground tabular-nums hover:bg-accent hover:text-foreground',
+			'inline-flex h-5 shrink-0 cursor-pointer items-center gap-0.5 rounded-sm border border-border px-1 text-2xs text-muted-foreground tabular-nums hover:bg-accent hover:text-foreground',
 			className
 		)}
 		aria-label={title}
@@ -101,7 +101,7 @@
 						{/each}
 					</ul>
 					{#if hosts.length < count}
-						<p class="px-2 pt-2 pb-1 text-[11px] text-muted-foreground">
+						<p class="px-2 pt-2 pb-1 text-2xs text-muted-foreground">
 							Showing {hosts.length} of {count}. Use Filter for the full list.
 						</p>
 					{/if}

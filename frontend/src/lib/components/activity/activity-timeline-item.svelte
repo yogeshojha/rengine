@@ -70,10 +70,10 @@
 
 {#snippet meta(isNew: boolean)}
 	<div class="mt-0.5 flex shrink-0 items-center gap-1.5">
-		<span class="font-mono text-[10px] tabular-nums text-muted-foreground">{timeAgo}</span>
+		<span class="font-mono text-2xs tabular-nums text-muted-foreground">{timeAgo}</span>
 		{#if isNew}
 			<span
-				class="new-badge inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold uppercase tracking-wide text-info"
+				class="new-badge inline-flex h-4 items-center rounded px-1 text-2xs font-semibold uppercase tracking-wide text-info"
 			>
 				new
 			</span>
@@ -95,15 +95,14 @@
 				>
 					<div class="flex items-start justify-between gap-3">
 						<div class="min-w-0 flex-1">
-							<span class="line-clamp-1 text-[12px] leading-tight text-foreground"
-								>{cluster.label}</span
+							<span class="line-clamp-1 text-xs leading-tight text-foreground">{cluster.label}</span
 							>
 							<div class="mt-0.5 flex items-center gap-1.5">
-								<span class="text-[10px] text-muted-foreground"
+								<span class="text-2xs text-muted-foreground"
 									>{getCategoryLabel(primary.event_type)}</span
 								>
 								<span class="text-muted-foreground/40">·</span>
-								<span class="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+								<span class="inline-flex items-center gap-0.5 text-2xs text-muted-foreground">
 									{cluster.items.length} events
 									<ChevronRight
 										class="h-2.5 w-2.5 transition-transform duration-150 {expanded
@@ -130,9 +129,9 @@
 								<span class="mt-[5px] h-1 w-1 shrink-0 rounded-full {nodeTint[item.level] ?? ''}"
 								></span>
 								<div class="min-w-0 flex-1">
-									<p class="text-[11px] leading-snug text-foreground/80">{item.title}</p>
+									<p class="text-2xs leading-snug text-foreground/80">{item.title}</p>
 									{#if item.description}
-										<p class="text-[10px] leading-snug text-muted-foreground">{item.description}</p>
+										<p class="text-2xs leading-snug text-muted-foreground">{item.description}</p>
 									{/if}
 								</div>
 								{#if item.target_id}
@@ -155,11 +154,10 @@
 				>
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center gap-1.5">
-							<span class="line-clamp-1 text-[12px] leading-tight text-foreground"
-								>{primary.title}</span
+							<span class="line-clamp-1 text-xs leading-tight text-foreground">{primary.title}</span
 							>
 							{#if running}
-								<span class="shrink-0 text-[10px] font-medium uppercase tracking-wide text-info"
+								<span class="shrink-0 text-2xs font-medium uppercase tracking-wide text-info"
 									>running</span
 								>
 							{/if}
@@ -170,11 +168,11 @@
 							{/if}
 						</div>
 						{#if primary.description}
-							<p class="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
+							<p class="mt-0.5 line-clamp-1 text-2xs text-muted-foreground">
 								{primary.description}
 							</p>
 						{:else}
-							<p class="mt-0.5 text-[10px] text-muted-foreground">
+							<p class="mt-0.5 text-2xs text-muted-foreground">
 								{getCategoryLabel(primary.event_type)}
 							</p>
 						{/if}

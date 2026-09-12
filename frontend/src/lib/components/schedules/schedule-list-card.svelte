@@ -48,8 +48,8 @@
 			<Badge
 				variant={isPaused ? 'outline' : 'secondary'}
 				class={isPaused
-					? 'border-warning/40 bg-warning/10 text-[10px] font-semibold text-warning'
-					: 'text-[10px] font-semibold'}
+					? 'border-warning/40 bg-warning/10 text-2xs font-semibold text-warning'
+					: 'text-2xs font-semibold'}
 			>
 				{SCHEDULE_STATUS_LABELS[schedule.status]}
 			</Badge>
@@ -107,7 +107,7 @@
 				{#snippet child(props)}
 					<span
 						{...props}
-						class="shrink-0 rounded border border-warning/30 px-1 text-[10px] font-medium text-warning"
+						class="shrink-0 rounded border border-warning/30 px-1 text-2xs font-medium text-warning"
 					>
 						tz changed
 					</span>
@@ -119,7 +119,7 @@
 	<div class="mb-3 flex flex-wrap items-center gap-1.5">
 		<Badge
 			variant="secondary"
-			class="rounded-sm border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+			class="rounded-sm border border-border bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground"
 		>
 			{schedule.targets.length || schedule.target_ids.length} target{(schedule.targets.length ||
 				schedule.target_ids.length) === 1
@@ -128,14 +128,14 @@
 		</Badge>
 		<Badge
 			variant="secondary"
-			class="rounded-sm border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+			class="rounded-sm border border-border bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground"
 		>
 			{schedule.engine_name}
 		</Badge>
 		{#if schedule.context_name}
 			<Badge
 				variant="secondary"
-				class="rounded-sm border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+				class="rounded-sm border border-border bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground"
 			>
 				{schedule.context_name}
 			</Badge>
@@ -143,13 +143,13 @@
 	</div>
 
 	{#if schedule.last_error}
-		<p class="mb-2 truncate text-[11px] text-destructive" title={schedule.last_error}>
+		<p class="mb-2 truncate text-2xs text-destructive" title={schedule.last_error}>
 			Last run had errors: {schedule.last_error}
 		</p>
 	{/if}
 
 	<div
-		class="mt-auto flex items-center justify-between border-t border-border pt-2.5 text-[11px] text-muted-foreground"
+		class="mt-auto flex items-center justify-between border-t border-border pt-2.5 text-2xs text-muted-foreground"
 	>
 		<span>
 			{#if isCompleted}

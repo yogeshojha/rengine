@@ -35,7 +35,7 @@
 	let { connector, projectId }: { connector: Connector; projectId: string } = $props();
 
 	const HEAD =
-		'px-4 py-2 text-left text-[10px] font-semibold tracking-wider text-muted-foreground uppercase whitespace-nowrap';
+		'px-4 py-2 text-left text-2xs font-semibold tracking-wider text-muted-foreground uppercase whitespace-nowrap';
 
 	let stateFilter = $state<string>('new');
 	let host = $state<string>('');
@@ -281,7 +281,7 @@
 							</span>
 						</td>
 						<td
-							class="text-muted-foreground px-4 py-2.5 align-top font-mono text-[11px] leading-5 whitespace-nowrap"
+							class="text-muted-foreground px-4 py-2.5 align-top font-mono text-2xs leading-5 whitespace-nowrap"
 						>
 							{row.methods.join(' ') || 'GET'}
 						</td>
@@ -311,14 +311,14 @@
 									{#each row.notices as notice (notice)}
 										<Hint text={NOTICE_HELP[notice] ?? ''}>
 											{#snippet child(props)}
-												<span {...props} class="text-[11px] {noticeTone(notice)}">
+												<span {...props} class="text-2xs {noticeTone(notice)}">
 													{NOTICE_LABELS[notice] ?? notice}
 												</span>
 											{/snippet}
 										</Hint>
 									{/each}
 									{#if row.title}
-										<span class="text-muted-foreground/70 min-w-0 truncate text-[11px]"
+										<span class="text-muted-foreground/70 min-w-0 truncate text-2xs"
 											>{row.title}</span
 										>
 									{/if}
@@ -329,16 +329,13 @@
 							{#if row.param_count > 0}
 								<Hint text={row.params.join(', ')}>
 									{#snippet child(props)}
-										<span
-											{...props}
-											class="text-muted-foreground text-[11px] leading-5 tabular-nums"
-										>
+										<span {...props} class="text-muted-foreground text-2xs leading-5 tabular-nums">
 											{row.param_count}
 										</span>
 									{/snippet}
 								</Hint>
 							{:else}
-								<span class="text-muted-foreground/40 text-[11px] leading-5">—</span>
+								<span class="text-muted-foreground/40 text-2xs leading-5">—</span>
 							{/if}
 						</td>
 						<td
@@ -347,7 +344,7 @@
 							)}">{row.status_code ?? '—'}</td
 						>
 						<td
-							class="text-muted-foreground px-4 py-2.5 text-right align-top text-[11px] leading-5 whitespace-nowrap"
+							class="text-muted-foreground px-4 py-2.5 text-right align-top text-2xs leading-5 whitespace-nowrap"
 							>{relativeTime(row.last_seen_at)}</td
 						>
 					</tr>

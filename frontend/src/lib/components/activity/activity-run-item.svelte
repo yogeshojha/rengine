@@ -99,17 +99,17 @@
 				<div class="min-w-0 flex-1">
 					<div class="flex min-w-0 items-center gap-1.5">
 						<span
-							class="truncate text-[12px] leading-tight text-foreground {heading && !inGroup
+							class="truncate text-xs leading-tight text-foreground {heading && !inGroup
 								? 'font-mono'
 								: ''}"
 						>
 							{heading ?? 'Scan'}
 						</span>
-						<Badge variant={STATUS_VARIANT[status]} class="h-4 shrink-0 px-1.5 text-[9px]">
+						<Badge variant={STATUS_VARIANT[status]} class="h-4 shrink-0 px-1.5 text-2xs">
 							{STATUS_LABEL[status]}
 						</Badge>
 					</div>
-					<p class="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
+					<p class="mt-0.5 line-clamp-1 text-2xs text-muted-foreground">
 						{#if run.engine && run.summary && !inGroup}
 							<span>{run.engine}</span>
 							<span class="text-muted-foreground/40"> · </span>
@@ -118,10 +118,10 @@
 					</p>
 				</div>
 				<div class="mt-0.5 flex shrink-0 items-center gap-1.5">
-					<span class="font-mono text-[10px] text-muted-foreground tabular-nums">{timeAgo}</span>
+					<span class="font-mono text-2xs text-muted-foreground tabular-nums">{timeAgo}</span>
 					{#if isNew}
 						<span
-							class="new-badge inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold tracking-wide text-info uppercase"
+							class="new-badge inline-flex h-4 items-center rounded px-1 text-2xs font-semibold tracking-wide text-info uppercase"
 						>
 							new
 						</span>
@@ -138,7 +138,7 @@
 		{#if expanded}
 			<div class="mt-1 border-l border-border pl-2.5">
 				{#if run.steps.length === 0}
-					<p class="px-1 py-[3px] text-[10px] text-muted-foreground">No stage events yet.</p>
+					<p class="px-1 py-[3px] text-2xs text-muted-foreground">No stage events yet.</p>
 				{/if}
 				{#each run.steps as step (step.id)}
 					{@const StepIcon = stepIcon(step)}
@@ -162,8 +162,8 @@
 						<div class="min-w-0 flex-1">
 							<p
 								class="leading-snug {stage
-									? 'text-[11px] text-foreground/85'
-									: 'text-[10px] text-muted-foreground'}"
+									? 'text-2xs text-foreground/85'
+									: 'text-2xs text-muted-foreground'}"
 							>
 								{step.title}
 								{#if step.description}
@@ -181,7 +181,7 @@
 						<button
 							type="button"
 							onclick={open}
-							class="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/10"
+							class="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-2xs font-medium text-primary hover:bg-primary/10"
 						>
 							Open scan
 							<ArrowUpRight class="h-3 w-3" />
@@ -194,7 +194,7 @@
 								e.stopPropagation();
 								onRescan(cluster.targetId!);
 							}}
-							class="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+							class="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-2xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
 						>
 							<RotateCw class="h-3 w-3" />
 							Rescan

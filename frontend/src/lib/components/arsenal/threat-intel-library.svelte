@@ -50,65 +50,8 @@
 
 	let coverage = $derived(status?.coverage);
 	let feeds = $derived(status?.feeds ?? []);
-	let changes = $derived(status?.recent_changes ?? []);
 
-	let bands = $derived<Segment[]>(
-		BAND_ORDER.map((key) => ({
-			key,
-			label: BAND_LABELS[key],
-			count: coverage?.bands?.[key] ?? 0,
-			color: BAND_FILL[key],
-			filter: ''
-		})).filter((s) => s.count > 0)
-	);
-
-	let scored = $derived(coverage?.scored ?? 0);
 	let autoSync = $derived(status?.auto_sync ?? true);
-
-	let tiles = $derived(
-		[
-			{
-				kind: ExploitSignal.KEV,
-				icon: Flame,
-				count: coverage?.kev ?? 0,
-				label: 'Known exploited',
-				detail: 'CISA confirms exploitation in the wild',
-				tone: 'critical'
-			},
-			{
-				kind: `${ExploitSignal.RANSOM_PATH},${ExploitSignal.RANSOMWARE}`,
-				icon: Biohazard,
-				count: coverage?.ransomware ?? 0,
-				label: 'Used by ransomware',
-				detail: 'Recorded in known ransomware campaigns',
-				tone: 'critical'
-			},
-			{
-				kind: ExploitSignal.OVERDUE,
-				icon: CalendarX,
-				count: coverage?.overdue ?? 0,
-				label: 'Past the CISA deadline',
-				detail: 'The federal remediation date has passed',
-				tone: 'warning'
-			},
-			{
-				kind: ExploitSignal.WEAPONISED,
-				icon: Swords,
-				count: coverage?.weaponised ?? 0,
-				label: 'Public exploit available',
-				detail: 'Working exploit code is published',
-				tone: 'warning'
-			},
-			{
-				kind: ExploitSignal.UNTESTABLE,
-				icon: EyeOff,
-				count: coverage?.untestable ?? 0,
-				label: 'No check exists',
-				detail: 'No scanner template covers these, so no scan can clear them',
-				tone: 'info'
-			}
-		].filter((t) => t.count > 0)
-	);
 
 	async function load(id: string | null) {
 		try {
@@ -167,31 +110,6 @@
 		const handle = setInterval(() => untrack(() => load(fetchedProjectId)), POLL_MS);
 		return () => clearInterval(handle);
 	});
-
-	let sheetOpen = $state(false);
-	let sheetKind = $state('');
-	let sheetRows = $state<SheetRow[]>([]);
-
-	async function openSignal(kind: string) {
-		sheetKind = kind;
-		sheetRows = [];
-		sheetOpen = true;
-		let findings: SignalFinding[] = [];
-		try {
-			findings = await threatIntelApi.signal(kind, fetchedProjectId ?? undefined);
-		} catch {
-			findings = [];
-		}
-		sheetRows = findings.map((f) => ({
-			key: f.vulnerability_id,
-			primary: f.matched_at || f.host || f.template_name,
-			secondary: `${f.cve ? f.cve + ' · ' : ''}${f.template_name}`,
-			meta: `${f.exploit_score}`,
-			href: ROUTES.scanTab(f.scan_id, 'vulnerabilities', { q: `cve:${f.cve}` }),
-			tone: f.exploit_score >= 80 ? 'bad' : f.exploit_score >= 50 ? 'warn' : undefined,
-			group: f.target_value ?? undefined
-		}));
-	}
 </script>
 
 {#if loading}
@@ -207,7 +125,7 @@
 	/>
 {:else}
 	<div class="flex flex-col gap-6">
-		<!-- the two feeds -->
+		<!-- feeds -->
 		<Card.Root class="gap-0 py-0">
 			<PanelHead
 				title="Exploitation feeds"
@@ -255,88 +173,6 @@
 			</div>
 		</Card.Root>
 
-		<!-- what the feeds bought you -->
-		{#if coverage && coverage.findings > 0}
-			<Card.Root class="gap-0 py-0">
-				<PanelHead
-					title="Your findings"
-					description="Every finding you already hold, re-scored from the feeds. Nothing was rescanned."
-				/>
-
-				{#if scored > 0}
-					<div class="flex flex-col gap-3 border-b px-5 py-4">
-						<SectionHead
-							title="Likelihood of exploitation"
-							count="{scored} of {coverage.with_cve} scored"
-						/>
-						<CompositionBar
-							segments={bands}
-							total={scored}
-							label="Findings by exploitation likelihood"
-						/>
-					</div>
-				{/if}
-
-				<div class="grid sm:grid-cols-2 sm:divide-x [&>*]:border-b [&>*:last-child]:border-b-0">
-					{#each tiles as tile (tile.kind)}
-						<SignalTile
-							icon={tile.icon}
-							count={tile.count}
-							label={tile.label}
-							detail={tile.detail}
-							tone={tile.tone}
-							onSelect={tile.count > 0 ? () => openSignal(tile.kind) : undefined}
-						/>
-					{/each}
-				</div>
-			</Card.Root>
-		{/if}
-
-		<!-- the change feed -->
-		{#if changes.length}
-			<Card.Root class="gap-0 py-0">
-				<PanelHead
-					title="Recent changes"
-					description="Findings that earned a new exploitation signal, without a new scan."
-				/>
-				<ul class="divide-y">
-					{#each changes.slice(0, 10) as change (change.vulnerability_id + change.change)}
-						{@const Icon = SIGNAL_ICONS[change.change]}
-						<li>
-							<a
-								class="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-accent/40"
-								href={ROUTES.scanTab(change.scan_id, 'vulnerabilities', {
-									q: `cve:${change.cve}`
-								})}
-							>
-								<span class="flex h-5 shrink-0 items-center text-muted-foreground">
-									{#if Icon}<Icon class="size-3.5" />{/if}
-								</span>
-								<span class="flex min-w-0 flex-1 flex-col gap-0.5">
-									<span class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-										<span class="text-sm leading-5 font-medium">
-											{SIGNAL_LABELS[change.change] ?? change.change}
-										</span>
-										<Badge variant="outline" class="px-1 font-mono text-[10px] font-normal">
-											{change.cve}
-										</Badge>
-									</span>
-									<span class="truncate text-xs text-muted-foreground">
-										{change.template_name}
-										{#if change.target_value}· {change.target_value}{/if}
-									</span>
-								</span>
-								<span class="flex h-5 shrink-0 items-center gap-2 text-xs text-muted-foreground">
-									{#if change.changed_at}{relativeTime(change.changed_at)}{/if}
-									<ArrowUpRight class="size-3.5" />
-								</span>
-							</a>
-						</li>
-					{/each}
-				</ul>
-			</Card.Root>
-		{/if}
-
 		<!-- the provider -->
 		<Card.Root class="gap-0 py-0">
 			<PanelHead
@@ -361,11 +197,4 @@
 			</div>
 		</Card.Root>
 	</div>
-	<SignalSheet
-		open={sheetOpen}
-		onOpenChange={(v) => (sheetOpen = v)}
-		title={SIGNAL_LABELS[sheetKind.split(',')[0]] ?? 'Findings'}
-		description={SIGNAL_HELP[sheetKind.split(',')[0]] ?? ''}
-		rows={sheetRows}
-	/>
 {/if}

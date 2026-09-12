@@ -86,7 +86,7 @@
 									{row.target_value}
 								</a>
 								<span
-									class="shrink-0 text-[11px] leading-5 {row.stale
+									class="shrink-0 text-2xs leading-5 {row.stale
 										? 'text-warning'
 										: 'text-muted-foreground'}"
 								>
@@ -95,7 +95,7 @@
 								{#if row.scan_id}
 									<a
 										href={ROUTES.scan(row.scan_id)}
-										class="shrink-0 text-[11px] leading-5 text-muted-foreground hover:text-foreground hover:underline"
+										class="shrink-0 text-2xs leading-5 text-muted-foreground hover:text-foreground hover:underline"
 									>
 										run
 									</a>
@@ -106,10 +106,10 @@
 
 					{#if uncovered.length}
 						<div class="border-t bg-muted/20 px-3 py-2">
-							<p class="text-[11px] font-medium text-warning">
+							<p class="text-2xs font-medium text-warning">
 								Never scanned for {coverage.noun_plural} ({uncovered.length})
 							</p>
-							<p class="mt-0.5 text-[11px] text-muted-foreground">
+							<p class="mt-0.5 text-2xs text-muted-foreground">
 								These targets are absent from the numbers above, not empty.
 							</p>
 						</div>

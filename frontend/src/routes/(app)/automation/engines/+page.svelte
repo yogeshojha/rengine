@@ -362,14 +362,14 @@
 							</span>
 							<span class="text-xs text-muted-foreground">{preset.description}</span>
 							<StageList {stages} config={preset.stages} variant="inline" max={4} class="mt-auto" />
-							<span class="flex items-center justify-between gap-2 text-[11px]">
+							<span class="flex items-center justify-between gap-2 text-2xs">
 								<span class="text-muted-foreground tabular-nums">
 									{summary.activeStages} of {summary.totalStages} stages
 								</span>
 								<FootprintMeter
 									footprint={summary.footprint}
 									requestsPerSecond={summary.requestsPerSecond}
-									class="text-[11px]"
+									class="text-2xs"
 								/>
 							</span>
 						</button>

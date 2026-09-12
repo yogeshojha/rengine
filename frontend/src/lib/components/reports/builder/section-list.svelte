@@ -80,7 +80,7 @@
 					{#each SECTION_GROUP_ORDER as group (group)}
 						{@const items = reportCatalog.sectionsByGroup(group)}
 						{#if items.length}
-							<DropdownMenu.Label class="text-[11px] uppercase tracking-wide text-muted-foreground">
+							<DropdownMenu.Label class="text-2xs uppercase tracking-wide text-muted-foreground">
 								{reportCatalog.catalog?.groups.find((g) => g.key === group)?.label ?? group}
 							</DropdownMenu.Label>
 							{#each items as item (item.name)}
@@ -117,12 +117,12 @@
 								{entry.title || spec?.title || entry.section}
 							</span>
 							{#if spec?.requires.length}
-								<Badge variant="outline" class="text-[10px]">
+								<Badge variant="outline" class="text-2xs">
 									needs {spec.requires.join(', ').replaceAll('_', ' ')}
 								</Badge>
 							{/if}
 							{#if !spec}
-								<Badge variant="destructive" class="text-[10px]">unknown</Badge>
+								<Badge variant="destructive" class="text-2xs">unknown</Badge>
 							{/if}
 						</div>
 						{#if spec}

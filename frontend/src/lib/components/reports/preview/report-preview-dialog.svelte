@@ -145,7 +145,7 @@
 			<div class="min-w-0 flex-1 space-y-0.5">
 				<Dialog.Title class="truncate text-sm font-medium">{report.title}</Dialog.Title>
 				<Dialog.Description class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-					<Badge variant="outline" class="font-mono text-[10px]">{report.subject}</Badge>
+					<Badge variant="outline" class="font-mono text-2xs">{report.subject}</Badge>
 					<span>{report.template_name}</span>
 					{#if sizes.length}<span>{sizes.length} pages</span>{/if}
 					{#if pdfFile}<span>{formatBytes(pdfFile.bytes)}</span>{/if}

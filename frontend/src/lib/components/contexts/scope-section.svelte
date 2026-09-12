@@ -49,7 +49,7 @@
 	<div class="space-y-1.5">
 		<Label class="text-xs">Excluded subdomain patterns</Label>
 		<p class="text-xs text-muted-foreground">
-			Keyword, wildcard (<code class="text-[11px]">*admin*</code>) or regex matched against every
+			Keyword, wildcard (<code class="text-2xs">*admin*</code>) or regex matched against every
 			discovered subdomain. Use patterns rather than full domain names so the context works across
 			targets. Matching subdomains are recorded, flagged as
 			<span class="text-warning">excluded</span> and skipped by all later stages.
@@ -66,8 +66,8 @@
 		<Label class="text-xs">Excluded paths</Label>
 		<p class="text-xs text-muted-foreground">
 			Path prefixes or regular expressions excluded from crawling and fuzzing, for example
-			<code class="text-[11px]">/admin</code>, <code class="text-[11px]">/static/(?:css|js)/</code>,
-			<code class="text-[11px]">/images/.*\.jpg</code>
+			<code class="text-2xs">/admin</code>, <code class="text-2xs">/static/(?:css|js)/</code>,
+			<code class="text-2xs">/images/.*\.jpg</code>
 		</p>
 		<StringListField
 			items={context.excluded_paths}

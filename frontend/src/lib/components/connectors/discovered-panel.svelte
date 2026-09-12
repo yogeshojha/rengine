@@ -92,23 +92,21 @@
 						<div class="flex flex-wrap items-baseline gap-2">
 							<span class="font-mono text-sm">{row.domain}</span>
 							{#if row.out_of_scope}
-								<span class="text-destructive flex items-center gap-1 text-[11px] font-medium">
+								<span class="text-destructive flex items-center gap-1 text-2xs font-medium">
 									<TriangleAlertIcon class="size-3" />
 									Out of scope for {row.program}
 								</span>
 							{/if}
 							<Hint text={row.reason_detail}>
 								{#snippet child(props)}
-									<span {...props} class="text-muted-foreground text-[11px]"
-										>{row.reason_label}</span
-									>
+									<span {...props} class="text-muted-foreground text-2xs">{row.reason_label}</span>
 								{/snippet}
 							</Hint>
 						</div>
 						<p class="text-muted-foreground truncate font-mono text-xs">
 							{row.hostnames.join(', ')}
 						</p>
-						<p class="text-muted-foreground/70 text-[11px] tabular-nums">
+						<p class="text-muted-foreground/70 text-2xs tabular-nums">
 							{row.hostname_count} host{row.hostname_count === 1 ? '' : 's'} · {row.requests} request{row.requests ===
 							1
 								? ''

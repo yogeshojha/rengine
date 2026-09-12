@@ -147,10 +147,10 @@
 							aria-label="{r.leaf.label}: {r.leaf.value} {WEB.nounPlural}"
 						>
 							{#if inner.w > 72 && inner.h > 30}
-								<span class="truncate font-mono text-[11px] leading-4 font-medium">
+								<span class="truncate font-mono text-2xs leading-4 font-medium">
 									{r.leaf.label}
 								</span>
-								<span class="text-[11px] leading-4 text-muted-foreground tabular-nums">
+								<span class="text-2xs leading-4 text-muted-foreground tabular-nums">
 									{r.leaf.value.toLocaleString()}
 									{#if r.leaf.findings && inner.h > 46}
 										<span class="block" style="color:{edge(r.leaf)}">

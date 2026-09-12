@@ -153,22 +153,22 @@
 					<HighlightText text={node.name} {terms} />
 				</span>
 				{#if node.archive_only}
-					<span class="text-[11px] text-muted-foreground/80 italic">archived</span>
+					<span class="text-2xs text-muted-foreground/80 italic">archived</span>
 				{/if}
 				{#if hostNote}
-					<span class="text-[11px] text-muted-foreground">{hostNote}</span>
+					<span class="text-2xs text-muted-foreground">{hostNote}</span>
 				{/if}
 				{#if hint}
-					<span class="font-mono text-[11px] text-muted-foreground">{hint}</span>
+					<span class="font-mono text-2xs text-muted-foreground">{hint}</span>
 				{/if}
 				{#if reason}
-					<Badge variant={INTEREST_TONE[reason] ?? 'warning'} class="h-4 gap-1 px-1.5 text-[10px]">
+					<Badge variant={INTEREST_TONE[reason] ?? 'warning'} class="h-4 gap-1 px-1.5 text-2xs">
 						{#if SENSITIVE_INTEREST.has(reason)}<ShieldAlert class="size-2.5" />{/if}
 						{INTEREST_LABELS[reason] ?? reason}
 					</Badge>
 				{/if}
 				{#if node.anomaly}
-					<span class="flex items-center gap-1 text-[11px] text-warning">
+					<span class="flex items-center gap-1 text-2xs text-warning">
 						<TriangleAlert class="size-3" />
 						{node.anomaly}
 					</span>

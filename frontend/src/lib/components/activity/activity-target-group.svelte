@@ -72,7 +72,7 @@
 		</span>
 
 		<span
-			class="min-w-0 flex-1 truncate text-[12px] font-medium text-foreground {unscoped
+			class="min-w-0 flex-1 truncate text-xs font-medium text-foreground {unscoped
 				? ''
 				: 'font-mono'}"
 		>
@@ -82,7 +82,7 @@
 		<span class="flex shrink-0 items-center gap-1.5">
 			{#if group.errors > 0}
 				<span
-					class="rounded-full bg-destructive/10 px-1.5 font-mono text-[9px] font-semibold text-destructive tabular-nums"
+					class="rounded-full bg-destructive/10 px-1.5 font-mono text-2xs font-semibold text-destructive tabular-nums"
 				>
 					{group.errors} err
 				</span>
@@ -90,7 +90,7 @@
 			{#if fresh}
 				<span class="size-1.5 rounded-full bg-info"></span>
 			{/if}
-			<span class="font-mono text-[10px] text-muted-foreground tabular-nums">
+			<span class="font-mono text-2xs text-muted-foreground tabular-nums">
 				{collapsed ? `${eventCount} · ${timeAgo}` : timeAgo}
 			</span>
 			{#if group.targetId}

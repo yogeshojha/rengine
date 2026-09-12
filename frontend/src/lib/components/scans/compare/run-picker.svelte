@@ -103,7 +103,7 @@
 				{/each}
 
 				{#if blocked.length}
-					<p class="px-2.5 pt-3 pb-1 text-[11px] text-muted-foreground">Cannot be compared</p>
+					<p class="px-2.5 pt-3 pb-1 text-2xs text-muted-foreground">Cannot be compared</p>
 					{#each blocked as run (run.scan_id)}
 						<div class="flex flex-col gap-0.5 px-2.5 py-2 opacity-60">
 							<span class="text-sm leading-5 font-medium">{run.engine_name}</span>

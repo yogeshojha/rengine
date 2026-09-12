@@ -104,7 +104,7 @@
 
 	{#each groups as entry, i (entry.group)}
 		<div
-			class="flex items-baseline gap-2 border-b bg-muted/30 px-5 py-1.5 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase {i
+			class="flex items-baseline gap-2 border-b bg-muted/30 px-5 py-1.5 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase {i
 				? 'border-t'
 				: ''}"
 		>
@@ -141,10 +141,10 @@
 					</span>
 					<span class="flex shrink-0 items-center gap-1.5">
 						{#if tool.destructive}
-							<Badge variant="destructive" class="text-[10px]">Destructive</Badge>
+							<Badge variant="destructive" class="text-2xs">Destructive</Badge>
 						{/if}
 						{#if !available}
-							<Badge variant="outline" class="border-dashed text-[10px]">Off</Badge>
+							<Badge variant="outline" class="border-dashed text-2xs">Off</Badge>
 						{/if}
 						<CapabilityChips granted={[tool.capability]} />
 					</span>

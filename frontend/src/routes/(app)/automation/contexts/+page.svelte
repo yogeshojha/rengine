@@ -294,7 +294,7 @@
 							/>
 						</span>
 						<span class="text-xs text-muted-foreground">{template.description}</span>
-						<ContextFacets context={draft} variant="inline" class="mt-auto text-[11px]" />
+						<ContextFacets context={draft} variant="inline" class="mt-auto text-2xs" />
 						<span class="sr-only">{line}</span>
 					</button>
 				{/each}

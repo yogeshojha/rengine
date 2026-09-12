@@ -99,30 +99,30 @@
 	{#if sensitive.length || testable.length || endpoint.is_new || gone || endpoint.sources.includes(EndpointSource.ROBOTS)}
 		<div class="flex flex-wrap items-center gap-1 {compact ? '' : 'mt-1'}">
 			{#each sensitive as key (key)}
-				<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-[10px]">
+				<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-2xs">
 					<ShieldAlert class="size-2.5" />
 					{INTEREST_LABELS[key] ?? key}
 				</Badge>
 			{/each}
 			{#each testable as key (key)}
-				<Badge variant="warning" class="h-4 px-1.5 text-[10px]">
+				<Badge variant="warning" class="h-4 px-1.5 text-2xs">
 					{INTEREST_LABELS[key] ?? key}
 				</Badge>
 			{/each}
 			{#if compact && endpoint.is_new}
-				<Badge variant="info" class="h-4 px-1 text-[10px]">New</Badge>
+				<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
 			{/if}
 			{#if endpoint.sources.includes(EndpointSource.ROBOTS)}
 				<Hint text="Listed in robots.txt. Paths the site asks crawlers to skip.">
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
-							<Badge variant="outline" class="h-4 px-1.5 text-[10px] font-normal">robots.txt</Badge>
+							<Badge variant="outline" class="h-4 px-1.5 text-2xs font-normal">robots.txt</Badge>
 						</span>
 					{/snippet}
 				</Hint>
 			{/if}
 			{#if gone}
-				<Badge variant="outline" class="h-4 px-1.5 text-[10px] font-normal text-muted-foreground">
+				<Badge variant="outline" class="h-4 px-1.5 text-2xs font-normal text-muted-foreground">
 					Not found this scan
 				</Badge>
 			{/if}
@@ -166,10 +166,10 @@
 						<HighlightText text={leaf} {terms} />
 					</span>
 					{#if isIndex}
-						<span class="text-[11px] text-muted-foreground italic">index</span>
+						<span class="text-2xs text-muted-foreground italic">index</span>
 					{/if}
 					{#if origin}
-						<span class="font-mono text-[11px] text-muted-foreground">{origin}</span>
+						<span class="font-mono text-2xs text-muted-foreground">{origin}</span>
 					{/if}
 					{#if endpoint.param_count > 0}
 						<span class="font-mono text-xs text-primary">?{endpoint.params.join('&')}</span>
@@ -200,7 +200,7 @@
 					</span>
 				{/if}
 				{#if endpoint.is_new}
-					<Badge variant="info" class="h-4 px-1 text-[10px]">New</Badge>
+					<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
 				{/if}
 			</div>
 			{@render badges(false)}
@@ -233,7 +233,7 @@
 						{#each endpoint.params.slice(0, 3) as name (name)}
 							<button
 								type="button"
-								class="rounded bg-muted px-1 font-mono text-[10px] hover:bg-muted/70"
+								class="rounded bg-muted px-1 font-mono text-2xs hover:bg-muted/70"
 								onclick={(e) => {
 									e.stopPropagation();
 									onFilter?.(`param:${name}`);
@@ -243,7 +243,7 @@
 							</button>
 						{/each}
 						{#if endpoint.params.length > 3}
-							<span class="text-[10px] text-muted-foreground">
+							<span class="text-2xs text-muted-foreground">
 								+{endpoint.params.length - 3}
 							</span>
 						{/if}
@@ -255,7 +255,7 @@
 								: ''} different parameter values."
 						>
 							{#snippet child(props)}
-								<span {...props} class="mt-0.5 block text-[10px] text-muted-foreground">
+								<span {...props} class="mt-0.5 block text-2xs text-muted-foreground">
 									{endpoint.variants}{endpoint.more_variants ? '+' : ''} value sets
 								</span>
 							{/snippet}

@@ -51,17 +51,17 @@
 <section class="space-y-4">
 	<div class="flex items-center gap-2 border-b pb-1.5">
 		<Icon class="size-3.5 shrink-0 text-muted-foreground" />
-		<h3 class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+		<h3 class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
 			{run.title}
 		</h3>
 		<span class="flex-1"></span>
 		{#if pending}
-			<span class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+			<span class="flex items-center gap-1.5 text-2xs text-muted-foreground">
 				<Spinner class="size-3" />
 				{run.status === 'queued' ? 'Queued' : 'Running'}
 			</span>
 		{:else}
-			{#if took}<span class="font-mono text-[11px] text-muted-foreground">{took}</span>{/if}
+			{#if took}<span class="font-mono text-2xs text-muted-foreground">{took}</span>{/if}
 			{#if run.raw}
 				<CopyButton value={JSON.stringify(run.raw, null, 2)} class="size-5" />
 			{/if}
@@ -76,7 +76,7 @@
 		</div>
 	{:else if run.status === 'failed'}
 		<div
-			class="flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-[13px] leading-5 text-destructive"
+			class="flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-sm leading-5 text-destructive"
 		>
 			<span class="flex h-5 shrink-0 items-center"><CircleX class="size-4" /></span>
 			<span class="min-w-0 break-words">{run.error}</span>

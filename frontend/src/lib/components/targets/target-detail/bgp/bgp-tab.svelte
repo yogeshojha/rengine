@@ -208,7 +208,7 @@
 	{onRefresh}
 >
 	{#snippet bar()}
-		<span class="text-[13px]">
+		<span class="text-sm">
 			<span class="font-medium">Routing</span>
 			<span class="text-muted-foreground"> · {headline}</span>
 		</span>
@@ -220,12 +220,12 @@
 				<div class="group {ROW}">
 					<span class="pt-px text-xs text-muted-foreground">{f.label}</span>
 					<span
-						class="flex min-w-0 flex-col text-[13px] leading-5 {f.tone === 'warn'
+						class="flex min-w-0 flex-col text-sm leading-5 {f.tone === 'warn'
 							? 'text-warning'
 							: ''}"
 					>
 						<span class="flex min-w-0 items-center gap-1.5">
-							<span class="min-w-0 wrap-anywhere {f.mono ? 'font-mono text-[12.5px]' : ''}">
+							<span class="min-w-0 wrap-anywhere {f.mono ? 'font-mono text-xs' : ''}">
 								{f.value}
 							</span>
 							{#if f.copy}
@@ -249,13 +249,13 @@
 						{#each FAMILIES as f (f)}
 							<button
 								type="button"
-								class="rounded-md px-2 py-1 text-[13px] {prefixFamily === f
+								class="rounded-md px-2 py-1 text-sm {prefixFamily === f
 									? 'bg-muted font-medium'
 									: 'text-muted-foreground hover:text-foreground'}"
 								onclick={() => (prefixFamily = f)}
 							>
 								{familyLabel(f)}
-								<span class="ml-1 text-[11px] tabular-nums">{familyCount(f).toLocaleString()}</span>
+								<span class="ml-1 text-2xs tabular-nums">{familyCount(f).toLocaleString()}</span>
 							</button>
 						{/each}
 					</div>
@@ -285,8 +285,8 @@
 					<p class="py-6 text-center text-sm text-muted-foreground">No prefix matches.</p>
 				{:else}
 					{#each prefixRows.slice(0, prefixShown) as p (p.prefix)}
-						<div class="group flex items-center gap-3 py-1.5 text-[13px]">
-							<code class="min-w-0 flex-1 font-mono text-[12.5px]">{p.prefix}</code>
+						<div class="group flex items-center gap-3 py-1.5 text-sm">
+							<code class="min-w-0 flex-1 font-mono text-xs">{p.prefix}</code>
 							<span
 								class="hidden w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums sm:block"
 							>
@@ -342,7 +342,7 @@
 						{@const shown = open ? g.items : g.items.slice(0, PEER_PAGE)}
 						{@const more = g.items.length - shown.length}
 						<div class="flex min-w-0 flex-col gap-2">
-							<div class="flex items-baseline justify-between gap-3 text-[13px]">
+							<div class="flex items-baseline justify-between gap-3 text-sm">
 								<span class="font-medium">{g.label}</span>
 								<span class="text-xs text-muted-foreground tabular-nums">
 									{peerQuery.trim() && g.items.length !== g.total
@@ -388,8 +388,8 @@
 		{#if relatedPrefixes.length}
 			<RecordGroup label="Related prefixes" mono={false} sub="{relatedPrefixes.length} overlapping">
 				{#each relatedPrefixes as r (`${r.related_prefix}-${r.relationship}`)}
-					<div class="group flex items-center gap-3 py-1.5 text-[13px]">
-						<code class="min-w-0 flex-1 font-mono text-[12.5px]">{r.related_prefix}</code>
+					<div class="group flex items-center gap-3 py-1.5 text-sm">
+						<code class="min-w-0 flex-1 font-mono text-xs">{r.related_prefix}</code>
 						<span class="shrink-0 text-xs text-muted-foreground">
 							{PREFIX_RELATIONSHIP_LABELS[r.relationship] ?? r.relationship}
 						</span>
@@ -409,12 +409,11 @@
 		{#if abuse.length}
 			<RecordGroup label="Abuse contacts" mono={false} sub="from the registry">
 				{#each abuse as a (`${a.resource}-${a.abuse_email}`)}
-					<div class="group flex items-center gap-3 py-1.5 text-[13px]">
+					<div class="group flex items-center gap-3 py-1.5 text-sm">
 						<code class="w-36 shrink-0 truncate font-mono text-xs text-muted-foreground">
 							{a.resource}
 						</code>
-						<code class="min-w-0 flex-1 font-mono text-[12.5px] wrap-anywhere">{a.abuse_email}</code
-						>
+						<code class="min-w-0 flex-1 font-mono text-xs wrap-anywhere">{a.abuse_email}</code>
 						{#if a.rir}<span class="shrink-0 text-xs text-muted-foreground uppercase">{a.rir}</span
 							>{/if}
 						<span

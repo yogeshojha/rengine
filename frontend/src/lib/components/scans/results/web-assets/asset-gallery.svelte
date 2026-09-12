@@ -62,13 +62,13 @@
 						class="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground"
 					>
 						<ImageOff class="size-5" />
-						<span class="text-[10px]">No screenshot</span>
+						<span class="text-2xs">No screenshot</span>
 					</div>
 				{/if}
 				<div class="absolute top-1.5 left-1.5 flex items-center gap-1">
 					<Badge
 						variant="outline"
-						class="gap-1 border-border/60 bg-background/90 px-1.5 font-mono text-[10px] backdrop-blur"
+						class="gap-1 border-border/60 bg-background/90 px-1.5 font-mono text-2xs backdrop-blur"
 					>
 						<span class="size-1.5 rounded-full {STATUS_DOT[cls]}"></span>
 						{s.http_status ?? '—'}
@@ -76,7 +76,7 @@
 					{#if cert === 'expired' || cert === 'self-signed'}
 						<Badge
 							variant="outline"
-							class="gap-1 border-border/60 bg-background/90 px-1.5 text-[10px] text-destructive backdrop-blur"
+							class="gap-1 border-border/60 bg-background/90 px-1.5 text-2xs text-destructive backdrop-blur"
 						>
 							<Lock class="size-2.5" />
 							{cert}
@@ -98,25 +98,25 @@
 			</div>
 			<div class="flex flex-col gap-1 p-2.5">
 				<span class="truncate font-mono text-xs font-medium">{s.name}</span>
-				<span class="truncate text-[11px] text-muted-foreground">
+				<span class="truncate text-2xs text-muted-foreground">
 					{s.page_title ?? (s.http_status ? 'No page title' : 'No HTTP service')}
 				</span>
 				{#if s.tech.length || s.is_cdn}
 					<div class="mt-0.5 flex flex-wrap gap-1">
 						{#if s.is_cdn}
-							<Badge variant="info" class="px-1 text-[9px] font-normal">
+							<Badge variant="info" class="px-1 text-2xs font-normal">
 								<TechIcon name={s.cdn_name ?? ''} class="size-2.5" />
 								{s.cdn_name ?? 'CDN'}
 							</Badge>
 						{/if}
 						{#each s.tech.slice(0, MAX_TECH) as t (t)}
-							<Badge variant="outline" class="px-1 text-[9px] font-normal">
+							<Badge variant="outline" class="px-1 text-2xs font-normal">
 								<TechIcon name={t} class="size-2.5" />
 								{t}
 							</Badge>
 						{/each}
 						{#if s.tech.length > MAX_TECH}
-							<Badge variant="outline" class="px-1 text-[9px] font-normal text-muted-foreground">
+							<Badge variant="outline" class="px-1 text-2xs font-normal text-muted-foreground">
 								+{s.tech.length - MAX_TECH}
 							</Badge>
 						{/if}

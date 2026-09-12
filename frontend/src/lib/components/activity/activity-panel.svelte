@@ -194,17 +194,17 @@
 >
 	<div class="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5">
 		<div class="flex min-w-0 items-center gap-2">
-			<span class="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+			<span class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 				Activity
 			</span>
 
-			<Badge variant={connection.variant} class="h-5 gap-1 px-1.5 text-[10px]">
+			<Badge variant={connection.variant} class="h-5 gap-1 px-1.5 text-2xs">
 				<span class="size-1.5 rounded-full {connection.dot}"></span>
 				{connection.label}
 			</Badge>
 
 			{#if liveScans.hasLive}
-				<Badge variant="info" class="h-5 gap-1 px-1.5 text-[10px] tabular-nums">
+				<Badge variant="info" class="h-5 gap-1 px-1.5 text-2xs tabular-nums">
 					<Spinner class="size-2.5" />
 					{liveScans.count} running
 				</Badge>
@@ -216,8 +216,8 @@
 					onValueChange={(v) => activityFeed.setScopeMode(v as 'current' | 'project')}
 				>
 					<Tabs.List class="h-6">
-						<Tabs.Trigger value="current" class="h-4 px-2 text-[10px]">Current</Tabs.Trigger>
-						<Tabs.Trigger value="project" class="h-4 px-2 text-[10px]">Project</Tabs.Trigger>
+						<Tabs.Trigger value="current" class="h-4 px-2 text-2xs">Current</Tabs.Trigger>
+						<Tabs.Trigger value="project" class="h-4 px-2 text-2xs">Project</Tabs.Trigger>
 					</Tabs.List>
 				</Tabs.Root>
 			{/if}
@@ -267,7 +267,7 @@
 	{#if liveScans.hasLive}
 		<Collapsible.Root bind:open={runningOpen} class="shrink-0 px-3 pb-2">
 			<Collapsible.Trigger
-				class="flex w-full items-center justify-between rounded-md px-1 py-1 text-[10px] font-semibold tracking-[0.08em] text-info uppercase transition-colors hover:bg-info/10"
+				class="flex w-full items-center justify-between rounded-md px-1 py-1 text-2xs font-semibold tracking-[0.08em] text-info uppercase transition-colors hover:bg-info/10"
 			>
 				<span class="flex items-center gap-1.5">
 					<span class="relative flex size-1.5">
@@ -301,7 +301,7 @@
 					{#if overflow > 0}
 						<a
 							href={ROUTES.scans}
-							class="inline-flex items-center gap-1 px-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+							class="inline-flex items-center gap-1 px-1 text-2xs text-muted-foreground transition-colors hover:text-foreground"
 						>
 							+{overflow} more running
 							<ArrowRight class="size-3" />
@@ -319,7 +319,7 @@
 				value={activityFeed.search}
 				oninput={(e) => activityFeed.setSearch(e.currentTarget.value)}
 				placeholder="Search activity…"
-				class="h-7 border-border bg-muted/30 pr-7 pl-7 text-[11px] transition-colors focus:border-primary/40 focus:bg-background"
+				class="h-7 border-border bg-muted/30 pr-7 pl-7 text-2xs transition-colors focus:border-primary/40 focus:bg-background"
 			/>
 			{#if activityFeed.search}
 				<button
@@ -341,14 +341,14 @@
 				<button
 					type="button"
 					aria-pressed={activityFeed.filter === f}
-					class="rounded-full px-2.5 py-[3px] text-[10px] font-medium transition-colors {activityFeed.filter ===
+					class="rounded-full px-2.5 py-[3px] text-2xs font-medium transition-colors {activityFeed.filter ===
 					f
 						? 'bg-accent text-foreground ring-1 ring-border'
 						: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}"
 					onclick={() => activityFeed.setFilter(f as ActivityFilter)}
 				>
 					{FILTER_LABELS[f]}
-					<span class="ml-0.5 font-mono text-[9px] tabular-nums opacity-60">{n}</span>
+					<span class="ml-0.5 font-mono text-2xs tabular-nums opacity-60">{n}</span>
 				</button>
 			{/if}
 		{/each}
@@ -382,7 +382,7 @@
 						type="button"
 						aria-pressed={activityFeed.errorsOnly}
 						onclick={() => activityFeed.toggleErrorsOnly()}
-						class="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[10px] font-medium transition-colors {activityFeed.errorsOnly
+						class="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-2xs font-medium transition-colors {activityFeed.errorsOnly
 							? 'bg-destructive/10 text-destructive ring-1 ring-destructive/40'
 							: activityFeed.errorCount > 0
 								? 'text-destructive/80 hover:bg-destructive/10 hover:text-destructive'
@@ -391,7 +391,7 @@
 						<ShieldAlert class="size-3" />
 						Errors
 						{#if activityFeed.errorCount > 0}
-							<span class="font-mono text-[9px] tabular-nums opacity-80">
+							<span class="font-mono text-2xs tabular-nums opacity-80">
 								{activityFeed.errorCount}
 							</span>
 						{/if}
@@ -408,7 +408,7 @@
 			<button
 				type="button"
 				onclick={jumpToLive}
-				class="absolute top-2 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-primary/20 bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105"
+				class="absolute top-2 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-primary/20 bg-primary px-2.5 py-1 text-2xs font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105"
 			>
 				<ArrowUp class="size-3" />
 				{activityFeed.freshIds.size} new

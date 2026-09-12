@@ -43,7 +43,7 @@
 				<a href={ROUTES.reportTemplate(template.id)} class="truncate font-medium hover:underline">
 					{template.name}
 				</a>
-				{#if template.is_builtin}<Badge variant="outline" class="text-[10px]">Shipped</Badge>{/if}
+				{#if template.is_builtin}<Badge variant="outline" class="text-2xs">Shipped</Badge>{/if}
 			</div>
 			<p class="mt-1 line-clamp-2 text-xs text-muted-foreground">{template.description}</p>
 			<div class="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
@@ -99,7 +99,7 @@
 	<div class="flex items-center justify-between gap-2 border-t px-3.5 py-2 text-xs">
 		<span class="flex flex-wrap gap-1">
 			{#each template.formats as format (format)}
-				<span class="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+				<span class="rounded bg-muted px-1.5 py-0.5 text-2xs text-muted-foreground">
 					{FORMAT_LABELS[format] ?? format}
 				</span>
 			{/each}

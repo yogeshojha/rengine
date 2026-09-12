@@ -38,7 +38,7 @@
 							<Building class="mr-2 h-4 w-4" />
 							Add organization
 						</span>
-						<Badge variant="secondary" class="text-[10px]">Soon</Badge>
+						<Badge variant="secondary" class="text-2xs">Soon</Badge>
 					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Label class="text-xs text-muted-foreground">Automation</DropdownMenu.Label>

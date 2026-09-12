@@ -32,14 +32,14 @@
 {#if shown.length}
 	<div class="shrink-0 border-t p-2">
 		<div class="flex items-center justify-between px-2 pb-1">
-			<p class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Recent</p>
+			<p class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Recent</p>
 			<Hint text="Runs are kept for seven days">
 				{#snippet child(props)}
 					<span {...props} class="inline-flex">
 						<Button
 							variant="ghost"
 							size="sm"
-							class="h-5 px-1.5 text-[11px] text-muted-foreground"
+							class="h-5 px-1.5 text-2xs text-muted-foreground"
 							onclick={onClear}
 						>
 							Clear
@@ -62,8 +62,8 @@
 						? TONE_DOT.critical
 						: TONE_DOT.muted}"
 				></span>
-				<span class="min-w-0 flex-1 truncate font-mono text-[11px]">{run.label}</span>
-				<span class="shrink-0 text-[10px] text-muted-foreground">
+				<span class="min-w-0 flex-1 truncate font-mono text-2xs">{run.label}</span>
+				<span class="shrink-0 text-2xs text-muted-foreground">
 					{relativeTime(run.finished_at ?? run.queued_at)}
 				</span>
 			</button>

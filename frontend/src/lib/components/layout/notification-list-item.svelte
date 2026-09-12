@@ -74,7 +74,7 @@
 			<p
 				class={cn(
 					'min-w-0 flex-1 leading-snug',
-					full ? 'text-sm' : 'text-[13px]',
+					full ? 'text-sm' : 'text-sm',
 					unread ? 'font-medium text-foreground' : 'text-foreground/85',
 					!full && 'line-clamp-1'
 				)}
@@ -82,7 +82,7 @@
 				{notification.title}
 			</p>
 			<span
-				class="shrink-0 pt-px font-mono text-[10px] text-muted-foreground tabular-nums transition-opacity group-hover:opacity-0 group-focus-within:opacity-0"
+				class="shrink-0 pt-px font-mono text-2xs text-muted-foreground tabular-nums transition-opacity group-hover:opacity-0 group-focus-within:opacity-0"
 			>
 				{relativeTime(notification.created_at)}
 			</span>
@@ -98,14 +98,14 @@
 		</p>
 
 		<div class="mt-1.5 flex items-center gap-2">
-			<span class="text-[10px] font-medium tracking-[0.08em] text-muted-foreground/70 uppercase">
+			<span class="text-2xs font-medium tracking-[0.08em] text-muted-foreground/70 uppercase">
 				{NOTIFICATION_TYPE_LABELS[notification.type]}
 			</span>
 			{#if meta?.action_label}
 				<span class="text-muted-foreground/40">·</span>
 				<button
 					type="button"
-					class="inline-flex items-center gap-0.5 text-[11px] font-medium text-primary hover:underline"
+					class="inline-flex items-center gap-0.5 text-2xs font-medium text-primary hover:underline"
 					onclick={(e) => onAction(notification.id, e)}
 				>
 					{meta.action_label}

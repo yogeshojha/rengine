@@ -43,7 +43,7 @@
 		<div class="flex items-start justify-between gap-3 border-b pb-2.5">
 			<div class="min-w-0">
 				<p class="text-sm font-medium">{section.title}</p>
-				<p class="text-[11px] text-muted-foreground">Applies to this report only.</p>
+				<p class="text-2xs text-muted-foreground">Applies to this report only.</p>
 			</div>
 			{#if changed.length}
 				<Button

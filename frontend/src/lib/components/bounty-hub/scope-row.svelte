@@ -60,7 +60,7 @@
 			<span class="text-xs leading-5 text-muted-foreground">{scope.instruction}</span>
 		{/if}
 
-		<span class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+		<span class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-2xs text-muted-foreground">
 			<span>{scope.asset_type_label}</span>
 			{#if scope.max_severity}
 				<span>Pays up to {scope.max_severity}</span>

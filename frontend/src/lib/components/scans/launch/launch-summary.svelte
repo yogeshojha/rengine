@@ -32,14 +32,14 @@
 </script>
 
 <Collapsible.Root bind:open class="flex flex-col">
-	<div class="flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+	<div class="flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 		{#if launch.summary}
 			<span class="font-semibold tabular-nums">{count} {count === 1 ? 'stage' : 'stages'}</span>
 			<span class="text-muted-foreground">·</span>
 			<FootprintMeter
 				footprint={launch.summary.footprint}
 				requestsPerSecond={launch.summary.requestsPerSecond}
-				class="text-[13px]"
+				class="text-sm"
 			/>
 			{#if preview?.summary.estimated_duration_seconds}
 				<span class="text-muted-foreground">·</span>
@@ -54,7 +54,7 @@
 		<span class="flex-1"></span>
 		{#if launch.mode === 'quick'}
 			<Collapsible.Trigger
-				class="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[13px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+				class="inline-flex h-7 items-center gap-1 rounded-md px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
 			>
 				Execution plan
 				<ChevronRight class="size-3.5 transition-transform {open ? 'rotate-90' : ''}" />
@@ -64,10 +64,10 @@
 	<Collapsible.Content class="flex flex-col gap-2 pt-2">
 		<WhatRuns stages={launch.runningStages} implied={launch.resolution?.implied} />
 		{#each notes as note (note)}
-			<p class="text-[11px] text-muted-foreground">{note}</p>
+			<p class="text-2xs text-muted-foreground">{note}</p>
 		{/each}
 		{#each preview?.warnings ?? [] as warning (warning)}
-			<p class="flex items-start gap-1.5 text-[11px] text-warning">
+			<p class="flex items-start gap-1.5 text-2xs text-warning">
 				<TriangleAlert class="mt-px size-3 shrink-0" />
 				<span>{warning}</span>
 			</p>

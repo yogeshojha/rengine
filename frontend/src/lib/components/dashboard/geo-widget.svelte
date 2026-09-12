@@ -62,7 +62,7 @@
 								{countryName(e.code)}
 							</span>
 							<span class="font-medium tabular-nums">{e.count.toLocaleString()}</span>
-							<span class="w-9 text-right text-[11px] text-muted-foreground tabular-nums">
+							<span class="w-9 text-right text-2xs text-muted-foreground tabular-nums">
 								{total ? Math.round((e.count / total) * 100) : 0}%
 							</span>
 						</span>

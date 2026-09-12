@@ -80,9 +80,7 @@
 						)}
 						<div class="flex flex-col items-center justify-center gap-2 self-center">
 							<ArrowRight class="size-5 text-muted-foreground" />
-							<span
-								class="hidden text-[11px] tracking-wide text-muted-foreground uppercase sm:block"
-							>
+							<span class="hidden text-2xs tracking-wide text-muted-foreground uppercase sm:block">
 								{FINDING_RELATION[f.kind] ?? ''}
 							</span>
 						</div>
@@ -95,7 +93,7 @@
 					</div>
 
 					<section class="flex flex-col gap-2">
-						<h3 class="text-[11px] tracking-wide text-muted-foreground uppercase">Evidence</h3>
+						<h3 class="text-2xs tracking-wide text-muted-foreground uppercase">Evidence</h3>
 						<dl class="flex flex-col divide-y divide-border/60 rounded-lg border">
 							{#each f.evidence as e (e.kind)}
 								<div class="grid grid-cols-[10rem_1fr] items-baseline gap-3 px-3 py-2">
@@ -112,14 +110,14 @@
 
 					{#if f.open_ports.length}
 						<section class="flex flex-col gap-2">
-							<h3 class="text-[11px] tracking-wide text-muted-foreground uppercase">
+							<h3 class="text-2xs tracking-wide text-muted-foreground uppercase">
 								Open on {f.exposed.ip}
 							</h3>
 							<div class="flex flex-wrap items-center gap-1">
 								{#each f.open_ports as p (p)}
 									<Badge
 										variant="outline"
-										class="px-1.5 font-mono text-[11px] font-normal {sensitive.has(p)
+										class="px-1.5 font-mono text-2xs font-normal {sensitive.has(p)
 											? 'border-warning/40 text-warning'
 											: ''}"
 									>
@@ -138,13 +136,13 @@
 
 					{#if bypass && f.fronted.length > 1}
 						<section class="flex flex-col gap-2">
-							<h3 class="text-[11px] tracking-wide text-muted-foreground uppercase">
+							<h3 class="text-2xs tracking-wide text-muted-foreground uppercase">
 								Hostnames serving the same application
 							</h3>
 							<ul class="flex flex-wrap gap-1">
 								{#each f.fronted as s (s.url)}
 									<li>
-										<Badge variant="outline" class="font-mono text-[11px] font-normal">
+										<Badge variant="outline" class="font-mono text-2xs font-normal">
 											{s.host}
 										</Badge>
 									</li>
@@ -212,7 +210,7 @@
 	logo: string | null
 )}
 	<div class="flex min-w-0 flex-col gap-2">
-		<span class="text-[11px] tracking-wide text-muted-foreground uppercase">{label}</span>
+		<span class="text-2xs tracking-wide text-muted-foreground uppercase">{label}</span>
 		<ScreenshotThumb
 			path={sample?.screenshot_path}
 			alt={label}

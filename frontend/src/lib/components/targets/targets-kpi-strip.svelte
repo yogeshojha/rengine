@@ -87,7 +87,7 @@
 			<tile.icon class="h-4 w-4 shrink-0 {tile.accent}" />
 			<div class="min-w-0">
 				<div class="text-lg font-semibold leading-none tabular-nums">{tile.value}</div>
-				<div class="mt-1 truncate text-[11px] text-muted-foreground">{tile.label}</div>
+				<div class="mt-1 truncate text-2xs text-muted-foreground">{tile.label}</div>
 			</div>
 		</button>
 	{/each}

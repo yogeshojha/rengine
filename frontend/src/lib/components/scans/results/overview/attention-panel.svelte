@@ -194,7 +194,7 @@
 						<div
 							class="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/[0.03] p-4"
 						>
-							<span class="flex h-6 items-center justify-between gap-2 text-[11px]">
+							<span class="flex h-6 items-center justify-between gap-2 text-2xs">
 								<span class="flex items-center gap-1.5 text-muted-foreground">
 									<Waypoints class="size-3.5 text-primary" />
 									Related domain
@@ -208,7 +208,7 @@
 									<LoadingButton
 										size="sm"
 										variant="outline"
-										class="h-6 gap-1 px-2 text-[11px]"
+										class="h-6 gap-1 px-2 text-2xs"
 										loading={pending === d.domain}
 										onclick={() => addTarget(d)}
 									>
@@ -242,7 +242,7 @@
 							class="group flex cursor-pointer flex-col gap-3 rounded-lg border border-border/70 p-4 text-left transition-colors hover:border-primary/40 hover:bg-accent/40"
 							onclick={() => (f.open ? f.open() : onFilter(f.filter))}
 						>
-							<span class="flex h-6 items-center justify-between gap-2 text-[11px]">
+							<span class="flex h-6 items-center justify-between gap-2 text-2xs">
 								<span class="flex items-center gap-1.5 text-muted-foreground">
 									<span class="size-1.5 rounded-full {tone.dot}" aria-hidden="true"></span>
 									{tone.label}

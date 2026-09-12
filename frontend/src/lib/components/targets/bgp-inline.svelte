@@ -132,9 +132,7 @@
 							<CircleCheck class="h-3.5 w-3.5 text-foreground mt-0.5 shrink-0" />
 						{/if}
 						<div>
-							<p
-								class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
-							>
+							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
 								Status
 							</p>
 							<p
@@ -152,7 +150,7 @@
 							<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
 								<p
-									class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
 								>
 									Announced prefixes
 								</p>
@@ -164,7 +162,7 @@
 							<Users class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
 								<p
-									class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
 								>
 									BGP Peers
 								</p>
@@ -192,7 +190,7 @@
 							<Server class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
 								<p
-									class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
 								>
 									Announcing ASN
 								</p>
@@ -206,7 +204,7 @@
 							<CircleDot class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
 								<p
-									class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
 								>
 									Holder
 								</p>
@@ -220,7 +218,7 @@
 							<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
 								<p
-									class="text-[11px] text-muted-foreground uppercase tracking-wider leading-none mb-1"
+									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
 								>
 									Containing prefix
 								</p>
@@ -233,11 +231,11 @@
 
 			<div class="px-4 py-2.5 border-t border-border/50 bg-muted/30">
 				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+					<div class="flex items-center gap-1.5 text-2xs text-muted-foreground">
 						<Clock class="h-3 w-3" />
 						<span>Queried {bgp.queried_at ? formatShortDate(bgp.queried_at) : 'Unknown'}</span>
 					</div>
-					<span class="flex items-center gap-1 text-[11px] text-primary/70">
+					<span class="flex items-center gap-1 text-2xs text-primary/70">
 						Click for details
 						<ExternalLink class="h-2.5 w-2.5" />
 					</span>

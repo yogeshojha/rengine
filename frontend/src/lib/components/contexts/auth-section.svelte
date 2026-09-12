@@ -253,7 +253,7 @@
 
 	{#if previewLine}
 		<div class="rounded-md border border-dashed border-border bg-muted/40 px-3 py-2">
-			<p class="text-[10px] uppercase tracking-wide text-muted-foreground">Injected header</p>
+			<p class="text-2xs uppercase tracking-wide text-muted-foreground">Injected header</p>
 			<code class="text-xs text-foreground">{previewLine}</code>
 		</div>
 	{/if}

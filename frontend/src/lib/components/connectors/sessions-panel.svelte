@@ -43,7 +43,7 @@
 					</div>
 					<p class="text-muted-foreground truncate font-mono text-xs">{row.hosts.join(', ')}</p>
 					{#if row.client}
-						<p class="text-muted-foreground/70 text-[11px]">{row.client}</p>
+						<p class="text-muted-foreground/70 text-2xs">{row.client}</p>
 					{/if}
 				</div>
 			{/each}

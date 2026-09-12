@@ -60,11 +60,11 @@
 						<span class="flex min-w-0 items-center gap-2">
 							<span class="truncate font-mono text-xs font-medium">{r.host}</span>
 							{#if r.is_new}
-								<span class="shrink-0 text-[10px] font-medium text-success uppercase">new</span>
+								<span class="shrink-0 text-2xs font-medium text-success uppercase">new</span>
 							{/if}
 						</span>
 						<span
-							class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground"
+							class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-muted-foreground"
 						>
 							{#each reasons(r) as k (k)}
 								{@const Icon = KIND_ICONS[k]}

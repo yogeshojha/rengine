@@ -18,7 +18,7 @@
 				</span>
 			{/if}
 			<div class="min-w-0">
-				<h3 class="truncate text-[17px] leading-6 font-medium tracking-tight">
+				<h3 class="truncate text-lg leading-6 font-medium tracking-tight">
 					{block.headline}
 				</h3>
 				{#if block.sub}
@@ -33,7 +33,7 @@
 					{block.metric.value}
 				</div>
 				{#if block.metric.label}
-					<div class="text-[10px] tracking-wide text-muted-foreground uppercase">
+					<div class="text-2xs tracking-wide text-muted-foreground uppercase">
 						{block.metric.label}
 					</div>
 				{/if}
@@ -50,7 +50,7 @@
 				></div>
 			</div>
 			{#if block.meter.caption}
-				<p class="mt-1 text-[11px] text-muted-foreground">{block.meter.caption}</p>
+				<p class="mt-1 text-2xs text-muted-foreground">{block.meter.caption}</p>
 			{/if}
 		</div>
 	{/if}

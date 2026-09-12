@@ -296,7 +296,7 @@
 									<div class="flex items-center gap-2">
 										<h4 class="truncate text-sm font-medium">{proxy.name}</h4>
 										{#if proxy.is_default}
-											<Badge variant="secondary" class="h-5 shrink-0 border-0 px-1.5 text-[10px]"
+											<Badge variant="secondary" class="h-5 shrink-0 border-0 px-1.5 text-2xs"
 												>Default</Badge
 											>
 										{/if}
@@ -494,7 +494,7 @@
 						<div class="space-y-3 rounded-lg border bg-muted/30 p-3">
 							<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-[6.5rem_1fr_5.5rem_auto]">
 								<div class="space-y-1">
-									<Label class="text-[10px] uppercase tracking-wide text-muted-foreground"
+									<Label class="text-2xs uppercase tracking-wide text-muted-foreground"
 										>Scheme</Label
 									>
 									<Select.Root
@@ -516,9 +516,7 @@
 									</Select.Root>
 								</div>
 								<div class="space-y-1">
-									<Label class="text-[10px] uppercase tracking-wide text-muted-foreground"
-										>Host</Label
-									>
+									<Label class="text-2xs uppercase tracking-wide text-muted-foreground">Host</Label>
 									<Input
 										value={row.host}
 										placeholder="gate.provider.com"
@@ -528,9 +526,7 @@
 									/>
 								</div>
 								<div class="space-y-1">
-									<Label class="text-[10px] uppercase tracking-wide text-muted-foreground"
-										>Port</Label
-									>
+									<Label class="text-2xs uppercase tracking-wide text-muted-foreground">Port</Label>
 									<Input
 										type="number"
 										min="1"
@@ -556,7 +552,7 @@
 							</div>
 							<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
 								<div class="space-y-1">
-									<Label class="text-[10px] uppercase tracking-wide text-muted-foreground"
+									<Label class="text-2xs uppercase tracking-wide text-muted-foreground"
 										>Username <span class="normal-case">(optional)</span></Label
 									>
 									<Input
@@ -568,7 +564,7 @@
 									/>
 								</div>
 								<div class="space-y-1">
-									<Label class="text-[10px] uppercase tracking-wide text-muted-foreground"
+									<Label class="text-2xs uppercase tracking-wide text-muted-foreground"
 										>Password <span class="normal-case">(optional)</span></Label
 									>
 									<Input

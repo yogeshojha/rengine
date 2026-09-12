@@ -62,7 +62,7 @@
 			<span class="mt-0.5 size-2.5 shrink-0 rounded-full" style={dot(hub.kind)}></span>
 			<div class="min-w-0 flex-1">
 				<p
-					class="flex items-center gap-1.5 text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
+					class="flex items-center gap-1.5 text-2xs font-medium tracking-wider text-muted-foreground uppercase"
 				>
 					{#if Icon}<Icon class="size-3" />{/if}
 					{labelFor(hub.kind)}
@@ -111,7 +111,7 @@
 								></span>
 								<span class="min-w-0 flex-1 truncate font-mono text-xs">{host.name}</span>
 								{#if host.status !== null}
-									<span class="font-mono text-[11px] text-muted-foreground tabular-nums"
+									<span class="font-mono text-2xs text-muted-foreground tabular-nums"
 										>{host.status}</span
 									>
 								{/if}
@@ -121,7 +121,7 @@
 				{/each}
 			</ul>
 			{#if hub.members.length > MEMBERS}
-				<p class="px-4 py-2 text-[11px] text-muted-foreground">
+				<p class="px-4 py-2 text-2xs text-muted-foreground">
 					{hub.members.length - MEMBERS} more in Web assets
 				</p>
 			{/if}
@@ -161,9 +161,7 @@
 				Open in Web assets <ArrowUpRight class="size-3" />
 			</Button>
 		</div>
-		<p
-			class="px-4 pt-3 pb-1 text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
-		>
+		<p class="px-4 pt-3 pb-1 text-2xs font-medium tracking-wider text-muted-foreground uppercase">
 			Shared identities
 		</p>
 		<ScrollArea class="min-h-0 flex-1">
@@ -178,7 +176,7 @@
 							<span class="size-2 shrink-0 rounded-full" style={dot(hub.kind)}></span>
 							<span class="flex min-w-0 flex-1 flex-col">
 								<span class="truncate font-mono text-xs">{hub.label}</span>
-								<span class="text-[11px] text-muted-foreground">{labelFor(hub.kind)}</span>
+								<span class="text-2xs text-muted-foreground">{labelFor(hub.kind)}</span>
 							</span>
 							<span class="text-xs tabular-nums text-muted-foreground">{hub.count}</span>
 						</button>
@@ -187,9 +185,7 @@
 			</ul>
 		</ScrollArea>
 	{:else}
-		<p
-			class="px-4 pt-3 pb-1 text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
-		>
+		<p class="px-4 pt-3 pb-1 text-2xs font-medium tracking-wider text-muted-foreground uppercase">
 			Largest clusters
 		</p>
 		<ScrollArea class="min-h-0 flex-1">
@@ -208,7 +204,7 @@
 									<span class="size-2 shrink-0 rounded-full" style={dot(hub.kind)}></span>
 									<span class="flex min-w-0 flex-1 flex-col">
 										<span class="truncate font-mono text-xs">{hub.label}</span>
-										<span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+										<span class="flex items-center gap-1 text-2xs text-muted-foreground">
 											{#if Icon}<Icon class="size-3" />{/if}
 											{labelFor(hub.kind)}{hub.common ? ' · common' : ''}
 										</span>

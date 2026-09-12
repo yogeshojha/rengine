@@ -43,13 +43,13 @@
 						onFilter('is:corroborated');
 					}}
 				>
-					<Badge variant="secondary" class="gap-1 px-1 text-[10px] font-normal">
+					<Badge variant="secondary" class="gap-1 px-1 text-2xs font-normal">
 						<CheckCheck class="size-2.5" /> confirmed
 					</Badge>
 				</button>
 			{:else}
 				<span {...props} class="flex h-4 shrink-0 items-center">
-					<Badge variant="secondary" class="gap-1 px-1 text-[10px] font-normal">
+					<Badge variant="secondary" class="gap-1 px-1 text-2xs font-normal">
 						<CheckCheck class="size-2.5" /> confirmed
 					</Badge>
 				</span>

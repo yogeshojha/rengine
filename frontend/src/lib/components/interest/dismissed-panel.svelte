@@ -79,7 +79,7 @@
 		<div class="divide-y">
 			{#each rows as row (row.id)}
 				<div class="group flex items-center gap-3 px-5 py-2.5 hover:bg-accent/40">
-					<span class="min-w-0 flex-1 truncate font-mono text-[12.5px]">{row.host}</span>
+					<span class="min-w-0 flex-1 truncate font-mono text-xs">{row.host}</span>
 					<span class="shrink-0 text-xs text-muted-foreground">
 						{row.kind ? interestCatalog.label(row.kind) : 'Every reason'}
 					</span>

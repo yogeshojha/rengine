@@ -172,7 +172,7 @@
 
 		{#if brief.params.length}
 			<div class="flex flex-wrap items-center gap-1">
-				<span class="mr-1 text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+				<span class="mr-1 text-2xs font-medium tracking-wider text-muted-foreground uppercase">
 					Parameters
 				</span>
 				{#each shownParams as p (p.name)}
@@ -181,7 +181,7 @@
 							<button
 								{...props}
 								type="button"
-								class="inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[11px] leading-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {paramClass(
+								class="inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-2xs leading-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {paramClass(
 									p
 								)}"
 								onclick={() => onPivot(`param:${p.name}`)}
@@ -195,7 +195,7 @@
 				{#if hiddenParams > 0}
 					<button
 						type="button"
-						class="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+						class="text-2xs text-muted-foreground hover:text-foreground hover:underline"
 						onclick={() => (allParams = true)}
 					>
 						+{n(hiddenParams)} more
@@ -203,7 +203,7 @@
 				{:else if allParams && brief.params_total > PARAM_LIMIT}
 					<button
 						type="button"
-						class="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+						class="text-2xs text-muted-foreground hover:text-foreground hover:underline"
 						onclick={() => (allParams = false)}
 					>
 						Show fewer

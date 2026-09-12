@@ -129,7 +129,7 @@
 								{#snippet child(props)}
 									<span
 										{...props}
-										class="inline-flex h-5 items-center gap-1 rounded-sm border border-border px-1.5 text-[11px]"
+										class="inline-flex h-5 items-center gap-1 rounded-sm border border-border px-1.5 text-2xs"
 									>
 										<Check class="size-3 text-success" />
 										{spec.label}

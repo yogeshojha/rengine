@@ -75,7 +75,7 @@
 	<div class="-ml-px grid grid-cols-2 sm:grid-cols-3">
 		{#each cells as cell (cell.key)}
 			<div class="flex min-w-0 flex-col gap-1 border-t border-l px-5 py-4">
-				<span class="text-muted-foreground text-[11px] tracking-wide uppercase">{cell.label}</span>
+				<span class="text-muted-foreground text-2xs tracking-wide uppercase">{cell.label}</span>
 				<span class="text-2xl leading-7 font-semibold tabular-nums"
 					>{cell.value.toLocaleString()}</span
 				>

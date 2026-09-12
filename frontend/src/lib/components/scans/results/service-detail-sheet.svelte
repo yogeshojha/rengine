@@ -457,7 +457,7 @@
 
 {#snippet heading(Icon: IconComponent, title: string)}
 	<div
-		class="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+		class="flex items-center gap-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 	>
 		<Icon class="size-3.5" />
 		<span>{title}</span>
@@ -471,7 +471,7 @@
 				<button {...props} type="button" onclick={() => onFilter?.(dsl)}>
 					<Badge
 						variant="outline"
-						class="cursor-pointer font-normal hover:bg-accent {mono ? 'font-mono text-[10px]' : ''}"
+						class="cursor-pointer font-normal hover:bg-accent {mono ? 'font-mono text-2xs' : ''}"
 					>
 						{#if flag}<CountryFlag code={text} />{:else}{text}{/if}
 					</Badge>

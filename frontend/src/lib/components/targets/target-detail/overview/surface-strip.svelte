@@ -158,7 +158,7 @@
 								{m.label}
 							</span>
 							<span
-								class="text-[22px] leading-none font-semibold tracking-tight tabular-nums {m.covered
+								class="text-xl leading-none font-semibold tracking-tight tabular-nums {m.covered
 									? ''
 									: 'font-medium text-muted-foreground'}"
 							>

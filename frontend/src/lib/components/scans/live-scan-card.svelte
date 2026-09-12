@@ -52,12 +52,12 @@
 			{:else}
 				<Spinner class="size-3.5 shrink-0 text-info" />
 			{/if}
-			<span class="min-w-0 flex-1 truncate font-mono text-[12px] font-medium text-foreground">
+			<span class="min-w-0 flex-1 truncate font-mono text-xs font-medium text-foreground">
 				{scan.execution_config.target_value}
 			</span>
 			{#if elapsed}
 				<span
-					class="flex shrink-0 items-center gap-1 font-mono text-[10px] text-muted-foreground tabular-nums transition-opacity group-hover/card:opacity-0"
+					class="flex shrink-0 items-center gap-1 font-mono text-2xs text-muted-foreground tabular-nums transition-opacity group-hover/card:opacity-0"
 				>
 					{elapsed}
 					{#if eta}
@@ -83,23 +83,21 @@
 						</Hint>
 					{/each}
 				</div>
-				<span class="shrink-0 font-mono text-[10px] text-muted-foreground tabular-nums">
+				<span class="shrink-0 font-mono text-2xs text-muted-foreground tabular-nums">
 					{progress.done}/{progress.total}
 				</span>
 			</div>
 		{/if}
 
 		<div class="mt-1.5 flex min-w-0 items-center gap-1.5">
-			<span class="truncate text-[11px] font-medium text-foreground/90">{progress.label}</span>
+			<span class="truncate text-2xs font-medium text-foreground/90">{progress.label}</span>
 			{#if run?.tool}
-				<span
-					class="shrink-0 rounded bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground"
-				>
+				<span class="shrink-0 rounded bg-muted px-1 py-px font-mono text-2xs text-muted-foreground">
 					{run.tool}
 				</span>
 			{/if}
 		</div>
-		<p class="mt-0.5 truncate text-[10px] text-muted-foreground">{subtitle}</p>
+		<p class="mt-0.5 truncate text-2xs text-muted-foreground">{subtitle}</p>
 
 		{#if pills.length > 0 || failed > 0}
 			<div class="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
@@ -108,7 +106,7 @@
 						{#snippet child(props)}
 							<span
 								{...props}
-								class="inline-flex items-center gap-1 text-[10px] tabular-nums {p.emphasis
+								class="inline-flex items-center gap-1 text-2xs tabular-nums {p.emphasis
 									? 'font-medium text-warning'
 									: 'text-muted-foreground'}"
 							>
@@ -119,7 +117,7 @@
 					</Hint>
 				{/each}
 				{#if failed > 0}
-					<span class="text-[10px] font-medium text-destructive">
+					<span class="text-2xs font-medium text-destructive">
 						{failed} stage{failed === 1 ? '' : 's'} failed
 					</span>
 				{/if}

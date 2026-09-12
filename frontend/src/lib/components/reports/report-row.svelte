@@ -101,7 +101,7 @@
 				{:else}
 					<span class="truncate font-medium">{report.title}</span>
 				{/if}
-				<Badge variant="outline" class="font-mono text-[10px]">{report.subject}</Badge>
+				<Badge variant="outline" class="font-mono text-2xs">{report.subject}</Badge>
 				{#if report.ai_used}
 					<Badge variant="info" class="gap-1">
 						<SparklesIcon class="size-3" />

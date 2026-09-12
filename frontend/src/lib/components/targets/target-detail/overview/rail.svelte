@@ -97,14 +97,14 @@
 		/>
 	{/if}
 	<div class="flex flex-col gap-1.5 pb-4">
-		<h4 class="mb-1 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+		<h4 class="mb-1 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 			Scan
 		</h4>
 		{#if loading && !summary}
 			<Skeleton class="h-4 w-40" />
 			<Skeleton class="h-4 w-28" />
 		{:else if latest}
-			<div class="flex items-start gap-2 text-[13px]">
+			<div class="flex items-start gap-2 text-sm">
 				<span class="flex h-5 shrink-0 items-center">
 					<span class="size-2 rounded-full {DOT[latest.status]}" aria-hidden="true"></span>
 				</span>
@@ -118,7 +118,7 @@
 					{/if}
 				</span>
 			</div>
-			<div class="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-[13px]">
+			<div class="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-sm">
 				<span class="pt-px text-xs text-muted-foreground">Runs</span>
 				<span class="tabular-nums">
 					{summary!.scans_total}{#if summary!.first_scan_at}<span class="text-muted-foreground">
@@ -127,13 +127,13 @@
 				</span>
 			</div>
 		{:else}
-			<div class="flex items-center gap-2 text-[13px]">
+			<div class="flex items-center gap-2 text-sm">
 				<span class="size-2 shrink-0 rounded-full {DOT.pending}" aria-hidden="true"></span>
 				<span class="text-muted-foreground">Not scanned yet</span>
 			</div>
 		{/if}
 		{#if summary}
-			<div class="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-[13px]">
+			<div class="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-sm">
 				<span class="pt-px text-xs text-muted-foreground">Monitoring</span>
 				{#if summary.monitoring}
 					<a href={ROUTES.schedules} class="hover:underline">
@@ -159,7 +159,7 @@
 	{#each groups as g (g.key)}
 		<div class="flex flex-col gap-1.5 py-4">
 			<h4
-				class="mb-1 flex items-baseline justify-between gap-3 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase"
+				class="mb-1 flex items-baseline justify-between gap-3 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
 			>
 				{g.title}
 				{#if g.pending}
@@ -178,7 +178,7 @@
 				{/if}
 			</h4>
 			{#if g.note}
-				<div class="text-[13px] {TONE[g.note.tone]}">
+				<div class="text-sm {TONE[g.note.tone]}">
 					{g.note.text}
 					{#if g.note.detail}
 						<span class="block text-xs text-muted-foreground wrap-anywhere">{g.note.detail}</span>
@@ -190,9 +190,7 @@
 				<Skeleton class="h-4 w-36" />
 			{/if}
 			{#each g.rows as row (row.key)}
-				<div
-					class="group/row grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-[13px] leading-[1.4]"
-				>
+				<div class="group/row grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-sm leading-[1.4]">
 					<span class="pt-px text-xs text-muted-foreground">{row.label}</span>
 					<span class="flex min-w-0 flex-col wrap-anywhere {TONE[row.tone ?? 'neutral']}">
 						<span class="flex min-w-0 items-center gap-1.5">
@@ -202,7 +200,7 @@
 							{#if row.flag}
 								<CountryFlag code={row.flag} showCode={false} />
 							{/if}
-							<span class="min-w-0 {row.mono ? 'font-mono text-[12.5px]' : ''}">{row.value}</span>
+							<span class="min-w-0 {row.mono ? 'font-mono text-xs' : ''}">{row.value}</span>
 							{#if row.copy}
 								<span
 									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover/row:opacity-100"

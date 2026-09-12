@@ -151,7 +151,7 @@
 			</span>
 			{#if g.version === 6}
 				<span class="flex h-5 shrink-0 items-center">
-					<Badge variant="outline" class="px-1 text-[10px] font-normal text-muted-foreground">
+					<Badge variant="outline" class="px-1 text-2xs font-normal text-muted-foreground">
 						IPv6
 					</Badge>
 				</span>
@@ -162,7 +162,7 @@
 					class="flex h-5 shrink-0 items-center"
 					onclick={(e) => pivot(e, filterToken('cdn', g.cdn_name ?? 'yes'))}
 				>
-					<Badge variant="info" class="gap-1 px-1 text-[10px] font-normal">
+					<Badge variant="info" class="gap-1 px-1 text-2xs font-normal">
 						<TechIcon name={g.cdn_name ?? ''} class="size-2.5" />
 						{g.cdn_name ?? 'CDN'}
 					</Badge>
@@ -266,7 +266,7 @@
 								<button type="button" onclick={(e) => pivot(e, `port:${p.number}`)}>
 									<Badge
 										variant="outline"
-										class="cursor-pointer px-1 font-mono text-[10px] font-normal hover:bg-accent {isSensitivePort(
+										class="cursor-pointer px-1 font-mono text-2xs font-normal hover:bg-accent {isSensitivePort(
 											p.number
 										)
 											? 'border-warning/40 text-warning'
@@ -303,7 +303,7 @@
 									>
 										<Badge
 											variant="outline"
-											class="max-w-44 cursor-pointer font-mono text-[10px] font-normal hover:bg-accent"
+											class="max-w-44 cursor-pointer font-mono text-2xs font-normal hover:bg-accent"
 										>
 											<span class="truncate">{h}</span>
 										</Badge>

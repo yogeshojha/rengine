@@ -76,7 +76,7 @@
 				<empty.icon class="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
 			</Empty.Media>
 			<Empty.Title class="text-xs font-medium text-muted-foreground">{empty.title}</Empty.Title>
-			<Empty.Description class="mt-0.5 text-[10px] text-muted-foreground/70"
+			<Empty.Description class="mt-0.5 text-2xs text-muted-foreground/70"
 				>{empty.sub}</Empty.Description
 			>
 		</Empty.Header>
@@ -94,9 +94,7 @@
 				: ''}"
 		>
 			<div class="h-px flex-1 bg-border/40"></div>
-			<span
-				class="px-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70"
-			>
+			<span class="px-1 text-2xs font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">
 				{group.label}
 			</span>
 			<div class="h-px flex-1 bg-border/40"></div>

@@ -65,7 +65,7 @@
 			</div>
 		{/each}
 	</div>
-	<div class="flex justify-between font-mono text-[10px] text-muted-foreground tabular-nums">
+	<div class="flex justify-between font-mono text-2xs text-muted-foreground tabular-nums">
 		{#each ticks as t, i (i)}
 			<span>{t}</span>
 		{/each}

@@ -44,7 +44,7 @@
 					onclick?.();
 				}}
 				class={cn(
-					'inline-flex shrink-0 items-center gap-1 rounded-full border px-[7px] py-px text-[11px] font-medium whitespace-nowrap transition-colors',
+					'inline-flex shrink-0 items-center gap-1 rounded-full border px-[7px] py-px text-2xs font-medium whitespace-nowrap transition-colors',
 					TONES[tone],
 					onclick && 'hover:brightness-95',
 					className

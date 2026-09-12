@@ -102,7 +102,7 @@
 					<HighlightText text={leaf.name} {terms} />
 				</span>
 				{#if isIndex}
-					<span class="text-[11px] text-muted-foreground italic">index</span>
+					<span class="text-2xs text-muted-foreground italic">index</span>
 				{/if}
 				{#if leaf.param_count > 0}
 					<span class="font-mono text-xs text-primary">?{leaf.params.join('&')}</span>
@@ -114,7 +114,7 @@
 								<button
 									{...props}
 									type="button"
-									class="text-[11px] text-muted-foreground hover:text-primary hover:underline"
+									class="text-2xs text-muted-foreground hover:text-primary hover:underline"
 									onclick={(e) => e.stopPropagation()}
 								>
 									on {leaf.hosts} hosts
@@ -131,7 +131,7 @@
 								{#each leaf.host_names as host (host)}
 									<button
 										type="button"
-										class="rounded border px-1.5 py-0.5 font-mono text-[11px] hover:bg-accent"
+										class="rounded border px-1.5 py-0.5 font-mono text-2xs hover:bg-accent"
 										onclick={(e) => {
 											e.stopPropagation();
 											onHost(host);
@@ -141,7 +141,7 @@
 									</button>
 								{/each}
 								{#if leaf.hosts > leaf.host_names.length}
-									<span class="self-center text-[11px] text-muted-foreground">
+									<span class="self-center text-2xs text-muted-foreground">
 										+{leaf.hosts - leaf.host_names.length} more
 									</span>
 								{/if}
@@ -164,7 +164,7 @@
 				{:else if leaf.host_names[0]}
 					<button
 						type="button"
-						class="font-mono text-[11px] text-muted-foreground hover:text-primary hover:underline"
+						class="font-mono text-2xs text-muted-foreground hover:text-primary hover:underline"
 						onclick={(e) => {
 							e.stopPropagation();
 							onHost(leaf.host_names[0]);
@@ -174,20 +174,20 @@
 					</button>
 				{/if}
 				{#if leaf.new_count}
-					<Badge variant="info" class="h-4 px-1 text-[10px]">
+					<Badge variant="info" class="h-4 px-1 text-2xs">
 						{leaf.new_count === leaf.endpoints ? 'New' : `+${leaf.new_count} new`}
 					</Badge>
 				{/if}
 				{#if sensitive.length || testable.length}
 					<span class="flex flex-wrap items-center gap-1">
 						{#each sensitive as key (key)}
-							<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-[10px]">
+							<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-2xs">
 								<ShieldAlert class="size-2.5" />
 								{INTEREST_LABELS[key] ?? key}
 							</Badge>
 						{/each}
 						{#each testable as key (key)}
-							<Badge variant="warning" class="h-4 px-1.5 text-[10px]">
+							<Badge variant="warning" class="h-4 px-1.5 text-2xs">
 								{INTEREST_LABELS[key] ?? key}
 							</Badge>
 						{/each}
@@ -235,7 +235,7 @@
 						{#each leaf.params.slice(0, 3) as name (name)}
 							<button
 								type="button"
-								class="rounded bg-muted px-1 font-mono text-[10px] hover:bg-muted/70"
+								class="rounded bg-muted px-1 font-mono text-2xs hover:bg-muted/70"
 								onclick={(e) => {
 									e.stopPropagation();
 									onFilter(`param:${name}`);
@@ -245,7 +245,7 @@
 							</button>
 						{/each}
 						{#if leaf.params.length > 3}
-							<span class="text-[10px] text-muted-foreground">+{leaf.params.length - 3}</span>
+							<span class="text-2xs text-muted-foreground">+{leaf.params.length - 3}</span>
 						{/if}
 					</div>
 				{/if}

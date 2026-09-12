@@ -72,7 +72,7 @@
 				{/if}
 				{#each sections as section (section.name)}
 					<section class="flex flex-col gap-2">
-						<h3 class="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+						<h3 class="text-2xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
 							{section.name}
 						</h3>
 						<div class="grid gap-2 sm:grid-cols-2">

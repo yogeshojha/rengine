@@ -208,7 +208,7 @@
 		<div class="grid grid-cols-4 gap-2">
 			{#each [['margin_top', 'Top'], ['margin_right', 'Right'], ['margin_bottom', 'Bottom'], ['margin_left', 'Left']] as [key, name] (key)}
 				<div class="space-y-1">
-					<span class="text-[11px] text-muted-foreground">{name}</span>
+					<span class="text-2xs text-muted-foreground">{name}</span>
 					<Input
 						type="number"
 						min="5"

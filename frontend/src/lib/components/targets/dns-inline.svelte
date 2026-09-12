@@ -110,7 +110,7 @@
 	<div class="flex items-center gap-1.5 flex-wrap">
 		{#if cdnInfo}
 			<span
-				class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium border border-border/60 bg-muted/60 text-foreground/70"
+				class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-2xs font-medium border border-border/60 bg-muted/60 text-foreground/70"
 			>
 				<ShieldCheck class="h-3 w-3" />
 				{cdnInfo.label}
@@ -157,7 +157,7 @@
 								<span class="text-xs font-medium text-foreground/80">
 									Behind {cdnInfo.label}
 								</span>
-								<span class="text-[11px] text-muted-foreground">WAF or proxy detected</span>
+								<span class="text-2xs text-muted-foreground">WAF or proxy detected</span>
 							</div>
 						</div>
 					{/if}
@@ -177,13 +177,13 @@
 
 					<div class="px-4 py-2.5 border-t border-border/50 bg-muted/30">
 						<div class="flex items-center justify-between">
-							<div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+							<div class="flex items-center gap-1.5 text-2xs text-muted-foreground">
 								<Clock class="h-3 w-3" />
 								<span>Queried {dns.queried_at ? formatShortDate(dns.queried_at) : 'Unknown'}</span>
 							</div>
 							<button
 								type="button"
-								class="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
+								class="flex items-center gap-1 text-2xs text-primary/70 hover:text-primary transition-colors"
 								onclick={() => goto(ROUTES.target(targetId))}
 							>
 								See details

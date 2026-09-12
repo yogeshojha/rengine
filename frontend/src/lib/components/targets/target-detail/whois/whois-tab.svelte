@@ -234,7 +234,7 @@
 	{onRefresh}
 >
 	{#snippet bar()}
-		<span class="text-[13px]">
+		<span class="text-sm">
 			<span class="font-medium">{title}</span>
 			<span class="text-muted-foreground">
 				· {record?.query_value || targetValue}{record?.whois_server
@@ -250,7 +250,7 @@
 				<div class="group {ROW}">
 					<span class="pt-px text-xs text-muted-foreground">{f.label}</span>
 					<span
-						class="flex min-w-0 flex-col text-[13px] leading-5 {f.tone === 'bad'
+						class="flex min-w-0 flex-col text-sm leading-5 {f.tone === 'bad'
 							? 'text-destructive'
 							: f.tone === 'warn'
 								? 'text-warning'
@@ -259,7 +259,7 @@
 						<span class="flex min-w-0 items-center gap-1.5">
 							{#if f.brand}<TechIcon name={f.brand} class="size-4 rounded-[4px]" />{/if}
 							{#if f.flag}<CountryFlag code={f.flag} showCode={false} />{/if}
-							<span class="min-w-0 wrap-anywhere {f.mono ? 'font-mono text-[12.5px]' : ''}">
+							<span class="min-w-0 wrap-anywhere {f.mono ? 'font-mono text-xs' : ''}">
 								{f.value}
 							</span>
 							{#if f.copy}
@@ -277,7 +277,7 @@
 			{#if descriptionLines.length}
 				<div class={ROW}>
 					<span class="pt-px text-xs text-muted-foreground">Description</span>
-					<span class="flex flex-col text-[13px] leading-5">
+					<span class="flex flex-col text-sm leading-5">
 						{#each descriptionLines as line, i (i)}<span class="wrap-anywhere">{line}</span>{/each}
 					</span>
 				</div>
@@ -292,7 +292,7 @@
 			>
 				{#each statuses as s (s.code)}
 					{@const Icon = STATUS_ICON[s.tone]}
-					<div class="flex items-center gap-2.5 py-1.5 text-[13px]">
+					<div class="flex items-center gap-2.5 py-1.5 text-sm">
 						<Icon class="size-3.5 shrink-0 {STATUS_COLOR[s.tone]}" />
 						<span class="min-w-0 flex-1">{s.label}</span>
 						<span class="truncate font-mono text-xs text-muted-foreground">{s.code}</span>
@@ -305,8 +305,8 @@
 			<RecordGroup label="Nameservers" mono={false} sub="{nameservers.length} at the registry">
 				{#each nameservers as ns (ns)}
 					{@const p = nameserverProvider([ns])}
-					<div class="group flex items-center gap-3 py-1.5 text-[13px]">
-						<code class="min-w-0 flex-1 font-mono text-[12.5px] wrap-anywhere">{ns}</code>
+					<div class="group flex items-center gap-3 py-1.5 text-sm">
+						<code class="min-w-0 flex-1 font-mono text-xs wrap-anywhere">{ns}</code>
 						{#if p}
 							<span class="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
 								<TechIcon name={p.icon ?? p.name} class="size-3.5 rounded-[3px]" />{p.name}
@@ -330,7 +330,7 @@
 						class="group grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 py-2 sm:grid-cols-[9rem_minmax(0,1fr)]"
 					>
 						<span class="pt-px text-xs text-muted-foreground">{ENTITY_ROLE_LABELS[role]}</span>
-						<span class="flex min-w-0 flex-col gap-0.5 text-[13px] leading-5">
+						<span class="flex min-w-0 flex-col gap-0.5 text-sm leading-5">
 							{#if entity.name || entity.handle}
 								<span class="font-medium wrap-anywhere">{entity.name || entity.handle}</span>
 							{/if}
@@ -353,7 +353,7 @@
 								<span class="text-xs text-muted-foreground wrap-anywhere">{line}</span>
 							{/each}
 							{#if entity.handle && entity.handle !== entity.name}
-								<span class="font-mono text-[11px] text-muted-foreground/70">{entity.handle}</span>
+								<span class="font-mono text-2xs text-muted-foreground/70">{entity.handle}</span>
 							{/if}
 						</span>
 					</div>
@@ -364,7 +364,7 @@
 		{#if recordJson}
 			<Collapsible.Root bind:open={rawOpen} class="border-b">
 				<Collapsible.Trigger
-					class="group flex w-full items-center gap-2 py-2.5 text-left text-[13px] text-muted-foreground hover:text-foreground"
+					class="group flex w-full items-center gap-2 py-2.5 text-left text-sm text-muted-foreground hover:text-foreground"
 				>
 					<ChevronRight class="size-3.5 transition-transform group-data-[state=open]:rotate-90" />
 					Parsed record

@@ -59,7 +59,7 @@
 
 {#snippet head(label: string, side: RunSide, absent: boolean)}
 	<div class="flex min-w-0 flex-col gap-0.5">
-		<span class="text-[10px] tracking-wider text-muted-foreground uppercase">{label}</span>
+		<span class="text-2xs tracking-wider text-muted-foreground uppercase">{label}</span>
 		<a
 			href={ROUTES.scanTab(side.scan_id, tabTarget(row?.dimension ?? ''))}
 			class="inline-flex items-center gap-1 truncate text-xs font-medium hover:text-primary"
@@ -67,7 +67,7 @@
 			{side.engine_name}
 			<ArrowUpRight class="size-3 shrink-0" />
 		</a>
-		<span class="truncate text-[11px] text-muted-foreground tabular-nums">
+		<span class="truncate text-2xs text-muted-foreground tabular-nums">
 			{[
 				when(side.started_at),
 				side.duration_seconds != null ? durationText(side.duration_seconds) : ''
@@ -76,7 +76,7 @@
 				.join(' · ')}
 		</span>
 		{#if absent}
-			<span class="text-[11px] text-muted-foreground">Not present</span>
+			<span class="text-2xs text-muted-foreground">Not present</span>
 		{/if}
 	</div>
 {/snippet}
@@ -91,7 +91,7 @@
 			<Sheet.Header class="gap-2 border-b px-5 py-4 pr-12">
 				<div class="flex flex-wrap items-center gap-2">
 					<VerbRail verb={row.verb} size="dot" />
-					<Badge variant="outline" class="h-5 px-2 text-[10px]">{verb.label}</Badge>
+					<Badge variant="outline" class="h-5 px-2 text-2xs">{verb.label}</Badge>
 					<span
 						class={cn(
 							'flex items-center gap-1.5 text-xs font-medium',
@@ -207,8 +207,8 @@
 						>
 							<div class="col-span-3 grid grid-cols-subgrid border-b bg-muted/30 px-5 py-1.5">
 								<span></span>
-								<span class="text-[10px] tracking-wider text-muted-foreground uppercase">Was</span>
-								<span class="text-[10px] tracking-wider text-muted-foreground uppercase">Now</span>
+								<span class="text-2xs tracking-wider text-muted-foreground uppercase">Was</span>
+								<span class="text-2xs tracking-wider text-muted-foreground uppercase">Now</span>
 							</div>
 							{#each row.fields as f (f.field)}
 								<div

@@ -417,20 +417,20 @@
 										{DISCOVERY_SOURCE_LABELS[sr.source]}
 									</span>
 									{#if sr.cache}
-										<Badge variant="outline" class="text-[10px] h-5 px-1.5 font-normal">
+										<Badge variant="outline" class="text-2xs h-5 px-1.5 font-normal">
 											{sr.domains.length.toLocaleString()} domains
 										</Badge>
 										{#if sr.newDomains.length > 0}
 											<Badge
 												variant="outline"
-												class="text-[10px] h-5 px-1.5 font-normal text-primary border-primary/30"
+												class="text-2xs h-5 px-1.5 font-normal text-primary border-primary/30"
 											>
 												{sr.newDomains.length.toLocaleString()} new
 											</Badge>
 										{/if}
 									{/if}
 								</div>
-								<p class="text-[11px] text-muted-foreground truncate mt-0.5">
+								<p class="text-2xs text-muted-foreground truncate mt-0.5">
 									{#if sr.cache}
 										via <span class="font-mono">{sr.queryValue}</span>
 										{#if sr.cache.queried_at}
@@ -478,7 +478,7 @@
 												<Badge
 													{...props}
 													variant="outline"
-													class="text-[10px] font-normal shrink-0 h-4 px-1 text-muted-foreground border-border/60 cursor-default"
+													class="text-2xs font-normal shrink-0 h-4 px-1 text-muted-foreground border-border/60 cursor-default"
 												>
 													{source === 'reverse_whois' ? 'W' : source === 'reverse_ip' ? 'IP' : 'NS'}
 												</Badge>
@@ -490,7 +490,7 @@
 							</div>
 							<div class="shrink-0">
 								{#if isAdded}
-									<span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+									<span class="flex items-center gap-1 text-2xs text-muted-foreground">
 										<Check class="h-3 w-3" />
 										Added
 									</span>
@@ -519,7 +519,7 @@
 					{/each}
 				</div>
 				{#if totalNew > PREVIEW_LIMIT}
-					<p class="text-[11px] text-muted-foreground text-center">
+					<p class="text-2xs text-muted-foreground text-center">
 						and {(totalNew - PREVIEW_LIMIT).toLocaleString()} more new domains
 					</p>
 				{/if}
@@ -546,7 +546,7 @@
 					<p class="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
 						View all in Target Summary
 					</p>
-					<p class="text-[11px] text-muted-foreground mt-0.5">
+					<p class="text-2xs text-muted-foreground mt-0.5">
 						Search, filter, and bulk-add from {totalDiscovered > 0
 							? totalDiscovered.toLocaleString() + '+'
 							: 'all'} discovered domains with full pagination.
@@ -556,7 +556,7 @@
 		</button>
 
 		{#if sourceResults.some((s) => s.cache)}
-			<p class="text-[11px] text-muted-foreground/60 text-center">
+			<p class="text-2xs text-muted-foreground/60 text-center">
 				Powered by ViewDNS.info · Showing cached data
 			</p>
 		{/if}

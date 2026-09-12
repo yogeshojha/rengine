@@ -61,7 +61,7 @@
 		{:else}
 			<span class="h-1"></span>
 		{/if}
-		<span class="truncate text-[11px] text-muted-foreground tabular-nums">{foot}</span>
+		<span class="truncate text-2xs text-muted-foreground tabular-nums">{foot}</span>
 	</button>
 {/snippet}
 

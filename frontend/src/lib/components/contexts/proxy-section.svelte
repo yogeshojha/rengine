@@ -51,7 +51,7 @@
 						<span class="flex items-center gap-2">
 							{proxy.name}
 							{#if proxy.is_default}
-								<Badge variant="secondary" class="h-4 px-1 text-[10px]">Default</Badge>
+								<Badge variant="secondary" class="h-4 px-1 text-2xs">Default</Badge>
 							{/if}
 						</span>
 					</Select.Item>
@@ -71,9 +71,9 @@
 	{:else if selected}
 		<div class="rounded-md border border-dashed border-border bg-muted/40 px-3 py-2">
 			<div class="flex items-center gap-2">
-				<p class="text-[10px] uppercase tracking-wide text-muted-foreground">Endpoint</p>
+				<p class="text-2xs uppercase tracking-wide text-muted-foreground">Endpoint</p>
 				{#if selected.is_default}
-					<Badge variant="secondary" class="h-4 px-1 text-[10px]">Default</Badge>
+					<Badge variant="secondary" class="h-4 px-1 text-2xs">Default</Badge>
 				{/if}
 			</div>
 			<code class="text-xs text-foreground">

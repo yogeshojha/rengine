@@ -36,6 +36,6 @@
 			<span class="font-mono text-xl leading-none font-semibold tabular-nums">{count}</span>
 			<span class="truncate text-xs font-medium">{label}</span>
 		</span>
-		<span class="text-[11px] leading-4 text-muted-foreground">{detail}</span>
+		<span class="text-2xs leading-4 text-muted-foreground">{detail}</span>
 	</span>
 </svelte:element>

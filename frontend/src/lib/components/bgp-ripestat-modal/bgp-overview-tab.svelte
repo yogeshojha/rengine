@@ -160,7 +160,7 @@
 			{#if overview.rir}
 				<div class="space-y-1">
 					<div
-						class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+						class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 					>
 						<Globe class="h-3 w-3" />
 						RIR
@@ -172,7 +172,7 @@
 			{#if overview.block_name}
 				<div class="space-y-1">
 					<div
-						class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+						class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 					>
 						<Blocks class="h-3 w-3" />
 						Block
@@ -188,7 +188,7 @@
 		{#if isIp && displayAsn != null}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<RadioTower class="h-3 w-3" />
 					Announcing ASN
@@ -218,7 +218,7 @@
 			{#if displayPrefix}
 				<div class="space-y-1">
 					<div
-						class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+						class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 					>
 						<Cable class="h-3 w-3" />
 						Prefix
@@ -247,7 +247,7 @@
 		{#if isIpRange && prefixOverview && prefixOverview.length > 0}
 			<div class="space-y-1">
 				<div
-					class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<RadioTower class="h-3 w-3" />
 					Announcing ASN{prefixOverview.length > 1 ? 's' : ''}
@@ -281,7 +281,7 @@
 			{#if bgpSummary.prefix_count != null}
 				<div class="space-y-1">
 					<div
-						class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+						class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 					>
 						<Network class="h-3 w-3" />
 						Announced prefixes
@@ -293,7 +293,7 @@
 			{#if bgpSummary.peer_count != null}
 				<div class="space-y-1">
 					<div
-						class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider"
+						class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 					>
 						<ArrowUpRight class="h-3 w-3" />
 						BGP Peers
@@ -308,7 +308,7 @@
 		<Separator />
 		<div>
 			<div
-				class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider mb-2"
+				class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider mb-2"
 			>
 				<Shield class="h-3 w-3" />
 				Abuse Contact{abuseEmails.length > 1 ? 's' : ''}
@@ -333,11 +333,11 @@
 		<Separator />
 		<div>
 			<div
-				class="flex items-center gap-1.5 text-[11px] text-muted-foreground uppercase tracking-wider mb-3"
+				class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider mb-3"
 			>
 				<Cable class="h-3 w-3" />
 				Related prefixes
-				<Badge variant="outline" class="text-[10px] h-5 min-w-5 px-1.5 ml-0.5">
+				<Badge variant="outline" class="text-2xs h-5 min-w-5 px-1.5 ml-0.5">
 					{relatedCount}
 				</Badge>
 			</div>
@@ -346,7 +346,7 @@
 					<div class="space-y-1.5">
 						<Badge
 							variant="outline"
-							class="text-[10px] font-normal text-muted-foreground border-border/60"
+							class="text-2xs font-normal text-muted-foreground border-border/60"
 						>
 							{PREFIX_RELATIONSHIP_LABELS[relationship] ?? relationship}
 							<span class="ml-1 opacity-70">({prefixes.length})</span>
@@ -382,7 +382,7 @@
 								</Tooltip.Root>
 							{/each}
 							{#if prefixes.length > 4}
-								<Badge variant="outline" class="text-[10px] font-normal text-muted-foreground">
+								<Badge variant="outline" class="text-2xs font-normal text-muted-foreground">
 									+{prefixes.length - 4} more
 								</Badge>
 							{/if}

@@ -177,7 +177,7 @@
 								class="flex h-5 shrink-0 items-center"
 								onclick={(e) => pivot(e, 'is:kev')}
 							>
-								<Badge variant="destructive" class="gap-1 px-1.5 text-[10px] font-normal">
+								<Badge variant="destructive" class="gap-1 px-1.5 text-2xs font-normal">
 									<Flame class="size-2.5" /> KEV
 								</Badge>
 							</button>
@@ -197,7 +197,7 @@
 								class="flex h-5 shrink-0 items-center"
 								onclick={(e) => pivot(e, 'is:new')}
 							>
-								<Badge variant="info" class="px-1 text-[10px] font-normal">
+								<Badge variant="info" class="px-1 text-2xs font-normal">
 									{it.new_count === it.findings ? 'new' : `${it.new_count} new`}
 								</Badge>
 							</button>
@@ -217,7 +217,7 @@
 								class="flex h-5 shrink-0 items-center"
 								onclick={(e) => pivot(e, 'is:corroborated')}
 							>
-								<Badge variant="secondary" class="gap-1 px-1 text-[10px] font-normal">
+								<Badge variant="secondary" class="gap-1 px-1 text-2xs font-normal">
 									<CheckCheck class="size-2.5" />
 									{it.corroborated === it.findings ? 'confirmed' : `${it.corroborated} confirmed`}
 								</Badge>
@@ -240,7 +240,7 @@
 						<button
 							{...props}
 							type="button"
-							class="min-w-0 font-mono text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+							class="min-w-0 font-mono text-2xs text-muted-foreground hover:text-foreground hover:underline"
 							onclick={(e) => pivot(e, exactToken('template', it.template_id))}
 						>
 							<HighlightText text={it.template_id} {term} />
@@ -248,7 +248,7 @@
 					{/snippet}
 				</Hint>
 				{#if setKey}
-					<span class="text-[11px] text-muted-foreground">
+					<span class="text-2xs text-muted-foreground">
 						{TEMPLATE_SET_LABELS[setKey] ?? setKey}
 					</span>
 				{/if}
@@ -285,7 +285,7 @@
 									>
 										<Badge
 											variant="outline"
-											class="max-w-full px-1 font-mono text-[10px] font-normal hover:bg-accent"
+											class="max-w-full px-1 font-mono text-2xs font-normal hover:bg-accent"
 										>
 											<span class="truncate">{host}</span>
 										</Badge>
@@ -294,7 +294,7 @@
 							</Hint>
 						{/each}
 						{#if it.hosts > MAX_HOSTS}
-							<span class="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+							<span class="shrink-0 text-2xs text-muted-foreground tabular-nums">
 								+{it.hosts - MAX_HOSTS}
 							</span>
 						{/if}
@@ -308,10 +308,7 @@
 							class="flex h-4 items-center"
 							onclick={(e) => pivot(e, exactToken('cve', it.cve_ids[0]))}
 						>
-							<Badge
-								variant="outline"
-								class="px-1 font-mono text-[10px] font-normal hover:bg-accent"
-							>
+							<Badge variant="outline" class="px-1 font-mono text-2xs font-normal hover:bg-accent">
 								{it.cve_ids[0]}
 							</Badge>
 						</button>
@@ -365,7 +362,7 @@
 					>
 						{#snippet child(props)}
 							<span {...props} class="flex h-5 items-center">
-								<Badge variant="secondary" class="px-1.5 text-[10px] font-normal tabular-nums">
+								<Badge variant="secondary" class="px-1.5 text-2xs font-normal tabular-nums">
 									{allReviewed ? 'Reviewed' : `${reviewed} of ${it.findings} reviewed`}
 								</Badge>
 							</span>

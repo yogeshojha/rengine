@@ -526,7 +526,7 @@
 	{#if chrome}
 		<div class="crumbs">
 			<Breadcrumb.Root>
-				<Breadcrumb.List class="gap-1 text-[11px] sm:gap-1">
+				<Breadcrumb.List class="gap-1 text-2xs sm:gap-1">
 					<Breadcrumb.Item class="gap-1 text-muted-foreground">
 						<FileCode2 size={12} />
 						{filename}
@@ -535,9 +535,9 @@
 						<Breadcrumb.Separator class="[&>svg]:size-3" />
 						<Breadcrumb.Item>
 							{#if i === cursorPath.length - 1}
-								<Breadcrumb.Page class="font-mono text-[11px]">{segment}</Breadcrumb.Page>
+								<Breadcrumb.Page class="font-mono text-2xs">{segment}</Breadcrumb.Page>
 							{:else}
-								<span class="font-mono text-[11px] text-muted-foreground">{segment}</span>
+								<span class="font-mono text-2xs text-muted-foreground">{segment}</span>
 							{/if}
 						</Breadcrumb.Item>
 					{/each}
@@ -557,7 +557,7 @@
 					<Button
 						variant="ghost"
 						size="sm"
-						class="h-5 gap-1 px-1.5 text-[11px] {errorCount ? 'text-destructive' : 'text-warning'}"
+						class="h-5 gap-1 px-1.5 text-2xs {errorCount ? 'text-destructive' : 'text-warning'}"
 						onclick={jumpToFirstIssue}
 					>
 						{#if errorCount}

@@ -140,12 +140,12 @@
 		{#if t.pending}<Spinner class="size-3.5" />{:else}<Icon class="size-3.5" />{/if}
 	</span>
 	{#if t.count}
-		<span class="text-[22px] leading-none font-semibold tracking-tight tabular-nums">
-			{t.count}{#if t.unit}<span class="ml-1 text-[13px] font-medium tracking-normal">{t.unit}</span
+		<span class="text-xl leading-none font-semibold tracking-tight tabular-nums">
+			{t.count}{#if t.unit}<span class="ml-1 text-sm font-medium tracking-normal">{t.unit}</span
 				>{/if}
 		</span>
 	{/if}
-	<span class="flex items-center gap-1.5 text-[13px] leading-tight font-medium">
+	<span class="flex items-center gap-1.5 text-sm leading-tight font-medium">
 		<span class="size-1.5 shrink-0 rounded-full {tone.dot}" aria-hidden="true"></span>
 		{t.label}
 	</span>

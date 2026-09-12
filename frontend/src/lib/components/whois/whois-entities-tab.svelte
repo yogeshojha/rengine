@@ -96,7 +96,7 @@
 							<RoleIcon class="h-4 w-4 text-muted-foreground" />
 							<span class="text-sm font-medium">{ENTITY_ROLE_LABELS[role]}</span>
 							{#if entity.handle}
-								<Badge variant="outline" class="text-[10px] font-mono ml-auto">
+								<Badge variant="outline" class="text-2xs font-mono ml-auto">
 									{entity.handle}
 								</Badge>
 							{/if}

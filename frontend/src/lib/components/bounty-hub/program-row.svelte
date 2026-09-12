@@ -39,7 +39,7 @@
 	class="group flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-muted/40"
 >
 	<span
-		class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/50 text-[11px] font-semibold text-muted-foreground"
+		class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/50 text-2xs font-semibold text-muted-foreground"
 	>
 		{#if program.profile_picture}
 			<img src={program.profile_picture} alt="" class="size-full object-cover" loading="lazy" />

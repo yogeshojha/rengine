@@ -172,10 +172,10 @@
 						></span>
 					</span>
 					<span class="flex min-w-0 flex-col gap-1.5 pb-[18px]">
-						<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+						<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 							<a href={ROUTES.scan(s.id)} class="font-semibold hover:underline">{s.engine_name}</a>
 							<span
-								class="rounded-full px-[7px] text-[11px] font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
+								class="rounded-full px-[7px] text-2xs font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
 									s.status
 								]}"
 							>
@@ -185,7 +185,7 @@
 							{#if previous && !isLiveStatus(s.status) && s.scope === previous.scope}
 								<a
 									href={ROUTES.compare(s.id, previous.id)}
-									class="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary"
+									class="inline-flex items-center gap-1 text-2xs font-medium text-muted-foreground hover:text-primary"
 								>
 									<GitCompareArrows class="size-3" />
 									Compare
@@ -228,10 +228,10 @@
 							</span>
 						</span>
 						<span class="flex min-w-0 flex-col gap-1 pb-3.5">
-							<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+							<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 								<a href={ROUTES.scan(r.id)} class="font-medium hover:underline">{r.engine_name}</a>
 								<span
-									class="rounded-full px-[7px] text-[11px] font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
+									class="rounded-full px-[7px] text-2xs font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
 										r.status
 									]}"
 								>
@@ -256,7 +256,7 @@
 						></span></span
 					>
 				</span>
-				<span class="pb-1 text-[13px] text-muted-foreground">
+				<span class="pb-1 text-sm text-muted-foreground">
 					Target added{creator ? ` by ${creator}` : ''} · {enrichment}
 				</span>
 			</li>

@@ -91,12 +91,12 @@
 						{#if hovered}
 							{@const a = arcs.find((x) => x.band.key === hovered)}
 							<span class="text-lg leading-none font-semibold tabular-nums">{a?.share}%</span>
-							<span class="mt-1 text-[11px] text-muted-foreground">{a?.band.label}</span>
+							<span class="mt-1 text-2xs text-muted-foreground">{a?.band.label}</span>
 						{:else}
 							<span class="text-lg leading-none font-semibold tabular-nums">
 								{exposure.services.toLocaleString()}
 							</span>
-							<span class="mt-1 text-[11px] text-muted-foreground">services</span>
+							<span class="mt-1 text-2xs text-muted-foreground">services</span>
 						{/if}
 					</div>
 				</div>
@@ -118,7 +118,7 @@
 								{SERVICE_CLASS_LABELS[b.key] ?? b.label}
 							</span>
 							<span class="font-medium tabular-nums">{b.count.toLocaleString()}</span>
-							<span class="w-9 text-right text-[11px] text-muted-foreground tabular-nums">
+							<span class="w-9 text-right text-2xs text-muted-foreground tabular-nums">
 								{exposure.services ? Math.round((b.count / exposure.services) * 100) : 0}%
 							</span>
 						</a>
@@ -143,7 +143,7 @@
 
 		{#if top.length}
 			<div class="flex flex-col gap-2">
-				<span class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+				<span class="text-2xs font-medium tracking-wider text-muted-foreground uppercase">
 					Top non-web services
 				</span>
 				<RankedBars rows={top} dense>

@@ -96,7 +96,7 @@
 							{#each field.options as option (option)}
 								<ToggleGroup.Item
 									value={option}
-									class="h-6 px-2 text-[11px] font-normal data-[state=on]:bg-foreground data-[state=on]:text-background"
+									class="h-6 px-2 text-2xs font-normal data-[state=on]:bg-foreground data-[state=on]:text-background"
 								>
 									{optionLabel(field, option)}
 								</ToggleGroup.Item>

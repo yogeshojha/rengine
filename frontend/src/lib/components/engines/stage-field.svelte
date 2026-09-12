@@ -49,7 +49,7 @@
 <Field.Field orientation="horizontal" class="gap-6 py-2.5">
 	<Field.Content class="gap-0.5">
 		<span class="flex items-center gap-1.5">
-			<Field.Label for={id} class="text-[13px] font-normal">{field.title}</Field.Label>
+			<Field.Label for={id} class="text-sm font-normal">{field.title}</Field.Label>
 			{#if modified}
 				<Tooltip.Root>
 					<Tooltip.Trigger>
@@ -70,10 +70,10 @@
 			{/if}
 		</span>
 		{#if field.description}
-			<Field.Description class="text-[11px] leading-snug">{field.description}</Field.Description>
+			<Field.Description class="text-2xs leading-snug">{field.description}</Field.Description>
 		{/if}
 		{#if field.scale}
-			<Field.Description class="text-[11px] leading-snug opacity-75">
+			<Field.Description class="text-2xs leading-snug opacity-75">
 				{SCALE_HELP[field.scale]}
 			</Field.Description>
 		{/if}
@@ -105,7 +105,7 @@
 				{#each field.options as option (option)}
 					<ToggleGroup.Item
 						value={option}
-						class="h-6 px-2 text-[11px] font-normal aria-pressed:bg-foreground aria-pressed:text-background data-[state=on]:bg-foreground data-[state=on]:text-background"
+						class="h-6 px-2 text-2xs font-normal aria-pressed:bg-foreground aria-pressed:text-background data-[state=on]:bg-foreground data-[state=on]:text-background"
 					>
 						{optionLabel(option)}
 					</ToggleGroup.Item>
@@ -150,7 +150,7 @@
 					onchange={(e) => commitNumber(e.currentTarget.value)}
 				/>
 				{#if field.minimum !== null && field.maximum !== null}
-					<span class="text-[10px] text-muted-foreground tabular-nums">
+					<span class="text-2xs text-muted-foreground tabular-nums">
 						{field.minimum}–{field.maximum}
 					</span>
 				{/if}

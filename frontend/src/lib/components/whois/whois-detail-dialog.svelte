@@ -256,7 +256,7 @@
 						<Tabs.Trigger value="related" class="flex-1 gap-1.5">
 							Related
 							{#if !isLoadingCorrelations && relatedCount > 0}
-								<Badge variant="secondary" class="text-[10px] h-5 min-w-5 px-1.5 ml-1">
+								<Badge variant="secondary" class="text-2xs h-5 min-w-5 px-1.5 ml-1">
 									{relatedCount}
 								</Badge>
 							{:else if isLoadingCorrelations}

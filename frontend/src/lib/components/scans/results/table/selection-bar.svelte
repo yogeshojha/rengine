@@ -56,7 +56,7 @@
 </script>
 
 {#if count > 0 || offerAll}
-	<div class="border-b bg-primary/[0.06] text-[13px] dark:bg-primary/10">
+	<div class="border-b bg-primary/[0.06] text-sm dark:bg-primary/10">
 		{#if count > 0}
 			<div class="flex flex-wrap items-center gap-2 px-4 py-2">
 				<span class="font-semibold tabular-nums">{count.toLocaleString()} selected</span>

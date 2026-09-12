@@ -22,7 +22,7 @@
 			<button
 				{...props}
 				type="button"
-				class="inline-flex items-center gap-1 rounded border px-1.5 py-px text-[10px] font-medium {sourceChipClass(
+				class="inline-flex items-center gap-1 rounded border px-1.5 py-px text-2xs font-medium {sourceChipClass(
 					signal.source
 				)}"
 				onclick={(e) => {
@@ -38,8 +38,7 @@
 	<HoverCard.Content class="w-80 max-w-[90vw] p-3" side="top" align="start">
 		<p class="flex items-center gap-1.5 text-xs font-medium">
 			{signal.kind_label}
-			<span
-				class="rounded border px-1 py-px text-[10px] font-normal {sourceChipClass(signal.source)}"
+			<span class="rounded border px-1 py-px text-2xs font-normal {sourceChipClass(signal.source)}"
 				>{interestCatalog.sourceLabel(signal.source)}</span
 			>
 		</p>
@@ -49,12 +48,12 @@
 			<p class="mt-1.5 text-xs text-muted-foreground">{help}</p>
 		{/if}
 		{#if isAi && signal.model}
-			<p class="mt-2 text-[11px] text-muted-foreground">
+			<p class="mt-2 text-2xs text-muted-foreground">
 				Written by {signal.model}. A judgement, not an observation.
 			</p>
 		{:else if signal.evidence}
 			<p
-				class="mt-2 rounded border border-border bg-accent/50 p-2 font-mono text-[11px] break-all text-muted-foreground"
+				class="mt-2 rounded border border-border bg-accent/50 p-2 font-mono text-2xs break-all text-muted-foreground"
 			>
 				{signal.evidence}
 			</p>

@@ -212,7 +212,7 @@
 				<ShieldAlert class="size-3.5 text-muted-foreground" />
 				Vulnerability scan
 				{#if dirty}
-					<Badge variant="info" class="text-[10px] font-normal">This run only</Badge>
+					<Badge variant="info" class="text-2xs font-normal">This run only</Badge>
 				{/if}
 			</Label>
 			<div class="ml-auto flex shrink-0 items-center gap-2">
@@ -239,7 +239,7 @@
 				</p>
 			</div>
 		{:else if !current?.enabled}
-			<p class="text-[11px] text-muted-foreground">
+			<p class="text-2xs text-muted-foreground">
 				Off for this run. Enable it to test every asset this scan finds against {stats?.total.toLocaleString()}
 				checks.
 			</p>
@@ -277,7 +277,7 @@
 					<SeverityBar counts={severityCounts} height="h-1.5" />
 					<div class="flex flex-wrap gap-x-3 gap-y-1">
 						{#each severityCounts as part (part.severity)}
-							<span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+							<span class="flex items-center gap-1 text-2xs text-muted-foreground">
 								<span
 									class="size-1.5 rounded-full"
 									style="background:{SEVERITY_FILL[part.severity]}"
@@ -291,7 +291,7 @@
 					</div>
 				{/if}
 				{#each preview?.warnings ?? [] as warning (warning)}
-					<p class="text-[11px] text-warning">{warning}</p>
+					<p class="text-2xs text-warning">{warning}</p>
 				{/each}
 
 				<Collapsible.Root bind:open>
@@ -303,7 +303,7 @@
 					</Collapsible.Trigger>
 					<Collapsible.Content class="space-y-3 pt-3">
 						<div class="space-y-1.5">
-							<p class="text-[11px] font-medium text-muted-foreground">Severity</p>
+							<p class="text-2xs font-medium text-muted-foreground">Severity</p>
 							<div class="flex flex-wrap gap-1.5">
 								{#each SEVERITY_ORDER as value (value)}
 									{@const on = current?.severities.includes(value) ?? false}
@@ -331,7 +331,7 @@
 						</div>
 
 						<div class="space-y-1.5">
-							<p class="text-[11px] font-medium text-muted-foreground">Check sets</p>
+							<p class="text-2xs font-medium text-muted-foreground">Check sets</p>
 							<div class="grid grid-cols-1 gap-1">
 								{#each sets as set (set.key)}
 									{@const on = current?.template_sets.includes(set.key) ?? false}

@@ -192,13 +192,13 @@
 					<div class="group flex items-center gap-3 px-5 py-3 hover:bg-accent/40">
 						<Icon class="size-4 shrink-0 text-muted-foreground" />
 						<div class="flex min-w-0 flex-1 flex-col gap-0.5">
-							<span class="flex flex-wrap items-center gap-2 text-[12.5px] font-medium">
+							<span class="flex flex-wrap items-center gap-2 text-xs font-medium">
 								{rule.name}
 								<span
-									class="rounded border border-border px-1 py-px text-[10px] font-normal tracking-[0.04em] text-muted-foreground uppercase"
+									class="rounded border border-border px-1 py-px text-2xs font-normal tracking-[0.04em] text-muted-foreground uppercase"
 									>{rule.builtin ? 'Shipped' : 'Custom'}</span
 								>
-								<span class="text-[11px] font-normal text-muted-foreground">{rule.kind_label}</span>
+								<span class="text-2xs font-normal text-muted-foreground">{rule.kind_label}</span>
 								{#if rule.notify}
 									<Hint text="Notifies when this rule flags a new asset">
 										{#snippet child(props)}
@@ -207,10 +207,10 @@
 									</Hint>
 								{/if}
 							</span>
-							<span class="truncate font-mono text-[11px] text-muted-foreground">{rule.query}</span>
+							<span class="truncate font-mono text-2xs text-muted-foreground">{rule.query}</span>
 						</div>
 						<span
-							class="w-16 shrink-0 text-right text-[12.5px] tabular-nums {rule.matches
+							class="w-16 shrink-0 text-right text-xs tabular-nums {rule.matches
 								? ''
 								: 'text-muted-foreground'}">{(rule.matches ?? 0).toLocaleString()}</span
 						>

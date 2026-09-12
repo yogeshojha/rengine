@@ -150,7 +150,7 @@
 								<Tabs.Trigger value={tab} class="gap-1.5">
 									{TAB_LABELS[tab]}
 									{#if n}
-										<span class="text-muted-foreground text-[11px] tabular-nums">{n}</span>
+										<span class="text-muted-foreground text-2xs tabular-nums">{n}</span>
 									{/if}
 								</Tabs.Trigger>
 							{/each}

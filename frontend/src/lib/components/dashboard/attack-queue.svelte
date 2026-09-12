@@ -174,12 +174,12 @@
 									<span class="flex min-w-0 items-center gap-2">
 										<span class="truncate text-sm font-medium">{f.name}</span>
 										{#if f.is_kev}
-											<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-[10px]">
+											<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-2xs">
 												<Flame class="size-2.5" /> KEV
 											</Badge>
 										{/if}
 										{#if f.is_new}
-											<Badge variant="info" class="h-4 px-1.5 text-[10px]">New</Badge>
+											<Badge variant="info" class="h-4 px-1.5 text-2xs">New</Badge>
 										{/if}
 									</span>
 									<span class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
@@ -222,7 +222,7 @@
 			</div>
 			{#if concentration.length}
 				<div class="flex flex-col gap-2 border-t px-5 py-4 lg:border-t-0 lg:border-l">
-					<span class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+					<span class="text-2xs font-medium tracking-wider text-muted-foreground uppercase">
 						Findings by target
 					</span>
 					<RankedBars rows={concentration} dense />

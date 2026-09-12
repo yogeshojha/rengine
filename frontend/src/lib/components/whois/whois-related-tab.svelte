@@ -157,7 +157,7 @@
 								</span>
 								<Badge
 									variant="outline"
-									class="text-[10px] font-normal shrink-0 text-muted-foreground border-border/60"
+									class="text-2xs font-normal shrink-0 text-muted-foreground border-border/60"
 								>
 									{record.lookup_type}
 								</Badge>
@@ -169,7 +169,7 @@
 						{#if reasons.length >= 3}
 							<Badge
 								variant="outline"
-								class="text-[10px] shrink-0 gap-1 border-warning/30 text-warning bg-warning/10"
+								class="text-2xs shrink-0 gap-1 border-warning/30 text-warning bg-warning/10"
 							>
 								<ShieldAlert class="h-3 w-3" />
 								Strong
@@ -191,7 +191,7 @@
 												class="cursor-pointer"
 											>
 												<span
-													class="inline-flex items-center text-[11px] border border-border/60 rounded-md overflow-hidden hover:ring-1 hover:ring-ring/30 transition-shadow"
+													class="inline-flex items-center text-2xs border border-border/60 rounded-md overflow-hidden hover:ring-1 hover:ring-ring/30 transition-shadow"
 												>
 													<span class="px-2 py-1 font-medium bg-muted/60 text-foreground/70">
 														{reasonLabel(type)?.full ?? type}

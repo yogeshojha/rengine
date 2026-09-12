@@ -220,7 +220,7 @@
 													</span>
 													<Badge
 														variant="outline"
-														class="text-[10px] font-normal shrink-0 text-muted-foreground border-border/60"
+														class="text-2xs font-normal shrink-0 text-muted-foreground border-border/60"
 													>
 														{record.lookup_type}
 													</Badge>
@@ -253,7 +253,7 @@
 										</div>
 
 										{#if record.registration_date || record.expiration_date}
-											<div class="flex items-center gap-3 text-[11px] text-muted-foreground/70">
+											<div class="flex items-center gap-3 text-2xs text-muted-foreground/70">
 												{#if record.registration_date}
 													<span>Registered {formatShortDate(record.registration_date)}</span>
 												{/if}

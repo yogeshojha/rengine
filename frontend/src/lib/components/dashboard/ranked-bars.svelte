@@ -52,7 +52,7 @@
 										: ''}"
 								>
 									{r.label}
-									{#if r.sub}<span class="ml-1.5 font-sans text-[11px] text-muted-foreground"
+									{#if r.sub}<span class="ml-1.5 font-sans text-2xs text-muted-foreground"
 											>{r.sub}</span
 										>{/if}
 								</span>

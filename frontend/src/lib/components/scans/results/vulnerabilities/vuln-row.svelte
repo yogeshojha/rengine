@@ -166,7 +166,7 @@
 							class="flex h-5 shrink-0 items-center"
 							onclick={(e) => pivot(e, 'is:kev')}
 						>
-							<Badge variant="destructive" class="gap-1 px-1.5 text-[10px] font-normal">
+							<Badge variant="destructive" class="gap-1 px-1.5 text-2xs font-normal">
 								<Flame class="size-2.5" /> KEV
 							</Badge>
 						</button>
@@ -182,7 +182,7 @@
 							class="flex h-5 shrink-0 items-center"
 							onclick={(e) => pivot(e, 'is:new')}
 						>
-							<Badge variant="info" class="px-1 text-[10px] font-normal">new</Badge>
+							<Badge variant="info" class="px-1 text-2xs font-normal">new</Badge>
 						</button>
 					{/snippet}
 				</Hint>
@@ -197,7 +197,7 @@
 							aria-label="{bounty} HackerOne reports, filter to this CVE"
 							onclick={(e) => pivot(e, exactToken('cve', v.cve_ids[0] ?? ''))}
 						>
-							<Badge variant="outline" class="gap-1 px-1.5 text-[10px] font-normal">
+							<Badge variant="outline" class="gap-1 px-1.5 text-2xs font-normal">
 								<Trophy class="size-2.5" />
 								{bounty.toLocaleString()}
 							</Badge>
@@ -221,7 +221,7 @@
 					<button
 						{...props}
 						type="button"
-						class="min-w-0 font-mono text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+						class="min-w-0 font-mono text-2xs text-muted-foreground hover:text-foreground hover:underline"
 						onclick={(e) => pivot(e, exactToken('template', v.template_id))}
 					>
 						<HighlightText text={v.template_id} {term} />
@@ -234,7 +234,7 @@
 					class="flex h-4 shrink-0 items-center"
 					onclick={(e) => pivot(e, exactToken('tag', tag))}
 				>
-					<Badge variant="outline" class="px-1 text-[10px] font-normal hover:bg-accent">
+					<Badge variant="outline" class="px-1 text-2xs font-normal hover:bg-accent">
 						{tag}
 					</Badge>
 				</button>
@@ -265,7 +265,7 @@
 			{/snippet}
 		</Hint>
 		<span class="flex items-center gap-1">
-			<span class="min-w-0 truncate font-mono text-[11px] text-muted-foreground">{origin}</span>
+			<span class="min-w-0 truncate font-mono text-2xs text-muted-foreground">{origin}</span>
 			<CopyButton
 				value={v.matched_at}
 				class="size-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
@@ -314,13 +314,13 @@
 						{#if asset.tech.length || asset.is_cdn}
 							<div class="flex min-w-0 flex-wrap items-center gap-1">
 								{#each asset.tech.slice(0, 2) as tech (tech)}
-									<Badge variant="outline" class="gap-1 px-1 text-[10px] font-normal">
+									<Badge variant="outline" class="gap-1 px-1 text-2xs font-normal">
 										<TechIcon name={tech} class="size-2.5" />
 										<span class="truncate">{tech}</span>
 									</Badge>
 								{/each}
 								{#if asset.is_cdn}
-									<Badge variant="info" class="px-1 text-[10px] font-normal">
+									<Badge variant="info" class="px-1 text-2xs font-normal">
 										{asset.cdn_name ?? 'CDN'}
 									</Badge>
 								{/if}
@@ -342,7 +342,7 @@
 						{#if v.poc_count}
 							<Hint text="{v.poc_count} public exploits published">
 								{#snippet child(props)}
-									<span {...props} class="text-[11px] text-muted-foreground tabular-nums">
+									<span {...props} class="text-2xs text-muted-foreground tabular-nums">
 										{v.poc_count}
 										{v.poc_count === 1 ? 'exploit' : 'exploits'}
 									</span>
@@ -383,13 +383,13 @@
 							>
 								<Badge
 									variant="outline"
-									class="px-1 font-mono text-[10px] font-normal hover:bg-accent"
+									class="px-1 font-mono text-2xs font-normal hover:bg-accent"
 								>
 									{v.cve_ids[0]}
 								</Badge>
 							</button>
 							{#if v.cve_ids.length > 1}
-								<span class="text-[10px] text-muted-foreground">+{v.cve_ids.length - 1}</span>
+								<span class="text-2xs text-muted-foreground">+{v.cve_ids.length - 1}</span>
 							{/if}
 						{/if}
 						{#if cvss !== null}
@@ -466,7 +466,7 @@
 						class="flex h-5 items-center"
 						onclick={(e) => pivot(e, exactToken('state', v.state))}
 					>
-						<Badge variant="secondary" class="px-1.5 text-[10px] font-normal">
+						<Badge variant="secondary" class="px-1.5 text-2xs font-normal">
 							{VULN_STATE_LABELS[v.state] ?? v.state}
 						</Badge>
 					</button>

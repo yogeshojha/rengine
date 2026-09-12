@@ -61,7 +61,7 @@
 		<div class="mb-2 flex items-start justify-between gap-3">
 			<div class="min-w-0">
 				<p class="text-sm font-medium">{stage.title}</p>
-				<p class="text-[11px] text-muted-foreground">Applies to this scan only.</p>
+				<p class="text-2xs text-muted-foreground">Applies to this scan only.</p>
 			</div>
 			{#if changedFields.length}
 				<Button

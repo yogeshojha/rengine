@@ -59,7 +59,7 @@
 			{@const on = list.filter((s) => stateOf(s) === 'on').length}
 			<div>
 				<div
-					class="mb-1 flex items-baseline justify-between gap-2 text-[10px] tracking-wider text-muted-foreground uppercase"
+					class="mb-1 flex items-baseline justify-between gap-2 text-2xs tracking-wider text-muted-foreground uppercase"
 				>
 					<span>{phaseLabel(phase)}</span>
 					<span class="tracking-normal tabular-nums normal-case">{on}/{list.length}</span>

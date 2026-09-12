@@ -53,7 +53,7 @@
 	<div class="space-y-3 p-2">
 		{#each sections as section (section.group.key)}
 			<div>
-				<p class="px-2 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+				<p class="px-2 pb-1 text-2xs font-medium tracking-wide text-muted-foreground uppercase">
 					{section.group.label}
 				</p>
 				{#each section.items as tool (tool.name)}
@@ -66,7 +66,7 @@
 								type="button"
 								onclick={() => onSelect(tool.name)}
 								class={cn(
-									'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors',
+									'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
 									selected === tool.name
 										? 'bg-accent text-accent-foreground'
 										: 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
@@ -74,7 +74,7 @@
 							>
 								<Icon class="size-3.5 shrink-0" />
 								<span class="min-w-0 flex-1 truncate">{tool.title}</span>
-								<span class="shrink-0 text-[10px] {MODE_CLASS[mode]}">{MODE_LABELS[mode]}</span>
+								<span class="shrink-0 text-2xs {MODE_CLASS[mode]}">{MODE_LABELS[mode]}</span>
 							</button>
 						{/snippet}
 					</Hint>

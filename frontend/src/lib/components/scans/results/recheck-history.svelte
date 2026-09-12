@@ -33,7 +33,7 @@
 	<div class="flex flex-col">
 		{#each entries as entry (entry.scan_id + entry.asset_key)}
 			<div class="border-b px-1 py-3 last:border-b-0">
-				<div class="flex flex-wrap items-center gap-2 text-[13px]">
+				<div class="flex flex-wrap items-center gap-2 text-sm">
 					<span class="flex h-5 shrink-0 items-center">
 						<span class="size-2 rounded-full {dot(entry)}"></span>
 					</span>
@@ -46,7 +46,7 @@
 						<span class="text-xs font-medium text-destructive">recheck failed</span>
 					{:else if entry.changed}
 						<span
-							class="rounded-full border border-primary/40 bg-primary/10 px-[7px] text-[11px] font-semibold text-primary"
+							class="rounded-full border border-primary/40 bg-primary/10 px-[7px] text-2xs font-semibold text-primary"
 						>
 							{entry.changes.length}
 							{entry.changes.length === 1 ? 'change' : 'changes'}

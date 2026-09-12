@@ -52,7 +52,7 @@
 		<p class="text-xs text-destructive">{feed.error}</p>
 	{/if}
 
-	<div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-3 text-[11px]">
+	<div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-3 text-2xs">
 		{#if version}
 			<Hint text="Version published by {feed.source}">
 				{#snippet child(props)}
@@ -80,5 +80,5 @@
 			<ExternalLink class="size-2.5" />
 		</a>
 	</div>
-	<p class="text-[11px] text-muted-foreground">{feed.license}</p>
+	<p class="text-2xs text-muted-foreground">{feed.license}</p>
 </div>

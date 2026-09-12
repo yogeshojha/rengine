@@ -164,7 +164,7 @@
 						</Hint>
 					{/each}
 				</div>
-				<div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+				<div class="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted-foreground">
 					{#each segments as s (s.key)}
 						<span class="flex items-center gap-1.5">
 							<span class="size-2 rounded-full" style="background:{s.color}"></span>

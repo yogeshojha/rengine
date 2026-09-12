@@ -324,7 +324,7 @@
 							{@const inGroup = plan.content.filter((s) => s.group === group.key)}
 							{#if inGroup.length}
 								<div class="space-y-1.5">
-									<p class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+									<p class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
 										{group.label}
 									</p>
 									<div class="flex flex-wrap gap-1.5">
@@ -354,7 +354,7 @@
 								{#if changed.length}
 									<span class="flex shrink-0 items-center gap-1">
 										<span
-											class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+											class="rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary"
 										>
 											This report only
 										</span>
@@ -406,9 +406,7 @@
 													: ''
 											)}
 										/>
-										<span class="mt-1.5 block truncate text-[11px] leading-tight"
-											>{option.name}</span
-										>
+										<span class="mt-1.5 block truncate text-2xs leading-tight">{option.name}</span>
 									</button>
 								{/each}
 							</div>

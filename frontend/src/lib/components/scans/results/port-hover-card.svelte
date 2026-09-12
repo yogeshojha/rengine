@@ -117,7 +117,7 @@
 					<Lock class="size-3 text-muted-foreground" />
 				{/if}
 				{#if sensitive}
-					<Badge variant="warning" class="px-1 text-[10px] font-normal">Sensitive</Badge>
+					<Badge variant="warning" class="px-1 text-2xs font-normal">Sensitive</Badge>
 				{/if}
 			</div>
 		</div>
@@ -167,18 +167,18 @@
 									<span class="truncate text-muted-foreground">{serviceLabel(r)}</span>
 								{/if}
 							{/if}
-							<span class="ml-auto shrink-0 text-[11px] text-muted-foreground">
+							<span class="ml-auto shrink-0 text-2xs text-muted-foreground">
 								{PORT_SOURCE_LABELS[r.source] ?? r.source}
 							</span>
 						</div>
 					{/each}
 					{#if addresses.length > MAX_ADDRESSES}
-						<p class="text-[11px] text-muted-foreground">
+						<p class="text-2xs text-muted-foreground">
 							+{addresses.length - MAX_ADDRESSES} addresses
 						</p>
 					{/if}
 					{#if help}
-						<p class="text-[11px] text-muted-foreground">{help}</p>
+						<p class="text-2xs text-muted-foreground">{help}</p>
 					{/if}
 				</div>
 

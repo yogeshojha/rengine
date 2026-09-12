@@ -41,7 +41,7 @@
 		{ key: ALL, label: 'All calls' },
 		{ key: FAILED, label: 'Failed' }
 	];
-	const LABEL = 'text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase';
+	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
 	const CHIP_LIMIT = 5;
 	const RANK_LIMIT = 8;
 	const SESSION_PAGE = 20;
@@ -194,7 +194,7 @@
 						{@const remaining = Math.max(0, ordered.length - shown)}
 						{#if newDay}
 							<div
-								class="border-b bg-muted/30 px-5 py-1.5 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase"
+								class="border-b bg-muted/30 px-5 py-1.5 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
 							>
 								{day}
 							</div>
@@ -231,7 +231,7 @@
 									<span class="flex flex-wrap items-center gap-1">
 										{#each burst.tools.slice(0, CHIP_LIMIT) as t (t.name)}
 											<span
-												class="inline-flex h-5 items-center gap-1 rounded border bg-muted/40 px-1.5 font-mono text-[11px] leading-none font-normal"
+												class="inline-flex h-5 items-center gap-1 rounded border bg-muted/40 px-1.5 font-mono text-2xs leading-none font-normal"
 											>
 												{t.name}{#if t.count > 1}<span class="text-muted-foreground tabular-nums"
 														>×{t.count}</span
@@ -239,7 +239,7 @@
 											</span>
 										{/each}
 										{#if burst.tools.length > CHIP_LIMIT}
-											<span class="text-[11px] font-normal text-muted-foreground">
+											<span class="text-2xs font-normal text-muted-foreground">
 												+{burst.tools.length - CHIP_LIMIT} more
 											</span>
 										{/if}
@@ -332,7 +332,7 @@
 			>
 				<div class="flex flex-col gap-1.5 pb-4">
 					<h4 class="mb-1 {LABEL}">Trail</h4>
-					<div class="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-[13px]">
+					<div class="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2 text-sm">
 						<span class="pt-px text-xs text-muted-foreground">Calls</span>
 						<span class="tabular-nums">
 							{calls.length}{#if failedTotal}<span class="ml-1 text-destructive"
@@ -366,7 +366,7 @@
 							aria-pressed={tool === t.name}
 							onclick={() => (tool = tool === t.name ? null : t.name)}
 						>
-							<span class="flex items-baseline justify-between gap-2 text-[13px]">
+							<span class="flex items-baseline justify-between gap-2 text-sm">
 								<span
 									class="min-w-0 truncate font-mono text-xs group-hover:underline {tool === t.name
 										? 'font-medium'
@@ -408,7 +408,7 @@
 						{@const c = parseClient(a.client)}
 						<button
 							type="button"
-							class="group flex items-baseline justify-between gap-2 text-left text-[13px]"
+							class="group flex items-baseline justify-between gap-2 text-left text-sm"
 							aria-pressed={agent === a.key}
 							onclick={() => (agent = agent === a.key ? null : a.key)}
 						>

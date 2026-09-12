@@ -37,7 +37,7 @@
 
 {#snippet side(run: RunSide, label: string, which: 'baseline' | 'current')}
 	<div class="flex min-w-0 flex-col gap-2 px-4 py-3.5 sm:px-5">
-		<span class="text-[11px] tracking-wider text-muted-foreground uppercase">{label}</span>
+		<span class="text-2xs tracking-wider text-muted-foreground uppercase">{label}</span>
 
 		<RunPicker
 			{label}
@@ -47,7 +47,7 @@
 			{loading}
 			onPick={(id) => onPick(which, id)}
 		>
-			<span class="min-w-0 truncate text-[15px] leading-6 font-semibold">{run.engine_name}</span>
+			<span class="min-w-0 truncate text-base leading-6 font-semibold">{run.engine_name}</span>
 		</RunPicker>
 
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
@@ -57,7 +57,7 @@
 				<span class="tabular-nums">{durationText(run.duration_seconds)}</span>
 			{/if}
 			<span class="opacity-40">·</span>
-			<ScanStatusBadge status={run.status as ScanStatus} class="h-4 px-1.5 text-[10px]" />
+			<ScanStatusBadge status={run.status as ScanStatus} class="h-4 px-1.5 text-2xs" />
 		</div>
 
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">

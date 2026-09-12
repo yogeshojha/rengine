@@ -217,15 +217,15 @@
 										<span class="flex flex-wrap items-center gap-2 text-sm font-medium">
 											{capability.label}
 											{#if locked}
-												<Badge variant="secondary" class="text-[10px]">Required</Badge>
+												<Badge variant="secondary" class="text-2xs">Required</Badge>
 											{:else if touches}
-												<Badge variant="warning" class="gap-1 text-[10px]">
+												<Badge variant="warning" class="gap-1 text-2xs">
 													<TriangleAlertIcon class="size-3" />
 													Reaches targets
 												</Badge>
 											{/if}
 											{#if blocked}
-												<Badge variant="outline" class="text-[10px]">Off for this instance</Badge>
+												<Badge variant="outline" class="text-2xs">Off for this instance</Badge>
 											{/if}
 										</span>
 										<span class="mt-0.5 block text-xs text-muted-foreground">{capability.help}</span

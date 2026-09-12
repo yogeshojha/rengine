@@ -282,7 +282,7 @@
 						<button
 							{...props}
 							type="button"
-							class="flex h-5 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-[11px] tabular-nums text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+							class="flex h-5 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-2xs tabular-nums text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 							aria-label="Open the structure of {s.name}"
 							onclick={(e) => {
 								e.stopPropagation();
@@ -307,7 +307,7 @@
 						<button
 							{...props}
 							type="button"
-							class="flex h-5 shrink-0 items-center gap-1 rounded border px-1 text-[10px] hover:bg-accent"
+							class="flex h-5 shrink-0 items-center gap-1 rounded border px-1 text-2xs hover:bg-accent"
 							style="border-color:color-mix(in oklch, {SEVERITY_FILL[
 								worstSeverity
 							]} 45%, transparent)"
@@ -326,7 +326,7 @@
 			{/if}
 			{#if s.is_wildcard}
 				<span class="flex h-5 shrink-0 items-center">
-					<Badge variant="outline" class="px-1 text-[10px] font-normal text-muted-foreground">
+					<Badge variant="outline" class="px-1 text-2xs font-normal text-muted-foreground">
 						wildcard
 					</Badge>
 				</span>
@@ -336,7 +336,7 @@
 					<Tooltip.Trigger>
 						{#snippet child({ props })}
 							<span
-								class="flex h-5 shrink-0 items-center text-[10px] text-muted-foreground/70"
+								class="flex h-5 shrink-0 items-center text-2xs text-muted-foreground/70"
 								{...props}>no DNS</span
 							>
 						{/snippet}
@@ -375,7 +375,7 @@
 								<button
 									{...props}
 									type="button"
-									class="inline-flex shrink-0 items-center gap-1 rounded border border-border px-1 text-[11px] hover:bg-accent hover:text-foreground"
+									class="inline-flex shrink-0 items-center gap-1 rounded border border-border px-1 text-2xs hover:bg-accent hover:text-foreground"
 									onclick={(e) => pivot(e, filterToken('cname', provider.suffix))}
 								>
 									<TechIcon name={provider.label} class="size-3">
@@ -397,7 +397,7 @@
 						<button
 							{...props}
 							type="button"
-							class="min-w-0 truncate font-mono text-[11px] hover:text-foreground"
+							class="min-w-0 truncate font-mono text-2xs hover:text-foreground"
 							onclick={(e) => pivot(e, cnameToken)}
 						>
 							{s.cname}
@@ -410,7 +410,7 @@
 				<CornerDownRight class="size-3 shrink-0" />
 				<Hint text={s.final_url}>
 					{#snippet child(props)}
-						<span {...props} class="min-w-0 truncate font-mono text-[11px]">{s.final_url}</span>
+						<span {...props} class="min-w-0 truncate font-mono text-2xs">{s.final_url}</span>
 					{/snippet}
 				</Hint>
 			</div>
@@ -588,7 +588,7 @@
 				{#if s.asn}
 					<Hint text={s.asn_org ? `AS${s.asn} · ${s.asn_org}` : `AS${s.asn}`}>
 						{#snippet child(props)}
-							<div {...props} class="mt-0.5 truncate text-[11px] text-muted-foreground">
+							<div {...props} class="mt-0.5 truncate text-2xs text-muted-foreground">
 								<span class="font-mono">AS{s.asn}</span>{#if s.asn_org}
 									· {s.asn_org}{/if}
 							</div>
@@ -600,7 +600,7 @@
 						<Tooltip.Trigger>
 							{#snippet child({ props })}
 								<span {...props} class="mt-1 inline-flex">
-									<Badge variant="info" class="px-1 text-[10px] font-normal">
+									<Badge variant="info" class="px-1 text-2xs font-normal">
 										<TechIcon name={s.cdn_name ?? ''} class="size-2.5" />
 										{s.cdn_name ?? 'CDN'}
 									</Badge>
@@ -622,7 +622,7 @@
 								<button type="button" onclick={(e) => pivot(e, filterToken('port', String(p)))}>
 									<Badge
 										variant="outline"
-										class="cursor-pointer px-1 font-mono text-[10px] font-normal hover:bg-accent {isSensitivePort(
+										class="cursor-pointer px-1 font-mono text-2xs font-normal hover:bg-accent {isSensitivePort(
 											p
 										)
 											? 'border-warning/40 text-warning'
@@ -696,7 +696,7 @@
 						<button type="button" onclick={(e) => pivot(e, filterToken('source', src))}>
 							<Badge
 								variant="outline"
-								class="cursor-pointer px-1 text-[10px] font-normal text-muted-foreground hover:bg-accent"
+								class="cursor-pointer px-1 text-2xs font-normal text-muted-foreground hover:bg-accent"
 							>
 								{src}
 							</Badge>
@@ -718,7 +718,7 @@
 					{/snippet}
 				</Hint>
 				{#if s.discovered_at}
-					<div class="text-[11px] text-muted-foreground/70">{formatShortDate(s.discovered_at)}</div>
+					<div class="text-2xs text-muted-foreground/70">{formatShortDate(s.discovered_at)}</div>
 				{/if}
 			{:else if col.key === 'screenshot'}
 				{#if s.screenshot_path}

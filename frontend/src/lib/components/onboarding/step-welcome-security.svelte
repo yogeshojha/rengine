@@ -142,7 +142,7 @@
 				<LockIcon class="size-4 text-muted-foreground" />
 				<span class="font-medium">Change admin password</span>
 				<span
-					class="rounded-full border border-input px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+					class="rounded-full border border-input px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted-foreground"
 					>Recommended</span
 				>
 			</span>

@@ -189,7 +189,7 @@
 				<Bell class="size-4" />
 				{#if notificationStore.unreadCount > 0}
 					<span
-						class="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-[10px] leading-none font-semibold tabular-nums ring-2 ring-background {badgeClass}"
+						class="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-2xs leading-none font-semibold tabular-nums ring-2 ring-background {badgeClass}"
 					>
 						{badgeText}
 					</span>
@@ -207,7 +207,7 @@
 			<div class="flex items-center gap-2">
 				<span class="text-sm font-semibold">Notifications</span>
 				{#if notificationStore.unreadCount > 0}
-					<Badge variant="info" class="h-5 px-1.5 text-[10px] tabular-nums">
+					<Badge variant="info" class="h-5 px-1.5 text-2xs tabular-nums">
 						{notificationStore.unreadCount} new
 					</Badge>
 				{/if}
@@ -256,14 +256,14 @@
 				<Tabs.Trigger value="unread" class="text-xs">
 					Unread
 					{#if notificationStore.unreadCount > 0}
-						<span class="font-mono text-[10px] text-muted-foreground tabular-nums">
+						<span class="font-mono text-2xs text-muted-foreground tabular-nums">
 							{notificationStore.unreadCount}
 						</span>
 					{/if}
 				</Tabs.Trigger>
 				<Tabs.Trigger value="all" class="text-xs">
 					All
-					<span class="font-mono text-[10px] text-muted-foreground tabular-nums">
+					<span class="font-mono text-2xs text-muted-foreground tabular-nums">
 						{notificationStore.totalCount}
 					</span>
 				</Tabs.Trigger>
@@ -309,7 +309,7 @@
 				<div class="pb-1">
 					{#each inboxGroups as group (group.label)}
 						<div
-							class="sticky top-0 z-10 bg-popover/95 px-4 pt-2.5 pb-1 text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/70 uppercase backdrop-blur"
+							class="sticky top-0 z-10 bg-popover/95 px-4 pt-2.5 pb-1 text-2xs font-semibold tracking-[0.1em] text-muted-foreground/70 uppercase backdrop-blur"
 						>
 							{group.label}
 						</div>
@@ -401,7 +401,7 @@
 			<Tabs.List class="flex h-auto w-full flex-wrap justify-start gap-1">
 				<Tabs.Trigger value="all" class="flex-none text-xs">
 					All
-					<span class="font-mono text-[10px] text-muted-foreground tabular-nums">
+					<span class="font-mono text-2xs text-muted-foreground tabular-nums">
 						{typeCounts.all}
 					</span>
 				</Tabs.Trigger>
@@ -410,7 +410,7 @@
 					<Tabs.Trigger value={type} class="flex-none text-xs">
 						<TypeIcon class="size-3" />
 						{NOTIFICATION_TYPE_LABELS[type]}
-						<span class="font-mono text-[10px] text-muted-foreground tabular-nums">
+						<span class="font-mono text-2xs text-muted-foreground tabular-nums">
 							{typeCounts[type]}
 						</span>
 					</Tabs.Trigger>

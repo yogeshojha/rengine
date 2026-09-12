@@ -96,7 +96,7 @@
 								<span class="size-2.5 shrink-0 rounded-[3px]" style="background:{s.color}"></span>
 								<span class="min-w-0 flex-1 truncate text-muted-foreground">{s.label}</span>
 								<span class="font-medium tabular-nums">{s.n.toLocaleString()}</span>
-								<span class="w-9 text-right text-[11px] text-muted-foreground tabular-nums">
+								<span class="w-9 text-right text-2xs text-muted-foreground tabular-nums">
 									{resolved ? Math.round((s.n / resolved) * 100) : 0}%
 								</span>
 							</a>
@@ -107,7 +107,7 @@
 		{/if}
 		{#if rows.length}
 			<div class="flex flex-col gap-2">
-				<span class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+				<span class="text-2xs font-medium tracking-wider text-muted-foreground uppercase">
 					Top networks by address
 				</span>
 				<RankedBars {rows} dense />

@@ -38,11 +38,11 @@
 {:else}
 	{#if block.title && block.kind !== 'note'}
 		<div class="flex items-baseline gap-2 pb-1.5">
-			<h4 class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+			<h4 class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
 				{block.title}
 			</h4>
 			{#if block.total !== null && block.total > 0}
-				<span class="font-mono text-[11px] text-muted-foreground/70">{block.total}</span>
+				<span class="font-mono text-2xs text-muted-foreground/70">{block.total}</span>
 			{/if}
 		</div>
 	{/if}
@@ -53,9 +53,9 @@
 			alt={block.title ?? ''}
 			class="max-h-56 w-full rounded-md border bg-muted/30 object-cover object-top"
 		/>
-		{#if block.sub}<p class="pt-1 text-[11px] text-muted-foreground">{block.sub}</p>{/if}
+		{#if block.sub}<p class="pt-1 text-2xs text-muted-foreground">{block.sub}</p>{/if}
 	{:else if count === 0}
-		<p class="pb-1 text-[13px] text-muted-foreground">{block.empty}</p>
+		<p class="pb-1 text-sm text-muted-foreground">{block.empty}</p>
 	{:else if block.kind === 'facts'}
 		<dl class="grid">
 			{#each block.facts as f (f.label)}
@@ -75,9 +75,7 @@
 							</span>
 						{/if}
 						<span class="min-w-0 flex-1 break-words">
-							<span
-								class="text-[13px] {TINTED[f.tone]} {f.mono ? 'font-mono text-xs break-all' : ''}"
-							>
+							<span class="text-sm {TINTED[f.tone]} {f.mono ? 'font-mono text-xs break-all' : ''}">
 								{#if f.href}
 									<a
 										href={f.href}
@@ -114,7 +112,7 @@
 					<tr class="border-b border-border">
 						{#each block.columns as column (column)}
 							<th
-								class="pr-4 pb-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase last:pr-0"
+								class="pr-4 pb-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase last:pr-0"
 							>
 								{column}
 							</th>
@@ -134,7 +132,7 @@
 											</span>
 										{/if}
 										<span
-											class="text-[13px] leading-5 {TINTED[c.tone]} {c.mono
+											class="text-sm leading-5 {TINTED[c.tone]} {c.mono
 												? 'font-mono text-xs break-all'
 												: 'break-words'}"
 										>
@@ -217,7 +215,7 @@
 		/>
 	{:else if block.kind === 'note'}
 		<div
-			class="flex items-start gap-2 rounded-md border px-2.5 py-2 text-[13px] leading-5 {TONE_CHIP[
+			class="flex items-start gap-2 rounded-md border px-2.5 py-2 text-sm leading-5 {TONE_CHIP[
 				block.tone
 			]}"
 		>

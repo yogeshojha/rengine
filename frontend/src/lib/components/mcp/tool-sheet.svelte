@@ -39,7 +39,7 @@
 		onCeiling
 	}: Props = $props();
 
-	const LABEL = 'text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase';
+	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
 
 	const args = $derived(tool ? schemaArgs(tool.schema) : []);
 	const available = $derived(tool ? (ceiling[tool.capability] ?? false) : true);
@@ -73,7 +73,7 @@
 					<Sheet.Title class="font-mono text-base">{tool.name}</Sheet.Title>
 					<CapabilityChips granted={[tool.capability]} />
 					{#if tool.destructive}
-						<Badge variant="destructive" class="text-[10px]">Destructive</Badge>
+						<Badge variant="destructive" class="text-2xs">Destructive</Badge>
 					{/if}
 				</div>
 				<Sheet.Description>{tool.title}</Sheet.Description>
@@ -121,11 +121,11 @@
 									<div class="flex flex-col gap-1 px-3 py-2.5">
 										<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
 											<span class="font-mono text-sm font-medium">{arg.name}</span>
-											<span class="font-mono text-[11px] text-muted-foreground">{arg.type}</span>
+											<span class="font-mono text-2xs text-muted-foreground">{arg.type}</span>
 											{#if arg.required}
-												<span class="text-[11px] font-medium text-foreground/80">required</span>
+												<span class="text-2xs font-medium text-foreground/80">required</span>
 											{:else if arg.fallback !== null}
-												<span class="font-mono text-[11px] text-muted-foreground">
+												<span class="font-mono text-2xs text-muted-foreground">
 													default {arg.fallback}
 												</span>
 											{/if}
@@ -136,7 +136,7 @@
 										{#if arg.options.length}
 											<div class="flex flex-wrap gap-1">
 												{#each arg.options as option (option)}
-													<span class="rounded border px-1.5 py-px font-mono text-[11px]"
+													<span class="rounded border px-1.5 py-px font-mono text-2xs"
 														>{option}</span
 													>
 												{/each}
@@ -171,16 +171,16 @@
 						{#if own.length}
 							<div class="grid grid-cols-3 divide-x rounded-md border text-sm">
 								<div class="flex flex-col gap-0.5 px-3 py-2">
-									<span class="text-[11px] text-muted-foreground">Failed</span>
+									<span class="text-2xs text-muted-foreground">Failed</span>
 									<span class="tabular-nums {failed ? 'text-destructive' : ''}">{failed}</span>
 								</div>
 								<div class="flex flex-col gap-0.5 px-3 py-2">
-									<span class="text-[11px] text-muted-foreground">Typical</span>
+									<span class="text-2xs text-muted-foreground">Typical</span>
 									<span class="tabular-nums">{typical === null ? '—' : durationLabel(typical)}</span
 									>
 								</div>
 								<div class="flex flex-col gap-0.5 px-3 py-2">
-									<span class="text-[11px] text-muted-foreground">Last</span>
+									<span class="text-2xs text-muted-foreground">Last</span>
 									<span>{relativeTime(own[0].at)}</span>
 								</div>
 							</div>
