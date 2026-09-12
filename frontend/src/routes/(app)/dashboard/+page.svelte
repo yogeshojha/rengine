@@ -221,14 +221,6 @@
 						class="col-span-12 xl:col-span-8"
 					/>
 				{/if}
-				{#if dashboardStore.intel?.coverage?.findings}
-					<ExploitationWidget
-						intel={dashboardStore.intel}
-						projectId={projectsStore.activeProject?.id ?? null}
-						loading={dashboardStore.extrasLoading}
-						class="col-span-12 lg:col-span-6 xl:col-span-4"
-					/>
-				{/if}
 				<CoverageWidget
 					{overview}
 					window={dashboardStore.window}
@@ -238,6 +230,14 @@
 					class="col-span-12 lg:col-span-6 xl:col-span-4"
 				/>
 
+				{#if dashboardStore.intel?.coverage?.findings}
+					<ExploitationWidget
+						intel={dashboardStore.intel}
+						projectId={projectsStore.activeProject?.id ?? null}
+						loading={dashboardStore.extrasLoading}
+						class="col-span-12 lg:col-span-6 xl:col-span-4"
+					/>
+				{/if}
 				{#if feedHasRows}
 					<ChangesFeed {feed} class="col-span-12 lg:col-span-6 xl:col-span-4" />
 				{/if}
