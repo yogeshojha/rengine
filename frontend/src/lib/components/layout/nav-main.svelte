@@ -94,10 +94,7 @@
 {/snippet}
 
 {#each groups as group, groupIndex (group.label ?? groupIndex)}
-	{#if groupIndex > 0}
-		<Sidebar.Separator class="mx-auto hidden w-4 group-data-[collapsible=icon]:block" />
-	{/if}
-	<Sidebar.Group class={cn(groupIndex > 0 && 'pt-0', className)}>
+	<Sidebar.Group class={cn(groupIndex > 0 && 'pt-0 group-data-[collapsible=icon]:pt-3', className)}>
 		{#if group.label}
 			<Sidebar.GroupLabel
 				class="h-6 px-2 text-2xs font-semibold tracking-[0.1em] text-muted-foreground/60 uppercase"
