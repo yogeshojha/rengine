@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from shared.services.scan_resolve import MASK
+from shared.services.web_hygiene import evaluate as evaluate_hygiene
 from shared.utils.datetime import utc_now
 from tools.runner.fieldmap import F, parse_record
 
@@ -149,4 +150,14 @@ HTTPX_FIELDS: dict[str, F] = {
 
 
 def parse_httpx_record(record: dict) -> dict[str, Any]:
-    return parse_record(record, HTTPX_FIELDS)
+    fields = parse_record(record, HTTPX_FIELDS)
+    hygiene = evaluate_hygiene(
+        fields.get("response_headers"),
+        fields.get("raw_response_header"),
+        scheme=fields.get("scheme"),
+        status_code=fields.get("status_code"),
+        content_type=fields.get("content_type"),
+    )
+    fields["hygiene_issues"] = hygiene.issues
+    fields["hygiene_checked"] = hygiene.checked
+    return fields

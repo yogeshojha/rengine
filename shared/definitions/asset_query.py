@@ -9,6 +9,9 @@ from shared.definitions.endpoints import (
     INTEREST_KEYS,
     SOURCE_LABELS,
 )
+from shared.definitions.hygiene import (
+    QUERY_VALUES as HYGIENE_VALUES,
+)
 from shared.definitions.interest import (
     BAND_ORDER,
     KIND_KEYS,
@@ -122,6 +125,7 @@ GROUPS: tuple[str, ...] = (
     "Host",
     "HTTP",
     "Response",
+    "Hygiene",
     "Network",
     "Certificates",
     "Findings",
@@ -409,6 +413,19 @@ FIELDS: tuple[QueryField, ...] = (
         facet="service",
     ),
     QueryField(
+        name="hygiene",
+        type=FieldType.ENUM,
+        group="Hygiene",
+        description=(
+            "A hardening check the host fails on any of its responses. "
+            "Also takes warning, info, any or none."
+        ),
+        example="hygiene:cookie_no_secure",
+        aliases=("hardening",),
+        values=HYGIENE_VALUES,
+        facet="hygiene",
+    ),
+    QueryField(
         name="cert",
         type=FieldType.ENUM,
         group="Certificates",
@@ -643,6 +660,11 @@ GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         label="Status class",
         description="Names by HTTP response class",
     ),
+    GroupDimension(
+        key="hygiene",
+        label="Hygiene check",
+        description="Names failing the same hardening check",
+    ),
 )
 
 MAX_GROUPS = 50
@@ -655,8 +677,9 @@ EXAMPLE_GROUPS: tuple[str, ...] = (
     "Access control",
     "Certificates",
     "Origin exposure",
-    "Change",
     "Hygiene",
+    "Change",
+    "Health",
     "Exposures",
 )
 
@@ -846,14 +869,55 @@ EXAMPLES: tuple[QueryExample, ...] = (
         group="Origin exposure",
     ),
     QueryExample(
-        query="header:x-powered-by and not cdn:yes",
-        description="Runtime disclosed in response headers",
-        group="Origin exposure",
-    ),
-    QueryExample(
         query="tech:[php,tomcat,jboss,weblogic,coldfusion] and status:200",
         description="Runtimes with significant CVE history",
         group="Origin exposure",
+    ),
+    QueryExample(
+        query="hygiene:warning",
+        description="Hosts failing a warning-level hardening check",
+        group="Hygiene",
+        generic=True,
+    ),
+    QueryExample(
+        query="hygiene:cors_credentials",
+        description="CORS credentials allowed with a wildcard or null origin",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="hygiene:cookie_no_secure",
+        description="Cookies set over https without Secure",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="hygiene:cookie_no_httponly",
+        description="Session cookies readable by scripts",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="hygiene:no_frame_protection and is:live",
+        description="Pages that can be framed by another site",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="hygiene:[csp_unsafe_inline,csp_wildcard_script]",
+        description="Content-Security-Policy that does not restrict scripts",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="hygiene:no_https_redirect",
+        description="Plaintext http that never redirects to https",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="hygiene:[server_version,runtime_disclosed] and not cdn:yes",
+        description="Origin software versions disclosed in headers",
+        group="Hygiene",
+    ),
+    QueryExample(
+        query="hygiene:none and is:live",
+        description="Live hosts passing every hardening check",
+        group="Hygiene",
     ),
     QueryExample(
         query="is:new and (status:2xx or status:3xx)",
@@ -884,28 +948,28 @@ EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="status:>=500 or title:exception",
         description="Server-side errors returned",
-        group="Hygiene",
+        group="Health",
         generic=True,
     ),
     QueryExample(
         query="not is:resolved",
         description="Hostnames that no longer resolve",
-        group="Hygiene",
+        group="Health",
     ),
     QueryExample(
         query="size:<500 and status:200",
         description="Minimal-content responses returning 200",
-        group="Hygiene",
+        group="Health",
     ),
     QueryExample(
         query="time:>5s",
         description="Responses slower than 5 seconds",
-        group="Hygiene",
+        group="Health",
     ),
     QueryExample(
         query="is:redirect and not is:live",
         description="Redirects terminating in an error",
-        group="Hygiene",
+        group="Health",
     ),
     QueryExample(
         query="is:exposed",

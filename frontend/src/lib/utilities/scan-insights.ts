@@ -1,3 +1,4 @@
+import { checkLabel } from '$lib/config/hygiene';
 import type { SubdomainRead } from '$lib/types/subdomain';
 import type { HttpAssetRead } from '$lib/types/http-asset';
 import type { IpAddressRead } from '$lib/types/ip-address';
@@ -32,6 +33,7 @@ export interface WebAssetQuery {
 	tech: string[];
 	service: string[];
 	cert: string[];
+	hygiene: string[];
 	source: string[];
 	cdn: 'any' | 'yes' | 'no';
 	waf: 'any' | 'present' | 'none';
@@ -48,6 +50,7 @@ export function emptyQuery(): WebAssetQuery {
 		tech: [],
 		service: [],
 		cert: [],
+		hygiene: [],
 		source: [],
 		cdn: 'any',
 		waf: 'any',
@@ -64,6 +67,7 @@ export function activeFacetCount(q: WebAssetQuery): number {
 		q.tech.length +
 		q.service.length +
 		q.cert.length +
+		q.hygiene.length +
 		q.source.length +
 		(q.cdn !== 'any' ? 1 : 0) +
 		(q.waf !== 'any' ? 1 : 0) +
@@ -107,7 +111,7 @@ const CERT_CHIP: Record<string, string> = {
 	valid: 'Cert valid'
 };
 
-type ListKey = 'tech' | 'service' | 'cert' | 'source';
+type ListKey = 'tech' | 'service' | 'cert' | 'hygiene' | 'source';
 
 export function queryChips(q: WebAssetQuery): FilterChip[] {
 	const chips: FilterChip[] = [];
@@ -122,6 +126,7 @@ export function queryChips(q: WebAssetQuery): FilterChip[] {
 	list('tech', (v) => v);
 	list('service', (v) => `Service ${v}`);
 	list('cert', (v) => CERT_CHIP[v] ?? v);
+	list('hygiene', (v) => checkLabel(v));
 	list('source', (v) => `Source ${v}`);
 	if (q.cdn !== 'any')
 		chips.push({
@@ -184,6 +189,7 @@ export interface SubdomainFilter {
 	tech: string[];
 	services: string[];
 	cert: string[];
+	hygiene: string[];
 	sources: string[];
 	cdn: 'any' | 'yes' | 'no';
 	waf: 'any' | 'present' | 'none';
@@ -210,6 +216,24 @@ export interface SubdomainFacetSet {
 	service: Facet[];
 	source: Facet[];
 	cert: Facet[];
+	hygiene: Facet[];
+}
+
+export interface HygieneCheckCount {
+	key: string;
+	failing: number;
+	applicable: number;
+	query: string;
+}
+
+export interface HygieneSummary {
+	hosts: number;
+	evaluated: number;
+	pending: number;
+	clean: number;
+	warning: number;
+	info: number;
+	checks: HygieneCheckCount[];
 }
 
 export interface SubdomainRelation {
@@ -324,6 +348,7 @@ export function compileQuery(
 		tech: [...q.tech],
 		services: [...q.service],
 		cert: [...q.cert],
+		hygiene: [...q.hygiene],
 		sources: [...q.source],
 		cdn: q.cdn,
 		waf: q.waf,

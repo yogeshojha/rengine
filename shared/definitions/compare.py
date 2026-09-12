@@ -71,6 +71,7 @@ _HOST_FIELDS: tuple[WatchedField, ...] = (
     WatchedField("tls_self_signed", "Self-signed", FieldKind.BOOL.value),
     WatchedField("tls_not_after", "Certificate expiry", FieldKind.DATE.value),
     WatchedField("tech", "Technology", FieldKind.LIST.value),
+    WatchedField("hygiene_issues", "Hygiene", FieldKind.LIST.value),
     WatchedField("resolved_ips", "Addresses", FieldKind.LIST.value),
 )
 

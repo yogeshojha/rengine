@@ -41,6 +41,7 @@ from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
 from app.services.target_names import target_names
+from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.asset_query import COUNT_CAP, HOST_QUERY
 from shared.definitions.correlation import COMMON_SHARE, MIN_ESTATE_FOR_COMMON
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
@@ -67,6 +68,8 @@ from shared.models.scan_correlation import (
 )
 from shared.models.subdomain import (
     Facet,
+    HygieneCheckCount,
+    HygieneSummary,
     Subdomain,
     SubdomainFacets,
     SubdomainFilter,
@@ -197,6 +200,8 @@ class SubdomainService:
             tls_expired=sub.tls_expired,
             tls_self_signed=sub.tls_self_signed,
             screenshot_path=sub.screenshot_path,
+            hygiene_issues=list(sub.hygiene_issues or []),
+            hygiene_checked=list(sub.hygiene_checked or []),
             discovered_at=sub.discovered_at,
         )
 
@@ -274,6 +279,8 @@ class SubdomainService:
             )
         if f.cert:
             query = query.where(or_(*[self._cert_pred(c, now) for c in f.cert]))
+        if f.hygiene:
+            query = query.where(preds.hygiene(f.hygiene))
         if f.services:
             query = query.where(
                 preds.port_match(Port.service_name.in_(f.services), scope)
@@ -628,6 +635,26 @@ class SubdomainService:
 
         tech = await self._json_facet("tech", project_id, scope)
         source = await self._json_facet("sources", project_id, scope)
+        hygiene_rows = await self.session.execute(
+            select(
+                *[
+                    func.count().filter(preds.hygiene_check(key)).label(key)
+                    for key in hygiene_defs.CHECK_KEYS
+                ]
+            )
+            .select_from(Subdomain)
+            .where(*reach)
+        )
+        hygiene_counts = hygiene_rows.one()._mapping
+        hygiene = [
+            Facet(
+                value=spec.key,
+                label=spec.label,
+                count=int(hygiene_counts[spec.key]),
+            )
+            for spec in hygiene_defs.CHECKS
+            if hygiene_counts[spec.key] > 0
+        ]
 
         service_rows = await self.session.execute(
             select(Port.service_name, func.count())
@@ -646,7 +673,78 @@ class SubdomainService:
         ]
 
         return SubdomainFacets(
-            status=status, tech=tech, service=service, source=source, cert=cert
+            status=status,
+            tech=tech,
+            service=service,
+            source=source,
+            cert=cert,
+            hygiene=hygiene,
+        )
+
+    async def hygiene(self, project_id: UUID, scope: ScopeLike) -> HygieneSummary:
+        """Hosts failing each check, over the hosts it applied to."""
+        scope = QueryScope.of(scope)
+        reach = (Subdomain.project_id == project_id, scope.match(Subdomain.scan_id))
+        issues = cast(Subdomain.hygiene_issues, JSONB)
+        checked = cast(Subdomain.hygiene_checked, JSONB)
+        columns = [
+            func.count().label("hosts"),
+            func.count()
+            .filter(Subdomain.hygiene_checked.isnot(None))
+            .label("evaluated"),
+            func.count()
+            .filter(
+                and_(
+                    Subdomain.http_status.isnot(None),
+                    Subdomain.hygiene_checked.is_(None),
+                )
+            )
+            .label("pending"),
+            func.count()
+            .filter(
+                and_(
+                    func.jsonb_array_length(checked) > 0,
+                    func.jsonb_array_length(issues) == 0,
+                )
+            )
+            .label("clean"),
+            func.count()
+            .filter(preds.hygiene([hygiene_defs.TONE_WARNING]))
+            .label("warning"),
+            func.count().filter(preds.hygiene([hygiene_defs.TONE_INFO])).label("info"),
+        ]
+        for key in hygiene_defs.CHECK_KEYS:
+            columns.append(
+                func.count().filter(preds.hygiene_check(key)).label(f"f_{key}")
+            )
+            columns.append(
+                func.count().filter(preds.hygiene_applies(key)).label(f"a_{key}")
+            )
+        row = (
+            (
+                await self.session.execute(
+                    select(*columns).select_from(Subdomain).where(*reach)
+                )
+            )
+            .one()
+            ._mapping
+        )
+        return HygieneSummary(
+            hosts=int(row["hosts"]),
+            evaluated=int(row["evaluated"]),
+            pending=int(row["pending"]),
+            clean=int(row["clean"]),
+            warning=int(row["warning"]),
+            info=int(row["info"]),
+            checks=[
+                HygieneCheckCount(
+                    key=spec.key,
+                    failing=int(row[f"f_{spec.key}"]),
+                    applicable=int(row[f"a_{spec.key}"]),
+                    query=spec.query,
+                )
+                for spec in hygiene_defs.CHECKS
+            ],
         )
 
     async def _json_facet(

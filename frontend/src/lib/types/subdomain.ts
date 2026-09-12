@@ -32,6 +32,8 @@ export interface SubdomainRead {
 	tls_expired: boolean | null;
 	tls_self_signed: boolean | null;
 	screenshot_path: string | null;
+	hygiene_issues: string[];
+	hygiene_checked: string[];
 	ports?: number[];
 	endpoint_count?: number;
 	title_count?: number;

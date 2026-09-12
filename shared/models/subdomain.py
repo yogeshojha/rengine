@@ -55,6 +55,12 @@ class Subdomain(SQLModel, table=True):
     tls_expired: bool | None = Field(default=None)
     tls_self_signed: bool | None = Field(default=None)
     screenshot_path: str | None = Field(default=None, max_length=500)
+    hygiene_issues: list | None = Field(
+        default=None, sa_column=Column(JSON(none_as_null=True), nullable=True)
+    )
+    hygiene_checked: list | None = Field(
+        default=None, sa_column=Column(JSON(none_as_null=True), nullable=True)
+    )
 
     interest_score: int = Field(default=0, index=True)
     interest_band: str | None = Field(default=None, max_length=16, index=True)
@@ -97,6 +103,8 @@ class SubdomainRead(BaseModel):
     tls_expired: bool | None = None
     tls_self_signed: bool | None = None
     screenshot_path: str | None = None
+    hygiene_issues: list[str] = Field(default_factory=list)
+    hygiene_checked: list[str] = Field(default_factory=list)
     interest_score: int = 0
     interest_band: str | None = None
     interest_kinds: list[str] = Field(default_factory=list)
@@ -133,6 +141,7 @@ class SubdomainFilter(BaseModel):
     tech: list[str] = Field(default_factory=list, max_length=200)
     services: list[str] = Field(default_factory=list, max_length=200)
     cert: list[str] = Field(default_factory=list, max_length=10)
+    hygiene: list[str] = Field(default_factory=list, max_length=40)
     sources: list[str] = Field(default_factory=list, max_length=200)
     cdn: str = Field(default="any", max_length=10)
     waf: str = Field(default="any", max_length=20)
@@ -151,6 +160,7 @@ class SubdomainFilter(BaseModel):
             or self.tech
             or self.services
             or self.cert
+            or self.hygiene
             or self.sources
             or self.cdn != "any"
             or self.waf != "any"
@@ -174,6 +184,24 @@ class SubdomainFacets(BaseModel):
     service: list[Facet] = Field(default_factory=list)
     source: list[Facet] = Field(default_factory=list)
     cert: list[Facet] = Field(default_factory=list)
+    hygiene: list[Facet] = Field(default_factory=list)
+
+
+class HygieneCheckCount(BaseModel):
+    key: str
+    failing: int = 0
+    applicable: int = 0
+    query: str
+
+
+class HygieneSummary(BaseModel):
+    hosts: int = 0
+    evaluated: int = 0
+    pending: int = 0
+    clean: int = 0
+    warning: int = 0
+    info: int = 0
+    checks: list[HygieneCheckCount] = Field(default_factory=list)
 
 
 class SubdomainRelation(BaseModel):

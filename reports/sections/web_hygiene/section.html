@@ -1,0 +1,33 @@
+<p class="block muted small">{{ evaluated|num }} web hosts were checked. {{ warning|num }} fail a warning-level check and {{ info|num }} an informational one; {{ clean|num }} pass every check that applies to them.{% if pending %} {{ pending|num }} web hosts have not been evaluated.{% endif %}</p>
+<table class="table table--fixed">
+  <thead><tr><th>Check</th><th style="width:24mm">Group</th><th class="num" style="width:18mm">Failing</th><th class="num" style="width:20mm">Applicable</th><th style="width:30mm">Share</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="micro wrap"><span class="badge badge--{{ 'medium' if row.tone == 'warning' else 'info' }}">{{ row.label }}</span><div class="micro muted" style="margin-top:0.6mm">{{ row.help }}</div></td>
+      <td class="micro muted">{{ row.group }}</td>
+      <td class="num micro">{% if row.failing %}{{ row.failing|num }}{% else %}<span class="faint">0</span>{% endif %}</td>
+      <td class="num micro muted">{{ row.applicable|num }}</td>
+      <td class="micro"><div class="meter"><div class="meter__track"><div class="meter__fill" style="width:{{ row.share }}%"></div></div><div class="meter__value">{{ row.share }}%</div></div></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if hosts %}
+<div class="sub">
+  <div class="label block">Hosts failing warning-level checks</div>
+  <table class="table table--fixed">
+    <thead><tr><th>Host</th><th style="width:96mm">Checks</th></tr></thead>
+    <tbody>
+      {% for host in hosts %}
+      <tr>
+        <td class="micro mono-break wrap">{{ host.name }}</td>
+        <td class="micro wrap">{{ host.checks|join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further hosts are not listed.</p>{% endif %}
+</div>
+{% endif %}

@@ -58,6 +58,14 @@
 		filterToken
 	} from '$lib/utilities/scan-insights';
 	import { SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
+	import {
+		CHECK_BY_KEY,
+		HYGIENE_FIELD,
+		TONE_CHIP,
+		checkLabel,
+		sortChecks,
+		hygieneQuery
+	} from '$lib/config/hygiene';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -121,10 +129,12 @@
 	const COLUMN_EVIDENCE: Record<string, string> = {
 		tech: 'tech',
 		ip: 'ip',
-		sources: 'source'
+		sources: 'source',
+		hygiene: HYGIENE_FIELD
 	};
 
 	const MAX_TECH = 3;
+	const MAX_HYGIENE = 2;
 	const MAX_IPS = 2;
 	const MAX_PORTS = 4;
 	const MAX_SOURCES = 2;
@@ -135,6 +145,8 @@
 	);
 	let headLabels = $derived((apexSuffix ? s.name.slice(0, -apexSuffix.length) : s.name).split('.'));
 	let cert = $derived(certState(s));
+	let hygieneIssues = $derived(sortChecks(s.hygiene_issues ?? []));
+	let hygieneChecked = $derived(s.hygiene_checked ?? []);
 	let ports = $derived(s.ports ?? []);
 	let ips = $derived(s.resolved_ips ?? []);
 	let internalIp = $derived(ips.find(isPrivateIp) ?? null);
@@ -628,6 +640,53 @@
 							onSelect={(p) => onFilter(filterToken('port', String(p)))}
 						/>
 					</div>
+				{:else}
+					<span class="text-xs text-muted-foreground">—</span>
+				{/if}
+			{:else if col.key === 'hygiene'}
+				{#if hygieneIssues.length}
+					<div class="flex flex-wrap items-center gap-1">
+						{#each hygieneIssues.slice(0, MAX_HYGIENE) as key (key)}
+							{@const spec = CHECK_BY_KEY[key]}
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									{#snippet child({ props })}
+										<button
+											{...props}
+											type="button"
+											class="flex max-w-full min-w-0"
+											onclick={(e) => pivot(e, hygieneQuery(key))}
+										>
+											<Badge
+												variant="outline"
+												class="h-auto max-w-full min-w-0 cursor-pointer text-left font-normal whitespace-normal {spec
+													? TONE_CHIP[spec.tone]
+													: ''}"
+											>
+												{checkLabel(key)}
+											</Badge>
+										</button>
+									{/snippet}
+								</Tooltip.Trigger>
+								<Tooltip.Content class="max-w-xs">{spec?.help ?? key}</Tooltip.Content>
+							</Tooltip.Root>
+						{/each}
+						<OverflowPopover
+							items={hygieneIssues}
+							shown={MAX_HYGIENE}
+							label="hygiene checks"
+							onSelect={(key) => onFilter(hygieneQuery(key))}
+						>
+							{#snippet item(key)}
+								{checkLabel(key)}
+							{/snippet}
+						</OverflowPopover>
+					</div>
+				{:else if hygieneChecked.length}
+					<span class="text-xs text-muted-foreground">
+						Passes {hygieneChecked.length}
+						{hygieneChecked.length === 1 ? 'check' : 'checks'}
+					</span>
 				{:else}
 					<span class="text-xs text-muted-foreground">—</span>
 				{/if}

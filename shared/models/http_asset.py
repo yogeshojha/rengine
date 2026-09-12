@@ -28,6 +28,10 @@ def _text() -> Field:
     return Field(default=None, sa_column=Column(Text, nullable=True))
 
 
+def _json_optional_list() -> Field:
+    return Field(default=None, sa_column=Column(JSON(none_as_null=True), nullable=True))
+
+
 class HttpAsset(SQLModel, table=True):
     __tablename__ = "http_assets"
     __table_args__ = (UniqueConstraint("scan_id", "url", name="uq_httpasset_scan_url"),)
@@ -109,6 +113,8 @@ class HttpAsset(SQLModel, table=True):
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )
     body_preview: str | None = Field(default=None, max_length=512)
+    hygiene_issues: list | None = _json_optional_list()
+    hygiene_checked: list | None = _json_optional_list()
     search_tsv: Any | None = Field(
         default=None,
         sa_column=Column(TSVECTOR, Computed(SEARCH_TSV_SQL, persisted=True)),
@@ -171,7 +177,15 @@ class HttpAssetRead(BaseModel):
     tls_self_signed: bool | None = None
     screenshot_path: str | None = None
     body_preview: str | None = None
+    hygiene_issues: list[str] = Field(default_factory=list)
+    hygiene_checked: list[str] = Field(default_factory=list)
     discovered_at: datetime
+
+
+class HygieneVerdict(BaseModel):
+    key: str
+    failed: bool
+    evidence: str | None = None
 
 
 class HttpAssetDetail(HttpAssetRead):
@@ -181,6 +195,7 @@ class HttpAssetDetail(HttpAssetRead):
     raw_response_header: str | None = None
     response_body: str | None = None
     response_headers: dict = Field(default_factory=dict)
+    hygiene: list[HygieneVerdict] = Field(default_factory=list)
 
 
 class HttpAssetSummary(BaseModel):

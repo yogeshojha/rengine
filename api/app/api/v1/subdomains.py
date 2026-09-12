@@ -28,6 +28,7 @@ from shared.models.scan_correlation import (
 )
 from shared.models.subdomain import (
     Facet,
+    HygieneSummary,
     SubdomainFacets,
     SubdomainFilter,
     SubdomainRead,
@@ -238,6 +239,23 @@ async def subdomain_insights(
         facets=str(project_id),
         model=SubdomainInsights,
         build=lambda: service.insights(project_id=project_id, scan_id=scan_id),
+    )
+
+
+@router.get("/hygiene", response_model=HygieneSummary)
+async def subdomain_hygiene(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    scope: WebAssetScope,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await lead_cache.cached(
+        service.session,
+        name="hygiene",
+        scans=scope.ids,
+        facets=str(project_id),
+        model=HygieneSummary,
+        build=lambda: service.hygiene(project_id=project_id, scope=scope),
     )
 
 

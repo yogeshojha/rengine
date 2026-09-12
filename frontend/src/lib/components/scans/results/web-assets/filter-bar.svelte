@@ -88,7 +88,10 @@
 			waf: values.includes('nowaf') ? 'none' : query.waf === 'none' ? 'any' : query.waf
 		});
 	}
-	function setList<K extends 'tech' | 'service' | 'cert' | 'source'>(key: K, value: string[]) {
+	function setList<K extends 'tech' | 'service' | 'cert' | 'hygiene' | 'source'>(
+		key: K,
+		value: string[]
+	) {
 		onQuery({ ...query, [key]: value });
 	}
 </script>
@@ -117,6 +120,14 @@
 				options={facets.cert}
 				selected={query.cert}
 				onChange={(v) => setList('cert', v)}
+			/>
+		{/if}
+		{#if facets.hygiene.length}
+			<FacetedFilter
+				title="Hygiene"
+				options={facets.hygiene}
+				selected={query.hygiene}
+				onChange={(v) => setList('hygiene', v)}
 			/>
 		{/if}
 		{#if facets.source.length}

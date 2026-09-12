@@ -7,6 +7,7 @@
 	import { providerFor, PROVIDER_KIND_ICONS } from '$lib/config/hosting-providers';
 	import { httpStatusClass, httpStatusReason, STATUS_DOT } from '$lib/utilities/scan-correlation';
 	import type { SubdomainRead } from '$lib/types/subdomain';
+	import { TONE_CHIP, checkLabel, sortChecks, toneCounts, worstTone } from '$lib/config/hygiene';
 	import { claimHover, releaseHover } from '$lib/utilities/hover-exclusive';
 
 	interface Props {
@@ -18,6 +19,7 @@
 
 	const MAX_IPS = 3;
 	const MAX_TECH = 4;
+	const MAX_HYGIENE = 3;
 
 	let failed = $state(false);
 	let url = $derived(failed ? null : screenshotUrl(sub.screenshot_path));
@@ -25,6 +27,9 @@
 	let redirected = $derived(!!sub.final_url && sub.final_url !== sub.http_url);
 	let provider = $derived(providerFor(sub.cname));
 	let ProviderIcon = $derived(provider ? PROVIDER_KIND_ICONS[provider.kind] : null);
+	let hygiene = $derived(sortChecks(sub.hygiene_issues ?? []));
+	let hygieneTone = $derived(worstTone(hygiene));
+	let hygieneCounts = $derived(toneCounts(hygiene));
 
 	let hoverOpen = $state(false);
 	const closeSelf = () => (hoverOpen = false);
@@ -91,6 +96,30 @@
 				{/if}
 				{#if (sub.title_count ?? 0) > 1}
 					<p class="text-muted-foreground">Same page on {(sub.title_count ?? 0) - 1} other hosts</p>
+				{/if}
+				{#if hygiene.length && hygieneTone}
+					<div class="flex flex-col gap-1">
+						<p class="text-muted-foreground tabular-nums">
+							{[
+								hygieneCounts.warning ? `${hygieneCounts.warning} warning` : '',
+								hygieneCounts.info ? `${hygieneCounts.info} info` : ''
+							]
+								.filter(Boolean)
+								.join(' · ')} hygiene {hygiene.length === 1 ? 'check fails' : 'checks fail'}
+						</p>
+						<div class="flex flex-wrap gap-1">
+							{#each hygiene.slice(0, MAX_HYGIENE) as key (key)}
+								<Badge variant="outline" class="font-normal {TONE_CHIP[hygieneTone]}">
+									{checkLabel(key)}
+								</Badge>
+							{/each}
+							{#if hygiene.length > MAX_HYGIENE}
+								<Badge variant="outline" class="font-normal text-muted-foreground">
+									+{hygiene.length - MAX_HYGIENE}
+								</Badge>
+							{/if}
+						</div>
+					</div>
 				{/if}
 				{#if sub.tech.length}
 					<div class="flex flex-wrap gap-1">

@@ -20,7 +20,7 @@ from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
-from shared.services import port_inventory
+from shared.services import port_inventory, web_hygiene
 from shared.services.port_inventory import ServiceObservation
 from shared.utils.datetime import utc_now
 from stages.base import Stage, StageResult
@@ -123,6 +123,8 @@ class HttpProbeStage(Stage):
         services = self._record_services()
         if self.ctx.target_type == TargetType.DOMAIN.value:
             self._denormalize_to_subdomains()
+        web_hygiene.fold_onto_hosts(self.session, self.ctx.scan_id)
+        self.session.commit()
         self.emit_progress(
             f"probed {len(targets)} host and port pairs, {count} answered HTTP"
         )

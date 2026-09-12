@@ -51,7 +51,15 @@ export interface HttpAssetRead {
 	tls_self_signed: boolean | null;
 	screenshot_path: string | null;
 	body_preview: string | null;
+	hygiene_issues: string[];
+	hygiene_checked: string[];
 	discovered_at: string;
+}
+
+export interface HygieneVerdict {
+	key: string;
+	failed: boolean;
+	evidence: string | null;
 }
 
 export interface HttpAssetDetail extends HttpAssetRead {
@@ -61,4 +69,5 @@ export interface HttpAssetDetail extends HttpAssetRead {
 	raw_response_header: string | null;
 	response_body: string | null;
 	response_headers: Record<string, string | string[]>;
+	hygiene: HygieneVerdict[];
 }

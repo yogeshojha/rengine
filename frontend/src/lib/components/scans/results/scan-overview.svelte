@@ -12,6 +12,7 @@
 	import StructurePanel from './overview/structure-panel.svelte';
 	import VulnerabilityPanel from './overview/vulnerability-panel.svelte';
 	import HostingPanel from './overview/hosting-panel.svelte';
+	import HygienePanel from './overview/hygiene-panel.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { endpointsApi, servicesApi } from '$lib/api/scan-results';
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
@@ -23,7 +24,7 @@
 	import type { RelatedDomains } from '$lib/types/asset-query';
 	import { scanFoundNothing } from '$lib/types/scan';
 	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
-	import type { SubdomainInsights } from '$lib/utilities/scan-insights';
+	import type { HygieneSummary, SubdomainInsights } from '$lib/utilities/scan-insights';
 	import type { ScanExposure } from '$lib/utilities/services';
 	import type { ScanStructure } from '$lib/utilities/endpoints';
 	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
@@ -136,6 +137,15 @@
 			.catch(() => (origins = null));
 	}
 
+	let hygiene = $state<HygieneSummary | null>(null);
+	function loadHygiene() {
+		if (!scanId || !projectId) return;
+		subdomainsApi
+			.hygiene(projectId, scanId)
+			.then((d) => (hygiene = d))
+			.catch(() => (hygiene = null));
+	}
+
 	let hostingFlow = $state<HostingFlow | null>(null);
 	function loadHostingFlow() {
 		if (!scanId || !projectId) return;
@@ -157,6 +167,7 @@
 		loadInsights();
 		loadRelated();
 		loadHostingFlow();
+		loadHygiene();
 		loadExposure();
 		loadStructure();
 		loadVulns();
@@ -247,6 +258,7 @@
 			<VulnerabilityPanel {vulns} {onTab} />
 			<HostingPanel flow={hostingFlow} onPick={(q) => onTab('web-assets', q)} />
 			<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
+			<HygienePanel summary={hygiene} loading={loading && !hygiene} {onFilter} />
 			<ExposurePanel {exposure} {loading} {onTab} />
 			<StructurePanel {structure} {loading} {onTab} />
 			<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} />

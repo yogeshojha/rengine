@@ -11,7 +11,8 @@ import type {
 	SubdomainFacetSet,
 	SubdomainRelation,
 	SubdomainInsights,
-	SubdomainCorrelation
+	SubdomainCorrelation,
+	HygieneSummary
 } from '$lib/utilities/scan-insights';
 
 interface ListParams {
@@ -116,6 +117,10 @@ export const subdomainsApi = {
 		});
 		if (search.trim()) sp.append('search', search.trim());
 		return api.get<Facet[]>(`/subdomains/tech?${sp.toString()}`);
+	},
+
+	async hygiene(projectId: string, scanId: string): Promise<HygieneSummary> {
+		return api.get<HygieneSummary>(`/subdomains/hygiene?${scopeQuery({ projectId, scanId })}`);
 	},
 
 	async insights(projectId: string, scanId: string): Promise<SubdomainInsights> {

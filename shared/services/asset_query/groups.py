@@ -14,6 +14,7 @@ from shared.definitions.endpoints import (
     INTEREST_LABELS,
     SOURCE_LABELS,
 )
+from shared.definitions.hygiene import CHECK_BY_KEY
 from shared.definitions.ports import PORT_SOURCE_LABELS, SERVICE_CLASS_LABELS
 from shared.definitions.vulnerabilities import (
     PROTOCOL_LABELS,
@@ -103,7 +104,24 @@ _DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
     "cert.issuer": (lambda: HttpAsset.tls_issuer, "cert.issuer", "=", True),
     "header_hash": (lambda: HttpAsset.header_hash, "header_hash", "=", True),
     "target": (lambda: _target_value(Subdomain.target_id), "target", "=", False),
+    "hygiene": (
+        lambda: func.jsonb_array_elements_text(
+            cast(Subdomain.hygiene_issues, JSONB)
+        ).column_valued("hygiene_value"),
+        "hygiene",
+        ":",
+        False,
+    ),
 }
+
+
+def _group_label(key: str, raw: str) -> str:
+    if key == "status":
+        return _STATUS_LABELS.get(raw, raw)
+    if key == "hygiene":
+        spec = CHECK_BY_KEY.get(raw)
+        return spec.label if spec else raw
+    return raw
 
 
 def _dimension(key: str):
@@ -152,9 +170,7 @@ async def build_groups(session: AsyncSession, base, key: str) -> QueryGroups:
     groups = [
         QueryGroup(
             value=str(raw),
-            label=_STATUS_LABELS.get(str(raw), str(raw))
-            if key == "status"
-            else str(raw),
+            label=_group_label(key, str(raw)),
             count=int(n),
             query=_token(field, op, str(raw)),
         )

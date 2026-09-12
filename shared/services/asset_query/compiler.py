@@ -19,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import INET, JSONB
 
 from shared.definitions.asset_query import FLAGS, HOST_QUERY, FieldType, Op
+from shared.definitions.hygiene import QUERY_VALUES as HYGIENE_VALUES
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.interest import InterestSignal
@@ -254,6 +255,16 @@ def _interest_band(cmp: Compare):
     return negate(matched) if cmp.op is Op.NE else matched
 
 
+def _hygiene(cmp: Compare):
+    for raw in cmp.values:
+        if raw.lower() not in HYGIENE_VALUES:
+            msg = f"Unknown hygiene check {raw!r}."
+            hint = f"Try one of: {', '.join(HYGIENE_VALUES)}"
+            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
+    matched = preds.hygiene(list(cmp.values))
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
 _SUBDOMAIN_BUILDERS = {
     "target": lambda c, _ctx: target_match(Subdomain.target_id, c),
     "host": lambda c, _ctx: string_match(Subdomain.name, c),
@@ -299,6 +310,7 @@ _SUBDOMAIN_BUILDERS = {
     "exposure": lambda c, _ctx: _interest_kind(c),
     "flagged": lambda c, _ctx: _interest_source(c),
     "exposure_band": lambda c, _ctx: _interest_band(c),
+    "hygiene": lambda c, _ctx: _hygiene(c),
     "cve": lambda c, ctx: preds.host_vuln(
         ctx.scope, json_array_match(Vulnerability.cve_ids, c)
     ),

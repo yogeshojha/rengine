@@ -196,6 +196,30 @@ class EndpointRow:
 
 
 @dataclass
+class HygieneCount:
+    key: str
+    failing: int = 0
+    applicable: int = 0
+
+
+@dataclass
+class HygieneHost:
+    name: str
+    checks: list[str] = field(default_factory=list)
+
+
+@dataclass
+class HygieneRollup:
+    evaluated: int = 0
+    pending: int = 0
+    clean: int = 0
+    warning: int = 0
+    info: int = 0
+    checks: list[HygieneCount] = field(default_factory=list)
+    hosts: list[HygieneHost] = field(default_factory=list)
+
+
+@dataclass
 class Certificate:
     host: str
     subject: str | None = None

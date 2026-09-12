@@ -35,7 +35,21 @@
 	import Layers from '@lucide/svelte/icons/layers';
 	import Fingerprint from '@lucide/svelte/icons/fingerprint';
 	import CornerDownRight from '@lucide/svelte/icons/corner-down-right';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import Check from '@lucide/svelte/icons/check';
+	import X from '@lucide/svelte/icons/x';
 	import type { IconComponent } from '$lib/config/icons';
+	import {
+		CHECK_BY_KEY,
+		GROUP_ICONS,
+		GROUP_LABELS,
+		TONE_DOT,
+		TONE_TEXT,
+		checkLabel,
+		hygieneQuery,
+		sortChecks,
+		type HygieneGroup
+	} from '$lib/config/hygiene';
 	import {
 		providerFor,
 		PROVIDER_KIND_ICONS,
@@ -206,6 +220,30 @@
 		detail ? [detail.raw_response_header, detail.response_body].filter(Boolean).join('\n\n') : ''
 	);
 	let headerEntries = $derived(detail ? Object.entries(detail.response_headers ?? {}) : []);
+	let hygieneIssues = $derived(sortChecks(sub?.hygiene_issues ?? []));
+	let hygieneChecked = $derived(sub?.hygiene_checked ?? []);
+	let verdicts = $derived(detail?.hygiene ?? []);
+	let verdictFailing = $derived(verdicts.filter((v) => v.failed).length);
+	let evidenceByKey = $derived<Record<string, string>>(
+		Object.fromEntries(
+			verdicts.filter((v) => v.failed && v.evidence).map((v) => [v.key, v.evidence ?? ''])
+		)
+	);
+	let verdictGroups = $derived.by(() => {
+		const out: { group: HygieneGroup; list: typeof verdicts }[] = [];
+		for (const v of verdicts) {
+			const spec = CHECK_BY_KEY[v.key];
+			if (!spec) continue;
+			const bucket = out.find((g) => g.group === spec.group);
+			if (bucket) bucket.list.push(v);
+			else out.push({ group: spec.group, list: [v] });
+		}
+		return out;
+	});
+	function showChecks() {
+		tab = 'http';
+		httpView = 'hygiene';
+	}
 	let headerText = $derived(headerEntries.map(([k, v]) => `${k}: ${fmtHeader(v)}`).join('\n'));
 	let position = $derived(pageOffset + index + 1);
 	let privateIps = $derived((sub?.resolved_ips ?? []).filter(isPrivateIp));
@@ -592,6 +630,68 @@
 							</div>
 						{/if}
 
+						{#if hasHttp && hygieneChecked.length}
+							<section class="flex flex-col gap-2">
+								<div class="flex items-center justify-between">
+									{@render heading(hygieneIssues.length ? ShieldAlert : ShieldCheck, 'Web hygiene')}
+									<Button variant="ghost" size="sm" class="h-6 text-xs" onclick={showChecks}>
+										All checks <ChevronRight data-icon="inline-end" />
+									</Button>
+								</div>
+								{#if hygieneIssues.length}
+									<ul class="flex flex-col divide-y divide-border/60">
+										{#each hygieneIssues as key (key)}
+											{@const spec = CHECK_BY_KEY[key]}
+											{@const evidence = evidenceByKey[key]}
+											<li class="flex items-start gap-2 py-2">
+												<span class="flex h-5 shrink-0 items-center">
+													<span
+														class="size-1.5 rounded-full {spec ? TONE_DOT[spec.tone] : 'bg-muted'}"
+														aria-hidden="true"
+													></span>
+												</span>
+												<div class="min-w-0 flex-1">
+													<Tooltip.Root>
+														<Tooltip.Trigger>
+															{#snippet child({ props })}
+																<button
+																	{...props}
+																	type="button"
+																	class="text-left text-sm leading-5 hover:underline"
+																	onclick={() => onFilter?.(hygieneQuery(key))}
+																>
+																	{checkLabel(key)}
+																</button>
+															{/snippet}
+														</Tooltip.Trigger>
+														<Tooltip.Content class="flex max-w-xs items-center gap-1.5">
+															{spec?.help ?? 'Filter table'}
+															<Fingerprint class="size-3 opacity-60" />
+															<span class="font-mono">{hygieneQuery(key)}</span>
+														</Tooltip.Content>
+													</Tooltip.Root>
+													{#if evidence}
+														<p class="font-mono text-[11px] break-all text-muted-foreground">
+															{evidence}
+														</p>
+													{/if}
+												</div>
+											</li>
+										{/each}
+									</ul>
+								{:else}
+									<p class="text-xs text-muted-foreground">
+										Passes all {hygieneChecked.length} checks that apply.
+									</p>
+								{/if}
+								{#if hostAssets.length > 1}
+									<p class="text-xs text-muted-foreground">
+										Across {hostAssets.length} web services on this host.
+									</p>
+								{/if}
+							</section>
+						{/if}
+
 						{#if sub.tech.length || detail?.cpe?.length}
 							<section class="flex flex-col gap-2">
 								{@render heading(Layers, 'Technologies')}
@@ -738,6 +838,14 @@
 											Headers <span class="text-muted-foreground">{headerEntries.length}</span>
 										</ToggleGroup.Item>
 										<ToggleGroup.Item value="request" class="text-xs">Request</ToggleGroup.Item>
+										{#if verdicts.length}
+											<ToggleGroup.Item value="hygiene" class="text-xs">
+												Hygiene
+												<span class={verdictFailing ? TONE_TEXT.warning : 'text-muted-foreground'}>
+													{verdictFailing}
+												</span>
+											</ToggleGroup.Item>
+										{/if}
 									</ToggleGroup.Root>
 									{#if httpView === 'headers'}
 										<Button
@@ -750,7 +858,60 @@
 										</Button>
 									{/if}
 								</div>
-								{#if httpView === 'headers'}
+								{#if httpView === 'hygiene'}
+									<div class="flex flex-col gap-4">
+										<p class="text-xs text-muted-foreground tabular-nums">
+											{verdictFailing} of {verdicts.length}
+											{verdicts.length === 1 ? 'check' : 'checks'} that apply to this response fail.
+										</p>
+										{#each verdictGroups as { group, list } (group)}
+											{@const GroupIcon = GROUP_ICONS[group]}
+											<section class="flex flex-col gap-1">
+												<div
+													class="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+												>
+													<GroupIcon class="size-3.5" />
+													{GROUP_LABELS[group]}
+												</div>
+												<ul class="divide-y divide-border/60 rounded-md border border-border">
+													{#each list as v (v.key)}
+														{@const spec = CHECK_BY_KEY[v.key]}
+														<li class="flex items-start gap-2 px-3 py-2">
+															<span class="flex h-5 shrink-0 items-center">
+																{#if v.failed}
+																	<X class="size-3.5 {spec ? TONE_TEXT[spec.tone] : ''}" />
+																{:else}
+																	<Check class="size-3.5 text-success" />
+																{/if}
+															</span>
+															<div class="min-w-0 flex-1">
+																<div class="flex flex-wrap items-baseline gap-x-2">
+																	<span class="text-sm leading-5">{spec?.control ?? v.key}</span>
+																	<span class="font-mono text-[11px] text-muted-foreground"
+																		>{spec?.header}</span
+																	>
+																</div>
+																{#if v.failed}
+																	<p class="text-xs {spec ? TONE_TEXT[spec.tone] : ''}">
+																		{checkLabel(v.key)}
+																	</p>
+																{/if}
+																{#if v.evidence}
+																	<p class="font-mono text-[11px] break-all text-muted-foreground">
+																		{v.evidence}
+																	</p>
+																{/if}
+																{#if v.failed && spec}
+																	<p class="text-xs text-muted-foreground">{spec.fix}</p>
+																{/if}
+															</div>
+														</li>
+													{/each}
+												</ul>
+											</section>
+										{/each}
+									</div>
+								{:else if httpView === 'headers'}
 									{#if headerEntries.length}
 										<div class="divide-y divide-border/60 rounded-md border border-border">
 											{#each headerEntries as [k, v] (k)}

@@ -11,7 +11,9 @@ from shared.models.http_asset import (
     HttpAssetDetail,
     HttpAssetRead,
     HttpAssetSummary,
+    HygieneVerdict,
 )
+from shared.services import web_hygiene
 
 
 class HttpAssetService:
@@ -72,10 +74,13 @@ class HttpAssetService:
             tls_self_signed=asset.tls_self_signed,
             screenshot_path=asset.screenshot_path,
             body_preview=asset.body_preview,
+            hygiene_issues=list(asset.hygiene_issues or []),
+            hygiene_checked=list(asset.hygiene_checked or []),
             discovered_at=asset.discovered_at,
         )
 
     def _to_detail(self, asset: HttpAsset) -> HttpAssetDetail:
+        verdicts = web_hygiene.evaluate_asset(asset).verdicts
         return HttpAssetDetail(
             **self._to_read(asset).model_dump(),
             tls_subject_dn=asset.tls_subject_dn,
@@ -84,6 +89,10 @@ class HttpAssetService:
             raw_response_header=asset.raw_response_header,
             response_body=asset.response_body,
             response_headers=dict(asset.response_headers or {}),
+            hygiene=[
+                HygieneVerdict(key=str(v.key), failed=v.failed, evidence=v.evidence)
+                for v in verdicts
+            ],
         )
 
     async def get(self, asset_id: UUID, project_id: UUID) -> HttpAssetDetail | None:

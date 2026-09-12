@@ -96,7 +96,8 @@
 		tech: [],
 		service: [],
 		source: [],
-		cert: []
+		cert: [],
+		hygiene: []
 	};
 	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
 

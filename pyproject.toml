@@ -90,4 +90,5 @@ markers = [
     "grammar: invariants of the asset query language",
     "pipeline: scan orchestration and stage behaviour",
     "api: exercised through the HTTP surface",
+    "hygiene: hardening checks read off stored responses",
 ]

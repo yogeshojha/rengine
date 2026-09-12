@@ -5,6 +5,13 @@
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScopeStrip from '$lib/components/surface/scope-strip.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
+	import HygienePanel from '$lib/components/scans/results/overview/hygiene-panel.svelte';
+	import { subdomainsApi } from '$lib/api/subdomains';
+	import {
+		emptyQuery,
+		type HygieneSummary,
+		type WebAssetQuery
+	} from '$lib/utilities/scan-insights';
 	import EndpointsTable from '$lib/components/scans/results/endpoints-table.svelte';
 	import ServicesTable from '$lib/components/scans/results/services-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
@@ -20,12 +27,30 @@
 
 	let launchIds = $state<string[]>([]);
 	let launchOpen = $state(false);
+	let webQuery = $state<WebAssetQuery>(emptyQuery());
+	let hygiene = $state<HygieneSummary | null>(null);
+	let hygieneLoading = $state(false);
 
 	$effect(() => {
 		const id = projectId;
 		if (!id) return;
 		untrack(() => void surfaceStore.load(id));
 	});
+
+	$effect(() => {
+		const id = projectId;
+		if (!id || spec?.key !== SurfaceDimension.WEB_ASSETS) return;
+		untrack(() => loadHygiene(id));
+	});
+
+	function loadHygiene(id: string) {
+		hygieneLoading = true;
+		subdomainsApi
+			.hygiene(id, '')
+			.then((d) => (hygiene = d))
+			.catch(() => (hygiene = null))
+			.finally(() => (hygieneLoading = false));
+	}
 
 	function afterLaunch() {
 		launchOpen = false;
@@ -60,7 +85,12 @@
 
 		{#key `${projectId}:${spec.key}`}
 			{#if spec.key === SurfaceDimension.WEB_ASSETS}
-				<WebAssetsTable scanId="" projectWide {projectId} />
+				<HygienePanel
+					summary={hygiene}
+					loading={hygieneLoading}
+					onFilter={(search) => (webQuery = { ...emptyQuery(), search })}
+				/>
+				<WebAssetsTable scanId="" projectWide {projectId} bind:query={webQuery} />
 			{:else if spec.key === SurfaceDimension.ENDPOINTS}
 				<EndpointsTable scanId="" projectWide {projectId} />
 			{:else if spec.key === SurfaceDimension.SERVICES}

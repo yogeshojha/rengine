@@ -7,6 +7,7 @@ from sqlalchemy import (
     Text,
     and_,
     any_,
+    case,
     cast,
     distinct,
     exists,
@@ -22,6 +23,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import aliased
 
+from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.endpoints import ARCHIVE_SOURCES, LINKED_SOURCES
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity, VulnState
@@ -591,3 +593,54 @@ def interest_signal(condition=None):
 
 def interesting():
     return Subdomain.interest_score > 0
+
+
+# ---------- hygiene ----------
+
+
+def hygiene_length(column):
+    """Length of a JSON list column, 0 for NULL or a stray scalar."""
+    value = cast(column, JSONB)
+    return case(
+        (func.jsonb_typeof(value) == "array", func.jsonb_array_length(value)),
+        else_=0,
+    )
+
+
+def hygiene_evaluated():
+    return func.jsonb_typeof(cast(Subdomain.hygiene_checked, JSONB)) == "array"
+
+
+def hygiene_clean():
+    return and_(
+        hygiene_length(Subdomain.hygiene_checked) > 0,
+        hygiene_length(Subdomain.hygiene_issues) == 0,
+    )
+
+
+def hygiene(values: list[str]):
+    """Hosts failing any of the checks."""
+    keys: set[str] = set()
+    parts = []
+    issues = cast(Subdomain.hygiene_issues, JSONB)
+    for raw in values:
+        value = raw.lower()
+        if value == hygiene_defs.ANY:
+            parts.append(hygiene_length(Subdomain.hygiene_issues) > 0)
+        elif value == hygiene_defs.NONE:
+            parts.append(hygiene_clean())
+        elif value in hygiene_defs.KEYS_BY_TONE:
+            keys.update(hygiene_defs.KEYS_BY_TONE[value])
+        else:
+            keys.add(value)
+    if keys:
+        parts.append(func.jsonb_exists_any(issues, pg_array(sorted(keys))))
+    return or_(*parts) if parts else false()
+
+
+def hygiene_check(key: str):
+    return func.jsonb_exists(cast(Subdomain.hygiene_issues, JSONB), key)
+
+
+def hygiene_applies(key: str):
+    return func.jsonb_exists(cast(Subdomain.hygiene_checked, JSONB), key)

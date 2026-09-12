@@ -7,7 +7,9 @@ from functools import cached_property
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import and_, case, distinct, func, select, text
+from sqlalchemy import and_, case, cast, distinct, func, select, text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import Session, aliased
 
 from reports.data.models import (
@@ -18,9 +20,13 @@ from reports.data.models import (
     Facet,
     Finding,
     Host,
+    HygieneCount,
+    HygieneHost,
+    HygieneRollup,
     Service,
     StageRun,
 )
+from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.ports import SENSITIVE_PORTS, ServiceClass
 from shared.definitions.reports import MAX_REPORT_ROWS, ReportScope
 from shared.definitions.surface import SURFACE_KINDS, SURFACE_ORDER, SurfaceDimension
@@ -43,6 +49,7 @@ from shared.models.vulnerability import (
     VulnerabilityCoverage,
     VulnerabilityTriage,
 )
+from shared.services.asset_query import predicates as preds
 from shared.utils.datetime import utc_now
 from shared.utils.net import is_registry_routable
 
@@ -691,6 +698,98 @@ class ReportSource:
             )
             for row in rows
         ]
+
+    # ---------- hygiene ----------
+
+    @cached_property
+    def hygiene(self) -> HygieneRollup | None:
+        scan_id = self.scan_for(_DIM.WEB_ASSETS.value)
+        if scan_id is None:
+            return None
+        issues = cast(Subdomain.hygiene_issues, JSONB)
+        checked = cast(Subdomain.hygiene_checked, JSONB)
+        warning_keys = pg_array(list(hygiene_defs.WARNING_KEYS))
+        info_keys = pg_array(list(hygiene_defs.INFO_KEYS))
+        columns = [
+            func.count()
+            .filter(Subdomain.hygiene_checked.isnot(None))
+            .label("evaluated"),
+            func.count()
+            .filter(
+                and_(
+                    Subdomain.http_status.isnot(None),
+                    Subdomain.hygiene_checked.is_(None),
+                )
+            )
+            .label("pending"),
+            func.count()
+            .filter(
+                and_(
+                    func.jsonb_array_length(checked) > 0,
+                    func.jsonb_array_length(issues) == 0,
+                )
+            )
+            .label("clean"),
+            func.count()
+            .filter(func.jsonb_exists_any(issues, warning_keys))
+            .label("warning"),
+            func.count().filter(func.jsonb_exists_any(issues, info_keys)).label("info"),
+        ]
+        for key in hygiene_defs.CHECK_KEYS:
+            columns.append(
+                func.count().filter(func.jsonb_exists(issues, key)).label(f"f_{key}")
+            )
+            columns.append(
+                func.count().filter(func.jsonb_exists(checked, key)).label(f"a_{key}")
+            )
+        row = (
+            self.session.execute(
+                select(*columns)
+                .select_from(Subdomain)
+                .where(Subdomain.scan_id == scan_id)
+            )
+            .one()
+            ._mapping
+        )
+        host_rows = self.session.execute(
+            select(Subdomain.name, Subdomain.hygiene_issues)
+            .where(
+                Subdomain.scan_id == scan_id,
+                func.jsonb_exists_any(issues, warning_keys),
+            )
+            .order_by(
+                preds.hygiene_length(Subdomain.hygiene_issues).desc(), Subdomain.name
+            )
+            .limit(MAX_REPORT_ROWS)
+        ).all()
+        labels = {c.key: c.label for c in hygiene_defs.CHECKS}
+        order = hygiene_defs.CHECK_ORDER
+        return HygieneRollup(
+            evaluated=int(row["evaluated"]),
+            pending=int(row["pending"]),
+            clean=int(row["clean"]),
+            warning=int(row["warning"]),
+            info=int(row["info"]),
+            checks=[
+                HygieneCount(
+                    key=key,
+                    failing=int(row[f"f_{key}"]),
+                    applicable=int(row[f"a_{key}"]),
+                )
+                for key in hygiene_defs.CHECK_KEYS
+            ],
+            hosts=[
+                HygieneHost(
+                    name=name,
+                    checks=[
+                        labels.get(k, k)
+                        for k in sorted(keys or [], key=lambda k: order.get(k, 99))
+                        if k in hygiene_defs.WARNING_KEYS
+                    ],
+                )
+                for name, keys in host_rows
+            ],
+        )
 
     # ---------- certificates ----------
 

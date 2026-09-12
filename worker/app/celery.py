@@ -94,6 +94,7 @@ celery_app.conf.task_routes = {
     "app.tasks.interest.*": {"queue": "default"},
     "app.tasks.threat_intel.*": {"queue": "default"},
     "app.tasks.freshness.*": {"queue": "default"},
+    "app.tasks.hygiene.*": {"queue": "default"},
     "app.tasks.bounty_programs.*": {"queue": "default"},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
@@ -118,6 +119,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.bounty_programs",
         "app.tasks.toolbox",
         "app.tasks.retention",
+        "app.tasks.hygiene",
     ]
 )
 
@@ -131,6 +133,7 @@ NOTIFICATION_CLEANUP_SECONDS = 6 * 60 * 60.0
 RETENTION_SECONDS = 24 * 60 * 60.0
 THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
 CERT_RECHECK_SECONDS = 4 * 60 * 60.0
+HYGIENE_BACKFILL_SECONDS = 5 * 60.0
 
 # the task itself decides whether the interval is due
 BOUNTY_SYNC_TICK_SECONDS = 60 * 60
@@ -181,6 +184,10 @@ celery_app.conf.beat_schedule = {
     "certificate-recheck": {
         "task": "app.tasks.freshness.certificates",
         "schedule": CERT_RECHECK_SECONDS,
+    },
+    "hygiene-backfill": {
+        "task": "app.tasks.hygiene.backfill",
+        "schedule": HYGIENE_BACKFILL_SECONDS,
     },
 }
 
