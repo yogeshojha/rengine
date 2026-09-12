@@ -188,9 +188,7 @@ http:
 			{#if !editable && !loading}
 				<div class="flex items-start gap-2 rounded-md border bg-muted/40 px-3 py-2">
 					<Lock class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-					<p class="text-xs text-muted-foreground">
-						Project templates are read-only. Copy the source into a custom template to edit it.
-					</p>
+					<p class="text-xs text-muted-foreground">Project templates are read-only.</p>
 				</div>
 			{/if}
 

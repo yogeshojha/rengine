@@ -133,7 +133,7 @@
 					</section>
 
 					<section class="flex flex-col gap-2">
-						<SectionHead title="Where" />
+						<SectionHead title="Location" />
 						<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
 							<dt class={DT}>Asset</dt>
 							<dd class="break-all">

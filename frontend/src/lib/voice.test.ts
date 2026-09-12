@@ -12,6 +12,8 @@ const SCOPE_NARRATION =
 	/\b(in this project|across all targets|of each target|from the latest (scan|run|covering run))\b/i;
 // a description may decode a visual encoding; that is not a restatement
 const ENCODING = /\b(sized|tinted|coloured|colored|ranked|ordered|scaled|shaded) by\b/i;
+const RHETORICAL = /^(What|Where|Why|How|Who)\b/;
+const IMPERATIVE = /^(Leave|Pick|Tick|Press|Make sure|Please|Head|Go|Click|Hover)\b/;
 
 const STOP = new Set([
 	'a',
@@ -81,6 +83,12 @@ function pairs(text: string): { title: string; description: string }[] {
 	return found;
 }
 
+/** every title a heading component renders. */
+function headings(text: string): string[] {
+	const re = /<(Widget|PanelHead|SectionHead|EmptyState)\b[\s\S]{0,400}?title=\{?"([^"{}]{2,80})"/g;
+	return [...text.matchAll(re)].map((m) => m[2]);
+}
+
 /** the muted paragraph that sits directly under a page heading. */
 function subtitles(text: string): string[] {
 	const re =
@@ -117,6 +125,24 @@ describe('voice', () => {
 		const offenders = files.flatMap(({ name, text }) =>
 			[...descriptions(text), ...subtitles(text)]
 				.filter((s) => SCOPE_NARRATION.test(s))
+				.map((s) => `${name}: ${s}`)
+		);
+		expect(offenders).toEqual([]);
+	});
+
+	it('does not pose a heading or description as a question', () => {
+		const offenders = files.flatMap(({ name, text }) =>
+			[...descriptions(text), ...subtitles(text), ...headings(text)]
+				.filter((s) => RHETORICAL.test(s))
+				.map((s) => `${name}: ${s}`)
+		);
+		expect(offenders).toEqual([]);
+	});
+
+	it('does not instruct the reader from a description', () => {
+		const offenders = files.flatMap(({ name, text }) =>
+			[...descriptions(text), ...subtitles(text)]
+				.filter((s) => IMPERATIVE.test(s))
 				.map((s) => `${name}: ${s}`)
 		);
 		expect(offenders).toEqual([]);

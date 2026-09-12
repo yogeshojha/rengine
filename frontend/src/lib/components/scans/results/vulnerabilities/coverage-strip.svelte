@@ -75,7 +75,7 @@
 				<div class="border-b px-3 py-2">
 					<p class="text-sm font-medium">Scanner coverage</p>
 					<p class="text-xs text-muted-foreground">
-						Checks selected, loaded and sent by each scanner. A blank number was not reported.
+						Checks selected, loaded and sent by each scanner. Blank counts were not reported.
 					</p>
 				</div>
 				<div class="divide-y">

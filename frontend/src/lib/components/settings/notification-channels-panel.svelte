@@ -307,9 +307,7 @@
 	<div class="flex items-start justify-between">
 		<div>
 			<h2 class="text-lg font-semibold tracking-tight">Notifications</h2>
-			<p class="text-sm text-muted-foreground">
-				Scan events sent to Slack, Discord, Telegram, Teams, email, a webhook or an Apprise URL.
-			</p>
+			<p class="text-sm text-muted-foreground">Scan events sent to external channels.</p>
 		</div>
 		<Button size="sm" onclick={openAdd}>
 			<PlusIcon class="mr-1.5 size-4" />

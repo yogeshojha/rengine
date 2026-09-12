@@ -36,7 +36,7 @@ class BurpConnector(ProxyConnector):
                 detail="Open the reNgine tab in Burp. Paste the endpoint and the token. Press Test connection.",
             ),
             SetupStep(
-                title="Pick the target",
+                title="Select the target",
                 detail="Select it under Working on. Press Apply scope to Burp. Tick Send captured requests to reNgine.",
             ),
         ]

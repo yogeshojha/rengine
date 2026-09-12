@@ -171,7 +171,7 @@
 			</Button>
 		{/if}
 		{#if !ready && body.trim() && picked.size === 0 && notes.tags.length > 0}
-			<span class="text-xs text-muted-foreground">Pick at least one tag</span>
+			<span class="text-xs text-muted-foreground">Select at least one tag</span>
 		{/if}
 	</div>
 </div>

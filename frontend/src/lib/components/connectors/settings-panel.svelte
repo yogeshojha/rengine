@@ -97,7 +97,7 @@
 
 <div class="space-y-4">
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Traffic" description="What the connector records" />
+		<PanelHead title="Traffic" />
 
 		<div class="space-y-4 px-5 py-4">
 			<div class="space-y-2">
@@ -129,7 +129,7 @@
 	</Card.Root>
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Scans" description="How a scan of queued shapes runs" />
+		<PanelHead title="Scans" />
 
 		<div class="px-5 py-4">
 			<FormField

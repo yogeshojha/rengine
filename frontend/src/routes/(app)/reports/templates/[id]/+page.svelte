@@ -200,9 +200,7 @@
 
 		{#if template.is_builtin}
 			<Card.Root class="border-dashed py-3">
-				<div class="px-4 text-sm text-muted-foreground">
-					Shipped templates are read-only. Duplicate to edit.
-				</div>
+				<div class="px-4 text-sm text-muted-foreground">Shipped templates are read-only.</div>
 			</Card.Root>
 		{/if}
 

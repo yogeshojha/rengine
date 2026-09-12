@@ -228,7 +228,7 @@
 					{/if}
 				</div>
 			</div>
-			<p class="text-xs text-muted-foreground">Leave blank to keep the current password.</p>
+			<p class="text-xs text-muted-foreground">A blank field keeps the current password.</p>
 		</Collapsible.Content>
 	</Collapsible.Root>
 </div>

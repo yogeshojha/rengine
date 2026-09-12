@@ -86,7 +86,7 @@
 
 	<div class="space-y-1.5">
 		<Label class="text-xs">Included subdomains</Label>
-		<p class="text-xs text-muted-foreground">Leave empty to scan every discovered subdomain.</p>
+		<p class="text-xs text-muted-foreground">An empty list scans every discovered subdomain.</p>
 		<StringListField
 			items={context.included_subdomains}
 			placeholder="api.example.com"

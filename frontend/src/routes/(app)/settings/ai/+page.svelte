@@ -184,7 +184,7 @@
 							</div>
 							{#if status.configured}
 								<p class="text-xs text-muted-foreground">
-									A key is stored. Leave empty to keep it.
+									A key is stored. An empty field keeps it.
 								</p>
 							{/if}
 						</div>

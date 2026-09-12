@@ -233,9 +233,7 @@
 	<div class="flex items-start justify-between">
 		<div>
 			<h2 class="text-lg font-semibold tracking-tight">Proxies</h2>
-			<p class="text-sm text-muted-foreground">
-				Proxies for scan traffic. The default applies to scan contexts that do not choose one.
-			</p>
+			<p class="text-sm text-muted-foreground">Proxies for scan traffic.</p>
 		</div>
 		<Button size="sm" onclick={openAdd}>
 			<PlusIcon class="mr-1.5 size-4" />
