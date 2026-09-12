@@ -110,6 +110,7 @@ SOURCE_KIND: dict[str, str] = {
 
 SOURCE_RANK: dict[str, int] = {
     EndpointSource.OTHER.value: 0,
+    EndpointSource.PROXY.value: 5,
     EndpointSource.ARCHIVE.value: 10,
     EndpointSource.DEEP_ARCHIVE.value: 10,
     EndpointSource.IMPORT.value: 15,
@@ -870,6 +871,80 @@ def signature_for(
     """Structural identity of an endpoint."""
     key = f"{scheme}://{host}:{port}|{path}|{','.join(sorted(params))}"
     return hashlib.sha256(key.encode("utf-8", "replace")).hexdigest()
+
+
+# ---------- path shape ----------
+
+SHAPE_PLACEHOLDER = "{id}"
+_SHAPE_MIN_TOKEN = 12
+_SHAPE_MIN_STEM = 10
+_SHAPE_MIN_DIGITS = 3
+_SHAPE_NUMERIC = re.compile(r"^\d+$")
+_SHAPE_UUID = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
+)
+_SHAPE_HEX = re.compile(r"^[0-9a-f]{16,}$", re.IGNORECASE)
+_SHAPE_TOKEN = re.compile(r"^[A-Za-z0-9_-]{20,}$")
+_SHAPE_MIXED = re.compile(r"^(?=.*\d)(?=.*[A-Za-z])[A-Za-z0-9]{8,}$")
+_SHAPE_HASH_STEM = re.compile(r"^[a-z0-9]+$", re.IGNORECASE)
+_SHAPE_NAMED_HASH = re.compile(r"^(.+)-([a-z0-9]{8,})$", re.IGNORECASE)
+
+
+def _variable_segment(segment: str) -> bool:
+    if not segment or "." in segment:
+        return False
+    if (
+        _SHAPE_NUMERIC.match(segment)
+        or _SHAPE_UUID.match(segment)
+        or _SHAPE_HEX.match(segment)
+    ):
+        return True
+    return len(segment) >= _SHAPE_MIN_TOKEN and bool(
+        _SHAPE_TOKEN.match(segment) or _SHAPE_MIXED.match(segment)
+    )
+
+
+def _hashed_filename(segment: str) -> str | None:
+    stem, dot, extension = segment.rpartition(".")
+    if not dot or "." in stem:
+        return None
+    named = _SHAPE_NAMED_HASH.match(stem)
+    if named and sum(c.isdigit() for c in named.group(2)) >= _SHAPE_MIN_DIGITS:
+        return f"{named.group(1)}-{SHAPE_PLACEHOLDER}.{extension}"
+    if (
+        len(stem) >= _SHAPE_MIN_STEM
+        and _SHAPE_HASH_STEM.match(stem)
+        and sum(c.isdigit() for c in stem) >= _SHAPE_MIN_DIGITS
+        and any(c.isalpha() for c in stem)
+    ):
+        return f"{SHAPE_PLACEHOLDER}.{extension}"
+    return None
+
+
+def shape_for(path: str) -> tuple[str, int]:
+    """The path with identifier segments collapsed, and how many were collapsed."""
+    if not path or path == "/":
+        return path or "/", 0
+    trailing = path.endswith("/")
+    parts = [p for p in path.split("/") if p]
+    replaced = 0
+    out: list[str] = []
+    last = len(parts) - 1
+    for index, segment in enumerate(parts):
+        if _variable_segment(segment):
+            replaced += 1
+            out.append(SHAPE_PLACEHOLDER)
+            continue
+        hashed = _hashed_filename(segment) if index == last else None
+        if hashed is not None:
+            replaced += 1
+            out.append(hashed)
+            continue
+        out.append(segment)
+    shaped = "/" + "/".join(out)
+    if trailing and not shaped.endswith("/"):
+        shaped += "/"
+    return shaped[:MAX_PATH_LENGTH], replaced
 
 
 def classify(path: str, extension: str | None, content_type: str | None = None) -> str:

@@ -6,6 +6,8 @@ export const routeLabels: Record<string, string> = {
 	surface: 'Attack surface',
 	...Object.fromEntries(SURFACE_ORDER.map((spec) => [spec.tab, spec.label])),
 	exposures: 'Exposures',
+	cves: 'CVEs',
+	cve: 'CVEs',
 
 	// Discovery
 	targets: 'Targets',
@@ -57,7 +59,7 @@ export const REPORT_TABS = ['reports', 'templates', 'themes', 'defaults'] as con
 export type ReportTab = (typeof REPORT_TABS)[number];
 
 export const AI_TABS = ['connection', 'features', 'usage'] as const;
-export const CONNECTOR_TABS = ['queue', 'discovered', 'coverage', 'sessions', 'settings'] as const;
+export const CONNECTOR_TABS = ['queue', 'discovered', 'settings'] as const;
 export type ConnectorTab = (typeof CONNECTOR_TABS)[number];
 export const MCP_TABS = ['server', 'tools', 'access', 'activity'] as const;
 export type McpTab = (typeof MCP_TABS)[number];
@@ -80,6 +82,8 @@ export const ROUTES = {
 		return `/surface/${tab}${suffix ? `?${suffix}` : ''}`;
 	},
 	scan: (id: string) => `/scans/${id}`,
+	cves: '/surface/cve',
+	cve: (id: string) => `/surface/cve/${encodeURIComponent(id)}`,
 	compare: (current: string, baseline?: string | null, query?: Record<string, string>) => {
 		const params = new URLSearchParams({ current, ...(query ?? {}) });
 		if (baseline) params.set('baseline', baseline);

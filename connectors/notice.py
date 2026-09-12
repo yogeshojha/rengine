@@ -14,7 +14,8 @@ def notices_for(
     methods: list[str],
     status_code: int | None,
     known: bool,
-    in_scope: bool,
+    covered: bool,
+    new_params: bool = False,
     out_of_scope: bool = False,
 ) -> list[str]:
     found: set[str] = set()
@@ -25,8 +26,10 @@ def notices_for(
         found.add(NoticeKind.SENSITIVE.value)
     if interest & ADMIN_INTERESTS:
         found.add(NoticeKind.ADMIN.value)
-    if in_scope and not known:
+    if covered and not known:
         found.add(NoticeKind.UNSEEN_BY_SCANS.value)
+    if known and new_params:
+        found.add(NoticeKind.NEW_PARAMS.value)
     if status_code is not None and status_code >= _SERVER_ERROR:
         found.add(NoticeKind.SERVER_ERROR.value)
     if any(method.upper() not in COMMON_METHODS for method in methods):

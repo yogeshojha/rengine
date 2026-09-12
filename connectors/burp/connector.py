@@ -18,28 +18,25 @@ class BurpConnector(ProxyConnector):
         "https://portswigger.net/burp/documentation/desktop/extend-burp/extensions"
     )
     source_path = "clients/burp"
+    client_file = "rengine-connector-0.1.0.jar"
     supports_scope_push = True
 
-    def setup(self, *, endpoint: str, secret: str) -> list[SetupStep]:
+    def setup(self, **_: str) -> list[SetupStep]:
         return [
             SetupStep(
-                title="Build the extension",
-                detail="Build the jar from clients/burp in the reNgine repository. Requires JDK 17 or later.",
-                code="cd clients/burp && ./build.sh",
-                lang="shell",
+                title="Download the extension",
+                detail="Burp Suite Community or Professional. JRE 17 or later.",
             ),
             SetupStep(
                 title="Load it into Burp",
-                detail="Extensions \u2192 Installed \u2192 Add, extension type Java, then select the jar the build printed.",
+                detail="Extensions, Installed, Add. Extension type Java. Select the jar.",
             ),
             SetupStep(
                 title="Connect it",
-                detail="Open the reNgine tab in Burp, enter these values and press Test connection. The token is shown once.",
-                code=f"Endpoint  {endpoint}\nToken     {secret}",
-                lang="shell",
+                detail="Open the reNgine tab in Burp. Paste the endpoint and the token. Press Test connection.",
             ),
             SetupStep(
-                title="Start capturing",
-                detail="Enable Send captured requests, then request a page from a target in this project. The connector state changes to Receiving.",
+                title="Pick the target",
+                detail="Select it under Working on. Press Apply scope to Burp. Tick Send captured requests to reNgine.",
             ),
         ]

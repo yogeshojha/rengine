@@ -13,9 +13,7 @@
 	import ConnectorList from '$lib/components/connectors/connector-list.svelte';
 	import ConnectorStats from '$lib/components/connectors/connector-stats.svelte';
 	import QueuePanel from '$lib/components/connectors/queue-panel.svelte';
-	import CoveragePanel from '$lib/components/connectors/coverage-panel.svelte';
 	import DiscoveredPanel from '$lib/components/connectors/discovered-panel.svelte';
-	import SessionsPanel from '$lib/components/connectors/sessions-panel.svelte';
 	import SettingsPanel from '$lib/components/connectors/settings-panel.svelte';
 	import NewConnectorDialog from '$lib/components/connectors/new-connector-dialog.svelte';
 	import SetupDialog from '$lib/components/connectors/setup-dialog.svelte';
@@ -25,15 +23,13 @@
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { CONNECTOR_POLL_MS } from '$lib/config/connectors';
 	import { CONNECTOR_TABS, routeLabels, type ConnectorTab } from '$lib/config/routes';
-	import type { ConnectorCreated } from '$lib/types/connector';
+	import type { CandidateQuery, ConnectorCreated } from '$lib/types/connector';
 
 	const DEFAULT_TAB: ConnectorTab = CONNECTOR_TABS[0];
 	const validTabs = new Set<string>(CONNECTOR_TABS);
 	const TAB_LABELS: Record<ConnectorTab, string> = {
 		queue: 'Queue',
 		discovered: 'Discovered',
-		coverage: 'Coverage',
-		sessions: 'Sessions',
 		settings: 'Settings'
 	};
 
@@ -44,14 +40,14 @@
 	let newOpen = $state(false);
 	let setupOpen = $state(false);
 	let created = $state<ConnectorCreated | null>(null);
+	let preset = $state<CandidateQuery | null>(null);
 
 	const projectId = $derived(projectsStore.activeProject?.id ?? null);
 	const projectSlug = $derived(projectsStore.activeProject?.slug ?? null);
 	const selected = $derived(connectors.selected);
 	const tabCounts = $derived<Partial<Record<ConnectorTab, number | null>>>({
 		queue: selected?.queued ?? null,
-		discovered: selected?.discovered ?? null,
-		sessions: connectors.sessions.length || null
+		discovered: selected?.discovered ?? null
 	});
 
 	$effect(() => {
@@ -83,9 +79,7 @@
 			if (document.hidden) return;
 			void connectors.load(id, true);
 			if (!chosen) return;
-			if (tab === 'queue') void connectors.loadQueue(chosen, id, { state: 'new' });
 			if (tab === 'discovered') void connectors.loadDiscovered(chosen, id);
-			if (tab === 'sessions') void connectors.loadSessions(chosen, id);
 		};
 		const timer = setInterval(poll, CONNECTOR_POLL_MS);
 		return () => clearInterval(timer);
@@ -94,6 +88,11 @@
 	function onCreated(next: ConnectorCreated) {
 		created = next;
 		setupOpen = true;
+	}
+
+	function showQueue(query: CandidateQuery) {
+		preset = query;
+		activeTab = 'queue';
 	}
 
 	async function togglePause() {
@@ -111,7 +110,7 @@
 		<div class="min-w-0">
 			<h1 class="text-xl font-semibold">{routeLabels.connectors}</h1>
 			<p class="text-muted-foreground text-sm">
-				Burp Suite connections and the requests they record
+				Requests observed in Burp Suite, recorded as endpoints of their target
 			</p>
 		</div>
 		<Button size="sm" onclick={() => (newOpen = true)}>
@@ -137,7 +136,7 @@
 		<div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
 			{#if selected && projectId}
 				<div class="min-w-0 space-y-4">
-					<ConnectorStats connector={selected} onTogglePause={togglePause} />
+					<ConnectorStats connector={selected} onTogglePause={togglePause} onPick={showQueue} />
 
 					<Tabs.Root value={activeTab} onValueChange={(v) => v && (activeTab = v as ConnectorTab)}>
 						<Tabs.List class="w-full sm:w-fit">
@@ -153,16 +152,15 @@
 						</Tabs.List>
 
 						<Tabs.Content value="queue" class="mt-6">
-							<QueuePanel connector={selected} {projectId} />
+							<QueuePanel
+								connector={selected}
+								{projectId}
+								{preset}
+								onPresetApplied={() => (preset = null)}
+							/>
 						</Tabs.Content>
 						<Tabs.Content value="discovered" class="mt-6">
 							<DiscoveredPanel connector={selected} {projectId} />
-						</Tabs.Content>
-						<Tabs.Content value="coverage" class="mt-6">
-							<CoveragePanel connector={selected} {projectId} />
-						</Tabs.Content>
-						<Tabs.Content value="sessions" class="mt-6">
-							<SessionsPanel connector={selected} {projectId} />
 						</Tabs.Content>
 						<Tabs.Content value="settings" class="mt-6">
 							<SettingsPanel connector={selected} {projectId} onrotated={onCreated} />

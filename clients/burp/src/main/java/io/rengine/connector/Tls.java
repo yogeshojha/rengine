@@ -25,7 +25,7 @@ final class Tls {
         return builder.build();
     }
 
-    /** Accepts any certificate. Only ever reached when the operator has ticked the box. */
+    /** A context that accepts any certificate. */
     private static SSLContext permissive() {
         try {
             TrustManager[] trustAll = {
@@ -50,7 +50,7 @@ final class Tls {
         }
     }
 
-    /** True when the token would cross the network in clear text. */
+    /** True for plain HTTP to a remote host. */
     static boolean insecure(String endpoint) {
         String value = endpoint == null ? "" : endpoint.trim().toLowerCase();
         if (!value.startsWith("http://")) {

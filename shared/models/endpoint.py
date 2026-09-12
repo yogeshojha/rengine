@@ -54,6 +54,7 @@ class Endpoint(SQLModel, table=True):
     port: int = Field(default=443)
     scheme: str = Field(default="https", max_length=8)
     path: str = Field(max_length=MAX_PATH_LENGTH)
+    shape: str = Field(default="", max_length=MAX_PATH_LENGTH)
     dir_path: str = Field(max_length=MAX_PATH_LENGTH, index=True)
     filename: str | None = Field(default=None, max_length=MAX_FILENAME_LENGTH)
     extension: str | None = Field(default=None, max_length=10, index=True)

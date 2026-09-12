@@ -8,7 +8,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-/** The targets reNgine offers while testing. Asked for; never pushed. */
+/** The target picker, read from reNgine. */
 final class Targets {
     /** Nothing selected: each request is matched to a target by its hostname. */
     static final Option AUTO = new Option(null, "Match by hostname", "auto", 0, 0);

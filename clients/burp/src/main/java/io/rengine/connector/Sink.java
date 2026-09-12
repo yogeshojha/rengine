@@ -14,11 +14,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Buffers observations off the proxy thread and posts them in batches.
- *
- * <p>Nothing here touches Burp, so it can be exercised without the suite.
- */
+/** Buffers observations off the proxy thread and posts them in batches. */
 final class Sink {
     static final int QUEUE_CAPACITY = 5000;
     static final int MAX_BATCH = 200;
@@ -31,7 +27,7 @@ final class Sink {
         void line(String message);
     }
 
-    /** Where to post. Kept narrow so the sink can run without Burp. */
+    /** Where to post. */
     interface Config {
         String endpoint();
 
@@ -41,7 +37,7 @@ final class Sink {
 
         boolean allowSelfSigned();
 
-        /** Bumped whenever the operator saves; a client that gave up may try again. */
+        /** Incremented on every save. */
         long generation();
 
         /** The target chosen while testing, or null to match each request by hostname. */
@@ -100,7 +96,7 @@ final class Sink {
         }
     }
 
-    /** Called on Burp's request path. Never blocks and never throws. */
+    /** Called on Burp's request path. Non-blocking. */
     void offer(Observation observation) {
         if (!seenRecently(observation)) {
             if (queue.offer(observation)) {
@@ -205,16 +201,16 @@ final class Sink {
     private static String summarise(String responseBody) {
         String accepted = Json.readString(responseBody, "accepted");
         String novel = Json.readString(responseBody, "novel");
-        String queued = Json.readString(responseBody, "queued");
+        String recorded = Json.readString(responseBody, "recorded");
         String dropped = Json.readString(responseBody, "dropped");
         if (accepted == null) {
             return null;
         }
-        return accepted + " accepted, " + novel + " new, " + dropped + " out of scope, "
-                + queued + " queued";
+        return accepted + " accepted · " + novel + " new shapes · " + dropped + " discarded · "
+                + (recorded == null ? "0" : recorded) + " endpoints recorded";
     }
 
-    /** Posts an empty batch to confirm the endpoint and token. Returns null when it worked. */
+    /** Posts an empty batch. Returns null on success. */
     String verify() {
         if (!settings.isConfigured()) {
             return "No endpoint or token configured.";
@@ -240,7 +236,7 @@ final class Sink {
         }
     }
 
-    /** The two failures a self-hosted reNgine produces, stated as facts. */
+    /** A connection failure as a sentence. */
     static String explain(Exception e) {
         String name = e.getClass().getSimpleName();
         if (name.contains("SSL") || name.contains("Certificate")) {

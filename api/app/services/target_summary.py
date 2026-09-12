@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query.predicates import vuln_suppressed
 from app.services.scan import ScanService
-from app.services.surface_scope import TABLES, covering_stages
+from app.services.surface_scope import TABLES
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.surface import (
     SURFACE_LABELS,
@@ -36,7 +36,7 @@ from shared.models.target_summary import (
     TargetSummaryRead,
 )
 from shared.models.vulnerability import SeverityCount, Vulnerability
-from shared.services.scan_scope import census_only
+from shared.services.scan_scope import census_only, covering_stages
 from shared.services.schedule_timing import describe_schedule
 
 _MAX_RUNS = 25

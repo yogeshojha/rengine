@@ -24,7 +24,7 @@ from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.vulnerability import VulnerabilityCoverage
-from shared.services import software_match
+from shared.services import proxy_sync, software_match
 from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
@@ -83,6 +83,7 @@ def _finalize_user_cancelled(
 ) -> None:
     _guard(lambda: _match_software(session, scan), None)
     _guard(lambda: analyze_result_tables(session), None)
+    _settle(session, scan)
     if scan.completed_at is None:
         scan.completed_at = utc_now()
         session.add(scan)
@@ -305,6 +306,21 @@ def _measure(session: Session, scan: Scan) -> ScanDeltas:
     )
 
 
+def _settle(session: Session, scan: Scan) -> None:
+    """Rechecks for a focused run. Recorded browsing joins a census run."""
+    if scan.scope == ScanScope.FOCUSED.value:
+        try:
+            compute_rechecks(session, scan)
+        except Exception:
+            logger.warning("recheck diff failed for scan %s", scan.id, exc_info=True)
+    try:
+        proxy_sync.replay(session, scan)
+        proxy_sync.settle_queue(session, scan)
+    except Exception:
+        session.rollback()
+        logger.warning("proxy sync failed for scan %s", scan.id, exc_info=True)
+
+
 def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     events = ScanEventPublisher(
         redis_url, scan_id=str(scan.id), project_id=str(scan.project_id)
@@ -371,12 +387,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     session.add(locked)
     session.commit()
     scan = locked
-
-    if scan.scope == ScanScope.FOCUSED.value:
-        try:
-            compute_rechecks(session, scan)
-        except Exception:
-            logger.warning("recheck diff failed for scan %s", scan.id, exc_info=True)
+    _settle(session, scan)
 
     activity_log = ActivityLogService(session)
 

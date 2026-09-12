@@ -4,11 +4,10 @@ import type { EndpointFilter } from '$lib/utilities/endpoints';
 import type {
 	Candidate,
 	CandidatePage,
+	CandidateQuery,
 	Connector,
-	ConnectorCoverage,
 	ConnectorCreate,
 	ConnectorCreated,
-	ConnectorSession,
 	ConnectorSpec,
 	DiscoveredDomain,
 	TargetAdded,
@@ -41,11 +40,7 @@ export const connectorsApi = {
 		return api.delete<void>(`/connectors/${id}?project_id=${projectId}`);
 	},
 
-	candidates(
-		id: string,
-		projectId: string,
-		params: { state?: string; host?: string; notice?: string; search?: string; page?: number } = {}
-	): Promise<CandidatePage> {
+	candidates(id: string, projectId: string, params: CandidateQuery = {}): Promise<CandidatePage> {
 		const query = new URLSearchParams({ project_id: projectId });
 		for (const [key, value] of Object.entries(params)) {
 			if (value !== undefined && value !== null && value !== '') query.set(key, String(value));
@@ -88,8 +83,8 @@ export const connectorsApi = {
 		});
 	},
 
-	scan(id: string, projectId: string, ids: string[] = []): Promise<ScanRead> {
-		return api.post<ScanRead>(`/connectors/${id}/scan?project_id=${projectId}`, { ids });
+	scan(id: string, projectId: string, ids: string[] = []): Promise<ScanRead[]> {
+		return api.post<ScanRead[]>(`/connectors/${id}/scan?project_id=${projectId}`, { ids });
 	},
 
 	discovered(id: string, projectId: string): Promise<DiscoveredDomain[]> {
@@ -108,13 +103,5 @@ export const connectorsApi = {
 			`/connectors/${id}/discovered/dismiss?project_id=${projectId}`,
 			{ domain }
 		);
-	},
-
-	coverage(id: string, projectId: string): Promise<ConnectorCoverage[]> {
-		return api.get<ConnectorCoverage[]>(`/connectors/${id}/coverage?project_id=${projectId}`);
-	},
-
-	sessions(id: string, projectId: string): Promise<ConnectorSession[]> {
-		return api.get<ConnectorSession[]>(`/connectors/${id}/sessions?project_id=${projectId}`);
 	}
 };

@@ -473,3 +473,20 @@ def merge_engine_context(
     config._auth_header_names = auth_header_names
     config.proxy_url = proxy_url
     return config
+
+
+_MESSAGE_HEADER = re.compile(
+    r"^((?:authorization|cookie|set-cookie|x-api-key|x-auth-token|x-csrf-token"
+    r"|[\w-]*(?:token|secret)[\w-]*)\s*:\s*)(.+?)\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def redact_message(text: str | None) -> str | None:
+    """Mask credential header values in a raw HTTP request or response."""
+    if not text:
+        return text
+    head, sep, body = text.partition("\r\n\r\n")
+    if not sep:
+        head, sep, body = text.partition("\n\n")
+    return _MESSAGE_HEADER.sub(rf"\g<1>{MASK}", head) + sep + body

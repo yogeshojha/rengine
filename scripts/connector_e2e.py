@@ -101,7 +101,6 @@ s, created = call(
         "name": "e2e burp",
         "kind": "burp",
         "project_id": PID,
-        "sync_trigger": "manual",
     },
 )
 check("create returns 201", s == CREATED, s)
@@ -263,11 +262,6 @@ check(
 )
 s, srch = call("GET", f"/connectors/{cid}/candidates?project_id={PID}&search=wp-admin")
 check("search filter works", srch["total"] == 1, srch["total"])
-
-print("\n== sessions never hold out-of-scope hosts ==")
-s, sess = call("GET", f"/connectors/{cid}/sessions?project_id={PID}")
-hosts = {h for row in sess for h in row["hosts"]}
-check("the tested host is present", HOST in hosts, hosts)
 
 print("\n== only-known-hosts discards, and says so ==")
 call("PATCH", f"/connectors/{cid}?project_id={PID}", {"only_known_hosts": True})
@@ -757,7 +751,8 @@ s, _ = call("GET", "/connectors/actions", token="rngconn_" + "0" * 48)
 check("collecting needs a valid token", s == UNAUTHORIZED, s)
 
 print("\n== scan dispatch ==")
-s, scan = call("POST", f"/connectors/{cid}/scan?project_id={PID}", {"ids": []})
+s, scans = call("POST", f"/connectors/{cid}/scan?project_id={PID}", {"ids": []})
+scan = (scans or [{}])[0] if isinstance(scans, list) else (scans or {})
 check("scan launched", s == OK and scan.get("id"), scan)
 sid = scan["id"]
 check("run is focused", scan.get("scope") == "focused", scan.get("scope"))

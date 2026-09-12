@@ -1,9 +1,8 @@
 import { connectorsApi } from '$lib/api/connectors';
 import type {
 	CandidatePage,
+	CandidateQuery,
 	Connector,
-	ConnectorCoverage,
-	ConnectorSession,
 	ConnectorSpec,
 	DiscoveredDomain
 } from '$lib/types/connector';
@@ -13,9 +12,7 @@ function createConnectorsStore() {
 	let catalogPending: Promise<void> | null = null;
 	let items = $state<Connector[]>([]);
 	let queue = $state<CandidatePage | null>(null);
-	let coverage = $state<ConnectorCoverage[]>([]);
 	let discovered = $state<DiscoveredDomain[]>([]);
-	let sessions = $state<ConnectorSession[]>([]);
 	let isLoading = $state(false);
 	let queueLoading = $state(false);
 	let error = $state<string | null>(null);
@@ -36,14 +33,8 @@ function createConnectorsStore() {
 		get queue() {
 			return queue;
 		},
-		get coverage() {
-			return coverage;
-		},
 		get discovered() {
 			return discovered;
-		},
-		get sessions() {
-			return sessions;
 		},
 		get isLoading() {
 			return isLoading;
@@ -67,9 +58,7 @@ function createConnectorsStore() {
 		select(id: string | null) {
 			selectedId = id;
 			queue = null;
-			coverage = [];
 			discovered = [];
-			sessions = [];
 		},
 
 		async loadCatalog() {
@@ -104,17 +93,7 @@ function createConnectorsStore() {
 			}
 		},
 
-		async loadQueue(
-			id: string,
-			projectId: string,
-			params: {
-				state?: string;
-				host?: string;
-				notice?: string;
-				search?: string;
-				page?: number;
-			} = {}
-		) {
+		async loadQueue(id: string, projectId: string, params: CandidateQuery = {}) {
 			queueLoading = true;
 			try {
 				queue = await connectorsApi.candidates(id, projectId, params);
@@ -133,27 +112,11 @@ function createConnectorsStore() {
 			}
 		},
 
-		async loadCoverage(id: string, projectId: string) {
-			try {
-				coverage = await connectorsApi.coverage(id, projectId);
-			} catch (e) {
-				error = message(e, 'Coverage not loaded');
-			}
-		},
-
-		async loadSessions(id: string, projectId: string) {
-			try {
-				sessions = await connectorsApi.sessions(id, projectId);
-			} catch (e) {
-				error = message(e, 'Sessions not loaded');
-			}
-		},
-
-		upsert(connector: Connector) {
+		upsert(connector: Connector, select = false) {
 			const at = items.findIndex((c) => c.id === connector.id);
 			if (at >= 0) items[at] = connector;
 			else items = [connector, ...items];
-			selectedId = connector.id;
+			if (select) selectedId = connector.id;
 		},
 
 		drop(id: string) {
@@ -165,9 +128,7 @@ function createConnectorsStore() {
 			catalog = [];
 			items = [];
 			queue = null;
-			coverage = [];
 			discovered = [];
-			sessions = [];
 			isLoading = false;
 			queueLoading = false;
 			error = null;

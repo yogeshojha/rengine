@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -12,13 +12,10 @@
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { connectors } from '$lib/stores/connectors.svelte';
-	import {
-		SOURCE_TOOL_LABELS,
-		SYNC_TRIGGERS,
-		SYNC_TRIGGER_HELP,
-		SYNC_TRIGGER_LABELS
-	} from '$lib/config/connectors';
-	import type { Connector, ConnectorCreated, SourceTool, SyncTrigger } from '$lib/types/connector';
+	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
+	import { SOURCE_TOOL_LABELS } from '$lib/config/connectors';
+	import { SELECT_NONE } from '$lib/constants';
+	import type { Connector, ConnectorCreated, SourceTool } from '$lib/types/connector';
 
 	let {
 		connector,
@@ -33,6 +30,33 @@
 	let error = $state<string | null>(null);
 
 	const tools: SourceTool[] = ['proxy', 'repeater'];
+	const contexts = $derived(scanContextsStore.contexts);
+	const contextName = $derived(contexts.find((c) => c.id === connector.context_id)?.name ?? 'None');
+
+	const traffic = [
+		{
+			key: 'only_known_hosts',
+			label: 'Only record hosts that belong to a target',
+			help: 'Requests to other hosts are discarded.'
+		},
+		{
+			key: 'include_static',
+			label: 'Include static content',
+			help: 'Images, stylesheets and fonts.'
+		},
+		{
+			key: 'capture_bodies',
+			label: 'Keep a request sample',
+			help: 'The first request recorded for each shape. Samples may contain credentials.'
+		}
+	] as const;
+
+	$effect(() => {
+		const id = projectId;
+		untrack(() => {
+			if (scanContextsStore.fetchedProjectId !== id) void scanContextsStore.fetchContexts(id);
+		});
+	});
 
 	async function patch(body: Parameters<typeof connectorsApi.update>[2]) {
 		saving = true;
@@ -73,11 +97,11 @@
 
 <div class="space-y-4">
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Traffic" description="Hosts and tools the connector is permitted to send" />
+		<PanelHead title="Traffic" description="What the connector records" />
 
 		<div class="space-y-4 px-5 py-4">
 			<div class="space-y-2">
-				<p class="text-sm font-medium">Source tools</p>
+				<p class="text-sm font-medium">Burp tools</p>
 				<div class="flex flex-wrap gap-2">
 					{#each tools as tool (tool)}
 						<Button
@@ -87,75 +111,47 @@
 						>
 					{/each}
 				</div>
-				<p class="text-muted-foreground text-xs">Fuzzer and scanner traffic is excluded.</p>
+				<p class="text-muted-foreground text-xs">Intruder and Scanner traffic is not recorded.</p>
 			</div>
 		</div>
 
 		<div class="divide-y border-t">
-			{#each [{ key: 'only_known_hosts', label: 'Only record hosts that belong to a target', help: 'Requests to other hosts are discarded.' }, { key: 'include_static', label: 'Include static content', help: 'Images, stylesheets and fonts.' }, { key: 'capture_bodies', label: 'Keep a request sample', help: 'Stores the first request recorded for each shape. Samples may contain credentials.' }, { key: 'capture_sessions', label: 'Session records', help: 'Groups traffic into sessions.' }] as row (row.key)}
+			{#each traffic as row (row.key)}
 				<div class="flex items-start justify-between gap-4 px-5 py-3.5">
 					<div class="min-w-0">
 						<p class="text-sm">{row.label}</p>
 						<p class="text-muted-foreground text-xs">{row.help}</p>
 					</div>
-					<Switch
-						checked={connector[row.key as 'include_static']}
-						onCheckedChange={(v) => patch({ [row.key]: v })}
-					/>
+					<Switch checked={connector[row.key]} onCheckedChange={(v) => patch({ [row.key]: v })} />
 				</div>
 			{/each}
 		</div>
 	</Card.Root>
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<PanelHead title="Scan trigger" description="Conditions under which the queue is scanned" />
+		<PanelHead title="Scans" description="How a scan of queued shapes runs" />
 
-		<div class="space-y-4 px-5 py-4">
-			<FormField label="Trigger" description={SYNC_TRIGGER_HELP[connector.sync_trigger]}>
+		<div class="px-5 py-4">
+			<FormField
+				label="Scan context"
+				description="Session, headers and rate limits for scans of the queue."
+			>
 				{#snippet children({ id })}
 					<Select.Root
 						type="single"
-						value={connector.sync_trigger}
-						onValueChange={(v) => v && patch({ sync_trigger: v as SyncTrigger })}
+						value={connector.context_id ?? SELECT_NONE}
+						onValueChange={(v) => patch({ context_id: v && v !== SELECT_NONE ? v : null })}
 					>
-						<Select.Trigger {id}>{SYNC_TRIGGER_LABELS[connector.sync_trigger]}</Select.Trigger>
+						<Select.Trigger {id}>{contextName}</Select.Trigger>
 						<Select.Content>
-							{#each SYNC_TRIGGERS as option (option)}
-								<Select.Item value={option}>{SYNC_TRIGGER_LABELS[option]}</Select.Item>
+							<Select.Item value={SELECT_NONE}>None</Select.Item>
+							{#each contexts as context (context.id)}
+								<Select.Item value={context.id}>{context.name}</Select.Item>
 							{/each}
 						</Select.Content>
 					</Select.Root>
 				{/snippet}
 			</FormField>
-
-			{#if connector.sync_trigger !== 'manual'}
-				<div class="grid gap-4 sm:grid-cols-2">
-					<FormField label="Quiet period (minutes)">
-						{#snippet children({ id })}
-							<Input
-								{id}
-								type="number"
-								min="1"
-								max="120"
-								value={connector.quiet_minutes}
-								onchange={(e) => patch({ quiet_minutes: Number(e.currentTarget.value) })}
-							/>
-						{/snippet}
-					</FormField>
-					<FormField label="Queue size that triggers a scan">
-						{#snippet children({ id })}
-							<Input
-								{id}
-								type="number"
-								min="1"
-								max="1000"
-								value={connector.queue_threshold}
-								onchange={(e) => patch({ queue_threshold: Number(e.currentTarget.value) })}
-							/>
-						{/snippet}
-					</FormField>
-				</div>
-			{/if}
 		</div>
 
 		<div class="flex items-start justify-between gap-4 border-t px-5 py-3.5">
@@ -201,7 +197,7 @@
 <DeleteConfirmationDialog
 	bind:open={confirmDelete}
 	title="Delete {connector.name}"
-	description="Removes the connector, its token and its captured request shapes."
+	description="The connector, its token and its request shapes are removed. Recorded endpoints are kept."
 	onOpenChange={(value) => (confirmDelete = value)}
 	onConfirm={remove}
 />

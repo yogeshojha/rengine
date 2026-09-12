@@ -1,6 +1,5 @@
 export type ConnectorKind = 'burp';
 export type ConnectorState = 'idle' | 'live' | 'stale' | 'paused';
-export type SyncTrigger = 'manual' | 'quiet' | 'walked_away' | 'session_end';
 export type CandidateState = 'new' | 'queued' | 'scanned' | 'ignored';
 export type SourceTool = 'proxy' | 'repeater' | 'other';
 
@@ -11,8 +10,9 @@ export interface ConnectorSpec {
 	description: string;
 	docs_url: string;
 	source_path: string;
+	client_file: string;
+	download_url: string | null;
 	tools: SourceTool[];
-	supports_sessions: boolean;
 	supports_scope_push: boolean;
 	available: boolean;
 }
@@ -24,12 +24,8 @@ export interface Connector {
 	name: string;
 	token_prefix: string;
 	only_known_hosts: boolean;
-	sync_trigger: SyncTrigger;
-	quiet_minutes: number;
-	queue_threshold: number;
 	ingest_tools: SourceTool[];
 	capture_bodies: boolean;
-	capture_sessions: boolean;
 	record_hosts: boolean;
 	include_static: boolean;
 	scan_safe_methods_only: boolean;
@@ -43,6 +39,7 @@ export interface Connector {
 	unseen: number;
 	unassigned: number;
 	flagged: number;
+	out_of_scope: number;
 	discovered: number;
 	scans_launched: number;
 	pending_actions: number;
@@ -62,7 +59,12 @@ export interface SetupStep {
 export interface ConnectorCreated {
 	connector: Connector;
 	secret: string;
-	setup: { endpoint: string; steps: SetupStep[] };
+	setup: {
+		endpoint: string;
+		download_url: string | null;
+		client_file: string;
+		steps: SetupStep[];
+	};
 }
 
 export interface ConnectorCreate {
@@ -70,12 +72,9 @@ export interface ConnectorCreate {
 	kind: ConnectorKind;
 	project_id: string;
 	only_known_hosts?: boolean;
-	sync_trigger?: SyncTrigger;
-	quiet_minutes?: number;
-	queue_threshold?: number;
 	ingest_tools?: SourceTool[];
 	capture_bodies?: boolean;
-	capture_sessions?: boolean;
+	record_hosts?: boolean;
 	include_static?: boolean;
 	scan_safe_methods_only?: boolean;
 	context_id?: string | null;
@@ -99,9 +98,11 @@ export interface Candidate {
 	notices: string[];
 	status_code: number | null;
 	content_type: string | null;
+	content_length: number | null;
 	title: string | null;
 	authenticated: boolean;
 	source_tool: SourceTool;
+	request_sample: string | null;
 	known: boolean;
 	state: CandidateState;
 	hits: number;
@@ -138,21 +139,11 @@ export interface TargetAdded {
 	scan_id: string | null;
 }
 
-export interface ConnectorCoverage {
-	host: string;
-	known_endpoints: number;
-	visited: number;
-	unvisited: number;
-	unvisited_interesting: number;
-	browsed_unknown: number;
-}
-
-export interface ConnectorSession {
-	id: string;
-	client: string | null;
-	hosts: string[];
-	requests: number;
-	novel: number;
-	started_at: string;
-	last_event_at: string;
+export interface CandidateQuery {
+	state?: string;
+	host?: string;
+	notice?: string;
+	known?: boolean;
+	search?: string;
+	page?: number;
 }

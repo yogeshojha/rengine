@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Turns responses Burp has received into observations. Runs on Burp's request path. */
+/** Turns responses Burp has received into observations. */
 final class Capture implements HttpHandler {
     static final int MAX_TITLE_BODY = 262_144;
     static final int MAX_TITLE = 300;
@@ -100,9 +100,12 @@ final class Capture implements HttpHandler {
                 bodyParams(request)));
     }
 
-    /** The host most recently captured, so the tab can say what reNgine knows about it. */
+    /** The host most recently captured. */
     String lastHost() {
-        String value = lastHost;
+        return hostOf(lastHost);
+    }
+
+    static String hostOf(String value) {
         if (value == null) {
             return null;
         }
@@ -173,7 +176,7 @@ final class Capture implements HttpHandler {
         return value.isEmpty() ? null : trim(value, MAX_TITLE);
     }
 
-    /** Burp hands back bytes; a page's own Content-Type says how to read them. */
+    /** Charset from a Content-Type header. */
     private static Charset charsetOf(String contentType) {
         int at = contentType.toLowerCase().indexOf("charset=");
         if (at >= 0) {

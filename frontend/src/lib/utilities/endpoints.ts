@@ -340,7 +340,7 @@ export interface EndpointQuery {
 	statusClass: string;
 	probed: 'any' | 'yes' | 'no';
 	newOnly: boolean;
-	untested: boolean;
+	browsed: 'any' | 'yes' | 'no';
 }
 
 export function emptyEndpointQuery(): EndpointQuery {
@@ -355,7 +355,7 @@ export function emptyEndpointQuery(): EndpointQuery {
 		statusClass: '',
 		probed: 'any',
 		newOnly: false,
-		untested: false
+		browsed: 'any'
 	};
 }
 
@@ -427,7 +427,7 @@ export function endpointActiveFacetCount(q: EndpointQuery): number {
 		(q.statusClass ? 1 : 0) +
 		(q.probed !== 'any' ? 1 : 0) +
 		(q.newOnly ? 1 : 0) +
-		(q.untested ? 1 : 0)
+		(q.browsed !== 'any' ? 1 : 0)
 	);
 }
 
@@ -477,11 +477,11 @@ export function endpointQueryChips(q: EndpointQuery): EndpointFilterChip[] {
 			remove: (x) => ({ ...x, probed: 'any' })
 		});
 	if (q.newOnly) chips.push({ id: 'new', label: 'New', remove: (x) => ({ ...x, newOnly: false }) });
-	if (q.untested)
+	if (q.browsed !== 'any')
 		chips.push({
-			id: 'untested',
-			label: 'No proxy traffic',
-			remove: (x) => ({ ...x, untested: false })
+			id: 'browsed',
+			label: q.browsed === 'yes' ? 'Browsed' : 'Not browsed',
+			remove: (x) => ({ ...x, browsed: 'any' })
 		});
 	return chips;
 }
@@ -494,9 +494,10 @@ export function compileEndpointQuery(
 	size: number
 ): EndpointFilter {
 	const search = q.search.trim();
-	const untested = q.untested ? `not source:${EndpointSource.PROXY}` : '';
+	const browsed =
+		q.browsed === 'any' ? '' : `${q.browsed === 'no' ? 'not ' : ''}source:${EndpointSource.PROXY}`;
 	return {
-		q: (untested ? (search ? `(${search}) and ${untested}` : untested) : search) || null,
+		q: (browsed ? (search ? `(${search}) and ${browsed}` : browsed) : search) || null,
 		host: q.host || null,
 		dir_path: q.dir || null,
 		subtree: q.subtree,

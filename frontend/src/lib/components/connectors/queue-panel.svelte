@@ -2,11 +2,15 @@
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import SendIcon from '@lucide/svelte/icons/send';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import LockIcon from '@lucide/svelte/icons/lock';
+	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import ListTreeIcon from '@lucide/svelte/icons/list-tree';
+	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -18,6 +22,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import CodeBlock from '$lib/components/code-block.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { connectors } from '$lib/stores/connectors.svelte';
@@ -26,52 +31,94 @@
 		CANDIDATE_STATE_LABELS,
 		NOTICE_HELP,
 		NOTICE_LABELS,
+		SOURCE_TOOL_LABELS,
 		noticeTone
 	} from '$lib/config/connectors';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
-	import type { Connector } from '$lib/types/connector';
+	import type { Candidate, CandidateQuery, Connector } from '$lib/types/connector';
 
-	let { connector, projectId }: { connector: Connector; projectId: string } = $props();
+	let {
+		connector,
+		projectId,
+		preset = null,
+		onPresetApplied
+	}: {
+		connector: Connector;
+		projectId: string;
+		preset?: CandidateQuery | null;
+		onPresetApplied?: () => void;
+	} = $props();
 
 	const HEAD =
 		'px-4 py-2 text-left text-2xs font-semibold tracking-wider text-muted-foreground uppercase whitespace-nowrap';
+	const PAGE_SIZE = 50;
+	const PARAMS_SHOWN = 3;
 
 	let stateFilter = $state<string>('new');
 	let host = $state<string>('');
+	let notice = $state<string>('');
+	let known = $state<'any' | 'yes' | 'no'>('any');
 	let search = $state('');
 	let pageNumber = $state(1);
-	const PAGE_SIZE = 50;
 	let picked = new SvelteSet<string>();
+	let opened = new SvelteSet<string>();
 	let scanning = $state(false);
 	let sending = $state(false);
-	let sent = $state(0);
 	let acting = $state(false);
 	let error = $state<string | null>(null);
 
 	const page = $derived(connectors.queue);
 	const rows = $derived(page?.rows ?? []);
 	const hosts = $derived(page?.hosts ?? []);
+	const filters = $derived<CandidateQuery>({
+		state: stateFilter || undefined,
+		host: host || undefined,
+		notice: notice || undefined,
+		known: known === 'any' ? undefined : known === 'yes',
+		search: search || undefined,
+		page: pageNumber
+	});
+
+	$effect(() => {
+		if (!preset) return;
+		untrack(() => {
+			stateFilter = preset.state ?? '';
+			host = preset.host ?? '';
+			notice = preset.notice ?? '';
+			known = preset.known === undefined ? 'any' : preset.known ? 'yes' : 'no';
+			search = preset.search ?? '';
+			onPresetApplied?.();
+		});
+	});
 
 	$effect(() => {
 		const id = connector.id;
-		const filters = {
-			state: stateFilter,
-			host: host || undefined,
-			search: search || undefined,
-			page: pageNumber
-		};
+		const query = filters;
 		untrack(() => {
 			picked.clear();
-			void connectors.loadQueue(id, projectId, filters);
+			void connectors.loadQueue(id, projectId, query);
 		});
 	});
 
 	$effect(() => {
 		void stateFilter;
 		void host;
+		void notice;
+		void known;
 		void search;
 		untrack(() => (pageNumber = 1));
+	});
+
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		const id = connector.id;
+		const query = filters;
+		const timer = setInterval(() => {
+			if (document.hidden || picked.size) return;
+			void connectors.loadQueue(id, projectId, query);
+		}, 10_000);
+		return () => clearInterval(timer);
 	});
 
 	function toggle(id: string) {
@@ -85,13 +132,13 @@
 		if (!all) for (const row of rows) picked.add(row.id);
 	}
 
+	function toggleSample(id: string) {
+		if (opened.has(id)) opened.delete(id);
+		else opened.add(id);
+	}
+
 	async function reload() {
-		await connectors.loadQueue(connector.id, projectId, {
-			state: stateFilter,
-			host: host || undefined,
-			search: search || undefined,
-			page: pageNumber
-		});
+		await connectors.loadQueue(connector.id, projectId, filters);
 		await connectors.load(projectId, true);
 	}
 
@@ -99,10 +146,11 @@
 		scanning = true;
 		error = null;
 		try {
-			const run = await connectorsApi.scan(connector.id, projectId, [...picked]);
+			const runs = await connectorsApi.scan(connector.id, projectId, [...picked]);
 			picked.clear();
 			await reload();
-			void goto(ROUTES.scan(run.id));
+			if (runs.length === 1) void goto(ROUTES.scan(runs[0].id));
+			else toast.success(`${runs.length} scans started.`);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Scan not started.';
 		} finally {
@@ -115,9 +163,9 @@
 		error = null;
 		try {
 			const result = await connectorsApi.send(connector.id, projectId, [...picked]);
-			sent = result.queued;
 			picked.clear();
 			await reload();
+			toast.success(`${result.queued} sent to Repeater.`);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Requests not queued.';
 		} finally {
@@ -142,13 +190,15 @@
 		if (code >= 400) return 'text-warning';
 		return 'text-success';
 	}
+
+	function endpointsLink(row: Candidate): string {
+		const dir = row.path.slice(0, row.path.lastIndexOf('/') + 1) || '/';
+		return ROUTES.surface('endpoints', { ep_host: row.host, ep_dir: dir });
+	}
 </script>
 
 <Card.Root class="gap-0 overflow-hidden py-0">
-	<PanelHead
-		title="Queue"
-		description="Recorded requests, deduplicated by path and parameter names"
-	>
+	<PanelHead title="Queue" description="Request shapes recorded through this connector">
 		<span class="tabular-nums">{page?.total ?? 0} shown</span>
 	</PanelHead>
 
@@ -174,6 +224,35 @@
 			/>
 			<Input bind:value={search} placeholder="Filter by URL" class="h-8 pl-8 text-xs" />
 		</div>
+		<Select.Root
+			type="single"
+			value={known}
+			onValueChange={(v) => (known = (v as typeof known) || 'any')}
+		>
+			<Select.Trigger class="h-8 w-44 text-xs">
+				{known === 'any'
+					? 'All shapes'
+					: known === 'yes'
+						? 'Found by a scan'
+						: 'Not found by scans'}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="any">All shapes</Select.Item>
+				<Select.Item value="yes">Found by a scan</Select.Item>
+				<Select.Item value="no">Not found by scans</Select.Item>
+			</Select.Content>
+		</Select.Root>
+		<Select.Root type="single" value={notice} onValueChange={(v) => (notice = v ?? '')}>
+			<Select.Trigger class="h-8 w-52 text-xs">
+				{notice ? NOTICE_LABELS[notice] : 'Any notice'}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="">Any notice</Select.Item>
+				{#each Object.entries(NOTICE_LABELS) as [key, label] (key)}
+					<Select.Item value={key}>{label}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
 		{#if hosts.length > 1}
 			<Select.Root type="single" value={host} onValueChange={(v) => (host = v ?? '')}>
 				<Select.Trigger class="h-8 w-64 text-xs">
@@ -221,17 +300,7 @@
 
 	{#if connector.unassigned > 0 && connector.unassigned === connector.candidates}
 		<p class="text-muted-foreground border-b px-4 py-2 text-xs">
-			No target covers these requests. Add one from Discovered domains.
-		</p>
-	{/if}
-
-	{#if connector.pending_actions > 0}
-		<p class="text-muted-foreground border-b px-4 py-2 text-xs">
-			{connector.pending_actions} waiting to be collected by Burp.
-		</p>
-	{:else if sent > 0}
-		<p class="text-muted-foreground border-b px-4 py-2 text-xs">
-			{sent} sent to Repeater.
+			No target covers these requests. Add one from Discovered.
 		</p>
 	{/if}
 
@@ -249,7 +318,7 @@
 		<table class="w-full table-fixed text-sm">
 			<thead>
 				<tr class="bg-muted/40 border-b">
-					<th class="w-10 px-4 py-2">
+					<th class="w-10 px-3 py-2">
 						<Checkbox
 							checked={picked.size === rows.length && rows.length > 0}
 							onCheckedChange={toggleAll}
@@ -258,15 +327,18 @@
 					</th>
 					<th class="{HEAD} w-16">Method</th>
 					<th class={HEAD}>Shape</th>
-					<th class="{HEAD} w-20 text-right">Params</th>
+					<th class="{HEAD} w-32">Parameters</th>
 					<th class="{HEAD} w-16 text-right">Status</th>
-					<th class="{HEAD} w-24 text-right">Seen</th>
+					<th class="{HEAD} w-12 text-right">Hits</th>
+					<th class="{HEAD} w-20">Source</th>
+					<th class="{HEAD} w-20 text-right">Seen</th>
+					<th class="w-20 px-2 py-2"></th>
 				</tr>
 			</thead>
 			<tbody>
 				{#each rows as row (row.id)}
 					<tr class="border-b last:border-b-0">
-						<td class="px-4 py-2.5 align-top">
+						<td class="px-3 py-2.5 align-top">
 							<span class="flex h-5 items-center">
 								<Checkbox
 									checked={picked.has(row.id)}
@@ -283,7 +355,7 @@
 						<td class="px-4 py-2.5 align-top">
 							<div class="flex min-w-0 items-center gap-1.5">
 								{#if row.authenticated}
-									<Hint text="The request carried a session">
+									<Hint text="Session present">
 										{#snippet child(props)}
 											<span {...props} class="flex h-5 shrink-0 items-center">
 												<LockIcon class="text-muted-foreground size-3" />
@@ -293,21 +365,24 @@
 								{/if}
 								<Hint text={row.url}>
 									{#snippet child(props)}
-										<span {...props} class="min-w-0 truncate font-mono text-xs leading-5">
-											{#if !host && hosts.length > 1}<span class="text-muted-foreground"
-													>{row.host}</span
-												>{/if}{row.path}
-										</span>
+										<span {...props} class="min-w-0 truncate font-mono text-xs leading-5"
+											>{row.path}</span
+										>
 									{/snippet}
 								</Hint>
 							</div>
-							{#if row.notices.length > 0 || row.title}
+							{#if row.notices.length > 0 || row.title || (!host && hosts.length > 1)}
 								<div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2">
-									{#each row.notices as notice (notice)}
-										<Hint text={NOTICE_HELP[notice] ?? ''}>
+									{#if !host && hosts.length > 1}
+										<span class="text-muted-foreground min-w-0 truncate font-mono text-2xs"
+											>{row.host}</span
+										>
+									{/if}
+									{#each row.notices as item (item)}
+										<Hint text={NOTICE_HELP[item] ?? ''}>
 											{#snippet child(props)}
-												<span {...props} class="text-2xs {noticeTone(notice)}">
-													{NOTICE_LABELS[notice] ?? notice}
+												<span {...props} class="text-2xs whitespace-nowrap {noticeTone(item)}">
+													{NOTICE_LABELS[item] ?? item}
 												</span>
 											{/snippet}
 										</Hint>
@@ -319,13 +394,20 @@
 									{/if}
 								</div>
 							{/if}
+							{#if opened.has(row.id) && row.request_sample}
+								<div class="mt-2">
+									<CodeBlock code={row.request_sample} lang="http" maxLines={12} />
+								</div>
+							{/if}
 						</td>
-						<td class="px-4 py-2.5 text-right align-top">
+						<td class="px-4 py-2.5 align-top">
 							{#if row.param_count > 0}
 								<Hint text={row.params.join(', ')}>
 									{#snippet child(props)}
-										<span {...props} class="text-muted-foreground text-2xs leading-5 tabular-nums">
-											{row.param_count}
+										<span {...props} class="block truncate font-mono text-2xs leading-5">
+											{row.params.slice(0, PARAMS_SHOWN).join(' ')}{row.param_count > PARAMS_SHOWN
+												? ` +${row.param_count - PARAMS_SHOWN}`
+												: ''}
 										</span>
 									{/snippet}
 								</Hint>
@@ -339,9 +421,65 @@
 							)}">{row.status_code ?? '—'}</td
 						>
 						<td
+							class="text-muted-foreground px-4 py-2.5 text-right align-top text-2xs leading-5 tabular-nums"
+							>{row.hits > 1 ? row.hits : ''}</td
+						>
+						<td class="text-muted-foreground px-4 py-2.5 align-top text-2xs leading-5"
+							>{SOURCE_TOOL_LABELS[row.source_tool] ?? row.source_tool}</td
+						>
+						<td
 							class="text-muted-foreground px-4 py-2.5 text-right align-top text-2xs leading-5 whitespace-nowrap"
 							>{relativeTime(row.last_seen_at)}</td
 						>
+						<td class="px-2 py-2 align-top">
+							<span class="flex h-6 items-center justify-end gap-0.5">
+								{#if row.request_sample}
+									<Hint text="Request sample">
+										{#snippet child(props)}
+											<Button
+												{...props}
+												variant="ghost"
+												size="icon"
+												class="size-6"
+												onclick={() => toggleSample(row.id)}
+											>
+												<FileTextIcon class="size-3.5" />
+											</Button>
+										{/snippet}
+									</Hint>
+								{/if}
+								{#if row.target_id}
+									<Hint text="Open in Endpoints">
+										{#snippet child(props)}
+											<Button
+												{...props}
+												variant="ghost"
+												size="icon"
+												class="size-6"
+												href={endpointsLink(row)}
+											>
+												<ListTreeIcon class="size-3.5" />
+											</Button>
+										{/snippet}
+									</Hint>
+								{/if}
+								<Hint text="Open in a new tab">
+									{#snippet child(props)}
+										<Button
+											{...props}
+											variant="ghost"
+											size="icon"
+											class="size-6"
+											href={row.url}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											<ExternalLinkIcon class="size-3.5" />
+										</Button>
+									{/snippet}
+								</Hint>
+							</span>
+						</td>
 					</tr>
 				{/each}
 			</tbody>
@@ -357,10 +495,6 @@
 				onClearSelection={() => picked.clear()}
 				onPage={(next) => (pageNumber = next)}
 			/>
-		</div>
-		<div class="text-muted-foreground border-t px-4 py-2.5 text-xs">
-			{page?.total ?? 0} shapes · {connector.requests_seen.toLocaleString()} requests received · {connector.dropped_out_of_scope.toLocaleString()}
-			out of scope
 		</div>
 	{/if}
 </Card.Root>

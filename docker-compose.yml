@@ -62,6 +62,7 @@ services:
       - ./mcp:/app/mcp
       - ./connectors:/app/connectors
       - ./toolbox:/app/toolbox
+      - ./binaries:/app/binaries:ro
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
       - ./tests:/app/tests

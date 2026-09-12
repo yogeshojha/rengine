@@ -1,4 +1,4 @@
-"""Connector vocabulary: import scope, sync triggers and notice kinds."""
+"""Connector vocabulary: states, source tools, notice kinds and actions."""
 
 from __future__ import annotations
 
@@ -12,8 +12,6 @@ MAX_BODY_SAMPLE = 4000
 MAX_CANDIDATE_SCAN = 200
 STALE_MINUTES = 30
 LIVE_MINUTES = 2
-DEFAULT_QUIET_MINUTES = 5
-DEFAULT_QUEUE_THRESHOLD = 25
 
 
 class ConnectorKind(StrEnum):
@@ -45,7 +43,7 @@ class SourceTool(StrEnum):
 
 SOURCE_TOOL_LABELS: dict[str, str] = {
     SourceTool.PROXY.value: "Proxy",
-    SourceTool.REPEATER.value: "Manual request",
+    SourceTool.REPEATER.value: "Repeater",
     SourceTool.OTHER.value: "Other",
 }
 
@@ -53,35 +51,11 @@ INGESTED_TOOLS: frozenset[str] = frozenset(
     {SourceTool.PROXY.value, SourceTool.REPEATER.value}
 )
 
-
-class SyncTrigger(StrEnum):
-    """Conditions under which the queue is scanned."""
-
-    MANUAL = "manual"
-    QUIET = "quiet"
-    WALKED_AWAY = "walked_away"
-    SESSION_END = "session_end"
-
-
-SYNC_TRIGGER_LABELS: dict[str, str] = {
-    SyncTrigger.MANUAL.value: "Manual",
-    SyncTrigger.QUIET.value: "After a quiet period",
-    SyncTrigger.WALKED_AWAY.value: "On host change",
-    SyncTrigger.SESSION_END.value: "On disconnect",
-}
-
-SYNC_TRIGGER_HELP: dict[str, str] = {
-    SyncTrigger.MANUAL.value: "The queue is scanned only on request.",
-    SyncTrigger.QUIET.value: "Scans a host's queue after the quiet period passes with no further traffic.",
-    SyncTrigger.WALKED_AWAY.value: "Scans a host's queue once traffic moves to a different host.",
-    SyncTrigger.SESSION_END.value: "Scans the queue when the connector disconnects.",
-}
-
-
 MAX_PICKER_TARGETS = 500
 MAX_SCOPE_HOSTS = 500
 MAX_NOTICE_BATCH = 25
 MANUAL_RUN_LABEL = "Manual testing"
+BROWSING_RUN_LABEL = "Browsing"
 
 
 class ActionKind(StrEnum):
@@ -120,6 +94,7 @@ class NoticeKind(StrEnum):
     SENSITIVE = "sensitive"
     ADMIN = "admin"
     UNSEEN_BY_SCANS = "unseen_by_scans"
+    NEW_PARAMS = "new_params"
     SERVER_ERROR = "server_error"
     NON_STANDARD_METHOD = "non_standard_method"
     OUT_OF_SCOPE = "out_of_scope"
@@ -129,6 +104,7 @@ NOTICE_LABELS: dict[str, str] = {
     NoticeKind.SENSITIVE.value: "Sensitive path",
     NoticeKind.ADMIN.value: "Administrative interface",
     NoticeKind.UNSEEN_BY_SCANS.value: "Not found by any scan",
+    NoticeKind.NEW_PARAMS.value: "Parameters not seen by scans",
     NoticeKind.SERVER_ERROR.value: "Server error",
     NoticeKind.NON_STANDARD_METHOD.value: "Uncommon method",
     NoticeKind.OUT_OF_SCOPE.value: "Out of scope",
@@ -137,7 +113,8 @@ NOTICE_LABELS: dict[str, str] = {
 NOTICE_HELP: dict[str, str] = {
     NoticeKind.SENSITIVE.value: "The path matches a pattern associated with sensitive files.",
     NoticeKind.ADMIN.value: "The path matches an administrative or authentication surface.",
-    NoticeKind.UNSEEN_BY_SCANS.value: "No scan of this target has recorded this request shape.",
+    NoticeKind.UNSEEN_BY_SCANS.value: "A scan covered this target and did not record this path.",
+    NoticeKind.NEW_PARAMS.value: "A scan recorded this path with a different parameter set.",
     NoticeKind.SERVER_ERROR.value: "The server returned a 5xx response.",
     NoticeKind.NON_STANDARD_METHOD.value: "The method is not GET, POST, HEAD or OPTIONS.",
     NoticeKind.OUT_OF_SCOPE.value: "A bug bounty program lists this host as out of scope.",

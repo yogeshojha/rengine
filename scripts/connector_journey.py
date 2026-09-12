@@ -169,9 +169,10 @@ saw(
 
 step(8, "Does the browsing done BEFORE adding attach retroactively?")
 s, q2 = call("GET", f"/connectors/{cid}/candidates?project_id={PID}")
-attached = [r for r in q2["rows"] if r["target_id"]]
-saw(f"{len(attached)} of {q2['total']} rows now belong to the target")
-if len(attached) != q2["total"]:
+mine = [r for r in q2["rows"] if r["host"].endswith(SITE)]
+attached = [r for r in mine if r["target_id"]]
+saw(f"{len(attached)} of {len(mine)} rows under the site now belong to the target")
+if len(attached) != len(mine):
     friction("some earlier browsing did not attach")
 
 step(9, "Back in Burp, reloads the picker. Is it there now?")
@@ -197,12 +198,16 @@ saw(
 if facts["known_endpoints"] == 0:
     friction("no scan has covered it, so coverage has nothing to say yet")
 
-step(12, "Checks Coverage.")
-s, cov = call("GET", f"/connectors/{cid}/coverage?project_id={PID}")
-for c in cov:
-    saw(
-        f"{c['host']} · known {c['known_endpoints']} · reached {c['visited']} · never found by a scan {c['browsed_unknown']}"
-    )
+step(12, "Opens the target's Endpoints page. Is the browsing there?")
+s, eps = call(
+    "POST",
+    f"/endpoints/search?project_id={PID}",
+    {"q": "source:proxy", "host": None, "page": 1, "size": 50},
+)
+rows = (eps or {}).get("items") or (eps or {}).get("rows") or []
+saw(f"{len(rows)} endpoints carry source:proxy: {[r['path'] for r in rows][:6]}")
+if not rows:
+    friction("browsing did not land in the Endpoints inventory")
 
 step(13, "Sends the interesting ones to Repeater.")
 picks = [
@@ -220,8 +225,9 @@ s, collected = call("GET", "/connectors/actions", token=tok)
 saw(f"Burp collected {len(collected)}: {[a['label'] for a in collected]}")
 
 step(14, "Scans the rest.")
-s, scan = call("POST", f"/connectors/{cid}/scan?project_id={PID}", {"ids": []})
-saw(f"HTTP {s} · {scan.get('engine_name') if s == OK else scan}")
+s, scans = call("POST", f"/connectors/{cid}/scan?project_id={PID}", {"ids": []})
+scan = (scans or [{}])[0] if isinstance(scans, list) else (scans or {})
+saw(f"HTTP {s} · {scan.get('engine_name') if s == OK else scans}")
 
 print("\n--- cleanup ---")
 for run in (scan.get("id"), added.get("scan_id")):

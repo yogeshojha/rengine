@@ -87,7 +87,7 @@ final class Json {
         return sb.append(']').toString();
     }
 
-    /** The value of one top-level string field, or null. Enough to read the ingest response. */
+    /** The value of one top-level field, or null. */
     static String readString(String body, String field) {
         String needle = "\"" + field + "\":";
         int at = body.indexOf(needle);
@@ -110,7 +110,6 @@ final class Json {
             end++;
         }
         String literal = body.substring(i, end);
-        // a JSON null is an absent value, not the text "null"
         return "null".equals(literal) ? null : literal;
     }
 

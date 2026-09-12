@@ -18,6 +18,7 @@ from shared.definitions.endpoints import (
     coerce_source,
     interests_for,
     parse_url,
+    shape_for,
     source_rank,
 )
 from shared.logging import get_logger
@@ -74,19 +75,24 @@ class AssetIndex:
     subdomains: dict[str, uuid.UUID]
 
 
-def build_index(session: Session, scan_id: uuid.UUID) -> AssetIndex:
+def build_index(
+    session: Session, scan_id: uuid.UUID, hosts: list[str] | None = None
+) -> AssetIndex:
+    asset_query = select(HttpAsset.id, HttpAsset.host, HttpAsset.port).where(
+        HttpAsset.scan_id == scan_id
+    )
+    host_query = select(Subdomain.id, Subdomain.name).where(
+        Subdomain.scan_id == scan_id
+    )
+    if hosts is not None:
+        asset_query = asset_query.where(HttpAsset.host.in_(hosts))
+        host_query = host_query.where(Subdomain.name.in_(hosts))
     assets: dict[tuple[str, int], uuid.UUID] = {}
-    for row in session.execute(
-        select(HttpAsset.id, HttpAsset.host, HttpAsset.port).where(
-            HttpAsset.scan_id == scan_id
-        )
-    ):
+    for row in session.execute(asset_query):
         assets.setdefault((row.host.lower(), int(row.port or 0)), row.id)
 
     subdomains: dict[str, uuid.UUID] = {}
-    for row in session.execute(
-        select(Subdomain.id, Subdomain.name).where(Subdomain.scan_id == scan_id)
-    ):
+    for row in session.execute(host_query):
         subdomains.setdefault(row.name.lower(), row.id)
 
     return AssetIndex(assets=assets, subdomains=subdomains)
@@ -225,6 +231,7 @@ def _row(
             "port": merged.port,
             "scheme": merged.scheme,
             "path": merged.path,
+            "shape": shape_for(merged.path)[0],
             "dir_path": merged.dir_path,
             "filename": merged.filename,
             "extension": merged.extension,

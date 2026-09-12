@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from connectors.shape import templatize
 from shared.definitions.connectors import (
     INGESTED_TOOLS,
     MAX_BODY_SAMPLE,
@@ -14,17 +13,17 @@ from shared.definitions.connectors import (
 from shared.definitions.endpoints import (
     MAX_PARAMS,
     STATIC_CLASSES,
-    EndpointClass,
     ParsedUrl,
     classify,
     interests_for,
     is_static,
     parse_url,
+    shape_for,
     signature_for,
 )
 from shared.utils.text import strip_control
 
-NOISE_CLASSES = STATIC_CLASSES | {EndpointClass.SCRIPT.value, EndpointClass.STYLE.value}
+NOISE_CLASSES = STATIC_CLASSES
 
 
 def _is_noise(endpoint_class: str | None, extension: str | None) -> bool:
@@ -105,7 +104,6 @@ def prepare(items, *, include_static: bool, ingest_tools: list[str]) -> Batch:
             batch.rejected += 1
             continue
         batch.hosts_seen[parsed.host] = batch.hosts_seen.get(parsed.host, 0) + 1
-        # a form post names parameters the URL does not carry
         params = parsed.params
         if item.body_params:
             extra = [
@@ -114,7 +112,7 @@ def prepare(items, *, include_static: bool, ingest_tools: list[str]) -> Batch:
                 if p and strip_control(p).strip()
             ]
             params = tuple(sorted({*params, *extra})[:MAX_PARAMS])
-        shape, collapsed = templatize(parsed.path)
+        shape, collapsed = shape_for(parsed.path)
         endpoint_class = classify(parsed.path, parsed.extension, item.content_type)
         if not include_static and _is_noise(endpoint_class, parsed.extension):
             batch.rejected += 1

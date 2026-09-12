@@ -58,7 +58,7 @@ public class ReNgineConnector implements BurpExtension {
         api.logging().logToOutput(NAME + " " + VERSION + " loaded.");
     }
 
-    /** Swing components are built on the event dispatch thread, not the loading thread. */
+    /** Opens the action in Repeater. */
     private static void deliver(MontoyaApi api, Actions.Action action) {
         HttpRequest request = HttpRequest.httpRequestFromUrl(action.url());
         if (!"GET".equalsIgnoreCase(action.method())) {

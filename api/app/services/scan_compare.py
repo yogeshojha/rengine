@@ -29,7 +29,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.asset_query import NO_JIT, vuln_suppressed
-from app.services.surface_scope import covering_stages
 from shared.definitions.compare import (
     AUTH_STATUS,
     COMPARE_KEYS,
@@ -94,6 +93,7 @@ from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability, VulnerabilityCoverage
+from shared.services.scan_scope import covering_stages
 from shared.utils.datetime import utc_now
 from stages.registry import stage_by_name
 

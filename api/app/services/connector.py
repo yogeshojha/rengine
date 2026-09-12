@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import timedelta
+from pathlib import Path
 
 from fastapi import HTTPException, status
-from sqlalchemy import cast, delete, func, or_, select, update
+from sqlalchemy import and_, cast, delete, func, or_, select, tuple_, update
 from sqlalchemy.dialects.postgresql import JSONB, array, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from connectors import auth
 from connectors.ingest import Prepared, prepare
 from connectors.notice import notices_for
@@ -35,7 +37,7 @@ from shared.definitions.connectors import (
     ActionKind,
     CandidateState,
     ConnectorKind,
-    SyncTrigger,
+    NoticeKind,
     state_for,
 )
 from shared.definitions.domains import (
@@ -46,11 +48,11 @@ from shared.definitions.domains import (
     RelatedReason,
     registrable_domain,
 )
-from shared.definitions.endpoints import parse_url
+from shared.definitions.endpoints import EndpointSource, parse_url
 from shared.definitions.rescan import SeedKind, stages_for
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import Protocol, Scanner, Severity
-from shared.enums.scan import ScanScope, ScanStatus
+from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanScope, ScanStatus
 from shared.models.bounty_program import BountyProgram, BountyScope
 from shared.models.connector import (
     ActionRead,
@@ -59,13 +61,11 @@ from shared.models.connector import (
     Connector,
     ConnectorAction,
     ConnectorCandidate,
-    ConnectorCoverage,
     ConnectorCreate,
     ConnectorCreated,
     ConnectorHost,
     ConnectorRead,
     ConnectorScope,
-    ConnectorSession,
     ConnectorUpdate,
     DiscoveredDomain,
     FindingRecorded,
@@ -74,7 +74,6 @@ from shared.models.connector import (
     IngestRequest,
     IngestResult,
     NoticeRead,
-    SessionRead,
     TargetAdded,
     TargetOption,
 )
@@ -83,6 +82,9 @@ from shared.models.scan import Scan, ScanCreate, SeedAsset
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
+from shared.services import proxy_sync
+from shared.services.scan_resolve import redact_message
+from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 from tools.nuclei.parser import fingerprint
@@ -95,10 +97,12 @@ _RANK = (
     ConnectorCandidate.param_count.desc(),
     ConnectorCandidate.last_seen_at.desc(),
 )
-SESSION_GAP_MINUTES = 15
-MAX_SESSIONS = 40
 MAX_DISCOVERED = 40
 MAX_DISCOVERED_HOSTNAMES = 12
+_PROXY_ONLY = and_(
+    func.jsonb_array_length(cast(Endpoint.sources, JSONB)) == 1,
+    cast(Endpoint.sources, JSONB).has_key(EndpointSource.PROXY.value),
+)
 
 
 class ConnectorError(RuntimeError):
@@ -120,6 +124,10 @@ def _host_matches(host: str, value: str) -> bool:
     return bool(value) and (host == value or host.endswith(f".{value}"))
 
 
+def _under(column, value: str):
+    return or_(column == value, column.endswith(f".{value}"))
+
+
 class ConnectorService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -127,7 +135,25 @@ class ConnectorService:
     # registration ---------------------------------------------------------
 
     def catalog(self) -> list[dict]:
-        return [c.spec() for c in all_connectors().values()]
+        return [
+            {**c.spec(), "download_url": self.client_url(c.kind)}
+            for c in all_connectors().values()
+        ]
+
+    @staticmethod
+    def client_url(kind: str) -> str | None:
+        spec = connector_for(kind)
+        if spec is None or not spec.client_file:
+            return None
+        return f"{settings.API_V1_PREFIX}/connectors/client/{kind}"
+
+    @staticmethod
+    def client_path(kind: str) -> Path | None:
+        spec = connector_for(kind)
+        if spec is None or not spec.client_file:
+            return None
+        path = Path(settings.CLIENTS_DIR) / spec.client_file
+        return path if path.is_file() else None
 
     async def list(self, project_id: uuid.UUID) -> list[ConnectorRead]:
         rows = (
@@ -174,13 +200,9 @@ class ConnectorService:
             token_hash=token_hash,
             token_prefix=prefix,
             only_known_hosts=data.only_known_hosts,
-            sync_trigger=data.sync_trigger,
-            quiet_minutes=data.quiet_minutes,
-            queue_threshold=data.queue_threshold,
             ingest_tools=[t for t in data.ingest_tools if t in INGESTED_TOOLS]
             or sorted(INGESTED_TOOLS),
             capture_bodies=data.capture_bodies,
-            capture_sessions=data.capture_sessions,
             record_hosts=data.record_hosts,
             include_static=data.include_static,
             scan_safe_methods_only=data.scan_safe_methods_only,
@@ -206,7 +228,7 @@ class ConnectorService:
                 t for t in fields["ingest_tools"] if t in INGESTED_TOOLS
             ] or sorted(INGESTED_TOOLS)
         for key, value in fields.items():
-            if value is not None or key in {"target_id", "context_id"}:
+            if value is not None or key == "context_id":
                 setattr(row, key, value)
         row.updated_at = utc_now()
         await self.session.commit()
@@ -245,12 +267,7 @@ class ConnectorService:
         now = utc_now()
         if row.paused:
             return IngestResult(
-                accepted=0,
-                novel=0,
-                dropped=len(payload.items),
-                queued=0,
-                flagged=[],
-                ready=False,
+                accepted=0, novel=0, dropped=len(payload.items), queued=0, flagged=[]
             )
         batch = prepare(
             payload.items,
@@ -271,15 +288,19 @@ class ConnectorService:
                 continue
             kept.append((item, target_id))
 
-        known = await self._known_signatures(
-            row.project_id, [i.signature for i, _ in kept]
+        covered = await self._covered_targets(
+            row.project_id, {t for _, t in kept if t is not None}
+        )
+        known = await self._known_shapes(
+            row.project_id, [(i.parsed.host, i.shape) for i, _ in kept]
         )
         rows = [
             self._candidate_row(
                 row,
                 item,
                 target_id,
-                item.signature in known,
+                known.get((item.parsed.host, item.shape)),
+                target_id in covered,
                 now,
                 self._forbidden(item.parsed.host, forbidden) is not None,
             )
@@ -303,22 +324,18 @@ class ConnectorService:
         row.last_client = (client or row.last_client or "")[:120] or None
         if row.record_hosts:
             await self._record_hosts(row, batch.hosts_seen, targets, now)
-        kept_hosts = {item.parsed.host for item, _ in kept}
-        if kept_hosts:
-            await self._touch_session(
-                row, payload.client, kept_hosts, batch.seen, novel, now
-            )
         row.candidates = await self._count(row.id)
         await self.session.commit()
 
+        recorded = await self._sync_endpoints(row, [r["signature"] for r in rows])
         queued = await self._count(row.id, states=(CandidateState.NEW.value,))
         return IngestResult(
             accepted=len(kept),
             novel=novel,
             dropped=dropped,
             queued=queued,
+            recorded=recorded,
             flagged=flagged,
-            ready=self._ready(row, queued, now),
         )
 
     def _candidate_row(
@@ -326,11 +343,13 @@ class ConnectorService:
         row: Connector,
         item: Prepared,
         target_id: uuid.UUID | None,
-        known: bool,
+        known_params: set[str] | None,
+        covered: bool,
         now,
         out_of_scope: bool = False,
     ) -> dict:
         parsed = item.parsed
+        known = known_params is not None
         return {
             "id": uuid.uuid4(),
             "connector_id": row.id,
@@ -356,7 +375,8 @@ class ConnectorService:
                 methods=item.methods,
                 status_code=item.status_code,
                 known=known,
-                in_scope=target_id is not None,
+                covered=covered,
+                new_params=known and bool(set(item.params) - known_params),
                 out_of_scope=out_of_scope,
             ),
             "status_code": item.status_code,
@@ -391,9 +411,18 @@ class ConnectorService:
                     "methods": stmt.excluded.methods,
                     "status_code": stmt.excluded.status_code,
                     "content_type": stmt.excluded.content_type,
-                    "title": stmt.excluded.title,
+                    "content_length": stmt.excluded.content_length,
+                    "title": func.coalesce(
+                        stmt.excluded.title, ConnectorCandidate.title
+                    ),
                     "notices": stmt.excluded.notices,
                     "known": stmt.excluded.known,
+                    "target_id": func.coalesce(
+                        stmt.excluded.target_id, ConnectorCandidate.target_id
+                    ),
+                    "request_sample": func.coalesce(
+                        ConnectorCandidate.request_sample, stmt.excluded.request_sample
+                    ),
                     "authenticated": ConnectorCandidate.authenticated
                     | stmt.excluded.authenticated,
                 },
@@ -406,6 +435,146 @@ class ConnectorService:
             .where(ConnectorCandidate.connector_id == rows[0]["connector_id"])
         )
         return max((after or 0) - (before or 0), 0)
+
+    async def _sync_endpoints(self, row: Connector, signatures: list[str]) -> int:
+        """Record the shapes as endpoints of each target's covering scan."""
+        if not signatures:
+            return 0
+        candidates = (
+            (
+                await self.session.execute(
+                    select(ConnectorCandidate).where(
+                        ConnectorCandidate.connector_id == row.id,
+                        ConnectorCandidate.signature.in_(signatures),
+                        ConnectorCandidate.target_id.is_not(None),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        by_target: dict[uuid.UUID, list[ConnectorCandidate]] = {}
+        for candidate in candidates:
+            by_target.setdefault(candidate.target_id, []).append(candidate)
+        recorded = 0
+        for target_id, rows in by_target.items():
+            result = await self.session.run_sync(
+                proxy_sync.sync_target,
+                connector=row,
+                target_id=target_id,
+                candidates=rows,
+            )
+            if result is not None:
+                recorded += result.created + result.updated
+        return recorded
+
+    async def _covered_targets(
+        self, project_id: uuid.UUID, target_ids: set[uuid.UUID]
+    ) -> set[uuid.UUID]:
+        """Targets a settled census scan has recorded endpoints for."""
+        if not target_ids:
+            return set()
+        rows = await self.session.execute(
+            select(Scan.target_id)
+            .where(
+                Scan.project_id == project_id,
+                Scan.target_id.in_(target_ids),
+                Scan.status.in_(SCAN_TERMINAL_STATUSES),
+                census_only(),
+                covers(Endpoint, _DIMENSION),
+            )
+            .distinct()
+        )
+        return {row[0] for row in rows.all()}
+
+    async def _known_shapes(
+        self, project_id: uuid.UUID, pairs: list[tuple[str, str]]
+    ) -> dict[tuple[str, str], set[str]]:
+        """Scan-recorded host and shape pairs with their parameter names."""
+        wanted = sorted(set(pairs))
+        if not wanted:
+            return {}
+        rows = await self.session.execute(
+            select(Endpoint.host, Endpoint.shape, Endpoint.params).where(
+                Endpoint.project_id == project_id,
+                tuple_(Endpoint.host, Endpoint.shape).in_(wanted),
+                ~_PROXY_ONLY,
+            )
+        )
+        known: dict[tuple[str, str], set[str]] = {}
+        for host, shape, params in rows.all():
+            known.setdefault((host, shape), set()).update(params or [])
+        return known
+
+    async def attach_targets(self, row: Connector) -> set[uuid.UUID]:
+        """Attach unassigned shapes and hosts to the targets that now match."""
+        targets = await self._targets_all(row.project_id)
+        hosts = {
+            h
+            for (h,) in (
+                await self.session.execute(
+                    select(ConnectorCandidate.host)
+                    .where(
+                        ConnectorCandidate.connector_id == row.id,
+                        ConnectorCandidate.target_id.is_(None),
+                    )
+                    .distinct()
+                )
+            ).all()
+        }
+        hosts.update(
+            h
+            for (h,) in (
+                await self.session.execute(
+                    select(ConnectorHost.host)
+                    .where(
+                        ConnectorHost.connector_id == row.id,
+                        ConnectorHost.target_id.is_(None),
+                    )
+                    .distinct()
+                )
+            ).all()
+        )
+        by_target: dict[uuid.UUID, list[str]] = {}
+        for host in hosts:
+            target_id = self._resolve_target(host, targets)
+            if target_id is not None:
+                by_target.setdefault(target_id, []).append(host)
+        if not by_target:
+            return set()
+        for target_id, names in by_target.items():
+            await self.session.execute(
+                update(ConnectorCandidate)
+                .where(
+                    ConnectorCandidate.connector_id == row.id,
+                    ConnectorCandidate.target_id.is_(None),
+                    ConnectorCandidate.host.in_(names),
+                )
+                .values(target_id=target_id)
+            )
+            await self.session.execute(
+                update(ConnectorHost)
+                .where(
+                    ConnectorHost.connector_id == row.id,
+                    ConnectorHost.target_id.is_(None),
+                    ConnectorHost.host.in_(names),
+                )
+                .values(target_id=target_id)
+            )
+        await self.session.commit()
+        signatures = [
+            s
+            for (s,) in (
+                await self.session.execute(
+                    select(ConnectorCandidate.signature).where(
+                        ConnectorCandidate.connector_id == row.id,
+                        ConnectorCandidate.target_id.in_(by_target),
+                    )
+                )
+            ).all()
+        ]
+        await self._sync_endpoints(row, signatures)
+        return set(by_target)
 
     async def _record_hosts(
         self, row: Connector, counts: dict[str, int], targets, now
@@ -435,7 +604,9 @@ class ConnectorService:
                 set_={
                     "requests": ConnectorHost.requests + stmt.excluded.requests,
                     "last_seen_at": stmt.excluded.last_seen_at,
-                    "target_id": stmt.excluded.target_id,
+                    "target_id": func.coalesce(
+                        stmt.excluded.target_id, ConnectorHost.target_id
+                    ),
                 },
             )
         )
@@ -549,34 +720,23 @@ class ConnectorService:
             msg = "Target not created."
             raise ConnectorError(msg)
         target_id = targets[0].id
-        await self.session.execute(
-            update(ConnectorHost)
-            .where(
-                ConnectorHost.connector_id == row.id,
-                ConnectorHost.registrable == value,
-            )
-            .values(target_id=target_id)
-        )
-        attached = await self.session.execute(
-            update(ConnectorCandidate)
+        attached = await self.session.scalar(
+            select(func.count())
+            .select_from(ConnectorCandidate)
             .where(
                 ConnectorCandidate.connector_id == row.id,
                 ConnectorCandidate.target_id.is_(None),
-                or_(
-                    ConnectorCandidate.host == value,
-                    ConnectorCandidate.host.endswith(f".{value}"),
-                ),
+                _under(ConnectorCandidate.host, value),
             )
-            .values(target_id=target_id)
         )
-        await self.session.commit()
+        await self.attach_targets(row)
         scan_id = (
             await self._first_scan(target_id, project_id, created_by) if scan else None
         )
         return TargetAdded(
             target_id=target_id,
             target_value=value,
-            attached=attached.rowcount or 0,
+            attached=attached or 0,
             scan_id=scan_id,
         )
 
@@ -663,49 +823,6 @@ class ConnectorService:
         )
         return [(i, v) for i, v in rows.all()]
 
-    async def _touch_session(
-        self,
-        row: Connector,
-        client: str | None,
-        hosts: set[str],
-        seen: int,
-        novel: int,
-        now,
-    ) -> None:
-        """Only hosts that passed the scope filter are stored."""
-        if not row.capture_sessions:
-            return
-        cutoff = now - timedelta(minutes=SESSION_GAP_MINUTES)
-        current = await self.session.scalar(
-            select(ConnectorSession)
-            .where(
-                ConnectorSession.connector_id == row.id,
-                ConnectorSession.last_event_at >= cutoff,
-            )
-            .order_by(ConnectorSession.last_event_at.desc())
-            .limit(1)
-        )
-        if current is None:
-            current = ConnectorSession(
-                connector_id=row.id, client=(client or None), started_at=now
-            )
-            self.session.add(current)
-        current.hosts = sorted({*(current.hosts or []), *hosts})[:50]
-        current.requests += seen
-        current.novel += novel
-        current.last_event_at = now
-
-    def _ready(self, row: Connector, queued: int, now) -> bool:
-        """Whether the queue may be scanned without an explicit request."""
-        if row.sync_trigger == SyncTrigger.MANUAL.value or not queued:
-            return False
-        if queued >= row.queue_threshold:
-            return True
-        if row.sync_trigger == SyncTrigger.QUIET.value and row.last_seen_at:
-            quiet = (now - row.last_seen_at).total_seconds() / 60
-            return quiet >= row.quiet_minutes
-        return False
-
     # reading --------------------------------------------------------------
 
     async def candidates(
@@ -716,10 +833,12 @@ class ConnectorService:
         state: str | None = None,
         host: str | None = None,
         notice: str | None = None,
+        known: bool | None = None,
         search: str | None = None,
         page: int = 1,
     ) -> CandidatePage:
-        await self.get(connector_id, project_id)
+        row = await self.get(connector_id, project_id)
+        await self.attach_targets(row)
         base = select(ConnectorCandidate).where(
             ConnectorCandidate.connector_id == connector_id
         )
@@ -731,6 +850,8 @@ class ConnectorService:
             base = base.where(
                 cast(ConnectorCandidate.notices, JSONB).contains([notice])
             )
+        if known is not None:
+            base = base.where(ConnectorCandidate.known.is_(known))
         if search:
             base = base.where(ConnectorCandidate.url.ilike(f"%{search.strip()}%"))
         total = await self.session.scalar(
@@ -779,6 +900,30 @@ class ConnectorService:
             hosts=hosts,
         )
 
+    async def _pending_actions(self, connector_id: uuid.UUID) -> int:
+        return (
+            await self.session.scalar(
+                select(func.count())
+                .select_from(ConnectorAction)
+                .where(
+                    ConnectorAction.connector_id == connector_id,
+                    ConnectorAction.delivered_at.is_(None),
+                )
+            )
+            or 0
+        )
+
+    async def _queue_actions(self, row: Connector, actions: list[ConnectorAction]):
+        if not actions:
+            msg = "Nothing selected."
+            raise ConnectorError(msg)
+        if await self._pending_actions(row.id) + len(actions) > MAX_PENDING_ACTIONS:
+            msg = f"The action queue holds {MAX_PENDING_ACTIONS}. Wait for the proxy to collect them."
+            raise ConnectorError(msg)
+        self.session.add_all(actions)
+        await self.session.commit()
+        return len(actions)
+
     async def queue_actions(
         self,
         connector_id: uuid.UUID,
@@ -790,17 +935,6 @@ class ConnectorService:
         row = await self.get(connector_id, project_id)
         if kind not in {k.value for k in ActionKind}:
             msg = f"Unknown action {kind!r}."
-            raise ConnectorError(msg)
-        pending = await self.session.scalar(
-            select(func.count())
-            .select_from(ConnectorAction)
-            .where(
-                ConnectorAction.connector_id == row.id,
-                ConnectorAction.delivered_at.is_(None),
-            )
-        )
-        if (pending or 0) + len(ids) > MAX_PENDING_ACTIONS:
-            msg = f"The action queue holds {MAX_PENDING_ACTIONS}. Wait for the proxy to collect them."
             raise ConnectorError(msg)
         picked = (
             (
@@ -814,10 +948,8 @@ class ConnectorService:
             .scalars()
             .all()
         )
-        if not picked:
-            msg = "Nothing selected."
-            raise ConnectorError(msg)
-        self.session.add_all(
+        return await self._queue_actions(
+            row,
             [
                 ConnectorAction(
                     connector_id=row.id,
@@ -827,10 +959,8 @@ class ConnectorService:
                     label=candidate.path[:120],
                 )
                 for candidate in picked
-            ]
+            ],
         )
-        await self.session.commit()
-        return len(picked)
 
     async def queue_endpoint_actions(
         self,
@@ -844,22 +974,8 @@ class ConnectorService:
         if kind not in {k.value for k in ActionKind}:
             msg = f"Unknown action {kind!r}."
             raise ConnectorError(msg)
-        rows = [e for e in endpoints if e.project_id == project_id]
-        if not rows:
-            msg = "Nothing selected."
-            raise ConnectorError(msg)
-        pending = await self.session.scalar(
-            select(func.count())
-            .select_from(ConnectorAction)
-            .where(
-                ConnectorAction.connector_id == row.id,
-                ConnectorAction.delivered_at.is_(None),
-            )
-        )
-        if (pending or 0) + len(rows) > MAX_PENDING_ACTIONS:
-            msg = f"The action queue holds {MAX_PENDING_ACTIONS}. Wait for the proxy to collect them."
-            raise ConnectorError(msg)
-        self.session.add_all(
+        return await self._queue_actions(
+            row,
             [
                 ConnectorAction(
                     connector_id=row.id,
@@ -868,11 +984,10 @@ class ConnectorService:
                     method=(e.methods or ["GET"])[0],
                     label=e.path[:120],
                 )
-                for e in rows
-            ]
+                for e in endpoints
+                if e.project_id == project_id
+            ],
         )
-        await self.session.commit()
-        return len(rows)
 
     async def take_notices(self, row: Connector) -> list[NoticeRead]:
         """Loud notices not yet delivered."""
@@ -931,7 +1046,7 @@ class ConnectorService:
         targets = await self._targets_all(row.project_id)
         target_id = self._resolve_target(parsed.host, targets)
         if target_id is None:
-            msg = f"{parsed.host} does not belong to a target in this project."
+            msg = f"{parsed.host} does not belong to a target in this project. Add the target first."
             raise ConnectorError(msg)
         target_value = next(v for i, v in targets if i == target_id)
 
@@ -962,12 +1077,8 @@ class ConnectorService:
                 description=strip_control(report.notes)[:8000]
                 if report.notes
                 else None,
-                request=strip_control(report.request)[:200_000]
-                if report.request
-                else None,
-                response=strip_control(report.response)[:200_000]
-                if report.response
-                else None,
+                request=self._evidence(report.request),
+                response=self._evidence(report.response),
             )
             self.session.add(finding)
             await self.session.commit()
@@ -985,6 +1096,12 @@ class ConnectorService:
             target_value=target_value,
             total=total or 0,
         )
+
+    @staticmethod
+    def _evidence(text: str | None) -> str | None:
+        if not text:
+            return None
+        return redact_message(strip_control(text))[:200_000]
 
     async def _manual_run(
         self, row: Connector, target_id: uuid.UUID, created_by: uuid.UUID | None
@@ -1055,98 +1172,6 @@ class ConnectorService:
             for a in pending
         ]
 
-    async def coverage(
-        self, connector_id: uuid.UUID, project_id: uuid.UUID
-    ) -> list[ConnectorCoverage]:
-        """Scanned endpoints per host against shapes captured through the proxy."""
-        row = await self.get(connector_id, project_id)
-        browsed = (
-            await self.session.execute(
-                select(
-                    ConnectorCandidate.host,
-                    func.count(),
-                    func.count().filter(ConnectorCandidate.known.is_(False)),
-                )
-                .where(ConnectorCandidate.connector_id == connector_id)
-                .group_by(ConnectorCandidate.host)
-            )
-        ).all()
-        if not browsed:
-            return []
-        hosts = [h for h, _, _ in browsed]
-        seen = {
-            h: (sig or set())
-            for h, sig in (
-                (
-                    await self.session.execute(
-                        select(
-                            ConnectorCandidate.host,
-                            func.array_agg(ConnectorCandidate.signature),
-                        )
-                        .where(ConnectorCandidate.connector_id == connector_id)
-                        .group_by(ConnectorCandidate.host)
-                    )
-                ).all()
-            )
-        }
-        known_rows = (
-            await self.session.execute(
-                select(
-                    Endpoint.host,
-                    func.count(func.distinct(Endpoint.signature)),
-                    func.array_agg(func.distinct(Endpoint.signature)),
-                )
-                .where(Endpoint.project_id == row.project_id, Endpoint.host.in_(hosts))
-                .group_by(Endpoint.host)
-            )
-        ).all()
-        known_map = {h: (total, set(sigs or [])) for h, total, sigs in known_rows}
-        out: list[ConnectorCoverage] = []
-        for host, _browsed, unknown in browsed:
-            total, sigs = known_map.get(host, (0, set()))
-            visited = len(sigs & set(seen.get(host) or []))
-            out.append(
-                ConnectorCoverage(
-                    host=host,
-                    known_endpoints=total,
-                    visited=visited,
-                    unvisited=max(total - visited, 0),
-                    unvisited_interesting=0,
-                    browsed_unknown=unknown or 0,
-                )
-            )
-        out.sort(key=lambda c: (-c.unvisited, -c.known_endpoints))
-        return out
-
-    async def sessions(
-        self, connector_id: uuid.UUID, project_id: uuid.UUID
-    ) -> list[SessionRead]:
-        await self.get(connector_id, project_id)
-        rows = (
-            (
-                await self.session.execute(
-                    select(ConnectorSession)
-                    .where(ConnectorSession.connector_id == connector_id)
-                    .order_by(ConnectorSession.last_event_at.desc())
-                    .limit(MAX_SESSIONS)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        return [
-            SessionRead(
-                id=r.id,
-                client=r.client,
-                hosts=list(r.hosts or []),
-                requests=r.requests,
-                novel=r.novel,
-                started_at=r.started_at,
-                last_event_at=r.last_event_at,
-            )
-            for r in rows
-        ]
-
     # acting ---------------------------------------------------------------
 
     async def set_state(
@@ -1188,8 +1213,8 @@ class ConnectorService:
         project_id: uuid.UUID,
         created_by: uuid.UUID,
         ids: list[uuid.UUID] | None = None,
-    ):
-        """Dispatch the queue as one focused scan of exactly those URLs."""
+    ) -> list:
+        """Dispatch the chosen shapes as one focused scan per target."""
         from app.services.rescan import focused_overrides  # noqa: PLC0415
         from app.services.scan import ScanService  # noqa: PLC0415
 
@@ -1207,35 +1232,42 @@ class ConnectorService:
                 for c in picked
                 if not c.methods or any(m.upper() in SAFE_METHODS for m in c.methods)
             ]
-        picked = [c for c in picked if c.target_id][:MAX_CANDIDATE_SCAN]
-        if not picked:
+        by_target: dict[uuid.UUID, list[ConnectorCandidate]] = {}
+        for candidate in picked:
+            if candidate.target_id is not None:
+                group = by_target.setdefault(candidate.target_id, [])
+                if len(group) < MAX_CANDIDATE_SCAN:
+                    group.append(candidate)
+        if not by_target:
             msg = "No queued shape belongs to a target in this project."
             raise ConnectorError(msg)
-        target_id = picked[0].target_id
-        assets = [c.url for c in picked if c.target_id == target_id]
-        scan = await ScanService(self.session).create(
-            ScanCreate(
-                engine_id=None,
-                context_id=row.context_id,
-                target_id=target_id,
-                overrides=focused_overrides(list(stages_for(_DIMENSION))),
-                seed_assets=[
-                    SeedAsset(kind=SeedKind.URL.value, value=value) for value in assets
-                ],
-                dimension=_DIMENSION,
-            ),
-            project_id,
-            created_by,
-        )
-        await self.session.execute(
-            update(ConnectorCandidate)
-            .where(ConnectorCandidate.id.in_([c.id for c in picked]))
-            .values(state=CandidateState.QUEUED.value, scan_id=scan.id)
-        )
-        row.scans_launched += 1
+        scans = []
+        service = ScanService(self.session)
+        for target_id, group in by_target.items():
+            scan = await service.create(
+                ScanCreate(
+                    engine_id=None,
+                    context_id=row.context_id,
+                    target_id=target_id,
+                    overrides=focused_overrides(list(stages_for(_DIMENSION))),
+                    seed_assets=[
+                        SeedAsset(kind=SeedKind.URL.value, value=c.url) for c in group
+                    ],
+                    dimension=_DIMENSION,
+                ),
+                project_id,
+                created_by,
+            )
+            await self.session.execute(
+                update(ConnectorCandidate)
+                .where(ConnectorCandidate.id.in_([c.id for c in group]))
+                .values(state=CandidateState.QUEUED.value, scan_id=scan.id)
+            )
+            scans.append(scan)
+        row.scans_launched += len(scans)
         row.last_scan_at = utc_now()
         await self.session.commit()
-        return scan
+        return scans
 
     # helpers --------------------------------------------------------------
 
@@ -1407,7 +1439,7 @@ class ConnectorService:
         )
 
     async def host_facts(self, row: Connector, host: str) -> HostFacts:
-        """Known facts about a host."""
+        """Scan-recorded shapes on a host and the ones this proxy opened."""
         name = (host or "").strip().lower()
         if not name:
             msg = "No host given."
@@ -1415,22 +1447,29 @@ class ConnectorService:
         targets = await self._targets_all(row.project_id)
         target_id = self._resolve_target(name, targets)
         target_value = next((v for i, v in targets if i == target_id), None)
+        covered = bool(
+            target_id and await self._covered_targets(row.project_id, {target_id})
+        )
 
         scanned = {
-            signature
-            for (signature,) in (
+            shape
+            for (shape,) in (
                 await self.session.execute(
-                    select(Endpoint.signature)
-                    .where(Endpoint.project_id == row.project_id, Endpoint.host == name)
+                    select(Endpoint.shape)
+                    .where(
+                        Endpoint.project_id == row.project_id,
+                        Endpoint.host == name,
+                        ~_PROXY_ONLY,
+                    )
                     .distinct()
                 )
             ).all()
         }
         seen = {
-            signature
-            for (signature,) in (
+            shape
+            for (shape,) in (
                 await self.session.execute(
-                    select(ConnectorCandidate.signature).where(
+                    select(ConnectorCandidate.path).where(
                         ConnectorCandidate.connector_id == row.id,
                         ConnectorCandidate.host == name,
                     )
@@ -1443,25 +1482,30 @@ class ConnectorService:
             .where(
                 ConnectorCandidate.connector_id == row.id,
                 ConnectorCandidate.host == name,
-                func.json_array_length(ConnectorCandidate.notices) > 0,
+                cast(ConnectorCandidate.notices, JSONB).has_any(
+                    array(tuple(LOUD_NOTICES))
+                ),
             )
         )
         last_scan = (
             await self.session.scalar(
                 select(func.max(Scan.completed_at)).where(
-                    Scan.project_id == row.project_id, Scan.target_id == target_id
+                    Scan.project_id == row.project_id,
+                    Scan.target_id == target_id,
+                    census_only(),
                 )
             )
             if target_id
             else None
         )
-
+        visited = len(scanned & seen)
         return HostFacts(
             host=name,
             target_value=target_value,
+            covered=covered,
             known_endpoints=len(scanned),
-            visited=len(scanned & seen),
-            unvisited=max(len(scanned) - len(scanned & seen), 0),
+            visited=visited,
+            unvisited=len(scanned) - visited,
             flagged=flagged or 0,
             last_scan_at=last_scan,
         )
@@ -1476,19 +1520,6 @@ class ConnectorService:
             ):
                 best = (len(value), target_id)
         return best[1] if best else None
-
-    async def _known_signatures(
-        self, project_id: uuid.UUID, signatures: list[str]
-    ) -> set[str]:
-        if not signatures:
-            return set()
-        rows = await self.session.execute(
-            select(Endpoint.signature).where(
-                Endpoint.project_id == project_id,
-                Endpoint.signature.in_(signatures),
-            )
-        )
-        return {s for (s,) in rows.all()}
 
     async def _count(
         self, connector_id: uuid.UUID, states: tuple[str, ...] | None = None
@@ -1507,9 +1538,11 @@ class ConnectorService:
         spec = connector_for(row.kind)
         if spec is None:
             return {}
-        endpoint = f"{base_url.rstrip('/')}/api/v1/connectors/ingest"
+        endpoint = f"{base_url.rstrip('/')}{settings.API_V1_PREFIX}/connectors/ingest"
         return {
             "endpoint": endpoint,
+            "download_url": self.client_url(row.kind),
+            "client_file": spec.client_file,
             "steps": [
                 {
                     "title": step.title,
@@ -1536,9 +1569,11 @@ class ConnectorService:
             notices=list(row.notices or []),
             status_code=row.status_code,
             content_type=row.content_type,
+            content_length=row.content_length,
             title=row.title,
             authenticated=row.authenticated,
             source_tool=row.source_tool,
+            request_sample=row.request_sample,
             known=row.known,
             state=row.state,
             hits=row.hits,
@@ -1554,40 +1589,24 @@ class ConnectorService:
         minutes = (
             (now - row.last_seen_at).total_seconds() / 60 if row.last_seen_at else None
         )
-        queued = await self._count(row.id, states=(CandidateState.NEW.value,))
-        unseen = await self.session.scalar(
-            select(func.count())
-            .select_from(ConnectorCandidate)
-            .where(
-                ConnectorCandidate.connector_id == row.id,
-                ConnectorCandidate.known.is_(False),
+        notices = cast(ConnectorCandidate.notices, JSONB)
+        counted = (
+            await self.session.execute(
+                select(
+                    func.count().filter(
+                        ConnectorCandidate.state == CandidateState.NEW.value
+                    ),
+                    func.count().filter(ConnectorCandidate.known.is_(False)),
+                    func.count().filter(ConnectorCandidate.target_id.is_(None)),
+                    func.count().filter(notices.has_any(array(tuple(LOUD_NOTICES)))),
+                    func.count().filter(
+                        notices.contains([NoticeKind.OUT_OF_SCOPE.value])
+                    ),
+                ).where(ConnectorCandidate.connector_id == row.id)
             )
-        )
-        unassigned = await self.session.scalar(
-            select(func.count())
-            .select_from(ConnectorCandidate)
-            .where(
-                ConnectorCandidate.connector_id == row.id,
-                ConnectorCandidate.target_id.is_(None),
-            )
-        )
-        flagged = await self.session.scalar(
-            select(func.count())
-            .select_from(ConnectorCandidate)
-            .where(
-                ConnectorCandidate.connector_id == row.id,
-                func.json_array_length(ConnectorCandidate.notices) > 0,
-            )
-        )
+        ).one()
+        queued, unseen, unassigned, flagged, out_of_scope = counted
         discovered = len(await self.discovered(row.id, row.project_id, owned=owned))
-        pending_actions = await self.session.scalar(
-            select(func.count())
-            .select_from(ConnectorAction)
-            .where(
-                ConnectorAction.connector_id == row.id,
-                ConnectorAction.delivered_at.is_(None),
-            )
-        )
         return ConnectorRead(
             id=row.id,
             project_id=row.project_id,
@@ -1595,12 +1614,8 @@ class ConnectorService:
             name=row.name,
             token_prefix=row.token_prefix,
             only_known_hosts=row.only_known_hosts,
-            sync_trigger=row.sync_trigger,
-            quiet_minutes=row.quiet_minutes,
-            queue_threshold=row.queue_threshold,
             ingest_tools=list(row.ingest_tools or []),
             capture_bodies=row.capture_bodies,
-            capture_sessions=row.capture_sessions,
             record_hosts=row.record_hosts,
             include_static=row.include_static,
             scan_safe_methods_only=row.scan_safe_methods_only,
@@ -1610,13 +1625,14 @@ class ConnectorService:
             requests_seen=row.requests_seen,
             dropped_out_of_scope=row.dropped_out_of_scope,
             candidates=row.candidates,
-            queued=queued,
+            queued=queued or 0,
             unseen=unseen or 0,
             unassigned=unassigned or 0,
             flagged=flagged or 0,
+            out_of_scope=out_of_scope or 0,
             discovered=discovered,
             scans_launched=row.scans_launched,
-            pending_actions=pending_actions or 0,
+            pending_actions=await self._pending_actions(row.id),
             last_seen_at=row.last_seen_at,
             last_client=row.last_client,
             last_scan_at=row.last_scan_at,

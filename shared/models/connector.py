@@ -1,4 +1,4 @@
-"""Connector persistence: connections, captured request shapes and browsing sessions."""
+"""Connector persistence: connections, captured request shapes and the hosts they reached."""
 
 from __future__ import annotations
 
@@ -13,15 +13,12 @@ from sqlmodel import Field, SQLModel
 
 import shared.models._tztypes  # noqa: F401
 from shared.definitions.connectors import (
-    DEFAULT_QUEUE_THRESHOLD,
-    DEFAULT_QUIET_MINUTES,
     MAX_NAME,
     MAX_PENDING_ACTIONS,
     ActionKind,
     CandidateState,
     ConnectorKind,
     SourceTool,
-    SyncTrigger,
 )
 from shared.models.endpoint import EndpointFilter
 from shared.utils.datetime import utc_now
@@ -42,12 +39,8 @@ class Connector(SQLModel, table=True):
     token_prefix: str = Field(max_length=32)
 
     only_known_hosts: bool = Field(default=False)
-    sync_trigger: str = Field(default=SyncTrigger.MANUAL.value, max_length=16)
-    quiet_minutes: int = Field(default=DEFAULT_QUIET_MINUTES)
-    queue_threshold: int = Field(default=DEFAULT_QUEUE_THRESHOLD)
     ingest_tools: list = _json_list()
     capture_bodies: bool = Field(default=False)
-    capture_sessions: bool = Field(default=True)
     record_hosts: bool = Field(default=True)
     include_static: bool = Field(default=False)
     scan_safe_methods_only: bool = Field(default=True)
@@ -126,6 +119,23 @@ class ConnectorAction(SQLModel, table=True):
     delivered_at: datetime | None = Field(default=None, index=True)
 
 
+class ConnectorHost(SQLModel, table=True):
+    """Every hostname a connector has reached."""
+
+    __tablename__ = "connector_hosts"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
+    project_id: uuid.UUID = Field(index=True)
+    host: str = Field(max_length=500, index=True)
+    registrable: str = Field(default="", max_length=500, index=True)
+    target_id: uuid.UUID | None = Field(default=None, index=True)
+    requests: int = Field(default=0)
+    dismissed: bool = Field(default=False, index=True)
+    first_seen_at: datetime = Field(default_factory=utc_now)
+    last_seen_at: datetime = Field(default_factory=utc_now, index=True)
+
+
 class ActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -144,6 +154,16 @@ class EndpointActionRequest(BaseModel):
         default=MAX_PENDING_ACTIONS, ge=1, le=MAX_PENDING_ACTIONS
     )
     kind: str = PydanticField(default=ActionKind.REPEATER.value, max_length=16)
+
+
+class CandidateIds(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ids: list[uuid.UUID] = PydanticField(default_factory=list, max_length=5000)
+
+
+class CandidateStateRequest(CandidateIds):
+    state: str = PydanticField(max_length=16)
 
 
 class TargetOption(BaseModel):
@@ -207,6 +227,7 @@ class HostFacts(BaseModel):
 
     host: str
     target_value: str | None = None
+    covered: bool = False
     known_endpoints: int = 0
     visited: int = 0
     unvisited: int = 0
@@ -219,23 +240,6 @@ class ActionRead(BaseModel):
     url: str
     method: str
     label: str | None = None
-
-
-class ConnectorHost(SQLModel, table=True):
-    """Every hostname a connector has reached."""
-
-    __tablename__ = "connector_hosts"
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
-    project_id: uuid.UUID = Field(index=True)
-    host: str = Field(max_length=500, index=True)
-    registrable: str = Field(default="", max_length=500, index=True)
-    target_id: uuid.UUID | None = Field(default=None, index=True)
-    requests: int = Field(default=0)
-    dismissed: bool = Field(default=False, index=True)
-    first_seen_at: datetime = Field(default_factory=utc_now)
-    last_seen_at: datetime = Field(default_factory=utc_now, index=True)
 
 
 class DiscoveredDomain(BaseModel):
@@ -254,21 +258,6 @@ class DiscoveredDomain(BaseModel):
     last_seen_at: datetime
 
 
-class ConnectorSession(SQLModel, table=True):
-    """A burst of traffic, split on a gap in activity."""
-
-    __tablename__ = "connector_sessions"
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
-    client: str | None = Field(default=None, max_length=120)
-    hosts: list = _json_list()
-    requests: int = Field(default=0)
-    novel: int = Field(default=0)
-    started_at: datetime = Field(default_factory=utc_now, index=True)
-    last_event_at: datetime = Field(default_factory=utc_now, index=True)
-
-
 class ConnectorCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -276,12 +265,8 @@ class ConnectorCreate(BaseModel):
     kind: str = PydanticField(default=ConnectorKind.BURP.value, max_length=16)
     project_id: uuid.UUID
     only_known_hosts: bool = False
-    sync_trigger: str = PydanticField(default=SyncTrigger.MANUAL.value, max_length=16)
-    quiet_minutes: int = PydanticField(default=DEFAULT_QUIET_MINUTES, ge=1, le=120)
-    queue_threshold: int = PydanticField(default=DEFAULT_QUEUE_THRESHOLD, ge=1, le=1000)
     ingest_tools: list[str] = PydanticField(default_factory=list, max_length=4)
     capture_bodies: bool = False
-    capture_sessions: bool = True
     record_hosts: bool = True
     include_static: bool = False
     scan_safe_methods_only: bool = True
@@ -293,12 +278,8 @@ class ConnectorUpdate(BaseModel):
 
     name: str | None = PydanticField(default=None, min_length=1, max_length=MAX_NAME)
     only_known_hosts: bool | None = None
-    sync_trigger: str | None = PydanticField(default=None, max_length=16)
-    quiet_minutes: int | None = PydanticField(default=None, ge=1, le=120)
-    queue_threshold: int | None = PydanticField(default=None, ge=1, le=1000)
     ingest_tools: list[str] | None = PydanticField(default=None, max_length=4)
     capture_bodies: bool | None = None
-    capture_sessions: bool | None = None
     record_hosts: bool | None = None
     include_static: bool | None = None
     scan_safe_methods_only: bool | None = None
@@ -313,12 +294,8 @@ class ConnectorRead(BaseModel):
     name: str
     token_prefix: str
     only_known_hosts: bool
-    sync_trigger: str
-    quiet_minutes: int
-    queue_threshold: int
     ingest_tools: list[str]
     capture_bodies: bool
-    capture_sessions: bool
     record_hosts: bool
     include_static: bool
     scan_safe_methods_only: bool
@@ -332,6 +309,7 @@ class ConnectorRead(BaseModel):
     unseen: int
     unassigned: int
     flagged: int
+    out_of_scope: int
     discovered: int
     scans_launched: int
     pending_actions: int
@@ -363,9 +341,11 @@ class CandidateRead(BaseModel):
     notices: list[str]
     status_code: int | None
     content_type: str | None
+    content_length: int | None
     title: str | None
     authenticated: bool
     source_tool: str
+    request_sample: str | None
     known: bool
     state: str
     hits: int
@@ -393,27 +373,6 @@ class TargetAdded(BaseModel):
     target_value: str
     attached: int = 0
     scan_id: uuid.UUID | None = None
-
-
-class ConnectorCoverage(BaseModel):
-    """Scanned endpoints against shapes captured through the proxy."""
-
-    host: str
-    known_endpoints: int
-    visited: int
-    unvisited: int
-    unvisited_interesting: int
-    browsed_unknown: int
-
-
-class SessionRead(BaseModel):
-    id: uuid.UUID
-    client: str | None
-    hosts: list[str]
-    requests: int
-    novel: int
-    started_at: datetime
-    last_event_at: datetime
 
 
 class IngestItem(BaseModel):
@@ -448,5 +407,5 @@ class IngestResult(BaseModel):
     novel: int
     dropped: int
     queued: int
+    recorded: int = 0
     flagged: list[dict]
-    ready: bool

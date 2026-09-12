@@ -93,7 +93,7 @@
 <DeleteConfirmationDialog
 	open={pending !== null}
 	title="Delete {pending?.name ?? 'connector'}"
-	description="Removes the connector, its token and its captured request shapes."
+	description="The connector, its token and its request shapes are removed. Recorded endpoints are kept."
 	isDeleting={deleting}
 	onOpenChange={(value) => {
 		if (!value) pending = null;

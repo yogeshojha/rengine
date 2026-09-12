@@ -13,7 +13,6 @@ from app.services.asset_query.predicates import cert_state, live, vuln_seen_earl
 from app.services.dashboard import DashboardService
 from app.services.related_domains import RelatedDomainService
 from app.services.scan import ScanService
-from app.services.surface_scope import covering_stages
 from shared.definitions.dashboard import (
     CHANGES_LIMIT,
     DEFAULT_WINDOW,
@@ -87,7 +86,7 @@ from shared.models.vulnerability import (
     VulnerabilityTriage,
 )
 from shared.models.whois import WhoisRecord
-from shared.services.scan_scope import census_only
+from shared.services.scan_scope import census_only, covering_stages
 from shared.utils.datetime import utc_now
 
 WEB = SurfaceDimension.WEB_ASSETS.value

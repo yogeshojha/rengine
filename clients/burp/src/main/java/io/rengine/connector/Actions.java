@@ -9,18 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Collects work reNgine has queued for this proxy.
- *
- * <p>The proxy asks; reNgine never pushes. Nothing here touches Burp, so delivery is a callback.
- */
+/** Collects work reNgine has queued for this proxy. */
 final class Actions {
     static final long POLL_MILLIS = 3000;
     static final int UNAUTHORIZED = 401;
 
     record Action(String kind, String url, String method, String label) {}
 
-    /** Something reNgine wants the tester to know while they are still testing. */
+    /** A notice from reNgine. */
     record Notice(String kind, String label, String url, String host) {
         boolean outOfScope() {
             return "out_of_scope".equals(kind);
@@ -52,7 +48,7 @@ final class Actions {
         this.client = Tls.client(settings.allowSelfSigned());
     }
 
-    /** The ingest endpoint names the instance; actions sit beside it. */
+    /** The actions endpoint beside the ingest endpoint. */
     static String endpointFor(String ingest) {
         return beside(ingest, "actions");
     }
@@ -183,7 +179,7 @@ final class Actions {
         return out;
     }
 
-    /** The response is a flat array of flat objects; a JSON dependency is not worth it. */
+    /** Parses a flat array of flat objects. */
     static List<Action> parse(String body) {
         List<Action> out = new ArrayList<>();
         if (body == null) {

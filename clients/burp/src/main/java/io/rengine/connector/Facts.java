@@ -10,9 +10,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-/** What reNgine already knows: scope rules to apply, and facts about the host being tested. */
+/** Scope rules and host facts read from reNgine. */
 final class Facts {
-    record Host(String host, String target, int known, int visited, int unvisited, int flagged) {}
+    record Host(
+            String host,
+            String target,
+            boolean covered,
+            int known,
+            int visited,
+            int unvisited,
+            int flagged) {}
 
     record Scope(List<String> include, List<String> exclude, int hostsKnown, String program) {}
 
@@ -51,6 +58,7 @@ final class Facts {
         return new Host(
                 name,
                 Json.readString(body, "target_value"),
+                "true".equals(Json.readString(body, "covered")),
                 number(body, "known_endpoints"),
                 number(body, "visited"),
                 number(body, "unvisited"),

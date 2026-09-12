@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
-/** The last few things reNgine said, newest first. Bounded: a session is long. */
+/** The last notices from reNgine, newest first. */
 final class Notices {
     static final int KEEP = 12;
 

@@ -24,6 +24,7 @@ COPY interest /app/interest
 COPY mcp /app/mcp
 COPY connectors /app/connectors
 COPY toolbox /app/toolbox
+COPY binaries /app/binaries
 
 COPY api/pyproject.toml api/uv.lock* ./
 

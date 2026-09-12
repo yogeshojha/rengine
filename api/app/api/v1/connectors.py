@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,8 +18,9 @@ from shared.models.connector import (
     ActionRead,
     ActionRequest,
     AddTargetRequest,
+    CandidateIds,
     CandidatePage,
-    ConnectorCoverage,
+    CandidateStateRequest,
     ConnectorCreate,
     ConnectorCreated,
     ConnectorRead,
@@ -32,7 +34,6 @@ from shared.models.connector import (
     IngestRequest,
     IngestResult,
     NoticeRead,
-    SessionRead,
     TargetAdded,
     TargetOption,
 )
@@ -76,6 +77,9 @@ Service = Annotated[ConnectorService, Depends(get_service)]
 ProjectId = Annotated[UUID, Query(description="Project ID")]
 
 
+# ---------- proxy side, connector token ----------
+
+
 @router.post("/ingest", response_model=IngestResult)
 async def ingest(
     payload: IngestRequest,
@@ -94,66 +98,9 @@ async def collect_actions(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """Pending actions for the proxy. Authenticated by connector token."""
+    """Pending actions for the proxy. Delivered once."""
     row = await _authenticate(service, request, authorization)
     return await service.take_actions(row)
-
-
-@router.post("/{connector_id}/send")
-async def send_to_proxy(
-    connector_id: UUID,
-    body: ActionRequest,
-    _current_user: CurrentUser,
-    service: Service,
-    project_id: ProjectId,
-):
-    try:
-        queued = await service.queue_actions(
-            connector_id, project_id, body.ids, body.kind
-        )
-    except ConnectorError as exc:
-        raise _guard(exc) from exc
-    return {"queued": queued}
-
-
-@router.post("/{connector_id}/send-endpoints")
-async def send_endpoints_to_proxy(
-    connector_id: UUID,
-    body: EndpointActionRequest,
-    _current_user: CurrentUser,
-    service: Service,
-    project_id: ProjectId,
-    scope: EndpointScope,
-    session: Annotated[AsyncSession, Depends(get_session)],
-):
-    """Send endpoints, by id or by filter, to the proxy."""
-    if body.endpoint_ids:
-        rows = list(
-            (
-                await session.execute(
-                    select(Endpoint).where(
-                        Endpoint.id.in_(body.endpoint_ids),
-                        Endpoint.project_id == project_id,
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
-    elif body.filter is not None:
-        rows = await EndpointService(session).pick(scope, body.filter, body.limit)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Pass endpoint_ids or a filter.",
-        )
-    try:
-        queued = await service.queue_endpoint_actions(
-            connector_id, project_id, rows, body.kind
-        )
-    except ConnectorError as exc:
-        raise _guard(exc) from exc
-    return {"queued": queued}
 
 
 @router.get("/targets", response_model=list[TargetOption])
@@ -162,7 +109,7 @@ async def picker_targets(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """Target picker options for the proxy. Authenticated by connector token."""
+    """Target picker options for the proxy."""
     row = await _authenticate(service, request, authorization)
     return await service.target_options(row)
 
@@ -231,9 +178,24 @@ async def host_facts(
         raise _guard(exc) from exc
 
 
+# ---------- reNgine side, user session ----------
+
+
 @router.get("/catalog")
 async def catalog(_current_user: CurrentUser, service: Service):
     return service.catalog()
+
+
+@router.get("/client/{kind}")
+async def download_client(kind: str, _current_user: CurrentUser, service: Service):
+    """The proxy extension, built and shipped with this instance."""
+    path = service.client_path(kind)
+    if path is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No client is shipped for this connector.",
+        )
+    return FileResponse(path, media_type="application/java-archive", filename=path.name)
 
 
 @router.get("", response_model=list[ConnectorRead])
@@ -288,6 +250,63 @@ async def delete_connector(
     await service.delete(connector_id, project_id)
 
 
+@router.post("/{connector_id}/send")
+async def send_to_proxy(
+    connector_id: UUID,
+    body: ActionRequest,
+    _current_user: CurrentUser,
+    service: Service,
+    project_id: ProjectId,
+):
+    try:
+        queued = await service.queue_actions(
+            connector_id, project_id, body.ids, body.kind
+        )
+    except ConnectorError as exc:
+        raise _guard(exc) from exc
+    return {"queued": queued}
+
+
+@router.post("/{connector_id}/send-endpoints")
+async def send_endpoints_to_proxy(
+    connector_id: UUID,
+    body: EndpointActionRequest,
+    _current_user: CurrentUser,
+    service: Service,
+    project_id: ProjectId,
+    scope: EndpointScope,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Send endpoints, by id or by filter, to the proxy."""
+    if body.endpoint_ids:
+        rows = list(
+            (
+                await session.execute(
+                    select(Endpoint).where(
+                        Endpoint.id.in_(body.endpoint_ids),
+                        Endpoint.project_id == project_id,
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+    elif body.filter is not None:
+        rows = await EndpointService(session).pick(scope, body.filter, body.limit)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Pass endpoint_ids or a filter.",
+        )
+    try:
+        queued = await service.queue_endpoint_actions(
+            connector_id, project_id, rows, body.kind
+        )
+    except ConnectorError as exc:
+        raise _guard(exc) from exc
+    return {"queued": queued}
+
+
 @router.get("/{connector_id}/candidates", response_model=CandidatePage)
 async def candidates(
     connector_id: UUID,
@@ -297,6 +316,7 @@ async def candidates(
     state: str | None = None,
     host: str | None = None,
     notice: str | None = None,
+    known: bool | None = None,
     search: str | None = None,
     page: int = 1,
 ):
@@ -306,6 +326,7 @@ async def candidates(
         state=state,
         host=host,
         notice=notice,
+        known=known,
         search=search,
         page=page,
     )
@@ -314,17 +335,14 @@ async def candidates(
 @router.post("/{connector_id}/candidates/state")
 async def set_candidate_state(
     connector_id: UUID,
-    body: dict,
+    body: CandidateStateRequest,
     _current_user: CurrentUser,
     service: Service,
     project_id: ProjectId,
 ):
     try:
         changed = await service.set_state(
-            connector_id,
-            project_id,
-            [UUID(i) for i in body.get("ids", [])],
-            body.get("state", ""),
+            connector_id, project_id, body.ids, body.state
         )
     except ConnectorError as exc:
         raise _guard(exc) from exc
@@ -341,33 +359,21 @@ async def clear_candidates(
     return {"removed": await service.clear(connector_id, project_id)}
 
 
-@router.post("/{connector_id}/scan", response_model=ScanRead)
+@router.post("/{connector_id}/scan", response_model=list[ScanRead])
 async def scan_queue(
     connector_id: UUID,
-    body: dict,
+    body: CandidateIds,
     current_user: CurrentUser,
     service: Service,
     project_id: ProjectId,
 ):
+    """One focused scan per target the chosen shapes belong to."""
     try:
         return await service.scan(
-            connector_id,
-            project_id,
-            current_user.id,
-            [UUID(i) for i in body.get("ids", [])] or None,
+            connector_id, project_id, current_user.id, body.ids or None
         )
     except ConnectorError as exc:
         raise _guard(exc) from exc
-
-
-@router.get("/{connector_id}/coverage", response_model=list[ConnectorCoverage])
-async def coverage(
-    connector_id: UUID,
-    _current_user: CurrentUser,
-    service: Service,
-    project_id: ProjectId,
-):
-    return await service.coverage(connector_id, project_id)
 
 
 @router.get("/{connector_id}/discovered", response_model=list[DiscoveredDomain])
@@ -407,13 +413,3 @@ async def dismiss_discovered(
     return {
         "dismissed": await service.dismiss_domain(connector_id, project_id, body.domain)
     }
-
-
-@router.get("/{connector_id}/sessions", response_model=list[SessionRead])
-async def sessions(
-    connector_id: UUID,
-    _current_user: CurrentUser,
-    service: Service,
-    project_id: ProjectId,
-):
-    return await service.sessions(connector_id, project_id)

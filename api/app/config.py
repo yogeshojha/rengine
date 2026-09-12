@@ -18,6 +18,8 @@ class Settings(BaseAppSettings):
     GLOBAL_RATE_LIMIT_PER_MINUTE: int = 600
     TRUSTED_PROXIES: str = ""
 
+    CLIENTS_DIR: str = "/app/binaries"
+
     ADMIN_EMAIL: str = "admin@rengine.local"
     ADMIN_USERNAME: str = "rengine"
     ADMIN_PASSWORD: str = "rengine@123"  # noqa: S105

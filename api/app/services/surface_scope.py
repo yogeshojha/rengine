@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from functools import lru_cache
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -15,27 +14,24 @@ from app.services.asset_query import QueryScope, vuln_suppressed
 from shared.definitions.asset_query import COUNT_CAP
 from shared.definitions.dashboard import STALE_DAYS
 from shared.definitions.surface import (
-    SURFACE_KINDS,
     SURFACE_LABELS,
     SURFACE_NOUN,
     SURFACE_ORDER,
     SurfaceDimension,
 )
-from shared.enums.scan import SCAN_LIVE_STATUSES, ScanActivityStatus
+from shared.enums.scan import SCAN_LIVE_STATUSES
 from shared.models.endpoint import Endpoint
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
-from shared.models.scan_activity import ScanActivity
 from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.surface import SurfaceCoverage, SurfaceOverview, SurfaceTargetRead
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
-from shared.services.scan_scope import census_only
+from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
-from stages.registry import stages
 
 
 class _Count(BaseModel):
@@ -50,17 +46,6 @@ TABLES = {
     SurfaceDimension.VULNERABILITIES.value: Vulnerability,
     SurfaceDimension.SOFTWARE.value: SoftwareCve,
 }
-
-
-@lru_cache(maxsize=1)
-def covering_stages() -> dict[str, frozenset[str]]:
-    """Dimension -> the stage names whose success means the dimension was scanned."""
-    out: dict[str, set[str]] = {key: set() for key in SURFACE_ORDER}
-    for spec in stages():
-        for key, kinds in SURFACE_KINDS.items():
-            if spec.produces & kinds:
-                out[key].add(spec.name)
-    return {key: frozenset(names) for key, names in out.items()}
 
 
 async def baselined_targets(
@@ -117,20 +102,12 @@ class SurfaceScopeService:
         if cached is not None:
             return cached
         model = TABLES[dimension]
-        names = covering_stages()[dimension]
         rows = await self.session.execute(
             select(Scan.id, Scan.target_id, Scan.status, _started().label("at"))
             .where(
                 Scan.project_id == project_id,
                 census_only(),
-                exists(select(1).where(model.scan_id == Scan.id))
-                | exists(
-                    select(1).where(
-                        ScanActivity.scan_id == Scan.id,
-                        ScanActivity.status == ScanActivityStatus.SUCCESS.value,
-                        ScanActivity.name.in_(names),
-                    )
-                ),
+                covers(model, dimension),
             )
             .distinct(Scan.target_id)
             .order_by(Scan.target_id, _started().desc())

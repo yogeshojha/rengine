@@ -105,7 +105,8 @@
 		[
 			{ value: 'new', label: 'New' },
 			{ value: 'unverified', label: 'Not checked' },
-			hasProxy ? { value: 'untested', label: 'No proxy traffic' } : null,
+			hasProxy ? { value: 'browsed', label: 'Browsed' } : null,
+			hasProxy ? { value: 'unbrowsed', label: 'Not browsed' } : null,
 			{ value: 'static', label: 'Hide static' },
 			hostsAtRest && onHideRootOnly ? { value: 'rootonly', label: 'Hide root-only' } : null
 		].filter((q): q is { value: string; label: string } => q !== null)
@@ -114,7 +115,8 @@
 		[
 			query.newOnly && 'new',
 			query.probed === 'no' && 'unverified',
-			query.untested && 'untested',
+			query.browsed === 'yes' && 'browsed',
+			query.browsed === 'no' && 'unbrowsed',
 			hideStatic && 'static',
 			hideRootOnly && hostsAtRest && 'rootonly'
 		].filter((v): v is string => !!v)
@@ -125,7 +127,7 @@
 			...query,
 			newOnly: values.includes('new'),
 			probed: values.includes('unverified') ? 'no' : 'any',
-			untested: values.includes('untested')
+			browsed: values.includes('browsed') ? 'yes' : values.includes('unbrowsed') ? 'no' : 'any'
 		});
 		onHideStatic(values.includes('static'));
 		if (hostsAtRest) onHideRootOnly?.(values.includes('rootonly'));

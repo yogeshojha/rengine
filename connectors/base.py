@@ -24,9 +24,8 @@ class ProxyConnector:
     description: str = ""
     docs_url: str = ""
     source_path: str = ""
+    client_file: str = ""
     tools: tuple[str, ...] = (SourceTool.PROXY.value, SourceTool.REPEATER.value)
-    # this proxy can supply the session already in use
-    supports_sessions: bool = True
     # scope can be pushed back into the proxy
     supports_scope_push: bool = False
     available: bool = True
@@ -42,8 +41,8 @@ class ProxyConnector:
             "description": self.description,
             "docs_url": self.docs_url,
             "source_path": self.source_path,
+            "client_file": self.client_file,
             "tools": list(self.tools),
-            "supports_sessions": self.supports_sessions,
             "supports_scope_push": self.supports_scope_push,
             "available": self.available,
         }
