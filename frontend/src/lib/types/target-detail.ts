@@ -88,6 +88,14 @@ export interface TargetBgpDetailResponse {
 	abuse_contacts: AbuseContactDetail[];
 }
 
+export interface TargetDnsDetailResponse {
+	target_id: string;
+	target_type: TargetType;
+	status: TaskStatus;
+	error: string | null;
+	lookup: DnsLookupRead | null;
+}
+
 export interface TargetDetailRead {
 	id: string;
 	target_value: string;

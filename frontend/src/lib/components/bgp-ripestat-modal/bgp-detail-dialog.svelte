@@ -17,12 +17,16 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import BgpOverviewTab from './bgp-overview-tab.svelte';
+	import RelatedTargets from '$lib/components/targets/related-targets.svelte';
 	import BgpPrefixesTab from './bgp-prefixes-tab.svelte';
 	import BgpPeersTab from './bgp-peers-tab.svelte';
 	import RadioTower from '@lucide/svelte/icons/radio-tower';
 	import Radio from '@lucide/svelte/icons/radio';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { TargetRelation } from '$lib/config/relations';
+	import type { RelatedTarget } from '$lib/types/relations';
 
 	interface Props {
 		open: boolean;
@@ -44,6 +48,9 @@
 		onAddAsTarget
 	}: Props = $props();
 
+	const NETWORK_KINDS = [TargetRelation.NETWORK, TargetRelation.NETWORK_CIDR];
+
+	let relations = $state<RelatedTarget[]>([]);
 	let overview = $state<ASOverviewRead | null>(null);
 	let prefixes = $state<AnnouncedPrefixRead[]>([]);
 	let neighbours = $state<ASNNeighbourRead[]>([]);
@@ -113,6 +120,7 @@
 		if (open && targetId && targetType) {
 			activeTab = 'overview';
 			loadData();
+			loadRelations();
 		} else if (!open) {
 			resetState();
 		}
@@ -124,7 +132,18 @@
 		}
 	});
 
+	async function loadRelations() {
+		const project = projectsStore.activeProject;
+		if (!project || !targetId) return;
+		try {
+			relations = (await targetsApi.getRelations(targetId, project.id)).items;
+		} catch {
+			relations = [];
+		}
+	}
+
 	function resetState() {
+		relations = [];
 		overview = null;
 		prefixes = [];
 		neighbours = [];
@@ -254,6 +273,7 @@
 									{bgpSummary}
 									{onAddAsTarget}
 								/>
+								<RelatedTargets {relations} kinds={NETWORK_KINDS} />
 							</div>
 						</ScrollArea>
 					</Tabs.Content>

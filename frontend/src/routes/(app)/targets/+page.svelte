@@ -42,6 +42,7 @@
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import WhoisDetailDialog from '$lib/components/whois/whois-detail-dialog.svelte';
 	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
+	import DnsDetailDialog from '$lib/components/dns-modal/dns-detail-dialog.svelte';
 	import { downloadTargets, type ExportFormat } from '$lib/utilities/target-export';
 	import type { SignalFilter, SortDir, SortKey } from '$lib/utilities/target-signals';
 	import { TaskStatus } from '$lib/types/task-status';
@@ -96,6 +97,8 @@
 	let whoisInitialTab = $state('overview');
 
 	let showBgpDialog = $state(false);
+	let showDnsDialog = $state(false);
+	let dnsDialogTarget = $state<Target | null>(null);
 	let bgpDialogTarget = $state<Target | null>(null);
 
 	const selectedTargetIds = new SvelteSet<string>();
@@ -437,6 +440,11 @@
 		showBgpDialog = true;
 	}
 
+	function handleDnsClick(target: Target) {
+		dnsDialogTarget = target;
+		showDnsDialog = true;
+	}
+
 	function handleAddAsTarget(value: string) {
 		prefillValue = value;
 		showAddModal = true;
@@ -690,6 +698,7 @@
 						onWhoisClick={handleWhoisClick}
 						onDiscoveriesClick={handleDiscoveriesClick}
 						onBgpClick={handleBgpClick}
+						onDnsClick={handleDnsClick}
 						onInfraClick={handleInfraClick}
 					/>
 				{/each}
@@ -831,6 +840,13 @@
 	bgpSummary={bgpDialogTarget?.bgp}
 	onOpenChange={(o) => (showBgpDialog = o)}
 	onAddAsTarget={handleAddAsTarget}
+/>
+
+<DnsDetailDialog
+	bind:open={showDnsDialog}
+	targetId={dnsDialogTarget?.id ?? null}
+	targetValue={dnsDialogTarget?.target_value ?? null}
+	onOpenChange={(v) => (showDnsDialog = v)}
 />
 
 <AlertDialog.Root bind:open={showEnrichConfirm}>

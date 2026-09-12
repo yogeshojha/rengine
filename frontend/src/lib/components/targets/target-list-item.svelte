@@ -45,6 +45,7 @@
 		onWhoisClick: (target: Target) => void;
 		onDiscoveriesClick?: (target: Target) => void;
 		onBgpClick?: (target: Target) => void;
+		onDnsClick?: (target: Target) => void;
 		onInfraClick?: (target: Target) => void;
 	}
 
@@ -63,6 +64,7 @@
 		onWhoisClick,
 		onDiscoveriesClick,
 		onBgpClick,
+		onDnsClick,
 		onInfraClick
 	}: Props = $props();
 
@@ -167,7 +169,7 @@
 					targetType={target.target_type}
 					targetValue={target.target_value}
 					targetId={target.id}
-					onClick={() => onView(target)}
+					onClick={() => onDnsClick?.(target)}
 				/>
 				<BgpInline
 					status={target.bgp_status}

@@ -12,7 +12,11 @@ import type {
 	EnrichmentRefreshResponse
 } from '$lib/types/target';
 
-import type { TargetDetailRead, TargetBgpDetailResponse } from '@/types/target-detail';
+import type {
+	TargetDetailRead,
+	TargetBgpDetailResponse,
+	TargetDnsDetailResponse
+} from '@/types/target-detail';
 import type { TargetSummaryRead } from '$lib/types/target-summary';
 import type { TargetAssetFilter, TargetAssetPage } from '$lib/types/target-asset';
 import type { TargetPrograms, TargetRelations } from '$lib/types/relations';
@@ -162,6 +166,10 @@ export const targetsApi = {
 		}
 
 		return response.json();
+	},
+
+	async getDns(targetId: string): Promise<TargetDnsDetailResponse> {
+		return api.get<TargetDnsDetailResponse>(`/targets/${targetId}/dns`);
 	},
 
 	async refreshDns(targetId: string): Promise<EnrichmentRefreshResponse> {

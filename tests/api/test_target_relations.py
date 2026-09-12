@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from app.services.target_relations import TargetRelationService
+from app.services.target_relations import TargetRelationService, _dns_keys
 from shared.definitions.relations import TargetRelation
 from shared.enums.ip import IpSource
 from shared.enums.whois import WhoisLookupType
@@ -114,3 +114,47 @@ async def test_one_registrant_spelled_two_ways_is_a_relation(estate, now):
     assert await _related(estate, "one.com") == {
         "two.com": [TargetRelation.REGISTRANT.value]
     }
+
+
+OWNED = {"acme.com", "acme.io"}
+
+
+def test_a_rented_mail_host_says_nothing():
+    assert _dns_keys("MX", "alt1.aspmx.l.google.com", "", set(), OWNED) == []
+    assert _dns_keys("MX", "mx.zendesk.com", "", set(), OWNED) == []
+
+
+def test_a_mail_host_the_estate_owns_is_a_fact():
+    assert _dns_keys("MX", "mail.acme.com", "", set(), OWNED) == [
+        ("MX mail.acme.com", "mx:mail.acme.com")
+    ]
+
+
+def test_an_spf_include_counts_only_for_the_estate_own_domain():
+    spf = "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_spf.acme.io -all"
+    assert _dns_keys("TXT", spf, "", set(), OWNED) == [
+        ("SPF include:_spf.acme.io", "spf:_spf.acme.io")
+    ]
+
+
+def test_a_zone_contact_is_read_from_the_soa():
+    assert _dns_keys("SOA", "ns1.acme.com", "hostmaster.acme.com", set(), OWNED) == [
+        ("SOA hostmaster.acme.com", "soa:hostmaster.acme.com")
+    ]
+    assert (
+        _dns_keys(
+            "SOA", "ns-1.awsdns-50.org", "awsdns-hostmaster.amazon.com", set(), OWNED
+        )
+        == []
+    )
+
+
+def test_an_edge_address_is_not_a_shared_machine():
+    assert _dns_keys("A", "203.0.113.9", "", set(), OWNED) == [
+        ("A 203.0.113.9", "address:203.0.113.9")
+    ]
+    assert _dns_keys("A", "151.101.2.132", "", {"151.101.2.132"}, OWNED) == []
+
+
+def test_a_nameserver_record_is_left_to_the_whois_relation():
+    assert _dns_keys("NS", "a.ns.acme.com", "", set(), OWNED) == []

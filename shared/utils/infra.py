@@ -145,6 +145,54 @@ def public_ca(issuer: str | None) -> str | None:
     return None
 
 
+_SHARED_MAIL_DOMAINS = frozenset(
+    {
+        "google.com",
+        "googlemail.com",
+        "outlook.com",
+        "microsoft.com",
+        "office365.com",
+        "pphosted.com",
+        "mimecast.com",
+        "proofpoint.com",
+        "barracudanetworks.com",
+        "messagelabs.com",
+        "zoho.com",
+        "zohomail.com",
+        "protonmail.ch",
+        "fastmail.com",
+        "mailgun.org",
+        "sendgrid.net",
+        "amazonses.com",
+        "amazonaws.com",
+        "mandrillapp.com",
+        "sparkpostmail.com",
+        "mail.ru",
+        "yandex.net",
+        "secureserver.net",
+        "emailsrvr.com",
+        "improvmx.com",
+        "migadu.com",
+        "qq.com",
+        "cloudflare.com",
+        "amazon.com",
+    }
+)
+
+
+def is_shared_host(host: str | None) -> bool:
+    """Whether a nameserver, mail host or mail domain belongs to a provider."""
+    if not host:
+        return False
+    normalized = host.strip().lower().rstrip(".")
+    if is_shared_nameserver(normalized) or shared_edge(normalized):
+        return True
+    labels = normalized.split(".")
+    return any(
+        ".".join(labels[i:]) in _SHARED_MAIL_DOMAINS for i in range(len(labels) - 1)
+    )
+
+
 def owns_network(as_name: str | None, identities: set[str]) -> bool:
     """Whether the network's holder is one of these parties, not a landlord."""
     holder = registrant_key(as_name)

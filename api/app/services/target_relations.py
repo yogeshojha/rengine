@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from uuid import UUID
 
@@ -20,6 +21,7 @@ from shared.definitions.relations import (
     TargetRelation,
 )
 from shared.definitions.surface import SurfaceDimension
+from shared.models.dns import DnsRecord
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.relations import RelatedTarget, RelationEvidence, TargetRelations
@@ -27,11 +29,46 @@ from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.whois import WhoisNameserver, WhoisRecord
 from shared.services.asset_query.scope import QueryScope
-from shared.utils.infra import is_shared_nameserver, owns_network
+from shared.utils.infra import is_shared_host, is_shared_nameserver, owns_network
 from shared.utils.privacy import registrant_key
 
 # kind -> value -> targets carrying it, with what to show for each
 _Facts = dict[str, dict[str, dict[UUID, str]]]
+
+
+_SPF_INCLUDE = re.compile(r"include:([^\s]+)")
+_ADDRESS_RECORDS = ("A", "AAAA")
+
+
+def _ours(host: str, owned: set[str]) -> bool:
+    """A mail host or a zone contact identifies an estate only when the estate owns it."""
+    return bool(host) and not is_shared_host(host) and registrable_domain(host) in owned
+
+
+def _dns_keys(
+    record_type: str, value: str, soa_email: str, cdn: set[str], owned: set[str]
+) -> list[tuple[str, str]]:
+    """What a record says about ownership, as (shown, key) pairs. NS is the WHOIS relation's."""
+    kind = record_type.upper().removeprefix("DNSRECORDTYPE.")
+    host = value.strip().lower().rstrip(".")
+    if kind == "MX" and _ours(host, owned):
+        return [(f"MX {host}", f"mx:{host}")]
+    if kind == "SOA":
+        contact = soa_email.strip().lower().rstrip(".")
+        if _ours(contact, owned):
+            return [(f"SOA {contact}", f"soa:{contact}")]
+        return []
+    if kind in _ADDRESS_RECORDS and host and host not in cdn:
+        return [(f"{kind} {host}", f"address:{host}")]
+    if kind == "TXT" and host.startswith("v=spf1"):
+        return [
+            (f"SPF include:{domain}", f"spf:{domain}")
+            for domain in {
+                m.group(1).lower().rstrip(".") for m in _SPF_INCLUDE.finditer(host)
+            }
+            if _ours(domain, owned)
+        ]
+    return []
 
 
 def _identity(target_value: str, registrant: str) -> set[str]:
@@ -102,6 +139,7 @@ class TargetRelationService:
         addresses = await scopes.scope(project_id, SurfaceDimension.IPS.value)
         facts: _Facts = defaultdict(lambda: defaultdict(dict))
         await self._registration(targets, facts)
+        await self._dns(targets, facts)
         if assets:
             await self._certificates(assets, targets, facts)
             await self._favicons(assets, facts)
@@ -137,6 +175,34 @@ class TargetRelationService:
             facts[TargetRelation.NAMESERVER.value][nameserver][by_record[record_id]] = (
                 nameserver
             )
+
+    async def _dns(self, targets: dict[UUID, Target], facts: _Facts) -> None:
+        """A mail host, a zone contact or an address that is not a provider's."""
+        rows = await self.session.execute(
+            select(
+                DnsRecord.target_id,
+                DnsRecord.record_type,
+                DnsRecord.value,
+                DnsRecord.soa_email,
+            ).where(DnsRecord.target_id.in_(list(targets)))
+        )
+        cdn = await self._cdn_addresses()
+        owned = {
+            registrable_domain(t.target_value)
+            for t in targets.values()
+            if registrable_domain(t.target_value)
+        }
+        for target_id, kind, value, soa_email in rows.all():
+            for shown, key in _dns_keys(
+                str(kind), value or "", soa_email or "", cdn, owned
+            ):
+                facts[TargetRelation.DNS_RECORD.value][key][target_id] = shown
+
+    async def _cdn_addresses(self) -> set[str]:
+        rows = await self.session.execute(
+            select(IpAddress.ip).where(IpAddress.is_cdn.is_(True)).distinct()
+        )
+        return set(rows.scalars().all())
 
     async def _certificates(
         self, scope: QueryScope, targets: dict[UUID, Target], facts: _Facts
