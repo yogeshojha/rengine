@@ -232,7 +232,7 @@
 <div class="space-y-6">
 	<div class="flex items-start justify-between">
 		<div>
-			<h1 class="text-2xl font-semibold tracking-tight">Proxies</h1>
+			<h2 class="text-lg font-semibold tracking-tight">Proxies</h2>
 			<p class="text-sm text-muted-foreground">
 				Route scan traffic through proxies. The default applies to scan contexts that do not choose
 				one.

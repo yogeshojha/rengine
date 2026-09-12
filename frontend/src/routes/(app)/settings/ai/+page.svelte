@@ -9,7 +9,6 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -111,10 +110,7 @@
 <div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div>
-			<h1 class="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-				<SparklesIcon class="size-5" />
-				{routeLabels.ai}
-			</h1>
+			<h2 class="text-lg font-semibold tracking-tight">{routeLabels.ai}</h2>
 			<p class="mt-1 max-w-2xl text-sm text-muted-foreground">
 				Model connection, feature opt-ins and usage for report narratives
 			</p>

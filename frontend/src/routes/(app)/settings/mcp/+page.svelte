@@ -3,7 +3,6 @@
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { untrack } from 'svelte';
-	import NetworkIcon from '@lucide/svelte/icons/network';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -116,10 +115,7 @@
 <div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div class="min-w-0">
-			<h1 class="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-				<NetworkIcon class="size-5" />
-				{routeLabels.mcp}
-			</h1>
+			<h2 class="text-lg font-semibold tracking-tight">{routeLabels.mcp}</h2>
 			<p class="mt-1 max-w-2xl text-sm text-muted-foreground">
 				Model Context Protocol access for agents, scoped by service token
 			</p>

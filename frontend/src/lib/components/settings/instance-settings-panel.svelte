@@ -177,9 +177,9 @@
 
 <div class="space-y-6">
 	<div>
-		<h1 class="text-2xl font-semibold tracking-tight">General</h1>
+		<h2 class="text-lg font-semibold tracking-tight">General</h2>
 		<p class="text-sm text-muted-foreground">
-			Instance identity, retention windows and AI analysis. Applies across all projects.
+			Instance identity, retention windows and AI analysis.
 		</p>
 	</div>
 
