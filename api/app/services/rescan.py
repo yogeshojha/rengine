@@ -22,7 +22,7 @@ from shared.definitions.rescan import (
     stages_for,
 )
 from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN, SURFACE_ORDER
-from shared.enums.scan import SCAN_LIVE_STATUSES, Phase, ScanScope, StageRole
+from shared.enums.scan import SCAN_LIVE_STATUSES, Phase, ScanScope
 from shared.models.recheck import AssetRecheck, RecheckRead
 from shared.models.scan import (
     FocusedRunRead,
@@ -38,6 +38,7 @@ from shared.models.scan import (
     SeedSelection,
 )
 from shared.models.vuln_template import VulnTemplate
+from shared.services.focused import focused_overrides
 from stages.registry import stage_by_name
 
 
@@ -72,23 +73,6 @@ def rescan_schema() -> RescanSchema:
         max_assets=MAX_RUN_ASSETS,
         max_scans=MAX_RUN_SCANS,
     )
-
-
-def focused_overrides(picked: list[str]) -> dict:
-    """Disable every stage that enumerates the target."""
-    known = stage_by_name()
-    overrides = {
-        name: {"enabled": False}
-        for name, spec in known.items()
-        if not spec.catalog_hidden
-        and (
-            spec.role == StageRole.CAPABILITY.value
-            or (not spec.consumes and (spec.produces or spec.phase == _DISCOVERY))
-        )
-    }
-    for name in picked:
-        overrides[name] = {**(overrides.get(name) or {}), "enabled": True}
-    return overrides
 
 
 class RescanService:

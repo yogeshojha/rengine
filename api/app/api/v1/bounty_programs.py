@@ -1,15 +1,18 @@
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.services.bounty_program import BountyProgramService
 from app.services.instance_settings import InstanceSettingsService
+from app.services.watch import WatchService, validate_alert_query
 from shared.definitions.bounty_programs import (
     ASSET_TYPES,
     EVENTS,
@@ -22,7 +25,11 @@ from shared.definitions.bounty_programs import (
     SubmissionState,
     SyncInterval,
 )
-from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS, has_capability
+from shared.definitions.mode_features import (
+    CAP_BOUNTY_PROGRAMS,
+    CAP_PROGRAM_WATCHES,
+    has_capability,
+)
 from shared.models.bounty_program import (
     BountyEventRead,
     BountyImportRequest,
@@ -32,6 +39,16 @@ from shared.models.bounty_program import (
     BountySettingsRead,
     BountySettingsUpdate,
     BountyStatus,
+)
+from shared.models.watch import (
+    StreamStatus,
+    WatchCreate,
+    WatchEventRead,
+    WatchHostCounts,
+    WatchHostRead,
+    WatchPreview,
+    WatchRead,
+    WatchUpdate,
 )
 from shared.services.celery_dispatch import (
     dispatch_bounty_feed_sync,
@@ -49,6 +66,15 @@ def get_service(
 
 
 ServiceDep = Annotated[BountyProgramService, Depends(get_service)]
+
+
+def get_watches(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> WatchService:
+    return WatchService(session)
+
+
+WatchDep = Annotated[WatchService, Depends(get_watches)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 PlatformPath = Annotated[str, Path(description="Bug bounty platform key")]
 
@@ -244,6 +270,204 @@ async def list_programs(
     page = await paginate(session, query)
     page.items = await service.to_read(list(page.items), project_id)
     return page
+
+
+async def _require_watches(session: AsyncSession) -> None:
+    """Program watches are a bug bounty mode capability."""
+    settings = await InstanceSettingsService(session).get_or_create()
+    if not has_capability(settings.mode, CAP_PROGRAM_WATCHES):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Program watches require bug bounty mode.",
+        )
+
+
+# ---------- watches ----------
+
+
+class AlertQueryCheck(BaseModel):
+    query: str = ""
+
+
+@router.post("/watches/validate-query")
+async def validate_query(
+    body: AlertQueryCheck, _current_user: CurrentUser, session: SessionDep
+) -> dict:
+    await _require_watches(session)
+    return {"error": validate_alert_query(body.query)}
+
+
+@router.get("/watches/stream", response_model=StreamStatus)
+async def stream_status(
+    _current_user: CurrentUser, session: SessionDep
+) -> StreamStatus:
+    await _require_watches(session)
+    return await WatchService.stream_status()
+
+
+@router.get("/watches", response_model=list[WatchRead])
+async def list_watches(
+    project_id: UUID, current_user: CurrentUser, watches: WatchDep, session: SessionDep
+) -> list[WatchRead]:
+    await _require_watches(session)
+    return await watches.list(project_id, current_user.id)
+
+
+@router.get("/watches/{watch_id}", response_model=WatchRead)
+async def get_watch(
+    watch_id: UUID,
+    project_id: UUID,
+    current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+) -> WatchRead:
+    await _require_watches(session)
+    return await watches.get(watch_id, project_id, current_user.id)
+
+
+@router.patch("/watches/{watch_id}", response_model=WatchRead)
+async def update_watch(
+    watch_id: UUID,
+    project_id: UUID,
+    data: WatchUpdate,
+    current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+) -> WatchRead:
+    await _require_watches(session)
+    return await watches.update(watch_id, project_id, data, current_user.id)
+
+
+@router.delete("/watches/{watch_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_watch(
+    watch_id: UUID,
+    project_id: UUID,
+    _current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+) -> None:
+    await _require_watches(session)
+    await watches.delete(watch_id, project_id)
+
+
+@router.post("/watches/{watch_id}/seen")
+async def mark_watch_seen(
+    watch_id: UUID,
+    project_id: UUID,
+    current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+) -> dict:
+    await _require_watches(session)
+    at = await watches.mark_seen(watch_id, project_id, current_user.id)
+    return {"seen_at": at}
+
+
+@router.post("/watches/{watch_id}/reconcile")
+async def reconcile_watch(
+    watch_id: UUID,
+    project_id: UUID,
+    _current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+) -> dict:
+    await _require_watches(session)
+    return await watches.reconcile(watch_id, project_id)
+
+
+@router.get("/watches/{watch_id}/hosts", response_model=Page[WatchHostRead])
+async def list_watch_hosts(
+    watch_id: UUID,
+    project_id: UUID,
+    _current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+    state: Annotated[str | None, Query(max_length=32)] = None,
+    since: datetime | None = None,
+    q: Annotated[str | None, Query(max_length=200)] = None,
+) -> Page[WatchHostRead]:
+    await _require_watches(session)
+    await watches.ensure(watch_id, project_id)
+    return await paginate(
+        session,
+        watches.hosts_query(watch_id, state=state, since=since, q=q),
+        transformer=lambda rows: [WatchService.host_read(r) for r in rows],
+    )
+
+
+@router.get("/watches/{watch_id}/hosts/counts", response_model=WatchHostCounts)
+async def watch_host_counts(
+    watch_id: UUID,
+    project_id: UUID,
+    _current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+    since: datetime | None = None,
+) -> WatchHostCounts:
+    await _require_watches(session)
+    return await watches.host_counts(watch_id, project_id, since)
+
+
+@router.post("/watches/{watch_id}/hosts/{host_id}/mute", response_model=WatchHostRead)
+async def mute_watch_host(
+    watch_id: UUID,
+    host_id: UUID,
+    project_id: UUID,
+    _current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+) -> WatchHostRead:
+    await _require_watches(session)
+    return await watches.mute_host(watch_id, host_id, project_id)
+
+
+@router.get("/watches/{watch_id}/events", response_model=Page[WatchEventRead])
+async def list_watch_events(
+    watch_id: UUID,
+    project_id: UUID,
+    _current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+    kind: Annotated[str | None, Query(max_length=32)] = None,
+    since: datetime | None = None,
+) -> Page[WatchEventRead]:
+    await _require_watches(session)
+    await watches.ensure(watch_id, project_id)
+    return await paginate(
+        session,
+        watches.events_query(watch_id, kind=kind, since=since),
+        transformer=lambda rows: [WatchService.event_read(r) for r in rows],
+    )
+
+
+@router.get("/{platform}/{handle}/watch/preview", response_model=WatchPreview)
+async def watch_preview(
+    platform: PlatformPath,
+    handle: str,
+    project_id: UUID,
+    _current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+) -> WatchPreview:
+    await _require_watches(session)
+    return await watches.preview(
+        BountyProgramService.require_platform(platform), handle, project_id
+    )
+
+
+@router.post("/{platform}/{handle}/watch", response_model=WatchRead)
+async def create_watch(
+    platform: PlatformPath,
+    handle: str,
+    data: WatchCreate,
+    current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
+) -> WatchRead:
+    await _require_watches(session)
+    return await watches.create(
+        BountyProgramService.require_platform(platform), handle, data, current_user.id
+    )
 
 
 @router.get("/{platform}/{handle}")

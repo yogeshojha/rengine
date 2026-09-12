@@ -3,12 +3,14 @@ from shared.enums.instance import InstanceMode
 CAP_HACKERONE = "hackerone"
 CAP_BOUNTY_PROGRAMS = "bounty_programs"
 CAP_BB_RECON_PRESETS = "bb_recon_presets"
+CAP_PROGRAM_WATCHES = "program_watches"
 
 _MODE_CAPABILITIES: dict[str, set[str]] = {
     InstanceMode.BUG_BOUNTY.value: {
         CAP_HACKERONE,
         CAP_BOUNTY_PROGRAMS,
         CAP_BB_RECON_PRESETS,
+        CAP_PROGRAM_WATCHES,
     },
     InstanceMode.CORPORATE.value: set(),
 }

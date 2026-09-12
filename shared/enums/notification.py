@@ -9,6 +9,7 @@ class NotificationType(Enum):
     TARGET = "target"
     RESOURCE = "resource"
     INTEGRATION = "integration"
+    WATCH = "watch"
 
 
 class NotificationSeverity(Enum):

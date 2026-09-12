@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import RadarIcon from '@lucide/svelte/icons/radar';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -14,6 +15,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ImportDialog from './import-dialog.svelte';
+	import WatchDialog from './watch-dialog.svelte';
 	import ScopeRow from './scope-row.svelte';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import {
@@ -23,6 +25,7 @@
 		platformUrl
 	} from '$lib/config/bounty-programs';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import type { Watch } from '$lib/types/watch';
 	import {
 		ProgramState,
 		ScopeState,
@@ -37,9 +40,13 @@
 		open: boolean;
 		onOpenChange: (open: boolean) => void;
 		onImported: () => void;
+		onWatch?: (watch: Watch) => void;
+		onOpenWatch?: (watchId: string) => void;
 	}
 
-	let { program, projectId, open, onOpenChange, onImported }: Props = $props();
+	let { program, projectId, open, onOpenChange, onImported, onWatch, onOpenWatch }: Props =
+		$props();
+	let watchOpen = $state(false);
 
 	let detail = $state<BountyProgramDetail | null>(null);
 	let loading = $state(false);
@@ -211,6 +218,27 @@
 						<span class="text-xs">2FA required</span>
 					{/if}
 				</Sheet.Description>
+				<div class="flex flex-wrap items-center gap-2 pt-1">
+					{#if program.watched && program.watch_id}
+						<Button
+							size="sm"
+							variant="outline"
+							onclick={() => onOpenWatch?.(program.watch_id ?? '')}
+						>
+							<RadarIcon class="mr-1.5 size-3.5" />
+							Watching
+						</Button>
+					{:else}
+						<Button
+							size="sm"
+							disabled={!projectId || program.importable_count === 0}
+							onclick={() => (watchOpen = true)}
+						>
+							<RadarIcon class="mr-1.5 size-3.5" />
+							Watch
+						</Button>
+					{/if}
+				</div>
 			</Sheet.Header>
 
 			<div class="border-b px-4">
@@ -324,6 +352,19 @@
 		{/if}
 	</Sheet.Content>
 </Sheet.Root>
+
+{#if program && projectId}
+	<WatchDialog
+		{program}
+		{projectId}
+		open={watchOpen}
+		onOpenChange={(v) => (watchOpen = v)}
+		onSaved={(watch) => {
+			onImported();
+			onWatch?.(watch);
+		}}
+	/>
+{/if}
 
 {#if program}
 	<ImportDialog

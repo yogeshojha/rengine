@@ -5,6 +5,7 @@ import Bug from '@lucide/svelte/icons/bug';
 import Target from '@lucide/svelte/icons/target';
 import HardDrive from '@lucide/svelte/icons/hard-drive';
 import Plug from '@lucide/svelte/icons/plug';
+import Radar from '@lucide/svelte/icons/radar';
 import { NOTIFICATION_TYPES, type NotificationType } from '$lib/types/notification';
 import type { IconComponent } from '$lib/config/icons';
 
@@ -15,7 +16,8 @@ const TYPE_ICONS: Record<NotificationType, IconComponent> = {
 	vulnerability: Bug,
 	target: Target,
 	resource: HardDrive,
-	integration: Plug
+	integration: Plug,
+	watch: Radar
 };
 
 export const getTypeIcon = (type: NotificationType): IconComponent => TYPE_ICONS[type];

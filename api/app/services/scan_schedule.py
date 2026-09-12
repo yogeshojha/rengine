@@ -210,6 +210,7 @@ class ScanScheduleService:
             engine_name=sched.engine_name,
             context_id=sched.context_id,
             context_name=sched.context_name,
+            intensity=sched.intensity,
             schedule_type=sched.schedule_type,
             run_at=sched.run_at,
             interval_every=sched.interval_every,
@@ -246,6 +247,7 @@ class ScanScheduleService:
             engine_name=engine.name,
             context_id=context.id if context is not None else None,
             context_name=context.name if context is not None else None,
+            intensity=data.intensity,
             timezone=tz,
             status=ScheduleStatus.ACTIVE.value,
             created_by=created_by,
@@ -296,6 +298,8 @@ class ScanScheduleService:
         if data.target_ids is not None:
             targets = await self._targets(data.target_ids, project_id)
             sched.target_ids = [str(t.id) for t in targets]
+        if "intensity" in data.model_fields_set:
+            sched.intensity = data.intensity
 
         if data.schedule_type is not None:
             self._apply_timing(sched, data, sched.timezone)
@@ -336,6 +340,7 @@ class ScanScheduleService:
                         engine_id=sched.engine_id,
                         context_id=sched.context_id,
                         target_id=t,
+                        intensity=sched.intensity,
                     ),
                     project_id=project_id,
                     created_by=created_by,

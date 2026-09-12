@@ -478,6 +478,17 @@ class ScanContextService:
         await self.session.refresh(ctx)
         return _to_read(ctx)
 
+    async def set_rate_limit(
+        self, id: UUID, project_id: UUID, rate: int | None
+    ) -> None:
+        ctx = await self.session.get(ScanContext, id)
+        if ctx is None or ctx.project_id != project_id:
+            return
+        _validate_rate("global_rate_limit_override", rate)
+        ctx.global_rate_limit_override = rate
+        ctx.updated_at = utc_now()
+        await self.session.flush()
+
     async def touch(
         self, id: UUID, project_id: UUID, scan_id: UUID | None = None
     ) -> None:

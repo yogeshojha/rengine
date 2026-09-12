@@ -122,6 +122,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.retention",
         "app.tasks.hygiene",
         "app.tasks.software",
+        "app.tasks.watch",
     ]
 )
 
@@ -137,6 +138,7 @@ THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
 CERT_RECHECK_SECONDS = 4 * 60 * 60.0
 SOFTWARE_BACKFILL_SECONDS = 5 * 60.0
 HYGIENE_BACKFILL_SECONDS = 5 * 60.0
+WATCH_RECHECK_SECONDS = 10 * 60.0
 
 # the task itself decides whether the interval is due
 BOUNTY_SYNC_TICK_SECONDS = 60 * 60
@@ -195,6 +197,10 @@ celery_app.conf.beat_schedule = {
     "software-backfill": {
         "task": "app.tasks.software.backfill",
         "schedule": SOFTWARE_BACKFILL_SECONDS,
+    },
+    "watch-recheck": {
+        "task": "app.tasks.watch.recheck",
+        "schedule": WATCH_RECHECK_SECONDS,
     },
 }
 

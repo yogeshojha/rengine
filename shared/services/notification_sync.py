@@ -33,6 +33,8 @@ class SyncNotificationPublisher:
         message: str,
         metadata: NotificationMetadata | dict | None = None,
         project_id: uuid.UUID | str | None = None,
+        channel_ids=None,
+        attach: str | None = None,
     ) -> Notification:
         if isinstance(metadata, NotificationMetadata):
             metadata_dict = metadata.model_dump(exclude_none=True)
@@ -84,7 +86,15 @@ class SyncNotificationPublisher:
         try:
             from shared.services.notifier import dispatch_sync  # noqa: PLC0415
 
-            dispatch_sync(session, type, severity, title, message)
+            dispatch_sync(
+                session,
+                type,
+                severity,
+                title,
+                message,
+                channel_ids=channel_ids,
+                attach=attach,
+            )
         except Exception as exc:
             logger.warning("External notification dispatch failed: %s", exc)
 

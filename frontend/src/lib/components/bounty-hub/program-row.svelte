@@ -2,6 +2,7 @@
 	import BookmarkCheckIcon from '@lucide/svelte/icons/bookmark-check';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import RadarIcon from '@lucide/svelte/icons/radar';
 	import { Badge } from '$lib/components/ui/badge';
 	import Hint from '$lib/components/hint.svelte';
 	import { SUBMISSION_STATE_LABELS, formatPayout } from '$lib/config/bounty-programs';
@@ -90,6 +91,12 @@
 	</span>
 
 	<span class="flex shrink-0 items-center gap-1.5">
+		{#if program.watched}
+			<Badge variant="info" class="gap-1">
+				<RadarIcon class="size-3" />
+				Watching
+			</Badge>
+		{/if}
 		{#if program.imported_count > 0}
 			<Badge variant="success" class="gap-1">
 				<CheckIcon class="size-3" />

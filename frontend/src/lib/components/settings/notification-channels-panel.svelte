@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { notificationChannelsStore } from '$lib/stores/notificationChannels.svelte';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+	import { Capability } from '$lib/config/capabilities';
 	import { notificationChannelsApi } from '$lib/api/notificationChannels';
 	import {
 		NOTIF_CATEGORIES,
@@ -78,7 +80,12 @@
 		NOTIF_SEVERITIES.find((s) => s.value === formPref.min_severity)?.label ?? 'Everything'
 	);
 	let twoColumnFields = $derived(formMeta.fields.length > 2);
-	let allCategories = $derived(formPref.types.length === NOTIF_CATEGORIES.length);
+	const categories = $derived(
+		NOTIF_CATEGORIES.filter(
+			(c) => c.value !== 'watch' || capabilitiesStore.has(Capability.PROGRAM_WATCHES)
+		)
+	);
+	let allCategories = $derived(formPref.types.length === categories.length);
 
 	function applyDefaults(meta: ProviderMeta) {
 		const cfg: Record<string, unknown> = {};
@@ -99,7 +106,7 @@
 	function toggleAllCategories() {
 		formPref = {
 			...formPref,
-			types: allCategories ? [] : NOTIF_CATEGORIES.map((c) => c.value)
+			types: allCategories ? [] : categories.map((c) => c.value)
 		};
 		if (categoryError) categoryError = '';
 	}
@@ -647,9 +654,7 @@
 								Events
 							</h4>
 							<div class="flex items-center gap-2 text-xs text-muted-foreground">
-								<span class="tabular-nums"
-									>{formPref.types.length} of {NOTIF_CATEGORIES.length}</span
-								>
+								<span class="tabular-nums">{formPref.types.length} of {categories.length}</span>
 								<Button
 									variant="link"
 									size="sm"
@@ -667,7 +672,7 @@
 								? 'border-destructive'
 								: ''}"
 						>
-							{#each NOTIF_CATEGORIES as cat (cat.value)}
+							{#each categories as cat (cat.value)}
 								<Label
 									class="flex cursor-pointer items-center gap-3 px-3 py-2.5 font-normal transition-colors hover:bg-muted/40"
 								>

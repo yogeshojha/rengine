@@ -73,6 +73,7 @@ def build_scan_for_target_sync(
     created_by: uuid.UUID,
     schedule_id: uuid.UUID | None = None,
     schedule_type: str | None = None,
+    intensity: str | None = None,
 ) -> Scan:
     """Resolve engine/context/target on a sync Session and flush a PENDING Scan."""
     from shared.models.proxy import Proxy  # noqa: PLC0415
@@ -107,6 +108,7 @@ def build_scan_for_target_sync(
         target.target_value,
         target.target_type.value,
         proxy_url=proxy_url,
+        intensity=intensity,
     )
     scan = build_scan_row(
         resolved=resolved,

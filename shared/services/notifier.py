@@ -83,7 +83,12 @@ def _email_url(config: dict) -> str | None:
 
 
 def send_one(
-    provider: str, config: dict, title: str, body: str, severity: str
+    provider: str,
+    config: dict,
+    title: str,
+    body: str,
+    severity: str,
+    attach: str | None = None,
 ) -> tuple[bool, str]:
     try:
         url = build_apprise_url(provider, config)
@@ -95,6 +100,7 @@ def send_one(
                 title=title,
                 body=body,
                 notify_type=_NOTIFY_TYPE.get(severity, apprise.NotifyType.INFO),
+                attach=attach or None,
             )
             return (True, "Sent.") if ok else (False, "Delivery failed.")
         if provider in DIRECT_POST_PROVIDERS:
@@ -149,6 +155,7 @@ def _channels_to_targets(rows: list[NotificationChannel]) -> list[dict]:
                 "config": config,
                 "pref": row.events,
                 "name": row.name,
+                "id": row.id,
             }
         )
     return targets
@@ -160,13 +167,25 @@ def _fan_out(
     severity: NotificationSeverity,
     title: str,
     body: str,
+    *,
+    explicit: bool = False,
+    attach: str | None = None,
 ) -> None:
     for t in targets:
-        if not wants(t["pref"], ntype, severity):
+        if not explicit and not wants(t["pref"], ntype, severity):
             continue
-        ok, msg = send_one(t["provider"], t["config"], title, body, severity.value)
+        ok, msg = send_one(
+            t["provider"], t["config"], title, body, severity.value, attach=attach
+        )
         if not ok:
             logger.warning("dispatch to channel '%s' failed: %s", t["name"], msg)
+
+
+def _channel_query(channel_ids=None):
+    stmt = select(NotificationChannel).where(NotificationChannel.is_active.is_(True))
+    if channel_ids:
+        stmt = stmt.where(NotificationChannel.id.in_(list(channel_ids)))
+    return stmt
 
 
 def dispatch_sync(
@@ -175,17 +194,23 @@ def dispatch_sync(
     severity: NotificationSeverity,
     title: str,
     body: str,
+    *,
+    channel_ids=None,
+    attach: str | None = None,
 ) -> None:
-    rows = (
-        session.execute(
-            select(NotificationChannel).where(NotificationChannel.is_active.is_(True))
-        )
-        .scalars()
-        .all()
-    )
+    """Named channels receive it regardless of their event preferences."""
+    rows = session.execute(_channel_query(channel_ids)).scalars().all()
     targets = _channels_to_targets(list(rows))
     if targets:
-        _fan_out(targets, ntype, severity, title, body)
+        _fan_out(
+            targets,
+            ntype,
+            severity,
+            title,
+            body,
+            explicit=bool(channel_ids),
+            attach=attach,
+        )
 
 
 async def dispatch_async(
@@ -194,10 +219,20 @@ async def dispatch_async(
     severity: NotificationSeverity,
     title: str,
     body: str,
+    *,
+    channel_ids=None,
+    attach: str | None = None,
 ) -> None:
-    result = await session.execute(
-        select(NotificationChannel).where(NotificationChannel.is_active.is_(True))
-    )
+    result = await session.execute(_channel_query(channel_ids))
     targets = _channels_to_targets(list(result.scalars().all()))
     if targets:
-        await asyncio.to_thread(_fan_out, targets, ntype, severity, title, body)
+        await asyncio.to_thread(
+            _fan_out,
+            targets,
+            ntype,
+            severity,
+            title,
+            body,
+            explicit=bool(channel_ids),
+            attach=attach,
+        )

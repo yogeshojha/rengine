@@ -24,6 +24,7 @@ class NotificationManager:
         metadata: NotificationMetadata | dict | None = None,
         project_id: uuid.UUID | str | None = None,
         commit: bool = True,
+        channel_ids=None,
     ) -> Notification:
         if isinstance(metadata, NotificationMetadata):
             metadata_dict = metadata.model_dump(exclude_none=True)
@@ -73,7 +74,9 @@ class NotificationManager:
         try:
             from shared.services.notifier import dispatch_async  # noqa: PLC0415
 
-            await dispatch_async(session, type, severity, title, message)
+            await dispatch_async(
+                session, type, severity, title, message, channel_ids=channel_ids
+            )
         except Exception as exc:
             logger.warning(f"External notification dispatch failed: {exc}")
 

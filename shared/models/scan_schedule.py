@@ -26,6 +26,7 @@ class ScanSchedule(SQLModel, table=True):
     engine_name: str = Field(max_length=200)
     context_id: uuid.UUID | None = Field(default=None)
     context_name: str | None = Field(default=None, max_length=200)
+    intensity: str | None = Field(default=None, max_length=16)
 
     schedule_type: str = Field(index=True)
     run_at: datetime | None = Field(default=None)
@@ -57,6 +58,7 @@ class ScanScheduleCreate(BaseModel):
     target_ids: list[uuid.UUID] = Field(min_length=1, max_length=MAX_SCHEDULE_TARGETS)
     engine_id: uuid.UUID
     context_id: uuid.UUID | None = None
+    intensity: str | None = None
     schedule_type: str
     run_at: datetime | None = None
     interval_every: int | None = None
@@ -74,6 +76,7 @@ class ScanScheduleUpdate(BaseModel):
     )
     engine_id: uuid.UUID | None = None
     context_id: uuid.UUID | None = None
+    intensity: str | None = None
     schedule_type: str | None = None
     run_at: datetime | None = None
     interval_every: int | None = None
@@ -94,6 +97,7 @@ class ScanScheduleRead(BaseModel):
     engine_name: str
     context_id: uuid.UUID | None
     context_name: str | None
+    intensity: str | None = None
     schedule_type: str
     run_at: datetime | None
     interval_every: int | None

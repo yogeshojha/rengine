@@ -12,6 +12,7 @@ from shared.definitions.notifications import (
 )
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, CoverageStatus
+from shared.definitions.watch import WATCH_HOST_KEY
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import (
     ACTIVITY_TERMINAL_STATUSES,
@@ -29,6 +30,7 @@ from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
     dispatch_threat_intel,
+    dispatch_watch_settle,
 )
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator import (
@@ -319,6 +321,8 @@ def _settle(session: Session, scan: Scan) -> None:
     except Exception:
         session.rollback()
         logger.warning("proxy sync failed for scan %s", scan.id, exc_info=True)
+    if (scan.execution_config or {}).get(WATCH_HOST_KEY):
+        dispatch_watch_settle(str(scan.id))
 
 
 def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:

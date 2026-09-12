@@ -55,6 +55,7 @@ from shared.models.instance_settings import InstanceSettings
 from shared.models.organization import Organization, OrganizationSummary
 from shared.models.tag import Tag, TagSummary, TargetTag
 from shared.models.target import Target, TargetOrganization
+from shared.models.watch import ProgramWatch
 from shared.utils.datetime import utc_now
 from shared.utils.slug import add_with_unique_slug
 from shared.utils.validation import clean_name
@@ -79,6 +80,8 @@ def _without_counts(program) -> dict:
     for key in (
         *EMPTY_COUNTS,
         "imported_count",
+        "watched",
+        "watch_id",
         "scopes",
         "unreachable",
         "raw_state_label",
@@ -419,14 +422,30 @@ class BountyProgramService:
         ids = [p.id for p in programs]
         counts = await self.counts_for(ids)
         imported = await self.imported_for(ids, project_id)
+        watched = await self.watched_for(ids, project_id)
         return [
             BountyProgramRead(
                 **_without_counts(p),
                 **counts.get(p.id, EMPTY_COUNTS),
                 imported_count=imported.get(p.id, 0),
+                watched=p.id in watched,
+                watch_id=watched.get(p.id),
             )
             for p in programs
         ]
+
+    async def watched_for(
+        self, program_ids: list[UUID], project_id: UUID | None
+    ) -> dict[UUID, UUID]:
+        if not project_id or not program_ids:
+            return {}
+        rows = await self.session.execute(
+            select(ProgramWatch.program_id, ProgramWatch.id).where(
+                ProgramWatch.project_id == project_id,
+                ProgramWatch.program_id.in_(program_ids),
+            )
+        )
+        return dict(rows.all())
 
     async def get_program(self, platform: str, handle: str) -> BountyProgram:
         row = await self.session.execute(

@@ -237,6 +237,15 @@ from shared.models.vulnerability import (
     VulnerabilityRead,
     VulnerabilityTriage,
 )
+from shared.models.watch import (
+    ProgramWatch,
+    UserMark,
+    WatchCreate,
+    WatchEvent,
+    WatchHost,
+    WatchRead,
+    WatchUpdate,
+)
 from shared.models.wordlist import (
     Wordlist,
     WordlistFile,
@@ -349,6 +358,7 @@ __all__ = [
     "Port",
     "PortRead",
     "PortSummary",
+    "ProgramWatch",
     "Project",
     "ProjectBase",
     "ProjectCreate",
@@ -443,6 +453,7 @@ __all__ = [
     "User",
     "UserBase",
     "UserCreate",
+    "UserMark",
     "UserRead",
     "ViewDNSCache",
     "VulnTemplate",
@@ -456,6 +467,11 @@ __all__ = [
     "VulnerabilityPage",
     "VulnerabilityRead",
     "VulnerabilityTriage",
+    "WatchCreate",
+    "WatchEvent",
+    "WatchHost",
+    "WatchRead",
+    "WatchUpdate",
     "Wordlist",
     "WordlistFile",
     "WordlistRead",

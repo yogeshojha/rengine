@@ -62,6 +62,7 @@ def _fire_one(schedule_id: uuid.UUID) -> int:
                     created_by=sched.created_by,
                     schedule_id=sched.id,
                     schedule_type=sched.schedule_type,
+                    intensity=sched.intensity,
                 )
                 scan_ids.append(str(scan.id))
             except Exception as exc:

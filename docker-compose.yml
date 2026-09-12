@@ -173,6 +173,36 @@ services:
       redis:
         condition: service_healthy
 
+  # certificate transparency stream for watched programs
+  ct-stream:
+    init: true
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+      target: development
+    volumes:
+      - ./worker/app:/app/app
+      - ./shared:/app/shared
+      - ./tools:/app/tools
+      - ./stages:/app/stages
+      - ./reports:/app/reports
+      - ./interest:/app/interest
+      - ./toolbox:/app/toolbox
+      - ct_state:/app/ct-state
+      - /app/shared/build
+      - /app/shared/rengine_shared.egg-info
+      - /app/tools/build
+      - /app/tools/rengine_tools.egg-info
+    env_file:
+      - .env
+    command: uv run python -m app.ct_stream
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   flower:
     build:
       context: .
@@ -225,6 +255,7 @@ services:
       - api
 
 volumes:
+  ct_state:
   postgres_data:
   redis_data:
   celery_beat_data:

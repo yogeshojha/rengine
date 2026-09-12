@@ -160,6 +160,8 @@ class BountyProgramRead(BaseModel):
     out_of_scope_count: int = 0
     importable_count: int = 0
     imported_count: int = 0
+    watched: bool = False
+    watch_id: uuid.UUID | None = None
 
 
 class BountyProgramDetail(BountyProgramRead):

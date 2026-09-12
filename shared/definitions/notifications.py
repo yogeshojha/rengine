@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from shared.definitions.bounty_programs import BountyEvent, event_spec
 from shared.definitions.interest import InterestBand, kind_label
@@ -467,4 +468,53 @@ def bounty_changes(changes: list["BountyChange"], shown: int = 6) -> dict | None
         "title": title,
         "message": body,
         "metadata": {"kind": "bounty_programs"},
+    }
+
+
+@dataclass(frozen=True)
+class WatchAlert:
+    program: str
+    host: str
+    matched_item: str | None
+    status_code: int | None
+    title: str | None
+    tech: tuple[str, ...]
+    ips: tuple[str, ...]
+    issuer: str | None
+    not_before: datetime | None
+    scan_id: str | None
+    target_id: str | None = None
+    wildcard: bool = False
+    repeat: bool = False
+
+
+def watch_alert(alert: WatchAlert) -> dict:
+    """One message per new in-scope host, again only when the host changes."""
+    head = "Changed in-scope asset" if alert.repeat else "New in-scope asset"
+    lines = [alert.host]
+    if alert.status_code is not None:
+        answer = str(alert.status_code)
+        if alert.title:
+            answer += f" · {alert.title}"
+        lines.append(answer)
+    if alert.tech:
+        lines.append(", ".join(alert.tech[:6]))
+    if alert.ips:
+        addresses = ", ".join(alert.ips[:4])
+        lines.append(addresses + (" · wildcard DNS" if alert.wildcard else ""))
+    if alert.issuer or alert.not_before:
+        when = alert.not_before.strftime("%Y-%m-%d %H:%M") if alert.not_before else ""
+        lines.append(" · ".join(p for p in (alert.issuer or "", when) if p))
+    if alert.matched_item:
+        lines.append(f"Scope {alert.matched_item}")
+    return {
+        "type": NotificationType.WATCH,
+        "severity": NotificationSeverity.INFO,
+        "title": f"{head} · {alert.program}",
+        "message": "\n".join(lines),
+        "metadata": _scan_meta(alert.scan_id)
+        if alert.scan_id
+        else {"target_id": alert.target_id, "url": f"/targets/{alert.target_id}"}
+        if alert.target_id
+        else {},
     }

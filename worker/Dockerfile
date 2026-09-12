@@ -55,6 +55,9 @@ RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest \
 # vuln-templates volume and are synced at runtime, not baked into the image.
 RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
 
+# certificate transparency stream for program watches
+RUN go install -v software.sslmate.com/src/certspotter/cmd/certspotter@v0.24.2
+
 
 # WeasyPrint renders the PDF reports; pango does the text layout
 RUN apt-get update && apt-get install -y --no-install-recommends \

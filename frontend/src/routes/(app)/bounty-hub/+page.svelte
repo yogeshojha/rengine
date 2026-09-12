@@ -16,6 +16,11 @@
 	import UpdatesFeed from '$lib/components/bounty-hub/updates-feed.svelte';
 	import ProgramRow from '$lib/components/bounty-hub/program-row.svelte';
 	import ProgramSheet from '$lib/components/bounty-hub/program-sheet.svelte';
+	import WatchingTab from '$lib/components/bounty-hub/watching-tab.svelte';
+	import WatchSheet from '$lib/components/bounty-hub/watch-sheet.svelte';
+	import { watchesApi } from '$lib/api/watches';
+	import { watchesStore } from '$lib/stores/watches.svelte';
+	import type { StreamStatus, Watch, WatchHostFilter } from '$lib/types/watch';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import { PROGRAM_PAGE_SIZE, SYNC_INTERVAL_LABELS } from '$lib/config/bounty-programs';
 	import { BOUNTY_HUB_TABS, ROUTES, type BountyHubTab } from '$lib/config/routes';
@@ -38,6 +43,13 @@
 	let sheetOpen = $state(false);
 	let filters = $state<BountyProgramFilters>({ sort: 'age' });
 	let tab = $state<BountyHubTab>('programs');
+	let tabChosen = $state(false);
+	let watchOpen = $state(false);
+	let selectedWatch = $state<Watch | null>(null);
+	let watchFilter = $state<WatchHostFilter>('all');
+	let watchTab = $state<'hosts' | 'activity'>('hosts');
+	let deepLinkedWatch = $state<string | null>(null);
+	let stream = $state<StreamStatus | null>(null);
 
 	const projectId = $derived(projectsStore.activeProject?.id);
 	const filterKey = $derived(JSON.stringify(filters));
@@ -83,8 +95,71 @@
 		const requested = page.url.searchParams.get('tab');
 		if (requested && (BOUNTY_HUB_TABS as readonly string[]).includes(requested)) {
 			tab = requested as BountyHubTab;
+			tabChosen = true;
 		}
 	});
+
+	$effect(() => {
+		if (!projectId) return;
+		if (watchesStore.fetchedProjectId !== projectId) {
+			void watchesStore.fetch(projectId).then(() => {
+				if (!tabChosen && watchesStore.watches.length > 0) tab = 'watching';
+			});
+		}
+		void watchesApi
+			.stream()
+			.then((s) => (stream = s))
+			.catch(() => (stream = null));
+	});
+
+	$effect(() => {
+		const id = page.url.searchParams.get('watch');
+		if (!id) {
+			deepLinkedWatch = null;
+			return;
+		}
+		if (watchOpen || deepLinkedWatch === id) return;
+		const match = watchesStore.watches.find((w) => w.id === id);
+		if (match || (projectId && !watchesStore.isLoading)) deepLinkedWatch = id;
+		if (match) {
+			openWatch(match);
+			return;
+		}
+		if (!projectId || watchesStore.isLoading) return;
+		void watchesApi
+			.get(id, projectId)
+			.then((w) => openWatch(w))
+			.catch(() => toast.error('Watch not found'));
+	});
+
+	function openWatch(
+		watch: Watch,
+		filter: WatchHostFilter = 'all',
+		sheetTab: 'hosts' | 'activity' = 'hosts'
+	) {
+		selectedWatch = watch;
+		watchFilter = filter;
+		watchTab = sheetTab;
+		watchOpen = true;
+		tab = 'watching';
+	}
+
+	function onWatchOpen(value: boolean) {
+		watchOpen = value;
+		if (!value && page.url.searchParams.has('watch')) {
+			void goto(ROUTES.bountyHubTab('watching'), {
+				replaceState: true,
+				noScroll: true,
+				keepFocus: true
+			});
+		}
+	}
+
+	function onWatched(watch: Watch) {
+		watchesStore.upsert(watch);
+		sheetOpen = false;
+		void goto(ROUTES.bountyWatch(watch.id), { noScroll: true, keepFocus: true });
+	}
 
 	let deepLinked = $state<string | null>(null);
 
@@ -199,18 +274,37 @@
 		</Card.Root>
 	{/if}
 
-	{#if status}
+	{#if status || watchesStore.watches.length > 0}
 		<CountTabs
 			tabs={[
+				{ key: 'watching', label: 'Watching' },
 				{ key: 'programs', label: 'Programs' },
 				{ key: 'updates', label: 'Updates' }
 			]}
-			counts={{ programs: total, updates: status?.unseen_events ?? 0 }}
+			counts={{
+				watching: watchesStore.watches.length,
+				programs: total,
+				updates: status?.unseen_events ?? 0
+			}}
 			value={tab}
-			onChange={(k) => (tab = k as BountyHubTab)}
+			onChange={(k) => {
+				tab = k as BountyHubTab;
+				tabChosen = true;
+			}}
 		/>
 
-		{#if tab === 'updates'}
+		{#if tab === 'watching'}
+			<WatchingTab
+				watches={watchesStore.watches}
+				loading={watchesStore.isLoading}
+				{stream}
+				onOpen={openWatch}
+				onBrowsePrograms={() => {
+					tab = 'programs';
+					tabChosen = true;
+				}}
+			/>
+		{:else if tab === 'updates'}
 			<UpdatesFeed onOpenProgram={openProgram} />
 		{:else}
 			<FilterBar {filters} platforms={status?.platforms ?? []} onChange={onFilters} />
@@ -262,4 +356,24 @@
 	open={sheetOpen}
 	onOpenChange={onSheetOpen}
 	onImported={() => loadPrograms(filters, pageIndex, pageSize, projectId)}
+	onWatch={onWatched}
+	onOpenWatch={(id) => {
+		sheetOpen = false;
+		void goto(ROUTES.bountyWatch(id), { noScroll: true, keepFocus: true });
+	}}
 />
+
+{#if projectId}
+	<WatchSheet
+		watch={selectedWatch}
+		{projectId}
+		open={watchOpen}
+		initialFilter={watchFilter}
+		initialTab={watchTab}
+		onOpenChange={onWatchOpen}
+		onChanged={(w) => {
+			if (w) selectedWatch = w;
+			void loadPrograms(filters, pageIndex, pageSize, projectId);
+		}}
+	/>
+{/if}

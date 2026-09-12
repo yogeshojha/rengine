@@ -116,6 +116,8 @@ export interface BountyProgram {
 	out_of_scope_count: number;
 	importable_count: number;
 	imported_count: number;
+	watched: boolean;
+	watch_id: string | null;
 }
 
 export interface BountyProgramDetail extends BountyProgram {

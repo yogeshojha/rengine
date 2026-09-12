@@ -20,6 +20,7 @@ DEFAULT_PREFERENCE_TYPES = [
     NotificationType.TARGET.value,
     NotificationType.SECURITY.value,
     NotificationType.SYSTEM.value,
+    NotificationType.WATCH.value,
 ]
 
 

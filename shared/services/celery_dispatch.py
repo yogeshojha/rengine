@@ -247,3 +247,39 @@ def dispatch_toolbox_run(
         logger.warning("toolbox dispatch failed", exc_info=True)
         return False
     return True
+
+
+def dispatch_watch_certificate(cert: dict) -> bool:
+    """One discovered certificate from the stream."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.watch.certificate", kwargs={"cert": cert}, queue="default"
+        )
+        return True
+    except Exception:
+        logger.warning("watch certificate dispatch failed", exc_info=True)
+        return False
+
+
+def dispatch_watch_settle(scan_id: str) -> bool:
+    try:
+        get_celery_client().send_task(
+            "app.tasks.watch.settle", kwargs={"scan_id": scan_id}, queue="default"
+        )
+        return True
+    except Exception:
+        logger.warning("watch settle dispatch failed", exc_info=True)
+        return False
+
+
+def dispatch_watch_reconcile(program_id: str | None = None) -> bool:
+    try:
+        get_celery_client().send_task(
+            "app.tasks.watch.reconcile",
+            kwargs={"program_id": program_id},
+            queue="default",
+        )
+        return True
+    except Exception:
+        logger.warning("watch reconcile dispatch failed", exc_info=True)
+        return False

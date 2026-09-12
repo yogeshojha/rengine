@@ -21,9 +21,16 @@
 	} from '$lib/types/notification-channel';
 	import { ONBOARDING_NOTIFICATION_PROVIDERS as PROVIDERS } from '$lib/config/notification-providers';
 	import type { StepProps } from '$lib/types/onboarding';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+	import { Capability } from '$lib/config/capabilities';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	let { next, setFooter }: StepProps = $props();
+	const categories = $derived(
+		NOTIF_CATEGORIES.filter(
+			(c) => c.value !== 'watch' || capabilitiesStore.has(Capability.PROGRAM_WATCHES)
+		)
+	);
 
 	interface ChannelDraft {
 		enabled: boolean;
@@ -215,7 +222,7 @@
 				<div class="space-y-2">
 					<Label class="text-xs">Event categories</Label>
 					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-						{#each NOTIF_CATEGORIES as cat (cat.value)}
+						{#each categories as cat (cat.value)}
 							<Label
 								class="flex cursor-pointer items-start gap-2 rounded-md border border-input px-2.5 py-2 text-xs data-[active=true]:border-primary data-[active=true]:bg-muted"
 								data-active={pref.types.includes(cat.value)}

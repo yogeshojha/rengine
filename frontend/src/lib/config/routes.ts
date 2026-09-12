@@ -49,7 +49,7 @@ export const SETTINGS_SECTIONS = [
 ] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
-export const BOUNTY_HUB_TABS = ['programs', 'updates'] as const;
+export const BOUNTY_HUB_TABS = ['watching', 'programs', 'updates'] as const;
 export type BountyHubTab = (typeof BOUNTY_HUB_TABS)[number];
 
 export const ARSENAL_TABS = ['nuclei', 'wordlists', 'threat-intel'] as const;
@@ -110,6 +110,7 @@ export const ROUTES = {
 	bountyHub: (handle?: string, platform?: string) =>
 		handle ? `/bounty-hub?program=${handle}&platform=${platform ?? 'hackerone'}` : '/bounty-hub',
 	bountyHubTab: (tab: BountyHubTab) => `/bounty-hub?tab=${tab}`,
+	bountyWatch: (id: string) => `/bounty-hub?tab=watching&watch=${id}`,
 	exposures: (tab?: ExposureTab, query?: Record<string, string>) => {
 		const params = new URLSearchParams(query ?? {});
 		if (tab) params.set('tab', tab);

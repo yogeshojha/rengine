@@ -17,7 +17,8 @@ export const NOTIF_CATEGORIES = [
 	{ value: 'security', label: 'Security alerts', hint: 'Logins, account changes' },
 	{ value: 'system', label: 'System', hint: 'Updates and platform health' },
 	{ value: 'integration', label: 'Integrations', hint: 'API key and webhook failures' },
-	{ value: 'resource', label: 'Resources', hint: 'Storage and quota limits' }
+	{ value: 'resource', label: 'Resources', hint: 'Storage and quota limits' },
+	{ value: 'watch', label: 'Program watches', hint: 'New in-scope assets on a watched program' }
 ] as const;
 
 export const NOTIF_SEVERITIES = [
@@ -62,7 +63,7 @@ export interface NotificationChannelUpdate {
 
 export function defaultNotificationPreference(): NotificationPreference {
 	return {
-		types: ['scan', 'vulnerability', 'target', 'security', 'system'],
+		types: ['scan', 'vulnerability', 'target', 'security', 'system', 'watch'],
 		min_severity: 'info'
 	};
 }

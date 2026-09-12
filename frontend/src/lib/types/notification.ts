@@ -7,7 +7,8 @@ export const NOTIFICATION_TYPES = [
 	'vulnerability',
 	'target',
 	'resource',
-	'integration'
+	'integration',
+	'watch'
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -19,7 +20,8 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
 	vulnerability: 'Vulnerability',
 	target: 'Target',
 	resource: 'Resource',
-	integration: 'Integration'
+	integration: 'Integration',
+	watch: 'Watch'
 };
 
 export type NotificationSeverity = MessageLevel;

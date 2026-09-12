@@ -34,6 +34,7 @@ from shared.services.bounty_programs import (
     sync_programs,
     sync_scopes,
 )
+from shared.services.celery_dispatch import dispatch_watch_reconcile
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.utils.datetime import utc_now
 
@@ -143,6 +144,7 @@ def sync(scopes: bool = True, force: bool = True) -> dict:
                     break
         mark_synced(session)
         alerted = _notify(session, started)
+        dispatch_watch_reconcile()
         return {
             **result,
             "assets": assets,
@@ -197,4 +199,5 @@ def sync_feed(force: bool = True) -> dict:
         result = sync_feeds(session)
         if result["platforms"]:
             mark_feed_synced(session)
+            dispatch_watch_reconcile()
         return {**result, "alerted": _notify(session, started)}

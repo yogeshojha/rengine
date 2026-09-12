@@ -8,6 +8,7 @@
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { Switch } from '$lib/components/ui/switch';
 	import SectionHead from '$lib/components/section-head.svelte';
+	import CertificateStreamCard from './certificate-stream-card.svelte';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import {
 		EVENT_TONE,
@@ -81,6 +82,7 @@
 	</div>
 {:else if settings}
 	<div class="flex flex-col gap-6">
+		<CertificateStreamCard />
 		{#if status && !status.configured}
 			<Card.Root class="border-dashed">
 				<div class="flex flex-wrap items-center justify-between gap-3 p-4">
