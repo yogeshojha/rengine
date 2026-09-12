@@ -121,7 +121,15 @@
 						{ title: routeLabels.contexts, url: ROUTES.contexts },
 						{ title: routeLabels.schedules, url: ROUTES.schedules }
 					]
-				},
+				}
+			]
+		}
+	]);
+
+	const settingsGroup = $derived<NavGroup[]>([
+		{
+			label: null,
+			items: [
 				{
 					title: routeLabels.settings,
 					url: ROUTES.settings(),
@@ -142,7 +150,8 @@
 			<NavMain groups={navGroups} />
 		</ScrollArea>
 	</Sidebar.Content>
-	<Sidebar.Footer>
+	<Sidebar.Footer class="border-t border-sidebar-border">
+		<NavMain groups={settingsGroup} class="p-0" />
 		<NavUser user={userData} />
 	</Sidebar.Footer>
 	<Sidebar.Rail />

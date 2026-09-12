@@ -33,7 +33,7 @@
 	import { page } from '$app/state';
 	import { SvelteSet } from 'svelte/reactivity';
 
-	let { groups }: { groups: NavGroup[] } = $props();
+	let { groups, class: className }: { groups: NavGroup[]; class?: string } = $props();
 
 	const sidebar = useSidebar();
 
@@ -97,7 +97,7 @@
 {/snippet}
 
 {#each groups as group, groupIndex (group.label ?? groupIndex)}
-	<Sidebar.Group class={groupIndex > 0 ? 'pt-0' : undefined}>
+	<Sidebar.Group class={cn(groupIndex > 0 && 'pt-0', className)}>
 		{#if group.label}
 			<Sidebar.GroupLabel
 				class="h-7 px-2 text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/60 uppercase"
