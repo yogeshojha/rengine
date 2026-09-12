@@ -1,5 +1,6 @@
 import ipaddress
 import re
+from urllib.parse import urlsplit, urlunsplit
 
 import validators
 
@@ -45,9 +46,13 @@ def validate_ip_range(value: str) -> bool:
         return False
 
 
+MAX_ASN = 4294967295
+_ASN_SHAPE = re.compile(r"^AS(\d+)$")
+
+
 def validate_asn(value: str) -> bool:
-    asn_pattern = r"^AS\d+$"
-    return bool(re.match(asn_pattern, value.upper()))
+    match = _ASN_SHAPE.match(value.upper())
+    return bool(match) and 0 < int(match.group(1)) <= MAX_ASN
 
 
 WEB_SCHEMES = ("http://", "https://")
@@ -58,13 +63,28 @@ def validate_url(value: str) -> bool:
     return value.lower().startswith(WEB_SCHEMES) and validators.url(value) is True
 
 
+def _lower_host(netloc: str) -> str:
+    """Case-fold the host, leaving any userinfo as written."""
+    userinfo, sep, host = netloc.rpartition("@")
+    return f"{userinfo}{sep}{host.lower()}"
+
+
+def _normalize_url(value: str) -> str:
+    parts = urlsplit(value)
+    return urlunsplit(
+        parts._replace(scheme=parts.scheme.lower(), netloc=_lower_host(parts.netloc))
+    )
+
+
 def normalize_target_value(value: str) -> str:
-    """Normalized target value."""
+    """Normalized target value. Host names are case-folded so one host is one target."""
     v = (value or "").strip()
-    if not v or _SCHEME.match(v):
+    if not v:
         return v
+    if _SCHEME.match(v):
+        return _normalize_url(v)
     v = v.removeprefix("*.")
-    return v.rstrip("/").rstrip(".")
+    return v.rstrip("/").rstrip(".").lower()
 
 
 TARGET_FORMAT_HINT = "Enter a domain, IP address, CIDR range, URL or ASN."
@@ -72,9 +92,47 @@ _MAX_ECHO = 120
 
 
 def unrecognised_target(value: str) -> str:
-    """Wording for an unrecognised target value."""
+    """Wording for a target value the scanner will not take."""
     shown = (value or "").strip()[:_MAX_ECHO]
-    return f"Unrecognised target: {shown}. {TARGET_FORMAT_HINT}"
+    return _refusal(normalize_target_value(shown), shown) or (
+        f"Unrecognised target: {shown}. {TARGET_FORMAT_HINT}"
+    )
+
+
+def _refusal(value: str, shown: str) -> str | None:
+    """The reason, when the value has the right shape but is out of bounds."""
+    if _ASN_SHAPE.match(value.upper()):
+        return f"{shown} is out of range. An AS number runs from 1 to {MAX_ASN}."
+    try:
+        block = ipaddress.ip_network(value, strict=False)
+    except ValueError:
+        return None
+    if block.prefixlen == 0:
+        return f"{shown} covers every address. Enter the range you own."
+    return (
+        f"{shown} is out of scope. Loopback, link-local, multicast and reserved "
+        "address space are not scanned."
+    )
+
+
+def _routable(address) -> bool:
+    return not (
+        address.is_unspecified
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_multicast
+        or address.is_reserved
+    )
+
+
+def _scannable(value: str, target_type: TargetType) -> bool:
+    """Address space a scan may be aimed at. Private ranges stay in for corporate estates."""
+    if target_type is TargetType.IP_RANGE:
+        block = ipaddress.ip_network(value, strict=False)
+        return block.prefixlen > 0 and _routable(block.network_address)
+    if target_type is TargetType.IP:
+        return _routable(ipaddress.ip_address(value))
+    return True
 
 
 def validate_target(target_value: str) -> TargetType | None:
@@ -91,7 +149,7 @@ def validate_target(target_value: str) -> TargetType | None:
 
     for target_type, validator_func in _validators:
         if validator_func(value):
-            return target_type
+            return target_type if _scannable(value, target_type) else None
 
     return None
 
