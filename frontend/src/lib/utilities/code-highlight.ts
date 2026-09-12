@@ -1,7 +1,17 @@
 import { parser as yamlParser } from '@lezer/yaml';
 import { highlightCode, tagHighlighter, tags as t, type Tag } from '@lezer/highlight';
 
-export type CodeLang = 'yaml' | 'json' | 'http' | 'shell' | 'html' | 'xml' | 'css' | 'js' | 'text';
+export type CodeLang =
+	| 'yaml'
+	| 'json'
+	| 'http'
+	| 'shell'
+	| 'html'
+	| 'xml'
+	| 'css'
+	| 'js'
+	| 'diff'
+	| 'text';
 
 export type TokenKind =
 	| 'text'
@@ -43,6 +53,7 @@ export const LANG_LABELS: Record<CodeLang, string> = {
 	xml: 'XML',
 	css: 'CSS',
 	js: 'JavaScript',
+	diff: 'Diff',
 	text: 'Text'
 };
 
@@ -132,6 +143,45 @@ function* scan(code: string, pattern: RegExp): Generator<[string, number]> {
 		yield [match[0], cursor];
 		cursor = pattern.lastIndex;
 	}
+}
+
+/** Mirrors shared/definitions/compare.py:DIFF_FIELD_INDENT. */
+const FIELD_INDENT = '    ';
+
+const DIFF_KINDS: Record<string, TokenKind> = {
+	'+': 'atom',
+	'~': 'meta',
+	'-': 'comment',
+	'?': 'warn',
+	'@': 'keyword',
+	'#': 'comment'
+};
+
+function diffLine(line: string): CodeLine {
+	if (!line) return [];
+	if (line.startsWith('---') || line.startsWith('+++')) {
+		return [{ text: line, kind: 'comment' }];
+	}
+	if (line.startsWith(FIELD_INDENT)) {
+		const body = line.slice(FIELD_INDENT.length);
+		const split = body.search(/\s{2,}/);
+		if (split === -1) return [{ text: line, kind: 'text' }];
+		return [
+			{ text: FIELD_INDENT + body.slice(0, split), kind: 'key' },
+			{ text: body.slice(split), kind: 'text' }
+		];
+	}
+	const kind = DIFF_KINDS[line[0]];
+	if (!kind) return [{ text: line, kind: 'text' }];
+	if (line[0] === '@' || line[0] === '#') return [{ text: line, kind }];
+	return [
+		{ text: line.slice(0, 1), kind },
+		{ text: line.slice(1), kind: 'text' }
+	];
+}
+
+function highlightDiff(code: string): CodeLine[] {
+	return code.split('\n').map(diffLine);
 }
 
 function plainLines(code: string): CodeLine[] {
@@ -611,6 +661,8 @@ export function highlight(code: string, lang: CodeLang = 'text'): CodeLine[] {
 				return highlightHttp(code);
 			case 'shell':
 				return highlightShell(code);
+			case 'diff':
+				return highlightDiff(code);
 			case 'text':
 				return plainLines(code);
 			default: {

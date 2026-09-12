@@ -16,6 +16,7 @@
 	import FileText from '@lucide/svelte/icons/file-text';
 	import CodeXml from '@lucide/svelte/icons/code-xml';
 	import Code from '@lucide/svelte/icons/code';
+	import GitCompareArrows from '@lucide/svelte/icons/git-compare-arrows';
 	import Palette from '@lucide/svelte/icons/palette';
 	import Search from '@lucide/svelte/icons/search';
 	import X from '@lucide/svelte/icons/x';
@@ -74,11 +75,13 @@
 		xml: CodeXml,
 		css: Palette,
 		js: Code,
+		diff: GitCompareArrows,
 		text: FileText
 	};
 	const WRAPS: Record<CodeLang, boolean> = {
 		yaml: false,
 		json: false,
+		diff: false,
 		http: true,
 		shell: true,
 		html: true,

@@ -22,9 +22,11 @@ from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.project import Project
 from shared.models.scan import Scan
+from shared.models.scan_activity import ScanActivity
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.user import User
+from shared.models.vulnerability import Vulnerability
 from shared.utils.datetime import utc_now
 
 TEST_DB = os.environ.get("POSTGRES_TEST_DB", "rengine_test")
@@ -152,7 +154,15 @@ class Estate:
         return tid
 
     async def scan(
-        self, target: str, name: str, *, at: datetime, status: str = "completed"
+        self,
+        target: str,
+        name: str,
+        *,
+        at: datetime,
+        status: str = "completed",
+        config: dict | None = None,
+        scope: str = "full",
+        engine: str | None = None,
     ) -> uuid.UUID:
         tid = await self.target(target)
         sid = uuid.uuid4()
@@ -161,8 +171,9 @@ class Estate:
                 id=sid,
                 project_id=self.project_id,
                 target_id=tid,
-                engine_name=name,
-                execution_config={},
+                engine_name=engine or name,
+                execution_config=config or {},
+                scope=scope,
                 status=status,
                 created_by=self.user_id,
                 created_at=at,
@@ -287,6 +298,53 @@ class Estate:
                     param_count=params,
                     is_probed=status is not None,
                     status_code=status,
+                    discovered_at=at,
+                )
+            )
+        await self.session.flush()
+
+    async def activity(
+        self, scan: str, rows: dict[str, str], *, at: datetime | None = None
+    ) -> None:
+        sid = self.scans[scan]
+        for name, state in rows.items():
+            self.session.add(
+                ScanActivity(
+                    scan_id=sid,
+                    project_id=self.project_id,
+                    name=name,
+                    title=name.replace("_", " ").title(),
+                    status=state,
+                    started_at=at,
+                    completed_at=at,
+                )
+            )
+        await self.session.flush()
+
+    async def vulns(
+        self,
+        scan: str,
+        rows: list[tuple[str, str]],
+        *,
+        at: datetime,
+        host: str = "www.example.com",
+        kev: bool = False,
+    ) -> None:
+        sid = self.scans[scan]
+        target_id = await self._target_of(sid)
+        for fingerprint, severity in rows:
+            self.session.add(
+                Vulnerability(
+                    project_id=self.project_id,
+                    scan_id=sid,
+                    target_id=target_id,
+                    fingerprint=fingerprint,
+                    template_id=fingerprint,
+                    template_name=fingerprint.replace("-", " ").title(),
+                    severity=severity,
+                    matched_at=f"https://{host}/",
+                    host=host,
+                    is_kev=kev,
                     discovered_at=at,
                 )
             )

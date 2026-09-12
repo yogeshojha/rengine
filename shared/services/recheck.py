@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
 
+from shared.definitions.compare import WATCHED_FIELDS, FieldKind, WatchedField
 from shared.definitions.rescan import SeedKind
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import ScanActivityStatus, ScanScope
@@ -28,13 +30,10 @@ logger = get_logger(__name__)
 
 _RAN = (ScanActivityStatus.SUCCESS.value, ScanActivityStatus.PARTIAL.value)
 
-_HOST_FIELDS: tuple[tuple[str, str], ...] = (
-    ("http_status", "Status"),
-    ("page_title", "Title"),
-    ("webserver", "Server"),
-    ("waf", "WAF"),
-    ("cdn_name", "CDN"),
-    ("tls_expired", "Certificate expired"),
+_HOST_FIELDS: tuple[WatchedField, ...] = tuple(
+    f
+    for f in WATCHED_FIELDS[SurfaceDimension.WEB_ASSETS.value]
+    if f.kind not in (FieldKind.LIST.value, FieldKind.OPAQUE.value)
 )
 
 
@@ -43,6 +42,8 @@ def _text(value) -> str | None:
         return None
     if isinstance(value, bool):
         return "yes" if value else "no"
+    if isinstance(value, datetime):
+        return value.strftime("%d %b %Y %H:%M")
     return str(value)
 
 
@@ -156,12 +157,16 @@ def _host_changes(pair: dict, ran: set[str]) -> list[dict]:
         return []
     changes: list[dict] = []
     if "http_probe" in ran:
-        for field, label in _HOST_FIELDS:
-            new = getattr(now, field, None)
-            old = getattr(before, field, None) if before is not None else None
+        for field in _HOST_FIELDS:
+            new = getattr(now, field.name, None)
+            old = getattr(before, field.name, None) if before is not None else None
             if _text(new) != _text(old):
-                tone = "down" if new is None and old is not None else "neutral"
-                changes.append(_change(field, label, old, new, tone))
+                lost = new in (None, "", False) and old not in (None, "", False)
+                changes.append(
+                    _change(
+                        field.name, field.label, old, new, "down" if lost else "neutral"
+                    )
+                )
         tech = _set_change(
             "tech",
             "Technology",

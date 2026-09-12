@@ -1,23 +1,36 @@
 <script lang="ts">
+	import GitCompareArrows from '@lucide/svelte/icons/git-compare-arrows';
 	import Play from '@lucide/svelte/icons/play';
 	import Ban from '@lucide/svelte/icons/ban';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
+	import Hint from '$lib/components/hint.svelte';
 
 	interface Props {
 		selectedCount: number;
 		liveCount: number;
 		targetCount: number;
+		compareHref?: string | null;
+		compareReason?: string;
 		onRescan: () => void;
 		onCancel: () => void;
 		onDelete: () => void;
 		onClear: () => void;
 	}
 
-	let { selectedCount, liveCount, targetCount, onRescan, onCancel, onDelete, onClear }: Props =
-		$props();
+	let {
+		selectedCount,
+		liveCount,
+		targetCount,
+		compareHref = null,
+		compareReason = '',
+		onRescan,
+		onCancel,
+		onDelete,
+		onClear
+	}: Props = $props();
 </script>
 
 <div
@@ -37,6 +50,30 @@
 		</div>
 
 		<Separator orientation="vertical" class="h-4 self-center mx-0.5" />
+
+		{#if compareHref}
+			<Button variant="ghost" size="sm" class="gap-2 font-medium" href={compareHref}>
+				<GitCompareArrows class="h-3.5 w-3.5 text-muted-foreground" />
+				Compare runs
+			</Button>
+		{:else if compareReason}
+			<Hint text={compareReason}>
+				{#snippet child(props)}
+					<span {...props} class="inline-flex">
+						<Button
+							variant="ghost"
+							size="sm"
+							class="gap-2 font-medium"
+							disabled
+							aria-label="Compare runs. {compareReason}"
+						>
+							<GitCompareArrows class="h-3.5 w-3.5" />
+							Compare runs
+						</Button>
+					</span>
+				{/snippet}
+			</Hint>
+		{/if}
 
 		{#if targetCount > 0}
 			<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={onRescan}>

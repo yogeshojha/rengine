@@ -15,6 +15,7 @@
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
+	import GitCompareArrows from '@lucide/svelte/icons/git-compare-arrows';
 
 	import { scansApi } from '$lib/api/scans';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -33,6 +34,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
@@ -71,6 +73,7 @@
 	import { SCAN_COUNT_COLUMNS } from '$lib/types/scan';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
 	import { ROUTES } from '$lib/config/routes';
+	import { REFUSAL } from '$lib/config/compare';
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { NOW_TICK_MS } from '$lib/constants';
 
@@ -253,6 +256,27 @@
 					new Date(s.started_at ?? s.created_at).getTime() < at
 			) ?? null
 		);
+	});
+	let comparable = $derived.by<ScanRead | null>(() => {
+		if (!scan || live) return null;
+		const at = new Date(scan.started_at ?? scan.created_at).getTime();
+		return (
+			history.find(
+				(s) =>
+					s.id !== scan!.id &&
+					s.scope === scan!.scope &&
+					!isLiveStatus(s.status) &&
+					new Date(s.started_at ?? s.created_at).getTime() < at
+			) ?? null
+		);
+	});
+	let compareReason = $derived.by<string>(() => {
+		if (!scan || comparable) return '';
+		if (live) return REFUSAL.UNFINISHED;
+		if (!historyLoaded) return '';
+		return focused
+			? REFUSAL.FOCUSED_AGAINST_FULL
+			: `First run of ${scan.execution_config.target_value}. ${REFUSAL.NO_EARLIER_RUN}`;
 	});
 	let previousDuration = $derived.by<number | null>(() => {
 		if (!scan) return null;
@@ -513,6 +537,34 @@
 						Cancel
 					</Button>
 				{:else}
+					{#if comparable}
+						<Button
+							variant="outline"
+							size="sm"
+							class="gap-1.5"
+							href={ROUTES.compare(scan.id, comparable.id)}
+						>
+							<GitCompareArrows class="size-3.5" />
+							Compare
+						</Button>
+					{:else if compareReason}
+						<Hint text={compareReason}>
+							{#snippet child(props)}
+								<span {...props} class="inline-flex">
+									<Button
+										variant="outline"
+										size="sm"
+										class="gap-1.5"
+										disabled
+										aria-label="Compare. {compareReason}"
+									>
+										<GitCompareArrows class="size-3.5" />
+										Compare
+									</Button>
+								</span>
+							{/snippet}
+						</Hint>
+					{/if}
 					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (reportOpen = true)}>
 						<FileText class="size-3.5" />
 						Report

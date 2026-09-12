@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from functools import lru_cache
 from uuid import UUID
 
 from sqlalchemy import distinct, exists, func, not_, select
@@ -42,6 +43,7 @@ TABLES = {
 }
 
 
+@lru_cache(maxsize=1)
 def covering_stages() -> dict[str, frozenset[str]]:
     """Dimension -> the stage names whose success means the dimension was scanned."""
     out: dict[str, set[str]] = {key: set() for key in SURFACE_ORDER}

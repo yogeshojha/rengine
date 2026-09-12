@@ -44,6 +44,8 @@
 	import ScanListItem from './scan-list-item.svelte';
 	import ScanTargetGroupRow from './scan-target-group.svelte';
 	import ScanBulkActionBar from './scan-bulk-action-bar.svelte';
+	import { ROUTES } from '$lib/config/routes';
+	import { eligibility } from '$lib/utilities/compare';
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 
 	interface Props {
@@ -100,6 +102,12 @@
 	let selectedScans = $derived(scans.filter((s) => selectedScanIds.has(s.id)));
 	let selectedLiveCount = $derived(selectedScans.filter((s) => isLiveStatus(s.status)).length);
 	let selectedTargetIds = $derived([...new Set(selectedScans.map((s) => s.target_id))]);
+	let comparePair = $derived(eligibility(selectedScans));
+	let compareHref = $derived(
+		comparePair.ok && comparePair.current && comparePair.baseline
+			? ROUTES.compare(comparePair.current.id, comparePair.baseline.id)
+			: null
+	);
 	let selectAllChecked = $derived<boolean | 'indeterminate'>(
 		scans.length > 0 && selectedScans.length === scans.length
 			? true
@@ -536,6 +544,8 @@
 		selectedCount={selectedScans.length}
 		liveCount={selectedLiveCount}
 		targetCount={selectedTargetIds.length}
+		{compareHref}
+		compareReason={comparePair.reason}
 		onRescan={() => {
 			onRescanMany?.(selectedTargetIds);
 			clearSelection();

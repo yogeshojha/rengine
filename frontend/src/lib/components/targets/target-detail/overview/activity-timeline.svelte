@@ -8,6 +8,7 @@
 	import { TaskStatus } from '$lib/types/task-status';
 	import type { ScanRead } from '$lib/types/scan';
 	import type { TargetSummaryRead } from '$lib/types/target-summary';
+	import GitCompareArrows from '@lucide/svelte/icons/git-compare-arrows';
 	import type { LiveRun } from '$lib/stores/live-scans.svelte';
 	import {
 		durationText,
@@ -59,7 +60,11 @@
 			if (s.scope !== 'focused' || !s.parent_scan_id || !shown.has(s.parent_scan_id)) continue;
 			(children[s.parent_scan_id] ??= []).push(s);
 		}
-		return census.map((scan) => ({ scan, rescans: (children[scan.id] ?? []).slice(0, 4) }));
+		return census.map((scan, i) => ({
+			scan,
+			previous: census.slice(i + 1).find((s) => !isLiveStatus(s.status)) ?? null,
+			rescans: (children[scan.id] ?? []).slice(0, 4)
+		}));
 	});
 	let total = $derived(summary?.scans_total ?? history.length);
 
@@ -146,7 +151,7 @@
 		</div>
 	{:else}
 		<ol class="flex flex-col">
-			{#each runs as { scan: s, rescans } (s.id)}
+			{#each runs as { scan: s, previous, rescans } (s.id)}
 				{@const started = s.started_at ?? s.created_at}
 				{@const counts = countsFor(s)}
 				<li class="grid grid-cols-[5.5rem_1.25rem_minmax(0,1fr)] gap-x-2.5">
@@ -177,6 +182,15 @@
 								{SCAN_STATUS_LABEL[s.status]}
 							</span>
 							<span class="text-muted-foreground">{detailFor(s)}</span>
+							{#if previous && !isLiveStatus(s.status) && s.scope === previous.scope}
+								<a
+									href={ROUTES.compare(s.id, previous.id)}
+									class="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary"
+								>
+									<GitCompareArrows class="size-3" />
+									Compare
+								</a>
+							{/if}
 						</span>
 						{#if counts.length}
 							<span class="flex flex-wrap gap-1.5">

@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import PlainTextResponse
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +11,15 @@ from app.api.pagination import Page
 from app.core.database import get_session
 from app.services.rescan import RescanService, rescan_schema
 from app.services.scan import ScanService, ScanSortDir, ScanSortKey
+from app.services.scan_compare import ScanCompareService
+from shared.definitions.compare import (
+    DEFAULT_ROWS_PER_PAGE,
+    MAX_ROWS_PER_PAGE,
+    VERB_ORDER,
+    ChangeVerb,
+)
 from shared.enums.scan import ScanStatus
+from shared.models.compare import ChangeRows, ComparableRun, ScanComparison
 from shared.models.recheck import RecheckRead
 from shared.models.scan import (
     FocusedRunRead,
@@ -45,6 +54,12 @@ def get_rescan_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> RescanService:
     return RescanService(session)
+
+
+def get_compare_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ScanCompareService:
+    return ScanCompareService(session)
 
 
 @router.get("/rescan/schema", response_model=RescanSchema)
@@ -275,6 +290,82 @@ async def export_scans(
         scheduled=scheduled,
         include_focused=include_focused,
     )
+
+
+@router.get("/compare", response_model=ScanComparison)
+async def compare_scans(
+    _current_user: CurrentUser,
+    service: Annotated[ScanCompareService, Depends(get_compare_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    current: Annotated[UUID, Query(description="The later run")],
+    baseline: Annotated[
+        UUID | None, Query(description="The earlier run, or the previous one")
+    ] = None,
+):
+    return await service.comparison(
+        baseline_id=baseline, current_id=current, project_id=project_id
+    )
+
+
+@router.get("/compare/rows", response_model=ChangeRows)
+async def compare_scan_rows(
+    _current_user: CurrentUser,
+    service: Annotated[ScanCompareService, Depends(get_compare_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    current: Annotated[UUID, Query(description="The later run")],
+    dimension: Annotated[str, Query(description="Result dimension")],
+    baseline: Annotated[
+        UUID | None, Query(description="The earlier run, or the previous one")
+    ] = None,
+    verb: Annotated[
+        list[ChangeVerb] | None,
+        Query(description=f"Any of: {', '.join(VERB_ORDER)}. Omit for every change."),
+    ] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    size: Annotated[int, Query(ge=1, le=MAX_ROWS_PER_PAGE)] = DEFAULT_ROWS_PER_PAGE,
+):
+    return await service.rows(
+        baseline_id=baseline,
+        current_id=current,
+        project_id=project_id,
+        dimension=dimension,
+        verbs=[v.value for v in verb or []],
+        page=page,
+        size=size,
+    )
+
+
+@router.get("/compare/diff", response_class=PlainTextResponse)
+async def compare_scan_diff(
+    _current_user: CurrentUser,
+    service: Annotated[ScanCompareService, Depends(get_compare_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    current: Annotated[UUID, Query(description="The later run")],
+    baseline: Annotated[
+        UUID | None, Query(description="The earlier run, or the previous one")
+    ] = None,
+    dimension: Annotated[
+        str | None, Query(description="One dimension, or every one")
+    ] = None,
+    verb: Annotated[list[ChangeVerb] | None, Query()] = None,
+):
+    return await service.diff(
+        baseline_id=baseline,
+        current_id=current,
+        project_id=project_id,
+        dimension=dimension,
+        verbs=[v.value for v in verb or []],
+    )
+
+
+@router.get("/{id}/comparable", response_model=list[ComparableRun])
+async def comparable_runs(
+    id: UUID,
+    _current_user: CurrentUser,
+    service: Annotated[ScanCompareService, Depends(get_compare_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.comparable(scan_id=id, project_id=project_id)
 
 
 @router.get("/{id}", response_model=ScanRead)

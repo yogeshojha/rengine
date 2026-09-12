@@ -117,7 +117,7 @@
 			default:
 				if (baseline) return 'Baseline scan';
 				if (added > 0) return `${added.toLocaleString()} new ${noun(added)}`;
-				return gone > 0 ? `No new ${nounPlural}` : 'No change since the previous scan';
+				return `No new ${nounPlural}`;
 		}
 	});
 	let subline = $derived.by(() => {

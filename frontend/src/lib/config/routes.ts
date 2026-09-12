@@ -9,6 +9,7 @@ export const routeLabels: Record<string, string> = {
 	// Reconnaissance
 	targets: 'Targets',
 	scans: 'Scans',
+	compare: 'Compare runs',
 	notes: 'Notes',
 	automation: 'Automation',
 	engines: 'Scan engines',
@@ -74,6 +75,11 @@ export const ROUTES = {
 		return `/surface/${tab}${suffix ? `?${suffix}` : ''}`;
 	},
 	scan: (id: string) => `/scans/${id}`,
+	compare: (current: string, baseline?: string | null, query?: Record<string, string>) => {
+		const params = new URLSearchParams({ current, ...(query ?? {}) });
+		if (baseline) params.set('baseline', baseline);
+		return `/scans/compare?${params.toString()}`;
+	},
 	scanTab: (id: string, tab: string, query?: Record<string, string>) => {
 		const params = new URLSearchParams({ tab, ...(query ?? {}) });
 		return `/scans/${id}?${params.toString()}`;

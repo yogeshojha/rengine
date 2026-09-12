@@ -23,6 +23,15 @@ def scan(ui: str, scan_id: uuid.UUID | str) -> str:
     return f"{_base(ui)}/scans/{scan_id}"
 
 
+def compare(
+    ui: str, current: uuid.UUID | str, baseline: uuid.UUID | str | None = None
+) -> str:
+    params = {"current": str(current)}
+    if baseline:
+        params["baseline"] = str(baseline)
+    return f"{_base(ui)}/scans/compare?{urlencode(params)}"
+
+
 def target(ui: str, target_id: uuid.UUID | str, tab: str | None = None) -> str:
     suffix = f"?tab={tab}" if tab else ""
     return f"{_base(ui)}/targets/{target_id}{suffix}"
