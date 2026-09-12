@@ -21,6 +21,8 @@ from .predicates import (
     resolved,
     service_has_baseline,
     service_is_new,
+    software_has_baseline,
+    software_is_new,
     vuln_corroborated,
     vuln_corroborated_ids,
     vuln_has_baseline,
@@ -31,6 +33,7 @@ from .predicates import (
 from .schema import build_schema
 from .scope import QueryScope, ScopeLike, scan_filter, scope_of
 from .service_compiler import ServiceQueryContext, compile_service_query
+from .software_compiler import SoftwareQueryContext, compile_software_query
 from .vuln_compiler import VulnQueryContext, compile_vuln_query
 
 __all__ = [
@@ -45,6 +48,7 @@ __all__ = [
     "QuerySyntaxError",
     "ScopeLike",
     "ServiceQueryContext",
+    "SoftwareQueryContext",
     "VulnQueryContext",
     "build_endpoint_groups",
     "build_groups",
@@ -58,6 +62,7 @@ __all__ = [
     "compile_ip_query",
     "compile_query",
     "compile_service_query",
+    "compile_software_query",
     "compile_vuln_query",
     "count_queries",
     "endpoint_has_baseline",
@@ -71,6 +76,8 @@ __all__ = [
     "scope_of",
     "service_has_baseline",
     "service_is_new",
+    "software_has_baseline",
+    "software_is_new",
     "vuln_corroborated",
     "vuln_corroborated_ids",
     "vuln_has_baseline",

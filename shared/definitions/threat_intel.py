@@ -9,6 +9,7 @@ from enum import StrEnum
 class FeedKind(StrEnum):
     EPSS = "epss"
     KEV = "kev"
+    NVD = "nvd"
 
 
 class FeedStatus(StrEnum):
@@ -38,7 +39,11 @@ class FeedSpec:
     source: str
     source_url: str
     license: str
+    rows_table: str
+    rows_noun: str
 
+
+NVD_RELEASE = "https://github.com/fkie-cad/nvd-json-data-feeds/releases/latest/download"
 
 FEEDS: tuple[FeedSpec, ...] = (
     FeedSpec(
@@ -53,6 +58,8 @@ FEEDS: tuple[FeedSpec, ...] = (
         source="FIRST.org",
         source_url="https://www.first.org/epss/",
         license="Free to use, no account",
+        rows_table="epss_scores",
+        rows_noun="scored CVEs",
     ),
     FeedSpec(
         kind=FeedKind.KEV.value,
@@ -66,8 +73,27 @@ FEEDS: tuple[FeedSpec, ...] = (
         source="CISA",
         source_url="https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
         license="Public domain (US Government)",
+        rows_table="kev_entries",
+        rows_noun="catalogued CVEs",
+    ),
+    FeedSpec(
+        kind=FeedKind.NVD.value,
+        label="NVD",
+        tagline="Which versions a CVE affects",
+        description=(
+            "Every published CVE with the software versions NVD states it applies to. "
+            "Matching an asset's own version against it names known CVEs without "
+            "sending a request."
+        ),
+        url=f"{NVD_RELEASE}/CVE-<year>.json.xz",
+        source="NIST NVD, mirrored by fkie-cad",
+        source_url="https://github.com/fkie-cad/nvd-json-data-feeds",
+        license="Public domain (US Government)",
+        rows_table="nvd_cves",
+        rows_noun="published CVEs",
     ),
 )
+
 
 FEEDS_BY_KIND: dict[str, FeedSpec] = {spec.kind: spec for spec in FEEDS}
 

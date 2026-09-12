@@ -24,6 +24,7 @@ from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.vulnerability import VulnerabilityCoverage
+from shared.services import software_match
 from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
@@ -80,6 +81,7 @@ def _notify(
 def _finalize_user_cancelled(
     session: Session, scan: Scan, events: ScanEventPublisher
 ) -> None:
+    _guard(lambda: _match_software(session, scan), None)
     _guard(lambda: analyze_result_tables(session), None)
     if scan.completed_at is None:
         scan.completed_at = utc_now()
@@ -250,6 +252,15 @@ def _dispatch_intel(scan: Scan) -> None:
     dispatch_threat_intel(str(scan.id))
 
 
+def _match_software(session: Session, scan: Scan) -> None:
+    software_match.match_scan(
+        session,
+        scan_id=scan.id,
+        target_id=scan.target_id,
+        project_id=scan.project_id,
+    )
+
+
 def _guard(fn, fallback):
     try:
         return fn()
@@ -259,6 +270,7 @@ def _guard(fn, fallback):
 
 
 def _settled_counts(session: Session, scan: Scan) -> dict:
+    _guard(lambda: _match_software(session, scan), None)
     _guard(lambda: analyze_result_tables(session), None)
     return derived_counts(session, scan.id)
 

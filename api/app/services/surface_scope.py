@@ -27,6 +27,7 @@ from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
+from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.surface import SurfaceCoverage, SurfaceOverview, SurfaceTargetRead
 from shared.models.target import Target
@@ -47,6 +48,7 @@ TABLES = {
     SurfaceDimension.SERVICES.value: Port,
     SurfaceDimension.IPS.value: IpAddress,
     SurfaceDimension.VULNERABILITIES.value: Vulnerability,
+    SurfaceDimension.SOFTWARE.value: SoftwareCve,
 }
 
 

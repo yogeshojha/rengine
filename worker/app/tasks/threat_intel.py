@@ -9,6 +9,7 @@ from shared.definitions.notifications import IntelShift, intel_changed
 from shared.logging import get_logger
 from shared.services.exploitation import evaluate_all, evaluate_scan
 from shared.services.notification_sync import SyncNotificationPublisher
+from shared.services.software_match import rematch_latest
 from shared.services.threat_intel import (
     apply_intel,
     auto_sync_enabled,
@@ -85,9 +86,16 @@ def refresh(feeds: list[str] | None = None, force: bool = False) -> dict:
         counts = sync_feeds(session, feeds)
         applied = apply_intel(session)
         ranked = evaluate_all(session)
+        inferred = rematch_latest(session)
         alerted = _notify_changes(session, started)
     logger.info("threat intel refreshed", **counts, **applied, alerted=alerted)
-    return {"feeds": counts, "applied": applied, "ranked": ranked, "alerted": alerted}
+    return {
+        "feeds": counts,
+        "applied": applied,
+        "ranked": ranked,
+        "inferred": inferred,
+        "alerted": alerted,
+    }
 
 
 @shared_task(name="app.tasks.threat_intel.apply_scan")

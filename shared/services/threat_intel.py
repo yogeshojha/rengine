@@ -25,6 +25,7 @@ from shared.definitions.threat_intel import (
 )
 from shared.logging import get_logger
 from shared.models.threat_intel import EpssScore, KevEntry, ThreatFeed
+from shared.services import nvd_corpus
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 
@@ -130,6 +131,12 @@ def _load_kev(session: Session, path: Path) -> tuple[int, str | None]:
 _LOADERS = {FeedKind.EPSS.value: _load_epss, FeedKind.KEV.value: _load_kev}
 
 
+def _sync_single(session: Session, kind: str, spec) -> tuple[int, str | None, int]:
+    with _download(spec.url, f"{kind}.data") as (path, size):
+        rows, version = _LOADERS[kind](session, path)
+    return rows, version, size
+
+
 def _mark(
     session: Session,
     kind: str,
@@ -173,8 +180,10 @@ def sync_feed(session: Session, kind: str) -> int:
     _mark(session, kind, status=FeedStatus.SYNCING.value)
     session.commit()
     try:
-        with _download(spec.url, f"{kind}.data") as (path, size):
-            rows, version = _LOADERS[kind](session, path)
+        if kind == FeedKind.NVD.value:
+            rows, version, size = nvd_corpus.load(session)
+        else:
+            rows, version, size = _sync_single(session, kind, spec)
         elapsed = int((time.monotonic() - started) * 1000)
         _mark(
             session,
@@ -239,14 +248,17 @@ def feeds_ready(session: Session) -> bool:
 
 
 def feed_rows(session: Session) -> dict[str, int]:
-    return {
-        FeedKind.EPSS.value: int(
-            session.scalar(select(func.count()).select_from(EpssScore)) or 0
-        ),
-        FeedKind.KEV.value: int(
-            session.scalar(select(func.count()).select_from(KevEntry)) or 0
-        ),
-    }
+    """Counted from each feed's own table, named by its spec."""
+    out: dict[str, int] = {}
+    for spec in FEEDS_BY_KIND.values():
+        try:
+            out[spec.kind] = int(
+                session.scalar(text(f"SELECT count(*) FROM {spec.rows_table}")) or 0  # noqa: S608
+            )
+        except Exception:
+            logger.warning("feed row count failed", feed=spec.kind, exc_info=True)
+            out[spec.kind] = 0
+    return out
 
 
 def feed_status(feed: ThreatFeed | None, rows: int) -> str:

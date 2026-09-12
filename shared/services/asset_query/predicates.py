@@ -33,6 +33,7 @@ from shared.models.interest import InterestSignal
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
+from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 
@@ -390,6 +391,50 @@ def vuln_is_new(scope: ScopeLike):
     return and_(
         _per_scan(scope, Vulnerability.scan_id, _vuln_baseline),
         not_(vuln_seen_earlier()),
+    )
+
+
+def software_seen_earlier():
+    earlier = aliased(SoftwareCve)
+    return exists(
+        select(1).where(
+            earlier.target_id == SoftwareCve.target_id,
+            earlier.fingerprint == SoftwareCve.fingerprint,
+            earlier.scan_id != SoftwareCve.scan_id,
+            earlier.discovered_at < SoftwareCve.discovered_at,
+        )
+    )
+
+
+def _software_baseline(scan_id):
+    earlier = aliased(SoftwareCve)
+    target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
+    cutoff = (
+        select(func.min(SoftwareCve.discovered_at))
+        .where(SoftwareCve.scan_id == scan_id)
+        .scalar_subquery()
+    )
+    return exists(
+        select(1).where(
+            earlier.target_id == target,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < cutoff,
+        )
+    )
+
+
+def software_has_baseline(scope: ScopeLike):
+    scope = scope_of(scope)
+    if not scope.ids:
+        return false()
+    return or_(*[_software_baseline(sid) for sid in scope.ids])
+
+
+def software_is_new(scope: ScopeLike):
+    scope = scope_of(scope)
+    return and_(
+        _per_scan(scope, SoftwareCve.scan_id, _software_baseline),
+        not_(software_seen_earlier()),
     )
 
 

@@ -42,7 +42,7 @@
 			{feed.rows.toLocaleString()}
 		</span>
 		<span class="text-xs text-muted-foreground">
-			{feed.kind === 'kev' ? 'catalogued CVEs' : 'scored CVEs'}
+			{feed.rows_noun}
 		</span>
 	</div>
 

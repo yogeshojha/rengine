@@ -1,42 +1,21 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
-	import Biohazard from '@lucide/svelte/icons/biohazard';
-	import CalendarX from '@lucide/svelte/icons/calendar-x';
-	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Flame from '@lucide/svelte/icons/flame';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import Swords from '@lucide/svelte/icons/swords';
 	import * as Card from '$lib/components/ui/card';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Switch } from '$lib/components/ui/switch';
 	import Hint from '$lib/components/hint.svelte';
-	import CompositionBar, {
-		type Segment
-	} from '$lib/components/scans/results/overview/composition-bar.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
-	import SignalSheet, { type SheetRow } from '$lib/components/dashboard/signal-sheet.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import PanelHead from '$lib/components/panel-head.svelte';
-	import SectionHead from '$lib/components/section-head.svelte';
+	import { relativeTime } from '$lib/utilities/dates';
 	import FeedCard from '$lib/components/threat-intel/feed-card.svelte';
-	import SignalTile from '$lib/components/threat-intel/signal-tile.svelte';
 	import { threatIntelApi } from '$lib/api/threat-intel';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import {
-		BAND_FILL,
-		ExploitSignal,
-		BAND_LABELS,
-		BAND_ORDER,
-		SIGNAL_HELP,
-		SIGNAL_ICONS,
-		SIGNAL_LABELS
-	} from '$lib/config/threat-intel';
 	import { ROUTES } from '$lib/config/routes';
-	import { relativeTime } from '$lib/utilities/dates';
-	import type { SignalFinding, ThreatIntelStatus } from '$lib/types/threat-intel';
+	import type { ThreatIntelStatus } from '$lib/types/threat-intel';
 
 	const POLL_MS = 4000;
 
@@ -48,7 +27,6 @@
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? null);
 
-	let coverage = $derived(status?.coverage);
 	let feeds = $derived(status?.feeds ?? []);
 
 	let autoSync = $derived(status?.auto_sync ?? true);

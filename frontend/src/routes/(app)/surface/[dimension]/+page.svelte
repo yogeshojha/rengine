@@ -16,6 +16,7 @@
 	import ServicesTable from '$lib/components/scans/results/services-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
 	import VulnerabilitiesTable from '$lib/components/scans/results/vulnerabilities-table.svelte';
+	import SoftwareTable from '$lib/components/scans/results/software-table.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { surfaceStore } from '$lib/stores/surface.svelte';
 	import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
@@ -97,8 +98,10 @@
 				<ServicesTable scanId="" projectWide {projectId} />
 			{:else if spec.key === SurfaceDimension.IPS}
 				<IpsTable scanId="" projectWide {projectId} />
-			{:else}
+			{:else if spec.key === SurfaceDimension.VULNERABILITIES}
 				<VulnerabilitiesTable scanId="" projectWide />
+			{:else}
+				<SoftwareTable scanId="" projectWide {projectId} />
 			{/if}
 		{/key}
 	</div>

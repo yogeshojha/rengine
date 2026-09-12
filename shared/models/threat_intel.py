@@ -114,6 +114,7 @@ class ThreatFeedRead(BaseModel):
     source_url: str
     url: str
     license: str
+    rows_noun: str = ""
     status: str
     status_label: str
     rows: int

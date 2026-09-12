@@ -3,11 +3,13 @@ import { subdomainsApi } from '$lib/api/subdomains';
 import { interestApi } from '$lib/api/interest';
 import { endpointsApi, ipsApi, servicesApi } from '$lib/api/scan-results';
 import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
+import { threatIntelApi } from '$lib/api/threat-intel';
 import { compileVulnQuery, emptyVulnQuery } from '$lib/utilities/vulns';
 import { compileServiceQuery, emptyServiceQuery } from '$lib/utilities/services';
 import type { Facet } from '$lib/utilities/scan-insights';
 import type { IpFacetSet } from '$lib/utilities/ip-groups';
 import type { InterestPage } from '$lib/types/interest';
+import type { ThreatIntelStatus } from '$lib/types/threat-intel';
 import {
 	DEFAULT_DASHBOARD_WINDOW,
 	FEED_QUERIES,
@@ -40,6 +42,7 @@ function createDashboardStore() {
 	let readiness = $state<DashboardReadiness | null>(null);
 	let tech = $state<Facet[] | null>(null);
 	let ipFacets = $state<IpFacetSet | null>(null);
+	let intel = $state<ThreatIntelStatus | null>(null);
 	let hosting = $state<HostingSplit | null>(null);
 	let exposures = $state<InterestPage | null>(null);
 	let feed = $state<DashboardFeed | null>(null);
@@ -111,6 +114,7 @@ function createDashboardStore() {
 				(v) => (tech = v)
 			),
 			settle(ipsApi.facets(pid, ''), (v) => (ipFacets = v)),
+			settle(threatIntelApi.status(pid), (v) => (intel = v)),
 			settle(hostingCounts(pid), (v) => (hosting = v)),
 			settle(interestApi.project(pid, { limit: EXPOSURE_ROWS }), (v) => (exposures = v)),
 			settle(
@@ -167,6 +171,7 @@ function createDashboardStore() {
 		readiness = null;
 		tech = null;
 		ipFacets = null;
+		intel = null;
 		hosting = null;
 		exposures = null;
 		feed = null;
@@ -190,6 +195,9 @@ function createDashboardStore() {
 		},
 		get ipFacets() {
 			return ipFacets;
+		},
+		get intel() {
+			return intel;
 		},
 		get hosting() {
 			return hosting;

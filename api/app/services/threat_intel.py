@@ -136,16 +136,11 @@ class ThreatIntelService:
                 )
             ).all()
         }
-        counts = dict(
-            (
-                await self.session.execute(
-                    text(
-                        "SELECT 'epss' AS k, count(*) AS n FROM epss_scores"
-                        " UNION ALL SELECT 'kev', count(*) FROM kev_entries"
-                    )
-                )
-            ).all()
+        counted = " UNION ALL ".join(
+            f"SELECT '{spec.kind}' AS k, count(*) AS n FROM {spec.rows_table}"  # noqa: S608
+            for spec in FEEDS
         )
+        counts = dict((await self.session.execute(text(counted))).all())
         out: list[ThreatFeedRead] = []
         for spec in FEEDS:
             row = rows.get(spec.kind)
@@ -160,6 +155,7 @@ class ThreatIntelService:
                     source_url=spec.source_url,
                     url=spec.url,
                     license=spec.license,
+                    rows_noun=spec.rows_noun,
                     status=status,
                     status_label=FEED_STATUS_LABELS.get(status, status),
                     rows=int(counts.get(spec.kind, 0)),

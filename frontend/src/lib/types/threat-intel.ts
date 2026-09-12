@@ -7,6 +7,7 @@ export interface ThreatFeedRead {
 	source_url: string;
 	url: string;
 	license: string;
+	rows_noun: string;
 	status: string;
 	status_label: string;
 	rows: number;

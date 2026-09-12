@@ -31,6 +31,7 @@ from app.api.v1 import (
     scan_engines,
     scan_schedules,
     scans,
+    software,
     subdomains,
     surface,
     tags,
@@ -83,6 +84,7 @@ router.include_router(bounty_programs.router)
 router.include_router(wordlists.router)
 router.include_router(media.router)
 router.include_router(reports.router)
+router.include_router(software.router)
 router.include_router(ai.router)
 router.include_router(dashboard.router)
 router.include_router(celery_health.router)

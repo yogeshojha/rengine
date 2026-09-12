@@ -23,6 +23,15 @@ from shared.definitions.ports import (
     PORT_SOURCE_LABELS,
     SERVICE_CLASS_LABELS,
 )
+from shared.definitions.software import (
+    CAVEAT_ORDER as CAVEAT_KEYS,
+)
+from shared.definitions.software import (
+    CONFIDENCE_ORDER as CONFIDENCE_KEYS,
+)
+from shared.definitions.software import (
+    VERSION_SOURCE_LABELS,
+)
 from shared.definitions.threat_intel import SIGNAL_ORDER
 from shared.definitions.vulnerabilities import (
     PROTOCOLS,
@@ -2682,4 +2691,296 @@ ENDPOINT_QUERY = QueryRegistry(
     dimensions=ENDPOINT_GROUP_DIMENSIONS,
     examples=ENDPOINT_EXAMPLES,
     example_groups=ENDPOINT_EXAMPLE_GROUPS,
+)
+
+
+# ---------- software ----------
+
+VERSION_SOURCE_KEYS: tuple[str, ...] = tuple(VERSION_SOURCE_LABELS)
+
+SOFTWARE_GROUPS: tuple[str, ...] = (
+    "Software",
+    "Vulnerability",
+    "Confidence",
+    "Asset",
+    "Flags",
+)
+
+SOFTWARE_FLAGS: dict[str, str] = {
+    "new": "Not inferred by an earlier scan of this target",
+    "kev": "Listed as exploited in the wild",
+    "ransomware": "Recorded in known ransomware campaigns",
+    "overdue": "Past the CISA remediation deadline",
+    "likely": "Above the EPSS threshold most teams act on",
+    "firm": "Nothing about the match is unverified",
+    "conditional": "NVD names a further component this scan did not identify",
+    "backport": "A distribution build, where fixes land without a version change",
+    "fingerprinted": "The version was read from the page, not stated by the server",
+    "stated": "The server stated the version in its own headers",
+    "web": "Inferred from a web asset",
+    "service": "Inferred from a service banner",
+}
+
+SOFTWARE_FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="cve",
+        type=FieldType.STRING,
+        group="Vulnerability",
+        description="Published identifier of the weakness.",
+        example="cve:CVE-2021-23017",
+        free_text=True,
+        evidence="cve",
+    ),
+    QueryField(
+        name="software",
+        type=FieldType.STRING,
+        group="Software",
+        description="Name of the software as the scan read it.",
+        example="software:nginx",
+        aliases=("name",),
+        free_text=True,
+        evidence="software",
+    ),
+    QueryField(
+        name="product",
+        type=FieldType.STRING,
+        group="Software",
+        description="Product as NVD files it.",
+        example="product:http_server",
+    ),
+    QueryField(
+        name="vendor",
+        type=FieldType.STRING,
+        group="Software",
+        description="Vendor as NVD files it.",
+        example="vendor:apache",
+    ),
+    QueryField(
+        name="version",
+        type=FieldType.STRING,
+        group="Software",
+        description="Version the asset reported.",
+        example="version:2.4.52",
+    ),
+    QueryField(
+        name="source",
+        type=FieldType.ENUM,
+        group="Software",
+        description="Where the version came from.",
+        example="source:banner",
+        values=tuple(VERSION_SOURCE_KEYS),
+        facet="source",
+    ),
+    QueryField(
+        name="severity",
+        type=FieldType.ENUM,
+        group="Vulnerability",
+        description="Severity NVD scored the CVE at.",
+        example="severity:critical",
+        values=SEVERITY_ORDER,
+        facet="severity",
+    ),
+    QueryField(
+        name="cvss",
+        type=FieldType.NUMBER,
+        group="Vulnerability",
+        description="CVSS base score.",
+        example="cvss>=9",
+    ),
+    QueryField(
+        name="epss",
+        type=FieldType.NUMBER,
+        group="Vulnerability",
+        description="Probability of exploitation in the next 30 days.",
+        example="epss>=0.5",
+    ),
+    QueryField(
+        name="rank",
+        type=FieldType.NUMBER,
+        group="Vulnerability",
+        description="Exploitation rank built from the intelligence signals.",
+        example="rank>=40",
+    ),
+    QueryField(
+        name="confidence",
+        type=FieldType.ENUM,
+        group="Confidence",
+        description="How much of the match is verified.",
+        example="confidence:high",
+        values=tuple(CONFIDENCE_KEYS),
+        facet="confidence",
+    ),
+    QueryField(
+        name="caveat",
+        type=FieldType.ENUM,
+        group="Confidence",
+        description="A part of the match this scan did not verify.",
+        example="caveat:backport",
+        values=tuple(CAVEAT_KEYS),
+        facet="caveat",
+    ),
+    QueryField(
+        name="target",
+        type=FieldType.STRING,
+        group="Asset",
+        description="Target the asset belongs to.",
+        example="target:example.com",
+    ),
+    QueryField(
+        name="host",
+        type=FieldType.STRING,
+        group="Asset",
+        description="Hostname running the software.",
+        example="host:www.example.com",
+        free_text=True,
+        evidence="host",
+    ),
+    QueryField(
+        name="ip",
+        type=FieldType.IP,
+        group="Asset",
+        description="Address running the software.",
+        example="ip:203.0.113.10",
+    ),
+    QueryField(
+        name="port",
+        type=FieldType.NUMBER,
+        group="Asset",
+        description="Port the software answers on.",
+        example="port:443",
+    ),
+    QueryField(
+        name="seen",
+        type=FieldType.DATE,
+        group="Asset",
+        description="When this scan inferred it.",
+        example="seen:<24h",
+        aliases=("discovered", "age"),
+    ),
+    QueryField(
+        name="is",
+        type=FieldType.FLAG,
+        group="Flags",
+        description="Property of the match.",
+        example="is:kev",
+        aliases=("has",),
+        values=tuple(SOFTWARE_FLAGS),
+    ),
+)
+
+SOFTWARE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
+    GroupDimension(
+        key="target", label="Target", description="Rows belonging to the same target"
+    ),
+    GroupDimension(
+        key="cve", label="CVE", description="Every asset affected by one published CVE"
+    ),
+    GroupDimension(
+        key="product",
+        label="Product",
+        description="Everything running the same software",
+    ),
+    GroupDimension(
+        key="version",
+        label="Version",
+        description="Everything running the same release",
+    ),
+    GroupDimension(
+        key="host", label="Host", description="Everything inferred on one hostname"
+    ),
+    GroupDimension(
+        key="severity", label="Severity", description="Matches of the same severity"
+    ),
+    GroupDimension(
+        key="confidence",
+        label="Confidence",
+        description="Matches with the same amount verified",
+    ),
+)
+
+SOFTWARE_EXAMPLE_GROUPS: tuple[str, ...] = (
+    "Act on this first",
+    "Change",
+    "Software",
+    "Confidence",
+)
+
+SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
+    QueryExample(
+        query="is:kev",
+        description="Software carrying a CVE with confirmed exploitation",
+        group="Act on this first",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:kev and is:firm",
+        description="Confirmed exploited, with nothing about the match unverified",
+        group="Act on this first",
+    ),
+    QueryExample(
+        query="severity:critical and is:stated",
+        description="Critical CVEs where the server stated its own version",
+        group="Act on this first",
+        generic=True,
+    ),
+    QueryExample(
+        query="epss>=0.5",
+        description="More likely than not to be exploited in the next 30 days",
+        group="Act on this first",
+    ),
+    QueryExample(
+        query="is:new",
+        description="Matches absent from the previous scan of this target",
+        group="Change",
+        generic=True,
+    ),
+    QueryExample(
+        query="is:new and severity:[critical,high]",
+        description="Severe matches that appeared since the previous scan",
+        group="Change",
+    ),
+    QueryExample(
+        query="software:nginx",
+        description="Everything running nginx",
+        group="Software",
+        generic=True,
+    ),
+    QueryExample(
+        query="product:http_server and cvss>=9",
+        description="Apache builds carrying a critically scored CVE",
+        group="Software",
+    ),
+    QueryExample(
+        query="software:wordpress and is:new",
+        description="WordPress releases that newly fell behind",
+        group="Software",
+    ),
+    QueryExample(
+        query="confidence:high",
+        description="Matches with no unverified part",
+        group="Confidence",
+        generic=True,
+    ),
+    QueryExample(
+        query="caveat:backport",
+        description="Distribution builds, where the version number may not tell the whole story",
+        group="Confidence",
+    ),
+    QueryExample(
+        query="not caveat:conditional",
+        description="Matches NVD does not tie to a further component",
+        group="Confidence",
+    ),
+)
+
+SOFTWARE_QUERY = QueryRegistry(
+    key="software",
+    noun="software CVE",
+    noun_plural="software CVEs",
+    fields=SOFTWARE_FIELDS,
+    flags=SOFTWARE_FLAGS,
+    groups=SOFTWARE_GROUPS,
+    dimensions=SOFTWARE_GROUP_DIMENSIONS,
+    examples=SOFTWARE_EXAMPLES,
+    example_groups=SOFTWARE_EXAMPLE_GROUPS,
 )

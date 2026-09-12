@@ -1,4 +1,10 @@
 import { api } from './client';
+import type {
+	SoftwareCoverage,
+	SoftwareFacets,
+	SoftwareFilter,
+	SoftwarePage
+} from '$lib/types/software';
 import { scopeQuery } from '$lib/utilities/surface-scope';
 import type {
 	EndpointCoverageRead,
@@ -198,5 +204,30 @@ export const endpointsApi = {
 
 	async detail(projectId: string, scanId: string, id: string): Promise<EndpointDetail> {
 		return api.get<EndpointDetail>(`/endpoints/${id}?${scopeQuery({ projectId, scanId })}`);
+	}
+};
+
+export const softwareApi = {
+	async search(projectId: string, scanId: string, filter: SoftwareFilter): Promise<SoftwarePage> {
+		return api.post<SoftwarePage>(`/software/search?${scopeQuery({ projectId, scanId })}`, filter);
+	},
+
+	async facets(projectId: string, scanId: string): Promise<SoftwareFacets> {
+		return api.get<SoftwareFacets>(`/software/facets?${scopeQuery({ projectId, scanId })}`);
+	},
+
+	async coverage(projectId: string, scanId: string): Promise<SoftwareCoverage> {
+		return api.get<SoftwareCoverage>(`/software/coverage?${scopeQuery({ projectId, scanId })}`);
+	},
+
+	async counts(
+		projectId: string,
+		scanId: string,
+		queries: string[]
+	): Promise<Record<string, number>> {
+		return api.post<Record<string, number>>(
+			`/software/search/counts?${scopeQuery({ projectId, scanId })}`,
+			{ queries }
+		);
 	}
 };

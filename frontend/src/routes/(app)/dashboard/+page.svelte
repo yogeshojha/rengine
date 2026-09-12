@@ -21,6 +21,7 @@
 	import SurfaceTrend from '$lib/components/dashboard/surface-trend.svelte';
 	import CoverageWidget from '$lib/components/dashboard/coverage-widget.svelte';
 	import AttackQueue from '$lib/components/dashboard/attack-queue.svelte';
+	import ExploitationWidget from '$lib/components/dashboard/exploitation-widget.svelte';
 	import ExposuresWidget from '$lib/components/dashboard/exposures-widget.svelte';
 	import ChangesFeed from '$lib/components/dashboard/changes-feed.svelte';
 	import ServicesWidget from '$lib/components/dashboard/services-widget.svelte';
@@ -218,6 +219,14 @@
 						filter={queueFilter}
 						onFilter={(f) => (queueFilter = f)}
 						class="col-span-12 xl:col-span-8"
+					/>
+				{/if}
+				{#if dashboardStore.intel?.coverage?.findings}
+					<ExploitationWidget
+						intel={dashboardStore.intel}
+						projectId={projectsStore.activeProject?.id ?? null}
+						loading={dashboardStore.extrasLoading}
+						class="col-span-12 lg:col-span-6 xl:col-span-4"
 					/>
 				{/if}
 				<CoverageWidget

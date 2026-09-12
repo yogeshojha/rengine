@@ -13,6 +13,7 @@ from shared.definitions.asset_query import (
     HOST_QUERY,
     IP_QUERY,
     SERVICE_QUERY,
+    SOFTWARE_QUERY,
     VULN_QUERY,
 )
 from shared.definitions.surface import SURFACE_ORDER, SurfaceDimension
@@ -36,6 +37,7 @@ async def surface_schemas(_current_user: CurrentUser) -> dict[str, QuerySchema]:
         SurfaceDimension.SERVICES.value: build_schema(SERVICE_QUERY),
         SurfaceDimension.IPS.value: build_schema(IP_QUERY),
         SurfaceDimension.VULNERABILITIES.value: build_schema(VULN_QUERY),
+        SurfaceDimension.SOFTWARE.value: build_schema(SOFTWARE_QUERY),
     }
 
 

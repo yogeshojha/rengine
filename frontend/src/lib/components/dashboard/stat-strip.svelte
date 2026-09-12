@@ -76,7 +76,7 @@
 </script>
 
 <div
-	class="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border md:grid-cols-3 xl:grid-cols-6"
+	class="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border md:grid-cols-4 xl:grid-cols-7"
 >
 	{#if !overview}
 		{#each Array(6) as _, i (i)}

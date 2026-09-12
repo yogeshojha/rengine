@@ -7,6 +7,7 @@ from typing import Any
 from shared.services.scan_resolve import MASK
 from shared.services.web_hygiene import evaluate as evaluate_hygiene
 from shared.utils.datetime import utc_now
+from shared.utils.software import components_of
 from tools.runner.fieldmap import F, parse_record
 
 _REQUEST_SECRET_HEADER = re.compile(
@@ -89,6 +90,10 @@ def _tls_self_signed(record: dict) -> bool | None:
     return issuer == subject if (issuer and subject) else None
 
 
+def _software(record: dict) -> list[dict]:
+    return components_of(_str_list(record.get("tech")), record.get("webserver"))
+
+
 HTTPX_FIELDS: dict[str, F] = {
     "url": F(lambda r: r.get("url") or r.get("input") or "", max_len=2000),
     "final_url": F("final_url", max_len=2000),
@@ -111,6 +116,7 @@ HTTPX_FIELDS: dict[str, F] = {
     "words": F("words", _int),
     "lines": F("lines", _int),
     "tech": F(lambda r: _str_list(r.get("tech"))),
+    "software": F(_software),
     "cpe": F(lambda r: list(r.get("cpe") or [])),
     "cname": F(lambda r: _first(r.get("cname")), max_len=500),
     "is_cdn": F(lambda r: bool(r.get("cdn"))),

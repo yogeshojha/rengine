@@ -115,12 +115,20 @@ _VULN_FIELDS: tuple[WatchedField, ...] = (
     WatchedField("extracted_results", "Extracted", FieldKind.LIST.value),
 )
 
+_SOFTWARE_FIELDS: tuple[WatchedField, ...] = (
+    WatchedField("severity", "Severity"),
+    WatchedField("confidence", "Confidence"),
+    WatchedField("is_kev", "Known exploited", FieldKind.BOOL.value),
+    WatchedField("caveats", "Caveats", FieldKind.LIST.value),
+)
+
 WATCHED_FIELDS: dict[str, tuple[WatchedField, ...]] = {
     SurfaceDimension.WEB_ASSETS.value: _HOST_FIELDS,
     SurfaceDimension.ENDPOINTS.value: _ENDPOINT_FIELDS,
     SurfaceDimension.SERVICES.value: _SERVICE_FIELDS,
     SurfaceDimension.IPS.value: _ADDRESS_FIELDS,
     SurfaceDimension.VULNERABILITIES.value: _VULN_FIELDS,
+    SurfaceDimension.SOFTWARE.value: _SOFTWARE_FIELDS,
 }
 
 # moves every run
@@ -136,6 +144,7 @@ IGNORED_FIELDS: dict[str, tuple[str, ...]] = {
     SurfaceDimension.SERVICES.value: ("source",),
     SurfaceDimension.IPS.value: ("source", "scan_policy_reason"),
     SurfaceDimension.VULNERABILITIES.value: ("description", "remediation"),
+    SurfaceDimension.SOFTWARE.value: ("description",),
 }
 
 # Class D: moves without a scan
@@ -159,6 +168,7 @@ COMPARE_KEYS: dict[str, tuple[str, ...]] = {
     SurfaceDimension.SERVICES.value: ("ip", "number", "protocol"),
     SurfaceDimension.IPS.value: ("ip",),
     SurfaceDimension.VULNERABILITIES.value: ("fingerprint",),
+    SurfaceDimension.SOFTWARE.value: ("fingerprint",),
 }
 
 

@@ -65,3 +65,4 @@ export const ipQuerySchema = new QuerySchemaStore(SurfaceDimension.IPS);
 export const serviceQuerySchema = new QuerySchemaStore(SurfaceDimension.SERVICES);
 export const vulnQuerySchema = new QuerySchemaStore(SurfaceDimension.VULNERABILITIES);
 export const endpointQuerySchema = new QuerySchemaStore(SurfaceDimension.ENDPOINTS);
+export const softwareQuerySchema = new QuerySchemaStore(SurfaceDimension.SOFTWARE);

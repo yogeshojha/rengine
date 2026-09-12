@@ -23,6 +23,7 @@ from shared.models.subdomain import Subdomain
 from shared.services import port_inventory, web_hygiene
 from shared.services.port_inventory import ServiceObservation
 from shared.utils.datetime import utc_now
+from shared.utils.software import parse_banner
 from stages.base import Stage, StageResult
 from stages.http_probe.config import HttpProbeConfig
 from tools.httpx.client import HttpxClient, HttpxError
@@ -224,6 +225,7 @@ class HttpProbeStage(Stage):
         ).all()
         merged: dict[tuple[str, int], ServiceObservation] = {}
         for host, ip, port, scheme, webserver in rows:
+            product, version, _distro = parse_banner(webserver)
             https = scheme == "https"
             addresses = set(resolved.get(host, ()))
             if ip:
@@ -239,7 +241,8 @@ class HttpProbeStage(Stage):
                     is_http=True,
                     tls=https,
                     service_name="https" if https else "http",
-                    product=(webserver or None),
+                    product=product,
+                    version=version,
                 )
         return port_inventory.upsert(
             self.session,

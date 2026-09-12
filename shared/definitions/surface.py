@@ -1,4 +1,4 @@
-"""The five result dimensions a scan produces, named as the UI names them."""
+"""The result dimensions a scan produces, named as the UI names them."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ class SurfaceDimension(StrEnum):
     SERVICES = "services"
     IPS = "ips"
     VULNERABILITIES = "vulnerabilities"
+    SOFTWARE = "software"
 
 
 SURFACE_ORDER: tuple[str, ...] = tuple(d.value for d in SurfaceDimension)
@@ -23,6 +24,7 @@ SURFACE_LABELS: dict[str, str] = {
     SurfaceDimension.SERVICES.value: "Services",
     SurfaceDimension.IPS.value: "IP addresses",
     SurfaceDimension.VULNERABILITIES.value: "Vulnerabilities",
+    SurfaceDimension.SOFTWARE.value: "Software CVEs",
 }
 
 SURFACE_NOUN: dict[str, tuple[str, str]] = {
@@ -31,6 +33,7 @@ SURFACE_NOUN: dict[str, tuple[str, str]] = {
     SurfaceDimension.SERVICES.value: ("service", "services"),
     SurfaceDimension.IPS.value: ("address", "addresses"),
     SurfaceDimension.VULNERABILITIES.value: ("finding", "findings"),
+    SurfaceDimension.SOFTWARE.value: ("software CVE", "software CVEs"),
 }
 
 SURFACE_KINDS: dict[str, frozenset[str]] = {
@@ -42,6 +45,10 @@ SURFACE_KINDS: dict[str, frozenset[str]] = {
     SurfaceDimension.IPS.value: frozenset({AssetKind.ADDRESSES.value}),
     SurfaceDimension.VULNERABILITIES.value: frozenset(
         {AssetKind.VULNERABILITIES.value}
+    ),
+    # inferred from what the probe stages report, never produced by a stage of its own
+    SurfaceDimension.SOFTWARE.value: frozenset(
+        {AssetKind.HTTP_ASSETS.value, AssetKind.PORTS.value}
     ),
 }
 

@@ -3,6 +3,7 @@ import Waypoints from '@lucide/svelte/icons/waypoints';
 import ServerCog from '@lucide/svelte/icons/server-cog';
 import Network from '@lucide/svelte/icons/network';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+import Package from '@lucide/svelte/icons/package';
 import type { IconComponent } from './icons';
 import type { ScanRead } from '$lib/types/scan';
 
@@ -11,7 +12,8 @@ export enum SurfaceDimension {
 	ENDPOINTS = 'endpoints',
 	SERVICES = 'services',
 	IPS = 'ips',
-	VULNERABILITIES = 'vulnerabilities'
+	VULNERABILITIES = 'vulnerabilities',
+	SOFTWARE = 'software'
 }
 
 export const RESULT_TABS = [
@@ -19,7 +21,8 @@ export const RESULT_TABS = [
 	'endpoints',
 	'services',
 	'ips',
-	'vulnerabilities'
+	'vulnerabilities',
+	'software'
 ] as const;
 export type ResultTab = (typeof RESULT_TABS)[number];
 
@@ -90,6 +93,17 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		queryParam: 'vuln_q',
 		kinds: ['vulnerabilities'],
 		countColumns: ['vulnerabilities_found']
+	},
+	[SurfaceDimension.SOFTWARE]: {
+		key: SurfaceDimension.SOFTWARE,
+		label: 'Software CVEs',
+		noun: 'software CVE',
+		nounPlural: 'software CVEs',
+		icon: Package,
+		tab: 'software',
+		queryParam: 'sw_q',
+		kinds: ['http_assets', 'ports'],
+		countColumns: []
 	}
 };
 
@@ -98,7 +112,8 @@ export const SURFACE_ORDER: SurfaceSpec[] = [
 	SURFACE[SurfaceDimension.ENDPOINTS],
 	SURFACE[SurfaceDimension.SERVICES],
 	SURFACE[SurfaceDimension.IPS],
-	SURFACE[SurfaceDimension.VULNERABILITIES]
+	SURFACE[SurfaceDimension.VULNERABILITIES],
+	SURFACE[SurfaceDimension.SOFTWARE]
 ];
 
 export function surfaceSpec(key: string): SurfaceSpec | undefined {

@@ -90,6 +90,7 @@ from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
+from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability, VulnerabilityCoverage
@@ -154,6 +155,14 @@ SPECS: dict[str, DimSpec] = {
         title="template_name",
         subtitle=("matched_at",),
         display=("template_id", "severity", "is_kev", "host", "exploit_score"),
+    ),
+    SurfaceDimension.SOFTWARE.value: DimSpec(
+        dimension=SurfaceDimension.SOFTWARE.value,
+        model=SoftwareCve,
+        keys=COMPARE_KEYS[SurfaceDimension.SOFTWARE.value],
+        title="cve",
+        subtitle=("host",),
+        display=("name", "version", "severity", "confidence", "is_kev"),
     ),
 }
 
